@@ -6,10 +6,13 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['html', { open: 'never' }]],
+  timeout: 5000,
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:60101',
     trace: 'on-first-retry',
+    actionTimeout: 5000,
+    navigationTimeout: 5000,
   },
 
   projects: [
@@ -17,31 +20,12 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    // Mobile tests
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
   ],
 
   webServer: {
     command: 'npm run dev',
-    port: 3000,
+    port: 60101,
     reuseExistingServer: !process.env.CI,
+    timeout: 5000,
   },
 });

@@ -10,7 +10,7 @@ export class PlaywrightGameHelper {
 
   async goto() {
     await this.page.goto('/');
-    await expect(this.page.locator('h1')).toContainText('Texas 42 - mk5');
+    await expect(this.page.locator('h1')).toContainText('Texas 42 Debug Interface');
   }
 
   async getCurrentPhase(): Promise<string> {
@@ -34,36 +34,108 @@ export class PlaywrightGameHelper {
     await expect(this.page.locator('[data-testid="debug-panel"]')).not.toBeVisible();
   }
 
-  async getAvailableActions(): Promise<string[]> {
-    const actionButtons = this.page.locator('[data-testid="action-button"]');
-    return await actionButtons.allTextContents();
+  async getAvailableActions(): Promise<Array<{index: number, type: string, value?: any}>> {
+    return await this.getActionsList();
   }
 
-  async clickAction(actionText: string) {
-    await this.page
-      .locator(`[data-testid="action-button"]:has-text("${actionText}")`)
-      .click();
+  async getBiddingOptions(): Promise<Array<{index: number, type: string, value?: number}>> {
+    const actions = await this.getActionsList();
+    return actions.filter(a => a.type === 'pass' || a.type === 'bid_points' || a.type === 'bid_marks');
   }
 
-  async clickActionByIndex(index: number) {
-    await this.page.locator('[data-testid="action-button"]').nth(index).click();
+  async selectActionByIndex(index: number) {
+    await this.page.locator('.action-btn').nth(index).click();
   }
 
-  async getBiddingOptions(): Promise<string[]> {
-    const biddingButtons = this.page.locator('[data-testid="bid-button"]');
-    return await biddingButtons.allTextContents();
+  async getActionsList(): Promise<Array<{index: number, type: string, value?: any}>> {
+    const buttons = await this.page.locator('.action-btn').all();
+    const actions = [];
+    
+    for (let i = 0; i < buttons.length; i++) {
+      const actionId = await buttons[i].getAttribute('data-action-id');
+      
+      let type = 'unknown';
+      let value = null;
+      
+      if (actionId === 'pass') {
+        type = 'pass';
+      } else if (actionId?.startsWith('bid-')) {
+        const parts = actionId.split('-');
+        if (parts.length === 3 && parts[2] === 'marks') {
+          type = 'bid_marks';
+          value = parseInt(parts[1]);
+        } else if (parts.length === 2) {
+          type = 'bid_points';
+          value = parseInt(parts[1]);
+        }
+      } else if (actionId?.startsWith('trump-')) {
+        type = 'trump_selection';
+        value = actionId.split('-')[1];
+      } else if (actionId?.startsWith('play-')) {
+        type = 'play_domino';
+        value = actionId.substring(5);
+      } else if (actionId === 'complete-trick') {
+        type = 'complete_trick';
+      } else if (actionId === 'score-hand') {
+        type = 'score_hand';
+      } else if (actionId === 'redeal') {
+        type = 'redeal';
+      } else if (actionId === 'select-trump') {
+        type = 'select_trump';
+      }
+      
+      actions.push({ index: i, type, value });
+    }
+    
+    return actions;
   }
 
-  async placeBid(bidText: string) {
-    await this.page
-      .locator(`[data-testid="bid-button"]:has-text("${bidText}")`)
-      .click();
+  async selectActionByType(type: string, value?: any) {
+    const actions = await this.getActionsList();
+    const action = actions.find(a => a.type === type && (value === undefined || a.value === value));
+    if (action) {
+      await this.selectActionByIndex(action.index);
+    } else {
+      throw new Error(`No action found for type: ${type}, value: ${value}`);
+    }
   }
 
-  async selectTrump(trumpText: string) {
-    await this.page
-      .locator(`[data-testid="trump-button"]:has-text("${trumpText}")`)
-      .click();
+  async setTrumpBySuit(suit: string) {
+    await this.selectActionByType('trump_selection', suit);
+  }
+
+  // Add back methods that tests expect, but using new index-based approach
+  async bidPoints(player: number, points: number) {
+    await this.selectActionByType('bid_points', points);
+  }
+
+  async bidMarks(player: number, marks: number) {
+    await this.selectActionByType('bid_marks', marks);
+  }
+
+  async bidPass(player: number) {
+    await this.selectActionByType('pass');
+  }
+
+  async setTrump(suit: string) {
+    // Map common suit names to internal names
+    const suitMap: Record<string, string> = {
+      '0s': 'blanks',
+      '1s': 'ones',
+      '2s': 'twos', 
+      '3s': 'threes',
+      '4s': 'fours',
+      '5s': 'fives',
+      '6s': 'sixes',
+      'Doubles': 'doubles'
+    };
+    
+    const internalSuit = suitMap[suit] || suit.toLowerCase();
+    await this.setTrumpBySuit(internalSuit);
+  }
+
+  async clickActionIndex(index: number) {
+    await this.selectActionByIndex(index);
   }
 
   async getPlayerHand(playerIndex: number): Promise<string[]> {
@@ -79,6 +151,14 @@ export class PlaywrightGameHelper {
       .click();
   }
 
+  async playAnyDomino() {
+    await this.selectActionByType('play_domino');
+  }
+  
+  async playDominoByValue(dominoValue: string) {
+    await this.selectActionByType('play_domino', dominoValue);
+  }
+
   async getTeamScores(): Promise<[number, number]> {
     const team0Score = await this.page
       .locator('[data-testid="team-0-score"]')
@@ -87,10 +167,11 @@ export class PlaywrightGameHelper {
       .locator('[data-testid="team-1-score"]')
       .textContent();
     
-    return [
-      parseInt(team0Score || '0'),
-      parseInt(team1Score || '0')
-    ];
+    // Extract numbers from text like "25 points"
+    const score0 = parseInt((team0Score || '0').match(/(\d+)/)?.[1] || '0');
+    const score1 = parseInt((team1Score || '0').match(/(\d+)/)?.[1] || '0');
+    
+    return [score0, score1];
   }
 
   async getTeamMarks(): Promise<[number, number]> {
@@ -101,10 +182,11 @@ export class PlaywrightGameHelper {
       .locator('[data-testid="team-1-marks"]')
       .textContent();
     
-    return [
-      parseInt(team0Marks || '0'),
-      parseInt(team1Marks || '0')
-    ];
+    // Extract numbers from text like "3 marks"
+    const marks0 = parseInt((team0Marks || '0').match(/(\d+)/)?.[1] || '0');
+    const marks1 = parseInt((team1Marks || '0').match(/(\d+)/)?.[1] || '0');
+    
+    return [marks0, marks1];
   }
 
   async getCurrentTrick(): Promise<string[]> {
@@ -113,13 +195,25 @@ export class PlaywrightGameHelper {
   }
 
   async getTrump(): Promise<string> {
-    const trumpElement = this.page.locator('[data-testid="trump-display"]');
+    const trumpElement = this.page.locator('[data-testid="trump"]');
     return await trumpElement.textContent() || '';
   }
 
+  async completeTrick() {
+    await this.selectActionByType('complete_trick');
+  }
+
+  async scoreHand() {
+    await this.selectActionByType('score_hand');
+  }
+
+  async redeal() {
+    await this.selectActionByType('redeal');
+  }
+
+
   async newGame() {
     await this.page.locator('[data-testid="new-game-button"]').click();
-    await this.page.waitForTimeout(100); // Brief wait for state reset
   }
 
   async waitForPhaseChange(expectedPhase: string, timeout = 5000) {
@@ -196,30 +290,61 @@ export class PlaywrightGameHelper {
         break;
       }
       
-      const actions = await this.getAvailableActions();
+      const actions = await this.getActionsList();
       if (actions.length === 0) {
         break;
       }
       
-      // Select action based on strategy
       let actionIndex = 0;
       
       switch (strategy) {
         case 'aggressive':
-          // Choose highest bid or most aggressive play
           actionIndex = actions.length - 1;
           break;
         case 'conservative':
-          // Choose pass or lowest bid
-          actionIndex = actions.findIndex(a => a.toLowerCase().includes('pass')) || 0;
+          actionIndex = actions.findIndex(a => a.type === 'pass') || 0;
           break;
         default:
-          // Random selection
           actionIndex = Math.floor(Math.random() * actions.length);
       }
       
-      await this.clickActionByIndex(actionIndex);
-      await this.page.waitForTimeout(100); // Brief pause for state updates
+      await this.selectActionByIndex(actionIndex);
+    }
+  }
+
+  async playCompleteHand(bidder: number, bidValue: number, bidType: 'points' | 'marks', trump: string) {
+    // Bidding phase
+    for (let i = 0; i < 4; i++) {
+      const currentPlayerText = await this.getCurrentPlayer();
+      const currentPlayerNum = parseInt(currentPlayerText.replace('Current Player: P', ''));
+      
+      if (currentPlayerNum === bidder) {
+        if (bidType === 'marks') {
+          await this.selectActionByType('bid_marks', bidValue);
+        } else {
+          await this.selectActionByType('bid_points', bidValue);
+        }
+      } else {
+        await this.selectActionByType('pass');
+      }
+    }
+
+    // Trump selection
+    await this.setTrumpBySuit(trump);
+
+    // Play 7 tricks
+    for (let trick = 1; trick <= 7; trick++) {
+      // Each player plays a domino
+      for (let play = 0; play < 4; play++) {
+        await this.playAnyDomino();
+      }
+      
+      if (trick < 7) {
+        await this.completeTrick();
+      } else {
+        await this.completeTrick();
+        await this.scoreHand();
+      }
     }
   }
 }

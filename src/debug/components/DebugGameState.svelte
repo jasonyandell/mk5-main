@@ -1,0 +1,307 @@
+<script lang="ts">
+  import type { GameState, Bid, Player } from '../../game/types';
+  
+  interface Props {
+    gameState: GameState;
+  }
+  
+  let { gameState }: Props = $props();
+  
+  function getBidLabel(bid: Bid): string {
+    switch (bid.type) {
+      case 'pass': return 'Pass';
+      case 'points': return `${bid.value}pts`;
+      case 'marks': return `${bid.value}m`;
+      case 'nello': return `N${bid.value}`;
+      case 'splash': return `S${bid.value}`;
+      case 'plunge': return `P${bid.value}`;
+      default: return 'Unknown';
+    }
+  }
+  
+  function getTrumpName(trump: any): string {
+    if (trump === null) return 'None';
+    if (typeof trump === 'number') {
+      const suits = ['0s', '1s', '2s', '3s', '4s', '5s', '6s', 'Doubles'];
+      return suits[trump] || 'Unknown';
+    }
+    if (typeof trump === 'object' && trump.suit) {
+      return trump.suit;
+    }
+    return 'Unknown';
+  }
+  
+  const currentPlayerInfo = $derived(gameState.players[gameState.currentPlayer]);
+  const dealerInfo = $derived(gameState.players[gameState.dealer]);
+</script>
+
+<div class="debug-game-state" data-testid="debug-panel">
+  <div class="state-header">
+    <div class="phase-info">
+      <span class="label">Phase:</span>
+      <span class="value phase-{gameState.phase}" data-testid="phase">Phase: {gameState.phase.toUpperCase()}</span>
+    </div>
+    <div class="player-info">
+      <span class="label">Current:</span>
+      <span class="value" data-testid="current-player">Current Player: P{gameState.currentPlayer}</span>
+    </div>
+    <div class="dealer-info">
+      <span class="label">Dealer:</span>
+      <span class="value" data-testid="dealer">Dealer: P{gameState.dealer}</span>
+    </div>
+    <div class="trump-info">
+      <span class="label">Trump:</span>
+      <span class="value" data-testid="trump">Trump: {getTrumpName(gameState.trump)}</span>
+    </div>
+  </div>
+  
+  <div class="core-state-section">
+    <h3>Core State</h3>
+    <div class="core-state-content">
+      Phase: {gameState.phase.toUpperCase()}<br/>
+      Dealer: P{gameState.dealer}<br/>
+      Current Player: P{gameState.currentPlayer}<br/>
+      Trump: {getTrumpName(gameState.trump)}<br/>
+      Bid Winner: {gameState.winningBidder !== null ? `P${gameState.winningBidder}` : 'None'}<br/>
+      Current Bid: {gameState.currentBid ? getBidLabel(gameState.currentBid) : 'None'}
+    </div>
+  </div>
+  
+  <div class="state-details">
+    <div class="section">
+      <h4>Bidding</h4>
+      <div class="bid-history">
+        {#each gameState.bids as bid, i}
+          <div class="bid-entry" class:current={bid === gameState.currentBid}>
+            <span class="player">P{bid.player}:</span>
+            <span class="bid">{getBidLabel(bid)}</span>
+          </div>
+        {/each}
+        {#if gameState.bids.length === 0}
+          <div class="empty">No bids yet</div>
+        {/if}
+      </div>
+      {#if gameState.winningBidder !== null}
+        <div class="winning-bidder">
+          Winner: P{gameState.winningBidder}
+          {#if gameState.currentBid}
+            ({getBidLabel(gameState.currentBid)})
+          {/if}
+        </div>
+      {/if}
+    </div>
+    
+    <div class="section" data-testid="score-board">
+      <h4>Scores</h4>
+      <div class="scores">
+        <div class="team">
+          <span class="team-label">Team 1:</span>
+          <span class="points" data-testid="team-0-score">{gameState.teamScores[0]} points</span>
+          <span class="marks" data-testid="team-0-marks">{gameState.teamMarks[0]} marks</span>
+        </div>
+        <div class="team">
+          <span class="team-label">Team 2:</span>
+          <span class="points" data-testid="team-1-score">{gameState.teamScores[1]} points</span>
+          <span class="marks" data-testid="team-1-marks">{gameState.teamMarks[1]} marks</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h4>Tricks ({gameState.tricks.length}/7)</h4>
+      <div class="tricks-summary">
+        <div data-testid="tricks-completed">Tricks Completed: {gameState.tricks.length}/7</div>
+        {#each gameState.tricks as trick, i}
+          <div class="trick">
+            <span class="trick-num">#{i + 1}</span>
+            <span class="trick-winner">P{trick.winner || 0}</span>
+            <span class="trick-points">{trick.points}pts</span>
+          </div>
+        {/each}
+        {#if gameState.currentTrick.length > 0}
+          <div class="current-trick">
+            Current: {gameState.currentTrick.length}/4 plays
+          </div>
+        {/if}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .debug-game-state {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 12px;
+  }
+  
+  .state-header {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #dee2e6;
+  }
+  
+  .state-header > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .label {
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 10px;
+    text-transform: uppercase;
+  }
+  
+  .value {
+    font-weight: 500;
+    color: #212529;
+  }
+  
+  .phase-bidding { color: #007bff; }
+  .phase-trump_selection { color: #fd7e14; }
+  .phase-playing { color: #28a745; }
+  .phase-scoring { color: #6f42c1; }
+  .phase-game_end { color: #dc3545; }
+  
+  .core-state-section {
+    margin-bottom: 12px;
+    padding: 8px;
+    background: #e9ecef;
+    border-radius: 3px;
+    border: 1px solid #dee2e6;
+  }
+  
+  .core-state-section h3 {
+    margin: 0 0 6px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #495057;
+  }
+  
+  .core-state-content {
+    font-size: 11px;
+    line-height: 1.4;
+    color: #212529;
+    font-family: monospace;
+  }
+  
+  .state-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  
+  .section h4 {
+    margin: 0 0 6px 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #495057;
+    text-transform: uppercase;
+  }
+  
+  .bid-history {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .bid-entry {
+    display: flex;
+    gap: 4px;
+    font-size: 11px;
+  }
+  
+  .bid-entry.current {
+    font-weight: 600;
+    color: #007bff;
+  }
+  
+  .player {
+    color: #6c757d;
+    min-width: 24px;
+  }
+  
+  .winning-bidder {
+    margin-top: 4px;
+    font-weight: 600;
+    color: #28a745;
+    font-size: 11px;
+  }
+  
+  .scores {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .team {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 11px;
+  }
+  
+  .team-label {
+    color: #6c757d;
+    min-width: 48px;
+  }
+  
+  .points {
+    color: #28a745;
+    font-weight: 500;
+  }
+  
+  .marks {
+    color: #007bff;
+    font-weight: 500;
+  }
+  
+  .tricks-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .trick {
+    display: flex;
+    gap: 2px;
+    padding: 2px 4px;
+    background: #e9ecef;
+    border-radius: 2px;
+    font-size: 10px;
+  }
+  
+  .trick-num {
+    color: #6c757d;
+  }
+  
+  .trick-winner {
+    color: #495057;
+    font-weight: 500;
+  }
+  
+  .trick-points {
+    color: #28a745;
+  }
+  
+  .current-trick {
+    padding: 2px 4px;
+    background: #fff3cd;
+    border-radius: 2px;
+    font-size: 10px;
+    color: #856404;
+  }
+  
+  .empty {
+    color: #6c757d;
+    font-style: italic;
+    font-size: 11px;
+  }
+</style>

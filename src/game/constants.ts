@@ -29,6 +29,7 @@ export const TRUMP_SUITS: Record<string, Trump> = {
   FOURS: 4,
   FIVES: 5,
   SIXES: 6,
+  DOUBLES: 7,
 } as const;
 
 export const SUIT_VALUES = TRUMP_SUITS;

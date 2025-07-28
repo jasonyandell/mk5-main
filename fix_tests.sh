@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 MAX_ITERATIONS=${MAX_ITERATIONS:-100}
-TEST_COMMAND="npm run test"
+TEST_COMMAND="npm run test:e2e"
 CLAUDE_COMMAND="claude --dangerously-skip-permissions"
 
 echo -e "${BLUE}🔧 Starting automated test fixing loop${NC}"
@@ -63,7 +63,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         
         # Create a prompt for Claude with test output
         cat > claude_prompt.txt << EOF
-The tests are failing. Please analyze the test output and fix the issues.
+The tests are failing after we changed the UI to a debug UI. The debug UI should have all of the features of the old site plus displaying all possible state.  Please analyze the test output and fix the issues.
 
 Recent test output:
 \`\`\`

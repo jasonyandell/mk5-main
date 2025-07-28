@@ -5,10 +5,10 @@ import { DOMINO_VALUES, TRUMP_SUITS } from '../constants';
  * Creates a complete set of 28 dominoes
  */
 export function createDominoes(): Domino[] {
-  return DOMINO_VALUES.map(([high, low]) => ({
-    high,
-    low,
-    id: `${high}-${low}`
+  return DOMINO_VALUES.map(([a, b]) => ({
+    high: Math.max(a, b),
+    low: Math.min(a, b),
+    id: `${Math.max(a, b)}-${Math.min(a, b)}`
   }));
 }
 
