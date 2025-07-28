@@ -3,6 +3,7 @@ import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
+import { getPlayerAfter } from '../../game/core/players';
 import type { GameState, Bid } from '../../game/types';
 
 describe('Edge Cases and Unusual Scenarios', () => {
@@ -25,7 +26,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
         const redeal = redealTransitions.find(t => t.id === 'redeal');
         if (redeal) {
           state = redeal.newState;
-          expect(state.dealer).toBe((originalDealer + round + 1) % 4);
+          expect(state.dealer).toBe(getPlayerAfter(originalDealer, round + 1));
         }
       }
     });

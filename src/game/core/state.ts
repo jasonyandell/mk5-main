@@ -1,13 +1,14 @@
 import type { GameState } from '../types';
 import { GAME_CONSTANTS } from '../constants';
 import { dealDominoes } from './dominoes';
+import { getPlayerLeftOfDealer } from './players';
 
 /**
  * Creates the initial game state in setup phase
  */
 export function createSetupState(): GameState {
   const dealer = 3; // Start with dealer as player 3 for deterministic tests
-  const currentPlayer = (dealer + 1) % 4; // Player to left of dealer bids first
+  const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   
   return {
     phase: 'setup',
@@ -42,7 +43,7 @@ export function createSetupState(): GameState {
  */
 export function createInitialState(): GameState {
   const dealer = 3; // Start with dealer as player 3 for deterministic tests
-  const currentPlayer = (dealer + 1) % 4; // Player to left of dealer bids first
+  const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   const hands = dealDominoes();
   
   return {

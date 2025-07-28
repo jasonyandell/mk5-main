@@ -9,6 +9,7 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest --run",
     "test:e2e": "playwright test",
+    "test:all": "npm run test && npm run test:e2e",
     "lint": "eslint src --ext .ts,.svelte",
     "format": "prettier --write src"
   },

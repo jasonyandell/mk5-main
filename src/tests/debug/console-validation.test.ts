@@ -125,7 +125,7 @@ describe('Console Validation and Error Detection', () => {
       
       // Rapid state modifications should not cause issues
       for (let i = 0; i < 50; i++) {
-        state.currentPlayer = i % 4;
+        state.currentPlayer = i % 4; // Intentionally cycling through player IDs 0-3 for stress test
         expect(consoleErrorSpy).not.toHaveBeenCalled();
       }
     });

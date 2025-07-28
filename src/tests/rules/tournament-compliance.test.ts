@@ -3,6 +3,7 @@ import { createTestState, createTestHand } from '../helpers/gameTestHelper';
 import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
 import { getNextStates } from '../../game/core/actions';
 import { BID_TYPES } from '../../game/constants';
+import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';
 
 describe('Tournament Rule Compliance', () => {
@@ -304,7 +305,7 @@ describe('Tournament Rule Compliance', () => {
         currentPlayer: 3 // First bidder after dealer
       });
 
-      expect(state.currentPlayer).toBe((state.dealer + 1) % 4);
+      expect(state.currentPlayer).toBe(getPlayerLeftOfDealer(state.dealer));
     });
   });
 

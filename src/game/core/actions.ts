@@ -4,6 +4,7 @@ import { cloneGameState } from './state';
 import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
 import { dealDominoes } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
+import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 
 /**
  * Core state machine function that returns all possible next states
@@ -37,8 +38,8 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
       // All passed - redeal
       const newState = cloneGameState(state);
       const hands = dealDominoes();
-      newState.dealer = (state.dealer + 1) % 4;
-      newState.currentPlayer = (newState.dealer + 1) % 4;
+      newState.dealer = getNextDealer(state.dealer);
+      newState.currentPlayer = getPlayerLeftOfDealer(newState.dealer);
       newState.bids = [];
       newState.currentBid = null;
       newState.players.forEach((player, i) => {
@@ -85,7 +86,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
   if (isValidBid(state, passBid)) {
     const newState = cloneGameState(state);
     newState.bids.push(passBid);
-    newState.currentPlayer = (state.currentPlayer + 1) % 4;
+    newState.currentPlayer = getNextPlayer(state.currentPlayer);
     
     // If this completes bidding (4 bids), set up trump selection
     if (newState.bids.length === 4) {
@@ -121,7 +122,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
       const newState = cloneGameState(state);
       newState.bids.push(bid);
       newState.currentBid = bid;
-      newState.currentPlayer = (state.currentPlayer + 1) % 4;
+      newState.currentPlayer = getNextPlayer(state.currentPlayer);
       
       transitions.push({
         id: `bid-${points}`,
@@ -138,7 +139,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
       const newState = cloneGameState(state);
       newState.bids.push(bid);
       newState.currentBid = bid;
-      newState.currentPlayer = (state.currentPlayer + 1) % 4;
+      newState.currentPlayer = getNextPlayer(state.currentPlayer);
       
       transitions.push({
         id: `bid-${marks}-marks`,
@@ -157,7 +158,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
         const newState = cloneGameState(state);
         newState.bids.push(bid);
         newState.currentBid = bid;
-        newState.currentPlayer = (state.currentPlayer + 1) % 4;
+        newState.currentPlayer = getNextPlayer(state.currentPlayer);
         
         transitions.push({
           id: `nello-${marks}`,
@@ -174,7 +175,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
         const newState = cloneGameState(state);
         newState.bids.push(bid);
         newState.currentBid = bid;
-        newState.currentPlayer = (state.currentPlayer + 1) % 4;
+        newState.currentPlayer = getNextPlayer(state.currentPlayer);
         
         transitions.push({
           id: `splash-${marks}`,
@@ -191,7 +192,7 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
         const newState = cloneGameState(state);
         newState.bids.push(bid);
         newState.currentBid = bid;
-        newState.currentPlayer = (state.currentPlayer + 1) % 4;
+        newState.currentPlayer = getNextPlayer(state.currentPlayer);
         
         transitions.push({
           id: `plunge-${marks}`,
@@ -277,7 +278,7 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
     const newPlayer = newState.players[state.currentPlayer];
     newPlayer.hand = newPlayer.hand.filter(d => d.id !== domino.id);
     newState.currentTrick.push({ player: state.currentPlayer, domino });
-    newState.currentPlayer = (state.currentPlayer + 1) % 4;
+    newState.currentPlayer = getNextPlayer(state.currentPlayer);
     
     transitions.push({
       id: `play-${domino.id}`,
@@ -309,8 +310,8 @@ function getScoringTransitions(state: GameState): StateTransition[] {
     });
   } else {
     newState.phase = 'bidding';
-    newState.dealer = (state.dealer + 1) % 4;
-    newState.currentPlayer = (newState.dealer + 1) % 4;
+    newState.dealer = getNextDealer(state.dealer);
+    newState.currentPlayer = getPlayerLeftOfDealer(newState.dealer);
     
     // Deal new hands
     const hands = dealDominoes();

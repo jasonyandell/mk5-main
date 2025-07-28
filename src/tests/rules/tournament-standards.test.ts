@@ -3,6 +3,7 @@ import { createTestState, GameTestHelper } from '../helpers/gameTestHelper';
 import { isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
+import { getNextPlayer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';
 
 describe('Tournament Standards (N42PA Rules)', () => {
@@ -147,7 +148,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       bids.forEach(bid => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
 
       // After all 4 players bid, bidding should be complete

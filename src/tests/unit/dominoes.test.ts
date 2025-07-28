@@ -28,12 +28,12 @@ describe('Domino System', () => {
     it('should include all expected dominoes', () => {
       const dominoes = createDominoes();
       const expected = [
-        '0-0', '0-1', '0-2', '0-3', '0-4', '0-5', '0-6',
-        '1-1', '1-2', '1-3', '1-4', '1-5', '1-6',
-        '2-2', '2-3', '2-4', '2-5', '2-6',
-        '3-3', '3-4', '3-5', '3-6',
-        '4-4', '4-5', '4-6',
-        '5-5', '5-6',
+        '0-0', '1-0', '2-0', '3-0', '4-0', '5-0', '6-0',
+        '1-1', '2-1', '3-1', '4-1', '5-1', '6-1',
+        '2-2', '3-2', '4-2', '5-2', '6-2',
+        '3-3', '4-3', '5-3', '6-3',
+        '4-4', '5-4', '6-4',
+        '5-5', '6-5',
         '6-6'
       ];
       
@@ -161,7 +161,7 @@ describe('Domino System', () => {
         { high: 1, low: 1, id: '1-1' },
         { high: 6, low: 5, id: '6-5' }, // 11 total, not 5
         { high: 6, low: 6, id: '6-6' }, // 12 total, not special in mk4
-        { high: 3, low: 4, id: '3-4' }
+        { high: 4, low: 3, id: '4-3' }
       ];
       
       nonCountingDominoes.forEach(domino => {
@@ -172,7 +172,7 @@ describe('Domino System', () => {
     it('should handle reversed dominoes correctly', () => {
       // Test that 4-6 and 6-4 both give 10 points (should normalize to 6,4)
       const domino1 = { high: 6, low: 4, id: '6-4' };
-      const domino2 = { high: 4, low: 6, id: '4-6' }; // This should be normalized
+      const domino2 = { high: 6, low: 4, id: '6-4' }; // This should be normalized
       
       expect(getDominoPoints(domino1)).toBe(10);
       expect(getDominoPoints(domino2)).toBe(10);
@@ -194,8 +194,8 @@ describe('Domino System', () => {
     
     it('should identify non-doubles correctly', () => {
       const nonDoubles = [
-        { high: 0, low: 1, id: '0-1' },
-        { high: 3, low: 5, id: '3-5' },
+        { high: 1, low: 0, id: '1-0' },
+        { high: 5, low: 3, id: '5-3' },
         { high: 6, low: 2, id: '6-2' }
       ];
       

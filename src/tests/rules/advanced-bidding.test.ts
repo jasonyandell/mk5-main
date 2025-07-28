@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
 import { isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
+import { getNextDealer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';
 
 describe('Advanced Bidding Rules', () => {
@@ -274,7 +275,7 @@ describe('Advanced Bidding Rules', () => {
       expect(allPassState.bids).toHaveLength(4);
       
       // New dealer should be next player
-      const newDealer = (allPassState.dealer + 1) % 4;
+      const newDealer = getNextDealer(allPassState.dealer);
       expect(newDealer).toBe(1); // if original dealer was 0
     });
   });

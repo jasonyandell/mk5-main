@@ -97,12 +97,12 @@ export class MathematicalVerification {
     const dominoSet = createDominoes();
     
     const actualDominoes = new Set(
-      dominoSet.map((d: Domino) => `${Math.min(d.high, d.low)}-${Math.max(d.high, d.low)}`)
+      dominoSet.map((d: Domino) => `${d.high}-${d.low}`)
     );
     
     // Check for 6-6, 6-4, 5-5 specifically
     return actualDominoes.has('6-6') && 
-           actualDominoes.has('4-6') && 
+           actualDominoes.has('6-4') && 
            actualDominoes.has('5-5');
   }
 

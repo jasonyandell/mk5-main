@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
+import { getNextPlayer } from '../../game/core/players';
 import { GameState, GamePhase } from '../../game/types';
 
 describe('State Transitions Integration', () => {
@@ -51,7 +52,7 @@ describe('State Transitions Integration', () => {
       for (let i = 0; i < 7; i++) {
         state.tricks.push({
           plays: [],
-          winner: i % 4,
+          winner: i % 4, // Keep this as-is since it's just cycling through players for test data
           points: 6 // 42/7 = 6 average
         });
       }
@@ -130,7 +131,7 @@ describe('State Transitions Integration', () => {
       
       // Current player should advance (unless it's trump selection)
       if (nextState.phase === 'bidding') {
-        const expectedNext = (initialPlayer + 1) % 4;
+        const expectedNext = getNextPlayer(initialPlayer);
         expect(nextState.currentPlayer).toBe(expectedNext);
       }
     });

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameState, Play } from '../../game/types';
+  import { getPlayerLeftOfDealer, getPlayersInOrder } from '../../game/core/players';
   
   interface Props {
     gameState: GameState;
@@ -21,15 +22,9 @@
   
   // Get players in clockwise order starting from dealer+1 (first to bid/play)
   function getPlayersInClockwiseOrder(): typeof gameState.players {
-    const startPlayer = (gameState.dealer + 1) % 4;
-    const orderedPlayers = [];
-    
-    for (let i = 0; i < 4; i++) {
-      const playerIndex = (startPlayer + i) % 4;
-      orderedPlayers.push(gameState.players[playerIndex]);
-    }
-    
-    return orderedPlayers;
+    const startPlayer = getPlayerLeftOfDealer(gameState.dealer);
+    const playerOrder = getPlayersInOrder(startPlayer);
+    return playerOrder.map(playerId => gameState.players[playerId]);
   }
   
   const currentTrickPlays = $derived(getCurrentTrickPlays());

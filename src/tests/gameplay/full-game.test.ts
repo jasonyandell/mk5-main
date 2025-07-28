@@ -3,6 +3,7 @@ import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
 import { GameState, StateTransition } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
+import { getPlayerLeftOfDealer } from '../../game/core/players';
 
 describe('Full Game Scenarios', () => {
   function executeAction(state: GameState, actionId: string): GameState {
@@ -20,7 +21,7 @@ describe('Full Game Scenarios', () => {
       
       // Verify initial state
       expect(state.phase).toBe('bidding');
-      expect(state.currentPlayer).toBe((state.dealer + 1) % 4);
+      expect(state.currentPlayer).toBe(getPlayerLeftOfDealer(state.dealer));
       
       // First player bids 30
       const bidTransitions = getNextStates(state);
@@ -32,7 +33,7 @@ describe('Full Game Scenarios', () => {
       expect(state.bids[0]).toEqual({
         type: BID_TYPES.POINTS,
         value: 30,
-        player: (state.dealer + 1) % 4
+        player: getPlayerLeftOfDealer(state.dealer)
       });
       
       // Other players pass
@@ -44,11 +45,11 @@ describe('Full Game Scenarios', () => {
       }
       
       // Should transition to trump selection
-      expect(state.winningBidder).toBe((state.dealer + 1) % 4);
+      expect(state.winningBidder).toBe(getPlayerLeftOfDealer(state.dealer));
       expect(state.currentBid).toEqual({
         type: BID_TYPES.POINTS,
         value: 30,
-        player: (state.dealer + 1) % 4
+        player: getPlayerLeftOfDealer(state.dealer)
       });
       
       // Select trump

@@ -3,6 +3,7 @@ import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
+import { getNextPlayer, getNextDealer, getPlayerLeftOfDealer, getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
 
 describe('Bidding Rules', () => {
@@ -27,7 +28,7 @@ describe('Bidding Rules', () => {
       passBids.forEach(bid => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
 
       // After all pass bids, should trigger redeal
@@ -38,16 +39,16 @@ describe('Bidding Rules', () => {
     it('should advance dealer correctly after all-pass redeal', () => {
       // Test dealer advancement from each position
       for (let startDealer = 0; startDealer < 4; startDealer++) {
-        const expectedNewDealer = (startDealer + 1) % 4;
-        const expectedFirstBidder = (expectedNewDealer + 1) % 4;
+        const expectedNewDealer = getNextDealer(startDealer);
+        const expectedFirstBidder = getPlayerLeftOfDealer(expectedNewDealer);
 
         const state = createTestState({
           phase: 'bidding',
           dealer: startDealer,
           bids: [
-            { type: BID_TYPES.PASS, player: (startDealer + 1) % 4 },
-            { type: BID_TYPES.PASS, player: (startDealer + 2) % 4 },
-            { type: BID_TYPES.PASS, player: (startDealer + 3) % 4 },
+            { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 1) },
+            { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 2) },
+            { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 3) },
             { type: BID_TYPES.PASS, player: startDealer }
           ]
         });
@@ -367,7 +368,7 @@ describe('Bidding Rules', () => {
       passBids.forEach(bid => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
       
       expect(state.bids).toHaveLength(4);
@@ -386,7 +387,7 @@ describe('Bidding Rules', () => {
       biddingSequence.forEach((bid, index) => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
         if (bid.type !== BID_TYPES.PASS) {
           state.currentBid = bid;
         }

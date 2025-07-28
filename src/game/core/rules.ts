@@ -451,10 +451,10 @@ export function determineTrickWinner(trick: any[], trump: Trump): number {
  */
 export function isValidTrump(trump: { suit: number | string; followsSuit: boolean }): boolean {
   if (typeof trump.suit === 'number') {
-    return trump.suit >= 0 && trump.suit <= 6;
+    return trump.suit >= 0 && trump.suit <= 7; // Include doubles (7)
   }
   if (typeof trump.suit === 'string') {
-    const validSuits = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+    const validSuits = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes', 'doubles'];
     return validSuits.includes(trump.suit);
   }
   return false;
@@ -464,10 +464,20 @@ export function isValidTrump(trump: { suit: number | string; followsSuit: boolea
  * Gets the numeric value of a trump suit
  */
 export function getTrumpValue(trump: { suit: number | string; followsSuit: boolean }): number {
-  if (typeof trump.suit === 'number' && trump.suit >= 0 && trump.suit <= 6) {
+  if (typeof trump.suit === 'number' && trump.suit >= 0 && trump.suit <= 7) {
     // Differentiate between regular trump and follow-suit trump
-    // Regular trump: 0-6, follow-suit trump: 10-16
+    // Regular trump: 0-7, follow-suit trump: 10-17
     return trump.followsSuit ? trump.suit + 10 : trump.suit;
+  }
+  if (typeof trump.suit === 'string') {
+    const suitMap: Record<string, number> = {
+      'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
+      'fours': 4, 'fives': 5, 'sixes': 6, 'doubles': 7
+    };
+    const numericSuit = suitMap[trump.suit];
+    if (numericSuit !== undefined) {
+      return trump.followsSuit ? numericSuit + 10 : numericSuit;
+    }
   }
   throw new Error(`Invalid trump suit: ${trump.suit}`);
 }

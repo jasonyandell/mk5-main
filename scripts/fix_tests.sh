@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 MAX_ITERATIONS=${MAX_ITERATIONS:-100}
-TEST_COMMAND="npm run test:e2e"
+TEST_COMMAND="npm run test:all"
 CLAUDE_COMMAND="claude --dangerously-skip-permissions"
 
 echo -e "${BLUE}🔧 Starting automated test fixing loop${NC}"

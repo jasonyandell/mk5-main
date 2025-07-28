@@ -4,6 +4,7 @@ import { isValidBid, isValidPlay } from '../../game/core/rules';
 import { shuffleDominoes } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
+import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
 import type { GameState, Bid, Domino } from '../../game/types';
 
 describe('Basic Game Flow', () => {
@@ -14,7 +15,7 @@ describe('Basic Game Flow', () => {
       expect(state.phase).toBe('setup');
       expect(state.dealer).toBeGreaterThanOrEqual(0);
       expect(state.dealer).toBeLessThan(4);
-      expect(state.currentPlayer).toBe((state.dealer + 1) % 4);
+      expect(state.currentPlayer).toBe(getPlayerLeftOfDealer(state.dealer));
       expect(state.bids).toHaveLength(0);
       expect(state.hands).toEqual({});
       expect(state.tricks).toHaveLength(0);
@@ -75,11 +76,11 @@ describe('Basic Game Flow', () => {
       const biddingState = { 
         ...dealtState, 
         phase: 'bidding' as const,
-        currentPlayer: (state.dealer + 1) % 4 
+        currentPlayer: getPlayerLeftOfDealer(state.dealer) 
       };
       
       expect(biddingState.phase).toBe('bidding');
-      expect(biddingState.currentPlayer).toBe((biddingState.dealer + 1) % 4);
+      expect(biddingState.currentPlayer).toBe(getPlayerLeftOfDealer(biddingState.dealer));
     });
 
     it('transitions from bidding to trump selection', () => {
@@ -159,7 +160,7 @@ describe('Basic Game Flow', () => {
       bids.forEach(bid => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
 
       expect(state.bids).toHaveLength(4);
@@ -189,14 +190,14 @@ describe('Basic Game Flow', () => {
       allPassBids.forEach(bid => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
-        state.currentPlayer = (state.currentPlayer + 1) % 4; // Advance to next player
+        state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
 
       // All passed - should trigger redeal
       expect(state.bids.every(bid => bid.type === BID_TYPES.PASS)).toBe(true);
       
       // New dealer should be next player
-      const newDealer = (state.dealer + 1) % 4;
+      const newDealer = getNextDealer(state.dealer);
       expect(newDealer).toBe(2);
     });
   });
@@ -263,7 +264,7 @@ describe('Basic Game Flow', () => {
       for (let trickNum = 0; trickNum < 7; trickNum++) {
         // Each trick has 4 plays
         for (let playNum = 0; playNum < 4; playNum++) {
-          const currentPlayer = (state.currentPlayer + playNum) % 4;
+          const currentPlayer = getPlayerAfter(state.currentPlayer, playNum);
           const availableDominoes = state.players[currentPlayer].hand;
           
           if (availableDominoes.length > 0) {

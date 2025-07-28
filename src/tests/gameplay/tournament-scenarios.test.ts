@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { isValidOpeningBid, isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
+import { getPlayerLeftOfDealer } from '../../game/core/players';
 import { Bid, GameState } from '../../game/types';
 
 describe('Tournament Scenarios', () => {
@@ -170,7 +171,7 @@ describe('Tournament Scenarios', () => {
       expect(state.dealer).toBeLessThan(4);
       
       // Current player should be after dealer
-      const expectedFirstPlayer = (state.dealer + 1) % 4;
+      const expectedFirstPlayer = getPlayerLeftOfDealer(state.dealer);
       expect(state.currentPlayer).toBe(expectedFirstPlayer);
     });
   });
