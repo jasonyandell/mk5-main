@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState, createSetupState, advanceToNextPhase } from '../../game/core/state';
+import { createInitialState, createSetupState } from '../../game/core/state';
 import { isValidBid, isValidPlay } from '../../game/core/rules';
 import { shuffleDominoes } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
-import type { GameState, Bid, Domino } from '../../game/types';
+import type { Bid, Domino } from '../../game/types';
 
 describe('Basic Game Flow', () => {
   describe('Game Initialization', () => {
@@ -33,18 +33,18 @@ describe('Basic Game Flow', () => {
       // Deal dominoes to all players
       const dealtState = helper.dealDominoes(state);
       
-      expect(Object.keys(dealtState.hands)).toHaveLength(4);
-      expect(dealtState.hands[0]).toHaveLength(7);
-      expect(dealtState.hands[1]).toHaveLength(7);
-      expect(dealtState.hands[2]).toHaveLength(7);
-      expect(dealtState.hands[3]).toHaveLength(7);
+      expect(Object.keys(dealtState.hands || {})).toHaveLength(4);
+      expect(dealtState.hands?.[0]).toHaveLength(7);
+      expect(dealtState.hands?.[1]).toHaveLength(7);
+      expect(dealtState.hands?.[2]).toHaveLength(7);
+      expect(dealtState.hands?.[3]).toHaveLength(7);
       
       // Total dominoes dealt should be 28
-      const totalDominoes = Object.values(dealtState.hands).flat().length;
+      const totalDominoes = Object.values(dealtState.hands || {}).flat().length;
       expect(totalDominoes).toBe(28);
       
       // All dominoes should be unique
-      const allDominoes = Object.values(dealtState.hands).flat();
+      const allDominoes = Object.values(dealtState.hands || {}).flat();
       const uniqueIds = new Set(allDominoes.map(d => d.id));
       expect(uniqueIds.size).toBe(28);
     });
@@ -98,19 +98,19 @@ describe('Basic Game Flow', () => {
 
       const trumpState = { 
         ...state, 
-        phase: 'trumpSelection' as const,
+        phase: 'trump_selection' as const,
         bidWinner: 1,
         currentPlayer: 1
       };
       
-      expect(trumpState.phase).toBe('trumpSelection');
+      expect(trumpState.phase).toBe('trump_selection');
       expect(trumpState.bidWinner).toBe(1);
       expect(trumpState.currentPlayer).toBe(1);
     });
 
     it('transitions from trump selection to playing', () => {
       const state = createTestState({
-        phase: 'trumpSelection',
+        phase: 'trump_selection',
         bidWinner: 1,
         trump: 2 // twos trump
       });
@@ -217,7 +217,6 @@ describe('Basic Game Flow', () => {
     });
 
     it('processes complete trick', () => {
-      const helper = new GameTestHelper();
       const testDominoes: Domino[] = [
         { id: 'test1', high: 2, low: 3, points: 0 },
         { id: 'test2', high: 2, low: 4, points: 0 },
@@ -246,7 +245,7 @@ describe('Basic Game Flow', () => {
       ];
 
       plays.forEach(play => {
-        expect(isValidPlay(play.domino, state.hands[play.player], state.currentTrick, state.trump!)).toBe(true);
+        expect(isValidPlay(play.domino, state.hands?.[play.player] || [], state.currentTrick, state.trump!)).toBe(true);
         state.currentTrick.push(play);
       });
 
@@ -278,7 +277,11 @@ describe('Basic Game Flow', () => {
         }
         
         // Complete trick
-        state.tricks.push([...state.currentTrick]);
+        state.tricks.push({
+          plays: [...state.currentTrick],
+          winner: 0, // For test purposes
+          points: 0
+        });
         state.currentTrick = [];
       }
 
@@ -297,7 +300,6 @@ describe('Basic Game Flow', () => {
     });
 
     it('tracks cumulative scores across multiple hands', () => {
-      const helper = new GameTestHelper();
       
       // Simulate multiple completed hands
       const gameScores = [

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions } from '../ui/stores/gameStore';
+  import { gameActions } from '../stores/gameStore';
   import type { GameState } from '../game/types';
   
   let uploadInput: HTMLInputElement;

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState } from '../ui/stores/gameStore';
+  import { gameState } from '../stores/gameStore';
   import StateDisplay from './StateDisplay.svelte';
   import TestGenerator from './TestGenerator.svelte';
   

@@ -3,7 +3,7 @@ import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelpe
 import { isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
 import { getNextDealer } from '../../game/core/players';
-import type { Bid, GameState } from '../../game/types';
+import type { Bid } from '../../game/types';
 
 describe('Advanced Bidding Rules', () => {
   describe('Sequential Bidding Requirements', () => {
@@ -135,7 +135,7 @@ describe('Advanced Bidding Rules', () => {
       const handWithFourDoubles = createHandWithDoubles(4);
       
       const plungeState = createTestState({
-        phase: 'trumpSelection',
+        phase: 'trump_selection',
         bidWinner: 1,
         currentPlayer: 1,
         bids: [
@@ -211,14 +211,14 @@ describe('Advanced Bidding Rules', () => {
       const lowerBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 1 };
       const higherBid: Bid = { type: BID_TYPES.POINTS, value: 35, player: 2 };
 
-      expect(higherBid.value).toBeGreaterThan(lowerBid.value);
+      expect(higherBid.value || 0).toBeGreaterThan(lowerBid.value || 0);
     });
 
     it('correctly compares mark bids', () => {
       const oneMarkBid: Bid = { type: BID_TYPES.MARKS, value: 1, player: 1 };
       const twoMarkBid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 2 };
 
-      expect(twoMarkBid.value).toBeGreaterThan(oneMarkBid.value);
+      expect(twoMarkBid.value || 0).toBeGreaterThan(oneMarkBid.value || 0);
     });
 
     it('marks beat equivalent point values', () => {
@@ -231,7 +231,7 @@ describe('Advanced Bidding Rules', () => {
       expect(fortyOnePoints.type).toBe(BID_TYPES.POINTS);
       
       // 1 mark represents 42 points, so it beats 41 points
-      expect(42).toBeGreaterThan(fortyOnePoints.value);
+      expect(42).toBeGreaterThan(fortyOnePoints.value!);
     });
   });
 
@@ -249,8 +249,6 @@ describe('Advanced Bidding Rules', () => {
       });
 
       // Dealer (player 3) should not be able to pass if all others passed
-      const dealerPass: Bid = { type: BID_TYPES.PASS, player: 3 };
-      
       // This depends on implementation - some rules force dealer to bid,
       // others allow all-pass with redeal
       // For tournament standard, test that system handles this scenario

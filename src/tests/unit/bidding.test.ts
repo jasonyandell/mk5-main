@@ -3,7 +3,7 @@ import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
-import { getNextPlayer, getNextDealer, getPlayerLeftOfDealer, getPlayerAfter } from '../../game/core/players';
+import { getNextPlayer, getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
 
 describe('Bidding Rules', () => {
@@ -39,9 +39,6 @@ describe('Bidding Rules', () => {
     it('should advance dealer correctly after all-pass redeal', () => {
       // Test dealer advancement from each position
       for (let startDealer = 0; startDealer < 4; startDealer++) {
-        const expectedNewDealer = getNextDealer(startDealer);
-        const expectedFirstBidder = getPlayerLeftOfDealer(expectedNewDealer);
-
         const state = createTestState({
           phase: 'bidding',
           dealer: startDealer,
@@ -384,7 +381,7 @@ describe('Bidding Rules', () => {
         { type: BID_TYPES.MARKS, value: 2, player: 3 }
       ] as Bid[];
       
-      biddingSequence.forEach((bid, index) => {
+      biddingSequence.forEach((bid) => {
         expect(isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player

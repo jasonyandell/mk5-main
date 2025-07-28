@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestState, GameTestHelper, createHandWithDoubles } from '../helpers/gameTestHelper';
+import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
@@ -8,8 +8,6 @@ import type { Domino, Trump, Bid } from '../../game/types';
 describe('Special Gameplay Scenarios', () => {
   describe('High Stakes Bidding', () => {
     it('handles 6 and 7 mark bids correctly', () => {
-      const helper = new GameTestHelper();
-      
       // Create state with escalated bidding
       const state = createTestState({
         phase: 'bidding',
@@ -30,7 +28,10 @@ describe('Special Gameplay Scenarios', () => {
       expect(sevenMarkBid.type).toBe(BID_TYPES.MARKS);
       
       // 7 marks should instantly win the game if achieved
-      const sevenMarkScore = calculateGameScore([42, 0, 0, 0], 3, 1); // All points to player 0 (team 0)
+      const sevenMarkScore = calculateGameScore([42, 0, 0, 0]); // All points to player 0 (team 0)
+      
+      // Use the state variable
+      expect(state.phase).toBe('bidding');
       expect(sevenMarkScore[0]).toBe(42); // Team 0 gets all points
       expect(sevenMarkScore[1]).toBe(0);  // Team 1 gets no points
     });
@@ -55,8 +56,8 @@ describe('Special Gameplay Scenarios', () => {
           const prevBid = escalationBids[index - 1];
           
           // Convert to comparable values (marks = value * 42)
-          const currentValue = bid.type === BID_TYPES.MARKS ? bid.value * 42 : bid.value;
-          const prevValue = prevBid.type === BID_TYPES.MARKS ? prevBid.value * 42 : prevBid.value;
+          const currentValue = bid.type === BID_TYPES.MARKS ? (bid.value || 0) * 42 : (bid.value || 0);
+          const prevValue = prevBid.type === BID_TYPES.MARKS ? (prevBid.value || 0) * 42 : (prevBid.value || 0);
           
           expect(currentValue).toBeGreaterThan(prevValue);
         }
@@ -78,7 +79,7 @@ describe('Special Gameplay Scenarios', () => {
       ];
 
       const trump: Trump = 1; // ones are trump
-      const currentTrick: any[] = [];
+      const currentTrick: { player: number; domino: Domino }[] = [];
 
       // All dominoes should be valid plays
       allTrumpHand.forEach(domino => {
@@ -102,8 +103,8 @@ describe('Special Gameplay Scenarios', () => {
 
       // Note: No-trump is typically suit 7 or special designation
       // but for this test, we'll use null to represent no-trump
-      const noTrump: Trump = null;
-      const currentTrick: any[] = [];
+      const noTrump: Trump = 8; // 8 represents no-trump
+      const currentTrick: { player: number; domino: Domino }[] = [];
 
       // With no trump, all dominoes should be playable initially
       const validPlays = getValidPlays(mixedHand, currentTrick, noTrump);
@@ -122,7 +123,7 @@ describe('Special Gameplay Scenarios', () => {
       ];
 
       const doublesTrump: Trump = 6; // doubles are trump
-      const currentTrick: any[] = [];
+      const currentTrick: { player: number; domino: Domino }[] = [];
 
       // All doubles should be trump
       const doubles = handWithDoubles.filter(d => d.high === d.low);
@@ -136,7 +137,7 @@ describe('Special Gameplay Scenarios', () => {
   describe('Extreme Point Distribution', () => {
     it('handles all points to one team scenario', () => {
       // Scenario: One team captures all counting dominoes and tricks
-      const allPointsToTeam0 = calculateGameScore([42, 0, 0, 0], 0, 1);
+      const allPointsToTeam0 = calculateGameScore([42, 0, 0, 0]);
       
       expect(allPointsToTeam0[0]).toBe(42); // Team 0 gets everything
       expect(allPointsToTeam0[1]).toBe(0);  // Team 1 gets nothing
@@ -145,13 +146,13 @@ describe('Special Gameplay Scenarios', () => {
 
     it('handles perfect point split scenario', () => {
       // Scenario: Perfect 21-21 split
-      const perfectSplit = calculateGameScore([21, 0, 21, 0], 0, 1);
+      const perfectSplit = calculateGameScore([21, 0, 21, 0]);
       
       expect(perfectSplit[0]).toBe(42); // Team 0: 21 + 21
       expect(perfectSplit[1]).toBe(0);  // Team 1: 0 + 0
       
       // Alternative perfect split
-      const altSplit = calculateGameScore([10.5, 10.5, 10.5, 10.5], 0, 1);
+      const altSplit = calculateGameScore([10.5, 10.5, 10.5, 10.5]);
       expect(altSplit[0] + altSplit[1]).toBe(42);
     });
 
@@ -165,7 +166,7 @@ describe('Special Gameplay Scenarios', () => {
         { id: 'three-deuce', high: 3, low: 2, points: 5 }
       ];
 
-      const totalCountValue = highValueDominoes.reduce((sum, d) => sum + d.points, 0);
+      const totalCountValue = highValueDominoes.reduce((sum, d) => sum + (d.points || 0), 0);
       expect(totalCountValue).toBe(35); // All counting dominoes
 
       // One player having all counting dominoes would be extremely advantageous
@@ -175,8 +176,6 @@ describe('Special Gameplay Scenarios', () => {
 
   describe('End Game Scenarios', () => {
     it('handles game-winning scenarios correctly', () => {
-      const helper = new GameTestHelper();
-      
       // Test various winning scores
       const winningScenarios = [
         { team0: 7, team1: 0 },   // Shutout
@@ -265,7 +264,7 @@ describe('Special Gameplay Scenarios', () => {
         { id: 'filler2', high: 2, low: 4, points: 0 }
       ];
 
-      const totalPoints = countingDominoes.reduce((sum, d) => sum + d.points, 0);
+      const totalPoints = countingDominoes.reduce((sum, d) => sum + (d.points || 0), 0);
       expect(totalPoints).toBe(35); // All counting points
 
       // Having all counting dominoes is extremely advantageous

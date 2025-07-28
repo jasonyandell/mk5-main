@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
-import { GameState, StateTransition } from '../../game/types';
+import type { GameState } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 

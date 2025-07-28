@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestState, createTestHand } from '../helpers/gameTestHelper';
+import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay, canFollowSuit, getValidPlays } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { Domino, Trump } from '../../game/types';
@@ -21,10 +21,10 @@ describe('Renege Detection and Prevention', () => {
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
         players: [
-          undefined, // player 0 (use default)
-          { hand: playerHand }, // player 1 gets the test hand
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 
@@ -54,10 +54,10 @@ describe('Renege Detection and Prevention', () => {
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
         players: [
-          undefined, // player 0 (use default)
-          { hand: playerHand }, // player 1 gets the test hand
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 
@@ -97,10 +97,10 @@ describe('Renege Detection and Prevention', () => {
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
         players: [
-          undefined, // player 0 (use default)
-          { hand: playerHand }, // player 1 gets the test hand
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 
@@ -123,10 +123,10 @@ describe('Renege Detection and Prevention', () => {
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
         players: [
-          undefined, // player 0 (use default)
-          { hand: playerHand }, // player 1 gets the test hand
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 
@@ -174,10 +174,10 @@ describe('Renege Detection and Prevention', () => {
           domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
         }],
         players: [
-          undefined, // player 0 (use default)
-          { hand: playerHand }, // player 1 gets the test hand
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 
@@ -227,10 +227,10 @@ describe('Renege Detection and Prevention', () => {
         trump: 1, // Ones trump
         currentTrick: [], // Empty trick
         players: [
-          { hand: playerHand }, // player 0 gets the test hand
-          undefined, // player 1 (use default)
-          undefined, // player 2 (use default)
-          undefined  // player 3 (use default)
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: playerHand }, // player 0 gets the test hand
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] }, // player 1
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
         ]
       });
 

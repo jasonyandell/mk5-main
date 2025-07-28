@@ -1,6 +1,6 @@
 import { createInitialState } from '../../game/core/state';
 import { createDominoes, getDominoPoints } from '../../game/core/dominoes';
-import { GameState, Domino } from '../../game/types';
+import type { GameState, Domino } from '../../game/types';
 
 /**
  * Mathematical verification utilities for Texas 42 game constants

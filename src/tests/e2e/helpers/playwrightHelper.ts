@@ -1,5 +1,12 @@
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import type { GameState } from '../../../game/types';
+
+interface ActionOption {
+  index: number;
+  type: string;
+  value?: string | number;
+}
 
 /**
  * Playwright helper for E2E testing of Texas 42 game
@@ -34,7 +41,7 @@ export class PlaywrightGameHelper {
     await expect(this.page.locator('[data-testid="debug-panel"]')).not.toBeVisible();
   }
 
-  async getAvailableActions(): Promise<Array<{index: number, type: string, value?: any}>> {
+  async getAvailableActions(): Promise<ActionOption[]> {
     return await this.getActionsList();
   }
 
@@ -47,7 +54,7 @@ export class PlaywrightGameHelper {
     await this.page.locator('.action-btn').nth(index).click();
   }
 
-  async getActionsList(): Promise<Array<{index: number, type: string, value?: any}>> {
+  async getActionsList(): Promise<ActionOption[]> {
     const buttons = await this.page.locator('.action-btn').all();
     const actions = [];
     
@@ -90,7 +97,7 @@ export class PlaywrightGameHelper {
     return actions;
   }
 
-  async selectActionByType(type: string, value?: any) {
+  async selectActionByType(type: string, value?: string | number) {
     const actions = await this.getActionsList();
     const action = actions.find(a => a.type === type && (value === undefined || a.value === value));
     if (action) {
@@ -105,15 +112,15 @@ export class PlaywrightGameHelper {
   }
 
   // Add back methods that tests expect, but using new index-based approach
-  async bidPoints(player: number, points: number) {
+  async bidPoints(_player: number, points: number) {
     await this.selectActionByType('bid_points', points);
   }
 
-  async bidMarks(player: number, marks: number) {
+  async bidMarks(_player: number, marks: number) {
     await this.selectActionByType('bid_marks', marks);
   }
 
-  async bidPass(player: number) {
+  async bidPass(_player: number) {
     await this.selectActionByType('pass');
   }
 
@@ -346,5 +353,88 @@ export class PlaywrightGameHelper {
         await this.scoreHand();
       }
     }
+  }
+
+  // Debug snapshot and replay methods
+  async hasDebugSnapshot(): Promise<boolean> {
+    const snapshotElement = this.page.locator('[data-testid="debug-snapshot"]');
+    return await snapshotElement.count() > 0;
+  }
+
+  async getDebugSnapshotInfo(): Promise<{reason: string, actionCount: number} | null> {
+    if (!(await this.hasDebugSnapshot())) {
+      return null;
+    }
+    
+    const reasonElement = this.page.locator('[data-testid="snapshot-reason"]');
+    const actionCountElement = this.page.locator('[data-testid="snapshot-action-count"]');
+    
+    const reason = await reasonElement.textContent() || '';
+    const actionCountText = await actionCountElement.textContent() || '0';
+    const actionCount = parseInt(actionCountText.replace(/\D/g, ''));
+    
+    return { reason, actionCount };
+  }
+
+  async validateActionSequence(): Promise<{success: boolean, errors: string[]}> {
+    const validateButton = this.page.locator('[data-testid="validate-sequence-button"]');
+    await validateButton.click();
+    
+    // Wait for validation to complete
+    await this.page.waitForTimeout(500);
+    
+    const errorElements = this.page.locator('[data-testid="validation-error"]');
+    const errorCount = await errorElements.count();
+    
+    if (errorCount === 0) {
+      return { success: true, errors: [] };
+    }
+    
+    const errors = [];
+    for (let i = 0; i < errorCount; i++) {
+      const errorText = await errorElements.nth(i).textContent();
+      if (errorText) {
+        errors.push(errorText);
+      }
+    }
+    
+    return { success: false, errors };
+  }
+
+  async loadState(state: GameState) {
+    // Mock the prompt and then click the load state button
+    await this.page.evaluate((stateJson) => {
+      window.prompt = () => stateJson;
+    }, JSON.stringify(state));
+    
+    // Find and click the Load State button (it's a secondary button in the header)
+    await this.page.getByText('Load State').click();
+  }
+
+  async clickAction(actionId: string) {
+    await this.page.locator(`[data-action-id="${actionId}"]`).click();
+  }
+
+  async getCurrentURL(): Promise<string> {
+    return this.page.url();
+  }
+
+  async hasSnapshotInURL(): Promise<boolean> {
+    const url = await this.getCurrentURL();
+    return url.includes('snapshot=');
+  }
+
+  async copyStateURL(): Promise<string> {
+    // Just return the current URL since that's what would be copied
+    return await this.getCurrentURL();
+  }
+
+  async getBugReport(): Promise<string> {
+    // Click the bug report button
+    await this.page.locator('[data-testid="bug-report-button"]').click();
+    
+    // Get the generated bug report from the textarea
+    const reportElement = this.page.locator('[data-testid="generated-test-code"]');
+    return await reportElement.inputValue() || '';
   }
 }

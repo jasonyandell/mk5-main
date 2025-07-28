@@ -1,7 +1,6 @@
 import type { GameState, Play, PlayedDomino, Trump } from '../types';
 import { BID_TYPES } from '../constants';
 import { getDominoValue, getDominoPoints, getDominoSuit } from './dominoes';
-import { getBidComparisonValue } from './rules';
 
 /**
  * Checks if a domino follows the led suit (contains the led suit number)
@@ -22,21 +21,13 @@ function isDominoTrump(domino: { high: number; low: number }, numericTrump: numb
   }
   
   // Regular trump (contains trump suit number)
-  // In tournament rules, doubles belong to their natural suit unless doubles are trump
-  if (numericTrump === 7) {
-    // When doubles are trump, only doubles are trump
-    return domino.high === domino.low;
-  } else {
-    // When specific suit is trump, only dominoes containing that suit are trump
-    return domino.high === numericTrump || domino.low === numericTrump;
-  }
+  // When specific suit is trump, only dominoes containing that suit are trump
+  return domino.high === numericTrump || domino.low === numericTrump;
 }
 
 /**
  * Determines the winner of a completed trick (overloaded for different interfaces)
  */
-export function calculateTrickWinner(trick: Play[], trump: number): number;
-export function calculateTrickWinner(trick: PlayedDomino[], trump: Trump): number;
 export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: number | Trump): number {
   if (trick.length === 0) {
     throw new Error('Trick cannot be empty');
@@ -114,7 +105,7 @@ export function calculateRoundScore(state: GameState): [number, number] {
   const bid = state.currentBid;
   
   switch (bid.type) {
-    case BID_TYPES.POINTS:
+    case BID_TYPES.POINTS: {
       const requiredPointsScore = bid.value!;
       if (biddingTeamScore >= requiredPointsScore) {
         // Point bid made - award 1 mark to bidding team
@@ -124,8 +115,9 @@ export function calculateRoundScore(state: GameState): [number, number] {
         newMarks[opponentTeam] += 1;
       }
       break;
+    }
       
-    case BID_TYPES.MARKS:
+    case BID_TYPES.MARKS: {
       const requiredMarksScore = 42; // Mark bids always require 42 points
       const markValue = bid.value!;
       if (biddingTeamScore >= requiredMarksScore) {
@@ -136,8 +128,9 @@ export function calculateRoundScore(state: GameState): [number, number] {
         newMarks[opponentTeam] += markValue;
       }
       break;
+    }
       
-    case BID_TYPES.NELLO:
+    case BID_TYPES.NELLO: {
       // Nello: bidding team must take no tricks
       const biddingTeamTricks = state.tricks.filter(
         trick => trick.winner !== undefined && 
@@ -150,9 +143,10 @@ export function calculateRoundScore(state: GameState): [number, number] {
         newMarks[opponentTeam] += bid.value!;
       }
       break;
+    }
       
     case BID_TYPES.SPLASH:
-    case BID_TYPES.PLUNGE:
+    case BID_TYPES.PLUNGE: {
       // Special contracts: bidding team must take all tricks
       const nonBiddingTeamTricks = state.tricks.filter(
         trick => trick.winner !== undefined && 
@@ -165,6 +159,7 @@ export function calculateRoundScore(state: GameState): [number, number] {
         newMarks[opponentTeam] += bid.value!;
       }
       break;
+    }
   }
   
   return newMarks;
@@ -201,7 +196,7 @@ export function getWinningTeam(teamMarks: [number, number], gameTarget: number):
  * Calculates team scores from individual player scores
  * Players 0,2 are team 0, players 1,3 are team 1
  */
-export function calculateGameScore(playerScores: [number, number, number, number], biddingPlayer?: number, markValue?: number): [number, number] {
+export function calculateGameScore(playerScores: [number, number, number, number]): [number, number] {
   const team0Score = playerScores[0] + playerScores[2];
   const team1Score = playerScores[1] + playerScores[3];
   

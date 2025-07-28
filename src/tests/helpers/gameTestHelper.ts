@@ -1,15 +1,11 @@
-import type { GameState, Domino, Bid, Player } from '../../game/types';
+import type { GameState, Domino, Bid, Player, Trump } from '../../game/types';
 import { 
   createInitialState, 
   getNextStates, 
-  isValidBid, 
-  isValidPlay,
-  getDominoPoints,
-  calculateRoundScore,
-  dealDominoes,
-  createDominoes 
+  isValidBid,
+  dealDominoes
 } from '../../game';
-import { BID_TYPES, TRUMP_SUITS } from '../../game/constants';
+import { BID_TYPES } from '../../game/constants';
 
 /**
  * Comprehensive test helper for Texas 42 game testing
@@ -21,8 +17,7 @@ export class GameTestHelper {
    * Deals dominoes to all players in a game state
    */
   dealDominoes(state: GameState): GameState {
-    const dominoes = createDominoes();
-    const hands = dealDominoes(dominoes);
+    const hands = dealDominoes();
     
     return {
       ...state,
@@ -89,12 +84,15 @@ export class GameTestHelper {
     // Create 7 completed tricks
     const tricks = [];
     for (let i = 0; i < 7; i++) {
-      tricks.push([
-        { player: 0, domino: { id: `trick${i}-0`, high: 1, low: 2, points: 0 } },
-        { player: 1, domino: { id: `trick${i}-1`, high: 2, low: 3, points: 0 } },
-        { player: 2, domino: { id: `trick${i}-2`, high: 3, low: 4, points: 0 } },
-        { player: 3, domino: { id: `trick${i}-3`, high: 4, low: 5, points: 0 } }
-      ]);
+      tricks.push({
+        plays: [
+          { player: 0, domino: { id: `trick${i}-0`, high: 1, low: 2, points: 0 } },
+          { player: 1, domino: { id: `trick${i}-1`, high: 2, low: 3, points: 0 } },
+          { player: 2, domino: { id: `trick${i}-2`, high: 3, low: 4, points: 0 } },
+          { player: 3, domino: { id: `trick${i}-3`, high: 4, low: 5, points: 0 } }
+        ],
+        points: 1
+      });
     }
     return {
       ...state,
@@ -119,16 +117,21 @@ export class GameTestHelper {
   /**
    * Creates a test state with custom parameters
    */
-  static createTestState(overrides: Partial<GameState> = {}): GameState {
+  static createTestState(overrides: Partial<GameState> & { players?: (Player | Partial<Player> | undefined)[] } = {}): GameState {
     const baseState = createInitialState();
     
     // Deep merge players array if provided
     let players = baseState.players;
     if (overrides.players) {
-      players = overrides.players.map((playerOverride, index) => ({
-        ...baseState.players[index],
-        ...playerOverride
-      }));
+      players = overrides.players.map((playerOverride, index) => {
+        if (playerOverride === undefined) {
+          return baseState.players[index];
+        }
+        return {
+          ...baseState.players[index],
+          ...playerOverride
+        };
+      });
     }
     
     return {
@@ -158,11 +161,11 @@ export class GameTestHelper {
   static createPlayingScenario(
     trump: number,
     currentPlayer: number = 0,
-    currentTrick: any[] = []
+    currentTrick: { player: number; domino: Domino }[] = []
   ): GameState {
     return this.createTestState({
       phase: 'playing',
-      trump,
+      trump: trump as Trump,
       currentPlayer,
       currentTrick,
       winningBidder: 0,
@@ -175,13 +178,13 @@ export class GameTestHelper {
    */
   static createPlayingState(options: {
     trump?: Trump | { suit: string; followsSuit: boolean };
-    currentTrick?: any[];
+    currentTrick?: { player: number; domino: Domino }[];
     currentPlayer?: number;
     hands?: { [playerId: number]: Domino[] };
   } = {}): GameState {
     const baseState = this.createTestState({
       phase: 'playing',
-      trump: options.trump || null,
+      trump: options.trump || 0,
       currentPlayer: options.currentPlayer || 0,
       currentTrick: options.currentTrick || [],
       winningBidder: 0,
@@ -307,7 +310,6 @@ export class GameTestHelper {
     // Check bidding rules
     if (state.phase === 'bidding') {
       for (let i = 1; i < state.bids.length; i++) {
-        const prevBid = state.bids[i - 1];
         const currentBid = state.bids[i];
         
         if (!isValidBid(state, currentBid)) {
@@ -339,7 +341,7 @@ export class GameTestHelper {
       } else {
         // Find matching bid action
         const matchingAction = nextStates.find(action => {
-          const actionBid = this.extractBidFromAction(action.id, action.label);
+          const actionBid = this.extractBidFromAction(action.id);
           return actionBid && this.bidsEqual(actionBid, bid);
         });
         
@@ -357,7 +359,7 @@ export class GameTestHelper {
   /**
    * Extracts bid information from action
    */
-  private static extractBidFromAction(id: string, label: string): Bid | null {
+  private static extractBidFromAction(id: string): Bid | null {
     if (id === 'pass') {
       return { type: BID_TYPES.PASS, player: 0 }; // Player will be set correctly
     }
@@ -396,7 +398,7 @@ export class GameTestHelper {
       { high: 1, low: 1, points: 0 }   // 1-1 = 0 points
     ]);
     
-    const total = testDominoes.reduce((sum, d) => sum + d.points, 0);
+    const total = testDominoes.reduce((sum, d) => sum + (d.points || 0), 0);
     
     // Should total exactly 35 points for all counting dominoes (mk4 rules)
     return total === 35;

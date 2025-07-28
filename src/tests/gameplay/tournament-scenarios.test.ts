@@ -3,7 +3,7 @@ import { createInitialState } from '../../game/core/state';
 import { isValidOpeningBid, isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
-import { Bid, GameState } from '../../game/types';
+import type { Bid, GameState } from '../../game/types';
 
 describe('Tournament Scenarios', () => {
   function createTournamentState(): GameState {
@@ -21,12 +21,11 @@ describe('Tournament Scenarios', () => {
       const lowBid: Bid = { type: BID_TYPES.POINTS, value: 25, player: 0 };
       const validBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 0 };
       
-      expect(isValidOpeningBid(lowBid, state)).toBe(false);
-      expect(isValidOpeningBid(validBid, state)).toBe(true);
+      expect(isValidOpeningBid(lowBid, undefined, state.tournamentMode)).toBe(false);
+      expect(isValidOpeningBid(validBid, undefined, state.tournamentMode)).toBe(true);
     });
 
     it('should prohibit special contracts in tournament mode', () => {
-      const state = createTournamentState();
       
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 3, player: 0 };
@@ -92,7 +91,6 @@ describe('Tournament Scenarios', () => {
     });
 
     it('should award proper marks for successful tournament bids', () => {
-      const state = createTournamentState();
       
       // High-value bids in tournament should award more marks
       const highMarkBid: Bid = { type: BID_TYPES.MARKS, value: 4, player: 0 };
@@ -103,7 +101,6 @@ describe('Tournament Scenarios', () => {
 
   describe('Tournament Special Contracts', () => {
     it('should validate Nello requirements in tournament', () => {
-      const state = createTournamentState();
       
       // Nello typically requires no face cards or high-count dominoes
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
@@ -115,7 +112,6 @@ describe('Tournament Scenarios', () => {
     });
 
     it('should validate Splash requirements in tournament', () => {
-      const state = createTournamentState();
       
       // Splash requires taking all 7 tricks
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 4, player: 0 };
@@ -126,7 +122,6 @@ describe('Tournament Scenarios', () => {
     });
 
     it('should validate Plunge requirements in tournament', () => {
-      const state = createTournamentState();
       
       // Plunge requires all 42 points and all 7 tricks
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 6, player: 0 };

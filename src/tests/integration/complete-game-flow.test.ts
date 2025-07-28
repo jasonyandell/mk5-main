@@ -91,9 +91,6 @@ describe('Complete Game Flow Integration', () => {
       
       // Should allow special contracts
       const initialTransitions = getNextStates(state);
-      const specialContracts = initialTransitions.filter(t => 
-        t.id.includes('nello') || t.id.includes('splash') || t.id.includes('plunge')
-      );
       
       // Special contracts availability depends on hand composition
       expect(initialTransitions.length).toBeGreaterThan(0);

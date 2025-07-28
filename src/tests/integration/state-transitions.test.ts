@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
 import { getNextPlayer } from '../../game/core/players';
-import { GameState, GamePhase } from '../../game/types';
+import type { GameState } from '../../game/types';
 
 describe('State Transitions Integration', () => {
   describe('Phase Transitions', () => {

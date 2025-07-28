@@ -1,6 +1,45 @@
-import './ui/styles/app.css';
+import './styles/app.css';
 import App from './App.svelte';
 import { mount } from 'svelte';
+import { gameActions } from './stores/gameStore';
+
+// Check for state or snapshot parameter in URL and load it automatically
+function loadStateFromURL() {
+  const urlParams = new window.URLSearchParams(window.location.search);
+  const snapshotParam = urlParams.get('snapshot');
+  const stateParam = urlParams.get('state');
+  
+  if (snapshotParam) {
+    try {
+      const decodedSnapshot = decodeURIComponent(snapshotParam);
+      const snapshotData = JSON.parse(decodedSnapshot);
+      
+      // Load the base state first
+      gameActions.loadState(snapshotData.baseState);
+      
+      // TODO: Implement action replay for snapshot data
+      // For now, just load the base state
+      console.log('Loaded base state from snapshot URL', {
+        reason: snapshotData.reason,
+        actionCount: snapshotData.actions.length
+      });
+    } catch (error) {
+      console.error('Failed to load snapshot from URL:', error);
+    }
+  } else if (stateParam) {
+    try {
+      const decodedState = decodeURIComponent(stateParam);
+      const gameState = JSON.parse(decodedState);
+      gameActions.loadState(gameState);
+      console.log('Loaded game state from URL');
+    } catch (error) {
+      console.error('Failed to load state from URL:', error);
+    }
+  }
+}
+
+// Load state from URL before mounting the app
+loadStateFromURL();
 
 const app = mount(App, {
   target: document.getElementById('app')!,

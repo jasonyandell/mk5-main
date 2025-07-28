@@ -1,7 +1,8 @@
 export interface Domino {
   high: number;
   low: number;
-  id: string;
+  id: string | number;
+  points?: number;
 }
 
 export interface Player {
@@ -13,7 +14,7 @@ export interface Player {
 }
 
 export type BidType = 'pass' | 'points' | 'marks' | 'nello' | 'splash' | 'plunge';
-export type Trump = 0 | 1 | 2 | 3 | 4 | 5 | 6 | { suit: string; followsSuit: boolean };
+export type Trump = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | { suit: string | number; followsSuit: boolean }; // 0-6: suits, 7: doubles, 8: no-trump
 
 export interface Bid {
   type: BidType;

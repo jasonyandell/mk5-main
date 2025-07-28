@@ -4,7 +4,7 @@ import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
 import { getNextStates } from '../../game/core/actions';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
-import type { Bid, GameState } from '../../game/types';
+import type { Bid, BidType } from '../../game/types';
 
 describe('Tournament Rule Compliance', () => {
   describe('Straight 42 Rules (No Special Contracts)', () => {
@@ -392,7 +392,7 @@ describe('Tournament Rule Compliance', () => {
         bids: []
       });
 
-      const invalidBid: Bid = { type: 'INVALID' as any, value: 30, player: 0 };
+      const invalidBid: Bid = { type: 'INVALID' as BidType, value: 30, player: 0 };
       expect(isValidBid(state, invalidBid)).toBe(false);
     });
 

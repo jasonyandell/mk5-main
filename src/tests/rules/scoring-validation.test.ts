@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { calculateRoundScore } from '../../game/core/scoring';
-import { isGameComplete, createInitialState } from '../../game/core/state';
-import { Bid, GameState } from '../../game/types';
+import { isGameComplete } from '../../game/core/state';
+import type { Bid } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
 import { createTestState } from '../helpers/gameTestHelper';
 

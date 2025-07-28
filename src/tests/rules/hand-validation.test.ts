@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState } from '../../game/core/state';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { GameTestHelper } from '../helpers/gameTestHelper';
-import type { Domino, GameState } from '../../game/types';
+import type { Domino } from '../../game/types';
 
 describe('Hand Validation Rules', () => {
   describe('Must Follow Suit When Able', () => {

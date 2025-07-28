@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isValidPlay, getTrickWinner, getTrickPoints } from '../../game/core/rules';
-import { Trump, Play, Domino } from '../../game/types';
+import type { Trump, Play, Domino } from '../../game/types';
 import { TRUMP_SUITS } from '../../game/constants';
 
 // Helper function to create dominoes for testing
@@ -13,7 +13,7 @@ function createDomino(high: number, low: number): Domino {
 }
 
 describe('Trick Validation', () => {
-  const trump: Trump = { suit: TRUMP_SUITS.BLANKS, followsSuit: false };
+  const trump: Trump = TRUMP_SUITS.BLANKS;
   
   describe('isValidPlay', () => {
     it('should allow any domino for opening lead', () => {
@@ -56,7 +56,7 @@ describe('Trick Validation', () => {
     });
 
     it('should handle trump suit correctly', () => {
-      const trumpSuit: Trump = { suit: TRUMP_SUITS.ONES, followsSuit: false };
+      const trumpSuit: Trump = TRUMP_SUITS.ONES;
       const hand = [
         createDomino(1, 1), // trump
         createDomino(2, 3), // not trump

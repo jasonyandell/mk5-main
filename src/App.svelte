@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions } from './ui/stores/gameStore';
+  import { gameState, availableActions, gameActions, gameHistory } from './stores/gameStore';
   import DebugGameState from './debug/components/DebugGameState.svelte';
   import DebugActions from './debug/components/DebugActions.svelte';
   import DebugPlayerHands from './debug/components/DebugPlayerHands.svelte';
   import DebugJsonView from './debug/components/DebugJsonView.svelte';
+  import DebugBugReport from './debug/components/DebugBugReport.svelte';
+  import DebugReplay from './debug/components/DebugReplay.svelte';
   import type { StateTransition } from './game/types';
   
   function handleAction(transition: StateTransition) {
@@ -25,6 +27,29 @@
       }
     }
   }
+  
+  function copyStateURL() {
+    const stateParam = encodeURIComponent(JSON.stringify($gameState));
+    const url = `${window.location.origin}${window.location.pathname}?state=${stateParam}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('State URL copied to clipboard!');
+    }).catch(() => {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('State URL copied to clipboard!');
+    });
+  }
+  
+  function undo() {
+    gameActions.undo();
+  }
+  
+  let showBugPanel = $state(false);
 </script>
 
 <main class="debug-container">
@@ -36,18 +61,31 @@
       </div>
     </div>
     <div class="header-controls">
+      <button class="control-btn undo-btn" onclick={undo} disabled={$gameHistory.length === 0} data-testid="undo-button">
+        Undo
+      </button>
       <button class="control-btn" onclick={resetGame} data-testid="new-game-button">
         New Game
       </button>
       <button class="control-btn secondary" onclick={loadState}>
         Load State
       </button>
+      <button class="control-btn secondary" onclick={copyStateURL} data-testid="copy-state-url-button">
+        Copy State URL
+      </button>
     </div>
   </header>
+  
+  <DebugBugReport 
+    gameState={$gameState} 
+    generateBugReport={gameActions.generateBugReport}
+    bind:showBugPanel
+  />
   
   <div class="debug-layout">
     <div class="debug-left">
       <DebugGameState gameState={$gameState} />
+      <DebugReplay />
     </div>
     
     <div class="debug-center">
@@ -149,6 +187,21 @@
   .control-btn.secondary:hover {
     background: #383d43;
   }
+  
+  .control-btn.undo-btn {
+    background: #007bff;
+  }
+  
+  .control-btn.undo-btn:hover:not(:disabled) {
+    background: #0056b3;
+  }
+  
+  .control-btn.undo-btn:disabled {
+    background: #495057;
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
   
   .debug-layout {
     flex: 1;

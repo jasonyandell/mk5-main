@@ -19,7 +19,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       const buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
       
       const p1MarkBids = buttonTexts.filter(t => t.match(/P1: \d+M$/));
-      const maxMarkBid = Math.max(...p1MarkBids.map(t => parseInt(t.match(/(\d+)M$/)[1])));
+      const maxMarkBid = Math.max(...p1MarkBids.map(t => parseInt(t.match(/(\d+)M$/)?.[1] || '0')));
       
       expect(maxMarkBid).toBe(2); // Can only bid 2M after 1M
     });
@@ -28,17 +28,17 @@ test.describe('Tournament Compliance E2E Tests', () => {
       // Verify 3M not available as opening bid
       let buttons = await page.locator('button').all();
       let buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      let threeMark = buttonTexts.find(t => t === 'P0: 3M');
-      expect(threeMark).toBeUndefined();
+      let threeMarkP0 = buttonTexts.find(t => t === 'P0: 3M');
+      expect(threeMarkP0).toBeUndefined();
 
       // Bid 2M first
       await page.locator('[data-testid="bid-P0-2M"]').click();
 
-      // Now 3M should be available to next player
+      // Now 3M should be available to next player (P1)
       buttons = await page.locator('button').all();
       buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      threeMark = buttonTexts.find(t => t === 'P1: 3M');
-      expect(threeMark).toBeDefined();
+      const threeMarkP1 = buttonTexts.find(t => t === 'P1: 3M');
+      expect(threeMarkP1).toBeDefined();
     });
 
     test('should prohibit special contracts in tournament mode', async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       
       const markBids = buttonTexts.filter(t => t.match(/P0: \d+M$/));
       if (markBids.length > 0) {
-        const maxMarkBid = Math.max(...markBids.map(t => parseInt(t.match(/(\d+)M$/)[1])));
+        const maxMarkBid = Math.max(...markBids.map(t => parseInt(t.match(/(\d+)M$/)?.[1] || '0')));
         expect(maxMarkBid).toBeLessThanOrEqual(2);
       }
     });
@@ -176,7 +176,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
   });
 
   test.describe('Tournament Scoring Rules', () => {
-    test('should award exactly 1 mark for successful 30-41 point bids', async ({ page }) => {
+    test('should award exactly 1 mark for successful 30-41 point bids', async () => {
       const [initialMarks0, initialMarks1] = await helper.getTeamMarks();
 
       // Complete hand with 30-point bid
@@ -185,7 +185,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       // May need to click additional action after scoring
       try {
         await helper.clickActionIndex(0);
-      } catch (e) {
+      } catch {
         // Action may not be needed depending on game state
       }
 
@@ -199,8 +199,8 @@ test.describe('Tournament Compliance E2E Tests', () => {
 
     test('should enforce 7-mark game target', async ({ page }) => {
       // Game should end when a team reaches 7 marks
-      const team0Marks = parseInt(await page.locator('[data-testid="team-0-marks"]').textContent().then(text => text.match(/(\d+) marks/)[1]));
-      const team1Marks = parseInt(await page.locator('[data-testid="team-1-marks"]').textContent().then(text => text.match(/(\d+) marks/)[1]));
+      const team0Marks = parseInt(await page.locator('[data-testid="team-0-marks"]').textContent().then(text => text?.match(/(\d+) marks/)?.[1] || '0'));
+      const team1Marks = parseInt(await page.locator('[data-testid="team-1-marks"]').textContent().then(text => text?.match(/(\d+) marks/)?.[1] || '0'));
       
       if (team0Marks >= 7 || team1Marks >= 7) {
         await expect(page.locator('[data-testid="phase"]')).toContainText('Phase: GAME_END');
@@ -209,7 +209,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       }
     });
 
-    test('should handle set penalties correctly', async ({ page }) => {
+    test('should handle set penalties correctly', async () => {
       const [initialMarks0, initialMarks1] = await helper.getTeamMarks();
 
       // Bid high (2M = 84 points) to increase chance of set
@@ -221,7 +221,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       // May need to click additional action after scoring
       try {
         await helper.clickActionIndex(0);
-      } catch (e) {
+      } catch {
         // Action may not be needed depending on game state
       }
 

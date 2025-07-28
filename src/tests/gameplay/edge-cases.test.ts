@@ -4,7 +4,7 @@ import { getNextStates } from '../../game/core/actions';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerAfter } from '../../game/core/players';
-import type { GameState, Bid } from '../../game/types';
+import type { Bid } from '../../game/types';
 
 describe('Edge Cases and Unusual Scenarios', () => {
   describe('Dealer Rotation Edge Cases', () => {
@@ -85,7 +85,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
       
       // Player 0 should not be able to bid again
       const transitions = getNextStates(state);
-      const player0Bids = transitions.filter(t => t.description?.includes('P0'));
+      const player0Bids = transitions.filter(t => t.label?.includes('P0'));
       expect(player0Bids.length).toBe(0);
     });
 
@@ -109,6 +109,9 @@ describe('Edge Cases and Unusual Scenarios', () => {
       const state = GameTestHelper.createTestState({
         players: [{
           id: 0,
+          name: 'Player 0',
+          teamId: 0,
+          marks: 0,
           hand: [
             { id: 0, low: 0, high: 0 },   // [0|0]
             { id: 1, low: 1, high: 1 },   // [1|1]
@@ -159,6 +162,9 @@ describe('Edge Cases and Unusual Scenarios', () => {
       const state = GameTestHelper.createTestState({
         players: [{
           id: 0,
+          name: 'Player 0',
+          teamId: 0,
+          marks: 0,
           hand: [
             { id: 15, low: 5, high: 5 },  // [5|5] - 10 points
             { id: 20, low: 4, high: 6 },  // [6|4] - 10 points
@@ -248,7 +254,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
       
       if (noTrump) {
         const newState = noTrump.newState;
-        expect(newState.trump?.suit).toBe('no-trump');
+        expect(newState.trump).toBe(8); // 8 represents no-trump
       }
     });
   });

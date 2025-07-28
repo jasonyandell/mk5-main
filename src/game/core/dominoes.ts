@@ -1,5 +1,5 @@
 import type { Domino, Trump } from '../types';
-import { DOMINO_VALUES, TRUMP_SUITS } from '../constants';
+import { DOMINO_VALUES } from '../constants';
 
 /**
  * Creates a complete set of 28 dominoes
@@ -121,7 +121,6 @@ export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: Trum
  */
 export function getDominoValue(domino: Domino, trump: Trump | number | null): number {
   const numericTrump = trumpToNumber(trump);
-  const dominoSuit = getDominoSuit(domino, trump);
   
   // Special case: doubles trump (when numericTrump === 7)
   if (numericTrump === 7 && domino.high === domino.low) {

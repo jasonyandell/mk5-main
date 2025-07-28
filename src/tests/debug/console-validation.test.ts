@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 
 describe('Console Validation and Error Detection', () => {
-  let consoleErrorSpy: any;
-  let consoleWarnSpy: any;
-  let consoleLogSpy: any;
+  let consoleErrorSpy: MockedFunction<typeof console.error>;
+  let consoleWarnSpy: MockedFunction<typeof console.warn>;
+  let consoleLogSpy: MockedFunction<typeof console.log>;
 
   beforeEach(() => {
     // Spy on console methods to detect unexpected output
@@ -37,7 +37,7 @@ describe('Console Validation and Error Detection', () => {
       const dealtState = helper.dealDominoes(state);
       
       expect(dealtState.hands).toBeDefined();
-      expect(Object.keys(dealtState.hands)).toHaveLength(4);
+      expect(Object.keys(dealtState.hands || {})).toHaveLength(4);
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
@@ -77,8 +77,6 @@ describe('Console Validation and Error Detection', () => {
     });
 
     it('should handle edge cases in domino operations', () => {
-      const helper = new GameTestHelper();
-      
       // Test edge cases that might produce console output
       expect(() => {
         GameTestHelper.createHandWithDoubles(0); // Zero doubles
@@ -137,8 +135,8 @@ describe('Console Validation and Error Detection', () => {
       const state = helper.createGameInProgress();
       
       // Count total dominoes in hands + tricks + current trick
-      const handsCount = Object.values(state.hands).reduce((sum, hand) => sum + hand.length, 0);
-      const tricksCount = state.tricks.reduce((sum, trick) => sum + trick.length, 0);
+      const handsCount = Object.values(state.hands || {}).reduce((sum, hand) => sum + hand.length, 0);
+      const tricksCount = state.tricks.reduce((sum, trick) => sum + trick.plays.length, 0);
       const currentTrickCount = state.currentTrick.length;
       
       const totalDominoes = handsCount + tricksCount + currentTrickCount;
@@ -185,8 +183,6 @@ describe('Console Validation and Error Detection', () => {
       // Test that functions handle invalid inputs gracefully
       // without producing console errors
       
-      const helper = new GameTestHelper();
-      
       expect(() => {
         // Test with edge case inputs
         GameTestHelper.createTestState({ phase: 'setup' });
@@ -199,8 +195,6 @@ describe('Console Validation and Error Detection', () => {
     });
 
     it('should handle boundary values correctly', () => {
-      const helper = new GameTestHelper();
-      
       // Test boundary values that might cause issues
       expect(() => {
         GameTestHelper.createTestState({ dealer: 0 });

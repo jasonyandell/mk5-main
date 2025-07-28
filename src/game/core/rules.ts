@@ -1,6 +1,6 @@
 import type { GameState, Bid, Domino, Trump, PlayedDomino } from '../types';
 import { GAME_CONSTANTS, BID_TYPES } from '../constants';
-import { countDoubles, getDominoSuit } from './dominoes';
+import { countDoubles } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
 
 /**
@@ -243,7 +243,9 @@ export function isValidPlay(
   }
   
   // Handle the test signature: isValidPlay(state, domino, hand)
-  if ('phase' in (dominoOrState as any) && 'id' in (handOrDomino as any) && Array.isArray(currentTrickOrPlayerId)) {
+  if (typeof dominoOrState === 'object' && dominoOrState !== null && 'phase' in dominoOrState && 
+      typeof handOrDomino === 'object' && handOrDomino !== null && 'id' in handOrDomino && 
+      Array.isArray(currentTrickOrPlayerId)) {
     const state = dominoOrState as GameState;
     const domino = handOrDomino as Domino;
     const hand = currentTrickOrPlayerId as Domino[];
@@ -325,6 +327,22 @@ function getTrumpNumber(trump: Trump): number | null {
 function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump): boolean {
   const trumpSuit = getTrumpNumber(trump);
   
+  // Handle doubles trump case (trump = 7)
+  if (trumpSuit === 7) {
+    // When doubles are trump, all doubles form the trump suit
+    if (domino.high === domino.low) {
+      // This double can follow if trump suit (7) was led
+      return leadSuit === 7;
+    }
+    // Non-doubles can follow trump suit if they contain the trump number
+    // But trump number 7 doesn't exist on dominoes, so non-doubles never follow doubles trump
+    if (leadSuit === 7) {
+      return false; // Non-double cannot follow doubles trump
+    }
+    // For non-trump leads, check if domino contains the led suit number
+    return domino.high === leadSuit || domino.low === leadSuit;
+  }
+  
   // Standard tournament rules: doubles belong to their natural suit
   // A double can follow suit if its natural suit matches the led suit
   if (domino.high === domino.low) {
@@ -333,7 +351,7 @@ function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump):
       return true;
     }
     // Double can also be trump if trump is not doubles trump and not no-trump
-    const isDoubleTrump = trumpSuit !== null && trumpSuit !== 7 && trumpSuit !== 8;
+    const isDoubleTrump = trumpSuit !== null && trumpSuit !== 8;
     if (isDoubleTrump && leadSuit === trumpSuit) {
       return true; // Trump double following trump suit
     }
@@ -359,13 +377,18 @@ function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump):
 
 /**
  * Gets the suit that was led (for following suit purposes)
- * This is different from getDominoSuit - doubles lead their natural suit
+ * This is different from getDominoSuit - doubles lead their natural suit unless doubles are trump
  */
 function getLeadSuit(domino: Domino, trump: Trump): number {
   const trumpSuit = getTrumpNumber(trump);
   
-  // For doubles, always use the natural suit (the pip value)
+  // For doubles, check if doubles are trump
   if (domino.high === domino.low) {
+    // When doubles are trump (trump = 7), all doubles lead trump suit
+    if (trumpSuit === 7) {
+      return 7;
+    }
+    // Otherwise, doubles lead their natural suit (the pip value)
     return domino.high;
   }
   
@@ -408,6 +431,9 @@ function getValidPlaysCore(
   // First play of trick - all dominoes are valid
   if (currentTrick.length === 0) return [...hand];
   
+  // If no trump is set, all plays are valid
+  if (trump === null) return [...hand];
+  
   const leadPlay = currentTrick[0];
   const leadSuit = getLeadSuit(leadPlay.domino, trump);
   
@@ -440,10 +466,8 @@ export function getTrickPoints(trick: { player: number; domino: Domino }[]): num
 /**
  * Determines the winner of a trick (alternative interface)
  */
-export function determineTrickWinner(trick: { player: number; domino: Domino }[], trump: Trump): number;
-export function determineTrickWinner(trick: PlayedDomino[], trump: Trump): number;
-export function determineTrickWinner(trick: any[], trump: Trump): number {
-  return calculateTrickWinner(trick as any, trump);
+export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: Trump): number {
+  return calculateTrickWinner(trick as PlayedDomino[], trump);
 }
 
 /**

@@ -10,7 +10,7 @@
   let collapsed = $state(true);
   let selectedSection = $state<string>('state');
   
-  const prettyJson = $derived(() => {
+  const prettyJson = $derived.by(() => {
     try {
       return JSON.stringify(gameState, null, 2);
     } catch (e) {
@@ -18,7 +18,7 @@
     }
   });
   
-  const stateSummary = $derived(() => {
+  const stateSummary = $derived.by(() => {
     const summary = {
       phase: gameState.phase,
       currentPlayer: gameState.currentPlayer,
@@ -90,7 +90,7 @@
         </div>
         <div class="summary-item">
           <span class="key">Turn:</span>
-          <span class="value">P{gameState.currentPlayer + 1}</span>
+          <span class="value">P{gameState.currentPlayer}</span>
         </div>
         <div class="summary-item">
           <span class="key">Bids:</span>

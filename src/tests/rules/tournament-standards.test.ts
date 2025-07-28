@@ -4,7 +4,7 @@ import { isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
-import type { Bid, GameState } from '../../game/types';
+import type { Bid, Trump } from '../../game/types';
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
@@ -24,7 +24,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       specialBids.forEach(bid => {
-        expect(isValidBid(state, bid as any)).toBe(false);
+        expect(isValidBid(state, bid as Bid)).toBe(false);
       });
 
       // Valid standard bids should work
@@ -184,7 +184,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
   describe('Trump Declaration Rules', () => {
     it('bid winner must declare trump suit', () => {
       const state = createTestState({
-        phase: 'trumpSelection',
+        phase: 'trump_selection',
         bidWinner: 1,
         currentPlayer: 1,
         bids: [
@@ -197,17 +197,16 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
       expect(state.bidWinner).toBe(1);
       expect(state.currentPlayer).toBe(1);
-      expect(state.phase).toBe('trumpSelection');
+      expect(state.phase).toBe('trump_selection');
     });
 
     it('allows all valid trump options', () => {
-      const validTrumpSuits = [0, 1, 2, 3, 4, 5, 6]; // 0-6 for suits plus doubles
-      const invalidTrumpSuits = [-1, 7, 10];
+      const validTrumpSuits = [0, 1, 2, 3, 4, 5, 6, 7]; // 0-6 for suits plus doubles (7)
 
       validTrumpSuits.forEach(trump => {
         const state = createTestState({
           phase: 'playing',
-          trump: trump
+          trump: trump as Trump
         });
         expect(state.trump).toBe(trump);
       });
@@ -235,10 +234,10 @@ describe('Tournament Standards (N42PA Rules)', () => {
         phase: 'playing',
         trump: 1,
         currentTrick: [
-          { player: 0, domino: { id: 'test1', high: 2, low: 3, points: 0 } },
-          { player: 1, domino: { id: 'test2', high: 1, low: 1, points: 0 } }, // trump wins
-          { player: 2, domino: { id: 'test3', high: 2, low: 4, points: 0 } },
-          { player: 3, domino: { id: 'test4', high: 2, low: 5, points: 0 } }
+          { player: 0, domino: { id: 'test1', high: 2, low: 3 } },
+          { player: 1, domino: { id: 'test2', high: 1, low: 1 } }, // trump wins
+          { player: 2, domino: { id: 'test3', high: 2, low: 4 } },
+          { player: 3, domino: { id: 'test4', high: 2, low: 5 } }
         ]
       });
 

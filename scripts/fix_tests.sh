@@ -63,7 +63,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         
         # Create a prompt for Claude with test output
         cat > claude_prompt.txt << EOF
-The tests are failing after we changed the UI to a debug UI. The debug UI should have all of the features of the old site plus displaying all possible state.  Please analyze the test output and fix the issues.
+The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.
 
 Recent test output:
 \`\`\`

@@ -9,7 +9,7 @@
   let { availableActions, onAction }: Props = $props();
   
   // Import the game state to get current player info
-  import { gameState } from '../../ui/stores/gameStore';
+  import { gameState } from '../../stores/gameStore';
   
   const actionsByType = $derived(() => {
     const groups: Record<string, StateTransition[]> = {};
