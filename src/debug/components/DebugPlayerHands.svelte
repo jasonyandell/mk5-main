@@ -90,19 +90,6 @@
     {/each}
   </div>
   
-  {#if gameState.currentTrick.length > 0}
-    <div class="current-trick-info">
-      <h4>Current Trick ({gameState.currentTrick.length}/4)</h4>
-      <div class="trick-plays">
-        {#each gameState.currentTrick as play}
-          <div class="trick-play">
-            <span class="play-player">P{play.player}:</span>
-            <span class="play-domino">{renderDomino(play.domino.high, play.domino.low)}</span>
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -246,43 +233,4 @@
     margin-top: 4px;
   }
   
-  .current-trick-info {
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid #e9ecef;
-  }
-  
-  .current-trick-info h4 {
-    margin: 0 0 6px 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: #495057;
-  }
-  
-  .trick-plays {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .trick-play {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
-  
-  .play-player {
-    color: #6c757d;
-    font-size: 10px;
-  }
-  
-  .play-domino {
-    font-family: monospace;
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 2px;
-    padding: 1px 4px;
-    font-size: 9px;
-    color: #495057;
-  }
 </style>

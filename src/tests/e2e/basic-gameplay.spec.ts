@@ -48,7 +48,7 @@ test.describe('Basic Gameplay', () => {
     expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 42)).toBe(false);
     
     // Should not include 3+ marks in opening bid
-    expect(biddingOptions.some(option => option.type === 'bid_marks' && option.value! >= 3)).toBe(false);
+    expect(biddingOptions.some(option => option.type === 'bid_marks' && (option.value as number) >= 3)).toBe(false);
   });
 
   test('should progress through bidding round', async () => {

@@ -45,24 +45,24 @@ export class PlaywrightGameHelper {
     return await this.getActionsList();
   }
 
-  async getBiddingOptions(): Promise<Array<{index: number, type: string, value?: number}>> {
+  async getBiddingOptions(): Promise<ActionOption[]> {
     const actions = await this.getActionsList();
     return actions.filter(a => a.type === 'pass' || a.type === 'bid_points' || a.type === 'bid_marks');
   }
 
   async selectActionByIndex(index: number) {
-    await this.page.locator('.action-btn').nth(index).click();
+    await this.page.locator('.action-compact').nth(index).click();
   }
 
   async getActionsList(): Promise<ActionOption[]> {
-    const buttons = await this.page.locator('.action-btn').all();
+    const buttons = await this.page.locator('.action-compact').all();
     const actions = [];
     
     for (let i = 0; i < buttons.length; i++) {
       const actionId = await buttons[i].getAttribute('data-action-id');
       
       let type = 'unknown';
-      let value = null;
+      let value: string | number | undefined = undefined;
       
       if (actionId === 'pass') {
         type = 'pass';
@@ -159,7 +159,13 @@ export class PlaywrightGameHelper {
   }
 
   async playAnyDomino() {
-    await this.selectActionByType('play_domino');
+    const actions = await this.getActionsList();
+    const playAction = actions.find(a => a.type === 'play_domino');
+    if (playAction) {
+      await this.selectActionByIndex(playAction.index);
+    } else {
+      throw new Error('No play_domino action available');
+    }
   }
   
   async playDominoByValue(dominoValue: string) {

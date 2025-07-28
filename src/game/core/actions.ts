@@ -254,7 +254,7 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
     });
     newState.currentTrick = [];
     newState.currentPlayer = winner;
-    newState.teamScores[newState.players[winner].teamId] += points;
+    newState.teamScores[newState.players[winner].teamId] += points + 1; // +1 for the trick itself
     
     if (newState.tricks.length === GAME_CONSTANTS.TRICKS_PER_HAND) {
       newState.phase = 'scoring';
@@ -262,7 +262,7 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
     
     transitions.push({
       id: 'complete-trick',
-      label: `Player ${winner + 1} wins trick (${points} points)`,
+      label: `P${winner} wins trick (${points} points)`,
       newState
     });
     

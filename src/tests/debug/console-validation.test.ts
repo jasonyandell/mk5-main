@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach, type MockedFunction } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { MockInstance } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 
 describe('Console Validation and Error Detection', () => {
-  let consoleErrorSpy: MockedFunction<typeof console.error>;
-  let consoleWarnSpy: MockedFunction<typeof console.warn>;
-  let consoleLogSpy: MockedFunction<typeof console.log>;
+  let consoleErrorSpy: MockInstance;
+  let consoleWarnSpy: MockInstance;
+  let consoleLogSpy: MockInstance;
 
   beforeEach(() => {
     // Spy on console methods to detect unexpected output

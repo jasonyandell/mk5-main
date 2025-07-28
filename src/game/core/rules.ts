@@ -350,10 +350,9 @@ function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump):
     if (domino.high === leadSuit) {
       return true;
     }
-    // Double can also be trump if trump is not doubles trump and not no-trump
-    const isDoubleTrump = trumpSuit !== null && trumpSuit !== 8;
-    if (isDoubleTrump && leadSuit === trumpSuit) {
-      return true; // Trump double following trump suit
+    // Double can also follow if it IS trump (i.e., contains the trump suit number)
+    if (trumpSuit !== null && trumpSuit !== 8 && domino.high === trumpSuit && leadSuit === trumpSuit) {
+      return true; // This double IS trump and trump was led
     }
     return false; // Double doesn't follow non-matching suit
   }
@@ -504,4 +503,41 @@ export function getTrumpValue(trump: { suit: number | string; followsSuit: boole
     }
   }
   throw new Error(`Invalid trump suit: ${trump.suit}`);
+}
+
+/**
+ * Gets the current suit being led in a trick for display purposes
+ */
+export function getCurrentSuit(currentTrick: { player: number; domino: Domino }[], trump: Trump | null): string {
+  if (currentTrick.length === 0) {
+    return 'None (no domino led)';
+  }
+  
+  if (trump === null) {
+    return 'None (no trump set)';
+  }
+  
+  const leadDomino = currentTrick[0].domino;
+  const leadSuit = getLeadSuit(leadDomino, trump);
+  
+  const suitNames: Record<number, string> = {
+    0: 'Blanks',
+    1: 'Ones', 
+    2: 'Twos',
+    3: 'Threes',
+    4: 'Fours',
+    5: 'Fives',
+    6: 'Sixes',
+    7: 'Doubles (Trump)',
+    8: 'No Trump'
+  };
+  
+  const trumpSuit = getTrumpNumber(trump);
+  
+  // Special case: if lead suit equals trump suit, indicate it's trump
+  if (leadSuit === trumpSuit && trumpSuit !== 7) {
+    return `${suitNames[leadSuit]} (Trump)`;
+  }
+  
+  return suitNames[leadSuit] || `Unknown (${leadSuit})`;
 }

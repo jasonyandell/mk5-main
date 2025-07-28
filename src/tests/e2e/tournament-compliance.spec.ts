@@ -18,8 +18,12 @@ test.describe('Tournament Compliance E2E Tests', () => {
       const buttons = await page.locator('button').all();
       const buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
       
-      const p1MarkBids = buttonTexts.filter(t => t.match(/P1: \d+M$/));
-      const maxMarkBid = Math.max(...p1MarkBids.map(t => parseInt(t.match(/(\d+)M$/)?.[1] || '0')));
+      const markBids = buttonTexts.filter(t => t.includes('bid-') && t.includes('-marks'));
+      const markValues = markBids.map(t => {
+        const match = t.match(/bid-(\d+)-marks/);
+        return match ? parseInt(match[1]) : 0;
+      });
+      const maxMarkBid = markValues.length > 0 ? Math.max(...markValues) : 0;
       
       expect(maxMarkBid).toBe(2); // Can only bid 2M after 1M
     });
@@ -28,7 +32,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       // Verify 3M not available as opening bid
       let buttons = await page.locator('button').all();
       let buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      let threeMarkP0 = buttonTexts.find(t => t === 'P0: 3M');
+      let threeMarkP0 = buttonTexts.find(t => t.includes('bid-3-marks'));
       expect(threeMarkP0).toBeUndefined();
 
       // Bid 2M first
@@ -37,7 +41,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       // Now 3M should be available to next player (P1)
       buttons = await page.locator('button').all();
       buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      const threeMarkP1 = buttonTexts.find(t => t === 'P1: 3M');
+      const threeMarkP1 = buttonTexts.find(t => t.includes('bid-3-marks'));
       expect(threeMarkP1).toBeDefined();
     });
 

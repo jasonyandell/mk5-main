@@ -6,6 +6,7 @@
   import DebugJsonView from './debug/components/DebugJsonView.svelte';
   import DebugBugReport from './debug/components/DebugBugReport.svelte';
   import DebugReplay from './debug/components/DebugReplay.svelte';
+  import DebugPreviousTricks from './debug/components/DebugPreviousTricks.svelte';
   import type { StateTransition } from './game/types';
   
   function handleAction(transition: StateTransition) {
@@ -85,7 +86,6 @@
   <div class="debug-layout">
     <div class="debug-left">
       <DebugGameState gameState={$gameState} />
-      <DebugReplay />
     </div>
     
     <div class="debug-center">
@@ -93,14 +93,22 @@
         <DebugPlayerHands gameState={$gameState} />
       </div>
       <div class="center-bottom">
-        <DebugActions 
-          availableActions={$availableActions}
-          onAction={handleAction}
-        />
+        <div class="bottom-split">
+          <div class="split-left">
+            <DebugPreviousTricks gameState={$gameState} />
+          </div>
+          <div class="split-right">
+            <DebugActions 
+              availableActions={$availableActions}
+              onAction={handleAction}
+            />
+          </div>
+        </div>
       </div>
     </div>
     
     <div class="debug-right">
+      <DebugReplay />
       <DebugJsonView gameState={$gameState} />
     </div>
   </div>
@@ -216,6 +224,8 @@
   .debug-right {
     background: white;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   
   .debug-center {
@@ -240,6 +250,24 @@
     z-index: 1;
   }
   
+  .bottom-split {
+    height: 100%;
+    display: flex;
+    gap: 1px;
+  }
+  
+  .split-left {
+    width: 33.333%;
+    background: white;
+    overflow: hidden;
+  }
+  
+  .split-right {
+    width: 66.667%;
+    background: white;
+    overflow: hidden;
+  }
+  
   @media (max-width: 1200px) {
     .debug-layout {
       grid-template-columns: 250px 1fr 250px;
@@ -254,6 +282,20 @@
     
     .debug-right {
       flex-direction: row;
+    }
+    
+    .bottom-split {
+      flex-direction: column;
+    }
+    
+    .split-left,
+    .split-right {
+      width: 100%;
+    }
+    
+    .split-left {
+      flex-shrink: 0;
+      max-height: 200px;
     }
   }
   

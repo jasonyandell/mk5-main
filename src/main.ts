@@ -14,12 +14,10 @@ function loadStateFromURL() {
       const decodedSnapshot = decodeURIComponent(snapshotParam);
       const snapshotData = JSON.parse(decodedSnapshot);
       
-      // Load the base state first
-      gameActions.loadState(snapshotData.baseState);
+      // Load the base state and replay all actions to get to current state
+      gameActions.loadStateWithActionReplay(snapshotData.baseState, snapshotData.actions);
       
-      // TODO: Implement action replay for snapshot data
-      // For now, just load the base state
-      console.log('Loaded base state from snapshot URL', {
+      console.log('Loaded game state from snapshot URL', {
         reason: snapshotData.reason,
         actionCount: snapshotData.actions.length
       });

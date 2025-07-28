@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { GameState, Bid, Player } from '../../game/types';
+  import type { GameState, Bid } from '../../game/types';
+  import { getCurrentSuit } from '../../game/core/rules';
   
   interface Props {
     gameState: GameState;
@@ -31,8 +32,68 @@
     return 'Unknown';
   }
   
-  const currentPlayerInfo = $derived(gameState.players[gameState.currentPlayer]);
-  const dealerInfo = $derived(gameState.players[gameState.dealer]);
+  const currentSuit = $derived(getCurrentSuit(gameState.currentTrick, gameState.trump));
+
+  function getHandWinner(): { winner: number | null, label: string } {
+    if (!gameState.currentBid || gameState.winningBidder === null) {
+      return { winner: null, label: 'No bid' };
+    }
+
+    const biddingTeam = gameState.players[gameState.winningBidder].teamId;
+    const opponentTeam = biddingTeam === 0 ? 1 : 0;
+    const biddingTeamScore = gameState.teamScores[biddingTeam];
+    
+    const bid = gameState.currentBid;
+    let handWinnerTeam: number;
+    let reason: string;
+
+    switch (bid.type) {
+      case 'points': {
+        const requiredScore = bid.value!;
+        if (biddingTeamScore >= requiredScore) {
+          handWinnerTeam = biddingTeam;
+          reason = `Made ${requiredScore} (got ${biddingTeamScore})`;
+        } else {
+          handWinnerTeam = opponentTeam;
+          reason = `Set bidders (${biddingTeamScore}/${requiredScore})`;
+        }
+        break;
+      }
+      case 'marks': {
+        const requiredScore = 42;
+        const markValue = bid.value!;
+        if (biddingTeamScore >= requiredScore) {
+          handWinnerTeam = biddingTeam;
+          reason = `Made ${markValue} mark${markValue !== 1 ? 's' : ''} (got ${biddingTeamScore})`;
+        } else {
+          handWinnerTeam = opponentTeam;
+          reason = `Set ${markValue} mark${markValue !== 1 ? 's' : ''} bid (${biddingTeamScore}/42)`;
+        }
+        break;
+      }
+      case 'nello': {
+        const biddingTeamTricks = gameState.tricks.filter(
+          trick => trick.winner !== undefined && 
+          gameState.players[trick.winner].teamId === biddingTeam
+        ).length;
+        
+        if (biddingTeamTricks === 0) {
+          handWinnerTeam = biddingTeam;
+          reason = `Made Nel-O (0 tricks)`;
+        } else {
+          handWinnerTeam = opponentTeam;
+          reason = `Set Nel-O bid (${biddingTeamTricks} tricks)`;
+        }
+        break;
+      }
+      default:
+        return { winner: null, label: 'Unknown bid type' };
+    }
+
+    // Find a representative player from the winning team
+    const winnerPlayer = gameState.players.find(p => p.teamId === handWinnerTeam)?.id ?? null;
+    return { winner: winnerPlayer, label: reason };
+  }
 </script>
 
 <div class="debug-game-state" data-testid="debug-panel">
@@ -53,6 +114,10 @@
       <span class="label">Trump:</span>
       <span class="value" data-testid="trump">Trump: {getTrumpName(gameState.trump)}</span>
     </div>
+    <div class="suit-info">
+      <span class="label">Current Suit:</span>
+      <span class="value" data-testid="current-suit">Suit: {currentSuit}</span>
+    </div>
   </div>
   
   <div class="core-state-section">
@@ -62,6 +127,7 @@
       Dealer: P{gameState.dealer}<br/>
       Current Player: P{gameState.currentPlayer}<br/>
       Trump: {getTrumpName(gameState.trump)}<br/>
+      Current Suit: {currentSuit}<br/>
       Bid Winner: {gameState.winningBidder !== null ? `P${gameState.winningBidder}` : 'None'}<br/>
       Current Bid: {gameState.currentBid ? getBidLabel(gameState.currentBid) : 'None'}
     </div>
@@ -71,7 +137,7 @@
     <div class="section">
       <h4>Bidding</h4>
       <div class="bid-history">
-        {#each gameState.bids as bid, i}
+        {#each gameState.bids as bid}
           <div class="bid-entry" class:current={bid === gameState.currentBid}>
             <span class="player">P{bid.player}:</span>
             <span class="bid">{getBidLabel(bid)}</span>
@@ -83,11 +149,18 @@
       </div>
       {#if gameState.winningBidder !== null}
         <div class="winning-bidder">
-          Winner: P{gameState.winningBidder}
+          Bidder: P{gameState.winningBidder}
           {#if gameState.currentBid}
             ({getBidLabel(gameState.currentBid)})
           {/if}
         </div>
+        {#if gameState.tricks.length === 7}
+          {@const handResult = getHandWinner()}
+          <div class="winning-bidder">
+            Hand Winner: {#if handResult.winner !== null}Team {gameState.players.find(p => p.id === handResult.winner)?.teamId}{:else}None{/if}
+            <br/><small>{handResult.label}</small>
+          </div>
+        {/if}
       {/if}
     </div>
     
@@ -115,14 +188,9 @@
           <div class="trick">
             <span class="trick-num">#{i + 1}</span>
             <span class="trick-winner">P{trick.winner || 0}</span>
-            <span class="trick-points">{trick.points}pts</span>
+            <span class="trick-points">{trick.points + 1}pts</span>
           </div>
         {/each}
-        {#if gameState.currentTrick.length > 0}
-          <div class="current-trick">
-            Current: {gameState.currentTrick.length}/4 plays
-          </div>
-        {/if}
       </div>
     </div>
   </div>
@@ -139,7 +207,7 @@
   
   .state-header {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -291,13 +359,6 @@
     color: #28a745;
   }
   
-  .current-trick {
-    padding: 2px 4px;
-    background: #fff3cd;
-    border-radius: 2px;
-    font-size: 10px;
-    color: #856404;
-  }
   
   .empty {
     color: #6c757d;

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { isValidTrump, getTrumpValue } from '../../game/core/rules';
 import { TRUMP_SUITS, SUIT_VALUES } from '../../game/constants';
-import type { Trump } from '../../game/types';
 
 describe('Trump Validation', () => {
   describe('isValidTrump', () => {
@@ -16,7 +15,7 @@ describe('Trump Validation', () => {
     });
 
     it('should reject invalid suit combinations', () => {
-      expect(isValidTrump({ suit: 'invalid', followsSuit: false } as Trump)).toBe(false);
+      expect(isValidTrump({ suit: 'invalid', followsSuit: false })).toBe(false);
     });
   });
 
@@ -43,7 +42,7 @@ describe('Trump Validation', () => {
     });
 
     it('should handle edge cases', () => {
-      expect(() => getTrumpValue({ suit: 'invalid', followsSuit: false } as Trump)).toThrow();
+      expect(() => getTrumpValue({ suit: 'invalid', followsSuit: false })).toThrow();
     });
   });
 });

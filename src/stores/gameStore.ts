@@ -143,6 +143,63 @@ export const gameActions = {
     initialGameState = null;
     updateURLWithState(state);
   },
+
+  loadStateWithActionReplay: (baseState: GameState, actions: Array<{id: string, label: string}>) => {
+    // Set up initial state and tracking
+    gameState.set(baseState);
+    const history: GameState[] = [];
+    allActions = [];
+    initialGameState = JSON.parse(JSON.stringify(baseState));
+    
+    let currentState = baseState;
+    
+    // Replay each action in sequence, building history as we go
+    for (const actionData of actions) {
+      const availableTransitions = getNextStates(currentState);
+      const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
+      
+      if (matchingTransition) {
+        // Add current state to history before advancing (same as executeAction)
+        history.push(currentState);
+        
+        // Add to action history
+        allActions.push(matchingTransition);
+        
+        // Update current state
+        currentState = matchingTransition.newState;
+      } else {
+        // Invalid action - set state and debug snapshot before throwing
+        gameState.set(currentState);
+        gameHistory.set(history);
+        
+        if (allActions.length > 0 && initialGameState !== null) {
+          debugSnapshot.set({
+            baseState: initialGameState,
+            actions: [...allActions]
+          });
+        }
+        
+        updateURLWithState(currentState);
+        
+        // Now throw error to fail tests and expose broken logic
+        const availableIds = availableTransitions.map(t => t.id).join(', ');
+        throw new Error(`Invalid action replay: Action "${actionData.id}" is not available in current state. Available actions: [${availableIds}]`);
+      }
+    }
+    
+    // Set final state, history, and debug snapshot for successful replay
+    gameState.set(currentState);
+    gameHistory.set(history);
+    
+    if (allActions.length > 0 && initialGameState !== null) {
+      debugSnapshot.set({
+        baseState: initialGameState,
+        actions: [...allActions]
+      });
+    }
+    
+    updateURLWithState(currentState);
+  },
   
   undo: () => {
     gameHistory.update(history => {

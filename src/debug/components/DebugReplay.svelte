@@ -31,14 +31,19 @@
       const validAction = availableActions.find(a => a.id === action.id);
       
       if (!validAction) {
+        const currentPlayerName = `Player ${currentState.currentPlayer + 1}`;
+        const phaseInfo = currentState.phase === 'playing' ? 
+          ` (Trump: ${currentState.trump === null ? 'None' : currentState.trump === 7 ? 'Doubles' : currentState.trump}, Current trick: ${currentState.currentTrick.length}/4)` : 
+          ` (Phase: ${currentState.phase})`;
+        
         validationResults.push({
           step: i + 1,
           action: { id: action.id, label: action.label },
           valid: false,
-          error: `Action ${action.id} (${action.label}) is not valid. Available: ${availableActions.map(a => a.id).join(', ')}`
+          error: `${currentPlayerName} cannot perform action ${action.id} (${action.label})${phaseInfo}. Available actions: ${availableActions.map(a => a.id).join(', ')}`
         });
         replayState = 'error';
-        errorMessage = `Invalid action at step ${i + 1}`;
+        errorMessage = `Invalid action at step ${i + 1}: ${currentPlayerName} cannot ${action.label.toLowerCase()}`;
         return;
       }
       
