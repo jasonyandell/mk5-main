@@ -1,0 +1,193 @@
+import type { GameState } from '../types';
+import { GAME_CONSTANTS } from '../constants';
+import { dealDominoes } from './dominoes';
+
+/**
+ * Creates the initial game state in setup phase
+ */
+export function createSetupState(): GameState {
+  const dealer = 3; // Start with dealer as player 3 for deterministic tests
+  const currentPlayer = (dealer + 1) % 4; // Player to left of dealer bids first
+  
+  return {
+    phase: 'setup',
+    players: [
+      { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+      { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
+      { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
+      { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+    ],
+    currentPlayer,
+    dealer,
+    bids: [],
+    currentBid: null,
+    winningBidder: null,
+    trump: null,
+    tricks: [],
+    currentTrick: [],
+    teamScores: [0, 0],
+    teamMarks: [0, 0],
+    gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
+    tournamentMode: true,
+    // Test compatibility properties - empty hands in setup
+    hands: {},
+    bidWinner: null,
+    isComplete: false,
+    winner: null,
+  };
+}
+
+/**
+ * Creates the initial game state with fresh hands dealt ready for bidding
+ */
+export function createInitialState(): GameState {
+  const dealer = 3; // Start with dealer as player 3 for deterministic tests
+  const currentPlayer = (dealer + 1) % 4; // Player to left of dealer bids first
+  const hands = dealDominoes();
+  
+  return {
+    phase: 'bidding',
+    players: [
+      { id: 0, name: 'Player 1', hand: hands[0], teamId: 0, marks: 0 },
+      { id: 1, name: 'Player 2', hand: hands[1], teamId: 1, marks: 0 },
+      { id: 2, name: 'Player 3', hand: hands[2], teamId: 0, marks: 0 },
+      { id: 3, name: 'Player 4', hand: hands[3], teamId: 1, marks: 0 },
+    ],
+    currentPlayer,
+    dealer,
+    bids: [],
+    currentBid: null,
+    winningBidder: null,
+    trump: null,
+    tricks: [],
+    currentTrick: [],
+    teamScores: [0, 0],
+    teamMarks: [0, 0],
+    gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
+    tournamentMode: true,
+    // Test compatibility properties
+    hands: {
+      0: hands[0],
+      1: hands[1],
+      2: hands[2],
+      3: hands[3]
+    },
+    bidWinner: null,
+    isComplete: false,
+    winner: null,
+  };
+}
+
+/**
+ * Creates a deep copy of the game state for immutable operations
+ */
+export function cloneGameState(state: GameState): GameState {
+  return {
+    ...state,
+    players: state.players.map(player => ({
+      ...player,
+      hand: [...player.hand]
+    })),
+    bids: [...state.bids],
+    tricks: state.tricks.map(trick => ({
+      ...trick,
+      plays: [...trick.plays]
+    })),
+    currentTrick: [...state.currentTrick],
+    teamScores: [...state.teamScores] as [number, number],
+    teamMarks: [...state.teamMarks] as [number, number],
+    // Clone the hands object if it exists
+    hands: state.hands ? Object.fromEntries(
+      Object.entries(state.hands).map(([playerId, hand]) => [
+        playerId, 
+        [...hand]
+      ])
+    ) : undefined,
+  };
+}
+
+/**
+ * Validates that a game state is well-formed
+ */
+export function validateGameState(state: GameState): string[] {
+  const errors: string[] = [];
+
+  // Check player count
+  if (state.players.length !== GAME_CONSTANTS.PLAYERS) {
+    errors.push(`Game must have exactly ${GAME_CONSTANTS.PLAYERS} players`);
+  }
+
+  // Check current player bounds
+  if (state.currentPlayer < 0 || state.currentPlayer >= GAME_CONSTANTS.PLAYERS) {
+    errors.push('Current player ID out of bounds');
+  }
+
+  // Check dealer bounds
+  if (state.dealer < 0 || state.dealer >= GAME_CONSTANTS.PLAYERS) {
+    errors.push('Dealer ID out of bounds');
+  }
+
+  // Check team scores and marks
+  if (state.teamScores.length !== GAME_CONSTANTS.TEAMS) {
+    errors.push(`Must have exactly ${GAME_CONSTANTS.TEAMS} team scores`);
+  }
+  if (state.teamMarks.length !== GAME_CONSTANTS.TEAMS) {
+    errors.push(`Must have exactly ${GAME_CONSTANTS.TEAMS} team marks`);
+  }
+
+  // Check hand sizes (when not in setup)
+  if (state.phase !== 'bidding' || state.bids.length === 0) {
+    state.players.forEach((player, index) => {
+      if (player.hand.length > GAME_CONSTANTS.HAND_SIZE) {
+        errors.push(`Player ${index} has too many dominoes`);
+      }
+    });
+  }
+
+  return errors;
+}
+
+/**
+ * Checks if the game is complete (any team reached target marks)
+ */
+export function isGameComplete(state: GameState): boolean {
+  return state.teamMarks.some(marks => marks >= state.gameTarget);
+}
+
+/**
+ * Gets the winning team (0 or 1), or null if game not complete
+ */
+export function getWinningTeam(state: GameState): number | null {
+  if (!isGameComplete(state)) return null;
+  
+  return state.teamMarks[0] >= state.gameTarget ? 0 : 1;
+}
+
+/**
+ * Advances game state to the next logical phase
+ */
+export function advanceToNextPhase(state: GameState): GameState {
+  const newState = cloneGameState(state);
+  
+  switch (state.phase) {
+    case 'setup':
+      newState.phase = 'bidding';
+      break;
+    case 'bidding':
+      newState.phase = 'trump_selection';
+      break;
+    case 'trump_selection':
+      newState.phase = 'playing';
+      break;
+    case 'playing':
+      newState.phase = 'scoring';
+      break;
+    case 'scoring':
+      newState.phase = 'game_end';
+      break;
+    default:
+      break;
+  }
+  
+  return newState;
+}
