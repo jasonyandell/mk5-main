@@ -1,6 +1,6 @@
 import type { GameState } from '../types';
 import { GAME_CONSTANTS } from '../constants';
-import { dealDominoes } from './dominoes';
+import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
 
 /**
@@ -30,6 +30,7 @@ export function createSetupState(): GameState {
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: true,
+    shuffleSeed: Date.now(), // Initial seed for when dealing happens
     // Test compatibility properties - empty hands in setup
     hands: {},
     bidWinner: null,
@@ -44,7 +45,10 @@ export function createSetupState(): GameState {
 export function createInitialState(): GameState {
   const dealer = 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
-  const hands = dealDominoes();
+  
+  // Generate initial seed for deterministic shuffling
+  const shuffleSeed = Date.now();
+  const hands = dealDominoesWithSeed(shuffleSeed);
   
   return {
     phase: 'bidding',
@@ -66,6 +70,7 @@ export function createInitialState(): GameState {
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: true,
+    shuffleSeed,
     // Test compatibility properties
     hands: {
       0: hands[0],

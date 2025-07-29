@@ -2,7 +2,7 @@ import type { GameState, StateTransition, Bid } from '../types';
 import { BID_TYPES, TRUMP_SUITS, GAME_CONSTANTS } from '../constants';
 import { cloneGameState } from './state';
 import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
-import { dealDominoes } from './dominoes';
+import { dealDominoesWithSeed } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 
@@ -37,7 +37,9 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
     if (nonPassBids.length === 0) {
       // All passed - redeal
       const newState = cloneGameState(state);
-      const hands = dealDominoes();
+      // Use a large increment to ensure different shuffle
+      newState.shuffleSeed = state.shuffleSeed + 1000000;
+      const hands = dealDominoesWithSeed(newState.shuffleSeed);
       newState.dealer = getNextDealer(state.dealer);
       newState.currentPlayer = getPlayerLeftOfDealer(newState.dealer);
       newState.bids = [];
@@ -313,8 +315,9 @@ function getScoringTransitions(state: GameState): StateTransition[] {
     newState.dealer = getNextDealer(state.dealer);
     newState.currentPlayer = getPlayerLeftOfDealer(newState.dealer);
     
-    // Deal new hands
-    const hands = dealDominoes();
+    // Deal new hands with incremented seed
+    newState.shuffleSeed = state.shuffleSeed + 1000000;
+    const hands = dealDominoesWithSeed(newState.shuffleSeed);
     newState.players.forEach((player, i) => {
       player.hand = hands[i];
     });

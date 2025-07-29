@@ -362,7 +362,8 @@ describe('State Transitions Integration', () => {
         },
         bidWinner: null,
         isComplete: false,
-        winner: null
+        winner: null,
+        shuffleSeed: 12345
       };
       
       const actions = getNextStates(state);

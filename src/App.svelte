@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions, gameHistory } from './stores/gameStore';
+  import { onMount } from 'svelte';
+  import { gameState, availableActions, gameActions, actionHistory } from './stores/gameStore';
   import DebugGameState from './debug/components/DebugGameState.svelte';
   import DebugActions from './debug/components/DebugActions.svelte';
   import DebugPlayerHands from './debug/components/DebugPlayerHands.svelte';
@@ -8,6 +9,11 @@
   import DebugReplay from './debug/components/DebugReplay.svelte';
   import DebugPreviousTricks from './debug/components/DebugPreviousTricks.svelte';
   import type { StateTransition } from './game/types';
+  
+  // Load state from URL when app starts
+  onMount(() => {
+    gameActions.loadFromURL();
+  });
   
   function handleAction(transition: StateTransition) {
     gameActions.executeAction(transition);
@@ -62,7 +68,7 @@
       </div>
     </div>
     <div class="header-controls">
-      <button class="control-btn undo-btn" onclick={undo} disabled={$gameHistory.length === 0} data-testid="undo-button">
+      <button class="control-btn undo-btn" onclick={undo} disabled={$actionHistory.length === 0} data-testid="undo-button">
         Undo
       </button>
       <button class="control-btn" onclick={resetGame} data-testid="new-game-button">
@@ -257,13 +263,13 @@
   }
   
   .split-left {
-    width: 33.333%;
+    width: 50%;
     background: white;
     overflow: hidden;
   }
   
   .split-right {
-    width: 66.667%;
+    width: 50%;
     background: white;
     overflow: hidden;
   }

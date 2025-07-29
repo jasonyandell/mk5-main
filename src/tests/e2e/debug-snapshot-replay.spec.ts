@@ -76,7 +76,8 @@ test.describe('Debug Snapshot Replay Validation', () => {
         {"type": "pass" as const, "player": 2},
         {"type": "pass" as const, "player": 3}
       ],
-      "currentBid": {"type": "points" as const, "value": 30, "player": 1}
+      "currentBid": {"type": "points" as const, "value": 30, "player": 1},
+      "shuffleSeed": 12345
     };
 
     // Load this state 
@@ -207,11 +208,11 @@ test.describe('Debug Snapshot Replay Validation', () => {
     expect(await helper.hasSnapshotInURL()).toBe(true);
     
     const url = await helper.getCurrentURL();
-    expect(url).toMatch(/snapshot=/);
+    expect(url).toMatch(/d=/);
     
     // Copy the state URL and verify it contains snapshot data
     const copiedURL = await helper.copyStateURL();
-    expect(copiedURL).toMatch(/snapshot=/);
+    expect(copiedURL).toMatch(/d=/);
     
     // The URL should be different from simple state URLs
     expect(copiedURL).not.toMatch(/^.*\?state=/);
@@ -228,7 +229,7 @@ test.describe('Debug Snapshot Replay Validation', () => {
     
     // Get the URL with snapshot
     const urlWithSnapshot = await helper.getCurrentURL();
-    expect(urlWithSnapshot).toMatch(/snapshot=/);
+    expect(urlWithSnapshot).toMatch(/d=/);
     
     // Reload the page with the snapshot URL
     await page.goto(urlWithSnapshot);

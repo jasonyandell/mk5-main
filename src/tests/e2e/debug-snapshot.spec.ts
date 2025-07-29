@@ -131,7 +131,7 @@ test.describe('Debug Snapshot System', () => {
     expect(await helper.hasSnapshotInURL()).toBe(true);
     
     const url = await helper.getCurrentURL();
-    expect(url).toMatch(/snapshot=/);
+    expect(url).toMatch(/d=/);
   });
 
   test('generates enhanced bug reports with action sequences', async () => {

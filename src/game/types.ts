@@ -55,6 +55,7 @@ export interface GameState {
   teamMarks: [number, number];
   gameTarget: number;
   tournamentMode: boolean;
+  shuffleSeed: number; // Seed for deterministic shuffling
   // Additional properties for test compatibility
   hands?: { [playerId: number]: Domino[] };
   bidWinner?: number | null;

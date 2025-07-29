@@ -122,7 +122,8 @@ describe('Debug Validation Bug - Step 7', () => {
       },
       bidWinner: null,
       isComplete: false,
-      winner: null
+      winner: null,
+      shuffleSeed: 12345
     };
 
     // The exact action sequence from the URL

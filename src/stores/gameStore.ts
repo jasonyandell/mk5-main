@@ -1,52 +1,110 @@
 import { writable, derived, get } from 'svelte/store';
 import type { GameState, StateTransition } from '../game/types';
 import { createInitialState, getNextStates } from '../game';
+import { 
+  compressGameState, 
+  expandMinimalState, 
+  compressActionId, 
+  decompressActionId,
+  encodeURLData,
+  decodeURLData,
+  type URLData 
+} from '../game/core/url-compression';
 
-// Helper function to update URL with current state and debug snapshot
-function updateURLWithState(state: GameState) {
-  if (typeof window !== 'undefined') {
-    const currentSnapshot = get(debugSnapshot);
-    
-    if (currentSnapshot && currentSnapshot.actions && currentSnapshot.actions.length > 0) {
-      // Use snapshot + actions format
-      const snapshotData = {
-        baseState: currentSnapshot.baseState,
-        actions: currentSnapshot.actions.map((action: StateTransition) => ({
-          id: action.id,
-          label: action.label
-        })),
-        reason: currentSnapshot.snapshotReason
-      };
-      const snapshotParam = encodeURIComponent(JSON.stringify(snapshotData));
-      const newURL = `${window.location.pathname}?snapshot=${snapshotParam}`;
-      window.history.replaceState(null, '', newURL);
-    } else {
-      // Fallback to single state format
-      const stateParam = encodeURIComponent(JSON.stringify(state));
-      const newURL = `${window.location.pathname}?state=${stateParam}`;
-      window.history.replaceState(null, '', newURL);
+// Helper to deep compare two objects
+function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] {
+  const differences: string[] = [];
+  
+  if (obj1 === obj2) return differences;
+  
+  if (obj1 === null || obj2 === null || obj1 === undefined || obj2 === undefined) {
+    differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
+    return differences;
+  }
+  
+  if (typeof obj1 !== typeof obj2) {
+    differences.push(`${path}: type mismatch - ${typeof obj1} !== ${typeof obj2}`);
+    return differences;
+  }
+  
+  if (typeof obj1 !== 'object') {
+    if (obj1 !== obj2) {
+      differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
     }
+    return differences;
+  }
+  
+  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
+    differences.push(`${path}: array mismatch - one is array, other is not`);
+    return differences;
+  }
+  
+  if (Array.isArray(obj1)) {
+    if (Array.isArray(obj2)) {
+      if (obj1.length !== obj2.length) {
+        differences.push(`${path}: array length mismatch - ${obj1.length} !== ${obj2.length}`);
+      }
+      const maxLen = Math.max(obj1.length, obj2.length);
+      for (let i = 0; i < maxLen; i++) {
+        differences.push(...deepCompare(obj1[i], obj2[i], `${path}[${i}]`));
+      }
+    }
+  } else {
+    const keys1 = Object.keys(obj1 as Record<string, unknown>).sort();
+    const keys2 = Object.keys(obj2 as Record<string, unknown>).sort();
+    
+    // Check for missing/extra keys
+    const allKeys = new Set([...keys1, ...keys2]);
+    for (const key of allKeys) {
+      if (!keys1.includes(key)) {
+        differences.push(`${path}.${key}: missing in first object`);
+      } else if (!keys2.includes(key)) {
+        differences.push(`${path}.${key}: missing in second object`);
+      } else {
+        differences.push(...deepCompare((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key], path ? `${path}.${key}` : key));
+      }
+    }
+  }
+  
+  return differences;
+}
+
+// Helper function to update URL with initial state and actions
+function updateURLWithState(initialState: GameState, actions: StateTransition[]) {
+  if (typeof window !== 'undefined') {
+    // If no actions, clear the URL
+    if (actions.length === 0) {
+      window.history.replaceState(null, '', window.location.pathname);
+      return;
+    }
+    
+    // Use compressed format
+    const urlData: URLData = {
+      v: 1,
+      s: compressGameState(initialState),
+      a: actions.map(a => ({ i: compressActionId(a.id) }))
+    };
+    
+    const encoded = encodeURLData(urlData);
+    const newURL = `${window.location.pathname}?d=${encoded}`;
+    window.history.replaceState(null, '', newURL);
   }
 }
 
+// Create the initial state once
+const firstInitialState = createInitialState();
+
 // Core game state store
-export const gameState = writable<GameState>(createInitialState());
+export const gameState = writable<GameState>(firstInitialState);
 
-// History store for undo functionality
-export const gameHistory = writable<GameState[]>([]);
+// Store the initial state (snapshot) - deep clone to prevent mutations
+export const initialState = writable<GameState>(JSON.parse(JSON.stringify(firstInitialState)));
 
-// Debug snapshot - tracks all actions from initial state
-interface DebugSnapshot {
-  baseState: GameState; // Always the initial state
-  actions: StateTransition[]; // All actions since initial state
-  snapshotReason?: string; // Optional reason for snapshot
-}
+// Store all actions taken from initial state
+export const actionHistory = writable<StateTransition[]>([]);
 
-export const debugSnapshot = writable<DebugSnapshot | null>(null);
-
-// Track all actions from the beginning
-let allActions: StateTransition[] = [];
-let initialGameState: GameState | null = null;
+// Store for validation errors
+export const stateValidationError = writable<string | null>(null);
 
 // Available actions store
 export const availableActions = derived(
@@ -96,216 +154,257 @@ export const trickInfo = derived(
   })
 );
 
+// Recompute state from initial + actions and validate
+function validateState() {
+  const initial = get(initialState);
+  const actions = get(actionHistory);
+  const currentState = get(gameState);
+  
+  // Recompute state from scratch
+  let computedState = initial;
+  
+  for (const action of actions) {
+    const availableTransitions = getNextStates(computedState);
+    const matchingTransition = availableTransitions.find(t => t.id === action.id);
+    
+    if (!matchingTransition) {
+      stateValidationError.set(
+        `ERROR: Invalid action sequence at "${action.label}" (${action.id})\n` +
+        `Available actions were: ${availableTransitions.map(t => t.id).join(', ')}\n` +
+        `This indicates a bug in the game logic.`
+      );
+      return;
+    }
+    
+    computedState = matchingTransition.newState;
+  }
+  
+  // Deep compare computed vs actual state
+  const differences = deepCompare(computedState, currentState);
+  
+  if (differences.length > 0) {
+    const errorMessage = 
+      `ERROR: State mismatch detected!\n` +
+      `After ${actions.length} actions, the computed state differs from actual state:\n\n` +
+      differences.join('\n') +
+      `\n\nThis indicates a bug in the state management.`;
+    stateValidationError.set(errorMessage);
+  } else {
+    stateValidationError.set(null);
+  }
+}
+
 // Game actions
 export const gameActions = {
   executeAction: (transition: StateTransition) => {
-    // Add current state to history before executing action
-    gameState.update(currentState => {
-      gameHistory.update(history => [...history, currentState]);
-      const newState = transition.newState;
-      
-      // Set initial state on first action
-      if (initialGameState === null) {
-        initialGameState = JSON.parse(JSON.stringify(createInitialState()));
-      }
-      
-      // Add action to all actions list
-      allActions.push(transition);
-      
-      // Update debug snapshot with all actions from initial state
-      if (initialGameState) {
-        debugSnapshot.set({
-          baseState: initialGameState,
-          actions: [...allActions] // Copy array
-        });
-      }
-      
-      updateURLWithState(newState);
-      return newState;
-    });
+    const actions = get(actionHistory);
+    
+    // Add action to history
+    actionHistory.set([...actions, transition]);
+    
+    // Update to new state
+    gameState.set(transition.newState);
+    
+    // Validate state matches computed state
+    validateState();
+    
+    // Update URL with initial state and actions
+    updateURLWithState(get(initialState), [...actions, transition]);
   },
   
   resetGame: () => {
-    const initialState = createInitialState();
-    gameState.set(initialState);
-    gameHistory.set([]);
-    debugSnapshot.set(null);
-    allActions = [];
-    initialGameState = null;
-    updateURLWithState(initialState);
+    const newInitialState = createInitialState();
+    // Deep clone to prevent mutations
+    initialState.set(JSON.parse(JSON.stringify(newInitialState)));
+    gameState.set(newInitialState);
+    actionHistory.set([]);
+    stateValidationError.set(null);
+    updateURLWithState(newInitialState, []);
   },
   
   loadState: (state: GameState) => {
+    // When loading a state directly, make it the new initial state
+    // Deep clone to prevent mutations
+    initialState.set(JSON.parse(JSON.stringify(state)));
     gameState.set(state);
-    gameHistory.set([]);
-    debugSnapshot.set(null);
-    allActions = [];
-    initialGameState = null;
-    updateURLWithState(state);
+    actionHistory.set([]);
+    stateValidationError.set(null);
+    updateURLWithState(state, []);
   },
-
-  loadStateWithActionReplay: (baseState: GameState, actions: Array<{id: string, label: string}>) => {
-    // Set up initial state and tracking
-    gameState.set(baseState);
-    const history: GameState[] = [];
-    allActions = [];
-    initialGameState = JSON.parse(JSON.stringify(baseState));
-    
-    let currentState = baseState;
-    
-    // Replay each action in sequence, building history as we go
-    for (const actionData of actions) {
-      const availableTransitions = getNextStates(currentState);
-      const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
+  
+  loadFromURL: () => {
+    if (typeof window !== 'undefined') {
+      /* eslint-disable-next-line no-undef */
+      const urlParams = new URLSearchParams(window.location.search);
       
-      if (matchingTransition) {
-        // Add current state to history before advancing (same as executeAction)
-        history.push(currentState);
-        
-        // Add to action history
-        allActions.push(matchingTransition);
-        
-        // Update current state
-        currentState = matchingTransition.newState;
-      } else {
-        // Invalid action - set state and debug snapshot before throwing
-        gameState.set(currentState);
-        gameHistory.set(history);
-        
-        if (allActions.length > 0 && initialGameState !== null) {
-          debugSnapshot.set({
-            baseState: initialGameState,
-            actions: [...allActions]
-          });
+      // Try new compressed format first
+      const compressedParam = urlParams.get('d');
+      if (compressedParam) {
+        try {
+          const urlData = decodeURLData(compressedParam);
+          
+          if (urlData.v === 1) {
+            // Expand minimal state
+            const expandedInitial = expandMinimalState(urlData.s);
+            initialState.set(JSON.parse(JSON.stringify(expandedInitial)));
+            
+            let currentState = expandedInitial;
+            const validActions: StateTransition[] = [];
+            
+            // Replay compressed actions
+            for (const compressedAction of urlData.a) {
+              const actionId = decompressActionId(compressedAction.i);
+              const availableTransitions = getNextStates(currentState);
+              const matchingTransition = availableTransitions.find(t => t.id === actionId);
+              
+              if (matchingTransition) {
+                validActions.push(matchingTransition);
+                currentState = matchingTransition.newState;
+              } else {
+                console.error(`Invalid action in URL: ${actionId}`);
+                break;
+              }
+            }
+            
+            gameState.set(currentState);
+            actionHistory.set(validActions);
+            validateState();
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to load compressed URL:', e);
         }
-        
-        updateURLWithState(currentState);
-        
-        // Now throw error to fail tests and expose broken logic
-        const availableIds = availableTransitions.map(t => t.id).join(', ');
-        throw new Error(`Invalid action replay: Action "${actionData.id}" is not available in current state. Available actions: [${availableIds}]`);
+      }
+      
+      // Fallback to old format
+      const dataParam = urlParams.get('data');
+      if (dataParam) {
+        try {
+          const urlData = JSON.parse(decodeURIComponent(dataParam));
+          
+          if (urlData.initial && urlData.actions) {
+            // Event sourcing: load initial state and replay actions
+            // Deep clone to prevent mutations
+            initialState.set(JSON.parse(JSON.stringify(urlData.initial)));
+            
+            let currentState = urlData.initial;
+            const validActions: StateTransition[] = [];
+            
+            for (const actionData of urlData.actions) {
+              const availableTransitions = getNextStates(currentState);
+              const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
+              
+              if (matchingTransition) {
+                validActions.push(matchingTransition);
+                currentState = matchingTransition.newState;
+              } else {
+                console.error(`Invalid action in URL: ${actionData.id}`);
+                break;
+              }
+            }
+            
+            gameState.set(currentState);
+            actionHistory.set(validActions);
+            validateState();
+          } else if (urlData.current) {
+            // Backward compatibility: just load the current state
+            gameActions.loadState(urlData.current);
+          }
+        } catch (e) {
+          console.error('Failed to load from URL:', e);
+        }
       }
     }
-    
-    // Set final state, history, and debug snapshot for successful replay
-    gameState.set(currentState);
-    gameHistory.set(history);
-    
-    if (allActions.length > 0 && initialGameState !== null) {
-      debugSnapshot.set({
-        baseState: initialGameState,
-        actions: [...allActions]
-      });
-    }
-    
-    updateURLWithState(currentState);
   },
   
   undo: () => {
-    gameHistory.update(history => {
-      if (history.length > 0) {
-        const previousState = history[history.length - 1];
-        gameState.set(previousState);
+    const actions = get(actionHistory);
+    if (actions.length > 0) {
+      // Remove last action
+      const newActions = actions.slice(0, -1);
+      actionHistory.set(newActions);
+      
+      // Recompute state from initial + remaining actions
+      let currentState = get(initialState);
+      
+      for (const action of newActions) {
+        const availableTransitions = getNextStates(currentState);
+        const matchingTransition = availableTransitions.find(t => t.id === action.id);
         
-        // Remove last action from all actions
-        if (allActions.length > 0) {
-          allActions.pop();
+        if (matchingTransition) {
+          currentState = matchingTransition.newState;
         }
-        
-        // Update debug snapshot
-        if (allActions.length > 0 && initialGameState) {
-          debugSnapshot.set({
-            baseState: initialGameState,
-            actions: [...allActions]
-          });
-        } else {
-          debugSnapshot.set(null);
-        }
-        
-        updateURLWithState(previousState);
-        return history.slice(0, -1);
       }
-      return history;
-    });
+      
+      gameState.set(currentState);
+      validateState();
+      updateURLWithState(get(initialState), newActions);
+    }
   },
   
   generateBugReport: (): string => {
+    const initial = get(initialState);
+    const actions = get(actionHistory);
     const currentState = get(gameState);
-    const currentSnapshot = get(debugSnapshot);
+    const validationError = get(stateValidationError);
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-
-    if (currentSnapshot === null) {
-      // Fallback to current state if no snapshot available
-      const stateJson = JSON.stringify(currentState, null, 2);
-      return `import { test, expect } from '@playwright/test';
-import { playwrightHelper } from './helpers/playwrightHelper';
-
-test('Bug report - ${timestamp} (no actions)', async ({ page }) => {
-  await page.goto('/');
-  
-  // Current game state (no action history available)
-  const testState = ${stateJson};
-  
-  await playwrightHelper.loadState(page, testState);
-  await expect(page.locator('[data-testid="game-phase"]')).toContainText('${currentState.phase}');
-});`;
-    }
-
-    const baseStateJson = JSON.stringify(currentSnapshot.baseState, null, 2);
+    
+    const initialJson = JSON.stringify(initial, null, 2);
     const actionsJson = JSON.stringify(
-      currentSnapshot.actions ? currentSnapshot.actions.map((action: StateTransition) => ({
-        id: action.id,
-        label: action.label
-      })) : [], 
+      actions.map(a => ({ id: a.id, label: a.label })), 
       null, 
       2
     );
-
-    const testTemplate = `import { test, expect } from '@playwright/test';
+    
+    let errorSection = '';
+    if (validationError) {
+      errorSection = `
+  // VALIDATION ERROR DETECTED:
+  /*
+${validationError.split('\n').map(line => '  ' + line).join('\n')}
+  */
+`;
+    }
+    
+    return `import { test, expect } from '@playwright/test';
 import { playwrightHelper } from './helpers/playwrightHelper';
-import { getNextStates } from '../../../game';
 
 test('Bug report - ${timestamp}', async ({ page }) => {
   await page.goto('/');
-  
-  // Initial game state 
-  const baseState = ${baseStateJson};
-  
+  ${errorSection}
   // All actions from initial state to current state
+  // Initial game state
+  const baseState = ${initialJson};
+  
   const actionSequence = ${actionsJson};
   
+  // Load initial state
   await playwrightHelper.loadState(page, baseState);
   
-  // Replay each action and validate state transitions
+  // Replay and validate each action
+  let currentGameState = baseState;
   for (let i = 0; i < actionSequence.length; i++) {
     const action = actionSequence[i];
     
-    // Get available actions from current state
-    const availableActions = await playwrightHelper.getAvailableActions(page);
+    // Get available actions at this step
+    const availableActions = await playwrightHelper.getAvailableActions(page, currentGameState);
+    const isActionAvailable = availableActions.some(a => a.id === action.id);
     
-    // Verify the action we're about to perform is valid
-    const validAction = availableActions.find(a => a.id === action.id);
-    if (!validAction) {
-      throw new Error(\`Invalid action at step \${i + 1}: \${action.id} (\${action.label}) is not available. Available: \${availableActions.map(a => a.id).join(', ')}\`);
+    if (!isActionAvailable) {
+      throw new Error(\`Invalid action at step \${i + 1}: "\${action.id}" not available. Available actions: \${availableActions.map(a => a.id).join(', ')}\`);
     }
     
-    // Execute the action
     await playwrightHelper.clickAction(page, action.id);
     
-    // Optional: Add specific assertions for this step
-    console.log(\`Step \${i + 1}: Executed \${action.label}\`);
+    // Update current state for next iteration (would need state tracking)
+    // currentGameState = await playwrightHelper.getCurrentState(page);
   }
   
-  // Final state should match current state
+  // Verify we're in the expected phase
   await expect(page.locator('[data-testid="game-phase"]')).toContainText('${currentState.phase}');
   
   // Add your specific bug assertions here
-  // Example: Check if trick winner is correct
-  // const trickWinner = await playwrightHelper.getTrickWinner(page);
-  // expect(trickWinner).toBe(expectedWinner);
 });`;
-
-    return testTemplate;
   }
 };

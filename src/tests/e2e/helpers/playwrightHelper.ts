@@ -427,7 +427,7 @@ export class PlaywrightGameHelper {
 
   async hasSnapshotInURL(): Promise<boolean> {
     const url = await this.getCurrentURL();
-    return url.includes('snapshot=');
+    return url.includes('d=');
   }
 
   async copyStateURL(): Promise<string> {

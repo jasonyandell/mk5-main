@@ -1,5 +1,6 @@
 import type { Domino, Trump } from '../types';
 import { DOMINO_VALUES } from '../constants';
+import { createSeededRandom } from './random';
 
 /**
  * Creates a complete set of 28 dominoes
@@ -13,7 +14,20 @@ export function createDominoes(): Domino[] {
 }
 
 /**
- * Shuffles an array using Fisher-Yates algorithm
+ * Shuffles an array using Fisher-Yates algorithm with seeded RNG
+ */
+function shuffleWithSeed<T>(array: T[], seed: number): T[] {
+  const rng = createSeededRandom(seed);
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = rng.nextInt(0, i + 1);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+/**
+ * Shuffles an array using Fisher-Yates algorithm (legacy - uses Math.random)
  */
 function shuffle<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -25,17 +39,38 @@ function shuffle<T>(array: T[]): T[] {
 }
 
 /**
- * Shuffles and returns all 28 dominoes
+ * Shuffles and returns all 28 dominoes (legacy - uses Math.random)
  */
 export function shuffleDominoes(): Domino[] {
   return shuffle(createDominoes());
 }
 
 /**
- * Deals dominoes to 4 players (7 each)
+ * Shuffles and returns all 28 dominoes with a seed for deterministic results
+ */
+export function shuffleDominoesWithSeed(seed: number): Domino[] {
+  return shuffleWithSeed(createDominoes(), seed);
+}
+
+/**
+ * Deals dominoes to 4 players (7 each) - legacy version using Math.random
  */
 export function dealDominoes(): [Domino[], Domino[], Domino[], Domino[]] {
   const dominoes = shuffle(createDominoes());
+  
+  return [
+    dominoes.slice(0, 7),
+    dominoes.slice(7, 14),
+    dominoes.slice(14, 21),
+    dominoes.slice(21, 28)
+  ];
+}
+
+/**
+ * Deals dominoes to 4 players (7 each) with a seed for deterministic results
+ */
+export function dealDominoesWithSeed(seed: number): [Domino[], Domino[], Domino[], Domino[]] {
+  const dominoes = shuffleWithSeed(createDominoes(), seed);
   
   return [
     dominoes.slice(0, 7),

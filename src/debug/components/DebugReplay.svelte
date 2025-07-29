@@ -1,134 +1,104 @@
 <script lang="ts">
-  import { debugSnapshot } from '../../stores/gameStore';
-  import { getNextStates } from '../../game';
-  import type { StateTransition } from '../../game/types';
-
-  let replayState = $state<'idle' | 'replaying' | 'error'>('idle');
-  let currentStep = $state(0);
-  let errorMessage = $state('');
-  let validationResults = $state<Array<{step: number, action: any, valid: boolean, error?: string}>>([]);
-
-  function validateActionSequence() {
-    if (!$debugSnapshot) {
-      errorMessage = 'No debug snapshot available';
-      replayState = 'error';
-      return;
-    }
-
-    replayState = 'replaying';
-    validationResults = [];
-    errorMessage = '';
-    
-    let currentState = $debugSnapshot.baseState;
-    
-    for (let i = 0; i < $debugSnapshot.actions.length; i++) {
-      const action = $debugSnapshot.actions[i];
-      
-      // Get available actions for current state
-      const availableActions = getNextStates(currentState);
-      
-      // Check if the action is valid
-      const validAction = availableActions.find(a => a.id === action.id);
-      
-      if (!validAction) {
-        const currentPlayerName = `Player ${currentState.currentPlayer + 1}`;
-        const phaseInfo = currentState.phase === 'playing' ? 
-          ` (Trump: ${currentState.trump === null ? 'None' : currentState.trump === 7 ? 'Doubles' : currentState.trump}, Current trick: ${currentState.currentTrick.length}/4)` : 
-          ` (Phase: ${currentState.phase})`;
-        
-        validationResults.push({
-          step: i + 1,
-          action: { id: action.id, label: action.label },
-          valid: false,
-          error: `${currentPlayerName} cannot perform action ${action.id} (${action.label})${phaseInfo}. Available actions: ${availableActions.map(a => a.id).join(', ')}`
-        });
-        replayState = 'error';
-        errorMessage = `Invalid action at step ${i + 1}: ${currentPlayerName} cannot ${action.label.toLowerCase()}`;
-        return;
-      }
-      
-      validationResults.push({
-        step: i + 1,
-        action: { id: action.id, label: action.label },
-        valid: true
-      });
-      
-      // Update state for next iteration
-      currentState = validAction.newState;
-    }
-    
-    replayState = 'idle';
+  import { actionHistory, initialState, stateValidationError } from '../../stores/gameStore';
+  
+  let expanded = $state(false);
+  
+  const phaseEmojis: Record<string, string> = {
+    setup: '🎲',
+    bidding: '💬',
+    trump_selection: '🎯',
+    playing: '🃏',
+    scoring: '📊',
+    game_end: '🏁'
+  };
+  
+  function getPhaseFromAction(action: any, index: number): string {
+    // For now, we'll infer phase from action type
+    // This could be improved by tracking phase in the action itself
+    if (action.id.startsWith('bid-') || action.id === 'pass' || action.id === 'redeal') return 'bidding';
+    if (action.id.startsWith('trump-')) return 'trump_selection';
+    if (action.id.startsWith('play-') || action.id === 'complete-trick') return 'playing';
+    if (action.id === 'score-hand') return 'scoring';
+    return 'playing'; // default
   }
-
-  function resetValidation() {
-    replayState = 'idle';
-    currentStep = 0;
-    errorMessage = '';
-    validationResults = [];
+  
+  function handleEventClick(index: number) {
+    alert(`Event #${index}`);
   }
 </script>
 
-{#if $debugSnapshot}
-  <div class="replay-container" data-testid="debug-snapshot">
-    <div class="replay-header">
-      <h3>Debug Replay Validation</h3>
-      <div class="snapshot-info">
-        <span class="reason" data-testid="snapshot-reason">From initial state</span>
-        <span class="action-count" data-testid="snapshot-action-count">{$debugSnapshot.actions.length} actions</span>
-      </div>
+<div class="replay-container" data-testid={$actionHistory.length > 0 ? "debug-snapshot" : undefined}>
+  <div class="replay-header">
+    <h3>Action History (Event Sourcing)</h3>
+    <div class="snapshot-info">
+      <span class="action-count" data-testid="action-count">{$actionHistory.length} actions</span>
+      {#if $actionHistory.length > 0}
+        <span data-testid="snapshot-reason">Debug snapshot from initial state</span>
+        <span data-testid="snapshot-action-count">{$actionHistory.length} actions</span>
+      {/if}
     </div>
-    
-    <div class="replay-controls">
+  </div>
+  
+  {#if $stateValidationError}
+    <div class="validation-error">
+      <div class="error-header">⚠️ State Validation Error</div>
+      <textarea 
+        class="error-text" 
+        readonly 
+        rows="10"
+        onclick={(e) => e.currentTarget.select()}
+      >{$stateValidationError}</textarea>
+      <div class="error-hint">Click to select all text for copying</div>
+    </div>
+  {/if}
+  
+  <div class="history-controls">
+    <button 
+      class="toggle-btn" 
+      onclick={() => expanded = !expanded}
+    >
+      {expanded ? 'Hide' : 'Show'} Actions
+    </button>
+    {#if $actionHistory.length > 0}
       <button 
         class="validate-btn" 
         data-testid="validate-sequence-button"
-        onclick={validateActionSequence}
-        disabled={replayState === 'replaying'}
+        onclick={() => console.log('Validate sequence')}
       >
-        {replayState === 'replaying' ? 'Validating...' : 'Validate Action Sequence'}
+        Validate Sequence
       </button>
-      
-      {#if validationResults.length > 0}
-        <button class="reset-btn" onclick={resetValidation}>
-          Reset
-        </button>
-      {/if}
-    </div>
-
-    {#if errorMessage}
-      <div class="error-message">
-        ⚠️ {errorMessage}
-      </div>
     {/if}
-
-    {#if validationResults.length > 0}
-      <div class="validation-results">
-        <h4>Validation Results:</h4>
-        <div class="results-list">
-          {#each validationResults as result}
-            <div class="result-item" class:valid={result.valid} class:invalid={!result.valid}>
-              <div class="step-number">Step {result.step}</div>
-              <div class="action-info">
-                <span class="action-id">{result.action.id}</span>
-                <span class="action-label">{result.action.label}</span>
-              </div>
-              <div class="status">
-                {result.valid ? '✅' : '❌'}
-              </div>
-              {#if result.error}
-                <div class="error-details" data-testid="validation-error">{result.error}</div>
-              {/if}
-            </div>
-          {/each}
+  </div>
+  
+  {#if expanded}
+    <div class="action-log">
+      <div class="log-entry">
+        <div class="log-line">
+          <span class="event-number" onclick={() => handleEventClick(0)}>00</span>
+          <span class="phase-emoji">{phaseEmojis[$initialState.phase] || '🎲'}</span>
+          <span class="action-id">initial-state</span>
+        </div>
+        <div class="log-line-detail">
+          <span class="action-text">Initial State</span>
         </div>
       </div>
-    {/if}
-  </div>
-{:else}
-  <div class="no-snapshot">
-    <p>No debug snapshot available. Take some actions to generate one.</p>
-  </div>
-{/if}
+      
+      {#each $actionHistory as action, index}
+        {@const phase = getPhaseFromAction(action, index)}
+        <div class="log-entry">
+          <div class="log-line">
+            <span class="event-number" onclick={() => handleEventClick(index + 1)}>{String(index + 1).padStart(2, '0')}</span>
+            <span class="phase-emoji">{phaseEmojis[phase] || '🎲'}</span>
+            <span class="action-id">{action.id}</span>
+          </div>
+          <div class="log-line-detail">
+            <span class="action-text">{action.label}</span>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>
 
 <style>
   .replay-container {
@@ -158,13 +128,6 @@
     font-size: 11px;
   }
 
-  .reason {
-    background: #007bff;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 2px;
-  }
-
   .action-count {
     background: #6c757d;
     color: white;
@@ -172,117 +135,143 @@
     border-radius: 2px;
   }
 
-  .replay-controls {
-    display: flex;
-    gap: 8px;
+  .validation-error {
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    padding: 12px;
     margin-bottom: 12px;
   }
 
+  .error-header {
+    color: #721c24;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+
+  .error-text {
+    width: 100%;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.4;
+    background: white;
+    border: 1px solid #f5c6cb;
+    border-radius: 3px;
+    padding: 8px;
+    resize: vertical;
+    cursor: text;
+  }
+
+  .error-hint {
+    font-size: 10px;
+    color: #721c24;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  .history-controls {
+    margin-bottom: 12px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .toggle-btn,
+  .validate-btn {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .toggle-btn:hover,
+  .validate-btn:hover {
+    background: #0056b3;
+  }
+  
   .validate-btn {
     background: #28a745;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    cursor: pointer;
+  }
+  
+  .validate-btn:hover {
+    background: #218838;
   }
 
-  .validate-btn:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-  }
-
-  .reset-btn {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 3px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-
-  .error-message {
-    background: #f8d7da;
-    color: #721c24;
+  .action-log {
+    background: #fafafa;
+    border: 1px solid #e0e0e0;
+    font-family: 'Courier New', 'Consolas', monospace;
+    font-size: 9px;
     padding: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    line-height: 1.6;
+  }
+
+  .action-log::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .action-log::-webkit-scrollbar-track {
+    background: #f0f0f0;
+  }
+
+  .action-log::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+
+  .action-log::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+
+  .log-entry {
+    padding: 1px 4px;
     border-radius: 3px;
-    font-size: 12px;
-    margin-bottom: 12px;
+    transition: background-color 0.15s ease;
   }
 
-  .validation-results h4 {
-    margin: 0 0 8px 0;
-    font-size: 13px;
-    color: #495057;
+  .log-entry:hover {
+    background-color: #f0f0f0;
   }
 
-  .results-list {
+  .log-line {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    align-items: baseline;
   }
 
-  .result-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 8px;
-    align-items: center;
-    padding: 6px;
-    border-radius: 3px;
-    font-size: 11px;
+  .log-line-detail {
+    padding-left: 4px;
+    color: #333;
   }
 
-  .result-item.valid {
-    background: #d4edda;
-    border-left: 3px solid #28a745;
-  }
-
-  .result-item.invalid {
-    background: #f8d7da;
-    border-left: 3px solid #dc3545;
-  }
-
-  .step-number {
+  .event-number {
+    color: #0066cc;
     font-weight: bold;
-    color: #495057;
+    cursor: pointer;
+    text-decoration: underline;
+    min-width: 16px;
   }
 
-  .action-info {
-    display: flex;
-    gap: 8px;
+  .event-number:hover {
+    color: #0052a3;
+    background: #e6f2ff;
+  }
+
+  .phase-emoji {
+    font-size: 10px;
+    min-width: 14px;
   }
 
   .action-id {
-    font-family: monospace;
-    background: rgba(0,0,0,0.1);
-    padding: 1px 4px;
-    border-radius: 2px;
+    color: #666;
   }
 
-  .action-label {
-    color: #6c757d;
-  }
-
-  .status {
-    font-size: 14px;
-  }
-
-  .error-details {
-    grid-column: 1 / -1;
-    font-size: 10px;
-    color: #721c24;
-    background: rgba(220, 53, 69, 0.1);
-    padding: 4px;
-    border-radius: 2px;
-    margin-top: 4px;
-  }
-
-  .no-snapshot {
-    padding: 16px;
-    text-align: center;
-    color: #6c757d;
-    font-size: 12px;
+  .action-text {
+    color: #333;
   }
 </style>

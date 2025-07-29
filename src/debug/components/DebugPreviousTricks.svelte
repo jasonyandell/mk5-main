@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameState, Trick } from '../../game/types';
+  import { getCurrentSuit } from '../../game/core/rules';
   
   interface Props {
     gameState: GameState;
@@ -9,6 +10,11 @@
   
   function getDominoDisplay(domino: any): string {
     return `${domino.high}-${domino.low}`;
+  }
+  
+  function getTrickSuit(trick: Trick): string {
+    if (trick.plays.length === 0 || !gameState.trump) return '';
+    return getCurrentSuit(trick.plays, gameState.trump);
   }
 </script>
 
@@ -40,6 +46,7 @@
             {/each}
           </div>
           <div class="trick-info">
+            <span class="suit-info">{getTrickSuit(trick)}</span>
             <span class="winner-info">P{trick.winner || 0}</span>
             <span class="points-info">{trick.points + 1}pt</span>
           </div>
@@ -208,7 +215,14 @@
     flex-direction: column;
     align-items: center;
     gap: 1px;
-    min-width: 24px;
+    min-width: 30px;
+  }
+  
+  .suit-info {
+    font-size: 8px;
+    font-weight: 600;
+    color: #007bff;
+    text-transform: uppercase;
   }
   
   .winner-info {

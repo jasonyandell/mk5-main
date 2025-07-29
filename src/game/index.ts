@@ -24,12 +24,19 @@ export {
 // Core state management
 export { 
   createInitialState, 
+  createSetupState,
   cloneGameState, 
   validateGameState, 
   isGameComplete, 
   getWinningTeam,
   advanceToNextPhase
 } from './core/state';
+
+// Player utilities
+export {
+  getNextDealer,
+  getPlayerLeftOfDealer
+} from './core/players';
 
 // Game actions and transitions
 export { getNextStates } from './core/actions';
@@ -70,3 +77,16 @@ export {
   calculateGameScore,
   getWinningTeam as getWinningTeamFromMarks
 } from './core/scoring';
+
+// URL compression utilities
+export {
+  compressGameState,
+  expandMinimalState,
+  compressActionId,
+  decompressActionId,
+  encodeURLData,
+  decodeURLData,
+  type MinimalGameState,
+  type CompressedAction,
+  type URLData
+} from './core/url-compression';
