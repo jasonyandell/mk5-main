@@ -70,11 +70,11 @@ Recent test output:
 $(tail -100 test_output.log)
 \`\`\`
 
-Please fix the failing tests by making the necessary code changes. Focus on:
-1. Understanding what each test expects
-2. Fixing the underlying implementation to match the test requirements
-3. Following the specifications in @rules.md
-4. Making minimal changes to pass the tests
+Referencing @rules.md and @docs/rules-gherkin-plan.md we need to make new tests for a theoretical implementation for strictly tournament rules
+The tests should be written assuming the implementation does the right thing
+The code definitions and state are found in src/game/
+Find the first unmarked scenario create the tests and implementation as described for ONLY that block
+Check the block off when this task is complete.
 
 After making changes, I'll run the tests again automatically.
 EOF
