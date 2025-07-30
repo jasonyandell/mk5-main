@@ -1,5 +1,5 @@
-import { describe, test, expect } from '@jest/globals';
-import { GameState, Bid } from '../../../game/types';
+import { describe, test, expect } from 'vitest';
+import type { GameState } from '../../../game/types';
 
 describe('Feature: Special Bids', () => {
   describe('Scenario: All Players Pass', () => {
@@ -7,10 +7,10 @@ describe('Feature: Special Bids', () => {
       const mockState: Partial<GameState> = {
         phase: 'bidding',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 0, // Started with player to left of dealer
         dealer: 3,
@@ -33,10 +33,10 @@ describe('Feature: Special Bids', () => {
       const mockState: Partial<GameState> = {
         phase: 'bidding',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         dealer: 3,
         bids: [
@@ -68,10 +68,10 @@ describe('Feature: Special Bids', () => {
       const mockState: Partial<GameState> = {
         phase: 'bidding',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         dealer: 3,
         bids: [

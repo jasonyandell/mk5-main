@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { 
-  determineDealerFromDraw, 
-  DealerDrawResult,
+  determineDealerFromDraw,
   createDominoForDraw 
 } from '../../game/core/setup';
+import type { DealerDrawResult } from '../../game/core/setup';
 
 describe('Determining First Dealer', () => {
   describe('Given all four players are ready to start', () => {

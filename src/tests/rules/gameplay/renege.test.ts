@@ -1,5 +1,5 @@
-import { describe, test, expect } from '@jest/globals';
-import { GameState, Trump, Domino, Player, Play } from '../../../game/types';
+import { describe, test, expect } from 'vitest';
+import type { GameState, Trump } from '../../../game/types';
 
 describe('Feature: Doubles Treatment', () => {
   describe('Scenario: Renege', () => {
@@ -7,7 +7,7 @@ describe('Feature: Doubles Treatment', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
           { 
             id: 1, 
             name: 'Player 2', 
@@ -17,11 +17,11 @@ describe('Feature: Doubles Treatment', () => {
               { high: 4, low: 1, id: '4-1' }, // No 6
               { high: 3, low: 0, id: '3-0' }, // No 6
             ], 
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         trump: 2 as Trump, // twos are trump
@@ -55,10 +55,10 @@ describe('Feature: Doubles Treatment', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         teamMarks: [2, 3], // Current marks
         tournamentMode: true,
@@ -69,7 +69,7 @@ describe('Feature: Doubles Treatment', () => {
       // Simulate renege detection
       const renegingPlayer = 1; // Player 1 (team 1) reneged
       const renegingTeam = mockState.players![renegingPlayer].teamId; // Team 1
-      const biddingTeam = mockState.players![mockState.winningBidder!].teamId; // Team 0
+      // The bidding team (Team 0) is the opponent of the reneging team
       
       // In tournament play: immediate loss of hand
       const handLost = true;
@@ -95,10 +95,10 @@ describe('Feature: Doubles Treatment', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         teamMarks: [2, 3], // Current marks
         tournamentMode: false, // Casual play
@@ -137,16 +137,16 @@ describe('Feature: Doubles Treatment', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
           { 
             id: 1, 
             name: 'Player 2', 
             hand: [], // Empty now, domino was played
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         tricks: [
           {

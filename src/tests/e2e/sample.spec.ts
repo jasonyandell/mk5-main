@@ -9,17 +9,17 @@ test.describe('Basic Gameplay', () => {
     await helper.navigateToDebugUI();
   });
 
-  test('should display initial game state', async ({ page }) => {
+  test('should display initial game state', async () => {
     // TODO: Implement test
     expect(true).toBe(true);
   });
 
-  test('should start a new game', async ({ page }) => {
+  test('should start a new game', async () => {
     // TODO: Implement test
     expect(true).toBe(true);
   });
 
-  test('should handle player actions', async ({ page }) => {
+  test('should handle player actions', async () => {
     // TODO: Implement test
     expect(true).toBe(true);
   });

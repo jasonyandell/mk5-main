@@ -1,17 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Bid } from '../../../game/types';
+import type { Bid } from '../../../game/types';
 
 describe('Feature: Standard Bidding - Valid Point Bids', () => {
   describe('Scenario: Valid Point Bids', () => {
     it('should allow valid point bids from 30 to 41', () => {
       // Given it is a player's turn to bid
-      const gameState: Partial<GameState> = {
-        phase: 'bidding',
-        currentPlayer: 0,
-        bids: [],
-        currentBid: null,
-        tournamentMode: true
-      };
 
       // When they make a point bid
       const validPointBids = [30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41];

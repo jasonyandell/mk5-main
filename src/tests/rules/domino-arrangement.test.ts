@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, GamePhase, Domino } from '../../game/types';
+import type { GameState, GamePhase, Domino } from '../../game/types';
 
 describe('Feature: Game Setup - Domino Arrangement', () => {
   describe('Scenario: Domino Arrangement', () => {
@@ -8,10 +8,10 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
       const mockGameState: Partial<GameState> = {
         phase: 'setup' as GamePhase,
         players: [
-          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
         ],
         tournamentMode: true,
       };
@@ -46,10 +46,10 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
       const gameStateBeforeBidding: Partial<GameState> = {
         phase: 'setup' as GamePhase,
         players: [
-          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
         ],
       };
 

@@ -1,4 +1,4 @@
-import { Domino } from '../types';
+import type { Domino } from '../types';
 
 export interface DealerDrawResult {
   playerId: number;

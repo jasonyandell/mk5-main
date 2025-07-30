@@ -1,16 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState, Player } from '../../game/types';
-import { GAME_CONSTANTS } from '../../game/constants';
 
 describe('Victory Conditions - Point System Victory', () => {
   let gameState: GameState;
   
   beforeEach(() => {
     const players: Player[] = [
-      { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-      { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 }
+      { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+      { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+      { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+      { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 }
     ];
     
     gameState = {

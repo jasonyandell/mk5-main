@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@playwright/test';
+import { describe, it, expect } from 'vitest';
 import type { GameState, GamePhase } from '../../../game/types';
 
 describe('Feature: Mark System Scoring - Failed Bids', () => {
@@ -8,10 +8,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const state: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 0,
         dealer: 3,
@@ -38,10 +38,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const initialState: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 0,
         dealer: 3,
@@ -84,10 +84,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const initialState: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 0,
         dealer: 3,
@@ -132,10 +132,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const state: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         dealer: 0,
@@ -177,10 +177,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const state: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 2,
         dealer: 1,
@@ -223,10 +223,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       const state: GameState = {
         phase: 'scoring' as GamePhase,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 3,
         dealer: 2,

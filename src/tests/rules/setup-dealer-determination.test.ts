@@ -83,12 +83,7 @@ describe('Feature: Game Setup - Determining First Dealer', () => {
     });
 
     it('validates domino pip values are 0-6', () => {
-      const invalidDraws: DealerDrawResult[] = [
-        { playerId: 0, domino: createDominoForDraw(3, 2) },
-        { playerId: 1, domino: createDominoForDraw(7, 4) }, // Invalid high value
-        { playerId: 2, domino: createDominoForDraw(1, 1) },
-        { playerId: 3, domino: createDominoForDraw(5, 3) }
-      ];
+      // Test that invalid pip values are rejected
 
       expect(() => createDominoForDraw(7, 4)).toThrow('Invalid domino values: must be between 0 and 6');
     });

@@ -1,8 +1,8 @@
-import { test, expect } from '@playwright/test';
-import { GameState, Domino } from '../../../game/types';
+import { describe, test, expect } from 'vitest';
+import type { GameState, Domino } from '../../../game/types';
 
-test.describe('Feature: Tournament Conduct - Domino Handling', () => {
-  test.describe('Scenario: Domino Handling', () => {
+describe('Feature: Tournament Conduct - Domino Handling', () => {
+  describe('Scenario: Domino Handling', () => {
     test('the first domino touched must be played', async () => {
       // Mock game state in playing phase with a player having touched a domino
       const gameState: Partial<GameState> = {
@@ -18,7 +18,7 @@ test.describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 6, low: 5, id: '6-5' },
               { high: 5, low: 4, id: '5-4' }
             ], 
-            teamId: 0, 
+            teamId: 0 as 0, 
             marks: 0 
           }
         ]
@@ -51,7 +51,7 @@ test.describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 5, low: 2, id: '5-2' },
               { high: 3, low: 1, id: '3-1' }
             ], 
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           }
         ]
@@ -81,7 +81,7 @@ test.describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 6, low: 4, id: '6-4' },
               { high: 5, low: 4, id: '5-4' }
             ], 
-            teamId: 0, 
+            teamId: 0 as 0, 
             marks: 0 
           }
         ]

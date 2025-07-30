@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import type { Play, Trump, Domino } from '../../game/types';
+import { describe, it, expect } from 'vitest';
+import type { Play, Trump } from '../../game/types';
 import { determineTrickWinner } from '../../game/index';
 
 describe('Winning a Trick', () => {

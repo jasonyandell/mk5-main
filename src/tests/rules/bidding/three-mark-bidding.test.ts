@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Bid } from '../../../game/types';
+import type { GameState, Bid } from '../../../game/types';
 
 describe('Feature: Special Bids', () => {
   describe('Scenario: Three Mark Bidding', () => {
@@ -7,10 +7,10 @@ describe('Feature: Special Bids', () => {
       const state: GameState = {
         phase: 'bidding',
         players: [
-          { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: bids.length % 4,
         dealer: 3,

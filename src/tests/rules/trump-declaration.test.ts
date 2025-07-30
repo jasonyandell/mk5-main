@@ -1,5 +1,5 @@
-import { describe, test, expect } from '@jest/globals';
-import { GameState, Trump } from '../../game/types';
+import { describe, test, expect } from 'vitest';
+import type { GameState, Trump } from '../../game/types';
 
 describe('Feature: Trump Declaration', () => {
   describe('Scenario: Declaring Trump', () => {
@@ -7,10 +7,10 @@ describe('Feature: Trump Declaration', () => {
       const mockState: Partial<GameState> = {
         phase: 'trump_selection',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         bids: [
@@ -33,10 +33,10 @@ describe('Feature: Trump Declaration', () => {
       const mockState: Partial<GameState> = {
         phase: 'trump_selection',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         winningBidder: 1,

@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Domino, Bid, Trump } from '../../../game/types';
-import { BID_TYPES, GAME_CONSTANTS } from '../../../game/constants';
+import type { GameState, Bid } from '../../../game/types';
 
 describe('Feature: Nel-O Contract', () => {
   describe('Scenario: Nel-O Gameplay', () => {
     it('Given Nel-O has been bid', () => {
       // Create a game state with Nel-O bid
       const nelOBid: Bid = {
-        type: BID_TYPES.NELLO,
+        type: 'nello' as const,
         value: 1, // 1 mark
         player: 0
       };
@@ -30,15 +29,10 @@ describe('Feature: Nel-O Contract', () => {
     it('Then the bidder\'s partner sits out with dominoes face-down', () => {
       // In Nel-O, the bidder plays alone against both opponents
       // Partner of player 0 is player 2 (teams: 0&2 vs 1&3)
-      const bidder = 0;
       const partner = 2;
       
       // Create a Nel-O game state
-      const gameState: Partial<GameState> = {
-        currentBid: { type: BID_TYPES.NELLO, value: 1, player: bidder },
-        winningBidder: bidder,
-        phase: 'playing'
-      };
+      // In this variant, the bidder plays alone
       
       // In Nel-O, partner should not participate
       const activePlayers = [0, 1, 3]; // Bidder and both opponents
@@ -52,7 +46,7 @@ describe('Feature: Nel-O Contract', () => {
     it('And no trump suit is declared', () => {
       // Nel-O is played without trump
       const gameState: Partial<GameState> = {
-        currentBid: { type: BID_TYPES.NELLO, value: 1, player: 0 },
+        currentBid: { type: 'nello' as const, value: 1, player: 0 },
         winningBidder: 0,
         trump: null,
         phase: 'playing'

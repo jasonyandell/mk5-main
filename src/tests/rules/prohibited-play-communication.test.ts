@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { GameState, Player, Domino, Trick, Play, Trump } from '../../game/types';
+import type { GameState, Player, Trump } from '../../game/types';
 
 // Test-only implementation for prohibited play communication
 // This tests that the game properly prevents and detects prohibited communications during play
@@ -11,10 +11,10 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
   beforeEach(() => {
     // Setup a game in playing phase
     mockPlayers = [
-      { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
-      { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 }
+      { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
+      { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
+      { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
+      { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 }
     ];
 
     gameState = {
@@ -138,7 +138,7 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
         'card_positioning'
       ];
 
-      allCommunicationTypes.forEach(commType => {
+      allCommunicationTypes.forEach(() => {
         // In tournament mode, all communication is strictly forbidden
         const isAllowed = false;
         expect(isAllowed).toBe(false);

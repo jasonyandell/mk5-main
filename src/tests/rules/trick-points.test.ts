@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@playwright/test';
+import { describe, it, expect } from 'vitest';
 
 describe('Scoring Systems - Trick Points', () => {
   describe('When calculating trick points', () => {

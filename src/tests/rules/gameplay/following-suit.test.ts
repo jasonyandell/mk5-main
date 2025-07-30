@@ -1,5 +1,5 @@
-import { describe, test, expect } from '@jest/globals';
-import { GameState, Trump, Domino, Player, Play } from '../../../game/types';
+import { describe, test, expect } from 'vitest';
+import type { GameState, Trump, Play } from '../../../game/types';
 
 describe('Feature: Playing Tricks', () => {
   describe('Scenario: Following Suit', () => {
@@ -11,12 +11,12 @@ describe('Feature: Playing Tricks', () => {
             id: 0, 
             name: 'Player 1', 
             hand: [], 
-            teamId: 0, 
+            teamId: 0 as 0, 
             marks: 0 
           },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         trump: 4 as Trump, // fours are trump
@@ -62,7 +62,7 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
           { 
             id: 1, 
             name: 'Player 2', 
@@ -72,11 +72,11 @@ describe('Feature: Playing Tricks', () => {
               { high: 5, low: 3, id: '5-3' }, // Cannot follow suit
               { high: 4, low: 1, id: '4-1' }, // Cannot follow suit
             ], 
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         trump: 2 as Trump, // twos are trump
@@ -105,7 +105,7 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
           { 
             id: 1, 
             name: 'Player 2', 
@@ -115,11 +115,11 @@ describe('Feature: Playing Tricks', () => {
               { high: 2, low: 2, id: '2-2' }, // Trump (2)
               { high: 2, low: 0, id: '2-0' }, // Trump (2)
             ], 
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         trump: 2 as Trump, // twos are trump
@@ -157,7 +157,7 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
           { 
             id: 1, 
             name: 'Player 2', 
@@ -167,11 +167,11 @@ describe('Feature: Playing Tricks', () => {
               { high: 3, low: 0, id: '3-0' }, // Cannot follow 6, not trump
               { high: 1, low: 0, id: '1-0' }, // Cannot follow 6, not trump
             ], 
-            teamId: 1, 
+            teamId: 1 as 1, 
             marks: 0 
           },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         currentPlayer: 1,
         trump: 2 as Trump, // twos are trump

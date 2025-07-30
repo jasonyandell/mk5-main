@@ -75,10 +75,10 @@ describe('Drawing Dominoes (Tournament Standard)', () => {
   
   // Helper to create mock players
   const createPlayers = (): Player[] => [
-    { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
-    { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
-    { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
-    { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 }
+    { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
+    { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
+    { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
+    { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 }
   ];
   
   // Create a complete set of 28 dominoes

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState } from '../../../game/types';
+import type { GameState } from '../../../game/types';
 
 describe('Feature: Tournament Conduct', () => {
   describe('Scenario: Violation Penalties', () => {
@@ -10,10 +10,10 @@ describe('Feature: Tournament Conduct', () => {
         currentPlayer: 0,
         tournamentMode: true,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 }
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 }
         ],
         teamMarks: [3, 2],
         violations: []
@@ -112,7 +112,7 @@ describe('Feature: Tournament Conduct', () => {
       expect(gameState.violations.length).toBe(4);
       
       // And should correctly count violations per player
-      const player0Violations = gameState.violations.filter(v => v.player === 0);
+      const player0Violations = gameState.violations.filter((v: any) => v.player === 0);
       expect(player0Violations.length).toBe(2);
       
       // And should identify repeat offenders
@@ -124,7 +124,7 @@ describe('Feature: Tournament Conduct', () => {
 
     it('should differentiate between violation severities', () => {
       // Given violations of different severities
-      const gameState = setupGameWithViolations();
+      setupGameWithViolations();
       
       const minorViolation = {
         player: 0,
@@ -227,7 +227,7 @@ function identifyRepeatOffenders(violations: any[]): number[] {
   }, {} as Record<number, number>);
   
   return Object.entries(violationCounts)
-    .filter(([_, count]) => count > 1)
+    .filter(([_, count]) => (count as number) > 1)
     .map(([player]) => parseInt(player));
 }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Bid, BidType } from '../../../game/types';
+import type { GameState, Bid, BidType } from '../../../game/types';
 
 describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
   describe('Scenario: Opening Bid Constraints', () => {
@@ -95,7 +95,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
         { type: 'plunge' as BidType, value: 3, reason: 'plunge must be at least 4 marks' }
       ];
 
-      invalidOpeningBids.forEach(({ type, value, reason }) => {
+      invalidOpeningBids.forEach(({ type, value }) => {
         // Test implementation would reject these
         if (type === 'points') {
           const isValid = value >= 30 && value <= 41;

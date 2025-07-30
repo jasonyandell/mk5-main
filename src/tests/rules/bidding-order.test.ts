@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, GamePhase } from '../../game/types';
+import type { GameState, GamePhase } from '../../game/types';
 
 describe('Feature: Standard Bidding', () => {
   describe('Scenario: Bidding Order', () => {
@@ -8,10 +8,10 @@ describe('Feature: Standard Bidding', () => {
       const gameState: Partial<GameState> = {
         phase: 'bidding' as GamePhase,
         players: [
-          { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 },
+          { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 },
         ],
         dealer: 2, // Player 2 is the dealer/shaker
         currentPlayer: 3, // Player to left of shaker
@@ -56,16 +56,6 @@ describe('Feature: Standard Bidding', () => {
 
     it('And each player gets exactly one opportunity to bid or pass', () => {
       // Test that each player bids exactly once
-      const gameState: Partial<GameState> = {
-        dealer: 2,
-        bids: [],
-        players: [
-          { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 },
-        ],
-      };
 
       // Simulate one bid/pass per player
       const playerBids = [
@@ -84,7 +74,7 @@ describe('Feature: Standard Bidding', () => {
 
       // Verify each player bid exactly once
       expect(bidCounts.size).toBe(4);
-      bidCounts.forEach((count, playerId) => {
+      bidCounts.forEach((count) => {
         expect(count).toBe(1);
       });
     });

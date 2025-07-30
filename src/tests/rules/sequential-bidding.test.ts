@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Bid } from '../../game/types';
-import { GAME_CONSTANTS } from '../../game/constants';
+import type { GameState, Bid } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
 
 describe('Sequential Bidding', () => {

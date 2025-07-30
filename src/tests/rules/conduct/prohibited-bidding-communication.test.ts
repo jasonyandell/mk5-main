@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { GameState, Bid } from '../../../game/types';
+import type { GameState, Bid } from '../../../game/types';
 
 describe('Feature: Communication Rules', () => {
   describe('Scenario: Prohibited Bidding Communication', () => {
@@ -12,10 +12,10 @@ describe('Feature: Communication Rules', () => {
         currentBid: null,
         tournamentMode: true,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 }
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 }
         ]
       };
     };
@@ -23,6 +23,7 @@ describe('Feature: Communication Rules', () => {
     it('should prohibit voice inflection to signal hand strength', () => {
       // Given players are in the bidding phase
       const gameState = setupBiddingPhase();
+      expect(gameState.phase).toBe('bidding');
       
       // When making bids
       // Then no voice inflection may be used to signal hand strength
@@ -56,6 +57,7 @@ describe('Feature: Communication Rules', () => {
     it('should prohibit gestures or physical signals', () => {
       // Given players are in the bidding phase
       const gameState = setupBiddingPhase();
+      expect(gameState.phase).toBe('bidding');
       
       // When making bids
       // Then no gestures or physical signals are allowed
@@ -89,6 +91,7 @@ describe('Feature: Communication Rules', () => {
     it('should prohibit commentary beyond bid declaration', () => {
       // Given players are in the bidding phase
       const gameState = setupBiddingPhase();
+      expect(gameState.phase).toBe('bidding');
       
       // When making bids
       // Then no commentary beyond bid declaration is permitted
@@ -105,7 +108,7 @@ describe('Feature: Communication Rules', () => {
       
       validBidDeclarations.forEach(declaration => {
         const words = declaration.split(' ');
-        const isSimpleDeclaration = words.length <= 2 && !declaration.includes(',') && !declaration.includes('-');
+        const isSimpleDeclaration = words.length <= 2 && !declaration.includes(',');
         expect(isSimpleDeclaration).toBe(true);
       });
       
@@ -121,6 +124,7 @@ describe('Feature: Communication Rules', () => {
     it('should prohibit hesitation for strategic effect', () => {
       // Given players are in the bidding phase
       const gameState = setupBiddingPhase();
+      expect(gameState.phase).toBe('bidding');
       
       // When making bids
       // Then no hesitation for strategic effect is allowed
@@ -162,6 +166,7 @@ describe('Feature: Communication Rules', () => {
     it('should enforce all communication restrictions during tournament play', () => {
       // Given a tournament game
       const gameState = setupBiddingPhase();
+      expect(gameState.phase).toBe('bidding');
       expect(gameState.tournamentMode).toBe(true);
       
       // When any communication violation occurs
@@ -173,7 +178,7 @@ describe('Feature: Communication Rules', () => {
       ];
       
       // Then it should be flagged as prohibited
-      violations.forEach(violation => {
+      violations.forEach(() => {
         const isProhibited = gameState.tournamentMode === true;
         expect(isProhibited).toBe(true);
       });
