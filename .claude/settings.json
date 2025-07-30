@@ -1,1 +1,15 @@
-{}
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pkill -TERM claude 2>/dev/null || true; sleep 1; pkill -KILL claude 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
