@@ -117,13 +117,9 @@ export function getDominoSuit(domino: Domino, trump: Trump | number | null): num
     return Math.max(domino.high, domino.low);
   }
   
-  // Tournament rules: doubles are trump when trump is 0-6 or when doubles are trump (7)
+  // Doubles belong to their natural suit (unless doubles are trump)
   if (domino.high === domino.low) {
-    if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 7) {
-      return numericTrump; // All doubles are trump when any suit is trump
-    } else {
-      return domino.high; // Natural suit for no-trump
-    }
+    return domino.high; // Natural suit for doubles
   }
   
   // Non-doubles: if either end matches trump, it's trump suit
@@ -164,16 +160,16 @@ export function getDominoValue(domino: Domino, trump: Trump | number | null): nu
   }
   
   // Check if this domino is trump
-  if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 7) {
-    // When any suit is trump (0-7), all doubles are trump
-    if (domino.high === domino.low) {
-      // All doubles are trump, ranked from 6-6 down to 0-0
-      return 200 + domino.high;
-    }
+  if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 6) {
     // Regular suit trump (when numericTrump 0-6)
-    else if (numericTrump !== 7 && (domino.high === numericTrump || domino.low === numericTrump)) {
-      // Trump non-doubles containing the trump suit
-      return 100 + domino.high + domino.low;
+    if (domino.high === numericTrump || domino.low === numericTrump) {
+      // Dominoes containing the trump suit are trump
+      // Doubles of the trump suit rank highest
+      if (domino.high === domino.low) {
+        return 200 + domino.high; // Trump double
+      } else {
+        return 100 + domino.high + domino.low; // Trump non-double
+      }
     }
   }
   
