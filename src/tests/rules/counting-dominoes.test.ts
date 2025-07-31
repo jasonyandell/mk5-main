@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDominoPoints, createDominoes, GAME_CONSTANTS } from '../../game';
+import { getDominoPoints, createDominoes } from '../../game';
 
 describe('Scoring Systems - Counting Dominoes', () => {
   describe('When calculating point values', () => {

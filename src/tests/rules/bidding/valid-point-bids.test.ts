@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Bid, GameState } from '../../../game/types';
+import type { Bid } from '../../../game/types';
 import { isValidBid, createInitialState, GAME_CONSTANTS, createDominoes, dealDominoes, shuffleDominoes } from '../../../game';
 
 describe('Feature: Standard Bidding - Valid Point Bids', () => {

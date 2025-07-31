@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, calculateRoundScore } from '../../game';
-import type { GameState } from '../../game/types';
 
 describe('Feature: Hand Victory', () => {
   describe('Scenario: Defending Team Wins', () => {

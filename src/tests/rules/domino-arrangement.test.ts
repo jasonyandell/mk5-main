@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { GameState, Domino } from '../../game/types';
+import type { GameState } from '../../game/types';
 import { createInitialState, dealDominoes } from '../../game';
 
 describe('Feature: Game Setup - Domino Arrangement', () => {

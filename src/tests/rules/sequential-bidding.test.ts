@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid } from '../../game/types';
-import { createInitialState, getNextStates, isValidBid, getPlayerLeftOfDealer } from '../../game';
+import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../game';
 
 describe('Sequential Bidding', () => {
   // Helper to create a state with specific bids already made

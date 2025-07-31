@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { createInitialState, getNextStates, getTrumpSelectionTransitions } from '../../game';
-import type { GameState, Trump } from '../../game/types';
+import { createInitialState, getNextStates } from '../../game';
+import type { Trump } from '../../game/types';
 
 describe('Feature: Trump Declaration', () => {
   describe('Scenario: Declaring Trump', () => {
@@ -101,7 +101,7 @@ describe('Feature: Trump Declaration', () => {
       const validSuitTrumps: Trump[] = [0, 1, 2, 3, 4, 5, 6];
       
       validSuitTrumps.forEach(trumpValue => {
-        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][trumpValue];
+        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][trumpValue as number];
         const transition = trumpOptions.find(t => t.id === `trump-${suitName}`);
         
         expect(transition).toBeDefined();
@@ -143,7 +143,7 @@ describe('Feature: Trump Declaration', () => {
       gameState.trump = null;
       
       // Get available trump options
-      const trumpOptions = getNextStates(gameState);
+      // const trumpOptions = getNextStates(gameState);
       
       // Note: No-trump is not currently implemented in the game engine
       // The game engine only supports suits 0-6 and doubles (7)

@@ -41,8 +41,12 @@ function shuffle<T>(array: T[]): T[] {
 /**
  * Shuffles and returns all 28 dominoes (legacy - uses Math.random)
  */
-export function shuffleDominoes(): Domino[] {
-  return shuffle(createDominoes());
+export function shuffleDominoes(dominoes?: Domino[], seed?: number): Domino[] {
+  const dominoesToShuffle = dominoes || createDominoes();
+  if (seed !== undefined) {
+    return shuffleWithSeed(dominoesToShuffle, seed);
+  }
+  return shuffle(dominoesToShuffle);
 }
 
 /**
@@ -55,14 +59,14 @@ export function shuffleDominoesWithSeed(seed: number): Domino[] {
 /**
  * Deals dominoes to 4 players (7 each) - legacy version using Math.random
  */
-export function dealDominoes(): [Domino[], Domino[], Domino[], Domino[]] {
-  const dominoes = shuffle(createDominoes());
+export function dealDominoes(dominoes?: Domino[]): [Domino[], Domino[], Domino[], Domino[]] {
+  const dominoesToDeal = dominoes || shuffle(createDominoes());
   
   return [
-    dominoes.slice(0, 7),
-    dominoes.slice(7, 14),
-    dominoes.slice(14, 21),
-    dominoes.slice(21, 28)
+    dominoesToDeal.slice(0, 7),
+    dominoesToDeal.slice(7, 14),
+    dominoesToDeal.slice(14, 21),
+    dominoesToDeal.slice(21, 28)
   ];
 }
 

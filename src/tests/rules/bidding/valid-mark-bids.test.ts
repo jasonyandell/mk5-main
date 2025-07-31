@@ -26,7 +26,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
       expect(isValid).toBe(true);
       
       // 1 mark equals 42 points
-      expect(bid.value * GAME_CONSTANTS.TOTAL_POINTS).toBe(42);
+      expect(bid.value! * GAME_CONSTANTS.TOTAL_POINTS).toBe(42);
     });
 
     it('should accept 2 marks bid (84 points)', () => {
@@ -51,7 +51,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
       expect(isValid).toBe(true);
       
       // 2 marks equals 84 points
-      expect(bid.value * GAME_CONSTANTS.TOTAL_POINTS).toBe(84);
+      expect(bid.value! * GAME_CONSTANTS.TOTAL_POINTS).toBe(84);
     });
 
     it('should calculate higher marks as multiples of 42 points', () => {

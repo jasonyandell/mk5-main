@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../game';
-import type { GameState } from '../../game/types';
 
 describe('Feature: Standard Bidding', () => {
   describe('Scenario: Bidding Order', () => {
@@ -91,7 +90,7 @@ describe('Feature: Standard Bidding', () => {
 
       // Verify each player bid exactly once
       expect(playerBidCount.size).toBe(4);
-      playerBidCount.forEach((count, player) => {
+      playerBidCount.forEach((count) => {
         expect(count).toBe(1);
       });
       

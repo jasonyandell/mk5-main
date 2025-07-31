@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { 
   GAME_CONSTANTS, 
-  createInitialState,
-  type GameState 
+  createInitialState
 } from '../../game';
 
 describe('Scoring Systems - Trick Points', () => {

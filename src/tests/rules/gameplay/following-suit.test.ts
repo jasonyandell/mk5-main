@@ -4,7 +4,6 @@ import {
   getValidPlays, 
   canFollowSuit, 
   isValidPlay,
-  type GameState,
   type Domino
 } from '../../../game';
 

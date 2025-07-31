@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getDominoValue, getDominoSuit } from '../../game/core/dominoes';
 import { calculateTrickWinner } from '../../game/core/scoring';
-import type { Domino, PlayedDomino } from '../../game/types';
+import type { PlayedDomino } from '../../game/types';
 
 describe('Doubles Trump Rules', () => {
   describe('when a regular suit (0-6) is trump', () => {
@@ -26,7 +26,7 @@ describe('Doubles Trump Rules', () => {
         { domino: { high: 6, low: 4, id: '6-4' }, shouldBeTrump: false, reason: 'does not contain 5' }
       ];
       
-      testCases.forEach(({ domino, shouldBeTrump, reason }) => {
+      testCases.forEach(({ domino, shouldBeTrump }) => {
         const value = getDominoValue(domino, trump);
         const suit = getDominoSuit(domino, trump);
         

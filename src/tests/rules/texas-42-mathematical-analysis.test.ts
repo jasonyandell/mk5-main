@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
 
+// Console output flag - set to true to enable logging
+const ENABLE_CONSOLE_OUTPUT = false;
+
 describe('Texas 42 Mathematical Analysis', () => {
   const ALL_DOMINOES: [number, number][] = [];
   for (let i = 6; i >= 0; i--) {
@@ -86,7 +89,7 @@ describe('Texas 42 Mathematical Analysis', () => {
             laydowns.set(key, (laydowns.get(key) || 0) + 1);
             
             // Debug first few 4-trump hands
-            if (debugFirst && key.startsWith('4 ')) {
+            if (ENABLE_CONSOLE_OUTPUT && debugFirst && key.startsWith('4 ')) {
               console.log(`\nExample ${key}:`, hand.map(d => `${d[0]}-${d[1]}`).join(', '));
               debugFirst = false;
             }
@@ -101,15 +104,17 @@ describe('Texas 42 Mathematical Analysis', () => {
         }
       });
       
-      console.log(`\nTotal laydown hands: ${totalLaydowns}`);
-      console.log('\nPatterns found:');
-      for (const [pattern, count] of laydowns) {
-        console.log(`${pattern}: ${count}`);
+      if (ENABLE_CONSOLE_OUTPUT) {
+        console.log(`\nTotal laydown hands: ${totalLaydowns}`);
+        console.log('\nPatterns found:');
+        for (const [pattern, count] of laydowns) {
+          console.log(`${pattern}: ${count}`);
+        }
+        console.log(`\nVerified ${totalLaydowns} hands guarantee winning all 7 tricks`);
       }
       
       // We don't know the exact count, but should find many laydowns
       expect(totalLaydowns).toBeGreaterThan(0);
-      console.log(`\nVerified ${totalLaydowns} hands guarantee winning all 7 tricks`);
     });
   });
   
@@ -212,6 +217,8 @@ describe('Texas 42 Mathematical Analysis', () => {
   }
   
   
+  /*
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function compareSameSuit(d1: [number, number], d2: [number, number]): number {
     // For non-trump dominoes of the same suit
     const d1IsDouble = d1[0] === d1[1];
@@ -227,6 +234,7 @@ describe('Texas 42 Mathematical Analysis', () => {
     
     return d1Low - d2Low; // Higher wins
   }
+  */
 
   function compareDominosInSuit(d1: [number, number], d2: [number, number], suit: number): number {
     // When following suit, we need to compare dominoes that match the led suit

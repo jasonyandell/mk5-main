@@ -6,8 +6,8 @@ import { getPlayerLeftOfDealer } from './players';
 /**
  * Creates the initial game state in setup phase
  */
-export function createSetupState(): GameState {
-  const dealer = 3; // Start with dealer as player 3 for deterministic tests
+export function createSetupState(options?: { shuffleSeed?: number, dealer?: number, tournamentMode?: boolean }): GameState {
+  const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   
   return {
@@ -29,8 +29,8 @@ export function createSetupState(): GameState {
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-    tournamentMode: true,
-    shuffleSeed: Date.now(), // Initial seed for when dealing happens
+    tournamentMode: options?.tournamentMode ?? true,
+    shuffleSeed: options?.shuffleSeed ?? Date.now(), // Initial seed for when dealing happens
     // Test compatibility properties - empty hands in setup
     hands: {},
     bidWinner: null,
@@ -42,12 +42,12 @@ export function createSetupState(): GameState {
 /**
  * Creates the initial game state with fresh hands dealt ready for bidding
  */
-export function createInitialState(): GameState {
-  const dealer = 3; // Start with dealer as player 3 for deterministic tests
+export function createInitialState(options?: { shuffleSeed?: number, dealer?: number, tournamentMode?: boolean }): GameState {
+  const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   
   // Generate initial seed for deterministic shuffling
-  const shuffleSeed = Date.now();
+  const shuffleSeed = options?.shuffleSeed ?? Date.now();
   const hands = dealDominoesWithSeed(shuffleSeed);
   
   return {
@@ -69,7 +69,7 @@ export function createInitialState(): GameState {
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-    tournamentMode: true,
+    tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed,
     // Test compatibility properties
     hands: {

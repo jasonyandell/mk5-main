@@ -3,8 +3,7 @@ import {
   createDominoes, 
   getDominoSuit, 
   getDominoValue, 
-  isDouble,
-  type Domino 
+  isDouble
 } from '../../game';
 
 describe('Feature: Doubles Treatment', () => {
