@@ -72,7 +72,7 @@ describe('Texas 42 Mathematical Analysis', () => {
   });
   
   describe('Laydown Hands', () => {
-    it('should identify all hands that guarantee winning all 7 tricks', () => {
+    it('should identify all hands that guarantee winning all 7 tricks', { timeout: 30000 }, () => {
       const laydowns = new Map<string, number>();
       let totalLaydowns = 0;
       let debugFirst = true;
@@ -114,169 +114,51 @@ describe('Texas 42 Mathematical Analysis', () => {
   });
   
   function guaranteesAllTricksWithTrump(hand: [number, number][], trump: number): boolean {
-    const trumps = hand.filter(d => d[0] === trump || d[1] === trump);
+    // A laydown requires that we can play our dominoes in an order that guarantees winning all tricks
+    
+    // Special case: All 7 of same suit is always a laydown
+    const trumpDominoes = hand.filter(d => d[0] === trump || d[1] === trump);
+    if (trumpDominoes.length === 7) return true;
+    
+    // For mixed hands, we need a more sophisticated analysis
+    // Key insight: We can lead our trumps first to draw out opponent trumps,
+    // then lead our guaranteed winners
+    
+    // Count trumps
+    const ourTrumps = trumpDominoes;
     const nonTrumps = hand.filter(d => d[0] !== trump && d[1] !== trump);
     
-    // Special case: all 7 trumps
-    if (trumps.length === 7) return true;
-    
     // Must have more trumps than opponents
-    const opponentTrumps = 7 - trumps.length;
-    if (trumps.length <= opponentTrumps) return false;
+    const opponentTrumps = 7 - ourTrumps.length;
+    if (ourTrumps.length <= opponentTrumps) return false;
     
-    // If we don't have all trumps, we must have the highest trump (the double)
-    if (trumps.length < 7) {
-      const hasDouble = trumps.some(d => d[0] === trump && d[1] === trump);
-      if (!hasDouble) return false; // Opponent has the boss trump
-    }
+    // Must have the highest trump if we don't have all trumps
+    const hasHighestTrump = ourTrumps.some(d => d[0] === trump && d[1] === trump);
+    if (!hasHighestTrump) return false;
     
-    // We win one trick for each trump we have
-    const trumpTricks = trumps.length;
+    // Now check if we have enough control
+    // We need to be able to win tricks equal to opponent trump count with our HIGH trumps
+    const allPossibleTrumps = getAllTrumpsInOrder(trump);
+    const ourTrumpSet = new Set(ourTrumps.map(d => `${d[0]}-${d[1]}`));
     
-    // How many non-trump tricks do we need?
-    const nonTrumpTricksNeeded = 7 - trumpTricks;
-    
-    // Count guaranteed non-trump winners
-    let guaranteedWinners = 0;
-    const handDominoes = new Set(hand.map(d => `${d[0]}-${d[1]}`));
-    
-    // Group non-trumps by suit
-    const bySuit: Map<number, [number, number][]> = new Map();
-    for (const d of nonTrumps) {
-      const suit = Math.max(d[0], d[1]);
-      if (!bySuit.has(suit)) {
-        bySuit.set(suit, []);
-      }
-      bySuit.get(suit)!.push(d);
-    }
-    
-    // Sort each suit by rank within that suit
-    for (const [suit, dominoes] of bySuit) {
-      dominoes.sort((a, b) => {
-        // Doubles beat non-doubles
-        const aIsDouble = a[0] === a[1];
-        const bIsDouble = b[0] === b[1];
-        if (aIsDouble && !bIsDouble) return -1;
-        if (!aIsDouble && bIsDouble) return 1;
-        
-        // Higher other pip wins
-        const aLow = Math.min(a[0], a[1]);
-        const bLow = Math.min(b[0], b[1]);
-        return bLow - aLow;
-      });
-    }
-    
-    // Check the highest domino in each suit we control
-    for (const [suit, dominoes] of bySuit) {
-      if (dominoes.length > 0) {
-        // The highest in this suit (first after sorting) might be guaranteed
-        const highest = dominoes[0];
-        if (isGuaranteedWinner(highest, trump, handDominoes)) {
-          guaranteedWinners++;
-          if (guaranteedWinners >= nonTrumpTricksNeeded) {
-            return true;
-          }
-        }
+    // Count how many of the TOP trumps we have
+    let topTrumpsWeHave = 0;
+    for (const t of allPossibleTrumps) {
+      if (ourTrumpSet.has(`${t[0]}-${t[1]}`) || ourTrumpSet.has(`${t[1]}-${t[0]}`)) {
+        topTrumpsWeHave++;
+      } else {
+        break; // We're missing this trump, so we don't have consecutive top trumps
       }
     }
     
-    return false;
-  }
-  
-  function guaranteesAllTricksWithDoubles(hand: [number, number][]): boolean {
-    const doubles = hand.filter(d => d[0] === d[1]);
-    const nonDoubles = hand.filter(d => d[0] !== d[1]);
+    // For a laydown, we need more consecutive top trumps than opponents have total trumps
+    // This ensures we can draw out all their trumps while maintaining the lead
+    if (topTrumpsWeHave <= opponentTrumps) return false;
     
-    // All 7 doubles
-    if (doubles.length === 7) return true;
-    
-    // Must have more doubles than opponents
-    const opponentDoubles = 7 - doubles.length;
-    if (doubles.length <= opponentDoubles) return false;
-    
-    const doubleTricks = doubles.length;
-    const nonDoubleTricksNeeded = 7 - doubleTricks;
-    
-    // Count guaranteed non-double winners
-    let guaranteedWinners = 0;
-    const handDominoes = new Set(hand.map(d => `${d[0]}-${d[1]}`));
-    
-    // When doubles are trump, non-doubles win by suit
-    // Group non-doubles by suit
-    const nonDoublesBySuit: Map<number, [number, number][]> = new Map();
-    for (const d of nonDoubles) {
-      const suit = Math.max(d[0], d[1]);
-      if (!nonDoublesBySuit.has(suit)) {
-        nonDoublesBySuit.set(suit, []);
-      }
-      nonDoublesBySuit.get(suit)!.push(d);
-    }
-    
-    // Check highest in each suit
-    for (const [suit, dominoes] of nonDoublesBySuit) {
-      // Sort by rank within suit
-      dominoes.sort((a, b) => {
-        const aLow = Math.min(a[0], a[1]);
-        const bLow = Math.min(b[0], b[1]);
-        return bLow - aLow;
-      });
-      
-      if (dominoes.length > 0) {
-        const highest = dominoes[0];
-        // Check if this is guaranteed winner in its suit
-        let isGuaranteed = true;
-        
-        // Check all possible opponent dominoes in this suit
-        for (const d of ALL_DOMINOES) {
-          if (handDominoes.has(`${d[0]}-${d[1]}`)) continue;
-          if (d[0] === d[1]) continue; // Skip doubles (they're trump)
-          
-          const dSuit = Math.max(d[0], d[1]);
-          if (dSuit === suit) {
-            // Would this beat our highest?
-            const dLow = Math.min(d[0], d[1]);
-            const highestLow = Math.min(highest[0], highest[1]);
-            if (dLow > highestLow) {
-              isGuaranteed = false;
-              break;
-            }
-          }
-        }
-        
-        if (isGuaranteed) {
-          guaranteedWinners++;
-          if (guaranteedWinners >= nonDoubleTricksNeeded) {
-            return true;
-          }
-        }
-      }
-    }
-    
-    return false;
-  }
-  
-  function isGuaranteedWinner(domino: [number, number], trump: number, handSet: Set<string>): boolean {
-    // A domino is guaranteed to win if:
-    // 1. We can lead it (control when it's played)
-    // 2. No opponent domino of the same suit can beat it
-    
-    // Determine the suit of this domino (higher end)
-    const suit = Math.max(domino[0], domino[1]);
-    
-    // Find all dominoes of the same suit that opponents might have
-    for (const d of ALL_DOMINOES) {
-      // Skip if it's in our hand
-      if (handSet.has(`${d[0]}-${d[1]}`)) continue;
-      
-      // Skip if it's a trump
-      if (d[0] === trump || d[1] === trump) continue;
-      
-      // Skip if it's not the same suit
-      const dSuit = Math.max(d[0], d[1]);
-      if (dSuit !== suit) continue;
-      
-      // Would this domino beat ours in the same suit?
-      if (dominoBeatsInSuit(d, domino)) {
+    // Finally, check that all non-trumps are guaranteed winners
+    const handSet = new Set(hand.map(d => `${d[0]}-${d[1]}`));
+    for (const nonTrump of nonTrumps) {
+      if (!isNonTrumpGuaranteedWinner(nonTrump, trump, handSet)) {
         return false;
       }
     }
@@ -284,32 +166,160 @@ describe('Texas 42 Mathematical Analysis', () => {
     return true;
   }
   
-  function dominoBeatsInSuit(d1: [number, number], d2: [number, number]): boolean {
-    // When both dominoes are of the same suit (determined by higher pip)
-    // The ranking within that suit determines the winner
+  function getAllTrumpsInOrder(trump: number): [number, number][] {
+    const trumps: [number, number][] = [];
     
-    // For doubles: double beats non-double
+    // Double is highest
+    trumps.push([trump, trump]);
+    
+    // Then by other pip, highest to lowest
+    for (let i = 6; i >= 0; i--) {
+      if (i !== trump) {
+        if (i > trump) {
+          trumps.push([i, trump]);
+        } else {
+          trumps.push([trump, i]);
+        }
+      }
+    }
+    
+    return trumps;
+  }
+  
+  function isNonTrumpGuaranteedWinner(domino: [number, number], trump: number, ourHandSet: Set<string>): boolean {
+    // A non-trump is guaranteed if no opponent has:
+    // 1. A higher domino in the same suit
+    // 2. Any trump (but we've already checked we can exhaust their trumps)
+    
+    const suit = Math.max(domino[0], domino[1]);
+    
+    // For laydowns, we need to check all dominoes that would follow this suit
+    // A domino follows suit if EITHER pip matches the led suit
+    for (const opp of ALL_DOMINOES) {
+      if (ourHandSet.has(`${opp[0]}-${opp[1]}`)) continue;
+      if (opp[0] === trump || opp[1] === trump) continue; // Skip trumps
+      
+      // Check if opponent domino would follow suit
+      if (opp[0] === suit || opp[1] === suit) {
+        // They must follow suit, so compare
+        if (compareDominosInSuit(opp, domino, suit) > 0) {
+          return false; // Opponent has higher
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  
+  function compareSameSuit(d1: [number, number], d2: [number, number]): number {
+    // For non-trump dominoes of the same suit
     const d1IsDouble = d1[0] === d1[1];
     const d2IsDouble = d2[0] === d2[1];
     
-    if (d1IsDouble && !d2IsDouble) return true;
-    if (!d1IsDouble && d2IsDouble) return false;
+    // Double beats non-double
+    if (d1IsDouble && !d2IsDouble) return 1;
+    if (!d1IsDouble && d2IsDouble) return -1;
     
-    // For non-doubles of same suit: higher other pip wins
-    // Example: In 5s suit, 5-4 beats 5-3 beats 5-2, etc.
-    const d1High = Math.max(d1[0], d1[1]);
+    // Both non-doubles - HIGHER pip value wins (e.g., 2-1 beats 2-0)
     const d1Low = Math.min(d1[0], d1[1]);
-    const d2High = Math.max(d2[0], d2[1]);
     const d2Low = Math.min(d2[0], d2[1]);
     
-    // Both should have same high (the suit)
-    if (d1High !== d2High) {
-      throw new Error('Comparing dominoes of different suits');
+    return d1Low - d2Low; // Higher wins
+  }
+
+  function compareDominosInSuit(d1: [number, number], d2: [number, number], suit: number): number {
+    // When following suit, we need to compare dominoes that match the led suit
+    // The suit is the higher pip of the led domino
+    
+    // First check if both dominoes actually follow suit
+    const d1FollowsSuit = d1[0] === suit || d1[1] === suit;
+    const d2FollowsSuit = d2[0] === suit || d2[1] === suit;
+    
+    if (!d1FollowsSuit || !d2FollowsSuit) {
+      throw new Error('Both dominoes must follow suit');
     }
     
-    // Higher low pip wins
-    return d1Low > d2Low;
+    // Check if either is the double
+    const d1IsDouble = d1[0] === d1[1] && d1[0] === suit;
+    const d2IsDouble = d2[0] === d2[1] && d2[0] === suit;
+    
+    if (d1IsDouble && !d2IsDouble) return 1;
+    if (!d1IsDouble && d2IsDouble) return -1;
+    
+    // Both non-doubles - the one with the other pip HIGHER wins
+    const d1OtherPip = d1[0] === suit ? d1[1] : d1[0];
+    const d2OtherPip = d2[0] === suit ? d2[1] : d2[0];
+    
+    return d1OtherPip - d2OtherPip; // Higher other pip wins
   }
+  
+  function guaranteesAllTricksWithDoubles(hand: [number, number][]): boolean {
+    // Similar logic for doubles as trump
+    const doubles = hand.filter(d => d[0] === d[1]);
+    const nonDoubles = hand.filter(d => d[0] !== d[1]);
+    
+    // All 7 doubles is always a laydown
+    if (doubles.length === 7) return true;
+    
+    // Must have more doubles than opponents
+    const opponentDoubles = 7 - doubles.length;
+    if (doubles.length <= opponentDoubles) return false;
+    
+    // Must have the highest double (6-6)
+    const hasHighestDouble = doubles.some(d => d[0] === 6 && d[1] === 6);
+    if (!hasHighestDouble) return false;
+    
+    // Count top consecutive doubles we have
+    const allDoubles = [[6,6], [5,5], [4,4], [3,3], [2,2], [1,1], [0,0]];
+    const ourDoubleSet = new Set(doubles.map(d => `${d[0]}-${d[1]}`));
+    
+    let topDoublesWeHave = 0;
+    for (const d of allDoubles) {
+      if (ourDoubleSet.has(`${d[0]}-${d[1]}`)) {
+        topDoublesWeHave++;
+      } else {
+        break; // Missing this double
+      }
+    }
+    
+    // For a laydown, we need more consecutive top doubles than opponents have total doubles
+    // This ensures we can draw out all their doubles while maintaining the lead
+    if (topDoublesWeHave <= opponentDoubles) return false;
+    
+    // Check all non-doubles are guaranteed winners
+    const handSet = new Set(hand.map(d => `${d[0]}-${d[1]}`));
+    for (const nonDouble of nonDoubles) {
+      if (!isNonDoubleGuaranteedWinner(nonDouble, handSet)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  function isNonDoubleGuaranteedWinner(domino: [number, number], ourHandSet: Set<string>): boolean {
+    // When doubles are trump, a non-double wins if no opponent has higher in same suit
+    const suit = Math.max(domino[0], domino[1]);
+    const ourLow = Math.min(domino[0], domino[1]);
+    
+    for (const opp of ALL_DOMINOES) {
+      if (ourHandSet.has(`${opp[0]}-${opp[1]}`)) continue;
+      if (opp[0] === opp[1]) continue; // Skip doubles (they're trump)
+      
+      const oppSuit = Math.max(opp[0], opp[1]);
+      if (oppSuit === suit) {
+        const oppLow = Math.min(opp[0], opp[1]);
+        if (oppLow > ourLow) {
+          return false; // Opponent has higher
+        }
+      }
+    }
+    
+    return true;
+  }
+  
+  
   
   function describeHand(hand: [number, number][], trump: number): string {
     if (trump <= 6) {

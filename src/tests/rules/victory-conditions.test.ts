@@ -1,35 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { GameState, Player } from '../../game/types';
-import { GAME_CONSTANTS } from '../../game/constants';
+import type { GameState } from '../../game/types';
+import { createInitialState, isGameComplete, getWinningTeam } from '../../game';
 
 describe('Victory Conditions - Mark System Victory', () => {
   let gameState: GameState;
   
   beforeEach(() => {
-    const players: Player[] = [
-      { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
-      { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-      { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-      { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 }
-    ];
-    
-    gameState = {
-      phase: 'playing',
-      players,
-      currentPlayer: 0,
-      dealer: 0,
-      bids: [],
-      currentBid: null,
-      winningBidder: null,
-      trump: null,
-      tricks: [],
-      currentTrick: [],
-      teamScores: [0, 0],
-      teamMarks: [0, 0],
-      gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-      tournamentMode: true,
-      shuffleSeed: 12345
-    };
+    gameState = createInitialState({ tournamentMode: true });
   });
 
   describe('Scenario: Mark System Victory', () => {
@@ -41,14 +18,14 @@ describe('Victory Conditions - Mark System Victory', () => {
       // When checking for game victory
       // Simulate team 0 accumulating marks over multiple hands
       gameState.teamMarks[0] = 6;
-      expect(isGameOver(gameState)).toBe(false);
+      expect(isGameComplete(gameState)).toBe(false);
       expect(getWinningTeam(gameState)).toBe(null);
       
       // Team 0 wins another mark
       gameState.teamMarks[0] = 7;
       
       // Then the first partnership to accumulate 7 marks wins
-      expect(isGameOver(gameState)).toBe(true);
+      expect(isGameComplete(gameState)).toBe(true);
       expect(getWinningTeam(gameState)).toBe(0);
     });
 
@@ -62,7 +39,7 @@ describe('Victory Conditions - Mark System Victory', () => {
       gameState.teamMarks[0] = 5;
       
       // Then team 1 wins
-      expect(isGameOver(gameState)).toBe(true);
+      expect(isGameComplete(gameState)).toBe(true);
       expect(getWinningTeam(gameState)).toBe(1);
     });
 
@@ -75,7 +52,7 @@ describe('Victory Conditions - Mark System Victory', () => {
       gameState.teamMarks[1] = 6;
       
       // Then the game is not over
-      expect(isGameOver(gameState)).toBe(false);
+      expect(isGameComplete(gameState)).toBe(false);
       expect(getWinningTeam(gameState)).toBe(null);
     });
 
@@ -88,35 +65,8 @@ describe('Victory Conditions - Mark System Victory', () => {
       gameState.teamMarks[1] = 6;
       
       // Then that team wins immediately
-      expect(isGameOver(gameState)).toBe(true);
+      expect(isGameComplete(gameState)).toBe(true);
       expect(getWinningTeam(gameState)).toBe(0);
-      
-      // Phase should transition to game_end
-      const endState = { ...gameState, phase: 'game_end' as const };
-      expect(endState.phase).toBe('game_end');
     });
   });
 });
-
-// Test-only helper functions that check victory conditions
-function isGameOver(state: GameState): boolean {
-  // In mark system (tournament mode), game ends when a team reaches the target marks
-  if (state.tournamentMode) {
-    return state.teamMarks[0] >= state.gameTarget || state.teamMarks[1] >= state.gameTarget;
-  }
-  // Point system would check teamScores instead
-  return false;
-}
-
-function getWinningTeam(state: GameState): number | null {
-  if (!isGameOver(state)) {
-    return null;
-  }
-  
-  if (state.tournamentMode) {
-    if (state.teamMarks[0] >= state.gameTarget) return 0;
-    if (state.teamMarks[1] >= state.gameTarget) return 1;
-  }
-  
-  return null;
-}

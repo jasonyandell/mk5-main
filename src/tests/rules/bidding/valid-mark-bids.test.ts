@@ -1,31 +1,64 @@
 import { describe, it, expect } from 'vitest';
+import type { Bid } from '../../../game/types';
+import { isValidBid, createInitialState, GAME_CONSTANTS, createDominoes, dealDominoes, shuffleDominoes } from '../../../game';
 
 describe('Feature: Standard Bidding - Valid Mark Bids', () => {
   describe('Scenario: Valid Mark Bids', () => {
-    // Test helpers to calculate mark values
-    const markToBidValue = (marks: number): number => marks * 42;
-
-    it('Given it is a player\'s turn to bid', () => {
-      // This is a setup step, no assertions needed
-      expect(true).toBe(true);
+    it('should accept 1 mark bid (42 points)', () => {
+      const gameState = createInitialState();
+      gameState.phase = 'bidding';
+      gameState.currentPlayer = 0;
+      
+      // Deal dominoes to players
+      const dominoes = createDominoes();
+      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      gameState.players.forEach((player, i) => {
+        player.hand = hands[i];
+      });
+      
+      const bid: Bid = {
+        type: 'marks',
+        value: 1,
+        player: 0
+      };
+      
+      const isValid = isValidBid(bid, null, gameState);
+      expect(isValid).toBe(true);
+      
+      // 1 mark equals 42 points
+      expect(bid.value * GAME_CONSTANTS.TOTAL_POINTS).toBe(42);
     });
 
-    it('When they make a mark bid', () => {
-      // This is an action step, no assertions needed  
-      expect(true).toBe(true);
+    it('should accept 2 marks bid (84 points)', () => {
+      const gameState = createInitialState();
+      gameState.phase = 'bidding';
+      gameState.currentPlayer = 0;
+      
+      // Deal dominoes to players
+      const dominoes = createDominoes();
+      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      gameState.players.forEach((player, i) => {
+        player.hand = hands[i];
+      });
+      
+      const bid: Bid = {
+        type: 'marks',
+        value: 2,
+        player: 0
+      };
+      
+      const isValid = isValidBid(bid, null, gameState);
+      expect(isValid).toBe(true);
+      
+      // 2 marks equals 84 points
+      expect(bid.value * GAME_CONSTANTS.TOTAL_POINTS).toBe(84);
     });
 
-    it('Then 1 mark equals 42 points', () => {
-      const oneMarkValue = markToBidValue(1);
-      expect(oneMarkValue).toBe(42);
-    });
-
-    it('And 2 marks equals 84 points', () => {
-      const twoMarksValue = markToBidValue(2);
-      expect(twoMarksValue).toBe(84);
-    });
-
-    it('And higher marks equal multiples of 42 points', () => {
+    it('should calculate higher marks as multiples of 42 points', () => {
+      const gameState = createInitialState();
+      gameState.phase = 'bidding';
+      gameState.currentPlayer = 0;
+      
       // Test various mark values
       const testCases = [
         { marks: 3, expectedPoints: 126 },
@@ -36,7 +69,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
       ];
 
       testCases.forEach(({ marks, expectedPoints }) => {
-        const actualPoints = markToBidValue(marks);
+        const actualPoints = marks * GAME_CONSTANTS.TOTAL_POINTS;
         expect(actualPoints).toBe(expectedPoints);
       });
     });

@@ -1,39 +1,38 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { GameState, Player, Trump } from '../../game/types';
+import type { GameState, Trump } from '../../game/types';
+import { createInitialState, dealDominoes } from '../../game';
 
 // Test-only implementation for prohibited play communication
 // This tests that the game properly prevents and detects prohibited communications during play
 
 describe('Feature: Communication Rules - Prohibited Play Communication', () => {
   let gameState: GameState;
-  let mockPlayers: Player[];
 
   beforeEach(() => {
-    // Setup a game in playing phase
-    mockPlayers = [
-      { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
-      { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
-      { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
-      { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 }
+    // Setup a game in playing phase using proper game engine
+    gameState = createInitialState({ tournamentMode: true });
+    const hands = dealDominoes();
+    
+    // Assign dealt hands to players
+    gameState.players.forEach((player, index) => {
+      player.hand = hands[index];
+    });
+    
+    // Set up game state for playing phase
+    gameState.phase = 'playing';
+    gameState.currentPlayer = 0;
+    gameState.dealer = 3;
+    gameState.bids = [
+      { type: 'pass', player: 3 },
+      { type: 'points', value: 31, player: 0 },
+      { type: 'pass', player: 1 },
+      { type: 'pass', player: 2 }
     ];
-
-    gameState = {
-      phase: 'playing',
-      players: mockPlayers,
-      currentPlayer: 0,
-      dealer: 3,
-      bids: [],
-      currentBid: { type: 'points', value: 31, player: 0 },
-      winningBidder: 0,
-      trump: 3 as Trump, // threes are trump
-      tricks: [],
-      currentTrick: [],
-      teamScores: [0, 0],
-      teamMarks: [0, 0],
-      gameTarget: 7,
-      tournamentMode: true,
-      shuffleSeed: 12345
-    };
+    gameState.currentBid = { type: 'points', value: 31, player: 0 };
+    gameState.winningBidder = 0;
+    gameState.trump = 3 as Trump; // threes are trump
+    gameState.tricks = [];
+    gameState.currentTrick = [];
   });
 
   describe('Scenario: Prohibited Play Communication', () => {

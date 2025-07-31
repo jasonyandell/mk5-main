@@ -1,52 +1,37 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid } from '../../../game/types';
+import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../../game';
 
 describe('Feature: Special Bids', () => {
   describe('Scenario: Three Mark Bidding', () => {
     function createStateWithBids(bids: Bid[]): GameState {
-      const state: GameState = {
-        phase: 'bidding',
-        players: [
-          { id: 0, name: 'Player 0', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: [], teamId: 1 as 1, marks: 0 },
-        ],
-        currentPlayer: bids.length % 4,
-        dealer: 3,
-        bids: bids,
-        currentBid: bids.length > 0 ? bids[bids.length - 1] : null,
-        winningBidder: null,
-        trump: null,
-        tricks: [],
-        currentTrick: [],
-        teamScores: [0, 0],
-        teamMarks: [0, 0],
-        gameTarget: 7,
-        tournamentMode: true,
-        shuffleSeed: 12345,
-      };
+      const state = createInitialState({ shuffleSeed: 12345 });
+      state.phase = 'bidding';
+      state.dealer = 3;
+      state.currentPlayer = getPlayerLeftOfDealer(3); // Player 0
+      state.bids = [];
+      
+      // Apply each bid using the game engine
+      for (const bid of bids) {
+        const transitions = getNextStates(state);
+        const transition = transitions.find(t => {
+          if (bid.type === 'pass') return t.id === 'pass';
+          if (bid.type === 'points') return t.id === `bid-${bid.value}`;
+          if (bid.type === 'marks') return t.id === `bid-${bid.value}-marks`;
+          return false;
+        });
+        
+        if (transition) {
+          Object.assign(state, transition.newState);
+        }
+      }
+      
       return state;
     }
 
     function canBidThreeMarks(state: GameState): boolean {
-      // Tournament rules: Can only bid 3 marks if another player has already bid 2 marks
-      const hasTwoMarksBid = state.bids.some(bid => bid.type === 'marks' && bid.value === 2);
-      
-      if (!hasTwoMarksBid) {
-        return false; // Cannot bid 3 marks if no one has bid 2 marks
-      }
-
-      // Check if current bid is less than 3 marks
-      if (!state.currentBid) {
-        return false; // This shouldn't happen if 2 marks was bid
-      }
-
-      const currentBidValue = state.currentBid.type === 'marks' 
-        ? state.currentBid.value || 0
-        : 0; // If current bid is points, we shouldn't be able to bid 3 marks anyway
-
-      return currentBidValue < 3;
+      const transitions = getNextStates(state);
+      return transitions.some(t => t.id === 'bid-3-marks');
     }
 
     it('Given the current bid is less than 3 marks', () => {
@@ -138,20 +123,13 @@ describe('Feature: Special Bids', () => {
       // Cannot bid 3 marks as opening bid
       expect(canBidThreeMarks(emptyState)).toBe(false);
       
-      // Even if we had a function to check valid opening bids
-      function isValidOpeningBid(bidType: string, bidValue: number): boolean {
-        if (bidType === 'points') {
-          return bidValue >= 30 && bidValue <= 41;
-        } else if (bidType === 'marks') {
-          // Maximum opening bid is 2 marks (except plunge which requires 4+ doubles)
-          return bidValue <= 2;
-        }
-        return false;
-      }
-
-      expect(isValidOpeningBid('marks', 3)).toBe(false);
-      expect(isValidOpeningBid('marks', 2)).toBe(true);
-      expect(isValidOpeningBid('marks', 1)).toBe(true);
+      // Check opening bid validity through game engine transitions
+      const transitions = getNextStates(emptyState);
+      const validOpeningBids = transitions.map(t => t.id);
+      
+      expect(validOpeningBids).not.toContain('bid-3-marks');
+      expect(validOpeningBids).toContain('bid-2-marks');  // 2 marks is allowed as opening
+      expect(validOpeningBids).toContain('bid-1-marks');  // 1 mark is allowed as opening
     });
 
     describe('Three mark bidding integration scenarios', () => {

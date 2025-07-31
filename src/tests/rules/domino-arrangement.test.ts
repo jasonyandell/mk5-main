@@ -1,24 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import type { GameState, GamePhase, Domino } from '../../game/types';
+import type { GameState, Domino } from '../../game/types';
+import { createInitialState, dealDominoes } from '../../game';
 
 describe('Feature: Game Setup - Domino Arrangement', () => {
   describe('Scenario: Domino Arrangement', () => {
     it('Given players have drawn their dominoes', () => {
-      // Test setup - players have drawn 7 dominoes each
-      const mockGameState: Partial<GameState> = {
-        phase: 'setup' as GamePhase,
-        players: [
-          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
-        ],
-        tournamentMode: true,
-      };
+      // Test setup - create initial state and deal dominoes
+      const gameState: GameState = createInitialState({ tournamentMode: true });
+      const hands = dealDominoes();
+      
+      // Assign dealt hands to players
+      gameState.players.forEach((player, index) => {
+        player.hand = hands[index];
+      });
 
       // Verify each player has 7 dominoes
-      expect(mockGameState.players).toHaveLength(4);
-      mockGameState.players?.forEach(player => {
+      expect(gameState.players).toHaveLength(4);
+      gameState.players.forEach(player => {
         expect(player.hand).toHaveLength(7);
       });
     });
@@ -43,50 +41,30 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
 
     it('And once bidding begins, dominoes cannot be rearranged', () => {
       // Test that arrangement is locked once bidding phase starts
-      const gameStateBeforeBidding: Partial<GameState> = {
-        phase: 'setup' as GamePhase,
-        players: [
-          { id: 0, name: 'Player 0', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 1', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 2', hand: createMockHand(7), teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 3', hand: createMockHand(7), teamId: 1 as 1, marks: 0 },
-        ],
-      };
+      const gameStateBeforeBidding: GameState = createInitialState({ tournamentMode: true });
+      const hands = dealDominoes();
+      
+      // Assign dealt hands to players
+      gameStateBeforeBidding.players.forEach((player, index) => {
+        player.hand = hands[index];
+      });
+      
+      gameStateBeforeBidding.phase = 'setup';
 
       // Capture hand arrangement before bidding
-      const handsBeforeBidding = gameStateBeforeBidding.players?.map(p => [...p.hand]);
+      const handsBeforeBidding = gameStateBeforeBidding.players.map(p => [...p.hand]);
 
       // Transition to bidding phase
-      const gameStateAfterBiddingStarts: Partial<GameState> = {
+      const gameStateAfterBiddingStarts: GameState = {
         ...gameStateBeforeBidding,
-        phase: 'bidding' as GamePhase,
+        phase: 'bidding',
       };
 
       // Verify hands remain unchanged after bidding starts
       expect(gameStateAfterBiddingStarts.phase).toBe('bidding');
-      gameStateAfterBiddingStarts.players?.forEach((player, index) => {
-        expect(player.hand).toEqual(handsBeforeBidding?.[index]);
+      gameStateAfterBiddingStarts.players.forEach((player, index) => {
+        expect(player.hand).toEqual(handsBeforeBidding[index]);
       });
     });
   });
 });
-
-// Helper function to create a mock hand of dominoes
-function createMockHand(size: number): Domino[] {
-  const hand: Domino[] = [];
-  let dominoIndex = 0;
-  
-  for (let i = 0; i < size && dominoIndex < 28; i++) {
-    // Create dominoes in sequence for testing
-    const high = Math.floor(dominoIndex / 7);
-    const low = dominoIndex % 7;
-    hand.push({
-      high: Math.max(high, low),
-      low: Math.min(high, low),
-      id: `${Math.max(high, low)}-${Math.min(high, low)}`,
-    });
-    dominoIndex++;
-  }
-  
-  return hand;
-}
