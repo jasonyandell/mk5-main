@@ -2,6 +2,9 @@
   import { gameState } from '../stores/gameStore';
   import StateDisplay from './StateDisplay.svelte';
   import TestGenerator from './TestGenerator.svelte';
+  import DebugGameState from './components/DebugGameState.svelte';
+  import DebugPlayerHands from './components/DebugPlayerHands.svelte';
+  import DebugBiddingHelper from './components/DebugBiddingHelper.svelte';
   
   let showDebug = false;
   
@@ -19,8 +22,19 @@
       </div>
       
       <div class="debug-content">
-        <StateDisplay state={$gameState} />
-        <TestGenerator />
+        <div class="debug-section">
+          <DebugBiddingHelper gameState={$gameState} />
+          <DebugGameState gameState={$gameState} />
+        </div>
+        
+        <div class="debug-section">
+          <DebugPlayerHands gameState={$gameState} />
+        </div>
+        
+        <div class="debug-section">
+          <StateDisplay state={$gameState} />
+          <TestGenerator />
+        </div>
       </div>
     </div>
   </div>
@@ -117,5 +131,14 @@
     flex: 1;
     overflow: auto;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .debug-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 </style>

@@ -193,6 +193,23 @@
         {/each}
       </div>
     </div>
+    
+    {#if gameState.trump !== null}
+      <div class="section">
+        <h4>Trump Summary</h4>
+        <div class="trump-summary">
+          <div class="trump-type">Trump: {getTrumpName(gameState.trump)}</div>
+          {#each gameState.players as player}
+            <div class="player-trump">
+              <span class="player-name">P{player.id}:</span>
+              <span class="trump-count">
+                {player.suitAnalysis?.count.trump || 0} trump
+              </span>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -364,5 +381,35 @@
     color: #6c757d;
     font-style: italic;
     font-size: 11px;
+  }
+  
+  .trump-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  
+  .trump-type {
+    font-weight: 600;
+    color: #8b5cf6;
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  
+  .player-trump {
+    display: flex;
+    gap: 4px;
+    font-size: 10px;
+  }
+  
+  .player-name {
+    color: #6c757d;
+    min-width: 20px;
+    font-weight: 500;
+  }
+  
+  .trump-count {
+    color: #8b5cf6;
+    font-weight: 500;
   }
 </style>

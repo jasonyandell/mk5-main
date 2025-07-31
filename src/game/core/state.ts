@@ -2,6 +2,7 @@ import type { GameState } from '../types';
 import { GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
+import { analyzeSuits } from './suit-analysis';
 
 /**
  * Creates the initial game state in setup phase
@@ -50,13 +51,13 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
   const shuffleSeed = options?.shuffleSeed ?? Date.now();
   const hands = dealDominoesWithSeed(shuffleSeed);
   
-  return {
-    phase: 'bidding',
+  const initialState = {
+    phase: 'bidding' as const,
     players: [
-      { id: 0, name: 'Player 1', hand: hands[0], teamId: 0, marks: 0 },
-      { id: 1, name: 'Player 2', hand: hands[1], teamId: 1, marks: 0 },
-      { id: 2, name: 'Player 3', hand: hands[2], teamId: 0, marks: 0 },
-      { id: 3, name: 'Player 4', hand: hands[3], teamId: 1, marks: 0 },
+      { id: 0, name: 'Player 1', hand: hands[0], teamId: 0 as const, marks: 0, suitAnalysis: analyzeSuits(hands[0]) },
+      { id: 1, name: 'Player 2', hand: hands[1], teamId: 1 as const, marks: 0, suitAnalysis: analyzeSuits(hands[1]) },
+      { id: 2, name: 'Player 3', hand: hands[2], teamId: 0 as const, marks: 0, suitAnalysis: analyzeSuits(hands[2]) },
+      { id: 3, name: 'Player 4', hand: hands[3], teamId: 1 as const, marks: 0, suitAnalysis: analyzeSuits(hands[3]) },
     ],
     currentPlayer,
     dealer,
@@ -66,8 +67,8 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     trump: null,
     tricks: [],
     currentTrick: [],
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
+    teamScores: [0, 0] as [number, number],
+    teamMarks: [0, 0] as [number, number],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed,
@@ -82,6 +83,8 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     isComplete: false,
     winner: null,
   };
+  
+  return initialState;
 }
 
 /**
@@ -92,7 +95,21 @@ export function cloneGameState(state: GameState): GameState {
     ...state,
     players: state.players.map(player => ({
       ...player,
-      hand: [...player.hand]
+      hand: [...player.hand],
+      suitAnalysis: player.suitAnalysis ? {
+        count: { ...player.suitAnalysis.count },
+        rank: {
+          0: [...player.suitAnalysis.rank[0]],
+          1: [...player.suitAnalysis.rank[1]],
+          2: [...player.suitAnalysis.rank[2]],
+          3: [...player.suitAnalysis.rank[3]],
+          4: [...player.suitAnalysis.rank[4]],
+          5: [...player.suitAnalysis.rank[5]],
+          6: [...player.suitAnalysis.rank[6]],
+          doubles: [...player.suitAnalysis.rank.doubles],
+          trump: [...player.suitAnalysis.rank.trump]
+        }
+      } : undefined
     })),
     bids: [...state.bids],
     tricks: state.tricks.map(trick => ({

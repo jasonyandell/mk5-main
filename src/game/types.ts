@@ -5,12 +5,42 @@ export interface Domino {
   points?: number;
 }
 
+export interface SuitCount {
+  0: number; // blanks
+  1: number; // ones  
+  2: number; // twos
+  3: number; // threes
+  4: number; // fours
+  5: number; // fives
+  6: number; // sixes
+  doubles: number; // count of doubles
+  trump: number; // count of trump dominoes (identical to trump suit when trump is declared)
+}
+
+export interface SuitRanking {
+  0: Domino[]; // blanks
+  1: Domino[]; // ones
+  2: Domino[]; // twos
+  3: Domino[]; // threes
+  4: Domino[]; // fours
+  5: Domino[]; // fives
+  6: Domino[]; // sixes
+  doubles: Domino[]; // all doubles
+  trump: Domino[]; // all trump dominoes (identical to trump suit when trump is declared)
+}
+
+export interface SuitAnalysis {
+  count: SuitCount;
+  rank: SuitRanking;
+}
+
 export interface Player {
   id: number;
   name: string;
   hand: Domino[];
   teamId: 0 | 1;
   marks: number;
+  suitAnalysis?: SuitAnalysis;
 }
 
 export type BidType = 'pass' | 'points' | 'marks' | 'nello' | 'splash' | 'plunge';

@@ -343,35 +343,14 @@ function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump):
     return domino.high === leadSuit || domino.low === leadSuit;
   }
   
-  // Standard tournament rules: doubles belong to their natural suit
-  // A double can follow suit if its natural suit matches the led suit
-  if (domino.high === domino.low) {
-    // Double follows suit if its natural value matches led suit
-    if (domino.high === leadSuit) {
-      return true;
-    }
-    // Double can also follow if it IS trump (i.e., contains the trump suit number)
-    if (trumpSuit !== null && trumpSuit !== 8 && domino.high === trumpSuit && leadSuit === trumpSuit) {
-      return true; // This double IS trump and trump was led
-    }
-    return false; // Double doesn't follow non-matching suit
-  }
-  
-  // Check if this non-double domino is trump
-  const isDominoTrump = trumpSuit !== null && (domino.high === trumpSuit || domino.low === trumpSuit);
-  
-  // If trump was led, then trump dominoes follow suit
-  if (leadSuit === trumpSuit && isDominoTrump) {
+  // First check if domino can follow suit by containing the led suit number
+  // This applies to both doubles and non-doubles
+  if (domino.high === leadSuit || domino.low === leadSuit) {
     return true;
   }
   
-  // If non-trump was led and domino is trump, it doesn't follow suit (it trumps)
-  if (leadSuit !== trumpSuit && isDominoTrump) {
-    return false;
-  }
-  
-  // For non-trump dominoes, check if they contain the led suit number
-  return domino.high === leadSuit || domino.low === leadSuit;
+  // If domino doesn't contain the led suit number, it cannot follow suit
+  return false;
 }
 
 /**

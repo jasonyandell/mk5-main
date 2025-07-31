@@ -85,6 +85,42 @@
               Played: {currentTrickPlays[player.id]}
             </div>
           {/if}
+          
+          {#if player.suitAnalysis}
+            <div class="suit-analysis">
+              <div class="suit-counts">
+                <strong>Suits:</strong>
+                {#each [0, 1, 2, 3, 4, 5, 6] as suit}
+                  {#if player.suitAnalysis.count[suit] > 0}
+                    <span class="suit-count" class:trump-suit={gameState.trump === suit}>
+                      {suit}s:{player.suitAnalysis.count[suit]}
+                    </span>
+                  {/if}
+                {/each}
+                {#if player.suitAnalysis.count.doubles > 0}
+                  <span class="suit-count" class:trump-suit={gameState.trump === 7}>
+                    D:{player.suitAnalysis.count.doubles}
+                  </span>
+                {/if}
+                {#if player.suitAnalysis.count.trump > 0}
+                  <span class="trump-count">
+                    T:{player.suitAnalysis.count.trump}
+                  </span>
+                {/if}
+              </div>
+              
+              {#if gameState.trump !== null && player.suitAnalysis.rank.trump.length > 0}
+                <div class="trump-dominoes">
+                  <strong>Trump:</strong>
+                  {#each player.suitAnalysis.rank.trump as domino}
+                    <span class="trump-domino">
+                      {renderDomino(domino.high, domino.low)}
+                    </span>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
       {/if}
     {/each}
@@ -231,6 +267,74 @@
     color: #28a745;
     font-weight: 500;
     margin-top: 4px;
+  }
+  
+  .suit-analysis {
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px solid #e9ecef;
+    font-size: 8px;
+  }
+  
+  .suit-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    align-items: center;
+    margin-bottom: 3px;
+  }
+  
+  .suit-counts strong {
+    font-size: 8px;
+    color: #495057;
+  }
+  
+  .suit-count {
+    background: #e9ecef;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-size: 7px;
+    font-weight: 500;
+    color: #495057;
+  }
+  
+  .suit-count.trump-suit {
+    background: #ffd700;
+    color: #000;
+    font-weight: 600;
+  }
+  
+  .trump-count {
+    background: #8b5cf6;
+    color: white;
+    padding: 1px 3px;
+    border-radius: 2px;
+    font-size: 7px;
+    font-weight: 600;
+  }
+  
+  .trump-dominoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    align-items: center;
+  }
+  
+  .trump-dominoes strong {
+    font-size: 8px;
+    color: #8b5cf6;
+  }
+  
+  .trump-domino {
+    background: #8b5cf6;
+    color: white;
+    padding: 1px 2px;
+    border-radius: 2px;
+    font-family: monospace;
+    font-size: 7px;
+    font-weight: 500;
+    min-width: 14px;
+    text-align: center;
   }
   
 </style>

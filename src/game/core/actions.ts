@@ -5,6 +5,16 @@ import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
 import { dealDominoesWithSeed } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
+import { analyzeSuits } from './suit-analysis';
+
+/**
+ * Updates suit analysis for all players in the game state
+ */
+function updateAllPlayersSuitAnalysis(state: GameState): void {
+  state.players.forEach(player => {
+    player.suitAnalysis = analyzeSuits(player.hand, state.trump);
+  });
+}
 
 /**
  * Core state machine function that returns all possible next states
@@ -47,6 +57,9 @@ function getBiddingTransitions(state: GameState): StateTransition[] {
       newState.players.forEach((player, i) => {
         player.hand = hands[i];
       });
+      
+      // Update suit analysis for all players after dealing new hands
+      updateAllPlayersSuitAnalysis(newState);
       
       transitions.push({
         id: 'redeal',
@@ -225,6 +238,9 @@ function getTrumpSelectionTransitions(state: GameState): StateTransition[] {
     newState.trump = trump;
     newState.currentPlayer = state.winningBidder!;
     
+    // Update suit analysis for all players after trump is declared
+    updateAllPlayersSuitAnalysis(newState);
+    
     transitions.push({
       id: `trump-${name.toLowerCase()}`,
       label: `Declare ${name} trump`,
@@ -282,6 +298,9 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
     newState.currentTrick.push({ player: state.currentPlayer, domino });
     newState.currentPlayer = getNextPlayer(state.currentPlayer);
     
+    // Update suit analysis for the player who just played a domino
+    newPlayer.suitAnalysis = analyzeSuits(newPlayer.hand, state.trump);
+    
     transitions.push({
       id: `play-${domino.id}`,
       label: `Play ${domino.high}-${domino.low}`,
@@ -330,6 +349,9 @@ function getScoringTransitions(state: GameState): StateTransition[] {
     newState.tricks = [];
     newState.currentTrick = [];
     newState.teamScores = [0, 0];
+    
+    // Update suit analysis for all players after dealing new hands (no trump yet)
+    updateAllPlayersSuitAnalysis(newState);
     
     transitions.push({
       id: 'score-hand',

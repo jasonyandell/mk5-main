@@ -350,12 +350,8 @@ export const gameActions = {
     
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     
-    const initialJson = JSON.stringify(initial, null, 2);
-    const actionsJson = JSON.stringify(
-      actions.map(a => ({ id: a.id, label: a.label })), 
-      null, 
-      2
-    );
+    // Create simple action array - just the action IDs
+    const actionIds = actions.map(a => a.id);
     
     let errorSection = '';
     if (validationError) {
@@ -367,44 +363,62 @@ ${validationError.split('\n').map(line => '  ' + line).join('\n')}
 `;
     }
     
-    return `import { test, expect } from '@playwright/test';
-import { playwrightHelper } from './helpers/playwrightHelper';
+    return `import { test, expect } from 'vitest';
+import { getNextStates } from '../game';
+import type { GameState } from '../game/types';
 
-test('Bug report - ${timestamp}', async ({ page }) => {
-  await page.goto('/');
+test('Bug report - ${timestamp}', () => {
   ${errorSection}
-  // All actions from initial state to current state
-  // Initial game state
-  const baseState = ${initialJson};
+  // Bug report with efficient action array
+  // Base state for reproduction
+  const baseState: GameState = ${JSON.stringify(initial, null, 2)};
   
-  const actionSequence = ${actionsJson};
+  // Action sequence from action history
+  const actionIds = ${JSON.stringify(actionIds, null, 2)};
   
-  // Load initial state
-  await playwrightHelper.loadState(page, baseState);
+  // Replay actions step by step using game logic
+  let currentState = baseState;
   
-  // Replay and validate each action
-  let currentGameState = baseState;
-  for (let i = 0; i < actionSequence.length; i++) {
-    const action = actionSequence[i];
+  for (let i = 0; i < actionIds.length; i++) {
+    const actionId = actionIds[i];
+    console.log(\`Step \${i + 1}: Executing action "\${actionId}"\`);
     
-    // Get available actions at this step
-    const availableActions = await playwrightHelper.getAvailableActions(page, currentGameState);
-    const isActionAvailable = availableActions.some(a => a.id === action.id);
+    // Get available transitions from current state
+    const availableTransitions = getNextStates(currentState);
+    const matchingTransition = availableTransitions.find(t => t.id === actionId);
     
-    if (!isActionAvailable) {
-      throw new Error(\`Invalid action at step \${i + 1}: "\${action.id}" not available. Available actions: \${availableActions.map(a => a.id).join(', ')}\`);
+    // Verify action is available
+    if (!matchingTransition) {
+      const availableActions = availableTransitions.map(t => t.id).join(', ');
+      throw new Error(\`Action "\${actionId}" not available at step \${i + 1}. Available: [\${availableActions}]\`);
     }
     
-    await playwrightHelper.clickAction(page, action.id);
+    // Execute the action
+    currentState = matchingTransition.newState;
     
-    // Update current state for next iteration (would need state tracking)
-    // currentGameState = await playwrightHelper.getCurrentState(page);
+    // Verify state is valid after transition
+    expect(currentState).toBeDefined();
+    expect(currentState.phase).toBeTruthy();
   }
   
-  // Verify we're in the expected phase
-  await expect(page.locator('[data-testid="game-phase"]')).toContainText('${currentState.phase}');
+  // Verify final state matches expected
+  expect(currentState.phase).toBe('${currentState.phase}');
+  expect(currentState.currentPlayer).toBe(${currentState.currentPlayer});
+  ${currentState.trump !== null ? `expect(currentState.trump).toBe(${currentState.trump});` : '// No trump set'}
+  ${currentState.winningBidder !== null ? `expect(currentState.winningBidder).toBe(${currentState.winningBidder});` : '// No winning bidder yet'}
+  
+  // Team state verification
+  expect(currentState.teamScores).toEqual([${currentState.teamScores[0]}, ${currentState.teamScores[1]}]);
+  expect(currentState.teamMarks).toEqual([${currentState.teamMarks[0]}, ${currentState.teamMarks[1]}]);
+  
+  // Verify specific game state properties
+  expect(currentState.players).toHaveLength(4);
+  expect(currentState.bids).toHaveLength(${currentState.bids.length});
+  expect(currentState.tricks).toHaveLength(${currentState.tricks.length});
+  expect(currentState.currentTrick).toHaveLength(${currentState.currentTrick.length});
   
   // Add your specific bug assertions here
+  // Example: expect(specificBugCondition).toBe(expectedValue);
 });`;
   }
 };
