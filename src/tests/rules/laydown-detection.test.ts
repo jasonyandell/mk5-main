@@ -2,9 +2,7 @@ import { describe, it } from 'vitest';
 import type { GameState, Domino, Trump } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
-
-// Console output flag - set to true to enable logging
-const ENABLE_CONSOLE_OUTPUT = false;
+import { testLog } from '../helpers/testConsole';
 
 describe('Laydown Detection', () => {
   const ALL_DOMINOES: [number, number][] = [
@@ -323,9 +321,7 @@ describe('Laydown Detection', () => {
   }
 
   it('should find all true laydowns by checking all possible trumps', () => {
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log('\n=== Laydown Detection ===\n');
-    }
+    testLog('\n=== Laydown Detection ===\n');
     
     const laydowns: Array<{
       hand: [number, number][],
@@ -350,40 +346,39 @@ describe('Laydown Detection', () => {
       }
     });
     
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log(`Hands checked: ${handsChecked}`);
-      console.log(`Laydowns found: ${laydowns.length}\n`);
-      
-      // Show some examples, including some with 0 as trump
-      console.log('Example laydowns with correct play order:\n');
+    testLog(`Hands checked: ${handsChecked}`);
+    testLog(`Laydowns found: ${laydowns.length}\n`);
+    
+    // Show some examples, including some with 0 as trump
+    testLog('Example laydowns with correct play order:\n');
       
       // First show any with 0 as trump
       const zeroTrumpExamples = laydowns.filter(l => l.trump === 0).slice(0, 2);
       zeroTrumpExamples.forEach((laydown, i) => {
-        console.log(`Example ${i + 1} (0s trump):`);
-        console.log(`Hand: ${laydown.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-        console.log(`Best trump: ${laydown.trump}`);
-        console.log(`Play order: ${laydown.playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ')}`);
+        testLog(`Example ${i + 1} (0s trump):`);
+        testLog(`Hand: ${laydown.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+        testLog(`Best trump: ${laydown.trump}`);
+        testLog(`Play order: ${laydown.playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ')}`);
         
         // Count trumps
         const trumpCount = laydown.hand.filter(d => d[0] === 0 || d[1] === 0).length;
-        console.log(`Trumps: ${trumpCount}, Non-trumps: ${7 - trumpCount}`);
-        console.log('---\n');
+        testLog(`Trumps: ${trumpCount}, Non-trumps: ${7 - trumpCount}`);
+        testLog('---\n');
       });
       
       // Then show other examples
       laydowns.slice(0, 3).forEach((laydown, i) => {
-        console.log(`Example ${i + 3}:`);
-        console.log(`Hand: ${laydown.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-        console.log(`Best trump: ${laydown.trump === 7 ? 'Doubles' : laydown.trump}`);
-        console.log(`Play order: ${laydown.playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ')}`);
+        testLog(`Example ${i + 3}:`);
+        testLog(`Hand: ${laydown.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+        testLog(`Best trump: ${laydown.trump === 7 ? 'Doubles' : laydown.trump}`);
+        testLog(`Play order: ${laydown.playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ')}`);
         
         // Count trumps
         const trumpCount = laydown.trump === 7
           ? laydown.hand.filter(d => d[0] === d[1]).length
           : laydown.hand.filter(d => d[0] === laydown.trump || d[1] === laydown.trump).length;
-        console.log(`Trumps: ${trumpCount}, Non-trumps: ${7 - trumpCount}`);
-        console.log('---\n');
+        testLog(`Trumps: ${trumpCount}, Non-trumps: ${7 - trumpCount}`);
+        testLog('---\n');
       });
       
       // Group by trump
@@ -393,19 +388,16 @@ describe('Laydown Detection', () => {
         byTrump[key] = (byTrump[key] || 0) + 1;
       });
       
-      console.log('Laydowns by trump suit:');
+      testLog('Laydowns by trump suit:');
       Object.entries(byTrump)
         .sort(([,a], [,b]) => b - a)
         .forEach(([trump, count]) => {
-          console.log(`${trump}: ${count}`);
+          testLog(`${trump}: ${count}`);
         });
-    }
   });
 
   it('should verify detected laydowns with game engine', () => {
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log('\n=== Engine Verification of Detected Laydowns ===\n');
-    }
+    testLog('\n=== Engine Verification of Detected Laydowns ===\n');
     
     // Find a few laydowns with optimal trump
     const testHands: Array<{ hand: [number, number][], trump: number }> = [];
@@ -424,19 +416,15 @@ describe('Laydown Detection', () => {
       const gameState = setupGameWithHand(test.hand, test.trump as Trump);
       const isLaydown = exhaustiveCheck(gameState);
       
-      if (ENABLE_CONSOLE_OUTPUT) {
-        console.log(`${i + 1}. ${test.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-        console.log(`   Trump: ${test.trump === 7 ? 'Doubles' : test.trump}`);
-        console.log(`   Engine: ${isLaydown ? '✓ LAYDOWN' : '✗ NOT LAYDOWN'}`);
-      }
+      testLog(`${i + 1}. ${test.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+      testLog(`   Trump: ${test.trump === 7 ? 'Doubles' : test.trump}`);
+      testLog(`   Engine: ${isLaydown ? '✓ LAYDOWN' : '✗ NOT LAYDOWN'}`);
       
       if (isLaydown) verified++;
     });
     
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log('Testing first 10 corrected laydowns:\n');
-      console.log(`\nVerified: ${verified}/${testHands.length}`);
-    }
+    testLog('Testing first 10 corrected laydowns:\n');
+    testLog(`\nVerified: ${verified}/${testHands.length}`);
   });
 
   function exhaustiveCheck(state: GameState): boolean {

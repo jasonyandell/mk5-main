@@ -289,7 +289,6 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
   }
   
   // Generate play transitions for current player
-  const player = state.players[state.currentPlayer];
   const validPlays = getValidPlays(state, state.currentPlayer);
   
   validPlays.forEach(domino => {

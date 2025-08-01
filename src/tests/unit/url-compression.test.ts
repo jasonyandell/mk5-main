@@ -8,6 +8,7 @@ import {
   decodeURLData
 } from '../../game/core/url-compression';
 import { createInitialState } from '../../game';
+import { testLog } from '../helpers/testConsole';
 
 describe('URL Compression', () => {
   it('should compress game state to minimal representation', () => {
@@ -134,9 +135,9 @@ describe('URL Compression', () => {
     };
     const newParam = encodeURLData(newData);
     
-    console.log('Old URL length:', oldParam.length);
-    console.log('New URL length:', newParam.length);
-    console.log('Compression ratio:', (newParam.length / oldParam.length * 100).toFixed(1) + '%');
+    testLog('Old URL length:', oldParam.length);
+    testLog('New URL length:', newParam.length);
+    testLog('Compression ratio:', (newParam.length / oldParam.length * 100).toFixed(1) + '%');
     
     // Should be significantly smaller
     expect(newParam.length).toBeLessThan(oldParam.length * 0.1); // Less than 10% of original

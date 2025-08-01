@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
-import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { isValidPlay, getValidPlays, isValidBid } from '../../game/core/rules';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
-import type { Domino, Trump, Bid } from '../../game/types';
+import type { Domino, Bid } from '../../game/types';
 
 describe('Special Gameplay Scenarios', () => {
   describe('High Stakes Bidding', () => {
     it('handles 6 and 7 mark bids correctly', () => {
-      // Create state with escalated bidding
+      // Create state with escalated bidding up to 6 marks
       const state = createTestState({
         phase: 'bidding',
         dealer: 0,
-        currentPlayer: 1,
+        currentPlayer: 3,
         bids: [
           { type: BID_TYPES.MARKS, value: 4, player: 0 },
           { type: BID_TYPES.MARKS, value: 5, player: 1 },
@@ -21,14 +21,13 @@ describe('Special Gameplay Scenarios', () => {
         ]
       });
 
-      // Player 3 can bid 7 marks
+      // Player 3 can bid 7 marks (one more than current 6)
       const sevenMarkBid: Bid = { type: BID_TYPES.MARKS, value: 7, player: 3 };
+      expect(isValidBid(state, sevenMarkBid)).toBe(true);
       
       // But cannot jump to 8 marks (would need to bid 7 first)
       const eightMarkBid: Bid = { type: BID_TYPES.MARKS, value: 8, player: 3 };
-      
-      // 7 marks should be valid (one more than current 6)
-      // 8 marks would be invalid (too big a jump)
+      expect(isValidBid(state, eightMarkBid)).toBe(false);
     });
 
     it('handles minimum 30 bid enforcement', () => {
@@ -38,11 +37,13 @@ describe('Special Gameplay Scenarios', () => {
         bids: []
       });
 
-      // Minimum bid is 30
+      // Minimum bid is 30 points
       const belowMinBid: Bid = { type: BID_TYPES.POINTS, value: 29, player: 0 };
       const minBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 0 };
       
       // 29 should be invalid, 30 should be valid
+      expect(isValidBid(state, belowMinBid)).toBe(false);
+      expect(isValidBid(state, minBid)).toBe(true);
     });
 
     it('handles plunge bid requirements', () => {
@@ -55,11 +56,20 @@ describe('Special Gameplay Scenarios', () => {
         bids: [],
         tournamentMode: false // Plunge not allowed in tournament
       });
+      
+      // Set the player's hand to have 4 doubles
+      state.hands = { 0: handWith4Doubles, 1: [], 2: [], 3: [] };
+      state.players[0].hand = handWith4Doubles;
 
-      // Player needs 4+ doubles to plunge
+      // Plunge bid requires 4+ doubles
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
       // Should be valid with 4 doubles (in non-tournament mode)
+      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
+      
+      // But should be invalid in tournament mode
+      state.tournamentMode = true;
+      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(false);
     });
   });
 
@@ -239,10 +249,11 @@ describe('Special Gameplay Scenarios', () => {
 
   describe('Game-Ending Scenarios', () => {
     it('handles exact 7-mark victory', () => {
-      const state = createTestState({
-        teamMarks: [6, 5],
-        phase: 'scoring'
-      });
+      // TODO: Use state variable in actual test implementation
+      // const state = createTestState({
+      //   teamMarks: [6, 5],
+      //   phase: 'scoring'
+      // });
 
       // Team 0 wins one more mark to reach exactly 7
       const newMarks: [number, number] = [7, 5];
@@ -254,6 +265,10 @@ describe('Special Gameplay Scenarios', () => {
         teamMarks: [5, 4],
         phase: 'scoring'
       });
+
+      // Verify initial state before over-mark scenario
+      expect(state.teamMarks).toEqual([5, 4]);
+      expect(isGameComplete(state.teamMarks, 7)).toBe(false);
 
       // Team 0 bids and makes 3 marks, going to 8
       const newMarks: [number, number] = [8, 4];
@@ -267,6 +282,10 @@ describe('Special Gameplay Scenarios', () => {
         phase: 'playing'
       });
 
+      // Verify current state has both teams at 6 marks
+      expect(state.teamMarks).toEqual([6, 6]);
+      expect(isGameComplete(state.teamMarks, 7)).toBe(false); // Game not over yet
+      
       // Either team winning next hand wins game
       const team0Wins: [number, number] = [7, 6];
       const team1Wins: [number, number] = [6, 7];
@@ -345,8 +364,14 @@ describe('Special Gameplay Scenarios', () => {
         ]
       });
 
-      // All blanks (0s) have been played
-      // Future leads of blanks impossible
+      // All blanks (0s) have been played - verify the state reflects this
+      expect(afterSuitBlocked.tricks).toHaveLength(2);
+      
+      // Future leads of blanks impossible - all 0s should be in tricks
+      const allZeroesPlayed = afterSuitBlocked.tricks.every(trick => 
+        trick.plays.some(play => play.domino.high === 0 || play.domino.low === 0)
+      );
+      expect(allZeroesPlayed).toBe(true);
     });
   });
 });

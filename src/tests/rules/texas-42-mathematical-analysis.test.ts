@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-// Console output flag - set to true to enable logging
-const ENABLE_CONSOLE_OUTPUT = false;
+import { testLog } from '../helpers/testConsole';
 
 describe('Texas 42 Mathematical Analysis', () => {
   const ALL_DOMINOES: [number, number][] = [];
@@ -89,8 +87,8 @@ describe('Texas 42 Mathematical Analysis', () => {
             laydowns.set(key, (laydowns.get(key) || 0) + 1);
             
             // Debug first few 4-trump hands
-            if (ENABLE_CONSOLE_OUTPUT && debugFirst && key.startsWith('4 ')) {
-              console.log(`\nExample ${key}:`, hand.map(d => `${d[0]}-${d[1]}`).join(', '));
+            if (debugFirst && key.startsWith('4 ')) {
+              testLog(`\nExample ${key}:`, hand.map(d => `${d[0]}-${d[1]}`).join(', '));
               debugFirst = false;
             }
           }
@@ -104,13 +102,13 @@ describe('Texas 42 Mathematical Analysis', () => {
         }
       });
       
-      if (ENABLE_CONSOLE_OUTPUT) {
-        console.log(`\nTotal laydown hands: ${totalLaydowns}`);
-        console.log('\nPatterns found:');
+      {
+        testLog(`\nTotal laydown hands: ${totalLaydowns}`);
+        testLog('\nPatterns found:');
         for (const [pattern, count] of laydowns) {
-          console.log(`${pattern}: ${count}`);
+          testLog(`${pattern}: ${count}`);
         }
-        console.log(`\nVerified ${totalLaydowns} hands guarantee winning all 7 tricks`);
+        testLog(`\nVerified ${totalLaydowns} hands guarantee winning all 7 tricks`);
       }
       
       // We don't know the exact count, but should find many laydowns

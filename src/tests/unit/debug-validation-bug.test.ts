@@ -2,6 +2,7 @@ import { describe, test, expect } from 'vitest';
 import { getNextStates } from '../../game/core/actions';
 import { createTestState } from '../helpers/gameTestHelper';
 import type { GameState } from '../../game/types';
+import { testLog } from '../helpers/testConsole';
 
 describe('Debug Validation Bug - Step 7', () => {
   test('should validate action sequence correctly for the reported bug', () => {
@@ -78,6 +79,7 @@ describe('Debug Validation Bug - Step 7', () => {
       trump: null,
       tricks: [],
       currentTrick: [],
+      currentSuit: null,
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: 7,
@@ -142,42 +144,42 @@ describe('Debug Validation Bug - Step 7', () => {
     // Validate each step
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
-      console.log(`\nStep ${i + 1}: ${action.id} (${action.label})`);
-      console.log(`Current player: ${currentState.currentPlayer}`);
-      console.log(`Current phase: ${currentState.phase}`);
+      testLog(`\nStep ${i + 1}: ${action.id} (${action.label})`);
+      testLog(`Current player: ${currentState.currentPlayer}`);
+      testLog(`Current phase: ${currentState.phase}`);
       
       if (currentState.phase === 'playing') {
-        console.log(`Trump: ${currentState.trump}`);
-        console.log(`Current trick: ${JSON.stringify(currentState.currentTrick.map(p => `P${p.player}:${p.domino.id}`))}`);
+        testLog(`Trump: ${currentState.trump}`);
+        testLog(`Current trick: ${JSON.stringify(currentState.currentTrick.map(p => `P${p.player}:${p.domino.id}`))}`);
         
         if (action.id.startsWith('play-')) {
           const dominoId = action.id.replace('play-', '');
           const currentPlayerHand = currentState.players[currentState.currentPlayer].hand;
-          console.log(`Player ${currentState.currentPlayer} hand: ${currentPlayerHand.map(d => d.id).join(', ')}`);
-          console.log(`Looking for domino: ${dominoId}`);
-          console.log(`Player has domino: ${currentPlayerHand.some(d => d.id === dominoId)}`);
+          testLog(`Player ${currentState.currentPlayer} hand: ${currentPlayerHand.map(d => d.id).join(', ')}`);
+          testLog(`Looking for domino: ${dominoId}`);
+          testLog(`Player has domino: ${currentPlayerHand.some(d => d.id === dominoId)}`);
         }
       }
       
       // Get available actions for current state
       const availableActions = getNextStates(currentState);
-      console.log(`Available actions: ${availableActions.map(a => a.id).join(', ')}`);
+      testLog(`Available actions: ${availableActions.map(a => a.id).join(', ')}`);
       
       // Check if the action is valid
       const validAction = availableActions.find(a => a.id === action.id);
       
       if (!validAction) {
-        console.log(`❌ INVALID: Action ${action.id} not found in available actions`);
+        testLog(`❌ INVALID: Action ${action.id} not found in available actions`);
         if (i === 6) { // Step 7 (0-indexed)
           // This is the bug we're investigating
-          console.log('This is step 7 - the reported bug!');
-          console.log('Expected: play-6-5 should be available');
+          testLog('This is step 7 - the reported bug!');
+          testLog('Expected: play-6-5 should be available');
           
           // Let's debug who should have 6-5
           for (let playerId = 0; playerId < 4; playerId++) {
             const playerHand = currentState.players[playerId].hand;
             const has65 = playerHand.some(d => d.id === '6-5');
-            console.log(`Player ${playerId} has 6-5: ${has65}`);
+            testLog(`Player ${playerId} has 6-5: ${has65}`);
           }
         }
         
@@ -190,7 +192,7 @@ describe('Debug Validation Bug - Step 7', () => {
         }
       }
       
-      console.log(`✅ VALID: ${action.id}`);
+      testLog(`✅ VALID: ${action.id}`);
       
       // Update state for next iteration
       currentState = validAction.newState;

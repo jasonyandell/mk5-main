@@ -3,7 +3,7 @@ import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay, canFollowSuit, getValidPlays } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import type { Domino, Trump, Player } from '../../game/types';
+import type { Domino, Trump } from '../../game/types';
 
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {

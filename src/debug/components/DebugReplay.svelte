@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { actionHistory, initialState, stateValidationError } from '../../stores/gameStore';
+  import { actionHistory, initialState, stateValidationError, gameState } from '../../stores/gameStore';
+  import { getNextStates } from '../../game/core/actions';
   
   let expanded = $state(false);
   
@@ -23,7 +24,23 @@
   }
   
   function handleEventClick(index: number) {
-    alert(`Event #${index}`);
+    // Time travel to the state at this point in history
+    // index 0 is initial state, index 1 is after first action, etc.
+    
+    // Start from initial state
+    let currentState = JSON.parse(JSON.stringify($initialState));
+    
+    // Apply actions up to the selected index
+    for (let i = 0; i < index && i < $actionHistory.length; i++) {
+      const action = $actionHistory[i];
+      currentState = action.newState;
+    }
+    
+    // Update the game state
+    gameState.set(currentState);
+    
+    // Trim action history to this point
+    actionHistory.set($actionHistory.slice(0, index));
   }
 </script>
 
@@ -67,7 +84,7 @@
     <div class="action-log">
       <div class="log-entry">
         <div class="log-line">
-          <span class="event-number" onclick={() => handleEventClick(0)}>00</span>
+          <span class="event-number" onclick={() => handleEventClick(0)} title="Click to restore game to initial state">00</span>
           <span class="phase-emoji">{phaseEmojis[$initialState.phase] || '🎲'}</span>
           <span class="action-id">initial-state</span>
         </div>
@@ -80,7 +97,7 @@
         {@const phase = getPhaseFromAction(action, index)}
         <div class="log-entry">
           <div class="log-line">
-            <span class="event-number" onclick={() => handleEventClick(index + 1)}>{String(index + 1).padStart(2, '0')}</span>
+            <span class="event-number" onclick={() => handleEventClick(index + 1)} title="Click to time travel to this point">{String(index + 1).padStart(2, '0')}</span>
             <span class="phase-emoji">{phaseEmojis[phase] || '🎲'}</span>
             <span class="action-id">{action.id}</span>
           </div>

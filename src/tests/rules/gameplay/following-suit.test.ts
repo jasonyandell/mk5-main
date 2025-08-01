@@ -4,8 +4,7 @@ import {
   getValidPlays, 
   canFollowSuit, 
   isValidPlay,
-  type Domino,
-  type GameState
+  type Domino
 } from '../../../game';
 import { analyzeSuits } from '../../../game/core/suit-analysis';
 

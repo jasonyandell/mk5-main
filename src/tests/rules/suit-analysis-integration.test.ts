@@ -9,7 +9,7 @@ describe('Suit Analysis Integration', () => {
       const state = createInitialState({ shuffleSeed: 12345 });
       
       // All players should have suit analysis
-      state.players.forEach((player, index) => {
+      state.players.forEach((player) => {
         expect(player.suitAnalysis).toBeDefined();
         expect(player.suitAnalysis?.count).toBeDefined();
         expect(player.suitAnalysis?.rank).toBeDefined();
@@ -156,7 +156,6 @@ describe('Suit Analysis Integration', () => {
       
       const currentPlayer = playingState.players[playingState.currentPlayer];
       const initialHandSize = currentPlayer.hand.length;
-      const initialTrumpCount = currentPlayer.suitAnalysis?.count.trump || 0;
       
       // Get play transitions
       const playTransitions = getNextStates(playingState);
@@ -200,7 +199,7 @@ describe('Suit Analysis Integration', () => {
         const newState = redealTransition.newState;
         
         // All players should have new hands and updated suit analysis
-        newState.players.forEach((player, index) => {
+        newState.players.forEach((player) => {
           expect(player.hand.length).toBe(7); // Full hand
           expect(player.suitAnalysis).toBeDefined();
           
@@ -208,11 +207,6 @@ describe('Suit Analysis Integration', () => {
           expect(player.suitAnalysis?.count).toBeDefined();
           expect(player.suitAnalysis?.rank).toBeDefined();
           
-          // Since hands are redealt, they should be different from original
-          const originalPlayer = state.players[index];
-          const handsAreDifferent = player.hand.some((domino, i) => 
-            domino.id !== originalPlayer.hand[i]?.id
-          );
           // Note: With different seeds, hands should be different, but let's just verify structure
           expect(player.suitAnalysis?.count).toBeDefined();
         });

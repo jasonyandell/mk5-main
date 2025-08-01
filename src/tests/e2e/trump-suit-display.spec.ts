@@ -29,11 +29,11 @@ test.describe('Trump Suit Display in Previous Tricks', () => {
     await helper.completeTrick();
     
     // Verify trump suit appears in Previous Tricks panel
-    const trickElements = helper.page.locator('.trick-compact');
+    const trickElements = helper.locator('.trick-compact');
     await expect(trickElements).toHaveCount(1);
     
     // Check for trump display in the completed trick
-    const trumpDisplay = helper.page.locator('.trump-display');
+    const trumpDisplay = helper.locator('.trump-display');
     await expect(trumpDisplay).toBeVisible();
     await expect(trumpDisplay).toContainText('[doubles]');
     
@@ -56,7 +56,7 @@ test.describe('Trump Suit Display in Previous Tricks', () => {
     await helper.playAnyDomino();
     
     // Check current trick shows trump
-    const trumpDisplay = helper.page.locator('.trump-display');
+    const trumpDisplay = helper.locator('.trump-display');
     await expect(trumpDisplay).toBeVisible();
     await expect(trumpDisplay).toContainText('[5s]');
   });
@@ -80,7 +80,7 @@ test.describe('Trump Suit Display in Previous Tricks', () => {
     await helper.playAnyDomino();
     
     // Should have trump display in both completed and current trick
-    const trumpDisplays = helper.page.locator('.trump-display');
+    const trumpDisplays = helper.locator('.trump-display');
     await expect(trumpDisplays).toHaveCount(2);
     
     // Both should show the same trump
@@ -91,7 +91,7 @@ test.describe('Trump Suit Display in Previous Tricks', () => {
 
   test('does not show trump suit before trump is selected', async () => {
     // Before trump selection
-    const trumpDisplay = helper.page.locator('.trump-display');
+    const trumpDisplay = helper.locator('.trump-display');
     await expect(trumpDisplay).toHaveCount(0);
     
     // Even during bidding
@@ -115,7 +115,7 @@ test.describe('Trump Suit Display in Previous Tricks', () => {
     await helper.completeTrick();
     
     // Verify the order: trump display should come before winner info
-    const trickInfo = helper.page.locator('.trick-info').first();
+    const trickInfo = helper.locator('.trick-info').first();
     const trumpDisplay = trickInfo.locator('.trump-display');
     const winnerInfo = trickInfo.locator('.winner-info');
     const pointsInfo = trickInfo.locator('.points-info');

@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
-import type { Domino, GameState } from '../../game/types';
 
 describe('Current Suit Display', () => {
   const doublesAreTrump = 7;

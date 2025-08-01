@@ -138,13 +138,13 @@ test.describe('Bug Report Generation Tests', () => {
     await helper.selectActionByType('pass');
     
     // Generate bug report via UI
-    await helper.page.locator('[data-testid="bug-report-button"]').click();
+    await helper.locator('[data-testid="bug-report-button"]').click();
     
     // Verify bug panel is shown
-    await expect(helper.page.locator('[data-testid="bug-content"]')).toBeVisible();
+    await expect(helper.locator('[data-testid="bug-content"]')).toBeVisible();
     
     // Verify generated test code area has content
-    const testCodeArea = helper.page.locator('[data-testid="generated-test-code"]');
+    const testCodeArea = helper.locator('[data-testid="generated-test-code"]');
     const bugReportContent = await testCodeArea.inputValue();
     
     
@@ -152,7 +152,7 @@ test.describe('Bug Report Generation Tests', () => {
     expect(bugReportContent).toMatch(/Bug report - \d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}/);
     
     // Verify copy button is available
-    await expect(helper.page.locator('[data-testid="copy-test-code"]')).toBeVisible();
+    await expect(helper.locator('[data-testid="copy-test-code"]')).toBeVisible();
   });
 
   test('bug report works with different game phases', async () => {

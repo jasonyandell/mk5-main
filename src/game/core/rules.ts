@@ -125,7 +125,7 @@ function isValidSubsequentBid(
 /**
  * Validates mark bids with tournament progression rules
  */
-function isValidMarkBid(bid: Bid, lastBid: Bid, previousBids: Bid[]): boolean {
+function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): boolean {
   if (bid.value === undefined) return false;
   
   // After point bids, can bid 1 or 2 marks
@@ -133,17 +133,13 @@ function isValidMarkBid(bid: Bid, lastBid: Bid, previousBids: Bid[]): boolean {
     return bid.value >= 1 && bid.value <= 2;
   }
   
-  // Mark bid progression: 3+ marks can only be bid after 2 marks
+  // Mark bid progression: can only bid one more mark than the last mark bid
   if (lastBid.type === BID_TYPES.MARKS) {
-    // Include current lastBid in the check for 2 marks
-    const allMarkBids = [...previousBids, lastBid];
-    const hasTwoMarks = allMarkBids.some(b => b.type === BID_TYPES.MARKS && b.value === 2);
+    // Can always bid 2 marks (standard max opening bid rule)
+    if (bid.value === 2) return true;
     
-    // Can bid 2 marks if not already bid
-    if (!hasTwoMarks && bid.value === 2) return true;
-    
-    // Can only bid 3+ marks after 2 marks, and only one additional mark
-    if (hasTwoMarks && bid.value === lastBid.value! + 1) return true;
+    // For 3+ marks, can only bid one more than the last mark bid if last bid was 2+
+    if (bid.value >= 3 && lastBid.value! >= 2 && bid.value === lastBid.value! + 1) return true;
     
     return false;
   }

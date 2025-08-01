@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { testLog } from './helpers/testConsole';
 
 describe('Quad Laydowns Analysis', () => {
   const ALL_DOMINOES: [number, number][] = [
@@ -40,7 +41,7 @@ describe('Quad Laydowns Analysis', () => {
   }
 
   it('should verify trump suit overlaps prevent quad laydowns', () => {
-    console.log('\n=== Trump Suit Overlap Analysis ===\n');
+    testLog('\n=== Trump Suit Overlap Analysis ===\n');
     
     // Test all pairs of trump suits for overlaps
     const overlaps: { [key: string]: number } = {};
@@ -52,7 +53,7 @@ describe('Quad Laydowns Analysis', () => {
         overlaps[key] = shared.length;
         
         if (shared.length > 0) {
-          console.log(`${key}: ${shared.length} shared dominoes - ${shared.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+          testLog(`${key}: ${shared.length} shared dominoes - ${shared.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
         }
       }
     }
@@ -61,13 +62,13 @@ describe('Quad Laydowns Analysis', () => {
     const totalPairs = Object.keys(overlaps).length;
     const pairsWithOverlaps = Object.values(overlaps).filter(count => count > 0).length;
     
-    console.log(`\nSummary: ${pairsWithOverlaps}/${totalPairs} trump pairs have shared dominoes`);
+    testLog(`\nSummary: ${pairsWithOverlaps}/${totalPairs} trump pairs have shared dominoes`);
     
     expect(pairsWithOverlaps).toBe(totalPairs);
   });
 
   it('should verify no 4-trump combination allows sufficient dominoes', () => {
-    console.log('\n=== 4-Trump Combination Analysis ===\n');
+    testLog('\n=== 4-Trump Combination Analysis ===\n');
     
     const allCombinations: number[][] = [];
     
@@ -82,7 +83,7 @@ describe('Quad Laydowns Analysis', () => {
       }
     }
     
-    console.log(`Testing ${allCombinations.length} combinations of 4 trump suits...\n`);
+    testLog(`Testing ${allCombinations.length} combinations of 4 trump suits...\n`);
     
     let validCombinations = 0;
     
@@ -114,62 +115,62 @@ describe('Quad Laydowns Analysis', () => {
       
       if (isValid) {
         validCombinations++;
-        console.log(`✓ Valid: ${combo.map(t => `${t}s`).join(', ')}`);
+        testLog(`✓ Valid: ${combo.map(t => `${t}s`).join(', ')}`);
         
         // Show allocations
         allocations.forEach((hand, i) => {
-          console.log(`  P${i+1} (${combo[i]}s): ${hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+          testLog(`  P${i+1} (${combo[i]}s): ${hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
         });
-        console.log();
+        testLog();
       }
     }
     
-    console.log(`\nResult: ${validCombinations}/${allCombinations.length} combinations are valid`);
+    testLog(`\nResult: ${validCombinations}/${allCombinations.length} combinations are valid`);
     
     // This should be 0 based on our findings
     expect(validCombinations).toBe(0);
   });
 
   it('should demonstrate the mathematical impossibility', () => {
-    console.log('\n=== Mathematical Proof of Impossibility ===\n');
+    testLog('\n=== Mathematical Proof of Impossibility ===\n');
     
     // Count total trump dominoes needed vs available
     const trumpsNeededPerPlayer = 5; // double + 4 others
     const totalTrumpsNeeded = 4 * trumpsNeededPerPlayer; // 20 dominoes
     
-    console.log(`Trumps needed per player: ${trumpsNeededPerPlayer}`);
-    console.log(`Total trumps needed for 4 players: ${totalTrumpsNeeded}`);
-    console.log(`Total dominoes available: ${ALL_DOMINOES.length}`);
+    testLog(`Trumps needed per player: ${trumpsNeededPerPlayer}`);
+    testLog(`Total trumps needed for 4 players: ${totalTrumpsNeeded}`);
+    testLog(`Total dominoes available: ${ALL_DOMINOES.length}`);
     
     // Show why this fails
-    console.log('\nWhy this fails:');
-    console.log('1. Each suit has exactly 7 dominoes (including the double)');
-    console.log('2. Many dominoes belong to multiple suits (e.g., 6-4 is in both 6s and 4s)');
-    console.log('3. When 4 players need different trump suits, conflicts are inevitable');
+    testLog('\nWhy this fails:');
+    testLog('1. Each suit has exactly 7 dominoes (including the double)');
+    testLog('2. Many dominoes belong to multiple suits (e.g., 6-4 is in both 6s and 4s)');
+    testLog('3. When 4 players need different trump suits, conflicts are inevitable');
     
     // Demonstrate with a specific example
-    console.log('\nExample conflict with 0s, 1s, 2s, 3s:');
+    testLog('\nExample conflict with 0s, 1s, 2s, 3s:');
     const conflictExample = [0, 1, 2, 3];
     
-    conflictExample.forEach((trump, i) => {
+    conflictExample.forEach((trump) => {
       const trumpDominoes = getTrumpDominoes(trump);
-      console.log(`${trump}s trump dominoes: ${trumpDominoes.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+      testLog(`${trump}s trump dominoes: ${trumpDominoes.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
     });
     
     // Show specific conflicts
-    console.log('\nSpecific conflicts:');
-    console.log('- 1-0 needed by both 0s and 1s players');
-    console.log('- 2-0 needed by both 0s and 2s players');  
-    console.log('- 2-1 needed by both 1s and 2s players');
-    console.log('- 3-0 needed by both 0s and 3s players');
-    console.log('- And many more...');
+    testLog('\nSpecific conflicts:');
+    testLog('- 1-0 needed by both 0s and 1s players');
+    testLog('- 2-0 needed by both 0s and 2s players');  
+    testLog('- 2-1 needed by both 1s and 2s players');
+    testLog('- 3-0 needed by both 0s and 3s players');
+    testLog('- And many more...');
     
     expect(true).toBe(true); // This test just demonstrates the proof
   });
 
   it('should verify original laydown detection finds individual laydowns', () => {
     // Verify that individual laydowns do exist (just not 4 simultaneous ones)
-    console.log('\n=== Individual Laydown Verification ===\n');
+    testLog('\n=== Individual Laydown Verification ===\n');
     
     // Test a known good laydown hand
     const knownLaydown: [number, number][] = [
@@ -177,22 +178,22 @@ describe('Quad Laydowns Analysis', () => {
       [5,5], [4,4] // 2 high non-trumps
     ];
     
-    console.log(`Testing known laydown: ${knownLaydown.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-    console.log('Trump: 6s');
+    testLog(`Testing known laydown: ${knownLaydown.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+    testLog('Trump: 6s');
     
     // Count 6s trumps
     const trumpCount = knownLaydown.filter(d => d[0] === 6 || d[1] === 6).length;
     const hasDouble = knownLaydown.some(d => d[0] === 6 && d[1] === 6);
     const nonTrumps = knownLaydown.filter(d => !(d[0] === 6 || d[1] === 6));
     
-    console.log(`Trumps: ${trumpCount}/7 available`);
-    console.log(`Has double (6-6): ${hasDouble}`);
-    console.log(`Non-trumps: ${nonTrumps.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+    testLog(`Trumps: ${trumpCount}/7 available`);
+    testLog(`Has double (6-6): ${hasDouble}`);
+    testLog(`Non-trumps: ${nonTrumps.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
     
     // This should pass basic laydown requirements
     expect(hasDouble).toBe(true);
     expect(trumpCount).toBeGreaterThanOrEqual(4);
     
-    console.log('✓ Individual laydowns do exist');
+    testLog('✓ Individual laydowns do exist');
   });
 });

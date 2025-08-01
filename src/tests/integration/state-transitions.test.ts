@@ -3,6 +3,7 @@ import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
 import { getNextPlayer } from '../../game/core/players';
 import type { GameState } from '../../game/types';
+import { testLog } from '../helpers/testConsole';
 
 describe('State Transitions Integration', () => {
   describe('Phase Transitions', () => {
@@ -318,6 +319,7 @@ describe('State Transitions Integration', () => {
         trump: null,
         tricks: [],
         currentTrick: [],
+        currentSuit: null,
         teamScores: [0, 0],
         teamMarks: [0, 0],
         gameTarget: 7,
@@ -369,7 +371,7 @@ describe('State Transitions Integration', () => {
       const actions = getNextStates(state);
       
       // Debug: log the actions to see what's happening
-      console.log('Trump selection actions:', actions);
+      testLog('Trump selection actions:', actions);
       
       // Should have trump selection actions available
       expect(actions.length).toBeGreaterThan(0);

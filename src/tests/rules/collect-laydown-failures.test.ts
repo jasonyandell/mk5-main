@@ -2,9 +2,7 @@ import { describe, it } from 'vitest';
 import type { GameState, Domino, Trump } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/actions';
-
-// Console output flag - set to true to enable logging
-const ENABLE_CONSOLE_OUTPUT = false;
+import { testLog } from '../helpers/testConsole';
 
 describe('Collect Laydown Failures', () => {
   const ALL_DOMINOES: [number, number][] = [
@@ -472,9 +470,7 @@ describe('Collect Laydown Failures', () => {
   }
 
   it('should collect and analyze laydown failures', { timeout: 600000 }, () => {
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log('\n=== Collecting Laydown Failures ===\n');
-    }
+    testLog('\n=== Collecting Laydown Failures ===\n');
     
     const failures: FailureDetails[] = [];
     let potentialLaydowns = 0;
@@ -510,13 +506,12 @@ describe('Collect Laydown Failures', () => {
       }
     });
     
-    if (ENABLE_CONSOLE_OUTPUT) {
-      console.log(`Potential laydowns (by mathematical analysis): ${potentialLaydowns}`);
-      console.log(`True laydowns (verified by engine): ${trueLaydowns}`);
-      console.log(`Failures: ${failures.length}\n`);
-      
-      // Display ALL failures with key info and play order
-      console.log('=== All Failure Details ===\n');
+    testLog(`Potential laydowns (by mathematical analysis): ${potentialLaydowns}`);
+    testLog(`True laydowns (verified by engine): ${trueLaydowns}`);
+    testLog(`Failures: ${failures.length}\n`);
+    
+    // Display ALL failures with key info and play order
+    testLog('=== All Failure Details ===\n');
       failures.forEach((f, i) => {
         const handStr = f.hand.map(d => `${d[0]}-${d[1]}`).join(',');
         const lastPlay = f.lastMoves.filter(m => m.includes('P0:')).pop() || 'unknown';
@@ -527,13 +522,13 @@ describe('Collect Laydown Failures', () => {
         const playOrder = getPlayOrder(f.hand, f.trump === 'doubles' ? 7 : f.trump);
         const orderStr = playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ');
         
-        console.log(`${i+1}. [${handStr}] T:${trumpStr}`);
-        console.log(`   Order: ${orderStr}`);
-        console.log(`   Last: ${lastPlay} beaten by ${beatenBy}`);
+        testLog(`${i+1}. [${handStr}] T:${trumpStr}`);
+        testLog(`   Order: ${orderStr}`);
+        testLog(`   Last: ${lastPlay} beaten by ${beatenBy}`);
       });
       
       // Group failures by pattern
-      console.log('=== Failure Patterns ===\n');
+      testLog('=== Failure Patterns ===\n');
       const patterns: { [key: string]: number } = {};
       
       failures.forEach(f => {
@@ -547,11 +542,11 @@ describe('Collect Laydown Failures', () => {
       Object.entries(patterns)
         .sort(([,a], [,b]) => b - a)
         .forEach(([pattern, count]) => {
-          console.log(`${pattern}: ${count} failures`);
+          testLog(`${pattern}: ${count} failures`);
         });
       
       // Show specific examples of different failure types
-      console.log('\n=== Example Failures by Type ===\n');
+      testLog('\n=== Example Failures by Type ===\n');
       
       // Find examples of different trump counts
       const examplesByTrumpCount: { [key: number]: FailureDetails } = {};
@@ -567,23 +562,22 @@ describe('Collect Laydown Failures', () => {
       Object.entries(examplesByTrumpCount)
         .sort(([a], [b]) => Number(b) - Number(a))
         .forEach(([trumpCount, failure]) => {
-          console.log(`Example with ${trumpCount} trumps:`);
-          console.log(`Hand: ${failure.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-          console.log(`Trump: ${failure.trump}`);
+          testLog(`Example with ${trumpCount} trumps:`);
+          testLog(`Hand: ${failure.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
+          testLog(`Trump: ${failure.trump}`);
           const lastPlay = failure.lastMoves.filter(m => m.includes('P0:')).pop() || 'unknown';
           const beatenBy = failure.lastMoves.filter(m => m.includes('P') && !m.includes('P0:')).pop() || 'unknown';
-          console.log(`Bidder ${lastPlay} beaten by ${beatenBy}`);
-          console.log('');
+          testLog(`Bidder ${lastPlay} beaten by ${beatenBy}`);
+          testLog('');
         });
       
       // Should have no failures with corrected logic
-      console.log(`\nExpected failures: 0 (all potential laydowns should verify)`);
-      console.log(`Actual failures: ${failures.length}`);
+      testLog(`\nExpected failures: 0 (all potential laydowns should verify)`);
+      testLog(`Actual failures: ${failures.length}`);
       
       if (failures.length > 0) {
-        console.log('\n⚠️  WARNING: The laydown detection logic may still have issues!');
-        console.log('These hands were identified as laydowns but fail engine verification.');
+        testLog('\n⚠️  WARNING: The laydown detection logic may still have issues!');
+        testLog('These hands were identified as laydowns but fail engine verification.');
       }
-    }
   });
 });

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay } from '../../game/core/rules';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import type { Domino, GameState } from '../../game/types';
+import type { Domino } from '../../game/types';
 
 describe('Suit Following Bug Fix', () => {
   it('should not allow playing 1-1 when player has 5-1 and must follow suit (5s)', () => {

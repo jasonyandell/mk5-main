@@ -65,6 +65,7 @@ test.describe('Debug Snapshot Replay Validation', () => {
         {"player": 3, "domino": {"high": 2, "low": 0, "id": "2-0"}}, // Off-suit
         {"player": 0, "domino": {"high": 1, "low": 1, "id": "1-1"}}  // TRUMP! Should win
       ],
+      "currentSuit": 4, // 4s were led
       "tricks": [],
       "teamScores": [10, 15] as [number, number],
       "teamMarks": [0, 0] as [number, number],

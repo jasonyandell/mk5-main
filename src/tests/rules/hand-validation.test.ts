@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import { GameTestHelper } from '../helpers/gameTestHelper';
-import type { Domino, GameState } from '../../game/types';
+import type { Domino, GameState, Trump } from '../../game/types';
 
 describe('Hand Validation Rules', () => {
   function createTestState(options: {
@@ -14,7 +13,7 @@ describe('Hand Validation Rules', () => {
   }): GameState {
     const state = createInitialState();
     state.phase = 'playing';
-    state.trump = options.trump;
+    state.trump = options.trump as Trump;
     state.currentTrick = options.currentTrick;
     state.currentPlayer = options.currentPlayer || 1;
     

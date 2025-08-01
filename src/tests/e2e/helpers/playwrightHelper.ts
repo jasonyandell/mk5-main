@@ -14,6 +14,16 @@ interface ActionOption {
  */
 export class PlaywrightGameHelper {
   constructor(private page: Page) {}
+  
+  // Public method to access page for direct operations
+  getPage(): Page {
+    return this.page;
+  }
+  
+  // Public method to get locator
+  locator(selector: string) {
+    return this.page.locator(selector);
+  }
 
   async goto() {
     await this.page.goto('/');
@@ -444,21 +454,6 @@ export class PlaywrightGameHelper {
     return await reportElement.inputValue() || '';
   }
 
-  async getAvailableActions(state?: any): Promise<{id: string}[]> {
-    // Get available actions from the UI
-    const actionElements = this.page.locator('[data-action-id]');
-    const count = await actionElements.count();
-    const actions = [];
-    
-    for (let i = 0; i < count; i++) {
-      const actionId = await actionElements.nth(i).getAttribute('data-action-id');
-      if (actionId) {
-        actions.push({ id: actionId });
-      }
-    }
-    
-    return actions;
-  }
 
   async getCurrentState(): Promise<any> {
     // This would need to be implemented to get the current game state
@@ -477,8 +472,8 @@ export const playwrightHelper = {
     const helper = new PlaywrightGameHelper(page);
     return helper.clickAction(actionId);
   },
-  getAvailableActions: async (page: any, state?: any) => {
+  getAvailableActions: async (page: any) => {
     const helper = new PlaywrightGameHelper(page);
-    return helper.getAvailableActions(state);
+    return helper.getAvailableActions();
   }
 };

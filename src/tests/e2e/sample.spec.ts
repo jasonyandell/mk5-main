@@ -1,12 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { PlaywrightHelper } from './helpers/playwrightHelper';
+import { PlaywrightGameHelper } from './helpers/playwrightHelper';
 
 test.describe('Basic Gameplay', () => {
-  let helper: PlaywrightHelper;
+  let helper: PlaywrightGameHelper;
 
   test.beforeEach(async ({ page }) => {
-    helper = new PlaywrightHelper(page);
-    await helper.navigateToDebugUI();
+    helper = new PlaywrightGameHelper(page);
+    await helper.goto();
   });
 
   test('should display initial game state', async () => {

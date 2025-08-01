@@ -24,6 +24,7 @@ describe('Hand Victory - Bidding Team Wins', () => {
       trump: 5, // fives are trump
       tricks: [],
       currentTrick: [],
+      currentSuit: null,
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
