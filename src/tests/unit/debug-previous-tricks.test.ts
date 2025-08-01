@@ -1,42 +1,42 @@
 import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
+import { createInitialState } from '../../game/core/state';
 import type { GameState, Domino } from '../../game/types';
 
 // Test the getCurrentSuit function used in DebugPreviousTricks
 describe('DebugPreviousTricks Logic', () => {
   test('getCurrentSuit should work correctly for previous tricks', () => {
-    const trump = 5; // 5s are trump
-    
     // Test with a trick where trump was led
-    const trumpTrick = [
-      { player: 0, domino: { high: 5, low: 2, id: "5-2" } }
-    ];
-    expect(getCurrentSuit(trumpTrick, trump)).toBe('Fives (Trump)');
+    const state1 = createInitialState();
+    state1.trump = 5; // 5s are trump
+    state1.currentSuit = 5; // 5s were led
+    expect(getCurrentSuit(state1)).toBe('Fives (Trump)');
     
     // Test with a trick where non-trump was led
-    const nonTrumpTrick = [
-      { player: 0, domino: { high: 6, low: 3, id: "6-3" } }
-    ];
-    expect(getCurrentSuit(nonTrumpTrick, trump)).toBe('Sixes');
+    const state2 = createInitialState();
+    state2.trump = 5; // 5s are trump
+    state2.currentSuit = 6; // 6s were led
+    expect(getCurrentSuit(state2)).toBe('Sixes');
     
     // Test with doubles trump
-    const doublesTrump = 7;
-    const doubleTrick = [
-      { player: 0, domino: { high: 4, low: 4, id: "4-4" } }
-    ];
-    expect(getCurrentSuit(doubleTrick, doublesTrump)).toBe('Doubles (Trump)');
+    const state3 = createInitialState();
+    state3.trump = 7; // doubles are trump
+    state3.currentSuit = 7; // doubles were led
+    expect(getCurrentSuit(state3)).toBe('Doubles (Trump)');
   });
 
   test('should handle empty current trick gracefully', () => {
-    const emptyTrick: { player: number; domino: Domino }[] = [];
-    expect(getCurrentSuit(emptyTrick, 5)).toBe('None (no domino led)');
+    const state = createInitialState();
+    state.trump = 5;
+    state.currentSuit = null; // No trick in progress
+    expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
 
   test('should handle null trump gracefully', () => {
-    const trick = [
-      { player: 0, domino: { high: 6, low: 3, id: "6-3" } }
-    ];
-    expect(getCurrentSuit(trick, null)).toBe('None (no trump set)');
+    const state = createInitialState();
+    state.trump = null; // No trump set
+    state.currentSuit = 6; // Some suit was led
+    expect(getCurrentSuit(state)).toBe('None (no trump set)');
   });
 
   // Test the domino display logic used in the component
@@ -104,6 +104,11 @@ describe('DebugPreviousTricks Logic', () => {
     expect(mockGameState.tricks?.[0].winner).toBe(0); // Winner should be P0
     
     // Test current suit for current trick
-    expect(getCurrentSuit(mockGameState.currentTrick!, mockGameState.trump!)).toBe('Fives (Trump)');
+    const currentState: Partial<GameState> = {
+      currentTrick: mockGameState.currentTrick,
+      currentSuit: 5, // The suit that was led (5s)
+      trump: mockGameState.trump
+    };
+    expect(getCurrentSuit(currentState as GameState)).toBe('Fives (Trump)');
   });
 });

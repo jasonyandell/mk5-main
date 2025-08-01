@@ -27,6 +27,7 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
     trump: null,
     tricks: [],
     currentTrick: [],
+    currentSuit: null,
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -67,6 +68,7 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     trump: null,
     tricks: [],
     currentTrick: [],
+    currentSuit: null,
     teamScores: [0, 0] as [number, number],
     teamMarks: [0, 0] as [number, number],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -117,6 +119,7 @@ export function cloneGameState(state: GameState): GameState {
       plays: [...trick.plays]
     })),
     currentTrick: [...state.currentTrick],
+    currentSuit: state.currentSuit,
     teamScores: [...state.teamScores] as [number, number],
     teamMarks: [...state.teamMarks] as [number, number],
     // Clone the hands object if it exists

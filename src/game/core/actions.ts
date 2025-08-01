@@ -2,7 +2,7 @@ import type { GameState, StateTransition, Bid } from '../types';
 import { BID_TYPES, TRUMP_SUITS, GAME_CONSTANTS } from '../constants';
 import { cloneGameState } from './state';
 import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
-import { dealDominoesWithSeed } from './dominoes';
+import { dealDominoesWithSeed, getDominoSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
@@ -261,7 +261,7 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
   
   // If trick is complete, process it
   if (state.currentTrick.length === 4) {
-    const winner = calculateTrickWinner(state.currentTrick, state.trump);
+    const winner = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit!);
     const points = calculateTrickPoints(state.currentTrick);
     
     const newState = cloneGameState(state);
@@ -271,6 +271,7 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
       points
     });
     newState.currentTrick = [];
+    newState.currentSuit = null; // Reset current suit when trick completes
     newState.currentPlayer = winner;
     newState.teamScores[newState.players[winner].teamId] += points + 1; // +1 for the trick itself
     
@@ -289,13 +290,19 @@ function getPlayingTransitions(state: GameState): StateTransition[] {
   
   // Generate play transitions for current player
   const player = state.players[state.currentPlayer];
-  const validPlays = getValidPlays(player.hand, state.currentTrick, state.trump);
+  const validPlays = getValidPlays(state, state.currentPlayer);
   
   validPlays.forEach(domino => {
     const newState = cloneGameState(state);
     const newPlayer = newState.players[state.currentPlayer];
     newPlayer.hand = newPlayer.hand.filter(d => d.id !== domino.id);
     newState.currentTrick.push({ player: state.currentPlayer, domino });
+    
+    // Set currentSuit when first domino is played to a trick
+    if (state.currentTrick.length === 0) {
+      newState.currentSuit = getDominoSuit(domino, state.trump);
+    }
+    
     newState.currentPlayer = getNextPlayer(state.currentPlayer);
     
     // Update suit analysis for the player who just played a domino
@@ -348,6 +355,7 @@ function getScoringTransitions(state: GameState): StateTransition[] {
     newState.trump = null;
     newState.tricks = [];
     newState.currentTrick = [];
+    newState.currentSuit = null;
     newState.teamScores = [0, 0];
     
     // Update suit analysis for all players after dealing new hands (no trump yet)

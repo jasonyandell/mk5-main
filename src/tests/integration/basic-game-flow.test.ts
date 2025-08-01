@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState, createSetupState } from '../../game/core/state';
 import { isValidBid, isValidPlay } from '../../game/core/rules';
 import { shuffleDominoes } from '../../game/core/dominoes';
+import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
@@ -244,8 +245,17 @@ describe('Basic Game Flow', () => {
         { player: 3, domino: testDominoes[3] }
       ];
 
+      // Initialize players with their hands and suit analysis
+      state.players.forEach((player, idx) => {
+        player.hand = state.hands?.[idx] || [];
+        player.suitAnalysis = analyzeSuits(player.hand, state.trump!);
+      });
+      
+      // Set current suit from first play
+      state.currentSuit = 3; // threes led (3-2 high end is 3)
+      
       plays.forEach(play => {
-        expect(isValidPlay(play.domino, state.hands?.[play.player] || [], state.currentTrick, state.trump!)).toBe(true);
+        expect(isValidPlay(state, play.domino, play.player)).toBe(true);
         state.currentTrick.push(play);
       });
 
@@ -356,12 +366,18 @@ describe('Basic Game Flow', () => {
         { id: 'valid', high: 3, low: 4, points: 0 }, // valid follow (contains 3)
         { id: 'invalid', high: 2, low: 5, points: 0 } // invalid - different suit
       ];
+      
+      // Update state with player hand and current suit
+      state.currentPlayer = 1;
+      state.currentSuit = 3; // threes were led
+      state.players[1].hand = playerHand;
+      state.players[1].suitAnalysis = analyzeSuits(playerHand, state.trump!);
 
       // Valid play - following suit
-      expect(isValidPlay(playerHand[0], playerHand, state.currentTrick, state.trump!)).toBe(true);
+      expect(isValidPlay(state, playerHand[0], 1)).toBe(true);
       
       // Invalid play - not following suit when able
-      expect(isValidPlay(playerHand[1], playerHand, state.currentTrick, state.trump!)).toBe(false);
+      expect(isValidPlay(state, playerHand[1], 1)).toBe(false);
     });
 
     it('prevents out-of-turn actions', () => {

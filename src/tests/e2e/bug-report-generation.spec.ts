@@ -174,4 +174,23 @@ test.describe('Bug Report Generation Tests', () => {
     expect(bugReport).toContain('from \'vitest\'');
     expect(bugReport).toContain('getNextStates');
   });
+
+  test('bug report uses compact JSON formatting for small objects', async () => {
+    // Create some actions to generate state with dominoes and bids
+    await helper.selectActionByType('bid_points', 30);
+    await helper.selectActionByType('pass');
+    
+    const bugReport = await helper.getBugReport();
+    
+    // Verify dominoes are formatted compactly on single lines
+    expect(bugReport).toMatch(/{ "high": \d+, "low": \d+, "id": "[^"]+" }/);
+    
+    // Verify it doesn't have excessive line breaks for small objects (the old multi-line format)
+    expect(bugReport).not.toMatch(/{\s+\n\s+"high":/);
+    
+    // Verify the compact format saves significant space
+    const dominoMatches = bugReport.match(/{ "high": \d+, "low": \d+, "id": "[^"]+" }/g);
+    expect(dominoMatches).toBeTruthy();
+    expect(dominoMatches!.length).toBeGreaterThan(10); // Should have many compact dominoes
+  });
 });

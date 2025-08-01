@@ -29,14 +29,7 @@
 
 <div class="replay-container" data-testid={$actionHistory.length > 0 ? "debug-snapshot" : undefined}>
   <div class="replay-header">
-    <h3>Action History (Event Sourcing)</h3>
-    <div class="snapshot-info">
-      <span class="action-count" data-testid="action-count">{$actionHistory.length} actions</span>
-      {#if $actionHistory.length > 0}
-        <span data-testid="snapshot-reason">Debug snapshot from initial state</span>
-        <span data-testid="snapshot-action-count">{$actionHistory.length} actions</span>
-      {/if}
-    </div>
+    <h3>Action History</h3>
   </div>
   
   {#if $stateValidationError}
@@ -110,9 +103,6 @@
   }
 
   .replay-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 12px;
   }
 
@@ -122,18 +112,6 @@
     color: #495057;
   }
 
-  .snapshot-info {
-    display: flex;
-    gap: 8px;
-    font-size: 11px;
-  }
-
-  .action-count {
-    background: #6c757d;
-    color: white;
-    padding: 2px 6px;
-    border-radius: 2px;
-  }
 
   .validation-error {
     background: #f8d7da;

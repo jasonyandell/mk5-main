@@ -5,6 +5,7 @@ import {
   isValidBid,
   dealDominoes
 } from '../../game';
+import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
 
 /**
@@ -134,11 +135,19 @@ export class GameTestHelper {
       });
     }
     
-    return {
+    const state = {
       ...baseState,
       ...overrides,
       players
     };
+    
+    // Set currentSuit based on currentTrick if provided
+    if (state.currentTrick && state.currentTrick.length > 0 && state.trump !== null) {
+      const leadDomino = state.currentTrick[0].domino;
+      state.currentSuit = getDominoSuit(leadDomino, state.trump);
+    }
+    
+    return state;
   }
   
   /**

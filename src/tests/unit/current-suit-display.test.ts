@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
-import type { Domino } from '../../game/types';
+import { createInitialState } from '../../game/core/state';
+import type { Domino, GameState } from '../../game/types';
 
 describe('Current Suit Display', () => {
   const doublesAreTrump = 7;
@@ -9,78 +10,106 @@ describe('Current Suit Display', () => {
   const noTrump = 8;
 
   test('should return "None" when no domino is led', () => {
-    const emptyTrick: { player: number; domino: Domino }[] = [];
-    expect(getCurrentSuit(emptyTrick, doublesAreTrump)).toBe('None (no domino led)');
+    const state = createInitialState();
+    state.currentSuit = null;
+    state.trump = doublesAreTrump;
+    expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
 
   test('should return "None" when trump is not set', () => {
-    const trick = [{ player: 0, domino: { high: 6, low: 5, id: "6-5" } }];
-    expect(getCurrentSuit(trick, null)).toBe('None (no trump set)');
+    const state = createInitialState();
+    state.currentSuit = 6; // Some suit was led
+    state.trump = null;
+    expect(getCurrentSuit(state)).toBe('None (no trump set)');
   });
 
   describe('When doubles are trump', () => {
     test('6-6 leads -> Doubles (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 6, id: "6-6" } }];
-      expect(getCurrentSuit(trick, doublesAreTrump)).toBe('Doubles (Trump)');
+      const state = createInitialState();
+      state.trump = doublesAreTrump;
+      state.currentSuit = 7; // Doubles led
+      expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('3-3 leads -> Doubles (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 3, low: 3, id: "3-3" } }];
-      expect(getCurrentSuit(trick, doublesAreTrump)).toBe('Doubles (Trump)');
+      const state = createInitialState();
+      state.trump = doublesAreTrump;
+      state.currentSuit = 7; // Doubles led
+      expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('6-5 leads -> Sixes (higher end)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 5, id: "6-5" } }];
-      expect(getCurrentSuit(trick, doublesAreTrump)).toBe('Sixes');
+      const state = createInitialState();
+      state.trump = doublesAreTrump;
+      state.currentSuit = 6; // Sixes led (higher end)
+      expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('4-2 leads -> Fours (higher end)', () => {
-      const trick = [{ player: 0, domino: { high: 4, low: 2, id: "4-2" } }];
-      expect(getCurrentSuit(trick, doublesAreTrump)).toBe('Fours');
+      const state = createInitialState();
+      state.trump = doublesAreTrump;
+      state.currentSuit = 4; // Fours led (higher end)
+      expect(getCurrentSuit(state)).toBe('Fours');
     });
   });
 
   describe('When specific suit is trump (not doubles)', () => {
     test('6-6 leads with 6s trump -> Sixes (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 6, id: "6-6" } }];
-      expect(getCurrentSuit(trick, sixesAreTrump)).toBe('Sixes (Trump)');
+      const state = createInitialState();
+      state.trump = sixesAreTrump;
+      state.currentSuit = 6; // Sixes led (trump)
+      expect(getCurrentSuit(state)).toBe('Sixes (Trump)');
     });
 
     test('5-5 leads with 6s trump -> Fives', () => {
-      const trick = [{ player: 0, domino: { high: 5, low: 5, id: "5-5" } }];
-      expect(getCurrentSuit(trick, sixesAreTrump)).toBe('Fives');
+      const state = createInitialState();
+      state.trump = sixesAreTrump;
+      state.currentSuit = 5; // Fives led (not trump)
+      expect(getCurrentSuit(state)).toBe('Fives');
     });
 
     test('6-5 leads with 6s trump -> Sixes (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 5, id: "6-5" } }];
-      expect(getCurrentSuit(trick, sixesAreTrump)).toBe('Sixes (Trump)');
+      const state = createInitialState();
+      state.trump = sixesAreTrump;
+      state.currentSuit = 6; // Sixes led (trump)
+      expect(getCurrentSuit(state)).toBe('Sixes (Trump)');
     });
 
     test('6-5 leads with 5s trump -> Fives (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 5, id: "6-5" } }];
-      expect(getCurrentSuit(trick, fivesAreTrump)).toBe('Fives (Trump)');
+      const state = createInitialState();
+      state.trump = fivesAreTrump;
+      state.currentSuit = 5; // Fives led (trump)
+      expect(getCurrentSuit(state)).toBe('Fives (Trump)');
     });
 
     test('4-2 leads with 5s trump -> Fours', () => {
-      const trick = [{ player: 0, domino: { high: 4, low: 2, id: "4-2" } }];
-      expect(getCurrentSuit(trick, fivesAreTrump)).toBe('Fours');
+      const state = createInitialState();
+      state.trump = fivesAreTrump;
+      state.currentSuit = 4; // Fours led (not trump)
+      expect(getCurrentSuit(state)).toBe('Fours');
     });
   });
 
   describe('No trump (follow-me)', () => {
     test('6-6 leads -> Sixes', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 6, id: "6-6" } }];
-      expect(getCurrentSuit(trick, noTrump)).toBe('Sixes');
+      const state = createInitialState();
+      state.trump = noTrump;
+      state.currentSuit = 6; // Sixes led
+      expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('6-5 leads -> Sixes (higher end)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 5, id: "6-5" } }];
-      expect(getCurrentSuit(trick, noTrump)).toBe('Sixes');
+      const state = createInitialState();
+      state.trump = noTrump;
+      state.currentSuit = 6; // Sixes led
+      expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('0-0 leads -> Blanks', () => {
-      const trick = [{ player: 0, domino: { high: 0, low: 0, id: "0-0" } }];
-      expect(getCurrentSuit(trick, noTrump)).toBe('Blanks');
+      const state = createInitialState();
+      state.trump = noTrump;
+      state.currentSuit = 0; // Blanks led
+      expect(getCurrentSuit(state)).toBe('Blanks');
     });
   });
 
@@ -97,21 +126,27 @@ describe('Current Suit Display', () => {
 
     testCases.forEach(({ domino, expected }) => {
       test(`${domino.id} with no trump -> ${expected}`, () => {
-        const trick = [{ player: 0, domino }];
-        expect(getCurrentSuit(trick, noTrump)).toBe(expected);
+        const state = createInitialState();
+        state.trump = noTrump;
+        state.currentSuit = domino.high; // Use the domino's suit
+        expect(getCurrentSuit(state)).toBe(expected);
       });
     });
   });
 
   describe('Edge cases', () => {
     test('Complex scenario - 6-4 led with 4s trump should show Fours (Trump)', () => {
-      const trick = [{ player: 0, domino: { high: 6, low: 4, id: "6-4" } }];
-      expect(getCurrentSuit(trick, 4)).toBe('Fours (Trump)');
+      const state = createInitialState();
+      state.trump = 4; // 4s are trump
+      state.currentSuit = 4; // 4s were led (trump)
+      expect(getCurrentSuit(state)).toBe('Fours (Trump)');
     });
 
     test('Domino with trump number led should show trump', () => {
-      const trick = [{ player: 0, domino: { high: 5, low: 2, id: "5-2" } }];
-      expect(getCurrentSuit(trick, 5)).toBe('Fives (Trump)');
+      const state = createInitialState();
+      state.trump = 5; // 5s are trump
+      state.currentSuit = 5; // 5s were led (trump)
+      expect(getCurrentSuit(state)).toBe('Fives (Trump)');
     });
   });
 });

@@ -1,63 +1,12 @@
-import type { GameState, Bid, Domino, Trump, PlayedDomino } from '../types';
+import type { GameState, Bid, Domino, Trump, PlayedDomino, Player, SuitRanking } from '../types';
 import { GAME_CONSTANTS, BID_TYPES } from '../constants';
 import { countDoubles } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
 
 /**
  * Validates if a bid is legal in the current game state
- * Overloaded to support legacy test signature: isValidBid(bid, currentBid, state)
  */
-export function isValidBid(stateOrBid: GameState | Bid, bidOrCurrentBid: Bid | null, playerHandOrState?: Domino[] | GameState): boolean {
-  // Handle legacy signature: isValidBid(bid, currentBid, state)
-  // Check if first arg is Bid and third arg is GameState (second can be null)
-  if ('type' in stateOrBid && 'player' in stateOrBid && 
-      playerHandOrState && 'phase' in playerHandOrState) {
-    const bid = stateOrBid as Bid;
-    const currentBid = bidOrCurrentBid as Bid | null;
-    const state = playerHandOrState as GameState;
-    return isValidBidCoreLegacy(state, bid, currentBid);
-  }
-  
-  // Handle new signature: isValidBid(state, bid, playerHand?)
-  const state = stateOrBid as GameState;
-  const bid = bidOrCurrentBid as Bid;
-  const playerHand = playerHandOrState as Domino[] | undefined;
-  return isValidBidCore(state, bid, playerHand);
-}
-
-/**
- * Legacy bid validation logic (without current player check)
- */
-function isValidBidCoreLegacy(state: GameState, bid: Bid, currentBid: Bid | null, playerHand?: Domino[]): boolean {
-  // Check if bids array exists and player has already bid
-  if (state.bids) {
-    const playerBids = state.bids.filter(b => b.player === bid.player);
-    if (playerBids.length > 0) return false;
-  }
-  
-  // Pass is always valid if player hasn't bid yet
-  if (bid.type === BID_TYPES.PASS) return true;
-  
-  // If no current bid, this is an opening bid
-  if (!currentBid) {
-    return isValidOpeningBid(bid, playerHand, state.tournamentMode);
-  }
-  
-  // Compare against current bid
-  const lastBidValue = getBidComparisonValue(currentBid);
-  const currentBidValue = getBidComparisonValue(bid);
-  
-  if (currentBidValue <= lastBidValue) return false;
-  
-  // Get all previous bids from state, or use current bid if no state.bids
-  const previousBids = state.bids ? state.bids.filter(b => b.type !== BID_TYPES.PASS) : [currentBid];
-  return isValidSubsequentBid(bid, currentBid, previousBids, playerHand);
-}
-
-/**
- * Core bid validation logic
- */
-function isValidBidCore(state: GameState, bid: Bid, playerHand?: Domino[]): boolean {
+export function isValidBid(state: GameState, bid: Bid, playerHand?: Domino[]): boolean {
   // Check if bids array exists and player has already bid
   if (!state.bids) return false;
   const playerBids = state.bids.filter(b => b.player === bid.player);
@@ -83,7 +32,7 @@ function isValidBidCore(state: GameState, bid: Bid, playerHand?: Domino[]): bool
   
   if (currentBidValue <= lastBidValue) return false;
   
-  return isValidSubsequentBid(bid, lastBid, previousBids, playerHand);
+  return isValidSubsequentBid(bid, lastBid, previousBids, playerHand, state.tournamentMode);
 }
 
 /**
@@ -134,7 +83,8 @@ function isValidSubsequentBid(
   bid: Bid, 
   lastBid: Bid, 
   previousBids: Bid[], 
-  playerHand?: Domino[]
+  playerHand?: Domino[],
+  tournamentMode: boolean = true
 ): boolean {
   switch (bid.type) {
     case BID_TYPES.POINTS:
@@ -146,9 +96,13 @@ function isValidSubsequentBid(
       return isValidMarkBid(bid, lastBid, previousBids);
     
     case BID_TYPES.NELLO:
+      // Special contracts not allowed in tournament mode
+      if (tournamentMode) return false;
       return bid.value !== undefined && bid.value >= 1;
     
     case BID_TYPES.SPLASH:
+      // Special contracts not allowed in tournament mode
+      if (tournamentMode) return false;
       return bid.value !== undefined && 
              bid.value >= 2 && 
              bid.value <= 3 && 
@@ -156,6 +110,8 @@ function isValidSubsequentBid(
              countDoubles(playerHand) >= 3;
     
     case BID_TYPES.PLUNGE:
+      // Special contracts not allowed in tournament mode
+      if (tournamentMode) return false;
       return bid.value !== undefined && 
              bid.value >= 4 && 
              playerHand !== undefined && 
@@ -215,64 +171,13 @@ export function getBidComparisonValue(bid: Bid): number {
 }
 
 /**
- * Validates if a domino play is legal (overloaded for different call signatures)
+ * Validates if a domino play is legal using suit analysis from game state
  */
 export function isValidPlay(
-  dominoOrState: Domino | GameState, 
-  handOrDomino?: Domino[] | Domino, 
-  currentTrickOrPlayerId?: { player: number; domino: Domino }[] | number | Domino[], 
-  trump?: Trump
+  state: GameState,
+  domino: Domino,
+  playerId: number
 ): boolean {
-  // Handle the simple signature: isValidPlay(domino, hand, currentTrick, trump)
-  if (trump !== undefined && Array.isArray(handOrDomino) && Array.isArray(currentTrickOrPlayerId)) {
-    const domino = dominoOrState as Domino;
-    const hand = handOrDomino;
-    const currentTrick = currentTrickOrPlayerId as { player: number; domino: Domino }[];
-    
-    // First play of trick is always legal
-    if (currentTrick.length === 0) return true;
-    
-    const leadPlay = currentTrick[0];
-    const leadSuit = getLeadSuit(leadPlay.domino, trump);
-    
-    // If following suit, always legal
-    if (canDominoFollowLedSuit(domino, leadSuit, trump)) return true;
-    
-    // If can't follow suit, any play is legal
-    return !canFollowSuit(hand, leadSuit, trump);
-  }
-  
-  // Handle the test signature: isValidPlay(state, domino, hand)
-  if (typeof dominoOrState === 'object' && dominoOrState !== null && 'phase' in dominoOrState && 
-      typeof handOrDomino === 'object' && handOrDomino !== null && 'id' in handOrDomino && 
-      Array.isArray(currentTrickOrPlayerId)) {
-    const state = dominoOrState as GameState;
-    const domino = handOrDomino as Domino;
-    const hand = currentTrickOrPlayerId as Domino[];
-    
-    if (state.phase !== 'playing' || state.trump === null) return false;
-    
-    // Check if domino is in hand
-    if (!hand.some(d => d.id === domino.id)) return false;
-    
-    // First play of trick is always legal
-    if (state.currentTrick.length === 0) return true;
-    
-    const leadPlay = state.currentTrick[0];
-    const leadSuit = getLeadSuit(leadPlay.domino, state.trump);
-    
-    // If following suit, always legal
-    if (canDominoFollowLedSuit(domino, leadSuit, state.trump)) return true;
-    
-    // If can't follow suit, any play is legal
-    return !canFollowSuit(hand, leadSuit, state.trump);
-  }
-  
-  // Handle the GameState signature: isValidPlay(state, domino, playerId)
-  const state = dominoOrState as GameState;
-  const domino = handOrDomino as Domino;
-  const playerId = currentTrickOrPlayerId as number;
-  
   if (state.phase !== 'playing' || state.trump === null) return false;
   
   // Validate player bounds
@@ -284,25 +189,51 @@ export function isValidPlay(
   // First play of trick is always legal
   if (state.currentTrick.length === 0) return true;
   
-  const leadPlay = state.currentTrick[0];
-  const leadSuit = getLeadSuit(leadPlay.domino, state.trump);
+  // Use the currentSuit from state instead of computing it
+  const leadSuit = state.currentSuit;
+  if (leadSuit === null) return true; // No suit to follow
   
-  // If following suit, always legal
-  if (canDominoFollowLedSuit(domino, leadSuit, state.trump)) return true;
+  // Use suit analysis to check if player can follow suit
+  if (!player.suitAnalysis) return true; // If no analysis, allow any play
   
-  // If can't follow suit, any play is legal
-  return !canFollowSuit(player.hand, leadSuit, state.trump);
+  // Handle doubles trump special case
+  if (leadSuit === 7) {
+    // When doubles are led (trump = 7), only doubles can follow
+    const doubles = player.suitAnalysis.rank.doubles;
+    if (doubles && doubles.length > 0) {
+      return doubles.some(d => d.id === domino.id);
+    }
+    return true; // Can't follow doubles, any play is legal
+  }
+  
+  // For regular suits (0-6), use the suit ranking
+  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
+  
+  // If player has dominoes in the led suit, must play one of them
+  if (suitDominoes && suitDominoes.length > 0) {
+    return suitDominoes.some(d => d.id === domino.id);
+  }
+  
+  // If player can't follow suit, any play is legal
+  return true;
 }
 
 /**
- * Checks if player can follow the lead suit
+ * Checks if player can follow the lead suit using suit analysis
  */
 export function canFollowSuit(
-  hand: Domino[], 
-  leadSuit: number, 
-  trump: Trump
+  player: Player,
+  leadSuit: number
 ): boolean {
-  return hand.some(domino => canDominoFollowLedSuit(domino, leadSuit, trump));
+  if (!player.suitAnalysis) return false;
+  
+  // Handle doubles trump special case
+  if (leadSuit === 7) {
+    return player.suitAnalysis.rank.doubles && player.suitAnalysis.rank.doubles.length > 0;
+  }
+  
+  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
+  return suitDominoes && suitDominoes.length > 0;
 }
 
 /**
@@ -322,116 +253,51 @@ function getTrumpNumber(trump: Trump): number | null {
 }
 
 /**
- * Checks if a domino can follow the led suit
- */
-function canDominoFollowLedSuit(domino: Domino, leadSuit: number, trump: Trump): boolean {
-  const trumpSuit = getTrumpNumber(trump);
-  
-  // Handle doubles trump case (trump = 7)
-  if (trumpSuit === 7) {
-    // When doubles are trump, all doubles form the trump suit
-    if (domino.high === domino.low) {
-      // This double can follow if trump suit (7) was led
-      return leadSuit === 7;
-    }
-    // Non-doubles can follow trump suit if they contain the trump number
-    // But trump number 7 doesn't exist on dominoes, so non-doubles never follow doubles trump
-    if (leadSuit === 7) {
-      return false; // Non-double cannot follow doubles trump
-    }
-    // For non-trump leads, check if domino contains the led suit number
-    return domino.high === leadSuit || domino.low === leadSuit;
-  }
-  
-  // First check if domino can follow suit by containing the led suit number
-  // This applies to both doubles and non-doubles
-  if (domino.high === leadSuit || domino.low === leadSuit) {
-    return true;
-  }
-  
-  // If domino doesn't contain the led suit number, it cannot follow suit
-  return false;
-}
-
-/**
- * Gets the suit that was led (for following suit purposes)
- * This is different from getDominoSuit - doubles lead their natural suit unless doubles are trump
- */
-function getLeadSuit(domino: Domino, trump: Trump): number {
-  const trumpSuit = getTrumpNumber(trump);
-  
-  // For doubles, check if doubles are trump
-  if (domino.high === domino.low) {
-    // When doubles are trump (trump = 7), all doubles lead trump suit
-    if (trumpSuit === 7) {
-      return 7;
-    }
-    // Otherwise, doubles lead their natural suit (the pip value)
-    return domino.high;
-  }
-  
-  // For non-doubles containing trump, if trump was led, return trump suit
-  if (trumpSuit !== null && (domino.high === trumpSuit || domino.low === trumpSuit)) {
-    return trumpSuit;
-  }
-  
-  // Otherwise, use the higher value
-  return Math.max(domino.high, domino.low);
-}
-
-/**
- * Gets all valid plays for a player
+ * Gets all valid plays for a player using suit analysis
  */
 export function getValidPlays(
-  stateOrHand: GameState | Domino[], 
-  handOrCurrentTrick?: Domino[] | { player: number; domino: Domino }[], 
-  trump?: Trump
+  state: GameState,
+  playerId: number
 ): Domino[] {
-  // Handle overloaded signatures
-  if (Array.isArray(stateOrHand) && stateOrHand.length > 0 && 'id' in stateOrHand[0]) {
-    // Called as getValidPlays(hand, currentTrick, trump)
-    const hand = stateOrHand as Domino[];
-    const currentTrick = handOrCurrentTrick as { player: number; domino: Domino }[];
-    return getValidPlaysCore(hand, currentTrick, trump!);
-  } else {
-    // Called as getValidPlays(state, hand)
-    const state = stateOrHand as GameState;
-    const hand = handOrCurrentTrick as Domino[];
-    return getValidPlaysCore(hand, state.currentTrick, state.trump);
-  }
-}
-
-function getValidPlaysCore(
-  hand: Domino[], 
-  currentTrick: { player: number; domino: Domino }[], 
-  trump: Trump | null
-): Domino[] {
+  if (state.phase !== 'playing' || state.trump === null) return [];
+  
+  const player = state.players[playerId];
+  if (!player) return [];
+  if (!player.suitAnalysis) return [...player.hand];
+  
   // First play of trick - all dominoes are valid
-  if (currentTrick.length === 0) return [...hand];
+  if (state.currentTrick.length === 0) return [...player.hand];
   
-  // If no trump is set, all plays are valid
-  if (trump === null) return [...hand];
+  // Use the currentSuit from state instead of computing it
+  const leadSuit = state.currentSuit;
+  if (leadSuit === null) return [...player.hand]; // No suit to follow
   
-  const leadPlay = currentTrick[0];
-  const leadSuit = getLeadSuit(leadPlay.domino, trump);
+  // Handle doubles trump special case
+  if (leadSuit === 7) {
+    const doubles = player.suitAnalysis.rank.doubles;
+    if (doubles && doubles.length > 0) {
+      return doubles;
+    }
+    return [...player.hand]; // Can't follow doubles, all plays valid
+  }
   
-  // Get all dominoes that can follow the led suit (contain the led suit number and are not trump)
-  const followSuitPlays = hand.filter(domino => 
-    canDominoFollowLedSuit(domino, leadSuit, trump)
-  );
+  // Get dominoes that can follow the led suit from suit analysis
+  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
   
   // If can follow suit, must follow suit
-  if (followSuitPlays.length > 0) return followSuitPlays;
+  if (suitDominoes && suitDominoes.length > 0) {
+    return suitDominoes;
+  }
   
   // If can't follow suit, all dominoes are valid
-  return [...hand];
+  return [...player.hand];
 }
 
 /**
  * Gets the winner of a trick (alias for calculateTrickWinner)
  */
-export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: Trump): number {
-  return calculateTrickWinner(trick, trump);
+export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: Trump, leadSuit: number): number {
+  return calculateTrickWinner(trick, trump, leadSuit);
 }
 
 /**
@@ -444,8 +310,8 @@ export function getTrickPoints(trick: { player: number; domino: Domino }[]): num
 /**
  * Determines the winner of a trick (alternative interface)
  */
-export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: Trump): number {
-  return calculateTrickWinner(trick as PlayedDomino[], trump);
+export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: Trump, leadSuit: number): number {
+  return calculateTrickWinner(trick as PlayedDomino[], trump, leadSuit);
 }
 
 /**
@@ -487,17 +353,16 @@ export function getTrumpValue(trump: { suit: number | string; followsSuit: boole
 /**
  * Gets the current suit being led in a trick for display purposes
  */
-export function getCurrentSuit(currentTrick: { player: number; domino: Domino }[], trump: Trump | null): string {
-  if (currentTrick.length === 0) {
+export function getCurrentSuit(state: GameState): string {
+  if (state.currentSuit === null) {
     return 'None (no domino led)';
   }
   
-  if (trump === null) {
+  if (state.trump === null) {
     return 'None (no trump set)';
   }
   
-  const leadDomino = currentTrick[0].domino;
-  const leadSuit = getLeadSuit(leadDomino, trump);
+  const leadSuit = state.currentSuit;
   
   const suitNames: Record<number, string> = {
     0: 'Blanks',
@@ -511,7 +376,7 @@ export function getCurrentSuit(currentTrick: { player: number; domino: Domino }[
     8: 'No Trump'
   };
   
-  const trumpSuit = getTrumpNumber(trump);
+  const trumpSuit = getTrumpNumber(state.trump);
   
   // Special case: if lead suit equals trump suit, indicate it's trump
   if (leadSuit === trumpSuit && trumpSuit !== 7) {

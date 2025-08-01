@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay, canFollowSuit, getValidPlays } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
-import type { Domino, Trump } from '../../game/types';
+import { analyzeSuits } from '../../game/core/suit-analysis';
+import type { Domino, Trump, Player } from '../../game/types';
 
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {
@@ -20,16 +21,18 @@ describe('Renege Detection and Prevention', () => {
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
+        currentSuit: 2, // Twos were led
+        currentPlayer: 1,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
       // Can only play twos suit when able to follow
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe('follow-1');
       
@@ -53,16 +56,18 @@ describe('Renege Detection and Prevention', () => {
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
+        currentSuit: 2, // Twos were led
+        currentPlayer: 1,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
       // All plays valid when can't follow suit
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
       
       // All dominoes should be valid when can't follow suit
@@ -96,15 +101,17 @@ describe('Renege Detection and Prevention', () => {
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
+        currentSuit: 2, // Twos were led
+        currentPlayer: 1,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
-      expect(canFollowSuit(playerHand, 2, state.trump!)).toBe(false);
+      expect(canFollowSuit(state.players[1], 2)).toBe(false);
       expect(isValidPlay(state, playerHand[0], 1)).toBe(true); // Trump play allowed
       expect(isValidPlay(state, playerHand[1], 1)).toBe(true); // Any play allowed
     });
@@ -122,15 +129,17 @@ describe('Renege Detection and Prevention', () => {
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
         }],
+        currentSuit: 2, // Twos were led
+        currentPlayer: 1,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
-      expect(canFollowSuit(playerHand, 2, state.trump!)).toBe(true);
+      expect(canFollowSuit(state.players[1], 2)).toBe(true);
       expect(isValidPlay(state, playerHand[0], 1)).toBe(true);  // Following suit
       expect(isValidPlay(state, playerHand[1], 1)).toBe(false); // Trump when can follow
     });
@@ -138,23 +147,31 @@ describe('Renege Detection and Prevention', () => {
 
   describe('Doubles Trump Special Cases', () => {
     it('handles doubles trump correctly', () => {
-      const state = createTestState({
-        phase: 'playing',
-        trump: 7, // Doubles trump
-        currentTrick: [{
-          player: 0,
-          domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
-        }]
-      });
-
       const playerHand: Domino[] = [
         { id: 'follow-1', high: 3, low: 4, points: 0 }, // 3-4 (threes suit)
         { id: 'double-1', high: 1, low: 1, points: 0 }, // 1-1 (double/trump)
         { id: 'other-1', high: 4, low: 5, points: 0 }   // 4-5 (other suit)
       ];
 
+      const state = createTestState({
+        phase: 'playing',
+        trump: 7, // Doubles trump
+        currentTrick: [{
+          player: 0,
+          domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
+        }],
+        currentSuit: 3, // Threes were led
+        currentPlayer: 1,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 7) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+        ]
+      });
+
       // Must follow threes suit, not doubles trump
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe('follow-1');
     });
@@ -173,16 +190,18 @@ describe('Renege Detection and Prevention', () => {
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
         }],
+        currentSuit: 3, // Threes were led
+        currentPlayer: 1,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] }, // player 0
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand }, // player 1 gets the test hand
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 7) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
       // Cannot follow threes suit, all plays valid
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
       
       playerHand.forEach(domino => {
@@ -193,22 +212,30 @@ describe('Renege Detection and Prevention', () => {
 
   describe('No Trump (Follow-Me) Special Cases', () => {
     it('enforces natural suit following in no-trump', () => {
-      const state = createTestState({
-        phase: 'playing',
-        trump: 8, // No trump (follow-me)
-        currentTrick: [{
-          player: 0,
-          domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (higher pip = threes)
-        }]
-      });
-
       const playerHand: Domino[] = [
         { id: 'follow-1', high: 3, low: 4, points: 0 }, // 3-4 (threes suit)
         { id: 'double-1', high: 1, low: 1, points: 0 }, // 1-1 (ones suit in no-trump)
         { id: 'other-1', high: 4, low: 5, points: 0 }   // 4-5 (fours suit)
       ];
 
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const state = createTestState({
+        phase: 'playing',
+        trump: 8, // No trump (follow-me)
+        currentTrick: [{
+          player: 0,
+          domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (higher pip = threes)
+        }],
+        currentSuit: 3, // Threes were led
+        currentPlayer: 1,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 8) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+        ]
+      });
+
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe('follow-1');
     });
@@ -226,15 +253,17 @@ describe('Renege Detection and Prevention', () => {
         phase: 'playing',
         trump: 1, // Ones trump
         currentTrick: [], // Empty trick
+        currentSuit: null,
+        currentPlayer: 0,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: playerHand }, // player 0 gets the test hand
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] }, // player 1
-          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] }, // player 2
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }  // player 3
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
       });
 
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 0);
       expect(validPlays).toHaveLength(3);
       
       playerHand.forEach(domino => {
@@ -289,6 +318,11 @@ describe('Renege Detection and Prevention', () => {
 
   describe('Complex Renege Scenarios', () => {
     it('handles multiple trumps in trick with suit following', () => {
+      const playerHand: Domino[] = [
+        { id: 'follow-1', high: 2, low: 5, points: 0 }, // 2-5 (twos suit - must play)
+        { id: 'trump-3', high: 1, low: 6, points: 0 }   // 1-6 (trump)
+      ];
+
       const state = createTestState({
         phase: 'playing',
         trump: 1, // Ones trump
@@ -296,30 +330,24 @@ describe('Renege Detection and Prevention', () => {
           { player: 0, domino: { id: 'lead', high: 2, low: 2, points: 0 } }, // 2-2 (twos suit)
           { player: 1, domino: { id: 'trump1', high: 1, low: 3, points: 0 } }, // 1-3 (trump)
           { player: 2, domino: { id: 'trump2', high: 1, low: 4, points: 0 } }  // 1-4 (trump)
+        ],
+        currentSuit: 2, // Twos were led
+        currentPlayer: 3,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) }
         ]
       });
 
-      const playerHand: Domino[] = [
-        { id: 'follow-1', high: 2, low: 5, points: 0 }, // 2-5 (twos suit - must play)
-        { id: 'trump-3', high: 1, low: 6, points: 0 }   // 1-6 (trump)
-      ];
-
       // Must still follow original suit despite trumps played
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const validPlays = getValidPlays(state, 3);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe('follow-1');
     });
 
     it('prevents renege in complex trick scenarios', () => {
-      const state = createTestState({
-        phase: 'playing',
-        trump: 3, // Threes trump
-        currentTrick: [{
-          player: 0,
-          domino: { id: 'lead', high: 4, low: 5, points: 0 } // 4-5 (fives suit)
-        }]
-      });
-
       const playerHand: Domino[] = [
         { id: 'follow-1', high: 5, low: 6, points: 0 }, // 5-6 (fives suit)
         { id: 'follow-2', high: 0, low: 5, points: 5 }, // 0-5 (fives suit, counting)
@@ -327,7 +355,24 @@ describe('Renege Detection and Prevention', () => {
         { id: 'other-1', high: 1, low: 2, points: 0 }   // 1-2 (ones suit)
       ];
 
-      const validPlays = getValidPlays(playerHand, state.currentTrick, state.trump!);
+      const state = createTestState({
+        phase: 'playing',
+        trump: 3, // Threes trump
+        currentTrick: [{
+          player: 0,
+          domino: { id: 'lead', high: 4, low: 5, points: 0 } // 4-5 (fives suit)
+        }],
+        currentSuit: 5,
+        currentPlayer: 1,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 3) },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+        ]
+      });
+
+      const validPlays = getValidPlays(state, 1);
       
       // Must play one of the fives suit dominoes
       expect(validPlays).toHaveLength(2);

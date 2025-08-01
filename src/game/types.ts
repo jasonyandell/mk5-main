@@ -81,6 +81,7 @@ export interface GameState {
   trump: Trump | null;
   tricks: Trick[];
   currentTrick: Play[];
+  currentSuit: number | null; // The suit that was led for the current trick (null if no trick in progress)
   teamScores: [number, number];
   teamMarks: [number, number];
   gameTarget: number;

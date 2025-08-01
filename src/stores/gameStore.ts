@@ -353,6 +353,13 @@ export const gameActions = {
     // Create simple action array - just the action IDs
     const actionIds = actions.map(a => a.id);
     
+    // Create compact JSON formatting for better readability
+    const compactState = JSON.stringify(initial, null, 2)
+      .replace(/{\s+"high":\s+(\d+),\s+"low":\s+(\d+),\s+"id":\s+"([^"]+)"\s+}/g, '{ "high": $1, "low": $2, "id": "$3" }')
+      .replace(/{\s+"type":\s+"([^"]+)",\s+"player":\s+(\d+)\s+}/g, '{ "type": "$1", "player": $2 }')
+      .replace(/{\s+"type":\s+"([^"]+)",\s+"value":\s+(\d+),\s+"player":\s+(\d+)\s+}/g, '{ "type": "$1", "value": $2, "player": $3 }')
+      .replace(/{\s+"player":\s+(\d+),\s+"domino":\s+({ "high": \d+, "low": \d+, "id": "[^"]+" })\s+}/g, '{ "player": $1, "domino": $2 }');
+    
     let errorSection = '';
     if (validationError) {
       errorSection = `
@@ -371,7 +378,7 @@ test('Bug report - ${timestamp}', () => {
   ${errorSection}
   // Bug report with efficient action array
   // Base state for reproduction
-  const baseState: GameState = ${JSON.stringify(initial, null, 2)};
+  const baseState: GameState = ${compactState};
   
   // Action sequence from action history
   const actionIds = ${JSON.stringify(actionIds, null, 2)};
@@ -406,6 +413,7 @@ test('Bug report - ${timestamp}', () => {
   expect(currentState.currentPlayer).toBe(${currentState.currentPlayer});
   ${currentState.trump !== null ? `expect(currentState.trump).toBe(${currentState.trump});` : '// No trump set'}
   ${currentState.winningBidder !== null ? `expect(currentState.winningBidder).toBe(${currentState.winningBidder});` : '// No winning bidder yet'}
+  ${currentState.currentSuit !== null ? `expect(currentState.currentSuit).toBe(${currentState.currentSuit});` : '// No current suit (no trick in progress)'}
   
   // Team state verification
   expect(currentState.teamScores).toEqual([${currentState.teamScores[0]}, ${currentState.teamScores[1]}]);

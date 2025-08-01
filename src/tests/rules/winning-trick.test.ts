@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Play, Trump } from '../../game/types';
 import { determineTrickWinner } from '../../game/index';
+import { getDominoSuit } from '../../game/core/dominoes';
 
 describe('Winning a Trick', () => {
   describe('Given all players have played to a trick', () => {
@@ -14,7 +15,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 3, low: 2, id: '3-2' } }, // higher trump
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with higher trump (3-2) wins
       });
 
@@ -27,7 +29,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 4, low: 3, id: '4-3' } }, // highest four
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with highest four (4-3) wins
       });
 
@@ -40,7 +43,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 6, low: 4, id: '6-4' } }, // follows sixes
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(2); // player 2 with double six wins
       });
 
@@ -53,7 +57,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 5, low: 5, id: '5-5' } }, // higher double (trump)
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with higher double (5-5) wins
       });
 
@@ -66,7 +71,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 3, low: 3, id: '3-3' } }, // highest three
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with highest three (3-3) wins
       });
 
@@ -79,7 +85,8 @@ describe('Winning a Trick', () => {
           { player: 3, domino: { high: 4, low: 1, id: '4-1' } }, // trump
         ];
         
-        const winner = determineTrickWinner(plays, trump);
+        const leadSuit = getDominoSuit(plays[0].domino, trump);
+        const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(2); // player 2 with double one wins
       });
     });

@@ -53,7 +53,9 @@ describe('Doubles Trump Rules', () => {
         { domino: { high: 5, low: 1, id: '5-1' }, player: 3 }  // Not trump
       ];
       
-      const winner = calculateTrickWinner(trick, trump);
+      // First domino led 3-2, with 3s trump, so trump (3) was led
+      const leadSuit = 3; // Trump was led
+      const winner = calculateTrickWinner(trick, trump, leadSuit);
       
       // Player 0 should win because 3-2 is trump and 4-4 is not
       expect(winner).toBe(0);

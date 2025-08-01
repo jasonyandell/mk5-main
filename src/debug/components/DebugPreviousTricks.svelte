@@ -13,8 +13,71 @@
   }
   
   function getTrickSuit(trick: Trick): string {
-    if (trick.plays.length === 0 || !gameState.trump) return '';
-    return getCurrentSuit(trick.plays, gameState.trump);
+    if (trick.plays.length === 0 || gameState.trump === null) return '';
+    
+    // For completed tricks, compute the suit from the first play
+    const leadDomino = trick.plays[0].domino;
+    const trump = gameState.trump;
+    
+    
+    // Determine what suit was led
+    let ledSuit: number;
+    if (trump === 7) { // doubles are trump
+      ledSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
+    } else if (leadDomino.high === trump || leadDomino.low === trump) {
+      ledSuit = trump; // trump was led
+    } else {
+      ledSuit = Math.max(leadDomino.high, leadDomino.low); // higher end for non-trump
+    }
+    
+    // Format for display with brackets like [6s]
+    const suitFormats: Record<number, string> = {
+      0: '[0s]',
+      1: '[1s]', 
+      2: '[2s]',
+      3: '[3s]',
+      4: '[4s]',
+      5: '[5s]',
+      6: '[6s]',
+      7: '[doubles]'
+    };
+    
+    return suitFormats[ledSuit] || '[?]';
+  }
+  
+  function getTrumpDisplay(): string {
+    if (gameState.trump === null) return '';
+    
+    // Map trump values to display strings
+    switch (gameState.trump) {
+      case 0: return '[0s]';
+      case 1: return '[1s]';
+      case 2: return '[2s]';
+      case 3: return '[3s]';
+      case 4: return '[4s]';
+      case 5: return '[5s]';
+      case 6: return '[6s]';
+      case 7: return '[doubles]';
+      default: return '[?]';
+    }
+  }
+  
+  function getCurrentSuitBracketFormat(state: GameState): string {
+    if (state.currentSuit === null) return '[?]';
+    
+    const suitFormats: Record<number, string> = {
+      0: '[0s]',
+      1: '[1s]', 
+      2: '[2s]',
+      3: '[3s]',
+      4: '[4s]',
+      5: '[5s]',
+      6: '[6s]',
+      7: '[doubles]',
+      8: '[no-trump]'
+    };
+    
+    return suitFormats[state.currentSuit] || '[?]';
   }
 </script>
 
@@ -46,9 +109,11 @@
             {/each}
           </div>
           <div class="trick-info">
-            <span class="suit-info">{getTrickSuit(trick)}</span>
-            <span class="winner-info">P{trick.winner || 0}</span>
-            <span class="points-info">{trick.points + 1}pt</span>
+            <div class="trick-result">
+              <span class="trump-display">{getTrickSuit(trick)}</span>
+              <span class="winner-info">P{trick.winner || 0}</span>
+              <span class="points-info">{trick.points + 1}pt</span>
+            </div>
           </div>
         </div>
       {/each}
@@ -73,7 +138,9 @@
             {/each}
           </div>
           <div class="trick-info">
-            <span class="current-suit">In Progress</span>
+            <div class="trick-result">
+              <span class="trump-display">{gameState.currentSuit !== null ? getCurrentSuitBracketFormat(gameState) : '[...]'}</span>
+            </div>
           </div>
         </div>
       {/if}
@@ -218,12 +285,6 @@
     min-width: 30px;
   }
   
-  .suit-info {
-    font-size: 8px;
-    font-weight: 600;
-    color: #007bff;
-    text-transform: uppercase;
-  }
   
   .winner-info {
     font-size: 9px;
@@ -247,5 +308,27 @@
     text-align: center;
     max-width: 40px;
     line-height: 1.1;
+  }
+  
+  
+  .trick-result {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .trump-display {
+    background: #212529;
+    color: #fff;
+    border: 1px solid #495057;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 8px;
+    font-weight: 600;
+    font-family: monospace;
+    text-align: center;
+    line-height: 1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    min-width: 24px;
   }
 </style>

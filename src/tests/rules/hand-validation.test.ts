@@ -1,185 +1,212 @@
 import { describe, it, expect } from 'vitest';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { createInitialState } from '../../game/core/state';
+import { analyzeSuits } from '../../game/core/suit-analysis';
 import { GameTestHelper } from '../helpers/gameTestHelper';
-import type { Domino } from '../../game/types';
+import type { Domino, GameState } from '../../game/types';
 
 describe('Hand Validation Rules', () => {
+  function createTestState(options: {
+    trump: number,
+    currentTrick: { player: number; domino: Domino }[],
+    playerHand: Domino[],
+    currentPlayer?: number
+  }): GameState {
+    const state = createInitialState();
+    state.phase = 'playing';
+    state.trump = options.trump;
+    state.currentTrick = options.currentTrick;
+    state.currentPlayer = options.currentPlayer || 1;
+    
+    // Set currentSuit based on the first domino in currentTrick
+    if (options.currentTrick.length > 0) {
+      const leadDomino = options.currentTrick[0].domino;
+      if (options.trump === 7) { // doubles are trump
+        state.currentSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
+      } else if (leadDomino.high === options.trump || leadDomino.low === options.trump) {
+        state.currentSuit = options.trump; // trump was led
+      } else {
+        state.currentSuit = Math.max(leadDomino.high, leadDomino.low); // higher end for non-trump
+      }
+    } else {
+      state.currentSuit = null;
+    }
+    
+    const player = state.players[state.currentPlayer];
+    player.hand = options.playerHand;
+    player.suitAnalysis = analyzeSuits(options.playerHand, state.trump);
+    
+    return state;
+  }
+
   describe('Must Follow Suit When Able', () => {
     it('should require following suit when player has matching suit', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'fives', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours (high end)
-        ],
-        currentPlayer: 1
-      });
-
-      // Player has [4|1] and [2|3] - must play [4|1] to follow fours
       const playerHand: Domino[] = [
         { id: 8, low: 1, high: 4 },  // [4|1] - must play this
         { id: 5, low: 2, high: 3 }   // [2|3] - cannot play this
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 5, // fives are trump
+        currentTrick: [
+          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours (high end)
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe(8); // Must play [4|1]
       
       // Verify invalid play is rejected
       const invalidPlay = { id: 5, low: 2, high: 3 };
-      expect(isValidPlay(state, invalidPlay, playerHand)).toBe(false);
+      expect(isValidPlay(state, invalidPlay, state.currentPlayer)).toBe(false);
     });
 
     it('should allow trump when unable to follow suit', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'fives', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
-        ],
-        currentPlayer: 1
-      });
-
-      // Player has no fours but has trump
       const playerHand: Domino[] = [
         { id: 10, low: 0, high: 5 },  // [5|0] - trump
         { id: 5, low: 2, high: 3 }    // [2|3] - not trump, not fours
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 5, // fives are trump
+        currentTrick: [
+          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(2); // Can play either trump or any domino
       
       // Verify trump is valid
       const trumpPlay = { id: 10, low: 0, high: 5 };
-      expect(isValidPlay(state, trumpPlay, playerHand)).toBe(true);
+      expect(isValidPlay(state, trumpPlay, state.currentPlayer)).toBe(true);
     });
 
     it('should allow any domino when unable to follow suit or trump', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'sixes', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
-        ],
-        currentPlayer: 1
-      });
-
-      // Player has no fours and no sixes
       const playerHand: Domino[] = [
         { id: 1, low: 0, high: 1 },   // [1|0]
         { id: 5, low: 2, high: 3 }    // [2|3]
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 6, // sixes are trump
+        currentTrick: [
+          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(2); // Can play any domino
       
       validPlays.forEach(domino => {
-        expect(isValidPlay(state, domino, playerHand)).toBe(true);
+        expect(isValidPlay(state, domino, state.currentPlayer)).toBe(true);
       });
     });
   });
 
   describe('Doubles Natural Suit Rule', () => {
     it('should treat doubles as highest in their natural suit', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'threes', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 5, low: 2, high: 3 }, player: 0 } // Led with threes
-        ],
-        currentPlayer: 1
-      });
-
-      // Player has [3|3] - should be required to play as it's a three
       const playerHand: Domino[] = [
         { id: 6, low: 3, high: 3 },   // [3|3] - highest three, must play
         { id: 1, low: 0, high: 1 }    // [1|0] - cannot play
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 3, // threes are trump  
+        currentTrick: [
+          { domino: { id: 5, low: 2, high: 3 }, player: 0 } // Led with threes
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe(6); // Must play [3|3]
     });
 
     it('should recognize doubles trump when trump is declared', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'doubles', followsSuit: false },
-        currentTrick: [
-          { domino: { id: 1, low: 0, high: 1 }, player: 0 } // Led with ones
-        ],
-        currentPlayer: 1
-      });
-
-      // When doubles are trump, player must follow led suit unless playing trump
       const playerHand: Domino[] = [
-        { id: 6, low: 3, high: 3 },   // [3|3] - trump (double)
-        { id: 8, low: 1, high: 4 },   // [4|1] - has led suit (ones)
-        { id: 5, low: 2, high: 3 }    // [2|3] - no led suit
+        { id: 0, low: 0, high: 0 },   // [0|0] - double (trump)
+        { id: 6, low: 3, high: 3 },   // [3|3] - double (trump)
+        { id: 5, low: 2, high: 3 }    // [2|3] - not trump
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
-      expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(8); // Must follow ones with [4|1]
+      const state = createTestState({
+        trump: 7, // doubles are trump
+        currentTrick: [
+          { domino: { id: 10, low: 4, high: 4 }, player: 0 } // Led with double (trump)
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
+      expect(validPlays).toHaveLength(2); // Must play a double
+      expect(validPlays.every(d => d.high === d.low)).toBe(true);
     });
   });
 
   describe('Higher End Determines Suit Led', () => {
     it('should identify led suit from higher end of non-trump domino', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'fives', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 18, low: 2, high: 6 }, player: 0 } // [6|2] led - sixes is suit
-        ],
-        currentPlayer: 1
-      });
-
-      // Player must follow sixes if able
       const playerHand: Domino[] = [
-        { id: 27, low: 6, high: 6 },  // [6|6] - highest six, must play
-        { id: 5, low: 2, high: 3 }    // [2|3] - not sixes
+        { id: 10, low: 0, high: 5 },  // [5|0] - must play this for fives
+        { id: 12, low: 3, high: 4 }   // [4|3] - cannot play
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 6, // sixes are trump
+        currentTrick: [
+          { domino: { id: 9, low: 1, high: 5 }, player: 0 } // Led [5|1], suit is fives (non-trump)
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(27); // Must play [6|6]
+      expect(validPlays[0].id).toBe(10); // Must play [5|0]
     });
 
     it('should handle trump domino led (any suit can follow)', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'fives', followsSuit: true },
-        currentTrick: [
-          { domino: { id: 10, low: 0, high: 5 }, player: 0 } // [5|0] led (trump)
-        ],
-        currentPlayer: 1
-      });
-
-      // When trump is led, others must follow trump if able
       const playerHand: Domino[] = [
-        { id: 15, low: 5, high: 5 },  // [5|5] - trump
-        { id: 5, low: 2, high: 3 }    // [2|3] - not trump
+        { id: 8, low: 1, high: 4 },   // [4|1] - has trump
+        { id: 5, low: 2, high: 3 }    // [2|3] - no trump
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
-      expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(15); // Must play trump [5|5]
+      const state = createTestState({
+        trump: 1, // ones are trump
+        currentTrick: [
+          { domino: { id: 7, low: 1, high: 3 }, player: 0 } // Led with trump [3|1]
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
+      expect(validPlays).toHaveLength(1); // Must follow trump
+      expect(validPlays[0].id).toBe(8); // [4|1] is the only trump
     });
   });
 
   describe('No-Trump (Follow-Me) Rules', () => {
     it('should enforce suit following in no-trump games', () => {
-      const state = GameTestHelper.createPlayingState({
-        trump: { suit: 'no-trump', followsSuit: false },
-        currentTrick: [
-          { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
-        ],
-        currentPlayer: 1
-      });
-
-      // In no-trump, still must follow suit if able
       const playerHand: Domino[] = [
-        { id: 8, low: 1, high: 4 },   // [4|1] - has fours, must play
+        { id: 12, low: 3, high: 4 },  // [4|3] - must play this
         { id: 5, low: 2, high: 3 }    // [2|3] - cannot play
       ];
 
-      const validPlays = getValidPlays(state, playerHand);
+      const state = createTestState({
+        trump: 8, // no-trump
+        currentTrick: [
+          { domino: { id: 8, low: 1, high: 4 }, player: 0 } // Led [4|1], suit is fours
+        ],
+        playerHand
+      });
+
+      const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(8); // Must follow fours
+      expect(validPlays[0].id).toBe(12); // Must play [4|3]
     });
   });
 });

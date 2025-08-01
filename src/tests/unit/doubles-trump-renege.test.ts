@@ -1,11 +1,30 @@
 import { describe, test, expect } from 'vitest';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
-import type { Domino, Trump } from '../../game/types';
+import { analyzeSuits } from '../../game/core/suit-analysis';
+import { createTestState } from '../helpers/gameTestHelper';
+import type { Domino, Trump, GameState } from '../../game/types';
 
 describe('Doubles Trump Renege Validation', () => {
   const doublesAreTrump = 7;
   const fivesAreTrump = 5;
   const sixesAreTrump = 6;
+
+  function createTestStateWithHand(hand: Domino[], currentTrick: { player: number; domino: Domino }[], trump: number, currentSuit: number | null = null): GameState {
+    const state = createTestState({
+      phase: 'playing',
+      trump,
+      currentTrick,
+      currentSuit,
+      currentPlayer: 1,
+      players: [
+        { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+        { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: hand, suitAnalysis: analyzeSuits(hand, trump) },
+        { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+        { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+      ]
+    });
+    return state;
+  }
 
   describe('When doubles are trump', () => {
     test('6-6 leads, suit is trumps (doubles)', () => {
@@ -17,7 +36,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 5, low: 0, id: "5-0" }
       ];
       
-      const validPlays = getValidPlays(handWithDouble, currentTrick, doublesAreTrump);
+      const state = createTestStateWithHand(handWithDouble, currentTrick, doublesAreTrump, 7); // Doubles led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe("2-2");
     });
@@ -33,7 +53,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 4, low: 1, id: "4-1" }  // Cannot follow
       ];
       
-      const validPlays = getValidPlays(handWith6sAndDoubles, currentTrick, doublesAreTrump);
+      const state = createTestStateWithHand(handWith6sAndDoubles, currentTrick, doublesAreTrump, 6); // 6s led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe("6-2");
     });
@@ -47,7 +68,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 6, low: 4, id: "6-4" }  // Cannot follow
       ];
       
-      const validPlays = getValidPlays(handWith5sAndDoubles, currentTrick, fivesAreTrump);
+      const state = createTestStateWithHand(handWith5sAndDoubles, currentTrick, fivesAreTrump, 5); // 5s led (trump)
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe("5-2");
     });
@@ -60,8 +82,9 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 6, low: 3, id: "6-3" }  // Invalid play when double available
       ];
       
-      expect(isValidPlay({ high: 6, low: 3, id: "6-3" }, hand, currentTrick, doublesAreTrump)).toBe(false);
-      expect(isValidPlay({ high: 1, low: 1, id: "1-1" }, hand, currentTrick, doublesAreTrump)).toBe(true);
+      const state = createTestStateWithHand(hand, currentTrick, doublesAreTrump, 7); // Doubles led
+      expect(isValidPlay(state, { high: 6, low: 3, id: "6-3" }, 1)).toBe(false);
+      expect(isValidPlay(state, { high: 1, low: 1, id: "1-1" }, 1)).toBe(true);
     });
 
     test('Multiple doubles available - all are valid', () => {
@@ -73,7 +96,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 6, low: 1, id: "6-1" }
       ];
       
-      const validPlays = getValidPlays(handWithMultipleDoubles, currentTrick, doublesAreTrump);
+      const state = createTestStateWithHand(handWithMultipleDoubles, currentTrick, doublesAreTrump, 7); // Doubles led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(2);
       expect(validPlays.every(d => d.high === d.low)).toBe(true);
     });
@@ -89,7 +113,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 4, low: 1, id: "4-1" }   // Cannot follow
       ];
       
-      const validPlays = getValidPlays(handWith6s, currentTrick, sixesAreTrump);
+      const state = createTestStateWithHand(handWith6s, currentTrick, sixesAreTrump, 6); // 6s led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe("6-2");
     });
@@ -103,7 +128,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 2, low: 1, id: "2-1" }   // Cannot follow
       ];
       
-      const validPlays = getValidPlays(handWith5sAnd6s, currentTrick, sixesAreTrump);
+      const state = createTestStateWithHand(handWith5sAnd6s, currentTrick, sixesAreTrump, 5); // 5s led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);  
       expect(validPlays[0].id).toBe("5-3");
     });
@@ -119,7 +145,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 2, low: 1, id: "2-1" }   // Cannot follow trump
       ];
       
-      const validPlays = getValidPlays(hand, currentTrick, sixesAreTrump);
+      const state = createTestStateWithHand(hand, currentTrick, sixesAreTrump, 6); // 6s led (trump)
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(2);
       expect(validPlays.every(d => d.high === 6 || d.low === 6)).toBe(true);
     });
@@ -136,7 +163,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 2, low: 2, id: "2-2" }   // Cannot follow (different suit)
       ];
       
-      const validPlays = getValidPlays(hand, currentTrick, noTrump);
+      const state = createTestStateWithHand(hand, currentTrick, noTrump, 6); // 6s led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0].id).toBe("6-3");
     });
@@ -150,7 +178,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 2, low: 1, id: "2-1" }
       ];
       
-      const validPlays = getValidPlays(hand, emptyTrick, doublesAreTrump);
+      const state = createTestStateWithHand(hand, emptyTrick, doublesAreTrump, null); // No suit led yet
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
     });
 
@@ -163,7 +192,8 @@ describe('Doubles Trump Renege Validation', () => {
         { high: 1, low: 0, id: "1-0" }
       ];
       
-      const validPlays = getValidPlays(handWithoutDoubles, currentTrick, doublesAreTrump);
+      const state = createTestStateWithHand(handWithoutDoubles, currentTrick, doublesAreTrump, 7); // Doubles led
+      const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3); // All valid when can't follow
     });
 
@@ -178,6 +208,7 @@ describe('Doubles Trump Renege Validation', () => {
             { high: 5, low: 2, id: "5-2" }
           ],
           trump: doublesAreTrump,
+          currentSuit: 7, // Doubles led
           expectedValid: ["1-1"],
           expectedInvalid: ["5-2"]
         },
@@ -190,22 +221,23 @@ describe('Doubles Trump Renege Validation', () => {
             { high: 3, low: 1, id: "3-1" }
           ],
           trump: fivesAreTrump,
+          currentSuit: 5, // 5s led
           expectedValid: ["5-4"],
           expectedInvalid: ["6-6", "3-1"]
         }
       ];
 
       scenarios.forEach(scenario => {
+        const state = createTestStateWithHand(scenario.hand, scenario.currentTrick, scenario.trump, scenario.currentSuit);
+        
         scenario.expectedValid.forEach(dominoId => {
           const domino = scenario.hand.find(d => d.id === dominoId)!;
-          expect(isValidPlay(domino, scenario.hand, scenario.currentTrick, scenario.trump as Trump))
-            .toBe(true);
+          expect(isValidPlay(state, domino, 1)).toBe(true);
         });
 
         scenario.expectedInvalid.forEach(dominoId => {
           const domino = scenario.hand.find(d => d.id === dominoId)!;
-          expect(isValidPlay(domino, scenario.hand, scenario.currentTrick, scenario.trump as Trump))
-            .toBe(false);
+          expect(isValidPlay(state, domino, 1)).toBe(false);
         });
       });
     });

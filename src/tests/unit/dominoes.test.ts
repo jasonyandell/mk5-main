@@ -70,11 +70,11 @@ describe('Domino System', () => {
   });
   
   describe('getDominoSuit', () => {
-    it('should return trump for doubles when trump is set', () => {
+    it('should return natural suit for doubles when regular trump is set', () => {
       const double = { high: 5, low: 5, id: '5-5' };
       
-      expect(getDominoSuit(double, 2)).toBe(2); // Trump suit
-      expect(getDominoSuit(double, 5)).toBe(5); // Natural trump
+      expect(getDominoSuit(double, 2)).toBe(5); // Natural suit (doubles belong to natural suit)
+      expect(getDominoSuit(double, 5)).toBe(5); // Natural suit (also trump in this case)
     });
     
     it('should return trump for dominoes with trump value', () => {
@@ -111,8 +111,8 @@ describe('Domino System', () => {
       expect(getDominoValue(fiveDouble, trump)).toBeGreaterThan(getDominoValue(zeroDouble, trump));
     });
     
-    it('should rank trump doubles correctly', () => {
-      const trump = 3;
+    it('should rank trump doubles correctly when doubles are trump', () => {
+      const trump = 7; // Doubles trump
       const doubles = [
         { high: 6, low: 6, id: '6-6' },
         { high: 5, low: 5, id: '5-5' },

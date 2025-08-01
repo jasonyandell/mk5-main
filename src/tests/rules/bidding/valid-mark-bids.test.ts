@@ -22,7 +22,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
         player: 0
       };
       
-      const isValid = isValidBid(bid, null, gameState);
+      const isValid = isValidBid(gameState, bid);
       expect(isValid).toBe(true);
       
       // 1 mark equals 42 points
@@ -47,7 +47,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
         player: 0
       };
       
-      const isValid = isValidBid(bid, null, gameState);
+      const isValid = isValidBid(gameState, bid);
       expect(isValid).toBe(true);
       
       // 2 marks equals 84 points

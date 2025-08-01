@@ -1,6 +1,6 @@
 import type { GameState, Play, PlayedDomino, Trump } from '../types';
 import { BID_TYPES } from '../constants';
-import { getDominoValue, getDominoPoints, getDominoSuit } from './dominoes';
+import { getDominoValue, getDominoPoints } from './dominoes';
 
 /**
  * Checks if a domino follows the led suit (contains the led suit number)
@@ -28,13 +28,12 @@ function isDominoTrump(domino: { high: number; low: number }, numericTrump: numb
 /**
  * Determines the winner of a completed trick (overloaded for different interfaces)
  */
-export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: number | Trump): number {
+export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: number | Trump, leadSuit: number): number {
   if (trick.length === 0) {
     throw new Error('Trick cannot be empty');
   }
   
   const leadPlay = trick[0];
-  const leadSuit = getDominoSuit(leadPlay.domino, trump);
   
   // Convert trump to numeric value for comparison
   const numericTrump = typeof trump === 'number' ? trump : 

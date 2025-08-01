@@ -32,7 +32,7 @@
     return 'Unknown';
   }
   
-  const currentSuit = $derived(getCurrentSuit(gameState.currentTrick, gameState.trump));
+  const currentSuit = $derived(getCurrentSuit(gameState));
 
   function getHandWinner(): { winner: number | null, label: string } {
     if (!gameState.currentBid || gameState.winningBidder === null) {
@@ -114,10 +114,6 @@
       <span class="label">Trump:</span>
       <span class="value" data-testid="trump">Trump: {getTrumpName(gameState.trump)}</span>
     </div>
-    <div class="suit-info">
-      <span class="label">Current Suit:</span>
-      <span class="value" data-testid="current-suit">Suit: {currentSuit}</span>
-    </div>
   </div>
   
   <div class="core-state-section">
@@ -180,36 +176,6 @@
       </div>
     </div>
     
-    <div class="section">
-      <h4>Tricks ({gameState.tricks.length}/7)</h4>
-      <div class="tricks-summary">
-        <div data-testid="tricks-completed">Tricks Completed: {gameState.tricks.length}/7</div>
-        {#each gameState.tricks as trick, i}
-          <div class="trick">
-            <span class="trick-num">#{i + 1}</span>
-            <span class="trick-winner">P{trick.winner || 0}</span>
-            <span class="trick-points">{trick.points + 1}pts</span>
-          </div>
-        {/each}
-      </div>
-    </div>
-    
-    {#if gameState.trump !== null}
-      <div class="section">
-        <h4>Trump Summary</h4>
-        <div class="trump-summary">
-          <div class="trump-type">Trump: {getTrumpName(gameState.trump)}</div>
-          {#each gameState.players as player}
-            <div class="player-trump">
-              <span class="player-name">P{player.id}:</span>
-              <span class="trump-count">
-                {player.suitAnalysis?.count.trump || 0} trump
-              </span>
-            </div>
-          {/each}
-        </div>
-      </div>
-    {/if}
   </div>
 </div>
 
@@ -224,7 +190,7 @@
   
   .state-header {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -348,68 +314,9 @@
     font-weight: 500;
   }
   
-  .tricks-summary {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  
-  .trick {
-    display: flex;
-    gap: 2px;
-    padding: 2px 4px;
-    background: #e9ecef;
-    border-radius: 2px;
-    font-size: 10px;
-  }
-  
-  .trick-num {
-    color: #6c757d;
-  }
-  
-  .trick-winner {
-    color: #495057;
-    font-weight: 500;
-  }
-  
-  .trick-points {
-    color: #28a745;
-  }
-  
-  
   .empty {
     color: #6c757d;
     font-style: italic;
     font-size: 11px;
-  }
-  
-  .trump-summary {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  
-  .trump-type {
-    font-weight: 600;
-    color: #8b5cf6;
-    font-size: 11px;
-    margin-bottom: 2px;
-  }
-  
-  .player-trump {
-    display: flex;
-    gap: 4px;
-    font-size: 10px;
-  }
-  
-  .player-name {
-    color: #6c757d;
-    min-width: 20px;
-    font-weight: 500;
-  }
-  
-  .trump-count {
-    color: #8b5cf6;
-    font-weight: 500;
   }
 </style>

@@ -78,7 +78,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       // Pass is always valid (but handled separately, not through isValidOpeningBid)
       const passBid: Bid = { type: 'pass', player: 0 };
       // Pass bids are handled by isValidBid, not isValidOpeningBid
-      expect(isValidBid(passBid, null, gameState)).toBe(true);
+      expect(isValidBid(gameState, passBid)).toBe(true);
     });
 
     it('should create valid opening bids', () => {
@@ -112,7 +112,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       
       // Pass is handled by isValidBid
       const passBid: Bid = { type: 'pass', player: 0 };
-      expect(isValidBid(passBid, null, gameState)).toBe(true);
+      expect(isValidBid(gameState, passBid)).toBe(true);
       
       // Plunge is only valid in non-tournament mode with 4+ doubles
       if (!gameState.tournamentMode) {

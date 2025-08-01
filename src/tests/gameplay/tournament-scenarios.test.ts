@@ -57,15 +57,16 @@ describe('Tournament Scenarios', () => {
       });
     });
 
-    it('should allow overbidding with special contracts', () => {
+    it('should prohibit special contracts even when overbidding', () => {
       const state = createTournamentState();
-      const currentBid: Bid = { type: BID_TYPES.POINTS, value: 35, player: 0 };
+      state.bids = [{ type: BID_TYPES.POINTS, value: 35, player: 0 }];
+      state.currentPlayer = 1;
       
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 1 };
       const markBid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
       
-      expect(isValidBid(nelloBid, currentBid, state)).toBe(true);
-      expect(isValidBid(markBid, currentBid, state)).toBe(true);
+      expect(isValidBid(state, nelloBid)).toBe(false); // Special contracts not allowed in tournament mode
+      expect(isValidBid(state, markBid)).toBe(true);   // Regular mark bids are allowed
     });
   });
 

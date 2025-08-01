@@ -28,8 +28,8 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
           player: 0
         };
         
-        // Verify bid is valid - use legacy signature: isValidBid(bid, currentBid, state)
-        const isValid = isValidBid(bid, null, gameState);
+        // Verify bid is valid
+        const isValid = isValidBid(gameState, bid);
         expect(isValid).toBe(true);
         expect(bid.value).toBeGreaterThanOrEqual(GAME_CONSTANTS.MIN_BID);
         expect(bid.value).toBeLessThanOrEqual(GAME_CONSTANTS.MAX_BID);
@@ -59,7 +59,7 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
           player: 0
         };
         
-        const isValid = isValidBid(bid, null, gameState);
+        const isValid = isValidBid(gameState, bid);
         expect(isValid).toBe(false);
       });
     });
