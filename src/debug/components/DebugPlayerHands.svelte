@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { GameState, Play } from '../../game/types';
+  import type { GameState, Play, Domino } from '../../game/types';
   import { getPlayerLeftOfDealer, getPlayersInOrder } from '../../game/core/players';
+  import { dominoToGlyph, valuesToGlyph, supportsDominoGlyphs } from '../../game/core/domino-glyphs';
   
   interface Props {
     gameState: GameState;
@@ -8,8 +9,14 @@
   
   let { gameState }: Props = $props();
   
+  const useGlyphs = supportsDominoGlyphs();
+  
   function renderDomino(high: number, low: number): string {
-    return `[${high}|${low}]`;
+    return useGlyphs ? valuesToGlyph(high, low) : `[${high}|${low}]`;
+  }
+  
+  function renderDominoObject(domino: Domino): string {
+    return useGlyphs ? dominoToGlyph(domino) : `[${domino.high}|${domino.low}]`;
   }
   
   function getCurrentTrickPlays(): Record<number, string> {
@@ -71,8 +78,8 @@
           
           <div class="hand-dominoes">
             {#each player.hand as domino}
-              <div class="domino-mini">
-                {renderDomino(domino.high, domino.low)}
+              <div class="domino-mini domino-glyph">
+                {renderDominoObject(domino)}
               </div>
             {/each}
             {#if player.hand.length === 0}
@@ -113,8 +120,8 @@
                 <div class="trump-dominoes">
                   <strong>Trump:</strong>
                   {#each player.suitAnalysis.rank.trump as domino}
-                    <span class="trump-domino">
-                      {renderDomino(domino.high, domino.low)}
+                    <span class="trump-domino domino-glyph">
+                      {renderDominoObject(domino)}
                     </span>
                   {/each}
                 </div>
@@ -133,14 +140,15 @@
     background: white;
     border: 1px solid #dee2e6;
     border-radius: 4px;
-    padding: 8px;
+    padding: 6px;
     font-size: 10px;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
   
   .hands-header h3 {
-    margin: 0 0 8px 0;
+    margin: 0 0 4px 0;
     font-size: 12px;
     font-weight: 600;
     color: #212529;
@@ -150,8 +158,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 4px;
+    margin-bottom: 4px;
   }
   
   .position-0 { /* Player 0 - Top Left */
@@ -177,9 +185,10 @@
   .player-section {
     border: 1px solid #e9ecef;
     border-radius: 3px;
-    padding: 8px;
+    padding: 4px 6px;
     background: #f8f9fa;
     transition: all 0.1s ease;
+    overflow: hidden;
   }
   
   .player-section.current-player {
@@ -196,7 +205,7 @@
   }
   
   .player-header {
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
   
   .player-name {
@@ -239,9 +248,11 @@
   
   .hand-dominoes {
     display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    margin-bottom: 4px;
+    flex-wrap: nowrap;
+    gap: 0;
+    margin-bottom: 2px;
+    align-items: center;
+    overflow: hidden;
   }
   
   .domino-mini {
@@ -254,6 +265,23 @@
     color: #495057;
     min-width: 18px;
     text-align: center;
+  }
+  
+  .domino-glyph {
+    font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Symbola', sans-serif;
+    font-size: clamp(24px, 4vw, 48px);
+    line-height: 1;
+    padding: 0;
+    min-width: 0;
+    flex: 1 1 0;
+    max-width: calc(100% / 7);
+    border: none;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-variant-emoji: text;
   }
   
   .no-cards {
@@ -270,8 +298,8 @@
   }
   
   .suit-analysis {
-    margin-top: 6px;
-    padding-top: 4px;
+    margin-top: 3px;
+    padding-top: 2px;
     border-top: 1px solid #e9ecef;
     font-size: 8px;
   }
@@ -279,9 +307,9 @@
   .suit-counts {
     display: flex;
     flex-wrap: wrap;
-    gap: 3px;
+    gap: 2px;
     align-items: center;
-    margin-bottom: 3px;
+    margin-bottom: 1px;
   }
   
   .suit-counts strong {
@@ -316,13 +344,15 @@
   .trump-dominoes {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
+    gap: 0;
     align-items: center;
+    margin-top: 2px;
   }
   
   .trump-dominoes strong {
     font-size: 8px;
     color: #8b5cf6;
+    margin-right: 2px;
   }
   
   .trump-domino {
@@ -335,6 +365,22 @@
     font-weight: 500;
     min-width: 14px;
     text-align: center;
+  }
+  
+  .trump-domino.domino-glyph {
+    font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Symbola', sans-serif;
+    font-size: clamp(20px, 3vw, 36px);
+    padding: 1px 2px;
+    min-width: auto;
+    background: transparent;
+    color: #8b5cf6;
+    border: none;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    font-variant-emoji: text;
   }
   
 </style>

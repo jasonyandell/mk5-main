@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { StateTransition } from '../../game/types';
+  import { valuesToGlyph, supportsDominoGlyphs } from '../../game/core/domino-glyphs';
   
   interface Props {
     availableActions: StateTransition[];
@@ -10,6 +11,8 @@
   
   // Import the game state to get current player info
   import { gameState } from '../../stores/gameStore';
+  
+  const useGlyphs = supportsDominoGlyphs();
   
   function getActionTestId(action: StateTransition): string {
     // The current player in the current game state is the one who can take these actions
@@ -72,6 +75,23 @@
       return 'action-button';
     }
   }
+  
+  function formatActionLabel(action: StateTransition): string {
+    // For play actions, extract domino values and show glyph
+    if (action.id.startsWith('play-') && useGlyphs) {
+      const match = action.label.match(/Play (\d)-(\d)/);
+      if (match) {
+        const high = parseInt(match[1]);
+        const low = parseInt(match[2]);
+        return valuesToGlyph(high, low);
+      }
+    }
+    return action.label;
+  }
+  
+  function shouldShowGlyph(action: StateTransition): boolean {
+    return action.id.startsWith('play-') && useGlyphs;
+  }
 </script>
 
 <div class="debug-actions">
@@ -102,8 +122,12 @@
           data-generic-testid={getGenericTestId(action)}
           data-action-id={action.id}
         >
-          <div class="action-id">{action.id}</div>
-          <div class="action-label">{action.label}</div>
+          {#if shouldShowGlyph(action)}
+            <div class="action-glyph">{formatActionLabel(action)}</div>
+          {:else}
+            <div class="action-id">{action.id}</div>
+            <div class="action-label">{action.label}</div>
+          {/if}
         </button>
       {/each}
     </div>
@@ -192,6 +216,10 @@
 
   .action-compact.play-action {
     border-left: 3px solid #28a745;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
   }
 
   .action-compact.trick-action {
@@ -216,6 +244,15 @@
     color: #212529;
     text-align: right;
     flex: 1;
+  }
+  
+  .action-glyph {
+    font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Symbola', sans-serif;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1;
+    text-align: center;
+    width: 100%;
+    font-variant-emoji: text;
   }
 
   @media (prefers-reduced-motion: reduce) {

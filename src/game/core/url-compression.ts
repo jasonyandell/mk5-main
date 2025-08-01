@@ -2,6 +2,7 @@ import type { GameState } from '../types';
 import { createInitialState } from './state';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
+import { analyzeSuits } from './suit-analysis';
 
 /**
  * Minimal state representation for URL storage
@@ -66,9 +67,10 @@ export function expandMinimalState(minimal: MinimalGameState): GameState {
   // Recreate hands with the seed
   const hands = dealDominoesWithSeed(state.shuffleSeed);
   
-  // Update player hands
+  // Update player hands and recalculate suit analysis
   state.players.forEach((player, i) => {
     player.hand = hands[i];
+    player.suitAnalysis = analyzeSuits(hands[i]);
   });
   
   // Update deprecated hands property
