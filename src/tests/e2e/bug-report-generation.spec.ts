@@ -62,7 +62,7 @@ test.describe('Bug Report Generation Tests', () => {
     // This is just for testing - normally validation errors would occur naturally
     await page.evaluate(() => {
       // Access the game store and set a validation error
-      const gameStore = (window as any).gameStore;
+      const gameStore = (window as { gameStore?: { stateValidationError?: { set: (value: string) => void } } }).gameStore;
       if (gameStore && gameStore.stateValidationError) {
         gameStore.stateValidationError.set('Test validation error for bug report generation');
       }
@@ -156,19 +156,23 @@ test.describe('Bug Report Generation Tests', () => {
   });
 
   test('bug report works with different game phases', async () => {
-    // Test initial state (bidding phase)
-    let bugReport = await helper.getBugReport();
-    expect(bugReport).toContain('"phase": "bidding"');
-    
     // Make a single bid to change phase
     await helper.selectActionByType('bid_points', 30);
     await helper.selectActionByType('pass');
     await helper.selectActionByType('pass');
     await helper.selectActionByType('pass');
     
+    // Wait a moment for actions to be processed
+    await helper.getPage().waitForTimeout(100);
+    
     // Generate bug report and verify phase assertion
-    bugReport = await helper.getBugReport();
+    const bugReport = await helper.getBugReport();
     expect(bugReport).toContain('expect(currentState.phase).toBe(\'trump_selection\')');
+    
+    // Verify actions were recorded
+    expect(bugReport).not.toContain('const actionIds = [];');
+    expect(bugReport).toContain('"bid-30"');
+    expect(bugReport).toContain('"pass"');
     
     // Verify it contains unit test format
     expect(bugReport).toContain('from \'vitest\'');

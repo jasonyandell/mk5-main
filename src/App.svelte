@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameState, availableActions, gameActions, actionHistory } from './stores/gameStore';
+  import { gameState, availableActions, gameActions, actionHistory, stateValidationError } from './stores/gameStore';
   import DebugGameState from './debug/components/DebugGameState.svelte';
   import DebugActions from './debug/components/DebugActions.svelte';
   import DebugPlayerHands from './debug/components/DebugPlayerHands.svelte';
@@ -13,6 +13,13 @@
   // Load state from URL when app starts
   onMount(() => {
     gameActions.loadFromURL();
+    
+    // Expose gameStore to window for e2e testing
+    if (typeof window !== 'undefined') {
+      (window as any).gameStore = {
+        stateValidationError
+      };
+    }
   });
   
   function handleAction(transition: StateTransition) {

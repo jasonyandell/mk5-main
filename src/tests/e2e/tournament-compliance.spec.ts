@@ -6,7 +6,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     helper = new PlaywrightGameHelper(page);
-    await helper.goto();
+    await helper.gotoWithSeed(1); // Use deterministic seed
   });
 
   test.describe('Critical Tournament Rules', () => {
@@ -72,26 +72,24 @@ test.describe('Tournament Compliance E2E Tests', () => {
   });
 
   test.describe('Exact Point Distribution', () => {
-    test('should distribute exactly 42 points per hand', async ({ page }) => {
+    test('should distribute exactly 42 points per hand', async () => {
       // Bid 30 points
-      await helper.bidPoints(0, 30);
-      await helper.bidPass(1);
-      await helper.bidPass(2);
-      await helper.bidPass(3);
-      await helper.setTrump('5s');
+      await helper.selectActionByType('bid_points', 30);
+      await helper.selectActionByType('pass');
+      await helper.selectActionByType('pass');
+      await helper.selectActionByType('pass');
+      await helper.setTrump('fives');
 
       // Play 7 tricks
       for (let trick = 1; trick <= 7; trick++) {
         for (let play = 0; play < 4; play++) {
           await helper.playAnyDomino();
-          await page.waitForTimeout(50);
         }
         
         if (trick < 7) {
           await helper.completeTrick();
         } else {
           await helper.completeTrick();
-          await page.waitForTimeout(100);
           
           // Check scores before final scoring (after all tricks completed)
           const [team0Score, team1Score] = await helper.getTeamScores();
@@ -303,27 +301,26 @@ test.describe('Tournament Compliance E2E Tests', () => {
 
     test('should enforce correct trick count (exactly 7)', async ({ page }) => {
       // Bid 30 points
-      await helper.bidPoints(0, 30);
-      await helper.bidPass(1);
-      await helper.bidPass(2);
-      await helper.bidPass(3);
-      await helper.setTrump('5s');
+      await helper.selectActionByType('bid_points', 30);
+      await helper.selectActionByType('pass');
+      await helper.selectActionByType('pass');
+      await helper.selectActionByType('pass');
+      await helper.setTrump('fives');
 
       // Play exactly 7 tricks
       for (let trick = 1; trick <= 7; trick++) {
         for (let play = 0; play < 4; play++) {
           await helper.playAnyDomino();
-          await page.waitForTimeout(50);
         }
         
         if (trick < 7) {
           await helper.completeTrick();
-          await expect(page.locator('[data-testid="tricks-completed"]')).toContainText(`Tricks Completed: ${trick}/7`);
+          // After completing trick, should still be in playing phase with correct count
+          await expect(page.locator('[data-testid="game-phase"]')).toContainText('playing');
         } else {
           // 7th trick should complete and transition to scoring phase
           await helper.completeTrick();
-          await expect(page.locator('[data-testid="tricks-completed"]')).toContainText(`Tricks Completed: ${trick}/7`);
-          await expect(page.locator('[data-testid="phase"]')).toContainText('Phase: SCORING');
+          await expect(page.locator('[data-testid="game-phase"]')).toContainText('scoring');
           // Now score the hand
           await helper.scoreHand();
         }

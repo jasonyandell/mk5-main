@@ -164,8 +164,8 @@ test.describe('Debug Snapshot Replay Validation', () => {
     
     // Generate bug report to ensure it contains the action sequence
     const bugReport = await helper.getBugReport();
-    expect(bugReport).toContain('Initial game state');
-    expect(bugReport).toContain('actionSequence');
+    expect(bugReport).toContain('Base state for reproduction');
+    expect(bugReport).toContain('Action sequence from action history');
   });
 
   test('detects invalid action in replayed sequence', async () => {
@@ -192,8 +192,8 @@ test.describe('Debug Snapshot Replay Validation', () => {
     // Generate a bug report that would catch logic regressions
     const bugReport = await helper.getBugReport();
     expect(bugReport).toContain('throw new Error');
-    expect(bugReport).toContain('Invalid action at step');
-    expect(bugReport).toContain('not available');
+    expect(bugReport).toContain('not available at step');
+    expect(bugReport).toContain('Available:');
   });
 
   test('URL contains snapshot data for debugging', async () => {

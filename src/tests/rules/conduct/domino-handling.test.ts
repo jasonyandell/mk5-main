@@ -18,7 +18,7 @@ describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 6, low: 5, id: '6-5' },
               { high: 5, low: 4, id: '5-4' }
             ], 
-            teamId: 0 as 0, 
+            teamId: 0 as const, 
             marks: 0 
           }
         ]
@@ -51,7 +51,7 @@ describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 5, low: 2, id: '5-2' },
               { high: 3, low: 1, id: '3-1' }
             ], 
-            teamId: 1 as 1, 
+            teamId: 1 as const, 
             marks: 0 
           }
         ]
@@ -81,7 +81,7 @@ describe('Feature: Tournament Conduct - Domino Handling', () => {
               { high: 6, low: 4, id: '6-4' },
               { high: 5, low: 4, id: '5-4' }
             ], 
-            teamId: 0 as 0, 
+            teamId: 0 as const, 
             marks: 0 
           }
         ]

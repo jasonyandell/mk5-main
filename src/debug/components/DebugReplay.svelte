@@ -47,6 +47,10 @@
 <div class="replay-container" data-testid={$actionHistory.length > 0 ? "debug-snapshot" : undefined}>
   <div class="replay-header">
     <h3>Action History</h3>
+    <div class="snapshot-info">
+      <span data-testid="snapshot-reason">All actions from initial state to current state</span>
+      <span data-testid="snapshot-action-count">Actions: {$actionHistory.length}</span>
+    </div>
   </div>
   
   {#if $stateValidationError}
@@ -127,6 +131,16 @@
     margin: 0;
     font-size: 14px;
     color: #495057;
+  }
+
+  .snapshot-info {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+  }
+
+  .snapshot-info span {
+    margin-right: 12px;
   }
 
 

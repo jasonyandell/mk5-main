@@ -1,19 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState } from '../../../game/types';
 
+interface Violation {
+  player: number;
+  type: string;
+  description: string;
+  timestamp: number;
+  penalty?: string;
+  severity?: string;
+  penaltyApplied?: boolean;
+}
+
+interface GameStateWithViolations extends Partial<GameState> {
+  violations: Violation[];
+  applied?: boolean;
+  type?: string;
+}
+
 describe('Feature: Tournament Conduct', () => {
   describe('Scenario: Violation Penalties', () => {
     // Test setup for tracking violations
-    const setupGameWithViolations = (): Partial<GameState> & { violations: any[] } => {
+    const setupGameWithViolations = (): GameStateWithViolations => {
       return {
         phase: 'playing',
         currentPlayer: 0,
         tournamentMode: true,
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 }
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 }
         ],
         teamMarks: [3, 2],
         violations: []
@@ -52,7 +68,7 @@ describe('Feature: Tournament Conduct', () => {
         severity: 'minor',
         description: 'gesture during play',
         timestamp: Date.now() - 10000,
-        penaltyApplied: { type: 'warning', marksAwarded: 0 }
+        penaltyApplied: true
       };
       
       const secondViolation = {
@@ -100,10 +116,10 @@ describe('Feature: Tournament Conduct', () => {
       const gameState = setupGameWithViolations();
       
       const violations = [
-        { player: 0, type: 'communication', severity: 'minor', phase: 'bidding' },
-        { player: 1, type: 'communication', severity: 'minor', phase: 'playing' },
-        { player: 0, type: 'communication', severity: 'minor', phase: 'playing' },
-        { player: 3, type: 'communication', severity: 'moderate', phase: 'bidding' }
+        { player: 0, type: 'communication', severity: 'minor', phase: 'bidding', description: 'Violation 1', timestamp: Date.now() },
+        { player: 1, type: 'communication', severity: 'minor', phase: 'playing', description: 'Violation 2', timestamp: Date.now() },
+        { player: 0, type: 'communication', severity: 'minor', phase: 'playing', description: 'Violation 3', timestamp: Date.now() },
+        { player: 3, type: 'communication', severity: 'moderate', phase: 'bidding', description: 'Violation 4', timestamp: Date.now() }
       ];
       
       violations.forEach(v => gameState.violations.push(v));
@@ -112,7 +128,7 @@ describe('Feature: Tournament Conduct', () => {
       expect(gameState.violations.length).toBe(4);
       
       // And should correctly count violations per player
-      const player0Violations = gameState.violations.filter((v: any) => v.player === 0);
+      const player0Violations = gameState.violations.filter((v: Violation) => v.player === 0);
       expect(player0Violations.length).toBe(2);
       
       // And should identify repeat offenders
@@ -130,21 +146,24 @@ describe('Feature: Tournament Conduct', () => {
         player: 0,
         type: 'communication',
         severity: 'minor',
-        description: 'slight hesitation'
+        description: 'slight hesitation',
+        timestamp: Date.now()
       };
       
       const moderateViolation = {
         player: 1,
         type: 'communication',
         severity: 'moderate',
-        description: 'obvious gesture to partner'
+        description: 'obvious gesture to partner',
+        timestamp: Date.now()
       };
       
       const severeViolation = {
         player: 2,
         type: 'communication',
         severity: 'severe',
-        description: 'pre-arranged signal system'
+        description: 'pre-arranged signal system',
+        timestamp: Date.now()
       };
       
       // Then penalties should scale with severity
@@ -164,8 +183,8 @@ describe('Feature: Tournament Conduct', () => {
       
       // When a second offense is committed
       gameState.violations.push(
-        { player: 0, type: 'communication', severity: 'minor', penaltyApplied: { type: 'warning' } },
-        { player: 0, type: 'communication', severity: 'minor' }
+        { player: 0, type: 'communication', severity: 'minor', penaltyApplied: true, description: 'First violation', timestamp: Date.now() },
+        { player: 0, type: 'communication', severity: 'minor', description: 'Second violation', timestamp: Date.now() }
       );
       
       // Then the penalty should be applied immediately
@@ -185,7 +204,7 @@ describe('Feature: Tournament Conduct', () => {
 });
 
 // Helper functions for test implementation
-function assessPenalty(violations: any[], playerId: number): any {
+function assessPenalty(violations: Violation[], playerId: number): { type: string; marksAwarded?: number; message?: string; gameTerminated?: boolean; reason?: string; awardedToTeam?: number } {
   const playerViolations = violations.filter(v => v.player === playerId);
   const priorPenalties = playerViolations.filter(v => v.penaltyApplied).length;
   
@@ -220,7 +239,7 @@ function assessPenalty(violations: any[], playerId: number): any {
   };
 }
 
-function identifyRepeatOffenders(violations: any[]): number[] {
+function identifyRepeatOffenders(violations: Violation[]): number[] {
   const violationCounts = violations.reduce((acc, v) => {
     acc[v.player] = (acc[v.player] || 0) + 1;
     return acc;
@@ -231,7 +250,7 @@ function identifyRepeatOffenders(violations: any[]): number[] {
     .map(([player]) => parseInt(player));
 }
 
-function assessPenaltyForViolation(violation: any, priorViolations: any[]): any {
+function assessPenaltyForViolation(violation: Violation, priorViolations: Violation[]): { type: string; marksAwarded?: number; awardedToTeam?: number } {
   const playerPriors = priorViolations.filter(v => v.player === violation.player);
   
   if (violation.severity === 'severe') {
@@ -249,14 +268,14 @@ function assessPenaltyForViolation(violation: any, priorViolations: any[]): any 
   return { type: 'mark_penalty' };
 }
 
-function assessAndApplyPenalty(gameState: any, playerId: number): any {
+function assessAndApplyPenalty(gameState: GameStateWithViolations, playerId: number): { type: string; applied: boolean; marksAwarded?: number } {
   const penalty = assessPenalty(gameState.violations, playerId);
   
-  if (penalty.type === 'mark_penalty' && gameState.teamMarks) {
-    const playerTeam = gameState.players.find((p: any) => p.id === playerId)?.teamId;
+  if (penalty.type === 'mark_penalty' && gameState.teamMarks && penalty.marksAwarded) {
+    const playerTeam = gameState.players?.find((p) => p.id === playerId)?.teamId;
     const opposingTeam = playerTeam === 0 ? 1 : 0;
     gameState.teamMarks[opposingTeam] += penalty.marksAwarded;
   }
   
-  return { ...penalty, applied: true };
+  return { type: penalty.type, applied: true, marksAwarded: penalty.marksAwarded };
 }

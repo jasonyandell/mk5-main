@@ -63,23 +63,12 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         
         # Create a prompt for Claude with test output
         cat > claude_prompt.txt << EOF
-The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.
+The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.  This is a greenfield project.  Make tests thorough and maintainable.
 
 Recent test output:
 \`\`\`
 $(tail -100 test_output.log)
 \`\`\`
-
-This is an exercise in creating tests to a rules spec
-Referencing @rules.md and @docs/rules-gherkin-plan.md we need to make new tests for a theoretical implementation for strictly tournament rules
-The tests should be written assuming the implementation does the right thing
-The complete and final code definitions and state are found in src/game/
-CRITICAL: never reference or implement anything in src/game that does not already have a definition in src/game.  
-Do not run these tests you are about to create.  Do not implement any game logic.  
-Find the first unmarked scenario create the tests and test-only implementation as described for ONLY that block
-Check the block off when this task is complete.
-
-After making changes, I'll run the tests again automatically.
 EOF
         
         # Call Claude with the prompt

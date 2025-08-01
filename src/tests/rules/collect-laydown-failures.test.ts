@@ -122,7 +122,6 @@ describe('Collect Laydown Failures', () => {
     if (explorePath(initialState, [])) {
       // Find where bidder lost
       let testState = initialState;
-      let moveCount = 0;
       for (const move of losingPath) {
         if (move.includes('Complete trick')) {
           const lastTrick = testState.tricks[testState.tricks.length - 1];
@@ -138,7 +137,6 @@ describe('Collect Laydown Failures', () => {
           }
         }
         // Would need to replay moves to track exact state, but we have the path
-        moveCount++;
       }
       
       return {

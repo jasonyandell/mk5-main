@@ -3,12 +3,12 @@
  */
 
 // Check if verbose output is enabled via environment variable
-export const VERBOSE_TESTS = process.env.VERBOSE_TESTS === 'true' || process.env.VERBOSE_TESTS === '1';
+export const VERBOSE_TESTS = (globalThis.process?.env?.VERBOSE_TESTS === 'true') || (globalThis.process?.env?.VERBOSE_TESTS === '1');
 
 /**
  * Conditional console log that only outputs when VERBOSE_TESTS is enabled
  */
-export const testLog = (...args: any[]) => {
+export const testLog = (...args: unknown[]) => {
   if (VERBOSE_TESTS) {
     console.log(...args);
   }
@@ -17,7 +17,7 @@ export const testLog = (...args: any[]) => {
 /**
  * Conditional console info that only outputs when VERBOSE_TESTS is enabled
  */
-export const testInfo = (...args: any[]) => {
+export const testInfo = (...args: unknown[]) => {
   if (VERBOSE_TESTS) {
     console.info(...args);
   }
@@ -26,7 +26,7 @@ export const testInfo = (...args: any[]) => {
 /**
  * Conditional console warn that only outputs when VERBOSE_TESTS is enabled
  */
-export const testWarn = (...args: any[]) => {
+export const testWarn = (...args: unknown[]) => {
   if (VERBOSE_TESTS) {
     console.warn(...args);
   }
@@ -35,14 +35,14 @@ export const testWarn = (...args: any[]) => {
 /**
  * Conditional console error - always outputs (errors should always be visible)
  */
-export const testError = (...args: any[]) => {
+export const testError = (...args: unknown[]) => {
   console.error(...args);
 };
 
 /**
  * Conditional console debug that only outputs when VERBOSE_TESTS is enabled
  */
-export const testDebug = (...args: any[]) => {
+export const testDebug = (...args: unknown[]) => {
   if (VERBOSE_TESTS) {
     console.debug(...args);
   }
@@ -51,7 +51,7 @@ export const testDebug = (...args: any[]) => {
 /**
  * Conditional console table that only outputs when VERBOSE_TESTS is enabled
  */
-export const testTable = (data: any, columns?: string[]) => {
+export const testTable = (data: unknown, columns?: string[]) => {
   if (VERBOSE_TESTS) {
     console.table(data, columns);
   }

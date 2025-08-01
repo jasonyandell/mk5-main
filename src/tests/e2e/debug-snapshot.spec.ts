@@ -147,11 +147,11 @@ test.describe('Debug Snapshot System', () => {
     // Generate bug report
     const bugReport = await helper.getBugReport();
     
-    // Bug report should contain action sequence validation
-    expect(bugReport).toContain('All actions from initial state to current state');
+    // Bug report should contain action sequence validation and runnable test code
     expect(bugReport).toContain('baseState');
-    expect(bugReport).toContain('actionSequence');
-    expect(bugReport).toContain('playwrightHelper.getAvailableActions');
-    expect(bugReport).toContain('Invalid action at step');
+    expect(bugReport).toContain('actionIds');
+    expect(bugReport).toContain('getNextStates');
+    expect(bugReport).toContain('matchingTransition');
+    expect(bugReport).toContain('throw new Error(`Action'); // Should contain action validation logic
   });
 });

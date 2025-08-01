@@ -7,10 +7,10 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         currentPlayer: 1,
         winningBidder: 1,
@@ -27,10 +27,10 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         currentPlayer: 2, // Player 2 won the bid
         winningBidder: 2,
@@ -49,10 +49,10 @@ describe('Feature: Playing Tricks', () => {
       const mockState: Partial<GameState> = {
         phase: 'playing',
         players: [
-          { id: 0, name: 'Player 1', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         winningBidder: 1,
         trump: 4 as Trump,
@@ -90,12 +90,12 @@ describe('Feature: Playing Tricks', () => {
               { high: 3, low: 2, id: '3-2' },
               { high: 1, low: 0, id: '1-0' },
             ], 
-            teamId: 0 as 0, 
+            teamId: 0 as const, 
             marks: 0 
           },
-          { id: 1, name: 'Player 2', hand: [], teamId: 1 as 1, marks: 0 },
-          { id: 2, name: 'Player 3', hand: [], teamId: 0 as 0, marks: 0 },
-          { id: 3, name: 'Player 4', hand: [], teamId: 1 as 1, marks: 0 },
+          { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
+          { id: 2, name: 'Player 3', hand: [], teamId: 0 as const, marks: 0 },
+          { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         currentPlayer: 0,
         winningBidder: 0,

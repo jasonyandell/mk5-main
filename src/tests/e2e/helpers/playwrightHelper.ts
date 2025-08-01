@@ -1,11 +1,13 @@
 import { expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { GameState } from '../../../game/types';
+import { encodeURLData } from '../../../game/core/url-compression';
 
 interface ActionOption {
   index: number;
   type: string;
   value?: string | number;
+  id: string;
 }
 
 /**
@@ -27,6 +29,18 @@ export class PlaywrightGameHelper {
 
   async goto() {
     await this.page.goto('/');
+    await expect(this.page.locator('h1')).toContainText('Texas 42 Debug Interface');
+  }
+
+  async gotoWithSeed(seed: number) {
+    // Create a deterministic URL with the specified seed
+    const urlData = {
+      v: 1 as const,
+      s: { s: seed }, // MinimalGameState with shuffle seed
+      a: [] // No actions initially
+    };
+    const encoded = encodeURLData(urlData);
+    await this.page.goto(`/?d=${encoded}`);
     await expect(this.page.locator('h1')).toContainText('Texas 42 Debug Interface');
   }
 
@@ -61,7 +75,9 @@ export class PlaywrightGameHelper {
   }
 
   async selectActionByIndex(index: number) {
-    await this.page.locator('.action-compact').nth(index).click();
+    const locator = this.page.locator('.action-compact').nth(index);
+    await locator.waitFor({ state: 'visible' });
+    await locator.click({ force: true });
   }
 
   async getActionsList(): Promise<ActionOption[]> {
@@ -101,7 +117,7 @@ export class PlaywrightGameHelper {
         type = 'select_trump';
       }
       
-      actions.push({ index: i, type, value });
+      actions.push({ index: i, type, value, id: actionId || '' });
     }
     
     return actions;
@@ -117,8 +133,21 @@ export class PlaywrightGameHelper {
     }
   }
 
+  async selectActionById(id: string) {
+    const actions = await this.getActionsList();
+    const action = actions.find(a => a.id === id);
+    if (action) {
+      await this.selectActionByIndex(action.index);
+    } else {
+      console.log('Available actions:', actions.map(a => a.id));
+      throw new Error(`No action found for id: ${id}. Available actions: ${actions.map(a => a.id).join(', ')}`);
+    }
+  }
+
   async setTrumpBySuit(suit: string) {
-    await this.selectActionByType('trump_selection', suit);
+    // Use the correct trump action ID format
+    const trumpActionId = `trump-${suit}`;
+    await this.selectActionById(trumpActionId);
   }
 
   // Add back methods that tests expect, but using new index-based approach
@@ -144,7 +173,15 @@ export class PlaywrightGameHelper {
       '4s': 'fours',
       '5s': 'fives',
       '6s': 'sixes',
-      'Doubles': 'doubles'
+      'doubles': 'doubles',
+      'Doubles': 'doubles',
+      'blanks': 'blanks',
+      'ones': 'ones',
+      'twos': 'twos',
+      'threes': 'threes',
+      'fours': 'fours',
+      'fives': 'fives',
+      'sixes': 'sixes'
     };
     
     const internalSuit = suitMap[suit] || suit.toLowerCase();
@@ -455,7 +492,7 @@ export class PlaywrightGameHelper {
   }
 
 
-  async getCurrentState(): Promise<any> {
+  async getCurrentState(): Promise<unknown> {
     // This would need to be implemented to get the current game state
     // For now, return null - this is used in commented sections of bug reports
     return null;
@@ -464,15 +501,15 @@ export class PlaywrightGameHelper {
 
 // Export a singleton instance for backward compatibility
 export const playwrightHelper = {
-  loadState: async (page: any, state: any) => {
+  loadState: async (page: Page, state: GameState) => {
     const helper = new PlaywrightGameHelper(page);
     return helper.loadState(state);
   },
-  clickAction: async (page: any, actionId: string) => {
+  clickAction: async (page: Page, actionId: string) => {
     const helper = new PlaywrightGameHelper(page);
     return helper.clickAction(actionId);
   },
-  getAvailableActions: async (page: any) => {
+  getAvailableActions: async (page: Page) => {
     const helper = new PlaywrightGameHelper(page);
     return helper.getAvailableActions();
   }
