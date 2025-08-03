@@ -81,6 +81,12 @@ export class PlaywrightGameHelper {
   }
 
   async getActionsList(): Promise<ActionOption[]> {
+    // Wait for actions to be available with proper timeout
+    await this.page.waitForSelector('.action-compact', { timeout: 5000 }).catch(() => {
+      // If no actions available, return empty array
+      return null;
+    });
+    
     const buttons = await this.page.locator('.action-compact').all();
     const actions = [];
     

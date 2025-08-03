@@ -42,6 +42,7 @@ interface Player {
   hand: Domino[];
   teamId: 0 | 1;
   marks: number;
+  suitAnalysis?: SuitAnalysis;
 }
 ```
 
@@ -51,6 +52,7 @@ interface Domino {
   high: number;
   low: number;
   id: string;
+  points?: number; // Scoring points (0, 5, or 10)
 }
 ```
 
@@ -71,6 +73,39 @@ interface StateTransition {
   id: string;
   label: string;
   newState: GameState;
+  description?: string;
+}
+```
+
+### SuitAnalysis
+```typescript
+interface SuitAnalysis {
+  count: SuitCount;
+  rank: SuitRanking;
+}
+
+interface SuitCount {
+  0: number; // blanks
+  1: number; // ones
+  2: number; // twos
+  3: number; // threes
+  4: number; // fours
+  5: number; // fives
+  6: number; // sixes
+  doubles: number; // count of doubles
+  trump: number; // count of trump dominoes
+}
+
+interface SuitRanking {
+  0: Domino[]; // blanks (highest to lowest)
+  1: Domino[]; // ones (highest to lowest)
+  2: Domino[]; // twos (highest to lowest)
+  3: Domino[]; // threes (highest to lowest)
+  4: Domino[]; // fours (highest to lowest)
+  5: Domino[]; // fives (highest to lowest)
+  6: Domino[]; // sixes (highest to lowest)
+  doubles: Domino[]; // all doubles (highest to lowest)
+  trump: Domino[]; // all trump dominoes (highest to lowest)
 }
 ```
 
@@ -80,11 +115,20 @@ interface StateTransition {
 
 #### createInitialState()
 ```typescript
-function createInitialState(): GameState
+function createInitialState(options?: {
+  shuffleSeed?: number;
+  dealer?: number;
+  tournamentMode?: boolean;
+}): GameState
 ```
 Creates a fresh game state with dealt hands and proper initialization.
 
-**Returns**: New `GameState` with all players dealt 7 dominoes each.
+**Parameters**:
+- `options.shuffleSeed` - Seed for deterministic domino shuffling (defaults to `Date.now()`)
+- `options.dealer` - Starting dealer (defaults to 3)
+- `options.tournamentMode` - Tournament mode restrictions (defaults to `true`)
+
+**Returns**: New `GameState` with all players dealt 7 dominoes each and suit analysis calculated.
 
 **Example**:
 ```typescript
@@ -93,6 +137,10 @@ import { createInitialState } from './game';
 const state = createInitialState();
 console.log(state.phase); // 'bidding'
 console.log(state.players.length); // 4
+console.log(state.players[0].suitAnalysis); // SuitAnalysis object
+
+// Deterministic game for testing
+const testState = createInitialState({ shuffleSeed: 12345 });
 ```
 
 #### getNextStates()
@@ -191,19 +239,19 @@ Validates whether a domino play is legal.
 #### getValidPlays()
 ```typescript
 function getValidPlays(
-  hand: Domino[], 
-  currentTrick: Play[], 
-  trump: Trump
+  state: GameState,
+  playerId: number
 ): Domino[]
 ```
 Gets all valid domino plays for current situation.
 
 **Parameters**:
-- `hand` - Player's current hand
-- `currentTrick` - Current trick plays
-- `trump` - Current trump suit
+- `state` - Current game state
+- `playerId` - Player making the play
 
 **Returns**: Array of playable dominoes.
+
+**Note**: Uses player's suit analysis for efficient rule validation.
 
 ### Domino Utilities
 
@@ -233,12 +281,14 @@ function getDominoPoints(domino: Domino): number
 Gets the scoring points for a domino.
 
 **Point Values**:
-- 6-6: 42 points
 - 5-5: 10 points
-- 6-4: 10 points
+- 6-4: 10 points  
 - 5-0: 5 points
-- 6-5: 5 points
+- 4-1: 5 points
+- 3-2: 5 points
 - All others: 0 points
+
+**Total**: 35 counting points in the set
 
 ### Scoring
 
@@ -255,6 +305,48 @@ function calculateRoundScore(state: GameState): [number, number]
 Calculates mark awards at the end of a hand.
 
 **Returns**: Updated team marks `[team0Marks, team1Marks]`.
+
+### Suit Analysis
+
+#### analyzeSuits()
+```typescript
+function analyzeSuits(hand: Domino[], trump?: Trump | null): SuitAnalysis
+```
+Calculates comprehensive suit analysis for a player's hand.
+
+**Parameters**:
+- `hand` - Player's dominoes
+- `trump` - Current trump suit (affects trump count/ranking)
+
+**Returns**: Complete suit analysis including counts and rankings.
+
+**Example**:
+```typescript
+import { analyzeSuits } from './game/core/suit-analysis';
+
+const analysis = analyzeSuits(player.hand, state.trump);
+console.log(analysis.count[6]); // Number of sixes in hand
+console.log(analysis.count.trump); // Number of trump dominoes
+console.log(analysis.rank.doubles); // All doubles, sorted high to low
+```
+
+### URL State Persistence
+
+#### compressGameState()
+```typescript
+function compressGameState(state: GameState): MinimalGameState
+```
+Compresses game state to minimal representation for URL storage.
+
+**Important**: Only stores non-derivable data (shuffle seed, dealer, etc.).
+
+#### expandMinimalState()
+```typescript
+function expandMinimalState(minimal: MinimalGameState): GameState
+```
+Expands minimal state back to full game state.
+
+**Critical**: Automatically recalculates all derived data including suit analysis.
 
 ## Constants
 
@@ -295,6 +387,8 @@ const TRUMP_SUITS = {
   FOURS: 4,
   FIVES: 5,
   SIXES: 6,
+  DOUBLES: 7,    // All doubles are trump
+  NO_TRUMP: 8,   // Follow-me (no trump)
 };
 ```
 
@@ -375,6 +469,56 @@ if (actions.length === 0) {
 - **Caching**: Consider memoizing `getNextStates()` for repeated calls
 - **Memory**: Clone operations are deep but efficient for game-sized data
 - **Validation**: Rule validation is computationally lightweight
+- **Suit Analysis**: Calculated once per hand change, cached in player object
+
+## State Management Best Practices
+
+### Event Sourcing Pattern
+The engine uses event sourcing: initial state + action history = current state.
+
+```typescript
+// Good: Store initial state and actions
+const gameHistory = {
+  initialState: createInitialState(),
+  actions: ['bid-30', 'pass', 'pass', 'pass', 'trump-sixes']
+};
+
+// Replay to get current state
+let currentState = gameHistory.initialState;
+for (const actionId of gameHistory.actions) {
+  const transitions = getNextStates(currentState);
+  const action = transitions.find(t => t.id === actionId);
+  currentState = action.newState;
+}
+```
+
+### State Validation
+Always validate state consistency after loading from external sources:
+
+```typescript
+import { validateGameState } from './game/core/validation';
+
+// After loading state from URL, database, etc.
+const errors = validateGameState(loadedState);
+if (errors.length > 0) {
+  console.error('State validation failed:', errors);
+  // Fall back to new game or show error
+}
+```
+
+### Derived Data Management
+Critical: All derived data must be recalculated when loading state:
+
+```typescript
+// Bad: Derived data out of sync
+const state = loadStateFromURL();
+// state.players[0].suitAnalysis might be stale!
+
+// Good: Always recalculate derived data
+state.players.forEach(player => {
+  player.suitAnalysis = analyzeSuits(player.hand, state.trump);
+});
+```
 
 ## Thread Safety
 

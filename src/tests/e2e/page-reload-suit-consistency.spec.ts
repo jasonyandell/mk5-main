@@ -76,7 +76,7 @@ test.describe('Page Reload Suit Analysis Consistency', () => {
             suits.push(suitEl.textContent || '');
           });
           
-          const dominoes = Array.from(playerEl.querySelectorAll('.domino-mini, .domino-glyph'));
+          const dominoes = Array.from(playerEl.querySelectorAll('.domino-mini'));
           const dominoList: string[] = [];
           dominoes.forEach(dominoEl => {
             dominoList.push((dominoEl.textContent || '').trim());
@@ -116,8 +116,8 @@ test.describe('Page Reload Suit Analysis Consistency', () => {
     await helper.selectActionByType('pass');
     await helper.selectActionByType('pass');
     
-    // Should now be in trump selection phase
-    await expect(helper.locator('[data-testid="trump-selection"]')).toBeVisible();
+    // Should now be in trump selection phase - wait for phase change
+    await helper.waitForPhaseChange('trump_selection', 5000);
 
     // Capture URL before trump selection (for potential future use)
     // const urlBeforeTrump = page.url();
@@ -190,7 +190,7 @@ test.describe('Page Reload Suit Analysis Consistency', () => {
         const data: Array<{ dominoes: string[], suits: string[] }> = [];
         
         players.forEach((playerEl) => {
-          const dominoes = Array.from(playerEl.querySelectorAll('.domino-mini, .domino-glyph'));
+          const dominoes = Array.from(playerEl.querySelectorAll('.domino-mini'));
           const dominoList: string[] = [];
           dominoes.forEach(dominoEl => {
             dominoList.push((dominoEl.textContent || '').trim());

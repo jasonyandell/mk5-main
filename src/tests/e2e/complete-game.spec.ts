@@ -51,10 +51,6 @@ test.describe('Complete Game End-to-End', () => {
     await expect(page.locator('[data-testid="new-game-button"]')).toContainText('New Game');
   });
 
-  test.skip('should handle debug panel toggle', async () => {
-    // Skip - entire UI is now debug interface
-  });
-
   test('should reset game correctly', async ({ page }) => {
     // Click new game button
     await page.locator('[data-testid="new-game-button"]').click();

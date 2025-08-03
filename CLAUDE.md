@@ -5,5 +5,6 @@
 ** Playwright ** - all use of playwright be strictly in non-interactive mode.  We should never wait on reports or users to hit ctrl+c.  This is true in Claude as well as in any scripts
 
 ** No legacy layers ** - this is a greenfield project.  everything should be unified, even if it takes significant extra work
+** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
 
 To check behavior, consult @rules.md

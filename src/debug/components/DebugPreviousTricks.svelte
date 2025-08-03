@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { GameState, Trick, Domino } from '../../game/types';
   import { getCurrentSuit } from '../../game/core/rules';
-  import { dominoToGlyph, supportsDominoGlyphs } from '../../game/core/domino-glyphs';
   
   interface Props {
     gameState: GameState;
@@ -9,10 +8,8 @@
   
   let { gameState }: Props = $props();
   
-  const useGlyphs = supportsDominoGlyphs();
-  
   function getDominoDisplay(domino: Domino): string {
-    return useGlyphs ? dominoToGlyph(domino) : `${domino.high}-${domino.low}`;
+    return `${domino.high}-${domino.low}`;
   }
   
   function getTrickSuit(trick: Trick): string {
@@ -105,10 +102,9 @@
               <div class="domino-compact" 
                    class:winner={play.player === trick.winner}
                    class:counter={play.domino.points && play.domino.points > 0}
-                   class:use-glyph={useGlyphs}
-                   title="P{play.player}: {play.domino.high}-{play.domino.low}{play.domino.points && play.domino.points > 0 ? ` (${play.domino.points}pts)` : ''}">
+                                      title="P{play.player}: {play.domino.high}-{play.domino.low}{play.domino.points && play.domino.points > 0 ? ` (${play.domino.points}pts)` : ''}">
                 <span class="player-num">P{play.player}</span>
-                <span class="domino-value" class:domino-glyph={useGlyphs}>{getDominoDisplay(play.domino)}</span>
+                <span class="domino-value" >{getDominoDisplay(play.domino)}</span>
               </div>
             {/each}
           </div>
@@ -129,10 +125,9 @@
           <div class="trick-dominoes">
             {#each gameState.currentTrick as play}
               <div class="domino-compact current"
-                   class:use-glyph={useGlyphs}
-                   title="P{play.player}: {play.domino.high}-{play.domino.low}{play.domino.points && play.domino.points > 0 ? ` (${play.domino.points}pts)` : ''}">
+                                      title="P{play.player}: {play.domino.high}-{play.domino.low}{play.domino.points && play.domino.points > 0 ? ` (${play.domino.points}pts)` : ''}">
                 <span class="player-num">P{play.player}</span>
-                <span class="domino-value" class:domino-glyph={useGlyphs}>{getDominoDisplay(play.domino)}</span>
+                <span class="domino-value" >{getDominoDisplay(play.domino)}</span>
               </div>
             {/each}
             <!-- Empty slots for remaining plays -->
@@ -276,19 +271,6 @@
     color: #212529;
   }
   
-  .domino-value.domino-glyph {
-    font-family: 'Noto Sans Symbols', 'Noto Sans Symbols 2', 'Segoe UI Symbol', 'Segoe UI Emoji', 'Noto Color Emoji', 'Apple Color Emoji', 'Symbola', sans-serif;
-    font-size: clamp(20px, 3vw, 32px);
-    line-height: 1;
-    font-variant-emoji: text;
-  }
-  
-  .domino-compact.use-glyph {
-    padding: 4px 6px;
-    min-width: 0;
-    flex: 1 1 auto;
-    max-width: 25%;
-  }
   
   .empty-slot {
     font-size: 10px;
@@ -320,14 +302,6 @@
     line-height: 1;
   }
   
-  .current-suit {
-    font-size: 8px;
-    color: #856404;
-    font-weight: 500;
-    text-align: center;
-    max-width: 40px;
-    line-height: 1.1;
-  }
   
   
   .trick-result {
