@@ -48,10 +48,15 @@
       <span class="label">Dealer:</span>
       <span class="value">Player {state.dealer + 1}</span>
     </div>
-    {#if state.trump !== null}
+    {#if state.trump && state.trump.type !== 'none'}
       <div class="summary-item">
         <span class="label">Trump:</span>
-        <span class="value">{['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'][state.trump]}</span>
+        <span class="value">{
+          state.trump.type === 'suit' ? 
+            ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'][state.trump.suit!] :
+            state.trump.type === 'doubles' ? 'Doubles' : 
+            state.trump.type === 'no-trump' ? 'Follow-me' : 'Unknown'
+        }</span>
       </div>
     {/if}
     <div class="summary-item">

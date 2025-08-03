@@ -44,12 +44,28 @@ export interface Player {
 }
 
 export type BidType = 'pass' | 'points' | 'marks' | 'nello' | 'splash' | 'plunge';
-export type Trump = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | { suit: string | number; followsSuit: boolean }; // 0-6: suits, 7: doubles, 8: no-trump
+
+// Clean Trump type - no legacy support
+export interface TrumpSelection {
+  type: 'none' | 'suit' | 'doubles' | 'no-trump';
+  suit?: 0 | 1 | 2 | 3 | 4 | 5 | 6;  // Only when type === 'suit'
+}
 
 export interface Bid {
   type: BidType;
   value?: number;
   player: number;
+}
+
+// Empty state for current bid instead of null
+export const EMPTY_BID: Bid = {
+  type: 'pass',
+  player: -1
+};
+
+// Helper function to check if a bid is empty
+export function isEmptyBid(bid: Bid): boolean {
+  return bid.player === -1 && bid.type === 'pass';
 }
 
 export interface Play {
@@ -76,12 +92,12 @@ export interface GameState {
   currentPlayer: number;
   dealer: number;
   bids: Bid[];
-  currentBid: Bid | null;
-  winningBidder: number | null;
-  trump: Trump | null;
+  currentBid: Bid; // Never null, uses EMPTY_BID
+  winningBidder: number; // -1 during bidding instead of null
+  trump: TrumpSelection; // Never null, uses { type: 'none' }
   tricks: Trick[];
   currentTrick: Play[];
-  currentSuit: number | null; // The suit that was led for the current trick (null if no trick in progress)
+  currentSuit: number; // -1 when no trick in progress instead of null
   teamScores: [number, number];
   teamMarks: [number, number];
   gameTarget: number;
@@ -89,9 +105,9 @@ export interface GameState {
   shuffleSeed: number; // Seed for deterministic shuffling
   // Additional properties for test compatibility
   hands?: { [playerId: number]: Domino[] };
-  bidWinner?: number | null;
+  bidWinner?: number; // -1 instead of null
   isComplete?: boolean;
-  winner?: number | null;
+  winner?: number; // -1 instead of null
 }
 
 export interface StateTransition {
@@ -99,6 +115,23 @@ export interface StateTransition {
   label: string;
   newState: GameState;
 }
+
+// Game Action types based on existing transition IDs
+export type GameAction = 
+  | { type: 'bid'; player: number; bidType: BidType; value?: number }
+  | { type: 'pass'; player: number }
+  | { type: 'select-trump'; player: number; selection: TrumpSelection }
+  | { type: 'play'; player: number; dominoId: string }
+  | { type: 'complete-trick' }
+  | { type: 'score-hand' }
+  | { type: 'redeal' }
+
+// History tracking for undo/redo
+export interface GameHistory {
+  actions: GameAction[];
+  stateSnapshots: GameState[];
+}
+
 
 export interface GameConstants {
   TOTAL_DOMINOES: 28;

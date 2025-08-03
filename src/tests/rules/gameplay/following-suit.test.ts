@@ -13,7 +13,7 @@ describe('Feature: Playing Tricks', () => {
     test('Given a domino has been led And it is not a trump', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 4; // fours are trump
+      gameState.trump = { type: 'suit', suit: 4 }; // fours are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6-3 led, not a trump
       ];
@@ -21,8 +21,8 @@ describe('Feature: Playing Tricks', () => {
       const ledDomino = gameState.currentTrick[0].domino;
       expect(gameState.phase).toBe('playing');
       expect(gameState.currentTrick.length).toBe(1);
-      expect(ledDomino.high).not.toBe(gameState.trump);
-      expect(ledDomino.low).not.toBe(gameState.trump);
+      expect(ledDomino.high).not.toBe(gameState.trump.suit);
+      expect(ledDomino.low).not.toBe(gameState.trump.suit);
     });
 
     test('When determining the suit - Then the higher end of the domino determines the suit led', () => {
@@ -38,7 +38,7 @@ describe('Feature: Playing Tricks', () => {
       testCases.forEach(({ domino, expectedSuit }) => {
         const gameState = createInitialState();
         gameState.phase = 'playing';
-        gameState.trump = 5; // fives are trump, so none of these are trump
+        gameState.trump = { type: 'suit', suit: 5 }; // fives are trump, so none of these are trump
         gameState.currentTrick = [
           { player: 0, domino }
         ];
@@ -52,7 +52,7 @@ describe('Feature: Playing Tricks', () => {
     test('And players must play a domino of the led suit if possible', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 2; // twos are trump
+      gameState.trump = { type: 'suit', suit: 2 }; // twos are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6 led
       ];
@@ -88,7 +88,7 @@ describe('Feature: Playing Tricks', () => {
     test('And if unable to follow suit, players may play trump', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 2; // twos are trump
+      gameState.trump = { type: 'suit', suit: 2 }; // twos are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6 led
       ];
@@ -127,7 +127,7 @@ describe('Feature: Playing Tricks', () => {
     test('And if unable to follow suit or trump, players may play any domino', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 2; // twos are trump
+      gameState.trump = { type: 'suit', suit: 2 }; // twos are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6 led
       ];
@@ -149,7 +149,7 @@ describe('Feature: Playing Tricks', () => {
       
       // Check if player has trump (they don't)
       const hasTrump = playerHand.some(domino =>
-        domino.high === gameState.trump || domino.low === gameState.trump
+        domino.high === gameState.trump.suit || domino.low === gameState.trump.suit
       );
       expect(hasTrump).toBe(false);
       
@@ -167,7 +167,7 @@ describe('Feature: Playing Tricks', () => {
     test('And doubles follow their natural suit unless doubles are trump', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 3; // threes are trump
+      gameState.trump = { type: 'suit', suit: 3 }; // threes are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 5, low: 5, id: '5-5' } } // 5-5 led (natural suit 5)
       ];
@@ -202,7 +202,7 @@ describe('Feature: Playing Tricks', () => {
     test('And trump dominoes do not have to follow suit (they trump)', () => {
       const gameState = createInitialState();
       gameState.phase = 'playing';
-      gameState.trump = 3; // threes are trump
+      gameState.trump = { type: 'suit', suit: 3 }; // threes are trump
       gameState.currentTrick = [
         { player: 0, domino: { high: 6, low: 5, id: '6-5' } } // 6 led
       ];

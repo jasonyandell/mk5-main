@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createTestHand } from '../helpers/gameTestHelper';
 import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, BidType } from '../../game/types';

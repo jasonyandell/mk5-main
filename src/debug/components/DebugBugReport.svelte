@@ -106,12 +106,17 @@
             <li>Tricks Completed: {gameState.tricks.length}/7</li>
             <li>Current Trick: {gameState.currentTrick.length}/4</li>
             {#if gameState.currentBid}
-              <li>Current Bid: {gameState.currentBid.value} by P{gameState.currentBid.playerId}</li>
+              <li>Current Bid: {gameState.currentBid.value} by P{gameState.currentBid.player}</li>
             {/if}
-            {#if gameState.trump}
-              <li>Trump: {gameState.trump}</li>
+            {#if gameState.trump && gameState.trump.type !== 'none'}
+              <li>Trump: {
+                gameState.trump.type === 'suit' ? 
+                  ['0s', '1s', '2s', '3s', '4s', '5s', '6s'][gameState.trump.suit!] :
+                  gameState.trump.type === 'doubles' ? 'Doubles' :
+                  gameState.trump.type === 'no-trump' ? 'Follow-me' : 'Unknown'
+              }</li>
             {/if}
-            {#if gameState.winningBidder !== null}
+            {#if gameState.winningBidder !== -1}
               <li>Winning Bidder: P{gameState.winningBidder}</li>
             {/if}
           </ul>

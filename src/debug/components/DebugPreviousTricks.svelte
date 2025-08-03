@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { GameState, Trick, Domino } from '../../game/types';
-  import { getCurrentSuit } from '../../game/core/rules';
   
   interface Props {
     gameState: GameState;
@@ -13,7 +12,7 @@
   }
   
   function getTrickSuit(trick: Trick): string {
-    if (trick.plays.length === 0 || gameState.trump === null) return '';
+    if (trick.plays.length === 0 || !gameState.trump || gameState.trump.type === 'none') return '';
     
     // For completed tricks, compute the suit from the first play
     const leadDomino = trick.plays[0].domino;
@@ -22,10 +21,10 @@
     
     // Determine what suit was led
     let ledSuit: number;
-    if (trump === 7) { // doubles are trump
+    if (trump.type === 'doubles') { // doubles are trump
       ledSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
-    } else if (leadDomino.high === trump || leadDomino.low === trump) {
-      ledSuit = trump; // trump was led
+    } else if (trump.type === 'suit' && (leadDomino.high === trump.suit || leadDomino.low === trump.suit)) {
+      ledSuit = trump.suit; // trump was led
     } else {
       ledSuit = Math.max(leadDomino.high, leadDomino.low); // higher end for non-trump
     }
@@ -45,25 +44,9 @@
     return suitFormats[ledSuit] || '[?]';
   }
   
-  function getTrumpDisplay(): string {
-    if (gameState.trump === null) return '';
-    
-    // Map trump values to display strings
-    switch (gameState.trump) {
-      case 0: return '[0s]';
-      case 1: return '[1s]';
-      case 2: return '[2s]';
-      case 3: return '[3s]';
-      case 4: return '[4s]';
-      case 5: return '[5s]';
-      case 6: return '[6s]';
-      case 7: return '[doubles]';
-      default: return '[?]';
-    }
-  }
   
   function getCurrentSuitBracketFormat(state: GameState): string {
-    if (state.currentSuit === null) return '[?]';
+    if (state.currentSuit === -1) return '[?]';
     
     const suitFormats: Record<number, string> = {
       0: '[0s]',
@@ -131,7 +114,7 @@
               </div>
             {/each}
             <!-- Empty slots for remaining plays -->
-            {#each Array(4 - gameState.currentTrick.length) as _, i}
+            {#each Array(4 - gameState.currentTrick.length) as _}
               <div class="domino-compact empty">
                 <span class="empty-slot">—</span>
               </div>
@@ -139,7 +122,7 @@
           </div>
           <div class="trick-info">
             <div class="trick-result">
-              <span class="trump-display">{gameState.currentSuit !== null ? getCurrentSuitBracketFormat(gameState) : '[...]'}</span>
+              <span class="trump-display">{gameState.currentSuit !== -1 ? getCurrentSuitBracketFormat(gameState) : '[...]'}</span>
             </div>
           </div>
         </div>

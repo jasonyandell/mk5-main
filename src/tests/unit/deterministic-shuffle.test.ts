@@ -269,6 +269,6 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // Should match the state after redeal exactly
     expect(redoState.shuffleSeed).toBe(stateAfterRedeal.shuffleSeed);
-    expect(redoState.players.map(p => p.hand.map(d => d.id))).toEqual(handsAfterRedeal);
+    expect(redoState.players.map((p) => p.hand.map((d) => d.id))).toEqual(handsAfterRedeal);
   });
 });

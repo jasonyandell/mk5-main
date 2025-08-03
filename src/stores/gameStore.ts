@@ -411,9 +411,9 @@ test('Bug report - ${timestamp}', () => {
   // Verify final state matches expected
   expect(currentState.phase).toBe('${currentState.phase}');
   expect(currentState.currentPlayer).toBe(${currentState.currentPlayer});
-  ${currentState.trump !== null ? `expect(currentState.trump).toBe(${currentState.trump});` : '// No trump set'}
-  ${currentState.winningBidder !== null ? `expect(currentState.winningBidder).toBe(${currentState.winningBidder});` : '// No winning bidder yet'}
-  ${currentState.currentSuit !== null ? `expect(currentState.currentSuit).toBe(${currentState.currentSuit});` : '// No current suit (no trick in progress)'}
+  ${currentState.trump.type !== 'none' ? `expect(currentState.trump).toEqual(${JSON.stringify(currentState.trump)});` : '// No trump set'}
+  ${currentState.winningBidder !== -1 ? `expect(currentState.winningBidder).toBe(${currentState.winningBidder});` : '// No winning bidder yet'}
+  ${currentState.currentSuit !== -1 ? `expect(currentState.currentSuit).toBe(${currentState.currentSuit});` : '// No current suit (no trick in progress)'}
   
   // Team state verification
   expect(currentState.teamScores).toEqual([${currentState.teamScores[0]}, ${currentState.teamScores[1]}]);

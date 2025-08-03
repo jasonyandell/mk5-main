@@ -8,33 +8,33 @@ describe('DebugPreviousTricks Logic', () => {
   test('getCurrentSuit should work correctly for previous tricks', () => {
     // Test with a trick where trump was led
     const state1 = createInitialState();
-    state1.trump = 5; // 5s are trump
+    state1.trump = { type: 'suit', suit: 5 }; // 5s are trump
     state1.currentSuit = 5; // 5s were led
     expect(getCurrentSuit(state1)).toBe('Fives (Trump)');
     
     // Test with a trick where non-trump was led
     const state2 = createInitialState();
-    state2.trump = 5; // 5s are trump
+    state2.trump = { type: 'suit', suit: 5 }; // 5s are trump
     state2.currentSuit = 6; // 6s were led
     expect(getCurrentSuit(state2)).toBe('Sixes');
     
     // Test with doubles trump
     const state3 = createInitialState();
-    state3.trump = 7; // doubles are trump
+    state3.trump = { type: 'doubles' }; // doubles are trump
     state3.currentSuit = 7; // doubles were led
     expect(getCurrentSuit(state3)).toBe('Doubles (Trump)');
   });
 
   test('should handle empty current trick gracefully', () => {
     const state = createInitialState();
-    state.trump = 5;
-    state.currentSuit = null; // No trick in progress
+    state.trump = { type: 'suit', suit: 5 };
+    state.currentSuit = -1; // No trick in progress
     expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
 
   test('should handle null trump gracefully', () => {
     const state = createInitialState();
-    state.trump = null; // No trump set
+    state.trump = { type: 'none' }; // No trump set
     state.currentSuit = 6; // Some suit was led
     expect(getCurrentSuit(state)).toBe('None (no trump set)');
   });
@@ -87,7 +87,7 @@ describe('DebugPreviousTricks Logic', () => {
         { player: 0, domino: { high: 5, low: 5, id: "5-5" } },
         { player: 1, domino: { high: 4, low: 2, id: "4-2" } }
       ],
-      trump: 5
+      trump: { type: 'suit', suit: 5 }
     };
 
     // Test that we can process the tricks data structure

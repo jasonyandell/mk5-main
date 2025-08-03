@@ -88,9 +88,9 @@ describe('Special Gameplay Scenarios', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // ones are trump
+        trump: { type: 'suit', suit: 1 }, // ones are trump
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         currentPlayer: 0,
         players: [
           { 
@@ -99,7 +99,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 0, 
             marks: 0, 
             hand: allTrumpHand,
-            suitAnalysis: analyzeSuits(allTrumpHand, 1)
+            suitAnalysis: analyzeSuits(allTrumpHand, { type: 'suit', suit: 1 })
           },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
@@ -129,9 +129,9 @@ describe('Special Gameplay Scenarios', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 8, // 8 represents no-trump
+        trump: { type: 'no-trump' }, // no-trump
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         currentPlayer: 0,
         players: [
           { 
@@ -140,7 +140,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 0, 
             marks: 0, 
             hand: mixedHand,
-            suitAnalysis: analyzeSuits(mixedHand, 8)
+            suitAnalysis: analyzeSuits(mixedHand, { type: 'no-trump' })
           },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
@@ -166,9 +166,9 @@ describe('Special Gameplay Scenarios', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 7, // doubles are trump
+        trump: { type: 'doubles' }, // doubles are trump
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         currentPlayer: 0,
         players: [
           { 
@@ -177,7 +177,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 0, 
             marks: 0, 
             hand: handWithDoubles,
-            suitAnalysis: analyzeSuits(handWithDoubles, 7)
+            suitAnalysis: analyzeSuits(handWithDoubles, { type: 'doubles' })
           },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
@@ -306,7 +306,7 @@ describe('Special Gameplay Scenarios', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [{
           player: 0,
           domino: { id: 'lead', high: 3, low: 3, points: 0 } // 3-3 leads
@@ -321,7 +321,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 1, 
             marks: 0, 
             hand: limitedHand,
-            suitAnalysis: analyzeSuits(limitedHand, 1)
+            suitAnalysis: analyzeSuits(limitedHand, { type: 'suit', suit: 1 })
           },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
@@ -339,7 +339,7 @@ describe('Special Gameplay Scenarios', () => {
       // All dominoes of a suit are played
       const afterSuitBlocked = createTestState({
         phase: 'playing',
-        trump: 2,
+        trump: { type: 'suit', suit: 2 },
         tricks: [
           {
             plays: [

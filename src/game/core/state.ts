@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import { GAME_CONSTANTS } from '../constants';
+import { EMPTY_BID } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
 import { analyzeSuits } from './suit-analysis';
@@ -22,12 +23,12 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
     currentPlayer,
     dealer,
     bids: [],
-    currentBid: null,
-    winningBidder: null,
-    trump: null,
+    currentBid: EMPTY_BID,
+    winningBidder: -1, // -1 during bidding instead of null
+    trump: { type: 'none' as const }, // Never null, uses clear empty state
     tricks: [],
     currentTrick: [],
-    currentSuit: null,
+    currentSuit: -1, // -1 when no trick in progress instead of null
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -35,9 +36,9 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
     shuffleSeed: options?.shuffleSeed ?? Date.now(), // Initial seed for when dealing happens
     // Test compatibility properties - empty hands in setup
     hands: {},
-    bidWinner: null,
+    bidWinner: -1, // -1 instead of null
     isComplete: false,
-    winner: null,
+    winner: -1, // -1 instead of null
   };
 }
 
@@ -63,12 +64,12 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     currentPlayer,
     dealer,
     bids: [],
-    currentBid: null,
-    winningBidder: null,
-    trump: null,
+    currentBid: EMPTY_BID,
+    winningBidder: -1, // -1 during bidding instead of null
+    trump: { type: 'none' as const }, // Never null, uses clear empty state
     tricks: [],
     currentTrick: [],
-    currentSuit: null,
+    currentSuit: -1, // -1 when no trick in progress instead of null
     teamScores: [0, 0] as [number, number],
     teamMarks: [0, 0] as [number, number],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -81,9 +82,9 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
       2: hands[2],
       3: hands[3]
     },
-    bidWinner: null,
+    bidWinner: -1, // -1 instead of null
     isComplete: false,
-    winner: null,
+    winner: -1, // -1 instead of null
   };
   
   return initialState;

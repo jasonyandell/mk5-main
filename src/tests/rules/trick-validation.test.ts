@@ -3,8 +3,8 @@ import { isValidPlay, getTrickWinner, getTrickPoints, getValidPlays } from '../.
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { getDominoSuit } from '../../game/core/dominoes';
-import type { Trump, Play, Domino, GameState } from '../../game/types';
-import { TRUMP_SUITS } from '../../game/constants';
+import type { TrumpSelection, Play, Domino, GameState } from '../../game/types';
+import { TRUMP_SELECTIONS } from '../../game/constants';
 
 // Helper function to create dominoes for testing
 function createDomino(high: number, low: number): Domino {
@@ -16,7 +16,7 @@ function createDomino(high: number, low: number): Domino {
 }
 
 // Helper to create test game state
-function createTestState(hands: Domino[][], trump: Trump, currentTrick: Play[] = []): GameState {
+function createTestState(hands: Domino[][], trump: TrumpSelection, currentTrick: Play[] = []): GameState {
   const state = createInitialState();
   state.phase = 'playing';
   state.trump = trump;
@@ -40,7 +40,7 @@ function createTestState(hands: Domino[][], trump: Trump, currentTrick: Play[] =
 }
 
 describe('Trick Validation', () => {
-  const trump: Trump = TRUMP_SUITS.BLANKS;
+  const trump: TrumpSelection = TRUMP_SELECTIONS.BLANKS;
   
   describe('isValidPlay', () => {
     it('should allow any domino for opening lead', () => {
@@ -85,7 +85,7 @@ describe('Trick Validation', () => {
     });
 
     it('should handle trump suit correctly', () => {
-      const trumpSuit: Trump = TRUMP_SUITS.ONES;
+      const trumpSuit: TrumpSelection = TRUMP_SELECTIONS.ONES;
       const hand = [
         createDomino(1, 1), // trump
         createDomino(2, 3), // not trump

@@ -1,9 +1,9 @@
-import type { GameState, Domino, Bid, Player, Trump } from '../../game/types';
+import type { GameState, Domino, Bid, Player, TrumpSelection } from '../../game/types';
 import { 
   createInitialState, 
   getNextStates, 
   isValidBid,
-  dealDominoes
+  dealDominoesWithSeed
 } from '../../game';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
@@ -18,7 +18,7 @@ export class GameTestHelper {
    * Deals dominoes to all players in a game state
    */
   dealDominoes(state: GameState): GameState {
-    const hands = dealDominoes();
+    const hands = dealDominoesWithSeed(state.shuffleSeed || 12345);
     
     return {
       ...state,
@@ -51,8 +51,8 @@ export class GameTestHelper {
     return {
       ...state,
       phase: 'playing',
-      trump: 1,
-      bidWinner: 0,
+      trump: { type: 'suit', suit: 1 },
+      winningBidder: 0,
       currentPlayer: 0,
       bids: [
         { type: BID_TYPES.POINTS, value: 30, player: 0 },
@@ -72,7 +72,7 @@ export class GameTestHelper {
       ...state,
       phase: 'scoring',
       isComplete: true,
-      winner: winningTeam,
+      winner: winningTeam === -1 ? -1 : winningTeam,
       teamScores: winningTeam === 0 ? [7, 0] : [0, 7]
     };
   }
@@ -111,7 +111,7 @@ export class GameTestHelper {
       ...state,
       teamScores: [team0Marks, team1Marks],
       isComplete: team0Marks >= 7 || team1Marks >= 7,
-      winner: team0Marks >= 7 ? 0 : (team1Marks >= 7 ? 1 : null)
+      winner: team0Marks >= 7 ? 0 : (team1Marks >= 7 ? 1 : -1)
     };
   }
   
@@ -142,7 +142,7 @@ export class GameTestHelper {
     };
     
     // Set currentSuit based on currentTrick if provided
-    if (state.currentTrick && state.currentTrick.length > 0 && state.trump !== null) {
+    if (state.currentTrick && state.currentTrick.length > 0 && state.trump.type !== 'none') {
       const leadDomino = state.currentTrick[0].domino;
       state.currentSuit = getDominoSuit(leadDomino, state.trump);
     }
@@ -168,13 +168,13 @@ export class GameTestHelper {
    * Creates a playing scenario with specified trump and trick state
    */
   static createPlayingScenario(
-    trump: number,
+    trump: TrumpSelection,
     currentPlayer: number = 0,
     currentTrick: { player: number; domino: Domino }[] = []
   ): GameState {
     return this.createTestState({
       phase: 'playing',
-      trump: trump as Trump,
+      trump,
       currentPlayer,
       currentTrick,
       winningBidder: 0,
@@ -186,14 +186,14 @@ export class GameTestHelper {
    * Creates a playing state with custom parameters for rule testing
    */
   static createPlayingState(options: {
-    trump?: Trump | { suit: string; followsSuit: boolean };
+    trump?: TrumpSelection;
     currentTrick?: { player: number; domino: Domino }[];
     currentPlayer?: number;
     hands?: { [playerId: number]: Domino[] };
   } = {}): GameState {
     const baseState = this.createTestState({
       phase: 'playing',
-      trump: options.trump || 0,
+      trump: options.trump || { type: 'suit', suit: 0 },
       currentPlayer: options.currentPlayer || 0,
       currentTrick: options.currentTrick || [],
       winningBidder: 0,

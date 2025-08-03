@@ -63,7 +63,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         
         # Create a prompt for Claude with test output
         cat > claude_prompt.txt << EOF
-The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.  This is a greenfield project.  Make tests thorough and maintainable.
+The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.  This is a greenfield project.  Make all tests (unit and e2e) thorough and maintainable.  reference @rules.md for behavior questions
 
 Recent test output:
 \`\`\`

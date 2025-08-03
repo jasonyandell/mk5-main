@@ -18,10 +18,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'marks', value: 2, player: 0 }, // Team 0 bid 2 marks
         winningBidder: 0,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [35, 7], // Team 0 scored 35 points, Team 1 scored 7 points
         teamMarks: [0, 0], // Before scoring
         gameTarget: 7,
@@ -49,10 +49,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'marks', value: 2, player: 0 },
         winningBidder: 0,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [35, 7],
         teamMarks: [0, 0],
         gameTarget: 7,
@@ -96,10 +96,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'marks', value: 2, player: 0 }, // Team 0 bid 2 marks
         winningBidder: 0,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [35, 7], // Team 0 failed to make 84 points
         teamMarks: [3, 2], // Initial marks before scoring this hand
         gameTarget: 7,
@@ -145,10 +145,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'points', value: 35, player: 1 }, // Team 1 bid 35 points
         winningBidder: 1,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [28, 14], // Team 1 only got 14 points
         teamMarks: [0, 0],
         gameTarget: 7,
@@ -191,10 +191,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'marks', value: 1, player: 2 }, // Team 0 bid 1 mark (42 points)
         winningBidder: 2,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [40, 2], // Team 0 got 40 points, failed to make 42
         teamMarks: [1, 1],
         gameTarget: 7,
@@ -238,10 +238,10 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         bids: [],
         currentBid: { type: 'plunge', value: 4, player: 3 }, // Team 1 bid plunge (4 marks)
         winningBidder: 3,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [7, 35], // Team 1 failed to win all tricks
         teamMarks: [0, 0],
         gameTarget: 7,

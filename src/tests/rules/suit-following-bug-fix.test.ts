@@ -19,7 +19,7 @@ describe('Suit Following Bug Fix', () => {
 
     const state = createTestState({
       phase: 'playing',
-      trump: 1, // Ones are trump
+      trump: { type: 'suit', suit: 1 }, // Ones are trump
       currentTrick: [{
         player: 0,
         domino: { id: '5-4', high: 5, low: 4 } // 5-4 leads (fives suit)
@@ -35,7 +35,7 @@ describe('Suit Following Bug Fix', () => {
           teamId: 0, 
           marks: 0, 
           hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, 1) // Trump = 1
+          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) // Trump = 1
         },
         { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
       ]
@@ -65,7 +65,7 @@ describe('Suit Following Bug Fix', () => {
 
     const state = createTestState({
       phase: 'playing',
-      trump: 1, // Ones are trump
+      trump: { type: 'suit', suit: 1 }, // Ones are trump
       currentTrick: [{
         player: 0,
         domino: { id: '5-6', high: 6, low: 5 } // 5-6 leads (sixes suit)
@@ -80,7 +80,7 @@ describe('Suit Following Bug Fix', () => {
           teamId: 1, 
           marks: 0, 
           hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, 1) // Trump = 1
+          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) // Trump = 1
         },
         { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
         { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }

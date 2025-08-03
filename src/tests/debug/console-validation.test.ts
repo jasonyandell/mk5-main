@@ -69,9 +69,8 @@ describe('Console Validation and Error Detection', () => {
       expect(() => {
         // These should not throw or produce console errors
         const state = createInitialState();
-        state.trump = null; // Valid null state
-        state.bidWinner = null; // Valid null state
-        state.winner = null; // Valid null state
+        state.trump = { type: 'none' }; // Valid none state
+        // state.bidWinner and state.winner don't exist in new types
       }).not.toThrow();
       
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -157,7 +156,7 @@ describe('Console Validation and Error Detection', () => {
       expect(state.currentPlayer).toBeGreaterThanOrEqual(0);
       expect(state.currentPlayer).toBeLessThan(4);
       
-      if (state.bidWinner !== null) {
+      if (state.bidWinner !== null && state.bidWinner !== undefined && state.bidWinner !== -1) {
         expect(state.bidWinner).toBeGreaterThanOrEqual(0);
         expect(state.bidWinner).toBeLessThan(4);
       }
@@ -169,10 +168,13 @@ describe('Console Validation and Error Detection', () => {
       const helper = new GameTestHelper();
       const state = helper.createGameInProgress();
       
-      if (state.trump !== null) {
-        // Trump should be 0-6 (suits 0-5, doubles 6)
-        expect(state.trump).toBeGreaterThanOrEqual(0);
-        expect(state.trump).toBeLessThanOrEqual(6);
+      if (state.trump.type !== 'none') {
+        // Trump should be valid TrumpSelection
+        expect(['suit', 'doubles', 'no-trump']).toContain(state.trump.type);
+        if (state.trump.type === 'suit') {
+          expect(state.trump.suit).toBeGreaterThanOrEqual(0);
+          expect(state.trump.suit).toBeLessThanOrEqual(6);
+        }
       }
       
       expect(consoleErrorSpy).not.toHaveBeenCalled();

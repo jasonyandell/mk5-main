@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import type { GameState } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
@@ -58,7 +58,8 @@ describe('Full Game Scenarios', () => {
       expect(trumpBlanks).toBeDefined();
       
       state = trumpBlanks!.newState;
-      expect(state.trump).toBe(0); // 0 represents blanks trump
+      expect(state.trump.type).toBe('suit');
+      expect(state.trump.suit).toBe(0); // 0 represents blanks trump
       expect(state.phase).toBe('playing');
       
       // Verify game can proceed to playing
@@ -107,11 +108,13 @@ describe('Full Game Scenarios', () => {
       if (bid35) {
         state = bid35.newState;
         expect(state.currentBid?.value).toBe(35);
+        
+        // After 4 actions (bid, bid, pass, bid), bidding should be complete
+        // and should move to trump_selection phase
+        expect(state.bids.length).toBe(4);
+        expect(state.phase).toBe('trump_selection');
+        expect(state.winningBidder).toBe(3); // Player 4 won with bid 35
       }
-      
-      // Verify bidding continues properly
-      expect(state.bids.length).toBeGreaterThan(2);
-      expect(state.phase).toBe('bidding');
     });
   });
 
@@ -137,7 +140,7 @@ describe('Full Game Scenarios', () => {
         }
         
         // Should proceed to trump selection for Nello
-        if (state.winningBidder !== null) {
+        if (state.winningBidder !== -1) {
           expect(state.currentBid?.type).toBe(BID_TYPES.NELLO);
         }
       }

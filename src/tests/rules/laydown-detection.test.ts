@@ -1,7 +1,7 @@
 import { describe, it } from 'vitest';
-import type { GameState, Domino, Trump } from '../../game/types';
+import type { GameState, Domino, TrumpSelection } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { testLog } from '../helpers/testConsole';
 
 describe('Laydown Detection', () => {
@@ -24,7 +24,19 @@ describe('Laydown Detection', () => {
     };
   }
 
-  function setupGameWithHand(hand: [number, number][], trump: Trump): GameState {
+  function numberToTrumpSelection(trump: number): TrumpSelection {
+    if (trump === 7) {
+      return { type: 'doubles' };
+    } else if (trump === 8) {
+      return { type: 'no-trump' };
+    } else if (trump >= 0 && trump <= 6) {
+      return { type: 'suit', suit: trump as 0 | 1 | 2 | 3 | 4 | 5 | 6 };
+    } else {
+      return { type: 'none' };
+    }
+  }
+
+  function setupGameWithHand(hand: [number, number][], trump: TrumpSelection): GameState {
     const state = createInitialState();
     
     state.phase = 'playing';
@@ -413,7 +425,7 @@ describe('Laydown Detection', () => {
     
     let verified = 0;
     testHands.forEach((test, i) => {
-      const gameState = setupGameWithHand(test.hand, test.trump as Trump);
+      const gameState = setupGameWithHand(test.hand, numberToTrumpSelection(test.trump));
       const isLaydown = exhaustiveCheck(gameState);
       
       testLog(`${i + 1}. ${test.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
@@ -429,6 +441,7 @@ describe('Laydown Detection', () => {
 
   function exhaustiveCheck(state: GameState): boolean {
     const cache = new Map<string, boolean>();
+    const maxDepth = 50; // Prevent infinite recursion
     
     function getCacheKey(state: GameState): string {
       const tricksByPlayer = [0, 0, 0, 0];
@@ -438,14 +451,23 @@ describe('Laydown Detection', () => {
         }
       });
       const cardsLeft = state.players.map(p => p.hand.length).join('-');
-      return `${tricksByPlayer.join('-')}|${cardsLeft}|P${state.currentPlayer}`;
+      const currentTrick = state.currentTrick ? 
+        state.currentTrick.map(p => p.domino.id).join(',') : '';
+      return `${tricksByPlayer.join('-')}|${cardsLeft}|P${state.currentPlayer}|T${currentTrick}`;
     }
     
-    function canBidderWinAll(state: GameState): boolean {
+    function canBidderWinAll(state: GameState, depth = 0): boolean {
+      // Prevent infinite recursion
+      if (depth > maxDepth) {
+        return false;
+      }
+      
+      // If bidder already lost a trick, they can't win all
       if (state.tricks.some(t => t.winner !== 0)) {
         return false;
       }
       
+      // If game is over, check if bidder won all 7 tricks
       if (state.phase !== 'playing') {
         return state.tricks.length === 7 && state.tricks.every(t => t.winner === 0);
       }
@@ -456,13 +478,18 @@ describe('Laydown Detection', () => {
       }
       
       const transitions = getNextStates(state);
-      if (transitions.length === 0) return false;
+      if (transitions.length === 0) {
+        cache.set(key, false);
+        return false;
+      }
       
       let result: boolean;
       if (state.currentPlayer === 0) {
-        result = transitions.some(t => canBidderWinAll(t.newState));
+        // Bidder's turn: they need at least one winning move
+        result = transitions.some(t => canBidderWinAll(t.newState, depth + 1));
       } else {
-        result = transitions.every(t => canBidderWinAll(t.newState));
+        // Opponent's turn: all their moves must lead to bidder winning
+        result = transitions.every(t => canBidderWinAll(t.newState, depth + 1));
       }
       
       cache.set(key, result);

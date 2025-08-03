@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState } from '../../game/types';
-import { createInitialState, dealDominoes } from '../../game';
+import { createInitialState, dealDominoesWithSeed } from '../../game';
 
 describe('Feature: Game Setup - Domino Arrangement', () => {
   describe('Scenario: Domino Arrangement', () => {
     it('Given players have drawn their dominoes', () => {
       // Test setup - create initial state and deal dominoes
       const gameState: GameState = createInitialState({ tournamentMode: true });
-      const hands = dealDominoes();
+      const hands = dealDominoesWithSeed(12345);
       
       // Assign dealt hands to players
       gameState.players.forEach((player, index) => {
@@ -42,7 +42,7 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
     it('And once bidding begins, dominoes cannot be rearranged', () => {
       // Test that arrangement is locked once bidding phase starts
       const gameStateBeforeBidding: GameState = createInitialState({ tournamentMode: true });
-      const hands = dealDominoes();
+      const hands = dealDominoesWithSeed(12345);
       
       // Assign dealt hands to players
       gameStateBeforeBidding.players.forEach((player, index) => {

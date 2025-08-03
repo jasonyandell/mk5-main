@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { getNextPlayer } from '../../game/core/players';
 import type { GameState } from '../../game/types';
 import { testLog } from '../helpers/testConsole';
@@ -46,7 +46,7 @@ describe('State Transitions Integration', () => {
       
       // Simulate end of playing phase
       state.phase = 'playing';
-      state.trump = { suit: 'blanks', followsSuit: false };
+      state.trump = { type: 'suit', suit: 0 }; // blanks
       state.winningBidder = 0;
       
       // Add 7 complete tricks (simulated)
@@ -140,7 +140,7 @@ describe('State Transitions Integration', () => {
     it('should prevent invalid actions', () => {
       const state = createInitialState();
       state.phase = 'playing';
-      state.trump = { suit: 'blanks', followsSuit: false };
+      state.trump = { type: 'suit', suit: 0 }; // blanks
       
       // Should only have play actions in playing phase
       const actions = getNextStates(state);
@@ -316,10 +316,10 @@ describe('State Transitions Integration', () => {
         ],
         currentBid: { type: 'points', value: 30, player: 2 },
         winningBidder: 2,
-        trump: null,
+        trump: { type: 'none' },
         tricks: [],
         currentTrick: [],
-        currentSuit: null,
+        currentSuit: -1,
         teamScores: [0, 0],
         teamMarks: [0, 0],
         gameTarget: 7,
@@ -362,9 +362,9 @@ describe('State Transitions Integration', () => {
             { high: 1, low: 1, id: '1-1' }
           ]
         },
-        bidWinner: null,
+        bidWinner: -1,
         isComplete: false,
-        winner: null,
+        winner: -1,
         shuffleSeed: 12345
       };
       

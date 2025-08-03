@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { GameState, Trump } from '../../game/types';
-import { createInitialState, dealDominoes } from '../../game';
+import type { GameState } from '../../game/types';
+import { createInitialState, dealDominoesWithSeed } from '../../game';
 
 // Test-only implementation for prohibited play communication
 // This tests that the game properly prevents and detects prohibited communications during play
@@ -11,7 +11,7 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
   beforeEach(() => {
     // Setup a game in playing phase using proper game engine
     gameState = createInitialState({ tournamentMode: true });
-    const hands = dealDominoes();
+    const hands = dealDominoesWithSeed(12345);
     
     // Assign dealt hands to players
     gameState.players.forEach((player, index) => {
@@ -30,7 +30,7 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
     ];
     gameState.currentBid = { type: 'points', value: 31, player: 0 };
     gameState.winningBidder = 0;
-    gameState.trump = 3 as Trump; // threes are trump
+    gameState.trump = { type: 'suit', suit: 3 }; // threes are trump
     gameState.tricks = [];
     gameState.currentTrick = [];
   });

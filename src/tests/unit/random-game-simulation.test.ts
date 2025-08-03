@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 
 describe('Random Game Simulation', () => {
   test('should play 100 random games without getting stuck (no available actions)', () => {

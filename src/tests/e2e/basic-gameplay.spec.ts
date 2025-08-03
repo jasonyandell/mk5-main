@@ -148,8 +148,4 @@ test.describe('Basic Gameplay', () => {
     const biddingOptions = await helper.getBiddingOptions();
     expect(biddingOptions.length).toBeGreaterThan(0);
   });
-
-  test.skip('should handle debug panel', async () => {
-    // Skip - entire UI is now debug interface, no separate debug panel
-  });
 });

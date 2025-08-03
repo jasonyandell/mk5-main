@@ -1,4 +1,5 @@
-import type { GameState, Play, PlayedDomino, Trump } from '../types';
+import type { GameState, Play, PlayedDomino, TrumpSelection } from '../types';
+import { isEmptyBid } from '../types';
 import { BID_TYPES } from '../constants';
 import { getDominoValue, getDominoPoints } from './dominoes';
 
@@ -28,7 +29,7 @@ function isDominoTrump(domino: { high: number; low: number }, numericTrump: numb
 /**
  * Determines the winner of a completed trick (overloaded for different interfaces)
  */
-export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: number | Trump, leadSuit: number): number {
+export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: TrumpSelection, leadSuit: number): number {
   if (trick.length === 0) {
     throw new Error('Trick cannot be empty');
   }
@@ -36,18 +37,10 @@ export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: numb
   const leadPlay = trick[0];
   
   // Convert trump to numeric value for comparison
-  const numericTrump = typeof trump === 'number' ? trump : 
-                      (typeof trump === 'object' && 'suit' in trump) ? 
-                      (typeof trump.suit === 'number' ? trump.suit : 
-                       // Handle string suits
-                       (function(suit: string) {
-                         const suitMap: Record<string, number | null> = {
-                           'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
-                           'fours': 4, 'fives': 5, 'sixes': 6, 'no-trump': 8, 'doubles': 7
-                         };
-                         const result = suitMap[suit];
-                         return result !== undefined ? result : 0;
-                       })(trump.suit)) : trump;
+  const numericTrump = trump.type === 'none' ? null :
+                       trump.type === 'suit' ? trump.suit! :
+                       trump.type === 'doubles' ? 7 :
+                       trump.type === 'no-trump' ? 8 : null;
   
   let winningPlay = leadPlay;
   let winningValue = getDominoValue(leadPlay.domino, trump);
@@ -92,7 +85,7 @@ export function calculateTrickPoints(trick: Play[]): number {
  * Calculates marks awarded at end of hand
  */
 export function calculateRoundScore(state: GameState): [number, number] {
-  if (!state.currentBid || state.winningBidder === null) {
+  if (isEmptyBid(state.currentBid) || state.winningBidder === -1) {
     return state.teamMarks;
   }
   

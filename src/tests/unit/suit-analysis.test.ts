@@ -31,7 +31,7 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' }, // no trump
       ];
 
-      const count = calculateSuitCount(hand, 5); // 5s are trump
+      const count = calculateSuitCount(hand, { type: 'suit', suit: 5 }); // 5s are trump
       
       expect(count[5]).toBe(2); // natural suit count stays same
       expect(count.trump).toBe(2); // two trump dominoes (5-5, 6-5)
@@ -44,7 +44,7 @@ describe('Suit Analysis', () => {
         { high: 3, low: 3, id: '3-3' }, // double (trump when doubles are trump)
       ];
 
-      const count = calculateSuitCount(hand, 7); // doubles are trump
+      const count = calculateSuitCount(hand, { type: 'doubles' }); // doubles are trump
       
       expect(count.doubles).toBe(2); // two doubles
       expect(count.trump).toBe(2); // two trump dominoes (both doubles)
@@ -85,7 +85,7 @@ describe('Suit Analysis', () => {
         { high: 4, low: 2, id: '4-2' }, // no trump
       ];
 
-      const ranking = calculateSuitRanking(hand, 3); // 3s are trump
+      const ranking = calculateSuitRanking(hand, { type: 'suit', suit: 3 }); // 3s are trump
       
       // Trump ranking should have double first, then by pip count
       expect(ranking.trump).toHaveLength(3);
@@ -118,7 +118,7 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' },
       ];
 
-      const analysis = analyzeSuits(hand, 5);
+      const analysis = analyzeSuits(hand, { type: 'suit', suit: 5 });
       
       expect(analysis.count.trump).toBe(2);
       expect(analysis.rank.trump).toHaveLength(2);
@@ -187,7 +187,7 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' }, // contains trump
       ];
 
-      const analysis = analyzeSuits(hand, 3); // 3s are trump
+      const analysis = analyzeSuits(hand, { type: 'suit', suit: 3 }); // 3s are trump
       
       // Trump count and rank should be identical to suit 3
       expect(analysis.count.trump).toBe(analysis.count[3]);

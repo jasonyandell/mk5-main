@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';

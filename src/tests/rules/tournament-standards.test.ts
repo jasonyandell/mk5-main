@@ -4,7 +4,7 @@ import { isValidBid } from '../../game/core/rules';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
-import type { Bid, Trump } from '../../game/types';
+import type { Bid, TrumpSelection } from '../../game/types';
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
@@ -204,11 +204,23 @@ describe('Tournament Standards (N42PA Rules)', () => {
       const validTrumpSuits = [0, 1, 2, 3, 4, 5, 6, 7]; // 0-6 for suits plus doubles (7)
 
       validTrumpSuits.forEach(trump => {
+        const numberToTrumpSelection = (trump: number): TrumpSelection => {
+          if (trump === 7) {
+            return { type: 'doubles' };
+          } else if (trump === 8) {
+            return { type: 'no-trump' };
+          } else if (trump >= 0 && trump <= 6) {
+            return { type: 'suit', suit: trump as 0 | 1 | 2 | 3 | 4 | 5 | 6 };
+          } else {
+            return { type: 'none' };
+          }
+        };
+
         const state = createTestState({
           phase: 'playing',
-          trump: trump as Trump
+          trump: numberToTrumpSelection(trump)
         });
-        expect(state.trump).toBe(trump);
+        expect(state.trump).toEqual(numberToTrumpSelection(trump));
       });
 
       // Negative test would require trump validation function
@@ -221,7 +233,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
         phase: 'playing',
         bidWinner: 2,
         currentPlayer: 2,
-        trump: 1,
+        trump: { type: 'suit', suit: 1 },
         currentTrick: []
       });
 
@@ -232,7 +244,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
     it('trick winner leads next trick', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: 1,
+        trump: { type: 'suit', suit: 1 },
         currentTrick: [
           { player: 0, domino: { id: 'test1', high: 2, low: 3 } },
           { player: 1, domino: { id: 'test2', high: 1, low: 1 } }, // trump wins

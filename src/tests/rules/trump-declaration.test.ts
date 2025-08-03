@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { createInitialState, getNextStates } from '../../game';
-import type { Trump } from '../../game/types';
+import type { TrumpSelection } from '../../game/types';
 
 describe('Feature: Trump Declaration', () => {
   describe('Scenario: Declaring Trump', () => {
@@ -35,7 +35,7 @@ describe('Feature: Trump Declaration', () => {
       // After 4 bids, game should move to trump selection
       expect(gameState.winningBidder).toBe(2);
       expect(gameState.phase).toBe('trump_selection');
-      expect(gameState.trump).toBeNull();
+      expect(gameState.trump).toEqual({ type: 'none' });
     });
 
     test('When they are ready to play - Then they must declare trump before playing the first domino', () => {
@@ -45,13 +45,13 @@ describe('Feature: Trump Declaration', () => {
       gameState.winningBidder = 1;
       gameState.currentPlayer = 1;
       gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = null;
+      gameState.trump = { type: 'none' };
       gameState.currentTrick = [];
       gameState.tricks = [];
       
       // Cannot proceed to playing phase without declaring trump
       expect(gameState.phase).toBe('trump_selection');
-      expect(gameState.trump).toBeNull();
+      expect(gameState.trump).toEqual({ type: 'none' });
       expect(gameState.currentTrick.length).toBe(0);
       
       // Get available trump options
@@ -64,7 +64,7 @@ describe('Feature: Trump Declaration', () => {
       
       if (declareThrees) {
         const afterTrumpState = declareThrees.newState;
-        expect(afterTrumpState.trump).toBe(3);
+        expect(afterTrumpState.trump).toEqual({ type: 'suit', suit: 3 });
         expect(afterTrumpState.phase).toBe('playing');
       }
     });
@@ -76,7 +76,7 @@ describe('Feature: Trump Declaration', () => {
       gameState.winningBidder = 1;
       gameState.currentPlayer = 1;
       gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = null;
+      gameState.trump = { type: 'none' };
       
       // Get available trump options
       const trumpOptions = getNextStates(gameState);
@@ -98,15 +98,18 @@ describe('Feature: Trump Declaration', () => {
       });
       
       // Verify the trump values
-      const validSuitTrumps: Trump[] = [0, 1, 2, 3, 4, 5, 6];
+      const validSuitTrumps: TrumpSelection[] = [
+        { type: 'suit', suit: 0 }, { type: 'suit', suit: 1 }, { type: 'suit', suit: 2 },
+        { type: 'suit', suit: 3 }, { type: 'suit', suit: 4 }, { type: 'suit', suit: 5 }, { type: 'suit', suit: 6 }
+      ];
       
-      validSuitTrumps.forEach(trumpValue => {
-        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][trumpValue as number];
+      validSuitTrumps.forEach((trumpValue, index) => {
+        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][index];
         const transition = trumpOptions.find(t => t.id === `trump-${suitName}`);
         
         expect(transition).toBeDefined();
         if (transition) {
-          expect(transition.newState.trump).toBe(trumpValue);
+          expect(transition.newState.trump).toEqual(trumpValue);
         }
       });
     });
@@ -118,7 +121,7 @@ describe('Feature: Trump Declaration', () => {
       gameState.winningBidder = 1;
       gameState.currentPlayer = 1;
       gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = null;
+      gameState.trump = { type: 'none' };
       
       // Get available trump options
       const trumpOptions = getNextStates(gameState);
@@ -128,8 +131,8 @@ describe('Feature: Trump Declaration', () => {
       expect(doublesOption).toBeDefined();
       
       if (doublesOption) {
-        // Doubles as trump is represented as 7
-        expect(doublesOption.newState.trump).toBe(7);
+        // Doubles as trump is represented as TrumpSelection
+        expect(doublesOption.newState.trump).toEqual({ type: 'doubles' });
       }
     });
 
@@ -140,14 +143,14 @@ describe('Feature: Trump Declaration', () => {
       gameState.winningBidder = 1;
       gameState.currentPlayer = 1;
       gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = null;
+      gameState.trump = { type: 'none' };
       
       // Get available trump options
       // const trumpOptions = getNextStates(gameState);
       
       // Note: No-trump is not currently implemented in the game engine
-      // The game engine only supports suits 0-6 and doubles (7)
-      // No-trump (8) would need to be added to TRUMP_SUITS constant
+      // The game engine only supports suits 0-6 and doubles
+      // No-trump would need to be added to the trump selection system
     });
   });
 });

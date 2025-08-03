@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState, Player, Bid, Trick, Play, Domino } from '../../../game/types';
+import { EMPTY_BID, isEmptyBid } from '../../../game/types';
 import { GAME_CONSTANTS } from '../../../game/constants';
 
 describe('Hand Victory - Bidding Team Wins', () => {
@@ -19,12 +20,12 @@ describe('Hand Victory - Bidding Team Wins', () => {
       currentPlayer: 0,
       dealer: 0,
       bids: [],
-      currentBid: null,
+      currentBid: EMPTY_BID,
       winningBidder: 0, // Team 0 won the bid
-      trump: 5, // fives are trump
+      trump: { type: 'suit', suit: 5 }, // fives are trump
       tricks: [],
       currentTrick: [],
-      currentSuit: null,
+      currentSuit: -1,
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -156,7 +157,7 @@ interface HandResult {
 }
 
 function calculateHandWinner(state: GameState): HandResult {
-  if (!state.currentBid || state.winningBidder === null) {
+  if (isEmptyBid(state.currentBid) || state.winningBidder === -1) {
     throw new Error('No bid or winning bidder');
   }
   

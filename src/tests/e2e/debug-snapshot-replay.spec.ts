@@ -58,7 +58,7 @@ test.describe('Debug Snapshot Replay Validation', () => {
       "currentPlayer": 1,
       "dealer": 3,
       "winningBidder": 1,
-      "trump": 7 as const, // Doubles are trump
+      "trump": { "type": "doubles" } as const, // Doubles are trump
       "currentTrick": [
         {"player": 1, "domino": {"high": 4, "low": 0, "id": "4-0"}}, // Led 4s
         {"player": 2, "domino": {"high": 6, "low": 2, "id": "6-2"}}, // Off-suit

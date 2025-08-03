@@ -1,4 +1,4 @@
-import type { Trump, BidType, GameConstants } from './types';
+import type { BidType, GameConstants, TrumpSelection } from './types';
 
 export const GAME_CONSTANTS: GameConstants = {
   TOTAL_DOMINOES: 28,
@@ -21,7 +21,21 @@ export const BID_TYPES: Record<string, BidType> = {
   PLUNGE: 'plunge',
 } as const;
 
-export const TRUMP_SUITS: Record<string, Trump> = {
+
+// New TrumpSelection constants
+export const TRUMP_SELECTIONS: Record<string, TrumpSelection> = {
+  BLANKS: { type: 'suit', suit: 0 },
+  ONES: { type: 'suit', suit: 1 },
+  TWOS: { type: 'suit', suit: 2 },
+  THREES: { type: 'suit', suit: 3 },
+  FOURS: { type: 'suit', suit: 4 },
+  FIVES: { type: 'suit', suit: 5 },
+  SIXES: { type: 'suit', suit: 6 },
+  DOUBLES: { type: 'doubles' },
+  NO_TRUMP: { type: 'no-trump' },
+} as const;
+
+export const SUIT_VALUES = {
   BLANKS: 0,
   ONES: 1,
   TWOS: 2,
@@ -29,10 +43,8 @@ export const TRUMP_SUITS: Record<string, Trump> = {
   FOURS: 4,
   FIVES: 5,
   SIXES: 6,
-  DOUBLES: 7,
 } as const;
 
-export const SUIT_VALUES = TRUMP_SUITS;
 
 export const DOMINO_VALUES = [
   [0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6],

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
-import { isValidBid, createInitialState, GAME_CONSTANTS, createDominoes, dealDominoes, shuffleDominoes } from '../../../game';
+import { isValidBid, createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
 
 describe('Feature: Standard Bidding - Valid Point Bids', () => {
   describe('Scenario: Valid Point Bids', () => {
@@ -11,8 +11,7 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
       gameState.currentPlayer = 0;
       
       // Deal dominoes to players
-      const dominoes = createDominoes();
-      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
         player.hand = hands[i];
       });
@@ -43,8 +42,7 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
       gameState.currentPlayer = 0;
       
       // Deal dominoes to players
-      const dominoes = createDominoes();
-      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
         player.hand = hands[i];
       });

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { GameState, Play, Domino } from '../../game/types';
-  import { getPlayerLeftOfDealer, getPlayersInOrder } from '../../game/core/players';
+  import type { GameState, Domino, Player } from '../../game/types';
   
   interface Props {
     gameState: GameState;
@@ -25,16 +24,14 @@
   }
   
   // Get players arranged for 2x2 grid display: 0-1 top row, 3-2 bottom row
-  function getPlayersForTableDisplay(): Array<typeof gameState.players[0] | null> {
-    const positions = [null, null, null, null]; // [top-left, top-right, bottom-left, bottom-right]
-    
+  function getPlayersForTableDisplay(): Player[] {
     // Map to grid positions for layout: 0 1 / 3 2
-    positions[0] = gameState.players[0]; // Player 0 at top-left
-    positions[1] = gameState.players[1]; // Player 1 at top-right  
-    positions[2] = gameState.players[3]; // Player 3 at bottom-left (position 2)
-    positions[3] = gameState.players[2]; // Player 2 at bottom-right (position 3)
-    
-    return positions;
+    return [
+      gameState.players[0], // Player 0 at top-left
+      gameState.players[1], // Player 1 at top-right  
+      gameState.players[3], // Player 3 at bottom-left (position 2)
+      gameState.players[2]  // Player 2 at bottom-right (position 3)
+    ];
   }
   
   const currentTrickPlays = $derived(getCurrentTrickPlays());
@@ -48,7 +45,6 @@
   
   <div class="players-table">
     {#each playersForDisplay as player, position}
-      {#if player}
         <div 
           class="player-section position-{position}"
           class:current-player={player.id === gameState.currentPlayer}
@@ -95,14 +91,14 @@
               <div class="suit-counts">
                 <strong>Suits:</strong>
                 {#each [0, 1, 2, 3, 4, 5, 6] as suit}
-                  {#if player.suitAnalysis.count[suit] > 0}
-                    <span class="suit-count" class:trump-suit={gameState.trump === suit}>
-                      {suit}s:{player.suitAnalysis.count[suit]}
+                  {#if player.suitAnalysis.count[suit as 0 | 1 | 2 | 3 | 4 | 5 | 6] > 0}
+                    <span class="suit-count" class:trump-suit={gameState.trump?.type === 'suit' && gameState.trump.suit === suit}>
+                      {suit}s:{player.suitAnalysis.count[suit as 0 | 1 | 2 | 3 | 4 | 5 | 6]}
                     </span>
                   {/if}
                 {/each}
                 {#if player.suitAnalysis.count.doubles > 0}
-                  <span class="suit-count" class:trump-suit={gameState.trump === 7}>
+                  <span class="suit-count" class:trump-suit={gameState.trump?.type === 'doubles'}>
                     D:{player.suitAnalysis.count.doubles}
                   </span>
                 {/if}
@@ -113,7 +109,7 @@
                 {/if}
               </div>
               
-              {#if gameState.trump !== null && player.suitAnalysis.rank.trump.length > 0}
+              {#if gameState.trump && gameState.trump.type !== 'none' && player.suitAnalysis.rank.trump.length > 0}
                 <div class="trump-dominoes">
                   <strong>Trump:</strong>
                   {#each player.suitAnalysis.rank.trump as domino}
@@ -126,7 +122,6 @@
             </div>
           {/if}
         </div>
-      {/if}
     {/each}
   </div>
   

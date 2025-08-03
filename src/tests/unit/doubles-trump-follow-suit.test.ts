@@ -2,10 +2,10 @@ import { describe, test, expect } from 'vitest';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import type { Domino, GameState } from '../../game/types';
+import type { Domino, GameState, TrumpSelection } from '../../game/types';
 
 describe('Doubles Trump Follow Suit Rules', () => {
-  const trump = 7; // Doubles are trump
+  const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump
   
   function createTestState(playerHand: Domino[]): GameState {
     const state = createInitialState();

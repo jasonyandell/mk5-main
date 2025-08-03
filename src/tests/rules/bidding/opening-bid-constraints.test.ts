@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
-import { isValidOpeningBid, isValidBid, createInitialState, GAME_CONSTANTS, createDominoes, dealDominoes, shuffleDominoes } from '../../../game';
+import { EMPTY_BID } from '../../../game/types';
+import { isValidOpeningBid, isValidBid, createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
 
 describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
   describe('Scenario: Opening Bid Constraints', () => {
@@ -10,11 +11,10 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       gameState.phase = 'bidding';
       gameState.currentPlayer = 0;
       gameState.bids = [];
-      gameState.currentBid = null;
+      gameState.currentBid = EMPTY_BID;
       
       // Deal dominoes to players
-      const dominoes = createDominoes();
-      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
         player.hand = hands[i];
       });
@@ -127,8 +127,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       gameState.currentPlayer = 0;
       
       // Deal dominoes to players
-      const dominoes = createDominoes();
-      const hands = dealDominoes(shuffleDominoes(dominoes, 12345));
+      const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
         player.hand = hands[i];
       });

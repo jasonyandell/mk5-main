@@ -8,15 +8,18 @@ export type {
   Play, 
   StateTransition,
   BidType,
-  Trump,
+  TrumpSelection,
+  GameAction,
+  GameHistory,
   GamePhase,
   GameConstants
 } from './types';
 
+
 export { 
   GAME_CONSTANTS, 
   BID_TYPES, 
-  TRUMP_SUITS, 
+  TRUMP_SELECTIONS, 
   DOMINO_VALUES, 
   POINT_VALUES 
 } from './constants';
@@ -38,8 +41,17 @@ export {
   getPlayerLeftOfDealer
 } from './core/players';
 
-// Game actions and transitions
-export { getNextStates } from './core/actions';
+// Game actions and transitions are now exported from gameEngine
+
+// Action-based game engine
+export { 
+  GameEngine, 
+  applyAction, 
+  getValidActions, 
+  actionToId, 
+  actionToLabel,
+  getNextStates 
+} from './core/gameEngine';
 
 // Rule validation
 export { 
@@ -59,8 +71,8 @@ export {
 // Domino utilities
 export { 
   createDominoes, 
-  dealDominoes, 
-  shuffleDominoes,
+  shuffleDominoesWithSeed,
+  dealDominoesWithSeed,
   getDominoSuit, 
   getDominoValue, 
   getDominoPoints, 

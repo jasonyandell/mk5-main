@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerAfter } from '../../game/core/players';
@@ -131,7 +131,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
     it('should handle player with no trump dominoes', () => {
       const state = GameTestHelper.createPlayingScenario(
-        6, // trump: sixes
+        { type: 'suit', suit: 6 }, // trump: sixes
         0, // currentPlayer
         []
       );
@@ -254,7 +254,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
       
       if (noTrump) {
         const newState = noTrump.newState;
-        expect(newState.trump).toBe(8); // 8 represents no-trump
+        expect(newState.trump.type).toBe('no-trump'); // no-trump selected
       }
     });
   });

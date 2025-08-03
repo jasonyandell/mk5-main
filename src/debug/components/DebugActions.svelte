@@ -93,7 +93,7 @@
     </div>
   {:else}
     <div class="actions-grid">
-      {#each availableActions as action, index}
+      {#each availableActions as action}
         <button 
           class="action-compact"
           class:bid-action={action.id === 'pass' || action.id.startsWith('bid-')}

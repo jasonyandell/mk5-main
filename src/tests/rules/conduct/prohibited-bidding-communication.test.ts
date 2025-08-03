@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid } from '../../../game/types';
+import { EMPTY_BID } from '../../../game/types';
 
 describe('Feature: Communication Rules', () => {
   describe('Scenario: Prohibited Bidding Communication', () => {
@@ -9,7 +10,7 @@ describe('Feature: Communication Rules', () => {
         phase: 'bidding',
         currentPlayer: 0,
         bids: [],
-        currentBid: null,
+        currentBid: EMPTY_BID,
         tournamentMode: true,
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },

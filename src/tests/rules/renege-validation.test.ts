@@ -3,7 +3,7 @@ import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay, canFollowSuit, getValidPlays } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import type { Domino, Trump } from '../../game/types';
+import type { Domino, TrumpSelection } from '../../game/types';
 
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {
@@ -16,7 +16,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
@@ -25,7 +25,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -51,7 +51,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
@@ -60,7 +60,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -77,13 +77,13 @@ describe('Renege Detection and Prevention', () => {
     });
 
     it('correctly identifies trump vs non-trump suits', () => {
-      const trump: Trump = 2; // Twos trump
+      const trump: TrumpSelection = { type: 'suit', suit: 2 }; // Twos trump
       
       const trumpDomino: Domino = { id: 'trump', high: 2, low: 5, points: 0 }; // 2-5
       const nonTrumpDomino: Domino = { id: 'non-trump', high: 3, low: 4, points: 0 }; // 3-4
 
-      expect(getDominoSuit(trumpDomino, trump)).toBe(trump);
-      expect(getDominoSuit(nonTrumpDomino, trump)).not.toBe(trump);
+      expect(getDominoSuit(trumpDomino, trump)).toBe(2); // Should be suit 2 (trump)
+      expect(getDominoSuit(nonTrumpDomino, trump)).not.toBe(2); // Should not be suit 2
     });
   });
 
@@ -96,7 +96,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
@@ -105,7 +105,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -124,7 +124,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
@@ -133,7 +133,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -155,7 +155,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 7, // Doubles trump
+        trump: { type: 'doubles' }, // Doubles trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
@@ -164,7 +164,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 7) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'doubles' }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -185,7 +185,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 7, // Doubles trump
+        trump: { type: 'doubles' }, // Doubles trump
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (threes suit)
@@ -194,7 +194,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 7) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'doubles' }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -220,7 +220,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 8, // No trump (follow-me)
+        trump: { type: 'no-trump' }, // No trump (follow-me)
         currentTrick: [{
           player: 0,
           domino: { id: 'test-lead', high: 2, low: 3, points: 0 } // 2-3 leads (higher pip = threes)
@@ -229,7 +229,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 8) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'no-trump' }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -251,12 +251,12 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [], // Empty trick
-        currentSuit: null,
+        currentSuit: -1,
         currentPlayer: 0,
         players: [
-          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) },
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
@@ -285,7 +285,7 @@ describe('Renege Detection and Prevention', () => {
     it('handles missing trump declaration', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: null // No trump set
+        trump: { type: 'none' } // No trump set
       });
 
       const domino: Domino = { id: 'test', high: 1, low: 2, points: 0 };
@@ -295,7 +295,7 @@ describe('Renege Detection and Prevention', () => {
     it('prevents playing dominoes not in hand', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: 1,
+        trump: { type: 'suit', suit: 1 },
         currentTrick: []
       });
 
@@ -306,7 +306,7 @@ describe('Renege Detection and Prevention', () => {
     it('validates player bounds', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: 1,
+        trump: { type: 'suit', suit: 1 },
         currentTrick: []
       });
 
@@ -325,7 +325,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 1, // Ones trump
+        trump: { type: 'suit', suit: 1 }, // Ones trump
         currentTrick: [
           { player: 0, domino: { id: 'lead', high: 2, low: 2, points: 0 } }, // 2-2 (twos suit)
           { player: 1, domino: { id: 'trump1', high: 1, low: 3, points: 0 } }, // 1-3 (trump)
@@ -337,7 +337,7 @@ describe('Renege Detection and Prevention', () => {
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 1) }
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) }
         ]
       });
 
@@ -357,7 +357,7 @@ describe('Renege Detection and Prevention', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: 3, // Threes trump
+        trump: { type: 'suit', suit: 3 }, // Threes trump
         currentTrick: [{
           player: 0,
           domino: { id: 'lead', high: 4, low: 5, points: 0 } // 4-5 (fives suit)
@@ -366,7 +366,7 @@ describe('Renege Detection and Prevention', () => {
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, 3) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 3 }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]

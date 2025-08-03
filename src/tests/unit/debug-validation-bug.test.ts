@@ -1,7 +1,8 @@
 import { describe, test, expect } from 'vitest';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
 import { createTestState } from '../helpers/gameTestHelper';
 import type { GameState } from '../../game/types';
+import { EMPTY_BID } from '../../game/types';
 import { testLog } from '../helpers/testConsole';
 
 describe('Debug Validation Bug - Step 7', () => {
@@ -74,12 +75,12 @@ describe('Debug Validation Bug - Step 7', () => {
       currentPlayer: 0,
       dealer: 3,
       bids: [],
-      currentBid: null,
-      winningBidder: null,
-      trump: null,
+      currentBid: EMPTY_BID,
+      winningBidder: -1, // -1 instead of null
+      trump: { type: 'none' }, // TrumpSelection instead of null"
       tricks: [],
       currentTrick: [],
-      currentSuit: null,
+      currentSuit: -1, // -1 instead of null
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: 7,
@@ -122,9 +123,9 @@ describe('Debug Validation Bug - Step 7', () => {
           { high: 6, low: 2, id: '6-2' }
         ]
       },
-      bidWinner: null,
+      bidWinner: -1, // -1 instead of null
       isComplete: false,
-      winner: null,
+      winner: -1, // -1 instead of null
       shuffleSeed: 12345
     };
 
@@ -149,7 +150,7 @@ describe('Debug Validation Bug - Step 7', () => {
       testLog(`Current phase: ${currentState.phase}`);
       
       if (currentState.phase === 'playing') {
-        testLog(`Trump: ${currentState.trump}`);
+        testLog(`Trump: ${JSON.stringify(currentState.trump)}`);
         testLog(`Current trick: ${JSON.stringify(currentState.currentTrick.map(p => `P${p.player}:${p.domino.id}`))}`);
         
         if (action.id.startsWith('play-')) {
@@ -203,7 +204,7 @@ describe('Debug Validation Bug - Step 7', () => {
     // Create a state where we complete a trick and see who should lead next
     const state = createTestState({
       phase: 'playing',
-      trump: 0, // blanks are trump
+      trump: { type: 'suit', suit: 0 }, // blanks are trump
       currentTrick: [
         { player: 1, domino: { id: '5-5', high: 5, low: 5, points: 10 } }, // Player 1 leads with 5-5
         { player: 2, domino: { id: '5-1', high: 5, low: 1, points: 5 } },   // Player 2 follows with 5-1

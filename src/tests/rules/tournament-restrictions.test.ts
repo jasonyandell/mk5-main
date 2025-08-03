@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState, BidType } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
 import { isValidBid } from '../../game/core/rules';
-import { dealDominoes } from '../../game/core/dominoes';
+import { dealDominoesWithSeed } from '../../game/core/dominoes';
 
 describe('Tournament Restrictions', () => {
   let gameState: GameState;
@@ -11,7 +11,7 @@ describe('Tournament Restrictions', () => {
     gameState = createInitialState();
     gameState.tournamentMode = true;
     gameState.phase = 'bidding';
-    const hands = dealDominoes();
+    const hands = dealDominoesWithSeed(12345);
     gameState.players.forEach((player, i) => {
       player.hand = hands[i];
     });

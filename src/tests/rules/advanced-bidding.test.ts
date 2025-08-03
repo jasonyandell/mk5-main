@@ -146,15 +146,15 @@ describe('Advanced Bidding Rules', () => {
         }
       });
 
-      // For Plunge bids, trump must be doubles (6)
-      const plungeWithDoublesTrump = { ...plungeState, trump: 6 };
-      expect(plungeWithDoublesTrump.trump).toBe(6);
+      // For Plunge bids, trump must be doubles
+      const plungeWithDoublesTrump = { ...plungeState, trump: { type: 'doubles' } };
+      expect(plungeWithDoublesTrump.trump.type).toBe('doubles');
 
       // Plunge should not allow other trump suits
       const invalidTrumpSuits = [0, 1, 2, 3, 4, 5];
       invalidTrumpSuits.forEach(trump => {
-        // This would be validated by trump selection rules
-        expect(trump).not.toBe(6);
+        // This would be validated by trump selection rules - none of these should equal doubles
+        expect(trump).not.toBeGreaterThan(5);
       });
     });
   });

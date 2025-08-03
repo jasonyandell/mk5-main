@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { GameState, Player } from '../../game/types';
   import { getStrongestSuits } from '../../game/core/suit-analysis';
-  import { countDoubles } from '../../game/core/dominoes';
   
   interface Props {
     gameState: GameState;
@@ -20,7 +19,7 @@
     const handStrength = calculateHandStrength(player);
     
     // Get top 3 strongest suits for display
-    const topSuits = strongestSuits.slice(0, 3).filter(suit => analysis.count[suit] > 0);
+    const topSuits = strongestSuits.slice(0, 3).filter(suit => analysis.count[suit as 0 | 1 | 2 | 3 | 4 | 5 | 6] > 0);
     
     let suggestion = 'Pass';
     let reason = 'Weak hand';
@@ -59,7 +58,7 @@
     
     // Add points for strong suits (lots of dominoes in one suit)
     for (let suit = 0; suit <= 6; suit++) {
-      const count = analysis.count[suit];
+      const count = analysis.count[suit as 0 | 1 | 2 | 3 | 4 | 5 | 6];
       if (count >= 4) strength += count * 2; // Strong suit bonus
       else if (count >= 2) strength += count; // Moderate suit
     }
@@ -99,8 +98,8 @@
       <div class="strength-info">
         <span class="label">Hand Strength:</span>
         <span class="strength-bar">
-          <span class="strength-fill" style="width: {(biddingAnalysis.handStrength / 42) * 100}%"></span>
-          <span class="strength-text">{biddingAnalysis.handStrength}/42</span>
+          <span class="strength-fill" style="width: {((biddingAnalysis.handStrength || 0) / 42) * 100}%"></span>
+          <span class="strength-text">{biddingAnalysis.handStrength || 0}/42</span>
         </span>
       </div>
       
@@ -109,12 +108,12 @@
         <div class="strong-suits">
           {#each biddingAnalysis.strongSuits as suit}
             <span class="suit-badge">
-              {getSuitName(suit)} ({currentPlayer.suitAnalysis?.count[suit]})
+              {getSuitName(suit)} ({currentPlayer.suitAnalysis?.count[suit as 0 | 1 | 2 | 3 | 4 | 5 | 6]})
             </span>
           {/each}
-          {#if biddingAnalysis.doublesCount > 0}
+          {#if (biddingAnalysis.doublesCount || 0) > 0}
             <span class="suit-badge doubles">
-              Doubles ({biddingAnalysis.doublesCount})
+              Doubles ({biddingAnalysis.doublesCount || 0})
             </span>
           {/if}
         </div>
@@ -124,9 +123,9 @@
     <div class="strategy-notes">
       <h4>Strategy Notes:</h4>
       <ul>
-        {#if biddingAnalysis.doublesCount >= 4}
+        {#if (biddingAnalysis.doublesCount || 0) >= 4}
           <li>🔥 Perfect plunge hand - you can likely win all 7 tricks</li>
-        {:else if biddingAnalysis.doublesCount >= 3}
+        {:else if (biddingAnalysis.doublesCount || 0) >= 3}
           <li>💪 Strong trump potential - consider splash or aggressive bidding</li>
         {/if}
         
@@ -134,9 +133,9 @@
           <li>🎯 Focus trump on {getSuitName(biddingAnalysis.strongSuits[0])} for maximum control</li>
         {/if}
         
-        {#if biddingAnalysis.handStrength < 25}
+        {#if (biddingAnalysis.handStrength || 0) < 25}
           <li>⚠️ Weak hand - only bid if forced or with special contracts</li>
-        {:else if biddingAnalysis.handStrength > 35}
+        {:else if (biddingAnalysis.handStrength || 0) > 35}
           <li>🚀 Very strong hand - be aggressive in bidding</li>
         {/if}
       </ul>

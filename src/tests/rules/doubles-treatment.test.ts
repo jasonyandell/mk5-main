@@ -13,13 +13,13 @@ describe('Feature: Doubles Treatment', () => {
       const doubles = allDominoes.filter(isDouble);
       
       // When trump is NOT doubles (e.g., trump is 3), doubles belong to their natural suit
-      const trump = 3;
+      const trump = { type: 'suit', suit: 3 } as const;
       
       doubles.forEach(double => {
         const suit = getDominoSuit(double, trump);
         // Double's suit should be its pip value (unless it's the trump double)
-        if (double.high === trump) {
-          expect(suit).toBe(trump); // 3-3 would be trump suit
+        if (double.high === 3) {
+          expect(suit).toBe(3); // 3-3 would be trump suit
         } else {
           expect(suit).toBe(double.high); // Other doubles are their natural suit
         }
@@ -27,7 +27,7 @@ describe('Feature: Doubles Treatment', () => {
     });
 
     it('And 6-6 is the highest six when sixes are not trump', () => {
-      const trump = 3; // Threes are trump, not sixes
+      const trump = { type: 'suit', suit: 3 } as const; // Threes are trump, not sixes
       const sixDominoes = createDominoes().filter(domino => 
         getDominoSuit(domino, trump) === 6
       );
@@ -49,7 +49,7 @@ describe('Feature: Doubles Treatment', () => {
     });
 
     it('And 5-5 is the highest five when fives are not trump', () => {
-      const trump = 3; // Threes are trump, not fives
+      const trump = { type: 'suit', suit: 3 } as const; // Threes are trump, not fives
       const fiveDominoes = createDominoes().filter(domino => 
         getDominoSuit(domino, trump) === 5
       );
@@ -71,7 +71,7 @@ describe('Feature: Doubles Treatment', () => {
     });
 
     it('And when doubles are trump, only the seven doubles are trump', () => {
-      const trump = 7; // Doubles are trump
+      const trump = { type: 'doubles' } as const; // Doubles are trump
       const allDominoes = createDominoes();
       
       // Find all trump dominoes
@@ -91,12 +91,12 @@ describe('Feature: Doubles Treatment', () => {
       const nonDoubles = allDominoes.filter(domino => !isDouble(domino));
       nonDoubles.forEach(domino => {
         const suit = getDominoSuit(domino, trump);
-        expect(suit).not.toBe(7); // Should not be trump suit
+        expect(suit).not.toBe(7); // Should not be trump suit (doubles trump uses 7)
       });
     });
 
     it('And doubles are ranked 6-6 highest to 0-0 lowest when doubles are trump', () => {
-      const trump = 7; // Doubles are trump
+      const trump = { type: 'doubles' } as const; // Doubles are trump
       const allDominoes = createDominoes();
       const doubles = allDominoes.filter(isDouble);
       

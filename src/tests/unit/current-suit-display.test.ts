@@ -1,16 +1,17 @@
 import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
+import type { TrumpSelection } from '../../game/types';
 
 describe('Current Suit Display', () => {
-  const doublesAreTrump = 7;
-  const fivesAreTrump = 5;
-  const sixesAreTrump = 6;
-  const noTrump = 8;
+  const doublesAreTrump = { type: 'doubles' } as const;
+  const fivesAreTrump = { type: 'suit', suit: 5 } as const;
+  const sixesAreTrump = { type: 'suit', suit: 6 } as const;
+  const noTrump = { type: 'no-trump' } as const;
 
   test('should return "None" when no domino is led', () => {
     const state = createInitialState();
-    state.currentSuit = null;
+    state.currentSuit = -1;
     state.trump = doublesAreTrump;
     expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
@@ -18,7 +19,7 @@ describe('Current Suit Display', () => {
   test('should return "None" when trump is not set', () => {
     const state = createInitialState();
     state.currentSuit = 6; // Some suit was led
-    state.trump = null;
+    state.trump = { type: 'none' };
     expect(getCurrentSuit(state)).toBe('None (no trump set)');
   });
 
@@ -136,14 +137,14 @@ describe('Current Suit Display', () => {
   describe('Edge cases', () => {
     test('Complex scenario - 6-4 led with 4s trump should show Fours (Trump)', () => {
       const state = createInitialState();
-      state.trump = 4; // 4s are trump
+      state.trump = { type: 'suit', suit: 4 } as TrumpSelection; // 4s are trump
       state.currentSuit = 4; // 4s were led (trump)
       expect(getCurrentSuit(state)).toBe('Fours (Trump)');
     });
 
     test('Domino with trump number led should show trump', () => {
       const state = createInitialState();
-      state.trump = 5; // 5s are trump
+      state.trump = { type: 'suit', suit: 5 } as TrumpSelection; // 5s are trump
       state.currentSuit = 5; // 5s were led (trump)
       expect(getCurrentSuit(state)).toBe('Fives (Trump)');
     });

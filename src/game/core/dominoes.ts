@@ -1,4 +1,4 @@
-import type { Domino, Trump } from '../types';
+import type { Domino, TrumpSelection } from '../types';
 import { DOMINO_VALUES } from '../constants';
 import { createSeededRandom } from './random';
 
@@ -26,28 +26,7 @@ function shuffleWithSeed<T>(array: T[], seed: number): T[] {
   return shuffled;
 }
 
-/**
- * Shuffles an array using Fisher-Yates algorithm (legacy - uses Math.random)
- */
-function shuffle<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
 
-/**
- * Shuffles and returns all 28 dominoes (legacy - uses Math.random)
- */
-export function shuffleDominoes(dominoes?: Domino[], seed?: number): Domino[] {
-  const dominoesToShuffle = dominoes || createDominoes();
-  if (seed !== undefined) {
-    return shuffleWithSeed(dominoesToShuffle, seed);
-  }
-  return shuffle(dominoesToShuffle);
-}
 
 /**
  * Shuffles and returns all 28 dominoes with a seed for deterministic results
@@ -56,19 +35,6 @@ export function shuffleDominoesWithSeed(seed: number): Domino[] {
   return shuffleWithSeed(createDominoes(), seed);
 }
 
-/**
- * Deals dominoes to 4 players (7 each) - legacy version using Math.random
- */
-export function dealDominoes(dominoes?: Domino[]): [Domino[], Domino[], Domino[], Domino[]] {
-  const dominoesToDeal = dominoes || shuffle(createDominoes());
-  
-  return [
-    dominoesToDeal.slice(0, 7),
-    dominoesToDeal.slice(7, 14),
-    dominoesToDeal.slice(14, 21),
-    dominoesToDeal.slice(21, 28)
-  ];
-}
 
 /**
  * Deals dominoes to 4 players (7 each) with a seed for deterministic results
@@ -85,31 +51,21 @@ export function dealDominoesWithSeed(seed: number): [Domino[], Domino[], Domino[
 }
 
 /**
- * Converts Trump type to numeric value
+ * Converts TrumpSelection to numeric value
  */
-function trumpToNumber(trump: Trump | number | null): number | null {
-  if (trump === null) return null;
-  if (typeof trump === 'number') return trump;
-  if (typeof trump === 'object' && 'suit' in trump) {
-    // If suit is already a number, return it
-    if (typeof trump.suit === 'number') {
-      return trump.suit;
-    }
-    // Convert string suit to number
-    const suitMap: Record<string, number | null> = {
-      'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
-      'fours': 4, 'fives': 5, 'sixes': 6, 'no-trump': 8, 'doubles': 7
-    };
-    const result = suitMap[trump.suit];
-    return result !== undefined ? result : 0;
+function trumpToNumber(trump: TrumpSelection): number | null {
+  switch (trump.type) {
+    case 'none': return null;
+    case 'suit': return trump.suit!;
+    case 'doubles': return 7;
+    case 'no-trump': return 8;
   }
-  return trump as number;
 }
 
 /**
  * Gets the suit of a domino based on trump
  */
-export function getDominoSuit(domino: Domino, trump: Trump | number | null): number {
+export function getDominoSuit(domino: Domino, trump: TrumpSelection): number {
   const numericTrump = trumpToNumber(trump);
   
   // Special case: doubles trump (numericTrump = 7)
@@ -138,7 +94,7 @@ export function getDominoSuit(domino: Domino, trump: Trump | number | null): num
 /**
  * Checks if a domino can follow a specific suit (contains that number)
  */
-export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: Trump | number | null): boolean {
+export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
   const numericTrump = trumpToNumber(trump);
   
   // If the domino is trump, it can follow any suit (but is still trump)
@@ -154,7 +110,7 @@ export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: Trum
 /**
  * Gets the value of a domino for trick-taking purposes
  */
-export function getDominoValue(domino: Domino, trump: Trump | number | null): number {
+export function getDominoValue(domino: Domino, trump: TrumpSelection): number {
   const numericTrump = trumpToNumber(trump);
   
   // Special case: doubles trump (when numericTrump === 7)

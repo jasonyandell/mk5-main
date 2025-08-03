@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { getDominoValue, getDominoSuit } from '../../game/core/dominoes';
 import { calculateTrickWinner } from '../../game/core/scoring';
-import type { PlayedDomino } from '../../game/types';
+import type { PlayedDomino, TrumpSelection } from '../../game/types';
 
 describe('Doubles Trump Rules', () => {
   describe('when a regular suit (0-6) is trump', () => {
     it('should only treat dominoes containing that number as trump', () => {
       // Test with 5s as trump
-      const trump = 5;
+      const trump: TrumpSelection = { type: 'suit', suit: 5 };
       
       const testCases = [
         { domino: { high: 5, low: 5, id: '5-5' }, shouldBeTrump: true, reason: 'contains 5' },
@@ -33,17 +33,17 @@ describe('Doubles Trump Rules', () => {
         if (shouldBeTrump) {
           // Trump dominoes should have values > 100
           expect(value).toBeGreaterThan(100);
-          expect(suit).toBe(trump);
+          expect(suit).toBe(5); // 5s are trump
         } else {
           // Non-trump dominoes should have values < 100
           expect(value).toBeLessThan(100);
-          expect(suit).not.toBe(trump);
+          expect(suit).not.toBe(5); // Not 5s trump
         }
       });
     });
     
     it('should correctly determine trick winners with proper trump rules', () => {
-      const trump = 3; // 3s are trump
+      const trump: TrumpSelection = { type: 'suit', suit: 3 }; // 3s are trump
       
       // Test case: 4-4 should NOT beat 3-2 when 3s are trump
       const trick: PlayedDomino[] = [
@@ -64,7 +64,7 @@ describe('Doubles Trump Rules', () => {
   
   describe('when doubles are trump (trump = 7)', () => {
     it('should treat all doubles as trump', () => {
-      const trump = 7; // Doubles are trump
+      const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump
       
       const doubles = [
         { high: 6, low: 6, id: '6-6' },

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
-import type { GameState } from '../../game/types';
+import { getNextStates } from '../../game/core/gameEngine';
+import type { GameState, Player } from '../../game/types';
 
 describe('Suit Analysis Integration', () => {
   describe('Initial state creation', () => {
@@ -69,10 +69,11 @@ describe('Suit Analysis Integration', () => {
       
       if (trumpTransition) {
         const newState = trumpTransition.newState;
-        expect(newState.trump).toBe(5); // fives are trump
+        expect(newState.trump.type).toBe('suit');
+        expect(newState.trump.suit).toBe(5); // fives are trump
         
         // All players should have updated suit analysis with trump info
-        newState.players.forEach(player => {
+        newState.players.forEach((player: Player) => {
           expect(player.suitAnalysis).toBeDefined();
           
           // Trump count should match suit 5 count
@@ -109,9 +110,9 @@ describe('Suit Analysis Integration', () => {
       
       if (doublesTransition) {
         const newState = doublesTransition.newState;
-        expect(newState.trump).toBe(7); // doubles are trump
+        expect(newState.trump.type).toBe('doubles'); // doubles are trump
         
-        newState.players.forEach(player => {
+        newState.players.forEach((player: Player) => {
           // Trump count should match doubles count
           const doublesCount = player.suitAnalysis?.count.doubles || 0;
           expect(player.suitAnalysis?.count.trump).toBe(doublesCount);
@@ -131,7 +132,7 @@ describe('Suit Analysis Integration', () => {
       const playingState: GameState = {
         ...initialState,
         phase: 'playing',
-        trump: 3, // threes are trump
+        trump: { type: 'suit', suit: 3 }, // threes are trump
         winningBidder: 1,
         currentPlayer: 1,
         bids: [
@@ -199,7 +200,7 @@ describe('Suit Analysis Integration', () => {
         const newState = redealTransition.newState;
         
         // All players should have new hands and updated suit analysis
-        newState.players.forEach((player) => {
+        newState.players.forEach((player: Player) => {
           expect(player.hand.length).toBe(7); // Full hand
           expect(player.suitAnalysis).toBeDefined();
           

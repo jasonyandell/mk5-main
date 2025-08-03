@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { 
   createDominoes, 
-  dealDominoes, 
+  dealDominoesWithSeed, 
   getDominoSuit, 
   getDominoValue, 
   getDominoPoints, 
@@ -42,9 +42,9 @@ describe('Domino System', () => {
     });
   });
   
-  describe('dealDominoes', () => {
+  describe('dealDominoesWithSeed', () => {
     it('should deal 4 hands of 7 dominoes each', () => {
-      const hands = dealDominoes();
+      const hands = dealDominoesWithSeed(12345);
       
       expect(hands).toHaveLength(4);
       hands.forEach(hand => {
@@ -53,19 +53,34 @@ describe('Domino System', () => {
     });
     
     it('should use all 28 dominoes', () => {
-      const hands = dealDominoes();
+      const hands = dealDominoesWithSeed(67890);
       const allDominoes = hands.flat();
       
       expect(allDominoes).toHaveLength(28);
     });
     
     it('should not duplicate dominoes across hands', () => {
-      const hands = dealDominoes();
+      const hands = dealDominoesWithSeed(11111);
       const allDominoes = hands.flat();
       const ids = allDominoes.map(d => d.id);
       const uniqueIds = new Set(ids);
       
       expect(uniqueIds.size).toBe(28);
+    });
+    
+    it('should produce deterministic results with same seed', () => {
+      const hands1 = dealDominoesWithSeed(54321);
+      const hands2 = dealDominoesWithSeed(54321);
+      
+      expect(hands1).toEqual(hands2);
+    });
+    
+    it('should produce different results with different seeds', () => {
+      const hands1 = dealDominoesWithSeed(1000);
+      const hands2 = dealDominoesWithSeed(2000);
+      
+      // Very unlikely to be the same with different seeds
+      expect(hands1).not.toEqual(hands2);
     });
   });
   
@@ -73,29 +88,29 @@ describe('Domino System', () => {
     it('should return natural suit for doubles when regular trump is set', () => {
       const double = { high: 5, low: 5, id: '5-5' };
       
-      expect(getDominoSuit(double, 2)).toBe(5); // Natural suit (doubles belong to natural suit)
-      expect(getDominoSuit(double, 5)).toBe(5); // Natural suit (also trump in this case)
+      expect(getDominoSuit(double, { type: 'suit', suit: 2 })).toBe(5); // Natural suit (doubles belong to natural suit)
+      expect(getDominoSuit(double, { type: 'suit', suit: 5 })).toBe(5); // Natural suit (also trump in this case)
     });
     
     it('should return trump for dominoes with trump value', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       
-      expect(getDominoSuit(domino, 3)).toBe(3); // 3 is trump
-      expect(getDominoSuit(domino, 6)).toBe(6); // 6 is trump
+      expect(getDominoSuit(domino, { type: 'suit', suit: 3 })).toBe(3); // 3 is trump
+      expect(getDominoSuit(domino, { type: 'suit', suit: 6 })).toBe(6); // 6 is trump
     });
     
     it('should return high value for non-trump dominoes', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       
-      expect(getDominoSuit(domino, 1)).toBe(6); // Neither 6 nor 3 is trump 1
+      expect(getDominoSuit(domino, { type: 'suit', suit: 1 })).toBe(6); // Neither 6 nor 3 is trump 1
     });
     
     it('should handle null trump', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       const double = { high: 5, low: 5, id: '5-5' };
       
-      expect(getDominoSuit(domino, null)).toBe(6);
-      expect(getDominoSuit(double, null)).toBe(5);
+      expect(getDominoSuit(domino, { type: 'none' })).toBe(6);
+      expect(getDominoSuit(double, { type: 'none' })).toBe(5);
     });
   });
   
@@ -105,14 +120,14 @@ describe('Domino System', () => {
       const fiveDouble = { high: 5, low: 5, id: '5-5' };
       const zeroDouble = { high: 0, low: 0, id: '0-0' };
       
-      const trump = 6;
+      const trump = { type: 'suit', suit: 6 } as const;
       
       expect(getDominoValue(sixDouble, trump)).toBeGreaterThan(getDominoValue(fiveDouble, trump));
       expect(getDominoValue(fiveDouble, trump)).toBeGreaterThan(getDominoValue(zeroDouble, trump));
     });
     
     it('should rank trump doubles correctly when doubles are trump', () => {
-      const trump = 7; // Doubles trump
+      const trump = { type: 'doubles' } as const; // Doubles trump
       const doubles = [
         { high: 6, low: 6, id: '6-6' },
         { high: 5, low: 5, id: '5-5' },
@@ -134,7 +149,7 @@ describe('Domino System', () => {
     it('should value trump non-doubles higher than non-trump', () => {
       const trumpDomino = { high: 6, low: 3, id: '6-3' };
       const nonTrumpDomino = { high: 6, low: 5, id: '6-5' };
-      const trump = 3;
+      const trump = { type: 'suit', suit: 3 } as const;
       
       expect(getDominoValue(trumpDomino, trump)).toBeGreaterThan(getDominoValue(nonTrumpDomino, trump));
     });

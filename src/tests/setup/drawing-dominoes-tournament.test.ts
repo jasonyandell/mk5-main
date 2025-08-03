@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { dealDominoes, createDominoes, shuffleDominoes, GAME_CONSTANTS } from '../../game';
+import { dealDominoesWithSeed, createDominoes, GAME_CONSTANTS } from '../../game';
 
 describe('Drawing Dominoes (Tournament Standard)', () => {
   test('Given the shaker has shuffled dominoes face-down', () => {
@@ -11,11 +11,8 @@ describe('Drawing Dominoes (Tournament Standard)', () => {
   });
   
   test('When players draw dominoes', () => {
-    const dominoes = createDominoes();
-    const shuffled = shuffleDominoes(dominoes, 12345);
-    
     // Deal dominoes returns array of 4 hands
-    const hands = dealDominoes(shuffled);
+    const hands = dealDominoesWithSeed(12345);
     
     // Verify 4 hands with 7 dominoes each
     expect(hands).toHaveLength(4);
@@ -23,11 +20,8 @@ describe('Drawing Dominoes (Tournament Standard)', () => {
   });
   
   test('Then the non-shaking team draws first with 7 dominoes each', () => {
-    const dominoes = createDominoes();
-    const shuffled = shuffleDominoes(dominoes, 12345);
-    
-    // Standard dealDominoes deals in order: player 0, 1, 2, 3
-    const hands = dealDominoes(shuffled);
+    // Standard dealDominoesWithSeed deals in order: player 0, 1, 2, 3
+    const hands = dealDominoesWithSeed(12345);
     
     // In actual game, teams are 0+2 vs 1+3
     const team0 = [...hands[0], ...hands[2]];
@@ -44,38 +38,29 @@ describe('Drawing Dominoes (Tournament Standard)', () => {
   });
   
   test('And the shaker\'s partner draws next with 7 dominoes', () => {
-    const dominoes = createDominoes();
-    const shuffled = shuffleDominoes(dominoes, 12345);
-    
     // Deal dominoes
-    const hands = dealDominoes(shuffled);
+    const hands = dealDominoesWithSeed(12345);
     
     // Shaker's partner is player 2
     const player2Hand = hands[2];
     expect(player2Hand).toHaveLength(GAME_CONSTANTS.HAND_SIZE);
     
-    // Note: Standard dealDominoes doesn't follow tournament drawing order
+    // Note: Standard dealDominoesWithSeed doesn't follow tournament drawing order
     // It deals in player order 0,1,2,3
     // So we can't verify the exact dominoes without tournament-specific dealing
   });
   
   test('And the shaker draws last with 7 dominoes', () => {
-    const dominoes = createDominoes();
-    const shuffled = shuffleDominoes(dominoes, 12345);
-    
     // Deal dominoes
-    const hands = dealDominoes(shuffled);
+    const hands = dealDominoesWithSeed(12345);
     
     const player0Hand = hands[0];
     expect(player0Hand).toHaveLength(GAME_CONSTANTS.HAND_SIZE);
   });
   
   test('And no dominoes remain', () => {
-    const dominoes = createDominoes();
-    const shuffled = shuffleDominoes(dominoes, 12345);
-    
     // Deal dominoes
-    const hands = dealDominoes(shuffled);
+    const hands = dealDominoesWithSeed(12345);
     
     // Verify all 28 dominoes have been distributed
     const totalDominoesDrawn = hands.reduce(
@@ -88,7 +73,7 @@ describe('Drawing Dominoes (Tournament Standard)', () => {
   
   test('Dominoes are dealt evenly to all players', () => {
     // Use dealDominoesWithSeed for deterministic results
-    const hands = dealDominoes();
+    const hands = dealDominoesWithSeed(54321);
     
     // Verify each player gets exactly 7 dominoes
     expect(hands[0]).toHaveLength(7);

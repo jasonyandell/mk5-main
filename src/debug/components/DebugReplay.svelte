@@ -1,6 +1,5 @@
 <script lang="ts">
   import { actionHistory, initialState, stateValidationError, gameState } from '../../stores/gameStore';
-  import { getNextStates } from '../../game/core/actions';
   
   let expanded = $state(false);
   
@@ -13,7 +12,7 @@
     game_end: '🏁'
   };
   
-  function getPhaseFromAction(action: any, index: number): string {
+  function getPhaseFromAction(action: any): string {
     // For now, we'll infer phase from action type
     // This could be improved by tracking phase in the action itself
     if (action.id.startsWith('bid-') || action.id === 'pass' || action.id === 'redeal') return 'bidding';
@@ -88,7 +87,12 @@
     <div class="action-log">
       <div class="log-entry">
         <div class="log-line">
-          <span class="event-number" onclick={() => handleEventClick(0)} title="Click to restore game to initial state">00</span>
+          <button 
+            class="event-number" 
+            onclick={() => handleEventClick(0)} 
+            onkeydown={(e) => e.key === 'Enter' && handleEventClick(0)}
+            title="Click to restore game to initial state"
+          >00</button>
           <span class="phase-emoji">{phaseEmojis[$initialState.phase] || '🎲'}</span>
           <span class="action-id">initial-state</span>
         </div>
@@ -98,10 +102,15 @@
       </div>
       
       {#each $actionHistory as action, index}
-        {@const phase = getPhaseFromAction(action, index)}
+        {@const phase = getPhaseFromAction(action)}
         <div class="log-entry">
           <div class="log-line">
-            <span class="event-number" onclick={() => handleEventClick(index + 1)} title="Click to time travel to this point">{String(index + 1).padStart(2, '0')}</span>
+            <button 
+              class="event-number" 
+              onclick={() => handleEventClick(index + 1)} 
+              onkeydown={(e) => e.key === 'Enter' && handleEventClick(index + 1)}
+              title="Click to time travel to this point"
+            >{String(index + 1).padStart(2, '0')}</button>
             <span class="phase-emoji">{phaseEmojis[phase] || '🎲'}</span>
             <span class="action-id">{action.id}</span>
           </div>
@@ -264,6 +273,11 @@
     cursor: pointer;
     text-decoration: underline;
     min-width: 16px;
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: inherit;
   }
 
   .event-number:hover {

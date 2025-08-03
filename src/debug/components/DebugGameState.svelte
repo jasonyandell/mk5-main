@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameState, Bid } from '../../game/types';
+  import { isEmptyBid } from '../../game/types';
   import { getCurrentSuit } from '../../game/core/rules';
   
   interface Props {
@@ -21,21 +22,28 @@
   }
   
   function getTrumpName(trump: any): string {
-    if (trump === null) return 'None';
-    if (typeof trump === 'number') {
-      const suits = ['0s', '1s', '2s', '3s', '4s', '5s', '6s', 'Doubles'];
-      return suits[trump] || 'Unknown';
+    if (!trump || trump.type === 'none') return 'None';
+    
+    if (trump.type === 'suit' && trump.suit !== undefined) {
+      const suits = ['0s', '1s', '2s', '3s', '4s', '5s', '6s'];
+      return suits[trump.suit] || 'Unknown';
     }
-    if (typeof trump === 'object' && trump.suit) {
-      return trump.suit;
+    
+    if (trump.type === 'doubles') {
+      return 'Doubles';
     }
+    
+    if (trump.type === 'no-trump') {
+      return 'Follow-me';
+    }
+    
     return 'Unknown';
   }
   
   const currentSuit = $derived(getCurrentSuit(gameState));
 
   function getHandWinner(): { winner: number | null, label: string } {
-    if (!gameState.currentBid || gameState.winningBidder === null) {
+    if (isEmptyBid(gameState.currentBid) || gameState.winningBidder === -1) {
       return { winner: null, label: 'No bid' };
     }
 
@@ -124,7 +132,7 @@
       Current Player: P{gameState.currentPlayer}<br/>
       Trump: {getTrumpName(gameState.trump)}<br/>
       Current Suit: {currentSuit}<br/>
-      Bid Winner: {gameState.winningBidder !== null ? `P${gameState.winningBidder}` : 'None'}<br/>
+      Bid Winner: {gameState.winningBidder !== -1 ? `P${gameState.winningBidder}` : 'None'}<br/>
       Current Bid: {gameState.currentBid ? getBidLabel(gameState.currentBid) : 'None'}
     </div>
   </div>
@@ -143,7 +151,7 @@
           <div class="empty">No bids yet</div>
         {/if}
       </div>
-      {#if gameState.winningBidder !== null}
+      {#if gameState.winningBidder !== -1}
         <div class="winning-bidder">
           Bidder: P{gameState.winningBidder}
           {#if gameState.currentBid}

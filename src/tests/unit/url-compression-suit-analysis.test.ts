@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { compressGameState, expandMinimalState } from '../../game/core/url-compression';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
+import type { TrumpSelection } from '../../game/types';
 
 describe('URL Compression Suit Analysis Fix', () => {
   it('should maintain identical suit analysis after compress/expand cycle', () => {
@@ -31,7 +32,7 @@ describe('URL Compression Suit Analysis Fix', () => {
     const originalState = createInitialState({ shuffleSeed: 54321 });
     
     // Set trump to test trump-dependent suit analysis
-    originalState.trump = 6; // sixes trump
+    originalState.trump = { type: 'suit', suit: 6 } as TrumpSelection; // sixes trump
     
     // Update suit analyses with trump
     originalState.players.forEach(player => {
@@ -47,11 +48,11 @@ describe('URL Compression Suit Analysis Fix', () => {
       expect(player.hand).toEqual(originalState.players[i].hand);
     });
     
-    // Note: expandMinimalState resets trump to null and recalculates without trump
+    // Note: expandMinimalState resets trump to { type: 'none' } and recalculates without trump
     // This is correct behavior for initial state expansion
     // The trump will be set later during action replay
     expandedState.players.forEach((player) => {
-      const expectedAnalysis = analyzeSuits(player.hand, null);
+      const expectedAnalysis = analyzeSuits(player.hand, { type: 'none' });
       expect(player.suitAnalysis).toEqual(expectedAnalysis);
     });
   });

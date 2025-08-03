@@ -1,7 +1,8 @@
 import { describe, it } from 'vitest';
-import type { GameState, Domino, Trump } from '../../game/types';
+import type { GameState, Domino, TrumpSelection } from '../../game/types';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/actions';
+import { getNextStates } from '../../game/core/gameEngine';
+import { analyzeSuits } from '../../game/core/suit-analysis';
 import { testLog } from '../helpers/testConsole';
 
 describe('Collect Laydown Failures', () => {
@@ -24,7 +25,7 @@ describe('Collect Laydown Failures', () => {
     };
   }
 
-  function setupGameWithHand(hand: [number, number][], trump: Trump): GameState {
+  function setupGameWithHand(hand: [number, number][], trump: TrumpSelection): GameState {
     const state = createInitialState();
     
     state.phase = 'playing';
@@ -56,13 +57,18 @@ describe('Collect Laydown Failures', () => {
     state.players[2].hand = remainingDominoes.slice(7, 14);
     state.players[3].hand = remainingDominoes.slice(14, 21);
     
+    // Initialize suit analysis for all players
+    state.players.forEach(player => {
+      player.suitAnalysis = analyzeSuits(player.hand, trump);
+    });
+    
     return state;
   }
 
   interface FailureDetails {
     hand: [number, number][];
-    trump: number | 'doubles';
-    testedTrump: number | 'doubles';
+    trump: TrumpSelection;
+    testedTrump: TrumpSelection;
     losingPath: string[];
     lastMoves: string[];
     bidderLostAt: string;
@@ -70,7 +76,8 @@ describe('Collect Laydown Failures', () => {
 
   function findLosingPath(initialState: GameState): FailureDetails | null {
     const hand = initialState.players[0].hand.map(d => [d.high, d.low] as [number, number]);
-    const trumpValue = typeof initialState.trump === 'number' ? initialState.trump : 7;
+    const trumpValue = initialState.trump.type === 'doubles' ? 7 : 
+                      initialState.trump.type === 'suit' ? initialState.trump.suit! : -1;
     
     // Track the path that leads to bidder losing
     let losingPath: string[] = [];
@@ -128,8 +135,8 @@ describe('Collect Laydown Failures', () => {
           if (lastTrick && lastTrick.winner !== 0) {
             return {
               hand,
-              trump: trumpValue === 7 ? 'doubles' : trumpValue,
-              testedTrump: trumpValue === 7 ? 'doubles' : trumpValue,
+              trump: trumpValue === 7 ? { type: 'doubles' } : trumpValue === -1 ? { type: 'no-trump' } : { type: 'suit', suit: trumpValue as 0 | 1 | 2 | 3 | 4 | 5 | 6 },
+              testedTrump: trumpValue === 7 ? { type: 'doubles' } : trumpValue === -1 ? { type: 'no-trump' } : { type: 'suit', suit: trumpValue as 0 | 1 | 2 | 3 | 4 | 5 | 6 },
               losingPath,
               lastMoves,
               bidderLostAt: `Trick ${testState.tricks.length}, won by Player ${lastTrick.winner}`
@@ -141,8 +148,8 @@ describe('Collect Laydown Failures', () => {
       
       return {
         hand,
-        trump: trumpValue === 7 ? 'doubles' : trumpValue,
-        testedTrump: trumpValue === 7 ? 'doubles' : trumpValue,
+        trump: trumpValue === 7 ? { type: 'doubles' } : trumpValue === -1 ? { type: 'no-trump' } : { type: 'suit', suit: trumpValue as 0 | 1 | 2 | 3 | 4 | 5 | 6 },
+        testedTrump: trumpValue === 7 ? { type: 'doubles' } : trumpValue === -1 ? { type: 'no-trump' } : { type: 'suit', suit: trumpValue as 0 | 1 | 2 | 3 | 4 | 5 | 6 },
         losingPath,
         lastMoves,
         bidderLostAt: 'Unknown'
@@ -171,6 +178,7 @@ describe('Collect Laydown Failures', () => {
 
   function exhaustiveLaydownCheck(initialState: GameState): boolean {
     const cache = new Map<string, boolean>();
+    const maxDepth = 50; // Prevent infinite recursion
     
     function getCacheKey(state: GameState): string {
       const tricksByPlayer = [0, 0, 0, 0];
@@ -180,14 +188,23 @@ describe('Collect Laydown Failures', () => {
         }
       });
       const cardsLeft = state.players.map(p => p.hand.length).join('-');
-      return `${tricksByPlayer.join('-')}|${cardsLeft}|P${state.currentPlayer}`;
+      const currentTrick = state.currentTrick ? 
+        state.currentTrick.map(p => p.domino.id).join(',') : '';
+      return `${tricksByPlayer.join('-')}|${cardsLeft}|P${state.currentPlayer}|T${currentTrick}`;
     }
     
-    function canBidderWinAll(state: GameState): boolean {
+    function canBidderWinAll(state: GameState, depth = 0): boolean {
+      // Prevent infinite recursion
+      if (depth > maxDepth) {
+        return false;
+      }
+      
+      // If bidder already lost a trick, they can't win all
       if (state.tricks.some(t => t.winner !== 0)) {
         return false;
       }
       
+      // If game is over, check if bidder won all 7 tricks
       if (state.phase !== 'playing') {
         return state.tricks.length === 7 && state.tricks.every(t => t.winner === 0);
       }
@@ -198,13 +215,18 @@ describe('Collect Laydown Failures', () => {
       }
       
       const transitions = getNextStates(state);
-      if (transitions.length === 0) return false;
+      if (transitions.length === 0) {
+        cache.set(key, false);
+        return false;
+      }
       
       let result: boolean;
       if (state.currentPlayer === 0) {
-        result = transitions.some(t => canBidderWinAll(t.newState));
+        // Bidder's turn: they need at least one winning move
+        result = transitions.some(t => canBidderWinAll(t.newState, depth + 1));
       } else {
-        result = transitions.every(t => canBidderWinAll(t.newState));
+        // Opponent's turn: all their moves must lead to bidder winning
+        result = transitions.every(t => canBidderWinAll(t.newState, depth + 1));
       }
       
       cache.set(key, result);
@@ -486,8 +508,8 @@ describe('Collect Laydown Failures', () => {
         const playOrder = getPlayOrder(hand, bestTrump);
         
         // Verify with engine using play order
-        const trumpValue = bestTrump === 7 ? 'doubles' : bestTrump;
-        const gameState = setupGameWithHand(playOrder, trumpValue as Trump);
+        const trumpSelection: TrumpSelection = bestTrump === 7 ? { type: 'doubles' } : { type: 'suit', suit: bestTrump as 0|1|2|3|4|5|6 };
+        const gameState = setupGameWithHand(playOrder, trumpSelection);
         const isLaydown = exhaustiveLaydownCheck(gameState);
         
         if (isLaydown) {
@@ -514,10 +536,11 @@ describe('Collect Laydown Failures', () => {
         const handStr = f.hand.map(d => `${d[0]}-${d[1]}`).join(',');
         const lastPlay = f.lastMoves.filter(m => m.includes('P0:')).pop() || 'unknown';
         const beatenBy = f.lastMoves.filter(m => m.includes('P') && !m.includes('P0:')).pop() || 'unknown';
-        const trumpStr = f.trump === 'doubles' ? 'D' : f.trump.toString();
+        const trumpStr = f.trump.type === 'doubles' ? 'D' : f.trump.type === 'suit' ? f.trump.suit!.toString() : '?';
         
         // Show the play order for this hand
-        const playOrder = getPlayOrder(f.hand, f.trump === 'doubles' ? 7 : f.trump);
+        const trumpNum = f.trump.type === 'doubles' ? 7 : f.trump.type === 'suit' ? f.trump.suit! : -1;
+        const playOrder = getPlayOrder(f.hand, trumpNum);
         const orderStr = playOrder.map(d => `${d[0]}-${d[1]}`).join(' → ');
         
         testLog(`${i+1}. [${handStr}] T:${trumpStr}`);
@@ -530,10 +553,12 @@ describe('Collect Laydown Failures', () => {
       const patterns: { [key: string]: number } = {};
       
       failures.forEach(f => {
+        const trumpNum = f.trump.type === 'doubles' ? 7 : f.trump.type === 'suit' ? f.trump.suit! : -1;
         const trumpCount = f.hand.filter(d => 
-          f.trump === 'doubles' ? d[0] === d[1] : (d[0] === f.trump || d[1] === f.trump)
+          f.trump.type === 'doubles' ? d[0] === d[1] : (d[0] === trumpNum || d[1] === trumpNum)
         ).length;
-        const pattern = `${trumpCount} trumps (trump: ${f.trump})`;
+        const trumpStr = f.trump.type === 'doubles' ? 'doubles' : f.trump.type === 'suit' ? f.trump.suit!.toString() : 'none';
+        const pattern = `${trumpCount} trumps (trump: ${trumpStr})`;
         patterns[pattern] = (patterns[pattern] || 0) + 1;
       });
       
@@ -549,8 +574,9 @@ describe('Collect Laydown Failures', () => {
       // Find examples of different trump counts
       const examplesByTrumpCount: { [key: number]: FailureDetails } = {};
       failures.forEach(f => {
+        const trumpNum = f.trump.type === 'doubles' ? 7 : f.trump.type === 'suit' ? f.trump.suit! : -1;
         const trumpCount = f.hand.filter(d => 
-          f.trump === 'doubles' ? d[0] === d[1] : (d[0] === f.trump || d[1] === f.trump)
+          f.trump.type === 'doubles' ? d[0] === d[1] : (d[0] === trumpNum || d[1] === trumpNum)
         ).length;
         if (!examplesByTrumpCount[trumpCount]) {
           examplesByTrumpCount[trumpCount] = f;
@@ -562,7 +588,8 @@ describe('Collect Laydown Failures', () => {
         .forEach(([trumpCount, failure]) => {
           testLog(`Example with ${trumpCount} trumps:`);
           testLog(`Hand: ${failure.hand.map(d => `${d[0]}-${d[1]}`).join(', ')}`);
-          testLog(`Trump: ${failure.trump}`);
+          const trumpDisplay = failure.trump.type === 'doubles' ? 'doubles' : failure.trump.type === 'suit' ? failure.trump.suit!.toString() : 'none';
+          testLog(`Trump: ${trumpDisplay}`);
           const lastPlay = failure.lastMoves.filter(m => m.includes('P0:')).pop() || 'unknown';
           const beatenBy = failure.lastMoves.filter(m => m.includes('P') && !m.includes('P0:')).pop() || 'unknown';
           testLog(`Bidder ${lastPlay} beaten by ${beatenBy}`);

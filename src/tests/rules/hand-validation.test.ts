@@ -2,33 +2,33 @@ import { describe, it, expect } from 'vitest';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
-import type { Domino, GameState, Trump } from '../../game/types';
+import type { Domino, GameState, TrumpSelection } from '../../game/types';
 
 describe('Hand Validation Rules', () => {
   function createTestState(options: {
-    trump: number,
+    trump: TrumpSelection,
     currentTrick: { player: number; domino: Domino }[],
     playerHand: Domino[],
     currentPlayer?: number
   }): GameState {
     const state = createInitialState();
     state.phase = 'playing';
-    state.trump = options.trump as Trump;
+    state.trump = options.trump;
     state.currentTrick = options.currentTrick;
     state.currentPlayer = options.currentPlayer || 1;
     
     // Set currentSuit based on the first domino in currentTrick
     if (options.currentTrick.length > 0) {
       const leadDomino = options.currentTrick[0].domino;
-      if (options.trump === 7) { // doubles are trump
+      if (options.trump.type === 'doubles') { // doubles are trump
         state.currentSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
-      } else if (leadDomino.high === options.trump || leadDomino.low === options.trump) {
-        state.currentSuit = options.trump; // trump was led
+      } else if (options.trump.type === 'suit' && (leadDomino.high === options.trump.suit || leadDomino.low === options.trump.suit)) {
+        state.currentSuit = options.trump.suit!; // trump was led
       } else {
         state.currentSuit = Math.max(leadDomino.high, leadDomino.low); // higher end for non-trump
       }
     } else {
-      state.currentSuit = null;
+      state.currentSuit = -1;
     }
     
     const player = state.players[state.currentPlayer];
@@ -46,7 +46,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 5, // fives are trump
+        trump: { type: 'suit', suit: 5 }, // fives are trump
         currentTrick: [
           { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours (high end)
         ],
@@ -69,7 +69,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 5, // fives are trump
+        trump: { type: 'suit', suit: 5 }, // fives are trump
         currentTrick: [
           { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
         ],
@@ -91,7 +91,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 6, // sixes are trump
+        trump: { type: 'suit', suit: 6 }, // sixes are trump
         currentTrick: [
           { domino: { id: 12, low: 3, high: 4 }, player: 0 } // Led with fours
         ],
@@ -115,7 +115,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 3, // threes are trump  
+        trump: { type: 'suit', suit: 3 }, // threes are trump  
         currentTrick: [
           { domino: { id: 5, low: 2, high: 3 }, player: 0 } // Led with threes
         ],
@@ -135,7 +135,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 7, // doubles are trump
+        trump: { type: 'doubles' }, // doubles are trump
         currentTrick: [
           { domino: { id: 10, low: 4, high: 4 }, player: 0 } // Led with double (trump)
         ],
@@ -156,7 +156,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 6, // sixes are trump
+        trump: { type: 'suit', suit: 6 }, // sixes are trump
         currentTrick: [
           { domino: { id: 9, low: 1, high: 5 }, player: 0 } // Led [5|1], suit is fives (non-trump)
         ],
@@ -175,7 +175,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 1, // ones are trump
+        trump: { type: 'suit', suit: 1 }, // ones are trump
         currentTrick: [
           { domino: { id: 7, low: 1, high: 3 }, player: 0 } // Led with trump [3|1]
         ],
@@ -196,7 +196,7 @@ describe('Hand Validation Rules', () => {
       ];
 
       const state = createTestState({
-        trump: 8, // no-trump
+        trump: { type: 'no-trump' }, // no-trump
         currentTrick: [
           { domino: { id: 8, low: 1, high: 4 }, player: 0 } // Led [4|1], suit is fours
         ],

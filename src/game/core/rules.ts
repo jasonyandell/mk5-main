@@ -1,4 +1,4 @@
-import type { GameState, Bid, Domino, Trump, PlayedDomino, Player, SuitRanking } from '../types';
+import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, SuitRanking } from '../types';
 import { GAME_CONSTANTS, BID_TYPES } from '../constants';
 import { countDoubles } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
@@ -174,7 +174,7 @@ export function isValidPlay(
   domino: Domino,
   playerId: number
 ): boolean {
-  if (state.phase !== 'playing' || state.trump === null) return false;
+  if (state.phase !== 'playing' || state.trump.type === 'none') return false;
   
   // Validate player bounds
   if (playerId < 0 || playerId >= state.players.length) return false;
@@ -187,7 +187,7 @@ export function isValidPlay(
   
   // Use the currentSuit from state instead of computing it
   const leadSuit = state.currentSuit;
-  if (leadSuit === null) return true; // No suit to follow
+  if (leadSuit === -1) return true; // No suit to follow
   
   // Use suit analysis to check if player can follow suit
   if (!player.suitAnalysis) return true; // If no analysis, allow any play
@@ -235,17 +235,13 @@ export function canFollowSuit(
 /**
  * Helper function to convert trump to numeric value
  */
-function getTrumpNumber(trump: Trump): number | null {
-  if (typeof trump === 'number') return trump;
-  if (typeof trump === 'object' && 'suit' in trump) {
-    if (typeof trump.suit === 'number') return trump.suit;
-    const suitMap: Record<string, number | null> = {
-      'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
-      'fours': 4, 'fives': 5, 'sixes': 6, 'no-trump': 8, 'doubles': 7
-    };
-    return suitMap[trump.suit] ?? 0;
+function getTrumpNumber(trump: TrumpSelection): number | null {
+  switch (trump.type) {
+    case 'none': return null;
+    case 'suit': return trump.suit!;
+    case 'doubles': return 7;
+    case 'no-trump': return 8;
   }
-  return trump as number;
 }
 
 /**
@@ -255,7 +251,7 @@ export function getValidPlays(
   state: GameState,
   playerId: number
 ): Domino[] {
-  if (state.phase !== 'playing' || state.trump === null) return [];
+  if (state.phase !== 'playing' || state.trump.type === 'none') return [];
   
   const player = state.players[playerId];
   if (!player) return [];
@@ -266,7 +262,7 @@ export function getValidPlays(
   
   // Use the currentSuit from state instead of computing it
   const leadSuit = state.currentSuit;
-  if (leadSuit === null) return [...player.hand]; // No suit to follow
+  if (leadSuit === -1) return [...player.hand]; // No suit to follow
   
   // Handle doubles trump special case
   if (leadSuit === 7) {
@@ -292,7 +288,7 @@ export function getValidPlays(
 /**
  * Gets the winner of a trick (alias for calculateTrickWinner)
  */
-export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: Trump, leadSuit: number): number {
+export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: TrumpSelection, leadSuit: number): number {
   return calculateTrickWinner(trick, trump, leadSuit);
 }
 
@@ -306,55 +302,41 @@ export function getTrickPoints(trick: { player: number; domino: Domino }[]): num
 /**
  * Determines the winner of a trick (alternative interface)
  */
-export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: Trump, leadSuit: number): number {
+export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: TrumpSelection, leadSuit: number): number {
   return calculateTrickWinner(trick as PlayedDomino[], trump, leadSuit);
 }
 
 /**
  * Validates if a trump suit is valid
  */
-export function isValidTrump(trump: { suit: number | string; followsSuit: boolean }): boolean {
-  if (typeof trump.suit === 'number') {
-    return trump.suit >= 0 && trump.suit <= 7; // Include doubles (7)
+export function isValidTrump(trump: TrumpSelection): boolean {
+  if (trump.type === 'suit') {
+    return trump.suit !== undefined && trump.suit >= 0 && trump.suit <= 6;
   }
-  if (typeof trump.suit === 'string') {
-    const validSuits = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes', 'doubles'];
-    return validSuits.includes(trump.suit);
-  }
-  return false;
+  return trump.type === 'doubles' || trump.type === 'no-trump';
 }
 
 /**
  * Gets the numeric value of a trump suit
  */
-export function getTrumpValue(trump: { suit: number | string; followsSuit: boolean }): number {
-  if (typeof trump.suit === 'number' && trump.suit >= 0 && trump.suit <= 7) {
-    // Differentiate between regular trump and follow-suit trump
-    // Regular trump: 0-7, follow-suit trump: 10-17
-    return trump.followsSuit ? trump.suit + 10 : trump.suit;
+export function getTrumpValue(trump: TrumpSelection): number {
+  switch (trump.type) {
+    case 'none': return -1;
+    case 'suit': return trump.suit!;
+    case 'doubles': return 7;
+    case 'no-trump': return 8;
   }
-  if (typeof trump.suit === 'string') {
-    const suitMap: Record<string, number> = {
-      'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
-      'fours': 4, 'fives': 5, 'sixes': 6, 'doubles': 7
-    };
-    const numericSuit = suitMap[trump.suit];
-    if (numericSuit !== undefined) {
-      return trump.followsSuit ? numericSuit + 10 : numericSuit;
-    }
-  }
-  throw new Error(`Invalid trump suit: ${trump.suit}`);
 }
 
 /**
  * Gets the current suit being led in a trick for display purposes
  */
 export function getCurrentSuit(state: GameState): string {
-  if (state.currentSuit === null) {
+  if (state.currentSuit === -1) {
     return 'None (no domino led)';
   }
   
-  if (state.trump === null) {
+  if (state.trump.type === 'none') {
     return 'None (no trump set)';
   }
   

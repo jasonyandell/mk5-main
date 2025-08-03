@@ -1,4 +1,4 @@
-import type { Domino, Trump } from '../types';
+import type { Domino, TrumpSelection } from '../types';
 
 /**
  * Suit count for a player's hand - counts dominoes by suit number
@@ -41,7 +41,7 @@ export interface SuitAnalysis {
 /**
  * Calculates suit count for a hand - how many dominoes contain each suit number
  */
-export function calculateSuitCount(hand: Domino[], trump: Trump | null = null): SuitCount {
+export function calculateSuitCount(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitCount {
   const count: SuitCount = {
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, doubles: 0, trump: 0
   };
@@ -60,7 +60,7 @@ export function calculateSuitCount(hand: Domino[], trump: Trump | null = null): 
   });
 
   // Calculate trump count based on trump suit
-  if (trump !== null) {
+  if (trump.type !== 'none') {
     count.trump = calculateTrumpCount(hand, trump);
   }
 
@@ -70,8 +70,7 @@ export function calculateSuitCount(hand: Domino[], trump: Trump | null = null): 
 /**
  * Calculates how many trump dominoes are in a hand
  */
-function calculateTrumpCount(hand: Domino[], trump: Trump): number {
-  if (trump === null) return 0;
+function calculateTrumpCount(hand: Domino[], trump: TrumpSelection): number {
   
   const numericTrump = trumpToNumber(trump);
   
@@ -87,29 +86,21 @@ function calculateTrumpCount(hand: Domino[], trump: Trump): number {
 }
 
 /**
- * Converts Trump type to numeric value
+ * Converts TrumpSelection to numeric value
  */
-function trumpToNumber(trump: Trump | null): number | null {
-  if (trump === null) return null;
-  if (typeof trump === 'number') return trump;
-  if (typeof trump === 'object' && 'suit' in trump) {
-    if (typeof trump.suit === 'number') {
-      return trump.suit;
-    }
-    const suitMap: Record<string, number | null> = {
-      'blanks': 0, 'ones': 1, 'twos': 2, 'threes': 3, 
-      'fours': 4, 'fives': 5, 'sixes': 6, 'no-trump': 8, 'doubles': 7
-    };
-    const result = suitMap[trump.suit];
-    return result !== undefined ? result : 0;
+function trumpToNumber(trump: TrumpSelection): number | null {
+  switch (trump.type) {
+    case 'none': return null;
+    case 'suit': return trump.suit!;
+    case 'doubles': return 7;
+    case 'no-trump': return 8;
   }
-  return trump as number;
 }
 
 /**
  * Calculates suit ranking for a hand - organizes dominoes by suit with highest first
  */
-export function calculateSuitRanking(hand: Domino[], trump: Trump | null = null): SuitRanking {
+export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitRanking {
   const rank: SuitRanking = {
     0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], doubles: [], trump: []
   };
@@ -153,7 +144,7 @@ export function calculateSuitRanking(hand: Domino[], trump: Trump | null = null)
   }
 
   // Calculate trump ranking
-  if (trump !== null) {
+  if (trump.type !== 'none') {
     rank.trump = calculateTrumpRanking(hand, trump);
   }
 
@@ -163,7 +154,7 @@ export function calculateSuitRanking(hand: Domino[], trump: Trump | null = null)
 /**
  * Calculates trump ranking for a hand - organizes trump dominoes by value
  */
-function calculateTrumpRanking(hand: Domino[], trump: Trump): Domino[] {
+function calculateTrumpRanking(hand: Domino[], trump: TrumpSelection): Domino[] {
   const numericTrump = trumpToNumber(trump);
   let trumpDominoes: Domino[] = [];
   
@@ -202,7 +193,7 @@ function calculateTrumpRanking(hand: Domino[], trump: Trump): Domino[] {
 /**
  * Performs complete suit analysis for a hand
  */
-export function analyzeSuits(hand: Domino[], trump: Trump | null = null): SuitAnalysis {
+export function analyzeSuits(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitAnalysis {
   return {
     count: calculateSuitCount(hand, trump),
     rank: calculateSuitRanking(hand, trump)

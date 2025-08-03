@@ -41,7 +41,7 @@ describe('Feature: Tournament Conduct - Domino Handling', () => {
         phase: 'playing',
         tournamentMode: true,
         currentPlayer: 1,
-        trump: 6, // Sixes are trump
+        trump: { type: 'suit', suit: 6 }, // Sixes are trump
         players: [
           { 
             id: 1, 
