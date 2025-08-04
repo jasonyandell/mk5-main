@@ -82,6 +82,7 @@ export interface Trick {
   plays: Play[];
   winner?: number;
   points: number;
+  ledSuit?: number;
 }
 
 export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end';

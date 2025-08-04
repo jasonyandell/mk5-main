@@ -42,7 +42,7 @@
   
   const currentSuit = $derived(getCurrentSuit(gameState));
 
-  function getHandWinner(): { winner: number | null, label: string } {
+  function getHandResultDescription(): { winner: number | null, label: string } {
     if (isEmptyBid(gameState.currentBid) || gameState.winningBidder === -1) {
       return { winner: null, label: 'No bid' };
     }
@@ -159,7 +159,7 @@
           {/if}
         </div>
         {#if gameState.tricks.length === 7}
-          {@const handResult = getHandWinner()}
+          {@const handResult = getHandResultDescription()}
           <div class="winning-bidder">
             Hand Winner: {#if handResult.winner !== null}Team {gameState.players.find(p => p.id === handResult.winner)?.teamId}{:else}None{/if}
             <br/><small>{handResult.label}</small>

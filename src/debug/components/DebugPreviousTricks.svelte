@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { GameState, Trick, Domino } from '../../game/types';
+  import type { GameState, Domino } from '../../game/types';
   
   interface Props {
     gameState: GameState;
@@ -11,42 +11,8 @@
     return `${domino.high}-${domino.low}`;
   }
   
-  function getTrickSuit(trick: Trick): string {
-    if (trick.plays.length === 0 || !gameState.trump || gameState.trump.type === 'none') return '';
-    
-    // For completed tricks, compute the suit from the first play
-    const leadDomino = trick.plays[0].domino;
-    const trump = gameState.trump;
-    
-    
-    // Determine what suit was led
-    let ledSuit: number;
-    if (trump.type === 'doubles') { // doubles are trump
-      ledSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
-    } else if (trump.type === 'suit' && (leadDomino.high === trump.suit || leadDomino.low === trump.suit)) {
-      ledSuit = trump.suit; // trump was led
-    } else {
-      ledSuit = Math.max(leadDomino.high, leadDomino.low); // higher end for non-trump
-    }
-    
-    // Format for display with brackets like [6s]
-    const suitFormats: Record<number, string> = {
-      0: '[0s]',
-      1: '[1s]', 
-      2: '[2s]',
-      3: '[3s]',
-      4: '[4s]',
-      5: '[5s]',
-      6: '[6s]',
-      7: '[doubles]'
-    };
-    
-    return suitFormats[ledSuit] || '[?]';
-  }
-  
-  
-  function getCurrentSuitBracketFormat(state: GameState): string {
-    if (state.currentSuit === -1) return '[?]';
+  function formatSuit(suit: number | undefined): string {
+    if (suit === undefined || suit === -1) return '[?]';
     
     const suitFormats: Record<number, string> = {
       0: '[0s]',
@@ -60,8 +26,9 @@
       8: '[no-trump]'
     };
     
-    return suitFormats[state.currentSuit] || '[?]';
+    return suitFormats[suit] || '[?]';
   }
+  
 </script>
 
 <div class="previous-tricks-container">
@@ -93,7 +60,7 @@
           </div>
           <div class="trick-info">
             <div class="trick-result">
-              <span class="trump-display">{getTrickSuit(trick)}</span>
+              <span class="trump-display">{formatSuit(trick.ledSuit)}</span>
               <span class="winner-info">P{trick.winner || 0}</span>
               <span class="points-info">{trick.points + 1}pt</span>
             </div>
@@ -122,7 +89,7 @@
           </div>
           <div class="trick-info">
             <div class="trick-result">
-              <span class="trump-display">{gameState.currentSuit !== -1 ? getCurrentSuitBracketFormat(gameState) : '[...]'}</span>
+              <span class="trump-display">{gameState.currentSuit !== -1 ? formatSuit(gameState.currentSuit) : '[...]'}</span>
             </div>
           </div>
         </div>

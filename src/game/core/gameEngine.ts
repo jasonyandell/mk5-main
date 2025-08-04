@@ -227,7 +227,8 @@ function applyCompleteTrick(state: GameState): GameState {
   newState.tricks.push({
     plays: [...state.currentTrick],
     winner,
-    points
+    points,
+    ledSuit: state.currentSuit
   });
   
   // Clear current trick

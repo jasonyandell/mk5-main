@@ -1,6 +1,6 @@
-# Texas 42 - mk5
+# Texas 42
 
-A production-ready TypeScript implementation of Texas 42 domino game, combining the best architectural approaches from previous iterations.
+A TypeScript implementation of the classic Texas domino game with tournament-compliant rules and comprehensive testing.
 
 ## Features
 
@@ -17,11 +17,12 @@ A production-ready TypeScript implementation of Texas 42 domino game, combining 
 - **Accessibility features**: Reduced motion support, proper ARIA attributes
 
 ### Testing & Debug Infrastructure
-- **400+ line test helper class** with state injection utilities
+- **Comprehensive test helper** with state injection utilities
 - **Automatic bug report generation** with reproducible test cases
 - **Tournament compliance validation** suite
 - **Mathematical constant verification** (42-point system)
 - **URL parameter state injection** for debugging specific scenarios
+- **Debug UI** for real-time game state inspection
 
 ## Quick Start
 
@@ -86,13 +87,12 @@ Implements official Texas 42 tournament rules:
 - Mark progression: 3+ marks only after 2-mark bid
 
 ### Gameplay
-- 7 tricks per hand with 4 dominoes each
-- All doubles are trump regardless of suit
+- 7 tricks per hand, 7 dominoes per player
 - Must follow suit when possible
-- Trump hierarchy: Doubles > Trump suit > Other suits
 
 ### Scoring
-- Point values: 5-5 (10), 6-4 (10), 5-0 (5), 6-5 (5), 6-6 (42)
+- Counting dominoes: 5-5 (10), 6-4 (10), 5-0 (5), 4-1 (5), 3-2 (5)
+- Each trick worth 1 point (7 total) + counting dominoes (35 total) = 42 points
 - First team to 7 marks wins
 - Failed bids award marks to opponents
 
@@ -109,7 +109,7 @@ src/
 │   ├── components/   # Reusable UI components
 │   ├── stores/       # Reactive state stores
 │   └── styles/       # Performance-optimized CSS
-├── debug/            # Development & debugging tools
+├── debug/            # Debug UI components (display-only)
 └── tests/            # Comprehensive test suite
     ├── unit/         # Pure function tests
     ├── e2e/          # End-to-end scenarios
@@ -117,10 +117,11 @@ src/
 ```
 
 ### Debug Features
-- **Debug Panel**: Real-time state inspection and manipulation
+- **Debug Panel**: Real-time state inspection (read-only display)
 - **State Injection**: Load specific game scenarios for testing
 - **Bug Reports**: Automatic generation with reproduction steps
 - **Rule Validation**: Live validation of game state integrity
+- **Previous Tricks Display**: Shows completed tricks with led suit information
 
 ### Performance Features
 - **CSS Containment**: Optimized rendering with `contain` property
@@ -181,4 +182,4 @@ MIT License - See LICENSE file for details.
 
 ---
 
-**mk5** represents the culmination of iterative development, combining mk4's clean functional architecture with sixtyfouragents' professional development practices to create a production-ready Texas 42 implementation.
+Built with a focus on correctness, testability, and adherence to official Texas 42 tournament rules.
