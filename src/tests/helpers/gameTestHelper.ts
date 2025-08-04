@@ -442,48 +442,6 @@ export class GameTestHelper {
     return errors;
   }
   
-  /**
-   * Generates bug report with state and context
-   */
-  static generateBugReport(
-    state: GameState,
-    expectedBehavior: string,
-    actualBehavior: string,
-    reproductionSteps: string[]
-  ): string {
-    const timestamp = new Date().toISOString();
-    const stateJson = JSON.stringify(state, null, 2);
-    
-    return `
-# Texas 42 Bug Report
-**Generated:** ${timestamp}
-
-## Description
-**Expected:** ${expectedBehavior}
-**Actual:** ${actualBehavior}
-
-## Reproduction Steps
-${reproductionSteps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
-
-## Game State
-\`\`\`json
-${stateJson}
-\`\`\`
-
-## Test Code Template
-\`\`\`typescript
-import { test, expect } from '@playwright/test';
-import { GameTestHelper } from '../helpers/gameTestHelper';
-
-test('reproducer for bug', async () => {
-  const state = GameTestHelper.createTestState(${JSON.stringify(state, null, 2)});
-  
-  // Add test assertions here
-  // expect(...).toBe(...);
-});
-\`\`\`
-    `.trim();
-  }
 }
 
 // Export convenience functions for easier importing

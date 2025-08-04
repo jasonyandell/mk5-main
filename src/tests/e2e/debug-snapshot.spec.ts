@@ -134,24 +134,4 @@ test.describe('Debug Snapshot System', () => {
     expect(url).toMatch(/d=/);
   });
 
-  test('generates enhanced bug reports with action sequences', async () => {
-    await helper.newGame();
-    
-    // Create a snapshot by performing actions
-    await helper.selectActionByType('bid_points', 30);
-    await helper.selectActionByType('pass');
-    await helper.selectActionByType('pass');
-    await helper.selectActionByType('pass');
-    await helper.setTrump('doubles');
-    
-    // Generate bug report
-    const bugReport = await helper.getBugReport();
-    
-    // Bug report should contain action sequence validation and runnable test code
-    expect(bugReport).toContain('baseState');
-    expect(bugReport).toContain('actionIds');
-    expect(bugReport).toContain('getNextStates');
-    expect(bugReport).toContain('matchingTransition');
-    expect(bugReport).toContain('throw new Error(`Action'); // Should contain action validation logic
-  });
 });

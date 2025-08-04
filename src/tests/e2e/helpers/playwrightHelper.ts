@@ -328,22 +328,6 @@ export class PlaywrightGameHelper {
     await this.closeDebugPanel();
   }
 
-  async generateBugReport(description: string): Promise<string> {
-    await this.openDebugPanel();
-    
-    // Click bug report generator
-    await this.page.locator('[data-testid="generate-bug-report"]').click();
-    
-    // Fill description
-    await this.page.locator('[data-testid="bug-description"]').fill(description);
-    
-    // Get generated report
-    const reportElement = this.page.locator('[data-testid="bug-report-output"]');
-    const report = await reportElement.textContent();
-    
-    await this.closeDebugPanel();
-    return report || '';
-  }
 
   async takeGameScreenshot(name: string) {
     await this.page.screenshot({ 
@@ -529,14 +513,6 @@ export class PlaywrightGameHelper {
     return await this.getCurrentURL();
   }
 
-  async getBugReport(): Promise<string> {
-    // Click the bug report button
-    await this.page.locator('[data-testid="bug-report-button"]').click();
-    
-    // Get the generated bug report from the textarea
-    const reportElement = this.page.locator('[data-testid="generated-test-code"]');
-    return await reportElement.inputValue() || '';
-  }
 
 
   async getCurrentState(): Promise<unknown> {

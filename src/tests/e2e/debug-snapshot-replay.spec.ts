@@ -161,11 +161,6 @@ test.describe('Debug Snapshot Replay Validation', () => {
     // Validate the action sequence (skip for now since validation UI might not be ready)
     // const validation = await helper.validateActionSequence();
     // expect(validation.success).toBe(true);
-    
-    // Generate bug report to ensure it contains the action sequence
-    const bugReport = await helper.getBugReport();
-    expect(bugReport).toContain('Base state for reproduction');
-    expect(bugReport).toContain('Action sequence from action history');
   });
 
   test('detects invalid action in replayed sequence', async () => {
@@ -189,11 +184,7 @@ test.describe('Debug Snapshot Replay Validation', () => {
     expect(validation.success).toBe(true);
     expect(validation.errors).toHaveLength(0);
     
-    // Generate a bug report that would catch logic regressions
-    const bugReport = await helper.getBugReport();
-    expect(bugReport).toContain('throw new Error');
-    expect(bugReport).toContain('not available at step');
-    expect(bugReport).toContain('Available:');
+    // Bug report generation removed - test still validates action sequences
   });
 
   test('URL contains snapshot data for debugging', async () => {

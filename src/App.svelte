@@ -5,7 +5,6 @@
   import DebugActions from './debug/components/DebugActions.svelte';
   import DebugPlayerHands from './debug/components/DebugPlayerHands.svelte';
   import DebugJsonView from './debug/components/DebugJsonView.svelte';
-  import DebugBugReport from './debug/components/DebugBugReport.svelte';
   import DebugReplay from './debug/components/DebugReplay.svelte';
   import DebugPreviousTricks from './debug/components/DebugPreviousTricks.svelte';
   import DebugQuickplay from './debug/components/DebugQuickplay.svelte';
@@ -64,7 +63,6 @@
     gameActions.undo();
   }
   
-  let showBugPanel = $state(false);
 </script>
 
 <main class="debug-container">
@@ -90,12 +88,6 @@
       </button>
     </div>
   </header>
-  
-  <DebugBugReport 
-    gameState={$gameState} 
-    generateBugReport={gameActions.generateBugReport}
-    bind:showBugPanel
-  />
   
   <div class="debug-layout">
     <div class="debug-left">
