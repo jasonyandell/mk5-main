@@ -5,6 +5,7 @@ import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
 import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
 import { dealDominoesWithSeed, getDominoSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
+import { checkHandOutcome } from './handOutcome';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
 
@@ -244,6 +245,13 @@ function applyCompleteTrick(state: GameState): GameState {
   // Check if hand is complete
   if (newState.tricks.length === GAME_CONSTANTS.TRICKS_PER_HAND) {
     newState.phase = 'scoring';
+  } else {
+    // Check if hand outcome is mathematically determined
+    const outcome = checkHandOutcome(newState);
+    if (outcome.isDetermined) {
+      // Hand is decided, move to scoring phase
+      newState.phase = 'scoring';
+    }
   }
   
   return newState;

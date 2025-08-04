@@ -398,18 +398,40 @@ export class PlaywrightGameHelper {
     // Trump selection
     await this.setTrumpBySuit(trump);
 
-    // Play 7 tricks
+    // Play tricks until hand is complete (may end early due to hand outcome detection)
     for (let trick = 1; trick <= 7; trick++) {
+      // Check if we're already in scoring phase (hand ended early)
+      const phase = await this.getCurrentPhase();
+      if (phase.toLowerCase().includes('scoring')) {
+        // Hand ended early - no more tricks to play
+        break;
+      }
+      
       // Each player plays a domino
       for (let play = 0; play < 4; play++) {
+        // Check again in case hand ends mid-trick
+        const currentPhase = await this.getCurrentPhase();
+        if (currentPhase.toLowerCase().includes('scoring')) {
+          break;
+        }
+        
         await this.playAnyDomino();
       }
       
-      if (trick < 7) {
+      // Only complete trick if we're still in playing phase
+      const phaseAfterPlays = await this.getCurrentPhase();
+      if (phaseAfterPlays.toLowerCase().includes('playing')) {
         await this.completeTrick();
-      } else {
-        await this.completeTrick();
+      }
+    }
+    
+    // Score hand if we're in scoring phase
+    const finalPhase = await this.getCurrentPhase();
+    if (finalPhase.toLowerCase().includes('scoring')) {
+      try {
         await this.scoreHand();
+      } catch {
+        // Scoring might not be available if already scored
       }
     }
   }

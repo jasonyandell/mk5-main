@@ -158,12 +158,18 @@
             ({getBidLabel(gameState.currentBid)})
           {/if}
         </div>
-        {#if gameState.tricks.length === 7}
+        {#if gameState.phase === 'scoring' || gameState.phase === 'game_end'}
           {@const handResult = getHandResultDescription()}
           <div class="winning-bidder">
             Hand Winner: {#if handResult.winner !== null}Team {gameState.players.find(p => p.id === handResult.winner)?.teamId}{:else}None{/if}
             <br/><small>{handResult.label}</small>
           </div>
+          {#if gameState.phase === 'scoring' && gameState.tricks.length < 7}
+            <div class="hand-outcome" data-testid="hand-outcome">
+              <span class="outcome-label">Early End:</span>
+              <span class="outcome-reason">Hand ended after trick {gameState.tricks.length}</span>
+            </div>
+          {/if}
         {/if}
       {/if}
     </div>
@@ -292,6 +298,35 @@
     font-weight: 600;
     color: #28a745;
     font-size: 11px;
+  }
+  
+  .hand-outcome {
+    margin-top: 8px;
+    padding: 6px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 3px;
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .outcome-label {
+    font-weight: 600;
+    color: #856404;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+  
+  .outcome-reason {
+    color: #721c24;
+    font-weight: 500;
+  }
+  
+  .outcome-trick {
+    color: #856404;
+    font-size: 10px;
   }
   
   .scores {
