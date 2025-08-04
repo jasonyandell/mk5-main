@@ -366,5 +366,49 @@ export const quickplayActions = {
     if (decision) {
       gameActions.executeAction(decision);
     }
+  },
+  
+  playToEndOfHand: () => {
+    const runToHandEnd = () => {
+      const $gameState = get(gameState);
+      const $availableActions = get(availableActions);
+      
+      // Stop if we've reached scoring phase
+      if ($gameState.phase === 'scoring' || $gameState.phase === 'game_end') {
+        return;
+      }
+      
+      // Execute one action
+      const decision = makeAIDecision($gameState, $availableActions);
+      if (decision) {
+        gameActions.executeAction(decision);
+        // Continue with next action
+        setTimeout(runToHandEnd, 0);
+      }
+    };
+    
+    runToHandEnd();
+  },
+  
+  playToEndOfGame: () => {
+    const runToGameEnd = () => {
+      const $gameState = get(gameState);
+      const $availableActions = get(availableActions);
+      
+      // Stop if game is complete
+      if ($gameState.phase === 'game_end' && $gameState.isComplete) {
+        return;
+      }
+      
+      // Execute one action
+      const decision = makeAIDecision($gameState, $availableActions);
+      if (decision) {
+        gameActions.executeAction(decision);
+        // Continue with next action
+        setTimeout(runToGameEnd, 0);
+      }
+    };
+    
+    runToGameEnd();
   }
 };

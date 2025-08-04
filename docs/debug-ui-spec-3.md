@@ -6,11 +6,16 @@ The Debug UI for Texas 42 is a **development-friendly game interface** that bala
 
 ## Key Design Principles
 
-1. **Intuitive Game Flow**: The interface follows natural Texas 42 gameplay patterns - bid, declare trump, play dominoes
-2. **Visual Hierarchy**: Most important information (hand, current trick, trump) is prominently displayed
-3. **Contextual Actions**: Only show relevant actions for the current game phase
-4. **Progressive Disclosure**: Basic gameplay on main screen, advanced debugging via overlay
-5. **Respectful Design**: Honor the game's Texas heritage with appropriate visual treatment
+1. **Game Visibility First**: The current game state, player's hand, and available actions must be visible at all times on the main screen
+2. **Direct Interaction**: Players can click dominoes in their hand to play them - no need to use action buttons for play moves
+3. **Debug as Overlay**: The debug panel is an optional overlay for deep inspection, not required for gameplay
+4. **No Scrolling**: All essential game information fits on one screen without scrolling
+5. **Color-Coded Clarity**: Use color to indicate playable vs non-playable dominoes and game state
+6. **Intuitive Game Flow**: The interface follows natural Texas 42 gameplay patterns - bid, declare trump, play dominoes
+7. **Visual Hierarchy**: Most important information (hand, current trick, trump) is prominently displayed
+8. **Contextual Actions**: Only show relevant actions for the current game phase
+9. **Progressive Disclosure**: Basic gameplay on main screen, advanced debugging via overlay
+10. **Respectful Design**: Honor the game's Texas heritage with appropriate visual treatment
 
 ## Main Screen Layout
 
@@ -52,7 +57,7 @@ The Debug UI for Texas 42 is a **development-friendly game interface** that bala
 │  [6-1][3-0]      │   │[5-3]│[6-2]│       │  │                  │ │
 │                  │   └─────┴─────┘       │  │ Quick Actions:   │ │
 │                  │   ┌─────┬─────┐       │  │ [Complete Trick] │ │
-│  Current: 3/7    │   │ P2  │ P3  │       │  │ [Score Hand]     │ │
+│  Current: 3/7    │   │ P3  │ P2  │       │  │ [Score Hand]     │ │
 │  Points: 12/42   │   │ ??? │ ??? │       │  │                  │ │
 │                  │   └─────┴─────┘       │  └──────────────────┘ │
 │                  │                        │                        │
@@ -180,15 +185,26 @@ Header shows only essential controls:
 - **Status Indicator**: Small text showing "AI Playing" or "Paused"
 
 #### AI Behavior
-- Plays instantly (no artificial delays)
-- Uses simple strategy by default
-- Can be configured in debug panel
+- Takes actions for any player whose turn it is
+- Uses the first available action by default (configurable in debug panel)
+- Continues until game ends or paused
+- No delays between actions - instant execution
+- Respects game rules and available actions only
 - Shows thinking indicator during complex decisions
 
 #### Smart Defaults
 - AI automatically takes over for non-human players
 - Pauses after each hand for review
 - Can be set to pause at phase transitions
+
+#### Debug Panel AI Configuration
+The full QuickPlay panel in the debug overlay provides:
+- Strategy selection (random, first, aggressive, conservative)
+- Detailed status information
+- Batch action execution
+- Phase skipping functionality
+
+Note: The header controls are just shortcuts - full configuration remains in the debug panel to keep the main UI clean.
 
 ## Debug Panel Overlay (Ctrl+Shift+D)
 
@@ -288,6 +304,14 @@ Floating toolbar when debug panel is closed:
 - Lazy loading for debug features
 - Background validation
 
+## Performance Requirements
+
+- No scrolling on main game view
+- Instant response to domino clicks
+- Smooth hover animations (< 200ms transitions)
+- Efficient re-rendering on state changes
+- Support for 100+ actions in history
+
 ## Polish & Delight
 
 ### Subtle Animations
@@ -308,7 +332,114 @@ Floating toolbar when debug panel is closed:
 - Achievement notifications
 - Historical facts during loading
 
+## Technical Implementation Details
+
+### Action ID Formats (Critical for Implementation)
+```javascript
+// Bidding actions
+"bid-30"           // Points bid
+"bid-1-marks"      // Marks bid
+"pass"             // Pass bid
+
+// Trump selection
+"trump-blanks"     // Suit trump
+"trump-ones"
+"trump-doubles"    // Doubles as trump
+"trump-no-trump"   // No trump
+
+// Play actions (handled by domino clicks)
+"play-5-3"         // Play domino 5-3
+"play-6-6"         // Play double six
+
+// Other actions
+"complete-trick"
+"score-hand"
+"redeal"
+```
+
+### Domino Playability Detection
+```javascript
+// Extract playable dominoes from available actions
+$: playableDominoes = (() => {
+  const dominoes = new Set();
+  $availableActions
+    .filter(action => action.id.startsWith('play-'))
+    .forEach(action => {
+      const dominoId = action.id.replace('play-', '');
+      dominoes.add(dominoId);
+      // Add reversed version (5-3 and 3-5)
+      const parts = dominoId.split('-');
+      if (parts.length === 2) {
+        dominoes.add(`${parts[1]}-${parts[0]}`);
+      }
+    });
+  return dominoes;
+})();
+```
+
+## Integration Points
+
+### Store Connections
+Required Svelte stores:
+- `gameState`: Current game state
+- `availableActions`: Valid actions for current state
+- `actionHistory`: List of all actions taken
+- `stateValidationError`: Any validation errors
+- `gameActions`: Object with executeAction, undo, reset methods
+
+### Event System
+- All state changes through gameActions.executeAction()
+- No direct state manipulation in UI components
+- Actions trigger immediate re-render
+- Error boundaries around action execution
+
+### Test Integration
+- Every interactive element must have a data-testid
+- Consistent naming: `play-${dominoId}`, `bid-${value}`, etc.
+- Debug panel sections have section-level test IDs
+- Actions must be accessible via both UI and test helpers
+
+## State Persistence & URL Sharing
+
+### URL State Encoding
+- Game state can be encoded in URL for sharing
+- Clicking "Copy State URL" creates shareable link
+- Loading URL restores exact game state
+- URL includes: current state, action history, and random seed
+
+### Local Storage
+- Remember debug panel open/closed state
+- Persist AI strategy preference
+- Store recently used game states
+- Clear storage option in debug panel
+
+## Critical Discoveries During Implementation
+
+1. **Action Format**: Game engine uses simple `play-${dominoId}` format, not complex player-prefixed IDs
+2. **Domino Storage**: Dominoes may be stored in either orientation (5-3 or 3-5), must check both
+3. **No Duplicate Actions**: The game engine already prevents duplicates, don't filter by phase
+4. **State is Reliable**: All game state is consistently available through stores - trust it
+5. **Debug First**: This is a debug UI - show everything, hide nothing
+
 ## Error Handling
+
+### State Validation Errors
+- Display validation errors prominently at the top of the debug panel
+- Show full error details in a copy-friendly format
+- Highlight invalid state fields in red
+- Never hide or minimize error messages
+
+### Empty States
+- When no tricks have been played: Show "No tricks played yet"
+- When no current trick: Show "Waiting for first play..."
+- When no available actions: Show appropriate message based on phase
+- Empty hands: Should never occur, but handle gracefully
+
+### Game End States
+- Clearly indicate when game has ended
+- Show final scores and winner prominently
+- Disable play controls but keep history/debug features active
+- Allow starting new game or resetting
 
 ### User-Friendly Messages
 Instead of technical errors, show:
