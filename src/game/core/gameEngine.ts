@@ -267,6 +267,17 @@ function applyScoreHand(state: GameState): GameState {
   
   if (isGameComplete(newMarks, state.gameTarget)) {
     newState.phase = 'game_end';
+    newState.isComplete = true;
+    newState.winner = newMarks[0] >= state.gameTarget ? 0 : 1;
+    // Clear hands since game is over
+    newState.players.forEach(player => {
+      player.hand = [];
+    });
+    if (newState.hands) {
+      Object.keys(newState.hands).forEach(key => {
+        newState.hands![parseInt(key)] = [];
+      });
+    }
   } else {
     // Start new hand
     newState.phase = 'bidding';

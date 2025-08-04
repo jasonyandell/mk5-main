@@ -30,8 +30,8 @@ test.describe('Debug UI Validation', () => {
     // Wait for page to load
     await page.waitForLoadState('networkidle');
     
-    // Wait a bit for reactive updates
-    await page.waitForTimeout(500);
+    // Wait a bit for reactive updates - optimized for offline testing
+    await page.waitForTimeout(100);
     
     // Check the actions count first
     const actionsCount = page.locator('[data-testid="actions-count"]');

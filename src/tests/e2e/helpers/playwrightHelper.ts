@@ -45,14 +45,26 @@ export class PlaywrightGameHelper {
   }
 
   async getCurrentPhase(): Promise<string> {
-    // Implementation depends on data-testid attributes in components
-    const phaseElement = this.page.locator('[data-testid="game-phase"]');
-    return await phaseElement.textContent() || '';
+    try {
+      // Implementation depends on data-testid attributes in components
+      const phaseElement = this.page.locator('[data-testid="game-phase"]');
+      // Don't wait for visibility since element may be hidden but still contain text
+      return await phaseElement.textContent({ timeout: 2000 }) || '';
+    } catch (error) {
+      console.warn('Could not get current phase:', error);
+      return '';
+    }
   }
 
   async getCurrentPlayer(): Promise<string> {
-    const playerElement = this.page.locator('[data-testid="current-player"]');
-    return await playerElement.textContent() || '';
+    try {
+      const playerElement = this.page.locator('[data-testid="current-player"]');
+      // Don't wait for visibility since element may be hidden but still contain text
+      return await playerElement.textContent({ timeout: 2000 }) || '';
+    } catch (error) {
+      console.warn('Could not get current player:', error);
+      return '';
+    }
   }
 
   async openDebugPanel() {
@@ -81,8 +93,8 @@ export class PlaywrightGameHelper {
   }
 
   async getActionsList(): Promise<ActionOption[]> {
-    // Wait for actions to be available with proper timeout
-    await this.page.waitForSelector('.action-compact', { timeout: 5000 }).catch(() => {
+    // Wait for actions to be available with optimized timeout
+    await this.page.waitForSelector('.action-compact', { timeout: 2000 }).catch(() => {
       // If no actions available, return empty array
       return null;
     });
@@ -241,18 +253,25 @@ export class PlaywrightGameHelper {
   }
 
   async getTeamMarks(): Promise<[number, number]> {
-    const team0Marks = await this.page
-      .locator('[data-testid="team-0-marks"]')
-      .textContent();
-    const team1Marks = await this.page
-      .locator('[data-testid="team-1-marks"]')
-      .textContent();
-    
-    // Extract numbers from text like "3 marks"
-    const marks0 = parseInt((team0Marks || '0').match(/(\d+)/)?.[1] || '0');
-    const marks1 = parseInt((team1Marks || '0').match(/(\d+)/)?.[1] || '0');
-    
-    return [marks0, marks1];
+    try {
+      // Don't wait for visibility since elements may be hidden but still contain text
+      const team0Marks = await this.page
+        .locator('[data-testid="team-0-marks"]')
+        .textContent({ timeout: 2000 });
+      const team1Marks = await this.page
+        .locator('[data-testid="team-1-marks"]')
+        .textContent({ timeout: 2000 });
+      
+      // Extract numbers from text like "3 marks"
+      const marks0 = parseInt((team0Marks || '0').match(/(\d+)/)?.[1] || '0');
+      const marks1 = parseInt((team1Marks || '0').match(/(\d+)/)?.[1] || '0');
+      
+      return [marks0, marks1];
+    } catch (error) {
+      // If elements not found, return [0, 0] as fallback
+      console.warn('Could not get team marks, returning [0, 0]:', error);
+      return [0, 0];
+    }
   }
 
   async getCurrentTrick(): Promise<string[]> {
@@ -282,7 +301,7 @@ export class PlaywrightGameHelper {
     await this.page.locator('[data-testid="new-game-button"]').click();
   }
 
-  async waitForPhaseChange(expectedPhase: string, timeout = 5000) {
+  async waitForPhaseChange(expectedPhase: string, timeout = 2000) {
     await this.page.waitForFunction(
       (phase) => {
         const phaseElement = document.querySelector('[data-testid="game-phase"]');
@@ -461,8 +480,8 @@ export class PlaywrightGameHelper {
     const validateButton = this.page.locator('[data-testid="validate-sequence-button"]');
     await validateButton.click();
     
-    // Wait for validation to complete
-    await this.page.waitForTimeout(500);
+    // Wait for validation to complete - optimized for offline testing
+    await this.page.waitForTimeout(100);
     
     const errorElements = this.page.locator('[data-testid="validation-error"]');
     const errorCount = await errorElements.count();

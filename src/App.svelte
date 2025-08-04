@@ -8,6 +8,7 @@
   import DebugBugReport from './debug/components/DebugBugReport.svelte';
   import DebugReplay from './debug/components/DebugReplay.svelte';
   import DebugPreviousTricks from './debug/components/DebugPreviousTricks.svelte';
+  import DebugQuickplay from './debug/components/DebugQuickplay.svelte';
   import type { StateTransition } from './game/types';
   
   // Load state from URL when app starts
@@ -121,6 +122,7 @@
     </div>
     
     <div class="debug-right">
+      <DebugQuickplay gameState={$gameState} />
       <DebugReplay />
       <DebugJsonView gameState={$gameState} />
     </div>
@@ -236,9 +238,12 @@
   .debug-left,
   .debug-right {
     background: white;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
+    gap: 1px;
+    padding: 8px;
   }
   
   .debug-center {

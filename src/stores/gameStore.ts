@@ -210,9 +210,15 @@ export const gameActions = {
     
     // Update URL with initial state and actions
     updateURLWithState(get(initialState), [...actions, transition]);
+    
+    // Debug logging for excessive actions
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && actions.length > 100) {
+      console.warn('[GameStore] Warning: Action history is very long:', actions.length + 1, 'actions');
+    }
   },
   
   resetGame: () => {
+    const oldActionCount = get(actionHistory).length;
     const newInitialState = createInitialState();
     // Deep clone to prevent mutations
     initialState.set(JSON.parse(JSON.stringify(newInitialState)));
@@ -220,6 +226,12 @@ export const gameActions = {
     actionHistory.set([]);
     stateValidationError.set(null);
     updateURLWithState(newInitialState, []);
+    
+    // Debug logging
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      const newActionCount = get(actionHistory).length;
+      console.log('[GameStore] Game reset - action history cleared from', oldActionCount, 'to', newActionCount);
+    }
   },
   
   loadState: (state: GameState) => {

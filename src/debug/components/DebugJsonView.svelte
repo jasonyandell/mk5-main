@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameState } from '../../game/types';
+  import { actionHistory, initialState } from '../../stores/gameStore';
   
   interface Props {
     gameState: GameState;
@@ -8,13 +9,26 @@
   let { gameState }: Props = $props();
   
   let collapsed = $state(true);
-  let selectedSection = $state<string>('state');
+  let selectedSection = $state<string>('history');
   
   const prettyJson = $derived.by(() => {
     try {
       return JSON.stringify(gameState, null, 2);
     } catch (e) {
       return 'Error serializing state';
+    }
+  });
+  
+  const historyJson = $derived.by(() => {
+    try {
+      const actions = $actionHistory.map(a => a.id);
+      return JSON.stringify({
+        initialState: $initialState,
+        actionHistory: actions,
+        currentState: gameState
+      }, null, 2);
+    } catch (e) {
+      return 'Error serializing history';
     }
   });
   
@@ -54,8 +68,9 @@
     <h3>State Inspection</h3>
     <div class="header-controls">
       <select bind:value={selectedSection} class="section-select">
+        <option value="history">State + History</option>
         <option value="summary">Summary</option>
-        <option value="state">Full State</option>
+        <option value="state">Current State Only</option>
       </select>
       <button 
         class="toggle-btn"
@@ -71,14 +86,14 @@
       <div class="json-controls">
         <button 
           class="copy-btn"
-          onclick={() => copyToClipboard(selectedSection === 'summary' ? stateSummary : prettyJson)}
+          onclick={() => copyToClipboard(selectedSection === 'summary' ? stateSummary : selectedSection === 'history' ? historyJson : prettyJson)}
         >
           Copy JSON
         </button>
       </div>
       
       <div class="json-display">
-        <pre class="json-text">{selectedSection === 'summary' ? stateSummary : prettyJson}</pre>
+        <pre class="json-text">{selectedSection === 'summary' ? stateSummary : selectedSection === 'history' ? historyJson : prettyJson}</pre>
       </div>
     </div>
   {:else}

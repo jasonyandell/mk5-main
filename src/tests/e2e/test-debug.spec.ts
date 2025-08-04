@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('simple button test', async ({ page }) => {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(100); // Optimized for offline testing
   
   // Check for bid buttons
   const bidButtons = page.locator('[data-generic-testid*="bid-button"]');
