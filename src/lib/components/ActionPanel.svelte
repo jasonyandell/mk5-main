@@ -3,6 +3,9 @@
   import type { StateTransition, Domino as DominoType } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
 
   // Group actions by type
   $: groupedActions = (() => {
@@ -34,6 +37,14 @@
   async function executeAction(action: StateTransition) {
     try {
       gameActions.executeAction(action);
+      
+      // If we just selected trump, switch back to play panel
+      if (action.id.startsWith('trump-')) {
+        // Small delay to let the state update
+        setTimeout(() => {
+          dispatch('switchToPlay');
+        }, 100);
+      }
     } catch (error) {
       // Trigger shake animation on error
       shakeActionId = action.id;
@@ -226,8 +237,6 @@
   {/if}
 
   <div class="actions-container">
-    <h2>Actions</h2>
-
     {#if $gamePhase === 'bidding'}
       <div class="action-group">
         <h3>Bidding</h3>
@@ -389,14 +398,6 @@
     -webkit-overflow-scrolling: touch;
     padding: 16px;
     padding-top: 8px;
-  }
-  
-  .actions-container h2 {
-    position: sticky;
-    top: 0;
-    background: inherit;
-    padding: 8px 0;
-    margin-bottom: 16px;
   }
 
   .action-group {

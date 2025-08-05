@@ -47,6 +47,29 @@
     // Try to load from URL on mount
     gameActions.loadFromURL();
   });
+  
+  // Smart panel switching based on game phase
+  // This handles both URL loading and normal game flow
+  $: {
+    // Automatically switch to appropriate panel based on game phase
+    // This works for both:
+    // 1. Loading from a URL with any game state
+    // 2. Natural game progression
+    
+    if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') {
+      // These phases need the Actions panel for decision making
+      activeView = 'actions';
+    } else if ($gamePhase === 'playing' || $gamePhase === 'setup') {
+      // Playing phase and setup should show the game board
+      activeView = 'game';
+    } else if ($gamePhase === 'scoring') {
+      // Scoring phase: stay on game view to see the "Score hand" button
+      activeView = 'game';
+    } else if ($gamePhase === 'game_end') {
+      // Game end: could show either, let's show game board with final state
+      activeView = 'game';
+    }
+  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -57,11 +80,11 @@
   <main class="game-container" class:no-scroll={activeView === 'actions'}>
     {#if activeView === 'game'}
       <div transition:fade={{ duration: 200 }}>
-        <PlayingArea />
+        <PlayingArea on:switchToActions={() => activeView = 'actions'} />
       </div>
     {:else}
       <div transition:fade={{ duration: 200 }} class="action-panel-wrapper">
-        <ActionPanel />
+        <ActionPanel on:switchToPlay={() => activeView = 'game'} />
       </div>
     {/if}
   </main>

@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions, currentPlayer, gamePhase } from '../../stores/gameStore';
+  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import type { Domino as DominoType } from '../../game/types';
+  import { fade, slide } from 'svelte/transition';
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
 
   // Extract playable dominoes from available actions
   $: playableDominoes = (() => {
@@ -152,6 +156,20 @@
   // Check if we should enable suit highlighting
   $: enableSuitHighlighting = $gamePhase === 'bidding' || $gamePhase === 'trump_selection';
   
+  // State for expandable trick counter
+  let showTrickHistory = false;
+  
+  // Get completed tricks from game state
+  $: completedTricks = $gameState.tricks || [];
+  
+  // Calculate current trick number (completed + 1, unless hand is over)
+  $: currentTrickNumber = (() => {
+    if ($gamePhase === 'scoring' || $gamePhase === 'bidding') {
+      return completedTricks.length; // Show total tricks completed
+    }
+    return Math.min(completedTricks.length + 1, 7); // Current trick being played
+  })();
+  
 
   // Handle domino hover - now with specific half detection
   function handleDominoHover(domino: DominoType, event: Event | MouseEvent | null, isEntering: boolean) {
@@ -187,6 +205,86 @@
     const isTopHalf = relativeY < halfwayPoint;
     hoveredSuit = isTopHalf ? domino.high : domino.low;
   }
+  
+  // Extract simple proceed actions that should show in play area
+  $: proceedAction = (() => {
+    // These actions should always show when available, regardless of turn
+    const alwaysShowActions = ['complete-trick', 'score-hand'];
+    
+    const alwaysShowAction = $availableActions.find(action => 
+      alwaysShowActions.includes(action.id)
+    );
+    
+    if (alwaysShowAction) {
+      return alwaysShowAction;
+    }
+    
+    // For other actions, only show if it's the human player's turn
+    if ($gameState.currentPlayer !== 0) {
+      return null;
+    }
+    
+    // Look for other simple proceed actions
+    const simpleAction = $availableActions.find(action => 
+      action.id === 'start-hand' ||
+      action.id === 'continue' ||
+      action.id === 'next-trick'
+    );
+    
+    return simpleAction || null;
+  })();
+  
+  // Calculate hand results for scoring phase
+  $: handResults = (() => {
+    if ($gamePhase !== 'scoring') return null;
+    
+    // Get total points for each team from won tricks
+    const team0Points = $teamInfo.scores[0];
+    const team1Points = $teamInfo.scores[1];
+    
+    // Get bid information
+    const bidAmount = $biddingInfo.currentBid.value || 0;
+    const biddingTeam = Math.floor($biddingInfo.winningBidder / 2);
+    
+    // Determine if bid was made
+    const bidMade = biddingTeam === 0 ? team0Points >= bidAmount : team1Points >= bidAmount;
+    
+    return {
+      team0Points,
+      team1Points,
+      bidAmount,
+      biddingTeam,
+      bidMade,
+      winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0)
+    };
+  })();
+  
+  // Debounce flag
+  let actionPending = false;
+  
+  // Handle action execution
+  function handleProceedAction() {
+    if (!proceedAction || actionPending) return;
+    
+    // Set debounce flag
+    actionPending = true;
+    
+    // Execute the action
+    gameActions.executeAction(proceedAction);
+    
+    // If we just scored a hand, transition to Actions panel for bidding
+    if (proceedAction.id === 'score-hand') {
+      // Small delay to let the state update
+      setTimeout(() => {
+        dispatch('switchToActions');
+      }, 100);
+    }
+    
+    // Clear debounce after a short delay
+    setTimeout(() => {
+      actionPending = false;
+    }, 300);
+  }
 
 </script>
 
@@ -207,39 +305,144 @@
     {/if}
     
     {#if $gamePhase === 'playing'}
-      <div class="trick-counter">
+      <button 
+        class="trick-counter"
+        class:expandable={completedTricks.length > 0}
+        on:click={() => {
+          if (completedTricks.length > 0) {
+            showTrickHistory = !showTrickHistory;
+          }
+        }}
+        disabled={completedTricks.length === 0}
+        type="button"
+      >
         <span class="trick-label">Trick</span>
-        <span class="trick-number">{$gameState.trickNumber || 1}/7</span>
-      </div>
+        <span class="trick-number">{currentTrickNumber}/7</span>
+        {#if completedTricks.length > 0}
+          <span class="expand-arrow">{showTrickHistory ? '▲' : '▼'}</span>
+        {/if}
+      </button>
     {/if}
   </div>
-
-  <div class="trick-table">
-    <div class="table-surface">
-      <div class="table-pattern"></div>
-      
-      {#each playerPositions as position}
-        {@const play = currentTrickPlays.find(p => p.player === position)}
-        <div class="trick-spot" data-position={position}>
-          {#if play}
-            <div class="played-domino" class:fresh={playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`)}>
-              <Domino 
-                domino={play.domino} 
-                small={true}
-                showPoints={true}
-              />
-              <div class="player-indicator">P{position}</div>
-            </div>
-          {:else}
-            <div class="waiting-spot">
-              <div class="spot-ring"></div>
-              <span class="spot-player">P{position}</span>
-            </div>
-          {/if}
+  
+  {#if showTrickHistory && $gamePhase === 'playing'}
+    <div class="trick-history" transition:slide={{ duration: 200 }}>
+      {#each completedTricks as trick, index}
+        <div class="history-row">
+          <span class="trick-num">{index + 1}:</span>
+          <div class="trick-dominoes-row">
+            {#each trick.plays as play}
+              <div class="history-domino-wrapper" class:winner={play.player === trick.winner}>
+                <Domino 
+                  domino={play.domino} 
+                  small={true}
+                  showPoints={false}
+                  clickable={false}
+                />
+              </div>
+            {/each}
+          </div>
+          <span class="trick-result">P{trick.winner}✓ {trick.points || 0}pts</span>
         </div>
       {/each}
+      {#if currentTrickPlays.length > 0 && currentTrickPlays.length < 4}
+        <div class="history-row current">
+          <span class="trick-num">{currentTrickNumber}:</span>
+          <div class="trick-dominoes-row">
+            {#each currentTrickPlays as play}
+              <div class="history-domino-wrapper">
+                <Domino 
+                  domino={play.domino} 
+                  small={true}
+                  showPoints={false}
+                  clickable={false}
+                />
+              </div>
+            {/each}
+            <span class="in-progress">(in progress)</span>
+          </div>
+        </div>
+      {/if}
     </div>
-  </div>
+  {/if}
+
+  <button
+    class="trick-table" 
+    class:tappable={proceedAction}
+    on:click={(e) => {
+      if (proceedAction) {
+        e.preventDefault();
+        handleProceedAction();
+      }
+    }}
+    disabled={!proceedAction}
+    aria-label={proceedAction ? proceedAction.label : null}
+    type="button"
+  >
+    <div class="table-surface" class:glowing={proceedAction}>
+      <div class="table-pattern"></div>
+      
+      {#if handResults}
+        <!-- Scoring display -->
+        <div class="scoring-display">
+          <div class="bid-summary">
+            <div class="bid-info-line">
+              Player {$biddingInfo.winningBidder + 1} bid {handResults.bidAmount}
+            </div>
+            <div class="bid-result" class:made={handResults.bidMade} class:set={!handResults.bidMade}>
+              {handResults.bidMade ? 'BID MADE' : 'BID SET'}
+            </div>
+          </div>
+          
+          <div class="score-breakdown">
+            <div class="team-score" class:winner={handResults.winningTeam === 0}>
+              <div class="team-label">US</div>
+              <div class="score-value">{handResults.team0Points}</div>
+              <div class="score-label">points</div>
+            </div>
+            
+            <div class="vs-divider">vs</div>
+            
+            <div class="team-score" class:winner={handResults.winningTeam === 1}>
+              <div class="team-label">THEM</div>
+              <div class="score-value">{handResults.team1Points}</div>
+              <div class="score-label">points</div>
+            </div>
+          </div>
+        </div>
+      {:else}
+        <!-- Normal trick display -->
+        {#each playerPositions as position}
+          {@const play = currentTrickPlays.find(p => p.player === position)}
+          <div class="trick-spot" data-position={position}>
+            {#if play}
+              <div class="played-domino" class:fresh={playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`)}>
+                <Domino 
+                  domino={play.domino} 
+                  small={true}
+                  showPoints={true}
+                  clickable={false}
+                />
+                <div class="player-indicator">P{position}</div>
+              </div>
+            {:else}
+              <div class="waiting-spot">
+                <div class="spot-ring"></div>
+                <span class="spot-player">P{position}</span>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      {/if}
+    </div>
+    
+    {#if proceedAction}
+      <div class="tap-indicator" on:click|stopPropagation={handleProceedAction}>
+        <span class="tap-icon">👆</span>
+        <span class="tap-text">{proceedAction.label}</span>
+      </div>
+    {/if}
+  </button>
 
   <div class="hand-container">
     {#if hoveredSuit !== null && enableSuitHighlighting}
@@ -295,6 +498,7 @@
       </div>
     {/if}
   </div>
+  
 </div>
 
 <style>
@@ -389,6 +593,22 @@
     font-size: 12px;
     font-weight: 600;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+    cursor: default;
+  }
+  
+  .trick-counter.expandable {
+    cursor: pointer;
+  }
+  
+  .trick-counter.expandable:hover {
+    background: rgba(139, 92, 246, 0.12);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .trick-counter:disabled {
+    cursor: default;
   }
 
   .trick-label {
@@ -404,6 +624,13 @@
     font-weight: 700;
     color: #8b5cf6;
   }
+  
+  .expand-arrow {
+    font-size: 9px;
+    margin-left: 2px;
+    color: #8b5cf6;
+    transition: transform 0.2s ease;
+  }
 
   .trick-table {
     flex: 1;
@@ -412,6 +639,22 @@
     justify-content: center;
     padding: 20px;
     position: relative;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    width: 100%;
+    font: inherit;
+  }
+  
+  .trick-table:disabled {
+    cursor: default;
+  }
+  
+  .trick-table.tappable {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
   }
 
   .table-surface {
@@ -426,6 +669,42 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 2;
+  }
+  
+  .table-surface.glowing {
+    animation: tablePulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes tablePulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 
+        inset 0 0 40px rgba(0, 0, 0, 0.3),
+        0 10px 30px rgba(0, 0, 0, 0.2),
+        0 0 0 0 rgba(139, 92, 246, 0);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 
+        inset 0 0 50px rgba(139, 92, 246, 0.2),
+        0 10px 30px rgba(0, 0, 0, 0.2),
+        0 0 40px 20px rgba(139, 92, 246, 0.5);
+    }
+  }
+  
+  .trick-table.tappable:hover .table-surface {
+    animation-play-state: paused;
+    transform: scale(1.03);
+    box-shadow: 
+      inset 0 0 40px rgba(0, 0, 0, 0.3),
+      0 10px 30px rgba(0, 0, 0, 0.2),
+      0 0 40px 15px rgba(139, 92, 246, 0.4);
+  }
+  
+  .trick-table.tappable:active .table-surface {
+    transform: scale(0.98);
   }
 
   .table-pattern {
@@ -440,6 +719,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none; /* Don't block table clicks */
   }
 
   .trick-spot[data-position="0"] {
@@ -468,6 +748,7 @@
 
   .played-domino {
     position: relative;
+    pointer-events: none; /* Don't block table clicks */
   }
 
   .played-domino.fresh {
@@ -505,6 +786,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none; /* Don't block table clicks */
   }
 
   .spot-ring {
@@ -647,6 +929,295 @@
     to {
       opacity: 1;
       transform: translateY(0) rotate(0);
+    }
+  }
+  
+  
+  /* Ensure button appears above trick table */
+  .trick-table {
+    position: relative;
+  }
+  
+  /* Tap indicator */
+  .tap-indicator {
+    position: absolute;
+    top: calc(50% + 140px + 25px); /* Half table height (140px) + half button height (~25px) */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: rgba(139, 92, 246, 0.95);
+    color: white;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    cursor: pointer;
+    z-index: 10;
+    animation: tapBounce 1.5s ease-in-out infinite;
+  }
+  
+  .tap-indicator:hover {
+    background: rgba(139, 92, 246, 1);
+    transform: translateX(-50%) scale(1.05);
+  }
+  
+  .tap-indicator:active {
+    transform: translateX(-50%) scale(0.95);
+  }
+  
+  @keyframes tapBounce {
+    0%, 100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(-50%) translateY(-5px);
+    }
+  }
+  
+  .tap-icon {
+    font-size: 18px;
+    animation: tapPoint 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes tapPoint {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
+  
+  .tap-text {
+    white-space: nowrap;
+  }
+  
+  /* Mobile adjustments */
+  @media (max-width: 640px) {
+    .table-surface {
+      width: 240px;
+      height: 240px;
+    }
+    
+    .tap-indicator {
+      top: calc(50% + 120px + 20px); /* Half of smaller table (120px) + half button */
+      padding: 6px 16px;
+      font-size: 13px;
+    }
+    
+    .tap-icon {
+      font-size: 16px;
+    }
+  }
+  
+  /* Scoring display styles */
+  .scoring-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    color: white;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .bid-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .bid-info-line {
+    font-size: 14px;
+    opacity: 0.9;
+    font-weight: 500;
+  }
+  
+  .bid-result {
+    font-size: 20px;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+  
+  .bid-result.made {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+    border: 2px solid #86efac;
+  }
+  
+  .bid-result.set {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 2px solid #fca5a5;
+  }
+  
+  .score-breakdown {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .team-score {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    transition: all 0.3s ease;
+  }
+  
+  .team-score.winner {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+  
+  .team-score .team-label {
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.8;
+    letter-spacing: 0.1em;
+  }
+  
+  .team-score .score-value {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  
+  .team-score .score-label {
+    font-size: 11px;
+    opacity: 0.7;
+  }
+  
+  .vs-divider {
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0.6;
+  }
+  
+  /* Mobile adjustments for scoring */
+  @media (max-width: 640px) {
+    .scoring-display {
+      gap: 16px;
+      padding: 16px;
+    }
+    
+    .bid-result {
+      font-size: 16px;
+    }
+    
+    .score-breakdown {
+      gap: 12px;
+    }
+    
+    .team-score {
+      padding: 12px 16px;
+    }
+    
+    .team-score .score-value {
+      font-size: 24px;
+    }
+  }
+  
+  /* Trick History Styles */
+  .trick-history {
+    background: white;
+    border-radius: 12px;
+    margin: 8px 12px;
+    padding: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e2e8f0;
+  }
+  
+  .history-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 4px;
+    background: #f8fafc;
+  }
+  
+  .history-row:last-child {
+    margin-bottom: 0;
+  }
+  
+  .history-row.current {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+  }
+  
+  .trick-num {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+    min-width: 16px;
+  }
+  
+  .trick-dominoes-row {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    align-items: center;
+  }
+  
+  .history-domino-wrapper {
+    display: inline-flex;
+    transition: all 0.2s ease;
+  }
+  
+  .history-domino-wrapper.winner {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.5));
+  }
+  
+  .trick-result {
+    font-size: 11px;
+    font-weight: 600;
+    color: #10b981;
+    white-space: nowrap;
+    margin-left: auto;
+    padding: 2px 6px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 10px;
+  }
+  
+  .in-progress {
+    font-size: 11px;
+    color: #94a3b8;
+    font-style: italic;
+    margin-left: 8px;
+  }
+  
+  /* Mobile optimizations for history */
+  @media (max-width: 640px) {
+    .trick-history {
+      margin: 6px 8px;
+      padding: 6px;
+    }
+    
+    .history-row {
+      padding: 4px 6px;
+      gap: 6px;
+    }
+    
+    .trick-num {
+      font-size: 11px;
+    }
+    
+    .trick-result {
+      font-size: 10px;
+      padding: 2px 4px;
     }
   }
 </style>
