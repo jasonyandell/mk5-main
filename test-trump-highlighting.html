@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Trump Button Highlighting</title>
+</head>
+<body>
+    <h1>Test Trump Selection Highlighting</h1>
+    
+    <p>This test shows highlighting when hovering over trump selection buttons.</p>
+    
+    <h2>Setup:</h2>
+    <ol>
+        <li>Click the link below to open a game in trump selection phase</li>
+        <li>Make sure you're on the "Actions" tab</li>
+        <li>You should see "Select Trump" section with buttons like:
+            <ul>
+                <li>Declare Blanks trump</li>
+                <li>Declare Ones trump</li>
+                <li>Declare Doubles trump</li>
+                <li>etc.</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li><strong>Hover over "Declare Blanks trump"</strong>: All dominoes with blanks (0) should highlight</li>
+        <li><strong>Hover over "Declare Fives trump"</strong>: All dominoes with 5s should highlight</li>
+        <li><strong>Hover over "Declare Doubles trump"</strong>: All doubles should highlight</li>
+        <li>The badge should show the suit name (e.g., "Blanks", "Fives", "Doubles")</li>
+    </ul>
+    
+    <p><a href="http://localhost:3001/#eyJjdXJyZW50UGxheWVyIjowLCJwaGFzZSI6InRydW1wX3NlbGVjdGlvbiIsImRlYWxlciI6MCwiYmlkV2lubmVyIjowLCJiaWRBbW91bnQiOjMwLCJiaWRzIjpbeyJwbGF5ZXIiOjAsInR5cGUiOiJiaWQiLCJ2YWx1ZSI6MzB9XSwiaGFuZHMiOltbeyJoaWdoIjo2LCJsb3ciOjYsInBvaW50cyI6MH0seyJoaWdoIjo1LCJsb3ciOjMsInBvaW50cyI6MH0seyJoaWdoIjo1LCJsb3ciOjAsInBvaW50cyI6NX0seyJoaWdoIjo0LCJsb3ciOjEsInBvaW50cyI6NX0seyJoaWdoIjozLCJsb3ciOjMsInBvaW50cyI6MH0seyJoaWdoIjoyLCJsb3ciOjAsInBvaW50cyI6MH0seyJoaWdoIjoxLCJsb3ciOjAsInBvaW50cyI6MH1dLFtdLFtdLFtdXSwidHJ1bXAiOnsidHlwZSI6Im5vbmUifX0=">
+        Open Trump Selection Test (Port 3001)
+    </a></p>
+    
+    <p>Your hand contains: 6-6, 5-3, 5-0, 4-1, 3-3, 2-0, 1-0</p>
+    <p>Note the 5-0, 2-0, and 1-0 dominoes all have blanks!</p>
+</body>
+</html>

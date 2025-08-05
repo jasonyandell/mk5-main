@@ -29,7 +29,8 @@ export class PlaywrightGameHelper {
 
   async goto() {
     await this.page.goto('/');
-    await expect(this.page.locator('h1')).toContainText('Texas 42 Debug Interface');
+    // Wait for the app to load - mobile UI uses .app-container
+    await this.page.waitForSelector('.app-container', { timeout: 2000 });
   }
 
   async gotoWithSeed(seed: number) {
@@ -41,7 +42,8 @@ export class PlaywrightGameHelper {
     };
     const encoded = encodeURLData(urlData);
     await this.page.goto(`/?d=${encoded}`);
-    await expect(this.page.locator('h1')).toContainText('Texas 42 Debug Interface');
+    // Wait for mobile UI to load
+    await this.page.waitForSelector('.app-container', { timeout: 2000 });
   }
 
   async getCurrentPhase(): Promise<string> {

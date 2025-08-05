@@ -70,11 +70,16 @@ function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] 
 }
 
 // Helper function to update URL with initial state and actions
-function updateURLWithState(initialState: GameState, actions: StateTransition[]) {
+function updateURLWithState(initialState: GameState, actions: StateTransition[], usePushState = false) {
   if (typeof window !== 'undefined') {
     // If no actions, clear the URL
     if (actions.length === 0) {
-      window.history.replaceState(null, '', window.location.pathname);
+      const historyState = { initialState, actions, timestamp: Date.now() };
+      if (usePushState) {
+        window.history.pushState(historyState, '', window.location.pathname);
+      } else {
+        window.history.replaceState(historyState, '', window.location.pathname);
+      }
       return;
     }
     
@@ -87,7 +92,15 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[])
     
     const encoded = encodeURLData(urlData);
     const newURL = `${window.location.pathname}?d=${encoded}`;
-    window.history.replaceState(null, '', newURL);
+    
+    // Store state in history for easy access
+    const historyState = { initialState, actions, timestamp: Date.now() };
+    
+    if (usePushState) {
+      window.history.pushState(historyState, '', newURL);
+    } else {
+      window.history.replaceState(historyState, '', newURL);
+    }
   }
 }
 
@@ -208,8 +221,8 @@ export const gameActions = {
     // Validate state matches computed state
     validateState();
     
-    // Update URL with initial state and actions
-    updateURLWithState(get(initialState), [...actions, transition]);
+    // Update URL with initial state and actions, using pushState for user actions
+    updateURLWithState(get(initialState), [...actions, transition], true);
     
     // Debug logging for excessive actions
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && actions.length > 100) {
@@ -225,7 +238,7 @@ export const gameActions = {
     gameState.set(newInitialState);
     actionHistory.set([]);
     stateValidationError.set(null);
-    updateURLWithState(newInitialState, []);
+    updateURLWithState(newInitialState, [], true);
     
     // Debug logging
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -241,7 +254,7 @@ export const gameActions = {
     gameState.set(state);
     actionHistory.set([]);
     stateValidationError.set(null);
-    updateURLWithState(state, []);
+    updateURLWithState(state, [], true);
   },
   
   loadFromURL: () => {
@@ -350,7 +363,34 @@ export const gameActions = {
       
       gameState.set(currentState);
       validateState();
-      updateURLWithState(get(initialState), newActions);
+      updateURLWithState(get(initialState), newActions, true);
+    }
+  },
+  
+  loadFromHistoryState: (historyState: any) => {
+    if (historyState && historyState.initialState && historyState.actions) {
+      // Deep clone to prevent mutations
+      initialState.set(JSON.parse(JSON.stringify(historyState.initialState)));
+      
+      let currentState = historyState.initialState;
+      const validActions: StateTransition[] = [];
+      
+      for (const actionData of historyState.actions) {
+        const availableTransitions = getNextStates(currentState);
+        const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
+        
+        if (matchingTransition) {
+          validActions.push(matchingTransition);
+          currentState = matchingTransition.newState;
+        } else {
+          console.error(`Invalid action in history: ${actionData.id}`);
+          break;
+        }
+      }
+      
+      gameState.set(currentState);
+      actionHistory.set(validActions);
+      validateState();
     }
   }
 };

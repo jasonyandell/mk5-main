@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Highlighting Works</title>
+</head>
+<body>
+    <h1>Test Domino Highlighting</h1>
+    <p>This will open a game in bidding phase where you can test the highlighting.</p>
+    
+    <h2>Expected Behavior:</h2>
+    <ul>
+        <li>Click the link below to open the game</li>
+        <li>Click "Actions" tab at the bottom</li>
+        <li>Hover over any domino in "Your Hand"</li>
+        <li>The dominoes should change color (yellow/orange for primary, blue for secondary)</li>
+        <li>A badge should appear showing which suit is highlighted</li>
+    </ul>
+    
+    <h2>Test Cases:</h2>
+    <ol>
+        <li><strong>Hover over 5-3</strong>: All dominoes with 5 OR 3 should turn yellow/orange</li>
+        <li><strong>Hover over 6-6 (double)</strong>: All doubles turn yellow/orange, all dominoes with 6 turn blue</li>
+        <li><strong>Move mouse away</strong>: All highlighting should disappear</li>
+    </ol>
+    
+    <p><a href="http://localhost:3001/#eyJjdXJyZW50UGxheWVyIjowLCJwaGFzZSI6ImJpZGRpbmciLCJkZWFsZXIiOjAsImJpZHMiOltdLCJoYW5kcyI6W1t7ImhpZ2giOjYsImxvdyI6NiwicG9pbnRzIjowfSx7ImhpZ2giOjUsImxvdyI6MywicG9pbnRzIjowfSx7ImhpZ2giOjUsImxvdyI6MiwicG9pbnRzIjowfSx7ImhpZ2giOjQsImxvdyI6MSwicG9pbnRzIjo1fSx7ImhpZ2giOjMsImxvdyI6MywicG9pbnRzIjowfSx7ImhpZ2giOjIsImxvdyI6MCwicG9pbnRzIjowfSx7ImhpZ2giOjEsImxvdyI6MCwicG9pbnRzIjowfV0sW10sW10sW11dLCJ0cnVtcCI6eyJ0eXBlIjoibm9uZSJ9fQ==">
+        Open Test Game (Port 3001)
+    </a></p>
+    
+    <p>Your hand contains: 6-6, 5-3, 5-2, 4-1, 3-3, 2-0, 1-0</p>
+</body>
+</html>
