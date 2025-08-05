@@ -54,174 +54,163 @@
 </script>
 
 <header class="app-header">
-  <div class="header-left">
-    <h1>Texas 42</h1>
-    {#key phaseKey}
-      <span class="phase-badge {phaseColors[$gamePhase]} phase-badge-change">
-        {phaseNames[$gamePhase]}
-      </span>
-    {/key}
+  <div class="header-top">
+    <div class="scores-section">
+      {#key scoreKeys[0]}
+        <div class="score-box us">
+          <span class="team-label">US</span>
+          <span class="score score-update-roll">{$teamInfo.marks[0]}</span>
+        </div>
+      {/key}
+      
+      <div class="game-info">
+        <h1>Texas 42</h1>
+        {#key phaseKey}
+          <div class="phase-badge {phaseColors[$gamePhase]} phase-badge-change">
+            {phaseNames[$gamePhase]}
+          </div>
+        {/key}
+      </div>
+      
+      {#key scoreKeys[1]}
+        <div class="score-box them">
+          <span class="team-label">THEM</span>
+          <span class="score score-update-roll">{$teamInfo.marks[1]}</span>
+        </div>
+      {/key}
+    </div>
   </div>
-
-  <div class="header-center">
+  
+  <div class="header-bottom">
+    <div class="turn-indicator">
+      P{$currentPlayer.id}'s Turn
+    </div>
+    
     <div class="ai-controls">
       <button 
         class="ai-button"
         on:click={toggleQuickPlay}
-        title={$quickplayState.enabled ? 'Pause AI' : 'Play All'}
       >
         {#if $quickplayState.enabled}
-          <span class="icon">⏸️</span> Pause
+          ⏸️
         {:else}
-          <span class="icon">▶️</span> Play All
+          ▶️
         {/if}
       </button>
-      <button 
-        class="ai-button"
-        on:click={stepQuickPlay}
-        title="Step one AI action"
-        disabled={$quickplayState.enabled}
-      >
-        <span class="icon">⏭️</span> Step
-      </button>
-      {#if $quickplayState.enabled}
-        <span class="ai-status">AI Playing</span>
-      {/if}
-    </div>
-  </div>
-
-  <div class="header-right">
-    <div class="team-scores">
-      {#key scoreKeys[0]}
-        <span class="score us score-update-roll">US: {$teamInfo.marks[0]}</span>
-      {/key}
-      <span class="score-separator">•</span>
-      {#key scoreKeys[1]}
-        <span class="score them score-update-roll">THEM: {$teamInfo.marks[1]}</span>
-      {/key}
-    </div>
-    <div class="turn-indicator">
-      Turn: <span class="player-badge">P{$currentPlayer.id}</span>
     </div>
   </div>
 </header>
 
 <style>
   .app-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .header-top {
+    padding: 8px 12px;
+  }
+
+  .scores-section {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
-    background-color: #ffffff;
-    border-bottom: 2px solid #e5e7eb;
-    min-height: 60px;
+    gap: 12px;
   }
 
-  .header-left {
+  .score-box {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    min-width: 50px;
+  }
+
+  .score-box.us {
+    background-color: #e0f2fe;
+    color: #0369a1;
+  }
+
+  .score-box.them {
+    background-color: #fee2e2;
+    color: #dc2626;
+  }
+
+  .team-label {
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.8;
+  }
+
+  .score {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .game-info {
+    text-align: center;
+    flex: 1;
   }
 
   h1 {
     margin: 0;
-    font-size: 24px;
+    font-size: 18px;
     font-weight: bold;
     color: #002868;
   }
 
   .phase-badge {
-    padding: 4px 12px;
-    border-radius: 16px;
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
     color: white;
-    font-size: 12px;
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    margin-top: 4px;
   }
 
-  .header-center {
-    flex: 1;
+  .header-bottom {
     display: flex;
-    justify-content: center;
-  }
-
-  .ai-controls {
-    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 8px;
-  }
-
-  .ai-button {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
-    background-color: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s;
-  }
-
-  .ai-button:hover:not(:disabled) {
-    background-color: #e5e7eb;
-  }
-
-  .ai-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .icon {
-    font-size: 16px;
-  }
-
-  .ai-status {
-    margin-left: 8px;
-    font-size: 12px;
-    color: #059669;
-    font-weight: 500;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .team-scores {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .score.us {
-    color: #002868;
-  }
-
-  .score.them {
-    color: #dc2626;
-  }
-
-  .score-separator {
-    color: #9ca3af;
+    padding: 8px 12px;
+    background-color: #f9fafb;
+    border-top: 1px solid #e5e7eb;
   }
 
   .turn-indicator {
     font-size: 14px;
-    color: #4b5563;
+    font-weight: 600;
+    color: #374151;
   }
 
-  .player-badge {
-    padding: 2px 8px;
-    background-color: #002868;
+  .ai-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ai-button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3b82f6;
     color: white;
-    border-radius: 4px;
-    font-weight: 600;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .ai-button:active {
+    transform: scale(0.9);
   }
 
   /* Phase colors */

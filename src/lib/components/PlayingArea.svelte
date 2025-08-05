@@ -293,25 +293,27 @@
   .playing-area {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 16px;
+    padding: 12px;
     height: 100%;
   }
 
   .trump-display {
     display: flex;
-    gap: 16px;
+    gap: 8px;
     justify-content: center;
   }
 
   .trump-box,
   .led-suit-box {
-    padding: 12px 24px;
+    padding: 8px 16px;
     background-color: #f3f4f6;
     border: 2px solid #e5e7eb;
     border-radius: 8px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    font-size: 14px;
   }
 
   .trump-label,
@@ -323,25 +325,24 @@
   .trump-value {
     font-weight: 700;
     color: #dc2626;
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .led-value {
     font-weight: 700;
     color: #3b82f6;
-    font-size: 18px;
+    font-size: 14px;
   }
 
   .current-trick-area {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   h3 {
-    margin: 0 0 16px 0;
-    font-size: 16px;
+    margin: 0 0 8px 0;
+    font-size: 14px;
     font-weight: 600;
     color: #374151;
   }
@@ -350,11 +351,13 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 20px;
-    padding: 20px;
+    gap: 12px;
+    padding: 12px;
     background-color: #f9fafb;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
+    width: 100%;
+    max-width: 280px;
   }
 
   .trick-position {
@@ -385,28 +388,28 @@
   }
 
   .player-label {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 600;
     color: #6b7280;
   }
 
   .empty-slot {
-    width: 50px;
-    height: 80px;
+    width: 45px;
+    height: 72px;
     border: 2px dashed #d1d5db;
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #9ca3af;
     font-weight: 600;
+    font-size: 12px;
   }
 
   .player-hand-area {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-bottom: 20px;
   }
 
   .empty-hand {
@@ -416,16 +419,23 @@
   }
 
   .hand-dominoes {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+    justify-items: center;
   }
 
   .suit-indicator {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: normal;
     color: #f59e0b;
     margin-left: 8px;
+  }
+
+  /* Animation for played dominoes */
+  .domino-play-animation {
+    animation: slideFromHand 0.2s ease-out;
   }
 </style>

@@ -92,13 +92,13 @@
   }
 
   .domino.small:not(.tiny) {
-    width: 50px;
-    height: 80px;
+    width: 45px;
+    height: 72px;
   }
 
   .domino:not(.small):not(.tiny) {
-    width: 70px;
-    height: 110px;
+    width: 60px;
+    height: 94px;
   }
 
   .domino.clickable {

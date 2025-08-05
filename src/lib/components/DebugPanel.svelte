@@ -348,14 +348,26 @@
 
   .debug-panel {
     background-color: white;
-    width: 80%;
-    max-width: 1200px;
-    height: 80%;
-    max-height: 800px;
-    border-radius: 12px;
+    width: 95%;
+    max-width: 600px;
+    height: 90%;
+    max-height: 90vh;
+    border-radius: 12px 12px 0 0;
     display: flex;
     flex-direction: column;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    margin-top: auto;
+  }
+
+  @media (min-width: 768px) {
+    .debug-panel {
+      width: 80%;
+      max-width: 1200px;
+      height: 80%;
+      max-height: 800px;
+      border-radius: 12px;
+      margin-top: 0;
+    }
   }
 
   .panel-header {
@@ -392,14 +404,16 @@
 
   .panel-tabs {
     display: flex;
-    gap: 4px;
-    padding: 0 20px;
+    gap: 2px;
+    padding: 0 12px;
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tab {
-    padding: 12px 24px;
+    padding: 10px 16px;
     background: none;
     border: none;
     cursor: pointer;
@@ -407,6 +421,9 @@
     color: #6b7280;
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .tab:hover {

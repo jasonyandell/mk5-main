@@ -169,22 +169,22 @@
 
 <style>
   .action-panel {
-    padding: 16px;
+    padding: 12px;
     height: 100%;
     display: flex;
     flex-direction: column;
   }
 
   h2 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
+    margin: 0 0 12px 0;
+    font-size: 16px;
     font-weight: 600;
     color: #002868;
   }
 
   h3 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
+    margin: 0 0 8px 0;
+    font-size: 13px;
     font-weight: 600;
     color: #6b7280;
     text-transform: uppercase;
@@ -200,7 +200,12 @@
     margin-bottom: 24px;
   }
 
-  .bid-actions,
+  .bid-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 8px;
+  }
+
   .trump-actions,
   .other-actions {
     display: flex;
@@ -209,20 +214,21 @@
   }
 
   .action-button {
-    padding: 10px 16px;
+    padding: 12px 8px;
     background-color: #f3f4f6;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
+    min-height: 44px;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .action-button:hover {
-    background-color: #e5e7eb;
-    transform: translateY(-1px);
+  .action-button:active {
+    transform: scale(0.95);
   }
 
   .action-button.bid {
@@ -231,8 +237,8 @@
     border-color: #002868;
   }
 
-  .action-button.bid:hover {
-    background-color: #001a4d;
+  .action-button.bid:active {
+    transform: scale(0.95);
   }
 
   .action-button.pass {
@@ -241,8 +247,15 @@
     border-color: #dc2626;
   }
 
-  .action-button.pass:hover {
-    background-color: #b91c1c;
+  .action-button.pass {
+    background-color: #dc2626;
+    color: white;
+    border-color: #dc2626;
+    grid-column: 1 / -1;
+  }
+
+  .action-button.pass:active {
+    transform: scale(0.95);
   }
 
   .bid-separator {
