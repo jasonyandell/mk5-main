@@ -12,6 +12,7 @@
   let activeView: 'game' | 'actions' = 'game';
   let touchStartY = 0;
   let touchStartTime = 0;
+  let actionPanelRef: ActionPanel | null = null;
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -84,7 +85,7 @@
       </div>
     {:else}
       <div transition:fade={{ duration: 200 }} class="action-panel-wrapper">
-        <ActionPanel on:switchToPlay={() => activeView = 'game'} />
+        <ActionPanel bind:this={actionPanelRef} on:switchToPlay={() => activeView = 'game'} />
       </div>
     {/if}
   </main>

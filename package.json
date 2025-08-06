@@ -18,6 +18,7 @@
     "format": "prettier --write src"
   },
   "devDependencies": {
+    "@playwright/mcp": "^0.0.32",
     "@sveltejs/vite-plugin-svelte": "^6.1.0",
     "@tsconfig/svelte": "^5.0.4",
     "@types/node": "^24.1.0",

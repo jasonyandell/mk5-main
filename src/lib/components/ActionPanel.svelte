@@ -6,6 +6,7 @@
   import { createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();
+  
 
   // Group actions by type
   $: groupedActions = (() => {
@@ -78,157 +79,22 @@
   // Current player's hand
   $: playerHand = $currentPlayer.hand || [];
 
-  // State for hovering during bidding/trump selection
-  let hoveredSuit: number | 'doubles' | null = null;
-  let hoveredDomino: DominoType | null = null;
-  let hoveredTrumpButton: string | null = null;
-  
   // State for expandable team status
   let teamStatusExpanded = false;
-
-  // Check if we should enable suit highlighting
-  $: enableSuitHighlighting = $gamePhase === 'bidding' || $gamePhase === 'trump_selection';
-
-  // Handle trump button hover
-  function handleTrumpHover(action: StateTransition, isEntering: boolean) {
-    if (!isEntering) {
-      hoveredTrumpButton = null;
-      hoveredSuit = null;
-      return;
-    }
-
-    hoveredTrumpButton = action.id;
-    
-    // Extract suit from action id (e.g., "trump-blanks" -> 0, "trump-fives" -> 5)
-    if (action.id === 'trump-doubles') {
-      hoveredSuit = 'doubles';
-    } else if (action.id.startsWith('trump-')) {
-      const suitMap: Record<string, number> = {
-        'trump-blanks': 0,
-        'trump-ones': 1,
-        'trump-twos': 2,
-        'trump-threes': 3,
-        'trump-fours': 4,
-        'trump-fives': 5,
-        'trump-sixes': 6
-      };
-      hoveredSuit = suitMap[action.id] ?? null;
-    } else {
-      hoveredSuit = null;
-    }
-  }
-
-  // Handle domino hover
-  function handleDominoHover(domino: DominoType, event: any, isEntering: boolean) {
-    if (!enableSuitHighlighting) {
-      hoveredSuit = null;
-      return;
-    }
-
-    if (!isEntering) {
-      hoveredSuit = null;
-      hoveredDomino = null;
-      return;
-    }
-
-    hoveredDomino = domino;
-
-    // For doubles, always use the suit value
-    if (domino.high === domino.low) {
-      hoveredSuit = domino.high;
-      return;
-    }
-
-    // For non-doubles, try to determine which half was hovered
-    if (event && event.currentTarget) {
-      const target = event.currentTarget as HTMLElement;
-      const rect = target.getBoundingClientRect();
-      const relativeY = event.clientY - rect.top;
-      const halfwayPoint = rect.height / 2;
-      const isTopHalf = relativeY < halfwayPoint;
-      hoveredSuit = isTopHalf ? domino.high : domino.low;
-    } else {
-      // Fallback: just use the higher value
-      hoveredSuit = Math.max(domino.high, domino.low);
-    }
-  }
-
-
-  // Get highlight color based on suit
-  function getHighlightColor(domino: DominoType): string | null {
-    if (hoveredSuit === null) return null;
-    
-    const isHoveringDouble = hoveredDomino && hoveredDomino.high === hoveredDomino.low;
-    
-    if (isHoveringDouble && domino.high === domino.low) {
-      return 'doubles';
-    } else if (typeof hoveredSuit === 'number' && (domino.high === hoveredSuit || domino.low === hoveredSuit)) {
-      return `suit-${hoveredSuit}`;
-    }
-    
-    return null;
-  }
 </script>
 
 <div class="action-panel">
   {#if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') && playerHand.length > 0}
     <div class="hand-section">
       <h3>Your Hand</h3>
-      {#if hoveredSuit !== null && enableSuitHighlighting}
-        <div class="suit-highlight-badge" class:suit-badge-0={hoveredSuit === 0}
-             class:suit-badge-1={hoveredSuit === 1}
-             class:suit-badge-2={hoveredSuit === 2}
-             class:suit-badge-3={hoveredSuit === 3}
-             class:suit-badge-4={hoveredSuit === 4}
-             class:suit-badge-5={hoveredSuit === 5}
-             class:suit-badge-6={hoveredSuit === 6}
-             class:suit-badge-doubles={hoveredDomino && hoveredDomino.high === hoveredDomino.low}>
-          {(() => {
-            if (hoveredSuit === 'doubles') {
-              return 'Doubles';
-            }
-            const suitName = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'][hoveredSuit];
-            return suitName;
-          })()}
-        </div>
-      {/if}
       <div class="hand-display">
         {#each playerHand as domino, i (domino.high + '-' + domino.low)}
-          {@const highlight = (() => {
-            if (hoveredSuit === null) return null;
-            
-            // If hovering over trump button
-            if (hoveredTrumpButton) {
-              if (hoveredSuit === 'doubles') {
-                return domino.high === domino.low ? 'primary' : null;
-              } else if (typeof hoveredSuit === 'number') {
-                return (domino.high === hoveredSuit || domino.low === hoveredSuit) ? 'primary' : null;
-              }
-            }
-            
-            // If hovering over domino
-            const isHoveringDouble = hoveredDomino && hoveredDomino.high === hoveredDomino.low;
-            
-            // Always prioritize suit highlighting
-            if (domino.high === hoveredSuit || domino.low === hoveredSuit) {
-              return 'primary';
-            }
-            
-            // If hovering a double, other doubles get secondary highlight
-            if (isHoveringDouble && domino.high === domino.low) {
-              return 'secondary';
-            }
-            return null;
-          })()}
           <div class="domino-in-hand" style="--delay: {i * 30}ms">
             <Domino
               {domino}
               small={true}
               showPoints={true}
-              {highlight}
-              on:mouseenter={(e) => handleDominoHover(domino, e, true)}
-              on:mousemove={(e) => handleDominoHover(domino, e, true)}
-              on:mouseleave={(e) => handleDominoHover(domino, e, false)}
+              clickable={true}
             />
           </div>
         {/each}
@@ -279,10 +145,7 @@
           {#each groupedActions.trump as action}
             <button 
               class="action-button primary trump-button"
-              class:trump-hovering={hoveredTrumpButton === action.id}
               on:click={() => executeAction(action)}
-              on:mouseenter={() => handleTrumpHover(action, true)}
-              on:mouseleave={() => handleTrumpHover(action, false)}
               data-testid={action.id}
             >
               {action.label}
@@ -516,11 +379,12 @@
     overflow: visible;
   }
 
-  .trump-button.trump-hovering {
+  .trump-button.trump-active {
     transform: translateY(-3px) scale(1.05);
     box-shadow: 
       0 8px 24px rgba(139, 92, 246, 0.5),
       0 0 40px rgba(139, 92, 246, 0.2);
+    border: 2px solid #7c3aed;
     z-index: 10;
   }
 
@@ -759,60 +623,6 @@
     margin-bottom: 16px;
   }
 
-  .suit-highlight-badge {
-    position: absolute;
-    top: 8px;
-    right: 16px;
-    padding: 4px 12px;
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 16px;
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-    animation: fadeInDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Suit-specific badge colors */
-  .suit-badge-0 { /* Blanks */
-    background: linear-gradient(135deg, #9ca3af, #6b7280);
-    box-shadow: 0 2px 8px rgba(107, 114, 128, 0.3);
-  }
-
-  .suit-badge-1 { /* Ones */
-    background: linear-gradient(135deg, #f87171, #ef4444);
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-  }
-
-  .suit-badge-2 { /* Twos */
-    background: linear-gradient(135deg, #fb923c, #f97316);
-    box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-  }
-
-  .suit-badge-3 { /* Threes */
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-  }
-
-  .suit-badge-4 { /* Fours */
-    background: linear-gradient(135deg, #a3e635, #84cc16);
-    box-shadow: 0 2px 8px rgba(132, 204, 22, 0.3);
-  }
-
-  .suit-badge-5 { /* Fives */
-    background: linear-gradient(135deg, #60a5fa, #3b82f6);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-  }
-
-  .suit-badge-6 { /* Sixes */
-    background: linear-gradient(135deg, #c084fc, #a855f7);
-    box-shadow: 0 2px 8px rgba(168, 85, 247, 0.3);
-  }
-
-  .suit-badge-doubles { /* Doubles */
-    background: linear-gradient(135deg, #f472b6, #ec4899);
-    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.3);
-  }
 
   @keyframes fadeInDown {
     from {

@@ -149,12 +149,7 @@
   // Create placeholder array for 4 players
   const playerPositions = [0, 1, 2, 3];
 
-  // State for hovering during bidding/trump selection
-  let hoveredSuit: number | 'doubles' | null = null;
-  let hoveredDomino: DominoType | null = null;
-
-  // Check if we should enable suit highlighting
-  $: enableSuitHighlighting = $gamePhase === 'bidding' || $gamePhase === 'trump_selection';
+  // Highlighting is only available in ActionPanel during bidding/trump selection
   
   // State for expandable trick counter
   let showTrickHistory = false;
@@ -171,40 +166,6 @@
   })();
   
 
-  // Handle domino hover - now with specific half detection
-  function handleDominoHover(domino: DominoType, event: Event | MouseEvent | null, isEntering: boolean) {
-    if (!enableSuitHighlighting) {
-      hoveredSuit = null;
-      return;
-    }
-
-    if (!isEntering || !event) {
-      hoveredSuit = null;
-      hoveredDomino = null;
-      return;
-    }
-
-    // Store which domino we're hovering over
-    hoveredDomino = domino;
-
-    // For doubles, always highlight both doubles and the suit
-    if (domino.high === domino.low) {
-      hoveredSuit = domino.high; // Will highlight both the suit AND doubles
-      return;
-    }
-
-    // For non-doubles, determine which half based on mouse position
-    const mouseEvent = event as MouseEvent;
-    const target = mouseEvent.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const relativeY = mouseEvent.clientY - rect.top;
-    const halfwayPoint = rect.height / 2;
-
-    // The domino display has high pip on top, low pip on bottom
-    // So if mouse is in top half, we want the high value
-    const isTopHalf = relativeY < halfwayPoint;
-    hoveredSuit = isTopHalf ? domino.high : domino.low;
-  }
   
   // Extract simple proceed actions that should show in play area
   $: proceedAction = (() => {
@@ -445,14 +406,6 @@
   </button>
 
   <div class="hand-container">
-    {#if hoveredSuit !== null && enableSuitHighlighting}
-      <div class="suit-highlight-indicator">
-        {(() => {
-          const suitName = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'][hoveredSuit];
-          return suitName;
-        })()}
-      </div>
-    {/if}
     
     {#if playerHand.length === 0}
       <div class="empty-hand">
@@ -463,34 +416,14 @@
       <div class="hand-scroll">
         <div class="hand-dominoes">
           {#each playerHand as domino, i (domino.high + '-' + domino.low)}
-            {@const highlight = (() => {
-              if (hoveredSuit === null) return null;
-              
-              const isHoveringDouble = hoveredDomino && hoveredDomino.high === hoveredDomino.low;
-              
-              // Always prioritize suit highlighting
-              if (domino.high === hoveredSuit || domino.low === hoveredSuit) {
-                return 'primary';
-              }
-              
-              // If hovering a double, other doubles get secondary highlight
-              if (isHoveringDouble && domino.high === domino.low) {
-                return 'secondary';
-              }
-              return null;
-            })()}
             <div class="domino-wrapper" style="--delay: {i * 50}ms">
               <Domino
                 {domino}
                 playable={isDominoPlayable(domino)}
-                clickable={true}
+                clickable={isDominoPlayable(domino) && $gamePhase === 'playing'}
                 showPoints={true}
-                {highlight}
                 tooltip={getDominoTooltip(domino)}
                 on:click={handleDominoClick}
-                on:mouseenter={(e) => handleDominoHover(domino, e, true)}
-                on:mousemove={(e) => handleDominoHover(domino, e, true)}
-                on:mouseleave={(e) => handleDominoHover(domino, e, false)}
               />
             </div>
           {/each}
@@ -719,7 +652,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    pointer-events: none; /* Don't block table clicks */
   }
 
   .trick-spot[data-position="0"] {
@@ -748,7 +680,6 @@
 
   .played-domino {
     position: relative;
-    pointer-events: none; /* Don't block table clicks */
   }
 
   .played-domino.fresh {
@@ -814,25 +745,6 @@
     padding-top: 20px;
   }
 
-  .suit-highlight-indicator {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 4px 16px;
-    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-    color: white;
-    font-size: 12px;
-    font-weight: 700;
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @keyframes slideDown {
-    from { transform: translateX(-50%) translateY(-100%); }
-    to { transform: translateX(-50%) translateY(0); }
-  }
 
   .empty-hand {
     display: flex;

@@ -8,14 +8,11 @@
   export let tiny: boolean = false;
   export let showPoints: boolean = true;
   export let winner: boolean = false;
-  export let highlight: 'primary' | 'secondary' | null = null;
-  export let highlightColor: string | null = null;
   export let tooltip: string = '';
 
   function handleClick() {
-    if (clickable) {
-      dispatch('click', domino);
-    }
+    if (!clickable) return;
+    dispatch('click', domino);
   }
 
   import { createEventDispatcher } from 'svelte';
@@ -45,22 +42,12 @@
   class:tiny
   class:counter={isCounter}
   class:winner
-  class:disabled={!playable && clickable}
-  class:highlight-primary={highlight === 'primary'}
-  class:highlight-secondary={highlight === 'secondary'}
-  class:highlight-suit-0={highlightColor === 'suit-0'}
-  class:highlight-suit-1={highlightColor === 'suit-1'}
-  class:highlight-suit-2={highlightColor === 'suit-2'}
-  class:highlight-suit-3={highlightColor === 'suit-3'}
-  class:highlight-suit-4={highlightColor === 'suit-4'}
-  class:highlight-suit-5={highlightColor === 'suit-5'}
-  class:highlight-suit-6={highlightColor === 'suit-6'}
-  class:highlight-doubles={highlightColor === 'doubles'}
+  class:disabled={false}
   on:click={handleClick}
   on:mouseenter
   on:mousemove
   on:mouseleave
-  disabled={!clickable || (!playable && clickable)}
+  disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
   data-testid="domino-{domino.high}-{domino.low}"
 >
@@ -166,149 +153,6 @@
     50% { transform: scale(1.05); }
   }
 
-  .domino.highlight-primary {
-    background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%) !important;
-    border-color: #f59e0b !important;
-    box-shadow: 
-      0 0 0 4px rgba(245, 158, 11, 0.4),
-      0 8px 16px rgba(245, 158, 11, 0.2) !important;
-    animation: highlightPrimary 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform: translateY(-4px) scale(1.05);
-  }
-
-  @keyframes highlightPrimary {
-    0% { 
-      transform: scale(1) translateY(0);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    50% {
-      transform: scale(1.08) translateY(-6px);
-    }
-    100% { 
-      transform: scale(1.05) translateY(-4px);
-    }
-  }
-
-  .domino.highlight-secondary {
-    background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%) !important;
-    border-color: #3b82f6 !important;
-    box-shadow: 
-      0 0 0 3px rgba(59, 130, 246, 0.3),
-      0 6px 12px rgba(59, 130, 246, 0.15) !important;
-    animation: highlightSecondary 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    transform: translateY(-2px) scale(1.03);
-  }
-
-  @keyframes highlightSecondary {
-    0% { 
-      transform: scale(1) translateY(0);
-      opacity: 0.8;
-    }
-    50% {
-      transform: scale(1.05) translateY(-3px);
-      opacity: 1;
-    }
-    100% { 
-      transform: scale(1.03) translateY(-2px);
-      opacity: 1;
-    }
-  }
-
-  /* Suit-specific highlights for bidding */
-  .domino.highlight-suit-0 { /* Blanks - White/Gray */
-    background: linear-gradient(145deg, #f9fafb 0%, #e5e7eb 100%) !important;
-    border-color: #6b7280 !important;
-    box-shadow: 
-      0 0 0 3px rgba(107, 114, 128, 0.3),
-      0 6px 12px rgba(107, 114, 128, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-1 { /* Ones - Red */
-    background: linear-gradient(145deg, #fee2e2 0%, #fecaca 100%) !important;
-    border-color: #ef4444 !important;
-    box-shadow: 
-      0 0 0 3px rgba(239, 68, 68, 0.3),
-      0 6px 12px rgba(239, 68, 68, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-2 { /* Twos - Orange */
-    background: linear-gradient(145deg, #fed7aa 0%, #fdba74 100%) !important;
-    border-color: #f97316 !important;
-    box-shadow: 
-      0 0 0 3px rgba(249, 115, 22, 0.3),
-      0 6px 12px rgba(249, 115, 22, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-3 { /* Threes - Yellow */
-    background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%) !important;
-    border-color: #f59e0b !important;
-    box-shadow: 
-      0 0 0 3px rgba(245, 158, 11, 0.3),
-      0 6px 12px rgba(245, 158, 11, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-4 { /* Fours - Green */
-    background: linear-gradient(145deg, #d9f99d 0%, #bef264 100%) !important;
-    border-color: #84cc16 !important;
-    box-shadow: 
-      0 0 0 3px rgba(132, 204, 22, 0.3),
-      0 6px 12px rgba(132, 204, 22, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-5 { /* Fives - Blue */
-    background: linear-gradient(145deg, #dbeafe 0%, #bfdbfe 100%) !important;
-    border-color: #3b82f6 !important;
-    box-shadow: 
-      0 0 0 3px rgba(59, 130, 246, 0.3),
-      0 6px 12px rgba(59, 130, 246, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-6 { /* Sixes - Purple */
-    background: linear-gradient(145deg, #e9d5ff 0%, #d8b4fe 100%) !important;
-    border-color: #a855f7 !important;
-    box-shadow: 
-      0 0 0 3px rgba(168, 85, 247, 0.3),
-      0 6px 12px rgba(168, 85, 247, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-doubles { /* Doubles - Pink/Rose */
-    background: linear-gradient(145deg, #fce7f3 0%, #fbcfe8 100%) !important;
-    border-color: #ec4899 !important;
-    box-shadow: 
-      0 0 0 3px rgba(236, 72, 153, 0.3),
-      0 6px 12px rgba(236, 72, 153, 0.2) !important;
-    transform: translateY(-3px) scale(1.04);
-  }
-
-  .domino.highlight-suit-0,
-  .domino.highlight-suit-1,
-  .domino.highlight-suit-2,
-  .domino.highlight-suit-3,
-  .domino.highlight-suit-4,
-  .domino.highlight-suit-5,
-  .domino.highlight-suit-6,
-  .domino.highlight-doubles {
-    animation: suitHighlight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes suitHighlight {
-    0% { 
-      transform: scale(1) translateY(0);
-    }
-    50% {
-      transform: scale(1.06) translateY(-5px);
-    }
-    100% { 
-      transform: scale(1.04) translateY(-3px);
-    }
-  }
 
   .domino-face {
     display: flex;
@@ -382,7 +226,7 @@
     margin: 2px 3px;
   }
 
-  /* Pip positions */
+  /* Pip positions - adjusted to prevent overlap */
   .pip.center {
     top: 50%;
     left: 50%;
@@ -390,35 +234,35 @@
   }
 
   .pip.top-left {
-    top: 20%;
-    left: 25%;
+    top: 14%;
+    left: 16%;
   }
 
   .pip.top-right {
-    top: 20%;
-    right: 25%;
+    top: 14%;
+    right: 16%;
   }
 
   .pip.middle-left {
     top: 50%;
-    left: 25%;
+    left: 16%;
     transform: translateY(-50%);
   }
 
   .pip.middle-right {
     top: 50%;
-    right: 25%;
+    right: 16%;
     transform: translateY(-50%);
   }
 
   .pip.bottom-left {
-    bottom: 20%;
-    left: 25%;
+    bottom: 14%;
+    left: 16%;
   }
 
   .pip.bottom-right {
-    bottom: 20%;
-    right: 25%;
+    bottom: 14%;
+    right: 16%;
   }
 
   .point-badge {

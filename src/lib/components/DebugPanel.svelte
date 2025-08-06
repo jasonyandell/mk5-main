@@ -3,6 +3,7 @@
   import { gameState, actionHistory, stateValidationError, gameActions, initialState } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import StateTreeView from './StateTreeView.svelte';
+  import GameProgress from './GameProgress.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -201,13 +202,14 @@
                 No actions taken yet. Start playing to see history.
               </div>
             {:else}
-              {#each $actionHistory as action, index}
+              {#each [...$actionHistory].reverse() as action, reverseIndex}
+                {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
                 <div class="history-item">
-                  <span class="history-index">#{index + 1}</span>
+                  <span class="history-index">#{actualIndex + 1}</span>
                   <span class="history-label">{action.label}</span>
                   <button 
                     class="time-travel-button"
-                    on:click={() => timeTravel(index)}
+                    on:click={() => timeTravel(actualIndex)}
                     title="Time travel to this point"
                   >
                     ⏪
