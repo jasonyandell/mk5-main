@@ -72,7 +72,7 @@ describe('Tournament Restrictions', () => {
         };
         
         const isValidWithDoubles = isValidBid(gameState, validBid);
-        expect(isValidWithDoubles).toBe(false); // Plunge not allowed in tournament mode per rules.md line 370
+        expect(isValidWithDoubles).toBe(false); // Plunge not allowed in tournament mode per docs/rules.md line 370
       });
 
       it('Then Splash is not allowed', () => {

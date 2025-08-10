@@ -7,4 +7,6 @@
 ** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
 ** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
 
-To check behavior, consult @rules.md
+** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
+
+To check behavior, consult @docs/rules.md

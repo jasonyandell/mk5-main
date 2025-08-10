@@ -60,7 +60,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
 Please implement the next uncompleted task from @docs/rules-gherkin-plan.md.
 
 This is an exercise in creating tests to a rules spec.
-Referencing @rules.md and @docs/rules-gherkin-plan.md we need to make new tests for a theoretical implementation for strictly tournament rules.
+Referencing @docs/rules.md and @docs/rules-gherkin-plan.md we need to make new tests for a theoretical implementation for strictly tournament rules.
 The tests should be written assuming the implementation does the right thing.
 The complete and final code definitions and state are found in src/game/.
 CRITICAL: never reference or implement anything in src/game that does not already have a definition in src/game.  

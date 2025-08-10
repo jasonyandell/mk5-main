@@ -58,6 +58,7 @@ playwright/.cache/
 .temp/
 *.tmp
 *.temp
+scratch/
 
 # Cache directories
 .cache/

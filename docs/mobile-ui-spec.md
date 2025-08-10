@@ -272,7 +272,6 @@ This separation ensures the UI remains maintainable, testable, and focused on us
   - Mobile-optimized copy confirmation feedback
 - **URL Sharing**: Generate shareable game state URLs
   - One-tap URL generation with automatic clipboard copy
-  - QR code generation for easy mobile sharing
   - Compressed URL format for efficient sharing
 
 #### 2. History Tab
