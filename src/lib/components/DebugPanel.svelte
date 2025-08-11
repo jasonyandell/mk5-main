@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { gameState, actionHistory, stateValidationError, gameActions, initialState } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
+  import { compressGameState, compressActionId, encodeURLData } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
   import GameProgress from './GameProgress.svelte';
 
@@ -33,14 +34,33 @@
 
   // Time travel to a specific action
   function timeTravel(index: number) {
-    // Reset to initial state
-    gameActions.loadState($initialState);
-    
-    // Replay actions up to index
+    // Get actions up to the specified index
     const actionsToReplay = $actionHistory.slice(0, index + 1);
+    
+    // Replay from initial state
+    let currentState = $initialState;
+    
     for (const action of actionsToReplay) {
-      gameActions.executeAction(action);
+      currentState = action.newState;
     }
+    
+    // Update the game state and history
+    gameState.set(currentState);
+    actionHistory.set(actionsToReplay);
+    
+    // Update URL to reflect the new state
+    const urlData = {
+      v: 1,
+      s: compressGameState($initialState),
+      a: actionsToReplay.map(a => ({ i: compressActionId(a.id) }))
+    };
+    
+    const encoded = encodeURLData(urlData);
+    const newURL = `${window.location.pathname}?d=${encoded}`;
+    
+    // Update browser history
+    const historyState = { initialState: $initialState, actions: actionsToReplay, timestamp: Date.now() };
+    window.history.pushState(historyState, '', newURL);
   }
 
   // Find differences between two objects

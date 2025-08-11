@@ -10,3 +10,5 @@
 ** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
 
 To check behavior, consult @docs/rules.md
+
+** Decode URL State ** - Run `node scripts/decode-url.js <base64-param>` to decode game state from URL parameter `d=`

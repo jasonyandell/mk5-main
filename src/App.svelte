@@ -1,18 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import Header from './lib/components/Header.svelte';
   import GameProgress from './lib/components/GameProgress.svelte';
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
-  import { gameActions, gamePhase } from './stores/gameStore';
+  import { gameActions, gamePhase, actionHistory, gameState, availableActions } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
+  import { calculateTrickWinner } from './game/core/scoring';
 
   let showDebugPanel = false;
   let activeView: 'game' | 'actions' = 'game';
   let touchStartY = 0;
   let touchStartTime = 0;
   let actionPanelRef: ActionPanel | null = null;
+  
+  // Flash message state
+  let flashMessage = '';
+  let flashTimeout: ReturnType<typeof setTimeout> | null = null;
+  let hasCompleteTrickAction = false;
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -49,6 +55,58 @@
     gameActions.loadFromURL();
   });
   
+  onDestroy(() => {
+    // Clean up any pending timeout
+    if (flashTimeout) {
+      clearTimeout(flashTimeout);
+      flashTimeout = null;
+    }
+  });
+  
+  // Watch for complete-trick becoming available
+  $: {
+    const completeTrickAvailable = $availableActions.some(action => action.id === 'complete-trick');
+    
+    // Show flash when complete-trick BECOMES available (wasn't before, now is)
+    if (completeTrickAvailable && !hasCompleteTrickAction) {
+      // Calculate who will win this trick
+      if ($gameState.currentTrick && $gameState.currentTrick.length === 4) {
+        const winner = calculateTrickWinner(
+          $gameState.currentTrick,
+          $gameState.trump,
+          $gameState.currentSuit
+        );
+        
+        // Display flash message
+        flashMessage = `P${winner + 1} Wins!`;
+        
+        // Clear any existing timeout
+        if (flashTimeout) {
+          clearTimeout(flashTimeout);
+        }
+        
+        // Set timeout to clear message after 1 second
+        flashTimeout = setTimeout(() => {
+          flashMessage = '';
+          flashTimeout = null;
+        }, 1000);
+      }
+    }
+    
+    hasCompleteTrickAction = completeTrickAvailable;
+  }
+  
+  // Handle clicking to dismiss flash message
+  function dismissFlash() {
+    if (flashMessage) {
+      flashMessage = '';
+      if (flashTimeout) {
+        clearTimeout(flashTimeout);
+        flashTimeout = null;
+      }
+    }
+  }
+  
   // Smart panel switching based on game phase
   // This handles both URL loading and normal game flow
   $: {
@@ -75,7 +133,7 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="app-container" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
+<div class="app-container" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd} on:click={dismissFlash}>
   <Header />
   
   <main class="game-container" class:no-scroll={activeView === 'actions'}>
@@ -124,6 +182,16 @@
 {#if showDebugPanel}
   <div transition:fly={{ y: 200, duration: 300 }}>
     <DebugPanel on:close={() => showDebugPanel = false} />
+  </div>
+{/if}
+
+{#if flashMessage}
+  <div 
+    class="flash-message"
+    transition:fade={{ duration: 200 }}
+    on:click={dismissFlash}
+  >
+    {flashMessage}
   </div>
 {/if}
 
@@ -224,6 +292,38 @@
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.025em;
+  }
+  
+  .flash-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 48px;
+    font-weight: bold;
+    padding: 30px 60px;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    z-index: 2000;
+    cursor: pointer;
+    user-select: none;
+    animation: pulse 0.5s ease-out;
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
   }
 
 </style>
