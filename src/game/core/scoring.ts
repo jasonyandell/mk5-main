@@ -35,6 +35,9 @@ export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: Trum
   }
   
   const leadPlay = trick[0];
+  if (!leadPlay) {
+    throw new Error('Cannot determine winner of empty trick');
+  }
   
   // Convert trump to numeric value for comparison
   const numericTrump = trump.type === 'none' ? null :
@@ -48,6 +51,9 @@ export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: Trum
   
   for (let i = 1; i < trick.length; i++) {
     const play = trick[i];
+    if (!play) {
+      throw new Error(`Invalid trick play at index ${i}`);
+    }
     const playValue = getDominoValue(play.domino, trump);
     const playIsTrump = isDominoTrump(play.domino, numericTrump);
     
@@ -90,7 +96,11 @@ export function calculateRoundScore(state: GameState): [number, number] {
   }
   
   const newMarks: [number, number] = [...state.teamMarks];
-  const biddingTeam = state.players[state.winningBidder].teamId;
+  const winnerPlayer = state.players[state.winningBidder];
+  if (!winnerPlayer) {
+    throw new Error(`Invalid winning bidder index: ${state.winningBidder}`);
+  }
+  const biddingTeam = winnerPlayer.teamId;
   const opponentTeam = biddingTeam === 0 ? 1 : 0;
   const biddingTeamScore = state.teamScores[biddingTeam];
   
@@ -124,10 +134,14 @@ export function calculateRoundScore(state: GameState): [number, number] {
       
     case BID_TYPES.NELLO: {
       // Nello: bidding team must take no tricks
-      const biddingTeamTricks = state.tricks.filter(
-        trick => trick.winner !== undefined && 
-        state.players[trick.winner].teamId === biddingTeam
-      ).length;
+      const biddingTeamTricks = state.tricks.filter(trick => {
+        if (trick.winner === undefined) return false;
+        const winnerPlayer = state.players[trick.winner];
+        if (!winnerPlayer) {
+          throw new Error(`Invalid trick winner index: ${trick.winner}`);
+        }
+        return winnerPlayer.teamId === biddingTeam;
+      }).length;
       
       if (biddingTeamTricks === 0) {
         newMarks[biddingTeam] += bid.value!;
@@ -140,10 +154,14 @@ export function calculateRoundScore(state: GameState): [number, number] {
     case BID_TYPES.SPLASH:
     case BID_TYPES.PLUNGE: {
       // Special contracts: bidding team must take all tricks
-      const nonBiddingTeamTricks = state.tricks.filter(
-        trick => trick.winner !== undefined && 
-        state.players[trick.winner].teamId === opponentTeam
-      ).length;
+      const nonBiddingTeamTricks = state.tricks.filter(trick => {
+        if (trick.winner === undefined) return false;
+        const winnerPlayer = state.players[trick.winner];
+        if (!winnerPlayer) {
+          throw new Error(`Invalid trick winner index: ${trick.winner}`);
+        }
+        return winnerPlayer.teamId === opponentTeam;
+      }).length;
       
       if (nonBiddingTeamTricks === 0) {
         newMarks[biddingTeam] += bid.value!;

@@ -63,7 +63,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Mock scoring function for test
       function scoreFailedBid(state: GameState): GameState {
         const newState = { ...state };
-        const bidderTeam = state.players[state.winningBidder!].teamId;
+        const { winningBidder } = state;
+        if (winningBidder === -1 || winningBidder < 0 || winningBidder >= state.players.length) {
+          return newState;
+        }
+        const bidderTeam = state.players[winningBidder].teamId;
         const opponentTeam = bidderTeam === 0 ? 1 : 0;
         const marksBid = state.currentBid?.value || 0;
         
@@ -110,7 +114,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Mock scoring function for test
       function scoreFailedBid(state: GameState): GameState {
         const newState = { ...state };
-        const bidderTeam = state.players[state.winningBidder!].teamId;
+        const { winningBidder } = state;
+        if (winningBidder === -1 || winningBidder < 0 || winningBidder >= state.players.length) {
+          return newState;
+        }
+        const bidderTeam = state.players[winningBidder].teamId;
         const opponentTeam = bidderTeam === 0 ? 1 : 0;
         const marksBid = state.currentBid?.value || 0;
         
@@ -159,7 +167,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Mock scoring function for test
       function scoreFailedBid(state: GameState): GameState {
         const newState = { ...state };
-        const bidderTeam = state.players[state.winningBidder!].teamId;
+        const { winningBidder } = state;
+        if (winningBidder === -1 || winningBidder < 0 || winningBidder >= state.players.length) {
+          return newState;
+        }
+        const bidderTeam = state.players[winningBidder].teamId;
         const opponentTeam = bidderTeam === 0 ? 1 : 0;
         
         // For point bids, opponents get 1 mark when bid fails
@@ -205,7 +217,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Mock scoring function for test
       function scoreFailedBid(state: GameState): GameState {
         const newState = { ...state };
-        const bidderTeam = state.players[state.winningBidder!].teamId;
+        const { winningBidder } = state;
+        if (winningBidder === -1 || winningBidder < 0 || winningBidder >= state.players.length) {
+          return newState;
+        }
+        const bidderTeam = state.players[winningBidder].teamId;
         const opponentTeam = bidderTeam === 0 ? 1 : 0;
         const marksBid = state.currentBid?.value || 0;
         
@@ -252,7 +268,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Mock scoring function for test
       function scoreFailedBid(state: GameState): GameState {
         const newState = { ...state };
-        const bidderTeam = state.players[state.winningBidder!].teamId;
+        const { winningBidder } = state;
+        if (winningBidder === -1 || winningBidder < 0 || winningBidder >= state.players.length) {
+          return newState;
+        }
+        const bidderTeam = state.players[winningBidder].teamId;
         const opponentTeam = bidderTeam === 0 ? 1 : 0;
         const marksBid = state.currentBid?.value || 0;
         

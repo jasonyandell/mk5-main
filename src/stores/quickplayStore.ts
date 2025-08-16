@@ -34,6 +34,7 @@ function makeAIDecision(state: GameState, actions: StateTransition[]): StateTran
   if (actions.length === 0) return null;
   
   const currentPlayer = state.players[state.currentPlayer];
+  if (!currentPlayer) return actions[0] || null;
   
   switch (state.phase) {
     case 'bidding':
@@ -44,12 +45,17 @@ function makeAIDecision(state: GameState, actions: StateTransition[]): StateTran
       return makeAIPlayDecision(state, currentPlayer, actions);
     default:
       // For other phases (scoring, etc), just take the first available action
-      return actions[0];
+      return actions[0] || null;
   }
 }
 
 // AI Bidding Logic
 function makeAIBidDecision(state: GameState, player: Player, actions: StateTransition[]): StateTransition {
+  // Ensure we have actions to work with
+  if (actions.length === 0) {
+    throw new Error('No actions available for AI bidding decision');
+  }
+  
   // Calculate hand strength
   const handStrength = calculateHandStrength(player.hand);
   
@@ -72,15 +78,19 @@ function makeAIBidDecision(state: GameState, player: Player, actions: StateTrans
   // Find best available bid
   const bidActions = actions.filter(a => a.id.startsWith('bid-') && !a.id.includes('marks'));
   const validBids = bidActions.filter(a => {
-    const bidValue = parseInt(a.id.split('-')[1]);
-    return bidValue >= targetBid && bidValue > currentBidValue;
+    const parts = a.id.split('-');
+    if (parts.length < 2 || !parts[1]) return false;
+    const bidValue = parseInt(parts[1]);
+    return !isNaN(bidValue) && bidValue >= targetBid && bidValue > currentBidValue;
   });
   
   if (validBids.length > 0) {
     // Sort by bid value and take the lowest valid bid
     validBids.sort((a, b) => {
-      const aValue = parseInt(a.id.split('-')[1]);
-      const bValue = parseInt(b.id.split('-')[1]);
+      const aParts = a.id.split('-');
+      const bParts = b.id.split('-');
+      const aValue = aParts.length >= 2 && aParts[1] ? parseInt(aParts[1]) : 0;
+      const bValue = bParts.length >= 2 && bParts[1] ? parseInt(bParts[1]) : 0;
       return aValue - bValue;
     });
     return validBids[0];
@@ -131,6 +141,10 @@ function getCurrentBidValue(state: GameState): number {
 
 // AI Trump Selection Logic
 function makeAITrumpDecision(_state: GameState, player: Player, actions: StateTransition[]): StateTransition {
+  if (actions.length === 0) {
+    throw new Error('No actions available for AI trump decision');
+  }
+  
   if (!player.suitAnalysis) {
     // Fallback - pick first available trump
     return actions[0];
@@ -159,6 +173,10 @@ function makeAITrumpDecision(_state: GameState, player: Player, actions: StateTr
 
 // AI Playing Logic
 function makeAIPlayDecision(state: GameState, player: Player, actions: StateTransition[]): StateTransition {
+  if (actions.length === 0) {
+    throw new Error('No actions available for AI play decision');
+  }
+  
   // If completing a trick, do it
   const completeTrickAction = actions.find(a => a.id === 'complete-trick');
   if (completeTrickAction) return completeTrickAction;
@@ -178,13 +196,16 @@ function makeAIPlayDecision(state: GameState, player: Player, actions: StateTran
     });
     
     scoredActions.sort((a, b) => b.points - a.points);
-    return scoredActions[0].action;
+    return scoredActions[0]?.action || actions[0];
   }
   
   // Following in a trick
   const myTeam = player.teamId;
-  const trickLeader = state.currentTrick[0].player;
-  const leaderTeam = state.players[trickLeader].teamId;
+  const trickLeader = state.currentTrick[0]?.player;
+  if (trickLeader === undefined) return actions[0];
+  const leaderPlayer = state.players[trickLeader];
+  if (!leaderPlayer) return actions[0];
+  const leaderTeam = leaderPlayer.teamId;
   const partnerLed = myTeam === leaderTeam;
   
   // Simple strategy: play high if opponent led, low if partner led
@@ -203,7 +224,7 @@ function makeAIPlayDecision(state: GameState, player: Player, actions: StateTran
     scoredActions.sort((a, b) => b.value - a.value);
   }
   
-  return scoredActions[0].action;
+  return scoredActions[0]?.action || actions[0];
 }
 
 // Subscribe to game state changes

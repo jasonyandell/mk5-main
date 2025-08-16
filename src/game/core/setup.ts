@@ -78,8 +78,12 @@ export function determineDealerFromDraw(draws: DealerDrawResult[]): DealerDeterm
   }
 
   // Single winner
+  const dealer = playersWithMaxPips[0];
+  if (dealer === undefined) {
+    throw new Error('No players found with max pips');
+  }
   return {
-    dealer: playersWithMaxPips[0],
+    dealer,
     requiresRedraw: false
   };
 }

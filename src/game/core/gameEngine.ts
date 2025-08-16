@@ -2,7 +2,7 @@ import type { GameState, GameAction, TrumpSelection, Bid, StateTransition } from
 import { EMPTY_BID } from '../types';
 import { cloneGameState } from './state';
 import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
-import { isValidBid, getValidPlays, getBidComparisonValue } from './rules';
+import { isValidBid, getValidPlays, getBidComparisonValue, isValidTrump } from './rules';
 import { dealDominoesWithSeed, getDominoSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
 import { checkHandOutcome } from './handOutcome';
@@ -105,8 +105,25 @@ export function applyAction(state: GameState, action: GameAction): GameState {
  * Applies a bid action
  */
 function applyBid(state: GameState, player: number, bidType: Bid['type'], value?: number): GameState {
+  // CRITICAL: Validate phase
+  if (state.phase !== 'bidding') {
+    throw new Error(`Invalid bid: Not in bidding phase (current phase: ${state.phase})`);
+  }
+  
   const newState = cloneGameState(state);
-  const bid: Bid = { type: bidType, value, player };
+  const bid: Bid = value !== undefined 
+    ? { type: bidType, value, player }
+    : { type: bidType, player };
+  
+  // CRITICAL: Validate that this bid is legal
+  const playerData = state.players[player];
+  if (!playerData) {
+    throw new Error(`Invalid player index: ${player}`);
+  }
+  
+  if (!isValidBid(state, bid, playerData.hand)) {
+    throw new Error(`Invalid bid: Player ${player} cannot make bid ${bidType} ${value || ''}`);
+  }
   
   newState.bids.push(bid);
   newState.currentBid = bid;
@@ -138,8 +155,23 @@ function applyBid(state: GameState, player: number, bidType: Bid['type'], value?
  * Applies a pass action
  */
 function applyPass(state: GameState, player: number): GameState {
+  // CRITICAL: Validate phase
+  if (state.phase !== 'bidding') {
+    throw new Error(`Invalid pass: Not in bidding phase (current phase: ${state.phase})`);
+  }
+  
   const newState = cloneGameState(state);
   const passBid: Bid = { type: BID_TYPES.PASS, player };
+  
+  // CRITICAL: Validate that this pass is legal
+  const playerData = state.players[player];
+  if (!playerData) {
+    throw new Error(`Invalid player index: ${player}`);
+  }
+  
+  if (!isValidBid(state, passBid, playerData.hand)) {
+    throw new Error(`Invalid pass: Player ${player} cannot pass at this time`);
+  }
   
   newState.bids.push(passBid);
   newState.currentPlayer = getNextPlayer(player);
@@ -171,6 +203,19 @@ function applyPass(state: GameState, player: number): GameState {
  * Applies trump selection
  */
 function applyTrumpSelection(state: GameState, player: number, selection: TrumpSelection): GameState {
+  // CRITICAL: Validate trump selection
+  if (state.phase !== 'trump_selection') {
+    throw new Error(`Invalid trump selection: Not in trump selection phase`);
+  }
+  
+  if (player !== state.winningBidder) {
+    throw new Error(`Invalid trump selection: Player ${player} is not the winning bidder`);
+  }
+  
+  if (!isValidTrump(selection)) {
+    throw new Error(`Invalid trump selection: Invalid trump type or value`);
+  }
+  
   const newState = cloneGameState(state);
   newState.phase = 'playing';
   newState.trump = selection;
@@ -188,11 +233,31 @@ function applyTrumpSelection(state: GameState, player: number, selection: TrumpS
  * Applies a domino play
  */
 function applyPlay(state: GameState, player: number, dominoId: string): GameState {
+  // CRITICAL: Validate phase
+  if (state.phase !== 'playing') {
+    throw new Error(`Invalid play: Not in playing phase (current phase: ${state.phase})`);
+  }
+  
   const newState = cloneGameState(state);
   const playerState = newState.players[player];
+  
+  if (!playerState) {
+    throw new Error(`Invalid player index: ${player}`);
+  }
+  
   const domino = playerState.hand.find(d => d.id === dominoId);
   
-  if (!domino) return state; // Invalid play
+  if (!domino) {
+    throw new Error(`Player ${player} does not have domino ${dominoId}`);
+  }
+  
+  // CRITICAL: Validate that this play is legal
+  const validPlays = getValidPlays(state, player);
+  const isValid = validPlays.some(d => d.id === dominoId);
+  
+  if (!isValid) {
+    throw new Error(`Invalid play: Player ${player} cannot play domino ${dominoId} - must follow suit if able`);
+  }
   
   // Remove domino from hand
   playerState.hand = playerState.hand.filter(d => d.id !== dominoId);
@@ -237,7 +302,11 @@ function applyCompleteTrick(state: GameState): GameState {
   newState.currentSuit = -1;
   
   // Award points to winning team
-  newState.teamScores[newState.players[winner].teamId] += points + 1; // +1 for the trick
+  const winnerPlayer = newState.players[winner];
+  if (!winnerPlayer) {
+    throw new Error(`Invalid winner index: ${winner}`);
+  }
+  newState.teamScores[winnerPlayer.teamId] += points + 1; // +1 for the trick
   
   // Set next player
   newState.currentPlayer = winner;
@@ -288,8 +357,12 @@ function applyScoreHand(state: GameState): GameState {
     newState.shuffleSeed = state.shuffleSeed + 1000000;
     const hands = dealDominoesWithSeed(newState.shuffleSeed);
     newState.players.forEach((player, i) => {
-      player.hand = hands[i];
-      player.suitAnalysis = analyzeSuits(hands[i]); // No trump yet
+      const hand = hands[i];
+      if (!hand) {
+        throw new Error(`No hand dealt for player ${i}`);
+      }
+      player.hand = hand;
+      player.suitAnalysis = analyzeSuits(hand); // No trump yet
     });
     
     // Reset round state
@@ -320,8 +393,12 @@ function applyRedeal(state: GameState): GameState {
   // Deal new hands
   const hands = dealDominoesWithSeed(newState.shuffleSeed);
   newState.players.forEach((player, i) => {
-    player.hand = hands[i];
-    player.suitAnalysis = analyzeSuits(hands[i]); // No trump yet
+    const hand = hands[i];
+    if (!hand) {
+      throw new Error(`No hand dealt for player ${i}`);
+    }
+    player.hand = hand;
+    player.suitAnalysis = analyzeSuits(hand); // No trump yet
   });
   
   // Reset bidding
@@ -372,7 +449,11 @@ function getBiddingActions(state: GameState): GameAction[] {
     return actions;
   }
   
-  const currentPlayerHand = state.players[state.currentPlayer].hand;
+  const currentPlayerData = state.players[state.currentPlayer];
+  if (!currentPlayerData) {
+    throw new Error(`Invalid current player index: ${state.currentPlayer}`);
+  }
+  const currentPlayerHand = currentPlayerData.hand;
   
   // Pass action
   actions.push({ type: 'pass', player: state.currentPlayer });

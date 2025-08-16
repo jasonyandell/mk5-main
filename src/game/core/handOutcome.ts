@@ -66,7 +66,11 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     return { isDetermined: false };
   }
   
-  const biddingTeam = state.players[bid.player].teamId;
+  const bidPlayer = state.players[bid.player];
+  if (!bidPlayer) {
+    throw new Error(`Invalid bid player index: ${bid.player}`);
+  }
+  const biddingTeam = bidPlayer.teamId;
   const defendingTeam = biddingTeam === 0 ? 1 : 0;
   
   const [team0Score, team1Score] = state.teamScores;
@@ -137,9 +141,14 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     case 'nello': {
       // Nello - bidding team must lose all tricks
       // Check if bidding team has won any tricks
-      const biddingTeamTricks = state.tricks.filter(trick => 
-        trick.winner !== undefined && state.players[trick.winner].teamId === biddingTeam
-      ).length;
+      const biddingTeamTricks = state.tricks.filter(trick => {
+        if (trick.winner === undefined) return false;
+        const winnerPlayer = state.players[trick.winner];
+        if (!winnerPlayer) {
+          throw new Error(`Invalid trick winner index: ${trick.winner}`);
+        }
+        return winnerPlayer.teamId === biddingTeam;
+      }).length;
       
       if (biddingTeamTricks > 0) {
         return {
@@ -156,9 +165,14 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     case 'plunge': {
       // Splash/Plunge - bidding team must win all tricks
       // Check if defending team has won any tricks
-      const defendingTeamTricks = state.tricks.filter(trick => 
-        trick.winner !== undefined && state.players[trick.winner].teamId === defendingTeam
-      ).length;
+      const defendingTeamTricks = state.tricks.filter(trick => {
+        if (trick.winner === undefined) return false;
+        const winnerPlayer = state.players[trick.winner];
+        if (!winnerPlayer) {
+          throw new Error(`Invalid trick winner index: ${trick.winner}`);
+        }
+        return winnerPlayer.teamId === defendingTeam;
+      }).length;
       
       if (defendingTeamTricks > 0) {
         return {

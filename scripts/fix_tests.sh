@@ -96,6 +96,8 @@ Please analyze the output and fix all issues including:
 - Build errors
 - Any other code quality issues
 
+REQUIREMENT: The core game in src/game must be correct by construction.  Do not perform quick-fix solutions to the core game, do analyze how we can improve the code to be more correct.
+
 Warnings are errors. This is a greenfield project.
 Make all tests (unit and e2e) thorough and maintainable.
 Ensure code follows project conventions and passes all quality checks.

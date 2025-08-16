@@ -1,4 +1,4 @@
-import type { GameState } from '../types';
+import type { GameState, Player } from '../types';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
@@ -94,26 +94,33 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
  * Creates a deep copy of the game state for immutable operations
  */
 export function cloneGameState(state: GameState): GameState {
-  return {
+  const clonedState: GameState = {
     ...state,
-    players: state.players.map(player => ({
-      ...player,
-      hand: [...player.hand],
-      suitAnalysis: player.suitAnalysis ? {
-        count: { ...player.suitAnalysis.count },
-        rank: {
-          0: [...player.suitAnalysis.rank[0]],
-          1: [...player.suitAnalysis.rank[1]],
-          2: [...player.suitAnalysis.rank[2]],
-          3: [...player.suitAnalysis.rank[3]],
-          4: [...player.suitAnalysis.rank[4]],
-          5: [...player.suitAnalysis.rank[5]],
-          6: [...player.suitAnalysis.rank[6]],
-          doubles: [...player.suitAnalysis.rank.doubles],
-          trump: [...player.suitAnalysis.rank.trump]
-        }
-      } : undefined
-    })),
+    players: state.players.map(player => {
+      const clonedPlayer: Player = {
+        ...player,
+        hand: [...player.hand]
+      };
+      
+      if (player.suitAnalysis) {
+        clonedPlayer.suitAnalysis = {
+          count: { ...player.suitAnalysis.count },
+          rank: {
+            0: [...player.suitAnalysis.rank[0]],
+            1: [...player.suitAnalysis.rank[1]],
+            2: [...player.suitAnalysis.rank[2]],
+            3: [...player.suitAnalysis.rank[3]],
+            4: [...player.suitAnalysis.rank[4]],
+            5: [...player.suitAnalysis.rank[5]],
+            6: [...player.suitAnalysis.rank[6]],
+            doubles: [...player.suitAnalysis.rank.doubles],
+            trump: [...player.suitAnalysis.rank.trump]
+          }
+        };
+      }
+      
+      return clonedPlayer;
+    }),
     bids: [...state.bids],
     tricks: state.tricks.map(trick => ({
       ...trick,
@@ -123,14 +130,19 @@ export function cloneGameState(state: GameState): GameState {
     currentSuit: state.currentSuit,
     teamScores: [...state.teamScores] as [number, number],
     teamMarks: [...state.teamMarks] as [number, number],
-    // Clone the hands object if it exists
-    hands: state.hands ? Object.fromEntries(
+  };
+  
+  // Clone the hands object if it exists
+  if (state.hands) {
+    clonedState.hands = Object.fromEntries(
       Object.entries(state.hands).map(([playerId, hand]) => [
         playerId, 
         [...hand]
       ])
-    ) : undefined,
-  };
+    );
+  }
+  
+  return clonedState;
 }
 
 /**

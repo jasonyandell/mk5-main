@@ -69,16 +69,20 @@ export function expandMinimalState(minimal: MinimalGameState): GameState {
   
   // Update player hands and recalculate suit analysis
   state.players.forEach((player, i) => {
-    player.hand = hands[i];
-    player.suitAnalysis = analyzeSuits(hands[i]);
+    const hand = hands[i];
+    if (!hand) {
+      throw new Error(`No hand dealt for player ${i}`);
+    }
+    player.hand = hand;
+    player.suitAnalysis = analyzeSuits(hand);
   });
   
   // Update deprecated hands property
   state.hands = {
-    0: hands[0],
-    1: hands[1],
-    2: hands[2],
-    3: hands[3]
+    0: hands[0]!,
+    1: hands[1]!,
+    2: hands[2]!,
+    3: hands[3]!
   };
   
   return state;

@@ -27,6 +27,9 @@ export function isValidBid(state: GameState, bid: Bid, playerHand?: Domino[]): b
   
   // All subsequent bids must be higher than current high bid
   const lastBid = previousBids[previousBids.length - 1];
+  if (!lastBid) {
+    throw new Error('No previous bid found when validating subsequent bid');
+  }
   const lastBidValue = getBidComparisonValue(lastBid);
   const currentBidValue = getBidComparisonValue(bid);
   

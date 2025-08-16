@@ -229,8 +229,8 @@ export function getStrongestSuits(analysis: SuitAnalysis): number[] {
     if (suitA.length === 0) return 1;
     if (suitB.length === 0) return -1;
     
-    const highestA = suitA[0];
-    const highestB = suitB[0];
+    const highestA = suitA[0]!;
+    const highestB = suitB[0]!;
     
     const totalA = highestA.high + highestA.low;
     const totalB = highestB.high + highestB.low;
