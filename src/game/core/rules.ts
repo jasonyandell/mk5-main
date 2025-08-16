@@ -202,15 +202,39 @@ export function isValidPlay(
     return true; // Can't follow doubles, any play is legal
   }
   
-  // For regular suits (0-6), use the suit ranking
-  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
-  
-  // If player has dominoes in the led suit, must play one of them
-  if (suitDominoes && suitDominoes.length > 0) {
-    return suitDominoes.some(d => d.id === domino.id);
+  // Check if trump is being led
+  const trumpValue = getTrumpNumber(state.trump);
+  if (trumpValue === leadSuit) {
+    // Trump is led - must follow with trump if possible
+    const trumpDominoes = player.suitAnalysis.rank.trump;
+    if (trumpDominoes && trumpDominoes.length > 0) {
+      return trumpDominoes.some(d => d.id === domino.id);
+    }
+    return true; // Can't follow trump, any play is legal
   }
   
-  // If player can't follow suit, any play is legal
+  // For regular suits (0-6), check if player can follow
+  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
+  
+  // Filter out trump dominoes - they can't follow non-trump suits
+  const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
+    // If trump is a regular suit, dominoes containing that suit are trump
+    if (trumpValue !== null && trumpValue >= 0 && trumpValue <= 6) {
+      return d.high !== trumpValue && d.low !== trumpValue;
+    }
+    // If doubles are trump, doubles can't follow regular suits
+    if (trumpValue === 7) {
+      return d.high !== d.low;
+    }
+    return true;
+  }) : [];
+  
+  // If player has non-trump dominoes in the led suit, must play one of them
+  if (nonTrumpSuitDominoes.length > 0) {
+    return nonTrumpSuitDominoes.some(d => d.id === domino.id);
+  }
+  
+  // If player can't follow suit (no non-trump dominoes in that suit), any play is legal
   return true;
 }
 
@@ -231,6 +255,7 @@ export function canFollowSuit(
   const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
   return suitDominoes && suitDominoes.length > 0;
 }
+
 
 /**
  * Helper function to convert trump to numeric value
@@ -273,15 +298,39 @@ export function getValidPlays(
     return [...player.hand]; // Can't follow doubles, all plays valid
   }
   
+  // Check if trump is being led
+  const trumpValue = getTrumpNumber(state.trump);
+  if (trumpValue === leadSuit) {
+    // Trump is led - must follow with trump if possible
+    const trumpDominoes = player.suitAnalysis.rank.trump;
+    if (trumpDominoes && trumpDominoes.length > 0) {
+      return trumpDominoes;
+    }
+    return [...player.hand]; // Can't follow trump, all plays valid
+  }
+  
   // Get dominoes that can follow the led suit from suit analysis
   const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
   
-  // If can follow suit, must follow suit
-  if (suitDominoes && suitDominoes.length > 0) {
-    return suitDominoes;
+  // Filter out trump dominoes - they can't follow non-trump suits
+  const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
+    // If trump is a regular suit, dominoes containing that suit are trump
+    if (trumpValue !== null && trumpValue >= 0 && trumpValue <= 6) {
+      return d.high !== trumpValue && d.low !== trumpValue;
+    }
+    // If doubles are trump, doubles can't follow regular suits
+    if (trumpValue === 7) {
+      return d.high !== d.low;
+    }
+    return true;
+  }) : [];
+  
+  // If player has non-trump dominoes in the led suit, must play one of them
+  if (nonTrumpSuitDominoes.length > 0) {
+    return nonTrumpSuitDominoes;
   }
   
-  // If can't follow suit, all dominoes are valid
+  // If player can't follow suit (no non-trump dominoes in that suit), all dominoes are valid
   return [...player.hand];
 }
 

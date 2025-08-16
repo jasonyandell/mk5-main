@@ -113,27 +113,27 @@ describe('Trump Suit Following Rules', () => {
   });
 
   describe('Suit Analysis with Trump', () => {
-    it('correctly separates trump dominoes from natural suits', () => {
+    it('correctly includes trump dominoes in natural suits for reference', () => {
       const hand: Domino[] = [
         { id: '2-1', high: 2, low: 1, points: 0 }, // Has 2, not trump
-        { id: '2-3', high: 2, low: 3, points: 5 }, // This is trump (3s are trump)
+        { id: '2-3', high: 2, low: 3, points: 5 }, // This is trump (3s are trump) but also in suit 2
         { id: '3-3', high: 3, low: 3, points: 0 }, // Double 3 (trump)
         { id: '4-5', high: 4, low: 5, points: 0 }  // Neither 2 nor trump
       ];
 
       const analysis = analyzeSuits(hand, { type: 'suit', suit: 3 });
       
-      // Check suit 2: should only have non-trump domino
-      expect(analysis.rank[2]).toHaveLength(1);
-      expect(analysis.rank[2][0].id).toBe('2-1');
+      // Check suit 2: should have both dominoes containing 2 (including trump)
+      expect(analysis.rank[2]).toHaveLength(2);
+      expect(analysis.rank[2].map(d => d.id)).toContain('2-1');
+      expect(analysis.rank[2].map(d => d.id)).toContain('2-3');
       
       // Check trump: should have both dominoes containing 3
       expect(analysis.rank.trump).toHaveLength(2);
       expect(analysis.rank.trump.map(d => d.id)).toContain('3-3');
       expect(analysis.rank.trump.map(d => d.id)).toContain('2-3');
       
-      // 2-3 should NOT be in suit 2 since it's trump
-      expect(analysis.rank[2].map(d => d.id)).not.toContain('2-3');
+      // Note: 2-3 is in BOTH suit 2 and trump (filtering happens at validation time)
     });
 
     it('handles doubles as trump correctly', () => {

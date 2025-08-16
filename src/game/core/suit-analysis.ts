@@ -115,15 +115,10 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
 
   // Get numeric trump value for checking
   const numericTrump = trumpToNumber(trump);
-  const isSuitTrump = numericTrump !== null && numericTrump >= 0 && numericTrump <= 6;
   const isDoublesTrump = numericTrump === 7;
 
   // Add doubles to their natural suit rankings
   doubles.forEach(domino => {
-    // If a specific suit is trump and this double is of that suit, don't add to natural suit
-    if (isSuitTrump && domino.high === numericTrump) {
-      return; // Skip adding to natural suit
-    }
     // If doubles are trump, don't add any double to natural suits
     if (isDoublesTrump) {
       return; // Skip adding to natural suit
@@ -131,12 +126,8 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
     rank[domino.high as keyof Omit<SuitRanking, 'doubles' | 'trump'>].push(domino);
   });
 
-  // Process non-doubles - each goes into suits it contains (unless it's trump)
+  // Process non-doubles - each goes into both suits it contains
   nonDoubles.forEach(domino => {
-    // If this domino contains trump suit, don't add to natural suits
-    if (isSuitTrump && (domino.high === numericTrump || domino.low === numericTrump)) {
-      return; // Skip adding to natural suits
-    }
     rank[domino.high as keyof Omit<SuitRanking, 'doubles' | 'trump'>].push(domino);
     rank[domino.low as keyof Omit<SuitRanking, 'doubles' | 'trump'>].push(domino);
   });

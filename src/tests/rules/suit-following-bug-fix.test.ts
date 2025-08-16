@@ -5,16 +5,16 @@ import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 
 describe('Suit Following Bug Fix', () => {
-  it('should not allow playing 1-1 when player has 5-1 and must follow suit (5s)', () => {
-    // This is the original bug report scenario
+  it('should allow any domino when only trump dominoes contain the led suit', () => {
+    // When 1s are trump and 5s are led, 5-1 is trump and cannot follow 5s
     const playerHand: Domino[] = [
-      { id: '1-2', high: 2, low: 1 },
-      { id: '5-1', high: 5, low: 1 }, // Must play this to follow 5s
-      { id: '1-1', high: 1, low: 1 }, // Cannot play this
-      { id: '3-2', high: 3, low: 2 },
-      { id: '4-3', high: 4, low: 3 },
-      { id: '6-2', high: 6, low: 2 },
-      { id: '4-2', high: 4, low: 2 }
+      { id: '1-2', high: 2, low: 1 }, // Trump, cannot follow 5s
+      { id: '5-1', high: 5, low: 1 }, // Trump (contains 1), cannot follow 5s
+      { id: '1-1', high: 1, low: 1 }, // Trump, cannot follow 5s
+      { id: '3-2', high: 3, low: 2 }, // Not trump, cannot follow 5s
+      { id: '4-3', high: 4, low: 3 }, // Not trump, cannot follow 5s
+      { id: '6-2', high: 6, low: 2 }, // Not trump, cannot follow 5s
+      { id: '4-2', high: 4, low: 2 }  // Not trump, cannot follow 5s
     ];
 
     const state = createTestState({
@@ -41,17 +41,17 @@ describe('Suit Following Bug Fix', () => {
       ]
     });
 
-    // Player 2 should NOT be able to play 1-1 (trump)
+    // Since 5-1 is trump, it cannot follow 5s
+    // Player has NO dominoes that can follow 5s (non-trump 5s)
+    // Therefore ALL dominoes should be playable
     const domino_1_1 = playerHand.find(d => d.id === '1-1')!;
-    expect(isValidPlay(state, domino_1_1, 2)).toBe(false);
+    expect(isValidPlay(state, domino_1_1, 2)).toBe(true);
 
-    // Player 2 MUST be able to play 5-1 (has the led suit)
     const domino_5_1 = playerHand.find(d => d.id === '5-1')!;
     expect(isValidPlay(state, domino_5_1, 2)).toBe(true);
 
-    // Other dominoes without 5s should not be playable
     const domino_3_2 = playerHand.find(d => d.id === '3-2')!;
-    expect(isValidPlay(state, domino_3_2, 2)).toBe(false);
+    expect(isValidPlay(state, domino_3_2, 2)).toBe(true);
   });
 
   it('should allow playing trump dominoes that also contain the led suit', () => {
