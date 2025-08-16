@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test('final hover test with screenshot', async ({ page }) => {
   // Navigate directly to bidding phase

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gamePhase, availableActions, gameActions, teamInfo, biddingInfo, currentPlayer } from '../../stores/gameStore';
-  import type { StateTransition, Domino as DominoType } from '../../game/types';
+  import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';

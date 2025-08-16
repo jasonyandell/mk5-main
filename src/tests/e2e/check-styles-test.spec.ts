@@ -39,10 +39,10 @@ test('check computed styles of trick container', async ({ page }) => {
   console.log('Trick positions:', positions);
   
   // Check if there's any CSS that might be overriding
-  const allStyles = await page.locator('.trick-horizontal').evaluate(el => {
+  const allStyles = await page.locator('.trick-horizontal').evaluate(() => {
     // Get all stylesheets
     const sheets = Array.from(document.styleSheets);
-    const rules = [];
+    const rules: Array<{ selector: string; style: string }> = [];
     
     sheets.forEach(sheet => {
       try {
@@ -61,7 +61,7 @@ test('check computed styles of trick container', async ({ page }) => {
             }
           }
         });
-      } catch (e) {
+      } catch {
         // Some stylesheets might be cross-origin
       }
     });

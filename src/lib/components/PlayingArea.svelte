@@ -2,7 +2,7 @@
   import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import type { Domino as DominoType } from '../../game/types';
-  import { fade, slide } from 'svelte/transition';
+  import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();

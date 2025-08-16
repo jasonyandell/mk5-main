@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('History Navigation URL Preservation', () => {
   test('should preserve URL when clicking history items in debug panel', async ({ page }) => {
     // Navigate to a URL with multiple actions
-    const testURL = '/?d=eyJ2IjoxLCJzIjp7InMiOjE3NTQ4NzIzNjEzOTN9LCJhIjpbeyJpIjoicCJ9LHsiaSI6IjMwIn0seyJpIjoiMzEifSx7ImkiOiIzMiJ9LHsiaSI6InRydW1wLWJsYW5rcyJ9LHsiaSI6IjExIn0seyJpIjoiMjEifSx7ImkiOiIzMWQifSx7ImkiOiI2MSJ9LHsiaSI6ImNvbXBsZXRlLXRyaWNrIn0seyJpIjoiMzNkIn0seyJpIjoiMDAifSx7ImkiOiI1MyJ9LHsiaSI6IjYzIn0seyJpIjoiY29tcGxldGUtdHJpY2sifV19';
+    const testURL = '/?d=eyJ2IjoxLCJzIjp7InMiOjE3NTQ4NzIzNjEzOTN9LCJhIjpbeyJpIjoicCJ9LHsiaSI6IjMwIn0seyJpIjoiMzEifSx7ImkiOiIzMiJ9LHsiaSI6InRydW1wLWJsYW5rcyJ9LHsiaSI6IjExIn0seyJpIjoiMjEifSx7ImkiOiIzMSJ9LHsiaSI6IjYxIn0seyJpIjoiY29tcGxldGUtdHJpY2sifSx7ImkiOiIzMyJ9LHsiaSI6IjAwIn0seyJpIjoiNTMifSx7ImkiOiI2MyJ9LHsiaSI6ImNvbXBsZXRlLXRyaWNrIn1dfQ';
     await page.goto(testURL);
     
     // Wait for app to load

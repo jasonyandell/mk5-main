@@ -1,0 +1,125 @@
+The tests are failing because they are out of date with the new frontend code. 
+Please analyze the test output and fix the issues.  Warnings are errors.  
+This is a greenfield project.  
+Make all tests (unit and e2e) thorough and maintainable.
+
+Failure and warning details:
+```
+=== FAILURE AND WARNING DETAILS ===
+
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m
+
+    Locator: locator('h1')
+    Expected string: [32m"Texas 42 Debug Interface"[39m
+--
+      14 |     // Use page directly from beforeEach setup
+    > 15 |     await expect(helper['page'].locator('h1')).toContainText('Texas 42 Debug Interface');
+         |                                                ^
+      16 |     await expect(helper['page'].locator('[data-testid="debug-panel"]')).toBeVisible();
+      17 |     await expect(helper['page'].locator('[data-testid="actions-count"]')).toBeVisible();
+      18 |   });
+        at /home/jason/v2/mk5-newtests/src/tests/e2e/basic-gameplay.spec.ts:15:48
+
+--
+
+    Error: page.waitForFunction: Test timeout of 5000ms exceeded.
+
+       at helpers/playwrightHelper.ts:327
+
+--
+
+    Error: locator.textContent: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('[data-testid="team-0-score"]')[22m
+
+--
+
+    Error: locator.click: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('button:has-text("Reset Game")')[22m
+
+--
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m()[22m
+
+    Locator: locator('h1')
+    Expected: visible
+--
+      143 |     // Should still be functional
+    > 144 |     await expect(page.locator('h1')).toBeVisible();
+          |                                      ^
+      145 |     await expect(page.locator('[data-testid="score-board"]')).toBeVisible();
+      146 |     
+      147 |     // Should be able to interact with bidding
+        at /home/jason/v2/mk5-newtests/src/tests/e2e/basic-gameplay.spec.ts:144:38
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.game-progress') to be visible[22m
+
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.game-progress') to be visible[22m
+
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.game-progress') to be visible[22m
+
+--
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+--
+      34 |     
+    > 35 |     expect(buttonCount).toBeGreaterThan(0);
+         |                         ^
+      36 |     
+      37 |     // Click the first available bid button
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.current-trick-area') to be visible[22m
+
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.trick-horizontal') to be visible[22m
+
+--
+
+    Error: page.waitForSelector: Test timeout of 5000ms exceeded.
+    Call log:
+    [2m  - waiting for locator('.game-progress') to be visible[22m
+
+--
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+... (Output truncated - 83 total failures/warnings found)
+Focus on fixing the first few issues above, which should resolve many others.
+
+=== TEST SUMMARY ===
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:162:5 › Tournament Compliance E2E Tests › Suit Following Enforcement › should handle doubles-trump correctly 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:181:5 › Tournament Compliance E2E Tests › Tournament Scoring Rules › should award exactly 1 mark for successful 30-41 point bids 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:202:5 › Tournament Compliance E2E Tests › Tournament Scoring Rules › should enforce 7-mark game target 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:214:5 › Tournament Compliance E2E Tests › Tournament Scoring Rules › should handle set penalties correctly 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:246:5 › Tournament Compliance E2E Tests › Turn Order and Dealing › should start bidding with player left of dealer 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:255:5 › Tournament Compliance E2E Tests › Turn Order and Dealing › should advance dealer after all-pass redeal 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:270:5 › Tournament Compliance E2E Tests › Turn Order and Dealing › should ensure each player bids exactly once per round 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:289:5 › Tournament Compliance E2E Tests › Game State Consistency › should maintain consistent domino count throughout 
+    [chromium] › src/tests/e2e/tournament-compliance.spec.ts:302:5 › Tournament Compliance E2E Tests › Game State Consistency › should enforce correct trick count (exactly 7) 
+  15 passed (59.5s)
+```

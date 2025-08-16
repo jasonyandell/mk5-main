@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 
 test('test precise domino hover', async ({ page }) => {
   // Start fresh game

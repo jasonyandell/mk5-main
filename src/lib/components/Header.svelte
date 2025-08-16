@@ -26,10 +26,6 @@
     quickplayActions.toggle();
   }
 
-  function stepQuickPlay() {
-    quickplayActions.step();
-  }
-
   // Track phase changes for animation
   let previousPhase = $gamePhase;
   let phaseKey = 0;

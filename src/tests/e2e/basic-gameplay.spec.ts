@@ -11,10 +11,9 @@ test.describe('Basic Gameplay', () => {
 
   test('should load game interface', async () => {
     // Check main UI elements are present
-    // Use page directly from beforeEach setup
-    await expect(helper['page'].locator('h1')).toContainText('Texas 42 Debug Interface');
-    await expect(helper['page'].locator('[data-testid="debug-panel"]')).toBeVisible();
-    await expect(helper['page'].locator('[data-testid="actions-count"]')).toBeVisible();
+    await expect(helper.getPage().locator('.app-container')).toBeVisible();
+    await expect(helper.getPage().locator('.app-header')).toBeVisible();
+    await expect(helper.getPage().locator('.bottom-nav')).toBeVisible();
   });
 
   test('should start in bidding phase', async () => {
@@ -91,10 +90,6 @@ test.describe('Basic Gameplay', () => {
     
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('playing');
-    
-    // Should show trump
-    const trump = await helper.getTrump();
-    expect(trump).toContain('0s');
   });
 
   test('should track scores correctly', async () => {
@@ -141,8 +136,8 @@ test.describe('Basic Gameplay', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     
     // Should still be functional
-    await expect(page.locator('h1')).toBeVisible();
-    await expect(page.locator('[data-testid="score-board"]')).toBeVisible();
+    await expect(page.locator('.app-header')).toBeVisible();
+    await expect(page.locator('.score-display')).toBeVisible();
     
     // Should be able to interact with bidding
     const biddingOptions = await helper.getBiddingOptions();

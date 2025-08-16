@@ -1,10 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { gameState, actionHistory, stateValidationError, gameActions, initialState } from '../../stores/gameStore';
+  import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { compressGameState, compressActionId, encodeURLData } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
-  import GameProgress from './GameProgress.svelte';
 
   const dispatch = createEventDispatcher();
 
@@ -50,7 +49,7 @@
     
     // Update URL to reflect the new state
     const urlData = {
-      v: 1,
+      v: 1 as const,
       s: compressGameState($initialState),
       a: actionsToReplay.map(a => ({ i: compressActionId(a.id) }))
     };
@@ -248,7 +247,7 @@
               <input 
                 type="checkbox" 
                 bind:checked={$quickplayState.enabled}
-                on:change={(e) => quickplayActions.toggle()}
+                on:change={() => quickplayActions.toggle()}
               />
               QuickPlay Active
             </label>

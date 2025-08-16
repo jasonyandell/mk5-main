@@ -1,11 +1,10 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import Header from './lib/components/Header.svelte';
-  import GameProgress from './lib/components/GameProgress.svelte';
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
-  import { gameActions, gamePhase, actionHistory, gameState, availableActions } from './stores/gameStore';
+  import { gameActions, gamePhase, gameState, availableActions } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
   import { calculateTrickWinner } from './game/core/scoring';
 
@@ -13,7 +12,6 @@
   let activeView: 'game' | 'actions' = 'game';
   let touchStartY = 0;
   let touchStartTime = 0;
-  let actionPanelRef: ActionPanel | null = null;
   
   // Flash message state
   let flashMessage = '';
@@ -143,7 +141,7 @@
       </div>
     {:else}
       <div transition:fade={{ duration: 200 }} class="action-panel-wrapper">
-        <ActionPanel bind:this={actionPanelRef} on:switchToPlay={() => activeView = 'game'} />
+        <ActionPanel on:switchToPlay={() => activeView = 'game'} />
       </div>
     {/if}
   </main>

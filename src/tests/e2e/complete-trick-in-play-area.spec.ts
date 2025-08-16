@@ -12,26 +12,41 @@ test.describe('Complete Trick in Play Area', () => {
       phase: 'playing',
       dealer: 0,
       winningBidder: 0,
-      currentBid: { value: 30 },
+      currentBid: { type: 'points' as const, value: 30, player: 0 },
       trump: { type: 'suit', suit: 3 }, // Threes trump
       // All 4 players have played - ready to complete trick
       currentTrick: [
-        { player: 0, domino: { high: 3, low: 2, points: 5 } },
-        { player: 1, domino: { high: 4, low: 1, points: 5 } },
-        { player: 2, domino: { high: 5, low: 0, points: 5 } },
-        { player: 3, domino: { high: 6, low: 4, points: 10 } }
+        { player: 0, domino: { high: 3, low: 2, points: 5, id: '3-2' } },
+        { player: 1, domino: { high: 4, low: 1, points: 5, id: '4-1' } },
+        { player: 2, domino: { high: 5, low: 0, points: 5, id: '5-0' } },
+        { player: 3, domino: { high: 6, low: 4, points: 10, id: '6-4' } }
       ],
-      hands: [
-        [
-          { high: 6, low: 6, points: 0 },
-          { high: 5, low: 5, points: 10 },
-          { high: 4, low: 4, points: 0 },
-          { high: 3, low: 3, points: 0 },
-          { high: 2, low: 2, points: 0 },
-          { high: 1, low: 1, points: 0 }
+      hands: {
+        0: [
+          { high: 6, low: 6, points: 0, id: '6-6' },
+          { high: 5, low: 5, points: 10, id: '5-5' },
+          { high: 4, low: 4, points: 0, id: '4-4' },
+          { high: 3, low: 3, points: 0, id: '3-3' },
+          { high: 2, low: 2, points: 0, id: '2-2' },
+          { high: 1, low: 1, points: 0, id: '1-1' }
         ],
-        [], [], []
-      ]
+        1: [], 2: [], 3: []
+      },
+      // Required fields for GameState
+      players: [
+        { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
+        { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
+        { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
+        { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 }
+      ],
+      bids: [],
+      tricks: [],
+      currentSuit: 3,
+      teamScores: [0, 0],
+      teamMarks: [0, 0],
+      gameTarget: 7,
+      tournamentMode: false,
+      shuffleSeed: 12345
     });
   });
 
@@ -92,18 +107,33 @@ test.describe('Complete Trick in Play Area', () => {
       phase: 'playing',
       dealer: 0,
       winningBidder: 0,
-      currentBid: { value: 30 },
+      currentBid: { type: 'points' as const, value: 30, player: 0 },
       trump: { type: 'suit', suit: 3 },
       currentTrick: [
-        { player: 0, domino: { high: 3, low: 2, points: 5 } }
+        { player: 0, domino: { high: 3, low: 2, points: 5, id: '3-2' } }
       ],
-      hands: [
-        [
-          { high: 6, low: 6, points: 0 },
-          { high: 5, low: 5, points: 10 }
+      hands: {
+        0: [
+          { high: 6, low: 6, points: 0, id: '6-6' },
+          { high: 5, low: 5, points: 10, id: '5-5' }
         ],
-        [], [], []
-      ]
+        1: [], 2: [], 3: []
+      },
+      // Required fields for GameState
+      players: [
+        { id: 0, name: 'Player 0', hand: [], teamId: 0, marks: 0 },
+        { id: 1, name: 'Player 1', hand: [], teamId: 1, marks: 0 },
+        { id: 2, name: 'Player 2', hand: [], teamId: 0, marks: 0 },
+        { id: 3, name: 'Player 3', hand: [], teamId: 1, marks: 0 }
+      ],
+      bids: [],
+      tricks: [],
+      currentSuit: 3,
+      teamScores: [0, 0],
+      teamMarks: [0, 0],
+      gameTarget: 7,
+      tournamentMode: false,
+      shuffleSeed: 12345
     });
     
     // Should not see any proceed button

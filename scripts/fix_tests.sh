@@ -61,13 +61,41 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         # Set auto-exit and call Claude
         export CLAUDE_AUTO_EXIT=true
         
-        # Create a prompt for Claude with test output
+        # Extract only failure and warning details for Claude
+        echo -e "${BLUE}📝 Extracting failure details for Claude...${NC}"
+        
+        # Create filtered output with only failures and warnings (limited to prevent context flooding)
+        {
+            echo "=== FAILURE AND WARNING DETAILS ==="
+            echo ""
+            
+            # Extract test failures, errors, warnings, and related context (limited to first 50 matches)
+            grep -A 3 -B 1 -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log | head -100 || true
+            
+            # Add truncation notice if there are more failures
+            total_failures=$(grep -c -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:)" test_output.log || echo "0")
+            if [ "$total_failures" -gt 25 ]; then
+                echo ""
+                echo "... (Output truncated - $total_failures total failures/warnings found)"
+                echo "Focus on fixing the first few issues above, which should resolve many others."
+            fi
+            
+            echo ""
+            echo "=== TEST SUMMARY ==="
+            grep -E "(Test Files|Tests|failed|passed|Suites|✓|✕)" test_output.log | tail -10 || true
+            
+        } > claude_failures.txt
+        
+        # Create a prompt for Claude with only failure details
         cat > claude_prompt.txt << EOF
-The tests are failing. Please analyze the test output and fix the issues.  Warnings are errors.  This is a greenfield project.  Make all tests (unit and e2e) thorough and maintainable.  reference @docs/rules.md for behavior questions
+The tests are failing because they are out of date with the new frontend code. 
+Please analyze the test output and fix the issues.  Warnings are errors.  
+This is a greenfield project.  
+Make all tests (unit and e2e) thorough and maintainable.
 
-Recent test output:
+Failure and warning details:
 \`\`\`
-$(tail -100 test_output.log)
+$(cat claude_failures.txt)
 \`\`\`
 EOF
         
@@ -79,8 +107,8 @@ EOF
             echo -e "${YELLOW}Continuing to next iteration anyway...${NC}"
         fi
         
-        # Clean up prompt file
-        rm -f claude_prompt.txt
+        # Clean up prompt files
+        rm -f claude_prompt.txt claude_failures.txt
         
         echo ""
         echo -e "${YELLOW}Waiting 2 seconds before next iteration...${NC}"

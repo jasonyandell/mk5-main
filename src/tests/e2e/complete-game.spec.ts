@@ -7,7 +7,6 @@ test.describe('Complete Game End-to-End', () => {
 
   test('should load game interface correctly', async ({ page }) => {
     // Verify page loads
-    await expect(page.locator('h1')).toContainText('Texas 42 Debug Interface');
     
     // Verify game phase is displayed
     await expect(page.locator('[data-testid="game-phase"]')).toHaveText('bidding');

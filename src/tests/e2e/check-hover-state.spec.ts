@@ -37,7 +37,7 @@ test('check hover state in component', async ({ page }) => {
       // Check the actual highlight prop values being passed
       const highlightValues = await page.evaluate(() => {
         const dominoElements = document.querySelectorAll('.domino');
-        const results = [];
+        const results: Array<{ title: string | null; classes: string[] }> = [];
         dominoElements.forEach(el => {
           // Try to get the Svelte component instance
           const title = el.getAttribute('title');

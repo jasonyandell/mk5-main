@@ -4,7 +4,6 @@
   import type { Trick } from '../../game/types';
 
   $: tricks = $gameState.tricks || [];
-  $: currentTrickNumber = tricks.length + 1;
   $: totalPoints = tricks.reduce((sum, trick) => sum + trick.points, 0);
   $: bidTarget = $biddingInfo.currentBid.type === 'marks' 
     ? 42 * ($biddingInfo.currentBid.value || 1)
@@ -15,7 +14,7 @@
   function getTrickTooltip(trick: Trick, index: number): string {
     const trickNum = index + 1;
     const winner = trick.winner !== undefined ? `P${trick.winner}` : 'Unknown';
-    const counters = trick.plays.filter(p => p.domino.points > 0)
+    const counters = trick.plays.filter(p => p.domino.points && p.domino.points > 0)
       .map(p => `${p.domino.high}-${p.domino.low} (${p.domino.points}pts)`)
       .join(', ');
     
