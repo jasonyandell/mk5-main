@@ -76,7 +76,8 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
             # Extract TypeScript errors first (highest priority)
             if grep -q "error TS" test_output.log; then
                 echo "=== TYPESCRIPT ERRORS ==="
-                grep -A 2 -B 1 "error TS" test_output.log | head -150 || true
+                # Get full file paths with errors
+                grep -E "\.ts.*error TS" test_output.log | head -150 || true
                 echo ""
             fi
             
@@ -87,10 +88,22 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
                 echo ""
             fi
             
-            # Extract test failures, errors, warnings, and related context
-            if grep -q -E "(FAIL|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log; then
-                echo "=== TEST FAILURES ==="
-                grep -A 3 -B 1 -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log | head -100 || true
+            # Extract Playwright E2E test failures with full context
+            if grep -q -E "^\s*[0-9]+\)" test_output.log; then
+                echo "=== PLAYWRIGHT E2E TEST FAILURES ==="
+                # Get numbered failures with file paths and test names
+                grep -E "^\s*[0-9]+\)|^\s*✘.*›.*\.spec\.ts" test_output.log || true
+                echo ""
+                # Get error details including stack traces
+                sed -n '/^\s*[0-9]+\)/,/Error Context:/p' test_output.log | head -200 || true
+                echo ""
+            fi
+            
+            # Extract Vitest unit test failures (avoid listing all passing tests)
+            if grep -q "Test Files.*failed" test_output.log; then
+                echo "=== VITEST UNIT TEST FAILURES ==="
+                # Skip the long list of passing tests, get failures only
+                sed -n '/FAIL.*\.test\.ts/,/Test Files/p' test_output.log | head -150 || true
                 echo ""
             fi
             
@@ -104,14 +117,24 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
             
             echo ""
             echo "=== SUMMARY ==="
-            # Try to extract any summary information
-            tail -20 test_output.log | grep -E "(Test Files|Tests|failed|passed|Suites|✓|✕|error TS|ESLint|files? checked|problems?)" || echo "See details above for errors"
+            # Extract test summaries from each tool
+            echo "TypeScript: $(grep -c "error TS" test_output.log 2>/dev/null || echo "0") errors"
+            echo "ESLint: $(grep -c "✖" test_output.log 2>/dev/null || echo "0") issues"
+            
+            # Get Vitest summary if present
+            grep "Test Files" test_output.log | tail -1 2>/dev/null || true
+            
+            # Get Playwright summary (look for the failure count)
+            grep -E "^\s*[0-9]+\sfailed" test_output.log | tail -1 2>/dev/null || true
+            
+            # Get overall test command result
+            tail -5 test_output.log | grep -E "(failed|passed|error|Error)" || echo "See details above for errors"
             
         } > claude_failures.txt
         
         # Create a prompt for Claude with only failure details
         cat > claude_prompt.txt << EOF
-The tests are failing and there may be other code quality issues. 
+We have changed the frontend and now the e2e tests are failing and there may be other code quality issues. 
 Please analyze the output and fix all issues including:
 - Test failures
 - Linting errors
@@ -120,6 +143,8 @@ Please analyze the output and fix all issues including:
 - Any other code quality issues
 
 REQUIREMENT: The core game in src/game must be correct by construction.  Do not perform quick-fix solutions to the core game, do analyze how we can improve the code to be more correct.
+REQUIREMENT: Do not change the UI (svelte) just because a test is failing.  The test is more likely (but not guaranteed) to be incorrect.
+REQUIREMENT: Put locators into playwrightHelper.ts and not in the tests.  The tests should be pure and readable.
 
 Warnings are errors. This is a greenfield project.
 Make all tests (unit and e2e) thorough and maintainable.

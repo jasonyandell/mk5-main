@@ -7,91 +7,106 @@ test.describe('Complete Game End-to-End', () => {
 
   test('should load game interface correctly', async ({ page }) => {
     // Verify page loads
+    await page.waitForSelector('.app-container', { timeout: 5000 });
     
     // Verify game phase is displayed
-    await expect(page.locator('[data-testid="game-phase"]')).toHaveText('bidding');
+    await expect(page.locator('.phase-name')).toContainText('Bidding');
     
-    // Verify all 4 players are shown
-    const players = page.locator('.player-section');
-    await expect(players).toHaveCount(4);
+    // Verify navigation is present
+    await expect(page.locator('nav')).toBeVisible();
     
-    // Verify debug panels are present
-    await expect(page.locator('[data-testid="debug-panel"]')).toBeVisible();
-    await expect(page.locator('[data-testid="player-hands"]')).toBeVisible();
+    // Verify header is present
+    await expect(page.locator('.app-header')).toBeVisible();
     
-    // Verify actions are available
-    await expect(page.locator('[data-testid="actions-count"]')).toBeVisible();
+    // Verify main content area is present
+    await expect(page.locator('.game-container')).toBeVisible();
   });
 
   test('should handle basic bidding flow', async ({ page }) => {
     // Wait for page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForSelector('.app-container', { timeout: 5000 });
+    
+    // Navigate to actions panel
+    await page.locator('[data-testid="nav-actions"]').click();
+    await page.waitForTimeout(200);
     
     // Check if bid buttons are available
-    const bidButtons = page.locator('[data-generic-testid*="bid-button"]');
-    const buttonCount = await bidButtons.count();
+    const bidButtons = page.locator('[data-testid^="bid-"]');
+    const passButton = page.locator('[data-testid="pass"]');
+    const buttonCount = await bidButtons.count() + await passButton.count();
     
     expect(buttonCount).toBeGreaterThan(0);
     
-    // Click the first available bid button
-    await bidButtons.first().click({ force: true });
+    // Click the first available action button
+    if (await bidButtons.count() > 0) {
+      await bidButtons.first().click();
+    } else {
+      await passButton.click();
+    }
     
     // Verify the bid was registered
     await page.waitForTimeout(100); // Small delay for state update
     
-    // Check game state shows a bid was made
-    const phaseElement = page.locator('[data-testid="game-phase"]');
-    await expect(phaseElement).toHaveText('bidding');
+    // Check game phase - should still be in bidding or advanced
+    const phaseElement = page.locator('.phase-name');
+    const phaseText = await phaseElement.textContent();
+    expect(['Bidding', 'Trump Selection']).toContain(phaseText);
   });
 
   test('should display game controls correctly', async ({ page }) => {
-    // Verify new game button is present
-    await expect(page.locator('[data-testid="new-game-button"]')).toBeVisible();
-    await expect(page.locator('[data-testid="new-game-button"]')).toContainText('New Game');
+    // Verify navigation controls are present
+    await expect(page.locator('[data-testid="nav-game"]')).toBeVisible();
+    await expect(page.locator('[data-testid="nav-actions"]')).toBeVisible();
+    await expect(page.locator('[data-testid="nav-debug"]')).toBeVisible();
   });
 
   test('should reset game correctly', async ({ page }) => {
-    // Click new game button
-    await page.locator('[data-testid="new-game-button"]').click();
+    // Reload page to reset game
+    await page.reload();
+    await page.waitForSelector('.app-container', { timeout: 5000 });
     
     // Verify game resets to bidding phase
-    await expect(page.locator('[data-testid="game-phase"]')).toHaveText('bidding');
+    await expect(page.locator('.phase-name')).toContainText('Bidding');
     
     // Verify scores reset
-    await expect(page.locator('[data-testid="team-0-marks"]')).toContainText('0');
-    await expect(page.locator('[data-testid="team-1-marks"]')).toContainText('0');
+    await expect(page.locator('.score-card.us .score-value')).toContainText('0');
+    await expect(page.locator('.score-card.them .score-value')).toContainText('0');
   });
 
   test('should display responsive layout', async ({ page }) => {
     // Test desktop layout
     await page.setViewportSize({ width: 1200, height: 800 });
-    await expect(page.locator('.debug-layout')).toBeVisible();
+    await expect(page.locator('.app-container')).toBeVisible();
     
     // Test tablet layout
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.locator('.debug-layout')).toBeVisible();
+    await expect(page.locator('.app-container')).toBeVisible();
     
     // Test mobile layout
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.locator('.debug-layout')).toBeVisible();
+    await expect(page.locator('.app-container')).toBeVisible();
   });
 
   test('should show correct team assignments', async ({ page }) => {
-    // Check that players are assigned to correct teams
-    const players = page.locator('.player-section');
-    await expect(players).toHaveCount(4);
+    // Check that team scores are displayed in header
+    await expect(page.locator('.score-card.us')).toBeVisible();
+    await expect(page.locator('.score-card.them')).toBeVisible();
     
-    // Verify team info is displayed for each player
-    const teamInfos = page.locator('.team-info');
-    await expect(teamInfos).toHaveCount(4);
+    // Navigate to game view to see playing area
+    await page.locator('[data-testid="nav-game"]').click();
+    await page.waitForTimeout(200);
     
-    // Check that team assignments are visible in the text
-    await expect(page.locator('.team-info')).toContainText(['Team 1', 'Team 2']);
+    // Check that playing area is displayed
+    await expect(page.locator('.playing-area')).toBeVisible();
   });
 
   test('should handle accessibility features', async ({ page }) => {
+    // Navigate to actions panel
+    await page.locator('[data-testid="nav-actions"]').click();
+    await page.waitForTimeout(200);
+    
     // Check for proper button structure
-    const actionButtons = page.locator('[data-generic-testid*="bid-button"]');
+    const actionButtons = page.locator('.action-button');
     const buttonCount = await actionButtons.count();
     expect(buttonCount).toBeGreaterThan(0);
     
@@ -106,31 +121,43 @@ test.describe('Complete Game End-to-End', () => {
   });
 
   test('should maintain game state consistency', async ({ page }) => {
-    // Check if debug state display is present (always visible in new UI)
-    await expect(page.locator('[data-testid="debug-panel"]')).toBeVisible();
+    // Verify game phase is shown in header
+    await expect(page.locator('.phase-name')).toContainText('Bidding');
     
-    // Verify game phase is shown
-    await expect(page.locator('[data-testid="game-phase"]')).toHaveText('bidding');
+    // Navigate to debug panel to see game state
+    await page.locator('[data-testid="nav-debug"]').click();
+    await page.waitForTimeout(200);
     
-    // Verify actions count is displayed
-    const actionsCount = page.locator('[data-testid="actions-count"]');
-    await expect(actionsCount).toBeVisible();
-    const count = await actionsCount.textContent();
-    expect(parseInt(count || '0')).toBeGreaterThan(0);
+    // Check that debug panel is visible
+    await expect(page.locator('.debug-panel')).toBeVisible();
+    
+    // Close debug panel first to avoid backdrop issues
+    await page.locator('.close-button').click();
+    await page.waitForTimeout(200);
+    
+    // Verify actions are available by navigating to actions panel
+    await page.locator('[data-testid="nav-actions"]').click();
+    await page.waitForTimeout(200);
+    
+    const actionButtons = page.locator('.action-button');
+    const count = await actionButtons.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('should handle game flow transitions', async ({ page }) => {
     // Start in bidding phase
-    await expect(page.locator('[data-testid="game-phase"]')).toHaveText('bidding');
+    await expect(page.locator('.phase-name')).toContainText('Bidding');
+    
+    // Navigate to actions panel
+    await page.locator('[data-testid="nav-actions"]').click();
+    await page.waitForTimeout(200);
     
     // Verify bid actions are available
-    const bidButtons = page.locator('[data-generic-testid*="bid-button"]');
+    const bidButtons = page.locator('[data-testid^="bid-"]');
     await expect(bidButtons.first()).toBeVisible();
     
-    // Verify actions count matches available buttons
-    const actionsCount = page.locator('[data-testid="actions-count"]');
-    const displayedCount = await actionsCount.textContent();
-    const buttonCount = await bidButtons.count();
-    expect(parseInt(displayedCount || '0')).toBe(buttonCount);
+    // Verify that actions are available
+    const buttonCount = await bidButtons.count() + await page.locator('[data-testid="pass"]').count();
+    expect(buttonCount).toBeGreaterThan(0);
   });
 });

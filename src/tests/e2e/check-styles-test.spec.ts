@@ -1,14 +1,15 @@
 import { test } from '@playwright/test';
+import { PlaywrightGameHelper } from './helpers/playwrightHelper';
 
 test('check computed styles of trick container', async ({ page }) => {
-  await page.goto('/');
-  await page.waitForSelector('header', { timeout: 5000 });
+  const helper = new PlaywrightGameHelper(page);
+  await helper.goto();
   
-  // Wait for the trick area to be visible
-  await page.waitForSelector('.trick-horizontal', { timeout: 5000 });
+  // Wait for the trick area to be visible (mapped to .trick-table)
+  await helper.waitForSelector('.trick-horizontal', { timeout: 5000 });
   
   // Get computed styles
-  const display = await page.locator('.trick-horizontal').evaluate(el => {
+  const display = await helper.locator('.trick-horizontal').evaluate(el => {
     const styles = window.getComputedStyle(el);
     return {
       display: styles.display,
@@ -22,8 +23,8 @@ test('check computed styles of trick container', async ({ page }) => {
   
   console.log('Computed styles for .trick-horizontal:', display);
   
-  // Check positions of trick elements
-  const positions = await page.locator('.trick-position').evaluateAll(elements => {
+  // Check positions of trick elements (mapped to .trick-spot)
+  const positions = await helper.locator('.trick-position').evaluateAll(elements => {
     return elements.map(el => {
       const rect = el.getBoundingClientRect();
       return {
@@ -39,7 +40,7 @@ test('check computed styles of trick container', async ({ page }) => {
   console.log('Trick positions:', positions);
   
   // Check if there's any CSS that might be overriding
-  const allStyles = await page.locator('.trick-horizontal').evaluate(() => {
+  const allStyles = await helper.locator('.trick-horizontal').evaluate(() => {
     // Get all stylesheets
     const sheets = Array.from(document.styleSheets);
     const rules: Array<{ selector: string; style: string }> = [];

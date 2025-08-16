@@ -414,7 +414,7 @@
       <div class="hand-scroll">
         <div class="hand-dominoes">
           {#each playerHand as domino, i (domino.high + '-' + domino.low)}
-            <div class="domino-wrapper" style="--delay: {i * 50}ms">
+            <div class="domino-wrapper" style="--delay: {i * 50}ms" data-testid="domino-{domino.high}-{domino.low}" data-playable={isDominoPlayable(domino)}>
               <Domino
                 {domino}
                 playable={isDominoPlayable(domino)}

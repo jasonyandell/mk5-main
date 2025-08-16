@@ -10,39 +10,26 @@ test.describe('Tournament Compliance E2E Tests', () => {
   });
 
   test.describe('Critical Tournament Rules', () => {
-    test('should enforce sequential mark bidding (no jumping)', async ({ page }) => {
-      // Bid 1 mark
-      await page.locator('[data-testid="bid-P0-1M"]').click();
+    test('should enforce sequential mark bidding (no jumping)', async () => {
+      // Bid 1 mark using helper
+      await helper.clickBidAction(1, true);
       
       // Next player should only see 2M, not 3M or higher
-      const buttons = await page.locator('button').all();
-      const buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      
-      const markBids = buttonTexts.filter(t => t.includes('bid-') && t.includes('-marks'));
-      const markValues = markBids.map(t => {
-        const match = t.match(/bid-(\d+)-marks/);
-        return match && match[1] ? parseInt(match[1]) : 0;
-      });
-      const maxMarkBid = markValues.length > 0 ? Math.max(...markValues) : 0;
+      const availableBids = await helper.getAvailableBids();
+      const maxMarkBid = availableBids.marks.length > 0 ? Math.max(...availableBids.marks) : 0;
       
       expect(maxMarkBid).toBe(2); // Can only bid 2M after 1M
     });
 
-    test('should require 2M to be bid before 3M is available', async ({ page }) => {
+    test('should require 2M to be bid before 3M is available', async () => {
       // Verify 3M not available as opening bid
-      let buttons = await page.locator('button').all();
-      let buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      let threeMarkP0 = buttonTexts.find(t => t.includes('bid-3-marks'));
-      expect(threeMarkP0).toBeUndefined();
+      expect(await helper.isBidAvailable(3, true)).toBe(false);
 
       // Bid 2M first
-      await page.locator('[data-testid="bid-P0-2M"]').click();
+      await helper.clickBidAction(2, true);
 
-      // Now 3M should be available to next player (P1)
-      buttons = await page.locator('button').all();
-      buttonTexts = await Promise.all(buttons.map(b => b.innerText()));
-      const threeMarkP1 = buttonTexts.find(t => t.includes('bid-3-marks'));
-      expect(threeMarkP1).toBeDefined();
+      // Now 3M should be available to next player
+      expect(await helper.isBidAvailable(3, true)).toBe(true);
     });
 
     test('should prohibit special contracts in tournament mode', async ({ page }) => {
@@ -159,21 +146,22 @@ test.describe('Tournament Compliance E2E Tests', () => {
       expect(pageContent).toContain('[3|3]');
     });
 
-    test('should handle doubles-trump correctly', async ({ page }) => {
-      await page.locator('[data-testid="bid-P0-30"]').click();
-      await page.locator('[data-testid="bid-P1-PASS"]').click();
-      await page.locator('[data-testid="bid-P2-PASS"]').click();
-      await page.locator('[data-testid="bid-P3-PASS"]').click();
-      await page.locator('[data-testid="set-trump-Doubles"]').click();
+    test('should handle doubles-trump correctly', async () => {
+      // Complete bidding using helper
+      await helper.completeBiddingSimple(30, 'points', 0);
+      
+      // Set trump using helper
+      await helper.setTrump('doubles');
 
-      // When doubles are trump, only the 7 doubles should be trump
-      await expect(page.locator('[data-testid="trump"]')).toContainText('Trump: Doubles');
+      // When doubles are trump, verify trump display
+      await helper.expectTrumpDisplay('doubles');
       
       // All doubles should be present: [0|0], [1|1], [2|2], [3|3], [4|4], [5|5], [6|6]
-      const pageContent = await page.content();
+      const expectedDominoes = [];
       for (let i = 0; i <= 6; i++) {
-        expect(pageContent).toContain(`[${i}|${i}]`);
+        expectedDominoes.push(`[${i}|${i}]`);
       }
+      await helper.expectDominoesInContent(expectedDominoes);
     });
   });
 
@@ -320,7 +308,8 @@ test.describe('Tournament Compliance E2E Tests', () => {
         } else {
           // 7th trick should complete and transition to scoring phase
           await helper.completeTrick();
-          await expect(page.locator('[data-testid="game-phase"]')).toContainText('scoring');
+          const finalPhase = await helper.getCurrentPhase();
+          expect(finalPhase.toLowerCase()).toContain('scoring');
           // Now score the hand
           await helper.scoreHand();
         }
