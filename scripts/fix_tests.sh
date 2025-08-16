@@ -88,10 +88,17 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         
         # Create a prompt for Claude with only failure details
         cat > claude_prompt.txt << EOF
-The tests are failing because they are out of date with the new frontend code. 
-Please analyze the test output and fix the issues.  Warnings are errors.  
-This is a greenfield project.  
+The tests are failing and there may be other code quality issues. 
+Please analyze the output and fix all issues including:
+- Test failures
+- Linting errors
+- TypeScript errors
+- Build errors
+- Any other code quality issues
+
+Warnings are errors. This is a greenfield project.
 Make all tests (unit and e2e) thorough and maintainable.
+Ensure code follows project conventions and passes all quality checks.
 
 Failure and warning details:
 \`\`\`

@@ -25,7 +25,7 @@ export default [js.configs.recommended, {
   rules: {
     ...typescript.configs.recommended.rules,
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-explicit-any': 'error',
     'no-redeclare': 'error',
     'no-case-declarations': 'error'
   }
