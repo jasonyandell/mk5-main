@@ -39,7 +39,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(handWithDouble, currentTrick, doublesAreTrump, 7); // Doubles led
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe("2-2");
+      expect(validPlays[0]?.id).toBe("2-2");
     });
 
     test('6-5 leads with 6s trump, but doubles are trump - suit is 6s', () => {
@@ -56,7 +56,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(handWith6sAndDoubles, currentTrick, doublesAreTrump, 6); // 6s led
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe("6-2");
+      expect(validPlays[0]?.id).toBe("6-2");
     });
 
     test('6-5 leads when 5s are trump, suit is 5s', () => {
@@ -71,7 +71,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(handWith5sAndDoubles, currentTrick, fivesAreTrump, 5); // 5s led (trump)
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe("5-2");
+      expect(validPlays[0]?.id).toBe("5-2");
     });
 
     test('Renege detection - playing non-double when double is available', () => {
@@ -116,7 +116,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(handWith6s, currentTrick, sixesAreTrump, 6); // 6s led
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe("6-2");
+      expect(validPlays[0]?.id).toBe("6-2");
     });
 
     test('5-5 leads when 6s are trump - suit is 5s, must follow with 5s', () => {
@@ -131,7 +131,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(handWith5sAnd6s, currentTrick, sixesAreTrump, 5); // 5s led
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);  
-      expect(validPlays[0].id).toBe("5-3");
+      expect(validPlays[0]?.id).toBe("5-3");
     });
 
     test('Complex scenario - 6-5 leads when 6s are trump', () => {
@@ -166,7 +166,7 @@ describe('Doubles Trump Renege Validation', () => {
       const state = createTestStateWithHand(hand, currentTrick, noTrump, 6); // 6s led
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe("6-3");
+      expect(validPlays[0]?.id).toBe("6-3");
     });
 
     test('Leading first domino - all plays valid', () => {
@@ -231,12 +231,14 @@ describe('Doubles Trump Renege Validation', () => {
         const state = createTestStateWithHand(scenario.hand, scenario.currentTrick, scenario.trump, scenario.currentSuit);
         
         scenario.expectedValid.forEach(dominoId => {
-          const domino = scenario.hand.find(d => d.id === dominoId)!;
+          const domino = scenario.hand.find(d => d.id === dominoId);
+          if (!domino) throw new Error(`Domino ${dominoId} not found in hand`);
           expect(isValidPlay(state, domino, 1)).toBe(true);
         });
 
         scenario.expectedInvalid.forEach(dominoId => {
-          const domino = scenario.hand.find(d => d.id === dominoId)!;
+          const domino = scenario.hand.find(d => d.id === dominoId);
+          if (!domino) throw new Error(`Domino ${dominoId} not found in hand`);
           expect(isValidPlay(state, domino, 1)).toBe(false);
         });
       });

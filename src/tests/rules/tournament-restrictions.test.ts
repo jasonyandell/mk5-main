@@ -13,7 +13,10 @@ describe('Tournament Restrictions', () => {
     gameState.phase = 'bidding';
     const hands = dealDominoesWithSeed(12345);
     gameState.players.forEach((player, i) => {
-      player.hand = hands[i];
+      const hand = hands[i];
+      if (hand) {
+        player.hand = hand;
+      }
     });
   });
 
@@ -42,7 +45,10 @@ describe('Tournament Restrictions', () => {
           { high: 4, low: 0, id: '4-0' },
           { high: 5, low: 1, id: '5-1' }
         ];
-        gameState.players[gameState.currentPlayer].hand = handWith2Doubles;
+        const currentPlayer = gameState.players[gameState.currentPlayer];
+        if (currentPlayer) {
+          currentPlayer.hand = handWith2Doubles;
+        }
         
         const bid = {
           type: 'plunge' as BidType,
@@ -63,7 +69,10 @@ describe('Tournament Restrictions', () => {
           { high: 6, low: 0, id: '6-0' },
           { high: 5, low: 1, id: '5-1' }
         ];
-        gameState.players[gameState.currentPlayer].hand = handWith4Doubles;
+        const currentPlayerWith4 = gameState.players[gameState.currentPlayer];
+        if (currentPlayerWith4) {
+          currentPlayerWith4.hand = handWith4Doubles;
+        }
         
         const validBid = {
           type: 'plunge' as BidType,

@@ -38,10 +38,10 @@ describe('Game State Management', () => {
     it('should assign players to correct teams', () => {
       const state = createInitialState();
       
-      expect(state.players[0].teamId).toBe(0);
-      expect(state.players[1].teamId).toBe(1);
-      expect(state.players[2].teamId).toBe(0);
-      expect(state.players[3].teamId).toBe(1);
+      expect(state.players[0]?.teamId).toBe(0);
+      expect(state.players[1]?.teamId).toBe(1);
+      expect(state.players[2]?.teamId).toBe(0);
+      expect(state.players[3]?.teamId).toBe(1);
     });
   });
   
@@ -53,7 +53,7 @@ describe('Game State Management', () => {
       expect(clone).toEqual(original);
       expect(clone).not.toBe(original);
       expect(clone.players).not.toBe(original.players);
-      expect(clone.players[0].hand).not.toBe(original.players[0].hand);
+      expect(clone.players[0]?.hand).not.toBe(original.players[0]?.hand);
     });
     
     it('should allow independent modifications', () => {
@@ -61,10 +61,10 @@ describe('Game State Management', () => {
       const clone = cloneGameState(original);
       
       clone.currentPlayer = 2;
-      clone.players[0].hand.pop();
+      clone.players[0]?.hand.pop();
       
       expect(original.currentPlayer).toBe(0);
-      expect(original.players[0].hand.length).toBe(7);
+      expect(original.players[0]?.hand.length).toBe(7);
     });
   });
   
@@ -153,7 +153,7 @@ describe('Game State Management', () => {
     
     it('should detect hand size violations', () => {
       const state = createInitialState();
-      state.players[0].hand.push({ high: 0, low: 0, id: 'extra' });
+      state.players[0]?.hand.push({ high: 0, low: 0, id: 'extra' });
       
       const errors = GameTestHelper.validateGameRules(state);
       expect(errors.length).toBeGreaterThan(0);

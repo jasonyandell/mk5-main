@@ -13,7 +13,10 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
 
       // When they make a point bid
@@ -44,7 +47,10 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
       
       // Test invalid bids are rejected

@@ -104,8 +104,8 @@ test.describe('Page Reload Suit Analysis Consistency', () => {
 
     // Verify player hands are identical (dominoes should be the same)
     for (let i = 0; i < 4; i++) {
-      expect(afterReloadData[i].dominoes).toEqual(initialData[i].dominoes);
-      expect(afterReloadData[i].suits).toEqual(initialData[i].suits);
+      expect(afterReloadData[i]!.dominoes).toEqual(initialData[i]!.dominoes);
+      expect(afterReloadData[i]!.suits).toEqual(initialData[i]!.suits);
     }
   });
 
@@ -212,7 +212,7 @@ test.describe('Page Reload Suit Analysis Consistency', () => {
     const initialData = await getPlayerData();
 
     // Start a completely new game (clear URL)
-    await page.goto(page.url().split('?')[0]);
+    await page.goto(page.url().split('?')[0] || page.url());
     await helper.locator('[data-testid="player-hands"]').waitFor({ state: 'visible' });
 
     // The new game should have different hands (different seed)

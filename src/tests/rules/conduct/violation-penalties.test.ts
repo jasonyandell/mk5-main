@@ -179,7 +179,10 @@ describe('Feature: Tournament Conduct', () => {
     it('should apply penalties immediately when detected', () => {
       // Given a violation is detected during play
       const gameState = setupGameWithViolations();
-      const initialMarks = [...gameState.teamMarks!];
+      if (!gameState.teamMarks) {
+        throw new Error('teamMarks should be defined for this test');
+      }
+      const initialMarks = [...gameState.teamMarks];
       
       // When a second offense is committed
       gameState.violations.push(
@@ -194,9 +197,12 @@ describe('Feature: Tournament Conduct', () => {
       expect(penalty.type).toBe('mark_penalty');
       
       // And team marks should be updated
-      if (penalty.type === 'mark_penalty') {
+      if (penalty.type === 'mark_penalty' && gameState.teamMarks && initialMarks) {
         const expectedMarks = [...initialMarks];
-        expectedMarks[1] += 1; // Team 1 gets a mark (player 0 is on team 0)
+        const team1Mark = expectedMarks[1];
+        if (team1Mark !== undefined) {
+          expectedMarks[1] = team1Mark + 1; // Team 1 gets a mark (player 0 is on team 0)
+        }
         expect(gameState.teamMarks).toEqual(expectedMarks);
       }
     });
@@ -271,11 +277,14 @@ function assessPenaltyForViolation(violation: Violation, priorViolations: Violat
 function assessAndApplyPenalty(gameState: GameStateWithViolations, playerId: number): { type: string; applied: boolean; marksAwarded?: number } {
   const penalty = assessPenalty(gameState.violations, playerId);
   
-  if (penalty.type === 'mark_penalty' && gameState.teamMarks && penalty.marksAwarded) {
-    const playerTeam = gameState.players?.find((p) => p.id === playerId)?.teamId;
-    const opposingTeam = playerTeam === 0 ? 1 : 0;
+  if (penalty.type === 'mark_penalty' && gameState.teamMarks && penalty.marksAwarded && gameState.players) {
+    const player = gameState.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found`);
+    }
+    const opposingTeam = player.teamId === 0 ? 1 : 0;
     gameState.teamMarks[opposingTeam] += penalty.marksAwarded;
   }
   
-  return { type: penalty.type, applied: true, marksAwarded: penalty.marksAwarded };
+  return { type: penalty.type, applied: true, marksAwarded: penalty.marksAwarded ?? 0 };
 }

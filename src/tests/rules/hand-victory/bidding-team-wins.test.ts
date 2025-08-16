@@ -161,14 +161,22 @@ function calculateHandWinner(state: GameState): HandResult {
     throw new Error('No bid or winning bidder');
   }
   
-  const biddingTeam = state.players[state.winningBidder].teamId;
+  const biddingPlayer = state.players[state.winningBidder];
+  if (!biddingPlayer) {
+    throw new Error('Bidding player not found');
+  }
+  const biddingTeam = biddingPlayer.teamId;
   let biddingTeamPoints = 0;
   let tricksWonByBiddingTeam = 0;
   
   // Calculate points for each trick
   for (const trick of state.tricks) {
     if (trick.winner !== undefined) {
-      const winningTeam = state.players[trick.winner].teamId;
+      const winningPlayer = state.players[trick.winner];
+      if (!winningPlayer) {
+        continue; // Skip if player not found
+      }
+      const winningTeam = winningPlayer.teamId;
       if (winningTeam === biddingTeam) {
         tricksWonByBiddingTeam++;
         biddingTeamPoints += trick.points + 1; // Trick points + 1 for winning the trick
@@ -267,6 +275,9 @@ function createTricksWithPoints(targetPoints: number, winningTeam: number): Tric
     // Need all 42 points - winning team must win all 7 tricks
     for (let i = 0; i < 7; i++) {
       const domino = allDominoes[i];
+      if (!domino) {
+        throw new Error(`Missing domino at index ${i}`);
+      }
       const winner = winningTeam === 0 ? 0 : 1; // All tricks to winning team
       tricks.push({
         plays: createPlaysForTrick(domino.domino, winner),
@@ -278,6 +289,9 @@ function createTricksWithPoints(targetPoints: number, winningTeam: number): Tric
     // General case - just distribute sensibly
     for (let i = 0; i < 7; i++) {
       const domino = allDominoes[i];
+      if (!domino) {
+        throw new Error(`Missing domino at index ${i}`);
+      }
       const winner = i < 5 ? (winningTeam === 0 ? 0 : 1) : (winningTeam === 0 ? 1 : 0);
       tricks.push({
         plays: createPlaysForTrick(domino.domino, winner),
@@ -331,6 +345,9 @@ function createTrickWithCounters(counters: Domino[], winningPlayer: number): Tri
   // Add plays for all 4 players
   for (let i = 0; i < 4; i++) {
     const domino = i < counters.length ? counters[i] : createDomino(1, 0);
+    if (!domino) {
+      throw new Error(`Missing domino for player ${i}`);
+    }
     plays.push({ player: i, domino });
     trickPoints += getDominoPoints(domino);
   }

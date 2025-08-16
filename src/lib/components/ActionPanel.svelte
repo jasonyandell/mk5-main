@@ -3,14 +3,24 @@
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
-  import { createEventDispatcher } from 'svelte';
   
-  const dispatch = createEventDispatcher();
+  interface Props {
+    onswitchToPlay?: () => void;
+  }
+  
+  let { onswitchToPlay }: Props = $props();
   
 
-  // Group actions by type
-  $: groupedActions = (() => {
-    const groups: { [key: string]: StateTransition[] } = {
+  // Group actions by type with strong typing
+  interface GroupedActions {
+    bidding: StateTransition[];
+    trump: StateTransition[];
+    play: StateTransition[];
+    other: StateTransition[];
+  }
+
+  const groupedActions = $derived((() => {
+    const groups: GroupedActions = {
       bidding: [],
       trump: [],
       play: [],
@@ -30,10 +40,10 @@
     });
 
     return groups;
-  })();
+  })());
 
 
-  let shakeActionId: string | null = null;
+  let shakeActionId = $state<string | null>(null);
 
   async function executeAction(action: StateTransition) {
     try {
@@ -43,7 +53,7 @@
       if (action.id.startsWith('trump-')) {
         // Small delay to let the state update
         setTimeout(() => {
-          dispatch('switchToPlay');
+          onswitchToPlay?.();
         }, 100);
       }
     } catch (error) {
@@ -77,10 +87,10 @@
   }
 
   // Current player's hand
-  $: playerHand = $currentPlayer.hand || [];
+  const playerHand = $derived($currentPlayer?.hand || []);
 
   // State for expandable team status
-  let teamStatusExpanded = false;
+  let teamStatusExpanded = $state(false);
 </script>
 
 <div class="action-panel">
@@ -111,7 +121,7 @@
             {#if action.id === 'pass'}
               <button 
                 class="action-button pass {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
-                on:click={() => executeAction(action)}
+                onclick={() => executeAction(action)}
                 data-testid={action.id}
                 title={getBidTooltip(action)}
               >
@@ -126,7 +136,7 @@
             {#if action.id !== 'pass'}
               <button 
                 class="action-button bid {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
-                on:click={() => executeAction(action)}
+                onclick={() => executeAction(action)}
                 data-testid={action.id}
                 title={getBidTooltip(action)}
               >
@@ -145,7 +155,7 @@
           {#each groupedActions.trump as action}
             <button 
               class="action-button primary trump-button"
-              on:click={() => executeAction(action)}
+              onclick={() => executeAction(action)}
               data-testid={action.id}
             >
               {action.label}
@@ -162,7 +172,7 @@
           {#each groupedActions.other as action}
             <button 
               class="action-button"
-              on:click={() => executeAction(action)}
+              onclick={() => executeAction(action)}
               data-testid={action.id}
             >
               {action.label}
@@ -174,7 +184,7 @@
   </div>
 
   <div class="team-status" class:expanded={teamStatusExpanded}>
-    <button class="team-status-toggle" on:click={() => teamStatusExpanded = !teamStatusExpanded}>
+    <button class="team-status-toggle" onclick={() => teamStatusExpanded = !teamStatusExpanded}>
       <div class="compact-scores">
         <div class="team-score us">
           <span class="team-label">US</span>
@@ -211,12 +221,12 @@
           <div class="bid-details">
             <div class="bid-info-row">
               <span>Current Bid:</span>
-              <span>{$biddingInfo.currentBid.value || 0} by Player {$biddingInfo.winningBidder + 1}</span>
+              <span>{$biddingInfo.currentBid?.value || 0} by Player {$biddingInfo.winningBidder + 1}</span>
             </div>
             {#if $gamePhase === 'playing'}
               <div class="bid-info-row">
                 <span>Points Needed:</span>
-                <span>{Math.max(0, ($biddingInfo.currentBid.value || 0) - $teamInfo.scores[Math.floor($biddingInfo.winningBidder / 2)])}</span>
+                <span>{Math.max(0, ($biddingInfo.currentBid?.value || 0) - ($teamInfo.scores?.[Math.floor($biddingInfo.winningBidder / 2)] || 0))}</span>
               </div>
             {/if}
           </div>
@@ -233,15 +243,6 @@
     flex-direction: column;
     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.5));
     overflow: hidden;
-  }
-
-  h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #1e293b;
-    text-align: center;
-    margin-bottom: 20px;
   }
 
   h3 {
@@ -379,14 +380,6 @@
     overflow: visible;
   }
 
-  .trump-button.trump-active {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 
-      0 8px 24px rgba(139, 92, 246, 0.5),
-      0 0 40px rgba(139, 92, 246, 0.2);
-    border: 2px solid #7c3aed;
-    z-index: 10;
-  }
 
 
   @keyframes pointDown {
@@ -454,53 +447,6 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   }
 
-  .status-content {
-    background: white;
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(226, 232, 240, 0.5);
-  }
-
-  .score-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding: 8px 0;
-  }
-
-  .team-name {
-    font-weight: 700;
-    font-size: 15px;
-    color: #1e293b;
-  }
-
-  .score {
-    font-size: 15px;
-    color: #64748b;
-    font-weight: 600;
-  }
-
-  .bid-info {
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #f1f5f9;
-  }
-
-  .bid-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    margin-bottom: 8px;
-    color: #64748b;
-  }
-
-  .bid-row span:last-child {
-    font-weight: 600;
-    color: #1e293b;
-  }
 
   /* New Compact Team Status Styles */
   .team-status-toggle {

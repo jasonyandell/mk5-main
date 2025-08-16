@@ -45,7 +45,7 @@ describe('URL Compression Suit Analysis Fix', () => {
     
     // Verify hands are correct
     expandedState.players.forEach((player, i) => {
-      expect(player.hand).toEqual(originalState.players[i].hand);
+      expect(player.hand).toEqual(originalState.players[i]?.hand);
     });
     
     // Note: expandMinimalState resets trump to { type: 'none' } and recalculates without trump
@@ -72,8 +72,8 @@ describe('URL Compression Suit Analysis Fix', () => {
     
     // Specifically check suit analyses
     expanded1.players.forEach((player, i) => {
-      expect(player.suitAnalysis).toEqual(expanded2.players[i].suitAnalysis);
-      expect(player.suitAnalysis).toEqual(expanded3.players[i].suitAnalysis);
+      expect(player.suitAnalysis).toEqual(expanded2.players[i]?.suitAnalysis);
+      expect(player.suitAnalysis).toEqual(expanded3.players[i]?.suitAnalysis);
     });
   });
 
@@ -91,7 +91,7 @@ describe('URL Compression Suit Analysis Fix', () => {
         expect(player.suitAnalysis).toEqual(expectedAnalysis);
         
         // Also verify it matches the original (since both have null trump)
-        expect(player.suitAnalysis).toEqual(originalState.players[i].suitAnalysis);
+        expect(player.suitAnalysis).toEqual(originalState.players[i]?.suitAnalysis);
       });
     });
   });
@@ -107,7 +107,7 @@ describe('URL Compression Suit Analysis Fix', () => {
       
       // Verify hands are identical
       expandedState.players.forEach((player, i) => {
-        expect(player.hand).toEqual(originalState.players[i].hand);
+        expect(player.hand).toEqual(originalState.players[i]?.hand);
       });
       
       // Verify suit analysis is correct for each hand

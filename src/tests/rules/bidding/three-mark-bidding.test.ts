@@ -142,7 +142,7 @@ describe('Feature: Special Bids', () => {
         ]);
 
         expect(validProgression.bids.length).toBe(3);
-        expect(validProgression.bids[2].value).toBe(3);
+        expect(validProgression.bids[2]!.value).toBe(3);
       });
 
       it('should not allow 3 marks without prior 2 mark bid', () => {

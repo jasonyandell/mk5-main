@@ -32,8 +32,12 @@ describe('Feature: Doubles Treatment', () => {
         tournamentMode: true,
       };
       
-      const ledSuit = mockState.currentTrick![0].domino.high; // 6
-      const currentPlayerHand = mockState.players![1].hand;
+      const firstPlay = mockState.currentTrick![0];
+      expect(firstPlay).toBeDefined();
+      const ledSuit = firstPlay!.domino.high; // 6
+      const player1 = mockState.players![1];
+      expect(player1).toBeDefined();
+      const currentPlayerHand = player1!.hand;
       
       // Check if player can follow suit
       const canFollowSuit = currentPlayerHand.some(domino => 
@@ -68,7 +72,9 @@ describe('Feature: Doubles Treatment', () => {
       
       // Simulate renege detection
       const renegingPlayer = 1; // Player 1 (team 1) reneged
-      const renegingTeam = mockState.players![renegingPlayer].teamId; // Team 1
+      const renegingPlayerData = mockState.players![renegingPlayer];
+      expect(renegingPlayerData).toBeDefined();
+      const renegingTeam = renegingPlayerData!.teamId; // Team 1
       // The bidding team (Team 0) is the opponent of the reneging team
       
       // In tournament play: immediate loss of hand
@@ -108,7 +114,9 @@ describe('Feature: Doubles Treatment', () => {
       
       // Simulate renege detection in casual play
       const renegingPlayer = 1; // Player 1 (team 1) reneged
-      const renegingTeam = mockState.players![renegingPlayer].teamId; // Team 1
+      const renegingPlayerData = mockState.players![renegingPlayer];
+      expect(renegingPlayerData).toBeDefined();
+      const renegingTeam = renegingPlayerData!.teamId; // Team 1
       
       // In casual play: just loss of hand (no extra penalty)
       const handLost = true;
@@ -164,12 +172,16 @@ describe('Feature: Doubles Treatment', () => {
       
       // Verify renege by examining played dominoes
       const trick = mockState.tricks![0];
-      const ledDomino = trick.plays[0].domino;
+      expect(trick).toBeDefined();
+      const firstPlay = trick!.plays[0];
+      expect(firstPlay).toBeDefined();
+      const ledDomino = firstPlay!.domino;
       const ledSuit = ledDomino.high; // 6 was led
       
       // Player 1's play
-      const player1Play = trick.plays[1];
-      const player1Domino = player1Play.domino;
+      const player1Play = trick!.plays[1];
+      expect(player1Play).toBeDefined();
+      const player1Domino = player1Play!.domino;
       
       // Check if Player 1 followed suit
       const followedSuit = player1Domino.high === ledSuit || player1Domino.low === ledSuit;

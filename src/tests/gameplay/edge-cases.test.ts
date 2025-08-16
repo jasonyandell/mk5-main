@@ -125,8 +125,8 @@ describe('Edge Cases and Unusual Scenarios', () => {
       });
       
       // Player should be able to make Plunge bid
-      expect(state.players[0].hand.length).toBe(7);
-      expect(state.players[0].hand.every(d => d.low === d.high)).toBe(true);
+      expect(state.players[0]!.hand.length).toBe(7);
+      expect(state.players[0]!.hand.every(d => d.low === d.high)).toBe(true);
     });
 
     it('should handle player with no trump dominoes', () => {
@@ -154,7 +154,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
       };
       
       // Verify no sixes in hand
-      const hasSixes = testState.players[0].hand.some(d => d.low === 6 || d.high === 6);
+      const hasSixes = testState.players[0]!.hand.some(d => d.low === 6 || d.high === 6);
       expect(hasSixes).toBe(false);
     });
 
@@ -186,7 +186,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
         { id: 5, low: 2, high: 3 }    // 5 points
       ];
       
-      const playerCountingDominoes = state.players[0].hand.filter(d => 
+      const playerCountingDominoes = state.players[0]!.hand.filter(d => 
         countingDominoes.some(cd => cd.id === d.id)
       );
       expect(playerCountingDominoes.length).toBe(5);

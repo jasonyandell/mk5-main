@@ -27,7 +27,10 @@ describe('Complete Game Flow Integration', () => {
       for (let play = 0; play < 4; play++) {
         const playOptions = getNextStates(state).filter(t => t.id.startsWith('play-'));
         if (playOptions.length > 0) {
-          state = playOptions[0].newState;
+          const firstOption = playOptions[0];
+          if (firstOption) {
+            state = firstOption.newState;
+          }
         }
       }
       
@@ -162,7 +165,7 @@ describe('Complete Game Flow Integration', () => {
         const transitions = getNextStates(state);
         const lowerBids = transitions.filter(t => {
           const match = t.id.match(/bid-(\d+)$/);
-          return match && parseInt(match[1]) <= 35;
+          return match && match[1] && parseInt(match[1]) <= 35;
         });
         
         expect(lowerBids.length).toBe(0);
@@ -192,7 +195,10 @@ describe('Complete Game Flow Integration', () => {
       state = playCompleteHand(state);
       
       // Someone should have gained marks
-      const marksGained = state.teamMarks.some((marks, i) => marks > initialMarks[i]);
+      const marksGained = state.teamMarks.some((marks, i) => {
+        const initial = initialMarks[i];
+        return initial !== undefined && marks > initial;
+      });
       expect(marksGained).toBe(true);
     });
 
@@ -227,7 +233,7 @@ describe('Complete Game Flow Integration', () => {
         if (transitions.length === 0) break;
         
         // Smart transition selection to avoid infinite all-pass redeals
-        let selectedTransition = transitions[0];
+        let selectedTransition = transitions[0]!;
         if (state.phase === 'bidding') {
           // Always force a bid on the first opportunity to prevent redeals
           if (state.bids.length === 0) {

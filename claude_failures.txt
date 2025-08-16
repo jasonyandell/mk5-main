@@ -1,9 +1,0 @@
-=== FAILURE AND WARNING DETAILS ===
-
-
-=== TEST SUMMARY ===
-src/tests/rules/scoring/failed-bids.test.ts(70,28): error TS2532: Object is possibly 'undefined'.
-src/tests/rules/scoring/failed-bids.test.ts(121,28): error TS2532: Object is possibly 'undefined'.
-src/tests/rules/scoring/failed-bids.test.ts(174,28): error TS2532: Object is possibly 'undefined'.
-src/tests/rules/scoring/failed-bids.test.ts(224,28): error TS2532: Object is possibly 'undefined'.
-src/tests/rules/scoring/failed-bids.test.ts(275,28): error TS2532: Object is possibly 'undefined'.

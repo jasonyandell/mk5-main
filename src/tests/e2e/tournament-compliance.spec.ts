@@ -21,7 +21,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       const markBids = buttonTexts.filter(t => t.includes('bid-') && t.includes('-marks'));
       const markValues = markBids.map(t => {
         const match = t.match(/bid-(\d+)-marks/);
-        return match ? parseInt(match[1]) : 0;
+        return match && match[1] ? parseInt(match[1]) : 0;
       });
       const maxMarkBid = markValues.length > 0 ? Math.max(...markValues) : 0;
       
@@ -130,7 +130,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
 
       // First player leads
       const firstPlayButtons = await page.locator('button[data-testid^="play-"]').all();
-      await firstPlayButtons[0].click();
+      await firstPlayButtons[0]!.click();
 
       // Second player should only see valid plays
       // (UI should prevent illegal plays)
@@ -138,7 +138,7 @@ test.describe('Tournament Compliance E2E Tests', () => {
       expect(secondPlayButtons.length).toBeGreaterThan(0);
       
       // All available plays should be legal
-      await secondPlayButtons[0].click();
+      await secondPlayButtons[0]!.click();
       
       // Game should continue normally
       await expect(page.locator('[data-testid="current-player"]')).toContainText(/Current Player: P[0-3]/);

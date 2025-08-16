@@ -27,7 +27,7 @@ describe('Trick Winner Leads Next Trick', () => {
     // Verify that player 2 (who played trump) wins the trick
     const newState = completeTrickTransition!.newState;
     expect(newState.tricks).toHaveLength(1);
-    expect(newState.tricks[0].winner).toBe(2); // Player 2 played trump
+    expect(newState.tricks[0]!.winner).toBe(2); // Player 2 played trump
     
     // Verify that the trick winner (player 2) is now the current player
     expect(newState.currentPlayer).toBe(2);
@@ -54,7 +54,7 @@ describe('Trick Winner Leads Next Trick', () => {
     expect(completeTrickTransition).toBeDefined();
 
     const newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(1); // Player 1 had highest 6
+    expect(newState.tricks[0]!.winner).toBe(1); // Player 1 had highest 6
     expect(newState.currentPlayer).toBe(1); // Player 1 leads next trick
   });
 
@@ -76,7 +76,7 @@ describe('Trick Winner Leads Next Trick', () => {
     expect(completeTrickTransition).toBeDefined();
 
     const newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(1); // Player 1 played trump
+    expect(newState.tricks[0]!.winner).toBe(1); // Player 1 played trump
     expect(newState.currentPlayer).toBe(1); // Player 1 leads next trick
   });
 
@@ -98,7 +98,7 @@ describe('Trick Winner Leads Next Trick', () => {
     expect(completeTrickTransition).toBeDefined();
 
     const newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(2); // Player 2 had highest trump
+    expect(newState.tricks[0]!.winner).toBe(2); // Player 2 had highest trump
     expect(newState.currentPlayer).toBe(2); // Player 2 leads next trick
   });
 
@@ -120,7 +120,7 @@ describe('Trick Winner Leads Next Trick', () => {
     expect(completeTrickTransition).toBeDefined();
 
     const newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(1); // Player 1 played doubles trump
+    expect(newState.tricks[0]!.winner).toBe(1); // Player 1 played doubles trump
     expect(newState.currentPlayer).toBe(1); // Player 1 leads next trick
   });
 
@@ -146,7 +146,7 @@ describe('Trick Winner Leads Next Trick', () => {
     expect(completeTrickTransition).toBeDefined();
 
     let newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(3);
+    expect(newState.tricks[0]!.winner).toBe(3);
     expect(newState.currentPlayer).toBe(3); // Player 3 leads next trick
 
     // Play second trick where player 0 wins
@@ -163,7 +163,7 @@ describe('Trick Winner Leads Next Trick', () => {
 
     const finalState = completeTrickTransition!.newState;
     expect(finalState.tricks).toHaveLength(2);
-    expect(finalState.tricks[1].winner).toBe(0);
+    expect(finalState.tricks[1]!.winner).toBe(0);
     expect(finalState.currentPlayer).toBe(0); // Player 0 leads next trick
   });
 });

@@ -4,6 +4,7 @@
 # This script runs tests in a loop and uses Claude to fix failures
 
 set -e  # Exit on any error except test failures
+set -o pipefail  # Ensure pipeline failures are detected
 
 # Colors for output
 RED='\033[0;31m'
@@ -29,7 +30,6 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
     echo -e "${BLUE}🧪 Running tests...${NC}"
     
     # Run tests and capture output
-    set -o pipefail
     if $TEST_COMMAND 2>&1 | tee test_output.log; then
         # Tests passed!
         echo -e "${GREEN}✅ ALL TESTS PASSED!${NC}"
@@ -47,12 +47,16 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
         # Tests failed
         echo -e "${RED}❌ Tests failed${NC}"
         
-        # Show test summary
-        echo -e "${YELLOW}Test summary:${NC}"
-        if grep -E "(Test Files|Tests|failed|passed)" test_output.log | tail -5; then
-            :  # Command succeeded
+        # Show test summary or error type
+        echo -e "${YELLOW}Test/Build summary:${NC}"
+        if grep -E "(Test Files|Tests|failed|passed|PASS|FAIL)" test_output.log | tail -5; then
+            :  # Found test summary
+        elif grep -E "(error TS|TypeError|SyntaxError)" test_output.log | tail -5; then
+            echo "TypeScript errors detected"
+        elif grep -E "(ESLint|Prettier|warning|error)" test_output.log | tail -5; then
+            echo "Linting errors detected"
         else
-            echo "Could not extract test summary"
+            echo "Build or test failure (see details below)"
         fi
         
         echo ""
@@ -69,20 +73,39 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
             echo "=== FAILURE AND WARNING DETAILS ==="
             echo ""
             
-            # Extract test failures, errors, warnings, and related context (limited to first 50 matches)
-            grep -A 3 -B 1 -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log | head -100 || true
-            
-            # Add truncation notice if there are more failures
-            total_failures=$(grep -c -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:)" test_output.log || echo "0")
-            if [ "$total_failures" -gt 25 ]; then
+            # Extract TypeScript errors first (highest priority)
+            if grep -q "error TS" test_output.log; then
+                echo "=== TYPESCRIPT ERRORS ==="
+                grep -A 2 -B 1 "error TS" test_output.log | head -150 || true
                 echo ""
-                echo "... (Output truncated - $total_failures total failures/warnings found)"
+            fi
+            
+            # Extract lint errors
+            if grep -q -E "(ESLint|Prettier|⚠|✖)" test_output.log; then
+                echo "=== LINT ERRORS ==="
+                grep -A 2 -B 1 -E "(ESLint|Prettier|⚠|✖|error|warning)" test_output.log | head -100 || true
+                echo ""
+            fi
+            
+            # Extract test failures, errors, warnings, and related context
+            if grep -q -E "(FAIL|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log; then
+                echo "=== TEST FAILURES ==="
+                grep -A 3 -B 1 -E "(FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:|expect\(|received:|AssertionError)" test_output.log | head -100 || true
+                echo ""
+            fi
+            
+            # Add truncation notice if there are many failures
+            total_failures=$(grep -c -E "(error TS|FAIL|ERROR|WARN|✕|❌|Failed|Error:|Warning:|ESLint|✖)" test_output.log 2>/dev/null || echo "0")
+            if [ "$total_failures" -gt 30 ]; then
+                echo ""
+                echo "... (Output truncated - $total_failures total issues found)"
                 echo "Focus on fixing the first few issues above, which should resolve many others."
             fi
             
             echo ""
-            echo "=== TEST SUMMARY ==="
-            grep -E "(Test Files|Tests|failed|passed|Suites|✓|✕)" test_output.log | tail -10 || true
+            echo "=== SUMMARY ==="
+            # Try to extract any summary information
+            tail -20 test_output.log | grep -E "(Test Files|Tests|failed|passed|Suites|✓|✕|error TS|ESLint|files? checked|problems?)" || echo "See details above for errors"
             
         } > claude_failures.txt
         

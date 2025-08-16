@@ -14,7 +14,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "5", low: 2, high: 3 }, player: 3 }    // [2|3] - not trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(2); // Player 2 with [5|5] (highest trump)
     });
@@ -28,7 +30,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "12", low: 3, high: 4 }, player: 3 }   // [4|3] - not trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(0); // Player 0 with trump [6|4]
     });
@@ -44,7 +48,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "1", low: 0, high: 1 }, player: 3 }    // [1|0] - not fours
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(0); // Player 0 with [4|3] (highest four by pip count: 7 > 5)
     });
@@ -58,7 +64,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "12", low: 3, high: 4 }, player: 3 }   // [4|3] - has three but lower
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with [3|3] (double-three beats all threes)
     });
@@ -74,7 +82,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "5", low: 2, high: 3 }, player: 3 }    // [2|3] - not trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(2); // Player 2 with [3|3] (highest double)
     });
@@ -88,7 +98,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "1", low: 0, high: 1 }, player: 3 }    // [1|0] - not trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(0); // Player 0 with [6|6] (highest double)
     });
@@ -104,7 +116,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "15", low: 5, high: 5 }, player: 3 }   // [5|5] - not fours
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with [6|4] (highest four)
     });
@@ -118,7 +132,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "1", low: 0, high: 1 }, player: 3 }    // [1|0] - not sixes
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(0); // Player 0 with [6|6] (double-six beats [6|4])
     });
@@ -134,7 +150,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "1", low: 0, high: 1 }, player: 3 }    // [1|0] - not fours
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with [4|3] (4 is higher than 1 in [4|1])
     });
@@ -148,7 +166,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: "1", low: 0, high: 1 }, player: 3 }    // [1|0] - not trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(0); // Player 0 with [5|5] (highest trump)
     });
@@ -162,7 +182,9 @@ describe('Trick Winner Validation', () => {
         { domino: { id: 0, low: 0, high: 0 }, player: 3 }    // [0|0] - trump
       ];
 
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = determineTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(3); // Player 3 with [0|0] (highest trump - double blank)
     });

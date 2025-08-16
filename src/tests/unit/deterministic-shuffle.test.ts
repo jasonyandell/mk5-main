@@ -44,7 +44,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // Verify hands are different after redeal
     const handsChanged = redealtHands.some((hand, playerIdx) => 
-      hand.some((domino, idx) => domino.id !== initialHands[playerIdx][idx].id)
+      hand.some((domino, idx) => domino.id !== initialHands[playerIdx]?.[idx]?.id)
     );
     expect(handsChanged).toBe(true);
     
@@ -88,7 +88,8 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     for (let i = 0; i < 4; i++) {
       const transitions = getNextStates(current);
       const passAction = transitions.find(t => t.label === 'Pass');
-      current = passAction!.newState;
+      if (!passAction) throw new Error('Pass action not found');
+      current = passAction.newState;
     }
     
     const hands2 = current.players.map(p => p.hand.map(d => d.id));
@@ -115,12 +116,13 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
       // Execute the redeal
       const redealTransitions = getNextStates(currentState);
       const redealAction = redealTransitions.find(t => t.id === 'redeal');
-      currentState = redealAction!.newState;
+      if (!redealAction) throw new Error('Redeal action not found');
+      currentState = redealAction.newState;
       states.push(currentState);
       
       // Verify seed increments
       expect(currentState.shuffleSeed).toBeGreaterThan(
-        states[states.length - 2].shuffleSeed
+        states[states.length - 2]?.shuffleSeed ?? 0
       );
     }
     
@@ -138,15 +140,16 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
       // Execute the redeal
       const redealTransitions = getNextStates(replayState);
       const redealAction = redealTransitions.find(t => t.id === 'redeal');
-      replayState = redealAction!.newState;
+      if (!redealAction) throw new Error('Redeal action not found');
+      replayState = redealAction.newState;
       replayStates.push(replayState);
     }
     
     // All states should match exactly
     for (let i = 0; i < states.length; i++) {
-      expect(replayStates[i].shuffleSeed).toBe(states[i].shuffleSeed);
-      expect(replayStates[i].players.map(p => p.hand)).toEqual(
-        states[i].players.map(p => p.hand)
+      expect(replayStates[i]?.shuffleSeed).toBe(states[i]?.shuffleSeed);
+      expect(replayStates[i]?.players.map(p => p.hand)).toEqual(
+        states[i]?.players.map(p => p.hand)
       );
     }
   });
@@ -169,20 +172,21 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     for (let i = 0; i < 3; i++) {
       transitions = getNextStates(currentState);
       const passAction = transitions.find(t => t.label === 'Pass');
-      actions.push(passAction!);
-      currentState = passAction!.newState;
+      if (!passAction) throw new Error('Pass action not found');
+      actions.push(passAction);
+      currentState = passAction.newState;
     }
     
     // Set trump
     transitions = getNextStates(currentState);
-    const trumpAction = transitions[0]; // Just pick first available trump
+    const trumpAction = transitions[0]!; // Just pick first available trump
     actions.push(trumpAction);
     currentState = trumpAction.newState;
     
     // Play all tricks (just play first available domino each time)
     while (currentState.phase === 'playing') {
       transitions = getNextStates(currentState);
-      if (transitions.length > 0) {
+      if (transitions.length > 0 && transitions[0]) {
         actions.push(transitions[0]);
         currentState = transitions[0].newState;
       } else {
@@ -196,6 +200,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Score the hand
     transitions = getNextStates(currentState);
     const scoreAction = transitions[0];
+    if (!scoreAction) throw new Error('Score action not found');
     actions.push(scoreAction);
     currentState = scoreAction.newState;
     
@@ -255,17 +260,20 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // Simulate undo back to before redeal
     const stateBeforeRedeal = stateHistory[3]; // State after 3 passes
+    if (!stateBeforeRedeal) throw new Error('State not found in history');
     expect(stateBeforeRedeal.shuffleSeed).toBe(initialState.shuffleSeed);
     
     // Redo the last pass
     const redoTransitions = getNextStates(stateBeforeRedeal);
     const redoPass = redoTransitions.find(t => t.label === 'Pass');
-    const afterFourthPass = redoPass!.newState;
+    if (!redoPass) throw new Error('Pass action not found');
+    const afterFourthPass = redoPass.newState;
     
     // Now get the redeal action
     const afterPassTransitions = getNextStates(afterFourthPass);
     const redoRedeal = afterPassTransitions.find(t => t.id === 'redeal');
-    const redoState = redoRedeal!.newState;
+    if (!redoRedeal) throw new Error('Redeal action not found');
+    const redoState = redoRedeal.newState;
     
     // Should match the state after redeal exactly
     expect(redoState.shuffleSeed).toBe(stateAfterRedeal.shuffleSeed);

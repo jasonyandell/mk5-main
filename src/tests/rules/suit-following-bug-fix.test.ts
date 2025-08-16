@@ -88,9 +88,18 @@ describe('Suit Following Bug Fix', () => {
     });
 
     // Cannot follow 6s, so all plays should be valid
-    expect(isValidPlay(state, playerHand[0], 1)).toBe(true); // 5-1
-    expect(isValidPlay(state, playerHand[1], 1)).toBe(true); // 5-3
-    expect(isValidPlay(state, playerHand[2], 1)).toBe(true); // 1-2
-    expect(isValidPlay(state, playerHand[3], 1)).toBe(true); // 3-4
+    const domino0 = playerHand[0];
+    const domino1 = playerHand[1]; 
+    const domino2 = playerHand[2];
+    const domino3 = playerHand[3];
+    
+    if (!domino0 || !domino1 || !domino2 || !domino3) {
+      throw new Error('Player hand dominoes cannot be undefined');
+    }
+    
+    expect(isValidPlay(state, domino0, 1)).toBe(true); // 5-1
+    expect(isValidPlay(state, domino1, 1)).toBe(true); // 5-3
+    expect(isValidPlay(state, domino2, 1)).toBe(true); // 1-2
+    expect(isValidPlay(state, domino3, 1)).toBe(true); // 3-4
   });
 });

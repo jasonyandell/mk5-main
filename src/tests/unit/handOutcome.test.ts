@@ -28,7 +28,7 @@ function createTrick(plays: Array<{player: number, domino: Domino}>, winner: num
     plays: plays.map(p => ({ player: p.player, domino: p.domino })),
     winner,
     points,
-    ledSuit: plays[0].domino.high
+    ledSuit: plays[0]?.domino.high ?? 0
   };
 }
 

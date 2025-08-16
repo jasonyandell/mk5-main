@@ -72,10 +72,18 @@ describe('Feature: Nel-O Contract', () => {
       ];
       
       expect(doublesAsSeparateSuit).toBe(true);
-      expect(doublesOrder[0].high).toBe(6);
-      expect(doublesOrder[0].low).toBe(6);
-      expect(doublesOrder[doublesOrder.length - 1].high).toBe(0);
-      expect(doublesOrder[doublesOrder.length - 1].low).toBe(0);
+      
+      const firstDouble = doublesOrder[0];
+      const lastDouble = doublesOrder[doublesOrder.length - 1];
+      
+      if (!firstDouble || !lastDouble) {
+        throw new Error('Doubles order array elements cannot be undefined');
+      }
+      
+      expect(firstDouble.high).toBe(6);
+      expect(firstDouble.low).toBe(6);
+      expect(lastDouble.high).toBe(0);
+      expect(lastDouble.low).toBe(0);
     });
 
     it('And doubles may remain high in suits (variation)', () => {
@@ -94,8 +102,14 @@ describe('Feature: Nel-O Contract', () => {
       ];
       
       expect(doublesHighInSuits).toBe(true);
-      expect(sixSuitOrder[0].high).toBe(6);
-      expect(sixSuitOrder[0].low).toBe(6);
+      
+      const firstSix = sixSuitOrder[0];
+      if (!firstSix) {
+        throw new Error('Six suit order array element cannot be undefined');
+      }
+      
+      expect(firstSix.high).toBe(6);
+      expect(firstSix.low).toBe(6);
     });
 
     it('And doubles may become low in suits (variation)', () => {
@@ -114,8 +128,14 @@ describe('Feature: Nel-O Contract', () => {
       ];
       
       expect(doublesLowInSuits).toBe(true);
-      expect(sixSuitOrderLowDoubles[sixSuitOrderLowDoubles.length - 1].high).toBe(6);
-      expect(sixSuitOrderLowDoubles[sixSuitOrderLowDoubles.length - 1].low).toBe(6);
+      
+      const lastSix = sixSuitOrderLowDoubles[sixSuitOrderLowDoubles.length - 1];
+      if (!lastSix) {
+        throw new Error('Six suit order low doubles array element cannot be undefined');
+      }
+      
+      expect(lastSix.high).toBe(6);
+      expect(lastSix.low).toBe(6);
     });
   });
 });

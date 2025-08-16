@@ -25,10 +25,19 @@ describe('Suit Analysis Integration', () => {
         player.hand.forEach(domino => {
           if (domino.high === domino.low) {
             doubleCount++;
-            handSuitCounts[domino.high]++;
+            const highCount = handSuitCounts[domino.high];
+            if (highCount !== undefined) {
+              handSuitCounts[domino.high] = highCount + 1;
+            }
           } else {
-            handSuitCounts[domino.high]++;
-            handSuitCounts[domino.low]++;
+            const highCount = handSuitCounts[domino.high];
+            if (highCount !== undefined) {
+              handSuitCounts[domino.high] = highCount + 1;
+            }
+            const lowCount = handSuitCounts[domino.low];
+            if (lowCount !== undefined) {
+              handSuitCounts[domino.low] = lowCount + 1;
+            }
           }
         });
         
@@ -156,6 +165,9 @@ describe('Suit Analysis Integration', () => {
       });
       
       const currentPlayer = playingState.players[playingState.currentPlayer];
+      if (!currentPlayer) {
+        throw new Error('Current player not found');
+      }
       const initialHandSize = currentPlayer.hand.length;
       
       // Get play transitions
@@ -163,11 +175,14 @@ describe('Suit Analysis Integration', () => {
       expect(playTransitions.length).toBeGreaterThan(0);
       
       // Take the first play transition
-      const playTransition = playTransitions[0];
+      const playTransition = playTransitions[0]!;
       const newState = playTransition.newState;
       
       // Verify the player who played has updated suit analysis
       const updatedPlayer = newState.players[playingState.currentPlayer];
+      if (!updatedPlayer) {
+        throw new Error('Updated player not found');
+      }
       expect(updatedPlayer.hand.length).toBe(initialHandSize - 1);
       expect(updatedPlayer.suitAnalysis).toBeDefined();
       

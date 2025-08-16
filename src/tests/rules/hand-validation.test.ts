@@ -19,7 +19,7 @@ describe('Hand Validation Rules', () => {
     
     // Set currentSuit based on the first domino in currentTrick
     if (options.currentTrick.length > 0) {
-      const leadDomino = options.currentTrick[0].domino;
+      const leadDomino = options.currentTrick[0]!.domino;
       if (options.trump.type === 'doubles') { // doubles are trump
         state.currentSuit = leadDomino.high === leadDomino.low ? 7 : Math.max(leadDomino.high, leadDomino.low);
       } else if (options.trump.type === 'suit' && (leadDomino.high === options.trump.suit || leadDomino.low === options.trump.suit)) {
@@ -32,8 +32,10 @@ describe('Hand Validation Rules', () => {
     }
     
     const player = state.players[state.currentPlayer];
-    player.hand = options.playerHand;
-    player.suitAnalysis = analyzeSuits(options.playerHand, state.trump);
+    if (player) {
+      player.hand = options.playerHand;
+      player.suitAnalysis = analyzeSuits(options.playerHand, state.trump);
+    }
     
     return state;
   }
@@ -55,7 +57,7 @@ describe('Hand Validation Rules', () => {
 
       const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(8); // Must play [4|1]
+      expect(validPlays[0]?.id).toBe(8); // Must play [4|1]
       
       // Verify invalid play is rejected
       const invalidPlay = { id: 5, low: 2, high: 3 };
@@ -124,7 +126,7 @@ describe('Hand Validation Rules', () => {
 
       const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(6); // Must play [3|3]
+      expect(validPlays[0]?.id).toBe(6); // Must play [3|3]
     });
 
     it('should recognize doubles trump when trump is declared', () => {
@@ -165,7 +167,7 @@ describe('Hand Validation Rules', () => {
 
       const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(10); // Must play [5|0]
+      expect(validPlays[0]?.id).toBe(10); // Must play [5|0]
     });
 
     it('should handle trump domino led (any suit can follow)', () => {
@@ -184,7 +186,7 @@ describe('Hand Validation Rules', () => {
 
       const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1); // Must follow trump
-      expect(validPlays[0].id).toBe(8); // [4|1] is the only trump
+      expect(validPlays[0]?.id).toBe(8); // [4|1] is the only trump
     });
   });
 
@@ -205,7 +207,7 @@ describe('Hand Validation Rules', () => {
 
       const validPlays = getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe(12); // Must play [4|3]
+      expect(validPlays[0]?.id).toBe(12); // Must play [4|3]
     });
   });
 });

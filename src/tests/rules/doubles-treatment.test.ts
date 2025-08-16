@@ -42,7 +42,10 @@ describe('Feature: Doubles Treatment', () => {
       sixValues.sort((a, b) => b.value - a.value);
       
       // 6-6 should be the highest six
-      const highestSix = sixValues[0].domino;
+      const highestSix = sixValues[0]?.domino;
+      if (!highestSix) {
+        throw new Error('No highest six found');
+      }
       expect(highestSix.high).toBe(6);
       expect(highestSix.low).toBe(6);
       expect(isDouble(highestSix)).toBe(true);
@@ -64,7 +67,10 @@ describe('Feature: Doubles Treatment', () => {
       fiveValues.sort((a, b) => b.value - a.value);
       
       // 5-5 should be the highest five
-      const highestFive = fiveValues[0].domino;
+      const highestFive = fiveValues[0]?.domino;
+      if (!highestFive) {
+        throw new Error('No highest five found');
+      }
       expect(highestFive.high).toBe(5);
       expect(highestFive.low).toBe(5);
       expect(isDouble(highestFive)).toBe(true);

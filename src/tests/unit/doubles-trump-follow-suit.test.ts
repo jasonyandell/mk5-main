@@ -19,8 +19,10 @@ describe('Doubles Trump Follow Suit Rules', () => {
     ];
     state.currentSuit = 7; // Doubles were led (doubles are trump)
     state.currentPlayer = 1;
-    state.players[1].hand = playerHand;
-    state.players[1].suitAnalysis = analyzeSuits(playerHand, trump);
+    if (state.players[1]) {
+      state.players[1].hand = playerHand;
+      state.players[1].suitAnalysis = analyzeSuits(playerHand, trump);
+    }
     return state;
   }
   
@@ -40,7 +42,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
     const validPlays = getValidPlays(state, 1);
     
     expect(validPlays).toHaveLength(1);
-    expect(validPlays[0].id).toBe("5-5");
+    expect(validPlays[0]?.id).toBe("5-5");
   });
 
   test('Only doubles are valid when doubles trump is led', () => {
@@ -110,6 +112,6 @@ describe('Doubles Trump Follow Suit Rules', () => {
     // Get valid plays - should only be 5-5
     const validPlays = getValidPlays(state, 1);
     expect(validPlays).toHaveLength(1);
-    expect(validPlays[0].id).toBe("5-5");
+    expect(validPlays[0]?.id).toBe("5-5");
   });
 });

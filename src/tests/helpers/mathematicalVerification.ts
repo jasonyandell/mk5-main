@@ -124,10 +124,10 @@ export class MathematicalVerification {
     if (state.dealer < 0 || state.dealer >= 4) return false;
     
     // Team assignments should be correct (0&2 vs 1&3)
-    if (state.players[0].teamId !== 0) return false;
-    if (state.players[1].teamId !== 1) return false;
-    if (state.players[2].teamId !== 0) return false;
-    if (state.players[3].teamId !== 1) return false;
+    if (state.players[0]?.teamId !== 0) return false;
+    if (state.players[1]?.teamId !== 1) return false;
+    if (state.players[2]?.teamId !== 0) return false;
+    if (state.players[3]?.teamId !== 1) return false;
     
     return true;
   }
@@ -160,19 +160,19 @@ export class MathematicalVerification {
     for (const bid of state.bids) {
       switch (bid.type) {
         case 'points':
-          if (bid.value! < 30 || bid.value! > 42) return false;
+          if (bid.value === undefined || bid.value < 30 || bid.value > 42) return false;
           break;
         case 'marks':
-          if (bid.value! < 1 || bid.value! > 6) return false;
+          if (bid.value === undefined || bid.value < 1 || bid.value > 6) return false;
           break;
         case 'nello':
-          if (bid.value! < 1 || bid.value! > 4) return false;
+          if (bid.value === undefined || bid.value < 1 || bid.value > 4) return false;
           break;
         case 'splash':
-          if (bid.value! < 2 || bid.value! > 6) return false;
+          if (bid.value === undefined || bid.value < 2 || bid.value > 6) return false;
           break;
         case 'plunge':
-          if (bid.value! < 4 || bid.value! > 8) return false;
+          if (bid.value === undefined || bid.value < 4 || bid.value > 8) return false;
           break;
         case 'pass':
           // Pass bids don't have values

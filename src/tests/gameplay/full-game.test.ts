@@ -30,7 +30,7 @@ describe('Full Game Scenarios', () => {
       
       state = bid30!.newState;
       expect(state.bids).toHaveLength(1);
-      expect(state.bids[0]).toEqual({
+      expect(state.bids[0]!).toEqual({
         type: BID_TYPES.POINTS,
         value: 30,
         player: getPlayerLeftOfDealer(state.dealer)
@@ -177,7 +177,7 @@ describe('Full Game Scenarios', () => {
         if (transitions.length === 0) break;
         
         // Take first available action
-        state = transitions[0].newState;
+        state = transitions[0]!.newState;
         
         // Verify state constraints
         expect(state.players).toHaveLength(4);

@@ -253,10 +253,10 @@ describe('Tournament Rule Compliance', () => {
       });
 
       // Verify standard partnership (0&2 vs 1&3)
-      expect(state.players[0].teamId).toBe(0);
-      expect(state.players[1].teamId).toBe(1);
-      expect(state.players[2].teamId).toBe(0);
-      expect(state.players[3].teamId).toBe(1);
+      expect(state.players[0]!.teamId).toBe(0);
+      expect(state.players[1]!.teamId).toBe(1);
+      expect(state.players[2]!.teamId).toBe(0);
+      expect(state.players[3]!.teamId).toBe(1);
     });
 
     it('prevents players from bidding multiple times', () => {

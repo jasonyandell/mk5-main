@@ -65,8 +65,10 @@ describe('DebugPreviousTricks Logic', () => {
     expect(mockTrick.plays.length).toBe(2);
     expect(mockTrick.winner).toBe(0);
     expect(mockTrick.points).toBe(11);
-    expect(getDominoDisplay(mockTrick.plays[0].domino)).toBe('6-4');
-    expect(mockTrick.plays[0].domino.points).toBe(10); // Counter domino
+    const firstPlay = mockTrick.plays[0];
+    if (!firstPlay) throw new Error('First play not found');
+    expect(getDominoDisplay(firstPlay.domino)).toBe('6-4');
+    expect(mockTrick.plays[0]?.domino.points).toBe(10); // Counter domino
   });
 
   test('component should work with realistic game state structure and use P0-P3 numbering', () => {
@@ -92,23 +94,23 @@ describe('DebugPreviousTricks Logic', () => {
 
     // Test that we can process the tricks data structure
     expect(mockGameState.tricks?.length).toBe(1);
-    expect(mockGameState.tricks?.[0].plays.length).toBe(4);
-    expect(mockGameState.tricks?.[0].winner).toBe(0);
-    expect(mockGameState.tricks?.[0].points).toBe(11);
+    expect(mockGameState.tricks?.[0]?.plays.length).toBe(4);
+    expect(mockGameState.tricks?.[0]?.winner).toBe(0);
+    expect(mockGameState.tricks?.[0]?.points).toBe(11);
     
     // Test that player numbers are 0-based (P0, P1, P2, P3)
-    expect(mockGameState.tricks?.[0].plays[0].player).toBe(0); // Should be P0
-    expect(mockGameState.tricks?.[0].plays[1].player).toBe(1); // Should be P1
-    expect(mockGameState.tricks?.[0].plays[2].player).toBe(2); // Should be P2
-    expect(mockGameState.tricks?.[0].plays[3].player).toBe(3); // Should be P3
-    expect(mockGameState.tricks?.[0].winner).toBe(0); // Winner should be P0
+    expect(mockGameState.tricks?.[0]?.plays[0]?.player).toBe(0); // Should be P0
+    expect(mockGameState.tricks?.[0]?.plays[1]?.player).toBe(1); // Should be P1
+    expect(mockGameState.tricks?.[0]?.plays[2]?.player).toBe(2); // Should be P2
+    expect(mockGameState.tricks?.[0]?.plays[3]?.player).toBe(3); // Should be P3
+    expect(mockGameState.tricks?.[0]?.winner).toBe(0); // Winner should be P0
     
     // Test current suit for current trick
-    const currentState: Partial<GameState> = {
-      currentTrick: mockGameState.currentTrick,
+    const currentState: GameState = {
+      currentTrick: mockGameState.currentTrick || [],
       currentSuit: 5, // The suit that was led (5s)
-      trump: mockGameState.trump
-    };
+      trump: mockGameState.trump || { type: 'none' }
+    } as GameState;
     expect(getCurrentSuit(currentState as GameState)).toBe('Fives (Trump)');
   });
 });

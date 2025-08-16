@@ -34,12 +34,18 @@ describe('Renege Detection and Prevention', () => {
       // Can only play twos suit when able to follow
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('follow-1');
+      expect(validPlays[0]?.id).toBe('follow-1');
       
       // Validate each domino individually
-      expect(isValidPlay(state, playerHand[0], 1)).toBe(true);  // Following suit
-      expect(isValidPlay(state, playerHand[1], 1)).toBe(false); // Trump when can follow
-      expect(isValidPlay(state, playerHand[2], 1)).toBe(false); // Other suit when can follow
+      const domino0 = playerHand[0];
+      const domino1 = playerHand[1];
+      const domino2 = playerHand[2];
+      if (!domino0 || !domino1 || !domino2) {
+        throw new Error('Missing dominoes in player hand');
+      }
+      expect(isValidPlay(state, domino0, 1)).toBe(true);  // Following suit
+      expect(isValidPlay(state, domino1, 1)).toBe(false); // Trump when can follow
+      expect(isValidPlay(state, domino2, 1)).toBe(false); // Other suit when can follow
     });
 
     it('allows any play when cannot follow suit', () => {
@@ -111,9 +117,9 @@ describe('Renege Detection and Prevention', () => {
         ]
       });
 
-      expect(canFollowSuit(state.players[1], 2)).toBe(false);
-      expect(isValidPlay(state, playerHand[0], 1)).toBe(true); // Trump play allowed
-      expect(isValidPlay(state, playerHand[1], 1)).toBe(true); // Any play allowed
+      expect(canFollowSuit(state.players[1]!, 2)).toBe(false);
+      expect(isValidPlay(state, playerHand[0]!, 1)).toBe(true); // Trump play allowed
+      expect(isValidPlay(state, playerHand[1]!, 1)).toBe(true); // Any play allowed
     });
 
     it('prevents trump when can follow suit', () => {
@@ -139,9 +145,9 @@ describe('Renege Detection and Prevention', () => {
         ]
       });
 
-      expect(canFollowSuit(state.players[1], 2)).toBe(true);
-      expect(isValidPlay(state, playerHand[0], 1)).toBe(true);  // Following suit
-      expect(isValidPlay(state, playerHand[1], 1)).toBe(false); // Trump when can follow
+      expect(canFollowSuit(state.players[1]!, 2)).toBe(true);
+      expect(isValidPlay(state, playerHand[0]!, 1)).toBe(true);  // Following suit
+      expect(isValidPlay(state, playerHand[1]!, 1)).toBe(false); // Trump when can follow
     });
   });
 
@@ -173,7 +179,7 @@ describe('Renege Detection and Prevention', () => {
       // Must follow threes suit, not doubles trump
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('follow-1');
+      expect(validPlays[0]?.id).toBe('follow-1');
     });
 
     it('allows doubles trump when cannot follow natural suit', () => {
@@ -237,7 +243,7 @@ describe('Renege Detection and Prevention', () => {
 
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('follow-1');
+      expect(validPlays[0]?.id).toBe('follow-1');
     });
   });
 
@@ -344,7 +350,7 @@ describe('Renege Detection and Prevention', () => {
       // Must still follow original suit despite trumps played
       const validPlays = getValidPlays(state, 3);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('follow-1');
+      expect(validPlays[0]?.id).toBe('follow-1');
     });
 
     it('prevents renege in complex trick scenarios', () => {

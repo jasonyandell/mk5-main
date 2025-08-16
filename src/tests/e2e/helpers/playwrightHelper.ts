@@ -122,7 +122,10 @@ export class PlaywrightGameHelper {
     const actions = [];
     
     for (let i = 0; i < buttons.length; i++) {
-      const actionId = await buttons[i].getAttribute('data-testid');
+      const button = buttons[i];
+      if (!button) continue; // Skip undefined buttons
+      const actionId = await button.getAttribute('data-testid');
+      if (!actionId) continue; // Skip buttons without actionId
       
       let type = 'unknown';
       let value: string | number | undefined = undefined;
@@ -131,16 +134,17 @@ export class PlaywrightGameHelper {
         type = 'pass';
       } else if (actionId?.startsWith('bid-')) {
         const parts = actionId.split('-');
-        if (parts.length === 3 && parts[2] === 'marks') {
+        if (parts.length === 3 && parts[2] === 'marks' && parts[1]) {
           type = 'bid_marks';
           value = parseInt(parts[1]);
-        } else if (parts.length === 2) {
+        } else if (parts.length === 2 && parts[1]) {
           type = 'bid_points';
           value = parseInt(parts[1]);
         }
       } else if (actionId?.startsWith('trump-')) {
         type = 'trump_selection';
-        value = actionId.split('-')[1];
+        const trumpPart = actionId.split('-')[1];
+        value = trumpPart || '';
       } else if (actionId?.startsWith('play-')) {
         type = 'play_domino';
         value = actionId.substring(5);
@@ -154,7 +158,7 @@ export class PlaywrightGameHelper {
         type = 'select_trump';
       }
       
-      actions.push({ index: i, type, value, id: actionId || '' });
+      actions.push({ index: i, type, value: value ?? '', id: actionId });
     }
     
     return actions;

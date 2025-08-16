@@ -22,10 +22,10 @@ describe('Trump Validation', () => {
     });
 
     it('should reject invalid suit values', () => {
-      const invalidTrump: TrumpSelection = { type: 'suit', suit: -1 as TrumpSelection['suit'] };
+      const invalidTrump: TrumpSelection = { type: 'suit', suit: -1 as 0 | 1 | 2 | 3 | 4 | 5 | 6 };
       expect(isValidTrump(invalidTrump)).toBe(false);
       
-      const invalidTrump2: TrumpSelection = { type: 'suit', suit: 7 as TrumpSelection['suit'] };
+      const invalidTrump2: TrumpSelection = { type: 'suit', suit: 7 as 0 | 1 | 2 | 3 | 4 | 5 | 6 };
       expect(isValidTrump(invalidTrump2)).toBe(false);
     });
   });

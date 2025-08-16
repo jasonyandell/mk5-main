@@ -35,16 +35,19 @@
   }
 
   // Track score changes for animation
-  let previousScores = [...$teamInfo.marks];
-  let scoreKeys = [0, 0];
+  let previousScores: [number, number] = $teamInfo.marks ? [...$teamInfo.marks] : [0, 0];
+  let scoreKeys: [number, number] = [0, 0];
   $: {
-    if ($teamInfo.marks[0] !== previousScores[0]) {
-      scoreKeys[0]++;
-      previousScores[0] = $teamInfo.marks[0];
-    }
-    if ($teamInfo.marks[1] !== previousScores[1]) {
-      scoreKeys[1]++;
-      previousScores[1] = $teamInfo.marks[1];
+    const marks = $teamInfo.marks;
+    if (marks) {
+      if (marks[0] !== previousScores[0]) {
+        scoreKeys = [scoreKeys[0] + 1, scoreKeys[1]];
+        previousScores = [marks[0], previousScores[1]];
+      }
+      if (marks[1] !== previousScores[1]) {
+        scoreKeys = [scoreKeys[0], scoreKeys[1] + 1];
+        previousScores = [previousScores[0], marks[1]];
+      }
     }
   }
 </script>
@@ -60,17 +63,17 @@
     
     <div class="turn-display">
       <span class="turn-label">Turn</span>
-      <span class="turn-player">P{$currentPlayer.id}</span>
+      <span class="turn-player">P{$currentPlayer?.id ?? 1}</span>
     </div>
   </div>
   
   <div class="score-display">
     {#key scoreKeys[0]}
-      <div class="score-card us" class:winning={$teamInfo.marks[0] > $teamInfo.marks[1]}>
-        <div class="score-value score-animate">{$teamInfo.marks[0]}</div>
+      <div class="score-card us" class:winning={($teamInfo.marks?.[0] ?? 0) > ($teamInfo.marks?.[1] ?? 0)}>
+        <div class="score-value score-animate">{$teamInfo.marks?.[0] ?? 0}</div>
         <div class="score-label">US</div>
         <div class="score-progress">
-          <div class="progress-fill" style="width: {($teamInfo.marks[0] / 7) * 100}%"></div>
+          <div class="progress-fill" style="width: {(($teamInfo.marks?.[0] ?? 0) / 7) * 100}%"></div>
         </div>
       </div>
     {/key}
@@ -83,11 +86,11 @@
     </div>
     
     {#key scoreKeys[1]}
-      <div class="score-card them" class:winning={$teamInfo.marks[1] > $teamInfo.marks[0]}>
-        <div class="score-value score-animate">{$teamInfo.marks[1]}</div>
+      <div class="score-card them" class:winning={($teamInfo.marks?.[1] ?? 0) > ($teamInfo.marks?.[0] ?? 0)}>
+        <div class="score-value score-animate">{$teamInfo.marks?.[1] ?? 0}</div>
         <div class="score-label">THEM</div>
         <div class="score-progress">
-          <div class="progress-fill" style="width: {($teamInfo.marks[1] / 7) * 100}%"></div>
+          <div class="progress-fill" style="width: {(($teamInfo.marks?.[1] ?? 0) / 7) * 100}%"></div>
         </div>
       </div>
     {/key}

@@ -50,8 +50,8 @@ describe('URL Compression', () => {
     expect(expanded.tournamentMode).toBe(original.tournamentMode);
     
     // Hands should be recreated identically (same seed)
-    expect(expanded.players[0].hand.map(d => d.id)).toEqual(
-      original.players[0].hand.map(d => d.id)
+    expect(expanded.players[0]?.hand.map(d => d.id)).toEqual(
+      original.players[0]?.hand.map(d => d.id)
     );
   });
 

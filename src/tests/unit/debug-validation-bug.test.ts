@@ -145,6 +145,7 @@ describe('Debug Validation Bug - Step 7', () => {
     // Validate each step
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
+      if (!action) throw new Error(`Action at index ${i} is undefined`);
       testLog(`\nStep ${i + 1}: ${action.id} (${action.label})`);
       testLog(`Current player: ${currentState.currentPlayer}`);
       testLog(`Current phase: ${currentState.phase}`);
@@ -155,7 +156,7 @@ describe('Debug Validation Bug - Step 7', () => {
         
         if (action.id.startsWith('play-')) {
           const dominoId = action.id.replace('play-', '');
-          const currentPlayerHand = currentState.players[currentState.currentPlayer].hand;
+          const currentPlayerHand = currentState.players[currentState.currentPlayer]?.hand || [];
           testLog(`Player ${currentState.currentPlayer} hand: ${currentPlayerHand.map(d => d.id).join(', ')}`);
           testLog(`Looking for domino: ${dominoId}`);
           testLog(`Player has domino: ${currentPlayerHand.some(d => d.id === dominoId)}`);
@@ -178,7 +179,7 @@ describe('Debug Validation Bug - Step 7', () => {
           
           // Let's debug who should have 6-5
           for (let playerId = 0; playerId < 4; playerId++) {
-            const playerHand = currentState.players[playerId].hand;
+            const playerHand = currentState.players[playerId]?.hand || [];
             const has65 = playerHand.some(d => d.id === '6-5');
             testLog(`Player ${playerId} has 6-5: ${has65}`);
           }
@@ -220,7 +221,7 @@ describe('Debug Validation Bug - Step 7', () => {
 
     // Player 1 should win (played 5-5, highest 5)
     const newState = completeTrickTransition!.newState;
-    expect(newState.tricks[0].winner).toBe(1);
+    expect(newState.tricks[0]?.winner).toBe(1);
     expect(newState.currentPlayer).toBe(1); // Winner leads next trick
   });
 });

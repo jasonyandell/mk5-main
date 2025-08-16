@@ -67,7 +67,7 @@ function makeAIBidDecision(state: GameState, player: Player, actions: StateTrans
   
   // Weak hand - pass if can't bid 30
   if (handStrength < 8 && currentBidValue >= 30) {
-    return passAction || actions[0];
+    return passAction || actions[0]!;
   }
   
   // Calculate bid based on hand strength
@@ -93,11 +93,11 @@ function makeAIBidDecision(state: GameState, player: Player, actions: StateTrans
       const bValue = bParts.length >= 2 && bParts[1] ? parseInt(bParts[1]) : 0;
       return aValue - bValue;
     });
-    return validBids[0];
+    return validBids[0]!;
   }
   
   // Can't make desired bid - pass
-  return passAction || actions[0];
+  return passAction || actions[0]!;
 }
 
 // Calculate hand strength for bidding
@@ -147,7 +147,7 @@ function makeAITrumpDecision(_state: GameState, player: Player, actions: StateTr
   
   if (!player.suitAnalysis) {
     // Fallback - pick first available trump
-    return actions[0];
+    return actions[0]!;
   }
   
   // Get strongest suits
@@ -168,7 +168,7 @@ function makeAITrumpDecision(_state: GameState, player: Player, actions: StateTr
   }
   
   // Fallback
-  return actions[0];
+  return actions[0]!;
 }
 
 // AI Playing Logic
@@ -183,7 +183,7 @@ function makeAIPlayDecision(state: GameState, player: Player, actions: StateTran
   
   // Extract dominoes from play actions
   const playActions = actions.filter(a => a.id.startsWith('play-'));
-  if (playActions.length === 0) return actions[0];
+  if (playActions.length === 0) return actions[0]!;
   
   // Leading a trick
   if (state.currentTrick.length === 0) {
@@ -196,15 +196,15 @@ function makeAIPlayDecision(state: GameState, player: Player, actions: StateTran
     });
     
     scoredActions.sort((a, b) => b.points - a.points);
-    return scoredActions[0]?.action || actions[0];
+    return scoredActions[0]?.action || actions[0]!;
   }
   
   // Following in a trick
   const myTeam = player.teamId;
   const trickLeader = state.currentTrick[0]?.player;
-  if (trickLeader === undefined) return actions[0];
+  if (trickLeader === undefined) return actions[0]!;
   const leaderPlayer = state.players[trickLeader];
-  if (!leaderPlayer) return actions[0];
+  if (!leaderPlayer) return actions[0]!;
   const leaderTeam = leaderPlayer.teamId;
   const partnerLed = myTeam === leaderTeam;
   
@@ -224,7 +224,7 @@ function makeAIPlayDecision(state: GameState, player: Player, actions: StateTran
     scoredActions.sort((a, b) => b.value - a.value);
   }
   
-  return scoredActions[0]?.action || actions[0];
+  return scoredActions[0]?.action || actions[0]!;
 }
 
 // Subscribe to game state changes

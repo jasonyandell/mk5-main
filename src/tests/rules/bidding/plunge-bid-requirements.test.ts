@@ -14,7 +14,10 @@ describe('Feature: Special Bids', () => {
       state.bids = [];
       
       // Set the hand for the specified player
-      state.players[playerId].hand = hand;
+      const player = state.players[playerId];
+      if (player) {
+        player.hand = hand;
+      }
       
       // Apply each bid using the game engine
       for (const bid of bids) {
@@ -39,7 +42,9 @@ describe('Feature: Special Bids', () => {
 
     function canPlungeBid(state: GameState): boolean {
       // Check if player has enough doubles for a plunge bid
-      const currentPlayerHand = state.players[state.currentPlayer].hand;
+      const currentPlayer = state.players[state.currentPlayer];
+      if (!currentPlayer) return false;
+      const currentPlayerHand = currentPlayer.hand;
       const doubleCount = countDoubles(currentPlayerHand);
       return doubleCount >= 4;
     }

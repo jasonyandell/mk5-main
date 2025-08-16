@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import type { GameState } from '../../../game/types';
+import type { GameState, Trick } from '../../../game/types';
 
 describe('Feature: Plunge Bid Mechanics', () => {
   describe('Scenario: Plunge Bid Mechanics', () => {
@@ -39,6 +39,7 @@ describe('Feature: Plunge Bid Mechanics', () => {
 
       // Partner of player 0 (teamId 0) is player 2
       const plungeBidder = mockState.players![0];
+      if (!plungeBidder) throw new Error('Plunge bidder not found');
       const partner = mockState.players!.find(p => p.id !== plungeBidder.id && p.teamId === plungeBidder.teamId);
       
       expect(partner?.id).toBe(2);
@@ -73,6 +74,7 @@ describe('Feature: Plunge Bid Mechanics', () => {
 
       // Partner of plunge bidder should be leading
       const plungeBidder = mockState.players![0];
+      if (!plungeBidder) throw new Error('Plunge bidder not found');
       const partner = mockState.players!.find(p => p.id !== plungeBidder.id && p.teamId === plungeBidder.teamId);
       
       expect(mockState.currentPlayer).toBe(partner!.id);
@@ -93,9 +95,9 @@ describe('Feature: Plunge Bid Mechanics', () => {
         winningBidder: 0,
         tricks: Array(7).fill(null).map(() => ({
           plays: [],
-          winner: undefined,
+          winner: 0,
           points: 0
-        })),
+        })) as Trick[],
         teamScores: [0, 0],
       };
 
@@ -110,7 +112,9 @@ describe('Feature: Plunge Bid Mechanics', () => {
       };
 
       // Check all tricks were won by plunge team
-      const plungeTeam = mockState.players![0].teamId;
+      const plungeBidder = mockState.players![0];
+      if (!plungeBidder) throw new Error('Plunge bidder not found');
+      const plungeTeam = plungeBidder.teamId;
       const tricksWonByPlungeTeam = successfulPlungeState.tricks!.filter(trick => {
         const winnerPlayer = mockState.players!.find(p => p.id === trick.winner);
         return winnerPlayer?.teamId === plungeTeam;

@@ -15,7 +15,11 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
     
     // Assign dealt hands to players
     gameState.players.forEach((player, index) => {
-      player.hand = hands[index];
+      const hand = hands[index];
+      if (!hand) {
+        throw new Error(`No hand dealt for player ${index}`);
+      }
+      player.hand = hand;
     });
     
     // Set up game state for playing phase

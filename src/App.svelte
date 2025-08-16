@@ -33,18 +33,22 @@
 
   // Handle swipe gestures
   function handleTouchStart(e: TouchEvent) {
-    touchStartY = e.touches[0].clientY;
-    touchStartTime = Date.now();
+    if (e.touches.length > 0 && e.touches[0]) {
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+    }
   }
 
   function handleTouchEnd(e: TouchEvent) {
-    const touchEndY = e.changedTouches[0].clientY;
-    const touchDuration = Date.now() - touchStartTime;
-    const swipeDistance = touchStartY - touchEndY;
+    if (e.changedTouches.length > 0 && e.changedTouches[0]) {
+      const touchEndY = e.changedTouches[0].clientY;
+      const touchDuration = Date.now() - touchStartTime;
+      const swipeDistance = touchStartY - touchEndY;
 
-    // Quick swipe up opens debug panel
-    if (swipeDistance > 100 && touchDuration < 300) {
-      showDebugPanel = true;
+      // Quick swipe up opens debug panel
+      if (swipeDistance > 100 && touchDuration < 300) {
+        showDebugPanel = true;
+      }
     }
   }
 
@@ -95,7 +99,11 @@
   }
   
   // Handle clicking to dismiss flash message
-  function dismissFlash() {
+  function dismissFlash(e?: MouseEvent | KeyboardEvent) {
+    // Only dismiss on Enter or Space key for keyboard events
+    if (e && e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') {
+      return;
+    }
     if (flashMessage) {
       flashMessage = '';
       if (flashTimeout) {
@@ -131,7 +139,7 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="app-container" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd} on:click={dismissFlash}>
+<div class="app-container" role="application" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
   <Header />
   
   <main class="game-container" class:no-scroll={activeView === 'actions'}>
@@ -141,7 +149,7 @@
       </div>
     {:else}
       <div transition:fade={{ duration: 200 }} class="action-panel-wrapper">
-        <ActionPanel on:switchToPlay={() => activeView = 'game'} />
+        <ActionPanel onswitchToPlay={() => activeView = 'game'} />
       </div>
     {/if}
   </main>
@@ -184,13 +192,17 @@
 {/if}
 
 {#if flashMessage}
-  <div 
+  <button 
     class="flash-message"
     transition:fade={{ duration: 200 }}
     on:click={dismissFlash}
+    on:keydown={dismissFlash}
+    type="button"
+    aria-label="Dismiss message: {flashMessage}"
+    aria-live="polite"
   >
     {flashMessage}
-  </div>
+  </button>
 {/if}
 
 <style>
@@ -302,6 +314,7 @@
     font-size: 48px;
     font-weight: bold;
     padding: 30px 60px;
+    border: none;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     z-index: 2000;

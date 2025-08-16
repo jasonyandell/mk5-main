@@ -367,7 +367,7 @@ export const gameActions = {
     }
   },
   
-  loadFromHistoryState: (historyState: any) => {
+  loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {
     if (historyState && historyState.initialState && historyState.actions) {
       // Deep clone to prevent mutations
       initialState.set(JSON.parse(JSON.stringify(historyState.initialState)));
@@ -375,15 +375,15 @@ export const gameActions = {
       let currentState = historyState.initialState;
       const validActions: StateTransition[] = [];
       
-      for (const actionData of historyState.actions) {
+      for (const actionId of historyState.actions) {
         const availableTransitions = getNextStates(currentState);
-        const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
+        const matchingTransition = availableTransitions.find(t => t.id === actionId);
         
         if (matchingTransition) {
           validActions.push(matchingTransition);
           currentState = matchingTransition.newState;
         } else {
-          console.error(`Invalid action in history: ${actionData.id}`);
+          console.error(`Invalid action in history: ${actionId}`);
           break;
         }
       }

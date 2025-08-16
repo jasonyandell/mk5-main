@@ -11,7 +11,11 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
       
       // Assign dealt hands to players
       gameState.players.forEach((player, index) => {
-        player.hand = hands[index];
+        const hand = hands[index];
+        if (!hand) {
+          throw new Error(`No hand dealt for player ${index}`);
+        }
+        player.hand = hand;
       });
 
       // Verify each player has 7 dominoes
@@ -46,7 +50,11 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
       
       // Assign dealt hands to players
       gameStateBeforeBidding.players.forEach((player, index) => {
-        player.hand = hands[index];
+        const hand = hands[index];
+        if (!hand) {
+          throw new Error(`No hand dealt for player ${index}`);
+        }
+        player.hand = hand;
       });
       
       gameStateBeforeBidding.phase = 'setup';

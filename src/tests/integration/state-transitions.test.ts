@@ -128,7 +128,7 @@ describe('State Transitions Integration', () => {
       expect(actions.length).toBeGreaterThan(0);
       
       // Execute first action
-      const nextState = actions[0].newState;
+      const nextState = actions[0]!.newState;
       
       // Current player should advance (unless it's trump selection)
       if (nextState.phase === 'bidding') {
@@ -161,6 +161,7 @@ describe('State Transitions Integration', () => {
         
         // Pick random action
         const randomAction = actions[Math.floor(Math.random() * actions.length)];
+        if (!randomAction) break;
         state = randomAction.newState;
         
         // Verify state consistency
@@ -183,7 +184,7 @@ describe('State Transitions Integration', () => {
       
       const actions = getNextStates(state);
       if (actions.length > 0) {
-        const newState = actions[0].newState;
+        const newState = actions[0]!.newState;
         
         // Original state should be unchanged
         expect(state).toEqual(originalState);

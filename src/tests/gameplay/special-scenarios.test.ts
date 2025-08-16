@@ -59,7 +59,7 @@ describe('Special Gameplay Scenarios', () => {
       
       // Set the player's hand to have 4 doubles
       state.hands = { 0: handWith4Doubles, 1: [], 2: [], 3: [] };
-      state.players[0].hand = handWith4Doubles;
+      state.players[0]!.hand = handWith4Doubles;
 
       // Plunge bid requires 4+ doubles
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
@@ -332,7 +332,11 @@ describe('Special Gameplay Scenarios', () => {
       
       // Should be forced to play the threes suit domino
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('forced');
+      const firstValidPlay = validPlays[0];
+      if (!firstValidPlay) {
+        throw new Error('No valid play found');
+      }
+      expect(firstValidPlay.id).toBe('forced');
     });
 
     it('handles blocked suit scenarios', () => {

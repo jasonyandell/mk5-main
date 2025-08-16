@@ -58,14 +58,14 @@ describe('Basic Game Flow', () => {
       
       // Different seeds should produce different shuffles
       const sameOrder = shuffle1.every((domino, index) => 
-        domino.id === shuffle2[index].id
+        domino.id === shuffle2[index]?.id
       );
       expect(sameOrder).toBe(false);
       
       // Same seed should produce same shuffle
       const shuffle3 = shuffleDominoesWithSeed(12345);
       expect(shuffle1.every((domino, index) => 
-        domino.id === shuffle3[index].id
+        domino.id === shuffle3[index]?.id
       )).toBe(true);
     });
   });
@@ -236,19 +236,19 @@ describe('Basic Game Flow', () => {
         trump: { type: 'suit', suit: 1 }, // ones trump
         currentTrick: [],
         hands: {
-          0: [testDominoes[0]],
-          1: [testDominoes[1]],
-          2: [testDominoes[2]],
-          3: [testDominoes[3]]
+          0: [testDominoes[0]!],
+          1: [testDominoes[1]!],
+          2: [testDominoes[2]!],
+          3: [testDominoes[3]!]
         }
       });
 
       // Play each domino in turn
       const plays = [
-        { player: 0, domino: testDominoes[0] },
-        { player: 1, domino: testDominoes[1] },
-        { player: 2, domino: testDominoes[2] },
-        { player: 3, domino: testDominoes[3] }
+        { player: 0, domino: testDominoes[0]! },
+        { player: 1, domino: testDominoes[1]! },
+        { player: 2, domino: testDominoes[2]! },
+        { player: 3, domino: testDominoes[3]! }
       ];
 
       // Initialize players with their hands and suit analysis
@@ -280,15 +280,18 @@ describe('Basic Game Flow', () => {
         // Each trick has 4 plays
         for (let playNum = 0; playNum < 4; playNum++) {
           const currentPlayer = getPlayerAfter(state.currentPlayer, playNum);
-          const availableDominoes = state.players[currentPlayer].hand;
+          const player = state.players[currentPlayer];
+          if (!player) continue;
+          
+          const availableDominoes = player.hand;
           
           if (availableDominoes.length > 0) {
-            const domino = availableDominoes[0];
+            const domino = availableDominoes[0]!;
             // For this test, we'll just play any available domino to complete the game structure
             // Real gameplay would enforce suit following rules
             
             state.currentTrick.push({ player: currentPlayer, domino });
-            state.players[currentPlayer].hand = availableDominoes.slice(1);
+            player.hand = availableDominoes.slice(1);
           }
         }
         
@@ -376,14 +379,20 @@ describe('Basic Game Flow', () => {
       // Update state with player hand and current suit
       state.currentPlayer = 1;
       state.currentSuit = 3; // threes were led
-      state.players[1].hand = playerHand;
-      state.players[1].suitAnalysis = analyzeSuits(playerHand, state.trump!);
+      state.players[1]!.hand = playerHand;
+      state.players[1]!.suitAnalysis = analyzeSuits(playerHand, state.trump!);
 
       // Valid play - following suit
-      expect(isValidPlay(state, playerHand[0], 1)).toBe(true);
+      const firstDomino = playerHand[0];
+      const secondDomino = playerHand[1];
+      if (firstDomino) {
+        expect(isValidPlay(state, firstDomino, 1)).toBe(true);
+      }
       
       // Invalid play - not following suit when able
-      expect(isValidPlay(state, playerHand[1], 1)).toBe(false);
+      if (secondDomino) {
+        expect(isValidPlay(state, secondDomino, 1)).toBe(false);
+      }
     });
 
     it('prevents out-of-turn actions', () => {

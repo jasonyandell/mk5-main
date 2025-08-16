@@ -142,7 +142,7 @@ describe('Domino System', () => {
       
       // Should be in descending order: 6-6, 5-5, 4-4, 3-3, 2-2, 1-1, 0-0
       for (let i = 0; i < values.length - 1; i++) {
-        expect(values[i]).toBeGreaterThan(values[i + 1]);
+        expect(values[i]).toBeGreaterThan(values[i + 1] ?? 0);
       }
     });
     

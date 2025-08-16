@@ -172,6 +172,9 @@ describe('Scoring Validation', () => {
       ];
 
       distributions.forEach(dist => {
+        if (dist[0] === undefined || dist[1] === undefined) {
+          throw new Error('Distribution values cannot be undefined');
+        }
         expect(dist[0] + dist[1]).toBe(42);
         expect(dist[0]).toBeGreaterThanOrEqual(0);
         expect(dist[1]).toBeGreaterThanOrEqual(0);
@@ -230,8 +233,18 @@ describe('Scoring Validation', () => {
       const team1Scores = [0, 1, 2, 4, 4];
 
       for (let i = 1; i < team0Scores.length; i++) {
-        expect(team0Scores[i]).toBeGreaterThanOrEqual(team0Scores[i - 1]);
-        expect(team1Scores[i]).toBeGreaterThanOrEqual(team1Scores[i - 1]);
+        const currentTeam0 = team0Scores[i];
+        const prevTeam0 = team0Scores[i - 1];
+        const currentTeam1 = team1Scores[i];
+        const prevTeam1 = team1Scores[i - 1];
+        
+        if (currentTeam0 === undefined || prevTeam0 === undefined || 
+            currentTeam1 === undefined || prevTeam1 === undefined) {
+          throw new Error('Score values cannot be undefined');
+        }
+        
+        expect(currentTeam0).toBeGreaterThanOrEqual(prevTeam0);
+        expect(currentTeam1).toBeGreaterThanOrEqual(prevTeam1);
       }
     });
   });

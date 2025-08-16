@@ -131,7 +131,7 @@
   })();
 
   // Current player's hand
-  $: playerHand = $currentPlayer.hand || [];
+  $: playerHand = $currentPlayer?.hand || [];
 
   // Current trick plays
   $: currentTrickPlays = $gameState.currentTrick || [];
@@ -327,18 +327,11 @@
     </div>
   {/if}
 
-  <button
+  <div
     class="trick-table" 
     class:tappable={proceedAction}
-    on:click={(e) => {
-      if (proceedAction) {
-        e.preventDefault();
-        handleProceedAction();
-      }
-    }}
-    disabled={!proceedAction}
-    aria-label={proceedAction ? proceedAction.label : null}
-    type="button"
+    role="region"
+    aria-label="Trick table"
   >
     <div class="table-surface" class:glowing={proceedAction}>
       <div class="table-pattern"></div>
@@ -398,12 +391,17 @@
     </div>
     
     {#if proceedAction}
-      <div class="tap-indicator" on:click|stopPropagation={handleProceedAction}>
+      <button 
+        class="tap-indicator" 
+        on:click={handleProceedAction}
+        type="button"
+        aria-label={proceedAction.label}
+      >
         <span class="tap-icon">👆</span>
         <span class="tap-text">{proceedAction.label}</span>
-      </div>
+      </button>
     {/if}
-  </button>
+  </div>
 
   <div class="hand-container">
     
@@ -862,6 +860,7 @@
     padding: 8px 20px;
     background: rgba(139, 92, 246, 0.95);
     color: white;
+    border: none;
     border-radius: 24px;
     font-size: 14px;
     font-weight: 600;

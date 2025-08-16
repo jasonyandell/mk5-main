@@ -73,7 +73,11 @@ describe('Feature: Playing Tricks', () => {
       };
       
       // After first trick, winner leads next
-      expect(mockState.tricks![0].winner).toBe(3);
+      const firstTrick = mockState.tricks![0];
+      if (!firstTrick) {
+        throw new Error('First trick not found');
+      }
+      expect(firstTrick.winner).toBe(3);
       expect(mockState.currentPlayer).toBe(3);
     });
 
@@ -106,6 +110,9 @@ describe('Feature: Playing Tricks', () => {
       
       // Player can lead any domino from their hand
       const player = mockState.players![0];
+      if (!player) {
+        throw new Error('Player not found');
+      }
       const validLeads = player.hand;
       
       // All dominoes in hand are valid leads

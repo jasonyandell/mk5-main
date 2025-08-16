@@ -28,7 +28,7 @@ describe('Refactor Validation', () => {
     expect(validActions.length).toBeGreaterThan(0);
     
     // Execute first action
-    const firstAction = validActions[0];
+    const firstAction = validActions[0]!;
     engine.executeAction(firstAction);
     
     expect(engine.getHistory()).toHaveLength(1);

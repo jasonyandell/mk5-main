@@ -20,7 +20,9 @@ describe('Random Game Simulation', () => {
 
         // Take random action
         const randomIndex = Math.floor(Math.random() * transitions.length);
-        currentState = transitions[randomIndex].newState;
+        const selectedTransition = transitions[randomIndex];
+        if (!selectedTransition) throw new Error('Selected transition is undefined');
+        currentState = selectedTransition.newState;
         actionCount++;
       }
     }

@@ -132,7 +132,7 @@ export class GameTestHelper {
           ...baseState.players[index],
           ...playerOverride
         };
-      });
+      }) as Player[];
     }
     
     const state = {
@@ -143,7 +143,7 @@ export class GameTestHelper {
     
     // Set currentSuit based on currentTrick if provided
     if (state.currentTrick && state.currentTrick.length > 0 && state.trump.type !== 'none') {
-      const leadDomino = state.currentTrick[0].domino;
+      const leadDomino = state.currentTrick[0]!.domino;
       state.currentSuit = getDominoSuit(leadDomino, state.trump);
     }
     
@@ -306,8 +306,12 @@ export class GameTestHelper {
     const calculatedScores = [0, 0];
     state.tricks.forEach(trick => {
       if (trick.winner !== undefined) {
-        const team = state.players[trick.winner].teamId;
-        calculatedScores[team] += trick.points;
+        const player = state.players[trick.winner];
+        if (!player) {
+          throw new Error(`Invalid winner player index: ${trick.winner}`);
+        }
+        const team = player.teamId;
+        calculatedScores[team] = (calculatedScores[team] || 0) + trick.points;
       }
     });
     
@@ -321,7 +325,7 @@ export class GameTestHelper {
       for (let i = 1; i < state.bids.length; i++) {
         const currentBid = state.bids[i];
         
-        if (!isValidBid(state, currentBid)) {
+        if (currentBid && !isValidBid(state, currentBid)) {
           errors.push(`Invalid bid at position ${i}: ${JSON.stringify(currentBid)}`);
         }
       }
@@ -345,7 +349,7 @@ export class GameTestHelper {
       if (bid === 'auto') {
         // Automatically select first valid action
         if (nextStates.length > 0) {
-          state = nextStates[0].newState;
+          state = nextStates[0]!.newState;
         }
       } else {
         // Find matching bid action
@@ -374,12 +378,12 @@ export class GameTestHelper {
     }
     
     const pointsMatch = id.match(/^bid-(\d+)$/);
-    if (pointsMatch) {
+    if (pointsMatch && pointsMatch[1]) {
       return { type: BID_TYPES.POINTS, value: parseInt(pointsMatch[1]), player: 0 };
     }
     
     const marksMatch = id.match(/^bid-(\d+)-marks$/);
-    if (marksMatch) {
+    if (marksMatch && marksMatch[1]) {
       return { type: BID_TYPES.MARKS, value: parseInt(marksMatch[1]), player: 0 };
     }
     

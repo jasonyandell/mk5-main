@@ -12,7 +12,10 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
       
       const bid: Bid = {
@@ -36,7 +39,10 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
       
       const bid: Bid = {

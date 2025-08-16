@@ -65,8 +65,8 @@ describe('Game Engine', () => {
       const newState = applyAction(initialState, passAction);
       
       expect(newState.bids).toHaveLength(1);
-      expect(newState.bids[0].type).toBe('pass');
-      expect(newState.bids[0].player).toBe(0);
+      expect(newState.bids[0]!.type).toBe('pass');
+      expect(newState.bids[0]!.player).toBe(0);
       expect(newState.currentPlayer).toBe(1); // Next player
     });
     
@@ -82,10 +82,10 @@ describe('Game Engine', () => {
       const newState = applyAction(initialState, bidAction);
       
       expect(newState.bids).toHaveLength(1);
-      expect(newState.bids[0].type).toBe('points');
-      expect(newState.bids[0].value).toBe(30);
-      expect(newState.bids[0].player).toBe(0);
-      expect(newState.currentBid).toEqual(newState.bids[0]);
+      expect(newState.bids[0]!.type).toBe('points');
+      expect(newState.bids[0]!.value).toBe(30);
+      expect(newState.bids[0]!.player).toBe(0);
+      expect(newState.currentBid).toEqual(newState.bids[0]!);
     });
     
     it('should apply trump selection correctly', () => {

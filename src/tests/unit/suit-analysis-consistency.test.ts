@@ -88,7 +88,9 @@ describe('Suit Analysis Consistency', () => {
       { id: 'p0d7', high: 6, low: 6, points: 0 }
     ];
 
-    initialState.players[0].hand = player0Hand;
+    if (initialState.players[0]) {
+      initialState.players[0].hand = player0Hand;
+    }
     initialState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits for this player
@@ -103,7 +105,9 @@ describe('Suit Analysis Consistency', () => {
       winningBidder: 1
     });
 
-    afterBidState.players[0].hand = player0Hand;
+    if (afterBidState.players[0]) {
+      afterBidState.players[0].hand = player0Hand;
+    }
     afterBidState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits again - should be identical when trump is none

@@ -38,7 +38,9 @@ describe('Trump Suit Following Rules', () => {
       // Valid plays should only include 6-2, not 6-5
       const validPlays = getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
-      expect(validPlays[0].id).toBe('6-2');
+      const firstValidPlay = validPlays[0];
+      if (!firstValidPlay) throw new Error('First valid play is undefined');
+      expect(firstValidPlay.id).toBe('6-2');
     });
 
     it('allows playing trump domino when it is the only way to follow suit', () => {

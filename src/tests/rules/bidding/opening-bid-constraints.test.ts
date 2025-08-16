@@ -16,7 +16,10 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
 
       // When a player makes the opening bid
@@ -29,7 +32,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
       
       pointsBids.forEach(({ bid, valid }) => {
-        expect(isValidOpeningBid(bid, gameState.players[0].hand, gameState.tournamentMode)).toBe(valid);
+        expect(isValidOpeningBid(bid, gameState.players[0]!.hand, gameState.tournamentMode)).toBe(valid);
       });
 
       // And the maximum opening bid is 2 marks (84 points)
@@ -41,7 +44,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
       
       markBids.forEach(({ bid, valid }) => {
-        expect(isValidOpeningBid(bid, gameState.players[0].hand, gameState.tournamentMode)).toBe(valid);
+        expect(isValidOpeningBid(bid, gameState.players[0]!.hand, gameState.tournamentMode)).toBe(valid);
       });
       
       // Verify 2 marks equals 84 points
@@ -51,11 +54,11 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       // In tournament mode, plunge is not allowed
       if (gameState.tournamentMode) {
         const plungeBid: Bid = { type: 'plunge' as const, value: 4, player: 0 };
-        expect(isValidOpeningBid(plungeBid, gameState.players[0].hand, gameState.tournamentMode)).toBe(false);
+        expect(isValidOpeningBid(plungeBid, gameState.players[0]!.hand, gameState.tournamentMode)).toBe(false);
       } else {
         // Test invalid plunge first (with current hand - not enough doubles)
         const invalidPlunge: Bid = { type: 'plunge' as const, value: 3, player: 0 };
-        expect(isValidOpeningBid(invalidPlunge, gameState.players[0].hand, false)).toBe(false);
+        expect(isValidOpeningBid(invalidPlunge, gameState.players[0]!.hand, false)).toBe(false);
         
         // Now give player 4 doubles for valid plunge tests
         const handWith4Doubles = [
@@ -87,7 +90,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       gameState.currentPlayer = 0;
       
       // Give player doubles for plunge bid
-      gameState.players[0].hand = [
+      gameState.players[0]!.hand = [
         { high: 0, low: 0, id: '0-0' },
         { high: 1, low: 1, id: '1-1' },
         { high: 2, low: 2, id: '2-2' },
@@ -107,7 +110,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
 
       validOpeningBids.forEach(bid => {
-        expect(isValidOpeningBid(bid, gameState.players[0].hand, gameState.tournamentMode)).toBe(true);
+        expect(isValidOpeningBid(bid, gameState.players[0]!.hand, gameState.tournamentMode)).toBe(true);
       });
       
       // Pass is handled by isValidBid
@@ -117,7 +120,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       // Plunge is only valid in non-tournament mode with 4+ doubles
       if (!gameState.tournamentMode) {
         const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
-        expect(isValidOpeningBid(plungeBid, gameState.players[0].hand, false)).toBe(true);
+        expect(isValidOpeningBid(plungeBid, gameState.players[0]!.hand, false)).toBe(true);
       }
     });
 
@@ -129,7 +132,10 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       // Deal dominoes to players
       const hands = dealDominoesWithSeed(12345);
       gameState.players.forEach((player, i) => {
-        player.hand = hands[i];
+        const hand = hands[i];
+        if (hand) {
+          player.hand = hand;
+        }
       });
       
       // Test creating invalid bid objects that should be rejected
@@ -142,7 +148,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
 
       invalidOpeningBids.forEach(bid => {
-        expect(isValidOpeningBid(bid, gameState.players[0].hand, gameState.tournamentMode)).toBe(false);
+        expect(isValidOpeningBid(bid, gameState.players[0]!.hand, gameState.tournamentMode)).toBe(false);
       });
     });
   });

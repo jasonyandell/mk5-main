@@ -101,12 +101,12 @@ describe('Mathematical Constants Verification', () => {
       const state = createInitialState();
       
       // Players 0 and 2 on team 0
-      expect(state.players[0].teamId).toBe(0);
-      expect(state.players[2].teamId).toBe(0);
+      expect(state.players[0]!.teamId).toBe(0);
+      expect(state.players[2]!.teamId).toBe(0);
       
       // Players 1 and 3 on team 1  
-      expect(state.players[1].teamId).toBe(1);
-      expect(state.players[3].teamId).toBe(1);
+      expect(state.players[1]!.teamId).toBe(1);
+      expect(state.players[3]!.teamId).toBe(1);
     });
 
     it('should verify initial domino distribution', () => {

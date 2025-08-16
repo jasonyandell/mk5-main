@@ -24,15 +24,21 @@ function createTestState(hands: Domino[][], trump: TrumpSelection, currentTrick:
   
   // Set currentSuit based on lead domino if trick in progress
   if (currentTrick.length > 0) {
-    const leadDomino = currentTrick[0].domino;
-    state.currentSuit = getDominoSuit(leadDomino, trump);
+    const firstPlay = currentTrick[0];
+    if (firstPlay) {
+      const leadDomino = firstPlay.domino;
+      state.currentSuit = getDominoSuit(leadDomino, trump);
+    }
   }
   
   // Set up player hands and analyze suits
   hands.forEach((hand, i) => {
     if (i < state.players.length) {
-      state.players[i].hand = hand;
-      state.players[i].suitAnalysis = analyzeSuits(hand, trump);
+      const player = state.players[i];
+      if (player) {
+        player.hand = hand;
+        player.suitAnalysis = analyzeSuits(hand, trump);
+      }
     }
   });
   
@@ -40,7 +46,7 @@ function createTestState(hands: Domino[][], trump: TrumpSelection, currentTrick:
 }
 
 describe('Trick Validation', () => {
-  const trump: TrumpSelection = TRUMP_SELECTIONS.BLANKS;
+  const trump: TrumpSelection = TRUMP_SELECTIONS.BLANKS!;
   
   describe('isValidPlay', () => {
     it('should allow any domino for opening lead', () => {
@@ -63,9 +69,9 @@ describe('Trick Validation', () => {
       ];
       const state = createTestState([hand, [], [], []], trump, currentTrick);
       
-      expect(isValidPlay(state, hand[0], 0)).toBe(true);  // must follow
-      expect(isValidPlay(state, hand[1], 0)).toBe(false); // can't play off-suit
-      expect(isValidPlay(state, hand[2], 0)).toBe(false); // can't play off-suit
+      expect(isValidPlay(state, hand[0]!, 0)).toBe(true);  // must follow
+      expect(isValidPlay(state, hand[1]!, 0)).toBe(false); // can't play off-suit
+      expect(isValidPlay(state, hand[2]!, 0)).toBe(false); // can't play off-suit
     });
 
     it('should allow any domino when cannot follow suit', () => {
@@ -85,7 +91,8 @@ describe('Trick Validation', () => {
     });
 
     it('should handle trump suit correctly', () => {
-      const trumpSuit: TrumpSelection = TRUMP_SELECTIONS.ONES;
+      const trumpSuit = TRUMP_SELECTIONS.ONES;
+      if (!trumpSuit) throw new Error('TRUMP_SELECTIONS.ONES is undefined');
       const hand = [
         createDomino(1, 1), // trump
         createDomino(2, 3), // not trump
@@ -95,10 +102,16 @@ describe('Trick Validation', () => {
         { player: 1, domino: createDomino(1, 2) } // lead with trump suit
       ];
       const state = createTestState([hand, [], [], []], trumpSuit, currentTrick);
+      state.trump = trumpSuit;
       
-      expect(isValidPlay(state, hand[0], 0)).toBe(true);  // can follow trump
-      expect(isValidPlay(state, hand[1], 0)).toBe(false); // must follow trump
-      expect(isValidPlay(state, hand[2], 0)).toBe(false); // must follow trump
+      const trumpDomino = hand[0];
+      const nonTrumpDomino1 = hand[1];
+      const nonTrumpDomino2 = hand[2];
+      if (!trumpDomino || !nonTrumpDomino1 || !nonTrumpDomino2) throw new Error('Hand dominoes are undefined');
+      
+      expect(isValidPlay(state, trumpDomino, 0)).toBe(true);  // can follow trump
+      expect(isValidPlay(state, nonTrumpDomino1, 0)).toBe(false); // must follow trump
+      expect(isValidPlay(state, nonTrumpDomino2, 0)).toBe(false); // must follow trump
     });
   });
 
@@ -125,7 +138,10 @@ describe('Trick Validation', () => {
       
       const validPlays = getValidPlays(state, 0);
       expect(validPlays).toHaveLength(2);
-      expect(validPlays).toEqual(expect.arrayContaining([hand[0], hand[1]]));
+      const firstSuitDomino = hand[0];
+      const secondSuitDomino = hand[1];
+      if (!firstSuitDomino || !secondSuitDomino) throw new Error('Expected hand dominoes are undefined');
+      expect(validPlays).toEqual(expect.arrayContaining([firstSuitDomino, secondSuitDomino]));
     });
   });
 
@@ -138,7 +154,9 @@ describe('Trick Validation', () => {
         { player: 3, domino: createDomino(2, 3) }  // 3s - CAN follow suit with higher value
       ];
       
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(3); // Player 3 wins by following suit with higher value
     });
@@ -151,7 +169,9 @@ describe('Trick Validation', () => {
         { player: 3, domino: createDomino(2, 3) }
       ];
       
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with trump
     });
@@ -164,7 +184,9 @@ describe('Trick Validation', () => {
         { player: 3, domino: createDomino(2, 3) }
       ];
       
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(2); // Player 2 with highest trump
     });
@@ -177,7 +199,9 @@ describe('Trick Validation', () => {
         { player: 3, domino: createDomino(2, 3) }
       ];
       
-      const leadSuit = getDominoSuit(trick[0].domino, trump);
+      const firstPlay = trick[0];
+      if (!firstPlay) throw new Error('First play in trick is undefined');
+      const leadSuit = getDominoSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with double blank
     });
