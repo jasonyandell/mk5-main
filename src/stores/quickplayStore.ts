@@ -13,6 +13,13 @@ export interface QuickplayState {
   isPaused: boolean;
 }
 
+export interface QuickplayError {
+  message: string;
+  state: GameState;
+  availableActions: string[];
+  timestamp: string;
+}
+
 // Speed delays in milliseconds
 // const SPEED_DELAYS = {
 //   instant: 0,
@@ -28,6 +35,9 @@ export const quickplayState = writable<QuickplayState>({
   aiPlayers: new Set([0, 1, 2, 3]), // All players AI by default
   isPaused: false
 });
+
+// Store for quickplay errors
+export const quickplayErrorStore = writable<QuickplayError | null>(null);
 
 // AI Decision Logic
 function makeAIDecision(state: GameState, actions: StateTransition[]): StateTransition | null {
@@ -236,12 +246,7 @@ function processAIMoves() {
   const $gameState = get(gameState);
   const $quickplayState = get(quickplayState);
   const $availableActions = get(availableActions);
-  
-  // Debug logging
-  if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && Math.random() < 0.05) {
-    console.log('[Quickplay] processAIMoves - phase:', $gameState.phase, 'marks:', $gameState.teamMarks);
-  }
-  
+    
   // Check if we should continue
   if (!$quickplayState.enabled || $quickplayState.isPaused) {
     animationFrameId = null;
@@ -292,8 +297,29 @@ function processAIMoves() {
       if (decision) {
         gameActions.executeAction(decision);
       }
-    } catch {
-      // Stop quickplay silently on error
+    } catch (error) {
+      // Log error details for debugging
+      console.error('[Quickplay] AI decision error:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        phase: $gameState.phase,
+        currentPlayer: $gameState.currentPlayer,
+        availableActions: $availableActions.map(a => a.id),
+        actionCount: get(actionHistory).length,
+        currentTrick: $gameState.currentTrick,
+        hands: $gameState.hands,
+        trump: $gameState.trump
+      });
+      
+      // Store error in a new error store for UI display
+      quickplayErrorStore.set({
+        message: error instanceof Error ? error.message : 'Unknown error in AI decision',
+        state: JSON.parse(JSON.stringify($gameState)),
+        availableActions: $availableActions.map(a => a.id),
+        timestamp: new Date().toISOString()
+      });
+      
+      // Stop quickplay on error
       quickplayState.update(state => ({ ...state, enabled: false }));
       animationFrameId = null;
       return;
@@ -388,8 +414,26 @@ export const quickplayActions = {
       if (decision) {
         gameActions.executeAction(decision);
       }
-    } catch {
-      // Stop on error
+    } catch (error) {
+      console.error('[Quickplay] Step error:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        phase: $gameState.phase,
+        currentPlayer: $gameState.currentPlayer,
+        availableActions: $availableActions.map(a => a.id),
+        actionCount: get(actionHistory).length,
+        currentTrick: $gameState.currentTrick,
+        hands: $gameState.hands
+      });
+      
+      // Store error for UI display
+      quickplayErrorStore.set({
+        message: error instanceof Error ? error.message : 'Unknown error in AI step',
+        state: JSON.parse(JSON.stringify($gameState)),
+        availableActions: $availableActions.map(a => a.id),
+        timestamp: new Date().toISOString()
+      });
+      
       return;
     }
   },

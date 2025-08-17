@@ -24,7 +24,7 @@ export class PlaywrightGameHelper {
     '.trick-grid': '.table-surface',
     '.proceed-action-button': '.tap-indicator',
     '[data-testid="complete-trick"]': '.tap-indicator',
-    '.history-item': '.history-row',
+    '.history-row': '.history-item',  // Map old selector to new
     '.trump-display': '.info-badge.trump .info-value',
     '[data-testid="game-phase"]': '.phase-name',
   };
@@ -51,12 +51,12 @@ export class PlaywrightGameHelper {
     return this.page.waitForSelector(mappedSelector, options || {});
   }
 
-  async goto(seed: number = 12345) {
+  async goto(seed: number = 12345, options?: { disableUrlUpdates?: boolean }) {
     // Use deterministic seed for tests
-    await this.gotoWithSeed(seed);
+    await this.gotoWithSeed(seed, options);
   }
 
-  async gotoWithSeed(seed: number) {
+  async gotoWithSeed(seed: number, options?: { disableUrlUpdates?: boolean }) {
     // Create a deterministic URL with the specified seed
     const urlData = {
       v: 1 as const,
@@ -68,8 +68,7 @@ export class PlaywrightGameHelper {
     await this.waitForGameReady();
     
     // Disable AI for all players during testing to prevent conflicts
-    // Also disable URL updating to prevent navigation issues during tests
-    await this.page.evaluate(() => {
+    await this.page.evaluate((opts) => {
       if (window.quickplayActions && window.getQuickplayState) {
         // First stop any running quickplay
         const currentState = window.getQuickplayState() as { enabled: boolean; aiPlayers: Set<number> };
@@ -84,20 +83,24 @@ export class PlaywrightGameHelper {
         }
       }
       
-      // Override history methods to prevent URL changes during tests
-      const originalPushState = window.history.pushState;
-      const originalReplaceState = window.history.replaceState;
-      window.history.pushState = function() {
-        // Do nothing - disable URL updates during tests
-      };
-      window.history.replaceState = function() {
-        // Do nothing - disable URL updates during tests
-      };
-      
-      // Store originals in case we need to restore them
-      (window as { _originalPushState?: typeof originalPushState; _originalReplaceState?: typeof originalReplaceState })._originalPushState = originalPushState;
-      (window as { _originalPushState?: typeof originalPushState; _originalReplaceState?: typeof originalReplaceState })._originalReplaceState = originalReplaceState;
-    });
+      // Only disable URL updates if not explicitly disabled (defaults to disabling for backwards compatibility)
+      const shouldDisableUrlUpdates = opts?.disableUrlUpdates !== false;
+      if (shouldDisableUrlUpdates) {
+        // Override history methods to prevent URL changes during tests
+        const originalPushState = window.history.pushState;
+        const originalReplaceState = window.history.replaceState;
+        window.history.pushState = function() {
+          // Do nothing - disable URL updates during tests
+        };
+        window.history.replaceState = function() {
+          // Do nothing - disable URL updates during tests
+        };
+        
+        // Store originals in case we need to restore them
+        (window as { _originalPushState?: typeof originalPushState; _originalReplaceState?: typeof originalReplaceState })._originalPushState = originalPushState;
+        (window as { _originalPushState?: typeof originalPushState; _originalReplaceState?: typeof originalReplaceState })._originalReplaceState = originalReplaceState;
+      }
+    }, options || { disableUrlUpdates: true });
   }
 
   async getCurrentPhase(): Promise<string> {
@@ -112,10 +115,11 @@ export class PlaywrightGameHelper {
       // Continue to next check
     }
     
-    // Check for trump buttons
+    // Check for trump buttons - but also verify no playable dominoes (to distinguish from playing phase)
     try {
       const trumpButtons = await this.page.locator('[data-testid^="trump-"]').count();
-      if (trumpButtons > 0) return 'trump_selection';
+      const playableDominoes = await this.page.locator('.domino-wrapper[data-playable="true"]').count();
+      if (trumpButtons > 0 && playableDominoes === 0) return 'trump_selection';
     } catch {
       // Continue to next check
     }
@@ -137,8 +141,12 @@ export class PlaywrightGameHelper {
       // Continue to next check
     }
     
-    // Check for dominoes as final indicator of playing phase
+    // Check for playable dominoes as indicator of playing phase
     try {
+      const playableDominoes = await this.page.locator('.domino-wrapper[data-playable="true"]').count();
+      if (playableDominoes > 0) return 'playing';
+      
+      // Also check for any dominoes (might not all be playable)
       const dominoes = await this.page.locator('button[data-testid^="domino-"]').count();
       if (dominoes > 0) return 'playing';
     } catch {
@@ -235,9 +243,26 @@ export class PlaywrightGameHelper {
           throw new Error(`Page was closed before clicking action button (index: ${index})`);
         }
         
+        // Store current phase/state to detect changes
+        const preClickPhase = await this.getCurrentPhase();
+        const preClickActions = await this.getActionsList().catch(() => []);
+        
         await button.click();
-        // Add a small delay after click to ensure action is processed
-        await this.page.waitForTimeout(50);
+        
+        // Wait for state change instead of arbitrary timeout
+        // Either phase changes or available actions change
+        await this.page.waitForFunction(
+          ({ prevPhase, prevActionCount }) => {
+            const header = document.querySelector('.app-header');
+            const currentPhase = header?.textContent || '';
+            const actionCount = document.querySelectorAll('.action-button, .tap-indicator').length;
+            return currentPhase !== prevPhase || actionCount !== prevActionCount;
+          },
+          { prevPhase: preClickPhase, prevActionCount: preClickActions.length },
+          { timeout: 1000 }
+        ).catch(() => {
+          // If no change detected in 1s, that's okay - action may not cause immediate change
+        });
       }
     } else {
       throw new Error(`Action index ${index} out of range (0-${buttons.length - 1})`);
@@ -293,6 +318,7 @@ export class PlaywrightGameHelper {
               // Map common tap indicator texts to action IDs
               const tapTextMap: Record<string, string> = {
                 'Complete Trick': 'complete-trick',
+                'Complete trick': 'complete-trick',  // Handle lowercase from game engine
                 'Score Hand': 'score-hand',
                 'Score hand': 'score-hand',
                 'Next Trick': 'next-trick',
@@ -371,8 +397,7 @@ export class PlaywrightGameHelper {
       
       // Use selectActionByIndex which already handles the button click correctly
       await this.selectActionByIndex(action.index);
-      // Add a small delay after action to ensure state updates
-      await this.page.waitForTimeout(50);
+      // selectActionByIndex now waits for state changes deterministically
     } else {
       throw new Error(`No action found for type: ${type}, value: ${value}. Available actions: ${actions.map(a => `${a.type}(${a.value})`).join(', ')}`);
     }
@@ -385,8 +410,7 @@ export class PlaywrightGameHelper {
     if (action) {
       // Use selectActionByIndex which already handles the button click correctly
       await this.selectActionByIndex(action.index);
-      // Add a small delay after action to ensure state updates
-      await this.page.waitForTimeout(50);
+      // selectActionByIndex now waits for state changes deterministically
     } else {
       console.log('Available actions:', actions.map(a => a.id));
       throw new Error(`No action found for id: ${id}. Available actions: ${actions.map(a => a.id).join(', ')}`);
@@ -397,8 +421,16 @@ export class PlaywrightGameHelper {
     // Use selectActionByType which is more robust
     await this.selectActionByType('trump_selection', suit);
     
+    // Wait for trump buttons to disappear (indicates trump was selected)
+    await this.page.waitForFunction(
+      () => document.querySelectorAll('[data-testid^="trump-"]').length === 0,
+      {},
+      { timeout: 2000 }
+    ).catch(() => {
+      // If buttons don't disappear, continue anyway
+    });
+    
     // Wait for phase to change to playing after trump selection
-    await this.page.waitForTimeout(100);
     await this.waitForPhaseChange('playing', 2000);
   }
 
@@ -476,8 +508,16 @@ export class PlaywrightGameHelper {
     // Use selectActionByType which is more robust
     await this.selectActionByType('trump_selection', internalSuit);
     
+    // Wait for trump buttons to disappear (indicates trump was selected)
+    await this.page.waitForFunction(
+      () => document.querySelectorAll('[data-testid^="trump-"]').length === 0,
+      {},
+      { timeout: 2000 }
+    ).catch(() => {
+      // If buttons don't disappear, continue anyway
+    });
+    
     // Wait for phase to change to playing after trump selection
-    await this.page.waitForTimeout(100);
     await this.waitForPhaseChange('playing', 2000);
     
     // Additionally wait for at least one domino to become playable
@@ -526,8 +566,7 @@ export class PlaywrightGameHelper {
       const playAction = actions.find(a => a.type === 'play_domino');
       if (playAction) {
         await this.selectActionByIndex(playAction.index);
-        // Wait for the play to be processed and game state to update
-        await this.page.waitForTimeout(100);
+        // selectActionByIndex now handles waiting for state changes
         return;
       }
     } catch (error) {
@@ -549,7 +588,7 @@ export class PlaywrightGameHelper {
     
     // Try both selectors with shorter timeouts to be more responsive
     try {
-      await this.page.waitForSelector('.domino-wrapper[data-playable="true"], button[data-testid^="domino-"]:not([disabled])', { timeout: 2000 });
+      await this.page.waitForSelector('.domino-wrapper[data-playable="true"], button[data-testid^="domino-"]:not([disabled])', { timeout: 1000 });
     } catch (error) {
       // If page is closed, throw specific error
       if (error instanceof Error && error.message.includes('Target page, context or browser has been closed')) {
@@ -571,9 +610,23 @@ export class PlaywrightGameHelper {
       // Click the Domino component inside the wrapper
       const firstWrapper = playableWrappers.first();
       const dominoInWrapper = firstWrapper.locator('button[data-testid^="domino-"]');
+      
+      // Get current state before click
+      const preClickTrickCount = await this.page.locator('.trick-spot .played-domino').count();
+      
       await dominoInWrapper.click();
-      // Wait for the click to be processed and game state to update
-      await this.page.waitForTimeout(100);
+      
+      // Wait for domino to appear in trick
+      await this.page.waitForFunction(
+        (prevCount) => {
+          const currentCount = document.querySelectorAll('.trick-spot .played-domino').length;
+          return currentCount > prevCount;
+        },
+        preClickTrickCount,
+        { timeout: 1000 }
+      ).catch(() => {
+        // Domino may not appear immediately in some cases
+      });
       return;
     }
     
@@ -587,10 +640,23 @@ export class PlaywrightGameHelper {
       throw new Error(`No playable dominoes found in phase: ${currentPhase}. This might indicate the game has transitioned to a different state.`);
     }
     
+    // Get current state before click
+    const preClickTrickCount = await this.page.locator('.trick-spot .played-domino').count();
+    
     // Click the first playable domino
     await playableDominoes.first().click();
-    // Wait for the click to be processed and game state to update
-    await this.page.waitForTimeout(100);
+    
+    // Wait for domino to appear in trick
+    await this.page.waitForFunction(
+      (prevCount) => {
+        const currentCount = document.querySelectorAll('.trick-spot .played-domino').length;
+        return currentCount > prevCount;
+      },
+      preClickTrickCount,
+      { timeout: 1000 }
+    ).catch(() => {
+      // Domino may not appear immediately in some cases
+    });
   }
   
   async playDominoByValue(dominoValue: string) {
@@ -692,20 +758,24 @@ export class PlaywrightGameHelper {
   }
 
   async waitForPhaseChange(expectedPhase: string, timeout = 5000) {
-    // Poll for phase change using getCurrentPhase method
-    const startTime = Date.now();
-    
-    while (Date.now() - startTime < timeout) {
-      const currentPhase = await this.getCurrentPhase();
-      if (currentPhase.toLowerCase().includes(expectedPhase.toLowerCase())) {
-        return;
-      }
-      // Use smaller delay to be more responsive but avoid too frequent polling
-      await this.page.waitForTimeout(50);
+    // Wait for phase change using page.waitForFunction
+    try {
+      await this.page.waitForFunction(
+        (targetPhase) => {
+          const headerElement = document.querySelector('.app-header');
+          const headerText = headerElement?.textContent || '';
+          const phaseElement = document.querySelector('.phase-name');
+          const phaseText = phaseElement?.textContent || '';
+          return headerText.toLowerCase().includes(targetPhase.toLowerCase()) ||
+                 phaseText.toLowerCase().includes(targetPhase.toLowerCase());
+        },
+        expectedPhase,
+        { timeout }
+      );
+    } catch (error) {
+      const finalPhase = await this.getCurrentPhase();
+      throw new Error(`Timeout waiting for phase change to ${expectedPhase} after ${timeout}ms. Current phase: ${finalPhase}`);
     }
-    
-    const finalPhase = await this.getCurrentPhase();
-    throw new Error(`Timeout waiting for phase change to ${expectedPhase} after ${timeout}ms. Current phase: ${finalPhase}`);
   }
 
   async injectGameState(state: GameState) {
@@ -916,8 +986,20 @@ export class PlaywrightGameHelper {
       console.warn('Navigation not found within 1.5s, continuing...');
     }
     
-    // Give the page a moment to fully initialize
-    await this.page.waitForTimeout(200);
+    // Wait for initial game state to be ready
+    await this.page.waitForFunction(
+      () => {
+        // Check that essential game elements are initialized
+        const hasPhase = document.querySelector('.phase-name')?.textContent;
+        const hasActions = document.querySelectorAll('.action-button, .tap-indicator').length > 0;
+        const hasHeader = document.querySelector('.app-header')?.textContent;
+        return hasPhase && (hasActions || hasHeader);
+      },
+      {},
+      { timeout: 2000 }
+    ).catch(() => {
+      // Game may be in a state without actions, that's okay
+    });
     
     // The UI automatically switches tabs based on game state, so we don't force a specific tab here
   }
@@ -990,8 +1072,17 @@ export class PlaywrightGameHelper {
         await this.clickBidAction(bid.value, true);
       }
       
-      // Small delay for state update
-      await this.page.waitForTimeout(100);
+      // Wait for phase or action changes instead of arbitrary delay
+      await this.page.waitForFunction(
+        () => {
+          const buttons = document.querySelectorAll('.action-button, .tap-indicator');
+          return buttons.length > 0;
+        },
+        {},
+        { timeout: 1000 }
+      ).catch(() => {
+        // Actions may not be immediately available
+      });
     }
   }
 

@@ -143,10 +143,10 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
 We have changed the frontend and now the e2e tests are failing and there may be other code quality issues. 
 Please analyze the output and fix all issues including:
 - Test failures
-- Linting errors
 - TypeScript errors
 - Build errors
 - Any other code quality issues
+- Linting errors LAST.  Linting errors ONLY after all other issues are resolved.
 
 REQUIREMENT: The core game in src/game must be correct by construction.  Do not perform quick-fix solutions to the core game, do analyze how we can improve the code to be more correct.
 REQUIREMENT: Do not change the UI (svelte) just because a test is failing.  The test is more likely (but not guaranteed) to be incorrect.

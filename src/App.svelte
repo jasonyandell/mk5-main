@@ -4,6 +4,7 @@
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
+  import QuickplayError from './lib/components/QuickplayError.svelte';
   import { gameActions, gamePhase, gameState, availableActions } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
   import { calculateTrickWinner } from './game/core/scoring';
@@ -190,6 +191,8 @@
     <DebugPanel on:close={() => showDebugPanel = false} />
   </div>
 {/if}
+
+<QuickplayError />
 
 {#if flashMessage}
   <button 
