@@ -857,7 +857,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 20px;
+    padding: 12px 20px;
+    min-height: 48px; /* Ensure minimum touch target size for accessibility */
     background: rgba(139, 92, 246, 0.95);
     color: white;
     border: none;

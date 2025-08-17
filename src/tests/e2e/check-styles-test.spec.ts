@@ -5,6 +5,9 @@ test('check computed styles of trick container', async ({ page }) => {
   const helper = new PlaywrightGameHelper(page);
   await helper.goto();
   
+  // Navigate to Play tab to see the trick table
+  await page.locator('[data-testid="nav-game"]').click();
+  
   // Wait for the trick area to be visible (mapped to .trick-table)
   await helper.waitForSelector('.trick-horizontal', { timeout: 5000 });
   

@@ -223,11 +223,6 @@ export const gameActions = {
     
     // Update URL with initial state and actions, using pushState for user actions
     updateURLWithState(get(initialState), [...actions, transition], true);
-    
-    // Debug logging for excessive actions
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && actions.length > 100) {
-      console.warn('[GameStore] Warning: Action history is very long:', actions.length + 1, 'actions');
-    }
   },
   
   resetGame: () => {
@@ -286,8 +281,8 @@ export const gameActions = {
                 validActions.push(matchingTransition);
                 currentState = matchingTransition.newState;
               } else {
-                console.error(`Invalid action in URL: ${actionId}`);
-                break;
+                const availableActionIds = availableTransitions.map(t => t.id).join(', ');
+                throw new Error(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
               }
             }
             
@@ -298,45 +293,7 @@ export const gameActions = {
           }
         } catch (e) {
           console.error('Failed to load compressed URL:', e);
-        }
-      }
-      
-      // Fallback to old format
-      const dataParam = urlParams.get('data');
-      if (dataParam) {
-        try {
-          const urlData = JSON.parse(decodeURIComponent(dataParam));
-          
-          if (urlData.initial && urlData.actions) {
-            // Event sourcing: load initial state and replay actions
-            // Deep clone to prevent mutations
-            initialState.set(JSON.parse(JSON.stringify(urlData.initial)));
-            
-            let currentState = urlData.initial;
-            const validActions: StateTransition[] = [];
-            
-            for (const actionData of urlData.actions) {
-              const availableTransitions = getNextStates(currentState);
-              const matchingTransition = availableTransitions.find(t => t.id === actionData.id);
-              
-              if (matchingTransition) {
-                validActions.push(matchingTransition);
-                currentState = matchingTransition.newState;
-              } else {
-                console.error(`Invalid action in URL: ${actionData.id}`);
-                break;
-              }
-            }
-            
-            gameState.set(currentState);
-            actionHistory.set(validActions);
-            validateState();
-          } else if (urlData.current) {
-            // Backward compatibility: just load the current state
-            gameActions.loadState(urlData.current);
-          }
-        } catch (e) {
-          console.error('Failed to load from URL:', e);
+          throw e; // Re-throw to surface errors instead of silent failure
         }
       }
     }
@@ -383,8 +340,8 @@ export const gameActions = {
           validActions.push(matchingTransition);
           currentState = matchingTransition.newState;
         } else {
-          console.error(`Invalid action in history: ${actionId}`);
-          break;
+          const availableActionIds = availableTransitions.map(t => t.id).join(', ');
+          throw new Error(`Invalid action in history: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
         }
       }
       

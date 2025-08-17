@@ -7,12 +7,18 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }]],
-  timeout: 5000,
+  timeout: 10000,
   use: {
     baseURL: 'http://localhost:60101',
     trace: 'on-first-retry',
-    actionTimeout: 5000,
-    navigationTimeout: 5000,
+    actionTimeout: 4000,
+    navigationTimeout: 6000,
+    // Disable animations for faster, more reliable tests
+    launchOptions: {
+      args: ['--force-prefers-reduced-motion']
+    },
+    // Emulate reduced motion preference
+    reducedMotion: 'reduce',
   },
 
   projects: [

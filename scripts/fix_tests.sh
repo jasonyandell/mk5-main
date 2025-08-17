@@ -88,14 +88,14 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
                 echo ""
             fi
             
-            # Extract Playwright E2E test failures with full context
-            if grep -q -E "^\s*[0-9]+\)" test_output.log; then
+            # Extract Playwright E2E test failures - SIMPLE approach
+            # Just grab any lines that look like Playwright failures without complex parsing
+            if grep -q "\[chromium\].*› " test_output.log; then
                 echo "=== PLAYWRIGHT E2E TEST FAILURES ==="
-                # Get numbered failures with file paths and test names
-                grep -E "^\s*[0-9]+\)|^\s*✘.*›.*\.spec\.ts" test_output.log || true
-                echo ""
-                # Get error details including stack traces
-                sed -n '/^\s*[0-9]+\)/,/Error Context:/p' test_output.log | head -200 || true
+                
+                # Get all test failure lines and their error messages (up to 50 lines of context each)
+                grep -A 50 "^.*) \[chromium\].*›" test_output.log | head -2000 || true
+                
                 echo ""
             fi
             
@@ -124,8 +124,14 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
             # Get Vitest summary if present
             grep "Test Files" test_output.log | tail -1 2>/dev/null || true
             
-            # Get Playwright summary (look for the failure count)
-            grep -E "^\s*[0-9]+\sfailed" test_output.log | tail -1 2>/dev/null || true
+            # Get Playwright summary - look for the pattern "  X failed" where X is a number
+            grep -E "^  [0-9]+ failed" test_output.log | tail -1 2>/dev/null || true
+            
+            # Count individual Playwright test failures (simple pattern)
+            playwright_failures=$(grep -c ") \[chromium\].*›" test_output.log 2>/dev/null || echo "0")
+            if [ "$playwright_failures" -gt 0 ]; then
+                echo "Playwright E2E: $playwright_failures test failures detected"
+            fi
             
             # Get overall test command result
             tail -5 test_output.log | grep -E "(failed|passed|error|Error)" || echo "See details above for errors"
@@ -145,6 +151,8 @@ Please analyze the output and fix all issues including:
 REQUIREMENT: The core game in src/game must be correct by construction.  Do not perform quick-fix solutions to the core game, do analyze how we can improve the code to be more correct.
 REQUIREMENT: Do not change the UI (svelte) just because a test is failing.  The test is more likely (but not guaranteed) to be incorrect.
 REQUIREMENT: Put locators into playwrightHelper.ts and not in the tests.  The tests should be pure and readable.
+HINT: If you find a race condition, it is likely not a race condition at all, but that the helper is doing the wrong thing or the test is expecting the wrong behavior.  Look for comments that indicate places we know the helper is likely incorrect.  Find the correct behavior that does not involve switching tabs and update the helper.
+CRITICAL: this is all local and there's no network delay.  when addressing timeouts, try to make things deterministic, including within the browser, if possible    
 
 Warnings are errors. This is a greenfield project.
 Make all tests (unit and e2e) thorough and maintainable.

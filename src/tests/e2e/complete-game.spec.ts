@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
+import { PlaywrightGameHelper } from './helpers/playwrightHelper';
 
 test.describe('Complete Game End-to-End', () => {
+  let helper: PlaywrightGameHelper;
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    helper = new PlaywrightGameHelper(page);
+    await helper.goto();
   });
 
   test('should load game interface correctly', async ({ page }) => {
@@ -10,16 +14,16 @@ test.describe('Complete Game End-to-End', () => {
     await page.waitForSelector('.app-container', { timeout: 5000 });
     
     // Verify game phase is displayed
-    await expect(page.locator('.phase-name')).toContainText('Bidding');
+    await expect(helper.getPhaseNameLocator()).toContainText('Bidding');
     
     // Verify navigation is present
     await expect(page.locator('nav')).toBeVisible();
     
     // Verify header is present
-    await expect(page.locator('.app-header')).toBeVisible();
+    await expect(helper.getAppHeaderLocator()).toBeVisible();
     
     // Verify main content area is present
-    await expect(page.locator('.game-container')).toBeVisible();
+    await expect(helper.getGameContainerLocator()).toBeVisible();
   });
 
   test('should handle basic bidding flow', async ({ page }) => {
@@ -27,12 +31,12 @@ test.describe('Complete Game End-to-End', () => {
     await page.waitForSelector('.app-container', { timeout: 5000 });
     
     // Navigate to actions panel
-    await page.locator('[data-testid="nav-actions"]').click();
+    await helper.getNavLocator('actions').click();
     await page.waitForTimeout(200);
     
     // Check if bid buttons are available
-    const bidButtons = page.locator('[data-testid^="bid-"]');
-    const passButton = page.locator('[data-testid="pass"]');
+    const bidButtons = helper.getBidButtonsLocator();
+    const passButton = helper.getPassButtonLocator();
     const buttonCount = await bidButtons.count() + await passButton.count();
     
     expect(buttonCount).toBeGreaterThan(0);
@@ -48,16 +52,16 @@ test.describe('Complete Game End-to-End', () => {
     await page.waitForTimeout(100); // Small delay for state update
     
     // Check game phase - should still be in bidding or advanced
-    const phaseElement = page.locator('.phase-name');
+    const phaseElement = helper.getPhaseNameLocator();
     const phaseText = await phaseElement.textContent();
     expect(['Bidding', 'Trump Selection']).toContain(phaseText);
   });
 
-  test('should display game controls correctly', async ({ page }) => {
+  test('should display game controls correctly', async ({ page: _page }) => {
     // Verify navigation controls are present
-    await expect(page.locator('[data-testid="nav-game"]')).toBeVisible();
-    await expect(page.locator('[data-testid="nav-actions"]')).toBeVisible();
-    await expect(page.locator('[data-testid="nav-debug"]')).toBeVisible();
+    await expect(helper.getNavLocator('game')).toBeVisible();
+    await expect(helper.getNavLocator('actions')).toBeVisible();
+    await expect(helper.getNavLocator('debug')).toBeVisible();
   });
 
   test('should reset game correctly', async ({ page }) => {
@@ -66,53 +70,53 @@ test.describe('Complete Game End-to-End', () => {
     await page.waitForSelector('.app-container', { timeout: 5000 });
     
     // Verify game resets to bidding phase
-    await expect(page.locator('.phase-name')).toContainText('Bidding');
+    await expect(helper.getPhaseNameLocator()).toContainText('Bidding');
     
     // Verify scores reset
-    await expect(page.locator('.score-card.us .score-value')).toContainText('0');
-    await expect(page.locator('.score-card.them .score-value')).toContainText('0');
+    await expect(helper.getScoreValueLocator('us')).toContainText('0');
+    await expect(helper.getScoreValueLocator('them')).toContainText('0');
   });
 
   test('should display responsive layout', async ({ page }) => {
     // Test desktop layout
     await page.setViewportSize({ width: 1200, height: 800 });
-    await expect(page.locator('.app-container')).toBeVisible();
+    await expect(helper.getAppContainerLocator()).toBeVisible();
     
     // Test tablet layout
     await page.setViewportSize({ width: 768, height: 1024 });
-    await expect(page.locator('.app-container')).toBeVisible();
+    await expect(helper.getAppContainerLocator()).toBeVisible();
     
     // Test mobile layout
     await page.setViewportSize({ width: 375, height: 667 });
-    await expect(page.locator('.app-container')).toBeVisible();
+    await expect(helper.getAppContainerLocator()).toBeVisible();
   });
 
   test('should show correct team assignments', async ({ page }) => {
     // Check that team scores are displayed in header
-    await expect(page.locator('.score-card.us')).toBeVisible();
-    await expect(page.locator('.score-card.them')).toBeVisible();
+    await expect(helper.getScoreCardLocator('us')).toBeVisible();
+    await expect(helper.getScoreCardLocator('them')).toBeVisible();
     
     // Navigate to game view to see playing area
-    await page.locator('[data-testid="nav-game"]').click();
+    await helper.getNavLocator('game').click();
     await page.waitForTimeout(200);
     
     // Check that playing area is displayed
-    await expect(page.locator('.playing-area')).toBeVisible();
+    await expect(helper.getPlayingAreaLocator()).toBeVisible();
   });
 
   test('should handle accessibility features', async ({ page }) => {
     // Navigate to actions panel
-    await page.locator('[data-testid="nav-actions"]').click();
+    await helper.getNavLocator('actions').click();
     await page.waitForTimeout(200);
     
     // Check for proper button structure
-    const actionButtons = page.locator('.action-button');
+    const actionButtons = helper.getActionButtonsLocator();
     const buttonCount = await actionButtons.count();
     expect(buttonCount).toBeGreaterThan(0);
     
     // Verify buttons are keyboard accessible
     await page.keyboard.press('Tab');
-    const focusedElement = page.locator(':focus');
+    const focusedElement = helper.getFocusedElementLocator();
     await expect(focusedElement).toHaveCount(1);
     
     // Verify buttons have title attributes for tooltips
@@ -122,42 +126,42 @@ test.describe('Complete Game End-to-End', () => {
 
   test('should maintain game state consistency', async ({ page }) => {
     // Verify game phase is shown in header
-    await expect(page.locator('.phase-name')).toContainText('Bidding');
+    await expect(helper.getPhaseNameLocator()).toContainText('Bidding');
     
     // Navigate to debug panel to see game state
-    await page.locator('[data-testid="nav-debug"]').click();
+    await helper.getNavLocator('debug').click();
     await page.waitForTimeout(200);
     
     // Check that debug panel is visible
-    await expect(page.locator('.debug-panel')).toBeVisible();
+    await expect(helper.getDebugPanelLocator()).toBeVisible();
     
     // Close debug panel first to avoid backdrop issues
-    await page.locator('.close-button').click();
+    await helper.getCloseButtonLocator().click();
     await page.waitForTimeout(200);
     
     // Verify actions are available by navigating to actions panel
-    await page.locator('[data-testid="nav-actions"]').click();
+    await helper.getNavLocator('actions').click();
     await page.waitForTimeout(200);
     
-    const actionButtons = page.locator('.action-button');
+    const actionButtons = helper.getActionButtonsLocator();
     const count = await actionButtons.count();
     expect(count).toBeGreaterThan(0);
   });
 
   test('should handle game flow transitions', async ({ page }) => {
     // Start in bidding phase
-    await expect(page.locator('.phase-name')).toContainText('Bidding');
+    await expect(helper.getPhaseNameLocator()).toContainText('Bidding');
     
     // Navigate to actions panel
-    await page.locator('[data-testid="nav-actions"]').click();
+    await helper.getNavLocator('actions').click();
     await page.waitForTimeout(200);
     
     // Verify bid actions are available
-    const bidButtons = page.locator('[data-testid^="bid-"]');
+    const bidButtons = helper.getBidButtonsLocator();
     await expect(bidButtons.first()).toBeVisible();
     
     // Verify that actions are available
-    const buttonCount = await bidButtons.count() + await page.locator('[data-testid="pass"]').count();
+    const buttonCount = await bidButtons.count() + await helper.getPassButtonLocator().count();
     expect(buttonCount).toBeGreaterThan(0);
   });
 });

@@ -67,8 +67,8 @@ describe('URL Compression', () => {
     expect(decompressActionId('m1')).toBe('bid-1-marks');
     
     // Test trump selection
-    expect(compressActionId('select-trump-0')).toBe('t0');
-    expect(decompressActionId('t0')).toBe('select-trump-0');
+    expect(compressActionId('trump-blanks')).toBe('t0');
+    expect(decompressActionId('t0')).toBe('trump-blanks');
     
     // Test domino plays
     expect(compressActionId('play-6-4')).toBe('64');
@@ -113,7 +113,7 @@ describe('URL Compression', () => {
       { id: 'bid-30', label: 'Bid 30 points' },
       { id: 'pass', label: 'Pass' },
       { id: 'pass', label: 'Pass' },
-      { id: 'select-trump-5', label: 'Select fives as trump' },
+      { id: 'trump-fives', label: 'Select fives as trump' },
       { id: 'play-6-4', label: 'Play 6-4' },
       { id: 'play-5-5', label: 'Play 5-5' },
       { id: 'play-5-0', label: 'Play 5-0' },

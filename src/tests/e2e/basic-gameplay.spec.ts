@@ -56,7 +56,14 @@ test.describe('Basic Gameplay', () => {
       await helper.selectActionByType('pass');
     }
     
-    // Should redeal after all passes
+    // Should have redeal action available after all passes
+    const actions = await helper.getAvailableActions();
+    expect(actions.some(action => action.type === 'redeal')).toBe(true);
+    
+    // Execute redeal
+    await helper.selectActionByType('redeal');
+    
+    // Should be back in bidding phase after redeal
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('bidding');
   });
@@ -109,6 +116,8 @@ test.describe('Basic Gameplay', () => {
   });
 
   test('should complete full game flow', async () => {
+    // ISSUE: Test completely stubbed out - provides false confidence
+    throw new Error('TEST NOT IMPLEMENTED: This test is completely stubbed and provides no actual coverage');
     // Complex test that relies on debug panel functionality
     // TODO: Reimplement without debug panel dependency
   });
@@ -128,6 +137,8 @@ test.describe('Basic Gameplay', () => {
   });
 
   test('should validate game rules throughout play', async () => {
+    // ISSUE: Empty test with TODO - no validation actually performed
+    throw new Error('TEST NOT IMPLEMENTED: Game rules validation is completely missing');
     // TODO: implement me
   });
 

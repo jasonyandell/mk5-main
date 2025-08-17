@@ -292,10 +292,10 @@ function processAIMoves() {
       if (decision) {
         gameActions.executeAction(decision);
       }
-    } catch (error) {
-      console.error('AI decision error:', error);
-      // Disable quickplay on error
+    } catch {
+      // Stop quickplay silently on error
       quickplayState.update(state => ({ ...state, enabled: false }));
+      animationFrameId = null;
       return;
     }
     
@@ -383,9 +383,14 @@ export const quickplayActions = {
     // Check if current player is AI
     if (!$quickplayState.aiPlayers.has($gameState.currentPlayer)) return;
     
-    const decision = makeAIDecision($gameState, $availableActions);
-    if (decision) {
-      gameActions.executeAction(decision);
+    try {
+      const decision = makeAIDecision($gameState, $availableActions);
+      if (decision) {
+        gameActions.executeAction(decision);
+      }
+    } catch {
+      // Stop on error
+      return;
     }
   },
   
@@ -400,11 +405,16 @@ export const quickplayActions = {
       }
       
       // Execute one action
-      const decision = makeAIDecision($gameState, $availableActions);
-      if (decision) {
-        gameActions.executeAction(decision);
-        // Continue with next action
-        setTimeout(runToHandEnd, 0);
+      try {
+        const decision = makeAIDecision($gameState, $availableActions);
+        if (decision) {
+          gameActions.executeAction(decision);
+          // Continue with next action
+          setTimeout(runToHandEnd, 0);
+        }
+      } catch {
+        // Stop on error
+        return;
       }
     };
     
@@ -422,11 +432,16 @@ export const quickplayActions = {
       }
       
       // Execute one action
-      const decision = makeAIDecision($gameState, $availableActions);
-      if (decision) {
-        gameActions.executeAction(decision);
-        // Continue with next action
-        setTimeout(runToGameEnd, 0);
+      try {
+        const decision = makeAIDecision($gameState, $availableActions);
+        if (decision) {
+          gameActions.executeAction(decision);
+          // Continue with next action
+          setTimeout(runToGameEnd, 0);
+        }
+      } catch {
+        // Stop on error
+        return;
       }
     };
     

@@ -1,7 +1,9 @@
 import './styles/app.css';
 import App from './App.svelte';
 import { mount } from 'svelte';
-import { gameActions } from './stores/gameStore';
+import { gameActions, gameState } from './stores/gameStore';
+import { quickplayActions, quickplayState } from './stores/quickplayStore';
+import { get } from 'svelte/store';
 
 const app = mount(App, {
   target: document.getElementById('app')!,
@@ -16,5 +18,24 @@ window.addEventListener('popstate', (event) => {
     gameActions.loadFromURL();
   }
 });
+
+// Expose quickplay and gameState for testing
+declare global {
+  interface Window {
+    quickplayActions: typeof quickplayActions;
+    quickplayState: typeof quickplayState;
+    getQuickplayState: () => ReturnType<typeof get>;
+    gameActions: typeof gameActions;
+    getGameState: () => ReturnType<typeof get>;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.quickplayActions = quickplayActions;
+  window.quickplayState = quickplayState;
+  window.getQuickplayState = () => get(quickplayState);
+  window.gameActions = gameActions;
+  window.getGameState = () => get(gameState);
+}
 
 export default app;
