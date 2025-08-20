@@ -74,7 +74,7 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
   if (typeof window !== 'undefined') {
     // If no actions, clear the URL
     if (actions.length === 0) {
-      const historyState = { initialState, actions, timestamp: Date.now() };
+      const historyState = { initialState, actions: [], timestamp: Date.now() };
       if (usePushState) {
         window.history.pushState(historyState, '', window.location.pathname);
       } else {
@@ -94,7 +94,7 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
     const newURL = `${window.location.pathname}?d=${encoded}`;
     
     // Store state in history for easy access
-    const historyState = { initialState, actions, timestamp: Date.now() };
+    const historyState = { initialState, actions: actions.map(a => a.id), timestamp: Date.now() };
     
     if (usePushState) {
       window.history.pushState(historyState, '', newURL);

@@ -221,7 +221,7 @@
           <div class="bid-details">
             <div class="bid-info-row">
               <span>Current Bid:</span>
-              <span>{$biddingInfo.currentBid?.value || 0} by Player {$biddingInfo.winningBidder + 1}</span>
+              <span>{$biddingInfo.currentBid?.value || 0} by P{$biddingInfo.winningBidder}</span>
             </div>
             {#if $gamePhase === 'playing'}
               <div class="bid-info-row">

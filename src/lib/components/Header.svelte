@@ -1,6 +1,9 @@
 <script lang="ts">
   import { gamePhase, teamInfo, currentPlayer } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
+  import { createEventDispatcher } from 'svelte';
+  
+  const dispatch = createEventDispatcher();
 
   // Phase badge color mapping
   const phaseColors = {
@@ -61,6 +64,26 @@
       </div>
     {/key}
     
+    <div class="tool-buttons">
+      <button 
+        class="tool-btn debug-btn"
+        on:click={() => dispatch('openDebug')}
+        title="Debug Panel"
+        aria-label="Open debug panel"
+      >
+        🔧
+      </button>
+      <button 
+        class="tool-btn ai-btn"
+        class:active={$quickplayState.enabled}
+        on:click={toggleQuickPlay}
+        title={$quickplayState.enabled ? 'Pause AI' : 'Start AI'}
+        aria-label={$quickplayState.enabled ? 'Pause AI play' : 'Start AI play'}
+      >
+        {$quickplayState.enabled ? '⏸' : '🤖'}
+      </button>
+    </div>
+    
     <div class="turn-display">
       <span class="turn-label">Turn</span>
       <span class="turn-player">P{$currentPlayer?.id ?? 1}</span>
@@ -95,25 +118,6 @@
       </div>
     {/key}
   </div>
-  
-  <button 
-    class="ai-fab"
-    class:playing={$quickplayState.enabled}
-    on:click={toggleQuickPlay}
-  >
-    <span class="ai-icon">
-      {#if $quickplayState.enabled}
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <rect x="6" y="6" width="4" height="12" fill="currentColor"/>
-          <rect x="14" y="6" width="4" height="12" fill="currentColor"/>
-        </svg>
-      {:else}
-        <svg viewBox="0 0 24 24" width="24" height="24">
-          <path d="M8 5v14l11-7z" fill="currentColor"/>
-        </svg>
-      {/if}
-    </span>
-  </button>
 </header>
 
 <style>
@@ -155,6 +159,70 @@
     color: #64748b;
   }
 
+  .tool-buttons {
+    display: flex;
+    gap: 6px;
+  }
+  
+  .tool-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    border: 1.5px solid;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .debug-btn {
+    border-color: #8b5cf6;
+    color: #8b5cf6;
+  }
+  
+  .debug-btn:hover {
+    background: rgba(139, 92, 246, 0.1);
+    transform: scale(1.05);
+  }
+  
+  .debug-btn:active {
+    transform: scale(0.95);
+  }
+  
+  .ai-btn {
+    border-color: #3b82f6;
+    color: #3b82f6;
+  }
+  
+  .ai-btn.active {
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    border-color: #ef4444;
+    color: white;
+    animation: subtlePulse 2s infinite;
+  }
+  
+  .ai-btn:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: scale(1.05);
+  }
+  
+  .ai-btn.active:hover {
+    background: linear-gradient(135deg, #ef4444, #f97316);
+  }
+  
+  .ai-btn:active {
+    transform: scale(0.95);
+  }
+  
+  @keyframes subtlePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+  }
+  
   .turn-display {
     display: flex;
     align-items: center;
@@ -260,46 +328,6 @@
 
   .vs-separator {
     color: #94a3b8;
-  }
-
-  .ai-fab {
-    position: absolute;
-    top: 50%;
-    right: 16px;
-    transform: translateY(-50%);
-    width: 48px;
-    height: 48px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    color: white;
-    border: none;
-    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .ai-fab:active {
-    transform: translateY(-50%) scale(0.9);
-  }
-
-  .ai-fab.playing {
-    background: linear-gradient(135deg, #ef4444, #f97316);
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3); }
-    50% { box-shadow: 0 4px 24px rgba(239, 68, 68, 0.5); }
-  }
-
-  .ai-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   /* Phase animations */

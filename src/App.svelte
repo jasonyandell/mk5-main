@@ -81,7 +81,7 @@
         );
         
         // Display flash message
-        flashMessage = `P${winner + 1} Wins!`;
+        flashMessage = `P${winner} Wins!`;
         
         // Clear any existing timeout
         if (flashTimeout) {
@@ -140,8 +140,8 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-<div class="app-container" role="application" on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
-  <Header />
+<div class="app-container" role="application" data-phase={$gameState.phase} on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
+  <Header on:openDebug={() => showDebugPanel = true} />
   
   <main class="game-container" class:no-scroll={activeView === 'actions'}>
     {#if activeView === 'game'}
@@ -154,36 +154,6 @@
       </div>
     {/if}
   </main>
-  
-  <nav class="bottom-nav">
-    <div class="nav-indicator" style="transform: translateX({activeView === 'game' ? '0' : '50%'})"></div>
-    <button 
-      class="nav-button"
-      class:active={activeView === 'game'}
-      on:click={() => activeView = 'game'}
-      data-testid="nav-game"
-    >
-      <span class="nav-icon">🎯</span>
-      <span class="nav-label">Play</span>
-    </button>
-    <button 
-      class="nav-button"
-      class:active={activeView === 'actions'}
-      on:click={() => activeView = 'actions'}
-      data-testid="nav-actions"
-    >
-      <span class="nav-icon">🎲</span>
-      <span class="nav-label">Actions</span>
-    </button>
-    <button 
-      class="nav-button debug"
-      on:click={() => showDebugPanel = true}
-      data-testid="nav-debug"
-    >
-      <span class="nav-icon">🔧</span>
-      <span class="nav-label">Debug</span>
-    </button>
-  </nav>
 </div>
 
 {#if showDebugPanel}
@@ -240,72 +210,6 @@
     overflow: hidden;
   }
 
-  .bottom-nav {
-    position: relative;
-    display: flex;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-top: 1px solid rgba(229, 231, 235, 0.5);
-    padding-bottom: env(safe-area-inset-bottom); /* Safe area for iPhone */
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-  }
-
-  .nav-indicator {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 50%;
-    height: 3px;
-    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 3px 3px 0 0;
-  }
-
-  .nav-button {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 10px 8px;
-    border: none;
-    background: none;
-    color: #64748b;
-    cursor: pointer;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
-    min-height: 48px; /* Touch target size */
-    position: relative;
-    z-index: 1;
-  }
-
-  .nav-button:active {
-    transform: scale(0.92);
-  }
-
-  .nav-button.active {
-    color: #3b82f6;
-  }
-
-  .nav-button.active .nav-icon {
-    transform: translateY(-2px) scale(1.15);
-  }
-
-  .nav-button.debug {
-    color: #8b5cf6;
-  }
-
-  .nav-icon {
-    font-size: 22px;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .nav-label {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.025em;
-  }
   
   .flash-message {
     position: fixed;
@@ -318,6 +222,7 @@
     font-weight: bold;
     padding: 30px 60px;
     border: none;
+    pointer-events: none;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
     z-index: 2000;

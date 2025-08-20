@@ -1,21 +1,42 @@
-** Mobile UI ** - currently in good working order.  Changes should be thought through VERY carefully.
+** Texas 42 **
+Web implementation of Texas 42 dominoes game
+- Svelte/TypeScript SPA with real-time gameplay
+- AI opponent with quickplay mode
+- Complete rule enforcement and scoring
+Official rules are in docs/rules.md
 
-** Game logic ** - root is src/game/index.ts
-pure functions and states. strictly.  fix any issues if you discover them
+** Every line of code is a liability **
+** Strive for correct by construction **
 
-** Unit Tests ** - for pure game logic.
+** Game logic **
+Code is src/game/index.ts
+Pure functions and states. Strictly. Fix any issues if you discover them
 
-** E2E Tests ** - for UI. REQUIREMENT: fast. never longer than 5s timeout. should always hit the Debug UI via a unified, authoritative helper in src/tests/e2e/helpers/playwrightHelper.ts. CRITICAL: locators go in playwrightHelper.ts, not in the tests.  The tests should be pure and readable.
+** Mobile UI ** - Prioritize mobile: wrap dominoes, no horizontal scroll, maximize vertical space
 
-** Playwright ** - all use of playwright be strictly in non-interactive mode.  We should never wait on reports or users to hit ctrl+c.  This is true in Claude as well as in any scripts
+** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
+
+## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
+  User provides localhost URL with a bug report? Follow this workflow:
+
+  1. **Generate test automatically**: `node scripts/replay-from-url.js "<url>" --generate-test`
+      - Creates test file in scratch/test-{timestamp}.js
+      - Test includes all replay logic and state logging
+
+  2. **Debug with focused options**:
+      - `--action-range 87 92` - Show only actions 87-92 (no grep needed!)
+      - `--hand 4` - Focus on just hand 4
+      - `--show-tricks` - Display trick winners and points
+      - `--compact` - One line per action with score changes
+      - `--stop-at N` - Stop replay at action N
+
+** Unit Tests ** - for pure game logic and pasted URLs.
+
+** Playwright ** - 
+Use src/tests/e2e/helpers/game-helper.ts for all interactions
+Locators go in game-helper.ts, NOT in tests
+CRITICAL: setTimeout() is BANNED and can NEVER be used in playwright tests
 
 ** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
 
 ** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
-
-** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
-
-To check behavior, consult docs/rules.md
-
-** Decode URL State ** - Run `node scripts/decode-url.js <base64-param>` to decode game state from URL parameter `d=`
-** Encode URL State ** - Run `node scripts/encode-url.js <seed> [actions...]` to create URL (e.g. `node scripts/encode-url.js 12345 30 p p p trump-blanks 32 63`)

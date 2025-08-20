@@ -160,7 +160,7 @@ export function getDominoPoints(domino: Domino): number {
   const total = domino.high + domino.low;
   if (domino.high === 5 && domino.low === 5) return 10; // 5-5 = 10 points
   if ((domino.high === 6 && domino.low === 4) || (domino.high === 4 && domino.low === 6)) return 10; // 6-4 = 10 points
-  if (total === 5) return 5; // Any domino totaling 5 pips = 5 points
+  if (total === 5) return 5; // 5-0, 4-1, 3-2 = 5 points each
   return 0;
 }
 

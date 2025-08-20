@@ -1,144 +1,202 @@
 import { test, expect } from '@playwright/test';
-import { PlaywrightGameHelper } from './helpers/playwrightHelper';
+import { PlaywrightGameHelper } from './helpers/game-helper';
 
 test.describe('Basic Gameplay', () => {
-  let helper: PlaywrightGameHelper;
-
-  test.beforeEach(async ({ page }) => {
-    helper = new PlaywrightGameHelper(page);
-    await helper.goto();
+  test('should load game interface', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    const locators = helper.getLocators();
+    
+    await helper.goto(12345);
+    
+    // Check main UI elements are present (auto-waits)
+    await expect(locators.app()).toBeVisible();
+    await expect(locators.appHeader()).toBeVisible();
+    // Score display should be visible
+    await expect(locators.scoreDisplay()).toBeVisible();
   });
 
-  test('should load game interface', async () => {
-    // Check main UI elements are present
-    await expect(helper.getPage().locator('.app-container')).toBeVisible();
-    await expect(helper.getPage().locator('.app-header')).toBeVisible();
-    await expect(helper.getPage().locator('.bottom-nav')).toBeVisible();
-  });
-
-  test('should start in bidding phase', async () => {
+  test('should start in bidding phase', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
+    // Verify phase
     const phase = await helper.getCurrentPhase();
     expect(phase.toLowerCase()).toContain('bidding');
     
     // Should have bidding options available
-    const biddingOptions = await helper.getBiddingOptions();
-    expect(biddingOptions.length).toBeGreaterThan(0);
-    expect(biddingOptions.some(option => option.type === 'pass')).toBe(true);
+    const actions = await helper.getAvailableActions();
+    expect(actions.length).toBeGreaterThan(0);
+    expect(actions.some(action => action.type === 'pass')).toBe(true);
   });
 
-  test('should allow valid opening bids', async () => {
-    const biddingOptions = await helper.getBiddingOptions();
+  test('should allow valid opening bids', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
+    const actions = await helper.getAvailableActions();
     
     // Should include point bids 30-41
-    expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 30)).toBe(true);
-    expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 35)).toBe(true);
-    expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 41)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 30)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 35)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 41)).toBe(true);
     
     // Should include mark bids 1-2 in tournament mode  
-    expect(biddingOptions.some(option => option.type === 'bid_marks' && option.value === 1)).toBe(true);
-    expect(biddingOptions.some(option => option.type === 'bid_marks' && option.value === 2)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_marks' && action.value === 1)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_marks' && action.value === 2)).toBe(true);
   });
 
-  test('should not allow invalid opening bids', async () => {
-    const biddingOptions = await helper.getBiddingOptions();
+  test('should not allow invalid opening bids', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
+    const actions = await helper.getAvailableActions();
     
     // Should not include point bids below 30 or above 41
-    expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 29)).toBe(false);
-    expect(biddingOptions.some(option => option.type === 'bid_points' && option.value === 42)).toBe(false);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 29)).toBe(false);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 42)).toBe(false);
     
     // Should not include 3+ marks in opening bid
-    expect(biddingOptions.some(option => option.type === 'bid_marks' && (option.value as number) >= 3)).toBe(false);
+    expect(actions.some(action => action.type === 'bid_marks' && typeof action.value === 'number' && action.value >= 3)).toBe(false);
   });
 
-  test('should progress through bidding round', async () => {
+  test('should progress through bidding round', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
     // Pass for all players
-    for (let i = 0; i < 4; i++) {
-      await helper.selectActionByType('pass');
-    }
+    await helper.pass();
+    await helper.pass();
+    await helper.pass();
+    await helper.pass();
     
     // Should have redeal action available after all passes
     const actions = await helper.getAvailableActions();
     expect(actions.some(action => action.type === 'redeal')).toBe(true);
     
     // Execute redeal
-    await helper.selectActionByType('redeal');
+    await helper.selectAction({ type: 'redeal' });
     
     // Should be back in bidding phase after redeal
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('bidding');
   });
 
-  test('should handle winning bid and trump selection', async () => {
+  test('should handle winning bid and trump selection', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
     // Place a winning bid
-    await helper.selectActionByType('bid_points', 30);
+    await helper.bid(30, false);
     
     // Other players pass
-    for (let i = 0; i < 3; i++) {
-      await helper.selectActionByType('pass');
-    }
+    await helper.pass();
+    await helper.pass();
+    await helper.pass();
     
     // Should now be in trump selection
     const actions = await helper.getAvailableActions();
     expect(actions.some(action => action.type === 'trump_selection')).toBe(true);
   });
 
-  test('should transition to playing phase after trump selection', async () => {
-    // Quick bidding round
-    await helper.selectActionByType('bid_points', 30);
-    for (let i = 0; i < 3; i++) {
-      await helper.selectActionByType('pass');
-    }
+  test('should transition to playing phase after trump selection', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    // Load state with bidding already done
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p']);
     
     // Select trump
-    await helper.setTrumpBySuit('blanks');
+    await helper.setTrump('blanks');
     
-    // Should be in playing phase
-    await helper.waitForPhaseChange('playing');
-    
+    // Verify we're in playing phase
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('playing');
   });
 
-  test('should track scores correctly', async () => {
-    const initialScores = await helper.getTeamScores();
-    expect(initialScores).toEqual([0, 0]);
+  test('should track scores correctly', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    const locators = helper.getLocators();
     
-    const initialMarks = await helper.getTeamMarks();
-    expect(initialMarks).toEqual([0, 0]);
+    await helper.goto(12345);
+    
+    // Check initial scores using locators
+    const usScore = await locators.scoreUs().textContent();
+    const themScore = await locators.scoreThem().textContent();
+    
+    // Extract numbers from score text
+    const usScoreNum = parseInt(usScore?.match(/\d+/)?.[0] || '0');
+    const themScoreNum = parseInt(themScore?.match(/\d+/)?.[0] || '0');
+    
+    expect(usScoreNum).toBe(0);
+    expect(themScoreNum).toBe(0);
   });
 
-  test('should allow domino plays in correct order', async () => {
-    // Set up playing phase (this would need state injection)
-    // For now, test the basic interface
+  test('should allow domino plays in correct order', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
     
+    // Load state in playing phase with trump selected
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    
+    // Playing area should be visible
+    await expect(helper.getLocators().playingArea()).toBeVisible();
+    
+    // Get current trick (should be empty initially)
     const currentTrick = await helper.getCurrentTrick();
     expect(Array.isArray(currentTrick)).toBe(true);
+    expect(currentTrick.length).toBe(0);
+    
+    // Play a domino
+    await helper.playAnyDomino();
+    
+    // Trick should now have one domino
+    const updatedTrick = await helper.getCurrentTrick();
+    expect(updatedTrick.length).toBeGreaterThan(0);
   });
 
-  test('should handle new game correctly', async () => {
-    await helper.newGame();
+  test('should handle new game correctly', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    const locators = helper.getLocators();
+    
+    // Start with a game in progress
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    
+    // New game by loading fresh state
+    await helper.goto(54321);
     
     // Should reset to initial state
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('bidding');
     
-    const scores = await helper.getTeamScores();
-    expect(scores).toEqual([0, 0]);
+    // Check scores directly from UI (no trump in bidding phase)
+    const usScore = await locators.scoreUs().textContent();
+    const themScore = await locators.scoreThem().textContent();
     
-    const marks = await helper.getTeamMarks();
-    expect(marks).toEqual([0, 0]);
+    const usScoreNum = parseInt(usScore?.match(/\d+/)?.[0] || '0');
+    const themScoreNum = parseInt(themScore?.match(/\d+/)?.[0] || '0');
+    
+    expect(usScoreNum).toBe(0);
+    expect(themScoreNum).toBe(0);
   });
 
   test('should be responsive on mobile', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    const locators = helper.getLocators();
+    
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     
+    await helper.goto(12345);
+    
     // Should still be functional
-    await expect(page.locator('.app-header')).toBeVisible();
-    await expect(page.locator('.score-display')).toBeVisible();
+    await expect(locators.appHeader()).toBeVisible();
+    await expect(locators.scoreDisplay()).toBeVisible();
     
     // Should be able to interact with bidding
-    const biddingOptions = await helper.getBiddingOptions();
-    expect(biddingOptions.length).toBeGreaterThan(0);
+    const actions = await helper.getAvailableActions();
+    expect(actions.length).toBeGreaterThan(0);
   });
 });

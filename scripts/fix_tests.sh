@@ -14,7 +14,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-MAX_ITERATIONS=${MAX_ITERATIONS:-100}
+MAX_ITERATIONS=${MAX_ITERATIONS:-10}
 TEST_COMMAND="npm run test:all"
 CLAUDE_COMMAND="claude --dangerously-skip-permissions"
 
@@ -30,7 +30,7 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
     echo -e "${BLUE}🧪 Running tests...${NC}"
     
     # Run tests and capture output
-    if $TEST_COMMAND 2>&1 | tee test_output.log; then
+    if $TEST_COMMAND 2>&1 | tee test_output.log && false; then
         # Tests passed!
         echo -e "${GREEN}✅ ALL TESTS PASSED!${NC}"
         echo -e "${GREEN}🎉 Test fixing complete after $iteration iteration(s)${NC}"
@@ -143,10 +143,12 @@ while [ $iteration -le $MAX_ITERATIONS ]; do
 We have changed the frontend and now the e2e tests are failing and there may be other code quality issues. 
 Please analyze the output and fix all issues including:
 - Test failures
+- Linting errors
 - TypeScript errors
 - Build errors
+- Slow tests (timeouts > 2000)
+- Non-deterministic e2e tests. Make a best effort to make them deterministic.
 - Any other code quality issues
-- Linting errors LAST.  Linting errors ONLY after all other issues are resolved.
 
 REQUIREMENT: The core game in src/game must be correct by construction.  Do not perform quick-fix solutions to the core game, do analyze how we can improve the code to be more correct.
 REQUIREMENT: Do not change the UI (svelte) just because a test is failing.  The test is more likely (but not guaranteed) to be incorrect.
@@ -157,6 +159,8 @@ CRITICAL: this is all local and there's no network delay.  when addressing timeo
 Warnings are errors. This is a greenfield project.
 Make all tests (unit and e2e) thorough and maintainable.
 Ensure code follows project conventions and passes all quality checks.
+
+Once the tests are passing, you have ONE PRIMARY GOAL: IMPROVE E2E TEST PERFORMANCE.  Deterministic. LOW TIMEOUTS.
 
 Failure and warning details:
 \`\`\`

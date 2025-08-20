@@ -41,7 +41,7 @@
 
     // Check if it's this player's turn
     if ($gameState.currentPlayer !== 0) { // Assuming player 0 is the human player
-      return `${dominoStr} - Waiting for Player ${$gameState.currentPlayer}'s turn`;
+      return `${dominoStr} - Waiting for P${$gameState.currentPlayer}'s turn`;
     }
 
     const isPlayable = isDominoPlayable(domino);
@@ -198,18 +198,18 @@
   // Calculate hand results for scoring phase
   $: handResults = (() => {
     if ($gamePhase !== 'scoring') return null;
-    
-    // Get total points for each team from won tricks
+
+    // Get total points for each team from the authoritative teamInfo store
     const team0Points = $teamInfo.scores[0];
     const team1Points = $teamInfo.scores[1];
-    
+
     // Get bid information
     const bidAmount = $biddingInfo.currentBid.value || 0;
     const biddingTeam = Math.floor($biddingInfo.winningBidder / 2);
-    
+
     // Determine if bid was made
     const bidMade = biddingTeam === 0 ? team0Points >= bidAmount : team1Points >= bidAmount;
-    
+
     return {
       team0Points,
       team1Points,
@@ -265,7 +265,7 @@
       </div>
     {/if}
     
-    {#if $gamePhase === 'playing'}
+    {#if $gamePhase === 'playing' || $gamePhase === 'scoring'}
       <button 
         class="trick-counter"
         class:expandable={completedTricks.length > 0}
@@ -286,52 +286,80 @@
     {/if}
   </div>
   
-  {#if showTrickHistory && $gamePhase === 'playing'}
+  {#if showTrickHistory && ($gamePhase === 'playing' || $gamePhase === 'scoring')}
     <div class="trick-history" transition:slide={{ duration: 200 }}>
+      <!-- Player headers -->
+      <div class="history-header">
+        <span class="trick-num"></span>
+        <div class="trick-dominoes-row">
+          <div class="player-header">P0</div>
+          <div class="player-header">P1</div>
+          <div class="player-header">P2</div>
+          <div class="player-header">P3</div>
+        </div>
+        <span class="trick-result-header"></span>
+      </div>
+      
       {#each completedTricks as trick, index}
+        {@const sortedPlays = [0, 1, 2, 3].map(playerNum => 
+          trick.plays.find(play => play.player === playerNum)
+        )}
         <div class="history-row">
           <span class="trick-num">{index + 1}:</span>
           <div class="trick-dominoes-row">
-            {#each trick.plays as play}
-              <div class="history-domino-wrapper" class:winner={play.player === trick.winner}>
-                <Domino 
-                  domino={play.domino} 
-                  small={true}
-                  showPoints={false}
-                  clickable={false}
-                />
-              </div>
+            {#each sortedPlays as play}
+              {#if play}
+                <div class="history-domino-wrapper" class:winner={play.player === trick.winner}>
+                  <Domino 
+                    domino={play.domino} 
+                    small={true}
+                    showPoints={false}
+                    clickable={false}
+                  />
+                </div>
+              {:else}
+                <div class="history-domino-placeholder"></div>
+              {/if}
             {/each}
           </div>
           <span class="trick-result">P{trick.winner}✓ {trick.points || 0}pts</span>
         </div>
       {/each}
-      {#if currentTrickPlays.length > 0 && currentTrickPlays.length < 4}
+      {#if currentTrickPlays.length > 0 && currentTrickPlays.length < 4 && $gamePhase === 'playing'}
+        {@const sortedCurrentPlays = [0, 1, 2, 3].map(playerNum => 
+          currentTrickPlays.find(play => play.player === playerNum)
+        )}
         <div class="history-row current">
           <span class="trick-num">{currentTrickNumber}:</span>
           <div class="trick-dominoes-row">
-            {#each currentTrickPlays as play}
-              <div class="history-domino-wrapper">
-                <Domino 
-                  domino={play.domino} 
-                  small={true}
-                  showPoints={false}
-                  clickable={false}
-                />
-              </div>
+            {#each sortedCurrentPlays as play}
+              {#if play}
+                <div class="history-domino-wrapper">
+                  <Domino 
+                    domino={play.domino} 
+                    small={true}
+                    showPoints={false}
+                    clickable={false}
+                  />
+                </div>
+              {:else}
+                <div class="history-domino-placeholder"></div>
+              {/if}
             {/each}
-            <span class="in-progress">(in progress)</span>
           </div>
+          <span class="trick-result in-progress">(in progress)</span>
         </div>
       {/if}
     </div>
   {/if}
 
-  <div
+  <button
     class="trick-table" 
     class:tappable={proceedAction}
-    role="region"
-    aria-label="Trick table"
+    on:click={proceedAction ? handleProceedAction : undefined}
+    disabled={!proceedAction}
+    type="button"
+    aria-label={proceedAction ? proceedAction.label : "Trick table"}
   >
     <div class="table-surface" class:glowing={proceedAction}>
       <div class="table-pattern"></div>
@@ -341,7 +369,7 @@
         <div class="scoring-display">
           <div class="bid-summary">
             <div class="bid-info-line">
-              Player {$biddingInfo.winningBidder + 1} bid {handResults.bidAmount}
+              P{$biddingInfo.winningBidder} bid {handResults.bidAmount}
             </div>
             <div class="bid-result" class:made={handResults.bidMade} class:set={!handResults.bidMade}>
               {handResults.bidMade ? 'BID MADE' : 'BID SET'}
@@ -368,7 +396,7 @@
         <!-- Normal trick display -->
         {#each playerPositions as position}
           {@const play = currentTrickPlays.find(p => p.player === position)}
-          <div class="trick-spot" data-position={position}>
+          <div class="trick-spot" data-position={position} style="pointer-events: none;">
             {#if play}
               <div class="played-domino" class:fresh={playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`)}>
                 <Domino 
@@ -391,17 +419,15 @@
     </div>
     
     {#if proceedAction}
-      <button 
-        class="tap-indicator" 
-        on:click={handleProceedAction}
-        type="button"
-        aria-label={proceedAction.label}
+      <div 
+        class="tap-indicator"
+        role="presentation"
       >
         <span class="tap-icon">👆</span>
         <span class="tap-text">{proceedAction.label}</span>
-      </button>
+      </div>
     {/if}
-  </div>
+  </button>
 
   <div class="hand-container">
     
@@ -803,27 +829,15 @@
   }
 
   .hand-scroll {
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
     padding: 20px 16px;
-    mask-image: linear-gradient(to right, 
-      transparent 0%, 
-      black 16px, 
-      black calc(100% - 16px), 
-      transparent 100%);
-    -webkit-mask-image: linear-gradient(to right, 
-      transparent 0%, 
-      black 16px, 
-      black calc(100% - 16px), 
-      transparent 100%);
   }
 
   .hand-dominoes {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     padding: 0 8px;
-    min-width: min-content;
+    justify-content: center;
   }
 
   .domino-wrapper {
@@ -858,7 +872,6 @@
     align-items: center;
     gap: 8px;
     padding: 12px 20px;
-    min-height: 48px; /* Ensure minimum touch target size for accessibility */
     background: rgba(139, 92, 246, 0.95);
     color: white;
     border: none;
@@ -873,6 +886,7 @@
   
   .tap-indicator:hover {
     background: rgba(139, 92, 246, 1);
+    animation-play-state: paused;
     transform: translateX(-50%) scale(1.05);
   }
   
@@ -1104,11 +1118,38 @@
     border-radius: 10px;
   }
   
-  .in-progress {
-    font-size: 11px;
+  .trick-result.in-progress {
+    background: rgba(148, 163, 184, 0.1);
     color: #94a3b8;
     font-style: italic;
-    margin-left: 8px;
+  }
+  
+  .history-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .player-header {
+    width: 40px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+  }
+  
+  .history-domino-placeholder {
+    width: 40px;
+    height: 60px;
+    display: inline-flex;
+  }
+  
+  .trick-result-header {
+    min-width: 70px;
   }
   
   /* Mobile optimizations for history */

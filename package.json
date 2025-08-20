@@ -12,9 +12,9 @@
     "test:verbose": "VERBOSE_TESTS=true vitest --run",
     "test:watch": "vitest",
     "test:watch:verbose": "VERBOSE_TESTS=true vitest",
-    "test:e2e": "playwright test --workers=8",
+    "test:e2e": "playwright test --workers=4",
     "test:all": "npm run typecheck && npm run check && npm run lint && npm run test && npm run test:e2e",
-    "lint": "#eslint src --ext .ts,.svelte",
+    "lint": "eslint src --ext .ts,.svelte",
     "format": "prettier --write src"
   },
   "devDependencies": {
