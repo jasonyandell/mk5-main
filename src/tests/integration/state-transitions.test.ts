@@ -180,7 +180,21 @@ describe('State Transitions Integration', () => {
 
     it('should preserve immutability of state', () => {
       const state = createInitialState();
-      const originalState = JSON.parse(JSON.stringify(state));
+      // Deep clone for comparison, handling Sets properly
+      const originalState = {
+        ...state,
+        players: state.players.map(p => ({ ...p, hand: [...p.hand] })),
+        bids: [...state.bids],
+        tricks: [...state.tricks],
+        currentTrick: [...state.currentTrick],
+        teamScores: [...state.teamScores],
+        teamMarks: [...state.teamMarks],
+        consensus: {
+          completeTrick: new Set(state.consensus.completeTrick),
+          scoreHand: new Set(state.consensus.scoreHand)
+        },
+        actionHistory: [...state.actionHistory]
+      };
       
       const actions = getNextStates(state);
       if (actions.length > 0) {
@@ -366,7 +380,12 @@ describe('State Transitions Integration', () => {
         bidWinner: -1,
         isComplete: false,
         winner: -1,
-        shuffleSeed: 12345
+        shuffleSeed: 12345,
+        actionHistory: [],
+        consensus: {
+          completeTrick: new Set<number>(),
+          scoreHand: new Set<number>()
+        }
       };
       
       const actions = getNextStates(state);

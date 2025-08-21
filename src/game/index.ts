@@ -12,7 +12,9 @@ export type {
   GameAction,
   GameHistory,
   GamePhase,
-  GameConstants
+  GameConstants,
+  PlayerView,
+  PublicPlayer
 } from './types';
 
 
@@ -46,12 +48,21 @@ export {
 // Action-based game engine
 export { 
   GameEngine, 
-  applyAction, 
   getValidActions, 
   actionToId, 
   actionToLabel,
   getNextStates 
 } from './core/gameEngine';
+
+// Pure action execution
+export { executeAction } from './core/actions';
+
+// Player view system
+export { 
+  getPlayerView, 
+  isHumanPlayer, 
+  chooseAIAction 
+} from './core/playerView';
 
 // Rule validation
 export { 
