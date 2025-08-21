@@ -34,15 +34,39 @@ describe('Complete Game Flow Integration', () => {
         }
       }
       
-      // Complete trick after 4 plays
-      const completeTrick = getNextStates(state).find(t => t.id === 'complete-trick');
+      // Complete trick after 4 plays - need consensus
+      let transitions = getNextStates(state);
+      
+      // All players agree to complete trick
+      for (let player = 0; player < 4; player++) {
+        const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+        if (agreeAction) {
+          state = agreeAction.newState;
+          transitions = getNextStates(state);
+        }
+      }
+      
+      // Now complete the trick
+      const completeTrick = transitions.find(t => t.id === 'complete-trick');
       if (completeTrick) {
         state = completeTrick.newState;
       }
     }
     
-    // Score hand
-    const scoreHand = getNextStates(state).find(t => t.id === 'score-hand');
+    // Score hand - need consensus
+    let transitions = getNextStates(state);
+    
+    // All players agree to score hand
+    for (let player = 0; player < 4; player++) {
+      const agreeAction = transitions.find(t => t.id === `agree-score-hand-${player}`);
+      if (agreeAction) {
+        state = agreeAction.newState;
+        transitions = getNextStates(state);
+      }
+    }
+    
+    // Now score the hand
+    const scoreHand = transitions.find(t => t.id === 'score-hand');
     if (scoreHand) {
       state = scoreHand.newState;
     }

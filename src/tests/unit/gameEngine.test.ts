@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { GameEngine, applyAction } from '../../game/core/gameEngine';
+import { GameEngine } from '../../game/core/gameEngine';
+import { executeAction } from '../../game/core/actions';
 import { createInitialState } from '../../game/core/state';
 import type { GameAction } from '../../game/types';
 
@@ -62,7 +63,7 @@ describe('Game Engine', () => {
       const initialState = createInitialState({ shuffleSeed: 12345 });
       const passAction: GameAction = { type: 'pass', player: 0 };
       
-      const newState = applyAction(initialState, passAction);
+      const newState = executeAction(initialState, passAction);
       
       expect(newState.bids).toHaveLength(1);
       expect(newState.bids[0]!.type).toBe('pass');
@@ -75,11 +76,11 @@ describe('Game Engine', () => {
       const bidAction: GameAction = { 
         type: 'bid', 
         player: 0, 
-        bidType: 'points', 
+        bid: 'points', 
         value: 30 
       };
       
-      const newState = applyAction(initialState, bidAction);
+      const newState = executeAction(initialState, bidAction);
       
       expect(newState.bids).toHaveLength(1);
       expect(newState.bids[0]!.type).toBe('points');
@@ -95,16 +96,21 @@ describe('Game Engine', () => {
         ...initialState, 
         phase: 'trump_selection' as const,
         winningBidder: 0,
-        currentPlayer: 0
+        currentPlayer: 0,
+        actionHistory: [],
+        consensus: {
+          completeTrick: new Set<number>(),
+          scoreHand: new Set<number>()
+        }
       };
       
       const trumpAction: GameAction = {
         type: 'select-trump',
         player: 0,
-        selection: { type: 'suit', suit: 2 }
+        trump: { type: 'suit', suit: 2 }
       };
       
-      const newState = applyAction(stateWithBid, trumpAction);
+      const newState = executeAction(stateWithBid, trumpAction);
       
       expect(newState.phase).toBe('playing');
       expect(newState.trump).toEqual({ type: 'suit', suit: 2 });

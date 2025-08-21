@@ -34,6 +34,13 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed: options?.shuffleSeed ?? Date.now(), // Initial seed for when dealing happens
+    // Consensus tracking for neutral actions
+    consensus: {
+      completeTrick: new Set<number>(),
+      scoreHand: new Set<number>()
+    },
+    // Action history for replay and debugging
+    actionHistory: [],
     // Test compatibility properties - empty hands in setup
     hands: {},
     bidWinner: -1, // -1 instead of null
@@ -75,6 +82,13 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed,
+    // Consensus tracking for neutral actions
+    consensus: {
+      completeTrick: new Set<number>(),
+      scoreHand: new Set<number>()
+    },
+    // Action history for replay and debugging
+    actionHistory: [],
     // Test compatibility properties
     hands: {
       0: hands[0],
@@ -130,6 +144,13 @@ export function cloneGameState(state: GameState): GameState {
     currentSuit: state.currentSuit,
     teamScores: [...state.teamScores] as [number, number],
     teamMarks: [...state.teamMarks] as [number, number],
+    // Clone consensus Sets
+    consensus: {
+      completeTrick: new Set(state.consensus.completeTrick),
+      scoreHand: new Set(state.consensus.scoreHand)
+    },
+    // Clone action history
+    actionHistory: [...state.actionHistory]
   };
   
   // Clone the hands object if it exists

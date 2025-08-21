@@ -71,7 +71,7 @@ describe('Refactor Validation', () => {
     const engine = new GameEngine(state);
     
     // Fast-forward to trump selection phase by applying bids
-    const bidAction = { type: 'bid' as const, player: 0, bidType: 'points' as const, value: 30 };
+    const bidAction = { type: 'bid' as const, player: 0, bid: 'points' as const, value: 30 };
     engine.executeAction(bidAction);
     
     // Pass for other players
@@ -89,7 +89,7 @@ describe('Refactor Validation', () => {
     const trumpAction = {
       type: 'select-trump' as const,
       player: 0,
-      selection: { type: 'suit' as const, suit: 2 as const }
+      trump: { type: 'suit' as const, suit: 2 as const }
     };
     engine.executeAction(trumpAction);
     

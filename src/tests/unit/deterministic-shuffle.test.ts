@@ -197,10 +197,21 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Should be in scoring phase
     expect(currentState.phase).toBe('scoring');
     
-    // Score the hand
+    // Score the hand - first all players must agree
     transitions = getNextStates(currentState);
-    const scoreAction = transitions[0];
-    if (!scoreAction) throw new Error('Score action not found');
+    
+    // All players agree to score hand
+    for (let player = 0; player < 4; player++) {
+      const agreeAction = transitions.find(t => t.id === `agree-score-hand-${player}`);
+      if (!agreeAction) throw new Error(`Agree score action for player ${player} not found`);
+      actions.push(agreeAction);
+      currentState = agreeAction.newState;
+      transitions = getNextStates(currentState);
+    }
+    
+    // Now the score-hand action should be available
+    const scoreAction = transitions.find(t => t.id === 'score-hand');
+    if (!scoreAction) throw new Error('Score hand action not found');
     actions.push(scoreAction);
     currentState = scoreAction.newState;
     

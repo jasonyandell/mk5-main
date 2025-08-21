@@ -104,6 +104,13 @@ export interface GameState {
   gameTarget: number;
   tournamentMode: boolean;
   shuffleSeed: number; // Seed for deterministic shuffling
+  // Consensus tracking for neutral actions
+  consensus: {
+    completeTrick: Set<number>;  // Players who agreed to complete trick
+    scoreHand: Set<number>;       // Players who agreed to score hand
+  };
+  // Action history for replay and debugging
+  actionHistory: GameAction[];
   // Additional properties for test compatibility
   hands?: { [playerId: number]: Domino[] };
   bidWinner?: number; // -1 instead of null
@@ -114,17 +121,20 @@ export interface GameState {
 export interface StateTransition {
   id: string;
   label: string;
+  action: GameAction;  // The action that creates this transition
   newState: GameState;
 }
 
-// Game Action types based on existing transition IDs
+// Simplified Game Action types - pure data, no nesting
 export type GameAction = 
-  | { type: 'bid'; player: number; bidType: BidType; value?: number }
+  | { type: 'bid'; player: number; bid: BidType; value?: number }
   | { type: 'pass'; player: number }
-  | { type: 'select-trump'; player: number; selection: TrumpSelection }
+  | { type: 'select-trump'; player: number; trump: TrumpSelection }
   | { type: 'play'; player: number; dominoId: string }
-  | { type: 'complete-trick' }
-  | { type: 'score-hand' }
+  | { type: 'agree-complete-trick'; player: number }  // Consensus action
+  | { type: 'agree-score-hand'; player: number }     // Consensus action
+  | { type: 'complete-trick' }  // Executed when all agree
+  | { type: 'score-hand' }      // Executed when all agree
   | { type: 'redeal' }
 
 // History tracking for undo/redo
@@ -133,6 +143,33 @@ export interface GameHistory {
   stateSnapshots: GameState[];
 }
 
+
+// Type-safe public player without hand visibility
+export interface PublicPlayer {
+  id: number;
+  name: string;
+  teamId: 0 | 1;
+  marks: number;
+  handCount: number;  // No hand field exists in type!
+}
+
+// Player-specific view with privacy
+export interface PlayerView {
+  playerId: number;
+  phase: GamePhase;
+  self: { id: number; hand: Domino[] };  // Only self has hands
+  players: PublicPlayer[];  // Others have no hand field
+  validTransitions: StateTransition[];  // Only transitions this player can take
+  consensus: {
+    completeTrick: Set<number>;
+    scoreHand: Set<number>;
+  };
+  currentTrick: Play[];
+  tricks: Trick[];
+  teamScores: [number, number];
+  teamMarks: [number, number];
+  trump: TrumpSelection;
+}
 
 export interface GameConstants {
   TOTAL_DOMINOES: 28;
