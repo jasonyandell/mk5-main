@@ -608,7 +608,21 @@ export class PlaywrightGameHelper {
    */
   async enableAIForOtherPlayers(): Promise<void> {
     await this.page.evaluate(() => {
-      const gameWindow = window as GameWindow;
+      const gameWindow = window as any;
+      
+      // Update the game state to enable AI for players 1-3
+      if (gameWindow.gameState && gameWindow.getGameState) {
+        const currentState = gameWindow.getGameState();
+        // Set players 1-3 as AI
+        const newState = {
+          ...currentState,
+          playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[]
+        };
+        // Update the game state directly
+        gameWindow.gameState.set(newState);
+      }
+      
+      // Also enable quickplay if available (for backward compatibility)
       if (gameWindow.quickplayActions && gameWindow.getQuickplayState) {
         const state = gameWindow.getQuickplayState();
         for (let i = 1; i <= 3; i++) {

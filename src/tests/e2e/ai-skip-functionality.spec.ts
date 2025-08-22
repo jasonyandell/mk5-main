@@ -27,9 +27,9 @@ test.describe('AI Skip Functionality', () => {
     // Inject spy to verify skipAIDelays is called
     await page.evaluate(() => {
       let called = false;
-      if ((window as any).controllerManager) {
-        const original = (window as any).controllerManager.skipAIDelays;
-        (window as any).controllerManager.skipAIDelays = function() {
+      if ((window as any).gameActions) {
+        const original = (window as any).gameActions.skipAIDelays;
+        (window as any).gameActions.skipAIDelays = function() {
           called = true;
           return original.call(this);
         };

@@ -1,8 +1,6 @@
 import type { PlayerController, PlayerConfig } from './types';
 import type { GameState, StateTransition } from '../types';
 import { HumanController } from './HumanController';
-import { AIController } from './AIController';
-import { SimpleAIStrategy, SmartAIStrategy, RandomAIStrategy } from './strategies';
 import { getNextStates } from '../core/gameEngine';
 
 /**
@@ -20,6 +18,7 @@ export class ControllerManager {
   
   /**
    * Set up controllers for a local game
+   * Note: AI is now handled via pure functions in the game state
    */
   setupLocalGame(config: PlayerConfig[] = [
     { type: 'human' },
@@ -31,29 +30,15 @@ export class ControllerManager {
     this.clearControllers();
     
     // Set up new controllers based on config
+    // Only human controllers are managed here now
+    // AI is handled by pure functions in ai-scheduler.ts
     config.forEach((cfg, playerId) => {
       if (cfg.type === 'human') {
         this.controllers.set(playerId, 
           new HumanController(playerId, this.executeTransitionCallback)
         );
-      } else {
-        // Choose AI strategy - default to smart
-        let strategy;
-        switch (cfg.aiStrategy) {
-          case 'simple':
-            strategy = new SimpleAIStrategy();
-            break;
-          case 'random':
-            strategy = new RandomAIStrategy();
-            break;
-          default:
-            strategy = new SmartAIStrategy();
-        }
-        
-        this.controllers.set(playerId,
-          new AIController(playerId, this.executeTransitionCallback, strategy)
-        );
       }
+      // AI players don't need controllers anymore - handled by pure functions
     });
   }
   
@@ -72,6 +57,7 @@ export class ControllerManager {
   
   /**
    * Switch a player to AI control
+   * Note: AI is now handled via pure functions, so we just remove the human controller
    */
   switchToAI(playerId: number, strategy?: 'simple' | 'smart' | 'random'): void {
     const old = this.controllers.get(playerId);
@@ -79,21 +65,8 @@ export class ControllerManager {
       old.destroy();
     }
     
-    let aiStrategy;
-    switch (strategy) {
-      case 'simple':
-        aiStrategy = new SimpleAIStrategy();
-        break;
-      case 'random':
-        aiStrategy = new RandomAIStrategy();
-        break;
-      default:
-        aiStrategy = new SmartAIStrategy();
-    }
-    
-    this.controllers.set(playerId,
-      new AIController(playerId, this.executeTransitionCallback, aiStrategy)
-    );
+    // Remove the controller - AI is handled by pure functions
+    this.controllers.delete(playerId);
   }
   
   /**
@@ -130,10 +103,11 @@ export class ControllerManager {
   
   /**
    * Check if a player is controlled by AI
+   * Note: AI is now handled via pure functions, so check if no human controller exists
    */
   isAIControlled(playerId: number): boolean {
-    const controller = this.controllers.get(playerId);
-    return controller instanceof AIController;
+    // If there's no human controller, it's AI-controlled
+    return !this.controllers.has(playerId);
   }
   
   /**
@@ -159,18 +133,11 @@ export class ControllerManager {
   
   /**
    * Skip all AI delays and execute pending actions immediately
+   * Note: With pure AI scheduling, this now updates state directly
    */
   skipAIDelays(): void {
-    // Execute any pending AI decisions immediately
-    if (!this.currentState) {
-      return; // No state to process
-    }
-    
-    for (const controller of this.controllers.values()) {
-      if (controller instanceof AIController) {
-        controller.executeNow(this.currentState);
-      }
-    }
+    // This will be handled by the pure skipAIDelays function in the store
+    // The ControllerManager no longer manages AI timing
   }
   
   /**

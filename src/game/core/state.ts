@@ -48,6 +48,10 @@ export function createSetupState(options?: {
     },
     // Action history for replay and debugging
     actionHistory: [],
+    // Pure AI scheduling
+    aiSchedule: {},
+    // Game's internal clock
+    currentTick: 0,
     // Test compatibility properties - empty hands in setup
     hands: {},
     bidWinner: -1, // -1 instead of null
@@ -103,6 +107,10 @@ export function createInitialState(options?: {
     },
     // Action history for replay and debugging
     actionHistory: [],
+    // Pure AI scheduling
+    aiSchedule: {},
+    // Game's internal clock
+    currentTick: 0,
     // Test compatibility properties
     hands: {
       0: hands[0],

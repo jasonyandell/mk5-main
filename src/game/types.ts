@@ -118,15 +118,15 @@ export interface GameState {
   bidWinner?: number; // -1 instead of null
   isComplete?: boolean;
   winner?: number; // -1 instead of null
-  // AI decision tracking for deterministic delays
-  aiDecisions?: {
+  // Pure AI scheduling - part of game state for determinism
+  aiSchedule: {
     [playerId: number]: {
       transition: StateTransition;
-      decidedAt: number;  // timestamp when AI made decision
-      minDelay: number;    // minimum ms before execution (500-2000)
-      skipRequested?: boolean; // true when user wants immediate execution
+      executeAtTick: number;  // Game tick when this should execute
     }
   };
+  // Game's internal clock (not wall time) for pure deterministic timing
+  currentTick: number;
 }
 
 export interface StateTransition {
