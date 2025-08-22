@@ -27,6 +27,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Test setup: Team 0 bid 2 marks (84 points) but only scored 35 points
@@ -58,6 +63,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Mock scoring function for test
@@ -113,6 +123,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Mock scoring function for test
@@ -170,6 +185,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Mock scoring function for test
@@ -224,6 +244,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Mock scoring function for test
@@ -279,6 +304,11 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         gameTarget: 7,
         tournamentMode: true,
         shuffleSeed: 12345,
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        },
+        actionHistory: [],
       };
 
       // Mock scoring function for test

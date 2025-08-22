@@ -8,7 +8,12 @@ import { analyzeSuits } from './suit-analysis';
 /**
  * Creates the initial game state in setup phase
  */
-export function createSetupState(options?: { shuffleSeed?: number, dealer?: number, tournamentMode?: boolean }): GameState {
+export function createSetupState(options?: { 
+  shuffleSeed?: number, 
+  dealer?: number, 
+  tournamentMode?: boolean,
+  playerTypes?: ('human' | 'ai')[]
+}): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   
@@ -34,6 +39,8 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed: options?.shuffleSeed ?? Date.now(), // Initial seed for when dealing happens
+    // Player control types - default: player 0 human, rest AI
+    playerTypes: options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'],
     // Consensus tracking for neutral actions
     consensus: {
       completeTrick: new Set<number>(),
@@ -52,7 +59,12 @@ export function createSetupState(options?: { shuffleSeed?: number, dealer?: numb
 /**
  * Creates the initial game state with fresh hands dealt ready for bidding
  */
-export function createInitialState(options?: { shuffleSeed?: number, dealer?: number, tournamentMode?: boolean }): GameState {
+export function createInitialState(options?: { 
+  shuffleSeed?: number, 
+  dealer?: number, 
+  tournamentMode?: boolean,
+  playerTypes?: ('human' | 'ai')[]
+}): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
   
@@ -82,6 +94,8 @@ export function createInitialState(options?: { shuffleSeed?: number, dealer?: nu
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
     tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed,
+    // Player control types - default: player 0 human, rest AI
+    playerTypes: options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'],
     // Consensus tracking for neutral actions
     consensus: {
       completeTrick: new Set<number>(),

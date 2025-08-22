@@ -1,14 +1,8 @@
-import type { GameState, GameAction, TrumpSelection, Bid, StateTransition } from '../types';
-import { EMPTY_BID } from '../types';
+import type { GameState, GameAction, StateTransition, Bid, TrumpSelection, Domino } from '../types';
 import { cloneGameState } from './state';
-import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
-import { isValidBid, getValidPlays, getBidComparisonValue, isValidTrump } from './rules';
-import { dealDominoesWithSeed, getDominoSuit } from './dominoes';
-import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
-import { checkHandOutcome } from './handOutcome';
-import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
-import { analyzeSuits } from './suit-analysis';
 import { executeAction } from './actions';
+import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
+import { isValidBid, getValidPlays } from './rules';
 
 /**
  * Game Engine with action-based state management and history tracking
@@ -170,7 +164,7 @@ function getTrumpSelectionActions(state: GameState): GameAction[] {
     actions.push({
       type: 'select-trump',
       player: state.winningBidder,
-      trump: trumpSelection
+      trump: trumpSelection as TrumpSelection
     });
   });
   
@@ -203,7 +197,7 @@ function getPlayingActions(state: GameState): GameAction[] {
   
   // Get valid plays for current player
   const validPlays = getValidPlays(state, state.currentPlayer);
-  validPlays.forEach(domino => {
+  validPlays.forEach((domino: Domino) => {
     actions.push({
       type: 'play',
       player: state.currentPlayer,

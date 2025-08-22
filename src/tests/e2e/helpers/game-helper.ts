@@ -107,8 +107,11 @@ export class PlaywrightGameHelper {
     };
     const encoded = encodeURLData(urlData);
     
+    // Add testMode for deterministic testing (disables AI controllers)
+    const url = `/?d=${encoded}&testMode=true`;
+    
     // Navigate and wait for network idle for deterministic loading
-    await this.page.goto(`/?d=${encoded}`, { 
+    await this.page.goto(url, { 
       waitUntil: 'networkidle',
       timeout: PlaywrightGameHelper.TIMEOUTS.slow 
     });
@@ -479,7 +482,7 @@ export class PlaywrightGameHelper {
     };
     const encoded = encodeURLData(urlData);
     
-    await this.page.goto(`/?d=${encoded}`, { 
+    await this.page.goto(`/?d=${encoded}&testMode=true`, { 
       waitUntil: 'networkidle',
       timeout: PlaywrightGameHelper.TIMEOUTS.slow 
     });

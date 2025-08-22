@@ -106,7 +106,7 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
 
   // Apply bid
   const newBids = [...state.bids, bid];
-  let newPhase = state.phase;
+  let newPhase: GameState['phase'] = state.phase;
   let newWinningBidder = state.winningBidder;
   let newCurrentPlayer = getNextPlayer(player);
   let newCurrentBid = bid;
@@ -164,7 +164,7 @@ function executePass(state: GameState, player: number): GameState {
 
   // Apply pass
   const newBids = [...state.bids, passBid];
-  let newPhase = state.phase;
+  let newPhase: GameState['phase'] = state.phase;
   let newWinningBidder = state.winningBidder;
   let newCurrentPlayer = getNextPlayer(player);
   let newCurrentBid = state.currentBid;
@@ -249,6 +249,9 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
   }
 
   const playerState = state.players[playerIndex];
+  if (!playerState) {
+    return state; // Invalid player state, no-op
+  }
   const domino = playerState.hand.find(d => d.id === dominoId);
 
   if (!domino) {
@@ -264,7 +267,7 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
   }
 
   // Create new player with domino removed
-  const newPlayer = {
+  const newPlayer: typeof playerState = {
     ...playerState,
     hand: playerState.hand.filter(d => d.id !== dominoId),
     suitAnalysis: analyzeSuits(

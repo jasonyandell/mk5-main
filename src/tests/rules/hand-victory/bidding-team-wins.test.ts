@@ -30,7 +30,12 @@ describe('Hand Victory - Bidding Team Wins', () => {
       teamMarks: [0, 0],
       gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
       tournamentMode: true,
-      shuffleSeed: 12345
+      shuffleSeed: 12345,
+      consensus: {
+        completeTrick: new Set(),
+        scoreHand: new Set()
+      },
+      actionHistory: []
     };
   });
 

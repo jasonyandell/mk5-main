@@ -58,11 +58,10 @@ export {
 export { executeAction } from './core/actions';
 
 // Player view system
-export { 
-  getPlayerView, 
-  isHumanPlayer, 
-  chooseAIAction 
-} from './core/playerView';
+export { getPlayerView } from './core/playerView';
+
+// Controller system
+export { ControllerManager } from './controllers';
 
 // Rule validation
 export { 

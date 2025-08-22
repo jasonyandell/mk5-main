@@ -30,6 +30,32 @@ test.describe('Basic Gameplay', () => {
     expect(actions.some(action => action.type === 'pass')).toBe(true);
   });
 
+  test('should show proper UI during bidding phase', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+    
+    await helper.goto(12345);
+    
+    // The ActionPanel should be visible since we're in bidding phase
+    const actionPanel = page.locator('.action-panel');
+    await expect(actionPanel).toBeVisible();
+    
+    // Should show hand and bidding actions
+    const handSection = actionPanel.locator('.hand-section');
+    await expect(handSection).toBeVisible();
+    
+    // Should have bidding section with actions
+    const biddingSection = actionPanel.locator('.action-group').filter({ hasText: 'Bidding' });
+    await expect(biddingSection).toBeVisible();
+    
+    // Should have pass button
+    const passButton = actionPanel.locator('button').filter({ hasText: 'Pass' });
+    await expect(passButton).toBeVisible();
+    
+    // Bidding table should NOT be visible when player has actions
+    const biddingTable = page.locator('.bidding-table');
+    await expect(biddingTable).not.toBeVisible();
+  });
+
   test('should allow valid opening bids', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
@@ -65,13 +91,8 @@ test.describe('Basic Gameplay', () => {
   test('should progress through bidding round', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    await helper.goto(12345);
-    
-    // Pass for all players
-    await helper.pass();
-    await helper.pass();
-    await helper.pass();
-    await helper.pass();
+    // Load state after all 4 players have passed
+    await helper.loadStateWithActions(12345, ['p', 'p', 'p', 'p']);
     
     // Should have redeal action available after all passes
     const actions = await helper.getAvailableActions();
@@ -88,15 +109,8 @@ test.describe('Basic Gameplay', () => {
   test('should handle winning bid and trump selection', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    await helper.goto(12345);
-    
-    // Place a winning bid
-    await helper.bid(30, false);
-    
-    // Other players pass
-    await helper.pass();
-    await helper.pass();
-    await helper.pass();
+    // Load state with player 0 bidding 30 and others passing
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p']);
     
     // Should now be in trump selection
     const actions = await helper.getAvailableActions();
@@ -106,11 +120,8 @@ test.describe('Basic Gameplay', () => {
   test('should transition to playing phase after trump selection', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Load state with bidding already done
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p']);
-    
-    // Select trump
-    await helper.setTrump('blanks');
+    // Load state with bidding done and trump selected (t0 = blanks)
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 't0']);
     
     // Verify we're in playing phase
     const phase = await helper.getCurrentPhase();
