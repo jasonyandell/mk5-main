@@ -13,6 +13,7 @@ export interface MinimalGameState {
   d?: number; // dealer (only if not default 3)
   t?: number; // gameTarget (only if not default 7)
   m?: boolean; // tournamentMode (only if false)
+  p?: ('h' | 'a')[]; // player types: 'h'uman or 'a'i (only if not default [h,a,a,a])
 }
 
 /**
@@ -44,6 +45,12 @@ export function compressGameState(state: GameState): MinimalGameState {
   if (state.gameTarget !== 7) minimal.t = state.gameTarget;
   if (!state.tournamentMode) minimal.m = false;
   
+  // Only include player types if not default [human, ai, ai, ai]
+  const defaultTypes = ['human', 'ai', 'ai', 'ai'];
+  if (state.playerTypes.some((t, i) => t !== defaultTypes[i])) {
+    minimal.p = state.playerTypes.map(t => t === 'human' ? 'h' : 'a');
+  }
+  
   return minimal;
 }
 
@@ -51,8 +58,12 @@ export function compressGameState(state: GameState): MinimalGameState {
  * Expand minimal state to full GameState
  */
 export function expandMinimalState(minimal: MinimalGameState): GameState {
-  // Create a state with the specific seed
-  const state = createInitialState();
+  // Create a state with the specific seed and player types
+  const playerTypes = minimal.p ? 
+    minimal.p.map(t => t === 'h' ? 'human' : 'ai') as ('human' | 'ai')[] :
+    undefined;
+  
+  const state = createInitialState(playerTypes ? { playerTypes } : undefined);
   
   // Override with minimal state values
   state.shuffleSeed = minimal.s;

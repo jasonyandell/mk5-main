@@ -104,6 +104,8 @@ export interface GameState {
   gameTarget: number;
   tournamentMode: boolean;
   shuffleSeed: number; // Seed for deterministic shuffling
+  // Player control types - who is human vs AI (supports drop-in/drop-out)
+  playerTypes: ('human' | 'ai')[];
   // Consensus tracking for neutral actions
   consensus: {
     completeTrick: Set<number>;  // Players who agreed to complete trick

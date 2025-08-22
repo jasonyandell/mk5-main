@@ -19,9 +19,13 @@ window.addEventListener('popstate', (event) => {
   }
 });
 
-// Expose quickplay and gameState for testing
+// Expose stores for testing and debugging
+import { actionHistory, controllerManager } from './stores/gameStore';
+
 declare global {
   interface Window {
+    __actionHistory?: typeof actionHistory;
+    controllerManager?: typeof controllerManager;
     quickplayActions: typeof quickplayActions;
     quickplayState: typeof quickplayState;
     getQuickplayState: () => ReturnType<typeof get>;
@@ -31,6 +35,8 @@ declare global {
 }
 
 if (typeof window !== 'undefined') {
+  window.__actionHistory = actionHistory;
+  window.controllerManager = controllerManager;
   window.quickplayActions = quickplayActions;
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);

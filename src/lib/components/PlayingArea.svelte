@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo } from '../../stores/gameStore';
+  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, controllerManager, uiState } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();
+  
+  // Check if we're in test mode
+  const urlParams = typeof window !== 'undefined' ? 
+    new URLSearchParams(window.location.search) : null;
+  const testMode = urlParams?.get('testMode') === 'true';
 
   // Extract playable dominoes from available actions
   $: playableDominoes = (() => {
@@ -130,8 +135,13 @@
     return suitNames[$gameState.currentSuit];
   })();
 
-  // Current player's hand
-  $: playerHand = $currentPlayer?.hand || [];
+  // Current player's hand (always player 0 for privacy, unless in test mode)
+  $: playerHand = testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []);
+
+  // Check if AI is thinking
+  $: isThinking = $gameState.phase === 'playing' && 
+                   $gameState.currentPlayer !== 0 &&
+                   controllerManager.isAIControlled($gameState.currentPlayer);
 
   // Current trick plays
   $: currentTrickPlays = $gameState.currentTrick || [];
@@ -172,12 +182,22 @@
     // These actions should always show when available, regardless of turn
     const alwaysShowActions = ['complete-trick', 'score-hand'];
     
+    // First check for actual complete/score actions
     const alwaysShowAction = $availableActions.find(action => 
       alwaysShowActions.includes(action.id)
     );
     
     if (alwaysShowAction) {
       return alwaysShowAction;
+    }
+    
+    // Check for consensus actions that the human player (player 0) can take
+    const humanConsensusAction = $availableActions.find(action => 
+      (action.id === 'agree-complete-trick-0' || action.id === 'agree-score-hand-0')
+    );
+    
+    if (humanConsensusAction) {
+      return humanConsensusAction;
     }
     
     // For other actions, only show if it's the human player's turn
@@ -230,8 +250,15 @@
     // Set debounce flag
     actionPending = true;
     
-    // Execute the action
-    gameActions.executeAction(proceedAction);
+    // Find which human controller should handle this
+    const playerId = 'player' in proceedAction.action ? proceedAction.action.player : 0;
+    const humanController = controllerManager.getHumanController(playerId);
+    if (humanController) {
+      humanController.handleUserAction(proceedAction);
+    } else {
+      // Fallback to direct execution
+      gameActions.executeAction(proceedAction);
+    }
     
     // If we just scored a hand, transition to Actions panel for bidding
     if (proceedAction.id === 'score-hand') {
@@ -353,6 +380,58 @@
     </div>
   {/if}
 
+  <!-- Bidding table only when waiting during bidding phase -->
+  {#if $uiState.showBiddingTable}
+    <div class="bidding-table">
+      <h3 class="bidding-title">Bidding Round</h3>
+      <div class="bidding-status">
+        {#each [0, 1, 2, 3] as playerId}
+          {@const bid = $biddingInfo.bids.find(b => b.player === playerId)}
+          {@const isCurrentTurn = $gameState.currentPlayer === playerId}
+          {@const isAI = controllerManager.isAIControlled(playerId)}
+          {@const isYou = playerId === 0 && !testMode}
+          
+          <div class="bid-row" class:current-turn={isCurrentTurn} class:you={isYou}>
+            <span class="player-label">
+              <span class="player-icon">{isAI ? '🤖' : '👤'}</span>
+              P{playerId}{isYou ? ' (You)' : ''}:
+            </span>
+            <span class="bid-value">
+              {#if bid}
+                {#if bid.type === 'pass'}
+                  <span class="bid-pass">Pass</span>
+                {:else}
+                  <span class="bid-points">{bid.value} {bid.type}</span>
+                {/if}
+              {:else if isCurrentTurn}
+                {#if isAI}
+                  <span class="thinking">Thinking...</span>
+                {:else}
+                  <span class="waiting">Your turn...</span>
+                {/if}
+              {:else}
+                <span class="pending">Waiting...</span>
+              {/if}
+            </span>
+          </div>
+        {/each}
+      </div>
+      
+      {#if $biddingInfo.currentBid.player !== -1}
+        <div class="current-bid-info">
+          <div>Current Bid: {$biddingInfo.currentBid.value} (P{$biddingInfo.currentBid.player})</div>
+          <div>Dealer: P{$gameState.dealer}</div>
+        </div>
+      {:else}
+        <div class="current-bid-info">
+          <div>Opening bid</div>
+          <div>Dealer: P{$gameState.dealer}</div>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- Trick table -->
   <button
     class="trick-table" 
     class:tappable={proceedAction}
@@ -410,6 +489,9 @@
             {:else}
               <div class="waiting-spot">
                 <div class="spot-ring"></div>
+                <span class="spot-icon">
+                  {controllerManager.isAIControlled(position) ? '🤖' : '👤'}
+                </span>
                 <span class="spot-player">P{position}</span>
               </div>
             {/if}
@@ -417,6 +499,13 @@
         {/each}
       {/if}
     </div>
+    
+    {#if isThinking}
+      <div class="thinking-indicator">
+        <span class="robot-icon">🤖</span>
+        <span class="thinking-text">P{$gameState.currentPlayer} is thinking...</span>
+      </div>
+    {/if}
     
     {#if proceedAction}
       <div 
@@ -685,7 +774,7 @@
   }
 
   .trick-spot[data-position="1"] {
-    right: 20px;
+    left: 20px;
     top: 50%;
     transform: translateY(-50%);
   }
@@ -697,7 +786,7 @@
   }
 
   .trick-spot[data-position="3"] {
-    left: 20px;
+    right: 20px;
     top: 50%;
     transform: translateY(-50%);
   }
@@ -742,6 +831,135 @@
     align-items: center;
     justify-content: center;
     pointer-events: none; /* Don't block table clicks */
+  }
+
+  .thinking-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #666;
+    animation: pulse 1.5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+  }
+
+  .robot-icon {
+    font-size: 18px;
+  }
+
+  .spot-icon {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-right: 2px;
+  }
+
+  /* Bidding table styles */
+  .bidding-table {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 280px;
+    z-index: 5;
+  }
+
+  .bidding-title {
+    text-align: center;
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+  }
+
+  .bidding-status {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .bid-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8f8f8;
+    transition: all 0.2s;
+  }
+
+  .bid-row.current-turn {
+    background: #e8f4ff;
+    border: 1px solid #4a90e2;
+  }
+
+  .bid-row.you {
+    font-weight: 600;
+    background: #f0f8ff;
+  }
+
+  .player-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .player-icon {
+    font-size: 16px;
+  }
+
+  .bid-value {
+    font-weight: 500;
+  }
+
+  .bid-pass {
+    color: #999;
+    font-style: italic;
+  }
+
+  .bid-points {
+    color: #2c5aa0;
+    font-weight: bold;
+  }
+
+  .bid-value .thinking {
+    color: #f39c12;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .bid-value .waiting {
+    color: #4a90e2;
+  }
+
+  .bid-value .pending {
+    color: #999;
+    font-style: italic;
+  }
+
+  .current-bid-info {
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
   }
 
   .spot-ring {

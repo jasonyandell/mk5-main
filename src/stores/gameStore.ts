@@ -1,6 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import type { GameState, StateTransition } from '../game/types';
-import { createInitialState, getNextStates } from '../game';
+import { createInitialState, getNextStates, getPlayerView } from '../game';
+import { ControllerManager } from '../game/controllers';
 import { 
   compressGameState, 
   expandMinimalState, 
@@ -10,6 +11,24 @@ import {
   decodeURLData,
   type URLData 
 } from '../game/core/url-compression';
+
+// Helper to deep clone an object preserving Sets
+function deepClone<T>(obj: T): T {
+  if (obj === null || obj === undefined) return obj;
+  if (obj instanceof Set) return new Set(obj) as T;
+  if (obj instanceof Date) return new Date(obj.getTime()) as T;
+  if (obj instanceof Array) return obj.map(item => deepClone(item)) as T;
+  if (typeof obj === 'object') {
+    const cloned = {} as T;
+    for (const key in obj) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        cloned[key] = deepClone(obj[key]);
+      }
+    }
+    return cloned;
+  }
+  return obj;
+}
 
 // Helper to deep compare two objects
 function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] {
@@ -105,13 +124,16 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
 }
 
 // Create the initial state once
+const urlParams = typeof window !== 'undefined' ? 
+  new URLSearchParams(window.location.search) : null;
+const testMode = urlParams?.get('testMode') === 'true';
 const firstInitialState = createInitialState();
 
 // Core game state store
 export const gameState = writable<GameState>(firstInitialState);
 
 // Store the initial state (snapshot) - deep clone to prevent mutations
-export const initialState = writable<GameState>(JSON.parse(JSON.stringify(firstInitialState)));
+export const initialState = writable<GameState>(deepClone(firstInitialState));
 
 // Store all actions taken from initial state
 export const actionHistory = writable<StateTransition[]>([]);
@@ -119,16 +141,46 @@ export const actionHistory = writable<StateTransition[]>([]);
 // Store for validation errors
 export const stateValidationError = writable<string | null>(null);
 
-// Available actions store
-export const availableActions = derived(
-  gameState,
-  ($gameState) => getNextStates($gameState)
-);
-
 // Current player store
 export const currentPlayer = derived(
   gameState,
   ($gameState) => $gameState.players[$gameState.currentPlayer]
+);
+
+// Track which players are controlled by humans on this client
+export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
+
+// Current player ID for primary view (can be changed for spectating)
+export const currentPlayerId = writable<number>(0);
+
+// Available actions store - filtered for privacy
+export const availableActions = derived(
+  [gameState, currentPlayerId],
+  ([$gameState, $playerId]) => {
+    const allActions = getNextStates($gameState);
+    
+    // In test mode, show all actions for current player in game state
+    if (testMode) {
+      return allActions;
+    }
+    
+    // In normal mode, only show actions for player 0
+    // Filter to only actions that player 0 can take
+    return allActions.filter(action => {
+      // Actions without a player field are neutral (like complete-trick, score-hand)
+      if (!('player' in action.action)) {
+        return true;
+      }
+      // Only show actions for player 0
+      return action.action.player === 0;
+    });
+  }
+);
+
+// Player view store - provides privacy-safe view for current player
+export const playerView = derived(
+  [gameState, currentPlayerId],
+  ([$gameState, $playerId]) => getPlayerView($gameState, $playerId)
 );
 
 // Game phase store
@@ -165,6 +217,60 @@ export const trickInfo = derived(
     completedTricks: $gameState.tricks,
     trump: $gameState.trump
   })
+);
+
+// Deterministic UI state based on game state and available actions
+export const uiState = derived(
+  [gameState, availableActions],
+  ([$gameState, $availableActions]) => {
+    // Determine if player 0 is waiting (has no actions or it's not their turn)
+    const isPlayer0Turn = $gameState.currentPlayer === 0;
+    
+    // Filter actions that are relevant for determining waiting state
+    const playerActions = $availableActions.filter(a => {
+      // Include bidding actions
+      if (a.id.startsWith('bid-') || a.id === 'pass' || a.id === 'redeal') {
+        return true;
+      }
+      // Include trump selection actions
+      if (a.id.startsWith('trump-')) {
+        return true;
+      }
+      // Include play actions
+      if (a.id.startsWith('play-')) {
+        return true;
+      }
+      // Exclude consensus actions from waiting determination
+      if (a.id === 'complete-trick' || a.id === 'score-hand' || a.id.startsWith('agree-')) {
+        return false;
+      }
+      // Include other actions
+      return true;
+    });
+    
+    const hasActions = playerActions.length > 0;
+    
+    // Determine waiting state based on phase
+    const isWaitingDuringBidding = $gameState.phase === 'bidding' && (!isPlayer0Turn || !hasActions);
+    const isWaitingDuringTrump = $gameState.phase === 'trump_selection' && (!isPlayer0Turn || !hasActions);
+    const isWaitingDuringPlay = $gameState.phase === 'playing' && (!isPlayer0Turn || !hasActions);
+    
+    // Determine who we're waiting on
+    const waitingOnPlayer = (!isPlayer0Turn || !hasActions) ? $gameState.currentPlayer : -1;
+    
+    return {
+      isPlayer0Turn,
+      hasActions,
+      playerActions,
+      isWaitingDuringBidding,
+      isWaitingDuringTrump,
+      isWaitingDuringPlay,
+      isWaiting: isWaitingDuringBidding || isWaitingDuringTrump || isWaitingDuringPlay,
+      waitingOnPlayer,
+      showBiddingTable: isWaitingDuringBidding && !testMode,
+      showActionPanel: $gameState.phase === 'bidding' || $gameState.phase === 'trump_selection'
+    };
+  }
 );
 
 // Recompute state from initial + actions and validate
@@ -207,6 +313,9 @@ function validateState() {
   }
 }
 
+// Forward declaration for circular reference
+let controllerManager: ControllerManager;
+
 // Game actions
 export const gameActions = {
   executeAction: (transition: StateTransition) => {
@@ -214,6 +323,7 @@ export const gameActions = {
     
     // Add action to history
     actionHistory.set([...actions, transition]);
+    
     
     // Update to new state
     gameState.set(transition.newState);
@@ -223,17 +333,23 @@ export const gameActions = {
     
     // Update URL with initial state and actions, using pushState for user actions
     updateURLWithState(get(initialState), [...actions, transition], true);
+    
+    // Notify all controllers of state change
+    controllerManager.onStateChange(transition.newState);
   },
   
   resetGame: () => {
     const oldActionCount = get(actionHistory).length;
     const newInitialState = createInitialState();
     // Deep clone to prevent mutations
-    initialState.set(JSON.parse(JSON.stringify(newInitialState)));
+    initialState.set(deepClone(newInitialState));
     gameState.set(newInitialState);
     actionHistory.set([]);
     stateValidationError.set(null);
     updateURLWithState(newInitialState, [], true);
+    
+    // Notify controllers of reset
+    controllerManager.onStateChange(newInitialState);
     
     // Debug logging
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
@@ -245,11 +361,14 @@ export const gameActions = {
   loadState: (state: GameState) => {
     // When loading a state directly, make it the new initial state
     // Deep clone to prevent mutations
-    initialState.set(JSON.parse(JSON.stringify(state)));
+    initialState.set(deepClone(state));
     gameState.set(state);
     actionHistory.set([]);
     stateValidationError.set(null);
     updateURLWithState(state, [], true);
+    
+    // Notify controllers of new state
+    controllerManager.onStateChange(state);
   },
   
   loadFromURL: () => {
@@ -266,12 +385,13 @@ export const gameActions = {
           if (urlData.v === 1) {
             // Expand minimal state
             const expandedInitial = expandMinimalState(urlData.s);
-            initialState.set(JSON.parse(JSON.stringify(expandedInitial)));
+            initialState.set(deepClone(expandedInitial));
             
             let currentState = expandedInitial;
             const validActions: StateTransition[] = [];
             
             // Replay compressed actions
+            let invalidActionFound = false;
             for (const compressedAction of urlData.a) {
               const actionId = decompressActionId(compressedAction.i);
               const availableTransitions = getNextStates(currentState);
@@ -281,19 +401,31 @@ export const gameActions = {
                 validActions.push(matchingTransition);
                 currentState = matchingTransition.newState;
               } else {
+                // Log warning but continue loading what we can
                 const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-                throw new Error(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
+                console.warn(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
+                console.warn('Stopping replay at this point - game will continue from here');
+                invalidActionFound = true;
+                break; // Stop processing further actions
               }
             }
             
             gameState.set(currentState);
             actionHistory.set(validActions);
+            
+            // If we had invalid actions, update the URL to reflect the valid state
+            if (invalidActionFound) {
+              updateURLWithState(get(initialState), validActions, false);
+            }
+            
             validateState();
             return;
           }
         } catch (e) {
           console.error('Failed to load compressed URL:', e);
-          throw e; // Re-throw to surface errors instead of silent failure
+          console.warn('Starting fresh game instead');
+          // Don't re-throw - just start with a fresh game
+          // The game is already in its initial state
         }
       }
     }
@@ -327,7 +459,7 @@ export const gameActions = {
   loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {
     if (historyState && historyState.initialState && historyState.actions) {
       // Deep clone to prevent mutations
-      initialState.set(JSON.parse(JSON.stringify(historyState.initialState)));
+      initialState.set(deepClone(historyState.initialState));
       
       let currentState = historyState.initialState;
       const validActions: StateTransition[] = [];
@@ -351,3 +483,27 @@ export const gameActions = {
     }
   }
 };
+
+// Initialize controller manager after gameActions is defined
+controllerManager = new ControllerManager((transition) => {
+  gameActions.executeAction(transition);
+});
+
+// Initialize controllers with default configuration
+if (typeof window !== 'undefined') {
+  if (testMode) {
+    // In test mode, all players are human-controlled for deterministic testing
+    controllerManager.setupLocalGame([
+      { type: 'human' },
+      { type: 'human' },
+      { type: 'human' },
+      { type: 'human' }
+    ]);
+  } else {
+    // Normal game: default configuration
+    controllerManager.setupLocalGame();
+  }
+}
+
+// Export controller manager
+export { controllerManager };

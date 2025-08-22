@@ -63,35 +63,6 @@ export function getPlayerView(state: GameState, playerId: number): PlayerView {
   };
 }
 
-/**
- * Checks if a player is human (for AI response handling)
- */
-export function isHumanPlayer(playerId: number): boolean {
-  // For now, assume player 0 is human and others are AI
-  // This can be configured later based on game settings
-  return playerId === 0;
-}
+// isHumanPlayer removed - use ControllerManager.isHumanControlled() instead
 
-/**
- * Simple AI action selection - picks the first available action
- * Can be enhanced with smarter logic later
- */
-export function chooseAIAction(transitions: StateTransition[]): StateTransition | null {
-  if (transitions.length === 0) {
-    return null;
-  }
-  
-  // For consensus actions, always agree immediately
-  const consensusAction = transitions.find(t => 
-    t.action.type === 'agree-complete-trick' || 
-    t.action.type === 'agree-score-hand'
-  );
-  
-  if (consensusAction) {
-    return consensusAction;
-  }
-  
-  // Otherwise pick the first available action
-  // This can be made smarter with game logic
-  return transitions[0];
-}
+// chooseAIAction removed - AI logic now in AIController/strategies

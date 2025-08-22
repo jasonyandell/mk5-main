@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gamePhase, availableActions, gameActions, teamInfo, biddingInfo, currentPlayer } from '../../stores/gameStore';
+  import { gamePhase, availableActions, gameActions, teamInfo, biddingInfo, currentPlayer, playerView, controllerManager, gameState, uiState } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
@@ -9,6 +9,11 @@
   }
   
   let { onswitchToPlay }: Props = $props();
+  
+  // Check if we're in test mode
+  const urlParams = typeof window !== 'undefined' ? 
+    new URLSearchParams(window.location.search) : null;
+  const testMode = urlParams?.get('testMode') === 'true';
   
 
   // Group actions by type with strong typing
@@ -28,7 +33,7 @@
     };
 
     $availableActions.forEach(action => {
-      if (action.id.startsWith('bid-') || action.id === 'pass') {
+      if (action.id.startsWith('bid-') || action.id === 'pass' || action.id === 'redeal') {
         groups.bidding.push(action);
       } else if (action.id.startsWith('trump-')) {
         groups.trump.push(action);
@@ -47,7 +52,17 @@
 
   async function executeAction(action: StateTransition) {
     try {
-      gameActions.executeAction(action);
+      // Find which human controller should handle this
+      const playerId = 'player' in action.action ? action.action.player : 0;
+      const humanController = controllerManager.getHumanController(playerId);
+      
+      if (humanController) {
+        humanController.handleUserAction(action);
+      } else {
+        // Fallback to direct execution (used in testMode)
+        console.log('[ActionPanel] Direct execution (no controller):', action.label, 'for player', playerId);
+        gameActions.executeAction(action);
+      }
       
       // If we just selected trump, switch back to play panel
       if (action.id.startsWith('trump-')) {
@@ -86,8 +101,13 @@
     }
   }
 
-  // Current player's hand
-  const playerHand = $derived($currentPlayer?.hand || []);
+  // Current player's hand (always player 0 for privacy, unless in test mode)
+  const playerHand = $derived(testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []));
+
+  // Use centralized UI state for waiting logic
+  const isWaiting = $derived($uiState.isWaiting);
+  const waitingPlayer = $derived($uiState.waitingOnPlayer);
+  const isAIThinking = $derived(waitingPlayer >= 0 && controllerManager.isAIControlled(waitingPlayer));
 
   // State for expandable team status
   let teamStatusExpanded = $state(false);
@@ -114,6 +134,48 @@
 
   <div class="actions-container">
     {#if $gamePhase === 'bidding'}
+      <!-- Always show compact bid status during bidding -->
+      <div class="compact-bid-status">
+        <div class="bid-chips">
+          {#each [0, 1, 2, 3] as playerId}
+            {@const bid = $biddingInfo.bids.find(b => b.player === playerId)}
+            {@const isHighBidder = $biddingInfo.currentBid.player === playerId}
+            {@const isDealer = $gameState.dealer === playerId}
+            <div class="bid-chip" class:high-bidder={isHighBidder} class:dealer={isDealer}>
+              <span class="chip-player">P{playerId}</span>
+              <span class="chip-bid">
+                {#if bid}
+                  {#if bid.type === 'pass'}
+                    Pass
+                  {:else}
+                    {bid.value}
+                  {/if}
+                {:else}
+                  --
+                {/if}
+              </span>
+              {#if isDealer}
+                <span class="dealer-badge" title="Dealer">D</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+        {#if $biddingInfo.currentBid.player !== -1}
+          <div class="high-bid-indicator">
+            High: {$biddingInfo.currentBid.value}
+          </div>
+        {/if}
+      </div>
+    {/if}
+    
+    {#if isWaiting && isAIThinking}
+      <div class="waiting-indicator">
+        <span class="robot-icon">🤖</span>
+        <span class="waiting-text">P{waitingPlayer} is thinking...</span>
+      </div>
+    {/if}
+    
+    {#if $gamePhase === 'bidding'}
       <div class="action-group">
         <h3>Bidding</h3>
         <div class="bid-actions">
@@ -127,13 +189,22 @@
               >
                 Pass
               </button>
+            {:else if action.id === 'redeal'}
+              <button 
+                class="action-button redeal {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
+                onclick={() => executeAction(action)}
+                data-testid={action.id}
+                title="Redeal the dominoes - all players passed"
+              >
+                Redeal
+              </button>
             {/if}
           {/each}
           
           <div class="bid-separator"></div>
           
           {#each groupedActions.bidding as action}
-            {#if action.id !== 'pass'}
+            {#if action.id !== 'pass' && action.id !== 'redeal'}
               <button 
                 class="action-button bid {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
                 onclick={() => executeAction(action)}
@@ -603,5 +674,187 @@
       opacity: 1;
       transform: translateY(0) rotate(0) scale(1);
     }
+  }
+
+  .waiting-indicator {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .robot-icon {
+    font-size: 20px;
+  }
+
+  .waiting-text {
+    font-size: 14px;
+  }
+
+  /* Bidding table styles */
+  /* Compact bid status styles */
+  .compact-bid-status {
+    margin: 16px;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .bid-chips {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .bid-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: white;
+    border-radius: 20px;
+    border: 2px solid #e2e8f0;
+    font-size: 14px;
+    position: relative;
+    transition: all 0.2s ease;
+  }
+
+  .bid-chip.high-bidder {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-color: #059669;
+    font-weight: 600;
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  }
+
+  .bid-chip.dealer {
+    border-color: #8b5cf6;
+  }
+
+  .chip-player {
+    font-weight: 600;
+    color: #64748b;
+  }
+
+  .bid-chip.high-bidder .chip-player {
+    color: white;
+  }
+
+  .chip-bid {
+    color: #1e293b;
+  }
+
+  .bid-chip.high-bidder .chip-bid {
+    color: white;
+  }
+
+  .dealer-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #8b5cf6;
+    color: white;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    border: 2px solid white;
+  }
+
+  .high-bid-indicator {
+    text-align: center;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .bidding-status {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+  }
+
+  .bid-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 6px;
+    background: #f8f8f8;
+    transition: all 0.2s;
+  }
+
+  .bid-row.current-turn {
+    background: #e8f4ff;
+    border: 1px solid #4a90e2;
+  }
+
+  .bid-row.you {
+    font-weight: 600;
+    background: #f0f8ff;
+  }
+
+  .player-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .player-icon {
+    font-size: 16px;
+  }
+
+  .bid-value {
+    font-weight: 500;
+  }
+
+  .bid-pass {
+    color: #999;
+    font-style: italic;
+  }
+
+  .bid-points {
+    color: #2c5aa0;
+    font-weight: bold;
+  }
+
+  .bid-value .thinking {
+    color: #f39c12;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .bid-value .waiting {
+    color: #4a90e2;
+  }
+
+  .bid-value .pending {
+    color: #999;
+    font-style: italic;
+  }
+
+  .current-bid-info {
+    padding-top: 12px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 14px;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
   }
 </style>
