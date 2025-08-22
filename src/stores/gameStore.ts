@@ -153,10 +153,11 @@ export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
 // Current player ID for primary view (can be changed for spectating)
 export const currentPlayerId = writable<number>(0);
 
+
 // Available actions store - filtered for privacy
 export const availableActions = derived(
   [gameState, currentPlayerId],
-  ([$gameState, $playerId]) => {
+  ([$gameState, _$playerId]) => {
     const allActions = getNextStates($gameState);
     
     // In test mode, show all actions for current player in game state
@@ -316,9 +317,12 @@ function validateState() {
 // Forward declaration for circular reference
 let controllerManager: ControllerManager;
 
+// Track if we're in a popstate response phase (controllers responding to navigation)
+let inPopstateResponse = false;
+
 // Game actions
 export const gameActions = {
-  executeAction: (transition: StateTransition) => {
+  executeAction: (transition: StateTransition, isFromController = false) => {
     const actions = get(actionHistory);
     
     // Add action to history
@@ -331,8 +335,18 @@ export const gameActions = {
     // Validate state matches computed state
     validateState();
     
-    // Update URL with initial state and actions, using pushState for user actions
-    updateURLWithState(get(initialState), [...actions, transition], true);
+    // Update URL with initial state and actions
+    // Skip URL updates for controller actions after popstate to avoid corrupting history
+    if (inPopstateResponse && isFromController) {
+      // Controller action during popstate response - skip URL update
+    } else {
+      // User action or normal flow - update URL
+      updateURLWithState(get(initialState), [...actions, transition], true);
+      // Clear popstate response phase on user action
+      if (!isFromController) {
+        inPopstateResponse = false;
+      }
+    }
     
     // Notify all controllers of state change
     controllerManager.onStateChange(transition.newState);
@@ -373,7 +387,6 @@ export const gameActions = {
   
   loadFromURL: () => {
     if (typeof window !== 'undefined') {
-      /* eslint-disable-next-line no-undef */
       const urlParams = new URLSearchParams(window.location.search);
       
       // Try new compressed format first
@@ -387,7 +400,8 @@ export const gameActions = {
             const expandedInitial = expandMinimalState(urlData.s);
             initialState.set(deepClone(expandedInitial));
             
-            let currentState = expandedInitial;
+            // CRITICAL: Must deep clone here to avoid mutating the stored initial state
+            let currentState = deepClone(expandedInitial);
             const validActions: StateTransition[] = [];
             
             // Replay compressed actions
@@ -419,6 +433,9 @@ export const gameActions = {
             }
             
             validateState();
+            
+            // Notify controllers of the state change so AI can take action
+            controllerManager.onStateChange(currentState);
             return;
           }
         } catch (e) {
@@ -461,7 +478,8 @@ export const gameActions = {
       // Deep clone to prevent mutations
       initialState.set(deepClone(historyState.initialState));
       
-      let currentState = historyState.initialState;
+      // CRITICAL: Must deep clone here to avoid mutating the stored initial state
+      let currentState = deepClone(historyState.initialState);
       const validActions: StateTransition[] = [];
       
       for (const actionId of historyState.actions) {
@@ -480,13 +498,23 @@ export const gameActions = {
       gameState.set(currentState);
       actionHistory.set(validActions);
       validateState();
+      
+      // Enter popstate response phase - controller actions won't update URL
+      inPopstateResponse = true;
+      
+      // Notify controllers of the state change so AI can take action
+      controllerManager.onStateChange(currentState);
+      
+      // Clear flag synchronously - only affects controller actions taken synchronously
+      inPopstateResponse = false;
     }
   }
 };
 
 // Initialize controller manager after gameActions is defined
 controllerManager = new ControllerManager((transition) => {
-  gameActions.executeAction(transition);
+  // Mark this as coming from a controller (AI or human controller)
+  gameActions.executeAction(transition, true);
 });
 
 // Initialize controllers with default configuration
@@ -507,3 +535,31 @@ if (typeof window !== 'undefined') {
 
 // Export controller manager
 export { controllerManager };
+
+// Set up a ticker to check AI decisions periodically
+// This ensures AI actions execute after their delays
+if (typeof window !== 'undefined') {
+  let tickerFrame: number | null = null;
+  
+  const checkAIDecisions = () => {
+    const currentState = get(gameState);
+    
+    // Trigger controller state check to see if any AI decisions are ready
+    // This will cause AIController.onStateChange to be called
+    // which will check if enough time has passed for pending decisions
+    controllerManager.onStateChange(currentState);
+    
+    // Schedule next check
+    tickerFrame = requestAnimationFrame(checkAIDecisions);
+  };
+  
+  // Start the ticker
+  tickerFrame = requestAnimationFrame(checkAIDecisions);
+  
+  // Clean up on page unload
+  window.addEventListener('beforeunload', () => {
+    if (tickerFrame !== null) {
+      cancelAnimationFrame(tickerFrame);
+    }
+  });
+}

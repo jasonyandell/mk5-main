@@ -188,7 +188,6 @@ export function decompressActionId(compressed: string): string {
 export function encodeURLData(data: URLData): string {
   const json = JSON.stringify(data);
   // Use base64url encoding (URL-safe)
-  /* eslint-disable-next-line no-undef */
   return btoa(json)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -205,7 +204,6 @@ export function decodeURLData(encoded: string): URLData {
     .replace(/_/g, '/')
     + '=='.slice(0, (4 - encoded.length % 4) % 4);
   
-  /* eslint-disable-next-line no-undef */
   const json = atob(base64);
   return JSON.parse(json);
 }

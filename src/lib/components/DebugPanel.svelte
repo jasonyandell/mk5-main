@@ -36,16 +36,19 @@
     // Get actions up to the specified index
     const actionsToReplay = $actionHistory.slice(0, index + 1);
     
-    // Replay from initial state
-    let currentState = $initialState;
+    // Use gameActions to properly load the state
+    // This ensures controllers are notified and state is properly managed
+    const historyState = {
+      initialState: $initialState,
+      actions: actionsToReplay.map(a => a.id),
+      timestamp: Date.now()
+    };
     
-    for (const action of actionsToReplay) {
-      currentState = action.newState;
-    }
-    
-    // Update the game state and history
-    gameState.set(currentState);
-    actionHistory.set(actionsToReplay);
+    // Use loadFromHistoryState which handles everything correctly:
+    // - Deep clones to prevent mutations
+    // - Updates all stores properly
+    // - Notifies controllers for AI
+    gameActions.loadFromHistoryState(historyState);
     
     // Update URL to reflect the new state
     const urlData = {
@@ -58,7 +61,6 @@
     const newURL = `${window.location.pathname}?d=${encoded}`;
     
     // Update browser history
-    const historyState = { initialState: $initialState, actions: actionsToReplay, timestamp: Date.now() };
     window.history.pushState(historyState, '', newURL);
   }
 

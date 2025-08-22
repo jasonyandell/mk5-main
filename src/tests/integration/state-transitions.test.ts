@@ -259,6 +259,7 @@ describe('State Transitions Integration', () => {
       // Create state exactly matching the user's provided JSON
       const state: GameState = {
         phase: 'trump_selection',
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           {
             id: 0,

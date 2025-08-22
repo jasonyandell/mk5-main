@@ -49,6 +49,15 @@
 
 
   let shakeActionId = $state<string | null>(null);
+  let previousPhase = $state($gamePhase);
+  
+  // React to phase changes for panel switching
+  $effect(() => {
+    if ($gamePhase === 'playing' && previousPhase === 'trump_selection') {
+      onswitchToPlay?.();
+    }
+    previousPhase = $gamePhase;
+  });
 
   async function executeAction(action: StateTransition) {
     try {
@@ -64,19 +73,10 @@
         gameActions.executeAction(action);
       }
       
-      // If we just selected trump, switch back to play panel
-      if (action.id.startsWith('trump-')) {
-        // Small delay to let the state update
-        setTimeout(() => {
-          onswitchToPlay?.();
-        }, 100);
-      }
+      // Panel switching is handled by the reactive effect above
     } catch (error) {
       // Trigger shake animation on error
       shakeActionId = action.id;
-      setTimeout(() => {
-        shakeActionId = null;
-      }, 300);
     }
   }
 
@@ -108,6 +108,26 @@
   const isWaiting = $derived($uiState.isWaiting);
   const waitingPlayer = $derived($uiState.waitingOnPlayer);
   const isAIThinking = $derived(waitingPlayer >= 0 && controllerManager.isAIControlled(waitingPlayer));
+  
+  // Track skip attempts for automatic retry
+  let skipAttempts = $state(0);
+  
+  // Reactive skip logic - automatically retry skip in bidding/trump phases
+  $effect(() => {
+    if (($gamePhase === 'bidding' || $gamePhase === 'trump_selection') && 
+        isAIThinking && skipAttempts > 0 && skipAttempts < 3) {
+      // Automatically try skip on state change
+      controllerManager.skipAIDelays();
+      skipAttempts++;
+    }
+  });
+  
+  // Reset skip attempts when not AI thinking
+  $effect(() => {
+    if (!isAIThinking) {
+      skipAttempts = 0;
+    }
+  });
 
   // State for expandable team status
   let teamStatusExpanded = $state(false);
@@ -169,10 +189,24 @@
     {/if}
     
     {#if isWaiting && isAIThinking}
-      <div class="waiting-indicator">
+      <button 
+        class="waiting-indicator clickable ai-thinking-indicator"
+        onclick={() => {
+          // Skip current AI delay
+          controllerManager.skipAIDelays();
+          // Enable automatic retry for bidding/trump phases
+          if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') {
+            skipAttempts = 1; // Start retry counter
+          }
+        }}
+        type="button"
+        aria-label="Click to skip AI thinking"
+        title="Click to skip AI thinking"
+      >
         <span class="robot-icon">🤖</span>
         <span class="waiting-text">P{waitingPlayer} is thinking...</span>
-      </div>
+        <span class="skip-hint">(tap to skip)</span>
+      </button>
     {/if}
     
     {#if $gamePhase === 'bidding'}
@@ -184,6 +218,7 @@
               <button 
                 class="action-button pass {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
                 onclick={() => executeAction(action)}
+                onanimationend={() => { if (shakeActionId === action.id) shakeActionId = null; }}
                 data-testid={action.id}
                 title={getBidTooltip(action)}
               >
@@ -193,6 +228,7 @@
               <button 
                 class="action-button redeal {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
                 onclick={() => executeAction(action)}
+                onanimationend={() => { if (shakeActionId === action.id) shakeActionId = null; }}
                 data-testid={action.id}
                 title="Redeal the dominoes - all players passed"
               >
@@ -208,6 +244,7 @@
               <button 
                 class="action-button bid {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
                 onclick={() => executeAction(action)}
+                onanimationend={() => { if (shakeActionId === action.id) shakeActionId = null; }}
                 data-testid={action.id}
                 title={getBidTooltip(action)}
               >
@@ -685,6 +722,23 @@
     justify-content: center;
     gap: 8px;
     animation: pulse 1.5s ease-in-out infinite;
+    width: 100%;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  
+  .waiting-indicator.clickable {
+    cursor: pointer;
+    transition: transform 0.2s ease;
+  }
+  
+  .waiting-indicator.clickable:hover {
+    transform: scale(1.05);
+  }
+  
+  .waiting-indicator.clickable:active {
+    transform: scale(0.98);
   }
 
   @keyframes pulse {
@@ -698,6 +752,12 @@
 
   .waiting-text {
     font-size: 14px;
+  }
+  
+  .skip-hint {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-left: 4px;
   }
 
   /* Bidding table styles */
@@ -785,76 +845,4 @@
     font-weight: 600;
   }
 
-  .bidding-status {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
-  }
-
-  .bid-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border-radius: 6px;
-    background: #f8f8f8;
-    transition: all 0.2s;
-  }
-
-  .bid-row.current-turn {
-    background: #e8f4ff;
-    border: 1px solid #4a90e2;
-  }
-
-  .bid-row.you {
-    font-weight: 600;
-    background: #f0f8ff;
-  }
-
-  .player-label {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .player-icon {
-    font-size: 16px;
-  }
-
-  .bid-value {
-    font-weight: 500;
-  }
-
-  .bid-pass {
-    color: #999;
-    font-style: italic;
-  }
-
-  .bid-points {
-    color: #2c5aa0;
-    font-weight: bold;
-  }
-
-  .bid-value .thinking {
-    color: #f39c12;
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  .bid-value .waiting {
-    color: #4a90e2;
-  }
-
-  .bid-value .pending {
-    color: #999;
-    font-style: italic;
-  }
-
-  .current-bid-info {
-    padding-top: 12px;
-    border-top: 1px solid #e0e0e0;
-    font-size: 14px;
-    color: #666;
-    display: flex;
-    justify-content: space-between;
-  }
 </style>

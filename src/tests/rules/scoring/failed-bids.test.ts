@@ -7,6 +7,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const state: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -43,6 +44,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const initialState: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -103,6 +105,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const initialState: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -165,6 +168,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const state: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -224,6 +228,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const state: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -284,6 +289,7 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
       // Test-only mock implementation
       const state: GameState = {
         phase: 'scoring' as GamePhase,
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },

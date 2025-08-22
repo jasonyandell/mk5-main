@@ -118,6 +118,15 @@ export interface GameState {
   bidWinner?: number; // -1 instead of null
   isComplete?: boolean;
   winner?: number; // -1 instead of null
+  // AI decision tracking for deterministic delays
+  aiDecisions?: {
+    [playerId: number]: {
+      transition: StateTransition;
+      decidedAt: number;  // timestamp when AI made decision
+      minDelay: number;    // minimum ms before execution (500-2000)
+      skipRequested?: boolean; // true when user wants immediate execution
+    }
+  };
 }
 
 export interface StateTransition {

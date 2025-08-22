@@ -1,4 +1,3 @@
-/* global URL, Buffer */
 import { createInitialState, decompressActionId, getNextStates } from '../index';
 import type { GameState } from '../types';
 

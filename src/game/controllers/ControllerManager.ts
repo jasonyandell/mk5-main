@@ -12,6 +12,7 @@ import { getNextStates } from '../core/gameEngine';
 export class ControllerManager {
   private controllers = new Map<number, PlayerController>();
   private executeTransitionCallback: (transition: StateTransition) => void;
+  private currentState?: GameState;
   
   constructor(executeTransition: (transition: StateTransition) => void) {
     this.executeTransitionCallback = executeTransition;
@@ -36,17 +37,17 @@ export class ControllerManager {
           new HumanController(playerId, this.executeTransitionCallback)
         );
       } else {
-        // Choose AI strategy
+        // Choose AI strategy - default to smart
         let strategy;
         switch (cfg.aiStrategy) {
-          case 'smart':
-            strategy = new SmartAIStrategy();
+          case 'simple':
+            strategy = new SimpleAIStrategy();
             break;
           case 'random':
             strategy = new RandomAIStrategy();
             break;
           default:
-            strategy = new SimpleAIStrategy();
+            strategy = new SmartAIStrategy();
         }
         
         this.controllers.set(playerId,
@@ -60,6 +61,7 @@ export class ControllerManager {
    * Called whenever game state changes
    */
   onStateChange(state: GameState): void {
+    this.currentState = state;
     const transitions = getNextStates(state);
     
     // Notify ALL controllers - they decide if they need to act
@@ -79,14 +81,14 @@ export class ControllerManager {
     
     let aiStrategy;
     switch (strategy) {
-      case 'smart':
-        aiStrategy = new SmartAIStrategy();
+      case 'simple':
+        aiStrategy = new SimpleAIStrategy();
         break;
       case 'random':
         aiStrategy = new RandomAIStrategy();
         break;
       default:
-        aiStrategy = new SimpleAIStrategy();
+        aiStrategy = new SmartAIStrategy();
     }
     
     this.controllers.set(playerId,
@@ -153,6 +155,22 @@ export class ControllerManager {
       }
     }
     return humanPlayers;
+  }
+  
+  /**
+   * Skip all AI delays and execute pending actions immediately
+   */
+  skipAIDelays(): void {
+    // Execute any pending AI decisions immediately
+    if (!this.currentState) {
+      return; // No state to process
+    }
+    
+    for (const controller of this.controllers.values()) {
+      if (controller instanceof AIController) {
+        controller.executeNow(this.currentState);
+      }
+    }
   }
   
   /**

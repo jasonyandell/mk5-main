@@ -19,6 +19,6 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src/**/*.ts", "src/**/*.svelte"],
+  "include": ["src/**/*.ts", "src/**/*.svelte", "src/types/**/*.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

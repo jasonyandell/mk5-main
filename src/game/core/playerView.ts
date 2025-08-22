@@ -1,4 +1,4 @@
-import type { GameState, PlayerView, PublicPlayer, StateTransition } from '../types';
+import type { GameState, PlayerView, PublicPlayer } from '../types';
 import { getNextStates } from './gameEngine';
 
 /**
