@@ -11,7 +11,7 @@ export class HumanController implements PlayerController {
     private executeTransition: (transition: StateTransition) => void
   ) {}
   
-  onStateChange(state: GameState, availableTransitions: StateTransition[]): void {
+  onStateChange(_state: GameState, _availableTransitions: StateTransition[]): void {
     // Human controller doesn't auto-emit actions
     // The UI will show available transitions and human will click when ready
     // This method could be used for notifications, sounds, etc.

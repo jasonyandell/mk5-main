@@ -20,7 +20,7 @@ test.describe('Complete Trick in Play Area', () => {
     
     // Verify tap indicator shows with correct text
     await expect(locators.tapIndicator()).toBeVisible();
-    await expect(locators.tapIndicator()).toContainText('Player 0 agrees to complete trick');
+    await expect(locators.tapIndicator()).toContainText('Complete trick');
     
     // Click the tappable trick table
     await locators.trickTableTappable().click();
@@ -72,7 +72,7 @@ test.describe('Complete Trick in Play Area', () => {
     
     // Verify tap indicator appears with correct text
     await expect(locators.tapIndicator()).toBeVisible();
-    await expect(locators.tapIndicator()).toContainText('Player 0 agrees to complete trick');
+    await expect(locators.tapIndicator()).toContainText('Complete trick');
     
     // Test passes - action button appears correctly
   });

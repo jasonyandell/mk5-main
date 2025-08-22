@@ -4,6 +4,7 @@
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
+  import { calculateTrickWinner } from '../../game/core/scoring';
   
   const dispatch = createEventDispatcher();
   
@@ -138,10 +139,11 @@
   // Current player's hand (always player 0 for privacy, unless in test mode)
   $: playerHand = testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []);
 
-  // Check if AI is thinking
+  // Check if AI is thinking (but not during consensus actions)
   $: isThinking = $gameState.phase === 'playing' && 
                    $gameState.currentPlayer !== 0 &&
-                   controllerManager.isAIControlled($gameState.currentPlayer);
+                   controllerManager.isAIControlled($gameState.currentPlayer) &&
+                   $gameState.currentTrick.length < 4;  // Not thinking if trick is complete
 
   // Current trick plays
   $: currentTrickPlays = $gameState.currentTrick || [];
@@ -155,6 +157,18 @@
       playedDominoIds.add(id);
     });
   }
+  
+  // Calculate the winning player for the current trick
+  $: trickWinner = (() => {
+    if (currentTrickPlays.length === 4) {
+      return calculateTrickWinner(
+        currentTrickPlays,
+        $gameState.trump,
+        $gameState.currentSuit
+      );
+    }
+    return -1;
+  })();
 
   // Create placeholder array for 4 players
   const playerPositions = [0, 1, 2, 3];
@@ -243,6 +257,17 @@
   // Debounce flag
   let actionPending = false;
   
+  // Track phase for transitions
+  let previousPhase = $gamePhase;
+  
+  // React to phase changes for panel switching
+  $: {
+    if ($gamePhase === 'bidding' && previousPhase === 'scoring') {
+      dispatch('switchToActions');
+    }
+    previousPhase = $gamePhase;
+  }
+  
   // Handle action execution
   function handleProceedAction() {
     if (!proceedAction || actionPending) return;
@@ -260,18 +285,21 @@
       gameActions.executeAction(proceedAction);
     }
     
-    // If we just scored a hand, transition to Actions panel for bidding
-    if (proceedAction.id === 'score-hand') {
-      // Small delay to let the state update
-      setTimeout(() => {
-        dispatch('switchToActions');
-      }, 100);
-    }
+    // Panel switching is handled by reactive statement above
     
-    // Clear debounce after a short delay
-    setTimeout(() => {
-      actionPending = false;
-    }, 300);
+    // Clear debounce flag synchronously
+    actionPending = false;
+  }
+  
+  // Handle table click to skip AI delays
+  function handleTableClick() {
+    // If there's a proceed action, handle it
+    if (proceedAction) {
+      handleProceedAction();
+    } else {
+      // Otherwise, skip AI delays
+      controllerManager.skipAIDelays();
+    }
   }
 
 </script>
@@ -434,11 +462,11 @@
   <!-- Trick table -->
   <button
     class="trick-table" 
-    class:tappable={proceedAction}
-    on:click={proceedAction ? handleProceedAction : undefined}
-    disabled={!proceedAction}
+    class:tappable={true}
+    on:click={handleTableClick}
+    disabled={false}
     type="button"
-    aria-label={proceedAction ? proceedAction.label : "Trick table"}
+    aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
   >
     <div class="table-surface" class:glowing={proceedAction}>
       <div class="table-pattern"></div>
@@ -475,9 +503,12 @@
         <!-- Normal trick display -->
         {#each playerPositions as position}
           {@const play = currentTrickPlays.find(p => p.player === position)}
+          {@const isWinner = trickWinner === position}
           <div class="trick-spot" data-position={position} style="pointer-events: none;">
             {#if play}
-              <div class="played-domino" class:fresh={playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`)}>
+              <div class="played-domino" 
+                   class:fresh={playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`)}
+                   class:winner={isWinner}>
                 <Domino 
                   domino={play.domino} 
                   small={true}
@@ -485,6 +516,12 @@
                   clickable={false}
                 />
                 <div class="player-indicator">P{position}</div>
+                {#if isWinner}
+                  <div class="winner-badge">
+                    <span class="winner-icon">👑</span>
+                    <span class="winner-text">Winner!</span>
+                  </div>
+                {/if}
               </div>
             {:else}
               <div class="waiting-spot">
@@ -501,7 +538,7 @@
     </div>
     
     {#if isThinking}
-      <div class="thinking-indicator">
+      <div class="thinking-indicator ai-thinking-pulse">
         <span class="robot-icon">🤖</span>
         <span class="thinking-text">P{$gameState.currentPlayer} is thinking...</span>
       </div>
@@ -796,7 +833,78 @@
   }
 
   .played-domino.fresh {
-    animation: dropIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: dropIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .played-domino.winner {
+    animation: winnerGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes winnerGlow {
+    0%, 100% {
+      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+      transform: scale(1);
+    }
+    50% {
+      filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9));
+      transform: scale(1.05);
+    }
+  }
+  
+  .winner-badge {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #1e293b;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.5);
+    animation: bounceIn 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    white-space: nowrap;
+    z-index: 15;
+  }
+  
+  .winner-icon {
+    font-size: 14px;
+    animation: sparkle 2s ease-in-out infinite;
+  }
+  
+  .winner-text {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-10px) scale(0.3);
+    }
+    50% {
+      transform: translateX(-50%) translateY(0) scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+  }
+  
+  @keyframes sparkle {
+    0%, 100% {
+      transform: rotate(0deg) scale(1);
+    }
+    25% {
+      transform: rotate(-10deg) scale(1.1);
+    }
+    75% {
+      transform: rotate(10deg) scale(1.1);
+    }
   }
 
   @keyframes dropIn {

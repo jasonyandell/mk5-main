@@ -16,6 +16,7 @@ describe('Hand Victory - Bidding Team Wins', () => {
     
     gameState = {
       phase: 'scoring',
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
       players,
       currentPlayer: 0,
       dealer: 0,

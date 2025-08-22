@@ -7,17 +7,11 @@
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import { gameActions, gamePhase, gameState, availableActions } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
-  import { calculateTrickWinner } from './game/core/scoring';
 
   let showDebugPanel = false;
   let activeView: 'game' | 'actions' = 'game';
   let touchStartY = 0;
   let touchStartTime = 0;
-  
-  // Flash message state
-  let flashMessage = '';
-  let flashTimeout: ReturnType<typeof setTimeout> | null = null;
-  let hasCompleteTrickAction = false;
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -57,62 +51,6 @@
     // Try to load from URL on mount
     gameActions.loadFromURL();
   });
-  
-  onDestroy(() => {
-    // Clean up any pending timeout
-    if (flashTimeout) {
-      clearTimeout(flashTimeout);
-      flashTimeout = null;
-    }
-  });
-  
-  // Watch for complete-trick becoming available
-  $: {
-    const completeTrickAvailable = $availableActions.some(action => action.id === 'complete-trick');
-    
-    // Show flash when complete-trick BECOMES available (wasn't before, now is)
-    if (completeTrickAvailable && !hasCompleteTrickAction) {
-      // Calculate who will win this trick
-      if ($gameState.currentTrick && $gameState.currentTrick.length === 4) {
-        const winner = calculateTrickWinner(
-          $gameState.currentTrick,
-          $gameState.trump,
-          $gameState.currentSuit
-        );
-        
-        // Display flash message
-        flashMessage = `P${winner} Wins!`;
-        
-        // Clear any existing timeout
-        if (flashTimeout) {
-          clearTimeout(flashTimeout);
-        }
-        
-        // Set timeout to clear message after 1 second
-        flashTimeout = setTimeout(() => {
-          flashMessage = '';
-          flashTimeout = null;
-        }, 1000);
-      }
-    }
-    
-    hasCompleteTrickAction = completeTrickAvailable;
-  }
-  
-  // Handle clicking to dismiss flash message
-  function dismissFlash(e?: MouseEvent | KeyboardEvent) {
-    // Only dismiss on Enter or Space key for keyboard events
-    if (e && e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') {
-      return;
-    }
-    if (flashMessage) {
-      flashMessage = '';
-      if (flashTimeout) {
-        clearTimeout(flashTimeout);
-        flashTimeout = null;
-      }
-    }
-  }
   
   // Smart panel switching based on game phase
   // This handles both URL loading and normal game flow
@@ -164,20 +102,6 @@
 
 <QuickplayError />
 
-{#if flashMessage}
-  <button 
-    class="flash-message"
-    transition:fade={{ duration: 200 }}
-    on:click={dismissFlash}
-    on:keydown={dismissFlash}
-    type="button"
-    aria-label="Dismiss message: {flashMessage}"
-    aria-live="polite"
-  >
-    {flashMessage}
-  </button>
-{/if}
-
 <style>
   .app-container {
     display: flex;
@@ -209,40 +133,4 @@
   .game-container.no-scroll {
     overflow: hidden;
   }
-
-  
-  .flash-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    font-size: 48px;
-    font-weight: bold;
-    padding: 30px 60px;
-    border: none;
-    pointer-events: none;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    z-index: 2000;
-    cursor: pointer;
-    user-select: none;
-    animation: pulse 0.5s ease-out;
-  }
-  
-  @keyframes pulse {
-    0% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.1);
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-  }
-
 </style>

@@ -4,10 +4,14 @@ import { SimpleAIStrategy } from './strategies';
 
 /**
  * Controller for AI players.
- * Emits actions automatically using the same mechanism as humans.
+ * Registers decisions immediately in state for deterministic execution.
  */
 export class AIController implements PlayerController {
-  private timeoutId?: ReturnType<typeof setTimeout>;
+  private pendingDecision?: {
+    transition: StateTransition;
+    decidedAt: number;
+    minDelay: number;
+  };
   
   constructor(
     public readonly playerId: number,
@@ -16,10 +20,18 @@ export class AIController implements PlayerController {
   ) {}
   
   onStateChange(state: GameState, availableTransitions: StateTransition[]): void {
-    // Clear any pending action
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = undefined;
+    // Check if we have a pending decision to execute
+    if (this.pendingDecision) {
+      const elapsed = Date.now() - this.pendingDecision.decidedAt;
+      // Execute if enough time passed
+      if (elapsed >= this.pendingDecision.minDelay) {
+        const transition = this.pendingDecision.transition;
+        delete this.pendingDecision;
+        this.executeTransition(transition);
+        return;
+      }
+      // Still waiting, check again on next state change
+      return;
     }
     
     // Filter to only this player's actions
@@ -38,21 +50,34 @@ export class AIController implements PlayerController {
     const choice = this.strategy.chooseAction(state, myTransitions);
     if (!choice) return;
     
-    // AI "thinks" then emits action just like a human would
+    // Get thinking time
     const thinkingTime = this.strategy.getThinkingTime(choice.action.type);
     
-    this.timeoutId = setTimeout(() => {
-      // Emit action through exact same mechanism as human
+    // If thinking time is 0, execute immediately
+    if (thinkingTime === 0) {
       this.executeTransition(choice);
-      this.timeoutId = undefined;
-    }, thinkingTime);
+    } else {
+      // Store decision for later execution
+      this.pendingDecision = {
+        transition: choice,
+        decidedAt: Date.now(),
+        minDelay: thinkingTime
+      };
+      // The decision will be executed on the next state change
+      // when enough time has passed
+    }
+  }
+  
+  executeNow(_state: GameState): void {
+    // Execute immediately if there's a pending decision
+    if (this.pendingDecision) {
+      const transition = this.pendingDecision.transition;
+      delete this.pendingDecision;
+      this.executeTransition(transition);
+    }
   }
   
   destroy(): void {
-    // Clean up any pending timeouts
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId);
-      this.timeoutId = undefined;
-    }
+    // No timers to clean up anymore!
   }
 }

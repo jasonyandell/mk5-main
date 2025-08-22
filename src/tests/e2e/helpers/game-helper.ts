@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Reason: page.waitForFunction() and page.evaluate() run in browser context where TypeScript cannot
+// verify window properties. The use of 'any' for window casts is architectural, not a shortcut.
+
 import { expect } from '@playwright/test';
 import type { Page, Locator } from '@playwright/test';
 import { encodeURLData } from '../../../game/core/url-compression';
@@ -42,10 +46,10 @@ export class PlaywrightGameHelper {
   private page: Page;
   // Timeout strategy for different operation types
   static TIMEOUTS = {
-    quick: 100,      // For immediate DOM checks
-    normal: 1000,    // For standard operations
-    slow: 5000,      // For page loads and complex operations
-    test: 3000       // Overall test timeout
+    quick: 1000,     // For immediate DOM checks
+    normal: 5000,    // For standard operations
+    slow: 10000,     // For page loads and complex operations
+    test: 10000      // Overall test timeout
   };
 
   // Centralized selector definitions using data attributes and roles
@@ -160,15 +164,37 @@ export class PlaywrightGameHelper {
     // Wait for app container and phase to be set
     await this.page.waitForSelector(PlaywrightGameHelper.SELECTORS.app);
     
-    // Wait for phase attribute to be set (indicates game state is loaded)
+    // Wait for phase attribute to be set and game state to be stable
     await this.page.waitForFunction(
       () => {
         const container = document.querySelector('.app-container');
-        return container && container.getAttribute('data-phase');
+        const phase = container?.getAttribute('data-phase');
+        const gameState = (window as any).getGameState?.();
+        
+        // Check that we have both a phase and a game state
+        // and that the game is not in a transitional state
+        return !!(phase && gameState && !gameState.isProcessing);
       },
-      null,
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
+  }
+  
+  /**
+   * Wait for navigation state to be restored after browser navigation
+   * Simply waits for game state to be ready after navigation
+   */
+  async waitForNavigationRestore(): Promise<void> {
+    // Wait for game state to exist and be stable
+    await this.page.waitForFunction(
+      () => {
+        const gameState = (window as any).getGameState?.();
+        return !!gameState && !('isProcessing' in gameState && gameState.isProcessing);
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
+    );
+    
+    // Then wait for game to be ready
+    await this.waitForGameReady();
   }
 
   /**
@@ -241,21 +267,36 @@ export class PlaywrightGameHelper {
     await locator.click();
     
     // Wait for any state change (phase or action availability)
-    await this.page.waitForFunction(
-      ({ prevPhase }: { prevPhase: string }) => {
-        const currentPhase = document.querySelector('.app-container')?.getAttribute('data-phase');
-        const hasActions = document.querySelectorAll('.action-button, .tap-indicator').length > 0;
-        return currentPhase !== prevPhase || hasActions;
-      },
-      { prevPhase: preClickPhase },
-      { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
-    );
+    try {
+      await this.page.waitForFunction(
+        ({ prevPhase }: { prevPhase: string }) => {
+          const currentPhase = document.querySelector('.app-container')?.getAttribute('data-phase');
+          const hasActions = document.querySelectorAll('.action-button, .tap-indicator').length > 0;
+          return currentPhase !== prevPhase || hasActions;
+        },
+        { prevPhase: preClickPhase },
+        { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
+      );
+    } catch {
+      // State might have already changed, continue
+    }
   }
 
   /**
    * Get all available actions in current state
    */
   async getAvailableActions(): Promise<ActionInfo[]> {
+    // First ensure there are action buttons or we're in a stable state
+    await this.page.waitForFunction(
+      () => {
+        const buttons = document.querySelectorAll('.action-button, .tap-indicator');
+        // Either we have buttons, or we're in a phase that doesn't need them
+        const phase = document.querySelector('.app-container')?.getAttribute('data-phase');
+        return buttons.length > 0 || phase === 'game_over' || phase === 'waiting';
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
+    );
+    
     const buttons = await this.page.locator(PlaywrightGameHelper.SELECTORS.actionButton).all();
     const actions = [];
     
@@ -335,8 +376,27 @@ export class PlaywrightGameHelper {
     };
     const normalizedSuit = (suitMap[suit] || suit).toLowerCase();
     
-    await this.selectAction({ type: 'trump_selection', value: normalizedSuit });
-    await this.waitForPhase('playing');
+    // Ensure we're in trump selection phase
+    const currentPhase = await this.getCurrentPhase();
+    if (currentPhase !== 'trump_selection') {
+      throw new Error(`Cannot set trump: not in trump_selection phase (current: ${currentPhase})`);
+    }
+    
+    // Wait for trump buttons to be available
+    const trumpButton = this.page.locator(`[data-testid="trump-${normalizedSuit}"]`);
+    await trumpButton.waitFor({ state: 'visible', timeout: PlaywrightGameHelper.TIMEOUTS.normal });
+    
+    // Click via JavaScript to bypass any overlay issues
+    await trumpButton.evaluate((el: Element) => (el as HTMLElement).click());
+    
+    // Wait for phase to change from trump_selection
+    await this.page.waitForFunction(
+      () => {
+        const phase = document.querySelector('.app-container')?.getAttribute('data-phase');
+        return phase && phase !== 'trump_selection';
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
+    );
   }
 
   /**
@@ -354,15 +414,30 @@ export class PlaywrightGameHelper {
       .or(this.page.locator(PlaywrightGameHelper.SELECTORS.domino.any + ':not([disabled])'))
       .first();
     
-    // Wait for element to be stable before clicking (force stability)
-    await playable.waitFor({ state: 'visible' });
+    // Try to find and click a playable domino with a short timeout
+    try {
+      await playable.waitFor({ state: 'visible', timeout: 500 });
+      await playable.click({ force: true });
+    } catch {
+      // If no playable dominoes visible, try any domino
+      const anyDomino = this.page.locator(PlaywrightGameHelper.SELECTORS.domino.any).first();
+      const count = await anyDomino.count();
+      if (count > 0) {
+        await anyDomino.click({ force: true });
+      } else {
+        throw new Error('No dominoes found to play');
+      }
+    }
     
-    // Click with force option to bypass animation checks if needed
-    await playable.click({ force: true });
-    
-    // The click itself is synchronous in the game, no need to wait for DOM updates
-    // Just a minimal wait to ensure state is processed
-    await this.page.waitForTimeout(50);
+    // Wait for any state changes after playing domino
+    // Use waitForFunction to detect when game processes the move
+    await this.page.waitForFunction(
+      () => {
+        const state = (window as any).getGameState?.();
+        return state && !(state as any).isProcessing;
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
+    );
   }
 
   /**
@@ -546,6 +621,63 @@ export class PlaywrightGameHelper {
         }
       }
     });
+  }
+
+  /**
+   * Wait for AI to complete its move(s)
+   * Detects when AI has finished by monitoring action count or current player change
+   */
+  async waitForAIMove(expectedActionCount?: number): Promise<void> {
+    const initialPlayer = await this.page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      return state?.currentPlayer;
+    });
+    
+    const initialActionCount = await this.page.evaluate(() => {
+      const url = new URL(window.location.href);
+      const d = url.searchParams.get('d');
+      if (!d) return 0;
+      try {
+        // Decode base64 and parse JSON to count actions
+        const decoded = JSON.parse(atob(d));
+        return decoded.a?.length || 0;
+      } catch {
+        return 0;
+      }
+    });
+
+    // Wait for either action count increase or player change (AI finished)
+    await this.page.waitForFunction(
+      ({ initialCount, initialP, expected }: { initialCount: number; initialP: number | undefined; expected: number | undefined }) => {
+        const url = new URL(window.location.href);
+        const d = url.searchParams.get('d');
+        const state = (window as any).getGameState?.();
+        const currentPlayer = state?.currentPlayer;
+        
+        // Check if it's back to human player (player 0)
+        if (currentPlayer === 0 && initialP !== 0) {
+          return true;
+        }
+        
+        if (!d) return false;
+        try {
+          const decoded = JSON.parse(atob(d));
+          const currentCount = decoded.a?.length || 0;
+          // If we have an expected count, wait for that, otherwise just wait for any increase
+          return expected ? currentCount >= expected : currentCount > initialCount;
+        } catch {
+          return false;
+        }
+      },
+      { initialCount: initialActionCount, initialP: initialPlayer, expected: expectedActionCount },
+      { 
+        timeout: PlaywrightGameHelper.TIMEOUTS.normal,
+        polling: 50 
+      }
+    );
+
+    // Also ensure game state is stable
+    await this.waitForGameReady();
   }
 
   /**

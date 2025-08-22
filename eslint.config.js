@@ -16,7 +16,16 @@ export default [js.configs.recommended, {
       window: 'readonly',
       setTimeout: 'readonly',
       clearTimeout: 'readonly',
-      CSSStyleRule: 'readonly'
+      CSSStyleRule: 'readonly',
+      URLSearchParams: 'readonly',
+      URL: 'readonly',
+      atob: 'readonly',
+      btoa: 'readonly',
+      Buffer: 'readonly',
+      Element: 'readonly',
+      HTMLElement: 'readonly',
+      requestAnimationFrame: 'readonly',
+      cancelAnimationFrame: 'readonly'
     }
   },
   plugins: {
@@ -30,7 +39,7 @@ export default [js.configs.recommended, {
     'no-case-declarations': 'error'
   }
 }, {
-  files: ['**/*.test.ts', '**/*.spec.ts'],
+  files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
   languageOptions: {
     globals: {
       console: 'readonly',
@@ -41,7 +50,13 @@ export default [js.configs.recommended, {
       describe: 'readonly',
       it: 'readonly',
       beforeEach: 'readonly',
-      afterEach: 'readonly'
+      afterEach: 'readonly',
+      URL: 'readonly',
+      atob: 'readonly',
+      btoa: 'readonly',
+      Buffer: 'readonly',
+      Element: 'readonly',
+      HTMLElement: 'readonly'
     }
   }
 }, {

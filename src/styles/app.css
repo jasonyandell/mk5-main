@@ -247,9 +247,55 @@ button:disabled {
   }
 }
 
+/* AI thinking animations */
+@keyframes aiThinking {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes aiProgress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes aiPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(243, 156, 18, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(243, 156, 18, 0);
+  }
+}
+
 /* Animation classes */
 .domino-play-animation {
   animation: slideFromHand 0.2s ease-out;
+}
+
+.ai-thinking-indicator {
+  animation: aiThinking 1.5s ease-in-out infinite;
+}
+
+.ai-progress-bar {
+  animation: aiProgress var(--ai-delay, 1500ms) linear forwards;
+  background: linear-gradient(90deg, #f39c12, #e67e22);
+  height: 3px;
+  border-radius: 2px;
+}
+
+.ai-thinking-pulse {
+  animation: aiPulse 2s ease-in-out infinite;
+  border-radius: 50%;
 }
 
 .trick-complete-animation {

@@ -1,4 +1,3 @@
-/* global requestAnimationFrame, cancelAnimationFrame */
 import { writable, get } from 'svelte/store';
 import { gameState, availableActions, gameActions, actionHistory } from './gameStore';
 import type { GameState, StateTransition, Domino, Player } from '../game/types';
@@ -295,7 +294,7 @@ function processAIMoves() {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision);
+        gameActions.executeAction(decision, true); // Mark as controller action
       }
     } catch (error) {
       // Log error details for debugging
@@ -412,7 +411,7 @@ export const quickplayActions = {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision);
+        gameActions.executeAction(decision, true); // Mark as controller action
       }
     } catch (error) {
       console.error('[Quickplay] Step error:', {
@@ -452,7 +451,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision);
+          gameActions.executeAction(decision, true); // Mark as controller action
           // Continue with next action
           setTimeout(runToHandEnd, 0);
         }
@@ -479,7 +478,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision);
+          gameActions.executeAction(decision, true); // Mark as controller action
           // Continue with next action
           setTimeout(runToGameEnd, 0);
         }
