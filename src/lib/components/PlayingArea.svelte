@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, controllerManager, uiState } from '../../stores/gameStore';
+  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, uiState } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
@@ -298,7 +298,7 @@
       handleProceedAction();
     } else {
       // Otherwise, skip AI delays
-      controllerManager.skipAIDelays();
+      gameActions.skipAIDelays();
     }
   }
 

@@ -14,8 +14,10 @@ test.describe('AI Controller After Navigation', () => {
     // Player 0 bids 30
     await helper.bid(30, false);
     
-    // Wait for AI to make their moves (passes)
-    await helper.waitForAIMove();
+    // Wait for all 3 AI players to pass
+    await helper.waitForAIMove(); // P1 passes
+    await helper.waitForAIMove(); // P2 passes
+    await helper.waitForAIMove(); // P3 passes
     
     // Should be in trump selection (player 0 won)
     let phase = await helper.getCurrentPhase();
@@ -94,7 +96,11 @@ test.describe('AI Controller After Navigation', () => {
     
     // Make some moves to create history
     await helper.bid(30, false);
-    await helper.waitForAIMove(); // Let AI pass
+    
+    // Wait for all 3 AI players to respond
+    await helper.waitForAIMove(); // P1 passes
+    await helper.waitForAIMove(); // P2 passes
+    await helper.waitForAIMove(); // P3 passes
     
     // Store URL after bidding
     

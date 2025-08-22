@@ -15,6 +15,10 @@ Pure functions and states. Strictly. Fix any issues if you discover them
 ** Mobile UI ** - Prioritize mobile: wrap dominoes, no horizontal scroll, maximize vertical space
 
 ** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
+  - Playwright tests in scratch/ must use `.test.ts` extension (not `.spec.ts`)
+  - Example: `scratch/debug-issue.test.ts` 
+  - These won't run with `npm run test:e2e` (production tests only)
+  - Run scratch tests explicitly: `npx playwright test --config=playwright.scratch.config.ts`
 
 ## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
   User provides localhost URL with a bug report? Follow this workflow:

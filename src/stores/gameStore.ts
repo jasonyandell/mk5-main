@@ -11,6 +11,7 @@ import {
   decodeURLData,
   type URLData 
 } from '../game/core/url-compression';
+import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule } from '../game/core/ai-scheduler';
 
 // Helper to deep clone an object preserving Sets
 function deepClone<T>(obj: T): T {
@@ -352,6 +353,15 @@ export const gameActions = {
     controllerManager.onStateChange(transition.newState);
   },
   
+  skipAIDelays: () => {
+    // Use pure function to skip AI delays
+    const currentState = get(gameState);
+    const newState = skipAIDelaysPure(currentState);
+    if (newState !== currentState) {
+      gameState.set(newState);
+    }
+  },
+  
   resetGame: () => {
     const oldActionCount = get(actionHistory).length;
     const newInitialState = createInitialState();
@@ -424,6 +434,9 @@ export const gameActions = {
               }
             }
             
+            // Reset AI scheduling for clean state
+            currentState = resetAISchedule(currentState);
+            
             gameState.set(currentState);
             actionHistory.set(validActions);
             
@@ -495,6 +508,9 @@ export const gameActions = {
         }
       }
       
+      // Reset AI scheduling for clean navigation
+      currentState = resetAISchedule(currentState);
+      
       gameState.set(currentState);
       actionHistory.set(validActions);
       validateState();
@@ -536,30 +552,37 @@ if (typeof window !== 'undefined') {
 // Export controller manager
 export { controllerManager };
 
-// Set up a ticker to check AI decisions periodically
-// This ensures AI actions execute after their delays
+// Pure game loop - advances game ticks and executes AI decisions
 if (typeof window !== 'undefined') {
-  let tickerFrame: number | null = null;
+  let animationFrame: number | null = null;
   
-  const checkAIDecisions = () => {
+  const runGameLoop = () => {
     const currentState = get(gameState);
     
-    // Trigger controller state check to see if any AI decisions are ready
-    // This will cause AIController.onStateChange to be called
-    // which will check if enough time has passed for pending decisions
-    controllerManager.onStateChange(currentState);
+    // Use pure tick function to advance game state
+    const newState = tickGame(currentState);
     
-    // Schedule next check
-    tickerFrame = requestAnimationFrame(checkAIDecisions);
+    // Only update store if state actually changed
+    if (newState !== currentState) {
+      // Set the new state without triggering URL updates or controller notifications
+      // (the tick already handled AI decisions purely)
+      gameState.set(newState);
+      
+      // Validate the new state
+      validateState();
+    }
+    
+    // Schedule next frame
+    animationFrame = requestAnimationFrame(runGameLoop);
   };
   
-  // Start the ticker
-  tickerFrame = requestAnimationFrame(checkAIDecisions);
+  // Start the game loop
+  animationFrame = requestAnimationFrame(runGameLoop);
   
   // Clean up on page unload
   window.addEventListener('beforeunload', () => {
-    if (tickerFrame !== null) {
-      cancelAnimationFrame(tickerFrame);
+    if (animationFrame !== null) {
+      cancelAnimationFrame(animationFrame);
     }
   });
 }

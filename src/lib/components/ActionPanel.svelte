@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gamePhase, availableActions, gameActions, teamInfo, biddingInfo, currentPlayer, playerView, controllerManager, gameState, uiState } from '../../stores/gameStore';
+  import { gamePhase, availableActions, gameActions, teamInfo, biddingInfo, currentPlayer, playerView, gameState, uiState } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
@@ -117,7 +117,7 @@
     if (($gamePhase === 'bidding' || $gamePhase === 'trump_selection') && 
         isAIThinking && skipAttempts > 0 && skipAttempts < 3) {
       // Automatically try skip on state change
-      controllerManager.skipAIDelays();
+      gameActions.skipAIDelays();
       skipAttempts++;
     }
   });
@@ -193,7 +193,7 @@
         class="waiting-indicator clickable ai-thinking-indicator"
         onclick={() => {
           // Skip current AI delay
-          controllerManager.skipAIDelays();
+          gameActions.skipAIDelays();
           // Enable automatic retry for bidding/trump phases
           if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') {
             skipAttempts = 1; // Start retry counter

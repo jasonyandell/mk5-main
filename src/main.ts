@@ -30,6 +30,7 @@ declare global {
     quickplayState: typeof quickplayState;
     getQuickplayState: () => ReturnType<typeof get>;
     gameActions: typeof gameActions;
+    gameState: typeof gameState;
     getGameState: () => ReturnType<typeof get>;
   }
 }
@@ -41,6 +42,7 @@ if (typeof window !== 'undefined') {
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);
   window.gameActions = gameActions;
+  window.gameState = gameState;
   window.getGameState = () => get(gameState);
 }
 
