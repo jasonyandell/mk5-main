@@ -32,36 +32,36 @@
   }
 </script>
 
-<div class="game-progress">
-  <h2>Game Progress</h2>
+<div class="p-4 h-full flex flex-col">
+  <h2 class="mb-4 text-lg font-semibold text-[#002868]">Game Progress</h2>
 
-  <div class="progress-summary">
-    <div class="point-count">
+  <div class="mb-5 p-3 bg-white rounded-lg border border-gray-200">
+    <div class="text-sm font-semibold text-gray-700 mb-3">
       Points: {totalPoints}/42
     </div>
     {#if $gameState.phase === 'playing' && $biddingInfo.winningBidder !== -1}
-      <div class="bid-progress">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: {progress}%"></div>
+      <div class="mt-2">
+        <div class="h-2 bg-gray-200 rounded overflow-hidden mb-1">
+          <div class="h-full bg-green-500 transition-all duration-300 ease-out" style="width: {progress}%"></div>
         </div>
-        <div class="progress-text">
+        <div class="text-xs text-gray-500">
           Need: {Math.max(0, bidTarget - totalPoints)} more
         </div>
       </div>
     {/if}
   </div>
 
-  <div class="tricks-list">
+  <div class="flex-1 overflow-y-auto">
     {#if tricks.length === 0}
-      <div class="empty-state">
+      <div class="text-center py-10 px-5 text-gray-400 italic">
         No tricks played yet
       </div>
     {:else}
       {#each tricks as trick, index}
-        <div class="trick-card compact {index === tricks.length - 1 ? 'trick-complete-animation' : ''}" class:completed={trick.winner !== undefined} title={getTrickTooltip(trick, index)}>
-          <div class="trick-dominoes-horizontal">
+        <div class="bg-white border border-gray-200 rounded-md p-1.5 mb-1 transition-all duration-200 ease-out flex items-center gap-2 min-h-0 {trick.winner !== undefined ? 'opacity-75' : ''} {index === tricks.length - 1 ? 'trick-complete-animation' : ''}" title={getTrickTooltip(trick, index)}>
+          <div class="flex flex-row gap-0.5 flex-nowrap">
             {#each trick.plays as play}
-              <div class="played-domino">
+              <div class="flex items-center">
                 <Domino 
                   domino={play.domino} 
                   small={true}
@@ -72,128 +72,12 @@
               </div>
             {/each}
           </div>
-          <div class="trick-info">
-            <span class="trick-number">{index + 1}</span>
-            <span class="trick-points">{trick.points}</span>
+          <div class="flex flex-col items-center ml-auto text-[11px] text-gray-500">
+            <span class="font-semibold text-gray-700">{index + 1}</span>
+            <span class="text-gray-400">{trick.points}</span>
           </div>
         </div>
       {/each}
     {/if}
   </div>
 </div>
-
-<style>
-  .game-progress {
-    padding: 16px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  h2 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #002868;
-  }
-
-  .progress-summary {
-    margin-bottom: 20px;
-    padding: 12px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .point-count {
-    font-size: 14px;
-    font-weight: 600;
-    color: #374151;
-    margin-bottom: 12px;
-  }
-
-  .bid-progress {
-    margin-top: 8px;
-  }
-
-  .progress-bar {
-    height: 8px;
-    background-color: #e5e7eb;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 4px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background-color: #22c55e;
-    transition: width 0.3s ease;
-  }
-
-  .progress-text {
-    font-size: 12px;
-    color: #6b7280;
-  }
-
-  .tricks-list {
-    flex: 1;
-    overflow-y: auto;
-  }
-
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: #9ca3af;
-    font-style: italic;
-  }
-
-  .trick-card {
-    background-color: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 6px;
-    margin-bottom: 4px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .trick-card.compact {
-    min-height: auto;
-  }
-
-  .trick-card.completed {
-    opacity: 0.75;
-  }
-
-  .trick-info {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-left: auto;
-    font-size: 11px;
-    color: #6b7280;
-  }
-
-  .trick-number {
-    font-weight: 600;
-    color: #374151;
-  }
-
-  .trick-points {
-    color: #9ca3af;
-  }
-
-  .trick-dominoes-horizontal {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 2px;
-    flex-wrap: nowrap;
-  }
-
-  .played-domino {
-    display: flex;
-    align-items: center;
-  }
-</style>
