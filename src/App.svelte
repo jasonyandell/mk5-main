@@ -8,10 +8,11 @@
   import { gameActions, gamePhase, gameState, availableActions } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
-  let showDebugPanel = false;
-  let activeView: 'game' | 'actions' = 'game';
-  let touchStartY = 0;
-  let touchStartTime = 0;
+  let showDebugPanel = $state(false);
+  let activeView = $state<'game' | 'actions'>('game');
+  let touchStartY = $state(0);
+  let touchStartTime = $state(0);
+  let currentTheme = $state('light');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -50,11 +51,18 @@
   onMount(() => {
     // Try to load from URL on mount
     gameActions.loadFromURL();
+    
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      currentTheme = savedTheme;
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
   });
   
   // Smart panel switching based on game phase
   // This handles both URL loading and normal game flow
-  $: {
+  $effect(() => {
     // Automatically switch to appropriate panel based on game phase
     // This works for both:
     // 1. Loading from a URL with any game state
@@ -73,21 +81,62 @@
       // Game end: could show either, let's show game board with final state
       activeView = 'game';
     }
-  }
+  });
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} />
 
-<div class="app-container" role="application" data-phase={$gameState.phase} on:touchstart={handleTouchStart} on:touchend={handleTouchEnd}>
-  <Header on:openDebug={() => showDebugPanel = true} />
+<div 
+  class="flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
+  style="height: 100dvh;"
+  role="application" 
+  data-phase={$gameState.phase} 
+  ontouchstart={handleTouchStart} 
+  ontouchend={handleTouchEnd}
+>
+  <Header onopenDebug={() => showDebugPanel = true} />
   
-  <main class="game-container" class:no-scroll={activeView === 'actions'}>
+  <!-- Theme Switcher -->
+  <div class="fixed bottom-4 left-4 z-50">
+    <select 
+      class="select select-bordered select-sm" 
+      data-choose-theme
+      bind:value={currentTheme}
+      onchange={(e) => {
+        const theme = e.currentTarget.value;
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+      }}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+      <option value="cupcake">Cupcake</option>
+      <option value="bumblebee">Bumblebee</option>
+      <option value="emerald">Emerald</option>
+      <option value="corporate">Corporate</option>
+      <option value="retro">Retro</option>
+      <option value="cyberpunk">Cyberpunk</option>
+      <option value="valentine">Valentine</option>
+      <option value="garden">Garden</option>
+      <option value="forest">Forest</option>
+      <option value="lofi">Lo-Fi</option>
+      <option value="pastel">Pastel</option>
+      <option value="wireframe">Wireframe</option>
+      <option value="luxury">Luxury</option>
+      <option value="dracula">Dracula</option>
+      <option value="autumn">Autumn</option>
+      <option value="business">Business</option>
+      <option value="coffee">Coffee</option>
+      <option value="winter">Winter</option>
+    </select>
+  </div>
+  
+  <main class="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y pb-safe relative {activeView === 'actions' ? 'overflow-hidden' : ''}">
     {#if activeView === 'game'}
       <div transition:fade={{ duration: 200 }}>
-        <PlayingArea on:switchToActions={() => activeView = 'actions'} />
+        <PlayingArea onswitchToActions={() => activeView = 'actions'} />
       </div>
     {:else}
-      <div transition:fade={{ duration: 200 }} class="action-panel-wrapper">
+      <div transition:fade={{ duration: 200 }} class="h-full flex flex-col overflow-hidden">
         <ActionPanel onswitchToPlay={() => activeView = 'game'} />
       </div>
     {/if}
@@ -96,41 +145,9 @@
 
 {#if showDebugPanel}
   <div transition:fly={{ y: 200, duration: 300 }}>
-    <DebugPanel on:close={() => showDebugPanel = false} />
+    <DebugPanel onclose={() => showDebugPanel = false} />
   </div>
 {/if}
 
 <QuickplayError />
 
-<style>
-  .app-container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height for mobile */
-    background: linear-gradient(to bottom, #f8fafc, #e2e8f0);
-    color: #1e293b;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    overflow: hidden;
-  }
-
-  .game-container {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-    padding-bottom: env(safe-area-inset-bottom); /* Account for iPhone notch */
-    position: relative;
-  }
-  
-  .action-panel-wrapper {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-  
-  .game-container.no-scroll {
-    overflow: hidden;
-  }
-</style>
