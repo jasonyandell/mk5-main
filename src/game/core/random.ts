@@ -40,3 +40,16 @@ export function createSeededRandom(seed: number): SeededRandom {
   const safeSeed = Math.abs(Math.floor(seed)) || 1;
   return new SeededRandom(safeSeed);
 }
+
+/**
+ * Simple hash function for generating deterministic values
+ */
+export function createHash(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}

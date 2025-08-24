@@ -5,6 +5,9 @@ export interface Domino {
   points?: number;
 }
 
+export type ConsensusAction = 'complete-trick' | 'score-hand';
+export type PlayerType = 'human' | 'ai';
+
 export interface SuitCount {
   0: number; // blanks
   1: number; // ones  
