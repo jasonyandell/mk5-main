@@ -300,11 +300,11 @@ export function actionToLabel(action: GameAction): string {
     case 'complete-trick':
       return 'Complete trick';
     case 'score-hand':
-      return 'Score hand';
+      return 'Next hand';
     case 'agree-complete-trick':
       return action.player === 0 ? 'Complete trick' : `Player ${action.player} agrees to complete trick`;
     case 'agree-score-hand':
-      return action.player === 0 ? 'Score hand' : `Player ${action.player} agrees to score hand`;
+      return action.player === 0 ? 'Next hand' : `Player ${action.player} agrees to next hand`;
     case 'redeal':
       return 'All passed - Redeal';
     default:

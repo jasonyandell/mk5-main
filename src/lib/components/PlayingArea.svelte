@@ -2,7 +2,7 @@
   import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, uiState, controllerManager } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
-  import TrickDisplay from './TrickDisplay.svelte';
+  import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
@@ -16,7 +16,7 @@
   const testMode = urlParams?.get('testMode') === 'true';
 
   // Extract playable dominoes from available actions
-  $: playableDominoes = (() => {
+  const playableDominoes = $derived((() => {
     const dominoes = new Set<string>();
     $availableActions
       .filter(action => action.id.startsWith('play-'))
@@ -30,7 +30,7 @@
         }
       });
     return dominoes;
-  })();
+  })());
 
   // Check if a domino is playable
   function isDominoPlayable(domino: DominoType): boolean {
@@ -120,7 +120,7 @@
   }
 
   // Get trump display text
-  $: trumpDisplay = (() => {
+  const trumpDisplay = $derived((() => {
     if ($gameState.trump.type === 'none') return 'Not Selected';
     if ($gameState.trump.type === 'no-trump') return 'No Trump';
     if ($gameState.trump.type === 'doubles') return 'Doubles';
@@ -129,39 +129,39 @@
       return suitNames[$gameState.trump.suit];
     }
     return 'Unknown';
-  })();
+  })());
 
   // Get led suit display
-  $: ledSuitDisplay = (() => {
+  const ledSuitDisplay = $derived((() => {
     if ($gameState.currentSuit === -1) return null;
     const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
     return suitNames[$gameState.currentSuit];
-  })();
+  })());
 
   // Current player's hand (always player 0 for privacy, unless in test mode)
-  $: playerHand = testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []);
+  const playerHand = $derived(testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []));
 
   // Check if AI is thinking (but not during consensus actions)
-  $: isThinking = $gameState.phase === 'playing' && 
+  const isThinking = $derived($gameState.phase === 'playing' && 
                    $gameState.currentPlayer !== 0 &&
                    controllerManager.isAIControlled($gameState.currentPlayer) &&
-                   $gameState.currentTrick.length < 4;  // Not thinking if trick is complete
+                   $gameState.currentTrick.length < 4);  // Not thinking if trick is complete
 
   // Current trick plays
-  $: currentTrickPlays = $gameState.currentTrick || [];
+  const currentTrickPlays = $derived($gameState.currentTrick || []);
 
   // Track newly played dominoes for animation
-  let playedDominoIds = new Set<string>();
-  $: {
+  let playedDominoIds = $state(new Set<string>());
+  $effect(() => {
     // Add new plays to the set
     currentTrickPlays.forEach(play => {
       const id = `${play.player}-${play.domino.high}-${play.domino.low}`;
       playedDominoIds.add(id);
     });
-  }
+  });
   
   // Calculate the winning player for the current trick
-  $: trickWinner = (() => {
+  const trickWinner = $derived((() => {
     if (currentTrickPlays.length === 4) {
       return calculateTrickWinner(
         currentTrickPlays,
@@ -170,7 +170,7 @@
       );
     }
     return -1;
-  })();
+  })());
 
   // Create placeholder array for 4 players
   const playerPositions = [0, 1, 2, 3];
@@ -179,22 +179,23 @@
   
   // State for expandable trick counter
   let showTrickHistory = false;
+  let drawerState = $state<'collapsed' | 'peeking' | 'expanded'>('collapsed');
   
   // Get completed tricks from game state
-  $: completedTricks = $gameState.tricks || [];
+  const completedTricks = $derived($gameState.tricks || []);
   
   // Calculate current trick number (completed + 1, unless hand is over)
-  $: currentTrickNumber = (() => {
+  const currentTrickNumber = $derived((() => {
     if ($gamePhase === 'scoring' || $gamePhase === 'bidding') {
       return completedTricks.length; // Show total tricks completed
     }
     return Math.min(completedTricks.length + 1, 7); // Current trick being played
-  })();
+  })());
   
 
   
   // Extract simple proceed actions that should show in play area
-  $: proceedAction = (() => {
+  const proceedAction = $derived((() => {
     // These actions should always show when available, regardless of turn
     const alwaysShowActions = ['complete-trick', 'score-hand'];
     
@@ -229,10 +230,10 @@
     );
     
     return simpleAction || null;
-  })();
+  })());
   
   // Calculate hand results for scoring phase
-  $: handResults = (() => {
+  const handResults = $derived((() => {
     if ($gamePhase !== 'scoring') return null;
 
     // Get total points for each team from the authoritative teamInfo store
@@ -254,7 +255,7 @@
       bidMade,
       winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0)
     };
-  })();
+  })());
   
   // Debounce flag
   let actionPending = false;
@@ -263,12 +264,12 @@
   let previousPhase = $gamePhase;
   
   // React to phase changes for panel switching
-  $: {
+  $effect(() => {
     if ($gamePhase === 'bidding' && previousPhase === 'scoring') {
       dispatch('switchToActions');
     }
     previousPhase = $gamePhase;
-  }
+  });
   
   // Handle action execution
   function handleProceedAction() {
@@ -306,7 +307,7 @@
 
 </script>
 
-<div class="flex flex-col h-full relative">
+<div class="flex flex-col h-full relative transition-all duration-300" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
   <!-- Mobile-optimized Game Info Bar -->
   <div class="mb-2">
     <GameInfoBar 
@@ -438,24 +439,17 @@
     </div>
   {/if}
 
-  <!-- Collapsible Trick Display for Mobile -->
-  <div class="lg:hidden mb-2 px-3">
-    <TrickDisplay 
-      trick={currentTrickPlays}
-      collapsed={!showTrickHistory}
-      onToggle={() => showTrickHistory = !showTrickHistory}
-    />
-  </div>
 
   <!-- Responsive Trick Table -->
-  <button
-    class="flex-1 flex items-center justify-center p-3 lg:p-5 relative transition-all bg-transparent border-none w-full cursor-pointer tap-highlight-transparent touch-manipulation select-none"
-    on:click={handleTableClick}
-    disabled={false}
-    type="button"
-    aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
-  >
-    <div class="relative w-[240px] h-[240px] lg:w-[280px] lg:h-[280px] bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all z-[2] {proceedAction ? 'animate-pulse-table' : ''}">
+  <div class="relative flex-1">
+    <button
+      class="flex items-center justify-center p-3 lg:p-5 relative transition-all bg-transparent border-none w-full h-full cursor-pointer tap-highlight-transparent touch-manipulation select-none"
+      on:click={handleTableClick}
+      disabled={false}
+      type="button"
+      aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
+    >
+      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
       {#if handResults}
@@ -463,10 +457,14 @@
         <div class="flex flex-col items-center justify-center gap-6 text-base-100 text-center p-5">
           <div class="flex flex-col gap-2">
             <div class="text-sm opacity-90 font-medium">
-              P{$biddingInfo.winningBidder} bid {handResults.bidAmount}
+              P{$biddingInfo.winningBidder} ({handResults.biddingTeam === 0 ? 'US' : 'THEM'}) bid {handResults.bidAmount}
             </div>
             <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {handResults.bidMade ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
-              {handResults.bidMade ? 'BID MADE' : 'BID SET'}
+              {#if handResults.biddingTeam === 0}
+                {handResults.bidMade ? '✅ WE MADE IT!' : '❌ WE GOT SET!'}
+              {:else}
+                {handResults.bidMade ? '❌ THEY MADE IT!' : '✅ WE SET THEM!'}
+              {/if}
             </div>
           </div>
           
@@ -489,18 +487,18 @@
       {:else}
         <!-- Normal trick display -->
         {#each playerPositions as position}
-          {@const play = currentTrickPlays.find(p => p.player === position)}
-          {@const isWinner = trickWinner === position}
-          <div class="absolute flex items-center justify-center pointer-events-none" data-position={position} style="{position === 0 ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' : position === 1 ? 'left: 20px; top: 50%; transform: translateY(-50%);' : position === 2 ? 'top: 20px; left: 50%; transform: translateX(-50%);' : 'right: 20px; top: 50%; transform: translateY(-50%);'}">
-            {#if play}
-              <div class="relative {playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`) ? 'animate-drop-in' : ''} {isWinner ? 'animate-winner-glow' : ''}">
-                <Domino 
-                  domino={play.domino} 
-                  small={true}
-                  showPoints={true}
-                  clickable={false}
-                />
-                <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-bold text-base-100 bg-base-content/70 px-2 py-0.5 rounded-full">P{position}</div>
+            {@const play = currentTrickPlays.find(p => p.player === position)}
+            {@const isWinner = trickWinner === position}
+            <div class="absolute flex items-center justify-center pointer-events-none" data-position={position} style="{position === 0 ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' : position === 1 ? 'left: 20px; top: 50%; transform: translateY(-50%);' : position === 2 ? 'top: 20px; left: 50%; transform: translateX(-50%);' : 'right: 20px; top: 50%; transform: translateY(-50%);'}">
+              {#if play}
+                <div class="relative {playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`) ? 'animate-drop-in' : ''} {isWinner ? 'animate-winner-glow' : ''}">
+                  <Domino 
+                    domino={play.domino} 
+                    small={true}
+                    showPoints={true}
+                    clickable={false}
+                  />
+                  <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-bold text-base-100 bg-base-content/70 px-2 py-0.5 rounded-full">P{position}</div>
                 {#if isWinner}
                   <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-slate-800 px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-[0_2px_8px_rgba(255,215,0,0.5)] animate-bounce-in whitespace-nowrap z-[15]">
                     <span class="text-sm animate-sparkle">👑</span>
@@ -538,7 +536,8 @@
         <span class="whitespace-nowrap">{proceedAction.label}</span>
       </div>
     {/if}
-  </button>
+    </button>
+  </div>
 
   <!-- Player Hand with Touch-Optimized Spacing -->
   <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-3 lg:pt-5">
@@ -574,6 +573,17 @@
     {/if}
   </div>
   
+  <!-- Trick History Drawer (only during playing/scoring phases) -->
+  {#if $gamePhase === 'playing' || $gamePhase === 'scoring'}
+    <TrickHistoryDrawer 
+      completedTricks={completedTricks}
+      currentTrick={currentTrickPlays}
+      trickNumber={currentTrickNumber}
+      onStateChange={(state) => {
+        drawerState = state;
+      }}
+    />
+  {/if}
 </div>
 
 <style>
