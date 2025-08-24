@@ -1,6 +1,8 @@
 <script lang="ts">
   import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, uiState, controllerManager } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
+  import GameInfoBar from './GameInfoBar.svelte';
+  import TrickDisplay from './TrickDisplay.svelte';
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
@@ -305,39 +307,17 @@
 </script>
 
 <div class="flex flex-col h-full relative">
-  <div class="flex gap-2 px-3 py-2 justify-center items-center flex-wrap min-h-[40px]">
-    {#if $gameState.trump.type !== 'none'}
-      <div class="badge badge-error gap-1 {$gamePhase === 'trump_selection' ? 'animate-pulse' : ''}">
-        <span class="text-[10px] uppercase tracking-wider opacity-70">Trump</span>
-        <span class="font-bold">{trumpDisplay}</span>
-      </div>
-    {/if}
-    
-    {#if ledSuitDisplay}
-      <div class="badge badge-info gap-1">
-        <span class="text-[10px] uppercase tracking-wider opacity-70">Led</span>
-        <span class="font-bold">{ledSuitDisplay}</span>
-      </div>
-    {/if}
-    
-    {#if $gamePhase === 'playing' || $gamePhase === 'scoring'}
-      <button 
-        class="badge badge-secondary gap-1 {completedTricks.length > 0 ? 'cursor-pointer hover:scale-105 transition-transform' : 'cursor-default'}"
-        on:click={() => {
-          if (completedTricks.length > 0) {
-            showTrickHistory = !showTrickHistory;
-          }
-        }}
-        disabled={completedTricks.length === 0}
-        type="button"
-      >
-        <span class="text-[10px] uppercase tracking-wider opacity-70">Trick</span>
-        <span class="font-bold">{currentTrickNumber}/7</span>
-        {#if completedTricks.length > 0}
-          <span class="text-[9px] transition-transform">{showTrickHistory ? '▲' : '▼'}</span>
-        {/if}
-      </button>
-    {/if}
+  <!-- Mobile-optimized Game Info Bar -->
+  <div class="mb-2">
+    <GameInfoBar 
+      phase={$gamePhase}
+      currentPlayer={$gameState.currentPlayer}
+      trump={$gameState.trump}
+      trickNumber={currentTrickNumber}
+      totalTricks={7}
+      bidWinner={$biddingInfo.winningBidder}
+      currentBid={$biddingInfo.currentBid}
+    />
   </div>
   
   {#if showTrickHistory && ($gamePhase === 'playing' || $gamePhase === 'scoring')}
@@ -458,15 +438,24 @@
     </div>
   {/if}
 
-  <!-- Trick table -->
+  <!-- Collapsible Trick Display for Mobile -->
+  <div class="lg:hidden mb-2 px-3">
+    <TrickDisplay 
+      trick={currentTrickPlays}
+      collapsed={!showTrickHistory}
+      onToggle={() => showTrickHistory = !showTrickHistory}
+    />
+  </div>
+
+  <!-- Responsive Trick Table -->
   <button
-    class="flex-1 flex items-center justify-center p-5 relative transition-all bg-transparent border-none w-full cursor-pointer tap-highlight-transparent touch-manipulation select-none"
+    class="flex-1 flex items-center justify-center p-3 lg:p-5 relative transition-all bg-transparent border-none w-full cursor-pointer tap-highlight-transparent touch-manipulation select-none"
     on:click={handleTableClick}
     disabled={false}
     type="button"
     aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
   >
-    <div class="relative w-[280px] h-[280px] bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all z-[2] {proceedAction ? 'animate-pulse-table' : ''}">
+    <div class="relative w-[240px] h-[240px] lg:w-[280px] lg:h-[280px] bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all z-[2] {proceedAction ? 'animate-pulse-table' : ''}">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
       {#if handResults}
@@ -551,18 +540,25 @@
     {/if}
   </button>
 
-  <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-5">
+  <!-- Player Hand with Touch-Optimized Spacing -->
+  <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-3 lg:pt-5">
     
     {#if playerHand.length === 0}
-      <div class="flex flex-col items-center gap-2 py-10 text-base-content/50">
-        <span class="text-5xl opacity-50">🀚</span>
+      <div class="flex flex-col items-center gap-2 py-8 lg:py-10 text-base-content/50">
+        <span class="text-4xl lg:text-5xl opacity-50">🀚</span>
         <span class="text-sm font-medium">No dominoes</span>
       </div>
     {:else}
-      <div class="px-4 py-5">
-        <div class="flex flex-wrap gap-3 px-2 justify-center">
+      <div class="px-2 lg:px-4 py-3 lg:py-5">
+        <div class="flex flex-wrap gap-2 lg:gap-3 justify-center">
           {#each playerHand as domino, i (domino.high + '-' + domino.low)}
-            <div class="animate-hand-slide" style="animation-delay: {i * 50}ms" data-testid="domino-{domino.high}-{domino.low}" data-playable={isDominoPlayable(domino)}>
+            <!-- Larger tap target wrapper for mobile -->
+            <div 
+              class="animate-hand-slide p-1 lg:p-0 -m-1 lg:m-0 touch-manipulation" 
+              style="animation-delay: {i * 50}ms" 
+              data-testid="domino-{domino.high}-{domino.low}" 
+              data-playable={isDominoPlayable(domino)}
+            >
               <Domino
                 {domino}
                 playable={isDominoPlayable(domino)}
