@@ -225,3 +225,56 @@
 .phase-badge-change {
   animation: phaseChange 0.3s ease-out;
 }
+
+/* Mobile-first responsive utilities */
+@layer utilities {
+  /* Ensure minimum touch target size (44x44px) */
+  .touch-target {
+    @apply min-w-[44px] min-h-[44px];
+  }
+  
+  /* Remove tap highlight on mobile */
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Improve touch manipulation */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  /* Responsive spacing for mobile */
+  @media (max-width: 640px) {
+    .mobile-compact {
+      @apply px-2 py-1;
+    }
+    
+    .mobile-spacing {
+      @apply gap-2;
+    }
+  }
+  
+  /* Smooth transitions for collapsible elements */
+  .collapse-transition {
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  }
+  
+  /* Better scrolling on mobile */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Responsive grid layouts */
+  .game-grid {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+  }
+  
+  @media (max-width: 1023px) {
+    .game-grid {
+      grid-template-rows: auto auto 1fr auto;
+    }
+  }
+}
