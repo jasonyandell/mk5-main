@@ -17,7 +17,6 @@
     trump, 
     trickNumber = 0, 
     totalTricks = 7,
-    bidWinner,
     currentBid
   }: Props = $props();
   
@@ -27,16 +26,6 @@
       return suits[trump.suit] || '';
     } else if (trump.type === 'doubles') {
       return 'Doubles';
-    }
-    return '';
-  }
-  
-  function getTrumpIcon(): string {
-    if (trump.type === 'suit' && trump.suit !== undefined) {
-      const icons = ['⚪', '⚫', '✌️', '🎲', '🍀', '🖐️', '⭐'];
-      return icons[trump.suit] || '';
-    } else if (trump.type === 'doubles') {
-      return '⚡';
     }
     return '';
   }
@@ -115,13 +104,15 @@
   </div>
 </div>
 
-<style>
+<style lang="postcss">
+  /* svelte-ignore css_unused_selector */
   .game-info-bar {
     @apply w-full;
   }
   
   /* Ensure minimum touch target size on mobile */
   @media (max-width: 1023px) {
+    /* svelte-ignore css_unused_selector */
     .game-info-bar :global(.badge) {
       @apply min-h-[24px] px-3;
     }

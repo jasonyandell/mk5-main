@@ -350,10 +350,12 @@
 </div>
 
 <style>
+  /* svelte-ignore css_unused_selector */
   .tap-highlight-transparent {
     -webkit-tap-highlight-color: transparent;
   }
   
+  /* svelte-ignore css_unused_selector */
   .touch-manipulation {
     touch-action: manipulation;
   }

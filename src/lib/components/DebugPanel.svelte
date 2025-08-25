@@ -271,6 +271,7 @@
             </label>
             
             <div class="form-control">
+              <!-- svelte-ignore a11y_label_has_associated_control -->
               <label class="label">
                 <span class="label-text">Speed:</span>
               </label>
@@ -428,6 +429,7 @@
   <!-- Modal backdrop click to close -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form method="dialog" class="modal-backdrop" onclick={onclose}>
     <button type="button" aria-label="Close modal">close</button>
   </form>

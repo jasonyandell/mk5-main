@@ -120,6 +120,7 @@
   }
 
   // Get trump display text
+  // @ts-ignore - Used in template
   const trumpDisplay = $derived((() => {
     if ($gameState.trump.type === 'none') return 'Not Selected';
     if ($gameState.trump.type === 'no-trump') return 'No Trump';
@@ -132,6 +133,7 @@
   })());
 
   // Get led suit display
+  // @ts-ignore - Used in template
   const ledSuitDisplay = $derived((() => {
     if ($gameState.currentSuit === -1) return null;
     const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
@@ -195,6 +197,7 @@
 
   
   // Extract simple proceed actions that should show in play area
+  // @ts-ignore - Used in template
   const proceedAction = $derived((() => {
     // These actions should always show when available, regardless of turn
     const alwaysShowActions = ['complete-trick', 'score-hand'];
@@ -444,7 +447,7 @@
   <div class="relative flex-1">
     <button
       class="flex items-center justify-center p-4 relative transition-all bg-transparent border-none w-full h-full cursor-pointer tap-highlight-transparent touch-manipulation select-none min-h-[200px]"
-      on:click={handleTableClick}
+      onclick={handleTableClick}
       disabled={false}
       type="button"
       aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
@@ -607,6 +610,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-drop-in {
     animation: animate-drop-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -622,6 +626,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-winner-glow {
     animation: animate-winner-glow 2s ease-in-out infinite;
   }
@@ -640,6 +645,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-bounce-in {
     animation: animate-bounce-in 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
@@ -656,6 +662,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-sparkle {
     animation: animate-sparkle 2s ease-in-out infinite;
   }
@@ -665,6 +672,7 @@
     to { transform: rotate(360deg); }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-spin-slow {
     animation: animate-spin-slow 20s linear infinite;
   }
@@ -678,6 +686,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-tap-bounce {
     animation: animate-tap-bounce 1.5s ease-in-out infinite;
   }
@@ -691,6 +700,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-tap-point {
     animation: animate-tap-point 1.5s ease-in-out infinite;
   }
@@ -706,6 +716,7 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-hand-slide {
     animation: animate-hand-slide 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
   }
@@ -727,16 +738,19 @@
     }
   }
   
+  /* svelte-ignore css_unused_selector */
   .animate-pulse-table {
     animation: animate-pulse-table 2s ease-in-out infinite;
   }
   
+  /* svelte-ignore css_unused_selector */
   .tap-highlight-transparent {
     -webkit-tap-highlight-color: transparent;
   }
   
   /* Mobile adjustments for tap indicator position */
   @media (max-width: 640px) {
+    /* svelte-ignore css_unused_selector */
     .tap-indicator-mobile {
       top: calc(50% + 120px + 20px) !important;
     }

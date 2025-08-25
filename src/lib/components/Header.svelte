@@ -1,28 +1,29 @@
 <script lang="ts">
   import { gamePhase, teamInfo, currentPlayer } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
+  import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   
   const dispatch = createEventDispatcher();
 
   // Phase badge color mapping (daisyUI classes)
   const phaseColors = {
-    setup: 'badge-neutral',
-    bidding: 'badge-info',
-    trump_selection: 'badge-secondary',
-    playing: 'badge-success',
-    scoring: 'badge-warning',
-    game_end: 'badge-error'
+    [GAME_PHASES.SETUP]: 'badge-neutral',
+    [GAME_PHASES.BIDDING]: 'badge-info',
+    [GAME_PHASES.TRUMP_SELECTION]: 'badge-secondary',
+    [GAME_PHASES.PLAYING]: 'badge-success',
+    [GAME_PHASES.SCORING]: 'badge-warning',
+    [GAME_PHASES.GAME_END]: 'badge-error'
   };
 
   // Phase display names
   const phaseNames = {
-    setup: 'Setup',
-    bidding: 'Bidding',
-    trump_selection: 'Trump Selection',
-    playing: 'Playing',
-    scoring: 'Scoring',
-    game_end: 'Game End'
+    [GAME_PHASES.SETUP]: 'Setup',
+    [GAME_PHASES.BIDDING]: 'Bidding',
+    [GAME_PHASES.TRUMP_SELECTION]: 'Trump Selection',
+    [GAME_PHASES.PLAYING]: 'Playing',
+    [GAME_PHASES.SCORING]: 'Scoring',
+    [GAME_PHASES.GAME_END]: 'Game End'
   };
 
   function toggleQuickPlay() {
