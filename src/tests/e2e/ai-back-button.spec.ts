@@ -26,11 +26,9 @@ test.describe('AI Controller After Navigation', () => {
     // Select trump
     await helper.setTrump('blanks');
     
-    // Now in playing phase - player 1 should play
+    // Now in playing phase - player 0 should play (bid winner leads)
     phase = await helper.getCurrentPhase();
     expect(phase).toBe('playing');
-    const player1 = await helper.getCurrentPlayer();
-    expect(player1).toBe('P1'); // Left of dealer (P0)
     
     // Store current URL
     
@@ -50,39 +48,40 @@ test.describe('AI Controller After Navigation', () => {
     phase = await helper.getCurrentPhase();
     expect(phase).toBe('playing');
     
-    // CRITICAL: AI (P1) should now play automatically
-    // Wait for AI to take action
+    // P0 (human) needs to play first since bid winner leads
+    await helper.playAnyDomino();
+    
+    // Now all AI players should play automatically
     await helper.waitForAIMove();
     
-    // Check that a domino was played (trick should have at least 1 domino)
-    const trick = await helper.getCurrentTrick();
-    expect(trick.length).toBeGreaterThan(0);
-    
-    // Verify we're not stuck on "P1 is thinking..."
-    const turnPlayer = await helper.getCurrentPlayer();
-    expect(turnPlayer).not.toBe('P1'); // Should have moved to next player
+    // Check that all AI played (trick should have 4 dominoes total)
+    const trickLength = await page.evaluate(() => {
+      const state = (window as any).getGameState();
+      return state.currentTrick.length;
+    });
+    expect(trickLength).toBe(4); // P0, P1, P2, P3 all played
   });
 
   test('AI should play after loading from URL', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Create a state where it's AI's turn
-    // P0 bids, others pass, P0 selects trump -> P1's turn to play
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 't0']);
+    // Load state where P1 won bid - when we enable AI, they will play automatically
+    // P0 passes, P1 bids 30, P2/P3 pass, P1 selects trump
+    await helper.loadStateWithActions(12345, ['p', '30', 'p', 'p', 't0']);
     
-    // Enable AI for other players
+    // Enable AI for other players - this triggers AI to play immediately
     await helper.enableAIForOtherPlayers();
     
-    // Should be P1's turn (left of dealer P0)
+    // Should be in playing phase
     const phase = await helper.getCurrentPhase();
     expect(phase).toBe('playing');
     
-    // Wait for AI to play
-    await helper.waitForAIMove();
-    
-    // Check that AI played
-    const trick = await helper.getCurrentTrick();
-    expect(trick.length).toBeGreaterThan(0);
+    // AI should have already played (P1, P2, P3 all play automatically)
+    const trickLength = await page.evaluate(() => {
+      const state = (window as any).getGameState();
+      return state.currentTrick.length;
+    });
+    expect(trickLength).toBe(3); // P1 leads (bid winner), then P2, P3 play, waiting for P0
   });
 
   test('AI should continue playing after popstate event', async ({ page }) => {
@@ -129,15 +128,21 @@ test.describe('AI Controller After Navigation', () => {
     
     await helper.waitForNavigationRestore();
     
-    // Should be in playing phase with AI taking action
+    // Should be in playing phase with P0 (bid winner) to play
     const phase3 = await helper.getCurrentPhase();
     expect(phase3).toBe('playing');
     
-    // Wait for AI to play
+    // P0 (human) plays first since they won the bid
+    await helper.playAnyDomino();
+    
+    // Now AI players should all play automatically
     await helper.waitForAIMove();
     
-    // Verify AI played
-    const trick = await helper.getCurrentTrick();
-    expect(trick.length).toBeGreaterThan(0);
+    // Verify all AI players played (trick should have 4 dominoes total)
+    const trickLength2 = await page.evaluate(() => {
+      const state = (window as any).getGameState();
+      return state.currentTrick.length;
+    });
+    expect(trickLength2).toBe(4); // P0 + P1, P2, P3 all played
   });
 });

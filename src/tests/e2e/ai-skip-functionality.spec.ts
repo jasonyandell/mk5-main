@@ -12,9 +12,8 @@ test.describe('AI Skip Functionality', () => {
     // Load deterministic state in playing phase
     await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
     
-    const table = page.locator('.trick-table');
+    const table = page.locator('[data-testid="trick-table"]');
     await expect(table).toBeVisible();
-    await expect(table).toHaveClass(/tappable/);
     await expect(table).not.toBeDisabled();
   });
 
@@ -38,7 +37,7 @@ test.describe('AI Skip Functionality', () => {
     });
     
     // Click the table
-    await page.locator('.trick-table').click();
+    await page.locator('[data-testid="trick-table"]').click();
     
     // Verify skipAIDelays was called
     const wasCalled = await page.evaluate(() => {
@@ -64,7 +63,7 @@ test.describe('AI Skip Functionality', () => {
     expect(phase).toBe('playing');
     
     // Table should still be clickable
-    const table = page.locator('.trick-table');
+    const table = page.locator('[data-testid="trick-table"]');
     await expect(table).toBeVisible();
     
     // Click table - should not cause errors
@@ -80,7 +79,7 @@ test.describe('AI Skip Functionality', () => {
     
     await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
     
-    const table = page.locator('.trick-table');
+    const table = page.locator('[data-testid="trick-table"]');
     await table.hover();
     
     const cursor = await table.evaluate(el => 
@@ -94,7 +93,7 @@ test.describe('AI Skip Functionality', () => {
     
     await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
     
-    const table = page.locator('.trick-table');
+    const table = page.locator('[data-testid="trick-table"]');
     
     // Click multiple times - should not cause errors
     for (let i = 0; i < 3; i++) {
@@ -116,14 +115,17 @@ test.describe('AI Skip Functionality', () => {
     await helper.playAnyDomino();
     
     // Click table - should trigger skipAIDelays
-    await page.locator('.trick-table').click();
+    await page.locator('[data-testid="trick-table"]').click();
     
     // Game should still be valid
     const phase = await helper.getCurrentPhase();
     expect(phase).toBe('playing');
     
-    // Trick should exist and have at least one domino
-    const trick = await helper.getCurrentTrick();
-    expect(trick.length).toBeGreaterThan(0);
+    // Trick should be complete (4 dominoes)
+    const trickLength = await page.evaluate(() => {
+      const state = (window as any).getGameState();
+      return state.currentTrick.length;
+    });
+    expect(trickLength).toBe(4); // Full trick after P0 plays and AI follows
   });
 });

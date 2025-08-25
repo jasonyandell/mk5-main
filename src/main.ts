@@ -37,7 +37,13 @@ if (typeof window !== 'undefined') {
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);
   window.gameActions = gameActions;
-  window.gameState = gameState;
+  // Properly expose the store with its methods
+  window.gameState = {
+    set: (state: any) => gameState.set(state),
+    update: (fn: any) => gameState.update(fn),
+    subscribe: gameState.subscribe,
+    get: () => get(gameState)
+  } as any;
   window.getGameState = () => get(gameState);
 }
 

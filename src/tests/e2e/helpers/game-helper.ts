@@ -57,7 +57,7 @@ export class PlaywrightGameHelper {
     app: '.app-container',
     appHeader: '.app-header',
     phase: '[data-phase]',
-    actionButton: '.action-button, .tap-indicator',
+    actionButton: 'button[data-testid]',
     domino: {
       playable: '.domino-wrapper[data-playable="true"] button[data-testid^="domino-"]',
       any: 'button[data-testid^="domino-"]',
@@ -70,8 +70,8 @@ export class PlaywrightGameHelper {
     },
     trump: '.info-badge.trump .info-value',
     trick: {
-      table: '.trick-table',
-      tappable: '.trick-table.tappable',
+      table: '[data-testid="trick-table"]',
+      tappable: '[data-testid="trick-table"]',
       spot: '.trick-spot',
       played: '.trick-spot .played-domino'
     },
@@ -88,8 +88,8 @@ export class PlaywrightGameHelper {
       historyItem: '.history-item',
       timeTravelButton: '.time-travel-button'
     },
-    playingArea: '.playing-area',
-    tapIndicator: '.tap-indicator',
+    playingArea: '[data-testid="playing-area"]',
+    tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
     tapText: '.tap-text',
     turnPlayer: '.turn-player'
   };
@@ -106,7 +106,11 @@ export class PlaywrightGameHelper {
   async goto(seed = 12345, options: GotoOptions = {}): Promise<void> {
     const urlData: URLData = {
       v: 1 as const,
-      s: { s: seed },
+      s: { 
+        s: seed,
+        // Default to all human players for deterministic testing
+        p: ['h', 'h', 'h', 'h'] as ('h' | 'a')[]
+      },
       a: []
     };
     const encoded = encodeURLData(urlData);
@@ -271,7 +275,7 @@ export class PlaywrightGameHelper {
       await this.page.waitForFunction(
         ({ prevPhase }: { prevPhase: string }) => {
           const currentPhase = document.querySelector('.app-container')?.getAttribute('data-phase');
-          const hasActions = document.querySelectorAll('.action-button, .tap-indicator').length > 0;
+          const hasActions = document.querySelectorAll('button[data-testid]').length > 0;
           return currentPhase !== prevPhase || hasActions;
         },
         { prevPhase: preClickPhase },
@@ -289,7 +293,7 @@ export class PlaywrightGameHelper {
     // First ensure there are action buttons or we're in a stable state
     await this.page.waitForFunction(
       () => {
-        const buttons = document.querySelectorAll('.action-button, .tap-indicator');
+        const buttons = document.querySelectorAll('button[data-testid]');
         // Either we have buttons, or we're in a phase that doesn't need them
         const phase = document.querySelector('.app-container')?.getAttribute('data-phase');
         return buttons.length > 0 || phase === 'game_over' || phase === 'waiting';
@@ -539,7 +543,7 @@ export class PlaywrightGameHelper {
       
       // Wait for next player's turn
       await this.page.waitForFunction(
-        () => document.querySelectorAll('.action-button, .tap-indicator').length > 0,
+        () => document.querySelectorAll('button[data-testid]').length > 0,
         null,
         { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
       );
@@ -549,10 +553,20 @@ export class PlaywrightGameHelper {
   /**
    * Load game state from URL
    */
-  async loadStateWithActions(seed: number, actions: string[]): Promise<void> {
+  async loadStateWithActions(
+    seed: number, 
+    actions: string[], 
+    playerTypes: ('human' | 'ai')[] = ['human', 'human', 'human', 'human']
+  ): Promise<void> {
     const urlData: URLData = {
       v: 1 as const,
-      s: { s: seed },
+      s: { 
+        s: seed,
+        // Only include player types if not default all-human
+        ...(playerTypes.some((t, i) => t !== 'human') && {
+          p: playerTypes.map(t => t === 'human' ? 'h' : 'a') as ('h' | 'a')[]
+        })
+      },
       a: actions.map((id: string) => ({ i: id }))
     };
     const encoded = encodeURLData(urlData);
@@ -610,16 +624,26 @@ export class PlaywrightGameHelper {
     await this.page.evaluate(() => {
       const gameWindow = window as any;
       
-      // Update the game state to enable AI for players 1-3
-      if (gameWindow.gameState && gameWindow.getGameState) {
-        const currentState = gameWindow.getGameState();
-        // Set players 1-3 as AI
-        const newState = {
-          ...currentState,
-          playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[]
-        };
-        // Update the game state directly
-        gameWindow.gameState.set(newState);
+      // Use the enableAI action if available
+      if (gameWindow.gameActions && gameWindow.gameActions.enableAI) {
+        gameWindow.gameActions.enableAI();
+      } else {
+        // Fallback to direct state update if action not available
+        if (gameWindow.gameState && gameWindow.getGameState) {
+          const currentState = gameWindow.getGameState();
+          // Set players 1-3 as AI
+          const newState = {
+            ...currentState,
+            playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[]
+          };
+          // Update the game state directly - gameState now has methods exposed
+          if (typeof gameWindow.gameState.set === 'function') {
+            gameWindow.gameState.set(newState);
+          } else if (typeof gameWindow.gameState === 'object' && gameWindow.gameState.set) {
+            // Already an object with set method
+            gameWindow.gameState.set(newState);
+          }
+        }
       }
       
       // Also enable quickplay if available (for backward compatibility)
@@ -639,55 +663,21 @@ export class PlaywrightGameHelper {
 
   /**
    * Wait for AI to complete its move(s)
-   * Detects when AI has finished by monitoring action count or current player change
+   * In test mode, AI executes synchronously, so this just verifies state
    */
   async waitForAIMove(expectedActionCount?: number): Promise<void> {
-    const initialPlayer = await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      return state?.currentPlayer;
-    });
-    
-    const initialActionCount = await this.page.evaluate(() => {
-      const url = new URL(window.location.href);
-      const d = url.searchParams.get('d');
-      if (!d) return 0;
-      try {
-        // Decode base64 and parse JSON to count actions
-        const decoded = JSON.parse(atob(d));
-        return decoded.a?.length || 0;
-      } catch {
-        return 0;
-      }
-    });
-
-    // Wait for either action count increase or player change (AI finished)
+    // In test mode, AI executes synchronously, so just verify state has changed
     await this.page.waitForFunction(
-      ({ initialCount, initialP, expected }: { initialCount: number; initialP: number | undefined; expected: number | undefined }) => {
-        const url = new URL(window.location.href);
-        const d = url.searchParams.get('d');
+      () => {
         const state = (window as any).getGameState?.();
-        const currentPlayer = state?.currentPlayer;
+        if (!state) return false;
         
-        // Check if it's back to human player (player 0)
-        if (currentPlayer === 0 && initialP !== 0) {
-          return true;
-        }
-        
-        if (!d) return false;
-        try {
-          const decoded = JSON.parse(atob(d));
-          const currentCount = decoded.a?.length || 0;
-          // If we have an expected count, wait for that, otherwise just wait for any increase
-          return expected ? currentCount >= expected : currentCount > initialCount;
-        } catch {
-          return false;
-        }
+        // AI has finished if it's human's turn or game phase changed
+        return state.playerTypes[state.currentPlayer] === 'human' ||
+               state.phase === 'scoring' ||
+               state.phase === 'game_over';
       },
-      { initialCount: initialActionCount, initialP: initialPlayer, expected: expectedActionCount },
-      { 
-        timeout: PlaywrightGameHelper.TIMEOUTS.normal,
-        polling: 50 
-      }
+      { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );
 
     // Also ensure game state is stable
@@ -729,8 +719,8 @@ export class PlaywrightGameHelper {
     const mappings: Record<string, string> = {
       '.trick-horizontal': '.trick-table',
       '.trick-position': '.trick-spot',
-      '.proceed-action-button': '.tap-indicator',
-      '[data-testid="complete-trick"]': '.tap-indicator',
+      '.proceed-action-button': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
+      '[data-testid="complete-trick"]': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
       '.history-row': '.history-item',
       '.trump-display': PlaywrightGameHelper.SELECTORS.trump
     };

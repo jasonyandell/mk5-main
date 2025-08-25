@@ -5,7 +5,7 @@
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
-  import { gameActions, gamePhase, gameState } from './stores/gameStore';
+  import { gameActions, gamePhase, gameState, startGameLoop } from './stores/gameStore';
   import { GAME_PHASES } from './game';
   import { fly, fade } from 'svelte/transition';
 
@@ -52,6 +52,13 @@
     // Try to load from URL on mount
     gameActions.loadFromURL();
     
+    // Start the game loop for interactive play (not in test mode)
+    const urlParams = new URLSearchParams(window.location.search);
+    const testMode = urlParams.get('testMode') === 'true';
+    if (!testMode) {
+      startGameLoop();
+    }
+    
     // Load saved theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
@@ -86,7 +93,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div 
-  class="flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
+  class="app-container flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
   style="height: 100dvh;"
   role="application" 
   data-phase={$gameState.phase} 
