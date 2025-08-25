@@ -104,8 +104,9 @@ export function scheduleAIDecisions(state: GameState): GameState {
 
 /**
  * Pure function - Execute scheduled AI actions that are ready
+ * Returns the state and any action that should be executed
  */
-export function executeScheduledAIActions(state: GameState): GameState {
+export function executeScheduledAIActions(state: GameState): { state: GameState; action?: StateTransition } {
   // Find actions ready to execute
   const ready: Array<[number, typeof state.aiSchedule[number]]> = [];
   
@@ -118,24 +119,26 @@ export function executeScheduledAIActions(state: GameState): GameState {
   // Sort by executeAtTick to ensure deterministic order
   ready.sort((a, b) => a[1].executeAtTick - b[1].executeAtTick);
   
-  // Execute the first ready action
+  // Return the first ready action to be executed
   if (ready.length > 0) {
     const firstReady = ready[0];
-    if (!firstReady) return state;
+    if (!firstReady) return { state };
     
     const [playerId, scheduled] = firstReady;
     const newSchedule = { ...state.aiSchedule };
     delete newSchedule[playerId];
     
-    // Return the new state from the transition with updated schedule
+    // Return the state with updated schedule and the action to execute
     return {
-      ...scheduled.transition.newState,
-      aiSchedule: newSchedule,
-      currentTick: state.currentTick
+      state: {
+        ...state,
+        aiSchedule: newSchedule
+      },
+      action: scheduled.transition
     };
   }
   
-  return state;
+  return { state };
 }
 
 /**
@@ -160,8 +163,9 @@ export function skipAIDelays(state: GameState): GameState {
 
 /**
  * Pure function - Advance game by one tick
+ * Returns the state and any action that should be executed
  */
-export function tickGame(state: GameState): GameState {
+export function tickGame(state: GameState): { state: GameState; action?: StateTransition } {
   // Increment tick
   let newState = { ...state, currentTick: state.currentTick + 1 };
   
@@ -169,9 +173,9 @@ export function tickGame(state: GameState): GameState {
   newState = scheduleAIDecisions(newState);
   
   // Execute ready AI actions
-  newState = executeScheduledAIActions(newState);
+  const result = executeScheduledAIActions(newState);
   
-  return newState;
+  return result;
 }
 
 /**

@@ -119,12 +119,13 @@
 <div class="modal modal-open">
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-box max-w-6xl h-[90vh] p-0 flex flex-col" onclick={(e) => e.stopPropagation()}>
+  <div class="modal-box max-w-6xl h-[90vh] p-0 flex flex-col" data-testid="debug-panel" onclick={(e) => e.stopPropagation()}>
     <!-- Header -->
     <div class="flex justify-between items-center p-4 border-b border-base-300">
       <h2 class="text-xl font-bold">Debug Panel</h2>
       <button 
         class="btn btn-sm btn-circle btn-ghost"
+        data-testid="debug-close-button"
         onclick={onclose}
         aria-label="Close debug panel"
       >
@@ -142,6 +143,7 @@
       </button>
       <button 
         class="tab {activeTab === 'history' ? 'tab-active' : ''}"
+        data-testid="history-tab"
         onclick={() => activeTab = 'history'}
       >
         History
@@ -239,11 +241,12 @@
               <div class="space-y-2">
                 {#each [...$actionHistory].reverse() as action, reverseIndex}
                   {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
-                  <div class="flex items-center gap-2 p-2 bg-base-100 rounded-lg">
+                  <div class="flex items-center gap-2 p-2 bg-base-100 rounded-lg" data-testid="history-item">
                     <span class="badge badge-neutral">#{actualIndex + 1}</span>
                     <span class="flex-1 text-sm">{action.label}</span>
                     <button 
-                      class="btn btn-xs btn-info"
+                      class="btn btn-xs btn-info time-travel-button"
+                      data-testid="time-travel-button"
                       onclick={() => timeTravel(actualIndex)}
                       title="Time travel to this point"
                     >

@@ -55,7 +55,7 @@
     {#if trump.type !== 'none' && phase !== 'bidding'}
       <div class="flex items-center gap-1">
         <span class="text-sm font-medium">Trump:</span>
-        <span class="text-sm font-bold">{getTrumpDisplay()}</span>
+        <span class="text-sm font-bold" data-testid="trump-display">{getTrumpDisplay()}</span>
       </div>
     {/if}
     

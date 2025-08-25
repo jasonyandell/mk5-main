@@ -44,7 +44,7 @@ test.describe('Complete Trick in Play Area', () => {
     
     // Verify the DOM structure exists
     const playingAreaExists = await page.evaluate(() => {
-      const area = document.querySelector('.playing-area');
+      const area = document.querySelector('[data-testid="playing-area"]');
       return area ? 'PlayingArea exists' : 'PlayingArea not found';
     });
     

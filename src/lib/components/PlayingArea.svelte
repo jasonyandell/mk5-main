@@ -444,13 +444,14 @@
 
 
   <!-- Responsive Trick Table -->
-  <div class="relative flex-1">
+  <div class="relative flex-1" data-testid="trick-area">
     <button
       class="flex items-center justify-center p-4 relative transition-all bg-transparent border-none w-full h-full cursor-pointer tap-highlight-transparent touch-manipulation select-none min-h-[200px]"
       onclick={handleTableClick}
       disabled={false}
       type="button"
       data-testid={proceedAction ? proceedAction.id : "trick-table"}
+      data-trick-button="true"
       aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
     >
       <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
