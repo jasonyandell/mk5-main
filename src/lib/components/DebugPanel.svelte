@@ -1,24 +1,26 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { compressGameState, compressActionId, encodeURLData } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
 
-  const dispatch = createEventDispatcher();
+  interface Props {
+    onclose: () => void;
+  }
 
-  let activeTab = 'state';
-  let showDiff = false;
-  let showTreeView = true;
-  let showHistoricalTreeView = true;
-  let previousState: any = null;
-  let changedPaths = new Set<string>();
+  let { onclose }: Props = $props();
+
+  let activeTab = $state('state');
+  let showDiff = $state(false);
+  let showTreeView = $state(true);
+  let showHistoricalTreeView = $state(true);
+  let previousState: any = $state(null);
+  let changedPaths = $state(new Set<string>());
 
   // JSON stringify with indentation
   function prettyJson(obj: any): string {
     return JSON.stringify(obj, null, 2);
   }
-
 
   // Copy to clipboard
   function copyToClipboard(text: string) {
@@ -103,87 +105,97 @@
   }
 
   // Track state changes
-  $: {
+  $effect(() => {
     if (showDiff && previousState) {
       changedPaths = findDifferences(previousState, $gameState);
     } else {
       changedPaths = new Set();
     }
     previousState = JSON.parse(JSON.stringify($gameState));
-  }
+  });
 </script>
 
-<div class="debug-backdrop" role="presentation" on:click={() => dispatch('close')} on:keydown={() => {}}>
-  <div class="debug-panel" role="dialog" tabindex="-1" on:click|stopPropagation on:keydown={() => {}}>
-    <div class="panel-header">
-      <h2>Debug Panel</h2>
-      <button class="close-button" on:click={() => dispatch('close')}>×</button>
+<!-- Modal backdrop -->
+<div class="modal modal-open">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="modal-box max-w-6xl h-[90vh] p-0 flex flex-col" onclick={(e) => e.stopPropagation()}>
+    <!-- Header -->
+    <div class="flex justify-between items-center p-4 border-b border-base-300">
+      <h2 class="text-xl font-bold">Debug Panel</h2>
+      <button 
+        class="btn btn-sm btn-circle btn-ghost"
+        onclick={onclose}
+        aria-label="Close debug panel"
+      >
+        ✕
+      </button>
     </div>
 
-    <div class="panel-tabs">
+    <!-- Tabs -->
+    <div class="tabs tabs-boxed bg-base-200 rounded-none">
       <button 
-        class="tab" 
-        class:active={activeTab === 'state'}
-        on:click={() => activeTab = 'state'}
+        class="tab {activeTab === 'state' ? 'tab-active' : ''}"
+        onclick={() => activeTab = 'state'}
       >
         Game State
       </button>
       <button 
-        class="tab" 
-        class:active={activeTab === 'history'}
-        on:click={() => activeTab = 'history'}
+        class="tab {activeTab === 'history' ? 'tab-active' : ''}"
+        onclick={() => activeTab = 'history'}
       >
         History
       </button>
       <button 
-        class="tab" 
-        class:active={activeTab === 'quickplay'}
-        on:click={() => activeTab = 'quickplay'}
+        class="tab {activeTab === 'quickplay' ? 'tab-active' : ''}"
+        onclick={() => activeTab = 'quickplay'}
       >
         QuickPlay
       </button>
       <button 
-        class="tab" 
-        class:active={activeTab === 'historical'}
-        on:click={() => activeTab = 'historical'}
+        class="tab {activeTab === 'historical' ? 'tab-active' : ''}"
+        onclick={() => activeTab = 'historical'}
       >
-        Historical State
+        Historical
       </button>
     </div>
 
-    <div class="panel-content">
+    <!-- Content -->
+    <div class="flex-1 overflow-hidden p-4">
       {#if activeTab === 'state'}
-        <div class="state-tab">
-          <div class="state-controls">
-            <label class="toggle-label">
+        <div class="flex flex-col h-full gap-4">
+          <div class="flex flex-wrap gap-2">
+            <label class="label cursor-pointer gap-2">
               <input 
                 type="checkbox" 
+                class="checkbox checkbox-sm"
                 bind:checked={showTreeView}
               />
-              Tree View
+              <span class="label-text">Tree View</span>
             </label>
-            <label class="toggle-label">
+            <label class="label cursor-pointer gap-2">
               <input 
                 type="checkbox" 
+                class="checkbox checkbox-sm"
                 bind:checked={showDiff}
               />
-              Diff Mode
+              <span class="label-text">Diff Mode</span>
             </label>
             <button 
-              class="control-button"
-              on:click={() => copyToClipboard(prettyJson($gameState))}
+              class="btn btn-sm btn-primary"
+              onclick={() => copyToClipboard(prettyJson($gameState))}
             >
               Copy State
             </button>
             <button 
-              class="control-button"
-              on:click={copyShareableUrl}
+              class="btn btn-sm btn-secondary"
+              onclick={copyShareableUrl}
             >
               Copy URL
             </button>
           </div>
           
-          <div class="state-display">
+          <div class="flex-1 overflow-auto bg-base-200 rounded-lg p-4">
             {#if showTreeView}
               <StateTreeView 
                 data={$gameState} 
@@ -191,131 +203,182 @@
                 changedPaths={showDiff ? changedPaths : new Set()}
               />
             {:else}
-              <pre>{prettyJson($gameState)}</pre>
+              <pre class="text-xs">{prettyJson($gameState)}</pre>
             {/if}
           </div>
         </div>
       {/if}
 
       {#if activeTab === 'history'}
-        <div class="history-tab">
-          <div class="history-header">
-            <h3>Action History ({$actionHistory.length})</h3>
-            <div class="history-controls">
+        <div class="flex flex-col h-full gap-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-lg font-semibold">Action History ({$actionHistory.length})</h3>
+            <div class="flex gap-2">
               <button 
-                class="control-button"
-                on:click={gameActions.undo}
+                class="btn btn-sm btn-warning"
+                onclick={gameActions.undo}
                 disabled={$actionHistory.length === 0}
               >
                 Undo Last
               </button>
               <button 
-                class="control-button"
-                on:click={gameActions.resetGame}
+                class="btn btn-sm btn-error"
+                onclick={gameActions.resetGame}
               >
                 Reset Game
               </button>
             </div>
           </div>
-          <div class="action-history">
+          
+          <div class="flex-1 overflow-y-auto bg-base-200 rounded-lg p-4">
             {#if $actionHistory.length === 0}
-              <div class="empty-history">
+              <div class="text-center py-8 text-base-content/60">
                 No actions taken yet. Start playing to see history.
               </div>
             {:else}
-              {#each [...$actionHistory].reverse() as action, reverseIndex}
-                {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
-                <div class="history-item">
-                  <span class="history-index">#{actualIndex + 1}</span>
-                  <span class="history-label">{action.label}</span>
-                  <button 
-                    class="time-travel-button"
-                    on:click={() => timeTravel(actualIndex)}
-                    title="Time travel to this point"
-                  >
-                    ⏪
-                  </button>
-                </div>
-              {/each}
+              <div class="space-y-2">
+                {#each [...$actionHistory].reverse() as action, reverseIndex}
+                  {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
+                  <div class="flex items-center gap-2 p-2 bg-base-100 rounded-lg">
+                    <span class="badge badge-neutral">#{actualIndex + 1}</span>
+                    <span class="flex-1 text-sm">{action.label}</span>
+                    <button 
+                      class="btn btn-xs btn-info"
+                      onclick={() => timeTravel(actualIndex)}
+                      title="Time travel to this point"
+                    >
+                      ⏪
+                    </button>
+                  </div>
+                {/each}
+              </div>
             {/if}
           </div>
         </div>
       {/if}
 
       {#if activeTab === 'quickplay'}
-        <div class="quickplay-tab">
-          <div class="quickplay-controls">
-            <label>
+        <div class="space-y-4">
+          <div class="flex flex-wrap gap-4 items-center">
+            <label class="label cursor-pointer gap-2">
               <input 
                 type="checkbox" 
+                class="toggle toggle-primary"
                 bind:checked={$quickplayState.enabled}
-                on:change={() => quickplayActions.toggle()}
+                onchange={() => quickplayActions.toggle()}
               />
-              QuickPlay Active
+              <span class="label-text">QuickPlay Active</span>
             </label>
             
-            <label>
-              Speed:
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Speed:</span>
+              </label>
               <select 
+                class="select select-bordered select-sm"
                 bind:value={$quickplayState.speed}
-                on:change={(e) => quickplayActions.setSpeed(e.currentTarget.value as any)}
+                onchange={(e) => quickplayActions.setSpeed(e.currentTarget.value as any)}
               >
                 <option value="instant">Instant</option>
                 <option value="fast">Fast</option>
                 <option value="normal">Normal</option>
                 <option value="slow">Slow</option>
               </select>
-            </label>
+            </div>
 
             <button 
-              class="control-button"
-              on:click={quickplayActions.step}
+              class="btn btn-sm btn-primary"
+              onclick={quickplayActions.step}
               disabled={$quickplayState.enabled}
             >
               Step
             </button>
 
             <button 
-              class="control-button"
-              on:click={quickplayActions.playToEndOfHand}
+              class="btn btn-sm btn-secondary"
+              onclick={quickplayActions.playToEndOfHand}
             >
-              Play to End of Hand
+              End of Hand
             </button>
 
             <button 
-              class="control-button"
-              on:click={quickplayActions.playToEndOfGame}
+              class="btn btn-sm btn-accent"
+              onclick={quickplayActions.playToEndOfGame}
             >
-              Play to End of Game
+              End of Game
             </button>
           </div>
 
-          <div class="quickplay-status">
-            <h4>Status</h4>
-            <div class="status-grid">
-              <span>Active:</span> <span>{$quickplayState.enabled}</span>
-              <span>Speed:</span> <span>{$quickplayState.speed}</span>
-              <span>Phase:</span> <span>{$gameState.phase}</span>
-              <span>Current Player:</span> <span>P{$gameState.currentPlayer}</span>
+          <div class="card bg-base-200">
+            <div class="card-body">
+              <h4 class="card-title text-base">Status</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <span class="font-semibold">Active:</span>
+                <span>{$quickplayState.enabled}</span>
+                <span class="font-semibold">Speed:</span>
+                <span>{$quickplayState.speed}</span>
+                <span class="font-semibold">Phase:</span>
+                <span>{$gameState.phase}</span>
+                <span class="font-semibold">Current Player:</span>
+                <span>P{$gameState.currentPlayer}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Theme Switcher -->
+          <div class="card bg-base-200">
+            <div class="card-body">
+              <h4 class="card-title text-base">Theme</h4>
+              <select 
+                class="select select-bordered w-full"
+                data-choose-theme
+                value={typeof window !== 'undefined' && localStorage.getItem('theme') || 'light'}
+                onchange={(e) => {
+                  const theme = e.currentTarget.value;
+                  document.documentElement.setAttribute('data-theme', theme);
+                  localStorage.setItem('theme', theme);
+                }}>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="cupcake">Cupcake</option>
+                <option value="bumblebee">Bumblebee</option>
+                <option value="emerald">Emerald</option>
+                <option value="corporate">Corporate</option>
+                <option value="retro">Retro</option>
+                <option value="cyberpunk">Cyberpunk</option>
+                <option value="valentine">Valentine</option>
+                <option value="garden">Garden</option>
+                <option value="forest">Forest</option>
+                <option value="lofi">Lo-Fi</option>
+                <option value="pastel">Pastel</option>
+                <option value="wireframe">Wireframe</option>
+                <option value="luxury">Luxury</option>
+                <option value="dracula">Dracula</option>
+                <option value="autumn">Autumn</option>
+                <option value="business">Business</option>
+                <option value="coffee">Coffee</option>
+                <option value="winter">Winter</option>
+              </select>
             </div>
           </div>
         </div>
       {/if}
 
       {#if activeTab === 'historical'}
-        <div class="historical-tab">
-          <div class="historical-controls">
-            <h3>Event Sourcing State</h3>
-            <label class="toggle-label">
+        <div class="flex flex-col h-full gap-4">
+          <div class="flex items-center gap-4">
+            <h3 class="text-lg font-semibold">Event Sourcing State</h3>
+            <label class="label cursor-pointer gap-2">
               <input 
                 type="checkbox" 
+                class="checkbox checkbox-sm"
                 bind:checked={showHistoricalTreeView}
               />
-              Tree View
+              <span class="label-text">Tree View</span>
             </label>
             <button 
-              class="control-button"
-              on:click={() => {
+              class="btn btn-sm btn-primary"
+              onclick={() => {
                 const historicalData = {
                   initialState: $initialState,
                   actions: $actionHistory
@@ -323,29 +386,37 @@
                 copyToClipboard(prettyJson(historicalData));
               }}
             >
-              Copy Historical JSON
+              Copy JSON
             </button>
           </div>
           
-          <div class="historical-display">
+          <div class="flex-1 overflow-auto">
             {#if showHistoricalTreeView}
-              <StateTreeView 
-                data={{
-                  initialState: $initialState,
-                  actions: $actionHistory
-                }}
-                searchQuery=""
-                changedPaths={new Set()}
-              />
-            {:else}
-              <div class="historical-section">
-                <h4>Initial State</h4>
-                <pre>{prettyJson($initialState)}</pre>
+              <div class="bg-base-200 rounded-lg p-4">
+                <StateTreeView 
+                  data={{
+                    initialState: $initialState,
+                    actions: $actionHistory
+                  }}
+                  searchQuery=""
+                  changedPaths={new Set()}
+                />
               </div>
-              
-              <div class="historical-section">
-                <h4>Actions ({$actionHistory.length})</h4>
-                <pre>{prettyJson($actionHistory)}</pre>
+            {:else}
+              <div class="space-y-4">
+                <div class="card bg-base-200">
+                  <div class="card-body">
+                    <h4 class="card-title text-base">Initial State</h4>
+                    <pre class="text-xs overflow-auto max-h-64">{prettyJson($initialState)}</pre>
+                  </div>
+                </div>
+                
+                <div class="card bg-base-200">
+                  <div class="card-body">
+                    <h4 class="card-title text-base">Actions ({$actionHistory.length})</h4>
+                    <pre class="text-xs overflow-auto max-h-64">{prettyJson($actionHistory)}</pre>
+                  </div>
+                </div>
               </div>
             {/if}
           </div>
@@ -353,367 +424,11 @@
       {/if}
     </div>
   </div>
+  
+  <!-- Modal backdrop click to close -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <form method="dialog" class="modal-backdrop" onclick={onclose}>
+    <button type="button" aria-label="Close modal">close</button>
+  </form>
 </div>
-
-<style>
-  .debug-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .debug-panel {
-    background-color: white;
-    width: 95%;
-    max-width: 600px;
-    height: 90%;
-    max-height: 90vh;
-    border-radius: 12px 12px 0 0;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-    margin-top: auto;
-  }
-
-  @media (min-width: 768px) {
-    .debug-panel {
-      width: 80%;
-      max-width: 1200px;
-      height: 80%;
-      max-height: 800px;
-      border-radius: 12px;
-      margin-top: 0;
-    }
-  }
-
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-
-  .panel-header h2 {
-    margin: 0;
-    font-size: 20px;
-    color: #002868;
-  }
-
-  .close-button {
-    background: none;
-    border: none;
-    font-size: 28px;
-    cursor: pointer;
-    color: #6b7280;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-  }
-
-  .close-button:hover {
-    background-color: #f3f4f6;
-  }
-
-  .panel-tabs {
-    display: flex;
-    gap: 2px;
-    padding: 0 12px;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .tab {
-    padding: 10px 16px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-weight: 500;
-    color: #6b7280;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    font-size: 14px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .tab:hover {
-    color: #374151;
-  }
-
-  .tab.active {
-    color: #002868;
-    border-bottom-color: #002868;
-  }
-
-  .panel-content {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* State Tab */
-  .state-tab {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .state-controls {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .toggle-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 14px;
-    color: #374151;
-    cursor: pointer;
-  }
-
-  .toggle-label input {
-    cursor: pointer;
-  }
-
-  .control-button {
-    padding: 8px 16px;
-    background-color: #002868;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-  }
-
-  .control-button:hover {
-    background-color: #001a4d;
-  }
-
-  .control-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .state-display {
-    flex: 1;
-    overflow: auto;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .state-display pre {
-    margin: 0;
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  /* History Tab */
-  .history-tab {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-
-  .history-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-
-  .history-header h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #374151;
-  }
-
-  .history-controls {
-    display: flex;
-    gap: 8px;
-  }
-
-  .action-history {
-    flex: 1;
-    overflow-y: auto;
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 12px;
-  }
-
-  .empty-history {
-    text-align: center;
-    padding: 40px;
-    color: #9ca3af;
-    font-style: italic;
-  }
-
-  .history-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
-    background-color: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    transition: background-color 0.2s;
-  }
-
-  .history-item:hover {
-    background-color: #f9fafb;
-  }
-
-  .history-index {
-    font-family: monospace;
-    font-size: 12px;
-    color: #6b7280;
-    min-width: 40px;
-  }
-
-  .history-label {
-    flex: 1;
-    font-size: 14px;
-  }
-
-  .time-travel-button {
-    padding: 4px 8px;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .time-travel-button:hover {
-    background-color: #2563eb;
-  }
-
-  /* QuickPlay Tab */
-  .quickplay-tab {
-    padding: 20px;
-  }
-
-  .quickplay-controls {
-    display: flex;
-    gap: 16px;
-    align-items: center;
-    margin-bottom: 24px;
-    flex-wrap: wrap;
-  }
-
-  .quickplay-controls label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-  }
-
-  .quickplay-controls select {
-    padding: 4px 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  .quickplay-status {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .quickplay-status h4 {
-    margin: 0 0 12px 0;
-    font-size: 16px;
-    color: #374151;
-  }
-
-  .status-grid {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 8px 16px;
-    font-size: 14px;
-  }
-
-  .status-grid span:nth-child(odd) {
-    font-weight: 600;
-    color: #6b7280;
-  }
-
-  /* Historical State Tab */
-  .historical-tab {
-    padding: 20px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .historical-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-
-  .historical-controls h3 {
-    margin: 0;
-    font-size: 18px;
-    color: #374151;
-    margin-right: auto;
-  }
-
-  .historical-display {
-    flex: 1;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .historical-section {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px;
-  }
-
-  .historical-section h4 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #6b7280;
-  }
-
-  .historical-section pre {
-    margin: 0;
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    overflow: auto;
-    max-height: 300px;
-  }
-</style>

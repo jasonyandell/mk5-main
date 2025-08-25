@@ -179,7 +179,7 @@
   
   // State for expandable trick counter
   let showTrickHistory = false;
-  let drawerState = $state<'collapsed' | 'peeking' | 'expanded'>('collapsed');
+  let drawerState = $state<'collapsed' | 'expanded'>('collapsed');
   
   // Get completed tricks from game state
   const completedTricks = $derived($gameState.tricks || []);
@@ -309,7 +309,7 @@
 
 <div class="flex flex-col h-full relative transition-all duration-300" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
   <!-- Mobile-optimized Game Info Bar -->
-  <div class="mb-2">
+  <div class="mb-3">
     <GameInfoBar 
       phase={$gamePhase}
       currentPlayer={$gameState.currentPlayer}
@@ -322,9 +322,9 @@
   </div>
   
   {#if showTrickHistory && ($gamePhase === 'playing' || $gamePhase === 'scoring')}
-    <div class="bg-base-100 rounded-xl mx-3 p-2 shadow-md border border-base-300" transition:slide={{ duration: 200 }}>
+    <div class="bg-base-100 rounded-xl mx-4 p-3 shadow-md border border-base-300" transition:slide={{ duration: 200 }}>
       <!-- Player headers -->
-      <div class="flex items-center gap-2 px-2 pb-2 mb-2 border-b-2 border-base-300">
+      <div class="flex items-center gap-3 px-3 pb-3 mb-3 border-b-2 border-base-300">
         <span class="min-w-[16px]"></span>
         <div class="flex gap-1 flex-1 items-center">
           <div class="w-10 text-center text-[11px] font-bold text-base-content/70 uppercase">P0</div>
@@ -339,8 +339,8 @@
         {@const sortedPlays = [0, 1, 2, 3].map(playerNum => 
           trick.plays.find(play => play.player === playerNum)
         )}
-        <div class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-base-200 mb-1">
-          <span class="text-xs font-bold text-base-content/60 min-w-[16px]">{index + 1}:</span>
+        <div class="flex items-center gap-3 px-3 py-2 rounded-md bg-base-200 mb-2">
+          <span class="text-xs font-bold text-base-content/60 w-4">{index + 1}:</span>
           <div class="flex gap-1 flex-1 items-center">
             {#each sortedPlays as play}
               {#if play}
@@ -357,15 +357,15 @@
               {/if}
             {/each}
           </div>
-          <span class="text-[11px] font-semibold text-success whitespace-nowrap ml-auto px-1.5 py-0.5 bg-success/10 rounded-full">P{trick.winner}✓ {trick.points || 0}pts</span>
+          <span class="text-xs font-semibold text-success whitespace-nowrap ml-auto px-2 py-1 bg-success/10 rounded-full">P{trick.winner}✓ {trick.points || 0}pts</span>
         </div>
       {/each}
       {#if currentTrickPlays.length > 0 && currentTrickPlays.length < 4 && $gamePhase === 'playing'}
         {@const sortedCurrentPlays = [0, 1, 2, 3].map(playerNum => 
           currentTrickPlays.find(play => play.player === playerNum)
         )}
-        <div class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-warning/20 border border-warning mb-1">
-          <span class="text-xs font-bold text-base-content/60 min-w-[16px]">{currentTrickNumber}:</span>
+        <div class="flex items-center gap-3 px-3 py-2 rounded-md bg-warning/20 border border-warning mb-2">
+          <span class="text-xs font-bold text-base-content/60 w-4">{currentTrickNumber}:</span>
           <div class="flex gap-1 flex-1 items-center">
             {#each sortedCurrentPlays as play}
               {#if play}
@@ -382,7 +382,7 @@
               {/if}
             {/each}
           </div>
-          <span class="text-[11px] font-semibold text-base-content/50 italic whitespace-nowrap ml-auto px-1.5 py-0.5 bg-base-300/50 rounded-full">(in progress)</span>
+          <span class="text-xs font-semibold text-base-content/50 italic whitespace-nowrap ml-auto px-2 py-1 bg-base-300/50 rounded-full">(in progress)</span>
         </div>
       {/if}
     </div>
@@ -443,13 +443,13 @@
   <!-- Responsive Trick Table -->
   <div class="relative flex-1">
     <button
-      class="flex items-center justify-center p-3 lg:p-5 relative transition-all bg-transparent border-none w-full h-full cursor-pointer tap-highlight-transparent touch-manipulation select-none"
+      class="flex items-center justify-center p-4 relative transition-all bg-transparent border-none w-full h-full cursor-pointer tap-highlight-transparent touch-manipulation select-none min-h-[200px]"
       on:click={handleTableClick}
       disabled={false}
       type="button"
       aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
     >
-      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
+      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
       {#if handResults}
@@ -491,7 +491,7 @@
             {@const isWinner = trickWinner === position}
             <div class="absolute flex items-center justify-center pointer-events-none" data-position={position} style="{position === 0 ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' : position === 1 ? 'left: 20px; top: 50%; transform: translateY(-50%);' : position === 2 ? 'top: 20px; left: 50%; transform: translateX(-50%);' : 'right: 20px; top: 50%; transform: translateY(-50%);'}">
               {#if play}
-                <div class="relative {playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`) ? 'animate-drop-in' : ''} {isWinner ? 'animate-winner-glow' : ''}">
+                <div class="relative {playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`) ? 'motion-safe:animate-drop-in' : ''} {isWinner ? 'motion-safe:animate-winner-glow' : ''}">
                   <Domino 
                     domino={play.domino} 
                     small={true}
@@ -500,15 +500,15 @@
                   />
                   <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-bold text-base-100 bg-base-content/70 px-2 py-0.5 rounded-full">P{position}</div>
                 {#if isWinner}
-                  <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-slate-800 px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-[0_2px_8px_rgba(255,215,0,0.5)] animate-bounce-in whitespace-nowrap z-[15]">
-                    <span class="text-sm animate-sparkle">👑</span>
+                  <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-slate-800 px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-[0_2px_8px_rgba(255,215,0,0.5)] motion-safe:animate-bounce-in whitespace-nowrap z-[15]">
+                    <span class="text-sm motion-safe:animate-sparkle">👑</span>
                     <span class="uppercase tracking-wider">Winner!</span>
                   </div>
                 {/if}
               </div>
             {:else}
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
-                <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl animate-spin-slow"></div>
+                <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
                   {controllerManager.isAIControlled(position) ? '🤖' : '👤'}
                 </span>
@@ -521,7 +521,7 @@
     </div>
     
     {#if isThinking}
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center gap-2 text-sm text-base-content/70 animate-pulse pointer-events-none z-10">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center gap-2 text-sm text-base-content/70 motion-safe:animate-pulse pointer-events-none z-10">
         <span class="text-lg">🤖</span>
         <span>P{$gameState.currentPlayer} is thinking...</span>
       </div>
@@ -529,10 +529,10 @@
     
     {#if proceedAction}
       <div 
-        class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-10 animate-tap-bounce"
+        class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-10 motion-safe:animate-tap-bounce"
         role="presentation"
       >
-        <span class="text-lg animate-tap-point">👆</span>
+        <span class="text-lg motion-safe:animate-tap-point">👆</span>
         <span class="whitespace-nowrap">{proceedAction.label}</span>
       </div>
     {/if}
@@ -540,20 +540,20 @@
   </div>
 
   <!-- Player Hand with Touch-Optimized Spacing -->
-  <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-3 lg:pt-5">
+  <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-4">
     
     {#if playerHand.length === 0}
-      <div class="flex flex-col items-center gap-2 py-8 lg:py-10 text-base-content/50">
-        <span class="text-4xl lg:text-5xl opacity-50">🀚</span>
+      <div class="flex flex-col items-center gap-3 py-8 text-base-content/50">
+        <span class="text-5xl opacity-50">🀚</span>
         <span class="text-sm font-medium">No dominoes</span>
       </div>
     {:else}
-      <div class="px-2 lg:px-4 py-3 lg:py-5">
-        <div class="flex flex-wrap gap-2 lg:gap-3 justify-center">
+      <div class="px-4 py-4">
+        <div class="flex flex-wrap gap-3 justify-center">
           {#each playerHand as domino, i (domino.high + '-' + domino.low)}
             <!-- Larger tap target wrapper for mobile -->
             <div 
-              class="animate-hand-slide p-1 lg:p-0 -m-1 lg:m-0 touch-manipulation" 
+              class="motion-safe:animate-hand-slide touch-manipulation" 
               style="animation-delay: {i * 50}ms" 
               data-testid="domino-{domino.high}-{domino.low}" 
               data-playable={isDominoPlayable(domino)}
@@ -588,6 +588,14 @@
 
 <style>
   /* Custom animations that can't be expressed in Tailwind */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
   @keyframes animate-drop-in {
     from {
       transform: translateY(-100px) scale(0.8);

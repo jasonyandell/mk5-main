@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Play } from '../../game/types';
   import Domino from './Domino.svelte';
-  import { onMount } from 'svelte';
   
   interface CompletedTrick {
     plays: Play[];
@@ -15,7 +14,7 @@
     trickNumber: number;
     isOpen?: boolean;
     onToggle?: () => void;
-    onStateChange?: (state: 'collapsed' | 'peeking' | 'expanded') => void;
+    onStateChange?: (state: 'collapsed' | 'expanded') => void;
   }
   
   let { 
@@ -27,32 +26,11 @@
     onStateChange
   }: Props = $props();
   
-  let drawerState = $state<'collapsed' | 'peeking' | 'expanded'>('collapsed');
+  let drawerState = $state<'collapsed' | 'expanded'>('collapsed');
   let dragStartX = $state(0);
   let dragCurrentX = $state(0);
   let isDragging = $state(false);
   let drawerElement: HTMLElement;
-  let autoHideTimeout: number;
-  
-  // Track if we should show peek after trick completion
-  let lastCompletedCount = $state(completedTricks.length);
-  
-  $effect(() => {
-    // Auto-peek when a new trick is completed
-    if (completedTricks.length > lastCompletedCount && drawerState === 'collapsed') {
-      drawerState = 'peeking';
-      onStateChange?.('peeking');
-      // Auto-hide after 3 seconds
-      clearTimeout(autoHideTimeout);
-      autoHideTimeout = setTimeout(() => {
-        if (drawerState === 'peeking') {
-          drawerState = 'collapsed';
-          onStateChange?.('collapsed');
-        }
-      }, 3000);
-    }
-    lastCompletedCount = completedTricks.length;
-  });
   
   // Only use isOpen for initial state, don't override internal state changes
   // $effect(() => {
@@ -102,7 +80,6 @@
       drawerElement.style.transform = '';
     }
     
-    clearTimeout(autoHideTimeout);
     onToggle?.();
   }
   
@@ -114,7 +91,6 @@
       drawerState = 'collapsed';
       onStateChange?.('collapsed');
     }
-    clearTimeout(autoHideTimeout);
     onToggle?.();
   }
   
@@ -123,20 +99,15 @@
     return plays.find(p => p.player === playerIndex) || null;
   }
   
-  onMount(() => {
-    return () => {
-      clearTimeout(autoHideTimeout);
-    };
-  });
 </script>
 
 <!-- Mobile: Left Side Panel -->
-<div class="lg:hidden fixed left-0 top-0 h-full z-40 flex">
+<div class="lg:hidden fixed left-0 top-0 h-full z-40 flex pointer-events-none">
   <!-- Side Panel Container -->
   <div
     bind:this={drawerElement}
-    class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex"
-    style="width: min(70vw, 280px); transform: translateX({drawerState === 'expanded' ? '0' : drawerState === 'peeking' ? 'calc(-100% + 80px)' : '-100%'});"
+    class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex pointer-events-auto"
+    style="width: min(70vw, 280px); transform: translateX({drawerState === 'expanded' ? '0' : '-100%'});"
   >
     <!-- Panel Content -->
     <div class="flex-1 h-full overflow-y-auto">
@@ -222,7 +193,7 @@
     
     <!-- Vertical Tab (always visible) -->
     <button
-      class="absolute -right-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-base-200 rounded-r-lg shadow-lg flex items-center justify-center hover:bg-base-300 transition-colors"
+      class="absolute -right-8 top-1/2 -translate-y-1/2 w-8 h-24 bg-base-200 rounded-r-lg shadow-lg flex items-center justify-center hover:bg-base-300 transition-colors pointer-events-auto"
       onclick={toggleDrawer}
       aria-expanded={drawerState !== 'collapsed'}
       aria-label="Toggle trick history"

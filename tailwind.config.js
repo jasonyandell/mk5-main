@@ -11,8 +11,6 @@ export default {
         'phase-in': 'phaseIn 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         'subtle-pulse': 'subtlePulse 2s infinite',
         'shake': 'shake 0.5s',
-        'deal': 'deal 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        'play-card': 'playCard 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         'fadeInUp': 'fadeInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         'fadeInDown': 'fadeInDown 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
         'handFadeIn': 'handFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) both',
@@ -35,14 +33,6 @@ export default {
           '0%, 100%': { transform: 'translateX(0)' },
           '25%': { transform: 'translateX(-5px)' },
           '75%': { transform: 'translateX(5px)' }
-        },
-        deal: {
-          'from': { opacity: '0', transform: 'translateY(-20px) scale(0.8)' },
-          'to': { opacity: '1', transform: 'translateY(0) scale(1)' }
-        },
-        playCard: {
-          'from': { transform: 'translateY(0)' },
-          'to': { transform: 'translateY(-10px)' }
         },
         fadeInUp: {
           'from': { opacity: '0', transform: 'translateY(20px)' },

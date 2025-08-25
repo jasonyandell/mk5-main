@@ -65,7 +65,7 @@
     <!-- Trump Info (if set) -->
     {#if trump.type !== 'none' && phase !== 'bidding'}
       <div class="flex items-center gap-1">
-        <span class="text-lg" role="img" aria-label="Trump">{getTrumpIcon()}</span>
+        <span class="text-sm font-medium">Trump:</span>
         <span class="text-sm font-bold">{getTrumpDisplay()}</span>
       </div>
     {/if}
@@ -102,10 +102,7 @@
     {#if trump.type !== 'none' && phase !== 'bidding'}
       <div class="flex items-center justify-between">
         <span class="text-sm font-medium">Trump</span>
-        <div class="flex items-center gap-1">
-          <span class="text-lg">{getTrumpIcon()}</span>
-          <span class="font-bold">{getTrumpDisplay()}</span>
-        </div>
+        <span class="font-bold">{getTrumpDisplay()}</span>
       </div>
     {/if}
     
