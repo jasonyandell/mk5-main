@@ -12,7 +12,6 @@
   let activeView = $state<'game' | 'actions'>('game');
   let touchStartY = $state(0);
   let touchStartTime = $state(0);
-  let currentTheme = $state('light');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -55,7 +54,6 @@
     // Load saved theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
-      currentTheme = savedTheme;
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
   });
@@ -94,41 +92,7 @@
   ontouchstart={handleTouchStart} 
   ontouchend={handleTouchEnd}
 >
-  <Header onopenDebug={() => showDebugPanel = true} />
-  
-  <!-- Theme Switcher -->
-  <div class="fixed bottom-4 left-4 z-50">
-    <select 
-      class="select select-bordered select-sm" 
-      data-choose-theme
-      bind:value={currentTheme}
-      onchange={(e) => {
-        const theme = e.currentTarget.value;
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-      }}>
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-      <option value="cupcake">Cupcake</option>
-      <option value="bumblebee">Bumblebee</option>
-      <option value="emerald">Emerald</option>
-      <option value="corporate">Corporate</option>
-      <option value="retro">Retro</option>
-      <option value="cyberpunk">Cyberpunk</option>
-      <option value="valentine">Valentine</option>
-      <option value="garden">Garden</option>
-      <option value="forest">Forest</option>
-      <option value="lofi">Lo-Fi</option>
-      <option value="pastel">Pastel</option>
-      <option value="wireframe">Wireframe</option>
-      <option value="luxury">Luxury</option>
-      <option value="dracula">Dracula</option>
-      <option value="autumn">Autumn</option>
-      <option value="business">Business</option>
-      <option value="coffee">Coffee</option>
-      <option value="winter">Winter</option>
-    </select>
-  </div>
+  <Header on:openDebug={() => showDebugPanel = true} />
   
   <main class="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y pb-safe relative {activeView === 'actions' ? 'overflow-hidden' : ''}">
     {#if activeView === 'game'}

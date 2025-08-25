@@ -154,10 +154,10 @@
     </div>
   {/if}
 
-  <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-2 pb-4 touch-pan-y bg-base-200">
+  <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 touch-pan-y bg-base-200">
     {#if $gamePhase === 'bidding'}
       <!-- Always show compact bid status during bidding -->
-      <div class="card bg-base-100 shadow-lg m-4">
+      <div class="card bg-base-100 shadow-lg mb-4">
         <div class="card-body p-3">
         <div class="flex gap-2 justify-center flex-wrap">
           {#each [0, 1, 2, 3] as playerId}
@@ -214,9 +214,9 @@
     {/if}
     
     {#if $gamePhase === 'bidding'}
-      <div class="mb-7 animate-fadeInUp">
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Bidding</h3>
-        <div class="grid grid-cols-3 gap-2.5 max-w-[400px] mx-auto">
+      <div class="mb-6 animate-fadeInUp">
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Bidding</h3>
+        <div class="grid grid-cols-3 gap-3 max-w-[400px] mx-auto">
           {#each groupedActions.bidding as action}
             {#if action.id === 'pass'}
               <button 
@@ -261,12 +261,12 @@
     {/if}
 
     {#if $gamePhase === 'trump_selection'}
-      <div class="mb-7 animate-fadeInUp">
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Select Trump</h3>
-        <div class="flex flex-col gap-2.5 max-w-[320px] mx-auto">
+      <div class="mb-6 animate-fadeInUp">
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Select Trump</h3>
+        <div class="flex flex-col gap-3 max-w-[320px] mx-auto">
           {#each groupedActions.trump as action}
             <button 
-              class="btn btn-secondary btn-lg w-full"
+              class="btn btn-secondary btn-lg w-full min-h-[48px]"
               onclick={() => executeAction(action)}
               data-testid={action.id}
             >
@@ -278,12 +278,12 @@
     {/if}
 
     {#if groupedActions.other.length > 0}
-      <div class="mb-7 animate-fadeInUp">
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Quick Actions</h3>
-        <div class="flex flex-col gap-2.5 max-w-[320px] mx-auto">
+      <div class="mb-6 animate-fadeInUp">
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Quick Actions</h3>
+        <div class="flex flex-col gap-3 max-w-[320px] mx-auto">
           {#each groupedActions.other as action}
             <button 
-              class="btn btn-outline btn-lg w-full"
+              class="btn btn-outline btn-lg w-full min-h-[48px]"
               onclick={() => executeAction(action)}
               data-testid={action.id}
             >

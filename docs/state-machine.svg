@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="600" viewBox="0 0 980 600">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="8" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+    </marker>
+    <style><![CDATA[
+      .state { fill:#eef7ff; stroke:#3b82f6; stroke-width:1.5; rx:8; ry:8; }
+      .label { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; font-size:14px; fill:#0f172a; }
+      .title { font-weight:600; font-size:16px; }
+      .edge { stroke:#334155; stroke-width:1.2; fill:none; marker-end:url(#arrow); }
+      .edge-text { font-size:12px; fill:#334155; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+      .badge { font-size:11px; fill:#1f2937; }
+    ]]></style>
+  </defs>
+
+  <!-- States -->
+  <rect x="80"  y="80"  width="200" height="60" class="state"/>
+  <text x="180" y="115" text-anchor="middle" class="label title">Bidding</text>
+
+  <rect x="360" y="80"  width="200" height="60" class="state"/>
+  <text x="460" y="115" text-anchor="middle" class="label title">Trump Selection</text>
+
+  <rect x="660" y="80"  width="200" height="60" class="state"/>
+  <text x="760" y="115" text-anchor="middle" class="label title">Playing</text>
+
+  <rect x="660" y="320" width="200" height="60" class="state"/>
+  <text x="760" y="355" text-anchor="middle" class="label title">Scoring</text>
+
+  <rect x="360" y="320" width="200" height="60" class="state"/>
+  <text x="460" y="355" text-anchor="middle" class="label title">Game End</text>
+
+  <rect x="80"  y="320" width="200" height="60" class="state"/>
+  <text x="180" y="355" text-anchor="middle" class="label title">Setup</text>
+
+  <!-- Edges -->
+  <!-- Setup -> Bidding -->
+  <path class="edge" d="M 280 350 C 320 350, 320 110, 280 110"/>
+  <path class="edge" d="M 280 110 L 360 110"/>
+  <text class="edge-text" x="230" y="230" transform="rotate(-90,230,230)">advanceToNextPhase</text>
+  <text class="edge-text" x="300" y="95">or createInitialState()</text>
+
+  <!-- Bidding -> Trump Selection -->
+  <path class="edge" d="M 280 110 L 360 110"/>
+  <text class="edge-text" x="320" y="95">4 bids with any non-pass</text>
+
+  <!-- Bidding self-loop (pass/bid first 3 bids) -->
+  <path class="edge" d="M 120 150 C 40 200, 40 40, 120 80"/>
+  <text class="edge-text" x="42" y="118" transform="rotate(-55,42,118)">pass / bid (first 3 bids)</text>
+
+  <!-- Redeal (all pass) stays in Bidding -->
+  <path class="edge" d="M 180 145 C 220 200, 280 200, 280 140"/>
+  <text class="edge-text" x="238" y="197">all pass → redeal</text>
+
+  <!-- Trump Selection -> Playing -->
+  <path class="edge" d="M 560 110 L 660 110"/>
+  <text class="edge-text" x="610" y="95">select-trump</text>
+
+  <!-- Playing loops: play and agree-complete-trick -->
+  <path class="edge" d="M 760 140 C 880 220, 880 10, 760 80"/>
+  <text class="edge-text" x="880" y="110" transform="rotate(-60,880,110)">play-*</text>
+
+  <path class="edge" d="M 790 140 C 930 240, 930 0, 790 70"/>
+  <text class="edge-text" x="925" y="115" transform="rotate(-62,925,115)">agree-complete-trick-*</text>
+
+  <!-- Playing -> Scoring -->
+  <path class="edge" d="M 760 140 L 760 320"/>
+  <text class="edge-text" x="770" y="235" transform="rotate(90,770,235)">complete-trick (7th trick or decided)</text>
+
+  <!-- Scoring loops: agree-score-hand -->
+  <path class="edge" d="M 760 380 C 900 430, 900 310, 760 320"/>
+  <text class="edge-text" x="898" y="368" transform="rotate(-15,898,368)">agree-score-hand-*</text>
+
+  <!-- Scoring -> Bidding -->
+  <path class="edge" d="M 660 350 L 280 350"/>
+  <text class="edge-text" x="470" y="340">score-hand (marks &lt; target)</text>
+
+  <!-- Scoring -> Game End -->
+  <path class="edge" d="M 660 350 L 560 350"/>
+  <text class="edge-text" x="610" y="340">score-hand (marks ≥ target)</text>
+
+  <!-- Legend small text -->
+  <text class="edge-text" x="80" y="430">Consensus steps: agree-complete-trick ×4 → complete-trick; agree-score-hand ×4 → score-hand</text>
+</svg>
+

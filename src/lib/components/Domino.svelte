@@ -75,7 +75,7 @@
 </script>
 
 <button
-  class="relative bg-base-100 border-2 border-base-300 rounded-md shadow-md transition-all {sizeClasses} {stateClasses} p-0 overflow-visible"
+  class="relative bg-base-100 border-2 border-base-300 rounded-md shadow-md transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
   onclick={handleClick}
   disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
