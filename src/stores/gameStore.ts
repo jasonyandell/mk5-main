@@ -128,7 +128,9 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
 const urlParams = typeof window !== 'undefined' ? 
   new URLSearchParams(window.location.search) : null;
 const testMode = urlParams?.get('testMode') === 'true';
-const firstInitialState = createInitialState();
+const firstInitialState = createInitialState({
+  playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
+});
 
 // Core game state store
 export const gameState = writable<GameState>(firstInitialState);
@@ -318,9 +320,6 @@ function validateState() {
 // Forward declaration for circular reference
 let controllerManager: ControllerManager;
 
-// Track if we're in a popstate response phase (controllers responding to navigation)
-let inPopstateResponse = false;
-
 // Helper function to execute AI moves immediately (for tests/replay)
 // Returns the new state and the AI actions taken
 function executeAllAIImmediate(state: GameState): { state: GameState; aiActions: StateTransition[] } {
@@ -372,26 +371,25 @@ function executeAllAIImmediate(state: GameState): { state: GameState; aiActions:
 
 // Game actions
 export const gameActions = {
-  executeAction: (transition: StateTransition, isFromController = false) => {
+  executeAction: (transition: StateTransition) => {
     const actions = get(actionHistory);
     
     // Add action to history
-    actionHistory.set([...actions, transition]);
-    
+    let finalActions = [...actions, transition];
+    actionHistory.set(finalActions);
     
     // Update to new state
     let newState = transition.newState;
     
     // In test mode, execute AI immediately after human actions
+    // This ensures deterministic behavior for tests
     if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
       const result = executeAllAIImmediate(newState);
       newState = result.state;
       // Add AI actions to history
       if (result.aiActions.length > 0) {
-        const allActions = [...actions, transition, ...result.aiActions];
-        actionHistory.set(allActions);
-        // Update URL with all actions including AI
-        updateURLWithState(get(initialState), allActions, true);
+        finalActions = [...finalActions, ...result.aiActions];
+        actionHistory.set(finalActions);
       }
     }
     
@@ -400,18 +398,9 @@ export const gameActions = {
     // Validate state matches computed state
     validateState();
     
-    // Update URL with initial state and actions
-    // Skip URL updates for controller actions after popstate to avoid corrupting history
-    if (inPopstateResponse && isFromController) {
-      // Controller action during popstate response - skip URL update
-    } else {
-      // User action or normal flow - update URL
-      updateURLWithState(get(initialState), [...actions, transition], true);
-      // Clear popstate response phase on user action
-      if (!isFromController) {
-        inPopstateResponse = false;
-      }
-    }
+    // Update URL with initial state and actions (including any AI actions)
+    // Pure approach: every action always updates the URL
+    updateURLWithState(get(initialState), finalActions, true);
     
     // Notify all controllers of state change
     controllerManager.onStateChange(newState);
@@ -428,7 +417,9 @@ export const gameActions = {
   
   resetGame: () => {
     const oldActionCount = get(actionHistory).length;
-    const newInitialState = createInitialState();
+    const newInitialState = createInitialState({
+      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
+    });
     // Deep clone to prevent mutations
     initialState.set(deepClone(newInitialState));
     gameState.set(newInitialState);
@@ -471,6 +462,10 @@ export const gameActions = {
           
           if (urlData.v === 1) {
             // Expand minimal state
+            // In test mode, override player types to be all human unless explicitly specified
+            if (testMode && !urlData.s.p) {
+              urlData.s.p = ['h', 'h', 'h', 'h'];
+            }
             const expandedInitial = expandMinimalState(urlData.s);
             initialState.set(deepClone(expandedInitial));
             
@@ -526,8 +521,18 @@ export const gameActions = {
         } catch (e) {
           console.error('Failed to load compressed URL:', e);
           console.warn('Starting fresh game instead');
-          // Don't re-throw - just start with a fresh game
-          // The game is already in its initial state
+          // Ensure we have a clean fresh game state
+          const freshState = createInitialState({
+            playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
+          });
+          initialState.set(deepClone(freshState));
+          gameState.set(freshState);
+          actionHistory.set([]);
+          stateValidationError.set(null);
+          // Don't update URL - leave the invalid param there but game starts fresh
+          // Notify controllers of the fresh state
+          controllerManager.onStateChange(freshState);
+          return; // Important: return here to avoid fallthrough
         }
       }
     }
@@ -618,14 +623,8 @@ export const gameActions = {
       actionHistory.set(validActions);
       validateState();
       
-      // Enter popstate response phase - controller actions won't update URL
-      inPopstateResponse = true;
-      
       // Notify controllers of the state change so AI can take action
       controllerManager.onStateChange(currentState);
-      
-      // Clear flag synchronously - only affects controller actions taken synchronously
-      inPopstateResponse = false;
     }
   }
 };
@@ -633,7 +632,7 @@ export const gameActions = {
 // Initialize controller manager after gameActions is defined
 controllerManager = new ControllerManager((transition) => {
   // Mark this as coming from a controller (AI or human controller)
-  gameActions.executeAction(transition, true);
+  gameActions.executeAction(transition);
 });
 
 // Initialize controllers with default configuration
@@ -663,16 +662,18 @@ const runGameLoop = () => {
   const currentState = get(gameState);
   
   // Use pure tick function to advance game state
-  const newState = tickGame(currentState);
+  const result = tickGame(currentState);
   
-  // Only update store if state actually changed
-  if (newState !== currentState) {
-    // Set the new state without triggering URL updates or controller notifications
-    // (the tick already handled AI decisions purely)
-    gameState.set(newState);
-    
-    // Validate the new state
-    validateState();
+  // Update tick state if it changed
+  if (result.state.currentTick !== currentState.currentTick || 
+      result.state.aiSchedule !== currentState.aiSchedule) {
+    gameState.set(result.state);
+  }
+  
+  // Execute any AI action through the proper channel
+  if (result.action) {
+    // Execute through gameActions to ensure it's recorded in history
+    gameActions.executeAction(result.action);
   }
   
   // Schedule next frame if still running

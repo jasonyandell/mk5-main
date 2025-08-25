@@ -133,7 +133,7 @@
   let teamStatusExpanded = $state(false);
 </script>
 
-<div class="h-full flex flex-col bg-base-200 overflow-hidden">
+<div class="action-panel h-full flex flex-col bg-base-200 overflow-hidden" data-testid="action-panel">
   {#if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') && playerHand.length > 0}
     <div class="card bg-base-100 shadow-xl m-4 mb-0 flex-shrink-0 animate-fadeInDown">
       <div class="card-body p-4">
@@ -223,7 +223,8 @@
                 class="btn btn-error col-span-full {shakeActionId === action.id ? 'invalid-action-shake' : ''}"
                 onclick={() => executeAction(action)}
                 onanimationend={() => { if (shakeActionId === action.id) shakeActionId = null; }}
-                data-testid={action.id}
+                data-testid="pass"
+                data-testid-alt="pass-button"
                 title={getBidTooltip(action)}
               >
                 Pass

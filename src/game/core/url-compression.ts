@@ -63,17 +63,17 @@ export function expandMinimalState(minimal: MinimalGameState): GameState {
     minimal.p.map(t => t === 'h' ? 'human' : 'ai') as ('human' | 'ai')[] :
     undefined;
   
-  const state = createInitialState(playerTypes ? { playerTypes } : undefined);
+  // Pass all known options to createInitialState to avoid double initialization
+  const state = createInitialState({
+    playerTypes,
+    shuffleSeed: minimal.s,
+    dealer: minimal.d,
+    gameTarget: minimal.t,
+    tournamentMode: minimal.m
+  });
   
-  // Override with minimal state values
+  // Ensure shuffleSeed is set correctly (createInitialState might have used Date.now())
   state.shuffleSeed = minimal.s;
-  if (minimal.d !== undefined) {
-    state.dealer = minimal.d;
-    // Update current player based on dealer
-    state.currentPlayer = getPlayerLeftOfDealer(state.dealer);
-  }
-  if (minimal.t !== undefined) state.gameTarget = minimal.t;
-  if (minimal.m !== undefined) state.tournamentMode = minimal.m;
   
   // Recreate hands with the seed
   const hands = dealDominoesWithSeed(state.shuffleSeed);

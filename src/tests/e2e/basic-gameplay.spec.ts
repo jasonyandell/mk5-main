@@ -36,24 +36,22 @@ test.describe('Basic Gameplay', () => {
     await helper.goto(12345);
     
     // The ActionPanel should be visible since we're in bidding phase
-    const actionPanel = page.locator('.action-panel');
+    const actionPanel = page.locator('[data-testid="action-panel"]');
     await expect(actionPanel).toBeVisible();
     
-    // Should show hand and bidding actions
-    const handSection = actionPanel.locator('.hand-section');
-    await expect(handSection).toBeVisible();
-    
-    // Should have bidding section with actions
-    const biddingSection = actionPanel.locator('.action-group').filter({ hasText: 'Bidding' });
-    await expect(biddingSection).toBeVisible();
+    // Should show hand with dominoes (updated for Tailwind UI)
+    const handDominoes = actionPanel.locator('button[data-testid^="domino-"]');
+    const dominoCount = await handDominoes.count();
+    expect(dominoCount).toBe(7); // Should have 7 dominoes at start
     
     // Should have pass button
-    const passButton = actionPanel.locator('button').filter({ hasText: 'Pass' });
+    const passButton = page.locator('[data-testid="pass"]');
     await expect(passButton).toBeVisible();
     
-    // Bidding table should NOT be visible when player has actions
-    const biddingTable = page.locator('.bidding-table');
-    await expect(biddingTable).not.toBeVisible();
+    // Should have bid buttons
+    const bidButtons = page.locator('button[data-testid^="bid-"]');
+    const bidCount = await bidButtons.count();
+    expect(bidCount).toBeGreaterThan(0); // Should have multiple bid options
   });
 
   test('should allow valid opening bids', async ({ page }) => {
@@ -149,23 +147,29 @@ test.describe('Basic Gameplay', () => {
   test('should allow domino plays in correct order', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Load state in playing phase with trump selected
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    // Load state in playing phase with trump selected - use all human players for control
+    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], 
+      ['human', 'human', 'human', 'human']);
     
     // Playing area should be visible
     await expect(helper.getLocators().playingArea()).toBeVisible();
     
-    // Get current trick (should be empty initially)
-    const currentTrick = await helper.getCurrentTrick();
-    expect(Array.isArray(currentTrick)).toBe(true);
-    expect(currentTrick.length).toBe(0);
+    // Get current trick length (should be empty initially)
+    const initialTrickLength = await page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      return state?.currentTrick?.length || 0;
+    });
+    expect(initialTrickLength).toBe(0);
     
     // Play a domino
     await helper.playAnyDomino();
     
     // Trick should now have one domino
-    const updatedTrick = await helper.getCurrentTrick();
-    expect(updatedTrick.length).toBeGreaterThan(0);
+    const updatedTrickLength = await page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      return state?.currentTrick?.length || 0;
+    });
+    expect(updatedTrickLength).toBe(1);
   });
 
   test('should handle new game correctly', async ({ page }) => {

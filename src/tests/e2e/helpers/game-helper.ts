@@ -68,10 +68,10 @@ export class PlaywrightGameHelper {
       us: '.score-card.us .score-value',
       them: '.score-card.them .score-value'
     },
-    trump: '.info-badge.trump .info-value',
+    trump: '[data-testid="trump-display"]',
     trick: {
-      table: '[data-testid="trick-table"]',
-      tappable: '[data-testid="trick-table"]',
+      table: '[data-testid="trick-table"], [data-testid*="complete-trick"], [data-testid*="score-hand"]',
+      tappable: '[data-testid="trick-table"], [data-testid*="complete-trick"], [data-testid*="score-hand"]',
       spot: '.trick-spot',
       played: '.trick-spot .played-domino'
     },
@@ -81,12 +81,12 @@ export class PlaywrightGameHelper {
     trumpSelect: (suit: string) => `[data-testid="trump-${suit}"]`,
     flash: '.flash-message',
     debug: {
-      panel: '.debug-panel',
+      panel: '[data-testid="debug-panel"]',
       button: '.debug-btn',
-      closeButton: '.close-button',
-      historyTab: '.tab',
-      historyItem: '.history-item',
-      timeTravelButton: '.time-travel-button'
+      closeButton: '[data-testid="debug-close-button"]',
+      historyTab: '[data-testid="history-tab"]',
+      historyItem: '[data-testid="history-item"]',
+      timeTravelButton: '[data-testid="time-travel-button"], .time-travel-button'
     },
     playingArea: '[data-testid="playing-area"]',
     tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
@@ -108,7 +108,7 @@ export class PlaywrightGameHelper {
       v: 1 as const,
       s: { 
         s: seed,
-        // Default to all human players for deterministic testing
+        // Always specify all human players for deterministic testing (override defaults)
         p: ['h', 'h', 'h', 'h'] as ('h' | 'a')[]
       },
       a: []
@@ -519,11 +519,24 @@ export class PlaywrightGameHelper {
 
   /**
    * Complete a full trick (4 plays)
+   * NOTE: This requires players 1-3 to be AI for automated play
    */
   async playFullTrick(): Promise<void> {
-    for (let i = 0; i < 4; i++) {
-      await this.playAnyDomino();
-    }
+    // First ensure AI is enabled for players 1-3
+    await this.enableAIForOtherPlayers();
+    
+    // Play one domino as player 0
+    await this.playAnyDomino();
+    
+    // In test mode, AI should execute synchronously after human action
+    // Just verify trick is complete (should have 4 dominoes)
+    await this.page.waitForFunction(
+      () => {
+        const state = (window as any).getGameState?.();
+        return state && state.currentTrick && state.currentTrick.length === 4;
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
+    );
   }
 
   /**
@@ -562,20 +575,36 @@ export class PlaywrightGameHelper {
       v: 1 as const,
       s: { 
         s: seed,
-        // Only include player types if not default all-human
-        ...(playerTypes.some((t, i) => t !== 'human') && {
-          p: playerTypes.map(t => t === 'human' ? 'h' : 'a') as ('h' | 'a')[]
-        })
+        // Always include player types to override defaults
+        p: playerTypes.map(t => t === 'human' ? 'h' : 'a') as ('h' | 'a')[]
       },
       a: actions.map((id: string) => ({ i: id }))
     };
     const encoded = encodeURLData(urlData);
     
+    // Include testMode=true to disable controllers, but AI will execute synchronously
+    // when explicitly specified in the URL data
     await this.page.goto(`/?d=${encoded}&testMode=true`, { 
       waitUntil: 'networkidle',
       timeout: PlaywrightGameHelper.TIMEOUTS.slow 
     });
     await this.waitForGameReady();
+    
+    // If AI players are specified, they execute synchronously in test mode
+    // Just verify the state is stable after loading
+    if (playerTypes.some(t => t === 'ai')) {
+      await this.page.waitForFunction(
+        () => {
+          const state = (window as any).getGameState?.();
+          if (!state) return false;
+          // State is stable when current player is human or game ended
+          return state.playerTypes[state.currentPlayer] === 'human' ||
+                 state.phase === 'scoring' ||
+                 state.phase === 'game_over';
+        },
+        { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
+      );
+    }
   }
 
   /**
@@ -594,12 +623,15 @@ export class PlaywrightGameHelper {
   async openDebugPanel(): Promise<void> {
     // Click the debug button in the header
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button).click();
+    // Wait for modal to be visible (modal is a parent of debug panel)
+    await expect(this.page.locator('.modal.modal-open')).toBeVisible();
     await expect(this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel)).toBeVisible();
   }
 
   async closeDebugPanel(): Promise<void> {
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.closeButton).click();
-    await expect(this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel)).not.toBeVisible();
+    // Wait for modal to close
+    await expect(this.page.locator('.modal.modal-open')).not.toBeVisible();
   }
 
   /**
@@ -726,6 +758,60 @@ export class PlaywrightGameHelper {
     };
     
     return this.page.locator(mappings[selector] || selector);
+  }
+
+  /**
+   * Check if current player is human
+   */
+  async isCurrentPlayerHuman(): Promise<boolean> {
+    return await this.page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      if (!state) return true; // Default to human if no state
+      return state.playerTypes[state.currentPlayer] === 'human';
+    });
+  }
+
+  /**
+   * Check if it's currently an AI player's turn
+   */
+  async isAITurn(): Promise<boolean> {
+    return await this.page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      if (!state) return false;
+      return state.playerTypes[state.currentPlayer] === 'ai';
+    });
+  }
+
+  /**
+   * Wait until it's a human player's turn
+   */
+  async waitForHumanTurn(): Promise<void> {
+    await this.page.waitForFunction(
+      () => {
+        const state = (window as any).getGameState?.();
+        if (!state) return false;
+        // Wait for human turn or game end
+        return state.playerTypes[state.currentPlayer] === 'human' ||
+               state.phase === 'scoring' ||
+               state.phase === 'game_over';
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
+    );
+  }
+
+  /**
+   * Check if player 0 can currently take actions
+   */
+  async canPlayerAct(): Promise<boolean> {
+    return await this.page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      if (!state) return false;
+      // Player 0 can act if it's their turn or there are consensus actions
+      return state.currentPlayer === 0 || 
+             (window as any).getAvailableActions?.().some((a: any) => 
+               a.id.includes('agree-') || a.id === 'complete-trick' || a.id === 'score-hand'
+             );
+    });
   }
 
   /**

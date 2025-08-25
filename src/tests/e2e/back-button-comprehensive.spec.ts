@@ -38,14 +38,11 @@ test.describe('Comprehensive Back Button Navigation', () => {
   test('should handle back button during trump selection', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Start fresh with URL updates
-    await helper.goto(12345, { disableUrlUpdates: false });
-    
-    // Get to trump selection - P0 wins bid
-    await helper.bid(30, false);
-    await helper.pass(); // P1 passes
-    await helper.pass(); // P2 passes
-    await helper.pass(); // P3 passes
+    // Load state where P0 won bid and is at trump selection
+    await helper.loadStateWithActions(12345, 
+      ['30', 'p', 'p', 'p'],
+      ['human', 'human', 'human', 'human'] // All human for this test
+    );
     
     // Should be in trump selection
     let phase = await helper.getCurrentPhase();
@@ -82,8 +79,12 @@ test.describe('Comprehensive Back Button Navigation', () => {
     phase = await helper.getCurrentPhase();
     expect(phase).toBe('playing');
     
-    const metrics = await helper.getGameMetrics();
-    expect(metrics.trump.toLowerCase()).toContain('double');
+    // Check trump was set correctly via game state
+    const trumpType = await page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      return state?.trump?.type || 'none';
+    });
+    expect(trumpType).toBe('doubles');
   });
 
   test('should handle back button during playing phase', async ({ page }) => {
@@ -280,39 +281,52 @@ test.describe('Comprehensive Back Button Navigation', () => {
   test('should handle back button with AI enabled', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Start with URL updates
+    // Start with AI players from the beginning - enable URL updates
     await helper.goto(12345, { disableUrlUpdates: false });
     
-    // Enable AI for other players
+    // Enable AI for players 1-3
     await helper.enableAIForOtherPlayers();
     
-    // Make a bid
+    // Store initial URL
+    const urlInitial = page.url();
+    
+    // Make a bid - this will cause AI to respond immediately in test mode
     await helper.bid(30, false);
     
-    // Wait for AI to respond
-    await helper.waitForAIMove();
-    
+    // AI should have already responded (synchronous in test mode)
     // Store URL after AI played
     const urlAfterAI = page.url();
     
-    // Should have multiple actions in URL now
+    // Should have multiple actions in URL now (bid + AI responses)
     const match = urlAfterAI.match(/d=([^&]+)/);
     if (match) {
       const { decodeURLData } = await import('../../game/core/url-compression');
       const decoded = decodeURLData(match[1]!);
-      expect(decoded.a.length).toBeGreaterThan(1); // Should have player bid + AI responses
+      // In test mode with AI, we should have at least 4 actions (P0 bid + 3 AI passes/bids)
+      expect(decoded.a.length).toBeGreaterThanOrEqual(4);
     }
     
-    // Go back
+    // Go back to initial state
     await page.goBack();
     await helper.waitForNavigationRestore();
     
-    // AI should play again from this state
-    await helper.waitForAIMove();
-    
-    // Check we're not stuck
+    // Should be back at start of bidding
     const phase = await helper.getCurrentPhase();
-    expect(['bidding', 'trump_selection', 'playing']).toContain(phase);
+    expect(phase).toBe('bidding');
+    
+    // URL should be initial URL
+    expect(page.url()).toBe(urlInitial);
+    
+    // Forward again should restore the state with AI responses
+    await page.goForward();
+    await helper.waitForNavigationRestore();
+    
+    // Should be back to post-AI state (could be trump selection if P0 won, or more bidding)
+    const phaseAfter = await helper.getCurrentPhase();
+    expect(['bidding', 'trump_selection']).toContain(phaseAfter);
+    
+    // URL should match the post-AI URL
+    expect(page.url()).toBe(urlAfterAI);
   });
 
   test('should preserve browser history when using back button', async ({ page }) => {
