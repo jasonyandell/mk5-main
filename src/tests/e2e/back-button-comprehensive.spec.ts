@@ -10,29 +10,29 @@ test.describe('Comprehensive Back Button Navigation', () => {
   test('should handle back button during bidding phase', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    // Start with URL tracking enabled
+    // Start with URL tracking enabled  
     await helper.goto(12345, { disableUrlUpdates: false });
     
-    // Make first bid
-    await helper.bid(30, false);
-    const urlAfterFirstBid = page.url();
-    
-    // Make second bid (pass)
+    // P0 passes first
     await helper.pass();
-    const urlAfterPass = page.url();
+    const urlAfterFirstPass = page.url();
     
-    // Go back to first bid
+    // P1 bids 30
+    await helper.bid(30, false);
+    const urlAfterBid = page.url();
+    
+    // Go back to before the bid
     await page.goBack();
     await helper.waitForNavigationRestore();
     
-    // URL should match first bid state
-    expect(page.url()).toBe(urlAfterFirstBid);
+    // URL should match first pass state
+    expect(page.url()).toBe(urlAfterFirstPass);
     
-    // Should be able to make different action
+    // P1 should be able to make different action (bid 31)
     await helper.bid(31, false);
     
     // Should have different URL now
-    expect(page.url()).not.toBe(urlAfterPass);
+    expect(page.url()).not.toBe(urlAfterBid);
   });
 
   test('should handle back button during trump selection', async ({ page }) => {
@@ -41,11 +41,11 @@ test.describe('Comprehensive Back Button Navigation', () => {
     // Start fresh with URL updates
     await helper.goto(12345, { disableUrlUpdates: false });
     
-    // Get to trump selection
+    // Get to trump selection - P0 wins bid
     await helper.bid(30, false);
-    await helper.pass();
-    await helper.pass();
-    await helper.pass();
+    await helper.pass(); // P1 passes
+    await helper.pass(); // P2 passes
+    await helper.pass(); // P3 passes
     
     // Should be in trump selection
     let phase = await helper.getCurrentPhase();

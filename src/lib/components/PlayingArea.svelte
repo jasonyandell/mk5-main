@@ -310,7 +310,7 @@
 
 </script>
 
-<div class="flex flex-col h-full relative transition-all duration-300" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
+<div class="flex flex-col h-full relative transition-all duration-300" data-testid="playing-area" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
   <!-- Mobile-optimized Game Info Bar -->
   <div class="mb-3">
     <GameInfoBar 
@@ -450,6 +450,7 @@
       onclick={handleTableClick}
       disabled={false}
       type="button"
+      data-testid={proceedAction ? proceedAction.id : "trick-table"}
       aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
     >
       <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">

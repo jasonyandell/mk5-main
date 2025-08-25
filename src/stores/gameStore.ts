@@ -321,6 +321,55 @@ let controllerManager: ControllerManager;
 // Track if we're in a popstate response phase (controllers responding to navigation)
 let inPopstateResponse = false;
 
+// Helper function to execute AI moves immediately (for tests/replay)
+// Returns the new state and the AI actions taken
+function executeAllAIImmediate(state: GameState): { state: GameState; aiActions: StateTransition[] } {
+  let currentState = state;
+  const aiActions: StateTransition[] = [];
+  
+  // Keep executing AI until no AI player needs to move
+  while (currentState.playerTypes[currentState.currentPlayer] === 'ai') {
+    const availableTransitions = getNextStates(currentState);
+    
+    // Find the best AI action (using existing AI logic)
+    let aiTransition: StateTransition | undefined;
+    
+    // Try to find a play action first
+    aiTransition = availableTransitions.find(t => 
+      t.action.type === 'play' && 
+      'player' in t.action && 
+      t.action.player === currentState.currentPlayer
+    );
+    
+    // If no play action, try bid/pass
+    if (!aiTransition) {
+      aiTransition = availableTransitions.find(t => 
+        (t.action.type === 'bid' || t.action.type === 'pass') && 
+        'player' in t.action && 
+        t.action.player === currentState.currentPlayer
+      );
+    }
+    
+    // If no player action, try trump selection
+    if (!aiTransition) {
+      aiTransition = availableTransitions.find(t => 
+        t.action.type === 'trump' && 
+        currentState.winningBidder === currentState.currentPlayer
+      );
+    }
+    
+    // If no action found, break
+    if (!aiTransition) {
+      break;
+    }
+    
+    currentState = aiTransition.newState;
+    aiActions.push(aiTransition);
+  }
+  
+  return { state: currentState, aiActions };
+}
+
 // Game actions
 export const gameActions = {
   executeAction: (transition: StateTransition, isFromController = false) => {
@@ -331,7 +380,22 @@ export const gameActions = {
     
     
     // Update to new state
-    gameState.set(transition.newState);
+    let newState = transition.newState;
+    
+    // In test mode, execute AI immediately after human actions
+    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
+      const result = executeAllAIImmediate(newState);
+      newState = result.state;
+      // Add AI actions to history
+      if (result.aiActions.length > 0) {
+        const allActions = [...actions, transition, ...result.aiActions];
+        actionHistory.set(allActions);
+        // Update URL with all actions including AI
+        updateURLWithState(get(initialState), allActions, true);
+      }
+    }
+    
+    gameState.set(newState);
     
     // Validate state matches computed state
     validateState();
@@ -350,7 +414,7 @@ export const gameActions = {
     }
     
     // Notify all controllers of state change
-    controllerManager.onStateChange(transition.newState);
+    controllerManager.onStateChange(newState);
   },
   
   skipAIDelays: () => {
@@ -434,6 +498,14 @@ export const gameActions = {
               }
             }
             
+            // After replaying all actions, if in test mode and current player is AI, execute AI
+            if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
+              const result = executeAllAIImmediate(currentState);
+              currentState = result.state;
+              // Add AI actions to the valid actions list
+              validActions.push(...result.aiActions);
+            }
+            
             // Reset AI scheduling for clean state
             currentState = resetAISchedule(currentState);
             
@@ -486,6 +558,29 @@ export const gameActions = {
     }
   },
   
+  enableAI: () => {
+    const state = get(gameState);
+    const newState = { ...state, playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[] };
+    
+    // Update state first
+    gameState.set(newState);
+    
+    // If current player is now AI, execute immediately in test mode
+    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
+      const result = executeAllAIImmediate(newState);
+      gameState.set(result.state);
+      // Add AI actions to history
+      const currentHistory = get(actionHistory);
+      const newHistory = [...currentHistory, ...result.aiActions];
+      actionHistory.set(newHistory);
+      // Update URL with new actions
+      updateURLWithState(get(initialState), newHistory, false);
+    }
+    
+    // Notify controllers of state change
+    controllerManager.onStateChange(get(gameState));
+  },
+  
   loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {
     if (historyState && historyState.initialState && historyState.actions) {
       // Deep clone to prevent mutations
@@ -506,6 +601,14 @@ export const gameActions = {
           const availableActionIds = availableTransitions.map(t => t.id).join(', ');
           throw new Error(`Invalid action in history: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
         }
+      }
+      
+      // After replaying all actions, if in test mode and current player is AI, execute AI
+      if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
+        const result = executeAllAIImmediate(currentState);
+        currentState = result.state;
+        // Add AI actions to the valid actions list
+        validActions.push(...result.aiActions);
       }
       
       // Reset AI scheduling for clean navigation
@@ -553,36 +656,54 @@ if (typeof window !== 'undefined') {
 export { controllerManager };
 
 // Pure game loop - advances game ticks and executes AI decisions
-if (typeof window !== 'undefined') {
-  let animationFrame: number | null = null;
+let animationFrame: number | null = null;
+let gameLoopRunning = false;
+
+const runGameLoop = () => {
+  const currentState = get(gameState);
   
-  const runGameLoop = () => {
-    const currentState = get(gameState);
+  // Use pure tick function to advance game state
+  const newState = tickGame(currentState);
+  
+  // Only update store if state actually changed
+  if (newState !== currentState) {
+    // Set the new state without triggering URL updates or controller notifications
+    // (the tick already handled AI decisions purely)
+    gameState.set(newState);
     
-    // Use pure tick function to advance game state
-    const newState = tickGame(currentState);
-    
-    // Only update store if state actually changed
-    if (newState !== currentState) {
-      // Set the new state without triggering URL updates or controller notifications
-      // (the tick already handled AI decisions purely)
-      gameState.set(newState);
-      
-      // Validate the new state
-      validateState();
-    }
-    
-    // Schedule next frame
+    // Validate the new state
+    validateState();
+  }
+  
+  // Schedule next frame if still running
+  if (gameLoopRunning) {
     animationFrame = requestAnimationFrame(runGameLoop);
-  };
+  }
+};
+
+// Export function to start game loop on demand
+export function startGameLoop(): void {
+  // Don't start in test mode or if already running
+  if (testMode || gameLoopRunning) {
+    return;
+  }
   
-  // Start the game loop
+  gameLoopRunning = true;
   animationFrame = requestAnimationFrame(runGameLoop);
-  
-  // Clean up on page unload
+}
+
+// Export function to stop game loop
+export function stopGameLoop(): void {
+  gameLoopRunning = false;
+  if (animationFrame !== null) {
+    cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  }
+}
+
+// Clean up on page unload
+if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    if (animationFrame !== null) {
-      cancelAnimationFrame(animationFrame);
-    }
+    stopGameLoop();
   });
 }
