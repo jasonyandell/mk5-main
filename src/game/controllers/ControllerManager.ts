@@ -10,7 +10,6 @@ import { getNextStates } from '../core/gameEngine';
 export class ControllerManager {
   private controllers = new Map<number, PlayerController>();
   private executeTransitionCallback: (transition: StateTransition) => void;
-  private currentState?: GameState;
   
   constructor(executeTransition: (transition: StateTransition) => void) {
     this.executeTransitionCallback = executeTransition;
@@ -46,7 +45,6 @@ export class ControllerManager {
    * Called whenever game state changes
    */
   onStateChange(state: GameState): void {
-    this.currentState = state;
     const transitions = getNextStates(state);
     
     // Notify ALL controllers - they decide if they need to act
@@ -59,7 +57,7 @@ export class ControllerManager {
    * Switch a player to AI control
    * Note: AI is now handled via pure functions, so we just remove the human controller
    */
-  switchToAI(playerId: number, strategy?: 'simple' | 'smart' | 'random'): void {
+  switchToAI(playerId: number, _strategy?: 'simple' | 'smart' | 'random'): void {
     const old = this.controllers.get(playerId);
     if (old?.destroy) {
       old.destroy();

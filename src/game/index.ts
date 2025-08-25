@@ -20,7 +20,8 @@ export type {
 
 export { 
   GAME_CONSTANTS, 
-  BID_TYPES, 
+  BID_TYPES,
+  GAME_PHASES, 
   TRUMP_SELECTIONS, 
   DOMINO_VALUES, 
   POINT_VALUES 

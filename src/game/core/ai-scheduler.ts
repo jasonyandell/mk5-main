@@ -2,6 +2,7 @@ import type { GameState, StateTransition } from '../types';
 import { SimpleAIStrategy, SmartAIStrategy, RandomAIStrategy } from '../controllers/strategies';
 import type { AIStrategy } from '../controllers/types';
 import { getNextStates } from './gameEngine';
+import { GAME_PHASES } from '../constants';
 
 // Strategy instances - reused for pure functions
 const strategies = {
@@ -13,7 +14,7 @@ const strategies = {
 /**
  * Get the AI strategy for a player (can be extended to support per-player strategies)
  */
-function getStrategyForPlayer(playerId: number, state: GameState): AIStrategy {
+function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy {
   // For now, all AI players use smart strategy
   // Could extend to check state.playerStrategies or similar
   return strategies.smart;
@@ -67,7 +68,7 @@ export function getAIDelayTicks(action: StateTransition): number {
  */
 export function scheduleAIDecisions(state: GameState): GameState {
   // Don't modify if game is over
-  if (state.phase === 'game_over') {
+  if (state.phase === GAME_PHASES.GAME_END) {
     return state;
   }
   
@@ -119,7 +120,10 @@ export function executeScheduledAIActions(state: GameState): GameState {
   
   // Execute the first ready action
   if (ready.length > 0) {
-    const [playerId, scheduled] = ready[0];
+    const firstReady = ready[0];
+    if (!firstReady) return state;
+    
+    const [playerId, scheduled] = firstReady;
     const newSchedule = { ...state.aiSchedule };
     delete newSchedule[playerId];
     
@@ -142,10 +146,13 @@ export function skipAIDelays(state: GameState): GameState {
   
   // Set all scheduled actions to execute now
   for (const playerId in newSchedule) {
-    newSchedule[playerId] = {
-      ...newSchedule[playerId],
-      executeAtTick: state.currentTick
-    };
+    const scheduled = newSchedule[playerId];
+    if (scheduled) {
+      newSchedule[playerId] = {
+        ...scheduled,
+        executeAtTick: state.currentTick
+      };
+    }
   }
   
   return { ...state, aiSchedule: newSchedule };

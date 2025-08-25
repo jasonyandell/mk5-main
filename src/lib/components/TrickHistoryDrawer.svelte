@@ -4,7 +4,7 @@
   
   interface CompletedTrick {
     plays: Play[];
-    winner: number;
+    winner?: number;
     points: number;
   }
   
@@ -21,7 +21,6 @@
     completedTricks = [], 
     currentTrick = [],
     trickNumber = 1,
-    isOpen = false,
     onToggle,
     onStateChange
   }: Props = $props();
@@ -41,13 +40,13 @@
   // });
   
   function handleTouchStart(e: TouchEvent) {
-    dragStartX = e.touches[0].clientX;
+    dragStartX = e.touches[0]?.clientX ?? 0;
     isDragging = true;
   }
   
   function handleTouchMove(e: TouchEvent) {
     if (!isDragging) return;
-    dragCurrentX = e.touches[0].clientX;
+    dragCurrentX = e.touches[0]?.clientX ?? 0;
     const diff = dragCurrentX - dragStartX;
     
     // Update drawer position based on drag
@@ -108,6 +107,9 @@
     bind:this={drawerElement}
     class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex pointer-events-auto"
     style="width: min(70vw, 280px); transform: translateX({drawerState === 'expanded' ? '0' : '-100%'});"
+    ontouchstart={handleTouchStart}
+    ontouchmove={handleTouchMove}
+    ontouchend={handleTouchEnd}
   >
     <!-- Panel Content -->
     <div class="flex-1 h-full overflow-y-auto">
@@ -135,16 +137,13 @@
                 <div class="flex justify-center">
                   {#if play}
                     <div 
-                      class="transition-all"
-                      class:scale-110={trick.winner === playerIndex}
-                      class:drop-shadow-md={trick.winner === playerIndex}
+                      class="transition-all {trick.winner === playerIndex ? 'scale-110 drop-shadow-md ring-2 ring-primary rounded' : ''}"
                     >
                       <Domino 
                         domino={play.domino} 
                         small={true} 
                         showPoints={false} 
                         clickable={false}
-                        class={trick.winner === playerIndex ? 'ring-2 ring-primary' : ''}
                       />
                     </div>
                   {:else}
@@ -154,7 +153,11 @@
               {/each}
             </div>
             <div class="text-right text-xs text-base-content/70 mt-1">
-              P{trick.winner} won ({trick.points} pts)
+              {#if trick.winner !== undefined}
+                P{trick.winner} won ({trick.points} pts)
+              {:else}
+                ({trick.points} pts)
+              {/if}
             </div>
           </div>
         {/each}
@@ -230,6 +233,7 @@
 
 <style>
   /* Ensure smooth animations */
+  /* svelte-ignore css_unused_selector */
   .drawer-transition {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }

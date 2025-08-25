@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import Header from './lib/components/Header.svelte';
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
-  import { gameActions, gamePhase, gameState, availableActions } from './stores/gameStore';
+  import { gameActions, gamePhase, gameState } from './stores/gameStore';
+  import { GAME_PHASES } from './game';
   import { fly, fade } from 'svelte/transition';
 
   let showDebugPanel = $state(false);
@@ -66,16 +67,16 @@
     // 1. Loading from a URL with any game state
     // 2. Natural game progression
     
-    if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') {
+    if ($gamePhase === GAME_PHASES.BIDDING || $gamePhase === GAME_PHASES.TRUMP_SELECTION) {
       // These phases need the Actions panel for decision making
       activeView = 'actions';
-    } else if ($gamePhase === 'playing' || $gamePhase === 'setup') {
+    } else if ($gamePhase === GAME_PHASES.PLAYING || $gamePhase === GAME_PHASES.SETUP) {
       // Playing phase and setup should show the game board
       activeView = 'game';
-    } else if ($gamePhase === 'scoring') {
+    } else if ($gamePhase === GAME_PHASES.SCORING) {
       // Scoring phase: stay on game view to see the "Score hand" button
       activeView = 'game';
-    } else if ($gamePhase === 'game_end') {
+    } else if ($gamePhase === GAME_PHASES.GAME_END) {
       // Game end: could show either, let's show game board with final state
       activeView = 'game';
     }
@@ -97,7 +98,7 @@
   <main class="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y pb-safe relative {activeView === 'actions' ? 'overflow-hidden' : ''}">
     {#if activeView === 'game'}
       <div transition:fade={{ duration: 200 }}>
-        <PlayingArea onswitchToActions={() => activeView = 'actions'} />
+        <PlayingArea />
       </div>
     {:else}
       <div transition:fade={{ duration: 200 }} class="h-full flex flex-col overflow-hidden">

@@ -21,6 +21,15 @@ export const BID_TYPES = {
   PLUNGE: 'plunge' as const,
 };
 
+export const GAME_PHASES = {
+  SETUP: 'setup' as const,
+  BIDDING: 'bidding' as const,
+  TRUMP_SELECTION: 'trump_selection' as const,
+  PLAYING: 'playing' as const,
+  SCORING: 'scoring' as const,
+  GAME_END: 'game_end' as const,
+} as const;
+
 
 // New TrumpSelection constants
 export const TRUMP_SELECTIONS: Record<string, TrumpSelection> = {
