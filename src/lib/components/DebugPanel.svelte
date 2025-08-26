@@ -137,39 +137,79 @@
     <!-- Content -->
     <div class="flex-1 overflow-auto p-4 pb-16">
       {#if activeTab === 'theme'}
+        {@const themes = [
+          { value: 'cupcake', emoji: '🧁', name: 'Cupcake' },
+          { value: 'light', emoji: '☀️', name: 'Light' },
+          { value: 'dark', emoji: '🌙', name: 'Dark' },
+          { value: 'bumblebee', emoji: '🐝', name: 'Bumblebee' },
+          { value: 'emerald', emoji: '💚', name: 'Emerald' },
+          { value: 'corporate', emoji: '💼', name: 'Corporate' },
+          { value: 'retro', emoji: '📻', name: 'Retro' },
+          { value: 'cyberpunk', emoji: '🤖', name: 'Cyberpunk' },
+          { value: 'valentine', emoji: '💝', name: 'Valentine' },
+          { value: 'garden', emoji: '🌸', name: 'Garden' },
+          { value: 'forest', emoji: '🌲', name: 'Forest' },
+          { value: 'lofi', emoji: '🎵', name: 'Lo-Fi' },
+          { value: 'pastel', emoji: '🎨', name: 'Pastel' },
+          { value: 'wireframe', emoji: '📐', name: 'Wireframe' },
+          { value: 'luxury', emoji: '💎', name: 'Luxury' },
+          { value: 'dracula', emoji: '🧛', name: 'Dracula' },
+          { value: 'autumn', emoji: '🍂', name: 'Autumn' },
+          { value: 'business', emoji: '👔', name: 'Business' },
+          { value: 'coffee', emoji: '☕', name: 'Coffee' },
+          { value: 'winter', emoji: '❄️', name: 'Winter' }
+        ]}
+        
+        {@const currentTheme = typeof document !== 'undefined' ? 
+          document.documentElement.getAttribute('data-theme') || 'cupcake' : 
+          'cupcake'}
+        
         <div class="space-y-4">
           <div class="prose prose-sm">
             <h3>Choose Theme</h3>
           </div>
-          <select 
-            class="select select-bordered select-lg w-full"
-            data-choose-theme
-            value={typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'cupcake' : 'cupcake'}
-            onchange={(e) => {
-              const theme = e.currentTarget.value;
-              document.documentElement.setAttribute('data-theme', theme);
-            }}>
-            <option value="cupcake">🧁 Cupcake</option>
-            <option value="light">☀️ Light</option>
-            <option value="dark">🌙 Dark</option>
-            <option value="bumblebee">🐝 Bumblebee</option>
-            <option value="emerald">💚 Emerald</option>
-            <option value="corporate">💼 Corporate</option>
-            <option value="retro">📻 Retro</option>
-            <option value="cyberpunk">🤖 Cyberpunk</option>
-            <option value="valentine">💝 Valentine</option>
-            <option value="garden">🌸 Garden</option>
-            <option value="forest">🌲 Forest</option>
-            <option value="lofi">🎵 Lo-Fi</option>
-            <option value="pastel">🎨 Pastel</option>
-            <option value="wireframe">📐 Wireframe</option>
-            <option value="luxury">💎 Luxury</option>
-            <option value="dracula">🧛 Dracula</option>
-            <option value="autumn">🍂 Autumn</option>
-            <option value="business">👔 Business</option>
-            <option value="coffee">☕ Coffee</option>
-            <option value="winter">❄️ Winter</option>
-          </select>
+          
+          <div class="grid grid-cols-2 gap-3">
+            {#each themes as theme}
+              <button
+                class="relative overflow-hidden rounded-lg transition-transform active:scale-95 {currentTheme === theme.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''}"
+                onclick={() => document.documentElement.setAttribute('data-theme', theme.value)}
+                data-theme={theme.value}
+              >
+                <div class="bg-base-100 p-3">
+                  <!-- Color preview dots -->
+                  <div class="flex gap-1.5 mb-2">
+                    <div class="bg-primary w-6 h-6 rounded-full"></div>
+                    <div class="bg-secondary w-6 h-6 rounded-full"></div>
+                    <div class="bg-accent w-6 h-6 rounded-full"></div>
+                    <div class="bg-neutral w-6 h-6 rounded-full"></div>
+                  </div>
+                  
+                  <!-- Theme name -->
+                  <div class="flex items-center gap-1 text-sm font-medium text-base-content">
+                    <span>{theme.emoji}</span>
+                    <span>{theme.name}</span>
+                  </div>
+                  
+                  <!-- Mini component preview -->
+                  <div class="flex gap-1 mt-2">
+                    <div class="badge badge-primary badge-xs">A</div>
+                    <div class="btn btn-secondary btn-xs">B</div>
+                    <div class="bg-base-200 rounded px-1 text-xs text-base-content">C</div>
+                  </div>
+                </div>
+                
+                <!-- Selected indicator -->
+                {#if currentTheme === theme.value}
+                  <div class="absolute top-1 right-1 bg-primary text-primary-content rounded-full p-0.5">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                {/if}
+              </button>
+            {/each}
+          </div>
         </div>
       {/if}
 
