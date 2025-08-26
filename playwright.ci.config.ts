@@ -1,21 +1,43 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Import base configuration
+import baseConfig from './playwright.config';
+
 const PORT = parseInt(process.env.PORT || '60101');
 
 export default defineConfig({
+  ...baseConfig,
+  
+  // Override for CI optimization
   testDir: '.',
   testMatch: ['src/tests/e2e/**/*.spec.ts'],
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : 4,
+  
+  // CI-specific settings
+  workers: 1, // GitHub Actions has 2 CPUs, but 1 worker is more stable
+  retries: 2, // More retries in CI
+  
+  // Mobile-first testing for faster execution
+  projects: [
+    {
+      name: 'mobile-chrome',
+      use: { 
+        ...devices['Pixel 5'],
+        // Force landscape orientation for game
+        viewport: { width: 812, height: 375 }
+      },
+    },
+  ],
+  
+  // Use the same reporter config
   reporter: [['html', { open: 'never' }]],
-  timeout: 10000,
+  
   use: {
     baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     actionTimeout: 2000,
     navigationTimeout: 5000,
+    // Headless for CI
+    headless: true,
     // Disable animations for faster, more reliable tests
     launchOptions: {
       args: ['--force-prefers-reduced-motion']
@@ -24,17 +46,10 @@ export default defineConfig({
     reducedMotion: 'reduce',
   },
 
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
-
   webServer: {
     command: 'npm run dev',
     port: PORT,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false, // Always start fresh in CI
     timeout: 30000,
   },
 });

@@ -239,7 +239,7 @@
       data-trick-button="true"
       aria-label={$viewProjection.tooltips.proceedAction || "Click to skip AI delays"}
     >
-      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {$viewProjection.actions.proceed ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
+      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {$viewProjection.actions.proceed ? 'motion-safe:animate-pulse-table' : ''} w-[260px] h-[260px]">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
       {#if $viewProjection.scoring.handResults}

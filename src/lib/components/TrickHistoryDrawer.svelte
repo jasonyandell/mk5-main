@@ -45,8 +45,8 @@
   
 </script>
 
-<!-- Mobile: Left Side Panel -->
-<div class="lg:hidden fixed left-0 top-0 h-full z-40 flex pointer-events-none">
+<!-- Unified Side Panel for all screen sizes -->
+<div class="fixed left-0 top-0 h-full z-40 flex pointer-events-none">
   <!-- Side Panel Container -->
   <div
     class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex flex-col pointer-events-auto"
@@ -176,11 +176,6 @@
       aria-label="Close drawer"
     ></button>
   {/if}
-</div>
-
-<!-- Desktop/Landscape: Side Drawer (can implement later) -->
-<div class="hidden lg:block">
-  <!-- Desktop implementation would go here -->
 </div>
 
 <style>
