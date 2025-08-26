@@ -114,17 +114,17 @@
 </script>
 
 <!-- Full screen mobile drawer -->
-<div class="fixed inset-0 z-50 bg-base-100 flex flex-col" data-testid="debug-panel">
+<div class="fixed inset-0 z-50 bg-base-100 flex flex-col" data-testid="settings-panel">
   <!-- Header with mobile-friendly close -->
   <div class="navbar bg-base-200 shadow-lg">
     <div class="flex-1">
-      <h2 class="text-lg font-semibold">Debug</h2>
+      <h2 class="text-lg font-semibold">Settings</h2>
     </div>
     <button 
       class="btn btn-ghost btn-square"
-      data-testid="debug-close-button"
+      data-testid="settings-close-button"
       onclick={onclose}
-      aria-label="Close debug panel"
+      aria-label="Close settings panel"
     >
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -161,8 +161,8 @@
         ]}
         
         {@const currentTheme = typeof document !== 'undefined' ? 
-          document.documentElement.getAttribute('data-theme') || 'cupcake' : 
-          'cupcake'}
+          document.documentElement.getAttribute('data-theme') || 'coffee' : 
+          'coffee'}
         
         <div class="space-y-4">
           <div class="prose prose-sm">
@@ -174,9 +174,8 @@
               <button
                 class="relative overflow-hidden rounded-lg transition-transform active:scale-95 {currentTheme === theme.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''}"
                 onclick={() => document.documentElement.setAttribute('data-theme', theme.value)}
-                data-theme={theme.value}
               >
-                <div class="bg-base-100 p-3">
+                <div data-theme={theme.value} class="bg-base-100 p-3">
                   <!-- Color preview dots -->
                   <div class="flex gap-1.5 mb-2">
                     <div class="bg-primary w-6 h-6 rounded-full"></div>

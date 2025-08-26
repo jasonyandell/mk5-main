@@ -182,7 +182,7 @@ test.describe('URL State Management', () => {
       
       // Verify game metrics
       const metrics = await helper.getGameMetrics();
-      expect(metrics.trump.toLowerCase()).toBe('2s'); // twos displayed as "2s"
+      expect(metrics.trump.toLowerCase()).toBe('deuces(2)'); // twos displayed as "deuces(2)"
     });
 
     test('should survive page refresh', async ({ page }) => {

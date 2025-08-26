@@ -204,7 +204,7 @@ export function createViewProjection(
   
   // Led suit display
   const ledSuitDisplay = gameState.currentSuit >= 0 && gameState.currentSuit < 7
-    ? ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'][gameState.currentSuit] ?? null
+    ? ['Blanks', 'Aces(1)', 'Deuces(2)', 'Tres(3)', 'Fours', 'Fives', 'Sixes'][gameState.currentSuit] ?? null
     : null;
   
   // Hand results (only during scoring)
@@ -319,7 +319,7 @@ function getDominoTooltip(
     return isPlayable ? `${dominoStr} - Click to play` : dominoStr;
   }
   
-  const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes', 'doubles'];
+  const suitNames = ['blanks', 'aces(1)', 'deuces(2)', 'tres(3)', 'fours', 'fives', 'sixes', 'doubles'];
   const ledSuitName = leadSuit === 7 ? 'doubles' : suitNames[leadSuit];
   
   if (isPlayable) {
@@ -362,7 +362,7 @@ function getTrumpDisplay(trump: TrumpSelection): string {
   if (trump.type === 'no-trump') return 'No Trump';
   if (trump.type === 'doubles') return 'Doubles';
   if (trump.type === 'suit' && trump.suit !== undefined) {
-    const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
+    const suitNames = ['Blanks', 'Aces(1)', 'Deuces(2)', 'Tres(3)', 'Fours', 'Fives', 'Sixes'];
     return suitNames[trump.suit] ?? 'Unknown';
   }
   return 'Unknown';
@@ -378,13 +378,29 @@ function calculateHandResults(gameState: GameState, playerPerspective: number = 
     .filter(t => t.winner !== undefined && t.winner % 2 === 1)
     .reduce((sum, t) => sum + (t.points || 0), 0);
   
-  const bidAmount = gameState.currentBid.value || 0;
-  const biddingPlayer = gameState.winningBidder;
-  const biddingTeam = biddingPlayer % 2; // Players 0,2 are team 0; Players 1,3 are team 1
-  const bidMade = biddingTeam === 0 ? team0Points >= bidAmount : team1Points >= bidAmount;
+  // Default to 42 points required (for marks, plunge, splash, etc.)
+  // Only use bid value for explicit points bids
+  const requiredPoints = (gameState.currentBid.type === 'points' && gameState.currentBid.value != null)
+    ? gameState.currentBid.value
+    : 42;
   
-  // Determine player's team (0 = team 0, 1 = team 1)
-  const playerTeam = playerPerspective % 2;
+  const biddingPlayer = gameState.winningBidder;
+  const biddingTeam = gameState.players[biddingPlayer]?.teamId;
+  
+  if (biddingTeam === undefined) {
+    return null; // No valid bidder
+  }
+  
+  const bidMade = biddingTeam === 0 
+    ? team0Points >= requiredPoints 
+    : team1Points >= requiredPoints;
+  
+  // Determine player's team from player object
+  const playerTeam = gameState.players[playerPerspective]?.teamId;
+  
+  if (playerTeam === undefined) {
+    return null; // Invalid player perspective
+  }
   
   // Generate perspective-aware messages
   let resultMessage: string;
@@ -414,7 +430,7 @@ function calculateHandResults(gameState: GameState, playerPerspective: number = 
   return {
     team0Points,
     team1Points,
-    bidAmount,
+    bidAmount: requiredPoints,
     biddingTeam,
     bidMade,
     winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0),
