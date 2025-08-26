@@ -6,7 +6,6 @@
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
-  import { calculateTrickWinner } from '../../game/core/scoring';
   
   const dispatch = createEventDispatcher();
 
