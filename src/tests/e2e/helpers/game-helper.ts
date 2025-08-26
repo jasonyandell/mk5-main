@@ -434,7 +434,6 @@ export class PlaywrightGameHelper {
         } else {
           throw new Error('No dominoes found to play');
         }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         // If page/context is closed, throw a more informative error
         if (err.message?.includes('Target page, context or browser has been closed')) {
