@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState, availableActions, gameActions, currentPlayer, gamePhase, teamInfo, biddingInfo, playerView, uiState, controllerManager } from '../../stores/gameStore';
+  import { gameActions, viewProjection, controllerManager, availableActions } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -9,102 +9,6 @@
   import { calculateTrickWinner } from '../../game/core/scoring';
   
   const dispatch = createEventDispatcher();
-  
-  // Check if we're in test mode
-  const urlParams = typeof window !== 'undefined' ? 
-    new URLSearchParams(window.location.search) : null;
-  const testMode = urlParams?.get('testMode') === 'true';
-
-  // Extract playable dominoes from available actions
-  const playableDominoes = $derived((() => {
-    const dominoes = new Set<string>();
-    $availableActions
-      .filter(action => action.id.startsWith('play-'))
-      .forEach(action => {
-        const dominoId = action.id.replace('play-', '');
-        dominoes.add(dominoId);
-        // Add reversed version (5-3 and 3-5)
-        const parts = dominoId.split('-');
-        if (parts.length === 2) {
-          dominoes.add(`${parts[1]}-${parts[0]}`);
-        }
-      });
-    return dominoes;
-  })());
-
-  // Check if a domino is playable
-  function isDominoPlayable(domino: DominoType): boolean {
-    return playableDominoes.has(`${domino.high}-${domino.low}`) || 
-           playableDominoes.has(`${domino.low}-${domino.high}`);
-  }
-
-  // Get tooltip for domino based on play state
-  function getDominoTooltip(domino: DominoType): string {
-    const dominoStr = `${domino.high}-${domino.low}`;
-    
-    // Not playing phase
-    if ($gamePhase !== 'playing') {
-      return dominoStr;
-    }
-
-    // Check if it's this player's turn
-    if ($gameState.currentPlayer !== 0) { // Assuming player 0 is the human player
-      return `${dominoStr} - Waiting for P${$gameState.currentPlayer}'s turn`;
-    }
-
-    const isPlayable = isDominoPlayable(domino);
-    
-    // First play of trick
-    if ($gameState.currentTrick.length === 0) {
-      return isPlayable ? `${dominoStr} - Click to lead this domino` : dominoStr;
-    }
-
-    // Must follow suit
-    const leadSuit = $gameState.currentSuit;
-    if (leadSuit === -1) {
-      return isPlayable ? `${dominoStr} - Click to play` : dominoStr;
-    }
-
-    // Get suit names
-    const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes', 'doubles'];
-    const ledSuitName = leadSuit === 7 ? 'doubles' : suitNames[leadSuit];
-
-    if (isPlayable) {
-      // Check if this domino follows suit
-      if (leadSuit === 7 && domino.high === domino.low) {
-        return `${dominoStr} - Double, follows ${ledSuitName}`;
-      } else if (leadSuit !== 7 && (domino.high === leadSuit || domino.low === leadSuit)) {
-        return `${dominoStr} - Has ${ledSuitName}, follows suit`;
-      } else {
-        // Must be trump or can't follow suit
-        if ($gameState.trump.type === 'doubles' && domino.high === domino.low) {
-          return `${dominoStr} - Trump (double)`;
-        } else if ($gameState.trump.type === 'suit' && 
-                   (domino.high === $gameState.trump.suit || domino.low === $gameState.trump.suit)) {
-          return `${dominoStr} - Trump`;
-        } else {
-          return `${dominoStr} - Can't follow ${ledSuitName}`;
-        }
-      }
-    } else {
-      // Not playable - must explain why
-      if (leadSuit === 7) {
-        return `${dominoStr} - Not a double, can't follow ${ledSuitName}`;
-      } else {
-        // Check if player has the led suit
-        const playerHasLedSuit = playerHand.some(d => 
-          d.high === leadSuit || d.low === leadSuit
-        );
-        
-        if (playerHasLedSuit) {
-          return `${dominoStr} - Must follow ${ledSuitName}`;
-        } else {
-          // This shouldn't happen if the domino is marked unplayable
-          return `${dominoStr} - Invalid play`;
-        }
-      }
-    }
-  }
 
   // Handle domino click
   function handleDominoClick(event: CustomEvent<DominoType>) {
@@ -119,163 +23,43 @@
     }
   }
 
-  // Get trump display text
-  // @ts-ignore - Used in template
-  const trumpDisplay = $derived((() => {
-    if ($gameState.trump.type === 'none') return 'Not Selected';
-    if ($gameState.trump.type === 'no-trump') return 'No Trump';
-    if ($gameState.trump.type === 'doubles') return 'Doubles';
-    if ($gameState.trump.type === 'suit' && $gameState.trump.suit !== undefined) {
-      const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
-      return suitNames[$gameState.trump.suit];
-    }
-    return 'Unknown';
-  })());
-
-  // Get led suit display
-  // @ts-ignore - Used in template
-  const ledSuitDisplay = $derived((() => {
-    if ($gameState.currentSuit === -1) return null;
-    const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
-    return suitNames[$gameState.currentSuit];
-  })());
-
-  // Current player's hand (always player 0 for privacy, unless in test mode)
-  const playerHand = $derived(testMode ? ($currentPlayer?.hand || []) : ($playerView?.self?.hand || []));
-
-  // Check if AI is thinking (but not during consensus actions)
-  const isThinking = $derived($gameState.phase === 'playing' && 
-                   $gameState.currentPlayer !== 0 &&
-                   controllerManager.isAIControlled($gameState.currentPlayer) &&
-                   $gameState.currentTrick.length < 4);  // Not thinking if trick is complete
-
-  // Current trick plays
-  const currentTrickPlays = $derived($gameState.currentTrick || []);
-
   // Track newly played dominoes for animation
   let playedDominoIds = $state(new Set<string>());
   $effect(() => {
     // Add new plays to the set
+    const currentTrickPlays = $viewProjection.trick.current.plays.filter(p => p !== null);
     currentTrickPlays.forEach(play => {
-      const id = `${play.player}-${play.domino.high}-${play.domino.low}`;
-      playedDominoIds.add(id);
+      if (play) {
+        const id = `${play.player}-${play.domino.high}-${play.domino.low}`;
+        playedDominoIds.add(id);
+      }
     });
   });
   
-  // Calculate the winning player for the current trick
-  const trickWinner = $derived((() => {
-    if (currentTrickPlays.length === 4) {
-      return calculateTrickWinner(
-        currentTrickPlays,
-        $gameState.trump,
-        $gameState.currentSuit
-      );
-    }
-    return -1;
-  })());
-
   // Create placeholder array for 4 players
   const playerPositions = [0, 1, 2, 3];
 
-  // Highlighting is only available in ActionPanel during bidding/trump selection
-  
   // State for expandable trick counter
   let showTrickHistory = false;
   let drawerState = $state<'collapsed' | 'expanded'>('collapsed');
-  
-  // Get completed tricks from game state
-  const completedTricks = $derived($gameState.tricks || []);
-  
-  // Calculate current trick number (completed + 1, unless hand is over)
-  const currentTrickNumber = $derived((() => {
-    if ($gamePhase === 'scoring' || $gamePhase === 'bidding') {
-      return completedTricks.length; // Show total tricks completed
-    }
-    return Math.min(completedTricks.length + 1, 7); // Current trick being played
-  })());
-  
-
-  
-  // Extract simple proceed actions that should show in play area
-  // @ts-ignore - Used in template
-  const proceedAction = $derived((() => {
-    // These actions should always show when available, regardless of turn
-    const alwaysShowActions = ['complete-trick', 'score-hand'];
-    
-    // First check for actual complete/score actions
-    const alwaysShowAction = $availableActions.find(action => 
-      alwaysShowActions.includes(action.id)
-    );
-    
-    if (alwaysShowAction) {
-      return alwaysShowAction;
-    }
-    
-    // Check for consensus actions that the human player (player 0) can take
-    const humanConsensusAction = $availableActions.find(action => 
-      (action.id === 'agree-complete-trick-0' || action.id === 'agree-score-hand-0')
-    );
-    
-    if (humanConsensusAction) {
-      return humanConsensusAction;
-    }
-    
-    // For other actions, only show if it's the human player's turn
-    if ($gameState.currentPlayer !== 0) {
-      return null;
-    }
-    
-    // Look for other simple proceed actions
-    const simpleAction = $availableActions.find(action => 
-      action.id === 'start-hand' ||
-      action.id === 'continue' ||
-      action.id === 'next-trick'
-    );
-    
-    return simpleAction || null;
-  })());
-  
-  // Calculate hand results for scoring phase
-  const handResults = $derived((() => {
-    if ($gamePhase !== 'scoring') return null;
-
-    // Get total points for each team from the authoritative teamInfo store
-    const team0Points = $teamInfo.scores[0];
-    const team1Points = $teamInfo.scores[1];
-
-    // Get bid information
-    const bidAmount = $biddingInfo.currentBid.value || 0;
-    const biddingTeam = Math.floor($biddingInfo.winningBidder / 2);
-
-    // Determine if bid was made
-    const bidMade = biddingTeam === 0 ? team0Points >= bidAmount : team1Points >= bidAmount;
-
-    return {
-      team0Points,
-      team1Points,
-      bidAmount,
-      biddingTeam,
-      bidMade,
-      winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0)
-    };
-  })());
   
   // Debounce flag
   let actionPending = false;
   
   // Track phase for transitions
-  let previousPhase = $gamePhase;
+  let previousPhase = $viewProjection.phase;
   
   // React to phase changes for panel switching
   $effect(() => {
-    if ($gamePhase === 'bidding' && previousPhase === 'scoring') {
+    if ($viewProjection.phase === 'bidding' && previousPhase === 'scoring') {
       dispatch('switchToActions');
     }
-    previousPhase = $gamePhase;
+    previousPhase = $viewProjection.phase;
   });
   
   // Handle action execution
   function handleProceedAction() {
+    const proceedAction = $viewProjection.actions.proceed;
     if (!proceedAction || actionPending) return;
     
     // Set debounce flag
@@ -300,7 +84,7 @@
   // Handle table click to skip AI delays
   function handleTableClick() {
     // If there's a proceed action, handle it
-    if (proceedAction) {
+    if ($viewProjection.actions.proceed) {
       handleProceedAction();
     } else {
       // Otherwise, skip AI delays
@@ -311,20 +95,23 @@
 </script>
 
 <div class="flex flex-col h-full relative transition-all duration-300" data-testid="playing-area" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
-  <!-- Mobile-optimized Game Info Bar -->
-  <div class="mb-3">
+  <!-- Mobile-optimized Game Info Bar (sticky during playing) -->
+  <div class="{$viewProjection.phase === 'playing' ? 'sticky top-0 z-10 bg-base-100' : ''} mb-3">
     <GameInfoBar 
-      phase={$gamePhase}
-      currentPlayer={$gameState.currentPlayer}
-      trump={$gameState.trump}
-      trickNumber={currentTrickNumber}
+      phase={$viewProjection.phase}
+      currentPlayer={$viewProjection.currentPlayer}
+      trump={$viewProjection.trump.selection}
+      trickNumber={$viewProjection.trick.number}
       totalTricks={7}
-      bidWinner={$biddingInfo.winningBidder}
-      currentBid={$biddingInfo.currentBid}
+      bidWinner={$viewProjection.bidding.winningBidder}
+      currentBid={$viewProjection.bidding.currentBid}
+      trickLeader={$viewProjection.trick.trickLeader}
+      ledSuit={$viewProjection.trick.ledSuit}
+      ledSuitDisplay={$viewProjection.trick.ledSuitDisplay}
     />
   </div>
   
-  {#if showTrickHistory && ($gamePhase === 'playing' || $gamePhase === 'scoring')}
+  {#if showTrickHistory && ($viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring')}
     <div class="bg-base-100 rounded-xl mx-4 p-3 shadow-md border border-base-300" transition:slide={{ duration: 200 }}>
       <!-- Player headers -->
       <div class="flex items-center gap-3 px-3 pb-3 mb-3 border-b-2 border-base-300">
@@ -338,7 +125,7 @@
         <span class="min-w-[70px]"></span>
       </div>
       
-      {#each completedTricks as trick, index}
+      {#each $viewProjection.trick.completed as trick, index}
         {@const sortedPlays = [0, 1, 2, 3].map(playerNum => 
           trick.plays.find(play => play.player === playerNum)
         )}
@@ -363,12 +150,10 @@
           <span class="text-xs font-semibold text-success whitespace-nowrap ml-auto px-2 py-1 bg-success/10 rounded-full">P{trick.winner}✓ {trick.points || 0}pts</span>
         </div>
       {/each}
-      {#if currentTrickPlays.length > 0 && currentTrickPlays.length < 4 && $gamePhase === 'playing'}
-        {@const sortedCurrentPlays = [0, 1, 2, 3].map(playerNum => 
-          currentTrickPlays.find(play => play.player === playerNum)
-        )}
+      {#if $viewProjection.trick.current.plays.filter(p => p !== null).length > 0 && $viewProjection.trick.current.plays.filter(p => p !== null).length < 4 && $viewProjection.phase === 'playing'}
+        {@const sortedCurrentPlays = $viewProjection.trick.current.plays}
         <div class="flex items-center gap-3 px-3 py-2 rounded-md bg-warning/20 border border-warning mb-2">
-          <span class="text-xs font-bold text-base-content/60 w-4">{currentTrickNumber}:</span>
+          <span class="text-xs font-bold text-base-content/60 w-4">{$viewProjection.trick.number}:</span>
           <div class="flex gap-1 flex-1 items-center">
             {#each sortedCurrentPlays as play}
               {#if play}
@@ -392,15 +177,16 @@
   {/if}
 
   <!-- Bidding table only when waiting during bidding phase -->
-  {#if $uiState.showBiddingTable}
+  {#if $viewProjection.ui.showBiddingTable}
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-base-100 rounded-xl p-5 shadow-xl min-w-[280px] z-10">
       <h3 class="text-center mb-4 text-lg text-base-content font-semibold">Bidding Round</h3>
       <div class="flex flex-col gap-2 mb-4">
-        {#each [0, 1, 2, 3] as playerId}
-          {@const bid = $biddingInfo.bids.find(b => b.player === playerId)}
-          {@const isCurrentTurn = $gameState.currentPlayer === playerId}
-          {@const isAI = controllerManager.isAIControlled(playerId)}
-          {@const isYou = playerId === 0 && !testMode}
+        {#each $viewProjection.bidding.playerStatuses as status}
+          {@const playerId = status.player}
+          {@const bid = status.bid}
+          {@const isCurrentTurn = status.isCurrentTurn}
+          {@const isAI = status.isThinking}
+          {@const isYou = playerId === 0}
           
           <div class="flex justify-between px-3 py-2 rounded-md bg-base-200 transition-all {isCurrentTurn ? 'bg-info/20 ring-1 ring-info' : ''} {isYou ? 'font-semibold bg-primary/10' : ''}">
             <span class="flex items-center gap-1">
@@ -428,15 +214,15 @@
         {/each}
       </div>
       
-      {#if $biddingInfo.currentBid.player !== -1}
+      {#if $viewProjection.bidding.currentBid.player !== -1}
         <div class="pt-3 border-t border-base-300 text-sm text-base-content/70 flex justify-between">
-          <div>Current Bid: {$biddingInfo.currentBid.value} (P{$biddingInfo.currentBid.player})</div>
-          <div>Dealer: P{$gameState.dealer}</div>
+          <div>Current Bid: {$viewProjection.bidding.currentBid.value} (P{$viewProjection.bidding.currentBid.player})</div>
+          <div>Dealer: P{$viewProjection.bidding.dealer}</div>
         </div>
       {:else}
         <div class="pt-3 border-t border-base-300 text-sm text-base-content/70 flex justify-between">
           <div>Opening bid</div>
-          <div>Dealer: P{$gameState.dealer}</div>
+          <div>Dealer: P{$viewProjection.bidding.dealer}</div>
         </div>
       {/if}
     </div>
@@ -450,41 +236,37 @@
       onclick={handleTableClick}
       disabled={false}
       type="button"
-      data-testid={proceedAction ? proceedAction.id : "trick-table"}
+      data-testid={$viewProjection.actions.proceed ? $viewProjection.actions.proceed.id : "trick-table"}
       data-trick-button="true"
-      aria-label={proceedAction ? proceedAction.label : "Click to skip AI delays"}
+      aria-label={$viewProjection.tooltips.proceedAction || "Click to skip AI delays"}
     >
-      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {proceedAction ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
+      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {$viewProjection.actions.proceed ? 'motion-safe:animate-pulse-table' : ''} w-[240px] h-[240px] lg:w-[280px] lg:h-[280px]">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
-      {#if handResults}
+      {#if $viewProjection.scoring.handResults}
         <!-- Scoring display -->
         <div class="flex flex-col items-center justify-center gap-6 text-base-100 text-center p-5">
           <div class="flex flex-col gap-2">
             <div class="text-sm opacity-90 font-medium">
-              P{$biddingInfo.winningBidder} ({handResults.biddingTeam === 0 ? 'US' : 'THEM'}) bid {handResults.bidAmount}
+              P{$viewProjection.scoring.handResults.biddingPlayer} ({$viewProjection.scoring.handResults.teamLabel}) bid {$viewProjection.scoring.handResults.bidAmount}
             </div>
-            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {handResults.bidMade ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
-              {#if handResults.biddingTeam === 0}
-                {handResults.bidMade ? '✅ WE MADE IT!' : '❌ WE GOT SET!'}
-              {:else}
-                {handResults.bidMade ? '❌ THEY MADE IT!' : '✅ WE SET THEM!'}
-              {/if}
+            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {$viewProjection.scoring.handResults.resultMessage.includes('✅') ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
+              {$viewProjection.scoring.handResults.resultMessage}
             </div>
           </div>
           
           <div class="flex items-center gap-5">
-            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {handResults.winningTeam === 0 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
+            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 0 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
               <div class="text-xs font-semibold text-base-100 opacity-90 tracking-widest">US</div>
-              <div class="text-3xl font-bold text-base-100 leading-none">{handResults.team0Points}</div>
+              <div class="text-3xl font-bold text-base-100 leading-none">{$viewProjection.scoring.handResults.team0Points}</div>
               <div class="text-[11px] text-base-100 opacity-80">points</div>
             </div>
             
             <div class="text-sm font-semibold text-base-100 opacity-80">vs</div>
             
-            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {handResults.winningTeam === 1 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
+            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 1 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
               <div class="text-xs font-semibold text-base-100 opacity-90 tracking-widest">THEM</div>
-              <div class="text-3xl font-bold text-base-100 leading-none">{handResults.team1Points}</div>
+              <div class="text-3xl font-bold text-base-100 leading-none">{$viewProjection.scoring.handResults.team1Points}</div>
               <div class="text-[11px] text-base-100 opacity-80">points</div>
             </div>
           </div>
@@ -492,8 +274,8 @@
       {:else}
         <!-- Normal trick display -->
         {#each playerPositions as position}
-            {@const play = currentTrickPlays.find(p => p.player === position)}
-            {@const isWinner = trickWinner === position}
+            {@const play = $viewProjection.trick.current.plays[position]}
+            {@const isWinner = $viewProjection.trick.current.winner === position}
             <div class="absolute flex items-center justify-center pointer-events-none" data-position={position} style="{position === 0 ? 'bottom: 20px; left: 50%; transform: translateX(-50%);' : position === 1 ? 'left: 20px; top: 50%; transform: translateY(-50%);' : position === 2 ? 'top: 20px; left: 50%; transform: translateX(-50%);' : 'right: 20px; top: 50%; transform: translateY(-50%);'}">
               {#if play}
                 <div class="relative {playedDominoIds.has(`${play.player}-${play.domino.high}-${play.domino.low}`) ? 'motion-safe:animate-drop-in' : ''} {isWinner ? 'motion-safe:animate-winner-glow' : ''}">
@@ -525,20 +307,20 @@
       {/if}
     </div>
     
-    {#if isThinking}
+    {#if $viewProjection.ui.isAIThinking}
       <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center gap-2 text-sm text-base-content/70 motion-safe:animate-pulse pointer-events-none z-10">
         <span class="text-lg">🤖</span>
-        <span>P{$gameState.currentPlayer} is thinking...</span>
+        <span>P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
       </div>
     {/if}
     
-    {#if proceedAction}
+    {#if $viewProjection.actions.proceed}
       <div 
         class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-10 motion-safe:animate-tap-bounce"
         role="presentation"
       >
         <span class="text-lg motion-safe:animate-tap-point">👆</span>
-        <span class="whitespace-nowrap">{proceedAction.label}</span>
+        <span class="whitespace-nowrap">{$viewProjection.tooltips.proceedAction}</span>
       </div>
     {/if}
     </button>
@@ -547,7 +329,7 @@
   <!-- Player Hand with Touch-Optimized Spacing -->
   <div class="relative bg-gradient-to-b from-transparent to-base-100/50 pt-4">
     
-    {#if playerHand.length === 0}
+    {#if $viewProjection.hand.length === 0}
       <div class="flex flex-col items-center gap-3 py-8 text-base-content/50">
         <span class="text-5xl opacity-50">🀚</span>
         <span class="text-sm font-medium">No dominoes</span>
@@ -555,20 +337,20 @@
     {:else}
       <div class="px-4 py-4">
         <div class="flex flex-wrap gap-3 justify-center">
-          {#each playerHand as domino, i (domino.high + '-' + domino.low)}
+          {#each $viewProjection.hand as handDomino, i (handDomino.domino.high + '-' + handDomino.domino.low)}
             <!-- Larger tap target wrapper for mobile -->
             <div 
               class="motion-safe:animate-hand-slide touch-manipulation" 
               style="animation-delay: {i * 50}ms" 
-              data-testid="domino-{domino.high}-{domino.low}" 
-              data-playable={isDominoPlayable(domino)}
+              data-testid="domino-{handDomino.domino.high}-{handDomino.domino.low}" 
+              data-playable={handDomino.isPlayable}
             >
               <Domino
-                {domino}
-                playable={isDominoPlayable(domino)}
-                clickable={isDominoPlayable(domino) && $gamePhase === 'playing'}
+                domino={handDomino.domino}
+                playable={handDomino.isPlayable}
+                clickable={handDomino.isPlayable && $viewProjection.phase === 'playing'}
                 showPoints={true}
-                tooltip={getDominoTooltip(domino)}
+                tooltip={handDomino.tooltip}
                 on:click={handleDominoClick}
               />
             </div>
@@ -579,11 +361,11 @@
   </div>
   
   <!-- Trick History Drawer (only during playing/scoring phases) -->
-  {#if $gamePhase === 'playing' || $gamePhase === 'scoring'}
+  {#if $viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring'}
     <TrickHistoryDrawer 
-      completedTricks={completedTricks}
-      currentTrick={currentTrickPlays}
-      trickNumber={currentTrickNumber}
+      completedTricks={$viewProjection.trick.completed}
+      currentTrick={$viewProjection.trick.current.plays.filter(p => p !== null)}
+      trickNumber={$viewProjection.trick.number}
       onStateChange={(state) => {
         drawerState = state;
       }}

@@ -163,7 +163,8 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // First player bids 30
     let transitions = getNextStates(currentState);
-    let bidAction = transitions.find(t => t.label === 'Bid 30 points');
+    // console.log('Available transitions:', transitions.map(t => ({ id: t.id, label: t.label })));
+    let bidAction = transitions.find(t => t.label === '30' || t.label === 'Bid 30' || t.label === 'Bid 30 points');
     expect(bidAction).toBeDefined();
     actions.push(bidAction!);
     currentState = bidAction!.newState;
@@ -264,7 +265,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // Make a bid after redeal
     transitions = getNextStates(currentState);
-    const bidAction = transitions.find(t => t.label === 'Bid 30 points');
+    const bidAction = transitions.find(t => t.label === '30' || t.label === 'Bid 30' || t.label === 'Bid 30 points');
     expect(bidAction).toBeDefined();
     currentState = bidAction!.newState;
     stateHistory.push(currentState);

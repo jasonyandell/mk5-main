@@ -329,7 +329,7 @@ function executeCompleteTrick(state: GameState): GameState {
   const newTricks = [...state.tricks, {
     plays: [...state.currentTrick],
     winner,
-    points,
+    points: points + 1,  // Include the 1 point for winning the trick
     ledSuit: state.currentSuit
   }];
 

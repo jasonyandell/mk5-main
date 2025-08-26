@@ -277,9 +277,9 @@ export function actionToLabel(action: GameAction): string {
   switch (action.type) {
     case 'bid':
       if (action.bid === BID_TYPES.POINTS) {
-        return `Bid ${action.value} points`;
+        return `${action.value}`;
       } else if (action.bid === BID_TYPES.MARKS) {
-        return `Bid ${action.value} mark${action.value! > 1 ? 's' : ''}`;
+        return `${action.value} mark${action.value! > 1 ? 's' : ''}`;
       }
       return `${action.bid} ${action.value}`;
     case 'pass':

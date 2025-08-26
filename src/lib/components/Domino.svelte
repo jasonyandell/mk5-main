@@ -52,11 +52,11 @@
   
   // State classes
   const stateClasses = $derived(playable 
-    ? 'border-success bg-success/10 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl' 
+    ? 'border-success bg-success/20 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-success/50' 
     : winner 
-    ? 'border-secondary bg-secondary/10 ring-4 ring-secondary/30' 
+    ? 'border-secondary bg-secondary/20 ring-4 ring-secondary/30' 
     : clickable
-    ? 'hover:scale-105 hover:shadow-lg cursor-pointer'
+    ? 'hover:scale-105 hover:shadow-xl cursor-pointer'
     : 'cursor-default');
 
   // Get pip position classes
@@ -75,7 +75,7 @@
 </script>
 
 <button
-  class="relative bg-base-100 border-2 border-base-300 rounded-md shadow-md transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
+  class="relative bg-white border-2 border-gray-400 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
   onclick={handleClick}
   disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
@@ -84,17 +84,17 @@
   <!-- Top half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.high] || [] as position}
-      <span class="absolute {pipSize} bg-base-content rounded-full shadow-inner {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   
   <!-- Divider -->
-  <div class="h-[1px] bg-base-content/20 mx-2"></div>
+  <div class="h-[1px] bg-black mx-2"></div>
   
   <!-- Bottom half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.low] || [] as position}
-      <span class="absolute {pipSize} bg-base-content rounded-full shadow-inner {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   
