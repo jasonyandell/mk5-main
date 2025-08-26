@@ -578,8 +578,8 @@ export const gameActions = {
       const currentHistory = get(actionHistory);
       const newHistory = [...currentHistory, ...result.aiActions];
       actionHistory.set(newHistory);
-      // Update URL with new actions
-      updateURLWithState(get(initialState), newHistory, false);
+      // Update URL with new actions - use pushState for pure approach
+      updateURLWithState(get(initialState), newHistory, true);
     }
     
     // Notify controllers of state change

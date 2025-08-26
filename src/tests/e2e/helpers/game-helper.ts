@@ -521,8 +521,20 @@ export class PlaywrightGameHelper {
    * NOTE: This requires players 1-3 to be AI for automated play
    */
   async playFullTrick(): Promise<void> {
-    // First ensure AI is enabled for players 1-3
-    await this.enableAIForOtherPlayers();
+    // Check if AI is already enabled for players 1-3
+    const needsAI = await this.page.evaluate(() => {
+      const state = (window as any).getGameState?.();
+      if (!state || !state.playerTypes) return true;
+      // Check if players 1-3 are already AI
+      return state.playerTypes[1] !== 'ai' || 
+             state.playerTypes[2] !== 'ai' || 
+             state.playerTypes[3] !== 'ai';
+    });
+    
+    // Only enable AI if not already enabled
+    if (needsAI) {
+      await this.enableAIForOtherPlayers();
+    }
     
     // Play one domino as player 0
     await this.playAnyDomino();
