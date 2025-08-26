@@ -25,78 +25,63 @@
   
   function getTrumpDisplay(): string {
     if (trump.type === 'suit' && trump.suit !== undefined) {
-      const suits = ['0s', '1s', '2s', '3s', '4s', '5s', '6s'];
+      const suits = ["blanks", "aces(1)", "deuces(2)", "tres(3)", "4's", "5's", "6's"];
       return suits[trump.suit] || '';
     } else if (trump.type === 'doubles') {
-      return 'Doubles';
+      return 'doubles';
     }
     return '';
-  }
-  
-  function getPhaseDisplay(): string {
-    switch(phase) {
-      case 'bidding': return 'Bidding';
-      case 'trump_selection': return 'Trump';
-      case 'playing': return 'Playing';
-      case 'scoring': return 'Scoring';
-      case 'game_end': return 'Game Over';
-      default: return phase;
-    }
   }
 </script>
 
 <div class="game-info-bar">
-  <!-- Unified Layout (horizontal for all screen sizes) -->
-  <div class="flex items-center justify-between px-3 py-2 bg-base-200 rounded-lg shadow-sm">
-    {#if phase === 'playing'}
-      <!-- Playing phase: Trump, Bid info, and Suit -->
-      {#if trump.type !== 'none'}
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-base-content/70">Trump:</span>
-          <span class="badge badge-sm badge-secondary" data-testid="trump-display">{getTrumpDisplay()}</span>
-        </div>
-      {:else}
-        <div></div>
-      {/if}
-      
-      <!-- Bid info in the middle -->
-      {#if bidWinner !== undefined && bidWinner >= 0 && currentBid}
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-base-content/70">Bid:</span>
-          <span class="badge badge-sm badge-primary">P{bidWinner}: {currentBid.value}</span>
-        </div>
-      {/if}
-      
-      {#if ledSuitDisplay}
-        <div class="flex items-center gap-1">
-          <span class="text-xs text-base-content/70">Suit:</span>
-          <span class="badge badge-sm badge-info">{ledSuitDisplay}</span>
-        </div>
-      {:else}
-        <div></div>
-      {/if}
-    {:else}
-      <!-- Other phases: phase badge + current player -->
-      <div class="flex items-center gap-2">
-        <span class="badge badge-primary badge-sm">{getPhaseDisplay()}</span>
-        <span class="text-sm font-medium">P{currentPlayer}</span>
+  {#if phase === 'playing'}
+    <!-- Clean single-line display during play -->
+    <div class="flex items-center justify-center bg-base-200 border-y border-base-300 divide-x divide-base-300">
+      <!-- Current player -->
+      <div class="px-3 py-2 text-sm">
+        <span class="font-semibold text-primary">P{currentPlayer} turn</span>
       </div>
       
-      {#if trump.type !== 'none' && phase !== 'bidding'}
-        <div class="flex items-center gap-1">
-          <span class="text-sm font-medium">Trump:</span>
-          <span class="text-sm font-bold" data-testid="trump-display">{getTrumpDisplay()}</span>
+      <!-- Trump -->
+      {#if trump.type !== 'none'}
+        <div class="px-3 py-2 text-sm">
+          <span class="font-semibold text-secondary">{getTrumpDisplay()} trump</span>
         </div>
       {/if}
       
-      {#if phase === 'bidding' && currentBid}
-        <div class="text-sm">
-          <span class="font-medium">Bid: </span>
-          <span>{currentBid.value} {currentBid.type}</span>
+      <!-- Bid info -->
+      {#if bidWinner !== undefined && bidWinner >= 0 && currentBid}
+        <div class="px-3 py-2 text-sm">
+          <span class="font-semibold text-accent">P{bidWinner} bid {currentBid.value}</span>
         </div>
       {/if}
-    {/if}
-  </div>
+      
+      <!-- Led suit (only shows after first domino played) -->
+      {#if ledSuitDisplay}
+        <div class="px-3 py-2 text-sm bg-info/10">
+          <span class="font-bold text-info">{ledSuitDisplay.toLowerCase()} led</span>
+        </div>
+      {/if}
+    </div>
+  {:else}
+    <!-- Non-playing phases: simplified display -->
+    <div class="flex items-center justify-between px-3 py-2 bg-base-100/90 backdrop-blur-sm shadow-sm">
+      {#if phase === 'bidding' && currentBid}
+        <span class="text-sm">Current bid: <span class="font-semibold">{currentBid.value}</span></span>
+      {:else if phase === 'trump_selection'}
+        <span class="text-sm">P{currentPlayer} selecting trump...</span>
+      {:else if phase === 'scoring'}
+        <span class="text-sm">Scoring hand...</span>
+      {:else}
+        <span class="text-sm text-base-content/60">Ready to play</span>
+      {/if}
+      
+      {#if trump.type !== 'none' && phase !== 'bidding'}
+        <span class="text-sm font-semibold text-secondary" data-testid="trump-display">Trump: {getTrumpDisplay()}</span>
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <style lang="postcss">

@@ -3,22 +3,22 @@
   import Header from './lib/components/Header.svelte';
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
-  import DebugPanel from './lib/components/DebugPanel.svelte';
+  import SettingsPanel from './lib/components/SettingsPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
-  let showDebugPanel = $state(false);
+  let showSettingsPanel = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
     if (e.ctrlKey && e.shiftKey && e.key === 'D') {
       e.preventDefault();
-      showDebugPanel = !showDebugPanel;
-    } else if (e.key === 'Escape' && showDebugPanel) {
-      showDebugPanel = false;
-    } else if (e.ctrlKey && e.key === 'z' && !showDebugPanel) {
+      showSettingsPanel = !showSettingsPanel;
+    } else if (e.key === 'Escape' && showSettingsPanel) {
+      showSettingsPanel = false;
+    } else if (e.ctrlKey && e.key === 'z' && !showSettingsPanel) {
       e.preventDefault();
       gameActions.undo();
     }
@@ -35,8 +35,8 @@
       startGameLoop();
     }
     
-    // Set default theme to cupcake (no persistence)
-    document.documentElement.setAttribute('data-theme', 'cupcake');
+    // Set default theme to coffee (no persistence)
+    document.documentElement.setAttribute('data-theme', 'coffee');
   });
   
   // Smart panel switching based on game phase
@@ -55,7 +55,7 @@
   role="application" 
   data-phase={$gameState.phase}
 >
-  <Header on:openDebug={() => showDebugPanel = true} />
+  <Header on:openSettings={() => showSettingsPanel = true} />
   
   <main class="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y pb-safe relative {activeView === 'actions' ? 'overflow-hidden' : ''}">
     {#if activeView === 'game'}
@@ -70,9 +70,9 @@
   </main>
 </div>
 
-{#if showDebugPanel}
+{#if showSettingsPanel}
   <div transition:fly={{ y: 200, duration: 300 }}>
-    <DebugPanel onclose={() => showDebugPanel = false} />
+    <SettingsPanel onclose={() => showSettingsPanel = false} />
   </div>
 {/if}
 

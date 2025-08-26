@@ -64,9 +64,9 @@ export class PlaywrightGameHelper {
       byId: (id: string) => `[data-testid="domino-${id}"]`
     },
     score: {
-      display: '.score-display',
-      us: '.score-display .badge-primary',
-      them: '.score-display .badge-secondary'
+      display: '.app-header',  // Scores are now in the header
+      us: '.app-header .text-primary',
+      them: '.app-header .text-secondary'
     },
     trump: '[data-testid="trump-display"]',
     trick: {
@@ -80,10 +80,18 @@ export class PlaywrightGameHelper {
     pass: '[data-testid="pass"]',
     trumpSelect: (suit: string) => `[data-testid="trump-${suit}"]`,
     flash: '.flash-message',
+    settings: {
+      panel: '[data-testid="settings-panel"]',
+      button: '.settings-btn',
+      closeButton: '[data-testid="settings-close-button"]',
+      historyTab: '[data-testid="history-tab"]',
+      historyItem: '[data-testid="history-item"]',
+      timeTravelButton: '[data-testid="time-travel-button"], .time-travel-button'
+    },
     debug: {
-      panel: '[data-testid="debug-panel"]',
-      button: '.debug-btn',
-      closeButton: '[data-testid="debug-close-button"]',
+      panel: '[data-testid="settings-panel"]',
+      button: '.settings-btn',
+      closeButton: '[data-testid="settings-close-button"]',
       historyTab: '[data-testid="history-tab"]',
       historyItem: '[data-testid="history-item"]',
       timeTravelButton: '[data-testid="time-travel-button"], .time-travel-button'
@@ -465,18 +473,36 @@ export class PlaywrightGameHelper {
    * Get game metrics (scores, marks, trump, etc.)
    */
   async getGameMetrics(): Promise<GameMetrics> {
-    const [usScore, themScore, trump] = await Promise.all([
+    const [usScore, themScore] = await Promise.all([
       this.page.locator(PlaywrightGameHelper.SELECTORS.score.us).textContent(),
-      this.page.locator(PlaywrightGameHelper.SELECTORS.score.them).textContent(),
-      this.page.locator(PlaywrightGameHelper.SELECTORS.trump).textContent()
+      this.page.locator(PlaywrightGameHelper.SELECTORS.score.them).textContent()
     ]);
+    
+    // Try to get trump from multiple possible locations
+    let trump = '';
+    
+    // First try the data-testid="trump-display" element (for non-playing phases)
+    const trumpDisplay = this.page.locator('[data-testid="trump-display"]');
+    if (await trumpDisplay.count() > 0) {
+      const trumpText = await trumpDisplay.textContent();
+      // Extract just the trump value from "Trump: XXX" format
+      trump = trumpText?.replace('Trump: ', '') || '';
+    } else {
+      // During playing phase, look for trump in the game info bar
+      const trumpElement = this.page.locator('.text-secondary:has-text("trump")');
+      if (await trumpElement.count() > 0) {
+        const trumpText = await trumpElement.textContent();
+        // Extract trump from "XXX trump" format
+        trump = trumpText?.replace(' trump', '') || '';
+      }
+    }
     
     return {
       scores: [
         parseInt(usScore?.match(/\d+/)?.[0] || '0'),
         parseInt(themScore?.match(/\d+/)?.[0] || '0')
       ],
-      trump: trump || ''
+      trump: trump
     };
   }
 
@@ -643,8 +669,16 @@ export class PlaywrightGameHelper {
    * Debug panel operations
    */
   async openDebugPanel(): Promise<void> {
-    // Click the debug button in the header
+    // First open the dropdown menu (three dots button)
+    const dropdownButton = this.page.locator('.dropdown-end .btn-ghost.btn-circle');
+    await dropdownButton.click();
+    
+    // Wait for dropdown menu to be visible
+    await this.page.waitForSelector('.dropdown-content', { state: 'visible' });
+    
+    // Now click the settings button inside the dropdown
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button).click();
+    
     // Wait for debug panel to be visible (it's a fixed fullscreen drawer)
     await expect(this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel)).toBeVisible();
   }
@@ -857,8 +891,10 @@ export class PlaywrightGameHelper {
       nav: (item: string): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.nav(item)),
       flash: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.flash),
       debug: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel),
-      debugButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button),
-      debugCloseButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.closeButton),
+      settingsButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.settings.button),
+      settingsCloseButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.settings.closeButton),
+      debugButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.settings.button),
+      debugCloseButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.settings.closeButton),
       historyTab: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.historyTab).filter({ hasText: 'History' }),
       historyItem: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.historyItem),
       timeTravelButton: (): Locator => this.page.locator(PlaywrightGameHelper.SELECTORS.debug.timeTravelButton),
