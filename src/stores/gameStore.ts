@@ -1,6 +1,6 @@
 import { writable, derived, get } from 'svelte/store';
 import type { GameState, StateTransition } from '../game/types';
-import { createInitialState, getNextStates, getPlayerView } from '../game';
+import { createInitialState, getNextStates } from '../game';
 import { ControllerManager } from '../game/controllers';
 import { 
   compressGameState, 
@@ -145,18 +145,11 @@ export const actionHistory = writable<StateTransition[]>([]);
 // Store for validation errors
 export const stateValidationError = writable<string | null>(null);
 
-// Current player store
-export const currentPlayer = derived(
-  gameState,
-  ($gameState) => $gameState.players[$gameState.currentPlayer]
-);
-
 // Track which players are controlled by humans on this client
 export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
 
 // Current player ID for primary view (can be changed for spectating)
 export const currentPlayerId = writable<number>(0);
-
 
 // Available actions store - filtered for privacy
 export const availableActions = derived(
@@ -179,102 +172,6 @@ export const availableActions = derived(
       // Only show actions for player 0
       return action.action.player === 0;
     });
-  }
-);
-
-// Player view store - provides privacy-safe view for current player
-export const playerView = derived(
-  [gameState, currentPlayerId],
-  ([$gameState, $playerId]) => getPlayerView($gameState, $playerId)
-);
-
-// Game phase store
-export const gamePhase = derived(
-  gameState,
-  ($gameState) => $gameState.phase
-);
-
-// Bidding information
-export const biddingInfo = derived(
-  gameState,
-  ($gameState) => ({
-    currentBid: $gameState.currentBid,
-    bids: $gameState.bids,
-    winningBidder: $gameState.winningBidder
-  })
-);
-
-// Team scores and marks
-export const teamInfo = derived(
-  gameState,
-  ($gameState) => ({
-    scores: $gameState.teamScores,
-    marks: $gameState.teamMarks,
-    target: $gameState.gameTarget
-  })
-);
-
-// Current trick information
-export const trickInfo = derived(
-  gameState,
-  ($gameState) => ({
-    currentTrick: $gameState.currentTrick,
-    completedTricks: $gameState.tricks,
-    trump: $gameState.trump
-  })
-);
-
-// Deterministic UI state based on game state and available actions
-export const uiState = derived(
-  [gameState, availableActions],
-  ([$gameState, $availableActions]) => {
-    // Determine if player 0 is waiting (has no actions or it's not their turn)
-    const isPlayer0Turn = $gameState.currentPlayer === 0;
-    
-    // Filter actions that are relevant for determining waiting state
-    const playerActions = $availableActions.filter(a => {
-      // Include bidding actions
-      if (a.id.startsWith('bid-') || a.id === 'pass' || a.id === 'redeal') {
-        return true;
-      }
-      // Include trump selection actions
-      if (a.id.startsWith('trump-')) {
-        return true;
-      }
-      // Include play actions
-      if (a.id.startsWith('play-')) {
-        return true;
-      }
-      // Exclude consensus actions from waiting determination
-      if (a.id === 'complete-trick' || a.id === 'score-hand' || a.id.startsWith('agree-')) {
-        return false;
-      }
-      // Include other actions
-      return true;
-    });
-    
-    const hasActions = playerActions.length > 0;
-    
-    // Determine waiting state based on phase
-    const isWaitingDuringBidding = $gameState.phase === 'bidding' && (!isPlayer0Turn || !hasActions);
-    const isWaitingDuringTrump = $gameState.phase === 'trump_selection' && (!isPlayer0Turn || !hasActions);
-    const isWaitingDuringPlay = $gameState.phase === 'playing' && (!isPlayer0Turn || !hasActions);
-    
-    // Determine who we're waiting on
-    const waitingOnPlayer = (!isPlayer0Turn || !hasActions) ? $gameState.currentPlayer : -1;
-    
-    return {
-      isPlayer0Turn,
-      hasActions,
-      playerActions,
-      isWaitingDuringBidding,
-      isWaitingDuringTrump,
-      isWaitingDuringPlay,
-      isWaiting: isWaitingDuringBidding || isWaitingDuringTrump || isWaitingDuringPlay,
-      waitingOnPlayer,
-      showBiddingTable: isWaitingDuringBidding && !testMode,
-      showActionPanel: $gameState.phase === 'bidding' || $gameState.phase === 'trump_selection'
-    };
   }
 );
 

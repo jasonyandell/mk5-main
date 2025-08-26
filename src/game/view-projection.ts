@@ -1,4 +1,4 @@
-import type { GameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid } from './types';
+import type { GameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase } from './types';
 import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
 
@@ -48,7 +48,7 @@ export interface HandResults {
 // Complete view projection for UI rendering
 export interface ViewProjection {
   // Game phase and flow
-  phase: string;
+  phase: GamePhase;
   currentPlayer: number;
   isPlayer0Turn: boolean;
   

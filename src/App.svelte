@@ -5,8 +5,7 @@
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
-  import { gameActions, gamePhase, gameState, startGameLoop, viewProjection } from './stores/gameStore';
-  import { GAME_PHASES } from './game';
+  import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showDebugPanel = $state(false);

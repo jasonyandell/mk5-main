@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState, gameActions, gamePhase, viewProjection, controllerManager, availableActions } from '../../stores/gameStore';
+  import { gameActions, viewProjection, controllerManager, availableActions } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -46,14 +46,14 @@
   let actionPending = false;
   
   // Track phase for transitions
-  let previousPhase = $gamePhase;
+  let previousPhase = $viewProjection.phase;
   
   // React to phase changes for panel switching
   $effect(() => {
-    if ($gamePhase === 'bidding' && previousPhase === 'scoring') {
+    if ($viewProjection.phase === 'bidding' && previousPhase === 'scoring') {
       dispatch('switchToActions');
     }
-    previousPhase = $gamePhase;
+    previousPhase = $viewProjection.phase;
   });
   
   // Handle action execution

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gamePhase, gameActions, gameState, viewProjection, controllerManager } from '../../stores/gameStore';
+  import { gameActions, viewProjection, controllerManager } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import { slide } from 'svelte/transition';
@@ -12,14 +12,14 @@
 
 
   let shakeActionId = $state<string | null>(null);
-  let previousPhase = $state($gamePhase);
+  let previousPhase = $state($viewProjection.phase);
   
   // React to phase changes for panel switching
   $effect(() => {
-    if ($gamePhase === 'playing' && previousPhase === 'trump_selection') {
+    if ($viewProjection.phase === 'playing' && previousPhase === 'trump_selection') {
       onswitchToPlay?.();
     }
-    previousPhase = $gamePhase;
+    previousPhase = $viewProjection.phase;
   });
 
   async function executeAction(action: StateTransition) {
@@ -152,7 +152,7 @@
           // Skip current AI delay
           gameActions.skipAIDelays();
           // Enable automatic retry for bidding/trump phases
-          if ($gamePhase === 'bidding' || $gamePhase === 'trump_selection') {
+          if ($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') {
             skipAttempts = 1; // Start retry counter
           }
         }}
@@ -231,22 +231,6 @@
       </div>
     {/if}
 
-    {#if false}
-      <div class="mb-6 animate-fadeInUp">
-        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Quick Actions</h3>
-        <div class="flex flex-col gap-3 max-w-[320px] mx-auto">
-          {#each [] as action}
-            <button 
-              class="btn btn-outline btn-lg w-full min-h-[48px]"
-              onclick={() => executeAction(action)}
-              data-testid={action.id}
-            >
-              {action.label}
-            </button>
-          {/each}
-        </div>
-      </div>
-    {/if}
   </div>
 
   <div class="card bg-base-100 shadow-lg mx-4 mb-4 flex-shrink-0">
