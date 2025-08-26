@@ -1,6 +1,5 @@
 <script lang="ts">
   import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
-  import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { compressGameState, compressActionId, encodeURLData } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
 
@@ -10,10 +9,9 @@
 
   let { onclose }: Props = $props();
 
-  let activeTab = $state('state');
+  let activeTab = $state('theme');
   let showDiff = $state(false);
   let showTreeView = $state(true);
-  let showHistoricalTreeView = $state(true);
   let previousState: any = $state(null);
   let changedPaths = $state(new Set<string>());
 
@@ -115,89 +113,110 @@
   });
 </script>
 
-<!-- Modal backdrop -->
-<div class="modal modal-open">
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="modal-box max-w-6xl h-[90vh] p-0 flex flex-col" data-testid="debug-panel" onclick={(e) => e.stopPropagation()}>
-    <!-- Header -->
-    <div class="flex justify-between items-center p-4 border-b border-base-300">
-      <h2 class="text-xl font-bold">Debug Panel</h2>
-      <button 
-        class="btn btn-sm btn-circle btn-ghost"
-        data-testid="debug-close-button"
-        onclick={onclose}
-        aria-label="Close debug panel"
-      >
-        ✕
-      </button>
+<!-- Full screen mobile drawer -->
+<div class="fixed inset-0 z-50 bg-base-100 flex flex-col" data-testid="debug-panel">
+  <!-- Header with mobile-friendly close -->
+  <div class="navbar bg-base-200 shadow-lg">
+    <div class="flex-1">
+      <h2 class="text-lg font-semibold">Debug</h2>
     </div>
+    <button 
+      class="btn btn-ghost btn-square"
+      data-testid="debug-close-button"
+      onclick={onclose}
+      aria-label="Close debug panel"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
 
-    <!-- Tabs -->
-    <div class="tabs tabs-boxed bg-base-200 rounded-none">
-      <button 
-        class="tab {activeTab === 'state' ? 'tab-active' : ''}"
-        onclick={() => activeTab = 'state'}
-      >
-        Game State
-      </button>
-      <button 
-        class="tab {activeTab === 'history' ? 'tab-active' : ''}"
-        data-testid="history-tab"
-        onclick={() => activeTab = 'history'}
-      >
-        History
-      </button>
-      <button 
-        class="tab {activeTab === 'quickplay' ? 'tab-active' : ''}"
-        onclick={() => activeTab = 'quickplay'}
-      >
-        QuickPlay
-      </button>
-      <button 
-        class="tab {activeTab === 'historical' ? 'tab-active' : ''}"
-        onclick={() => activeTab = 'historical'}
-      >
-        Historical
-      </button>
-    </div>
-
+  <!-- Bottom tabs for mobile navigation -->
+  <div class="flex-1 overflow-hidden flex flex-col">
     <!-- Content -->
-    <div class="flex-1 overflow-hidden p-4">
+    <div class="flex-1 overflow-auto p-4 pb-16">
+      {#if activeTab === 'theme'}
+        <div class="space-y-4">
+          <div class="prose prose-sm">
+            <h3>Choose Theme</h3>
+          </div>
+          <select 
+            class="select select-bordered select-lg w-full"
+            data-choose-theme
+            value={typeof document !== 'undefined' ? document.documentElement.getAttribute('data-theme') || 'cupcake' : 'cupcake'}
+            onchange={(e) => {
+              const theme = e.currentTarget.value;
+              document.documentElement.setAttribute('data-theme', theme);
+            }}>
+            <option value="cupcake">🧁 Cupcake</option>
+            <option value="light">☀️ Light</option>
+            <option value="dark">🌙 Dark</option>
+            <option value="bumblebee">🐝 Bumblebee</option>
+            <option value="emerald">💚 Emerald</option>
+            <option value="corporate">💼 Corporate</option>
+            <option value="retro">📻 Retro</option>
+            <option value="cyberpunk">🤖 Cyberpunk</option>
+            <option value="valentine">💝 Valentine</option>
+            <option value="garden">🌸 Garden</option>
+            <option value="forest">🌲 Forest</option>
+            <option value="lofi">🎵 Lo-Fi</option>
+            <option value="pastel">🎨 Pastel</option>
+            <option value="wireframe">📐 Wireframe</option>
+            <option value="luxury">💎 Luxury</option>
+            <option value="dracula">🧛 Dracula</option>
+            <option value="autumn">🍂 Autumn</option>
+            <option value="business">👔 Business</option>
+            <option value="coffee">☕ Coffee</option>
+            <option value="winter">❄️ Winter</option>
+          </select>
+        </div>
+      {/if}
+
       {#if activeTab === 'state'}
-        <div class="flex flex-col h-full gap-4">
-          <div class="flex flex-wrap gap-2">
-            <label class="label cursor-pointer gap-2">
-              <input 
-                type="checkbox" 
-                class="checkbox checkbox-sm"
-                bind:checked={showTreeView}
-              />
-              <span class="label-text">Tree View</span>
-            </label>
-            <label class="label cursor-pointer gap-2">
-              <input 
-                type="checkbox" 
-                class="checkbox checkbox-sm"
-                bind:checked={showDiff}
-              />
-              <span class="label-text">Diff Mode</span>
-            </label>
+        <div class="space-y-4">
+          <!-- Toggle switches -->
+          <div class="flex flex-col gap-3">
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Tree View</span>
+                <input 
+                  type="checkbox" 
+                  class="toggle toggle-primary"
+                  bind:checked={showTreeView}
+                />
+              </label>
+            </div>
+            <div class="form-control">
+              <label class="label cursor-pointer">
+                <span class="label-text">Show Changes</span>
+                <input 
+                  type="checkbox" 
+                  class="toggle toggle-secondary"
+                  bind:checked={showDiff}
+                />
+              </label>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="grid grid-cols-2 gap-2">
             <button 
-              class="btn btn-sm btn-primary"
+              class="btn btn-primary"
               onclick={() => copyToClipboard(prettyJson($gameState))}
             >
-              Copy State
+              📋 Copy State
             </button>
             <button 
-              class="btn btn-sm btn-secondary"
+              class="btn btn-secondary"
               onclick={copyShareableUrl}
             >
-              Copy URL
+              🔗 Copy URL
             </button>
           </div>
           
-          <div class="flex-1 overflow-auto bg-base-200 rounded-lg p-4">
+          <!-- State viewer -->
+          <div class="bg-base-200 rounded-lg p-3 max-h-96 overflow-auto">
             {#if showTreeView}
               <StateTreeView 
                 data={$gameState} 
@@ -205,235 +224,110 @@
                 changedPaths={showDiff ? changedPaths : new Set()}
               />
             {:else}
-              <pre class="text-xs">{prettyJson($gameState)}</pre>
+              <pre class="text-xs font-mono">{prettyJson($gameState)}</pre>
             {/if}
           </div>
         </div>
       {/if}
 
       {#if activeTab === 'history'}
-        <div class="flex flex-col h-full gap-4">
-          <div class="flex justify-between items-center">
-            <h3 class="text-lg font-semibold">Action History ({$actionHistory.length})</h3>
-            <div class="flex gap-2">
-              <button 
-                class="btn btn-sm btn-warning"
-                onclick={gameActions.undo}
-                disabled={$actionHistory.length === 0}
-              >
-                Undo Last
-              </button>
-              <button 
-                class="btn btn-sm btn-error"
-                onclick={gameActions.resetGame}
-              >
-                Reset Game
-              </button>
-            </div>
-          </div>
-          
-          <div class="flex-1 overflow-y-auto bg-base-200 rounded-lg p-4">
-            {#if $actionHistory.length === 0}
-              <div class="text-center py-8 text-base-content/60">
-                No actions taken yet. Start playing to see history.
-              </div>
-            {:else}
-              <div class="space-y-2">
-                {#each [...$actionHistory].reverse() as action, reverseIndex}
-                  {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
-                  <div class="flex items-center gap-2 p-2 bg-base-100 rounded-lg" data-testid="history-item">
-                    <span class="badge badge-neutral">#{actualIndex + 1}</span>
-                    <span class="flex-1 text-sm">{action.label}</span>
-                    <button 
-                      class="btn btn-xs btn-info time-travel-button"
-                      data-testid="time-travel-button"
-                      onclick={() => timeTravel(actualIndex)}
-                      title="Time travel to this point"
-                    >
-                      ⏪
-                    </button>
-                  </div>
-                {/each}
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === 'quickplay'}
         <div class="space-y-4">
-          <div class="flex flex-wrap gap-4 items-center">
-            <label class="label cursor-pointer gap-2">
-              <input 
-                type="checkbox" 
-                class="toggle toggle-primary"
-                bind:checked={$quickplayState.enabled}
-                onchange={() => quickplayActions.toggle()}
-              />
-              <span class="label-text">QuickPlay Active</span>
-            </label>
-            
-            <div class="form-control">
-              <!-- svelte-ignore a11y_label_has_associated_control -->
-              <label class="label">
-                <span class="label-text">Speed:</span>
-              </label>
-              <select 
-                class="select select-bordered select-sm"
-                bind:value={$quickplayState.speed}
-                onchange={(e) => quickplayActions.setSpeed(e.currentTarget.value as any)}
-              >
-                <option value="instant">Instant</option>
-                <option value="fast">Fast</option>
-                <option value="normal">Normal</option>
-                <option value="slow">Slow</option>
-              </select>
-            </div>
-
-            <button 
-              class="btn btn-sm btn-primary"
-              onclick={quickplayActions.step}
-              disabled={$quickplayState.enabled}
-            >
-              Step
-            </button>
-
-            <button 
-              class="btn btn-sm btn-secondary"
-              onclick={quickplayActions.playToEndOfHand}
-            >
-              End of Hand
-            </button>
-
-            <button 
-              class="btn btn-sm btn-accent"
-              onclick={quickplayActions.playToEndOfGame}
-            >
-              End of Game
-            </button>
+          <!-- Header with count -->
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold">
+              History 
+              <span class="badge badge-neutral ml-2">{$actionHistory.length}</span>
+            </h3>
           </div>
 
-          <div class="card bg-base-200">
-            <div class="card-body">
-              <h4 class="card-title text-base">Status</h4>
-              <div class="grid grid-cols-2 gap-2 text-sm">
-                <span class="font-semibold">Active:</span>
-                <span>{$quickplayState.enabled}</span>
-                <span class="font-semibold">Speed:</span>
-                <span>{$quickplayState.speed}</span>
-                <span class="font-semibold">Phase:</span>
-                <span>{$gameState.phase}</span>
-                <span class="font-semibold">Current Player:</span>
-                <span>P{$gameState.currentPlayer}</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Theme Switcher -->
-          <div class="card bg-base-200">
-            <div class="card-body">
-              <h4 class="card-title text-base">Theme</h4>
-              <select 
-                class="select select-bordered w-full"
-                data-choose-theme
-                value={typeof window !== 'undefined' && localStorage.getItem('theme') || 'light'}
-                onchange={(e) => {
-                  const theme = e.currentTarget.value;
-                  document.documentElement.setAttribute('data-theme', theme);
-                  localStorage.setItem('theme', theme);
-                }}>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="cupcake">Cupcake</option>
-                <option value="bumblebee">Bumblebee</option>
-                <option value="emerald">Emerald</option>
-                <option value="corporate">Corporate</option>
-                <option value="retro">Retro</option>
-                <option value="cyberpunk">Cyberpunk</option>
-                <option value="valentine">Valentine</option>
-                <option value="garden">Garden</option>
-                <option value="forest">Forest</option>
-                <option value="lofi">Lo-Fi</option>
-                <option value="pastel">Pastel</option>
-                <option value="wireframe">Wireframe</option>
-                <option value="luxury">Luxury</option>
-                <option value="dracula">Dracula</option>
-                <option value="autumn">Autumn</option>
-                <option value="business">Business</option>
-                <option value="coffee">Coffee</option>
-                <option value="winter">Winter</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      {/if}
-
-      {#if activeTab === 'historical'}
-        <div class="flex flex-col h-full gap-4">
-          <div class="flex items-center gap-4">
-            <h3 class="text-lg font-semibold">Event Sourcing State</h3>
-            <label class="label cursor-pointer gap-2">
-              <input 
-                type="checkbox" 
-                class="checkbox checkbox-sm"
-                bind:checked={showHistoricalTreeView}
-              />
-              <span class="label-text">Tree View</span>
-            </label>
+          <!-- Action buttons -->
+          <div class="grid grid-cols-2 gap-2">
             <button 
-              class="btn btn-sm btn-primary"
-              onclick={() => {
-                const historicalData = {
-                  initialState: $initialState,
-                  actions: $actionHistory
-                };
-                copyToClipboard(prettyJson(historicalData));
-              }}
+              class="btn btn-warning"
+              onclick={gameActions.undo}
+              disabled={$actionHistory.length === 0}
             >
-              Copy JSON
+              ↩️ Undo
+            </button>
+            <button 
+              class="btn btn-error"
+              onclick={gameActions.resetGame}
+            >
+              🔄 Reset
             </button>
           </div>
           
-          <div class="flex-1 overflow-auto">
-            {#if showHistoricalTreeView}
-              <div class="bg-base-200 rounded-lg p-4">
-                <StateTreeView 
-                  data={{
-                    initialState: $initialState,
-                    actions: $actionHistory
+          <!-- History list -->
+          {#if $actionHistory.length === 0}
+            <div class="alert">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>No moves yet. Start playing!</span>
+            </div>
+          {:else}
+            <div class="space-y-2">
+              {#each [...$actionHistory].reverse() as action, reverseIndex}
+                {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
+                <!-- Make entire card clickable on mobile -->
+                <button 
+                  class="card bg-base-200 w-full text-left active:scale-95 transition-transform"
+                  data-testid="history-item"
+                  onclick={() => timeTravel(actualIndex)}
+                  onpointerdown={(e) => {
+                    e.preventDefault();
+                    timeTravel(actualIndex);
                   }}
-                  searchQuery=""
-                  changedPaths={new Set()}
-                />
-              </div>
-            {:else}
-              <div class="space-y-4">
-                <div class="card bg-base-200">
-                  <div class="card-body">
-                    <h4 class="card-title text-base">Initial State</h4>
-                    <pre class="text-xs overflow-auto max-h-64">{prettyJson($initialState)}</pre>
+                >
+                  <div class="card-body p-3 flex-row items-center gap-3">
+                    <div class="badge badge-lg badge-primary font-bold">
+                      {actualIndex + 1}
+                    </div>
+                    <div class="flex-1 text-sm">
+                      {action.label}
+                    </div>
+                    <div class="text-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                
-                <div class="card bg-base-200">
-                  <div class="card-body">
-                    <h4 class="card-title text-base">Actions ({$actionHistory.length})</h4>
-                    <pre class="text-xs overflow-auto max-h-64">{prettyJson($actionHistory)}</pre>
-                  </div>
-                </div>
-              </div>
-            {/if}
-          </div>
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
+    
+    <!-- Bottom navigation tabs -->
+    <div class="btm-nav btm-nav-sm bg-base-200 border-t border-base-300">
+      <button 
+        class="{activeTab === 'theme' ? 'active text-primary' : ''}"
+        onclick={() => activeTab = 'theme'}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+        </svg>
+        <span class="btm-nav-label">Theme</span>
+      </button>
+      <button 
+        class="{activeTab === 'state' ? 'active text-primary' : ''}"
+        onclick={() => activeTab = 'state'}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+        <span class="btm-nav-label">State</span>
+      </button>
+      <button 
+        class="{activeTab === 'history' ? 'active text-primary' : ''}"
+        data-testid="history-tab"
+        onclick={() => activeTab = 'history'}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span class="btm-nav-label">History</span>
+      </button>
+    </div>
   </div>
-  
-  <!-- Modal backdrop click to close -->
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <form method="dialog" class="modal-backdrop" onclick={onclose}>
-    <button type="button" aria-label="Close modal">close</button>
-  </form>
 </div>

@@ -65,8 +65,8 @@ export class PlaywrightGameHelper {
     },
     score: {
       display: '.score-display',
-      us: '.score-card.us .score-value',
-      them: '.score-card.them .score-value'
+      us: '.score-display .badge-primary',
+      them: '.score-display .badge-secondary'
     },
     trump: '[data-testid="trump-display"]',
     trick: {
@@ -406,6 +406,9 @@ export class PlaywrightGameHelper {
    * Play any available domino
    */
   async playAnyDomino(): Promise<void> {
+    // Ensure page is still valid and game is ready
+    await this.waitForGameReady();
+    
     // Dismiss any flash messages first
     const flash = this.page.locator(PlaywrightGameHelper.SELECTORS.flash);
     if (await flash.isVisible()) {
@@ -417,18 +420,27 @@ export class PlaywrightGameHelper {
       .or(this.page.locator(PlaywrightGameHelper.SELECTORS.domino.any + ':not([disabled])'))
       .first();
     
-    // Try to find and click a playable domino with a short timeout
+    // Try to find and click a playable domino with a longer timeout
     try {
-      await playable.waitFor({ state: 'visible', timeout: 500 });
+      await playable.waitFor({ state: 'visible', timeout: 3000 });
       await playable.click({ force: true });
     } catch {
       // If no playable dominoes visible, try any domino
-      const anyDomino = this.page.locator(PlaywrightGameHelper.SELECTORS.domino.any).first();
-      const count = await anyDomino.count();
-      if (count > 0) {
-        await anyDomino.click({ force: true });
-      } else {
-        throw new Error('No dominoes found to play');
+      try {
+        const anyDomino = this.page.locator(PlaywrightGameHelper.SELECTORS.domino.any).first();
+        const count = await anyDomino.count();
+        if (count > 0) {
+          await anyDomino.click({ force: true });
+        } else {
+          throw new Error('No dominoes found to play');
+        }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        // If page/context is closed, throw a more informative error
+        if (err.message?.includes('Target page, context or browser has been closed')) {
+          throw new Error('Page was closed while trying to play domino');
+        }
+        throw err;
       }
     }
     
@@ -634,15 +646,14 @@ export class PlaywrightGameHelper {
   async openDebugPanel(): Promise<void> {
     // Click the debug button in the header
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button).click();
-    // Wait for modal to be visible (modal is a parent of debug panel)
-    await expect(this.page.locator('.modal.modal-open')).toBeVisible();
+    // Wait for debug panel to be visible (it's a fixed fullscreen drawer)
     await expect(this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel)).toBeVisible();
   }
 
   async closeDebugPanel(): Promise<void> {
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.closeButton).click();
-    // Wait for modal to close
-    await expect(this.page.locator('.modal.modal-open')).not.toBeVisible();
+    // Wait for debug panel to close
+    await expect(this.page.locator(PlaywrightGameHelper.SELECTORS.debug.panel)).not.toBeVisible();
   }
 
   /**

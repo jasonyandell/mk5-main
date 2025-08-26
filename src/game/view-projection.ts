@@ -43,6 +43,9 @@ export interface HandResults {
   bidMade: boolean;
   winningTeam: number;
   biddingPlayer: number;
+  // Perspective-aware messages for each player
+  resultMessage: string;  // e.g., "We made the bid!" or "They got set!"
+  teamLabel: string;  // e.g., "US" or "THEM" for the bidding team
 }
 
 // Complete view projection for UI rendering
@@ -85,6 +88,7 @@ export interface ViewProjection {
     number: number;  // Current trick number (1-7)
     ledSuit: number;  // -1 if no suit led
     ledSuitDisplay: string | null;
+    trickLeader: number | null;  // Player who led the current trick
   };
   
   // Scoring state
@@ -204,7 +208,9 @@ export function createViewProjection(
     : null;
   
   // Hand results (only during scoring)
-  const handResults = phase === 'scoring' ? calculateHandResults(gameState) : null;
+  // Use current player's perspective in test mode, otherwise always player 0
+  const playerPerspective = isTestMode ? currentPlayer : 0;
+  const handResults = phase === 'scoring' ? calculateHandResults(gameState, playerPerspective) : null;
   
   // Determine waiting state
   const playerActions = availableActions.filter(a => {
@@ -216,12 +222,18 @@ export function createViewProjection(
   });
   
   const hasActions = playerActions.length > 0;
+  
+  // Check if we're in a consensus phase (only agree actions available)
+  const isConsensusPhase = availableActions.length > 0 && 
+    availableActions.every(a => a.id.startsWith('agree-'));
+  
   const isWaitingDuringBidding = phase === 'bidding' && (!isPlayer0Turn || !hasActions);
   const isWaitingDuringTrump = phase === 'trump_selection' && (!isPlayer0Turn || !hasActions);
   const isWaitingDuringPlay = phase === 'playing' && (!isPlayer0Turn || !hasActions);
   const isWaiting = isWaitingDuringBidding || isWaitingDuringTrump || isWaitingDuringPlay;
   const waitingOnPlayer = (!isPlayer0Turn || !hasActions) ? currentPlayer : -1;
-  const isAIThinking = waitingOnPlayer >= 0 && isAIControlled(waitingOnPlayer);
+  // Don't show AI thinking during consensus phases
+  const isAIThinking = waitingOnPlayer >= 0 && isAIControlled(waitingOnPlayer) && !isConsensusPhase;
   
   // Determine active view
   let activeView: 'game' | 'actions' = 'game';
@@ -256,7 +268,8 @@ export function createViewProjection(
       completed: gameState.tricks,
       number: trickNumber,
       ledSuit: gameState.currentSuit,
-      ledSuitDisplay
+      ledSuitDisplay,
+      trickLeader: gameState.currentTrick[0]?.player ?? null
     },
     scoring: {
       teamScores: gameState.teamScores,
@@ -355,8 +368,8 @@ function getTrumpDisplay(trump: TrumpSelection): string {
   return 'Unknown';
 }
 
-// Helper to calculate hand results
-function calculateHandResults(gameState: GameState): HandResults | null {
+// Helper to calculate hand results with perspective-aware messages
+function calculateHandResults(gameState: GameState, playerPerspective: number = 0): HandResults | null {
   const tricks = gameState.tricks;
   const team0Points = tricks
     .filter(t => t.winner !== undefined && t.winner % 2 === 0)
@@ -367,8 +380,36 @@ function calculateHandResults(gameState: GameState): HandResults | null {
   
   const bidAmount = gameState.currentBid.value || 0;
   const biddingPlayer = gameState.winningBidder;
-  const biddingTeam = Math.floor(biddingPlayer / 2);
+  const biddingTeam = biddingPlayer % 2; // Players 0,2 are team 0; Players 1,3 are team 1
   const bidMade = biddingTeam === 0 ? team0Points >= bidAmount : team1Points >= bidAmount;
+  
+  // Determine player's team (0 = team 0, 1 = team 1)
+  const playerTeam = playerPerspective % 2;
+  
+  // Generate perspective-aware messages
+  let resultMessage: string;
+  let teamLabel: string;
+  
+  // Determine if the bidding team is "us" or "them" from player's perspective
+  const isBiddingTeamUs = biddingTeam === playerTeam;
+  teamLabel = isBiddingTeamUs ? 'US' : 'THEM';
+  
+  // Generate result message based on perspective
+  if (isBiddingTeamUs) {
+    // We bid
+    if (bidMade) {
+      resultMessage = '✅ WE MADE THE BID!';
+    } else {
+      resultMessage = '❌ WE GOT SET!';
+    }
+  } else {
+    // They bid
+    if (bidMade) {
+      resultMessage = '❌ THEY MADE THE BID!';
+    } else {
+      resultMessage = '✅ WE SET THEM!';
+    }
+  }
   
   return {
     team0Points,
@@ -377,6 +418,8 @@ function calculateHandResults(gameState: GameState): HandResults | null {
     biddingTeam,
     bidMade,
     winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0),
-    biddingPlayer
+    biddingPlayer,
+    resultMessage,
+    teamLabel
   };
 }

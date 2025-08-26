@@ -94,8 +94,8 @@
 </script>
 
 <div class="flex flex-col h-full relative transition-all duration-300" data-testid="playing-area" style="margin-left: {drawerState === 'expanded' ? 'calc(min(70vw, 280px) - 80px)' : '0'}">
-  <!-- Mobile-optimized Game Info Bar -->
-  <div class="mb-3">
+  <!-- Mobile-optimized Game Info Bar (sticky during playing) -->
+  <div class="{$viewProjection.phase === 'playing' ? 'sticky top-0 z-10 bg-base-100' : ''} mb-3">
     <GameInfoBar 
       phase={$viewProjection.phase}
       currentPlayer={$viewProjection.currentPlayer}
@@ -104,6 +104,9 @@
       totalTricks={7}
       bidWinner={$viewProjection.bidding.winningBidder}
       currentBid={$viewProjection.bidding.currentBid}
+      trickLeader={$viewProjection.trick.trickLeader}
+      ledSuit={$viewProjection.trick.ledSuit}
+      ledSuitDisplay={$viewProjection.trick.ledSuitDisplay}
     />
   </div>
   
@@ -244,14 +247,10 @@
         <div class="flex flex-col items-center justify-center gap-6 text-base-100 text-center p-5">
           <div class="flex flex-col gap-2">
             <div class="text-sm opacity-90 font-medium">
-              P{$viewProjection.scoring.handResults.biddingPlayer} ({$viewProjection.scoring.handResults.biddingTeam === 0 ? 'US' : 'THEM'}) bid {$viewProjection.scoring.handResults.bidAmount}
+              P{$viewProjection.scoring.handResults.biddingPlayer} ({$viewProjection.scoring.handResults.teamLabel}) bid {$viewProjection.scoring.handResults.bidAmount}
             </div>
-            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {$viewProjection.scoring.handResults.bidMade ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
-              {#if $viewProjection.scoring.handResults.biddingTeam === 0}
-                {$viewProjection.scoring.handResults.bidMade ? '✅ WE MADE IT!' : '❌ WE GOT SET!'}
-              {:else}
-                {$viewProjection.scoring.handResults.bidMade ? '❌ THEY MADE IT!' : '✅ WE SET THEM!'}
-              {/if}
+            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {$viewProjection.scoring.handResults.resultMessage.includes('✅') ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
+              {$viewProjection.scoring.handResults.resultMessage}
             </div>
           </div>
           

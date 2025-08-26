@@ -10,8 +10,6 @@
 
   let showDebugPanel = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
-  let touchStartY = $state(0);
-  let touchStartTime = $state(0);
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -26,27 +24,6 @@
     }
   }
 
-  // Handle swipe gestures
-  function handleTouchStart(e: TouchEvent) {
-    if (e.touches.length > 0 && e.touches[0]) {
-      touchStartY = e.touches[0].clientY;
-      touchStartTime = Date.now();
-    }
-  }
-
-  function handleTouchEnd(e: TouchEvent) {
-    if (e.changedTouches.length > 0 && e.changedTouches[0]) {
-      const touchEndY = e.changedTouches[0].clientY;
-      const touchDuration = Date.now() - touchStartTime;
-      const swipeDistance = touchStartY - touchEndY;
-
-      // Quick swipe up opens debug panel
-      if (swipeDistance > 100 && touchDuration < 300) {
-        showDebugPanel = true;
-      }
-    }
-  }
-
   onMount(() => {
     // Try to load from URL on mount
     gameActions.loadFromURL();
@@ -58,11 +35,8 @@
       startGameLoop();
     }
     
-    // Load saved theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
+    // Set default theme to cupcake (no persistence)
+    document.documentElement.setAttribute('data-theme', 'cupcake');
   });
   
   // Smart panel switching based on game phase
@@ -79,9 +53,7 @@
   class="app-container flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
   style="height: 100dvh;"
   role="application" 
-  data-phase={$gameState.phase} 
-  ontouchstart={handleTouchStart} 
-  ontouchend={handleTouchEnd}
+  data-phase={$gameState.phase}
 >
   <Header on:openDebug={() => showDebugPanel = true} />
   

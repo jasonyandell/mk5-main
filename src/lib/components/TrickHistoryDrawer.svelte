@@ -26,61 +26,6 @@
   }: Props = $props();
   
   let drawerState = $state<'collapsed' | 'expanded'>('collapsed');
-  let dragStartX = $state(0);
-  let dragCurrentX = $state(0);
-  let isDragging = $state(false);
-  let drawerElement: HTMLElement;
-  
-  // Only use isOpen for initial state, don't override internal state changes
-  // $effect(() => {
-  //   if (isOpen !== undefined) {
-  //     drawerState = isOpen ? 'expanded' : 'collapsed';
-  //     onStateChange?.(drawerState);
-  //   }
-  // });
-  
-  function handleTouchStart(e: TouchEvent) {
-    dragStartX = e.touches[0]?.clientX ?? 0;
-    isDragging = true;
-  }
-  
-  function handleTouchMove(e: TouchEvent) {
-    if (!isDragging) return;
-    dragCurrentX = e.touches[0]?.clientX ?? 0;
-    const diff = dragCurrentX - dragStartX;
-    
-    // Update drawer position based on drag
-    if (drawerElement) {
-      const maxWidth = drawerElement.offsetWidth;
-      const currentOffset = Math.min(Math.max(-maxWidth, diff), 0);
-      drawerElement.style.transform = `translateX(${currentOffset}px)`;
-    }
-  }
-  
-  function handleTouchEnd() {
-    if (!isDragging) return;
-    isDragging = false;
-    
-    const diff = dragCurrentX - dragStartX;
-    const threshold = 50; // pixels
-    
-    if (diff > threshold) {
-      // Dragged right - expand
-      drawerState = 'expanded';
-      onStateChange?.('expanded');
-    } else if (diff < -threshold) {
-      // Dragged left - collapse
-      drawerState = 'collapsed';
-      onStateChange?.('collapsed');
-    }
-    
-    // Reset transform
-    if (drawerElement) {
-      drawerElement.style.transform = '';
-    }
-    
-    onToggle?.();
-  }
   
   function toggleDrawer() {
     if (drawerState === 'collapsed') {
@@ -104,19 +49,26 @@
 <div class="lg:hidden fixed left-0 top-0 h-full z-40 flex pointer-events-none">
   <!-- Side Panel Container -->
   <div
-    bind:this={drawerElement}
-    class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex pointer-events-auto"
+    class="relative bg-base-100 shadow-2xl transition-transform duration-300 ease-out h-full flex flex-col pointer-events-auto"
     style="width: min(70vw, 280px); transform: translateX({drawerState === 'expanded' ? '0' : '-100%'});"
-    ontouchstart={handleTouchStart}
-    ontouchmove={handleTouchMove}
-    ontouchend={handleTouchEnd}
   >
+    <!-- Header with close button -->
+    <div class="flex items-center justify-between p-4 border-b border-base-300">
+      <h3 class="text-sm font-bold">Tricks ({completedTricks.length}/7)</h3>
+      <button
+        class="btn btn-ghost btn-sm btn-circle"
+        onclick={toggleDrawer}
+        aria-label="Close tricks drawer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    
     <!-- Panel Content -->
     <div class="flex-1 h-full overflow-y-auto">
       <div class="p-4">
-        <div class="mb-3 pb-2 border-b border-base-300">
-          <h3 class="text-sm font-bold">Tricks Played ({completedTricks.length} of 7)</h3>
-        </div>
         
         <!-- Column Headers -->
         <div class="grid grid-cols-5 gap-1 mb-2 text-xs font-bold text-base-content/70">

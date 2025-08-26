@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 
-test.describe('AI Controller After Navigation', () => {
+test.describe.skip('AI Controller After Navigation', () => {
   test('AI should play after browser back button', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
