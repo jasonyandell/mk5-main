@@ -28,7 +28,15 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
+
+      - name: Cache playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            playwright-${{ runner.os }}-
 
       - name: Run type checking
         run: npm run typecheck
@@ -42,11 +50,11 @@ jobs:
       - name: Run unit tests
         run: npm run test
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
+      - name: Install Playwright browsers (optimized)
+        run: npx playwright install chromium --only-shell
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e:ci
 
       - name: Build
         run: npm run build
