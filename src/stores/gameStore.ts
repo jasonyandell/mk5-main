@@ -12,6 +12,7 @@ import {
   type URLData 
 } from '../game/core/url-compression';
 import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule } from '../game/core/ai-scheduler';
+import { createViewProjection, type ViewProjection } from '../game/view-projection';
 
 // Helper to deep clone an object preserving Sets
 function deepClone<T>(obj: T): T {
@@ -274,6 +275,26 @@ export const uiState = derived(
       showBiddingTable: isWaitingDuringBidding && !testMode,
       showActionPanel: $gameState.phase === 'bidding' || $gameState.phase === 'trump_selection'
     };
+  }
+);
+
+// Unified view projection for all UI rendering needs
+export const viewProjection = derived<
+  [typeof gameState, typeof availableActions],
+  ViewProjection
+>(
+  [gameState, availableActions],
+  ([$gameState, $availableActions]) => {
+    const urlParams = typeof window !== 'undefined' ? 
+      new URLSearchParams(window.location.search) : null;
+    const testMode = urlParams?.get('testMode') === 'true' || false;
+    
+    return createViewProjection(
+      $gameState,
+      $availableActions,
+      testMode,
+      (player: number) => controllerManager.isAIControlled(player)
+    );
   }
 );
 

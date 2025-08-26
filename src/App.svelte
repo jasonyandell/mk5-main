@@ -5,7 +5,7 @@
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import DebugPanel from './lib/components/DebugPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
-  import { gameActions, gamePhase, gameState, startGameLoop } from './stores/gameStore';
+  import { gameActions, gamePhase, gameState, startGameLoop, viewProjection } from './stores/gameStore';
   import { GAME_PHASES } from './game';
   import { fly, fade } from 'svelte/transition';
 
@@ -69,24 +69,8 @@
   // Smart panel switching based on game phase
   // This handles both URL loading and normal game flow
   $effect(() => {
-    // Automatically switch to appropriate panel based on game phase
-    // This works for both:
-    // 1. Loading from a URL with any game state
-    // 2. Natural game progression
-    
-    if ($gamePhase === GAME_PHASES.BIDDING || $gamePhase === GAME_PHASES.TRUMP_SELECTION) {
-      // These phases need the Actions panel for decision making
-      activeView = 'actions';
-    } else if ($gamePhase === GAME_PHASES.PLAYING || $gamePhase === GAME_PHASES.SETUP) {
-      // Playing phase and setup should show the game board
-      activeView = 'game';
-    } else if ($gamePhase === GAME_PHASES.SCORING) {
-      // Scoring phase: stay on game view to see the "Score hand" button
-      activeView = 'game';
-    } else if ($gamePhase === GAME_PHASES.GAME_END) {
-      // Game end: could show either, let's show game board with final state
-      activeView = 'game';
-    }
+    // Use the ViewProjection's computed activeView
+    activeView = $viewProjection.ui.activeView;
   });
 </script>
 
