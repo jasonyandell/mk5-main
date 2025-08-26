@@ -386,7 +386,9 @@ describe('State Transitions Integration', () => {
         consensus: {
           completeTrick: new Set<number>(),
           scoreHand: new Set<number>()
-        }
+        },
+        aiSchedule: {},
+        currentTick: 0
       };
       
       const actions = getNextStates(state);

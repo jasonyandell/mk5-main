@@ -1,9 +1,11 @@
 import './styles/app.css';
 import { mount } from 'svelte';
 import { get } from 'svelte/store';
+import type { Writable } from 'svelte/store';
 import App from './App.svelte';
 import { gameActions, gameState, actionHistory, controllerManager } from './stores/gameStore';
 import { quickplayActions, quickplayState } from './stores/quickplayStore';
+import type { GameState } from './game/types';
 
 const app = mount(App, {
   target: document.getElementById('app')!,
@@ -39,11 +41,11 @@ if (typeof window !== 'undefined') {
   window.gameActions = gameActions;
   // Properly expose the store with its methods
   window.gameState = {
-    set: (state: any) => gameState.set(state),
-    update: (fn: any) => gameState.update(fn),
+    set: (state: GameState) => gameState.set(state),
+    update: (fn: (state: GameState) => GameState) => gameState.update(fn),
     subscribe: gameState.subscribe,
     get: () => get(gameState)
-  } as any;
+  } as Writable<GameState> & { get: () => GameState };
   window.getGameState = () => get(gameState);
 }
 

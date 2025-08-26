@@ -156,6 +156,7 @@ test.describe('Basic Gameplay', () => {
     
     // Get current trick length (should be empty initially)
     const initialTrickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState?.();
       return state?.currentTrick?.length || 0;
     });
@@ -166,6 +167,7 @@ test.describe('Basic Gameplay', () => {
     
     // Trick should now have one domino
     const updatedTrickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState?.();
       return state?.currentTrick?.length || 0;
     });

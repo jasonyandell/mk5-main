@@ -352,7 +352,7 @@ function executeAllAIImmediate(state: GameState): { state: GameState; aiActions:
     // If no player action, try trump selection
     if (!aiTransition) {
       aiTransition = availableTransitions.find(t => 
-        t.action.type === 'trump' && 
+        t.action.type === 'select-trump' && 
         currentState.winningBidder === currentState.currentPlayer
       );
     }

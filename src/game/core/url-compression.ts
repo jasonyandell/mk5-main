@@ -1,7 +1,6 @@
 import type { GameState } from '../types';
 import { createInitialState } from './state';
 import { dealDominoesWithSeed } from './dominoes';
-import { getPlayerLeftOfDealer } from './players';
 import { analyzeSuits } from './suit-analysis';
 
 /**
@@ -64,16 +63,29 @@ export function expandMinimalState(minimal: MinimalGameState): GameState {
     undefined;
   
   // Pass all known options to createInitialState to avoid double initialization
-  const state = createInitialState({
-    playerTypes,
-    shuffleSeed: minimal.s,
-    dealer: minimal.d,
-    gameTarget: minimal.t,
-    tournamentMode: minimal.m
-  });
+  const options: Parameters<typeof createInitialState>[0] = {
+    shuffleSeed: minimal.s
+  };
+  
+  if (playerTypes !== undefined) {
+    options.playerTypes = playerTypes;
+  }
+  if (minimal.d !== undefined) {
+    options.dealer = minimal.d;
+  }
+  if (minimal.m !== undefined) {
+    options.tournamentMode = minimal.m;
+  }
+  
+  const state = createInitialState(options);
   
   // Ensure shuffleSeed is set correctly (createInitialState might have used Date.now())
   state.shuffleSeed = minimal.s;
+  
+  // Set gameTarget if provided (createInitialState doesn't accept it as a parameter)
+  if (minimal.t !== undefined) {
+    state.gameTarget = minimal.t;
+  }
   
   // Recreate hands with the seed
   const hands = dealDominoesWithSeed(state.shuffleSeed);
