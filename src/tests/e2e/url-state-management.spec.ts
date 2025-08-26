@@ -84,9 +84,9 @@ test.describe('URL State Management', () => {
       const phase = await helper.getCurrentPhase();
       expect(phase).toContain('trump_selection');
       
-      // Verify actions are available for trump selection
-      const actions = await helper.getAvailableActions();
-      expect(actions.some(a => a.type === 'trump_selection')).toBe(true);
+      // Verify trump selection buttons are visible
+      const trumpButton = page.locator('[data-testid^="trump-"]').first();
+      await expect(trumpButton).toBeVisible();
     });
   });
 

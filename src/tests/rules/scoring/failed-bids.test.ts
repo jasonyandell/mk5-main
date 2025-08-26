@@ -33,6 +33,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Test setup: Team 0 bid 2 marks (84 points) but only scored 35 points
@@ -70,6 +72,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Mock scoring function for test
@@ -131,6 +135,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Mock scoring function for test
@@ -194,6 +200,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Mock scoring function for test
@@ -254,6 +262,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Mock scoring function for test
@@ -315,6 +325,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0,
       };
 
       // Mock scoring function for test

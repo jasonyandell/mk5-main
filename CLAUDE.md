@@ -1,16 +1,16 @@
 ** Texas 42 **
 Web implementation of Texas 42 dominoes game
-- Svelte/TypeScript SPA with real-time gameplay
-- AI opponent with quickplay mode
 - Complete rule enforcement and scoring
+- Svelte/TypeScript/Vite/Tailwind CSS SPA with real-time gameplay
+  - GameState type: src/game/types.ts:93-133 — Single source of truth
+  - GameAction type: src/game/types.ts:143-151 — Event sourcing primitives
+  - State store: src/stores/gameStore.ts:136 — Reactive state container
+  - Action handlers: src/stores/gameStore.ts:373-476 — Pure state transitions
+  - UI root: src/App.svelte — View layer entry point
 Official rules are in docs/rules.md
 
 ** Every line of code is a liability **
 ** Strive for correct by construction **
-
-** Game logic **
-Code is src/game/index.ts
-Pure functions and states. Strictly. Fix any issues if you discover them
 
 ** Mobile UI ** - Prioritize mobile: wrap dominoes, no horizontal scroll, maximize vertical space
 

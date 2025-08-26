@@ -28,6 +28,7 @@ test.describe('AI Controller After Navigation', () => {
     // AI should execute synchronously in test mode after human action
     // Verify trick is complete
     let trickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState();
       return state.currentTrick.length;
     });
@@ -46,6 +47,7 @@ test.describe('AI Controller After Navigation', () => {
     
     // Check trick is empty
     trickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState();
       return state.currentTrick.length;
     });
@@ -57,6 +59,7 @@ test.describe('AI Controller After Navigation', () => {
     
     // Should have the completed trick
     trickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState();
       return state.currentTrick.length;
     });
@@ -77,6 +80,7 @@ test.describe('AI Controller After Navigation', () => {
     
     // AI should have already played (P1, P2, P3 all play automatically)
     const trickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState();
       return state.currentTrick.length;
     });
@@ -135,6 +139,7 @@ test.describe('AI Controller After Navigation', () => {
     // AI should execute synchronously in test mode
     // Verify all AI players played (trick should have 4 dominoes total)
     const trickLength = await page.evaluate(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = (window as any).getGameState();
       return state.currentTrick.length;
     });

@@ -306,9 +306,8 @@ export class PlaywrightGameHelper {
     
     for (let i = 0; i < buttons.length; i++) {
       const button = buttons[i];
-      if (!button) continue;
-      const testId = await button.getAttribute('data-testid');
-      const text = await button.textContent();
+      const testId = await button!.getAttribute('data-testid');
+      const text = await button!.textContent();
       
       // Parse action type and value from testId or text
       let type = 'unknown';
@@ -697,7 +696,7 @@ export class PlaywrightGameHelper {
    * Wait for AI to complete its move(s)
    * In test mode, AI executes synchronously, so this just verifies state
    */
-  async waitForAIMove(expectedActionCount?: number): Promise<void> {
+  async waitForAIMove(_expectedActionCount?: number): Promise<void> {
     // In test mode, AI executes synchronously, so just verify state has changed
     await this.page.waitForFunction(
       () => {

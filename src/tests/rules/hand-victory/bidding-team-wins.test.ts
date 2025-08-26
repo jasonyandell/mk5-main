@@ -36,7 +36,9 @@ describe('Hand Victory - Bidding Team Wins', () => {
         completeTrick: new Set(),
         scoreHand: new Set()
       },
-      actionHistory: []
+      actionHistory: [],
+      aiSchedule: {},
+      currentTick: 0
     };
   });
 

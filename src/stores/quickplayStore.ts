@@ -294,7 +294,7 @@ function processAIMoves() {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision, true); // Mark as controller action
+        gameActions.executeAction(decision); // Mark as controller action
       }
     } catch (error) {
       // Log error details for debugging
@@ -411,7 +411,7 @@ export const quickplayActions = {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision, true); // Mark as controller action
+        gameActions.executeAction(decision); // Mark as controller action
       }
     } catch (error) {
       console.error('[Quickplay] Step error:', {
@@ -451,7 +451,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision, true); // Mark as controller action
+          gameActions.executeAction(decision); // Mark as controller action
           // Continue with next action
           setTimeout(runToHandEnd, 0);
         }
@@ -478,7 +478,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision, true); // Mark as controller action
+          gameActions.executeAction(decision); // Mark as controller action
           // Continue with next action
           setTimeout(runToGameEnd, 0);
         }
