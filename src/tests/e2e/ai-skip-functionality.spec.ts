@@ -112,8 +112,7 @@ test.describe('AI Skip Functionality', () => {
     await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], 
       ['human', 'ai', 'ai', 'ai']);
     
-    // Enable AI for other players
-    await helper.enableAIForOtherPlayers();
+    // AI is already enabled from loadStateWithActions, no need to enable again
     
     // Play a domino
     await helper.playAnyDomino();
