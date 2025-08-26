@@ -249,12 +249,6 @@ describe('Special Gameplay Scenarios', () => {
 
   describe('Game-Ending Scenarios', () => {
     it('handles exact 7-mark victory', () => {
-      // TODO: Use state variable in actual test implementation
-      // const state = createTestState({
-      //   teamMarks: [6, 5],
-      //   phase: 'scoring'
-      // });
-
       // Team 0 wins one more mark to reach exactly 7
       const newMarks: [number, number] = [7, 5];
       expect(isGameComplete(newMarks, 7)).toBe(true);

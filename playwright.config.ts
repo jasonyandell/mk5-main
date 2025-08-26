@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const PORT = parseInt(process.env.PORT || '60101');
+
 export default defineConfig({
   testDir: '.',
   testMatch: ['src/tests/e2e/**/*.spec.ts'],
@@ -10,7 +12,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   timeout: 10000,
   use: {
-    baseURL: 'http://localhost:60101',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     actionTimeout: 2000,
     navigationTimeout: 5000,
@@ -31,7 +33,7 @@ export default defineConfig({
 
   webServer: {
     command: 'npm run dev',
-    port: 60101,
+    port: PORT,
     reuseExistingServer: !process.env.CI,
     timeout: 30000,
   },

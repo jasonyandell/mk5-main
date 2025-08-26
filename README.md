@@ -1,28 +1,6 @@
 # Texas 42
 
-A TypeScript implementation of the classic Texas domino game with tournament-compliant rules and comprehensive testing.
-
-## Features
-
-### Core Game Engine
-- **Pure functional state machine** with immutable state transitions
-- **Comprehensive rule validation** including tournament compliance
-- **Clean separation** between game logic and UI concerns
-- **Full TypeScript implementation** for compile-time safety
-
-### Professional Development Experience
-- **Modern tooling**: TypeScript + Svelte 5 + Vite
-- **Comprehensive testing**: Unit tests with Vitest + E2E tests with Playwright
-- **Performance optimizations**: Hardware acceleration, CSS containment
-- **Accessibility features**: Reduced motion support, proper ARIA attributes
-
-### Testing & Debug Infrastructure
-- **Comprehensive test helper** with state injection utilities
-- **Automatic bug report generation** with reproducible test cases
-- **Tournament compliance validation** suite
-- **Mathematical constant verification** (42-point system)
-- **URL parameter state injection** for debugging specific scenarios
-- **Debug UI** for real-time game state inspection
+Web implementation of Texas 42 dominoes game with complete rule enforcement and scoring.
 
 ## Quick Start
 
