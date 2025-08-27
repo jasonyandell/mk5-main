@@ -75,7 +75,7 @@
 </script>
 
 <button
-  class="relative bg-white border-2 border-gray-400 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
+  class="relative bg-base-100 border-2 border-base-300 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
   onclick={handleClick}
   disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
@@ -84,17 +84,17 @@
   <!-- Top half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.high] || [] as position}
-      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-base-content rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   
   <!-- Divider -->
-  <div class="h-[1px] bg-black mx-2"></div>
+  <div class="h-[1px] bg-base-content/30 mx-2"></div>
   
   <!-- Bottom half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.low] || [] as position}
-      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-base-content rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   
