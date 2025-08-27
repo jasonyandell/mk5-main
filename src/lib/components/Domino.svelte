@@ -50,11 +50,11 @@
   const sizeClasses = $derived(tiny ? 'w-11 h-[72px]' : small ? 'w-9 h-14' : 'w-14 h-[88px]');
   const pipSize = $derived(tiny ? 'w-1.5 h-1.5' : small ? 'w-1.5 h-1.5' : 'w-2 h-2');
   
-  // State classes
+  // State classes - keeping white background but adding colored borders/rings
   const stateClasses = $derived(playable 
-    ? 'border-success bg-success/20 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-success/50' 
+    ? 'border-green-500 !border-4 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-green-400' 
     : winner 
-    ? 'border-secondary bg-secondary/20 ring-4 ring-secondary/30' 
+    ? 'border-purple-500 !border-4 ring-4 ring-purple-300' 
     : clickable
     ? 'hover:scale-105 hover:shadow-xl cursor-pointer'
     : 'cursor-default');
@@ -75,7 +75,7 @@
 </script>
 
 <button
-  class="relative bg-base-100 border-2 border-base-300 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
+  class="relative bg-white border-2 border-gray-400 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
   onclick={handleClick}
   disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
@@ -84,17 +84,17 @@
   <!-- Top half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.high] || [] as position}
-      <span class="absolute {pipSize} bg-base-content rounded-full {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   
   <!-- Divider -->
-  <div class="h-[1px] bg-base-content/30 mx-2"></div>
+  <div class="h-[1px] bg-black/30 mx-2"></div>
   
   <!-- Bottom half -->
   <div class="relative h-[45%] flex items-center justify-center">
     {#each pipPatterns[domino.low] || [] as position}
-      <span class="absolute {pipSize} bg-base-content rounded-full {getPipPosition(position)}"></span>
+      <span class="absolute {pipSize} bg-black rounded-full {getPipPosition(position)}"></span>
     {/each}
   </div>
   

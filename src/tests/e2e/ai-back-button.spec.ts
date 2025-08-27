@@ -8,7 +8,7 @@ test.describe.skip('AI Controller After Navigation', () => {
     // Load game state with AI players and P0 winning bid
     // This approach is more reliable than trying to manually bid
     await helper.loadStateWithActions(12345, 
-      ['30', 'p', 'p', 'p', 'trump-blanks'], 
+      ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'], 
       ['human', 'ai', 'ai', 'ai']
     );
     
@@ -72,7 +72,7 @@ test.describe.skip('AI Controller After Navigation', () => {
     // Load state where P1 won bid with AI players
     // P0 passes, P1 bids 30, P2/P3 pass, P1 selects trump
     // Set players 1-3 as AI from the start
-    await helper.loadStateWithActions(12345, ['p', '30', 'p', 'p', 't0'], ['human', 'ai', 'ai', 'ai']);
+    await helper.loadStateWithActions(12345, ['pass', 'bid-30', 'pass', 'pass', 'trump-blanks'], ['human', 'ai', 'ai', 'ai']);
     
     // Should be in playing phase (AI executes synchronously in test mode)
     const phase = await helper.getCurrentPhase();
@@ -92,7 +92,7 @@ test.describe.skip('AI Controller After Navigation', () => {
     
     // Load state at trump selection with AI players
     await helper.loadStateWithActions(12345, 
-      ['30', 'p', 'p', 'p'], 
+      ['bid-30', 'pass', 'pass', 'pass'], 
       ['human', 'ai', 'ai', 'ai']
     );
     

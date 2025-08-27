@@ -14,9 +14,9 @@ test.describe('History Navigation URL Preservation', () => {
     await helper.pass();
     await helper.pass();
     
-    // Get URL after actions - should contain state
+    // Get URL after actions - should contain state (v2 format)
     const urlWithActions = page.url();
-    expect(urlWithActions).toContain('d=');
+    expect(urlWithActions).toContain('?v=2');
     
     // Open debug panel directly
     await helper.openDebugPanel();
@@ -59,14 +59,14 @@ test.describe('History Navigation URL Preservation', () => {
           // The URL should now reflect the time-traveled state
           const newURL = page.url();
           
-          // URL should contain state data
-          expect(newURL).toContain('?d=');
+          // URL should contain state data (v2 format)
+          expect(newURL).toContain('?v=2');
           
           // URL should be different from before (we went back in time)
           // If it's the same, that's OK - it might mean we clicked on current state
           if (newURL !== urlBefore) {
             // Successfully time traveled to a different state
-            expect(newURL).toContain('?d=');
+            expect(newURL).toContain('?v=2');
           }
         }
         

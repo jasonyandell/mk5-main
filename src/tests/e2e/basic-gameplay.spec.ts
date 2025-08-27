@@ -90,7 +90,7 @@ test.describe('Basic Gameplay', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state after all 4 players have passed
-    await helper.loadStateWithActions(12345, ['p', 'p', 'p', 'p']);
+    await helper.loadStateWithActions(12345, ['pass', 'pass', 'pass', 'pass']);
     
     // Should have redeal action available after all passes
     const actions = await helper.getAvailableActions();
@@ -108,7 +108,7 @@ test.describe('Basic Gameplay', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state with player 0 bidding 30 and others passing
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass']);
     
     // Should now be in trump selection
     const actions = await helper.getAvailableActions();
@@ -119,7 +119,7 @@ test.describe('Basic Gameplay', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state with bidding done and trump selected (t0 = blanks)
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 't0']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     // Verify we're in playing phase
     const phase = await helper.getCurrentPhase();
@@ -148,7 +148,7 @@ test.describe('Basic Gameplay', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state in playing phase with trump selected - use all human players for control
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], 
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'], 
       ['human', 'human', 'human', 'human']);
     
     // Playing area should be visible
@@ -179,7 +179,7 @@ test.describe('Basic Gameplay', () => {
     const locators = helper.getLocators();
     
     // Start with a game in progress
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     // New game by loading fresh state
     await helper.goto(54321);

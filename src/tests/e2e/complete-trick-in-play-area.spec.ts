@@ -7,7 +7,7 @@ test.describe('Complete Trick in Play Area', () => {
     const locators = helper.getLocators();
     
     // Load state with trump already selected (with AI players for automated play)
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], ['human', 'ai', 'ai', 'ai']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'], ['human', 'ai', 'ai', 'ai']);
     
     // Playing area should be visible automatically in playing phase (auto-waits)
     await expect(locators.playingArea()).toBeVisible();
@@ -37,7 +37,7 @@ test.describe('Complete Trick in Play Area', () => {
     const locators = helper.getLocators();
     
     // Load state where we're in playing phase (with AI for automated play)
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], ['human', 'ai', 'ai', 'ai']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'], ['human', 'ai', 'ai', 'ai']);
     
     // In playing phase, playing area should be visible (auto-waits)
     await expect(locators.playingArea()).toBeVisible();
@@ -57,7 +57,7 @@ test.describe('Complete Trick in Play Area', () => {
     
     // Use the same approach as the working test - load state with actions (with AI players)
     await helper.loadStateWithActions(12345, [
-      '30', 'p', 'p', 'p', 'trump-blanks'
+      'bid-30', 'pass', 'pass', 'pass', 'trump-blanks'
     ], ['human', 'ai', 'ai', 'ai']);
     
     // Playing area should be visible automatically

@@ -4,8 +4,7 @@
 
 import { expect } from '@playwright/test';
 import type { Page, Locator } from '@playwright/test';
-import { encodeURLData } from '../../../game/core/url-compression';
-import type { URLData } from '../../../game/core/url-compression';
+import { encodeGameUrl } from '../../../game/core/url-compression';
 
 /**
  * Simplified, deterministic Playwright helper for Texas 42 E2E testing
@@ -112,19 +111,12 @@ export class PlaywrightGameHelper {
    * Navigate to game with deterministic seed and wait for ready state
    */
   async goto(seed = 12345, options: GotoOptions = {}): Promise<void> {
-    const urlData: URLData = {
-      v: 1 as const,
-      s: { 
-        s: seed,
-        // Always specify all human players for deterministic testing (override defaults)
-        p: ['h', 'h', 'h', 'h'] as ('h' | 'a')[]
-      },
-      a: []
-    };
-    const encoded = encodeURLData(urlData);
+    // Always use all human players for deterministic testing
+    const playerTypes = ['human', 'human', 'human', 'human'] as ('human' | 'ai')[];
+    const urlStr = encodeGameUrl(seed, [], playerTypes, undefined, undefined);
     
     // Add testMode for deterministic testing (disables AI controllers)
-    const url = `/?d=${encoded}&testMode=true`;
+    const url = `${urlStr}&testMode=true`;
     
     // Navigate and wait for network idle for deterministic loading
     await this.page.goto(url, { 
@@ -617,22 +609,15 @@ export class PlaywrightGameHelper {
   async loadStateWithActions(
     seed: number, 
     actions: string[], 
-    playerTypes: ('human' | 'ai')[] = ['human', 'human', 'human', 'human']
+    playerTypes: ('human' | 'ai')[] = ['human', 'human', 'human', 'human'],
+    dealer?: number,
+    tournamentMode?: boolean
   ): Promise<void> {
-    const urlData: URLData = {
-      v: 1 as const,
-      s: { 
-        s: seed,
-        // Always include player types to override defaults
-        p: playerTypes.map(t => t === 'human' ? 'h' : 'a') as ('h' | 'a')[]
-      },
-      a: actions.map((id: string) => ({ i: id }))
-    };
-    const encoded = encodeURLData(urlData);
+    const urlStr = encodeGameUrl(seed, actions, playerTypes, dealer, tournamentMode);
     
     // Include testMode=true to disable controllers, but AI will execute synchronously
     // when explicitly specified in the URL data
-    await this.page.goto(`/?d=${encoded}&testMode=true`, { 
+    await this.page.goto(`${urlStr}&testMode=true`, { 
       waitUntil: 'networkidle',
       timeout: PlaywrightGameHelper.TIMEOUTS.slow 
     });

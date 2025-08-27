@@ -101,15 +101,11 @@ export {
   getWinningTeam as getWinningTeamFromMarks
 } from './core/scoring';
 
-// URL compression utilities
+// URL compression utilities (v2 only)
 export {
-  compressGameState,
-  expandMinimalState,
-  compressActionId,
-  decompressActionId,
-  encodeURLData,
-  decodeURLData,
-  type MinimalGameState,
-  type CompressedAction,
+  compressEvents,
+  decompressEvents,
+  encodeGameUrl,
+  decodeGameUrl,
   type URLData
 } from './core/url-compression';
