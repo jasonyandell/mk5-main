@@ -1,4 +1,5 @@
-import { createInitialState, decompressActionId, getNextStates } from '../index';
+import { createInitialState, getNextStates } from '../index';
+import { decodeGameUrl } from '../core/url-compression';
 import type { GameState } from '../types';
 
 export interface ReplayOptions {
@@ -21,8 +22,9 @@ export interface ReplayResult {
  * Replay game actions from a URL containing encoded state
  */
 export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayResult {
-  const base64Data = extractBase64FromUrl(url);
-  const { seed, actions } = decodeUrlData(base64Data);
+  // Extract query string from URL
+  const queryString = url.includes('?') ? url.split('?')[1] : url;
+  const { seed, actions } = decodeGameUrl(queryString || '');
   return replayActions(seed, actions, options);
 }
 
@@ -45,9 +47,8 @@ export function replayActions(
     for (let i = 0; i < actions.length; i++) {
       const actionId = actions[i];
       if (!actionId) continue;
-      const decompressedId = decompressActionId(actionId);
       
-      if (decompressedId === 'score-hand') {
+      if (actionId === 'score-hand') {
         currentHand++;
         if (currentHand === options.focusHand) {
           handStartAction = i + 1;
@@ -55,7 +56,7 @@ export function replayActions(
           for (let j = 0; j <= i; j++) {
             const transitions = getNextStates(currentState);
             const actionJ = actions[j];
-            const transition = actionJ ? transitions.find(t => t.id === decompressActionId(actionJ)) : undefined;
+            const transition = actionJ ? transitions.find(t => t.id === actionJ) : undefined;
             if (transition) currentState = transition.newState;
           }
           break;
@@ -73,19 +74,18 @@ export function replayActions(
     
     // Stop if we're past the focused hand
     const currentActionForCheck = actions[i];
-    if (options.focusHand && currentActionForCheck && decompressActionId(currentActionForCheck) === 'score-hand' && i > handStartAction) {
+    if (options.focusHand && currentActionForCheck && currentActionForCheck === 'score-hand' && i > handStartAction) {
       break;
     }
 
     const actionId = actions[i];
     if (!actionId) continue;
-    const decompressedId = decompressActionId(actionId);
     const availableTransitions = getNextStates(currentState);
-    const matchingTransition = availableTransitions.find(t => t.id === decompressedId);
+    const matchingTransition = availableTransitions.find(t => t.id === actionId);
 
     if (!matchingTransition) {
       const availableIds = availableTransitions.map(t => t.id).join(', ');
-      const error = `Action ${i}: Invalid action "${decompressedId}" (from compressed: "${actionId}"). ` +
+      const error = `Action ${i}: Invalid action "${actionId}". ` +
                    `Phase: ${currentState.phase}, Available: [${availableIds}]`;
       errors.push(error);
       
@@ -110,13 +110,13 @@ export function replayActions(
         ? ` [${prevScores}] → [${currentState.teamScores}]`
         : '';
       const phaseChange = prevPhase !== currentState.phase ? ` ${currentState.phase.toUpperCase()}` : '';
-      console.log(`${i}: ${decompressedId}${scoreChange}${phaseChange}`);
+      console.log(`${i}: ${actionId}${scoreChange}${phaseChange}`);
     } else if (shouldShow && !options.showTricks) {
-      console.log(`Action ${i}: ${decompressedId} (Phase: ${prevPhase} → ${currentState.phase})`);
+      console.log(`Action ${i}: ${actionId} (Phase: ${prevPhase} → ${currentState.phase}`);
     }
 
     // Show tricks if requested
-    if (options.showTricks && decompressedId === 'complete-trick') {
+    if (options.showTricks && actionId === 'complete-trick') {
       const trickNum = currentState.tricks.length;
       const trick = currentState.tricks[trickNum - 1];
       if (trick) {
@@ -146,40 +146,3 @@ export function replayToAction(
   return result.state;
 }
 
-/**
- * Extract base64 parameter from URL
- */
-function extractBase64FromUrl(url: string): string {
-  let urlObj: URL;
-  
-  if (url.includes('://') || url.startsWith('localhost')) {
-    urlObj = new URL(url.startsWith('localhost') ? 'http://' + url : url);
-  } else {
-    // Assume it's already base64
-    return url;
-  }
-  
-  const base64Data = urlObj.searchParams.get('d');
-  if (!base64Data) {
-    throw new Error('No "d" parameter found in URL');
-  }
-  
-  return base64Data;
-}
-
-/**
- * Decode base64 URL data into seed and actions
- */
-function decodeUrlData(base64Data: string): { seed: number; actions: string[] } {
-  const decoded = Buffer.from(base64Data, 'base64').toString('utf-8');
-  const urlData = JSON.parse(decoded);
-  
-  const seed = urlData.s?.s;
-  const actions = urlData.a?.map((a: { i: string }) => a.i) || [];
-  
-  if (!seed) {
-    throw new Error('No seed found in URL data');
-  }
-  
-  return { seed, actions };
-}

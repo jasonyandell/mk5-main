@@ -1,6 +1,6 @@
 <script lang="ts">
   import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
-  import { compressGameState, compressActionId, encodeURLData } from '../../game/core/url-compression';
+  import { encodeGameUrl } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
 
   interface Props {
@@ -51,14 +51,11 @@
     gameActions.loadFromHistoryState(historyState);
     
     // Update URL to reflect the new state
-    const urlData = {
-      v: 1 as const,
-      s: compressGameState($initialState),
-      a: actionsToReplay.map(a => ({ i: compressActionId(a.id) }))
-    };
-    
-    const encoded = encodeURLData(urlData);
-    const newURL = `${window.location.pathname}?d=${encoded}`;
+    const newURL = window.location.pathname + encodeGameUrl(
+      $initialState.shuffleSeed,
+      actionsToReplay.map(a => a.id),
+      $initialState.playerTypes
+    );
     
     // Update browser history
     window.history.pushState(historyState, '', newURL);

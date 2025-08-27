@@ -39,8 +39,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state where P0 won bid and is at trump selection
-    await helper.loadStateWithActions(12345, 
-      ['30', 'p', 'p', 'p'],
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass'],
       ['human', 'human', 'human', 'human'] // All human for this test
     );
     
@@ -127,7 +126,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     // Load a game near scoring
     // This creates a valid state progression to scoring
     const actionsToScoring = [
-      '30', 'p', 'p', 'p', 't0' // Setup game
+      'bid-30', 'pass', 'pass', 'pass', 'trump-blanks' // Setup game
     ];
     
     await helper.loadStateWithActions(12345, actionsToScoring);
@@ -148,7 +147,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     const scoringActions = [...actionsToScoring];
     // Add dummy trick completions to simulate a full hand
     for (let i = 0; i < 7; i++) {
-      scoringActions.push('00', '10', '11', '20', 'ct');
+      scoringActions.push('play-0-0', 'play-1-0', 'play-1-1', 'play-2-0', 'complete-trick');
     }
     
     await helper.loadStateWithActions(12345, scoringActions);
@@ -298,12 +297,12 @@ test.describe('Comprehensive Back Button Navigation', () => {
     const urlAfterAI = page.url();
     
     // Should have multiple actions in URL now (bid + AI responses)
-    const match = urlAfterAI.match(/d=([^&]+)/);
-    if (match) {
-      const { decodeURLData } = await import('../../game/core/url-compression');
-      const decoded = decodeURLData(match[1]!);
+    // Check v2 URL format
+    const params = new URLSearchParams(urlAfterAI.split('?')[1]);
+    const actionsStr = params.get('a');
+    if (actionsStr) {
       // In test mode with AI, we should have at least 4 actions (P0 bid + 3 AI passes/bids)
-      expect(decoded.a.length).toBeGreaterThanOrEqual(4);
+      expect(actionsStr.length).toBeGreaterThanOrEqual(4);
     }
     
     // Go back to initial state
@@ -421,7 +420,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     await page.goBack();
     await helper.waitForNavigationRestore();
     const urlInitial = page.url();
-    expect(urlInitial).toContain('?d='); // Should have initial state with seed
+    expect(urlInitial).toContain('?v=2'); // Should have initial state with seed (v2 format)
     
     // Verify we can navigate forward again
     await page.goForward();
@@ -473,11 +472,11 @@ test.describe('Comprehensive Back Button Navigation', () => {
     const urlInitial = page.url();
     
     // Verify we're at the initial state (just seed, no actions)
-    const match = urlInitial.match(/d=([^&]+)/);
-    if (match) {
-      const { decodeURLData } = await import('../../game/core/url-compression');
-      const decoded = decodeURLData(match[1]!);
-      expect(decoded.a.length).toBe(0); // No actions, just initial state
+    // Check v2 URL format
+    const params = new URLSearchParams(urlInitial.split('?')[1]);
+    const actionsStr = params.get('a');
+    if (actionsStr) {
+      expect(actionsStr).toBe(''); // No actions, just initial state
     }
     
     // And we should be able to go forward through our new path

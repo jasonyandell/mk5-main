@@ -10,7 +10,7 @@ test.describe('AI Skip Functionality', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load deterministic state in playing phase
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     const table = page.locator('[data-testid="trick-table"]');
     await expect(table).toBeVisible();
@@ -21,7 +21,7 @@ test.describe('AI Skip Functionality', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load deterministic state
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     // Inject spy to verify skipAIDelays is called
     await page.evaluate(() => {
@@ -52,7 +52,7 @@ test.describe('AI Skip Functionality', () => {
     
     // Load state with a full trick played (deterministic)
     await helper.loadStateWithActions(12345, [
-      '30', 'p', 'p', 'p',
+      'bid-30', 'pass', 'pass', 'pass',
       'trump-blanks',
       'play-6-6', 'play-6-5', 'play-6-4', 'play-6-3',
       'complete-trick'  // Complete the trick
@@ -77,7 +77,7 @@ test.describe('AI Skip Functionality', () => {
   test('table hover shows pointer cursor', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     const table = page.locator('[data-testid="trick-table"]');
     await table.hover();
@@ -91,7 +91,7 @@ test.describe('AI Skip Functionality', () => {
   test('multiple clicks work without issues', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks']);
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
     
     const table = page.locator('[data-testid="trick-table"]');
     
@@ -109,7 +109,7 @@ test.describe('AI Skip Functionality', () => {
     const helper = new PlaywrightGameHelper(page);
     
     // Load state where player 0 can play - with AI players
-    await helper.loadStateWithActions(12345, ['30', 'p', 'p', 'p', 'trump-blanks'], 
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'], 
       ['human', 'ai', 'ai', 'ai']);
     
     // AI is already enabled from loadStateWithActions, no need to enable again

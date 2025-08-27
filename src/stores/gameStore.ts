@@ -3,13 +3,8 @@ import type { GameState, StateTransition } from '../game/types';
 import { createInitialState, getNextStates } from '../game';
 import { ControllerManager } from '../game/controllers';
 import { 
-  compressGameState, 
-  expandMinimalState, 
-  compressActionId, 
-  decompressActionId,
-  encodeURLData,
-  decodeURLData,
-  type URLData 
+  encodeGameUrl,
+  decodeGameUrl
 } from '../game/core/url-compression';
 import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule } from '../game/core/ai-scheduler';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
@@ -104,15 +99,14 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
       return;
     }
     
-    // Use compressed format
-    const urlData: URLData = {
-      v: 1,
-      s: compressGameState(initialState),
-      a: actions.map(a => ({ i: compressActionId(a.id) }))
-    };
-    
-    const encoded = encodeURLData(urlData);
-    const newURL = `${window.location.pathname}?d=${encoded}`;
+    // Use v2 compressed format
+    const newURL = window.location.pathname + encodeGameUrl(
+      initialState.shuffleSeed,
+      actions.map(a => a.id),
+      initialState.playerTypes,
+      initialState.dealer,
+      initialState.tournamentMode
+    );
     
     // Store state in history for easy access
     const historyState = { initialState, actions: actions.map(a => a.id), timestamp: Date.now() };
@@ -370,88 +364,97 @@ export const gameActions = {
   
   loadFromURL: () => {
     if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      
-      // Try new compressed format first
-      const compressedParam = urlParams.get('d');
-      if (compressedParam) {
-        try {
-          const urlData = decodeURLData(compressedParam);
-          
-          if (urlData.v === 1) {
-            // Expand minimal state
-            // In test mode, override player types to be all human unless explicitly specified
-            if (testMode && !urlData.s.p) {
-              urlData.s.p = ['h', 'h', 'h', 'h'];
-            }
-            const expandedInitial = expandMinimalState(urlData.s);
-            initialState.set(deepClone(expandedInitial));
-            
-            // CRITICAL: Must deep clone here to avoid mutating the stored initial state
-            let currentState = deepClone(expandedInitial);
-            const validActions: StateTransition[] = [];
-            
-            // Replay compressed actions
-            let invalidActionFound = false;
-            for (const compressedAction of urlData.a) {
-              const actionId = decompressActionId(compressedAction.i);
-              const availableTransitions = getNextStates(currentState);
-              const matchingTransition = availableTransitions.find(t => t.id === actionId);
-              
-              if (matchingTransition) {
-                validActions.push(matchingTransition);
-                currentState = matchingTransition.newState;
-              } else {
-                // Log warning but continue loading what we can
-                const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-                console.warn(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
-                console.warn('Stopping replay at this point - game will continue from here');
-                invalidActionFound = true;
-                break; // Stop processing further actions
-              }
-            }
-            
-            // After replaying all actions, if in test mode and current player is AI, execute AI
-            if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-              const result = executeAllAIImmediate(currentState);
-              currentState = result.state;
-              // Add AI actions to the valid actions list
-              validActions.push(...result.aiActions);
-            }
-            
-            // Reset AI scheduling for clean state
-            currentState = resetAISchedule(currentState);
-            
-            gameState.set(currentState);
-            actionHistory.set(validActions);
-            
-            // If we had invalid actions, update the URL to reflect the valid state
-            if (invalidActionFound) {
-              updateURLWithState(get(initialState), validActions, false);
-            }
-            
-            validateState();
-            
-            // Notify controllers of the state change so AI can take action
-            controllerManager.onStateChange(currentState);
-            return;
-          }
-        } catch (e) {
-          console.error('Failed to load compressed URL:', e);
-          console.warn('Starting fresh game instead');
-          // Ensure we have a clean fresh game state
-          const freshState = createInitialState({
-            playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-          });
-          initialState.set(deepClone(freshState));
-          gameState.set(freshState);
-          actionHistory.set([]);
-          stateValidationError.set(null);
-          // Don't update URL - leave the invalid param there but game starts fresh
-          // Notify controllers of the fresh state
-          controllerManager.onStateChange(freshState);
-          return; // Important: return here to avoid fallthrough
+      try {
+        const { seed, actions, playerTypes, dealer, tournamentMode } = decodeGameUrl(window.location.search);
+        
+        // If no seed, there's no game to load
+        if (!seed) {
+          return;
         }
+        
+        // Use the player types from the URL
+        const finalPlayerTypes = playerTypes;
+        
+        // Create initial state with the seed, player types, dealer, and tournament mode
+        const newInitialState = createInitialState({
+          shuffleSeed: seed,
+          playerTypes: finalPlayerTypes,
+          dealer,
+          tournamentMode
+        });
+        initialState.set(deepClone(newInitialState));
+        
+        // CRITICAL: Must deep clone here to avoid mutating the stored initial state
+        let currentState = deepClone(newInitialState);
+        const validActions: StateTransition[] = [];
+        
+        // Replay actions
+        let invalidActionFound = false;
+        for (const actionId of actions) {
+          const availableTransitions = getNextStates(currentState);
+          const matchingTransition = availableTransitions.find(t => t.id === actionId);
+          
+          if (matchingTransition) {
+            validActions.push(matchingTransition);
+            currentState = matchingTransition.newState;
+          } else {
+            // Log warning but continue loading what we can
+            const availableActionIds = availableTransitions.map(t => t.id).join(', ');
+            console.warn(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
+            console.warn('Stopping replay at this point - game will continue from here');
+            invalidActionFound = true;
+            break; // Stop processing further actions
+          }
+        }
+        
+        // After replaying all actions, if in test mode and current player is AI, execute AI
+        if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
+          const result = executeAllAIImmediate(currentState);
+          currentState = result.state;
+          // Add AI actions to the valid actions list
+          validActions.push(...result.aiActions);
+        }
+        
+        // Reset AI scheduling for clean state
+        currentState = resetAISchedule(currentState);
+        
+        gameState.set(currentState);
+        actionHistory.set(validActions);
+        
+        // If we had invalid actions, update the URL to reflect the valid state
+        if (invalidActionFound) {
+          updateURLWithState(get(initialState), validActions, false);
+        }
+        
+        validateState();
+        
+        // Notify controllers of the state change so AI can take action
+        controllerManager.onStateChange(currentState);
+        return;
+      } catch (e: unknown) {
+        const error = e as Error;
+        if (error.message && error.message.includes('outdated format')) {
+          window.alert(error.message);
+          return;
+        }
+        if (error.message && (error.message.includes('Invalid URL') || error.message.includes('Missing version'))) {
+          // Not an error - just no game to load
+          return;
+        }
+        console.error('Failed to load URL:', e);
+        console.warn('Starting fresh game instead');
+        // Ensure we have a clean fresh game state
+        const freshState = createInitialState({
+          playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
+        });
+        initialState.set(deepClone(freshState));
+        gameState.set(freshState);
+        actionHistory.set([]);
+        stateValidationError.set(null);
+        // Don't update URL - leave the invalid param there but game starts fresh
+        // Notify controllers of the fresh state
+        controllerManager.onStateChange(freshState);
+        return; // Important: return here to avoid fallthrough
       }
     }
   },
