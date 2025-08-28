@@ -95,6 +95,7 @@ export interface ViewProjection {
   scoring: {
     teamScores: [number, number];
     teamMarks: [number, number];
+    currentHandPoints: [number, number];  // Current hand's trick points
     handResults: HandResults | null;  // Only during scoring phase
   };
   
@@ -274,6 +275,7 @@ export function createViewProjection(
     scoring: {
       teamScores: gameState.teamScores,
       teamMarks: gameState.teamMarks,
+      currentHandPoints: calculateTeamPoints(gameState.tricks),
       handResults
     },
     ui: {
@@ -368,15 +370,21 @@ function getTrumpDisplay(trump: TrumpSelection): string {
   return 'Unknown';
 }
 
-// Helper to calculate hand results with perspective-aware messages
-function calculateHandResults(gameState: GameState, playerPerspective: number = 0): HandResults | null {
-  const tricks = gameState.tricks;
+// Helper to calculate current hand points for each team from tricks
+function calculateTeamPoints(tricks: Trick[]): [number, number] {
   const team0Points = tricks
     .filter(t => t.winner !== undefined && t.winner % 2 === 0)
     .reduce((sum, t) => sum + (t.points || 0), 0);
   const team1Points = tricks
     .filter(t => t.winner !== undefined && t.winner % 2 === 1)
     .reduce((sum, t) => sum + (t.points || 0), 0);
+  return [team0Points, team1Points];
+}
+
+// Helper to calculate hand results with perspective-aware messages
+function calculateHandResults(gameState: GameState, playerPerspective: number = 0): HandResults | null {
+  const tricks = gameState.tricks;
+  const [team0Points, team1Points] = calculateTeamPoints(tricks);
   
   // Default to 42 points required (for marks, plunge, splash, etc.)
   // Only use bid value for explicit points bids

@@ -12,6 +12,7 @@
     completedTricks: CompletedTrick[];
     currentTrick: Play[];
     trickNumber: number;
+    currentHandPoints: [number, number];
     isOpen?: boolean;
     onToggle?: () => void;
     onStateChange?: (state: 'collapsed' | 'expanded') => void;
@@ -21,6 +22,7 @@
     completedTricks = [], 
     currentTrick = [],
     trickNumber = 1,
+    currentHandPoints = [0, 0],
     onToggle,
     onStateChange
   }: Props = $props();
@@ -66,6 +68,19 @@
       </button>
     </div>
     
+    <!-- Current Hand Points Display -->
+    <div class="flex items-center justify-center gap-4 px-4 py-2 bg-base-200 border-b border-base-300">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-base-content/70">US:</span>
+        <span class="text-sm font-bold">{currentHandPoints[0]}</span>
+      </div>
+      <div class="text-xs text-base-content/50">|</div>
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-semibold text-base-content/70">THEM:</span>
+        <span class="text-sm font-bold">{currentHandPoints[1]}</span>
+      </div>
+    </div>
+    
     <!-- Panel Content -->
     <div class="flex-1 h-full overflow-y-auto">
       <div class="p-4">
@@ -86,18 +101,15 @@
               <div class="text-xs font-bold text-base-content/60">{index + 1}:</div>
               {#each [0, 1, 2, 3] as playerIndex}
                 {@const play = getPlayerPlay(trick.plays, playerIndex)}
-                <div class="flex justify-center">
+                <div class="flex justify-center items-center h-14">
                   {#if play}
-                    <div 
-                      class="transition-all {trick.winner === playerIndex ? 'scale-110 drop-shadow-md ring-2 ring-primary rounded' : ''}"
-                    >
-                      <Domino 
-                        domino={play.domino} 
-                        small={true} 
-                        showPoints={false} 
-                        clickable={false}
-                      />
-                    </div>
+                    <Domino 
+                      domino={play.domino} 
+                      small={true} 
+                      showPoints={false} 
+                      clickable={false}
+                      winner={trick.winner === playerIndex}
+                    />
                   {:else}
                     <div class="w-10 h-14 border-2 border-dashed border-base-300 rounded"></div>
                   {/if}

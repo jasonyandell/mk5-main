@@ -420,7 +420,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     await page.goBack();
     await helper.waitForNavigationRestore();
     const urlInitial = page.url();
-    expect(urlInitial).toContain('?v=2'); // Should have initial state with seed (v2 format)
+    expect(urlInitial).toContain('?s='); // Should have initial state with seed
     
     // Verify we can navigate forward again
     await page.goForward();
@@ -472,7 +472,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     const urlInitial = page.url();
     
     // Verify we're at the initial state (just seed, no actions)
-    // Check v2 URL format
+    // Check URL format
     const params = new URLSearchParams(urlInitial.split('?')[1]);
     const actionsStr = params.get('a');
     if (actionsStr) {

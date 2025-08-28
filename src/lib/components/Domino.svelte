@@ -53,8 +53,6 @@
   // State classes - keeping white background but adding colored borders/rings
   const stateClasses = $derived(playable 
     ? 'border-green-500 !border-4 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-green-400' 
-    : winner 
-    ? 'border-purple-500 !border-4 ring-4 ring-purple-300' 
     : clickable
     ? 'hover:scale-105 hover:shadow-xl cursor-pointer'
     : 'cursor-default');
@@ -75,7 +73,7 @@
 </script>
 
 <button
-  class="relative bg-white border-2 border-gray-400 rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
+  class="relative bg-white {winner ? 'border-4 border-primary' : 'border-2 border-gray-400'} rounded-md shadow-lg transition-all {sizeClasses} {stateClasses} p-0 overflow-visible min-h-touch"
   onclick={handleClick}
   disabled={!clickable}
   title={tooltip || domino.high + '-' + domino.low}
