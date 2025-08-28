@@ -34,9 +34,8 @@ test.describe('URL State Management', () => {
       expect(url).toContain('s=');
       expect(url).toContain('a=');
       
-      // Decode and verify the URL data - v2 format
+      // Decode and verify the URL data
       const params = new URLSearchParams(url.split('?')[1]);
-      expect(params.get('v')).toBe('2');
       const seed = params.get('s');
       expect(seed).toBeTruthy();
       const actions = params.get('a');
@@ -571,7 +570,8 @@ test.describe('URL State Management', () => {
       const helper = new PlaywrightGameHelper(page);
       
       // Create corrupted URL with invalid action characters
-      const corruptedUrl = '?v=2&s=12345&a=ABCD~~~INVALID';
+      // 12345 in base36 is '9ix'
+      const corruptedUrl = '?s=9ix&a=ABCD~~~INVALID';
       
       await page.goto(`${corruptedUrl}&testMode=true`);
       await helper.waitForGameReady();

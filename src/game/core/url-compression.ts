@@ -1,7 +1,8 @@
 /**
- * URL Compression System v2
+ * URL Compression System
  * Uses base66 encoding: 1 character = 1 event
  * Reduces URLs by ~96% (8KB -> 350 chars)
+ * Seeds use base36 encoding for additional compression
  * 
  * IMPORTANT: Completeness comes first - the URL must capture the complete game state
  * to enable proper replay and sharing. After ensuring completeness, we optimize for
@@ -169,11 +170,8 @@ export function encodeGameUrl(
 ): string {
   const params = new URLSearchParams();
   
-  // Version 2 format
-  params.set('v', '2');
-  
-  // Seed as decimal
-  params.set('s', seed.toString());
+  // Seed as base36 for compression
+  params.set('s', seed.toString(36));
   
   // Only include player types if not default
   if (playerTypes) {
@@ -216,7 +214,7 @@ export function decodeGameUrl(urlString: string): {
     
   const params = new URLSearchParams(queryString);
   
-  // Check version
+  // Check version for backward compatibility
   const version = params.get('v');
   
   // Empty URL is ok - no game to load
@@ -230,19 +228,24 @@ export function decodeGameUrl(urlString: string): {
     };
   }
   
-  // Must be v2
-  if (version !== '2') {
-    throw new Error('Invalid URL format. Only v2 URLs are supported.');
-  }
-  
   // Parse seed
   const seedStr = params.get('s');
   if (!seedStr) {
     throw new Error('Invalid URL: missing seed parameter');
   }
-  const seed = parseInt(seedStr, 10);
+  
+  // Handle both old decimal format (v2) and new base36 format
+  let seed: number;
+  if (version === '2') {
+    // Old format: decimal
+    seed = parseInt(seedStr, 10);
+  } else {
+    // New format: base36
+    seed = parseInt(seedStr, 36);
+  }
+  
   if (isNaN(seed)) {
-    throw new Error('Invalid URL: seed must be a number');
+    throw new Error('Invalid URL: seed must be a valid number');
   }
   
   // Parse actions
@@ -276,7 +279,6 @@ export function decodeGameUrl(urlString: string): {
 
 // Export types for use in other modules
 export interface URLData {
-  v: 2;
   seed: number;
   actions: string[];
   playerTypes: ('human' | 'ai')[];

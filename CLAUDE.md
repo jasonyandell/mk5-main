@@ -1,4 +1,6 @@
-** Texas 42 **
+# Texas 42
+
+## Overview
 Web implementation of Texas 42 dominoes game
 - Complete rule enforcement and scoring
 - Svelte/TypeScript/Vite/Tailwind CSS SPA with real-time gameplay
@@ -9,12 +11,13 @@ Web implementation of Texas 42 dominoes game
   - UI root: src/App.svelte — View layer entry point
 Official rules are in docs/rules.md
 
-** Every line of code is a liability **
-** Strive for correct by construction **
+## Philosophy
+- Immutable state transitions
+- Every line of code is a liability
+- Strive for correct by construction
 
-** Mobile UI ** - Prioritize mobile: wrap dominoes, no horizontal scroll, maximize vertical space
-
-** Temporary files ** - All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
+## Temporary files
+- All temporary files, test artifacts, and scratch work should be placed in the scratch/ directory, which is gitignored
   - Playwright tests in scratch/ must use `.test.ts` extension (not `.spec.ts`)
   - Example: `scratch/debug-issue.test.ts` 
   - These won't run with `npm run test:e2e` (production tests only)

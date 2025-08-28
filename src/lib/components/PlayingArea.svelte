@@ -365,6 +365,7 @@
       completedTricks={$viewProjection.trick.completed}
       currentTrick={$viewProjection.trick.current.plays.filter(p => p !== null)}
       trickNumber={$viewProjection.trick.number}
+      currentHandPoints={$viewProjection.scoring.currentHandPoints}
       onStateChange={(state) => {
         drawerState = state;
       }}
