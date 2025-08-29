@@ -55,7 +55,7 @@ export function dealDominoesWithSeed(seed: number): [Domino[], Domino[], Domino[
 /**
  * Converts TrumpSelection to numeric value
  */
-function trumpToNumber(trump: TrumpSelection): number | null {
+export function trumpToNumber(trump: TrumpSelection): number | null {
   switch (trump.type) {
     case 'none': return null;
     case 'suit': return trump.suit!;
