@@ -57,6 +57,9 @@ export function createSetupState(options?: {
     bidWinner: -1, // -1 instead of null
     isComplete: false,
     winner: -1, // -1 instead of null
+    // Theme as first-class citizen
+    theme: 'coffee',
+    colorOverrides: {}
   };
 }
 
@@ -67,7 +70,9 @@ export function createInitialState(options?: {
   shuffleSeed?: number, 
   dealer?: number, 
   tournamentMode?: boolean,
-  playerTypes?: ('human' | 'ai')[]
+  playerTypes?: ('human' | 'ai')[],
+  theme?: string,
+  colorOverrides?: Record<string, string>
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
@@ -77,6 +82,11 @@ export function createInitialState(options?: {
   const hands = dealDominoesWithSeed(shuffleSeed);
   
   const initialState = {
+    // Theme configuration (first-class citizen)
+    theme: options?.theme ?? 'coffee',
+    colorOverrides: options?.colorOverrides ?? {},
+    
+    // Game state
     phase: 'bidding' as const,
     players: [
       { id: 0, name: 'Player 1', hand: hands[0], teamId: 0 as const, marks: 0, suitAnalysis: analyzeSuits(hands[0]) },

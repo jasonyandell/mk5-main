@@ -116,7 +116,9 @@ export function calculateHandStrengthWithTrump(
     consensus: { completeTrick: new Set(), scoreHand: new Set() },
     actionHistory: [],
     aiSchedule: {},
-    currentTick: 0
+    currentTick: 0,
+    theme: 'coffee',
+    colorOverrides: {}
   };
   
   const analysis = analyzeHand(minimalState, analyzingPlayerId);
@@ -249,7 +251,9 @@ export function getHandStrengthBreakdown(
     consensus: { completeTrick: new Set(), scoreHand: new Set() },
     actionHistory: [],
     aiSchedule: {},
-    currentTick: 0
+    currentTick: 0,
+    theme: 'coffee',
+    colorOverrides: {}
   };
   
   const analysis = analyzeHand(minimalState, 0);

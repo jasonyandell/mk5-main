@@ -157,7 +157,7 @@
     
     {#if $viewProjection.ui.isWaiting && $viewProjection.ui.isAIThinking}
       <button 
-        class="w-full p-5 text-center text-gray-600 flex items-center justify-center gap-2 animate-pulse bg-transparent border-none font-inherit cursor-pointer transition-transform hover:scale-105 active:scale-[0.98] ai-thinking-indicator"
+        class="w-full p-5 text-center text-base-content/60 flex items-center justify-center gap-2 animate-pulse bg-transparent border-none font-inherit cursor-pointer transition-transform hover:scale-105 active:scale-[0.98] ai-thinking-indicator"
         onclick={() => {
           // Skip current AI delay
           gameActions.skipAIDelays();

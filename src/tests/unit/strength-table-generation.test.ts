@@ -36,8 +36,10 @@ function createMinimalState(): GameState {
     },
     actionHistory: [],
     aiSchedule: {},
-    currentTick: 0
-  } as GameState;
+    currentTick: 0,
+    theme: 'coffee',
+    colorOverrides: {}
+  };
 }
 
 function generateAllDominoes(): Domino[] {

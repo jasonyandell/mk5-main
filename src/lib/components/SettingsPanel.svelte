@@ -170,7 +170,10 @@
             {#each themes as theme}
               <button
                 class="relative overflow-hidden rounded-lg transition-transform active:scale-95 {currentTheme === theme.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''}"
-                onclick={() => document.documentElement.setAttribute('data-theme', theme.value)}
+                onclick={() => {
+                  // Use gameActions to update theme (first-class state)
+                  gameActions.updateTheme(theme.value, {});
+                }}
               >
                 <div data-theme={theme.value} class="bg-base-100 p-3">
                   <!-- Color preview dots -->
@@ -206,6 +209,21 @@
               </button>
             {/each}
           </div>
+          
+          <!-- Reset Game button -->
+          <div class="divider">Game Controls</div>
+          <button 
+            class="btn btn-warning btn-block"
+            onclick={() => {
+              // Reset the game state (theme is now preserved automatically)
+              gameActions.resetGame();
+            }}
+          >
+            🎮 Reset Game
+          </button>
+          <p class="text-xs text-base-content/60 text-center mt-2">
+            Starts a new game while keeping your theme settings
+          </p>
         </div>
       {/if}
 

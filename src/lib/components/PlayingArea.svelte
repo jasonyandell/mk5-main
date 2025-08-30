@@ -286,7 +286,7 @@
                   />
                   <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-bold text-base-100 bg-base-content/70 px-2 py-0.5 rounded-full">P{position}</div>
                 {#if isWinner}
-                  <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-gradient-to-br from-yellow-400 to-yellow-500 text-slate-800 px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-[0_2px_8px_rgba(255,215,0,0.5)] motion-safe:animate-bounce-in whitespace-nowrap z-[15]">
+                  <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-warning text-warning-content px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-lg motion-safe:animate-bounce-in whitespace-nowrap z-[15]">
                     <span class="text-sm motion-safe:animate-sparkle">👑</span>
                     <span class="uppercase tracking-wider">Winner!</span>
                   </div>
