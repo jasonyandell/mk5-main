@@ -5,6 +5,7 @@ import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Edge Cases and Unusual Scenarios', () => {
   describe('Dealer Rotation Edge Cases', () => {
@@ -113,13 +114,13 @@ describe('Edge Cases and Unusual Scenarios', () => {
           teamId: 0,
           marks: 0,
           hand: [
-            { id: 0, low: 0, high: 0 },   // [0|0]
-            { id: 1, low: 1, high: 1 },   // [1|1]
-            { id: 6, low: 2, high: 2 },   // [2|2]
-            { id: 7, low: 3, high: 3 },   // [3|3]
-            { id: 14, low: 4, high: 4 },  // [4|4]
-            { id: 15, low: 5, high: 5 },  // [5|5]
-            { id: 27, low: 6, high: 6 }   // [6|6]
+            { id: 0, low: BLANKS, high: BLANKS },   // [0|0]
+            { id: 1, low: ACES, high: ACES },   // [1|1]
+            { id: 6, low: DEUCES, high: DEUCES },   // [2|2]
+            { id: 7, low: TRES, high: TRES },   // [3|3]
+            { id: 14, low: FOURS, high: FOURS },  // [4|4]
+            { id: 15, low: FIVES, high: FIVES },  // [5|5]
+            { id: 27, low: SIXES, high: SIXES }   // [6|6]
           ]
         }]
       });
@@ -131,7 +132,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
     it('should handle player with no trump dominoes', () => {
       const state = GameTestHelper.createPlayingScenario(
-        { type: 'suit', suit: 6 }, // trump: sixes
+        { type: 'suit', suit: SIXES }, // trump: sixes
         0, // currentPlayer
         []
       );
@@ -142,19 +143,19 @@ describe('Edge Cases and Unusual Scenarios', () => {
         players: [{
           id: 0,
           hand: [
-            { id: 1, low: 0, high: 1 },   // [1|0]
-            { id: 5, low: 2, high: 3 },   // [2|3]
-            { id: 8, low: 1, high: 4 },   // [4|1]
-            { id: 10, low: 0, high: 5 },  // [5|0]
-            { id: 15, low: 5, high: 5 },  // [5|5]
-            { id: 6, low: 3, high: 3 },   // [3|3]
-            { id: 0, low: 0, high: 0 }    // [0|0]
+            { id: 1, low: BLANKS, high: ACES },   // [1|0]
+            { id: 5, low: DEUCES, high: TRES },   // [2|3]
+            { id: 8, low: ACES, high: FOURS },   // [4|1]
+            { id: 10, low: BLANKS, high: FIVES },  // [5|0]
+            { id: 15, low: FIVES, high: FIVES },  // [5|5]
+            { id: 6, low: TRES, high: TRES },   // [3|3]
+            { id: 0, low: BLANKS, high: BLANKS }    // [0|0]
           ]
         }]
       };
       
       // Verify no sixes in hand
-      const hasSixes = testState.players[0]!.hand.some(d => d.low === 6 || d.high === 6);
+      const hasSixes = testState.players[0]!.hand.some(d => (d.low as number) === SIXES || (d.high as number) === SIXES);
       expect(hasSixes).toBe(false);
     });
 
@@ -166,24 +167,24 @@ describe('Edge Cases and Unusual Scenarios', () => {
           teamId: 0,
           marks: 0,
           hand: [
-            { id: 15, low: 5, high: 5 },  // [5|5] - 10 points
-            { id: 20, low: 4, high: 6 },  // [6|4] - 10 points
-            { id: 10, low: 0, high: 5 },  // [5|0] - 5 points
-            { id: 8, low: 1, high: 4 },   // [4|1] - 5 points
-            { id: 5, low: 2, high: 3 },   // [3|2] - 5 points
-            { id: 1, low: 0, high: 1 },   // [1|0] - 0 points
-            { id: 6, low: 3, high: 3 }    // [3|3] - 0 points
+            { id: 15, low: FIVES, high: FIVES },  // [5|5] - 10 points
+            { id: 20, low: FOURS, high: SIXES },  // [6|4] - 10 points
+            { id: 10, low: BLANKS, high: FIVES },  // [5|0] - 5 points
+            { id: 8, low: ACES, high: FOURS },   // [4|1] - 5 points
+            { id: 5, low: DEUCES, high: TRES },   // [3|2] - 5 points
+            { id: 1, low: BLANKS, high: ACES },   // [1|0] - 0 points
+            { id: 6, low: TRES, high: TRES }    // [3|3] - 0 points
           ]
         }]
       });
       
       // Player has all 5 counting dominoes (35 points)
       const countingDominoes = [
-        { id: 15, low: 5, high: 5 },  // 10 points
-        { id: 20, low: 4, high: 6 },  // 10 points
-        { id: 10, low: 0, high: 5 },  // 5 points
-        { id: 8, low: 1, high: 4 },   // 5 points
-        { id: 5, low: 2, high: 3 }    // 5 points
+        { id: 15, low: FIVES, high: FIVES },  // 10 points
+        { id: 20, low: FOURS, high: SIXES },  // 10 points
+        { id: 10, low: BLANKS, high: FIVES },  // 5 points
+        { id: 8, low: ACES, high: FOURS },   // 5 points
+        { id: 5, low: DEUCES, high: TRES }    // 5 points
       ];
       
       const playerCountingDominoes = state.players[0]!.hand.filter(d => 

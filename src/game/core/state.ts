@@ -1,6 +1,6 @@
 import type { GameState, Player } from '../types';
 import { GAME_CONSTANTS } from '../constants';
-import { EMPTY_BID } from '../types';
+import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
 import { analyzeSuits } from './suit-analysis';
@@ -29,11 +29,11 @@ export function createSetupState(options?: {
     dealer,
     bids: [],
     currentBid: EMPTY_BID,
-    winningBidder: -1, // -1 during bidding instead of null
-    trump: { type: 'none' as const }, // Never null, uses clear empty state
+    winningBidder: NO_BIDDER, // NO_BIDDER during bidding
+    trump: { type: 'not-selected' as const }, // Never null, uses clear empty state
     tricks: [],
     currentTrick: [],
-    currentSuit: -1, // -1 when no trick in progress instead of null
+    currentSuit: NO_LEAD_SUIT, // NO_LEAD_SUIT when no trick in progress
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
@@ -88,11 +88,11 @@ export function createInitialState(options?: {
     dealer,
     bids: [],
     currentBid: EMPTY_BID,
-    winningBidder: -1, // -1 during bidding instead of null
-    trump: { type: 'none' as const }, // Never null, uses clear empty state
+    winningBidder: NO_BIDDER, // NO_BIDDER during bidding
+    trump: { type: 'not-selected' as const }, // Never null, uses clear empty state
     tricks: [],
     currentTrick: [],
-    currentSuit: -1, // -1 when no trick in progress instead of null
+    currentSuit: NO_LEAD_SUIT, // NO_LEAD_SUIT when no trick in progress
     teamScores: [0, 0] as [number, number],
     teamMarks: [0, 0] as [number, number],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,

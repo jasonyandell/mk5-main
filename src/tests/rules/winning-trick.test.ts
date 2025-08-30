@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest';
 import type { Play, TrumpSelection } from '../../game/types';
 import { determineTrickWinner } from '../../game/index';
 import { getDominoSuit } from '../../game/core/dominoes';
+import { ACES, DEUCES, TRES, FIVES } from '../../game/types';
 
 describe('Winning a Trick', () => {
   describe('Given all players have played to a trick', () => {
     describe('When determining the winner', () => {
       it('Then the highest trump played wins', () => {
-        const trump: TrumpSelection = { type: 'suit', suit: 3 }; // threes are trump
+        const trump: TrumpSelection = { type: 'suit', suit: TRES }; // threes are trump
         const plays: Play[] = [
           { player: 0, domino: { high: 4, low: 2, id: '4-2' } },
           { player: 1, domino: { high: 3, low: 1, id: '3-1' } }, // trump
@@ -23,7 +24,7 @@ describe('Winning a Trick', () => {
       });
 
       it('And if no trump was played, the highest domino of the led suit wins', () => {
-        const trump: TrumpSelection = { type: 'suit', suit: 5 }; // fives are trump (none played)
+        const trump: TrumpSelection = { type: 'suit', suit: FIVES }; // fives are trump (none played)
         const plays: Play[] = [
           { player: 0, domino: { high: 4, low: 2, id: '4-2' } }, // led fours
           { player: 1, domino: { high: 4, low: 1, id: '4-1' } }, // follows fours
@@ -39,7 +40,7 @@ describe('Winning a Trick', () => {
       });
 
       it('And if no trump was played and all followed suit, the highest of led suit wins', () => {
-        const trump: TrumpSelection = { type: 'suit', suit: 2 }; // twos are trump (none played)
+        const trump: TrumpSelection = { type: 'suit', suit: DEUCES }; // twos are trump (none played)
         const plays: Play[] = [
           { player: 0, domino: { high: 6, low: 1, id: '6-1' } }, // led sixes
           { player: 1, domino: { high: 6, low: 3, id: '6-3' } }, // follows sixes
@@ -87,7 +88,7 @@ describe('Winning a Trick', () => {
       });
 
       it('handles when only trump is played', () => {
-        const trump: TrumpSelection = { type: 'suit', suit: 1 }; // ones are trump
+        const trump: TrumpSelection = { type: 'suit', suit: ACES }; // ones are trump
         const plays: Play[] = [
           { player: 0, domino: { high: 1, low: 0, id: '1-0' } }, // trump
           { player: 1, domino: { high: 5, low: 1, id: '5-1' } }, // trump

@@ -8,7 +8,7 @@
  */
 
 import type { Domino, TrumpSelection, GameState } from '../types';
-import { analyzeDomino, orientDomino, formatStrengthAnalysis } from './domino-strength';
+import { analyzeDomino, orientDomino } from './domino-strength';
 
 /**
  * Analysis of a domino under different trump contexts
@@ -24,67 +24,12 @@ export interface MultiTrumpAnalysis {
 export interface TrumpContextAnalysis {
   trump: TrumpSelection;
   label: string; // e.g., "2s", "doubles", "no-trump"
-  suit?: number; // The suit being analyzed (for non-trump contexts)
+  suit: number | undefined; // The suit being analyzed (for non-trump contexts)
   isTrump: boolean;
   beatenBy: Domino[];
   beats: Domino[];
 }
 
-/**
- * Get all relevant trump contexts for a domino
- */
-function getRelevantTrumps(domino: Domino, currentTrump?: TrumpSelection): { trump: TrumpSelection; label: string }[] {
-  const contexts: { trump: TrumpSelection; label: string }[] = [];
-  
-  // Check if this domino is trump in the current context
-  const isTrumpDomino = currentTrump && (
-    (currentTrump.type === 'doubles' && domino.high === domino.low) ||
-    (currentTrump.type === 'suit' && (domino.high === currentTrump.suit || domino.low === currentTrump.suit))
-  );
-  
-  // For trump dominoes, only show contexts where they are trump
-  if (isTrumpDomino) {
-    // If it's a double trump, show doubles context
-    if (currentTrump?.type === 'doubles' && domino.high === domino.low) {
-      contexts.push({ 
-        trump: { type: 'doubles' }, 
-        label: 'doubles' 
-      });
-      // Also show this specific suit context
-      contexts.push({ 
-        trump: { type: 'suit', suit: domino.high }, 
-        label: `${domino.high}s` 
-      });
-    }
-    // If it's a suit trump, only show the trump suit context
-    else if (currentTrump?.type === 'suit') {
-      // Only show the context where this domino IS trump
-      contexts.push({ 
-        trump: currentTrump, 
-        label: `${currentTrump.suit}s` 
-      });
-    }
-  } else {
-    // For non-trump dominoes, always show both suit contexts
-    const suits = new Set([domino.high, domino.low]);
-    for (const suit of suits) {
-      contexts.push({ 
-        trump: { type: 'suit', suit }, 
-        label: `${suit}s` 
-      });
-    }
-    
-    // If it's a double, also add doubles context
-    if (domino.high === domino.low) {
-      contexts.push({ 
-        trump: { type: 'doubles' }, 
-        label: 'doubles' 
-      });
-    }
-  }
-  
-  return contexts;
-}
 
 /**
  * Analyze a domino under all relevant trump contexts

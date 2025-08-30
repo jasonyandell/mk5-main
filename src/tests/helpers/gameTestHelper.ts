@@ -1,4 +1,4 @@
-import type { GameState, Domino, Bid, Player, TrumpSelection } from '../../game/types';
+import type { GameState, Domino, Bid, Player, TrumpSelection, LedSuitOrNone } from '../../game/types';
 import { 
   createInitialState, 
   getNextStates, 
@@ -7,6 +7,7 @@ import {
 } from '../../game';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
+import { BLANKS, ACES } from '../../game/types';
 
 /**
  * Comprehensive test helper for Texas 42 game testing
@@ -51,7 +52,7 @@ export class GameTestHelper {
     return {
       ...state,
       phase: 'playing',
-      trump: { type: 'suit', suit: 1 },
+      trump: { type: 'suit', suit: ACES },
       winningBidder: 0,
       currentPlayer: 0,
       bids: [
@@ -142,9 +143,9 @@ export class GameTestHelper {
     };
     
     // Set currentSuit based on currentTrick if provided
-    if (state.currentTrick && state.currentTrick.length > 0 && state.trump.type !== 'none') {
+    if (state.currentTrick && state.currentTrick.length > 0 && state.trump.type !== 'not-selected') {
       const leadDomino = state.currentTrick[0]!.domino;
-      state.currentSuit = getDominoSuit(leadDomino, state.trump);
+      state.currentSuit = getDominoSuit(leadDomino, state.trump) as LedSuitOrNone;
     }
     
     return state;
@@ -193,7 +194,7 @@ export class GameTestHelper {
   } = {}): GameState {
     const baseState = this.createTestState({
       phase: 'playing',
-      trump: options.trump || { type: 'suit', suit: 0 },
+      trump: options.trump || { type: 'suit', suit: BLANKS },
       currentPlayer: options.currentPlayer || 0,
       currentTrick: options.currentTrick || [],
       winningBidder: 0,

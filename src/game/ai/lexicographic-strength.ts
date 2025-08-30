@@ -9,6 +9,7 @@
  */
 
 import type { Domino, TrumpSelection, GameState } from '../types';
+import { NO_LEAD_SUIT } from '../types';
 import { analyzeHand } from './utilities';
 
 /**
@@ -41,15 +42,15 @@ function evaluateHandWithTrump(
     ...state,
     phase: 'playing',
     players: [
-      { ...state.players[0], hand },
-      { ...state.players[1], hand: [] },
-      { ...state.players[2], hand: [] },
-      { ...state.players[3], hand: [] }
+      { ...state.players[0], hand, id: state.players[0]?.id ?? 0, name: state.players[0]?.name ?? 'Player 0', teamId: state.players[0]?.teamId ?? 0, marks: state.players[0]?.marks ?? 0 },
+      { ...state.players[1], hand: [], id: state.players[1]?.id ?? 1, name: state.players[1]?.name ?? 'Player 1', teamId: state.players[1]?.teamId ?? 1, marks: state.players[1]?.marks ?? 0 },
+      { ...state.players[2], hand: [], id: state.players[2]?.id ?? 2, name: state.players[2]?.name ?? 'Player 2', teamId: state.players[2]?.teamId ?? 0, marks: state.players[2]?.marks ?? 0 },
+      { ...state.players[3], hand: [], id: state.players[3]?.id ?? 3, name: state.players[3]?.name ?? 'Player 3', teamId: state.players[3]?.teamId ?? 1, marks: state.players[3]?.marks ?? 0 }
     ],
     currentPlayer: 0,
     trump,
     currentTrick: [],
-    currentSuit: -1,
+    currentSuit: NO_LEAD_SUIT,
   };
 
   // Analyze the hand with this trump (force analysis even if not in playing phase)
@@ -92,8 +93,10 @@ function compareLexicographic(a: number[], b: number[]): number {
   const minLength = Math.min(a.length, b.length);
   
   for (let i = 0; i < minLength; i++) {
-    if (a[i] < b[i]) return -1; // a is better
-    if (a[i] > b[i]) return 1;  // b is better
+    if (a[i] != null && b[i] != null) {
+      if (a[i]! < b[i]!) return -1; // a is better
+      if (a[i]! > b[i]!) return 1;  // b is better
+    }
   }
   
   // If all compared elements are equal, shorter array is better
@@ -113,8 +116,7 @@ function compareLexicographic(a: number[], b: number[]): number {
 export function calculateLexicographicStrength(
   hand: Domino[],
   trump: TrumpSelection | undefined,
-  state: GameState,
-  analyzingPlayerId: number = 0
+  state: GameState
 ): number {
   // If trump is already determined, evaluate with that trump
   if (trump) {
@@ -124,7 +126,9 @@ export function calculateLexicographicStrength(
     let score = 0;
     for (let i = 0; i < evaluation.score.length; i++) {
       // Each position is worth 100^(6-i) to maintain lexicographic ordering
-      score += evaluation.score[i] * Math.pow(100, 6 - i);
+      if (evaluation.score[i] != null) {
+        score += evaluation.score[i]! * Math.pow(100, 6 - i);
+      }
     }
     return score;
   }
@@ -158,7 +162,9 @@ export function calculateLexicographicStrength(
   // Convert best lexicographic array to a single score
   let score = 0;
   for (let i = 0; i < bestEvaluation.score.length; i++) {
-    score += bestEvaluation.score[i] * Math.pow(100, 6 - i);
+    if (bestEvaluation.score[i] != null) {
+      score += bestEvaluation.score[i]! * Math.pow(100, 6 - i);
+    }
   }
   
   return score;

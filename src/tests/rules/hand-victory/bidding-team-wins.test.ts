@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState, Player, Bid, Trick, Play, Domino } from '../../../game/types';
 import { EMPTY_BID, isEmptyBid } from '../../../game/types';
 import { GAME_CONSTANTS } from '../../../game/constants';
+import { FIVES, NO_LEAD_SUIT } from '../../../game/types';
 
 describe('Hand Victory - Bidding Team Wins', () => {
   let gameState: GameState;
@@ -23,10 +24,10 @@ describe('Hand Victory - Bidding Team Wins', () => {
       bids: [],
       currentBid: EMPTY_BID,
       winningBidder: 0, // Team 0 won the bid
-      trump: { type: 'suit', suit: 5 }, // fives are trump
+      trump: { type: 'suit', suit: FIVES }, // fives are trump
       tricks: [],
       currentTrick: [],
-      currentSuit: -1,
+      currentSuit: NO_LEAD_SUIT,
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,

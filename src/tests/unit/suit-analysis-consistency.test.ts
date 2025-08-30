@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, TrumpSelection } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Suit Analysis Consistency', () => {
   it('should produce identical suit analysis for same hand and trump', () => {
@@ -17,9 +18,9 @@ describe('Suit Analysis Consistency', () => {
     ];
 
     // Analyze suits multiple times with same parameters
-    const analysis1 = analyzeSuits(testHand, { type: 'suit', suit: 6 }); // sixes trump
-    const analysis2 = analyzeSuits(testHand, { type: 'suit', suit: 6 }); // sixes trump
-    const analysis3 = analyzeSuits(testHand, { type: 'suit', suit: 6 }); // sixes trump
+    const analysis1 = analyzeSuits(testHand, { type: 'suit', suit: SIXES }); // sixes trump
+    const analysis2 = analyzeSuits(testHand, { type: 'suit', suit: SIXES }); // sixes trump
+    const analysis3 = analyzeSuits(testHand, { type: 'suit', suit: SIXES }); // sixes trump
 
     // Results should be identical
     expect(analysis1).toEqual(analysis2);
@@ -53,9 +54,9 @@ describe('Suit Analysis Consistency', () => {
 
     // Analyze with different trump values
     const trumps: TrumpSelection[] = [
-      { type: 'suit', suit: 0 }, { type: 'suit', suit: 1 }, { type: 'suit', suit: 2 },
-      { type: 'suit', suit: 3 }, { type: 'suit', suit: 4 }, { type: 'suit', suit: 5 },
-      { type: 'suit', suit: 6 }, { type: 'doubles' }
+      { type: 'suit', suit: BLANKS }, { type: 'suit', suit: ACES }, { type: 'suit', suit: DEUCES },
+      { type: 'suit', suit: TRES }, { type: 'suit', suit: FOURS }, { type: 'suit', suit: FIVES },
+      { type: 'suit', suit: SIXES }, { type: 'doubles' }
     ];
 
     trumps.forEach(trump => {
@@ -94,7 +95,7 @@ describe('Suit Analysis Consistency', () => {
     initialState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits for this player
-    const analysis1 = analyzeSuits(player0Hand, { type: 'none' });
+    const analysis1 = analyzeSuits(player0Hand, { type: 'not-selected' });
     
     // Simulate what happens after a bid (trump selection phase)
     const afterBidState = createTestState({
@@ -111,13 +112,13 @@ describe('Suit Analysis Consistency', () => {
     afterBidState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits again - should be identical when trump is none
-    const analysis2 = analyzeSuits(player0Hand, { type: 'none' });
+    const analysis2 = analyzeSuits(player0Hand, { type: 'not-selected' });
     
     expect(analysis1).toEqual(analysis2);
 
     // Now test with specific trump
-    const analysis3 = analyzeSuits(player0Hand, { type: 'suit', suit: 6 }); // sixes trump
-    const analysis4 = analyzeSuits(player0Hand, { type: 'suit', suit: 6 }); // sixes trump again
+    const analysis3 = analyzeSuits(player0Hand, { type: 'suit', suit: SIXES }); // sixes trump
+    const analysis4 = analyzeSuits(player0Hand, { type: 'suit', suit: SIXES }); // sixes trump again
 
     expect(analysis3).toEqual(analysis4);
   });
@@ -168,11 +169,11 @@ describe('Suit Analysis Consistency', () => {
     expect(analysis1.count.doubles).toBe(7); // All are doubles
 
     // Test with non-doubles trump
-    const analysis3 = analyzeSuits(allDoublesHand, { type: 'suit', suit: 3 });
-    const analysis4 = analyzeSuits(allDoublesHand, { type: 'suit', suit: 3 });
+    const analysis3 = analyzeSuits(allDoublesHand, { type: 'suit', suit: TRES });
+    const analysis4 = analyzeSuits(allDoublesHand, { type: 'suit', suit: TRES });
     
     expect(analysis3).toEqual(analysis4);
     expect(analysis3.count.trump).toBe(1); // Only 3-3 is trump
-    expect(analysis3.count[3]).toBe(1); // Only one 3
+    expect(analysis3.count[TRES]).toBe(1); // Only one 3
   });
 });

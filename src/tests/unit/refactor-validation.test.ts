@@ -2,19 +2,18 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { GameEngine } from '../../game/core/gameEngine';
 import { getNextStates } from '../../game/core/gameEngine';
+import { DEUCES, NO_LEAD_SUIT, NO_BIDDER } from '../../game/types';
 
 describe('Refactor Validation', () => {
   it('should have no nullable fields in initial state', () => {
     const state = createInitialState({ shuffleSeed: 12345 });
     
     // Core assertions - these should never be null after refactor
-    expect(state.winningBidder).toBe(-1);
-    expect(state.trump).toEqual({ type: 'none' });
-    expect(state.currentSuit).toBe(-1);
-    expect(state.winner).toBe(-1);
-    expect(state.bidWinner).toBe(-1);
+    expect(state.winningBidder).toBe(NO_BIDDER);
+    expect(state.trump).toEqual({ type: 'not-selected' });
+    expect(state.currentSuit).toBe(NO_LEAD_SUIT);
     // New assertion for currentBid - should be EMPTY_BID instead of null
-    expect(state.currentBid).toEqual({ type: 'pass', player: -1 });
+    expect(state.currentBid).toEqual({ type: 'pass', player: NO_BIDDER });
   });
   
   it('should work with the action-based engine', () => {
@@ -54,10 +53,10 @@ describe('Refactor Validation', () => {
       expect(transition).toHaveProperty('newState');
       
       // New states should also follow the no-null rule
-      expect(transition.newState.winningBidder).toBeGreaterThanOrEqual(-1);
+      expect(transition.newState.winningBidder).toBeGreaterThanOrEqual(NO_BIDDER);
       expect(transition.newState.trump).toBeDefined();
       expect(transition.newState.trump.type).toBeDefined();
-      expect(transition.newState.currentSuit).toBeGreaterThanOrEqual(-1);
+      expect(transition.newState.currentSuit).toBeGreaterThanOrEqual(NO_LEAD_SUIT);
     });
   });
   
@@ -65,7 +64,7 @@ describe('Refactor Validation', () => {
     const state = createInitialState({ shuffleSeed: 12345 });
     
     // Verify initial trump state
-    expect(state.trump.type).toBe('none');
+    expect(state.trump.type).toBe('not-selected');
     
     // Test trump selection through engine
     const engine = new GameEngine(state);
@@ -89,12 +88,12 @@ describe('Refactor Validation', () => {
     const trumpAction = {
       type: 'select-trump' as const,
       player: 0,
-      trump: { type: 'suit' as const, suit: 2 as const }
+      trump: { type: 'suit' as const, suit: DEUCES }
     };
     engine.executeAction(trumpAction);
     
     const finalState = engine.getState();
     expect(finalState.phase).toBe('playing');
-    expect(finalState.trump).toEqual({ type: 'suit', suit: 2 });
+    expect(finalState.trump).toEqual({ type: 'suit', suit: DEUCES });
   });
 });

@@ -52,7 +52,7 @@ describe('Trump Validation', () => {
     });
 
     it('should return correct value for none trump', () => {
-      const trump: TrumpSelection = { type: 'none' };
+      const trump: TrumpSelection = { type: 'not-selected' };
       const value = getTrumpValue(trump);
       expect(value).toBe(-1);
     });

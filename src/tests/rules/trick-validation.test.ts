@@ -3,7 +3,7 @@ import { isValidPlay, getTrickWinner, getTrickPoints, getValidPlays } from '../.
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { getDominoSuit } from '../../game/core/dominoes';
-import type { TrumpSelection, Play, Domino, GameState } from '../../game/types';
+import type { TrumpSelection, Play, Domino, GameState, LedSuitOrNone } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
 
 // Helper function to create dominoes for testing
@@ -27,7 +27,7 @@ function createTestState(hands: Domino[][], trump: TrumpSelection, currentTrick:
     const firstPlay = currentTrick[0];
     if (firstPlay) {
       const leadDomino = firstPlay.domino;
-      state.currentSuit = getDominoSuit(leadDomino, trump);
+      state.currentSuit = getDominoSuit(leadDomino, trump) as LedSuitOrNone;
     }
   }
   

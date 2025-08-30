@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState } from '../../../game/types';
+import { DEUCES } from '../../../game/types';
 
 describe('Feature: Doubles Treatment', () => {
   describe('Scenario: Renege', () => {
@@ -24,7 +25,7 @@ describe('Feature: Doubles Treatment', () => {
           { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         currentPlayer: 1,
-        trump: { type: 'suit', suit: 2 }, // twos are trump
+        trump: { type: 'suit', suit: DEUCES }, // twos are trump
         currentTrick: [
           { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6 led
         ],

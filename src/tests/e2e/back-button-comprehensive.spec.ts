@@ -81,7 +81,7 @@ test.describe('Comprehensive Back Button Navigation', () => {
     // Check trump was set correctly via game state
     const trumpType = await page.evaluate(() => {
       const state = (window as any).getGameState?.();
-      return state?.trump?.type || 'none';
+      return state?.trump?.type || 'not-selected';
     });
     expect(trumpType).toBe('doubles');
   });

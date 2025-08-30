@@ -177,7 +177,7 @@ function getTrumpSelectionActions(state: GameState): GameAction[] {
 function getPlayingActions(state: GameState): GameAction[] {
   const actions: GameAction[] = [];
   
-  if (state.trump.type === 'none') return actions;
+  if (state.trump.type === 'not-selected') return actions;
   
   // If trick is complete, add consensus actions
   if (state.currentTrick.length === 4) {

@@ -5,7 +5,8 @@
  * Returns what the AI has and what it means in context.
  */
 
-import type { Domino, TrumpSelection, Trick, Play, GameState } from '../types';
+import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
+import { NO_LEAD_SUIT } from '../types';
 import { getDominoValue, trumpToNumber, getDominoPoints, getDominoSuit } from '../core/dominoes';
 import { getValidPlays, getTrickWinner } from '../core/rules';
 
@@ -164,13 +165,13 @@ function wouldBeatCurrentTrick(
   domino: Domino,
   currentTrick: Play[],
   trump: TrumpSelection,
-  currentSuit?: number
+  currentSuit?: LedSuitOrNone
 ): boolean {
   // If leading a trick, any domino we play is provisionally "winning" until others respond
   if (currentTrick.length === 0) return true;
 
   // Use the led suit from state (passed in) when following
-  const leadSuit = currentSuit ?? -1;
+  const leadSuit = currentSuit ?? NO_LEAD_SUIT;
 
   // Simulate adding our play as a synthetic player and ask the rules engine
   const simulated = [...currentTrick, { player: 999, domino }];
@@ -193,7 +194,7 @@ function getDominoesCanBeat(
   domino: Domino,
   trump: TrumpSelection,
   played: Set<string>,
-  currentSuit: number | undefined,
+  currentSuit: LedSuitOrNone | undefined,
   currentTrick: Play[],
   handDominoIds: Set<string> = new Set()
 ): Domino[] {
@@ -201,13 +202,13 @@ function getDominoesCanBeat(
   const simulatedTrick = [...currentTrick, { player: 0, domino }];
   
   // Determine the effective suit for this play
-  let effectiveSuit: number;
+  let effectiveSuit: LedSuitOrNone;
   if (currentTrick.length === 0) {
     // We're leading - the suit is determined by our domino
     effectiveSuit = getDominoSuit(domino, trump);
   } else {
     // We're following - use the led suit
-    effectiveSuit = currentSuit ?? -1;
+    effectiveSuit = currentSuit ?? NO_LEAD_SUIT;
   }
   
   const result: Domino[] = [];
@@ -258,7 +259,7 @@ function getDominoesBeaten(
   domino: Domino,
   trump: TrumpSelection,
   played: Set<string>,
-  currentSuit: number | undefined,
+  currentSuit: LedSuitOrNone | undefined,
   currentTrick: Play[],
   handDominoIds: Set<string> = new Set()
 ): Domino[] {

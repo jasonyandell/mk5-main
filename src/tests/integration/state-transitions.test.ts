@@ -4,6 +4,7 @@ import { getNextStates } from '../../game/core/gameEngine';
 import { getNextPlayer } from '../../game/core/players';
 import type { GameState } from '../../game/types';
 import { testLog } from '../helpers/testConsole';
+import { BLANKS } from '../../game/types';
 
 describe('State Transitions Integration', () => {
   describe('Phase Transitions', () => {
@@ -46,7 +47,7 @@ describe('State Transitions Integration', () => {
       
       // Simulate end of playing phase
       state.phase = 'playing';
-      state.trump = { type: 'suit', suit: 0 }; // blanks
+      state.trump = { type: 'suit', suit: BLANKS }; // blanks
       state.winningBidder = 0;
       
       // Add 7 complete tricks (simulated)
@@ -140,7 +141,7 @@ describe('State Transitions Integration', () => {
     it('should prevent invalid actions', () => {
       const state = createInitialState();
       state.phase = 'playing';
-      state.trump = { type: 'suit', suit: 0 }; // blanks
+      state.trump = { type: 'suit', suit: BLANKS }; // blanks
       
       // Should only have play actions in playing phase
       const actions = getNextStates(state);
@@ -332,7 +333,7 @@ describe('State Transitions Integration', () => {
         ],
         currentBid: { type: 'points', value: 30, player: 2 },
         winningBidder: 2,
-        trump: { type: 'none' },
+        trump: { type: 'not-selected' },
         tricks: [],
         currentTrick: [],
         currentSuit: -1,

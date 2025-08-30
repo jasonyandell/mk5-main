@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { analyzeSuits, calculateSuitCount, calculateSuitRanking, getStrongestSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Suit Analysis', () => {
   describe('calculateSuitCount', () => {
@@ -13,13 +14,13 @@ describe('Suit Analysis', () => {
 
       const count = calculateSuitCount(hand);
       
-      expect(count[0]).toBe(0); // no blanks
-      expect(count[1]).toBe(1); // one domino with 1 (3-1)
-      expect(count[2]).toBe(0); // no twos
-      expect(count[3]).toBe(1); // one domino with 3 (3-1)
-      expect(count[4]).toBe(0); // no fours
-      expect(count[5]).toBe(2); // two dominoes with 5 (5-5, 6-5)
-      expect(count[6]).toBe(1); // one domino with 6 (6-5)
+      expect(count[BLANKS]).toBe(0); // no blanks
+      expect(count[ACES]).toBe(1); // one domino with 1 (3-1)
+      expect(count[DEUCES]).toBe(0); // no twos
+      expect(count[TRES]).toBe(1); // one domino with 3 (3-1)
+      expect(count[FOURS]).toBe(0); // no fours
+      expect(count[FIVES]).toBe(2); // two dominoes with 5 (5-5, 6-5)
+      expect(count[SIXES]).toBe(1); // one domino with 6 (6-5)
       expect(count.doubles).toBe(1); // one double (5-5)
       expect(count.trump).toBe(0); // no trump declared
     });
@@ -31,9 +32,9 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' }, // no trump
       ];
 
-      const count = calculateSuitCount(hand, { type: 'suit', suit: 5 }); // 5s are trump
+      const count = calculateSuitCount(hand, { type: 'suit', suit: FIVES }); // 5s are trump
       
-      expect(count[5]).toBe(2); // natural suit count stays same
+      expect(count[FIVES]).toBe(2); // natural suit count stays same
       expect(count.trump).toBe(2); // two trump dominoes (5-5, 6-5)
     });
 
@@ -63,14 +64,14 @@ describe('Suit Analysis', () => {
       const ranking = calculateSuitRanking(hand);
       
       // Check that 5s are ranked correctly (double first, then by pip count)
-      expect(ranking[5]).toHaveLength(2);
-      expect(ranking[5][0]).toEqual({ high: 5, low: 5, id: '5-5' }); // double first
-      expect(ranking[5][1]).toEqual({ high: 6, low: 5, id: '6-5' }); // then non-double
+      expect(ranking[FIVES]).toHaveLength(2);
+      expect(ranking[FIVES][0]).toEqual({ high: 5, low: 5, id: '5-5' }); // double first
+      expect(ranking[FIVES][1]).toEqual({ high: 6, low: 5, id: '6-5' }); // then non-double
       
       // Check that 1s are ranked by pip count
-      expect(ranking[1]).toHaveLength(2);
-      expect(ranking[1][0]).toEqual({ high: 4, low: 1, id: '4-1' }); // higher pip count first
-      expect(ranking[1][1]).toEqual({ high: 3, low: 1, id: '3-1' }); // lower pip count second
+      expect(ranking[ACES]).toHaveLength(2);
+      expect(ranking[ACES][0]).toEqual({ high: 4, low: 1, id: '4-1' }); // higher pip count first
+      expect(ranking[ACES][1]).toEqual({ high: 3, low: 1, id: '3-1' }); // lower pip count second
       
       // Check doubles ranking
       expect(ranking.doubles).toHaveLength(1);
@@ -85,7 +86,7 @@ describe('Suit Analysis', () => {
         { high: 4, low: 2, id: '4-2' }, // no trump
       ];
 
-      const ranking = calculateSuitRanking(hand, { type: 'suit', suit: 3 }); // 3s are trump
+      const ranking = calculateSuitRanking(hand, { type: 'suit', suit: TRES }); // 3s are trump
       
       // Trump ranking should have double first, then by pip count
       expect(ranking.trump).toHaveLength(3);
@@ -107,8 +108,8 @@ describe('Suit Analysis', () => {
       
       expect(analysis.count).toBeDefined();
       expect(analysis.rank).toBeDefined();
-      expect(analysis.count[5]).toBe(2);
-      expect(analysis.rank[5]).toHaveLength(2);
+      expect(analysis.count[FIVES]).toBe(2);
+      expect(analysis.rank[FIVES]).toHaveLength(2);
     });
 
     it('should update trump analysis when trump is declared', () => {
@@ -118,7 +119,7 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' },
       ];
 
-      const analysis = analyzeSuits(hand, { type: 'suit', suit: 5 });
+      const analysis = analyzeSuits(hand, { type: 'suit', suit: FIVES });
       
       expect(analysis.count.trump).toBe(2);
       expect(analysis.rank.trump).toHaveLength(2);
@@ -138,19 +139,19 @@ describe('Suit Analysis', () => {
       const strongest = getStrongestSuits(analysis);
       
       // Suit 5 should be strongest (count 2)
-      expect(strongest[0]).toBe(5);
+      expect(strongest[0]).toBe(FIVES);
       // Suit 1 should be second (count 2, but lower highest domino than 5)
-      expect(strongest[1]).toBe(1);
+      expect(strongest[1]).toBe(ACES);
       // Then suits with count 1, ranked by their highest domino
       // Suit 6: has 6-5 (total 11)
       // Suit 4: has 4-1 (total 5) 
       // Suit 3: has 3-1 (total 4)
-      expect(strongest[2]).toBe(6); // highest total among count-1 suits
-      expect(strongest[3]).toBe(4);
-      expect(strongest[4]).toBe(3);
+      expect(strongest[2]).toBe(SIXES); // highest total among count-1 suits
+      expect(strongest[3]).toBe(FOURS);
+      expect(strongest[4]).toBe(TRES);
       // Suits 0 and 2 have count 0 and should be last (order doesn't matter)
-      expect(strongest.slice(5)).toContain(0);
-      expect(strongest.slice(5)).toContain(2);
+      expect(strongest.slice(5)).toContain(BLANKS);
+      expect(strongest.slice(5)).toContain(DEUCES);
     });
   });
 
@@ -165,19 +166,19 @@ describe('Suit Analysis', () => {
       const analysis = analyzeSuits(hand);
       
       // Expected count: {1:1, 3:1, 5:2, 6:1}
-      expect(analysis.count[1]).toBe(1);
-      expect(analysis.count[3]).toBe(1);
-      expect(analysis.count[5]).toBe(2);
-      expect(analysis.count[6]).toBe(1);
+      expect(analysis.count[ACES]).toBe(1);
+      expect(analysis.count[TRES]).toBe(1);
+      expect(analysis.count[FIVES]).toBe(2);
+      expect(analysis.count[SIXES]).toBe(1);
       
       // Expected rank: {5:[5-5, 6-5], 6:[6-5], 3:[3-1], 1:[3-1]}
-      expect(analysis.rank[5]).toEqual([
+      expect(analysis.rank[FIVES]).toEqual([
         { high: 5, low: 5, id: '5-5' },
         { high: 6, low: 5, id: '6-5' }
       ]);
-      expect(analysis.rank[6]).toEqual([{ high: 6, low: 5, id: '6-5' }]);
-      expect(analysis.rank[3]).toEqual([{ high: 3, low: 1, id: '3-1' }]);
-      expect(analysis.rank[1]).toEqual([{ high: 3, low: 1, id: '3-1' }]);
+      expect(analysis.rank[SIXES]).toEqual([{ high: 6, low: 5, id: '6-5' }]);
+      expect(analysis.rank[TRES]).toEqual([{ high: 3, low: 1, id: '3-1' }]);
+      expect(analysis.rank[ACES]).toEqual([{ high: 3, low: 1, id: '3-1' }]);
     });
 
     it('should properly track trump when 3s are trump', () => {
@@ -187,11 +188,11 @@ describe('Suit Analysis', () => {
         { high: 3, low: 1, id: '3-1' }, // contains trump
       ];
 
-      const analysis = analyzeSuits(hand, { type: 'suit', suit: 3 }); // 3s are trump
+      const analysis = analyzeSuits(hand, { type: 'suit', suit: TRES }); // 3s are trump
       
       // Trump count and rank should be identical to suit 3
-      expect(analysis.count.trump).toBe(analysis.count[3]);
-      expect(analysis.rank.trump).toEqual(analysis.rank[3]);
+      expect(analysis.count.trump).toBe(analysis.count[TRES]);
+      expect(analysis.rank.trump).toEqual(analysis.rank[TRES]);
       expect(analysis.count.trump).toBe(1);
       expect(analysis.rank.trump).toEqual([{ high: 3, low: 1, id: '3-1' }]);
     });

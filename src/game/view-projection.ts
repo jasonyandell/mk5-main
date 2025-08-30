@@ -1,6 +1,19 @@
-import type { GameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase } from './types';
+import type { GameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from './types';
 import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
+
+// LED suit display names (index corresponds to LedSuit type)
+const LED_SUIT_NAMES: Record<LedSuit, string> = {
+  [BLANKS]: 'Blanks',
+  [ACES]: 'Aces(1)',
+  [DEUCES]: 'Deuces(2)',
+  [TRES]: 'Tres(3)',
+  [FOURS]: 'Fours',
+  [FIVES]: 'Fives',
+  [SIXES]: 'Sixes',
+  [DOUBLES_AS_TRUMP]: 'Doubles'  // Only when doubles are trump
+};
 
 // Represents a player's bid status for UI display
 export interface BidStatus {
@@ -204,8 +217,8 @@ export function createViewProjection(
     : Math.min(gameState.tricks.length + 1, 7);
   
   // Led suit display
-  const ledSuitDisplay = gameState.currentSuit >= 0 && gameState.currentSuit < 7
-    ? ['Blanks', 'Aces(1)', 'Deuces(2)', 'Tres(3)', 'Fours', 'Fives', 'Sixes'][gameState.currentSuit] ?? null
+  const ledSuitDisplay = gameState.currentSuit >= 0 && gameState.currentSuit <= 7
+    ? LED_SUIT_NAMES[gameState.currentSuit as LedSuit]
     : null;
   
   // Hand results (only during scoring)
@@ -321,13 +334,12 @@ function getDominoTooltip(
     return isPlayable ? `${dominoStr} - Click to play` : dominoStr;
   }
   
-  const suitNames = ['blanks', 'aces(1)', 'deuces(2)', 'tres(3)', 'fours', 'fives', 'sixes', 'doubles'];
-  const ledSuitName = leadSuit === 7 ? 'doubles' : suitNames[leadSuit];
+  const ledSuitName = LED_SUIT_NAMES[leadSuit as LedSuit]?.toLowerCase() ?? 'unknown';
   
   if (isPlayable) {
-    if (leadSuit === 7 && domino.high === domino.low) {
+    if (leadSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
       return `${dominoStr} - Double, follows ${ledSuitName}`;
-    } else if (leadSuit !== 7 && (domino.high === leadSuit || domino.low === leadSuit)) {
+    } else if (leadSuit !== DOUBLES_AS_TRUMP && (domino.high === leadSuit || domino.low === leadSuit)) {
       return `${dominoStr} - Has ${ledSuitName}, follows suit`;
     } else {
       if (gameState.trump.type === 'doubles' && domino.high === domino.low) {
@@ -341,7 +353,7 @@ function getDominoTooltip(
       }
     }
   } else {
-    if (leadSuit === 7) {
+    if (leadSuit === DOUBLES_AS_TRUMP) {
       return `${dominoStr} - Not a double, can't follow ${ledSuitName}`;
     } else {
       const playerHand = gameState.players[0]?.hand || [];
@@ -350,7 +362,7 @@ function getDominoTooltip(
       );
       
       if (playerHasLedSuit) {
-        return `${dominoStr} - Must follow ${suitNames[leadSuit]}`;
+        return `${dominoStr} - Must follow ${LED_SUIT_NAMES[leadSuit as LedSuit]?.toLowerCase() ?? 'unknown'}`;
       } else {
         return `${dominoStr} - Invalid play`;
       }
@@ -360,12 +372,11 @@ function getDominoTooltip(
 
 // Helper to get trump display string
 function getTrumpDisplay(trump: TrumpSelection): string {
-  if (trump.type === 'none') return 'Not Selected';
+  if (trump.type === 'not-selected') return 'Not Selected';
   if (trump.type === 'no-trump') return 'No Trump';
   if (trump.type === 'doubles') return 'Doubles';
   if (trump.type === 'suit' && trump.suit !== undefined) {
-    const suitNames = ['Blanks', 'Aces(1)', 'Deuces(2)', 'Tres(3)', 'Fours', 'Fives', 'Sixes'];
-    return suitNames[trump.suit] ?? 'Unknown';
+    return LED_SUIT_NAMES[trump.suit] ?? 'Unknown';
   }
   return 'Unknown';
 }

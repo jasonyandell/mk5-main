@@ -1,6 +1,7 @@
-import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, SuitRanking } from '../types';
+import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, LedSuit, LedSuitOrNone, RegularSuit } from '../types';
+import { DOUBLES_AS_TRUMP } from '../types';
 import { GAME_CONSTANTS, BID_TYPES } from '../constants';
-import { countDoubles } from './dominoes';
+import { countDoubles, getTrumpSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
 
 /**
@@ -177,7 +178,7 @@ export function isValidPlay(
   domino: Domino,
   playerId: number
 ): boolean {
-  if (state.phase !== 'playing' || state.trump.type === 'none') return false;
+  if (state.phase !== 'playing' || state.trump.type === 'not-selected') return false;
   
   // Validate player bounds
   if (playerId < 0 || playerId >= state.players.length) return false;
@@ -206,8 +207,8 @@ export function isValidPlay(
   }
   
   // Check if trump is being led
-  const trumpValue = getTrumpNumber(state.trump);
-  if (trumpValue === leadSuit) {
+  const trumpSuit = getTrumpSuit(state.trump);
+  if (trumpSuit === leadSuit) {
     // Trump is led - must follow with trump if possible
     const trumpDominoes = player.suitAnalysis.rank.trump;
     if (trumpDominoes && trumpDominoes.length > 0) {
@@ -217,16 +218,18 @@ export function isValidPlay(
   }
   
   // For regular suits (0-6), check if player can follow
-  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
+  const suitDominoes = leadSuit >= 0 && leadSuit <= 6 
+    ? player.suitAnalysis.rank[leadSuit as RegularSuit]
+    : undefined;
   
   // Filter out trump dominoes - they can't follow non-trump suits
   const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
     // If trump is a regular suit, dominoes containing that suit are trump
-    if (trumpValue !== null && trumpValue >= 0 && trumpValue <= 6) {
-      return d.high !== trumpValue && d.low !== trumpValue;
+    if (trumpSuit >= 0 && trumpSuit <= 6) {
+      return d.high !== trumpSuit && d.low !== trumpSuit;
     }
     // If doubles are trump, doubles can't follow regular suits
-    if (trumpValue === 7) {
+    if (trumpSuit === DOUBLES_AS_TRUMP) {
       return d.high !== d.low;
     }
     return true;
@@ -246,7 +249,7 @@ export function isValidPlay(
  */
 export function canFollowSuit(
   player: Player,
-  leadSuit: number
+  leadSuit: LedSuit
 ): boolean {
   if (!player.suitAnalysis) return false;
   
@@ -255,22 +258,13 @@ export function canFollowSuit(
     return player.suitAnalysis.rank.doubles && player.suitAnalysis.rank.doubles.length > 0;
   }
   
-  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
-  return suitDominoes && suitDominoes.length > 0;
+  const suitDominoes = leadSuit >= 0 && leadSuit <= 6
+    ? player.suitAnalysis.rank[leadSuit as RegularSuit]
+    : undefined;
+  return suitDominoes !== undefined && suitDominoes.length > 0;
 }
 
 
-/**
- * Helper function to convert trump to numeric value
- */
-function getTrumpNumber(trump: TrumpSelection): number | null {
-  switch (trump.type) {
-    case 'none': return null;
-    case 'suit': return trump.suit!;
-    case 'doubles': return 7;
-    case 'no-trump': return 8;
-  }
-}
 
 /**
  * Gets all valid plays for a player using suit analysis
@@ -279,7 +273,7 @@ export function getValidPlays(
   state: GameState,
   playerId: number
 ): Domino[] {
-  if (state.phase !== 'playing' || state.trump.type === 'none') return [];
+  if (state.phase !== 'playing' || state.trump.type === 'not-selected') return [];
   
   const player = state.players[playerId];
   if (!player) return [];
@@ -302,8 +296,8 @@ export function getValidPlays(
   }
   
   // Check if trump is being led
-  const trumpValue = getTrumpNumber(state.trump);
-  if (trumpValue === leadSuit) {
+  const trumpSuit = getTrumpSuit(state.trump);
+  if (trumpSuit === leadSuit) {
     // Trump is led - must follow with trump if possible
     const trumpDominoes = player.suitAnalysis.rank.trump;
     if (trumpDominoes && trumpDominoes.length > 0) {
@@ -313,16 +307,18 @@ export function getValidPlays(
   }
   
   // Get dominoes that can follow the led suit from suit analysis
-  const suitDominoes = player.suitAnalysis.rank[leadSuit as keyof Omit<SuitRanking, 'doubles' | 'trump'>];
+  const suitDominoes = leadSuit >= 0 && leadSuit <= 6
+    ? player.suitAnalysis.rank[leadSuit as RegularSuit]
+    : undefined;
   
   // Filter out trump dominoes - they can't follow non-trump suits
   const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
     // If trump is a regular suit, dominoes containing that suit are trump
-    if (trumpValue !== null && trumpValue >= 0 && trumpValue <= 6) {
-      return d.high !== trumpValue && d.low !== trumpValue;
+    if (trumpSuit >= 0 && trumpSuit <= 6) {
+      return d.high !== trumpSuit && d.low !== trumpSuit;
     }
     // If doubles are trump, doubles can't follow regular suits
-    if (trumpValue === 7) {
+    if (trumpSuit === DOUBLES_AS_TRUMP) {
       return d.high !== d.low;
     }
     return true;
@@ -340,7 +336,7 @@ export function getValidPlays(
 /**
  * Gets the winner of a trick (alias for calculateTrickWinner)
  */
-export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: TrumpSelection, leadSuit: number): number {
+export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
   return calculateTrickWinner(trick, trump, leadSuit);
 }
 
@@ -354,7 +350,7 @@ export function getTrickPoints(trick: { player: number; domino: Domino }[]): num
 /**
  * Determines the winner of a trick (alternative interface)
  */
-export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: TrumpSelection, leadSuit: number): number {
+export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
   return calculateTrickWinner(trick as PlayedDomino[], trump, leadSuit);
 }
 
@@ -373,7 +369,7 @@ export function isValidTrump(trump: TrumpSelection): boolean {
  */
 export function getTrumpValue(trump: TrumpSelection): number {
   switch (trump.type) {
-    case 'none': return -1;
+    case 'not-selected': return -1;
     case 'suit': return trump.suit!;
     case 'doubles': return 7;
     case 'no-trump': return 8;
@@ -388,7 +384,7 @@ export function getCurrentSuit(state: GameState): string {
     return 'None (no domino led)';
   }
   
-  if (state.trump.type === 'none') {
+  if (state.trump.type === 'not-selected') {
     return 'None (no trump set)';
   }
   
@@ -406,7 +402,7 @@ export function getCurrentSuit(state: GameState): string {
     8: 'No Trump'
   };
   
-  const trumpSuit = getTrumpNumber(state.trump);
+  const trumpSuit = getTrumpSuit(state.trump);
   
   // Special case: if lead suit equals trump suit, indicate it's trump
   if (leadSuit === trumpSuit && trumpSuit !== 7) {

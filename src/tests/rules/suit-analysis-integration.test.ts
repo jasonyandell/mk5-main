@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/gameEngine';
 import type { GameState, Player } from '../../game/types';
+import { BLANKS, TRES, FIVES, SIXES } from '../../game/types';
 
 describe('Suit Analysis Integration', () => {
   describe('Initial state creation', () => {
@@ -41,7 +42,7 @@ describe('Suit Analysis Integration', () => {
           }
         });
         
-        for (let suit = 0; suit <= 6; suit++) {
+        for (let suit = BLANKS; suit <= SIXES; suit++) {
           expect(player.suitAnalysis?.count[suit as keyof typeof player.suitAnalysis.count]).toBe(handSuitCounts[suit]);
         }
         expect(player.suitAnalysis?.count.doubles).toBe(doubleCount);
@@ -79,18 +80,18 @@ describe('Suit Analysis Integration', () => {
       if (trumpTransition) {
         const newState = trumpTransition.newState;
         expect(newState.trump.type).toBe('suit');
-        expect(newState.trump.suit).toBe(5); // fives are trump
+        expect(newState.trump.suit).toBe(FIVES); // fives are trump
         
         // All players should have updated suit analysis with trump info
         newState.players.forEach((player: Player) => {
           expect(player.suitAnalysis).toBeDefined();
           
           // Trump count should match suit 5 count
-          const fivesCount = player.suitAnalysis?.count[5] || 0;
+          const fivesCount = player.suitAnalysis?.count[FIVES] || 0;
           expect(player.suitAnalysis?.count.trump).toBe(fivesCount);
           
           // Trump ranking should match suit 5 ranking
-          const fivesRanking = player.suitAnalysis?.rank[5] || [];
+          const fivesRanking = player.suitAnalysis?.rank[FIVES] || [];
           expect(player.suitAnalysis?.rank.trump).toEqual(fivesRanking);
         });
       }
@@ -141,7 +142,7 @@ describe('Suit Analysis Integration', () => {
       const playingState: GameState = {
         ...initialState,
         phase: 'playing',
-        trump: { type: 'suit', suit: 3 }, // threes are trump
+        trump: { type: 'suit', suit: TRES }, // threes are trump
         winningBidder: 1,
         currentPlayer: 1,
         bids: [
@@ -157,8 +158,8 @@ describe('Suit Analysis Integration', () => {
       playingState.players.forEach(player => {
         if (player.suitAnalysis) {
           // Recalculate trump counts and rankings for the trump suit
-          const trumpCount = player.hand.filter(d => d.high === 3 || d.low === 3).length;
-          const trumpRanking = player.hand.filter(d => d.high === 3 || d.low === 3);
+          const trumpCount = player.hand.filter(d => d.high === TRES || d.low === TRES).length;
+          const trumpRanking = player.hand.filter(d => d.high === TRES || d.low === TRES);
           player.suitAnalysis.count.trump = trumpCount;
           player.suitAnalysis.rank.trump = trumpRanking;
         }

@@ -44,7 +44,7 @@
       </div>
       
       <!-- Trump -->
-      {#if trump.type !== 'none'}
+      {#if trump.type !== 'not-selected'}
         <div class="px-3 py-2 text-sm">
           <span class="font-semibold text-secondary">{getTrumpDisplay()} trump</span>
         </div>
@@ -77,7 +77,7 @@
         <span class="text-sm text-base-content/60">Ready to play</span>
       {/if}
       
-      {#if trump.type !== 'none' && phase !== 'bidding'}
+      {#if trump.type !== 'not-selected' && phase !== 'bidding'}
         <span class="text-sm font-semibold text-secondary" data-testid="trump-display">Trump: {getTrumpDisplay()}</span>
       {/if}
     </div>

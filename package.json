@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "prebuild": "npm run generate:strength-table",
+    "predev": "npm run generate:strength-table",
+    "generate:strength-table": "npx tsx scripts/generate-strength-table.ts",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "typecheck": "tsc --noEmit",

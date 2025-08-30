@@ -7,6 +7,7 @@ import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
 import type { Bid, Domino } from '../../game/types';
+import { ACES, DEUCES, TRES } from '../../game/types';
 
 describe('Basic Game Flow', () => {
   describe('Game Initialization', () => {
@@ -21,7 +22,7 @@ describe('Basic Game Flow', () => {
       expect(state.hands).toEqual({});
       expect(state.tricks).toHaveLength(0);
       expect(state.currentTrick).toHaveLength(0);
-      expect(state.trump).toEqual({ type: 'none' });
+      expect(state.trump).toEqual({ type: 'not-selected' });
       expect(state.winningBidder).toBe(-1);
       // isComplete and winner are determined by scoring functions
     });
@@ -118,7 +119,7 @@ describe('Basic Game Flow', () => {
       const state = createTestState({
         phase: 'trump_selection',
         winningBidder: 1,
-        trump: { type: 'suit', suit: 2 } // twos trump
+        trump: { type: 'suit', suit: DEUCES } // twos trump
       });
 
       const playingState = {
@@ -129,7 +130,7 @@ describe('Basic Game Flow', () => {
       
       expect(playingState.phase).toBe('playing');
       expect(playingState.trump.type).toBe('suit');
-      expect(playingState.trump.suit).toBe(2);
+      expect(playingState.trump.suit).toBe(DEUCES);
       expect(playingState.currentPlayer).toBe(1);
     });
 
@@ -215,7 +216,7 @@ describe('Basic Game Flow', () => {
         phase: 'playing',
         bidWinner: 2,
         currentPlayer: 2,
-        trump: { type: 'suit', suit: 1 },
+        trump: { type: 'suit', suit: ACES },
         currentTrick: []
       });
 
@@ -233,7 +234,7 @@ describe('Basic Game Flow', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 1 }, // ones trump
+        trump: { type: 'suit', suit: ACES }, // ones trump
         currentTrick: [],
         hands: {
           0: [testDominoes[0]!],
@@ -258,7 +259,7 @@ describe('Basic Game Flow', () => {
       });
       
       // Set current suit from first play
-      state.currentSuit = 3; // threes led (3-2 high end is 3)
+      state.currentSuit = TRES; // threes led (3-2 high end is 3)
       
       plays.forEach(play => {
         expect(isValidPlay(state, play.domino, play.player)).toBe(true);
@@ -364,7 +365,7 @@ describe('Basic Game Flow', () => {
     it('handles invalid plays gracefully', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 1 },
+        trump: { type: 'suit', suit: ACES },
         currentTrick: [{
           player: 0,
           domino: { id: 'lead', high: 3, low: 2, points: 0 } // threes suit led
@@ -378,7 +379,7 @@ describe('Basic Game Flow', () => {
       
       // Update state with player hand and current suit
       state.currentPlayer = 1;
-      state.currentSuit = 3; // threes were led
+      state.currentSuit = TRES; // threes were led
       state.players[1]!.hand = playerHand;
       state.players[1]!.suitAnalysis = analyzeSuits(playerHand, state.trump!);
 

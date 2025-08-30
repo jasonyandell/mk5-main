@@ -6,6 +6,7 @@
  */
 
 import type { Domino, GameState, TrumpSelection, SuitAnalysis } from '../types';
+import { NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { analyzeHand } from './utilities';
 import { getStrongestSuits } from '../core/suit-analysis';
 import { countDoubles } from '../core/dominoes';
@@ -100,12 +101,12 @@ export function calculateHandStrengthWithTrump(
     currentPlayer: analyzingPlayerId,
     dealer: 0,
     bids: [],
-    currentBid: { type: 'pass', player: -1 },
-    winningBidder: -1,
+    currentBid: { type: 'pass', player: NO_BIDDER },
+    winningBidder: NO_BIDDER,
     trump,
     tricks: [],
     currentTrick: [],
-    currentSuit: -1,
+    currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 250,
@@ -233,12 +234,12 @@ export function getHandStrengthBreakdown(
     currentPlayer: 0,
     dealer: 0,
     bids: [],
-    currentBid: { type: 'pass', player: -1 },
-    winningBidder: -1,
+    currentBid: { type: 'pass', player: NO_BIDDER },
+    winningBidder: NO_BIDDER,
     trump,
     tricks: [],
     currentTrick: [],
-    currentSuit: -1,
+    currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 250,

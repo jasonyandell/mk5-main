@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { determineTrickWinner } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { PlayedDomino, TrumpSelection } from '../../game/types';
+import { BLANKS, FIVES, SIXES } from '../../game/types';
 
 describe('Trick Winner Validation', () => {
   describe('Trump Beats Non-Trump', () => {
     it('should award trick to lowest trump when multiple trump played', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 5 };
+      const trump: TrumpSelection = { type: 'suit', suit: FIVES };
       const trick: PlayedDomino[] = [
         { domino: { id: "1", low: 0, high: 1 }, player: 0 },   // [1|0] - not trump
         { domino: { id: "10", low: 0, high: 5 }, player: 1 },  // [5|0] - trump
@@ -22,7 +23,7 @@ describe('Trick Winner Validation', () => {
     });
 
     it('should award trick to any trump over non-trump', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 6 };
+      const trump: TrumpSelection = { type: 'suit', suit: SIXES };
       const trick: PlayedDomino[] = [
         { domino: { id: "20", low: 4, high: 6 }, player: 0 },  // [6|4] - trump
         { domino: { id: "15", low: 5, high: 5 }, player: 1 },  // [5|5] - not trump
@@ -40,7 +41,7 @@ describe('Trick Winner Validation', () => {
 
   describe('No Trump Played - Led Suit Wins', () => {
     it('should award to highest domino of led suit when no trump', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 5 };
+      const trump: TrumpSelection = { type: 'suit', suit: FIVES };
       const trick: PlayedDomino[] = [
         { domino: { id: "12", low: 3, high: 4 }, player: 0 },  // [4|3] - led fours
         { domino: { id: "8", low: 1, high: 4 }, player: 1 },   // [4|1] - higher four
@@ -56,7 +57,7 @@ describe('Trick Winner Validation', () => {
     });
 
     it('should handle doubles as highest in their natural suit', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 5 };
+      const trump: TrumpSelection = { type: 'suit', suit: FIVES };
       const trick: PlayedDomino[] = [
         { domino: { id: "5", low: 2, high: 3 }, player: 0 },   // [3|2] - led threes
         { domino: { id: 6, low: 3, high: 3 }, player: 1 },   // [3|3] - highest three
@@ -158,7 +159,7 @@ describe('Trick Winner Validation', () => {
     });
 
     it('should correctly identify suit when trump domino is led', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 5 };
+      const trump: TrumpSelection = { type: 'suit', suit: FIVES };
       const trick: PlayedDomino[] = [
         { domino: { id: "15", low: 5, high: 5 }, player: 0 },  // [5|5] - trump led
         { domino: { id: "10", low: 0, high: 5 }, player: 1 },  // [5|0] - trump
@@ -174,7 +175,7 @@ describe('Trick Winner Validation', () => {
     });
 
     it('should handle mixed trump and non-trump correctly', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 0 };
+      const trump: TrumpSelection = { type: 'suit', suit: BLANKS };
       const trick: PlayedDomino[] = [
         { domino: { id: "12", low: 3, high: 4 }, player: 0 },  // [4|3] - led fours
         { domino: { id: "1", low: 0, high: 1 }, player: 1 },   // [1|0] - trump
