@@ -39,7 +39,9 @@ describe('Hand Victory - Bidding Team Wins', () => {
       },
       actionHistory: [],
       aiSchedule: {},
-      currentTick: 0
+      currentTick: 0,
+      theme: 'coffee',
+      colorOverrides: {}
     };
   });
 

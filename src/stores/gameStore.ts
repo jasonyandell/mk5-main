@@ -88,24 +88,16 @@ function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] 
 // Helper function to update URL with initial state and actions
 function updateURLWithState(initialState: GameState, actions: StateTransition[], usePushState = false) {
   if (typeof window !== 'undefined') {
-    // If no actions, clear the URL
-    if (actions.length === 0) {
-      const historyState = { initialState, actions: [], timestamp: Date.now() };
-      if (usePushState) {
-        window.history.pushState(historyState, '', window.location.pathname);
-      } else {
-        window.history.replaceState(historyState, '', window.location.pathname);
-      }
-      return;
-    }
-    
-    // Use v2 compressed format
+    // Use v2 compressed format with theme as first-class citizen
+    // Always encode URL properly, even with no actions (preserves theme)
     const newURL = window.location.pathname + encodeGameUrl(
       initialState.shuffleSeed,
       actions.map(a => a.id),
       initialState.playerTypes,
       initialState.dealer,
-      initialState.tournamentMode
+      initialState.tournamentMode,
+      initialState.theme,
+      initialState.colorOverrides
     );
     
     // Store state in history for easy access
@@ -329,8 +321,13 @@ export const gameActions = {
   
   resetGame: () => {
     const oldActionCount = get(actionHistory).length;
+    const currentState = get(gameState);
+    
+    // Preserve theme settings when resetting
     const newInitialState = createInitialState({
-      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
+      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
+      theme: currentState.theme,
+      colorOverrides: currentState.colorOverrides
     });
     // Deep clone to prevent mutations
     initialState.set(deepClone(newInitialState));
@@ -365,22 +362,26 @@ export const gameActions = {
   loadFromURL: () => {
     if (typeof window !== 'undefined') {
       try {
-        const { seed, actions, playerTypes, dealer, tournamentMode } = decodeGameUrl(window.location.search);
+        const { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides } = decodeGameUrl(window.location.search);
         
         // If no seed, there's no game to load
         if (!seed) {
           return;
         }
         
+        // Theme will be applied reactively by App.svelte $effect
+        
         // Use the player types from the URL
         const finalPlayerTypes = playerTypes;
         
-        // Create initial state with the seed, player types, dealer, and tournament mode
+        // Create initial state with ALL properties including theme
         const newInitialState = createInitialState({
           shuffleSeed: seed,
           playerTypes: finalPlayerTypes,
           dealer,
-          tournamentMode
+          tournamentMode,
+          theme,
+          colorOverrides
         });
         initialState.set(deepClone(newInitialState));
         
@@ -505,6 +506,31 @@ export const gameActions = {
     
     // Notify controllers of state change
     controllerManager.onStateChange(get(gameState));
+  },
+  
+  updateTheme: (theme: string, colorOverrides: Record<string, string> = {}) => {
+    const currentState = get(gameState);
+    const newState = {
+      ...currentState,
+      theme,
+      colorOverrides
+    };
+    
+    // Theme will be applied reactively by App.svelte $effect
+    
+    // Update state
+    gameState.set(newState);
+    
+    // Update initial state too (so it persists through resets)
+    const currentInitial = get(initialState);
+    initialState.set({
+      ...currentInitial,
+      theme,
+      colorOverrides
+    });
+    
+    // Update URL
+    updateURLWithState(get(initialState), get(actionHistory), false);
   },
   
   loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {

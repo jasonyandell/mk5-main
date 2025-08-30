@@ -301,7 +301,6 @@ const SUIT_TO_LED_NAME = {
 // Export metadata for debugging
 export const TABLE_METADATA = {
   totalEntries: ${entryCount},
-  generatedAt: "${new Date().toISOString()}",
   dominoCount: ${dominoes.length},
   trumpConfigs: ${trumpConfigs.length}
 };

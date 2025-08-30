@@ -581,7 +581,6 @@ const SUIT_TO_LED_NAME = {
 // Export metadata for debugging
 export const TABLE_METADATA = {
   totalEntries: 504,
-  generatedAt: "2025-08-30T01:33:09.064Z",
   dominoCount: 28,
   trumpConfigs: 9
 };

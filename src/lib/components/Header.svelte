@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewProjection } from '../../stores/gameStore';
+  import { viewProjection, gameActions } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
@@ -86,6 +86,17 @@
         >
           <li>
             <button
+              class="new-game-btn flex items-center justify-between"
+              onclick={() => {
+                gameActions.resetGame();
+                closeMenu();
+              }}
+            >
+              <span>🎲 New Game</span>
+            </button>
+          </li>
+          <li>
+            <button
               class="settings-btn flex items-center justify-between"
               onclick={() => {
                 dispatch('openSettings');
@@ -93,6 +104,17 @@
               }}
             >
               <span>⚙️ Settings</span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="theme-colors-btn flex items-center justify-between"
+              onclick={() => {
+                dispatch('openThemeEditor');
+                closeMenu();
+              }}
+            >
+              <span>🎨 Colors</span>
             </button>
           </li>
           <li>

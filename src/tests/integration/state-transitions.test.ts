@@ -389,7 +389,9 @@ describe('State Transitions Integration', () => {
           scoreHand: new Set<number>()
         },
         aiSchedule: {},
-        currentTick: 0
+        currentTick: 0,
+        theme: 'coffee',
+        colorOverrides: {}
       };
       
       const actions = getNextStates(state);

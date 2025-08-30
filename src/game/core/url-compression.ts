@@ -166,9 +166,30 @@ export function encodeGameUrl(
   actions: string[],
   playerTypes?: ('human' | 'ai')[],
   dealer?: number,
-  tournamentMode?: boolean
+  tournamentMode?: boolean,
+  theme?: string,
+  colorOverrides?: Record<string, string>
 ): string {
   const params = new URLSearchParams();
+  
+  // Theme parameters FIRST (so they survive truncation)
+  // Only include theme if not default ('coffee')
+  if (theme && theme !== 'coffee') {
+    params.set('t', theme);
+  }
+  
+  // Only include color overrides if present
+  if (colorOverrides && Object.keys(colorOverrides).length > 0) {
+    // Convert color overrides to compact format
+    const colorPairs: string[] = [];
+    Object.entries(colorOverrides).forEach(([varName, colorValue]) => {
+      // Convert "--p" to "p" and color to comma-separated
+      const key = varName.replace('--', '');
+      const value = colorValue.replace(/\s+/g, ',').replace(/%/g, '');
+      colorPairs.push(`${key}:${value}`);
+    });
+    params.set('v', colorPairs.join(';'));
+  }
   
   // Seed as base36 for compression
   params.set('s', seed.toString(36));
@@ -188,7 +209,7 @@ export function encodeGameUrl(
   
   // Only include tournament mode if not default (true)
   if (tournamentMode !== undefined && tournamentMode !== true) {
-    params.set('t', '0');
+    params.set('tm', '0');
   }
   
   // Compressed actions - always last since it's the longest
@@ -206,6 +227,8 @@ export function decodeGameUrl(urlString: string): {
   playerTypes: ('human' | 'ai')[];
   dealer: number;
   tournamentMode: boolean;
+  theme: string;
+  colorOverrides: Record<string, string>;
 } {
   // Handle both full URLs and just query strings
   const queryString = urlString.includes('?') 
@@ -224,8 +247,40 @@ export function decodeGameUrl(urlString: string): {
       actions: [],
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       dealer: 3,
-      tournamentMode: true
+      tournamentMode: true,
+      theme: 'coffee',
+      colorOverrides: {}
     };
+  }
+  
+  // Parse theme (default 'coffee')
+  const theme = params.get('t') || 'coffee';
+  
+  // Parse color overrides
+  const colorOverrides: Record<string, string> = {};
+  const colorStr = params.get('v');
+  if (colorStr) {
+    const pairs = colorStr.split(';');
+    pairs.forEach(pair => {
+      const [key, value] = pair.split(':');
+      if (!key || !value) return;
+      
+      // Convert "p" back to "--p" and restore color format
+      const varName = '--' + key;
+      const parts = value.split(',');
+      if (parts.length === 3 && parts[0]) {
+        // Check if it's OKLCH (has decimal points) or HSL
+        if (parts[0].includes('.')) {
+          // OKLCH format
+          const colorValue = `${parts[0]}% ${parts[1]} ${parts[2]}`;
+          colorOverrides[varName] = colorValue;
+        } else {
+          // HSL format (legacy)
+          const colorValue = `${parts[0]} ${parts[1]}% ${parts[2]}%`;
+          colorOverrides[varName] = colorValue;
+        }
+      }
+    });
   }
   
   // Parse seed
@@ -270,11 +325,11 @@ export function decodeGameUrl(urlString: string): {
     throw new Error('Invalid URL: dealer must be 0-3');
   }
   
-  // Parse tournament mode (default true)
-  const tournamentStr = params.get('t');
+  // Parse tournament mode (default true) - now 'tm' since 't' is theme
+  const tournamentStr = params.get('tm');
   const tournamentMode = tournamentStr !== '0';
   
-  return { seed, actions, playerTypes, dealer, tournamentMode };
+  return { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides };
 }
 
 // Export types for use in other modules
@@ -284,4 +339,6 @@ export interface URLData {
   playerTypes: ('human' | 'ai')[];
   dealer: number;
   tournamentMode: boolean;
+  theme: string;
+  colorOverrides: Record<string, string>;
 }

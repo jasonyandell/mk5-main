@@ -5,10 +5,12 @@
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import SettingsPanel from './lib/components/SettingsPanel.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
+  import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showSettingsPanel = $state(false);
+  let showThemeEditor = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
 
   // Handle keyboard shortcuts
@@ -16,8 +18,12 @@
     if (e.ctrlKey && e.shiftKey && e.key === 'D') {
       e.preventDefault();
       showSettingsPanel = !showSettingsPanel;
-    } else if (e.key === 'Escape' && showSettingsPanel) {
-      showSettingsPanel = false;
+    } else if (e.key === 'Escape') {
+      if (showThemeEditor) {
+        showThemeEditor = false;
+      } else if (showSettingsPanel) {
+        showSettingsPanel = false;
+      }
     } else if (e.ctrlKey && e.key === 'z' && !showSettingsPanel) {
       e.preventDefault();
       gameActions.undo();
@@ -25,7 +31,7 @@
   }
 
   onMount(() => {
-    // Try to load from URL on mount
+    // Try to load from URL on mount (theme will be applied reactively)
     gameActions.loadFromURL();
     
     // Start the game loop for interactive play (not in test mode)
@@ -34,9 +40,6 @@
     if (!testMode) {
       startGameLoop();
     }
-    
-    // Set default theme to coffee (no persistence)
-    document.documentElement.setAttribute('data-theme', 'coffee');
   });
   
   // Smart panel switching based on game phase
@@ -44,6 +47,35 @@
   $effect(() => {
     // Use the ViewProjection's computed activeView
     activeView = $viewProjection.ui.activeView;
+  });
+  
+  // Theme is a first-class citizen - reactively apply to DOM
+  $effect(() => {
+    // Apply theme
+    if ($gameState.theme) {
+      document.documentElement.setAttribute('data-theme', $gameState.theme);
+    }
+    
+    // Apply color overrides
+    const overrides = $gameState.colorOverrides;
+    if (overrides && Object.keys(overrides).length > 0) {
+      let styleEl = document.getElementById('theme-overrides') as HTMLStyleElement;
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'theme-overrides';
+        document.head.appendChild(styleEl);
+      }
+      
+      let css = ':root {\n';
+      Object.entries(overrides).forEach(([varName, value]) => {
+        css += `  ${varName}: ${value} !important;\n`;
+      });
+      css += '}\n';
+      styleEl.textContent = css;
+    } else {
+      // Remove overrides if none
+      document.getElementById('theme-overrides')?.remove();
+    }
   });
 </script>
 
@@ -55,7 +87,10 @@
   role="application" 
   data-phase={$gameState.phase}
 >
-  <Header on:openSettings={() => showSettingsPanel = true} />
+  <Header 
+    on:openSettings={() => showSettingsPanel = true} 
+    on:openThemeEditor={() => showThemeEditor = true}
+  />
   
   <main class="flex-1 overflow-y-auto overflow-x-hidden touch-pan-y pb-safe relative {activeView === 'actions' ? 'overflow-hidden' : ''}">
     {#if activeView === 'game'}
@@ -75,6 +110,11 @@
     <SettingsPanel onclose={() => showSettingsPanel = false} />
   </div>
 {/if}
+
+<ThemeColorEditor 
+  bind:isOpen={showThemeEditor} 
+  onClose={() => showThemeEditor = false} 
+/>
 
 <QuickplayError />
 
