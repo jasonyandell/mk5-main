@@ -5,6 +5,7 @@ import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
@@ -201,18 +202,18 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
 
     it('allows all valid trump options', () => {
-      const validTrumpSuits = [0, 1, 2, 3, 4, 5, 6, 7]; // 0-6 for suits plus doubles (7)
+      const validTrumpSuits = [BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP]; // 0-6 for suits plus doubles (7)
 
       validTrumpSuits.forEach(trump => {
         const numberToTrumpSelection = (trump: number): TrumpSelection => {
-          if (trump === 7) {
+          if (trump === DOUBLES_AS_TRUMP) {
             return { type: 'doubles' };
           } else if (trump === 8) {
             return { type: 'no-trump' };
-          } else if (trump >= 0 && trump <= 6) {
+          } else if (trump >= BLANKS && trump <= SIXES) {
             return { type: 'suit', suit: trump as 0 | 1 | 2 | 3 | 4 | 5 | 6 };
           } else {
-            return { type: 'none' };
+            return { type: 'not-selected' };
           }
         };
 
@@ -233,7 +234,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
         phase: 'playing',
         bidWinner: 2,
         currentPlayer: 2,
-        trump: { type: 'suit', suit: 1 },
+        trump: { type: 'suit', suit: ACES },
         currentTrick: []
       });
 
@@ -244,7 +245,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
     it('trick winner leads next trick', () => {
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 1 },
+        trump: { type: 'suit', suit: ACES },
         currentTrick: [
           { player: 0, domino: { id: 'test1', high: 2, low: 3 } },
           { player: 1, domino: { id: 'test2', high: 1, low: 1 } }, // trump wins

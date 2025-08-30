@@ -5,6 +5,7 @@ import { isValidPlay, getValidPlays, isValidBid } from '../../game/core/rules';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
 import type { Domino, Bid } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Special Gameplay Scenarios', () => {
   describe('High Stakes Bidding', () => {
@@ -77,18 +78,18 @@ describe('Special Gameplay Scenarios', () => {
     it('handles all-trump hands correctly', () => {
       // Create hand with all trump dominoes
       const allTrumpHand: Domino[] = [
-        { id: 'trump1', high: 1, low: 0, points: 0 },
-        { id: 'trump2', high: 1, low: 1, points: 0 },
-        { id: 'trump3', high: 1, low: 2, points: 0 },
-        { id: 'trump4', high: 1, low: 3, points: 0 },
-        { id: 'trump5', high: 1, low: 4, points: 0 },
-        { id: 'trump6', high: 1, low: 5, points: 0 },
-        { id: 'trump7', high: 1, low: 6, points: 0 }
+        { id: 'trump1', high: ACES, low: BLANKS, points: 0 },
+        { id: 'trump2', high: ACES, low: ACES, points: 0 },
+        { id: 'trump3', high: ACES, low: DEUCES, points: 0 },
+        { id: 'trump4', high: ACES, low: TRES, points: 0 },
+        { id: 'trump5', high: ACES, low: FOURS, points: 0 },
+        { id: 'trump6', high: ACES, low: FIVES, points: 0 },
+        { id: 'trump7', high: ACES, low: SIXES, points: 0 }
       ];
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 1 }, // ones are trump
+        trump: { type: 'suit', suit: ACES }, // ones are trump
         currentTrick: [],
         currentSuit: -1,
         currentPlayer: 0,
@@ -99,7 +100,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 0, 
             marks: 0, 
             hand: allTrumpHand,
-            suitAnalysis: analyzeSuits(allTrumpHand, { type: 'suit', suit: 1 })
+            suitAnalysis: analyzeSuits(allTrumpHand, { type: 'suit', suit: ACES })
           },
           { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
@@ -118,13 +119,13 @@ describe('Special Gameplay Scenarios', () => {
 
     it('handles no-trump scenarios', () => {
       const mixedHand: Domino[] = [
-        { id: 'twos1', high: 2, low: 0, points: 0 },
-        { id: 'threes1', high: 3, low: 1, points: 5 },
-        { id: 'fours1', high: 4, low: 2, points: 0 },
-        { id: 'fives1', high: 5, low: 3, points: 0 },
-        { id: 'sixes1', high: 6, low: 4, points: 10 },
-        { id: 'double1', high: 1, low: 1, points: 0 },
-        { id: 'double2', high: 2, low: 2, points: 0 }
+        { id: 'twos1', high: DEUCES, low: BLANKS, points: 0 },
+        { id: 'threes1', high: TRES, low: ACES, points: 5 },
+        { id: 'fours1', high: FOURS, low: DEUCES, points: 0 },
+        { id: 'fives1', high: FIVES, low: TRES, points: 0 },
+        { id: 'sixes1', high: SIXES, low: FOURS, points: 10 },
+        { id: 'double1', high: ACES, low: ACES, points: 0 },
+        { id: 'double2', high: DEUCES, low: DEUCES, points: 0 }
       ];
 
       const state = createTestState({
@@ -155,13 +156,13 @@ describe('Special Gameplay Scenarios', () => {
 
     it('handles doubles as trump correctly', () => {
       const handWithDoubles: Domino[] = [
-        { id: 'double0', high: 0, low: 0, points: 0 },
-        { id: 'double1', high: 1, low: 1, points: 0 },
-        { id: 'double2', high: 2, low: 2, points: 0 },
-        { id: 'double6', high: 6, low: 6, points: 0 },
-        { id: 'regular1', high: 2, low: 3, points: 0 },
-        { id: 'regular2', high: 4, low: 5, points: 0 },
-        { id: 'regular3', high: 1, low: 6, points: 0 }
+        { id: 'double0', high: BLANKS, low: BLANKS, points: 0 },
+        { id: 'double1', high: ACES, low: ACES, points: 0 },
+        { id: 'double2', high: DEUCES, low: DEUCES, points: 0 },
+        { id: 'double6', high: SIXES, low: SIXES, points: 0 },
+        { id: 'regular1', high: DEUCES, low: TRES, points: 0 },
+        { id: 'regular2', high: FOURS, low: FIVES, points: 0 },
+        { id: 'regular3', high: ACES, low: SIXES, points: 0 }
       ];
 
       const state = createTestState({
@@ -219,11 +220,11 @@ describe('Special Gameplay Scenarios', () => {
     it('handles counting dominoes distribution extremes', () => {
       // All high-value counting dominoes to one player
       const highValueDominoes = [
-        { id: 'five-five', high: 5, low: 5, points: 10 },
-        { id: 'six-four', high: 6, low: 4, points: 10 },
-        { id: 'five-blank', high: 5, low: 0, points: 5 },
-        { id: 'four-one', high: 4, low: 1, points: 5 },
-        { id: 'three-deuce', high: 3, low: 2, points: 5 }
+        { id: 'five-five', high: FIVES, low: FIVES, points: 10 },
+        { id: 'six-four', high: SIXES, low: FOURS, points: 10 },
+        { id: 'five-blank', high: FIVES, low: BLANKS, points: 5 },
+        { id: 'four-one', high: FOURS, low: ACES, points: 5 },
+        { id: 'three-deuce', high: TRES, low: DEUCES, points: 5 }
       ];
 
       const totalCountValue = highValueDominoes.reduce((sum, d) => sum + (d.points || 0), 0);
@@ -233,13 +234,13 @@ describe('Special Gameplay Scenarios', () => {
     it('handles no-count hands', () => {
       // Hand with no counting dominoes
       const noCountHand: Domino[] = [
-        { id: 'nc1', high: 6, low: 1, points: 0 },
-        { id: 'nc2', high: 6, low: 2, points: 0 },
-        { id: 'nc3', high: 6, low: 3, points: 0 },
-        { id: 'nc4', high: 5, low: 2, points: 0 },
-        { id: 'nc5', high: 5, low: 3, points: 0 },
-        { id: 'nc6', high: 4, low: 3, points: 0 },
-        { id: 'nc7', high: 1, low: 1, points: 0 }
+        { id: 'nc1', high: SIXES, low: ACES, points: 0 },
+        { id: 'nc2', high: SIXES, low: DEUCES, points: 0 },
+        { id: 'nc3', high: SIXES, low: TRES, points: 0 },
+        { id: 'nc4', high: FIVES, low: DEUCES, points: 0 },
+        { id: 'nc5', high: FIVES, low: TRES, points: 0 },
+        { id: 'nc6', high: FOURS, low: TRES, points: 0 },
+        { id: 'nc7', high: ACES, low: ACES, points: 0 }
       ];
 
       const countTotal = noCountHand.reduce((sum, d) => sum + (d.points || 0), 0);
@@ -293,19 +294,19 @@ describe('Special Gameplay Scenarios', () => {
     it('handles forced play scenarios', () => {
       // Player has only one legal play
       const limitedHand: Domino[] = [
-        { id: 'forced', high: 3, low: 5, points: 0 },  // Only domino with threes
-        { id: 'trump1', high: 1, low: 2, points: 0 },  // Trump but can't play
-        { id: 'other1', high: 4, low: 6, points: 0 }   // No threes
+        { id: 'forced', high: TRES, low: FIVES, points: 0 },  // Only domino with threes
+        { id: 'trump1', high: ACES, low: DEUCES, points: 0 },  // Trump but can't play
+        { id: 'other1', high: FOURS, low: SIXES, points: 0 }   // No threes
       ];
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 1 }, // Ones trump
+        trump: { type: 'suit', suit: ACES }, // Ones trump
         currentTrick: [{
           player: 0,
-          domino: { id: 'lead', high: 3, low: 3, points: 0 } // 3-3 leads
+          domino: { id: 'lead', high: TRES, low: TRES, points: 0 } // 3-3 leads
         }],
-        currentSuit: 3, // Threes were led
+        currentSuit: TRES, // Threes were led
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
@@ -315,7 +316,7 @@ describe('Special Gameplay Scenarios', () => {
             teamId: 1, 
             marks: 0, 
             hand: limitedHand,
-            suitAnalysis: analyzeSuits(limitedHand, { type: 'suit', suit: 1 })
+            suitAnalysis: analyzeSuits(limitedHand, { type: 'suit', suit: ACES })
           },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
@@ -337,24 +338,24 @@ describe('Special Gameplay Scenarios', () => {
       // All dominoes of a suit are played
       const afterSuitBlocked = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 2 },
+        trump: { type: 'suit', suit: DEUCES },
         tricks: [
           {
             plays: [
-              { player: 0, domino: { id: '0-0', high: 0, low: 0, points: 0 } },
-              { player: 1, domino: { id: '0-1', high: 0, low: 1, points: 0 } },
-              { player: 2, domino: { id: '0-2', high: 0, low: 2, points: 0 } },
-              { player: 3, domino: { id: '0-3', high: 0, low: 3, points: 0 } }
+              { player: 0, domino: { id: '0-0', high: BLANKS, low: BLANKS, points: 0 } },
+              { player: 1, domino: { id: '0-1', high: BLANKS, low: ACES, points: 0 } },
+              { player: 2, domino: { id: '0-2', high: BLANKS, low: DEUCES, points: 0 } },
+              { player: 3, domino: { id: '0-3', high: BLANKS, low: TRES, points: 0 } }
             ],
             winner: 2, // Player with 0-2 (trump) wins
             points: 0
           },
           {
             plays: [
-              { player: 2, domino: { id: '0-4', high: 0, low: 4, points: 0 } },
-              { player: 3, domino: { id: '0-5', high: 0, low: 5, points: 5 } },
-              { player: 0, domino: { id: '0-6', high: 0, low: 6, points: 0 } },
-              { player: 1, domino: { id: 'other', high: 3, low: 4, points: 0 } }
+              { player: 2, domino: { id: '0-4', high: BLANKS, low: FOURS, points: 0 } },
+              { player: 3, domino: { id: '0-5', high: BLANKS, low: FIVES, points: 5 } },
+              { player: 0, domino: { id: '0-6', high: BLANKS, low: SIXES, points: 0 } },
+              { player: 1, domino: { id: 'other', high: TRES, low: FOURS, points: 0 } }
             ],
             winner: 3, // Player with 0-5 wins
             points: 6 // 5 count + 1 trick

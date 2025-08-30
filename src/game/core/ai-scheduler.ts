@@ -1,13 +1,12 @@
 import type { GameState, StateTransition } from '../types';
-import { SimpleAIStrategy, SmartAIStrategy, RandomAIStrategy } from '../controllers/strategies';
+import { BeginnerAIStrategy, RandomAIStrategy } from '../controllers/strategies';
 import type { AIStrategy } from '../controllers/types';
 import { getNextStates } from './gameEngine';
 import { GAME_PHASES } from '../constants';
 
 // Strategy instances - reused for pure functions
 const strategies = {
-  simple: new SimpleAIStrategy(),
-  smart: new SmartAIStrategy(),
+  beginner: new BeginnerAIStrategy(),
   random: new RandomAIStrategy()
 };
 
@@ -15,9 +14,9 @@ const strategies = {
  * Get the AI strategy for a player (can be extended to support per-player strategies)
  */
 function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy {
-  // For now, all AI players use smart strategy
+  // For now, all AI players use beginner strategy
   // Could extend to check state.playerStrategies or similar
-  return strategies.smart;
+  return strategies.beginner;
 }
 
 /**

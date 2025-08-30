@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState, Domino } from '../../../game/types';
+import { SIXES } from '../../../game/types';
 
 describe('Feature: Tournament Conduct - Domino Handling', () => {
   describe('Scenario: Domino Handling', () => {
@@ -41,7 +42,7 @@ describe('Feature: Tournament Conduct - Domino Handling', () => {
         phase: 'playing',
         tournamentMode: true,
         currentPlayer: 1,
-        trump: { type: 'suit', suit: 6 }, // Sixes are trump
+        trump: { type: 'suit', suit: SIXES }, // Sixes are trump
         players: [
           { 
             id: 1, 

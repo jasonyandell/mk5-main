@@ -1,4 +1,11 @@
-import type { Domino, TrumpSelection } from '../types';
+import type { 
+  Domino, 
+  TrumpSelection, 
+  RegularSuit, 
+  LedSuit, 
+  TrumpSuitOrNone
+} from '../types';
+import { DOUBLES_AS_TRUMP, NO_TRUMP, TRUMP_NOT_SELECTED } from '../types';
 import { DOMINO_VALUES } from '../constants';
 import { createSeededRandom } from './random';
 
@@ -53,44 +60,67 @@ export function dealDominoesWithSeed(seed: number): [Domino[], Domino[], Domino[
 }
 
 /**
- * Converts TrumpSelection to numeric value
+ * Converts TrumpSelection to TrumpSuit
  */
-function trumpToNumber(trump: TrumpSelection): number | null {
+export function getTrumpSuit(trump: TrumpSelection): TrumpSuitOrNone {
   switch (trump.type) {
-    case 'none': return null;
+    case 'not-selected': return TRUMP_NOT_SELECTED;
     case 'suit': return trump.suit!;
-    case 'doubles': return 7;
-    case 'no-trump': return 8;
+    case 'doubles': return DOUBLES_AS_TRUMP;
+    case 'no-trump': return NO_TRUMP;
   }
 }
 
 /**
- * Gets the suit of a domino based on trump
+ * Legacy function for backward compatibility - will be removed
+ * @deprecated Use getTrumpSuit instead
  */
-export function getDominoSuit(domino: Domino, trump: TrumpSelection): number {
-  const numericTrump = trumpToNumber(trump);
+export function trumpToNumber(trump: TrumpSelection): number | null {
+  const suit = getTrumpSuit(trump);
+  return suit === TRUMP_NOT_SELECTED ? null : suit;
+}
+
+/**
+ * Gets what suit a domino leads when played
+ */
+export function getLedSuit(domino: Domino, trump: TrumpSelection): LedSuit {
+  const trumpSuit = getTrumpSuit(trump);
   
-  // Special case: doubles trump (numericTrump = 7)
-  if (numericTrump === 7) {
+  // When doubles are trump, doubles lead suit 7
+  if (trumpSuit === DOUBLES_AS_TRUMP) {
     if (domino.high === domino.low) {
-      return 7; // All doubles are trump
+      return 7;  // Doubles lead the doubles suit
     }
-    // Non-doubles just use their higher value
-    return Math.max(domino.high, domino.low);
+    // Non-doubles lead their higher pip
+    return Math.max(domino.high, domino.low) as RegularSuit;
   }
   
-  // Doubles belong to their natural suit (unless doubles are trump)
+  // When a regular suit is trump (0-6)
+  if (trumpSuit >= 0 && trumpSuit <= 6) {
+    // Trump dominoes lead trump
+    if (domino.high === trumpSuit || domino.low === trumpSuit) {
+      return trumpSuit as RegularSuit;
+    }
+    // Non-trump dominoes lead their natural suit
+    if (domino.high === domino.low) {
+      return domino.high as RegularSuit;  // Double leads its pip
+    }
+    return Math.max(domino.high, domino.low) as RegularSuit;
+  }
+  
+  // No-trump or no trump selected: everything leads naturally
   if (domino.high === domino.low) {
-    return domino.high; // Natural suit for doubles
+    return domino.high as RegularSuit;  // Doubles lead their pip
   }
-  
-  // Non-doubles: if either end matches trump, it's trump suit
-  if (numericTrump !== null && (domino.high === numericTrump || domino.low === numericTrump)) {
-    return numericTrump;
-  }
-  
-  // Otherwise, suit is determined by higher value
-  return Math.max(domino.high, domino.low);
+  return Math.max(domino.high, domino.low) as RegularSuit;
+}
+
+/**
+ * Legacy function for backward compatibility - will be removed
+ * @deprecated Use getLedSuit instead
+ */
+export function getDominoSuit(domino: Domino, trump: TrumpSelection): LedSuit {
+  return getLedSuit(domino, trump);
 }
 
 /**
@@ -150,6 +180,23 @@ export function getDominoValue(domino: Domino, trump: TrumpSelection): number {
  */
 export function isDouble(domino: Domino): boolean {
   return domino.high === domino.low;
+}
+
+/**
+ * Check if a domino is trump
+ */
+export function isTrump(domino: Domino, trump: TrumpSelection): boolean {
+  const trumpSuit = getTrumpSuit(trump);
+  
+  if (trumpSuit === DOUBLES_AS_TRUMP) {
+    return domino.high === domino.low;  // All doubles are trump
+  }
+  
+  if (trumpSuit >= 0 && trumpSuit <= 6) {
+    return domino.high === trumpSuit || domino.low === trumpSuit;
+  }
+  
+  return false;  // No trump or no-trump game
 }
 
 /**

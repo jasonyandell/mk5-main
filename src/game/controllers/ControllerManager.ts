@@ -57,7 +57,7 @@ export class ControllerManager {
    * Switch a player to AI control
    * Note: AI is now handled via pure functions, so we just remove the human controller
    */
-  switchToAI(playerId: number, _strategy?: 'simple' | 'smart' | 'random'): void {
+  switchToAI(playerId: number, _strategy?: 'beginner' | 'random'): void {
     const old = this.controllers.get(playerId);
     if (old?.destroy) {
       old.destroy();

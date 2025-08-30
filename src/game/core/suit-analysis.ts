@@ -1,4 +1,6 @@
 import type { Domino, TrumpSelection } from '../types';
+import { DOUBLES_AS_TRUMP, TRUMP_NOT_SELECTED } from '../types';
+import { getTrumpSuit } from './dominoes';
 
 /**
  * Suit count for a player's hand - counts dominoes by suit number
@@ -41,7 +43,7 @@ export interface SuitAnalysis {
 /**
  * Calculates suit count for a hand - how many dominoes contain each suit number
  */
-export function calculateSuitCount(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitCount {
+export function calculateSuitCount(hand: Domino[], trump: TrumpSelection = { type: 'not-selected' }): SuitCount {
   const count: SuitCount = {
     0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, doubles: 0, trump: 0
   };
@@ -60,7 +62,7 @@ export function calculateSuitCount(hand: Domino[], trump: TrumpSelection = { typ
   });
 
   // Calculate trump count based on trump suit
-  if (trump.type !== 'none') {
+  if (trump.type !== 'not-selected') {
     count.trump = calculateTrumpCount(hand, trump);
   }
 
@@ -72,35 +74,24 @@ export function calculateSuitCount(hand: Domino[], trump: TrumpSelection = { typ
  */
 function calculateTrumpCount(hand: Domino[], trump: TrumpSelection): number {
   
-  const numericTrump = trumpToNumber(trump);
+  const trumpSuit = getTrumpSuit(trump);
   
-  if (numericTrump === 7) {
+  if (trumpSuit === DOUBLES_AS_TRUMP) {
     // Doubles trump - count all doubles
     return hand.filter(d => d.high === d.low).length;
-  } else if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 6) {
+  } else if (trumpSuit >= 0 && trumpSuit <= 6) {
     // Regular suit trump - count dominoes containing that number
-    return hand.filter(d => d.high === numericTrump || d.low === numericTrump).length;
+    return hand.filter(d => d.high === trumpSuit || d.low === trumpSuit).length;
   }
   
   return 0;
 }
 
-/**
- * Converts TrumpSelection to numeric value
- */
-function trumpToNumber(trump: TrumpSelection): number | null {
-  switch (trump.type) {
-    case 'none': return null;
-    case 'suit': return trump.suit!;
-    case 'doubles': return 7;
-    case 'no-trump': return 8;
-  }
-}
 
 /**
  * Calculates suit ranking for a hand - organizes dominoes by suit with highest first
  */
-export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitRanking {
+export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { type: 'not-selected' }): SuitRanking {
   const rank: SuitRanking = {
     0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], doubles: [], trump: []
   };
@@ -113,9 +104,9 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
   doubles.sort((a, b) => b.high - a.high);
   rank.doubles = doubles;
 
-  // Get numeric trump value for checking
-  const numericTrump = trumpToNumber(trump);
-  const isDoublesTrump = numericTrump === 7;
+  // Get trump suit for checking
+  const trumpSuit = getTrumpSuit(trump);
+  const isDoublesTrump = trumpSuit === DOUBLES_AS_TRUMP;
 
   // Add doubles to their natural suit rankings
   doubles.forEach(domino => {
@@ -152,7 +143,7 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
   }
 
   // Calculate trump ranking
-  if (trump.type !== 'none') {
+  if (trump.type !== 'not-selected') {
     rank.trump = calculateTrumpRanking(hand, trump);
   }
 
@@ -163,16 +154,16 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
  * Calculates trump ranking for a hand - organizes trump dominoes by value
  */
 function calculateTrumpRanking(hand: Domino[], trump: TrumpSelection): Domino[] {
-  const numericTrump = trumpToNumber(trump);
+  const trumpSuit = getTrumpSuit(trump);
   let trumpDominoes: Domino[] = [];
   
-  if (numericTrump === 7) {
+  if (trumpSuit === DOUBLES_AS_TRUMP) {
     // Doubles trump - all doubles are trump, sorted highest to lowest
     trumpDominoes = hand.filter(d => d.high === d.low);
     trumpDominoes.sort((a, b) => b.high - a.high);
-  } else if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 6) {
+  } else if (trumpSuit >= 0 && trumpSuit <= 6) {
     // Regular suit trump - dominoes containing that number
-    trumpDominoes = hand.filter(d => d.high === numericTrump || d.low === numericTrump);
+    trumpDominoes = hand.filter(d => d.high === trumpSuit || d.low === trumpSuit);
     
     // Sort trump dominoes by trump value priority:
     // 1. Doubles of trump suit first
@@ -201,7 +192,7 @@ function calculateTrumpRanking(hand: Domino[], trump: TrumpSelection): Domino[] 
 /**
  * Performs complete suit analysis for a hand
  */
-export function analyzeSuits(hand: Domino[], trump: TrumpSelection = { type: 'none' }): SuitAnalysis {
+export function analyzeSuits(hand: Domino[], trump: TrumpSelection = { type: 'not-selected' }): SuitAnalysis {
   return {
     count: calculateSuitCount(hand, trump),
     rank: calculateSuitRanking(hand, trump)
@@ -238,4 +229,245 @@ export function getStrongestSuits(analysis: SuitAnalysis): number[] {
     if (totalA !== totalB) return totalB - totalA;
     return highestB.high - highestA.high;
   });
+}
+
+/**
+ * Lead analysis result - categorizes dominoes for leading decisions
+ */
+export interface LeadAnalysis {
+  goodLeads: Domino[];  // Guaranteed to win if led
+  ranked: Domino[];     // All dominoes ranked by strength
+}
+
+/**
+ * Gets all dominoes that have been played in completed tricks
+ */
+function getPlayedDominoes(tricks: Array<{ plays: Array<{ domino: Domino }> }>): Set<string> {
+  const played = new Set<string>();
+  tricks.forEach(trick => {
+    trick.plays.forEach(play => {
+      played.add(play.domino.id.toString());
+    });
+  });
+  return played;
+}
+
+/**
+ * Checks if a domino is the highest unplayed in its suit
+ */
+function isHighestUnplayed(domino: Domino, suit: number, played: Set<string>): boolean {
+  // Check all possible dominoes in this suit, from highest to lowest
+  // We need to check in order of actual domino values
+  
+  // First check doubles (they're highest in their suit)
+  if (suit >= 0 && suit <= 6) {
+    const doubleDomino = `${suit}-${suit}`;
+    if (!played.has(doubleDomino)) {
+      // This double is unplayed
+      return domino.id.toString() === doubleDomino;
+    }
+  }
+  
+  // Then check non-doubles containing this suit, from highest total to lowest
+  for (let total = 12; total >= 0; total--) {
+    for (let high = 6; high >= 0; high--) {
+      const low = total - high;
+      if (low < 0 || low > 6 || low > high) continue;
+      
+      // Check if this domino contains our suit
+      if (high !== suit && low !== suit) continue;
+      
+      const testId = `${high}-${low}`;
+      
+      // Skip if already played
+      if (played.has(testId)) continue;
+      
+      // If we found our domino, it's the highest unplayed
+      if (testId === domino.id.toString()) {
+        return true;
+      }
+      
+      // Found a higher unplayed domino in this suit
+      return false;
+    }
+  }
+  
+  return false;
+}
+
+/**
+ * Analyzes a hand to identify good leads (guaranteed winners) vs ranked dominoes
+ * 
+ * Good leads are dominoes that are guaranteed to win if led:
+ * - The high trump (always wins)
+ * - Additional trump if you have enough (e.g., with 6-6, 6-5, 6-4, the 6-4 is also good)
+ * - When no trump remains, the highest unplayed in any suit
+ */
+export function analyzeLeads(
+  hand: Domino[], 
+  state: { 
+    trump: TrumpSelection;
+    tricks: Array<{ plays: Array<{ domino: Domino }> }>;
+  },
+  trumpCount?: number  // Optional: pre-calculated trump count in hand
+): LeadAnalysis {
+  const goodLeads: Domino[] = [];
+  const played = getPlayedDominoes(state.tricks);
+  
+  const trumpSuit = getTrumpSuit(state.trump);
+  
+  // 1. Identify trump good leads
+  if (trumpSuit !== TRUMP_NOT_SELECTED) {
+    // Find all trump in our hand
+    const trumpInHand = hand.filter(d => {
+      if (trumpSuit === DOUBLES_AS_TRUMP) {
+        // Doubles trump
+        return d.high === d.low;
+      } else if (trumpSuit >= 0 && trumpSuit <= 6) {
+        // Regular suit trump
+        return d.high === trumpSuit || d.low === trumpSuit;
+      }
+      return false;
+    });
+    
+    // Sort trump by value (highest first)
+    trumpInHand.sort((a, b) => {
+      if (trumpSuit === DOUBLES_AS_TRUMP) {
+        // Doubles trump - sort by pip value
+        return b.high - a.high;
+      } else {
+        // Regular trump - doubles first, then by total
+        const aIsDouble = a.high === a.low;
+        const bIsDouble = b.high === b.low;
+        if (aIsDouble && !bIsDouble) return -1;
+        if (!aIsDouble && bIsDouble) return 1;
+        return (b.high + b.low) - (a.high + a.low);
+      }
+    });
+    
+    // High trump is always a good lead
+    if (trumpInHand.length > 0) {
+      goodLeads.push(trumpInHand[0]!);
+      
+      // If we have 3+ trump including the high, lower trump are also good leads
+      // because we can run trump and opponents will run out
+      if (trumpInHand.length >= 3) {
+        // Check if we have the highest trump
+        let haveHighestTrump = false;
+        
+        if (trumpSuit === DOUBLES_AS_TRUMP) {
+          // For doubles trump, check if we have 6-6
+          haveHighestTrump = trumpInHand[0]!.high === 6 && trumpInHand[0]!.low === 6;
+        } else {
+          // For regular trump, check if we have the double of that suit
+          haveHighestTrump = trumpInHand[0]!.high === trumpSuit && trumpInHand[0]!.low === trumpSuit;
+        }
+        
+        if (haveHighestTrump) {
+          // Add more trump as good leads (they'll win after we run trump)
+          // Add up to 2 more (so we have 3 good trump leads total)
+          for (let i = 1; i < Math.min(3, trumpInHand.length); i++) {
+            goodLeads.push(trumpInHand[i]!);
+          }
+        }
+      }
+    }
+    
+    // 2. Check for non-trump good leads (only if all trump is accounted for)
+    const totalTrump = 7; // There are always 7 trump dominoes
+    const trumpPlayed = countPlayedTrump(state.tricks, state.trump);
+    const ourTrump = trumpCount ?? trumpInHand.length;
+    const trumpOutThere = totalTrump - trumpPlayed - ourTrump;
+    
+    if (trumpOutThere === 0) {
+      // No trump remains - highest in each suit is a good lead
+      for (const domino of hand) {
+        // Skip if already marked as good lead (trump)
+        if (goodLeads.some(gl => gl.id === domino.id)) continue;
+        
+        // Check each suit this domino belongs to
+        const suits = domino.high === domino.low ? [domino.high] : [domino.high, domino.low];
+        
+        for (const suit of suits) {
+          if (isHighestUnplayed(domino, suit, played)) {
+            goodLeads.push(domino);
+            break; // Only add once even if good in multiple suits
+          }
+        }
+      }
+    }
+  }
+  
+  // 3. Rank all dominoes by strength (for general play decisions)
+  // This includes both good leads and other dominoes
+  const ranked = [...hand].sort((a, b) => {
+    // Trump dominoes first
+    const aIsTrump = trumpSuit !== TRUMP_NOT_SELECTED && (
+      trumpSuit === DOUBLES_AS_TRUMP ? a.high === a.low : 
+      (a.high === trumpSuit || a.low === trumpSuit)
+    );
+    const bIsTrump = trumpSuit !== TRUMP_NOT_SELECTED && (
+      trumpSuit === DOUBLES_AS_TRUMP ? b.high === b.low : 
+      (b.high === trumpSuit || b.low === trumpSuit)
+    );
+    
+    if (aIsTrump && !bIsTrump) return -1;
+    if (!aIsTrump && bIsTrump) return 1;
+    
+    // Within trump or non-trump, sort by value
+    if (aIsTrump && bIsTrump) {
+      if (trumpSuit === DOUBLES_AS_TRUMP) {
+        // Doubles trump - by pip value
+        return b.high - a.high;
+      } else {
+        // Regular trump - doubles first, then by total
+        const aIsDouble = a.high === a.low;
+        const bIsDouble = b.high === b.low;
+        if (aIsDouble && !bIsDouble) return -1;
+        if (!aIsDouble && bIsDouble) return 1;
+        return (b.high + b.low) - (a.high + a.low);
+      }
+    }
+    
+    // Non-trump: doubles first, then by total
+    const aIsDouble = a.high === a.low;
+    const bIsDouble = b.high === b.low;
+    if (aIsDouble && !bIsDouble) return -1;
+    if (!aIsDouble && bIsDouble) return 1;
+    
+    const totalA = a.high + a.low;
+    const totalB = b.high + b.low;
+    if (totalA !== totalB) return totalB - totalA;
+    return b.high - a.high;
+  });
+  
+  return { goodLeads, ranked };
+}
+
+/**
+ * Counts how many trump dominoes have been played
+ */
+function countPlayedTrump(tricks: Array<{ plays: Array<{ domino: Domino }> }>, trump: TrumpSelection): number {
+  const trumpSuit = getTrumpSuit(trump);
+  if (trumpSuit === TRUMP_NOT_SELECTED) return 0;
+  
+  let trumpPlayed = 0;
+  
+  for (const trick of tricks) {
+    for (const play of trick.plays) {
+      if (trumpSuit === DOUBLES_AS_TRUMP) {
+        // Doubles trump
+        if (play.domino.high === play.domino.low) {
+          trumpPlayed++;
+        }
+      } else if (trumpSuit >= 0 && trumpSuit <= 6) {
+        // Regular suit trump
+        if (play.domino.high === trumpSuit || play.domino.low === trumpSuit) {
+          trumpPlayed++;
+        }
+      }
+    }
+  }
+  
+  return trumpPlayed;
 }

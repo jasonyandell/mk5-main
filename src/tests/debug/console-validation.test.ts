@@ -69,7 +69,7 @@ describe('Console Validation and Error Detection', () => {
       expect(() => {
         // These should not throw or produce console errors
         const state = createInitialState();
-        state.trump = { type: 'none' }; // Valid none state
+        state.trump = { type: 'not-selected' }; // Valid none state
         // state.bidWinner and state.winner don't exist in new types
       }).not.toThrow();
       
@@ -168,7 +168,7 @@ describe('Console Validation and Error Detection', () => {
       const helper = new GameTestHelper();
       const state = helper.createGameInProgress();
       
-      if (state.trump.type !== 'none') {
+      if (state.trump.type !== 'not-selected') {
         // Trump should be valid TrumpSelection
         expect(['suit', 'doubles', 'no-trump']).toContain(state.trump.type);
         if (state.trump.type === 'suit') {

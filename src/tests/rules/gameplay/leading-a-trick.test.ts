@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState } from '../../../game/types';
+import { DEUCES, TRES, FOURS, FIVES } from '../../../game/types';
 
 describe('Feature: Playing Tricks', () => {
   describe('Scenario: Leading a Trick', () => {
@@ -14,7 +15,7 @@ describe('Feature: Playing Tricks', () => {
         ],
         currentPlayer: 1,
         winningBidder: 1,
-        trump: { type: 'suit', suit: 3 }, // threes are trump
+        trump: { type: 'suit', suit: TRES }, // threes are trump
         currentTrick: [],
         tricks: [],
       };
@@ -34,7 +35,7 @@ describe('Feature: Playing Tricks', () => {
         ],
         currentPlayer: 2, // Player 2 won the bid
         winningBidder: 2,
-        trump: { type: 'suit', suit: 5 },
+        trump: { type: 'suit', suit: FIVES },
         currentTrick: [],
         tricks: [], // No tricks played yet
       };
@@ -55,7 +56,7 @@ describe('Feature: Playing Tricks', () => {
           { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         winningBidder: 1,
-        trump: { type: 'suit', suit: 4 },
+        trump: { type: 'suit', suit: FOURS },
         currentTrick: [],
         tricks: [
           { 
@@ -103,7 +104,7 @@ describe('Feature: Playing Tricks', () => {
         ],
         currentPlayer: 0,
         winningBidder: 0,
-        trump: { type: 'suit', suit: 2 }, // twos are trump
+        trump: { type: 'suit', suit: DEUCES }, // twos are trump
         currentTrick: [],
         tricks: [],
       };

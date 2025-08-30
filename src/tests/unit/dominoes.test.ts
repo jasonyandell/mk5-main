@@ -9,6 +9,7 @@ import {
   countDoubles 
 } from '../../game/core/dominoes';
 import { GameTestHelper } from '../helpers/gameTestHelper';
+import { ACES, DEUCES, TRES, FIVES, SIXES } from '../../game/types';
 
 describe('Domino System', () => {
   describe('createDominoes', () => {
@@ -88,29 +89,29 @@ describe('Domino System', () => {
     it('should return natural suit for doubles when regular trump is set', () => {
       const double = { high: 5, low: 5, id: '5-5' };
       
-      expect(getDominoSuit(double, { type: 'suit', suit: 2 })).toBe(5); // Natural suit (doubles belong to natural suit)
-      expect(getDominoSuit(double, { type: 'suit', suit: 5 })).toBe(5); // Natural suit (also trump in this case)
+      expect(getDominoSuit(double, { type: 'suit', suit: DEUCES })).toBe(FIVES); // Natural suit (doubles belong to natural suit)
+      expect(getDominoSuit(double, { type: 'suit', suit: FIVES })).toBe(FIVES); // Natural suit (also trump in this case)
     });
     
     it('should return trump for dominoes with trump value', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       
-      expect(getDominoSuit(domino, { type: 'suit', suit: 3 })).toBe(3); // 3 is trump
-      expect(getDominoSuit(domino, { type: 'suit', suit: 6 })).toBe(6); // 6 is trump
+      expect(getDominoSuit(domino, { type: 'suit', suit: TRES })).toBe(TRES); // 3 is trump
+      expect(getDominoSuit(domino, { type: 'suit', suit: SIXES })).toBe(SIXES); // 6 is trump
     });
     
     it('should return high value for non-trump dominoes', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       
-      expect(getDominoSuit(domino, { type: 'suit', suit: 1 })).toBe(6); // Neither 6 nor 3 is trump 1
+      expect(getDominoSuit(domino, { type: 'suit', suit: ACES })).toBe(SIXES); // Neither 6 nor 3 is trump 1
     });
     
     it('should handle null trump', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       const double = { high: 5, low: 5, id: '5-5' };
       
-      expect(getDominoSuit(domino, { type: 'none' })).toBe(6);
-      expect(getDominoSuit(double, { type: 'none' })).toBe(5);
+      expect(getDominoSuit(domino, { type: 'not-selected' })).toBe(SIXES);
+      expect(getDominoSuit(double, { type: 'not-selected' })).toBe(FIVES);
     });
   });
   
@@ -120,7 +121,7 @@ describe('Domino System', () => {
       const fiveDouble = { high: 5, low: 5, id: '5-5' };
       const zeroDouble = { high: 0, low: 0, id: '0-0' };
       
-      const trump = { type: 'suit', suit: 6 } as const;
+      const trump = { type: 'suit', suit: SIXES } as const;
       
       expect(getDominoValue(sixDouble, trump)).toBeGreaterThan(getDominoValue(fiveDouble, trump));
       expect(getDominoValue(fiveDouble, trump)).toBeGreaterThan(getDominoValue(zeroDouble, trump));
@@ -149,7 +150,7 @@ describe('Domino System', () => {
     it('should value trump non-doubles higher than non-trump', () => {
       const trumpDomino = { high: 6, low: 3, id: '6-3' };
       const nonTrumpDomino = { high: 6, low: 5, id: '6-5' };
-      const trump = { type: 'suit', suit: 3 } as const;
+      const trump = { type: 'suit', suit: TRES } as const;
       
       expect(getDominoValue(trumpDomino, trump)).toBeGreaterThan(getDominoValue(nonTrumpDomino, trump));
     });

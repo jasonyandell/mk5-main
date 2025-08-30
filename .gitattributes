@@ -1,0 +1,2 @@
+# Mark generated files as such for GitHub
+*.generated.ts linguist-generated=true

@@ -1,6 +1,6 @@
 import type { PlayerController, AIStrategy } from './types';
 import type { GameState, StateTransition } from '../types';
-import { SimpleAIStrategy } from './strategies';
+import { BeginnerAIStrategy } from './strategies';
 
 /**
  * Controller for AI players.
@@ -16,7 +16,7 @@ export class AIController implements PlayerController {
   constructor(
     public readonly playerId: number,
     private executeTransition: (transition: StateTransition) => void,
-    private strategy: AIStrategy = new SimpleAIStrategy()
+    private strategy: AIStrategy = new BeginnerAIStrategy()
   ) {}
   
   onStateChange(state: GameState, availableTransitions: StateTransition[]): void {

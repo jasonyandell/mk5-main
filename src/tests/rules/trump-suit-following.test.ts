@@ -3,6 +3,7 @@ import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
+import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Trump Suit Following Rules', () => {
   describe('Cannot Play Trump When Can Follow Suit', () => {
@@ -16,16 +17,16 @@ describe('Trump Suit Following Rules', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 5 }, // Fives are trump
+        trump: { type: 'suit', suit: FIVES }, // Fives are trump
         currentTrick: [{
           player: 0,
           domino: { id: '6-6', high: 6, low: 6, points: 0 } // 6-6 leads (sixes suit)
         }],
-        currentSuit: 6, // Sixes were led
+        currentSuit: SIXES, // Sixes were led
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 5 }) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: FIVES }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -53,16 +54,16 @@ describe('Trump Suit Following Rules', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 5 }, // Fives are trump
+        trump: { type: 'suit', suit: FIVES }, // Fives are trump
         currentTrick: [{
           player: 0,
           domino: { id: '6-6', high: 6, low: 6, points: 0 } // 6-6 leads (sixes suit)
         }],
-        currentSuit: 6, // Sixes were led
+        currentSuit: SIXES, // Sixes were led
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 5 }) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: FIVES }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -88,16 +89,16 @@ describe('Trump Suit Following Rules', () => {
 
       const state = createTestState({
         phase: 'playing',
-        trump: { type: 'suit', suit: 3 }, // Threes are trump
+        trump: { type: 'suit', suit: TRES }, // Threes are trump
         currentTrick: [{
           player: 0,
           domino: { id: '4-4', high: 4, low: 4, points: 0 } // 4-4 leads (fours suit)
         }],
-        currentSuit: 4, // Fours were led
+        currentSuit: FOURS, // Fours were led
         currentPlayer: 1,
         players: [
           { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 3 }) },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: playerHand, suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: TRES }) },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -123,12 +124,12 @@ describe('Trump Suit Following Rules', () => {
         { id: '4-5', high: 4, low: 5, points: 0 }  // Neither 2 nor trump
       ];
 
-      const analysis = analyzeSuits(hand, { type: 'suit', suit: 3 });
+      const analysis = analyzeSuits(hand, { type: 'suit', suit: TRES });
       
       // Check suit 2: should have both dominoes containing 2 (including trump)
-      expect(analysis.rank[2]).toHaveLength(2);
-      expect(analysis.rank[2].map(d => d.id)).toContain('2-1');
-      expect(analysis.rank[2].map(d => d.id)).toContain('2-3');
+      expect(analysis.rank[DEUCES]).toHaveLength(2);
+      expect(analysis.rank[DEUCES].map(d => d.id)).toContain('2-1');
+      expect(analysis.rank[DEUCES].map(d => d.id)).toContain('2-3');
       
       // Check trump: should have both dominoes containing 3
       expect(analysis.rank.trump).toHaveLength(2);
@@ -149,9 +150,9 @@ describe('Trump Suit Following Rules', () => {
       const analysis = analyzeSuits(hand, { type: 'doubles' });
       
       // When doubles are trump, non-double 3s should be in suit 3
-      expect(analysis.rank[3]).toHaveLength(2);
-      expect(analysis.rank[3].map(d => d.id)).toContain('3-4');
-      expect(analysis.rank[3].map(d => d.id)).toContain('3-5');
+      expect(analysis.rank[TRES]).toHaveLength(2);
+      expect(analysis.rank[TRES].map(d => d.id)).toContain('3-4');
+      expect(analysis.rank[TRES].map(d => d.id)).toContain('3-5');
       
       // Doubles should only be in trump
       expect(analysis.rank.trump).toHaveLength(2);
@@ -159,8 +160,8 @@ describe('Trump Suit Following Rules', () => {
       expect(analysis.rank.trump.map(d => d.id)).toContain('2-2');
       
       // Doubles should NOT be in their natural suits when doubles are trump
-      expect(analysis.rank[3].map(d => d.id)).not.toContain('3-3');
-      expect(analysis.rank[2].map(d => d.id)).not.toContain('2-2');
+      expect(analysis.rank[TRES].map(d => d.id)).not.toContain('3-3');
+      expect(analysis.rank[DEUCES].map(d => d.id)).not.toContain('2-2');
     });
   });
 });

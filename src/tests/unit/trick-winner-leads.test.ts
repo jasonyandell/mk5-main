@@ -1,13 +1,14 @@
 import { describe, test, expect } from 'vitest';
 import { getNextStates } from '../../game/core/gameEngine';
 import { createTestState } from '../helpers/gameTestHelper';
+import { ACES, DEUCES, TRES, FOURS, FIVES } from '../../game/types';
 
 describe('Trick Winner Leads Next Trick', () => {
   test('trick winner becomes current player for next trick', () => {
     // Create a state with a completed 4-domino trick
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 5 }, // 5s are trump
+      trump: { type: 'suit', suit: FIVES }, // 5s are trump
       currentTrick: [
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '6-3', high: 6, low: 3 } }, // follow suit
@@ -48,7 +49,7 @@ describe('Trick Winner Leads Next Trick', () => {
   test('highest domino of led suit wins when no trump played', () => {
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 1 }, // 1s are trump, but none played
+      trump: { type: 'suit', suit: ACES }, // 1s are trump, but none played
       currentTrick: [
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s - 10 points
         { player: 1, domino: { id: '6-5', high: 6, low: 5 } }, // higher 6 - should win
@@ -79,7 +80,7 @@ describe('Trick Winner Leads Next Trick', () => {
   test('first trump played wins over non-trump', () => {
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 2 }, // 2s are trump
+      trump: { type: 'suit', suit: DEUCES }, // 2s are trump
       currentTrick: [
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '2-0', high: 2, low: 0 } }, // play trump - should win
@@ -110,7 +111,7 @@ describe('Trick Winner Leads Next Trick', () => {
   test('higher trump beats lower trump', () => {
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 3 }, // 3s are trump
+      trump: { type: 'suit', suit: TRES }, // 3s are trump
       currentTrick: [
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '3-0', high: 3, low: 0 } }, // low trump
@@ -173,7 +174,7 @@ describe('Trick Winner Leads Next Trick', () => {
     // Start with empty state
     let state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 4 }, // 4s are trump
+      trump: { type: 'suit', suit: FOURS }, // 4s are trump
       currentPlayer: 2, // Player 2 starts
       tricks: []
     });

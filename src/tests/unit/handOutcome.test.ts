@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { checkHandOutcome } from '../../game/core/handOutcome';
 import { createInitialState } from '../../game/core/state';
-import type { GameState, Domino, Trick } from '../../game/types';
+import type { GameState, Domino, Trick, LedSuit } from '../../game/types';
+import { BLANKS, SIXES, NO_BIDDER } from '../../game/types';
 
 function createTestState(overrides?: Partial<GameState>): GameState {
   const state = createInitialState({ shuffleSeed: 1234 });
@@ -10,7 +11,7 @@ function createTestState(overrides?: Partial<GameState>): GameState {
     phase: 'playing',
     currentBid: { type: 'points', value: 35, player: 0 },
     winningBidder: 0,
-    trump: { type: 'suit', suit: 6 },
+    trump: { type: 'suit', suit: SIXES },
     ...overrides
   };
 }
@@ -28,7 +29,7 @@ function createTrick(plays: Array<{player: number, domino: Domino}>, winner: num
     plays: plays.map(p => ({ player: p.player, domino: p.domino })),
     winner,
     points,
-    ledSuit: plays[0]?.domino.high ?? 0
+    ledSuit: (plays[0]?.domino.high ?? BLANKS) as LedSuit
   };
 }
 
@@ -283,8 +284,8 @@ describe('Hand Outcome Detection', () => {
     it('should not detect outcome during bidding phase', () => {
       const state = createTestState({
         phase: 'bidding',
-        currentBid: { type: 'pass', player: -1 },
-        winningBidder: -1
+        currentBid: { type: 'pass', player: NO_BIDDER },
+        winningBidder: NO_BIDDER
       });
       
       const outcome = checkHandOutcome(state);

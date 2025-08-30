@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { GameState } from '../../game/types';
 import { createInitialState, dealDominoesWithSeed } from '../../game';
+import { TRES } from '../../game/types';
 
 // Test-only implementation for prohibited play communication
 // This tests that the game properly prevents and detects prohibited communications during play
@@ -34,7 +35,7 @@ describe('Feature: Communication Rules - Prohibited Play Communication', () => {
     ];
     gameState.currentBid = { type: 'points', value: 31, player: 0 };
     gameState.winningBidder = 0;
-    gameState.trump = { type: 'suit', suit: 3 }; // threes are trump
+    gameState.trump = { type: 'suit', suit: TRES }; // threes are trump
     gameState.tricks = [];
     gameState.currentTrick = [];
   });

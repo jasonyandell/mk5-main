@@ -1,5 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState, Trick } from '../../../game/types';
+import { FIVES } from '../../../game/types';
 
 describe('Feature: Plunge Bid Mechanics', () => {
   describe('Scenario: Plunge Bid Mechanics', () => {
@@ -34,7 +35,7 @@ describe('Feature: Plunge Bid Mechanics', () => {
         ],
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
-        trump: { type: 'none' },
+        trump: { type: 'not-selected' },
       };
 
       // Partner of player 0 (teamId 0) is player 2
@@ -47,7 +48,7 @@ describe('Feature: Plunge Bid Mechanics', () => {
       // Simulate partner declaring trump
       const trumpDeclaredState: Partial<GameState> = {
         ...mockState,
-        trump: { type: 'suit', suit: 5 }, // Partner declares fives as trump
+        trump: { type: 'suit', suit: FIVES }, // Partner declares fives as trump
         currentPlayer: partner!.id,
       };
       
@@ -66,7 +67,7 @@ describe('Feature: Plunge Bid Mechanics', () => {
         ],
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
-        trump: { type: 'suit', suit: 5 },
+        trump: { type: 'suit', suit: FIVES },
         currentPlayer: 2, // Partner leads
         tricks: [],
         currentTrick: [],

@@ -1,40 +1,15 @@
 import type { AIStrategy } from './types';
-import type { GameState, StateTransition, Domino, Player } from '../types';
+import type { GameState, StateTransition, Player } from '../types';
 import { BID_TYPES } from '../constants';
-import { getDominoPoints, countDoubles } from '../core/dominoes';
-import { getStrongestSuits } from '../core/suit-analysis';
+import { calculateTrickWinner } from '../core/scoring';
+import { analyzeHand } from '../ai/utilities';
+import { 
+  calculateHandStrengthWithTrump, 
+  determineBestTrump,
+  LAYDOWN_SCORE,
+  BID_THRESHOLDS 
+} from '../ai/hand-strength';
 
-/**
- * Simple AI strategy - picks first available action
- */
-export class SimpleAIStrategy implements AIStrategy {
-  chooseAction(_state: GameState, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
-    
-    // Prioritize consensus actions for quick agreement
-    const consensusAction = transitions.find(t =>
-      t.action.type === 'agree-complete-trick' ||
-      t.action.type === 'agree-score-hand'
-    );
-    
-    if (consensusAction) {
-      return consensusAction;
-    }
-    
-    // Otherwise pick the first available action
-    return transitions[0] || null;
-  }
-  
-  getThinkingTime(actionType: string): number {
-    // Instant response for consensus actions
-    if (actionType === 'agree-complete-trick' || actionType === 'agree-score-hand') {
-      return 0;
-    }
-    
-    // Normal thinking time for game actions
-    return 500 + Math.random() * 1500;
-  }
-}
 
 /**
  * Random AI strategy - picks random action
@@ -68,10 +43,14 @@ export class RandomAIStrategy implements AIStrategy {
   }
 }
 
+// NOTE: All AI decision-making utilities have been moved to src/game/ai/utilities.ts
+// The main analysis function analyzeHand() provides complete context analysis
+// including domino values and trump information
+
 /**
- * Smart AI strategy - makes intelligent decisions using quickplay logic
+ * Beginner AI strategy - makes basic intelligent decisions
  */
-export class SmartAIStrategy implements AIStrategy {
+export class BeginnerAIStrategy implements AIStrategy {
   chooseAction(state: GameState, transitions: StateTransition[]): StateTransition | null {
     if (transitions.length === 0) return null;
     
@@ -105,8 +84,9 @@ export class SmartAIStrategy implements AIStrategy {
   private makeBidDecision(state: GameState, player: Player, transitions: StateTransition[]): StateTransition | null {
     if (transitions.length === 0) return null;
     
-    // Calculate hand strength
-    const handStrength = this.calculateHandStrength(player.hand);
+    // Calculate hand strength using shared utility
+    // Pass undefined to force proper trump analysis for bidding decisions
+    const handStrength = calculateHandStrengthWithTrump(player.hand, undefined);
     
     // Find pass action
     const passAction = transitions.find(t => t.id === 'pass');
@@ -115,14 +95,70 @@ export class SmartAIStrategy implements AIStrategy {
     const currentBidValue = this.getCurrentBidValue(state);
     
     // Weak hand - pass if can't bid 30
-    if (handStrength < 8 && currentBidValue >= 30) {
+    if (handStrength < 30 && currentBidValue >= 30) {
       return passAction || transitions[0] || null;
     }
     
-    // Calculate bid based on hand strength
+    // Calculate bid based on hand strength with non-linear scoring
+    
+    // Special handling for laydown hands
+    if (handStrength === LAYDOWN_SCORE) {
+      // Calculate how many points we can actually make
+      // Count points in hand + 7 tricks we'll win
+      let handCount = 0;
+      for (const domino of player.hand) {
+        const sum = domino.high + domino.low;
+        if (sum % 5 === 0 && sum > 0) {
+          handCount += sum === 5 ? 5 : 10;
+        }
+      }
+      const guaranteedScore = handCount + 7; // 7 tricks we'll win
+      
+      // Find the best bid based on what we can actually make
+      const bidActions = transitions.filter(t => t.id.startsWith('bid-'));
+      
+      // If we can make exactly 42, bid 2 marks (highest bid)
+      if (guaranteedScore >= 42) {
+        const marksBid = bidActions.find(t => t.id === 'bid-2-marks');
+        if (marksBid) return marksBid;
+      }
+      
+      // Otherwise bid our actual score (or highest available under our score)
+      const pointBids = bidActions
+        .filter(t => !t.id.includes('marks'))
+        .map(t => {
+          const parts = t.id.split('-');
+          const value = parts.length >= 2 && parts[1] ? parseInt(parts[1]) : 0;
+          return { value, action: t };
+        })
+        .filter(item => !isNaN(item.value) && item.value <= guaranteedScore)
+        .sort((a, b) => b.value - a.value);
+      
+      if (pointBids.length > 0 && pointBids[0]) {
+        return pointBids[0].action;
+      }
+      
+      // If we can't find a suitable bid, just bid 30 (minimum)
+      const bid30 = bidActions.find(t => t.id === 'bid-30');
+      if (bid30) return bid30;
+      
+      // Fallback
+      return transitions[0] || null;
+    }
+    
+    // Pass should be the most common bid!
+    if (handStrength < BID_THRESHOLDS.PASS) {
+      return passAction || transitions[0] || null;
+    }
+    
+    // Determine target bid using shared thresholds
     let targetBid = 30;
-    if (handStrength >= 12) targetBid = 32;
-    if (handStrength >= 15) targetBid = 35;
+    
+    if (handStrength >= BID_THRESHOLDS.BID_31) targetBid = 31;
+    if (handStrength >= BID_THRESHOLDS.BID_32) targetBid = 32;
+    if (handStrength >= BID_THRESHOLDS.BID_33) targetBid = 33;
+    if (handStrength >= BID_THRESHOLDS.BID_34) targetBid = 34;
+    if (handStrength >= BID_THRESHOLDS.BID_35) targetBid = 35;
     
     // Find best available bid
     const bidActions = transitions.filter(t => t.id.startsWith('bid-') && !t.id.includes('marks'));
@@ -152,25 +188,16 @@ export class SmartAIStrategy implements AIStrategy {
   private makeTrumpDecision(_state: GameState, player: Player, transitions: StateTransition[]): StateTransition | null {
     if (transitions.length === 0) return null;
     
-    if (!player.suitAnalysis) {
-      // Fallback - pick first available trump
-      return transitions[0] || null;
-    }
+    // Use the shared utility to determine best trump
+    const bestTrump = determineBestTrump(player.hand, player.suitAnalysis);
     
-    // Get strongest suits
-    const strongestSuits = getStrongestSuits(player.suitAnalysis);
-    
-    // Check for 3+ doubles - consider doubles trump
-    const doubleCount = countDoubles(player.hand);
-    if (doubleCount >= 3) {
+    if (bestTrump.type === 'doubles') {
       const doublesAction = transitions.find(t => t.id === 'trump-doubles');
       if (doublesAction) return doublesAction;
-    }
-    
-    // Pick strongest suit as trump
-    for (const suit of strongestSuits) {
+    } else if (bestTrump.type === 'suit' && typeof bestTrump.suit === 'number') {
       const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
-      const trumpAction = transitions.find(t => t.id === `trump-${suitNames[suit]}`);
+      const suitName = suitNames[bestTrump.suit];
+      const trumpAction = transitions.find(t => t.id === `trump-${suitName}`);
       if (trumpAction) return trumpAction;
     }
     
@@ -189,68 +216,90 @@ export class SmartAIStrategy implements AIStrategy {
     const playActions = transitions.filter(t => t.id.startsWith('play-'));
     if (playActions.length === 0) return transitions[0] || null;
     
+    // Analyze hand using simplified interface
+    const analysis = analyzeHand(state, player.id);
+    
     // Leading a trick
     if (state.currentTrick.length === 0) {
-      // Lead with high-point dominoes
-      const scoredActions = playActions.map(action => {
-        const dominoId = action.id.split('-')[1];
-        const domino = player.hand.find(d => d.id.toString() === dominoId);
-        const points = domino ? getDominoPoints(domino) : 0;
-        return { action, points };
-      });
+      // Lead with best domino (already sorted by effective position)
+      // First playable domino is the strongest
+      const playable = analysis.dominoes.filter(d => d.beatenBy !== undefined);
+      if (playable.length > 0) {
+        const bestLead = playable[0];
+        if (bestLead) {
+          const action = playActions.find(a => 
+            a.id === `play-${bestLead.domino.id}`
+          );
+          if (action) {
+            return action;
+          }
+        }
+      }
       
-      scoredActions.sort((a, b) => b.points - a.points);
-      return scoredActions[0]?.action || transitions[0] || null;
+      // Fallback
+      return transitions[0] || null;
     }
     
-    // Following in a trick
+    // Following in a trick - determine who's currently winning
     const myTeam = player.teamId;
-    const trickLeader = state.currentTrick[0]?.player;
-    if (trickLeader === undefined) return transitions[0] || null;
-    const leaderPlayer = state.players[trickLeader];
-    if (!leaderPlayer) return transitions[0] || null;
-    const leaderTeam = leaderPlayer.teamId;
-    const partnerLed = myTeam === leaderTeam;
     
-    // Simple strategy: play high if opponent led, low if partner led
+    // Find current trick winner player id
+    const currentWinnerPlayerId = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit);
+    if (currentWinnerPlayerId === -1) return transitions[0] || null;
+    
+    // Find the winning player
+    const winnerPlayer = state.players[currentWinnerPlayerId];
+    if (!winnerPlayer) return transitions[0] || null;
+    
+    const partnerCurrentlyWinning = winnerPlayer.teamId === myTeam;
+    
+    // Map play actions to analyzed dominoes
     const scoredActions = playActions.map(action => {
-      const dominoId = action.id.split('-')[1];
-      const domino = player.hand.find(d => d.id.toString() === dominoId);
-      const value = domino ? domino.high + domino.low : 0;
-      return { action, value };
-    });
+      // Extract domino ID from action id (e.g., 'play-5-5' -> '5-5')
+      const dominoId = action.id.replace('play-', '');
+      const dominoAnalysis = analysis.dominoes.find(d => d.domino.id.toString() === dominoId);
+      
+      if (!dominoAnalysis) return null;
+      
+      return {
+        action,
+        points: dominoAnalysis.points,
+        canBeat: dominoAnalysis.wouldBeatTrick,
+      };
+    }).filter(Boolean) as Array<{ action: StateTransition; points: number; canBeat: boolean }>;
     
-    if (partnerLed) {
-      // Partner led - play low
-      scoredActions.sort((a, b) => a.value - b.value);
+    if (partnerCurrentlyWinning) {
+      // Partner currently winning - PLAY COUNT (safe points!)
+      // Sort to play highest count first
+      scoredActions.sort((a, b) => {
+        // Always prioritize playing count (10 > 5 > 0)
+        const pointDiff = b.points - a.points;
+        if (pointDiff !== 0) {
+          return pointDiff; // Play high count
+        }
+        return 0;
+      });
     } else {
-      // Opponent led - play high to try to win
-      scoredActions.sort((a, b) => b.value - a.value);
+      // Opponent currently winning
+      const winningPlays = scoredActions.filter(a => a.canBeat);
+      
+      if (winningPlays.length > 0) {
+        // Can win - use lowest count to win
+        winningPlays.sort((a, b) => a.points - b.points);
+        return winningPlays[0]?.action || transitions[0] || null;
+      } else {
+        // Can't win - play LOW count (don't give them points!)
+        scoredActions.sort((a, b) => {
+          // First priority: play low count
+          if (Math.abs(a.points - b.points) >= 5) {
+            return a.points - b.points; // Play low count
+          }
+          return 0;
+        });
+      }
     }
     
     return scoredActions[0]?.action || transitions[0] || null;
-  }
-  
-  private calculateHandStrength(hand: Domino[]): number {
-    let strength = 0;
-    
-    // Count points
-    hand.forEach(domino => {
-      strength += getDominoPoints(domino) / 5; // 0-2 points per domino
-    });
-    
-    // Count doubles (adds strength)
-    const doubleCount = countDoubles(hand);
-    strength += doubleCount * 2;
-    
-    // High dominoes add strength
-    hand.forEach(domino => {
-      if (domino.high + domino.low >= 10) {
-        strength += 1;
-      }
-    });
-    
-    return strength;
   }
   
   private getCurrentBidValue(state: GameState): number {

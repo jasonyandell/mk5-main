@@ -1,8 +1,8 @@
-import type { GameState, GameAction, TrumpSelection, Bid, Play } from '../types';
-import { EMPTY_BID } from '../types';
+import type { GameState, GameAction, TrumpSelection, Bid, Play, Trick, LedSuit } from '../types';
+import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { isValidBid, getValidPlays, getBidComparisonValue, isValidTrump } from './rules';
-import { dealDominoesWithSeed, getDominoSuit } from './dominoes';
+import { dealDominoesWithSeed, getLedSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
 import { checkHandOutcome } from './handOutcome';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
@@ -285,7 +285,7 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
 
   // Set current suit if first play
   const newCurrentSuit = state.currentTrick.length === 0 
-    ? getDominoSuit(domino, state.trump)
+    ? getLedSuit(domino, state.trump)
     : state.currentSuit;
 
   return {
@@ -326,12 +326,18 @@ function executeCompleteTrick(state: GameState): GameState {
   newTeamScores[winnerPlayer.teamId] += points + 1; // +1 for the trick
 
   // Add completed trick
-  const newTricks = [...state.tricks, {
+  const completedTrick: Trick = {
     plays: [...state.currentTrick],
     winner,
     points: points + 1,  // Include the 1 point for winning the trick
-    ledSuit: state.currentSuit
-  }];
+  };
+  
+  // Only add ledSuit if it's a valid suit (not -1)
+  if (state.currentSuit >= 0 && state.currentSuit <= 7) {
+    completedTrick.ledSuit = state.currentSuit as LedSuit;
+  }
+  
+  const newTricks = [...state.tricks, completedTrick];
 
   // Determine next phase
   let newPhase = state.phase;
@@ -351,7 +357,7 @@ function executeCompleteTrick(state: GameState): GameState {
     ...state,
     tricks: newTricks,
     currentTrick: [],
-    currentSuit: -1,
+    currentSuit: NO_LEAD_SUIT,
     teamScores: newTeamScores,
     currentPlayer: winner,
     phase: newPhase,
@@ -438,11 +444,11 @@ function executeScoreHand(state: GameState): GameState {
     players: newPlayers,
     bids: [],
     currentBid: EMPTY_BID,
-    winningBidder: -1,
-    trump: { type: 'none' },
+    winningBidder: NO_BIDDER,
+    trump: { type: 'not-selected' },
     tricks: [],
     currentTrick: [],
-    currentSuit: -1,
+    currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
     teamMarks: newMarks,
     consensus: {

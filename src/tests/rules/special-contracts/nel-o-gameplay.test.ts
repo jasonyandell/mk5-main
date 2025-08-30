@@ -48,11 +48,11 @@ describe('Feature: Nel-O Contract', () => {
       const gameState: Partial<GameState> = {
         currentBid: { type: 'nello' as const, value: 1, player: 0 },
         winningBidder: 0,
-        trump: { type: 'none' },
+        trump: { type: 'not-selected' },
         phase: 'playing'
       };
       
-      expect(gameState.trump).toEqual({ type: 'none' });
+      expect(gameState.trump).toEqual({ type: 'not-selected' });
     });
 
     it('And doubles may form their own suit (standard)', () => {

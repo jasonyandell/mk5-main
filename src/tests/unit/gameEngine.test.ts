@@ -3,6 +3,7 @@ import { GameEngine } from '../../game/core/gameEngine';
 import { executeAction } from '../../game/core/actions';
 import { createInitialState } from '../../game/core/state';
 import type { GameAction } from '../../game/types';
+import { DEUCES, NO_LEAD_SUIT, NO_BIDDER } from '../../game/types';
 
 describe('Game Engine', () => {
   describe('Action-based state management', () => {
@@ -13,9 +14,9 @@ describe('Game Engine', () => {
       // Verify initial state
       const state = engine.getState();
       expect(state.phase).toBe('bidding');
-      expect(state.winningBidder).toBe(-1); // Not null
-      expect(state.trump.type).toBe('none'); // TrumpSelection, not null
-      expect(state.currentSuit).toBe(-1); // Not null
+      expect(state.winningBidder).toBe(NO_BIDDER); // Not null
+      expect(state.trump.type).toBe('not-selected'); // TrumpSelection, not null
+      expect(state.currentSuit).toBe(NO_LEAD_SUIT); // Not null
     });
     
     it('should maintain action history', () => {
@@ -107,13 +108,13 @@ describe('Game Engine', () => {
       const trumpAction: GameAction = {
         type: 'select-trump',
         player: 0,
-        trump: { type: 'suit', suit: 2 }
+        trump: { type: 'suit', suit: DEUCES }
       };
       
       const newState = executeAction(stateWithBid, trumpAction);
       
       expect(newState.phase).toBe('playing');
-      expect(newState.trump).toEqual({ type: 'suit', suit: 2 });
+      expect(newState.trump).toEqual({ type: 'suit', suit: DEUCES });
       expect(newState.currentPlayer).toBe(0);
     });
   });
@@ -123,9 +124,9 @@ describe('Game Engine', () => {
       const initialState = createInitialState({ shuffleSeed: 12345 });
       
       // Check initial state
-      expect(initialState.winningBidder).toBe(-1);
-      expect(initialState.trump.type).toBe('none');
-      expect(initialState.currentSuit).toBe(-1);
+      expect(initialState.winningBidder).toBe(NO_BIDDER);
+      expect(initialState.trump.type).toBe('not-selected');
+      expect(initialState.currentSuit).toBe(NO_LEAD_SUIT);
       
       // Apply some actions and verify no nulls are introduced
       const engine = new GameEngine(initialState);
@@ -134,9 +135,9 @@ describe('Game Engine', () => {
       engine.executeAction(passAction);
       
       const state = engine.getState();
-      expect(state.winningBidder).toBe(-1);
-      expect(state.trump.type).toBe('none');
-      expect(state.currentSuit).toBe(-1);
+      expect(state.winningBidder).toBe(NO_BIDDER);
+      expect(state.trump.type).toBe('not-selected');
+      expect(state.currentSuit).toBe(NO_LEAD_SUIT);
     });
   });
 });

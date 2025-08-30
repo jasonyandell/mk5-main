@@ -3,6 +3,7 @@ import { createTestState } from '../helpers/gameTestHelper';
 import { isValidPlay } from '../../game/core/rules';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
+import { ACES, FIVES, SIXES } from '../../game/types';
 
 describe('Suit Following Bug Fix', () => {
   it('should allow any domino when only trump dominoes contain the led suit', () => {
@@ -19,12 +20,12 @@ describe('Suit Following Bug Fix', () => {
 
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 1 }, // Ones are trump
+      trump: { type: 'suit', suit: ACES }, // Ones are trump
       currentTrick: [{
         player: 0,
         domino: { id: '5-4', high: 5, low: 4 } // 5-4 leads (fives suit)
       }],
-      currentSuit: 5, // Fives were led
+      currentSuit: FIVES, // Fives were led
       currentPlayer: 2,
       players: [
         { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
@@ -35,7 +36,7 @@ describe('Suit Following Bug Fix', () => {
           teamId: 0, 
           marks: 0, 
           hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) // Trump = 1
+          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
         },
         { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
       ]
@@ -65,12 +66,12 @@ describe('Suit Following Bug Fix', () => {
 
     const state = createTestState({
       phase: 'playing',
-      trump: { type: 'suit', suit: 1 }, // Ones are trump
+      trump: { type: 'suit', suit: ACES }, // Ones are trump
       currentTrick: [{
         player: 0,
         domino: { id: '5-6', high: 6, low: 5 } // 5-6 leads (sixes suit)
       }],
-      currentSuit: 6, // Sixes were led
+      currentSuit: SIXES, // Sixes were led
       currentPlayer: 1,
       players: [
         { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
@@ -80,7 +81,7 @@ describe('Suit Following Bug Fix', () => {
           teamId: 1, 
           marks: 0, 
           hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: 1 }) // Trump = 1
+          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
         },
         { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
         { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }

@@ -7,9 +7,9 @@ import type { PlayerConfig } from '../game/controllers/types';
  */
 export const playerConfigs = writable<PlayerConfig[]>([
   { type: 'human', name: 'Player 1' },
-  { type: 'ai', name: 'Player 2', aiStrategy: 'simple' },
-  { type: 'ai', name: 'Player 3', aiStrategy: 'simple' },
-  { type: 'ai', name: 'Player 4', aiStrategy: 'simple' }
+  { type: 'ai', name: 'Player 2', aiStrategy: 'beginner' },
+  { type: 'ai', name: 'Player 3', aiStrategy: 'beginner' },
+  { type: 'ai', name: 'Player 4', aiStrategy: 'beginner' }
 ]);
 
 /**
@@ -18,16 +18,16 @@ export const playerConfigs = writable<PlayerConfig[]>([
 export const presetConfigs = {
   singlePlayer: [
     { type: 'human', name: 'You' },
-    { type: 'ai', name: 'AI 1', aiStrategy: 'simple' },
-    { type: 'ai', name: 'AI 2', aiStrategy: 'simple' },
-    { type: 'ai', name: 'AI 3', aiStrategy: 'simple' }
+    { type: 'ai', name: 'AI 1', aiStrategy: 'beginner' },
+    { type: 'ai', name: 'AI 2', aiStrategy: 'beginner' },
+    { type: 'ai', name: 'AI 3', aiStrategy: 'beginner' }
   ] as PlayerConfig[],
   
   twoHumans: [
     { type: 'human', name: 'Player 1' },
-    { type: 'ai', name: 'AI 1', aiStrategy: 'simple' },
+    { type: 'ai', name: 'AI 1', aiStrategy: 'beginner' },
     { type: 'human', name: 'Player 2' },
-    { type: 'ai', name: 'AI 2', aiStrategy: 'simple' }
+    { type: 'ai', name: 'AI 2', aiStrategy: 'beginner' }
   ] as PlayerConfig[],
   
   allHumans: [
@@ -38,15 +38,15 @@ export const presetConfigs = {
   ] as PlayerConfig[],
   
   allAI: [
-    { type: 'ai', name: 'AI 1', aiStrategy: 'smart' },
-    { type: 'ai', name: 'AI 2', aiStrategy: 'smart' },
-    { type: 'ai', name: 'AI 3', aiStrategy: 'smart' },
-    { type: 'ai', name: 'AI 4', aiStrategy: 'smart' }
+    { type: 'ai', name: 'AI 1', aiStrategy: 'beginner' },
+    { type: 'ai', name: 'AI 2', aiStrategy: 'beginner' },
+    { type: 'ai', name: 'AI 3', aiStrategy: 'beginner' },
+    { type: 'ai', name: 'AI 4', aiStrategy: 'beginner' }
   ] as PlayerConfig[],
   
   mixed: [
     { type: 'human', name: 'You' },
-    { type: 'ai', name: 'Smart AI', aiStrategy: 'smart' },
+    { type: 'ai', name: 'Beginner AI', aiStrategy: 'beginner' },
     { type: 'ai', name: 'Random AI', aiStrategy: 'random' },
     { type: 'human', name: 'Friend' }
   ] as PlayerConfig[]
@@ -67,7 +67,7 @@ export function togglePlayerControl(playerId: number): void {
   const isHuman = controllerManager.isHumanControlled(playerId);
   
   if (isHuman) {
-    controllerManager.switchToAI(playerId, 'simple');
+    controllerManager.switchToAI(playerId, 'beginner');
   } else {
     controllerManager.switchToHuman(playerId);
   }

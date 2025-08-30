@@ -4,6 +4,7 @@ import { getNextStates } from '../../game/core/gameEngine';
 import type { GameState } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
+import { BLANKS } from '../../game/types';
 
 describe('Full Game Scenarios', () => {
   function executeAction(state: GameState, actionId: string): GameState {
@@ -59,7 +60,7 @@ describe('Full Game Scenarios', () => {
       
       state = trumpBlanks!.newState;
       expect(state.trump.type).toBe('suit');
-      expect(state.trump.suit).toBe(0); // 0 represents blanks trump
+      expect(state.trump.suit).toBe(BLANKS); // 0 represents blanks trump
       expect(state.phase).toBe('playing');
       
       // Verify game can proceed to playing

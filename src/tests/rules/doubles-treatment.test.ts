@@ -5,6 +5,7 @@ import {
   getDominoValue, 
   isDouble
 } from '../../game';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
 
 describe('Feature: Doubles Treatment', () => {
   describe('Scenario: Standard Doubles Rules', () => {
@@ -13,13 +14,13 @@ describe('Feature: Doubles Treatment', () => {
       const doubles = allDominoes.filter(isDouble);
       
       // When trump is NOT doubles (e.g., trump is 3), doubles belong to their natural suit
-      const trump = { type: 'suit', suit: 3 } as const;
+      const trump = { type: 'suit', suit: TRES } as const;
       
       doubles.forEach(double => {
         const suit = getDominoSuit(double, trump);
         // Double's suit should be its pip value (unless it's the trump double)
-        if (double.high === 3) {
-          expect(suit).toBe(3); // 3-3 would be trump suit
+        if (double.high === TRES) {
+          expect(suit).toBe(TRES); // 3-3 would be trump suit
         } else {
           expect(suit).toBe(double.high); // Other doubles are their natural suit
         }
@@ -27,9 +28,9 @@ describe('Feature: Doubles Treatment', () => {
     });
 
     it('And 6-6 is the highest six when sixes are not trump', () => {
-      const trump = { type: 'suit', suit: 3 } as const; // Threes are trump, not sixes
+      const trump = { type: 'suit', suit: TRES } as const; // Threes are trump, not sixes
       const sixDominoes = createDominoes().filter(domino => 
-        getDominoSuit(domino, trump) === 6
+        getDominoSuit(domino, trump) === SIXES
       );
       
       // Get domino values for comparison (higher value wins)
@@ -46,15 +47,15 @@ describe('Feature: Doubles Treatment', () => {
       if (!highestSix) {
         throw new Error('No highest six found');
       }
-      expect(highestSix.high).toBe(6);
-      expect(highestSix.low).toBe(6);
+      expect(highestSix.high).toBe(SIXES);
+      expect(highestSix.low).toBe(SIXES);
       expect(isDouble(highestSix)).toBe(true);
     });
 
     it('And 5-5 is the highest five when fives are not trump', () => {
-      const trump = { type: 'suit', suit: 3 } as const; // Threes are trump, not fives
+      const trump = { type: 'suit', suit: TRES } as const; // Threes are trump, not fives
       const fiveDominoes = createDominoes().filter(domino => 
-        getDominoSuit(domino, trump) === 5
+        getDominoSuit(domino, trump) === FIVES
       );
       
       // Get domino values for comparison
@@ -71,8 +72,8 @@ describe('Feature: Doubles Treatment', () => {
       if (!highestFive) {
         throw new Error('No highest five found');
       }
-      expect(highestFive.high).toBe(5);
-      expect(highestFive.low).toBe(5);
+      expect(highestFive.high).toBe(FIVES);
+      expect(highestFive.low).toBe(FIVES);
       expect(isDouble(highestFive)).toBe(true);
     });
 
@@ -82,7 +83,7 @@ describe('Feature: Doubles Treatment', () => {
       
       // Find all trump dominoes
       const trumpDominoes = allDominoes.filter(domino => 
-        getDominoSuit(domino, trump) === 7
+        getDominoSuit(domino, trump) === DOUBLES_AS_TRUMP
       );
       
       // Should be exactly 7 trump dominoes (all doubles)
@@ -97,7 +98,7 @@ describe('Feature: Doubles Treatment', () => {
       const nonDoubles = allDominoes.filter(domino => !isDouble(domino));
       nonDoubles.forEach(domino => {
         const suit = getDominoSuit(domino, trump);
-        expect(suit).not.toBe(7); // Should not be trump suit (doubles trump uses 7)
+        expect(suit).not.toBe(DOUBLES_AS_TRUMP); // Should not be trump suit (doubles trump uses 7)
       });
     });
 
@@ -115,7 +116,7 @@ describe('Feature: Doubles Treatment', () => {
       doubleValues.sort((a, b) => b.value - a.value);
       
       // Should be ordered from 6-6 down to 0-0
-      const expectedOrder = [6, 5, 4, 3, 2, 1, 0];
+      const expectedOrder = [SIXES, FIVES, FOURS, TRES, DEUCES, ACES, BLANKS];
       doubleValues.forEach((item, index) => {
         expect(item.domino.high).toBe(expectedOrder[index]);
         expect(item.domino.low).toBe(expectedOrder[index]);

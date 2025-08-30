@@ -1,25 +1,29 @@
 import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
-import type { TrumpSelection } from '../../game/types';
+import type { TrumpSelection, LedSuitOrNone } from '../../game/types';
+import { 
+  BLANKS, FOURS, FIVES, SIXES,
+  DOUBLES_AS_TRUMP, NO_SUIT
+} from '../../game/types';
 
 describe('Current Suit Display', () => {
   const doublesAreTrump = { type: 'doubles' } as const;
-  const fivesAreTrump = { type: 'suit', suit: 5 } as const;
-  const sixesAreTrump = { type: 'suit', suit: 6 } as const;
+  const fivesAreTrump = { type: 'suit', suit: FIVES } as const;
+  const sixesAreTrump = { type: 'suit', suit: SIXES } as const;
   const noTrump = { type: 'no-trump' } as const;
 
   test('should return "None" when no domino is led', () => {
     const state = createInitialState();
-    state.currentSuit = -1;
+    state.currentSuit = NO_SUIT;
     state.trump = doublesAreTrump;
     expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
 
   test('should return "None" when trump is not set', () => {
     const state = createInitialState();
-    state.currentSuit = 6; // Some suit was led
-    state.trump = { type: 'none' };
+    state.currentSuit = SIXES; // Some suit was led
+    state.trump = { type: 'not-selected' };
     expect(getCurrentSuit(state)).toBe('None (no trump set)');
   });
 
@@ -27,28 +31,28 @@ describe('Current Suit Display', () => {
     test('6-6 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = 7; // Doubles led
+      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('3-3 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = 7; // Doubles led
+      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('6-5 leads -> Sixes (higher end)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = 6; // Sixes led (higher end)
+      state.currentSuit = SIXES; // Sixes led (higher end)
       expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('4-2 leads -> Fours (higher end)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = 4; // Fours led (higher end)
+      state.currentSuit = FOURS; // Fours led (higher end)
       expect(getCurrentSuit(state)).toBe('Fours');
     });
   });
@@ -57,35 +61,35 @@ describe('Current Suit Display', () => {
     test('6-6 leads with 6s trump -> Sixes (Trump)', () => {
       const state = createInitialState();
       state.trump = sixesAreTrump;
-      state.currentSuit = 6; // Sixes led (trump)
+      state.currentSuit = SIXES; // Sixes led (trump)
       expect(getCurrentSuit(state)).toBe('Sixes (Trump)');
     });
 
     test('5-5 leads with 6s trump -> Fives', () => {
       const state = createInitialState();
       state.trump = sixesAreTrump;
-      state.currentSuit = 5; // Fives led (not trump)
+      state.currentSuit = FIVES; // Fives led (not trump)
       expect(getCurrentSuit(state)).toBe('Fives');
     });
 
     test('6-5 leads with 6s trump -> Sixes (Trump)', () => {
       const state = createInitialState();
       state.trump = sixesAreTrump;
-      state.currentSuit = 6; // Sixes led (trump)
+      state.currentSuit = SIXES; // Sixes led (trump)
       expect(getCurrentSuit(state)).toBe('Sixes (Trump)');
     });
 
     test('6-5 leads with 5s trump -> Fives (Trump)', () => {
       const state = createInitialState();
       state.trump = fivesAreTrump;
-      state.currentSuit = 5; // Fives led (trump)
+      state.currentSuit = FIVES; // Fives led (trump)
       expect(getCurrentSuit(state)).toBe('Fives (Trump)');
     });
 
     test('4-2 leads with 5s trump -> Fours', () => {
       const state = createInitialState();
       state.trump = fivesAreTrump;
-      state.currentSuit = 4; // Fours led (not trump)
+      state.currentSuit = FOURS; // Fours led (not trump)
       expect(getCurrentSuit(state)).toBe('Fours');
     });
   });
@@ -94,21 +98,21 @@ describe('Current Suit Display', () => {
     test('6-6 leads -> Sixes', () => {
       const state = createInitialState();
       state.trump = noTrump;
-      state.currentSuit = 6; // Sixes led
+      state.currentSuit = SIXES; // Sixes led
       expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('6-5 leads -> Sixes (higher end)', () => {
       const state = createInitialState();
       state.trump = noTrump;
-      state.currentSuit = 6; // Sixes led
+      state.currentSuit = SIXES; // Sixes led
       expect(getCurrentSuit(state)).toBe('Sixes');
     });
 
     test('0-0 leads -> Blanks', () => {
       const state = createInitialState();
       state.trump = noTrump;
-      state.currentSuit = 0; // Blanks led
+      state.currentSuit = BLANKS; // Blanks led
       expect(getCurrentSuit(state)).toBe('Blanks');
     });
   });
@@ -128,7 +132,7 @@ describe('Current Suit Display', () => {
       test(`${domino.id} with no trump -> ${expected}`, () => {
         const state = createInitialState();
         state.trump = noTrump;
-        state.currentSuit = domino.high; // Use the domino's suit
+        state.currentSuit = domino.high as LedSuitOrNone; // Use the domino's suit
         expect(getCurrentSuit(state)).toBe(expected);
       });
     });
@@ -137,15 +141,15 @@ describe('Current Suit Display', () => {
   describe('Edge cases', () => {
     test('Complex scenario - 6-4 led with 4s trump should show Fours (Trump)', () => {
       const state = createInitialState();
-      state.trump = { type: 'suit', suit: 4 } as TrumpSelection; // 4s are trump
-      state.currentSuit = 4; // 4s were led (trump)
+      state.trump = { type: 'suit', suit: FOURS } as TrumpSelection; // 4s are trump
+      state.currentSuit = FOURS; // 4s were led (trump)
       expect(getCurrentSuit(state)).toBe('Fours (Trump)');
     });
 
     test('Domino with trump number led should show trump', () => {
       const state = createInitialState();
-      state.trump = { type: 'suit', suit: 5 } as TrumpSelection; // 5s are trump
-      state.currentSuit = 5; // 5s were led (trump)
+      state.trump = { type: 'suit', suit: FIVES } as TrumpSelection; // 5s are trump
+      state.currentSuit = FIVES; // 5s were led (trump)
       expect(getCurrentSuit(state)).toBe('Fives (Trump)');
     });
   });

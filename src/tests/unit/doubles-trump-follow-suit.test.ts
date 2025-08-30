@@ -3,6 +3,7 @@ import { isValidPlay, getValidPlays } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection } from '../../game/types';
+import { DOUBLES_AS_TRUMP } from '../../game/types';
 
 describe('Doubles Trump Follow Suit Rules', () => {
   const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump
@@ -17,7 +18,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
         domino: { high: 6, low: 6, id: "6-6" } // P0 led double-six
       }
     ];
-    state.currentSuit = 7; // Doubles were led (doubles are trump)
+    state.currentSuit = DOUBLES_AS_TRUMP; // Doubles were led (doubles are trump)
     state.currentPlayer = 1;
     if (state.players[1]) {
       state.players[1].hand = playerHand;

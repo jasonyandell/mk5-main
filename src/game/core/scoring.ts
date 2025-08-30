@@ -1,4 +1,4 @@
-import type { GameState, Play, PlayedDomino, TrumpSelection } from '../types';
+import type { GameState, Play, PlayedDomino, TrumpSelection, LedSuitOrNone, LedSuit } from '../types';
 import { isEmptyBid } from '../types';
 import { BID_TYPES } from '../constants';
 import { getDominoValue, getDominoPoints } from './dominoes';
@@ -6,7 +6,7 @@ import { getDominoValue, getDominoPoints } from './dominoes';
 /**
  * Checks if a domino follows the led suit (contains the led suit number)
  */
-function dominoFollowsLedSuit(domino: { high: number; low: number }, leadSuit: number): boolean {
+function dominoFollowsLedSuit(domino: { high: number; low: number }, leadSuit: LedSuit): boolean {
   return domino.high === leadSuit || domino.low === leadSuit;
 }
 
@@ -29,7 +29,7 @@ function isDominoTrump(domino: { high: number; low: number }, numericTrump: numb
 /**
  * Determines the winner of a completed trick (overloaded for different interfaces)
  */
-export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: TrumpSelection, leadSuit: number): number {
+export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
   if (trick.length === 0) {
     throw new Error('Trick cannot be empty');
   }
@@ -40,7 +40,7 @@ export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: Trum
   }
   
   // Convert trump to numeric value for comparison
-  const numericTrump = trump.type === 'none' ? null :
+  const numericTrump = trump.type === 'not-selected' ? null :
                        trump.type === 'suit' ? trump.suit! :
                        trump.type === 'doubles' ? 7 :
                        trump.type === 'no-trump' ? 8 : null;
@@ -70,7 +70,7 @@ export function calculateTrickWinner(trick: Play[] | PlayedDomino[], trump: Trum
     }
     // Both non-trump - must follow suit and higher value wins
     else if (!playIsTrump && !winningIsTrump && 
-             dominoFollowsLedSuit(play.domino, leadSuit) && 
+             leadSuit >= 0 && dominoFollowsLedSuit(play.domino, leadSuit as LedSuit) && 
              playValue > winningValue) {
       winningPlay = play;
       winningValue = playValue;

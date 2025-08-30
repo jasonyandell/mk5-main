@@ -2,12 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { getDominoValue, getDominoSuit } from '../../game/core/dominoes';
 import { calculateTrickWinner } from '../../game/core/scoring';
 import type { PlayedDomino, TrumpSelection } from '../../game/types';
+import { TRES, FIVES, DOUBLES_AS_TRUMP } from '../../game/types';
 
 describe('Doubles Trump Rules', () => {
   describe('when a regular suit (0-6) is trump', () => {
     it('should only treat dominoes containing that number as trump', () => {
       // Test with 5s as trump
-      const trump: TrumpSelection = { type: 'suit', suit: 5 };
+      const trump: TrumpSelection = { type: 'suit', suit: FIVES };
       
       const testCases = [
         { domino: { high: 5, low: 5, id: '5-5' }, shouldBeTrump: true, reason: 'contains 5' },
@@ -33,17 +34,17 @@ describe('Doubles Trump Rules', () => {
         if (shouldBeTrump) {
           // Trump dominoes should have values > 100
           expect(value).toBeGreaterThan(100);
-          expect(suit).toBe(5); // 5s are trump
+          expect(suit).toBe(FIVES); // 5s are trump
         } else {
           // Non-trump dominoes should have values < 100
           expect(value).toBeLessThan(100);
-          expect(suit).not.toBe(5); // Not 5s trump
+          expect(suit).not.toBe(FIVES); // Not 5s trump
         }
       });
     });
     
     it('should correctly determine trick winners with proper trump rules', () => {
-      const trump: TrumpSelection = { type: 'suit', suit: 3 }; // 3s are trump
+      const trump: TrumpSelection = { type: 'suit', suit: TRES }; // 3s are trump
       
       // Test case: 4-4 should NOT beat 3-2 when 3s are trump
       const trick: PlayedDomino[] = [
@@ -54,7 +55,7 @@ describe('Doubles Trump Rules', () => {
       ];
       
       // First domino led 3-2, with 3s trump, so trump (3) was led
-      const leadSuit = 3; // Trump was led
+      const leadSuit = TRES; // Trump was led
       const winner = calculateTrickWinner(trick, trump, leadSuit);
       
       // Player 0 should win because 3-2 is trump and 4-4 is not
@@ -82,7 +83,7 @@ describe('Doubles Trump Rules', () => {
         
         // All doubles should be trump with values >= 200
         expect(value).toBeGreaterThanOrEqual(200);
-        expect(suit).toBe(7);
+        expect(suit).toBe(DOUBLES_AS_TRUMP);
       });
       
       // Non-doubles should not be trump
@@ -91,7 +92,7 @@ describe('Doubles Trump Rules', () => {
       const suit = getDominoSuit(nonDouble, trump);
       
       expect(value).toBeLessThan(100);
-      expect(suit).not.toBe(7);
+      expect(suit).not.toBe(DOUBLES_AS_TRUMP);
     });
   });
 });
