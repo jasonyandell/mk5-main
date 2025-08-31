@@ -278,6 +278,7 @@
           <div class="color-picker-compact">
             <ColorPicker 
               hex={hexValue}
+              label=""
               onInput={(e: any) => {
                 // Get the new hex value from the event
                 const newHex = e.hex || hexValue;
@@ -425,7 +426,29 @@
     display: none;
   }
   
+  /* Fix mobile scrolling: ensure picker popup breaks out of scrolling context */
   .color-picker-compact :global(.picker) {
-    z-index: 9999;
+    z-index: 99999 !important;
+    position: fixed !important;
+  }
+  
+  /* Ensure the color picker wrapper properly positions the popup */
+  .color-picker-compact :global(.wrapper) {
+    position: fixed !important;
+    z-index: 99999 !important;
+  }
+  
+  /* Additional mobile-specific fixes */
+  @media (max-width: 768px) {
+    .theme-editor-panel {
+      position: fixed;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Ensure picker popup isn't constrained by panel */
+    .color-picker-compact :global(.color-picker-wrapper) {
+      position: static !important;
+    }
   }
 </style>
