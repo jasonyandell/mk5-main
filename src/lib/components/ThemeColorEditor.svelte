@@ -455,16 +455,31 @@
     display: none;
   }
   
-  /* Fix mobile scrolling: ensure picker popup breaks out of scrolling context */
+  /* Basic picker styling */
   .color-picker-compact :global(.picker) {
     z-index: 99999 !important;
-    position: fixed !important;
   }
   
   /* Ensure the color picker wrapper properly positions the popup */
   .color-picker-compact :global(.wrapper) {
-    position: fixed !important;
     z-index: 99999 !important;
+  }
+  
+  /* Fix layout to prevent overlapping */
+  .color-picker-compact :global(.picker .variant) {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  /* Color area styling */
+  .color-picker-compact :global(.picker .color) {
+    margin-bottom: 10px !important;
+  }
+  
+  /* Ensure sliders don't overlap */
+  .color-picker-compact :global(.picker .slider) {
+    margin: 6px 0 !important;
   }
   
   /* Additional mobile-specific fixes */
