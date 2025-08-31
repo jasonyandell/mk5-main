@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { formatHex, parse, converter } from 'culori';
   import { gameState, gameActions } from '../../stores/gameStore';
+  import ColorPicker from 'svelte-awesome-color-picker';
   
   interface Props {
     isOpen: boolean;
@@ -149,9 +150,7 @@
   }
   
   // Handle color change from picker
-  function handleColorChange(varName: string, event: Event) {
-    const input = event.target as HTMLInputElement;
-    const hexColor = input.value;
+  function handleColorChange(varName: string, hexColor: string) {
     const colorValue = hexToColor(hexColor);
     
     // Update colors through gameActions
@@ -276,14 +275,16 @@
           </div>
           
           <!-- Color picker -->
-          <input
-            type="color"
-            value={hexValue}
-            onchange={(e) => handleColorChange(variable.var, e)}
-            class="w-12 h-12 rounded cursor-pointer border border-base-300"
-            aria-label="Color for {variable.name}"
-            title="{variable.name}: {displayValue}"
-          />
+          <div class="color-picker-compact">
+            <ColorPicker 
+              hex={hexValue}
+              onInput={(e: any) => {
+                // Get the new hex value from the event
+                const newHex = e.hex || hexValue;
+                handleColorChange(variable.var, newHex);
+              }}
+            />
+          </div>
           
           <!-- Current value -->
           <div class="text-xs font-mono text-base-content/60 w-24">
@@ -407,18 +408,24 @@
     backdrop-filter: blur(4px);
   }
   
-  /* Nice color inputs */
-  input[type="color"] {
-    -webkit-appearance: none;
-    appearance: none;
+  /* Compact color picker styling using theme variables */
+  .color-picker-compact :global(.color-picker) {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.375rem;
+    border: 1px solid oklch(var(--b3));
+    cursor: pointer;
   }
   
-  input[type="color"]::-webkit-color-swatch-wrapper {
-    padding: 0;
+  .color-picker-compact :global(.color-picker__input) {
+    display: none;
   }
   
-  input[type="color"]::-webkit-color-swatch {
-    border: none;
-    border-radius: 6px;
+  .color-picker-compact :global(.color-picker__label) {
+    display: none;
+  }
+  
+  .color-picker-compact :global(.picker) {
+    z-index: 9999;
   }
 </style>
