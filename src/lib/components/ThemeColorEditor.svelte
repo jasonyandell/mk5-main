@@ -47,19 +47,17 @@
     { var: '--erc', name: 'Error Content', desc: 'Text on error' },
   ];
   
-  // Track which color picker is currently open
-  let activePickerVar = $state<string | null>(null);
+  // Initialize picker states for all variables  
+  const initStates: Record<string, boolean> = {};
+  daisyVariables.forEach(v => {
+    initStates[v.var] = false;
+  });
+  let pickerStates = $state<Record<string, boolean>>(initStates);
   
-  // Initialize picker states for all variables
-  const initPickerStates = () => {
-    const states: Record<string, boolean> = {};
-    daisyVariables.forEach(v => {
-      states[v.var] = false;
-    });
-    return states;
+  // Helper to get picker state with guaranteed boolean
+  const getPickerState = (varName: string): boolean => {
+    return pickerStates[varName] || false;
   };
-  
-  let pickerStates = $state<Record<string, boolean>>(initPickerStates());
   
   // Check if any picker is open
   let isAnyPickerOpen = $derived(Object.values(pickerStates).some(isOpen => isOpen));
@@ -279,16 +277,17 @@
     
     <!-- Color variables list -->
     <div class="p-4 space-y-3">
-      {#each daisyVariables as variable}
+      {#each daisyVariables as variable (variable.var)}
         {@const currentValue = currentColors[variable.var] || '50% 0.02 0'}
         {@const customValue = customColors[variable.var]}
         {@const displayValue = customValue || currentValue}
         {@const hexValue = colorToHex(displayValue)}
+        {@const isPickerOpen = getPickerState(variable.var)}
         
-        {#if !isAnyPickerOpen || pickerStates[variable.var]}
+        {#if !isAnyPickerOpen || isPickerOpen}
           <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors">
             <!-- Variable info - hide when picker is open -->
-            {#if !pickerStates[variable.var]}
+            {#if !isPickerOpen}
               <div class="flex-1">
                 <div class="text-sm font-medium text-base-content/90">{variable.name}</div>
                 <div class="text-xs text-base-content/50">{variable.desc}</div>
@@ -301,7 +300,7 @@
             <!-- Color picker - always visible -->
             <div class="color-picker-compact">
               <ColorPicker 
-                bind:isOpen={pickerStates[variable.var]}
+                bind:isOpen={pickerStates[variable.var]!}
                 hex={hexValue}
                 label=""
                 onInput={(e: any) => {
@@ -313,7 +312,7 @@
             </div>
             
             <!-- Current value - hide when picker is open -->
-            {#if !pickerStates[variable.var]}
+            {#if !isPickerOpen}
               <div class="text-xs font-mono text-base-content/60 w-24">
                 <div>{hexValue}</div>
                 <div class="text-[10px] opacity-60">{displayValue}</div>
