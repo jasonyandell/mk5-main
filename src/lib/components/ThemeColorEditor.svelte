@@ -47,6 +47,23 @@
     { var: '--erc', name: 'Error Content', desc: 'Text on error' },
   ];
   
+  // Track which color picker is currently open
+  let activePickerVar = $state<string | null>(null);
+  
+  // Initialize picker states for all variables
+  const initPickerStates = () => {
+    const states: Record<string, boolean> = {};
+    daisyVariables.forEach(v => {
+      states[v.var] = false;
+    });
+    return states;
+  };
+  
+  let pickerStates = $state<Record<string, boolean>>(initPickerStates());
+  
+  // Check if any picker is open
+  let isAnyPickerOpen = $derived(Object.values(pickerStates).some(isOpen => isOpen));
+  
   // Store current colors (HSL format)
   let currentColors = $state<Record<string, string>>({});
   // Custom colors now come from gameState
@@ -228,33 +245,37 @@
 </script>
 
 {#if isOpen}
-  <!-- Backdrop - invisible, just for click detection -->
-  <button
-    class="fixed inset-0 z-40"
-    onclick={() => onClose()}
-    aria-label="Close color editor"
-    type="button"
-  ></button>
+  <!-- Backdrop - only show when no picker is active -->
+  {#if !isAnyPickerOpen}
+    <button
+      class="fixed inset-0 z-40"
+      onclick={() => onClose()}
+      aria-label="Close color editor"
+      type="button"
+    ></button>
+  {/if}
   
   <!-- Color Editor Panel -->
-  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-96 bg-base-100 shadow-2xl border-l border-base-300 overflow-y-auto transition-transform duration-300 ease-out z-50">
-    <!-- Header -->
-    <div class="sticky top-0 bg-base-100 border-b border-base-300 p-4 flex items-center justify-between backdrop-blur-sm bg-opacity-95">
-      <h3 class="font-semibold text-lg">Theme Colors</h3>
-      <button 
-        class="btn btn-ghost btn-sm btn-circle"
-        onclick={onClose}
-        aria-label="Close"
-        type="button"
-      >
-        ✕
-      </button>
-    </div>
-    
-    <!-- Current theme indicator -->
-    <div class="px-4 pt-3 pb-1 text-sm text-base-content/60">
-      Base theme: <strong>{document.documentElement.getAttribute('data-theme') || 'default'}</strong>
-    </div>
+  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-96 {isAnyPickerOpen ? '' : 'bg-base-100 shadow-2xl border-l border-base-300'} overflow-y-auto transition-all duration-300 ease-out z-50">
+    {#if !isAnyPickerOpen}
+      <!-- Header -->
+      <div class="sticky top-0 bg-base-100 border-b border-base-300 p-4 flex items-center justify-between backdrop-blur-sm bg-opacity-95">
+        <h3 class="font-semibold text-lg">Theme Colors</h3>
+        <button 
+          class="btn btn-ghost btn-sm btn-circle"
+          onclick={onClose}
+          aria-label="Close"
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+      
+      <!-- Current theme indicator -->
+      <div class="px-4 pt-3 pb-1 text-sm text-base-content/60">
+        Base theme: <strong>{document.documentElement.getAttribute('data-theme') || 'default'}</strong>
+      </div>
+    {/if}
     
     <!-- Color variables list -->
     <div class="p-4 space-y-3">
@@ -264,41 +285,49 @@
         {@const displayValue = customValue || currentValue}
         {@const hexValue = colorToHex(displayValue)}
         
-        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors">
-          <!-- Variable info -->
-          <div class="flex-1">
-            <div class="text-sm font-medium text-base-content/90">{variable.name}</div>
-            <div class="text-xs text-base-content/50">{variable.desc}</div>
-            {#if customValue}
-              <div class="text-xs text-primary mt-1">Modified</div>
+        {#if !isAnyPickerOpen || pickerStates[variable.var]}
+          <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors">
+            <!-- Variable info - hide when picker is open -->
+            {#if !pickerStates[variable.var]}
+              <div class="flex-1">
+                <div class="text-sm font-medium text-base-content/90">{variable.name}</div>
+                <div class="text-xs text-base-content/50">{variable.desc}</div>
+                {#if customValue}
+                  <div class="text-xs text-primary mt-1">Modified</div>
+                {/if}
+              </div>
+            {/if}
+            
+            <!-- Color picker - always visible -->
+            <div class="color-picker-compact">
+              <ColorPicker 
+                bind:isOpen={pickerStates[variable.var]}
+                hex={hexValue}
+                label=""
+                onInput={(e: any) => {
+                  // Get the new hex value from the event
+                  const newHex = e.hex || hexValue;
+                  handleColorChange(variable.var, newHex);
+                }}
+              />
+            </div>
+            
+            <!-- Current value - hide when picker is open -->
+            {#if !pickerStates[variable.var]}
+              <div class="text-xs font-mono text-base-content/60 w-24">
+                <div>{hexValue}</div>
+                <div class="text-[10px] opacity-60">{displayValue}</div>
+              </div>
             {/if}
           </div>
-          
-          <!-- Color picker -->
-          <div class="color-picker-compact">
-            <ColorPicker 
-              hex={hexValue}
-              label=""
-              onInput={(e: any) => {
-                // Get the new hex value from the event
-                const newHex = e.hex || hexValue;
-                handleColorChange(variable.var, newHex);
-              }}
-            />
-          </div>
-          
-          <!-- Current value -->
-          <div class="text-xs font-mono text-base-content/60 w-24">
-            <div>{hexValue}</div>
-            <div class="text-[10px] opacity-60">{displayValue}</div>
-          </div>
-        </div>
+        {/if}
       {/each}
     </div>
     
     <!-- Action buttons -->
-    <div class="sticky bottom-0 p-4 bg-base-100 border-t border-base-300 space-y-2 backdrop-blur-sm bg-opacity-95">
-      <div class="flex gap-2">
+    {#if !isAnyPickerOpen}
+      <div class="sticky bottom-0 p-4 bg-base-100 border-t border-base-300 space-y-2 backdrop-blur-sm bg-opacity-95">
+        <div class="flex gap-2">
         <button 
           class="btn btn-primary flex-1"
           onclick={shareColorsViaURL}
@@ -316,15 +345,16 @@
         >
           📋 Copy CSS
         </button>
+        </div>
+        <button 
+          class="btn btn-outline btn-sm w-full"
+          onclick={resetColors}
+          type="button"
+        >
+          Reset to Theme Defaults
+        </button>
       </div>
-      <button 
-        class="btn btn-outline btn-sm w-full"
-        onclick={resetColors}
-        type="button"
-      >
-        Reset to Theme Defaults
-      </button>
-    </div>
+    {/if}
   </div>
   
   <!-- Share Dialog -->
