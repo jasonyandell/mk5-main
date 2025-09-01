@@ -420,7 +420,7 @@
   <!-- Share Dialog - Compact Mobile Friendly -->
   {#if showShareDialog}
     <div class="share-dialog fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div class="bg-base-100 rounded-lg shadow-2xl max-w-sm w-full">
+      <div class="bg-base-100 rounded-lg shadow-2xl max-w-[12rem] w-full">
         <div class="p-3 border-b border-base-300 flex items-center justify-between">
           <h3 class="font-semibold text-sm">Share</h3>
           <button 
@@ -434,7 +434,7 @@
         </div>
         <div class="p-3 space-y-2">
           <!-- Copy buttons -->
-          <div class="flex gap-2">
+          <div class="flex flex-col gap-2">
             <button
               class="btn btn-sm flex-1 {copySuccess === 'link' ? 'btn-success' : 'btn-primary'}"
               onclick={() => {
