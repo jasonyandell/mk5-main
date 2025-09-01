@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Play } from '../../game/types';
   import Domino from './Domino.svelte';
+  import Icon from '../icons/Icon.svelte';
   
   interface CompletedTrick {
     plays: Play[];
@@ -62,9 +63,7 @@
         onclick={toggleDrawer}
         aria-label="Close tricks drawer"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <Icon name="xMark" size="md" />
       </button>
     </div>
     
@@ -151,7 +150,7 @@
         <!-- Empty state -->
         {#if completedTricks.length === 0 && currentTrick.length === 0}
           <div class="text-center py-8 text-base-content/50">
-            <div class="text-4xl mb-2">🎲</div>
+            <Icon name="dice" size="xl" className="mb-2" />
             <div class="text-sm">No tricks played yet</div>
           </div>
         {/if}
@@ -167,14 +166,7 @@
       style="writing-mode: vertical-rl; text-orientation: mixed;"
     >
       <div class="flex items-center gap-1">
-        <svg 
-          class="w-4 h-4 transition-transform {drawerState === 'expanded' ? 'rotate-180' : ''}"
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
+        <Icon name="chevronDown" size="sm" className="transition-transform rotate-[-90deg] {drawerState === 'expanded' ? 'rotate-90' : ''}" />
         <span class="text-xs font-medium">Tricks {trickNumber}/7</span>
       </div>
     </button>
@@ -183,7 +175,7 @@
   <!-- Overlay (when expanded) -->
   {#if drawerState === 'expanded'}
     <button
-      class="fixed inset-0 bg-black/20 -z-10"
+      class="fixed inset-0 bg-base-content/20 -z-10"
       onclick={toggleDrawer}
       aria-label="Close drawer"
     ></button>

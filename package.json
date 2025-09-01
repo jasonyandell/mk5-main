@@ -48,6 +48,7 @@
   },
   "dependencies": {
     "culori": "^4.0.2",
+    "heroicons": "^2.2.0",
     "svelte-awesome-color-picker": "^4.0.2"
   }
 }

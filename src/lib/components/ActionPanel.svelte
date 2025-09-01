@@ -2,6 +2,7 @@
   import { gameActions, viewProjection, controllerManager } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
+  import Icon from '../icons/Icon.svelte';
   
   interface Props {
     onswitchToPlay?: () => void;
@@ -170,7 +171,7 @@
         aria-label="Click to skip AI thinking"
         title="Click to skip AI thinking"
       >
-        <span class="text-xl">🤖</span>
+        <Icon name="cpuChip" size="md" />
         <span class="text-sm">P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
         <span class="text-xs opacity-70 ml-1">(tap to skip)</span>
       </button>

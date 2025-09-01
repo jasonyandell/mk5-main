@@ -12,6 +12,7 @@
   let showSettingsPanel = $state(false);
   let showThemeEditor = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
+  let settingsInitialTab = $state<'state' | 'history' | 'theme'>('state');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -51,9 +52,54 @@
   
   // Theme is a first-class citizen - reactively apply to DOM
   $effect(() => {
+    // Cleanup any legacy override element from older implementations
+    document.getElementById('theme-color-overrides')?.remove();
+
     // Apply theme
     if ($gameState.theme) {
-      document.documentElement.setAttribute('data-theme', $gameState.theme);
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      if (currentTheme !== $gameState.theme) {
+        // Theme is changing
+        document.documentElement.setAttribute('data-theme', $gameState.theme);
+        
+        // CRITICAL: Force DaisyUI to recalculate all CSS variables
+        // This is the most reliable way to ensure theme changes are applied immediately
+        requestAnimationFrame(() => {
+          // Step 1: Toggle a class to force style recalculation
+          document.documentElement.classList.add('theme-changing');
+          
+          // Step 2: Force browser to recalculate all CSS variables by reading them
+          const style = window.getComputedStyle(document.documentElement);
+          // Read all DaisyUI CSS variables to force recalculation
+          const cssVars = ['--p', '--s', '--a', '--n', '--b1', '--b2', '--b3', '--bc', '--pc', '--sc', '--ac', '--nc'];
+          cssVars.forEach(varName => style.getPropertyValue(varName));
+          
+          // Step 3: Force a complete reflow by modifying then restoring critical styles
+          const html = document.documentElement;
+          const body = document.body;
+          
+          // Save original styles
+          const originalHtmlDisplay = html.style.display;
+          const originalBodyDisplay = body.style.display;
+          
+          // Force reflow with display changes
+          html.style.display = 'none';
+          html.offsetHeight; // Force reflow
+          html.style.display = originalHtmlDisplay || '';
+          
+          // Extra aggressive for mobile/touch devices
+          if ('ontouchstart' in window) {
+            body.style.display = 'none';
+            body.offsetHeight; // Force reflow
+            body.style.display = originalBodyDisplay || '';
+          }
+          
+          // Step 4: Remove the temporary class
+          requestAnimationFrame(() => {
+            document.documentElement.classList.remove('theme-changing');
+          });
+        });
+      }
     }
     
     // Apply color overrides
@@ -88,7 +134,10 @@
   data-phase={$gameState.phase}
 >
   <Header 
-    on:openSettings={() => showSettingsPanel = true} 
+    on:openSettings={() => {
+      settingsInitialTab = 'state';
+      showSettingsPanel = true;
+    }} 
     on:openThemeEditor={() => showThemeEditor = true}
   />
   
@@ -107,14 +156,21 @@
 
 {#if showSettingsPanel}
   <div transition:fly={{ y: 200, duration: 300 }}>
-    <SettingsPanel onclose={() => showSettingsPanel = false} />
+    <SettingsPanel 
+      onclose={() => showSettingsPanel = false} 
+      initialTab={settingsInitialTab}
+    />
   </div>
 {/if}
 
 <ThemeColorEditor 
   bind:isOpen={showThemeEditor} 
-  onClose={() => showThemeEditor = false} 
+  onClose={() => showThemeEditor = false}
+  on:openSettings={() => {
+    showThemeEditor = false;
+    settingsInitialTab = 'theme';
+    showSettingsPanel = true;
+  }}
 />
 
 <QuickplayError />
-

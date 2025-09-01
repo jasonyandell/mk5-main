@@ -3,6 +3,7 @@
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
+  import Icon from '../icons/Icon.svelte';
   
   const dispatch = createEventDispatcher();
 
@@ -73,9 +74,7 @@
         onclick={() => menuOpen = !menuOpen}
         aria-label="Menu"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
-        </svg>
+        <Icon name="verticalDots" size="md" />
       </button>
       {#if menuOpen}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -92,18 +91,10 @@
                 closeMenu();
               }}
             >
-              <span>🎲 New Game</span>
-            </button>
-          </li>
-          <li>
-            <button
-              class="settings-btn flex items-center justify-between"
-              onclick={() => {
-                dispatch('openSettings');
-                closeMenu();
-              }}
-            >
-              <span>⚙️ Settings</span>
+              <span class="flex items-center gap-2">
+                <Icon name="dice" size="sm" />
+                New Game
+              </span>
             </button>
           </li>
           <li>
@@ -114,7 +105,10 @@
                 closeMenu();
               }}
             >
-              <span>🎨 Colors</span>
+              <span class="flex items-center gap-2">
+                <Icon name="paintBrush" size="sm" />
+                Colors
+              </span>
             </button>
           </li>
           <li>
@@ -125,16 +119,36 @@
                 closeMenu();
               }}
             >
-              <span>{$quickplayState.enabled ? '✋ Manual Play' : '🤖 Auto Play'}</span>
+              <span class="flex items-center gap-2">
+                {#if $quickplayState.enabled}
+                  <Icon name="handRaised" size="sm" />
+                  Manual Play
+                {:else}
+                  <Icon name="cpuChip" size="sm" />
+                  Auto Play
+                {/if}
+              </span>
               {#if $quickplayState.enabled}
                 <span class="badge badge-success badge-xs animate-pulse">AUTO</span>
               {/if}
             </button>
           </li>
           <li class="text-base-content/50 text-xs mt-2">
-            <div class="flex items-center gap-2">
-              <span>Turn:</span>
-              <span class="font-bold">P{$viewProjection.currentPlayer}</span>
+            <div class="flex items-center justify-between px-2">
+              <div class="flex items-center gap-2">
+                <span>Turn:</span>
+                <span class="font-bold">P{$viewProjection.currentPlayer}</span>
+              </div>
+              <button
+                class="settings-btn btn btn-ghost btn-circle btn-xs"
+                onclick={() => {
+                  dispatch('openSettings');
+                  closeMenu();
+                }}
+                aria-label="Settings"
+              >
+                <Icon name="cog" size="sm" />
+              </button>
             </div>
           </li>
         </ul>

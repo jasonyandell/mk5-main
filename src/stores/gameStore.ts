@@ -1,4 +1,6 @@
+/* global HTMLStyleElement, getComputedStyle */
 import { writable, derived, get } from 'svelte/store';
+import { converter } from 'culori';
 import type { GameState, StateTransition } from '../game/types';
 import { createInitialState, getNextStates } from '../game';
 import { ControllerManager } from '../game/controllers';
@@ -88,6 +90,64 @@ function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] 
 // Helper function to update URL with initial state and actions
 function updateURLWithState(initialState: GameState, actions: StateTransition[], usePushState = false) {
   if (typeof window !== 'undefined') {
+    // Filter color overrides to only include values that differ from the base theme defaults
+    let filteredOverrides = initialState.colorOverrides || {};
+    try {
+      const currentThemeAttr = document.documentElement.getAttribute('data-theme');
+      if (currentThemeAttr === initialState.theme && filteredOverrides && Object.keys(filteredOverrides).length > 0) {
+        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
+        const prevDisabled = styleEl ? styleEl.disabled : undefined;
+        if (styleEl) styleEl.disabled = true;
+        const styles = getComputedStyle(document.documentElement);
+        const minimal: Record<string, string> = {};
+        // Compare defaults vs overrides in OKLCH space with tolerance to avoid formatting/precision issues
+        const toOklch = converter('oklch');
+        const approxEqual = (a: string, b: string): boolean => {
+          const parse = (val: string): [number, number, number] | null => {
+            const v = val.trim();
+            if (!v) return null;
+            const parts = v.split(/\s+/);
+            if (parts.length !== 3) return null;
+            // OKLCH if first part has '%'
+            if (parts[0] && parts[0].includes('%')) {
+              const l = parseFloat(parts[0].replace('%', ''));
+              const c = parseFloat(parts[1] || '0');
+              const h = parseFloat(parts[2] || '0');
+              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
+              return null;
+            }
+            // HSL (legacy) otherwise
+            const h = parseFloat(parts[0] || '0');
+            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
+            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
+            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
+            const ok = toOklch({ mode: 'hsl', h, s, l });
+            if (!ok) return null;
+            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
+          };
+          const A = parse(a);
+          const B = parse(b);
+          if (!A || !B) return false;
+          const [l1, c1, h1] = A;
+          const [l2, c2, h2] = B;
+          const el = Math.abs(l1 - l2);
+          const ec = Math.abs(c1 - c2);
+          const eh = Math.abs(h1 - h2);
+          return el < 0.02 && ec < 0.0005 && eh < 0.1;
+        };
+        for (const [varName, value] of Object.entries(filteredOverrides)) {
+          const defaultVal = styles.getPropertyValue(varName).trim();
+          const overrideVal = String(value).trim();
+          if (!defaultVal || !approxEqual(defaultVal, overrideVal)) {
+            minimal[varName] = value;
+          }
+        }
+        filteredOverrides = minimal;
+        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
+      }
+    } catch {
+      // If anything goes wrong, fall back to using provided overrides
+    }
     // Use v2 compressed format with theme as first-class citizen
     // Always encode URL properly, even with no actions (preserves theme)
     const newURL = window.location.pathname + encodeGameUrl(
@@ -97,7 +157,7 @@ function updateURLWithState(initialState: GameState, actions: StateTransition[],
       initialState.dealer,
       initialState.tournamentMode,
       initialState.theme,
-      initialState.colorOverrides
+      filteredOverrides
     );
     
     // Store state in history for easy access
@@ -510,10 +570,60 @@ export const gameActions = {
   
   updateTheme: (theme: string, colorOverrides: Record<string, string> = {}) => {
     const currentState = get(gameState);
+    // Minimize overrides to only changed-from-default values
+    let minimalOverrides = colorOverrides;
+    try {
+      if (typeof window !== 'undefined') {
+        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
+        const prevDisabled = styleEl ? styleEl.disabled : undefined;
+        if (styleEl) styleEl.disabled = true;
+        const styles = getComputedStyle(document.documentElement);
+        const toOklch = converter('oklch');
+        const approxEqual = (a: string, b: string): boolean => {
+          const parse = (val: string): [number, number, number] | null => {
+            const v = val.trim();
+            if (!v) return null;
+            const parts = v.split(/\s+/);
+            if (parts.length !== 3) return null;
+            if (parts[0] && parts[0].includes('%')) {
+              const l = parseFloat(parts[0].replace('%', ''));
+              const c = parseFloat(parts[1] || '0');
+              const h = parseFloat(parts[2] || '0');
+              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
+              return null;
+            }
+            const h = parseFloat(parts[0] || '0');
+            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
+            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
+            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
+            const ok = toOklch({ mode: 'hsl', h, s, l });
+            if (!ok) return null;
+            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
+          };
+          const A = parse(a);
+          const B = parse(b);
+          if (!A || !B) return false;
+          const [l1, c1, h1] = A;
+          const [l2, c2, h2] = B;
+          return Math.abs(l1 - l2) < 0.02 && Math.abs(c1 - c2) < 0.0005 && Math.abs(h1 - h2) < 0.1;
+        };
+        const out: Record<string, string> = {};
+        for (const [varName, value] of Object.entries(colorOverrides)) {
+          const base = styles.getPropertyValue(varName).trim();
+          if (!base || !approxEqual(base, String(value).trim())) {
+            out[varName] = value;
+          }
+        }
+        minimalOverrides = out;
+        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
+      }
+    } catch {
+      // Ignore; keep provided overrides
+    }
     const newState = {
       ...currentState,
       theme,
-      colorOverrides
+      colorOverrides: minimalOverrides
     };
     
     // Theme will be applied reactively by App.svelte $effect
@@ -526,11 +636,17 @@ export const gameActions = {
     initialState.set({
       ...currentInitial,
       theme,
-      colorOverrides
+      colorOverrides: minimalOverrides
     });
     
-    // Update URL
-    updateURLWithState(get(initialState), get(actionHistory), false);
+    // Update URL on next frame so App.svelte can apply data-theme first
+    if (typeof window !== 'undefined') {
+      requestAnimationFrame(() => {
+        updateURLWithState(get(initialState), get(actionHistory), false);
+      });
+    } else {
+      updateURLWithState(get(initialState), get(actionHistory), false);
+    }
   },
   
   loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {

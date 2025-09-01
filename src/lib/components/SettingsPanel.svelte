@@ -2,18 +2,17 @@
   import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
   import { encodeGameUrl } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
+  import Icon from '../icons/Icon.svelte';
 
   interface Props {
     onclose: () => void;
+    initialTab?: 'state' | 'history' | 'theme';
   }
 
-  let { onclose }: Props = $props();
+  let { onclose, initialTab = 'state' }: Props = $props();
 
-  let activeTab = $state('theme');
-  let showDiff = $state(false);
+  let activeTab = $state(initialTab);
   let showTreeView = $state(true);
-  let previousState: any = $state(null);
-  let changedPaths = $state(new Set<string>());
 
   // JSON stringify with indentation
   function prettyJson(obj: any): string {
@@ -61,53 +60,6 @@
     window.history.pushState(historyState, '', newURL);
   }
 
-  // Find differences between two objects
-  function findDifferences(obj1: any, obj2: any, path: string = 'root'): Set<string> {
-    const differences = new Set<string>();
-    
-    if (obj1 === obj2) return differences;
-    
-    if (typeof obj1 !== typeof obj2) {
-      differences.add(path);
-      return differences;
-    }
-    
-    if (typeof obj1 !== 'object' || obj1 === null || obj2 === null) {
-      if (obj1 !== obj2) {
-        differences.add(path);
-      }
-      return differences;
-    }
-    
-    // For arrays
-    if (Array.isArray(obj1) && Array.isArray(obj2)) {
-      const maxLength = Math.max(obj1.length, obj2.length);
-      for (let i = 0; i < maxLength; i++) {
-        const childDiffs = findDifferences(obj1[i], obj2[i], `${path}[${i}]`);
-        childDiffs.forEach(diff => differences.add(diff));
-      }
-      return differences;
-    }
-    
-    // For objects
-    const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
-    for (const key of allKeys) {
-      const childDiffs = findDifferences(obj1[key], obj2[key], `${path}.${key}`);
-      childDiffs.forEach(diff => differences.add(diff));
-    }
-    
-    return differences;
-  }
-
-  // Track state changes
-  $effect(() => {
-    if (showDiff && previousState) {
-      changedPaths = findDifferences(previousState, $gameState);
-    } else {
-      changedPaths = new Set();
-    }
-    previousState = JSON.parse(JSON.stringify($gameState));
-  });
 </script>
 
 <!-- Full screen mobile drawer -->
@@ -123,9 +75,7 @@
       onclick={onclose}
       aria-label="Close settings panel"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-      </svg>
+      <Icon name="xMark" size="lg" />
     </button>
   </div>
 
@@ -135,26 +85,26 @@
     <div class="flex-1 overflow-auto p-4 pb-16">
       {#if activeTab === 'theme'}
         {@const themes = [
-          { value: 'cupcake', emoji: '🧁', name: 'Cupcake' },
-          { value: 'light', emoji: '☀️', name: 'Light' },
-          { value: 'dark', emoji: '🌙', name: 'Dark' },
-          { value: 'bumblebee', emoji: '🐝', name: 'Bumblebee' },
-          { value: 'emerald', emoji: '💚', name: 'Emerald' },
-          { value: 'corporate', emoji: '💼', name: 'Corporate' },
-          { value: 'retro', emoji: '📻', name: 'Retro' },
-          { value: 'cyberpunk', emoji: '🤖', name: 'Cyberpunk' },
-          { value: 'valentine', emoji: '💝', name: 'Valentine' },
-          { value: 'garden', emoji: '🌸', name: 'Garden' },
-          { value: 'forest', emoji: '🌲', name: 'Forest' },
-          { value: 'lofi', emoji: '🎵', name: 'Lo-Fi' },
-          { value: 'pastel', emoji: '🎨', name: 'Pastel' },
-          { value: 'wireframe', emoji: '📐', name: 'Wireframe' },
-          { value: 'luxury', emoji: '💎', name: 'Luxury' },
-          { value: 'dracula', emoji: '🧛', name: 'Dracula' },
-          { value: 'autumn', emoji: '🍂', name: 'Autumn' },
-          { value: 'business', emoji: '👔', name: 'Business' },
-          { value: 'coffee', emoji: '☕', name: 'Coffee' },
-          { value: 'winter', emoji: '❄️', name: 'Winter' }
+          { value: 'cupcake', icon: 'cupcake' as const, name: 'Cupcake' },
+          { value: 'light', icon: 'sun' as const, name: 'Light' },
+          { value: 'dark', icon: 'moon' as const, name: 'Dark' },
+          { value: 'bumblebee', icon: 'sparkles' as const, name: 'Bumblebee' },
+          { value: 'emerald', icon: 'sparkles' as const, name: 'Emerald' },
+          { value: 'corporate', icon: 'briefcase' as const, name: 'Corporate' },
+          { value: 'retro', icon: 'radio' as const, name: 'Retro' },
+          { value: 'cyberpunk', icon: 'cpuChip' as const, name: 'Cyberpunk' },
+          { value: 'valentine', icon: 'heart' as const, name: 'Valentine' },
+          { value: 'garden', icon: 'sparkles' as const, name: 'Garden' },
+          { value: 'forest', icon: 'tree' as const, name: 'Forest' },
+          { value: 'lofi', icon: 'musicalNote' as const, name: 'Lo-Fi' },
+          { value: 'pastel', icon: 'paintBrush' as const, name: 'Pastel' },
+          { value: 'wireframe', icon: 'ruler' as const, name: 'Wireframe' },
+          { value: 'luxury', icon: 'sparkles' as const, name: 'Luxury' },
+          { value: 'dracula', icon: 'vampire' as const, name: 'Dracula' },
+          { value: 'autumn', icon: 'tree' as const, name: 'Autumn' },
+          { value: 'business', icon: 'briefcase' as const, name: 'Business' },
+          { value: 'coffee', icon: 'coffee' as const, name: 'Coffee' },
+          { value: 'winter', icon: 'snowflake' as const, name: 'Winter' }
         ]}
         
         {@const currentTheme = typeof document !== 'undefined' ? 
@@ -186,7 +136,7 @@
                   
                   <!-- Theme name -->
                   <div class="flex items-center gap-1 text-sm font-medium text-base-content">
-                    <span>{theme.emoji}</span>
+                    <Icon name={theme.icon} size="sm" />
                     <span>{theme.name}</span>
                   </div>
                   
@@ -201,9 +151,7 @@
                 <!-- Selected indicator -->
                 {#if currentTheme === theme.value}
                   <div class="absolute top-1 right-1 bg-primary text-primary-content rounded-full p-0.5">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                    </svg>
+                    <Icon name="checkSolid" size="sm" className="w-3 h-3" />
                   </div>
                 {/if}
               </button>
@@ -219,7 +167,10 @@
               gameActions.resetGame();
             }}
           >
-            🎮 Reset Game
+            <span class="flex items-center justify-center gap-2">
+              <Icon name="gameController" size="md" />
+              Reset Game
+            </span>
           </button>
           <p class="text-xs text-base-content/60 text-center mt-2">
             Starts a new game while keeping your theme settings
@@ -241,16 +192,6 @@
                 />
               </label>
             </div>
-            <div class="form-control">
-              <label class="label cursor-pointer">
-                <span class="label-text">Show Changes</span>
-                <input 
-                  type="checkbox" 
-                  class="toggle toggle-secondary"
-                  bind:checked={showDiff}
-                />
-              </label>
-            </div>
           </div>
 
           <!-- Action buttons -->
@@ -259,13 +200,19 @@
               class="btn btn-primary"
               onclick={() => copyToClipboard(prettyJson($gameState))}
             >
-              📋 Copy State
+              <span class="flex items-center justify-center gap-1">
+                <Icon name="clipboard" size="sm" />
+                Copy State
+              </span>
             </button>
             <button 
               class="btn btn-secondary"
               onclick={copyShareableUrl}
             >
-              🔗 Copy URL
+              <span class="flex items-center justify-center gap-1">
+                <Icon name="arrowPath" size="sm" />
+                Copy URL
+              </span>
             </button>
           </div>
           
@@ -275,7 +222,7 @@
               <StateTreeView 
                 data={$gameState} 
                 searchQuery=""
-                changedPaths={showDiff ? changedPaths : new Set()}
+                changedPaths={new Set()}
               />
             {:else}
               <pre class="text-xs font-mono">{prettyJson($gameState)}</pre>
@@ -301,20 +248,26 @@
               onclick={gameActions.undo}
               disabled={$actionHistory.length === 0}
             >
-              ↩️ Undo
+              <span class="flex items-center justify-center gap-1">
+                <Icon name="arrowUturnLeft" size="sm" />
+                Undo
+              </span>
             </button>
             <button 
               class="btn btn-error"
               onclick={gameActions.resetGame}
             >
-              🔄 Reset
+              <span class="flex items-center justify-center gap-1">
+                <Icon name="arrowPath" size="sm" />
+                Reset
+              </span>
             </button>
           </div>
           
           <!-- History list -->
           {#if $actionHistory.length === 0}
             <div class="alert">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <Icon name="informationCircle" size="lg" />
               <span>No moves yet. Start playing!</span>
             </div>
           {:else}
@@ -339,9 +292,7 @@
                       {action.label}
                     </div>
                     <div class="text-primary">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                      </svg>
+                      <Icon name="arrowUturnLeft" size="md" />
                     </div>
                   </div>
                 </button>
@@ -355,21 +306,10 @@
     <!-- Bottom navigation tabs -->
     <div class="btm-nav btm-nav-sm bg-base-200 border-t border-base-300">
       <button 
-        class="{activeTab === 'theme' ? 'active text-primary' : ''}"
-        onclick={() => activeTab = 'theme'}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-        </svg>
-        <span class="btm-nav-label">Theme</span>
-      </button>
-      <button 
         class="{activeTab === 'state' ? 'active text-primary' : ''}"
         onclick={() => activeTab = 'state'}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-        </svg>
+        <Icon name="code" size="md" />
         <span class="btm-nav-label">State</span>
       </button>
       <button 
@@ -377,10 +317,15 @@
         data-testid="history-tab"
         onclick={() => activeTab = 'history'}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <Icon name="clock" size="md" />
         <span class="btm-nav-label">History</span>
+      </button>
+      <button 
+        class="{activeTab === 'theme' ? 'active text-primary' : ''}"
+        onclick={() => activeTab = 'theme'}
+      >
+        <Icon name="paintBrush" size="md" />
+        <span class="btm-nav-label">Theme</span>
       </button>
     </div>
   </div>
