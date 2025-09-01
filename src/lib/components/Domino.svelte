@@ -52,7 +52,7 @@
   
   // State classes - keeping white background but adding colored borders/rings
   const stateClasses = $derived(playable 
-    ? 'border-green-500 !border-4 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-green-400' 
+    ? 'border-success !border-4 -translate-y-1 scale-105 shadow-xl hover:shadow-2xl ring-2 ring-success/50' 
     : clickable
     ? 'hover:scale-105 hover:shadow-xl cursor-pointer'
     : 'cursor-default');

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from '../icons/Icon.svelte';
+  
   export let data: any;
   export let path: string = 'root';
   export let searchQuery: string = '';
@@ -98,7 +100,7 @@
               on:click={() => copyValue(item)}
               title="Copy value"
             >
-              📋
+              <Icon name="clipboard" size="sm" />
             </button>
           </div>
           
@@ -139,7 +141,7 @@
               on:click={() => copyValue(value)}
               title="Copy value"
             >
-              📋
+              <Icon name="clipboard" size="sm" />
             </button>
           </div>
           

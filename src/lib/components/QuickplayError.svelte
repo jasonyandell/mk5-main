@@ -1,5 +1,6 @@
 <script lang="ts">
   import { quickplayErrorStore } from '../../stores/quickplayStore';
+  import Icon from '../icons/Icon.svelte';
   
   $: error = $quickplayErrorStore;
   
@@ -26,7 +27,7 @@
 {#if error}
   <div class="fixed top-5 right-5 bg-error/10 border-2 border-error rounded-lg p-0 max-w-[400px] shadow-lg z-[1000]">
     <div class="flex items-center gap-2 px-4 py-3 bg-error/20 border-b border-error rounded-t-md">
-      <span class="text-xl">⚠️</span>
+      <Icon name="exclamationTriangle" size="md" />
       <span class="flex-1 font-semibold text-error">Quickplay Error</span>
       <button class="btn btn-ghost btn-sm btn-circle text-error" on:click={clearError}>×</button>
     </div>

@@ -3,6 +3,7 @@
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
+  import Icon from '../icons/Icon.svelte';
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
@@ -189,7 +190,7 @@
           
           <div class="flex justify-between px-3 py-2 rounded-md bg-base-200 transition-all {isCurrentTurn ? 'bg-info/20 ring-1 ring-info' : ''} {isYou ? 'font-semibold bg-primary/10' : ''}">
             <span class="flex items-center gap-1">
-              <span class="text-base">{isAI ? '🤖' : '👤'}</span>
+              <Icon name={isAI ? 'cpuChip' : 'user'} size="sm" />
               P{playerId}{isYou ? ' (You)' : ''}:
             </span>
             <span class="font-medium">
@@ -249,8 +250,9 @@
             <div class="text-sm opacity-90 font-medium">
               P{$viewProjection.scoring.handResults.biddingPlayer} ({$viewProjection.scoring.handResults.teamLabel}) bid {$viewProjection.scoring.handResults.bidAmount}
             </div>
-            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider {$viewProjection.scoring.handResults.resultMessage.includes('✅') ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
-              {$viewProjection.scoring.handResults.resultMessage}
+            <div class="text-xl font-bold px-4 py-1.5 rounded-full tracking-wider flex items-center justify-center gap-2 {$viewProjection.scoring.handResults.isSuccess ? 'bg-success/30 text-success-content border-2 border-success' : 'bg-error/30 text-error-content border-2 border-error'}">
+              <Icon name={$viewProjection.scoring.handResults.isSuccess ? 'checkCircle' : 'xCircle'} size="md" />
+              <span>{$viewProjection.scoring.handResults.resultText}</span>
             </div>
           </div>
           
@@ -287,7 +289,7 @@
                   <div class="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[11px] font-bold text-base-100 bg-base-content/70 px-2 py-0.5 rounded-full">P{position}</div>
                 {#if isWinner}
                   <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-warning text-warning-content px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 shadow-lg motion-safe:animate-bounce-in whitespace-nowrap z-[15]">
-                    <span class="text-sm motion-safe:animate-sparkle">👑</span>
+                    <Icon name="sparkles" size="sm" className="motion-safe:animate-sparkle" />
                     <span class="uppercase tracking-wider">Winner!</span>
                   </div>
                 {/if}
@@ -296,7 +298,7 @@
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
                 <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
-                  {controllerManager.isAIControlled(position) ? '🤖' : '👤'}
+                  <Icon name={controllerManager.isAIControlled(position) ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
                 </span>
                 <span class="text-sm font-bold text-base-100/60">P{position}</span>
               </div>
@@ -308,7 +310,7 @@
     
     {#if $viewProjection.ui.isAIThinking}
       <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center gap-2 text-sm text-base-content/70 motion-safe:animate-pulse pointer-events-none z-10">
-        <span class="text-lg">🤖</span>
+        <Icon name="cpuChip" size="md" />
         <span>P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
       </div>
     {/if}
@@ -318,7 +320,7 @@
         class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-10 motion-safe:animate-tap-bounce"
         role="presentation"
       >
-        <span class="text-lg motion-safe:animate-tap-point">👆</span>
+        <Icon name="handRaised" size="md" className="motion-safe:animate-tap-point" />
         <span class="whitespace-nowrap">{$viewProjection.tooltips.proceedAction}</span>
       </div>
     {/if}
@@ -330,7 +332,7 @@
     
     {#if $viewProjection.hand.length === 0}
       <div class="flex flex-col items-center gap-3 py-8 text-base-content/50">
-        <span class="text-5xl opacity-50">🀚</span>
+        <Icon name="cubeTransparent" size="xl" className="opacity-50" />
         <span class="text-sm font-medium">No dominoes</span>
       </div>
     {:else}

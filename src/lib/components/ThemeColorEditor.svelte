@@ -1,8 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, createEventDispatcher } from 'svelte';
   import { formatHex, parse, converter } from 'culori';
   import { gameState, gameActions } from '../../stores/gameStore';
   import ColorPicker from 'svelte-awesome-color-picker';
+  import Icon from '../icons/Icon.svelte';
+  
+  const dispatch = createEventDispatcher();
   
   interface Props {
     isOpen: boolean;
@@ -66,21 +69,28 @@
   let currentColors = $state<Record<string, string>>({});
   // Custom colors now come from gameState
   let customColors = $derived($gameState.colorOverrides || {});
-  let styleElement: HTMLStyleElement | null = null;
+  // No direct style injection here; App.svelte handles overrides centrally
+  // Keep a reference only to clean up any legacy element from older builds
+  let legacyStyleElement: HTMLStyleElement | null = null;
   let showShareDialog = $state(false);
   let shareURL = $state('');
   let copySuccess = $state<'link' | 'css' | null>(null);
   
+  // Simple debounce timer for color updates
+  let updateTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingUpdates: Record<string, string> = {};
+  
   // Convert DaisyUI color string to hex for color picker
-  // DaisyUI uses either HSL or OKLCH format
+  // DaisyUI uses OKLCH format: L% C H
   function colorToHex(colorString: string): string {
     try {
       const parts = colorString.trim().split(/\s+/);
       
-      // Check if it's OKLCH format (3 numbers with decimal points)
-      if (parts.length === 3 && parts[0] && parts[0].includes('.')) {
-        // OKLCH format: L C H
-        const l = parseFloat(parts[0]) / 100; // L is 0-100 in DaisyUI
+      // OKLCH format: L% C H
+      if (parts.length === 3) {
+        // Remove % sign from L value if present
+        const lStr = parts[0].replace('%', '');
+        const l = parseFloat(lStr) / 100; // Convert percentage to 0-1 range
         const c = parseFloat(parts[1] || '0');
         const h = parseFloat(parts[2] || '0');
         
@@ -89,17 +99,8 @@
         return hex || '#808080';
       }
       
-      // HSL format (legacy, some themes might still use it)
-      if (parts.length === 3) {
-        const h = parseFloat(parts[0] || '0');
-        const s = parseFloat(parts[1] || '0') / 100;
-        const l = parseFloat(parts[2] || '0') / 100;
-        
-        const color = { mode: 'hsl', h, s, l };
-        const hex = formatHex(color);
-        return hex || '#808080';
-      }
-      
+      // Fallback for unexpected formats
+      console.warn('Unexpected color format:', colorString);
       return '#808080';
     } catch (e) {
       console.warn('Failed to convert color to hex:', colorString, e);
@@ -131,6 +132,25 @@
       return '50% 0 0';
     }
   }
+
+  // Approximate equality in OKLCH space to avoid tiny diffs from formatting
+  function approxEqualOklch(a: string, b: string): boolean {
+    try {
+      const pa = a.trim().split(/\s+/);
+      const pb = b.trim().split(/\s+/);
+      if (pa.length !== 3 || pb.length !== 3) return false;
+      const l1 = parseFloat(pa[0].replace('%', ''));
+      const c1 = parseFloat(pa[1]);
+      const h1 = parseFloat(pa[2]);
+      const l2 = parseFloat(pb[0].replace('%', ''));
+      const c2 = parseFloat(pb[1]);
+      const h2 = parseFloat(pb[2]);
+      if (![l1,c1,h1,l2,c2,h2].every(Number.isFinite)) return false;
+      return Math.abs(l1 - l2) < 0.02 && Math.abs(c1 - c2) < 0.0005 && Math.abs(h1 - h2) < 0.1;
+    } catch {
+      return false;
+    }
+  }
   
   // Read current CSS variables from the theme
   function readCurrentColors() {
@@ -147,45 +167,56 @@
     return colors;
   }
   
-  // Apply color overrides
-  function applyColors() {
-    if (!styleElement) {
-      styleElement = document.createElement('style');
-      styleElement.id = 'theme-color-overrides';
-      document.head.appendChild(styleElement);
-    }
-    
-    let css = ':root {\n';
-    Object.entries(customColors).forEach(([varName, hslValue]) => {
-      css += `  ${varName}: ${hslValue} !important;\n`;
-    });
-    css += '}\n';
-    
-    styleElement.textContent = css;
-  }
+  // Centralized overrides are applied in App.svelte; no local CSS injection
   
-  // Handle color change from picker
+  // Handle color change from picker with debouncing
   function handleColorChange(varName: string, hexColor: string) {
     const colorValue = hexToColor(hexColor);
+    // If the computed OKLCH equals the current theme value, ignore
+    const styles = getComputedStyle(document.documentElement);
+    const baseVal = styles.getPropertyValue(varName).trim();
+    if (baseVal && approxEqualOklch(baseVal, colorValue)) return;
+    // If an override exists and equals requested, ignore
+    const existing = ($gameState.colorOverrides || {})[varName];
+    if (existing && approxEqualOklch(existing, colorValue)) return;
+
+    // Accumulate this change
+    pendingUpdates[varName] = colorValue;
     
-    // Update colors through gameActions
-    const newColors = {
-      ...$gameState.colorOverrides,
-      [varName]: colorValue
-    };
-    gameActions.updateTheme($gameState.theme, newColors);
-    applyColors();
+    // Clear existing timer if any
+    if (updateTimer) {
+      clearTimeout(updateTimer);
+      updateTimer = null;
+    }
+    
+    // Set new timer to update after delay
+    updateTimer = setTimeout(() => {
+      const newColors = {
+        ...$gameState.colorOverrides,
+        ...pendingUpdates
+      };
+      gameActions.updateTheme($gameState.theme, newColors);
+      pendingUpdates = {};
+      updateTimer = null;
+    }, 300);
   }
   
   // Reset all colors
   function resetColors() {
+    // Clear any pending timer and updates
+    if (updateTimer) {
+      clearTimeout(updateTimer);
+      updateTimer = null;
+    }
+    pendingUpdates = {};
+    
     // Clear colors through gameActions (keeps theme)
     gameActions.updateTheme($gameState.theme, {});
     
-    // Remove style overrides
-    if (styleElement) {
-      styleElement.remove();
-      styleElement = null;
+    // Remove any legacy style overrides (from older approach)
+    if (legacyStyleElement) {
+      legacyStyleElement.remove();
+      legacyStyleElement = null;
     }
     
     // Force a small delay to ensure styles are cleared before re-reading
@@ -226,19 +257,82 @@
   // Initialize colors when component opens
   $effect(() => {
     if (isOpen) {
-      // Always re-read colors when opening the panel
-      // This ensures we get the latest theme's colors
-      currentColors = readCurrentColors();
+      // Force complete style recalculation before reading colors
+      // This ensures DaisyUI theme variables are fully computed
+      requestAnimationFrame(() => {
+        // Force browser to recalculate all CSS variables
+        const style = window.getComputedStyle(document.documentElement);
+        const cssVars = ['--p', '--s', '--a', '--n', '--b1', '--b2', '--b3', '--bc', '--pc', '--sc', '--ac', '--nc'];
+        cssVars.forEach(varName => style.getPropertyValue(varName));
+        
+        // Now read the colors with fresh computed values
+        currentColors = readCurrentColors();
+        
+        // If we still got invalid colors, try again after a small delay
+        // (sometimes needed when transitioning from settings panel)
+        if (Object.values(currentColors).some(color => color === '#808080')) {
+          setTimeout(() => {
+            currentColors = readCurrentColors();
+          }, 50);
+        }
+      });
     }
+  });
+  
+  // Re-read colors when theme changes (fixes mobile issue)
+  // Use a more reliable approach with MutationObserver
+  $effect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          // Theme changed, wait for App.svelte to complete its force reflow
+          // then update our colors
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              // Force style recalculation by reading all DaisyUI variables
+              const style = window.getComputedStyle(document.documentElement);
+              const cssVars = ['--p', '--s', '--a', '--n', '--b1', '--b2', '--b3', '--bc', '--pc', '--sc', '--ac', '--nc'];
+              cssVars.forEach(varName => style.getPropertyValue(varName));
+              
+              // Then read all colors
+              currentColors = readCurrentColors();
+              // Force component update
+              currentColors = { ...currentColors };
+            });
+          }, 150); // Delay to ensure theme is fully applied after App.svelte's force reflow
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+    
+    return () => observer.disconnect();
   });
   
   
   // Load from URL on mount
   onMount(() => {
+    // Cleanup: remove any legacy style element that might persist from older sessions
+    const old = document.getElementById('theme-color-overrides') as HTMLStyleElement | null;
+    if (old) {
+      old.remove();
+      legacyStyleElement = null;
+    }
     // Read current theme colors
     currentColors = readCurrentColors();
     
     // Color overrides are now applied reactively by App.svelte
+    
+    // Cleanup function - clear timer on unmount
+    return () => {
+      if (updateTimer) {
+        clearTimeout(updateTimer);
+        updateTimer = null;
+      }
+    };
   });
 </script>
 
@@ -253,30 +347,32 @@
     ></button>
   {/if}
   
-  <!-- Color Editor Panel -->
-  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-96 {isAnyPickerOpen ? '' : 'bg-base-100 shadow-2xl border-l border-base-300'} overflow-y-auto transition-all duration-300 ease-out z-50">
-    {#if !isAnyPickerOpen}
-      <!-- Header -->
-      <div class="sticky top-0 bg-base-100 border-b border-base-300 p-4 flex items-center justify-between backdrop-blur-sm bg-opacity-95">
-        <h3 class="font-semibold text-lg">Theme Colors</h3>
+  <!-- Color Editor Panel - Minimal vertical -->
+  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-16 bg-base-100 shadow-2xl border-l border-base-300 overflow-y-auto transition-all duration-300 ease-out z-50">
+    <!-- All content in single scrollable container -->
+    <div class="p-2 space-y-2">
+      {#if !isAnyPickerOpen}
+        <!-- Top action buttons -->
         <button 
-          class="btn btn-ghost btn-sm btn-circle"
-          onclick={onClose}
-          aria-label="Close"
+          class="btn btn-ghost btn-xs btn-block justify-center"
+          onclick={() => dispatch('openSettings')}
+          title="Change theme"
           type="button"
         >
-          ✕
+          <Icon name="paintBrush" size="sm" />
         </button>
-      </div>
+        <button 
+          class="btn btn-ghost btn-xs btn-block justify-center"
+          onclick={shareColorsViaURL}
+          title="Share theme"
+          type="button"
+        >
+          <Icon name="share" size="sm" />
+        </button>
+        <div class="divider my-2"></div>
+      {/if}
       
-      <!-- Current theme indicator -->
-      <div class="px-4 pt-3 pb-1 text-sm text-base-content/60">
-        Base theme: <strong>{document.documentElement.getAttribute('data-theme') || 'default'}</strong>
-      </div>
-    {/if}
-    
-    <!-- Color variables list -->
-    <div class="p-4 space-y-3">
+      <!-- Color circles list -->
       {#each daisyVariables as variable (variable.var)}
         {@const currentValue = currentColors[variable.var] || '50% 0.02 0'}
         {@const customValue = customColors[variable.var]}
@@ -285,99 +381,61 @@
         {@const isPickerOpen = getPickerState(variable.var)}
         
         {#if !isAnyPickerOpen || isPickerOpen}
-          <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-base-200/50 transition-colors">
-            <!-- Variable info - hide when picker is open -->
-            {#if !isPickerOpen}
-              <div class="flex-1">
-                <div class="text-sm font-medium text-base-content/90">{variable.name}</div>
-                <div class="text-xs text-base-content/50">{variable.desc}</div>
-                {#if customValue}
-                  <div class="text-xs text-primary mt-1">Modified</div>
-                {/if}
-              </div>
-            {/if}
-            
-            <!-- Color picker - always visible -->
+          <div class="flex justify-center" title={variable.name}>
+            <!-- Color picker circle only -->
             <div class="color-picker-compact">
               <ColorPicker 
                 bind:isOpen={pickerStates[variable.var]!}
                 hex={hexValue}
                 label=""
+                position="fixed"
+                isTextInput={false}
+                sliderDirection="vertical"
                 onInput={(e: any) => {
-                  // Get the new hex value from the event
-                  const newHex = e.hex || hexValue;
+                  // Only handle actual user changes; ignore initial emissions
+                  const newHex = e?.hex;
+                  if (!newHex || newHex.toLowerCase() === hexValue.toLowerCase()) return;
                   handleColorChange(variable.var, newHex);
                 }}
               />
             </div>
-            
-            <!-- Current value - hide when picker is open -->
-            {#if !isPickerOpen}
-              <div class="text-xs font-mono text-base-content/60 w-24">
-                <div>{hexValue}</div>
-                <div class="text-[10px] opacity-60">{displayValue}</div>
-              </div>
-            {/if}
           </div>
         {/if}
       {/each}
-    </div>
-    
-    <!-- Action buttons -->
-    {#if !isAnyPickerOpen}
-      <div class="sticky bottom-0 p-4 bg-base-100 border-t border-base-300 space-y-2 backdrop-blur-sm bg-opacity-95">
-        <div class="flex gap-2">
+      
+      <!-- Bottom action button -->
+      {#if !isAnyPickerOpen}
+        <div class="divider my-2"></div>
         <button 
-          class="btn btn-primary flex-1"
-          onclick={shareColorsViaURL}
-          type="button"
-        >
-          📤 Share Link
-        </button>
-        <button 
-          class="btn btn-primary flex-1"
-          onclick={() => {
-            const css = exportCSS();
-            navigator.clipboard.writeText(css);
-          }}
-          type="button"
-        >
-          📋 Copy CSS
-        </button>
-        </div>
-        <button 
-          class="btn btn-outline btn-sm w-full"
+          class="btn btn-ghost btn-xs btn-block justify-center"
           onclick={resetColors}
+          title="Reset to theme defaults"
           type="button"
         >
-          Reset to Theme Defaults
+          <Icon name="arrowPath" size="sm" />
         </button>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
   
-  <!-- Share Dialog -->
+  <!-- Share Dialog - Compact Mobile Friendly -->
   {#if showShareDialog}
     <div class="share-dialog fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div class="bg-base-100 rounded-xl shadow-2xl max-w-2xl w-full flex flex-col">
-        <div class="p-4 border-b border-base-300 flex items-center justify-between">
-          <h3 class="font-semibold">Share Your Theme</h3>
+      <div class="bg-base-100 rounded-lg shadow-2xl max-w-sm w-full">
+        <div class="p-3 border-b border-base-300 flex items-center justify-between">
+          <h3 class="font-semibold text-sm">Share</h3>
           <button 
-            class="btn btn-ghost btn-sm btn-circle"
+            class="btn btn-ghost btn-xs btn-circle"
             onclick={() => showShareDialog = false}
             type="button"
+            aria-label="Close"
           >
             ✕
           </button>
         </div>
-        <div class="p-4">
-          <p class="text-sm text-base-content/70 mb-3">
-            This link includes your <strong>{document.documentElement.getAttribute('data-theme') || 'default'}</strong> theme and all color customizations.
-          </p>
-          <div class="bg-base-200 p-3 rounded-lg break-all relative">
-            <code class="text-xs select-all" style="user-select: text;">{shareURL}</code>
-          </div>
-          <div class="mt-3 flex gap-2">
+        <div class="p-3 space-y-2">
+          <!-- Copy buttons -->
+          <div class="flex gap-2">
             <button
               class="btn btn-sm flex-1 {copySuccess === 'link' ? 'btn-success' : 'btn-primary'}"
               onclick={() => {
@@ -390,7 +448,11 @@
               }}
               type="button"
             >
-              {copySuccess === 'link' ? '✓ Copied!' : '📋 Copy Link'}
+              {#if copySuccess === 'link'}
+                <Icon name="check" size="sm" /> Link
+              {:else}
+                <Icon name="clipboard" size="sm" /> Link
+              {/if}
             </button>
             <button
               class="btn btn-sm flex-1 {copySuccess === 'css' ? 'btn-success' : 'btn-secondary'}"
@@ -405,23 +467,23 @@
               }}
               type="button"
             >
-              {copySuccess === 'css' ? '✓ Copied!' : '📄 Copy CSS'}
+              {#if copySuccess === 'css'}
+                <Icon name="check" size="sm" /> CSS
+              {:else}
+                <Icon name="clipboard" size="sm" /> CSS
+              {/if}
             </button>
           </div>
-          <div class="mt-4 p-3 bg-base-300/50 rounded-lg">
-            <p class="text-xs text-base-content/70">
-              <strong>Tip:</strong> The link has been automatically copied to your clipboard. You can also select the text above to copy manually.
-            </p>
+          
+          <!-- Theme name -->
+          <div class="text-xs text-center text-base-content/60">
+            {document.documentElement.getAttribute('data-theme') || 'default'}
           </div>
-        </div>
-        <div class="p-4 border-t border-base-300">
-          <button 
-            class="btn btn-primary w-full"
-            onclick={() => showShareDialog = false}
-            type="button"
-          >
-            Done
-          </button>
+          
+          <!-- URL in scrollable box -->
+          <div class="bg-base-200 p-2 rounded overflow-x-auto max-h-20">
+            <code class="text-xs whitespace-nowrap select-all" style="user-select: text;">{shareURL}</code>
+          </div>
         </div>
       </div>
     </div>
@@ -429,22 +491,32 @@
 {/if}
 
 <style>
-  .theme-editor-panel {
-    max-width: 400px;
-  }
-  
   .share-dialog {
     background-color: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(4px);
   }
   
-  /* Compact color picker styling using theme variables */
+  /* Compact color picker styling - circular */
   .color-picker-compact :global(.color-picker) {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.375rem;
-    border: 1px solid oklch(var(--b3));
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    border: 2px solid oklch(var(--b3));
     cursor: pointer;
+    transition: transform 0.2s;
+  }
+  
+  /* Hide the label background and padding to prevent elliptical shadow */
+  .color-picker-compact :global(label) {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  
+  .color-picker-compact :global(.color-picker:hover) {
+    transform: scale(1.1);
   }
   
   .color-picker-compact :global(.color-picker__input) {
@@ -458,29 +530,42 @@
   /* Basic picker styling */
   .color-picker-compact :global(.picker) {
     z-index: 99999 !important;
+    position: fixed !important;
+    right: 80px !important;
+    top: 80px !important;
+    max-width: 320px !important;
   }
   
-  /* Ensure the color picker wrapper properly positions the popup */
+  /* Remove wrapper padding and margins for compact layout */
   .color-picker-compact :global(.wrapper) {
     z-index: 99999 !important;
+    padding: 4px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    border: none !important;
   }
   
-  /* Fix layout to prevent overlapping */
-  .color-picker-compact :global(.picker .variant) {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
+  /* When picker is open, ensure it's above everything */
+  .color-picker-compact :global(.color-picker-wrapper) {
+    z-index: 100000 !important;
   }
   
-  /* Color area styling */
-  .color-picker-compact :global(.picker .color) {
-    margin-bottom: 10px !important;
+  /* Remove margins from sliders to fit in window */
+  .color-picker-compact :global(.h),
+  .color-picker-compact :global(.a) {
+    margin: 2px 0 !important;
+    --track-width: 180px !important;
   }
   
-  /* Ensure sliders don't overlap */
-  .color-picker-compact :global(.picker .slider) {
-    margin: 6px 0 !important;
+  /* Make color square more compact */
+  .color-picker-compact :global(.picker) {
+    width: 180px !important;
+    height: 180px !important;
+    --picker-width: 180px !important;
+    --picker-height: 180px !important;
   }
+  
+  /* Remove any layout overrides - let the picker use its default layout */
   
   /* Additional mobile-specific fixes */
   @media (max-width: 768px) {
@@ -488,11 +573,6 @@
       position: fixed;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-    }
-    
-    /* Ensure picker popup isn't constrained by panel */
-    .color-picker-compact :global(.color-picker-wrapper) {
-      position: static !important;
     }
   }
 </style>

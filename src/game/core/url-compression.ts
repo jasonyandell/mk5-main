@@ -185,7 +185,21 @@ export function encodeGameUrl(
     Object.entries(colorOverrides).forEach(([varName, colorValue]) => {
       // Convert "--p" to "p" and color to comma-separated
       const key = varName.replace('--', '');
-      const value = colorValue.replace(/\s+/g, ',').replace(/%/g, '');
+      const v = colorValue.trim();
+      // Detect format using robust regex
+      const isOKLCH = /^(\d+(?:\.\d+)?)%\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?$/.test(v);
+      const isHSL = /^(\d+(?:\.\d+)?)\s+\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%$/.test(v);
+      let value: string;
+      if (isOKLCH) {
+        // Prefix with 'o' to mark OKLCH, remove spaces and %
+        value = 'o,' + v.replace(/\s+/g, ',').replace(/%/g, '');
+      } else if (isHSL) {
+        // Prefix with 'h' to mark HSL, remove spaces and %
+        value = 'h,' + v.replace(/\s+/g, ',').replace(/%/g, '');
+      } else {
+        // Fallback: keep legacy behavior (no marker)
+        value = v.replace(/\s+/g, ',').replace(/%/g, '');
+      }
       colorPairs.push(`${key}:${value}`);
     });
     params.set('v', colorPairs.join(';'));
@@ -268,15 +282,26 @@ export function decodeGameUrl(urlString: string): {
       // Convert "p" back to "--p" and restore color format
       const varName = '--' + key;
       const parts = value.split(',');
-      if (parts.length === 3 && parts[0]) {
-        // Check if it's OKLCH (has decimal points) or HSL
-        if (parts[0].includes('.')) {
-          // OKLCH format
-          const colorValue = `${parts[0]}% ${parts[1]} ${parts[2]}`;
+      if (parts.length >= 3) {
+        if (parts[0] === 'o' && parts.length === 4) {
+          // New OKLCH format with marker
+          const colorValue = `${parts[1]}% ${parts[2]} ${parts[3]}`;
+          colorOverrides[varName] = colorValue;
+          return;
+        }
+        if (parts[0] === 'h' && parts.length === 4) {
+          // New HSL format with marker
+          const colorValue = `${parts[1]} ${parts[2]}% ${parts[3]}%`;
+          colorOverrides[varName] = colorValue;
+          return;
+        }
+        // Legacy fallback: infer by presence of decimal in first token
+        const legacy = parts.slice(0, 3);
+        if (legacy[0] && legacy[0].includes('.')) {
+          const colorValue = `${legacy[0]}% ${legacy[1]} ${legacy[2]}`;
           colorOverrides[varName] = colorValue;
         } else {
-          // HSL format (legacy)
-          const colorValue = `${parts[0]} ${parts[1]}% ${parts[2]}%`;
+          const colorValue = `${legacy[0]} ${legacy[1]}% ${legacy[2]}%`;
           colorOverrides[varName] = colorValue;
         }
       }

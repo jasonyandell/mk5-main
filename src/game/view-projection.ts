@@ -57,7 +57,9 @@ export interface HandResults {
   winningTeam: number;
   biddingPlayer: number;
   // Perspective-aware messages for each player
-  resultMessage: string;  // e.g., "We made the bid!" or "They got set!"
+  resultMessage: string;  // Full message with emoji (for backwards compatibility)
+  resultText: string;  // Text without emoji
+  isSuccess: boolean;  // true for success, false for failure
   teamLabel: string;  // e.g., "US" or "THEM" for the bidding team
 }
 
@@ -423,6 +425,8 @@ function calculateHandResults(gameState: GameState, playerPerspective: number = 
   
   // Generate perspective-aware messages
   let resultMessage: string;
+  let resultText: string;
+  let isSuccess: boolean;
   let teamLabel: string;
   
   // Determine if the bidding team is "us" or "them" from player's perspective
@@ -434,15 +438,23 @@ function calculateHandResults(gameState: GameState, playerPerspective: number = 
     // We bid
     if (bidMade) {
       resultMessage = '✅ WE MADE THE BID!';
+      resultText = 'WE MADE THE BID!';
+      isSuccess = true;
     } else {
       resultMessage = '❌ WE GOT SET!';
+      resultText = 'WE GOT SET!';
+      isSuccess = false;
     }
   } else {
     // They bid
     if (bidMade) {
       resultMessage = '❌ THEY MADE THE BID!';
+      resultText = 'THEY MADE THE BID!';
+      isSuccess = false;
     } else {
       resultMessage = '✅ WE SET THEM!';
+      resultText = 'WE SET THEM!';
+      isSuccess = true;
     }
   }
   
@@ -455,6 +467,8 @@ function calculateHandResults(gameState: GameState, playerPerspective: number = 
     winningTeam: bidMade ? biddingTeam : (biddingTeam === 0 ? 1 : 0),
     biddingPlayer,
     resultMessage,
+    resultText,
+    isSuccess,
     teamLabel
   };
 }
