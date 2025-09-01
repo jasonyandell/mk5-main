@@ -89,10 +89,10 @@
       // OKLCH format: L% C H
       if (parts.length === 3) {
         // Remove % sign from L value if present
-        const lStr = parts[0].replace('%', '');
+        const lStr = (parts[0] ?? '').replace('%', '');
         const l = parseFloat(lStr) / 100; // Convert percentage to 0-1 range
-        const c = parseFloat(parts[1] || '0');
-        const h = parseFloat(parts[2] || '0');
+        const c = parseFloat(parts[1] ?? '0');
+        const h = parseFloat(parts[2] ?? '0');
         
         const color = { mode: 'oklch', l, c, h };
         const hex = formatHex(color);
@@ -139,12 +139,12 @@
       const pa = a.trim().split(/\s+/);
       const pb = b.trim().split(/\s+/);
       if (pa.length !== 3 || pb.length !== 3) return false;
-      const l1 = parseFloat(pa[0].replace('%', ''));
-      const c1 = parseFloat(pa[1]);
-      const h1 = parseFloat(pa[2]);
-      const l2 = parseFloat(pb[0].replace('%', ''));
-      const c2 = parseFloat(pb[1]);
-      const h2 = parseFloat(pb[2]);
+      const l1 = parseFloat((pa[0] ?? '').replace('%', ''));
+      const c1 = parseFloat(pa[1] ?? '');
+      const h1 = parseFloat(pa[2] ?? '');
+      const l2 = parseFloat((pb[0] ?? '').replace('%', ''));
+      const c2 = parseFloat(pb[1] ?? '');
+      const h2 = parseFloat(pb[2] ?? '');
       if (![l1,c1,h1,l2,c2,h2].every(Number.isFinite)) return false;
       return Math.abs(l1 - l2) < 0.02 && Math.abs(c1 - c2) < 0.0005 && Math.abs(h1 - h2) < 0.1;
     } catch {

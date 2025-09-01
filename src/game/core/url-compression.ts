@@ -183,24 +183,42 @@ export function encodeGameUrl(
     // Convert color overrides to compact format
     const colorPairs: string[] = [];
     Object.entries(colorOverrides).forEach(([varName, colorValue]) => {
-      // Convert "--p" to "p" and color to comma-separated
+      // Convert "--p" to "p", "--pc" to "pc", etc.
       const key = varName.replace('--', '');
       const v = colorValue.trim();
+      
       // Detect format using robust regex
-      const isOKLCH = /^(\d+(?:\.\d+)?)%\s+\d+(?:\.\d+)?\s+\d+(?:\.\d+)?$/.test(v);
-      const isHSL = /^(\d+(?:\.\d+)?)\s+\d+(?:\.\d+)?%\s+\d+(?:\.\d+)?%$/.test(v);
-      let value: string;
+      const isOKLCH = /^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/.test(v);
+      const isHSL = /^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/.test(v);
+      
+      let encoded: string;
       if (isOKLCH) {
-        // Prefix with 'o' to mark OKLCH, remove spaces and %
-        value = 'o,' + v.replace(/\s+/g, ',').replace(/%/g, '');
+        // Parse OKLCH values
+        const match = v.match(/^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/);
+        if (match && match[1] && match[2] && match[3]) {
+          const l = parseFloat(match[1]).toFixed(2); // L with 2 decimals
+          const c = Math.round(parseFloat(match[2]) * 100); // C × 100 as int
+          const h = Math.round(parseFloat(match[3])); // H as int
+          encoded = `o${key}${l},${c},${h}`;
+        } else {
+          encoded = `o${key}${v.replace(/\s+/g, ',').replace(/%/g, '')}`;
+        }
       } else if (isHSL) {
-        // Prefix with 'h' to mark HSL, remove spaces and %
-        value = 'h,' + v.replace(/\s+/g, ',').replace(/%/g, '');
+        // Parse HSL values
+        const match = v.match(/^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/);
+        if (match && match[1] && match[2] && match[3]) {
+          const h = Math.round(parseFloat(match[1])); // H as int
+          const s = Math.round(parseFloat(match[2])); // S as int
+          const l = Math.round(parseFloat(match[3])); // L as int
+          encoded = `h${key}${h},${s},${l}`;
+        } else {
+          encoded = `h${key}${v.replace(/\s+/g, ',').replace(/%/g, '')}`;
+        }
       } else {
-        // Fallback: keep legacy behavior (no marker)
-        value = v.replace(/\s+/g, ',').replace(/%/g, '');
+        // Fallback for unexpected formats
+        encoded = `${key}${v.replace(/\s+/g, ',').replace(/%/g, '')}`;
       }
-      colorPairs.push(`${key}:${value}`);
+      colorPairs.push(encoded);
     });
     params.set('v', colorPairs.join(';'));
   }
@@ -270,40 +288,51 @@ export function decodeGameUrl(urlString: string): {
   // Parse theme (default 'coffee')
   const theme = params.get('t') || 'coffee';
   
-  // Parse color overrides
+  // Parse color overrides (new compact format)
   const colorOverrides: Record<string, string> = {};
   const colorStr = params.get('v');
   if (colorStr) {
-    const pairs = colorStr.split(';');
-    pairs.forEach(pair => {
-      const [key, value] = pair.split(':');
-      if (!key || !value) return;
+    const entries = colorStr.split(';');
+    entries.forEach(entry => {
+      // New compact format: o{var}{L},{C},{H} or h{var}{H},{S},{L}
+      // Examples: "op73.54,21,181" or "hpc240,60,50"
       
-      // Convert "p" back to "--p" and restore color format
-      const varName = '--' + key;
-      const parts = value.split(',');
-      if (parts.length >= 3) {
-        if (parts[0] === 'o' && parts.length === 4) {
-          // New OKLCH format with marker
-          const colorValue = `${parts[1]}% ${parts[2]} ${parts[3]}`;
-          colorOverrides[varName] = colorValue;
-          return;
+      // Check if it starts with 'o' (OKLCH) or 'h' (HSL)
+      if (entry.startsWith('o')) {
+        // OKLCH format
+        const content = entry.substring(1); // Remove 'o' prefix
+        // Find where the variable name ends and values begin
+        const firstNumberIndex = content.search(/\d/);
+        if (firstNumberIndex === -1) return;
+        
+        const varName = '--' + content.substring(0, firstNumberIndex);
+        const values = content.substring(firstNumberIndex).split(',');
+        
+        if (values.length === 3 && values[0] && values[1] && values[2]) {
+          const l = parseFloat(values[0]); // L is already with decimals
+          const c = parseFloat(values[1]) / 100; // C was multiplied by 100
+          const h = parseFloat(values[2]); // H is integer
+          colorOverrides[varName] = `${l}% ${c} ${h}`;
         }
-        if (parts[0] === 'h' && parts.length === 4) {
-          // New HSL format with marker
-          const colorValue = `${parts[1]} ${parts[2]}% ${parts[3]}%`;
-          colorOverrides[varName] = colorValue;
-          return;
+      } else if (entry.startsWith('h')) {
+        // HSL format
+        const content = entry.substring(1); // Remove 'h' prefix
+        // Find where the variable name ends and values begin
+        const firstNumberIndex = content.search(/\d/);
+        if (firstNumberIndex === -1) return;
+        
+        const varName = '--' + content.substring(0, firstNumberIndex);
+        const values = content.substring(firstNumberIndex).split(',');
+        
+        if (values.length === 3 && values[0] && values[1] && values[2]) {
+          const h = parseFloat(values[0]); // H is integer
+          const s = parseFloat(values[1]); // S is integer percentage
+          const l = parseFloat(values[2]); // L is integer percentage
+          colorOverrides[varName] = `${h} ${s}% ${l}%`;
         }
-        // Legacy fallback: infer by presence of decimal in first token
-        const legacy = parts.slice(0, 3);
-        if (legacy[0] && legacy[0].includes('.')) {
-          const colorValue = `${legacy[0]}% ${legacy[1]} ${legacy[2]}`;
-          colorOverrides[varName] = colorValue;
-        } else {
-          const colorValue = `${legacy[0]} ${legacy[1]}% ${legacy[2]}%`;
-          colorOverrides[varName] = colorValue;
-        }
+      } else {
+        // Fallback for any unexpected format
+        console.warn('Unknown color format in URL:', entry);
       }
     });
   }
