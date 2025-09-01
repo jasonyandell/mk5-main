@@ -198,7 +198,7 @@
       gameActions.updateTheme($gameState.theme, newColors);
       pendingUpdates = {};
       updateTimer = null;
-    }, 300);
+    }, 100);
   }
   
   // Reset all colors
@@ -348,7 +348,7 @@
   {/if}
   
   <!-- Color Editor Panel - Minimal vertical -->
-  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-16 bg-base-100 shadow-2xl border-l border-base-300 overflow-y-auto transition-all duration-300 ease-out z-50">
+  <div class="theme-editor-panel fixed right-0 top-16 bottom-0 w-16 bg-base-100 shadow-2xl border-l border-base-300 overflow-y-auto transition-all duration-300 ease-out z-50" class:picker-open={isAnyPickerOpen}>
     <!-- All content in single scrollable container -->
     <div class="p-2 space-y-2">
       {#if !isAnyPickerOpen}
@@ -388,7 +388,6 @@
                 bind:isOpen={pickerStates[variable.var]!}
                 hex={hexValue}
                 label=""
-                position="fixed"
                 isTextInput={false}
                 sliderDirection="vertical"
                 onInput={(e: any) => {
@@ -492,7 +491,7 @@
 
 <style>
   .share-dialog {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: hsl(var(--nc) / 0.5);
     backdrop-filter: blur(4px);
   }
   
@@ -500,24 +499,125 @@
   .color-picker-compact :global(.color-picker) {
     width: 2.5rem;
     height: 2.5rem;
-    border-radius: 50%;
-    border: 2px solid oklch(var(--b3));
+    border-radius: 9999px;
     cursor: pointer;
     transition: transform 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    line-height: 0 !important;
+    vertical-align: middle;
   }
+
+  /* (intentionally no pseudo on .color-picker; backdrop handled on label) */
   
-  /* Hide the label background and padding to prevent elliptical shadow */
-  .color-picker-compact :global(label) {
+  /* Neutralize any wrapper/label backgrounds that create a pill behind the swatch */
+  .color-picker-compact :global(label),
+  .color-picker-compact :global(.label),
+  .color-picker-compact :global(.color-picker__label) {
+    --input-size: 2.5rem !important; /* match our outer circle */
     background: transparent !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
+    height: var(--input-size) !important;
+    border-radius: 9999px !important;
+    gap: 0 !important;
+    line-height: 0 !important;
+  }
+
+  /* Ensure swatch wrapper itself has no background/shadow */
+  .color-picker-compact :global(.color-picker) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep the color circle round and free of extra layers */
+  .color-picker-compact :global(.result) {
+    border-radius: 9999px !important;
+    box-shadow: none !important;
+    overflow: hidden !important; /* ensure inner layers don't bleed as ellipse */
+  }
+  .color-picker-compact :global(.container) {
+    /* Ensure inner container matches our circle */
+    width: var(--input-size, 2.5rem) !important;
+    height: var(--input-size, 2.5rem) !important;
+  }
+  .color-picker-compact :global(.alpha),
+  .color-picker-compact :global(.color) {
+    width: var(--input-size, 2.5rem) !important;
+    height: var(--input-size, 2.5rem) !important;
+    border-radius: 9999px !important;
+    background-clip: padding-box !important;
+  }
+
+  /* Hide alpha checkerboard layer behind the swatch to avoid faint ring/ellipse */
+  .color-picker-compact :global(.alpha) {
+    display: none !important;
+    background: transparent !important;
+  }
+
+  /* Remove focus outlines that can appear as faint ovals around the swatch */
+  .color-picker-compact :global(input:focus ~ .color),
+  .color-picker-compact :global(input:focus-visible ~ .color) {
+    outline: none !important;
+  }
+
+  /* Cover any faint background with a clean circular backdrop matching panel bg */
+  .color-picker-compact :global(label) {
+    position: relative;
+    z-index: 1;
+  }
+  .color-picker-compact :global(label)::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: oklch(var(--b1));
+    pointer-events: none;
+    z-index: 0;
+  }
+  .color-picker-compact :global(.result::before),
+  .color-picker-compact :global(.result::after) {
+    content: none !important;
+  }
+
+  /* Remove WebKit tap highlight and focus rings that appear as an oval */
+  .color-picker-compact :global(.color-picker),
+  .color-picker-compact :global(label),
+  .color-picker-compact :global(.color-picker__label),
+  .color-picker-compact :global(.result) {
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none !important;
+  }
+  .color-picker-compact :global(.color-picker:focus),
+  .color-picker-compact :global(label:focus),
+  .color-picker-compact :global(.color-picker__label:focus),
+  .color-picker-compact :global(.result:focus),
+  .color-picker-compact :global(.color-picker:focus-visible),
+  .color-picker-compact :global(label:focus-visible),
+  .color-picker-compact :global(.color-picker__label:focus-visible),
+  .color-picker-compact :global(.result:focus-visible),
+  .color-picker-compact :global(.color-picker:focus-within),
+  .color-picker-compact :global(label:focus-within),
+  .color-picker-compact :global(.color-picker__label:focus-within),
+  .color-picker-compact :global(.result:focus-within) {
+    outline: none !important;
+    box-shadow: none !important;
   }
   
-  .color-picker-compact :global(.color-picker:hover) {
+  /* Remove hover scaling to avoid layout/position thrash with popup */
+  /* .color-picker-compact :global(.color-picker:hover) {
     transform: scale(1.1);
-  }
+  } */
   
   .color-picker-compact :global(.color-picker__input) {
     display: none;
@@ -527,14 +627,7 @@
     display: none;
   }
   
-  /* Basic picker styling */
-  .color-picker-compact :global(.picker) {
-    z-index: 99999 !important;
-    position: fixed !important;
-    right: 80px !important;
-    top: 80px !important;
-    max-width: 320px !important;
-  }
+  /* Basic picker styling (keep defaults; avoid forced positioning to prevent flicker) */
   
   /* Remove wrapper padding and margins for compact layout */
   .color-picker-compact :global(.wrapper) {
@@ -543,11 +636,18 @@
     margin: 0 !important;
     border-radius: 8px !important;
     border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
   }
   
   /* When picker is open, ensure it's above everything */
   .color-picker-compact :global(.color-picker-wrapper) {
     z-index: 100000 !important;
+  }
+
+  /* Allow popup to overflow panel when any picker is open */
+  .theme-editor-panel.picker-open {
+    overflow: visible !important;
   }
   
   /* Remove margins from sliders to fit in window */
@@ -557,16 +657,17 @@
     --track-width: 180px !important;
   }
   
-  /* Make color square more compact */
+  /* Optional: compact picker size — enable if needed
   .color-picker-compact :global(.picker) {
     width: 180px !important;
     height: 180px !important;
     --picker-width: 180px !important;
     --picker-height: 180px !important;
   }
+  */
   
   /* Remove any layout overrides - let the picker use its default layout */
-  
+
   /* Additional mobile-specific fixes */
   @media (max-width: 768px) {
     .theme-editor-panel {

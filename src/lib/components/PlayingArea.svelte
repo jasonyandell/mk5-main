@@ -134,7 +134,7 @@
           <div class="flex gap-1 flex-1 items-center">
             {#each sortedPlays as play}
               {#if play}
-                <div class="inline-flex transition-all {play.player === trick.winner ? 'scale-110 drop-shadow-[0_0_4px_rgba(16,185,129,0.5)]' : ''}">
+                <div class="inline-flex transition-all {play.player === trick.winner ? 'scale-110 drop-shadow-[0_0_4px_hsl(var(--su)/0.5)]' : ''}">
                   <Domino 
                     domino={play.domino} 
                     small={true}
@@ -240,7 +240,7 @@
       data-trick-button="true"
       aria-label={$viewProjection.tooltips.proceedAction || "Click to skip AI delays"}
     >
-      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-[inset_0_0_40px_rgba(0,0,0,0.3),0_10px_30px_rgba(0,0,0,0.2)] flex items-center justify-center transition-all duration-300 z-[2] {$viewProjection.actions.proceed ? 'motion-safe:animate-pulse-table' : ''} w-[260px] h-[260px]">
+      <div class="relative bg-gradient-to-b from-primary via-primary/80 to-primary/60 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 z-[2] {$viewProjection.actions.proceed ? 'motion-safe:animate-pulse-table' : ''} w-[260px] h-[260px]">
       <div class="absolute inset-5 border-2 border-base-100/10 rounded-full"></div>
       
       {#if $viewProjection.scoring.handResults}
@@ -257,7 +257,7 @@
           </div>
           
           <div class="flex items-center gap-5">
-            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 0 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
+            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 0 ? 'bg-base-100/30 scale-110 shadow-lg shadow-base-100/30' : ''}">
               <div class="text-xs font-semibold text-base-100 opacity-90 tracking-widest">US</div>
               <div class="text-3xl font-bold text-base-100 leading-none">{$viewProjection.scoring.handResults.team0Points}</div>
               <div class="text-[11px] text-base-100 opacity-80">points</div>
@@ -265,7 +265,7 @@
             
             <div class="text-sm font-semibold text-base-100 opacity-80">vs</div>
             
-            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 1 ? 'bg-base-100/30 scale-110 shadow-[0_0_20px_rgba(255,255,255,0.3)]' : ''}">
+            <div class="flex flex-col items-center gap-1 px-6 py-4 bg-base-100/20 rounded-2xl transition-all {$viewProjection.scoring.handResults.winningTeam === 1 ? 'bg-base-100/30 scale-110 shadow-lg shadow-base-100/30' : ''}">
               <div class="text-xs font-semibold text-base-100 opacity-90 tracking-widest">THEM</div>
               <div class="text-3xl font-bold text-base-100 leading-none">{$viewProjection.scoring.handResults.team1Points}</div>
               <div class="text-[11px] text-base-100 opacity-80">points</div>
@@ -309,7 +309,7 @@
     </div>
     
     {#if $viewProjection.ui.isAIThinking}
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 px-4 py-2 rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.1)] flex items-center gap-2 text-sm text-base-content/70 motion-safe:animate-pulse pointer-events-none z-10">
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-base-100/95 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 text-sm text-base-content/70 motion-safe:animate-pulse pointer-events-none z-10">
         <Icon name="cpuChip" size="md" />
         <span>P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
       </div>
@@ -317,7 +317,7 @@
     
     {#if $viewProjection.actions.proceed}
       <div 
-        class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-[0_4px_12px_rgba(139,92,246,0.3)] z-10 motion-safe:animate-tap-bounce"
+        class="absolute top-[calc(50%+140px+25px)] left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 bg-secondary text-secondary-content rounded-full text-sm font-semibold shadow-lg shadow-secondary/30 z-10 motion-safe:animate-tap-bounce"
         role="presentation"
       >
         <Icon name="handRaised" size="md" className="motion-safe:animate-tap-point" />
@@ -403,11 +403,11 @@
   
   @keyframes animate-winner-glow {
     0%, 100% {
-      filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+      filter: drop-shadow(0 0 8px hsl(var(--wa) / 0.6));
       transform: scale(1);
     }
     50% {
-      filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.9));
+      filter: drop-shadow(0 0 20px hsl(var(--wa) / 0.9));
       transform: scale(1.05);
     }
   }
@@ -511,16 +511,16 @@
     0%, 100% {
       transform: scale(1);
       box-shadow: 
-        inset 0 0 40px rgba(0, 0, 0, 0.3),
-        0 10px 30px rgba(0, 0, 0, 0.2),
-        0 0 0 0 rgba(139, 92, 246, 0);
+        inset 0 0 40px hsl(var(--n) / 0.3),
+        0 10px 30px hsl(var(--n) / 0.2),
+        0 0 0 0 hsl(var(--s) / 0);
     }
     50% {
       transform: scale(1.05);
       box-shadow: 
-        inset 0 0 50px rgba(139, 92, 246, 0.2),
-        0 10px 30px rgba(0, 0, 0, 0.2),
-        0 0 40px 20px rgba(139, 92, 246, 0.5);
+        inset 0 0 50px hsl(var(--s) / 0.2),
+        0 10px 30px hsl(var(--n) / 0.2),
+        0 0 40px 20px hsl(var(--s) / 0.5);
     }
   }
   

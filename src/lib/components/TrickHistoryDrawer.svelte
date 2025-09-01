@@ -175,7 +175,7 @@
   <!-- Overlay (when expanded) -->
   {#if drawerState === 'expanded'}
     <button
-      class="fixed inset-0 bg-black/20 -z-10"
+      class="fixed inset-0 bg-base-content/20 -z-10"
       onclick={toggleDrawer}
       aria-label="Close drawer"
     ></button>
