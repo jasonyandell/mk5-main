@@ -58,7 +58,7 @@ export function createSetupState(options?: {
     isComplete: false,
     winner: -1, // -1 instead of null
     // Theme as first-class citizen
-    theme: 'coffee',
+    theme: 'business',
     colorOverrides: {}
   };
 }
@@ -83,7 +83,7 @@ export function createInitialState(options?: {
   
   const initialState = {
     // Theme configuration (first-class citizen)
-    theme: options?.theme ?? 'coffee',
+    theme: options?.theme ?? 'business',
     colorOverrides: options?.colorOverrides ?? {},
     
     // Game state

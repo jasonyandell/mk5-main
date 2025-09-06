@@ -149,7 +149,7 @@ export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 's
 
 export interface GameState {
   // Theme configuration (first-class citizen)
-  theme: string; // DaisyUI theme name (default: 'coffee')
+  theme: string; // DaisyUI theme name (default: 'business')
   colorOverrides: Record<string, string>; // CSS variable overrides (e.g., '--p': '71.9967% 0.123825 62.756393')
   
   // Game state

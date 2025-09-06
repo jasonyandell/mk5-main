@@ -158,5 +158,13 @@ export const icons = {
   
   arrowUpTray: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+  </svg>`,
+  
+  trophy: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 4.5h13.5c.621 0 1.125.504 1.125 1.125v.75c0 2.071-1.679 3.75-3.75 3.75h-.375m-9 0h-.375c-2.071 0-3.75-1.679-3.75-3.75v-.75c0-.621.504-1.125 1.125-1.125m15.75 0v1.5c0 2.485-2.015 4.5-4.5 4.5m3.375-10.125h1.5c.621 0 1.125.504 1.125 1.125m-20.25 0v1.5c0 2.485 2.015 4.5 4.5 4.5m-3.375-10.125h-1.5c-.621 0-1.125.504-1.125 1.125m15.75 6.75c0 4.5-3 6.75-3 6.75s-3-2.25-3-6.75m-3-6.75h12m-6 15v3m-3 0h6" />
+  </svg>`,
+  
+  link: `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
   </svg>`
 };

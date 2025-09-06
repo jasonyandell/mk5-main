@@ -45,11 +45,32 @@ export class ControllerManager {
    * Called whenever game state changes
    */
   onStateChange(state: GameState): void {
+    // First, sync controllers with playerTypes from the state
+    this.syncControllersWithState(state);
+    
     const transitions = getNextStates(state);
     
     // Notify ALL controllers - they decide if they need to act
     for (const controller of this.controllers.values()) {
       controller.onStateChange(state, transitions);
+    }
+  }
+  
+  /**
+   * Sync controllers with the playerTypes in the state
+   */
+  private syncControllersWithState(state: GameState): void {
+    for (let playerId = 0; playerId < 4; playerId++) {
+      const shouldBeHuman = state.playerTypes[playerId] === 'human';
+      const isCurrentlyHuman = this.controllers.has(playerId);
+      
+      if (shouldBeHuman && !isCurrentlyHuman) {
+        // Add human controller
+        this.switchToHuman(playerId);
+      } else if (!shouldBeHuman && isCurrentlyHuman) {
+        // Remove human controller (AI doesn't need a controller)
+        this.switchToAI(playerId);
+      }
     }
   }
   

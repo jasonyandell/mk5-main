@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager } from '../../stores/gameStore';
+  import { gameActions, viewProjection, controllerManager, dispatcher } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import Icon from '../icons/Icon.svelte';
@@ -31,9 +31,9 @@
       if (humanController) {
         humanController.handleUserAction(action);
       } else {
-        // Fallback to direct execution (used in testMode)
+        // Fallback to unified dispatcher (used in testMode)
         console.log('[ActionPanel] Direct execution (no controller):', action.label, 'for player', playerId);
-        gameActions.executeAction(action);
+        dispatcher.requestTransition(action, 'ui');
       }
       
       // Panel switching is handled by the reactive effect above

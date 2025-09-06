@@ -168,13 +168,14 @@ export function encodeGameUrl(
   dealer?: number,
   tournamentMode?: boolean,
   theme?: string,
-  colorOverrides?: Record<string, string>
+  colorOverrides?: Record<string, string>,
+  sectionName?: string
 ): string {
   const params = new URLSearchParams();
   
   // Theme parameters FIRST (so they survive truncation)
-  // Only include theme if not default ('coffee')
-  if (theme && theme !== 'coffee') {
+  // Only include theme if not default ('business')
+  if (theme && theme !== 'business') {
     params.set('t', theme);
   }
   
@@ -247,6 +248,11 @@ export function encodeGameUrl(
   // Compressed actions - always last since it's the longest
   params.set('a', compressEvents(actions));
   
+  // Section identifier (human-readable) e.g., one_hand, one_trick
+  if (sectionName && sectionName.trim()) {
+    params.set('h', sectionName);
+  }
+  
   return '?' + params.toString();
 }
 
@@ -261,6 +267,7 @@ export function decodeGameUrl(urlString: string): {
   tournamentMode: boolean;
   theme: string;
   colorOverrides: Record<string, string>;
+  scenario: string;
 } {
   // Handle both full URLs and just query strings
   const queryString = urlString.includes('?') 
@@ -280,13 +287,17 @@ export function decodeGameUrl(urlString: string): {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       dealer: 3,
       tournamentMode: true,
-      theme: 'coffee',
-      colorOverrides: {}
+      theme: 'business',
+      colorOverrides: {},
+      scenario: ''
     };
   }
   
-  // Parse theme (default 'coffee')
-  const theme = params.get('t') || 'coffee';
+  // Parse theme (default 'business')
+  const theme = params.get('t') || 'business';
+  
+  // Parse section/scenario identifier (optional)
+  const scenario = params.get('h') || '';
   
   // Parse color overrides (new compact format)
   const colorOverrides: Record<string, string> = {};
@@ -340,7 +351,18 @@ export function decodeGameUrl(urlString: string): {
   // Parse seed
   const seedStr = params.get('s');
   if (!seedStr) {
-    throw new Error('Invalid URL: missing seed parameter');
+    // Defer decision to caller: use 0 when seed is not present
+    // Callers can detect and supply a seed and update URL.
+    return {
+      seed: 0,
+      actions: [],
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      dealer: 3,
+      tournamentMode: true,
+      theme,
+      colorOverrides,
+      scenario
+    };
   }
   
   // Handle both old decimal format (v2) and new base36 format
@@ -383,7 +405,7 @@ export function decodeGameUrl(urlString: string): {
   const tournamentStr = params.get('tm');
   const tournamentMode = tournamentStr !== '0';
   
-  return { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides };
+  return { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides, scenario };
 }
 
 // Export types for use in other modules
@@ -395,4 +417,5 @@ export interface URLData {
   tournamentMode: boolean;
   theme: string;
   colorOverrides: Record<string, string>;
+  scenario: string;
 }

@@ -142,7 +142,7 @@ if (isGameComplete(newMarks, state.gameTarget)) {
 
 ## Benefits
 - Automated testing (run many games quickly)
-- Demo mode for new players
+- Practice mode for new players
 - Development testing tool
 - No changes to core game logic
 - Continuous multi-game sessions

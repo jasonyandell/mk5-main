@@ -1,9 +1,10 @@
 import { writable, get } from 'svelte/store';
-import { gameState, availableActions, gameActions, actionHistory } from './gameStore';
+import { gameState, availableActions, gameActions, actionHistory, dispatcher, startGameLoop, stopGameLoop } from './gameStore';
 import type { GameState, StateTransition, Domino, Player } from '../game/types';
 import { BID_TYPES } from '../game/constants';
 import { getDominoPoints, countDoubles } from '../game/core/dominoes';
 import { getStrongestSuits } from '../game/core/suit-analysis';
+import { setAISpeedProfile } from '../game/core/ai-scheduler';
 
 export interface QuickplayState {
   enabled: boolean;
@@ -294,7 +295,7 @@ function processAIMoves() {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision); // Mark as controller action
+        dispatcher.requestTransition(decision, 'ai');
       }
     } catch (error) {
       // Log error details for debugging
@@ -342,6 +343,20 @@ export function startQuickplay() {
   // Subscribe to state changes to detect when to stop
   if (!unsubscribe) {
     unsubscribe = quickplayState.subscribe(($quickplayState) => {
+      // Ensure only one AI driver is active
+      if ($quickplayState.enabled) {
+        stopGameLoop();
+      } else {
+        startGameLoop();
+      }
+
+      // Apply AI speed profile
+      const speed = $quickplayState.speed;
+      if (speed === 'instant' || speed === 'fast' || speed === 'normal' || speed === 'slow') {
+        setAISpeedProfile(speed);
+      }
+
+      // Manage quickplay animation frame
       if (!$quickplayState.enabled && animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
@@ -411,7 +426,7 @@ export const quickplayActions = {
     try {
       const decision = makeAIDecision($gameState, $availableActions);
       if (decision) {
-        gameActions.executeAction(decision); // Mark as controller action
+        dispatcher.requestTransition(decision, 'ai');
       }
     } catch (error) {
       console.error('[Quickplay] Step error:', {
@@ -451,7 +466,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision); // Mark as controller action
+          dispatcher.requestTransition(decision, 'ai');
           // Continue with next action
           setTimeout(runToHandEnd, 0);
         }
@@ -478,7 +493,7 @@ export const quickplayActions = {
       try {
         const decision = makeAIDecision($gameState, $availableActions);
         if (decision) {
-          gameActions.executeAction(decision); // Mark as controller action
+          dispatcher.requestTransition(decision, 'ai');
           // Continue with next action
           setTimeout(runToGameEnd, 0);
         }

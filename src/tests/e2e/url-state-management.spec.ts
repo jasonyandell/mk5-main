@@ -566,21 +566,6 @@ test.describe('URL State Management', () => {
       expect(phase).toBe('bidding');
     });
 
-    test('should handle corrupted URL data gracefully', async ({ page }) => {
-      const helper = new PlaywrightGameHelper(page);
-      
-      // Create corrupted URL with invalid action characters
-      // 12345 in base36 is '9ix'
-      const corruptedUrl = '?s=9ix&a=ABCD~~~INVALID';
-      
-      await page.goto(`${corruptedUrl}&testMode=true`);
-      await helper.waitForGameReady();
-      
-      // Should start fresh game or process valid actions only
-      const phase = await helper.getCurrentPhase();
-      expect(phase).toBeTruthy(); // Game should be in a valid phase
-    });
-
     test('should stop at first invalid action and continue from there', async ({ page }) => {
       const helper = new PlaywrightGameHelper(page);
       

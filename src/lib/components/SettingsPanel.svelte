@@ -1,5 +1,8 @@
 <script lang="ts">
   import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
+  import { startSection } from '../../game/core/sectionRunner';
+  import { onePlay, oneTrick } from '../../game/core/sectionPresets';
+  import { sectionActions } from '../../stores/gameStore';
   import { encodeGameUrl } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
@@ -24,9 +27,21 @@
     navigator.clipboard.writeText(text);
   }
 
-  // Generate shareable URL
+  import { buildUrl } from '../../stores/utils/urlManager';
+  // Generate shareable URL via encoder (canonical)
   function copyShareableUrl() {
-    const url = window.location.href;
+    const compactIds = $actionHistory.map(a => a.id).filter((id: string) => !id.startsWith('agree-'));
+    const url = buildUrl({
+      initialState: $initialState,
+      actionIds: compactIds,
+      includeSeed: true,
+      includeActions: true,
+      includeScenario: true,
+      includeTheme: true,
+      includeOverrides: true,
+      preserveUnknownParams: true,
+      absolute: true
+    });
     copyToClipboard(url);
   }
 
@@ -50,9 +65,10 @@
     gameActions.loadFromHistoryState(historyState);
     
     // Update URL to reflect the new state
+    const compactIds = actionsToReplay.map(a => a.id).filter((id) => !id.startsWith('agree-'));
     const newURL = window.location.pathname + encodeGameUrl(
       $initialState.shuffleSeed,
-      actionsToReplay.map(a => a.id),
+      compactIds,
       $initialState.playerTypes
     );
     
@@ -180,6 +196,27 @@
 
       {#if activeTab === 'state'}
         <div class="space-y-4">
+          <!-- Sections quick actions -->
+          <div class="card bg-base-100 shadow-md">
+            <div class="card-body gap-3">
+              <h3 class="card-title text-sm">Sections</h3>
+              <div class="grid grid-cols-2 gap-2">
+                <button class="btn btn-primary" onclick={async () => {
+                  const runner = startSection(onePlay());
+                  await runner.done;
+                }}>Play One Domino</button>
+                <button class="btn btn-secondary" onclick={async () => {
+                  const runner = startSection(oneTrick());
+                  await runner.done;
+                }}>Play One Trick</button>
+                <button class="btn btn-accent col-span-2" onclick={async () => {
+                  await sectionActions.startOneHand();
+                }}>Play One Hand</button>
+              </div>
+              <p class="text-xs opacity-60">Runs a bounded section and returns control after completion.</p>
+            </div>
+          </div>
+
           <!-- Toggle switches -->
           <div class="flex flex-col gap-3">
             <div class="form-control">

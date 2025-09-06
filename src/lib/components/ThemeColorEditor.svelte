@@ -2,6 +2,7 @@
   import { onMount, createEventDispatcher } from 'svelte';
   import { formatHex, parse, converter } from 'culori';
   import { gameState, gameActions } from '../../stores/gameStore';
+  // No need to re-encode full URL for sharing; preserve current URL and patch theme if needed
   import ColorPicker from 'svelte-awesome-color-picker';
   import Icon from '../icons/Icon.svelte';
   
@@ -226,12 +227,23 @@
     }, 10);
   }
   
+  import { initialState, actionHistory } from '../../stores/gameStore';
+  import { buildUrl } from '../../stores/utils/urlManager';
   // Share colors via URL
   function shareColorsViaURL() {
-    // The URL already has everything since theme is first-class state!
-    shareURL = window.location.href;
+    const compactIds = $actionHistory.map(a => a.id).filter(id => !id.startsWith('agree-'));
+    shareURL = buildUrl({
+      initialState: $initialState,
+      actionIds: compactIds,
+      includeSeed: true,
+      includeActions: true,
+      includeScenario: true,
+      includeTheme: true,
+      includeOverrides: true,
+      preserveUnknownParams: true,
+      absolute: true
+    });
     showShareDialog = true;
-    
     navigator.clipboard.writeText(shareURL).catch(e => {
       console.error('Could not copy to clipboard:', e);
     });

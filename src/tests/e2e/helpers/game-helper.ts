@@ -24,6 +24,7 @@ interface GameMetrics {
 
 interface GotoOptions {
   disableUrlUpdates?: boolean;
+  testMode?: boolean; // default true; when false, main loop runs
 }
 
 interface QuickplayState {
@@ -115,8 +116,9 @@ export class PlaywrightGameHelper {
     const playerTypes = ['human', 'human', 'human', 'human'] as ('human' | 'ai')[];
     const urlStr = encodeGameUrl(seed, [], playerTypes, undefined, undefined);
     
-    // Add testMode for deterministic testing (disables AI controllers)
-    const url = `${urlStr}&testMode=true`;
+    // Add testMode for deterministic testing (disables main loop) unless overridden
+    const tm = options.testMode ?? true;
+    const url = tm ? `${urlStr}&testMode=true` : urlStr;
     
     // Navigate and wait for network idle for deterministic loading
     await this.page.goto(url, { 

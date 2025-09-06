@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager, availableActions } from '../../stores/gameStore';
+  import { gameActions, viewProjection, controllerManager, availableActions, dispatcher } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -19,7 +19,7 @@
     );
     
     if (playAction) {
-      gameActions.executeAction(playAction);
+      dispatcher.requestTransition(playAction, 'ui');
     }
   }
 
@@ -71,8 +71,8 @@
     if (humanController) {
       humanController.handleUserAction(proceedAction);
     } else {
-      // Fallback to direct execution
-      gameActions.executeAction(proceedAction);
+      // Fallback to unified dispatcher
+      dispatcher.requestTransition(proceedAction, 'ui');
     }
     
     // Panel switching is handled by reactive statement above

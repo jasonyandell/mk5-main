@@ -4,172 +4,23 @@ import { converter } from 'culori';
 import type { GameState, StateTransition } from '../game/types';
 import { createInitialState, getNextStates } from '../game';
 import { ControllerManager } from '../game/controllers';
-import { 
-  encodeGameUrl,
-  decodeGameUrl
-} from '../game/core/url-compression';
-import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule } from '../game/core/ai-scheduler';
+import { TransitionDispatcher } from '../game/core/dispatcher';
+import { decodeGameUrl } from '../game/core/url-compression';
+import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule, setAISpeedProfile } from '../game/core/ai-scheduler';
+import { startSection } from '../game/core/sectionRunner';
+import { oneHand as oneHandPreset, fromSlug as sectionFromSlug } from '../game/core/sectionPresets';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 
-// Helper to deep clone an object preserving Sets
-function deepClone<T>(obj: T): T {
-  if (obj === null || obj === undefined) return obj;
-  if (obj instanceof Set) return new Set(obj) as T;
-  if (obj instanceof Date) return new Date(obj.getTime()) as T;
-  if (obj instanceof Array) return obj.map(item => deepClone(item)) as T;
-  if (typeof obj === 'object') {
-    const cloned = {} as T;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        cloned[key] = deepClone(obj[key]);
-      }
-    }
-    return cloned;
-  }
-  return obj;
-}
+// Import extracted utilities
+import { deepClone, deepCompare } from './utils/deepUtils';
+import { updateURLWithState, setURLToMinimal, setCurrentScenario, beginUrlBatch, endUrlBatch } from './utils/urlManager';
+import { incrementAttempts } from './utils/oneHandStats';
+import { executeAllAIImmediate, injectConsensusIfNeeded } from './utils/aiHelpers';
+import { prepareDeterministicHand, buildActionsToPlayingFromState, buildOverlayPayload } from './utils/sectionHelpers';
 
-// Helper to deep compare two objects
-function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] {
-  const differences: string[] = [];
-  
-  if (obj1 === obj2) return differences;
-  
-  if (obj1 === null || obj2 === null || obj1 === undefined || obj2 === undefined) {
-    differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
-    return differences;
-  }
-  
-  if (typeof obj1 !== typeof obj2) {
-    differences.push(`${path}: type mismatch - ${typeof obj1} !== ${typeof obj2}`);
-    return differences;
-  }
-  
-  if (typeof obj1 !== 'object') {
-    if (obj1 !== obj2) {
-      differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
-    }
-    return differences;
-  }
-  
-  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-    differences.push(`${path}: array mismatch - one is array, other is not`);
-    return differences;
-  }
-  
-  if (Array.isArray(obj1)) {
-    if (Array.isArray(obj2)) {
-      if (obj1.length !== obj2.length) {
-        differences.push(`${path}: array length mismatch - ${obj1.length} !== ${obj2.length}`);
-      }
-      const maxLen = Math.max(obj1.length, obj2.length);
-      for (let i = 0; i < maxLen; i++) {
-        differences.push(...deepCompare(obj1[i], obj2[i], `${path}[${i}]`));
-      }
-    }
-  } else {
-    const keys1 = Object.keys(obj1 as Record<string, unknown>).sort();
-    const keys2 = Object.keys(obj2 as Record<string, unknown>).sort();
-    
-    // Check for missing/extra keys
-    const allKeys = new Set([...keys1, ...keys2]);
-    for (const key of allKeys) {
-      if (!keys1.includes(key)) {
-        differences.push(`${path}.${key}: missing in first object`);
-      } else if (!keys2.includes(key)) {
-        differences.push(`${path}.${key}: missing in second object`);
-      } else {
-        differences.push(...deepCompare((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key], path ? `${path}.${key}` : key));
-      }
-    }
-  }
-  
-  return differences;
-}
 
-// Helper function to update URL with initial state and actions
-function updateURLWithState(initialState: GameState, actions: StateTransition[], usePushState = false) {
-  if (typeof window !== 'undefined') {
-    // Filter color overrides to only include values that differ from the base theme defaults
-    let filteredOverrides = initialState.colorOverrides || {};
-    try {
-      const currentThemeAttr = document.documentElement.getAttribute('data-theme');
-      if (currentThemeAttr === initialState.theme && filteredOverrides && Object.keys(filteredOverrides).length > 0) {
-        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
-        const prevDisabled = styleEl ? styleEl.disabled : undefined;
-        if (styleEl) styleEl.disabled = true;
-        const styles = getComputedStyle(document.documentElement);
-        const minimal: Record<string, string> = {};
-        // Compare defaults vs overrides in OKLCH space with tolerance to avoid formatting/precision issues
-        const toOklch = converter('oklch');
-        const approxEqual = (a: string, b: string): boolean => {
-          const parse = (val: string): [number, number, number] | null => {
-            const v = val.trim();
-            if (!v) return null;
-            const parts = v.split(/\s+/);
-            if (parts.length !== 3) return null;
-            // OKLCH if first part has '%'
-            if (parts[0] && parts[0].includes('%')) {
-              const l = parseFloat(parts[0].replace('%', ''));
-              const c = parseFloat(parts[1] || '0');
-              const h = parseFloat(parts[2] || '0');
-              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
-              return null;
-            }
-            // HSL (legacy) otherwise
-            const h = parseFloat(parts[0] || '0');
-            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
-            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
-            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
-            const ok = toOklch({ mode: 'hsl', h, s, l });
-            if (!ok) return null;
-            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
-          };
-          const A = parse(a);
-          const B = parse(b);
-          if (!A || !B) return false;
-          const [l1, c1, h1] = A;
-          const [l2, c2, h2] = B;
-          const el = Math.abs(l1 - l2);
-          const ec = Math.abs(c1 - c2);
-          const eh = Math.abs(h1 - h2);
-          return el < 0.02 && ec < 0.0005 && eh < 0.1;
-        };
-        for (const [varName, value] of Object.entries(filteredOverrides)) {
-          const defaultVal = styles.getPropertyValue(varName).trim();
-          const overrideVal = String(value).trim();
-          if (!defaultVal || !approxEqual(defaultVal, overrideVal)) {
-            minimal[varName] = value;
-          }
-        }
-        filteredOverrides = minimal;
-        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
-      }
-    } catch {
-      // If anything goes wrong, fall back to using provided overrides
-    }
-    // Use v2 compressed format with theme as first-class citizen
-    // Always encode URL properly, even with no actions (preserves theme)
-    const newURL = window.location.pathname + encodeGameUrl(
-      initialState.shuffleSeed,
-      actions.map(a => a.id),
-      initialState.playerTypes,
-      initialState.dealer,
-      initialState.tournamentMode,
-      initialState.theme,
-      filteredOverrides
-    );
-    
-    // Store state in history for easy access
-    const historyState = { initialState, actions: actions.map(a => a.id), timestamp: Date.now() };
-    
-    if (usePushState) {
-      window.history.pushState(historyState, '', newURL);
-    } else {
-      window.history.replaceState(historyState, '', newURL);
-    }
-  }
-}
+// Re-export for backwards compatibility
+export { setCurrentScenario, beginUrlBatch, endUrlBatch };
 
 // Create the initial state once
 const urlParams = typeof window !== 'undefined' ? 
@@ -196,6 +47,23 @@ export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
 
 // Current player ID for primary view (can be changed for spectating)
 export const currentPlayerId = writable<number>(0);
+
+// Section completion overlay state
+export const sectionOverlay = writable<
+  | null
+  | {
+      type: 'oneHand';
+      phase: GameState['phase'];
+      seed: number;
+      canChallenge?: boolean;
+      attemptsForWin?: number;
+      attemptsCount?: number;
+      weWon?: boolean;
+      usScore?: number;
+      themScore?: number;
+    }
+>(null);
+
 
 // Available actions store - filtered for privacy
 export const availableActions = derived(
@@ -284,70 +152,38 @@ function validateState() {
 // Forward declaration for circular reference
 let controllerManager: ControllerManager;
 
-// Helper function to execute AI moves immediately (for tests/replay)
-// Returns the new state and the AI actions taken
-function executeAllAIImmediate(state: GameState): { state: GameState; aiActions: StateTransition[] } {
-  let currentState = state;
-  const aiActions: StateTransition[] = [];
-  
-  // Keep executing AI until no AI player needs to move
-  while (currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-    const availableTransitions = getNextStates(currentState);
-    
-    // Find the best AI action (using existing AI logic)
-    let aiTransition: StateTransition | undefined;
-    
-    // Try to find a play action first
-    aiTransition = availableTransitions.find(t => 
-      t.action.type === 'play' && 
-      'player' in t.action && 
-      t.action.player === currentState.currentPlayer
-    );
-    
-    // If no play action, try bid/pass
-    if (!aiTransition) {
-      aiTransition = availableTransitions.find(t => 
-        (t.action.type === 'bid' || t.action.type === 'pass') && 
-        'player' in t.action && 
-        t.action.player === currentState.currentPlayer
-      );
-    }
-    
-    // If no player action, try trump selection
-    if (!aiTransition) {
-      aiTransition = availableTransitions.find(t => 
-        t.action.type === 'select-trump' && 
-        currentState.winningBidder === currentState.currentPlayer
-      );
-    }
-    
-    // If no action found, break
-    if (!aiTransition) {
-      break;
-    }
-    
-    currentState = aiTransition.newState;
-    aiActions.push(aiTransition);
-  }
-  
-  return { state: currentState, aiActions };
-}
 
 // Game actions
 export const gameActions = {
   executeAction: (transition: StateTransition) => {
+    // Validate transition was offered by the game engine
+    const currentState = get(gameState);
+    const validTransitions = getNextStates(currentState);
+    const validIds = validTransitions.map(t => t.id);
+    
+    if (!validIds.includes(transition.id)) {
+      throw new Error(
+        `Invalid transition attempted: "${transition.id}". ` +
+        `Valid transitions are: [${validIds.join(', ')}]`
+      );
+    }
+    
+    // Use the fresh transition to avoid stale state issues
+    const freshTransition = validTransitions.find(t => t.id === transition.id)!;
+    
     const actions = get(actionHistory);
     
-    // Add action to history
-    let finalActions = [...actions, transition];
+    // Add action to history (use fresh transition)
+    let finalActions = [...actions, freshTransition];
     actionHistory.set(finalActions);
     
-    // Update to new state
-    let newState = transition.newState;
+    // Update to new state (use fresh state)
+    let newState = freshTransition.newState;
     
     // In test mode, execute AI immediately after human actions
     // This ensures deterministic behavior for tests
-    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
+    // Skip this immediate chaining if a custom gate is active (SectionRunner)
+    if (testMode && !dispatcher.hasCustomGate() && newState.playerTypes[newState.currentPlayer] === 'ai') {
       const result = executeAllAIImmediate(newState);
       newState = result.state;
       // Add AI actions to history
@@ -410,7 +246,7 @@ export const gameActions = {
     // When loading a state directly, make it the new initial state
     // Deep clone to prevent mutations
     initialState.set(deepClone(state));
-    gameState.set(state);
+    gameState.set(deepClone(state));
     actionHistory.set([]);
     stateValidationError.set(null);
     updateURLWithState(state, [], true);
@@ -422,7 +258,97 @@ export const gameActions = {
   loadFromURL: () => {
     if (typeof window !== 'undefined') {
       try {
-        const { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides } = decodeGameUrl(window.location.search);
+        const params = new URLSearchParams(window.location.search);
+        if (!params.get('s')) {
+          // Supply a seed if missing and update URL (preserving scenario if present)
+          // Reuse existing URL decode to capture theme/overrides even without seed
+          const { theme: urlTheme, colorOverrides: urlColorOverrides } = decodeGameUrl(window.location.search);
+          const supplied = createInitialState({
+            playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
+            theme: urlTheme,
+            colorOverrides: urlColorOverrides
+          });
+          const scenarioParam = params.get('h') || '';
+          setCurrentScenario(scenarioParam || null);
+
+          // Initialize stores
+          initialState.set(deepClone(supplied));
+          gameState.set(supplied);
+          actionHistory.set([]);
+          stateValidationError.set(null);
+
+          // Only update URL with a supplied seed if a scenario is requested
+          if (scenarioParam) {
+            updateURLWithState(supplied, [], false);
+          }
+
+          // If a scenario is provided, prepare and start it now
+          if (scenarioParam) {
+            const preset = sectionFromSlug(scenarioParam);
+            if (preset) {
+              if (scenarioParam === 'one_hand') {
+                // Prevent AI from running ahead while preparing and before runner is active
+                stopGameLoop();
+                dispatcher.setFrozen(true);
+
+                const actionIds = buildActionsToPlayingFromState(supplied);
+                gameActions.loadFromHistoryState({ initialState: supplied, actions: actionIds });
+                updateURLWithState(get(initialState), get(actionHistory), false);
+                // Increment attempts for this seed
+                incrementAttempts(supplied.shuffleSeed);
+              }
+              const runner = startSection(preset());
+              if (scenarioParam === 'one_hand') {
+                // Now allow progression
+                dispatcher.setFrozen(false);
+                startGameLoop();
+              }
+              if (scenarioParam === 'one_hand') {
+                // HACK: Direct state monitoring for URL-triggered sections
+                // The section runner's .done promise doesn't resolve properly for URL-triggered sections
+                // because the initial actions (buildActionsToPlayingFromState) are applied before the
+                // section runner's dispatcher listeners are set up. This causes the section runner to
+                // never "see" the state transitions during gameplay.
+                //
+                // TODO: Fix the root cause by either:
+                // 1. Ensuring all state transitions go through the dispatcher (including loadFromHistoryState)
+                // 2. Starting the section runner before applying initial actions
+                // 3. Restructuring how URL-triggered sections initialize vs user-triggered sections
+                //
+                // For now, we directly monitor the game state for completion:
+                let completed = false;
+                const checkCompletion = (state: GameState) => {
+                  console.log('[URL Section Monitor] Phase:', state.phase, 'Completed:', completed);
+                  if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
+                    completed = true;
+                    console.log('[URL Section Complete] Showing overlay for oneHand (will finalize after runner)');
+                    sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
+                    setURLToMinimal(get(initialState));
+                  }
+                };
+                
+                // Check immediately in case we're already at scoring
+                checkCompletion(get(gameState));
+                
+                // Then subscribe for future changes
+                const unsubscribe = gameState.subscribe(checkCompletion);
+                
+                // TODO: Handle consensus as part of game state machine
+                runner.done.then((result) => {
+                  stopGameLoop();
+                  dispatcher.setFrozen(true);
+                  sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
+                  setURLToMinimal(get(initialState));
+                }).finally(() => unsubscribe());
+              }
+            }
+          }
+
+          controllerManager.onStateChange(get(gameState));
+          return;
+        }
+
+        const { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides, scenario } = decodeGameUrl(window.location.search);
         
         // If no seed, there's no game to load
         if (!seed) {
@@ -449,9 +375,12 @@ export const gameActions = {
         let currentState = deepClone(newInitialState);
         const validActions: StateTransition[] = [];
         
-        // Replay actions
+        // Replay actions (supports compact consensus)
         let invalidActionFound = false;
         for (const actionId of actions) {
+          if (actionId === 'complete-trick' || actionId === 'score-hand') {
+            currentState = injectConsensusIfNeeded(currentState, actionId, validActions);
+          }
           const availableTransitions = getNextStates(currentState);
           const matchingTransition = availableTransitions.find(t => t.id === actionId);
           
@@ -481,6 +410,8 @@ export const gameActions = {
         
         gameState.set(currentState);
         actionHistory.set(validActions);
+        // Reflect scenario for ongoing URL updates
+        setCurrentScenario(scenario || null);
         
         // If we had invalid actions, update the URL to reflect the valid state
         if (invalidActionFound) {
@@ -491,6 +422,41 @@ export const gameActions = {
         
         // Notify controllers of the state change so AI can take action
         controllerManager.onStateChange(currentState);
+
+        // If scenario is provided, start the corresponding section.
+        // If no actions were supplied and scenario needs a prepared state (e.g., one_hand),
+        // build a deterministic action list up to that point and redirect URL accordingly.
+        if (scenario) {
+          const preset = sectionFromSlug(scenario);
+          if (preset) {
+            if (scenario === 'one_hand' && actions.length === 0) {
+              // Prevent AI from running ahead while preparing and before runner is active
+              stopGameLoop();
+              dispatcher.setFrozen(true);
+              // Build actions to reach playing from this initial state and load them as history
+              const actionIds = buildActionsToPlayingFromState(newInitialState);
+              gameActions.loadFromHistoryState({ initialState: newInitialState, actions: actionIds });
+              // Ensure URL reflects the actions up to this point
+              updateURLWithState(get(initialState), get(actionHistory), false);
+              // Increment attempts
+              incrementAttempts(newInitialState.shuffleSeed);
+            }
+            const runner = startSection(preset());
+            if (scenario === 'one_hand') {
+              // Now allow progression
+              dispatcher.setFrozen(false);
+              startGameLoop();
+            }
+            if (scenario === 'one_hand') {
+              runner.done.then((result) => {
+                stopGameLoop();
+                dispatcher.setFrozen(true);
+                sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
+                setURLToMinimal(get(initialState));
+              });
+            }
+          }
+        }
         return;
       } catch (e: unknown) {
         const error = e as Error;
@@ -659,6 +625,10 @@ export const gameActions = {
       const validActions: StateTransition[] = [];
       
       for (const actionId of historyState.actions) {
+        // Inflate compact consensus if needed right before boundary actions
+        if (actionId === 'complete-trick' || actionId === 'score-hand') {
+          currentState = injectConsensusIfNeeded(currentState, actionId, validActions);
+        }
         const availableTransitions = getNextStates(currentState);
         const matchingTransition = availableTransitions.find(t => t.id === actionId);
         
@@ -692,10 +662,16 @@ export const gameActions = {
   }
 };
 
+// Unified dispatcher: single entry for executing transitions
+export const dispatcher = new TransitionDispatcher(
+  (t) => gameActions.executeAction(t),
+  () => get(gameState)
+);
+
 // Initialize controller manager after gameActions is defined
 controllerManager = new ControllerManager((transition) => {
-  // Mark this as coming from a controller (AI or human controller)
-  gameActions.executeAction(transition);
+  // Route through unified dispatcher as a UI-originated transition
+  dispatcher.requestTransition(transition, 'ui');
 });
 
 // Initialize controllers with default configuration
@@ -735,8 +711,8 @@ const runGameLoop = () => {
   
   // Execute any AI action through the proper channel
   if (result.action) {
-    // Execute through gameActions to ensure it's recorded in history
-    gameActions.executeAction(result.action);
+    // Execute through dispatcher to unify transition entry
+    dispatcher.requestTransition(result.action, 'ai');
   }
   
   // Schedule next frame if still running
@@ -771,3 +747,107 @@ if (typeof window !== 'undefined') {
     stopGameLoop();
   });
 }
+
+
+// High-level section actions
+export const sectionActions = {
+  startOneHand: async () => {
+    // Prepare a deterministic hand and load it, preserving current theme settings
+    const prepared = await prepareDeterministicHand(424242);
+    const currentTheme = get(gameState).theme;
+    const currentOverrides = get(gameState).colorOverrides;
+    const preparedWithTheme = { ...prepared, theme: currentTheme, colorOverrides: currentOverrides };
+    // Set scenario before load so initial URL already includes it
+    setCurrentScenario('oneHand');
+    // Track attempts for this seed
+    incrementAttempts(prepared.shuffleSeed);
+    gameActions.loadState(preparedWithTheme);
+
+    // Start a one-hand section
+    // TODO: Handle consensus as part of game state machine
+    const runner = startSection(oneHandPreset());
+    // Show overlay as soon as we reach scoring/game_end
+    let completed = false;
+    const checkCompletion = (state: GameState) => {
+      if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
+        completed = true;
+        sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
+        setURLToMinimal(get(initialState));
+      }
+    };
+    // Immediate check + subscribe
+    checkCompletion(get(gameState));
+    const unsubscribe = gameState.subscribe(checkCompletion);
+    const result = await runner.done;
+    // Freeze the game at completion and update overlay with final phase
+    stopGameLoop();
+    dispatcher.setFrozen(true);
+    sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
+    setURLToMinimal(get(initialState));
+    unsubscribe();
+  },
+  clearOverlay: (unfreeze = false) => {
+    sectionOverlay.set(null);
+    if (unfreeze) {
+      // Ensure AI speed returns to normal when resuming general play
+      setAISpeedProfile('normal');
+      dispatcher.setFrozen(false);
+      dispatcher.clearGate();
+      startGameLoop();
+    }
+  },
+  restartOneHand: async (seedOverride?: number) => {
+    // Clear overlay and prevent AI from running ahead during setup
+    sectionOverlay.set(null);
+    dispatcher.clearGate();
+    stopGameLoop();
+    dispatcher.setFrozen(true);
+    // Use current seed by default
+    const seed = seedOverride ?? get(initialState).shuffleSeed;
+    setCurrentScenario('oneHand');
+    // Load fresh initial with this seed, preserving theme
+    const currentTheme = get(gameState).theme;
+    const currentOverrides = get(gameState).colorOverrides;
+    const fresh = createInitialState({ shuffleSeed: seed, playerTypes: ['human', 'ai', 'ai', 'ai'], theme: currentTheme, colorOverrides: currentOverrides });
+    initialState.set(deepClone(fresh));
+    gameState.set(fresh);
+    actionHistory.set([]);
+    stateValidationError.set(null);
+    updateURLWithState(fresh, [], false);
+    // Build actions to playing and load
+    const actionIds = buildActionsToPlayingFromState(fresh);
+    gameActions.loadFromHistoryState({ initialState: fresh, actions: actionIds });
+    updateURLWithState(get(initialState), get(actionHistory), false);
+    // Increment attempts for this seed
+    incrementAttempts(seed);
+    // Start section and handle completion overlay
+    const runner = startSection(oneHandPreset());
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      console.log('[OneHand Restart] Runner started');
+    }
+    // Allow progression now that runner is listening
+    dispatcher.setFrozen(false);
+    startGameLoop();
+    // Show overlay as soon as we reach scoring/game_end
+    let completed = false;
+    const checkCompletion = (state: GameState) => {
+      if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
+        completed = true;
+        sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
+        setURLToMinimal(get(initialState));
+      }
+    };
+    // Immediate check + subscribe
+    checkCompletion(get(gameState));
+    const unsubscribe = gameState.subscribe(checkCompletion);
+    const result = await runner.done;
+    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+      console.log('[OneHand Restart] Runner done with phase', result.state.phase);
+    }
+    stopGameLoop();
+    dispatcher.setFrozen(true);
+    sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
+    setURLToMinimal(get(initialState));
+    unsubscribe();
+  }
+};

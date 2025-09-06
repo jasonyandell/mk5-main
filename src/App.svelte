@@ -4,6 +4,7 @@
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import SettingsPanel from './lib/components/SettingsPanel.svelte';
+  import SectionCompleteModal from './lib/components/SectionCompleteModal.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
@@ -32,15 +33,16 @@
   }
 
   onMount(() => {
-    // Try to load from URL on mount (theme will be applied reactively)
-    gameActions.loadFromURL();
-    
     // Start the game loop for interactive play (not in test mode)
     const urlParams = new URLSearchParams(window.location.search);
     const testMode = urlParams.get('testMode') === 'true';
     if (!testMode) {
       startGameLoop();
     }
+    
+    // Try to load from URL on mount (theme will be applied reactively)
+    // IMPORTANT: This must happen AFTER startGameLoop() so sections can progress
+    gameActions.loadFromURL();
   });
   
   // Smart panel switching based on game phase
@@ -174,3 +176,4 @@
 />
 
 <QuickplayError />
+<SectionCompleteModal />

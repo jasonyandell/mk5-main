@@ -61,12 +61,14 @@ export function executeAction(state: GameState, action: GameAction): GameState {
 function executeAgreement(state: GameState, player: number, type: 'completeTrick' | 'scoreHand'): GameState {
   // Validate player
   if (player < 0 || player >= 4) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
+    //return state; // Invalid player, no-op
   }
 
   // Check if already agreed
   if (state.consensus[type].has(player)) {
-    return state; // Already agreed, no-op
+    throw new Error(`Player ${player} already agreed to ${type}`);
+    //return state; // Already agreed, no-op
   }
 
   // Record agreement
@@ -85,13 +87,15 @@ function executeAgreement(state: GameState, player: number, type: 'completeTrick
 function executeBid(state: GameState, player: number, bidType: Bid['type'], value?: number): GameState {
   // Validate phase
   if (state.phase !== 'bidding') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for bidding');
+//    return state; // Invalid phase, no-op
   }
 
   // Validate player
   const playerData = state.players[player];
   if (!playerData) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
+//    return state; // Invalid player, no-op
   }
 
   // Create bid object
@@ -101,7 +105,8 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
 
   // Validate bid legality
   if (!isValidBid(state, bid, playerData.hand)) {
-    return state; // Invalid bid, no-op
+    throw new Error('Invalid bid');
+//    return state; // Invalid bid, no-op
   }
 
   // Apply bid
@@ -146,20 +151,23 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
 function executePass(state: GameState, player: number): GameState {
   // Validate phase
   if (state.phase !== 'bidding') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for passing');
+//    return state; // Invalid phase, no-op
   }
 
   // Validate player
   const playerData = state.players[player];
   if (!playerData) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
+//    return state; // Invalid player, no-op
   }
 
   const passBid: Bid = { type: BID_TYPES.PASS, player };
 
   // Validate pass legality
   if (!isValidBid(state, passBid, playerData.hand)) {
-    return state; // Invalid pass, no-op
+    throw new Error('Invalid pass');
+//    return state; // Invalid pass, no-op
   }
 
   // Apply pass
@@ -205,17 +213,20 @@ function executePass(state: GameState, player: number): GameState {
 function executeTrumpSelection(state: GameState, player: number, selection: TrumpSelection): GameState {
   // Validate phase
   if (state.phase !== 'trump_selection') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for trump selection');
+//    return state; // Invalid phase, no-op
   }
 
   // Validate player is winning bidder
   if (player !== state.winningBidder) {
-    return state; // Not winning bidder, no-op
+    throw new Error('Only winning bidder can select trump');
+//    return state; // Not winning bidder, no-op
   }
 
   // Validate trump selection
   if (!isValidTrump(selection)) {
-    return state; // Invalid trump, no-op
+    throw new Error('Invalid trump selection');
+//    return state; // Invalid trump, no-op
   }
 
   // Update suit analysis for all players
@@ -239,23 +250,27 @@ function executeTrumpSelection(state: GameState, player: number, selection: Trum
 function executePlay(state: GameState, player: number, dominoId: string): GameState {
   // Validate phase
   if (state.phase !== 'playing') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for domino play');
+//    return state; // Invalid phase, no-op
   }
 
   // Validate player
   const playerIndex = state.players.findIndex(p => p.id === player);
   if (playerIndex === -1) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
+//    return state; // Invalid player, no-op
   }
 
   const playerState = state.players[playerIndex];
   if (!playerState) {
-    return state; // Invalid player state, no-op
+    throw new Error(`Invalid player state for player ID: ${player}`);
+//    return state; // Invalid player state, no-op
   }
   const domino = playerState.hand.find(d => d.id === dominoId);
 
   if (!domino) {
-    return state; // Player doesn't have domino, no-op
+    throw new Error(`Player ${player} does not have domino ${dominoId}`);
+//    return state; // Player doesn't have domino, no-op
   }
 
   // Validate play legality
@@ -263,7 +278,8 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
   const isValid = validPlays.some(d => d.id === dominoId);
 
   if (!isValid) {
-    return state; // Invalid play, no-op
+    throw new Error(`Invalid play: ${dominoId} by player ${player}`);
+//    return state; // Invalid play, no-op
   }
 
   // Create new player with domino removed
@@ -303,12 +319,14 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
 function executeCompleteTrick(state: GameState): GameState {
   // Validate trick is complete
   if (state.currentTrick.length !== 4) {
-    return state; // Trick not complete, no-op
+    // throw new Error('Trick not complete');
+    //return state; // Trick not complete, no-op
   }
 
   // Check consensus (all 4 players must agree)
   if (state.consensus.completeTrick.size !== 4) {
-    return state; // Not all agreed, no-op
+    throw new Error('Not all players agreed to complete trick');
+//    return state; // Not all agreed, no-op
   }
 
   // Calculate trick outcome
@@ -318,7 +336,9 @@ function executeCompleteTrick(state: GameState): GameState {
   // Get winner's team
   const winnerPlayer = state.players.find(p => p.id === winner);
   if (!winnerPlayer) {
-    return state; // Invalid winner, no-op
+
+    throw new Error(`Invalid winner player index: ${winner}`);
+//    return state; // Invalid winner, no-op
   }
 
   // Update team scores
@@ -374,12 +394,14 @@ function executeCompleteTrick(state: GameState): GameState {
 function executeScoreHand(state: GameState): GameState {
   // Validate phase
   if (state.phase !== 'scoring') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for scoring');
+    //return state; // Invalid phase, no-op
   }
 
   // Check consensus (all 4 players must agree)
   if (state.consensus.scoreHand.size !== 4) {
-    return state; // Not all agreed, no-op
+    throw new Error('Not all players agreed to score hand');
+//    return state; // Not all agreed, no-op
   }
 
   // Calculate round score
@@ -432,7 +454,8 @@ function executeScoreHand(state: GameState): GameState {
 
   // Validate all hands were dealt
   if (newPlayers.some(p => p.hand.length === 0 && state.phase !== 'game_end')) {
-    return state; // Deal failed, no-op
+    throw new Error('Deal failed');
+//    return state; // Deal failed, no-op
   }
 
   return {
@@ -465,7 +488,8 @@ function executeRedeal(state: GameState): GameState {
   // Validate all passed
   const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
   if (nonPassBids.length > 0) {
-    return state; // Not all passed, no-op
+    throw new Error('Not all players passed');
+//    return state; // Not all passed, no-op
   }
 
   // New dealer and shuffle
@@ -489,7 +513,8 @@ function executeRedeal(state: GameState): GameState {
 
   // Validate all hands were dealt
   if (newPlayers.some(p => p.hand.length === 0)) {
-    return state; // Deal failed, no-op
+    throw new Error('Deal failed');
+//    return state; // Deal failed, no-op
   }
 
   return {
