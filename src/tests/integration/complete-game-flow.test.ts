@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/gameEngine';
-import { GameTestHelper } from '../helpers/gameTestHelper';
+import { GameTestHelper, processSequentialConsensus } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';
 
 describe('Complete Game Flow Integration', () => {
-  function playCompleteHand(state: GameState): GameState {
+  async function playCompleteHand(state: GameState): Promise<GameState> {
     // Bid
     const bid30 = getNextStates(state).find(t => t.id === 'bid-30');
     state = bid30!.newState;
@@ -34,39 +34,23 @@ describe('Complete Game Flow Integration', () => {
         }
       }
       
-      // Complete trick after 4 plays - need consensus
-      let transitions = getNextStates(state);
-      
-      // All players agree to complete trick
-      for (let player = 0; player < 4; player++) {
-        const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
-        if (agreeAction) {
-          state = agreeAction.newState;
-          transitions = getNextStates(state);
-        }
-      }
+      // Complete trick using helper
+      state = await processSequentialConsensus(state, 'completeTrick');
       
       // Now complete the trick
-      const completeTrick = transitions.find(t => t.id === 'complete-trick');
+      const finalTransitions = getNextStates(state);
+      const completeTrick = finalTransitions.find(t => t.id === 'complete-trick');
       if (completeTrick) {
         state = completeTrick.newState;
       }
     }
     
-    // Score hand - need consensus
-    let transitions = getNextStates(state);
-    
-    // All players agree to score hand
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-score-hand-${player}`);
-      if (agreeAction) {
-        state = agreeAction.newState;
-        transitions = getNextStates(state);
-      }
-    }
+    // Score hand using helper
+    state = await processSequentialConsensus(state, 'scoreHand');
     
     // Now score the hand
-    const scoreHand = transitions.find(t => t.id === 'score-hand');
+    const finalTransitions = getNextStates(state);
+    const scoreHand = finalTransitions.find(t => t.id === 'score-hand');
     if (scoreHand) {
       state = scoreHand.newState;
     }
@@ -75,7 +59,7 @@ describe('Complete Game Flow Integration', () => {
   }
 
   describe('Full Tournament Game', () => {
-    it('should play complete tournament game to 7 marks', () => {
+    it('should play complete tournament game to 7 marks', async () => {
       let state = createInitialState();
       let handCount = 0;
       const maxHands = 20; // Safety limit
@@ -83,7 +67,7 @@ describe('Complete Game Flow Integration', () => {
       while (state.phase !== 'game_end' && handCount < maxHands) {
         const initialMarks = [...state.teamMarks];
         
-        state = playCompleteHand(state);
+        state = await playCompleteHand(state);
         handCount++;
         
         // Verify marks increased for someone
@@ -198,11 +182,11 @@ describe('Complete Game Flow Integration', () => {
   });
 
   describe('Scoring Integration', () => {
-    it('should maintain 42-point total per hand', () => {
+    it('should maintain 42-point total per hand', async () => {
       let state = createInitialState();
       
       // Play through one complete hand
-      state = playCompleteHand(state);
+      state = await playCompleteHand(state);
       
       // Verify total points distributed = 42
       if (state.phase === 'scoring' || state.phase === 'game_end') {
@@ -211,12 +195,12 @@ describe('Complete Game Flow Integration', () => {
       }
     });
 
-    it('should award marks correctly for successful bids', () => {
+    it('should award marks correctly for successful bids', async () => {
       let state = createInitialState();
       const initialMarks = [...state.teamMarks];
       
       // Force a specific bid and play it out
-      state = playCompleteHand(state);
+      state = await playCompleteHand(state);
       
       // Someone should have gained marks
       const marksGained = state.teamMarks.some((marks, i) => {

@@ -149,8 +149,8 @@ describe('SectionRunner and Dispatcher', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     {
-      const state = get(gameState);
-      const ts = getNextStates(state);
+      let state = get(gameState);
+      let ts = getNextStates(state);
       
       // Log current state for debugging
       console.log('Current trick length:', state.currentTrick.length);
@@ -158,26 +158,31 @@ describe('SectionRunner and Dispatcher', () => {
       console.log('Consensus completeTrick:', Array.from(state.consensus.completeTrick));
       console.log('Available transitions:', ts.map(t => t.id));
       
-      // If consensus hasn't been applied yet, manually apply the agree actions
-      if (state.consensus.completeTrick.size < 4) {
-        const agreeActions = ts.filter(t => t.id.startsWith('agree-complete-trick'));
-        console.log('Manually applying agree actions:', agreeActions.map(t => t.id));
-        for (const agree of agreeActions) {
-          dispatcher.requestTransition(agree, 'ui');
-          await new Promise(resolve => setTimeout(resolve, 10));
+      // Process consensus sequentially - each player agrees in turn
+      while (state.consensus.completeTrick.size < 4) {
+        const currentState = get(gameState);
+        const currentTs = getNextStates(currentState);
+        const agreeAction = currentTs.find(t => 
+          t.action.type === 'agree-complete-trick' &&
+          t.action.player === currentState.currentPlayer
+        );
+        
+        if (!agreeAction) {
+          console.log('No agree action found for current player:', currentState.currentPlayer);
+          break;
         }
         
-        // Get updated state after agreements
-        const updatedState = get(gameState);
-        const updatedTs = getNextStates(updatedState);
-        console.log('After agreements - consensus size:', updatedState.consensus.completeTrick.size);
-        console.log('After agreements - available:', updatedTs.map(t => t.id).filter(id => id.includes('complete')));
-        
-        const complete = updatedTs.find((t) => t.id === 'complete-trick');
-        expect(complete).toBeTruthy();
-        if (complete) dispatcher.requestTransition(complete, 'ui');
-      } else {
-        const complete = ts.find((t) => t.id === 'complete-trick');
+        console.log('Applying agree for player:', currentState.currentPlayer);
+        dispatcher.requestTransition(agreeAction, 'ui');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        state = get(gameState);
+      }
+      
+      // After all agrees, complete the trick
+      if (state.consensus.completeTrick.size === 4) {
+        const finalTs = getNextStates(state);
+        const complete = finalTs.find((t) => t.id === 'complete-trick');
+        console.log('Looking for complete-trick, found:', complete?.id);
         expect(complete).toBeTruthy();
         if (complete) dispatcher.requestTransition(complete, 'ui');
       }
@@ -196,15 +201,41 @@ describe('SectionRunner and Dispatcher', () => {
 
     // Let AI/human actions be provided by tests; we simulate a few dozen steps
     let guard = 0;
-    while (get(gameState).phase === 'playing' && guard++ < 100) {
-      const ts = getNextStates(get(gameState));
-      const next = ts.find((t) => t.id.startsWith('play-'))
-        || ts.find((t) => t.id.startsWith('agree-complete-trick'))
-        || ts.find((t) => t.id === 'complete-trick')
-        || ts.find((t) => t.id.startsWith('agree-score-hand'))
-        || ts.find((t) => t.id === 'score-hand');
+    while (get(gameState).phase === 'playing' && guard++ < 200) {
+      const currentState = get(gameState);
+      const ts = getNextStates(currentState);
+      
+      // Priority order for actions
+      let next = ts.find((t) => t.id.startsWith('play-'));
+      
+      // If no plays, look for consensus actions (must be for current player)
+      if (!next) {
+        next = ts.find((t) => 
+          t.action.type === 'agree-complete-trick' &&
+          t.action.player === currentState.currentPlayer
+        );
+      }
+      
+      if (!next) {
+        next = ts.find((t) => t.id === 'complete-trick');
+      }
+      
+      if (!next) {
+        next = ts.find((t) => 
+          t.action.type === 'agree-score-hand' &&
+          t.action.player === currentState.currentPlayer
+        );
+      }
+      
+      if (!next) {
+        next = ts.find((t) => t.id === 'score-hand');
+      }
+      
       if (!next) break;
       dispatcher.requestTransition(next, 'system');
+      
+      // Small delay to let state update
+      await new Promise(resolve => setTimeout(resolve, 5));
     }
 
     const result = await runner.done;

@@ -34,8 +34,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -75,8 +73,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -140,8 +136,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -207,8 +201,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -271,8 +263,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -336,8 +326,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
           scoreHand: new Set()
         },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };

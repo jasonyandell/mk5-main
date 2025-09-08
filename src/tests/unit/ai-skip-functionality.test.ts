@@ -79,10 +79,7 @@ describe('AI Skip Functionality', () => {
     
     // Trigger state change to make AIs think
     controllerManager.onStateChange(state);
-    
-    // Skip all AI delays
-    controllerManager.skipAIDelays();
-    
+        
     // Should work without throwing
     // The actual execution happens through the controllers
   });

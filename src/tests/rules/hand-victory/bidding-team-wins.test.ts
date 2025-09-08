@@ -38,8 +38,6 @@ describe('Hand Victory - Bidding Team Wins', () => {
         scoreHand: new Set()
       },
       actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {}
     };

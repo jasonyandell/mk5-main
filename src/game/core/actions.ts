@@ -71,13 +71,17 @@ function executeAgreement(state: GameState, player: number, type: 'completeTrick
     //return state; // Already agreed, no-op
   }
 
-  // Record agreement
+  // Record agreement and advance to next player
+  const nextPlayer = getNextPlayer(player);
+  
   return {
     ...state,
     consensus: {
       ...state.consensus,
       [type]: new Set([...state.consensus[type], player])
-    }
+    },
+    // Advance to next player for their turn to agree
+    currentPlayer: nextPlayer
   };
 }
 

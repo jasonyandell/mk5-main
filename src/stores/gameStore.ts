@@ -6,7 +6,7 @@ import { createInitialState, getNextStates } from '../game';
 import { ControllerManager } from '../game/controllers';
 import { TransitionDispatcher } from '../game/core/dispatcher';
 import { decodeGameUrl } from '../game/core/url-compression';
-import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule, setAISpeedProfile } from '../game/core/ai-scheduler';
+import { selectAIAction, resetAISchedule, setAISpeedProfile } from '../game/core/ai-scheduler';
 import { startSection } from '../game/core/sectionRunner';
 import { oneHand as oneHandPreset, fromSlug as sectionFromSlug } from '../game/core/sectionPresets';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
@@ -207,12 +207,8 @@ export const gameActions = {
   },
   
   skipAIDelays: () => {
-    // Use pure function to skip AI delays
-    const currentState = get(gameState);
-    const newState = skipAIDelaysPure(currentState);
-    if (newState !== currentState) {
-      gameState.set(newState);
-    }
+    // Execute all scheduled transitions immediately
+    dispatcher.executeAllScheduled();
   },
   
   resetGame: () => {
@@ -318,7 +314,6 @@ export const gameActions = {
                 // For now, we directly monitor the game state for completion:
                 let completed = false;
                 const checkCompletion = (state: GameState) => {
-                  console.log('[URL Section Monitor] Phase:', state.phase, 'Completed:', completed);
                   if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
                     completed = true;
                     console.log('[URL Section Complete] Showing overlay for oneHand (will finalize after runner)');
@@ -693,26 +688,74 @@ if (typeof window !== 'undefined') {
 // Export controller manager
 export { controllerManager };
 
+// Helper function to wrap getNextStates with delay attachment
+function getNextStatesWithDelays(state: GameState): (StateTransition & { delayTicks?: number })[] {
+  const transitions = getNextStates(state);
+  return transitions.map(t => ({
+    ...t,
+    delayTicks: getDelayTicksForAction(t.action, state)
+  }));
+}
+
+// Determines delay based on action and state context
+function getDelayTicksForAction(action: StateTransition['action'], state: GameState): number {
+  // AI delays (at 60fps: 30 ticks = ~500ms)
+  if ('player' in action && state.playerTypes[action.player] === 'ai') {
+    switch (action.type) {
+      case 'bid': return 30;           // ~500ms
+      case 'pass': return 30;          // ~500ms
+      case 'play': return 18;          // ~300ms
+      case 'select-trump': return 60;  // ~1000ms
+      case 'agree-complete-trick': return 0;  // Instant consensus
+      case 'agree-score-hand': return 0;      // Instant consensus
+      default: return 12;  // ~200ms
+    }
+  }
+  
+  // Human actions and system actions - no delay
+  return 0;
+}
+
+// Check if AI should act
+function shouldAIAct(state: GameState): boolean {
+  // AI should act if:
+  // 1. It's an AI player's turn
+  // 2. Not already scheduled
+  // 3. Game is in playable state
+  if (state.phase === 'game_end') return false;
+  
+  // Check if current player is AI
+  const currentPlayerType = state.playerTypes[state.currentPlayer];
+  if (currentPlayerType !== 'ai') return false;
+  
+  // Check if already has scheduled action
+  if (dispatcher.hasScheduledAction(state.currentPlayer)) return false;
+  
+  return true;
+}
+
 // Pure game loop - advances game ticks and executes AI decisions
 let animationFrame: number | null = null;
 let gameLoopRunning = false;
 
 const runGameLoop = () => {
-  const currentState = get(gameState);
+  // Advance dispatcher's internal tick and process scheduled transitions
+  dispatcher.advanceTick();
   
-  // Use pure tick function to advance game state
-  const result = tickGame(currentState);
+  let currentState = get(gameState);
   
-  // Update tick state if it changed
-  if (result.state.currentTick !== currentState.currentTick || 
-      result.state.aiSchedule !== currentState.aiSchedule) {
-    gameState.set(result.state);
-  }
-  
-  // Execute any AI action through the proper channel
-  if (result.action) {
-    // Execute through dispatcher to unify transition entry
-    dispatcher.requestTransition(result.action, 'ai');
+  // Check if AI needs to make a decision
+  if (shouldAIAct(currentState)) {
+    // Get available actions with delays attached
+    const transitions = getNextStatesWithDelays(currentState);
+    
+    // Ask AI for its decision (pure computation)
+    const choice = selectAIAction(currentState, currentState.currentPlayer, transitions);
+    
+    if (choice) {
+      // Decision already has delayTicks from getNextStatesWithDelays
+      dispatcher.requestTransition(choice, 'ai');
+    }
   }
   
   // Schedule next frame if still running

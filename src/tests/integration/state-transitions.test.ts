@@ -388,8 +388,6 @@ describe('State Transitions Integration', () => {
           completeTrick: new Set<number>(),
           scoreHand: new Set<number>()
         },
-        aiSchedule: {},
-        currentTick: 0,
         theme: 'coffee',
         colorOverrides: {}
       };

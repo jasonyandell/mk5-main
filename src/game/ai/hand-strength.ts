@@ -115,8 +115,6 @@ export function calculateHandStrengthWithTrump(
     playerTypes: ['human', 'ai', 'ai', 'ai'],
     consensus: { completeTrick: new Set(), scoreHand: new Set() },
     actionHistory: [],
-    aiSchedule: {},
-    currentTick: 0,
     theme: 'coffee',
     colorOverrides: {}
   };
@@ -250,8 +248,6 @@ export function getHandStrengthBreakdown(
     playerTypes: ['human', 'ai', 'ai', 'ai'],
     consensus: { completeTrick: new Set(), scoreHand: new Set() },
     actionHistory: [],
-    aiSchedule: {},
-    currentTick: 0,
     theme: 'coffee',
     colorOverrides: {}
   };

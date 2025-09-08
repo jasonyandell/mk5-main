@@ -35,9 +35,9 @@ describe('Consensus Action Flow', () => {
     const transitions = getNextStates(state);
     const agreeActions = transitions.filter(isAgreeCompleteTrick);
     
-    // Should offer 4 agree actions (one per player)
-    expect(agreeActions).toHaveLength(4);
-    expect(agreeActions.map(a => a.action.player).sort()).toEqual([0, 1, 2, 3]);
+    // Should offer only 1 agree action (for current player)
+    expect(agreeActions).toHaveLength(1);
+    expect(agreeActions[0]!.action.player).toBe(state.currentPlayer);
   });
 
   test('consensus actions are processed one at a time', async () => {
@@ -56,14 +56,17 @@ describe('Consensus Action Flow', () => {
     
     const executedAgrees: number[] = [];
     
-    // Process agrees one by one
+    // Process agrees sequentially (each player in turn)
     while (state.consensus.completeTrick.size < 4) {
       const transitions = getNextStates(state);
-      const agreeAction = transitions
-        .filter(isAgreeCompleteTrick)
-        .find(t => !executedAgrees.includes(t.action.player));
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        'player' in t.action &&
+        t.action.player === state.currentPlayer
+      );
       
       if (!agreeAction) break;
+      if (!('player' in agreeAction.action)) break;
       
       executedAgrees.push(agreeAction.action.player);
       state = executeAction(state, agreeAction.action);
@@ -95,12 +98,13 @@ describe('Consensus Action Flow', () => {
     let transitions = getNextStates(state);
     expect(transitions.find(t => t.action.type === 'complete-trick')).toBeUndefined();
     
-    // Add 3 agrees
+    // Add 3 agrees sequentially
     for (let i = 0; i < 3; i++) {
       transitions = getNextStates(state);
-      const agreeAction = transitions
-        .filter(isAgreeCompleteTrick)
-        .find(t => !state.consensus.completeTrick.has(t.action.player));
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === state.currentPlayer
+      );
       if (agreeAction) {
         state = executeAction(state, agreeAction.action);
       }
@@ -111,9 +115,10 @@ describe('Consensus Action Flow', () => {
     expect(transitions.find(t => t.action.type === 'complete-trick')).toBeUndefined();
     
     // Add 4th agree
-    const lastAgree = transitions
-      .filter(isAgreeCompleteTrick)
-      .find(t => !state.consensus.completeTrick.has(t.action.player));
+    const lastAgree = transitions.find(t => 
+      t.action.type === 'agree-complete-trick' &&
+      t.action.player === state.currentPlayer
+    );
     if (lastAgree) {
       state = executeAction(state, lastAgree.action);
     }
@@ -145,17 +150,39 @@ describe('Consensus Action Flow', () => {
       }
     }
     
-    // Add player 0's agree
+    // Process agrees until we get to player 0
+    let processedPlayers = 0;
+    while (state.currentPlayer !== 0 && processedPlayers < 4) {
+      const transitions = getNextStates(state);
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === state.currentPlayer
+      );
+      if (agreeAction) {
+        state = executeAction(state, agreeAction.action);
+        processedPlayers++;
+      } else {
+        break;
+      }
+    }
+    
+    // Now player 0 should be current player
+    expect(state.currentPlayer).toBe(0);
+    
     const transitions = getNextStates(state);
     const agree0 = transitions.find(t => 
       t.action.type === 'agree-complete-trick' && 
       t.action.player === 0
     );
     
+    expect(agree0).toBeDefined();
     if (agree0) {
+      // Record how many players agreed before player 0
+      const agreeCountBefore = state.consensus.completeTrick.size;
+      
       state = executeAction(state, agree0.action);
       expect(state.consensus.completeTrick.has(0)).toBe(true);
-      expect(state.consensus.completeTrick.size).toBe(1);
+      expect(state.consensus.completeTrick.size).toBe(agreeCountBefore + 1);
       
       // Try to add player 0's agree again
       const duplicateAgree: GameAction = {
@@ -178,12 +205,20 @@ describe('Consensus Action Flow', () => {
     const transitions = getNextStates(state);
     const scoreAgrees = transitions.filter(t => t.action.type === 'agree-score-hand');
     
-    // Should offer 4 agree-score-hand actions
-    expect(scoreAgrees).toHaveLength(4);
+    // Should offer only 1 agree-score-hand action (for current player)
+    expect(scoreAgrees).toHaveLength(1);
+    expect('player' in scoreAgrees[0]!.action && scoreAgrees[0]!.action.player).toBe(state.currentPlayer);
     
-    // Process all agrees
-    for (const agree of scoreAgrees) {
-      state = executeAction(state, agree.action);
+    // Process all agrees sequentially
+    for (let i = 0; i < 4; i++) {
+      const transitions = getNextStates(state);
+      const agree = transitions.find(t => 
+        t.action.type === 'agree-score-hand' &&
+        t.action.player === state.currentPlayer
+      );
+      if (agree) {
+        state = executeAction(state, agree.action);
+      }
     }
     
     // After all agrees, score-hand should be available
@@ -213,35 +248,42 @@ describe('Consensus Action Flow', () => {
       }
     }
     
-    // Simulate what section runner should do
+    // Simulate what section runner should do - process agrees sequentially
     const humanPlayers = new Set([0]);
-    const processedAgrees = new Set<number>();
+    let processedCount = 0;
     
-    // Process non-human agrees one at a time
-    while (processedAgrees.size < 3) { // 3 non-human players
+    // Process agrees sequentially until we reach human player
+    while (state.consensus.completeTrick.size < 4) {
       const transitions = getNextStates(state);
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === state.currentPlayer
+      );
       
-      // Find next non-human agree that hasn't been processed
-      const nextAgree = transitions
-        .filter(isAgreeCompleteTrick)
-        .find(t => !humanPlayers.has(t.action.player) && !processedAgrees.has(t.action.player));
+      if (!agreeAction) break;
       
-      if (!nextAgree) break;
+      // If current player is human, stop (let human decide)
+      if (humanPlayers.has(state.currentPlayer)) {
+        break;
+      }
       
-      processedAgrees.add(nextAgree.action.player);
-      state = executeAction(state, nextAgree.action);
+      // Non-human player agrees
+      state = executeAction(state, agreeAction.action);
+      processedCount++;
     }
     
-    // Should have processed 3 non-human agrees
-    expect(processedAgrees.size).toBe(3);
-    expect(state.consensus.completeTrick.size).toBe(3);
+    // Should have processed some non-human agrees
+    expect(processedCount).toBeGreaterThan(0);
+    expect(state.consensus.completeTrick.size).toBe(processedCount);
     
-    // Human's agree should still be available
-    const finalTransitions = getNextStates(state);
-    const humanAgree = finalTransitions.find(t => 
-      t.action.type === 'agree-complete-trick' && 
-      t.action.player === 0
-    );
-    expect(humanAgree).toBeDefined();
+    // If we stopped at human player, their agree should be available
+    if (state.currentPlayer === 0) {
+      const finalTransitions = getNextStates(state);
+      const humanAgree = finalTransitions.find(t => 
+        t.action.type === 'agree-complete-trick' && 
+        t.action.player === 0
+      );
+      expect(humanAgree).toBeDefined();
+    }
   });
 });

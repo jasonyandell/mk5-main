@@ -183,15 +183,6 @@ export interface GameState {
   bidWinner?: number; // -1 instead of null
   isComplete?: boolean;
   winner?: number; // -1 instead of null
-  // Pure AI scheduling - part of game state for determinism
-  aiSchedule: {
-    [playerId: number]: {
-      transition: StateTransition;
-      executeAtTick: number;  // Game tick when this should execute
-    }
-  };
-  // Game's internal clock (not wall time) for pure deterministic timing
-  currentTick: number;
 }
 
 export interface StateTransition {

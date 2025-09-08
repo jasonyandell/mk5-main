@@ -1,8 +1,6 @@
 import type { GameState, StateTransition } from '../types';
 import { BeginnerAIStrategy, RandomAIStrategy } from '../controllers/strategies';
 import type { AIStrategy } from '../controllers/types';
-import { getNextStates } from './gameEngine';
-import { GAME_PHASES } from '../constants';
 
 // Strategy instances - reused for pure functions
 const strategies = {
@@ -48,6 +46,15 @@ export function selectAIAction(
   
   if (myTransitions.length === 0) return null;
   
+  // AI players should immediately agree to consensus actions
+  const consensusAction = myTransitions.find(t => 
+    t.action.type === 'agree-complete-trick' || 
+    t.action.type === 'agree-score-hand'
+  );
+  if (consensusAction) {
+    return consensusAction;
+  }
+  
   const strategy = getStrategyForPlayer(playerId, state);
   return strategy.chooseAction(state, myTransitions);
 }
@@ -58,6 +65,12 @@ export function selectAIAction(
 export function getAIDelayTicks(action: StateTransition): number {
   // Speed profile overrides
   if (speedProfile === 'instant') return 0;
+  
+  // Consensus actions should be instant
+  if (action.action.type === 'agree-complete-trick' || 
+      action.action.type === 'agree-score-hand') {
+    return 0;
+  }
 
   // Base thinking time in milliseconds
   let base = 500;
@@ -91,127 +104,19 @@ export function getAIDelayTicks(action: StateTransition): number {
 }
 
 /**
- * Pure function - Schedule AI decisions for all AI players
+ * Pure function - Skip all AI delays (for compatibility)
  */
-export function scheduleAIDecisions(state: GameState): GameState {
-  // Don't modify if game is over
-  if (state.phase === GAME_PHASES.GAME_END) {
-    return state;
-  }
-  
-  const transitions = getNextStates(state);
-  const newSchedule = { ...state.aiSchedule };
-  
-  // Check each player
-  for (let playerId = 0; playerId < 4; playerId++) {
-    // Skip if human player
-    if (state.playerTypes[playerId] === 'human') continue;
-    
-    // Skip if already has scheduled action
-    if (newSchedule[playerId]) continue;
-    
-    // Try to select an action
-    const choice = selectAIAction(state, playerId, transitions);
-    if (choice) {
-      const delayTicks = getAIDelayTicks(choice);
-      newSchedule[playerId] = {
-        transition: choice,
-        executeAtTick: state.currentTick + delayTicks
-      };
-    }
-  }
-  
-  // Return new state if schedule changed
-  if (Object.keys(newSchedule).length !== Object.keys(state.aiSchedule).length) {
-    return { ...state, aiSchedule: newSchedule };
-  }
-  
+export function skipAIDelays(state: GameState): GameState {
+  // Now handled by dispatcher.executeAllScheduled()
   return state;
 }
 
-/**
- * Pure function - Execute scheduled AI actions that are ready
- * Returns the state and any action that should be executed
- */
-export function executeScheduledAIActions(state: GameState): { state: GameState; action?: StateTransition } {
-  // Find actions ready to execute
-  const ready: Array<[number, typeof state.aiSchedule[number]]> = [];
-  
-  for (const [playerId, scheduled] of Object.entries(state.aiSchedule)) {
-    if (scheduled.executeAtTick <= state.currentTick) {
-      ready.push([Number(playerId), scheduled]);
-    }
-  }
-  
-  // Sort by executeAtTick to ensure deterministic order
-  ready.sort((a, b) => a[1].executeAtTick - b[1].executeAtTick);
-  
-  // Return the first ready action to be executed
-  if (ready.length > 0) {
-    const firstReady = ready[0];
-    if (!firstReady) return { state };
-    
-    const [playerId, scheduled] = firstReady;
-    const newSchedule = { ...state.aiSchedule };
-    delete newSchedule[playerId];
-    
-    // Return the state with updated schedule and the action to execute
-    return {
-      state: {
-        ...state,
-        aiSchedule: newSchedule
-      },
-      action: scheduled.transition
-    };
-  }
-  
-  return { state };
-}
-
-/**
- * Pure function - Skip all AI delays (execute immediately)
- */
-export function skipAIDelays(state: GameState): GameState {
-  const newSchedule = { ...state.aiSchedule };
-  
-  // Set all scheduled actions to execute now
-  for (const playerId in newSchedule) {
-    const scheduled = newSchedule[playerId];
-    if (scheduled) {
-      newSchedule[playerId] = {
-        ...scheduled,
-        executeAtTick: state.currentTick
-      };
-    }
-  }
-  
-  return { ...state, aiSchedule: newSchedule };
-}
-
-/**
- * Pure function - Advance game by one tick
- * Returns the state and any action that should be executed
- */
-export function tickGame(state: GameState): { state: GameState; action?: StateTransition } {
-  // Increment tick
-  let newState = { ...state, currentTick: state.currentTick + 1 };
-  
-  // Schedule new AI decisions
-  newState = scheduleAIDecisions(newState);
-  
-  // Execute ready AI actions
-  const result = executeScheduledAIActions(newState);
-  
-  return result;
-}
+// DEPRECATED: tickGame removed - ticking now handled via advance-tick action
 
 /**
  * Pure function - Reset AI scheduling (for navigation/restore)
  */
 export function resetAISchedule(state: GameState): GameState {
-  return {
-    ...state,
-    aiSchedule: {},
-    currentTick: 0
-  };
+  // AI schedule reset no longer needed - handled by dispatcher
+  return state;
 }

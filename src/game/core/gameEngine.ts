@@ -181,11 +181,9 @@ function getPlayingActions(state: GameState): GameAction[] {
   
   // If trick is complete, add consensus actions
   if (state.currentTrick.length === 4) {
-    // Each player can agree to complete the trick
-    for (let i = 0; i < 4; i++) {
-      if (!state.consensus.completeTrick.has(i)) {
-        actions.push({ type: 'agree-complete-trick', player: i });
-      }
+    // Only the current player can agree to complete the trick
+    if (!state.consensus.completeTrick.has(state.currentPlayer)) {
+      actions.push({ type: 'agree-complete-trick', player: state.currentPlayer });
     }
     
     // If all have agreed, the trick can be completed
@@ -214,11 +212,9 @@ function getPlayingActions(state: GameState): GameAction[] {
 function getScoringActions(state: GameState): GameAction[] {
   const actions: GameAction[] = [];
   
-  // Each player can agree to score the hand
-  for (let i = 0; i < 4; i++) {
-    if (!state.consensus.scoreHand.has(i)) {
-      actions.push({ type: 'agree-score-hand', player: i });
-    }
+  // Only the current player can agree to score the hand
+  if (!state.consensus.scoreHand.has(state.currentPlayer)) {
+    actions.push({ type: 'agree-score-hand', player: state.currentPlayer });
   }
   
   // If all have agreed, the hand can be scored

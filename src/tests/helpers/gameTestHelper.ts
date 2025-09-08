@@ -446,6 +446,114 @@ export class GameTestHelper {
     
     return errors;
   }
+
+  /**
+   * Process consensus sequentially for all players in turn order
+   * @param initialState The initial game state
+   * @param consensusType The type of consensus to process ('completeTrick' or 'scoreHand')
+   * @param humanPlayers Optional set of player IDs that should be skipped (for human players)
+   * @returns The state after processing consensus
+   */
+  static async processSequentialConsensus(
+    initialState: GameState, 
+    consensusType: 'completeTrick' | 'scoreHand',
+    humanPlayers: Set<number> = new Set()
+  ): Promise<GameState> {
+    const { executeAction } = await import('../../game/core/actions');
+    let state = initialState;
+    const actionType = consensusType === 'completeTrick' 
+      ? 'agree-complete-trick' 
+      : 'agree-score-hand';
+    
+    // Process agrees sequentially until all players have agreed
+    while (state.consensus[consensusType].size < 4) {
+      // Skip if current player is human
+      if (humanPlayers.has(state.currentPlayer)) {
+        break;
+      }
+      
+      const transitions = getNextStates(state);
+      const agreeAction = transitions.find(t => 
+        t.action.type === actionType &&
+        t.action.player === state.currentPlayer
+      );
+      
+      if (!agreeAction) {
+        break; // No more agrees available
+      }
+      
+      state = executeAction(state, agreeAction.action);
+    }
+    
+    return state;
+  }
+
+  /**
+   * Process a complete trick including all plays and consensus
+   * @param initialState The initial game state
+   * @param humanPlayers Optional set of player IDs that should be skipped during consensus
+   * @returns The state after the trick is complete
+   */
+  static async processCompleteTrick(
+    initialState: GameState,
+    humanPlayers: Set<number> = new Set()
+  ): Promise<GameState> {
+    const { executeAction } = await import('../../game/core/actions');
+    let state = initialState;
+    
+    // Play cards until trick is complete
+    while (state.currentTrick.length < 4 && state.phase === 'playing') {
+      const transitions = getNextStates(state);
+      const playAction = transitions.find(t => t.action.type === 'play');
+      if (playAction) {
+        state = executeAction(state, playAction.action);
+      } else {
+        break;
+      }
+    }
+    
+    // Process consensus
+    state = await this.processSequentialConsensus(state, 'completeTrick', humanPlayers);
+    
+    // Complete the trick if all agreed
+    if (state.consensus.completeTrick.size === 4) {
+      const transitions = getNextStates(state);
+      const completeTrick = transitions.find(t => t.action.type === 'complete-trick');
+      if (completeTrick) {
+        state = executeAction(state, completeTrick.action);
+      }
+    }
+    
+    return state;
+  }
+
+  /**
+   * Process hand scoring including consensus
+   * @param initialState The initial game state in scoring phase
+   * @param humanPlayers Optional set of player IDs that should be skipped during consensus
+   * @returns The state after scoring is complete
+   */
+  static async processHandScoring(
+    initialState: GameState,
+    humanPlayers: Set<number> = new Set()
+  ): Promise<GameState> {
+    const { executeAction } = await import('../../game/core/actions');
+    let state = initialState;
+    
+    // Process consensus
+    state = await this.processSequentialConsensus(state, 'scoreHand', humanPlayers);
+    
+    // Score the hand if all agreed
+    if (state.consensus.scoreHand.size === 4) {
+      const transitions = getNextStates(state);
+      const scoreHand = transitions.find(t => t.action.type === 'score-hand');
+      if (scoreHand) {
+        state = executeAction(state, scoreHand.action);
+      }
+    }
+    
+    return state;
+  }
   
 }
 
@@ -453,3 +561,6 @@ export class GameTestHelper {
 export const createTestState = GameTestHelper.createTestState;
 export const createTestHand = GameTestHelper.createTestHand;
 export const createHandWithDoubles = GameTestHelper.createHandWithDoubles;
+export const processSequentialConsensus = GameTestHelper.processSequentialConsensus;
+export const processCompleteTrick = GameTestHelper.processCompleteTrick;
+export const processHandScoring = GameTestHelper.processHandScoring;

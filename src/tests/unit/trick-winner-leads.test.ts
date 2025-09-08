@@ -21,10 +21,13 @@ describe('Trick Winner Leads Next Trick', () => {
     // Get transitions - should include agreement actions first
     let transitions = getNextStates(state);
     
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -59,11 +62,14 @@ describe('Trick Winner Leads Next Trick', () => {
       currentPlayer: 0
     });
 
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state);
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -90,11 +96,14 @@ describe('Trick Winner Leads Next Trick', () => {
       currentPlayer: 0
     });
 
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state);
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -121,11 +130,14 @@ describe('Trick Winner Leads Next Trick', () => {
       currentPlayer: 0
     });
 
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state);
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -152,11 +164,14 @@ describe('Trick Winner Leads Next Trick', () => {
       currentPlayer: 0
     });
 
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state);
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -187,11 +202,14 @@ describe('Trick Winner Leads Next Trick', () => {
       { player: 1, domino: { id: '3-0', high: 3, low: 0 } }  // off
     ];
 
-    // First, all players must agree to complete the trick
+    // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state);
     let currentState = state;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);
@@ -212,11 +230,14 @@ describe('Trick Winner Leads Next Trick', () => {
       { player: 2, domino: { id: '2-0', high: 2, low: 0 } }  // off
     ];
 
-    // Second trick: all players agree again
+    // Second trick: all players agree again sequentially
     transitions = getNextStates(newState);
     currentState = newState;
-    for (let player = 0; player < 4; player++) {
-      const agreeAction = transitions.find(t => t.id === `agree-complete-trick-${player}`);
+    for (let i = 0; i < 4; i++) {
+      const agreeAction = transitions.find(t => 
+        t.action.type === 'agree-complete-trick' &&
+        t.action.player === currentState.currentPlayer
+      );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState);

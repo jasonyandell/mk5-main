@@ -113,7 +113,6 @@ function createMinimalState(): GameState {
     },
     actionHistory: [],
     aiSchedule: {},
-    currentTick: 0
   } as GameState;
 }
 
