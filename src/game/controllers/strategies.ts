@@ -87,12 +87,13 @@ export class BeginnerAIStrategy implements AIStrategy {
         return this.makeTrumpDecision(state, currentPlayer, transitions);
       case 'playing':
         return this.makePlayDecision(state, currentPlayer, transitions);
-      default:
+      default: {
         const fallback = transitions[0];
         if (!fallback) {
           throw new Error(`BeginnerAIStrategy: No fallback transition available for phase ${state.phase}`);
         }
         return fallback;
+      }
     }
   }
   

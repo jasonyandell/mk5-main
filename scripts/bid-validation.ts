@@ -16,7 +16,7 @@ import type { GameState, TrumpSelection } from '../src/game/types';
 interface BidOutcome {
   bidValue: number;
   bidType: 'points' | 'marks';
-  marksValue?: number; // How many marks if it's a marks bid
+  marksValue: number | undefined;
   handStrength: number;
   actualScore: number;
   madeBid: boolean;
@@ -45,8 +45,8 @@ async function playHand(initialState: GameState) {
     playerId: number;
     teamId: number;
     bidValue: number;
-    bidType?: 'points' | 'marks';
-    marksValue?: number;
+    bidType: 'points' | 'marks';
+    marksValue: number | undefined;
     handStrength: number;
   }
   
@@ -68,16 +68,16 @@ async function playHand(initialState: GameState) {
     
     // During bidding, capture bid info
     if (gameState.phase === 'bidding') {
-      const currentPlayer = gameState.players[gameState.currentPlayer];
+      const currentPlayer = gameState.players[gameState.currentPlayer!];
       // Use null like the AI does to force proper trump analysis
-      const handStrength = calculateHandStrengthWithTrump(currentPlayer.hand, null);
+      const handStrength = calculateHandStrengthWithTrump(currentPlayer!.hand, undefined);
       
       // Track laydowns with logging
       if (handStrength === 999) {
         if (!foundLaydownThisHand) { // Only count once per hand
           foundLaydownThisHand = true;
           laydownsFound++;
-          console.log(`🎯 LAYDOWN #${laydownsFound} at hand ${totalHands + 1}: Player ${gameState.currentPlayer} with ${currentPlayer.hand.map(d => `${d.high}-${d.low}`).join(', ')}`);
+          console.log(`🎯 LAYDOWN #${laydownsFound} at hand ${totalHands + 1}: Player ${gameState.currentPlayer} with ${currentPlayer!.hand.map(d => `${d.high}-${d.low}`).join(', ')}`);
         }
       }
       
@@ -95,15 +95,16 @@ async function playHand(initialState: GameState) {
           if (bidAction.bid === 'points' && bidAction.value) {
             laydownBidInfo = {
               playerId: gameState.currentPlayer,
-              teamId: currentPlayer.teamId,
+              teamId: currentPlayer!.teamId,
               bidValue: bidAction.value,
               bidType: 'points',
+              marksValue: undefined,
               handStrength: handStrength
             };
           } else if (bidAction.bid === 'marks' && bidAction.value) {
             laydownBidInfo = {
               playerId: gameState.currentPlayer,
-              teamId: currentPlayer.teamId,
+              teamId: currentPlayer!.teamId,
               bidValue: 42, // Marks bids always require exactly 42 points
               bidType: 'marks',
               marksValue: bidAction.value,
@@ -119,7 +120,7 @@ async function playHand(initialState: GameState) {
         gameState = executeAction(gameState, chosenTransition.action);
       } else {
         // AI couldn't choose, pick first valid
-        gameState = executeAction(gameState, transitions[0].action);
+        gameState = executeAction(gameState, transitions[0]!.action);
       }
     } else if (gameState.phase === 'trump_selection' && !winningBidInfo) {
       // Bidding just ended - capture the actual winner (only once!)
@@ -133,14 +134,14 @@ async function playHand(initialState: GameState) {
         } else {
           // Calculate the winning player's hand strength using null for proper trump analysis
           const winnerStrength = calculateHandStrengthWithTrump(
-            winningPlayer.hand, 
-            null
+            winningPlayer!.hand, 
+            undefined
           );
           
           
           winningBidInfo = {
             playerId: gameState.winningBidder,
-            teamId: winningPlayer.teamId,
+            teamId: winningPlayer!.teamId,
             bidValue: winningBid.type === 'marks' ? 42 : (winningBid.value || 0),
             bidType: winningBid.type === 'marks' ? 'marks' : 'points',
             marksValue: winningBid.type === 'marks' ? winningBid.value : undefined,
@@ -155,7 +156,7 @@ async function playHand(initialState: GameState) {
       if (chosenTransition) {
         gameState = executeAction(gameState, chosenTransition.action);
       } else {
-        gameState = executeAction(gameState, transitions[0].action);
+        gameState = executeAction(gameState, transitions[0]!.action);
       }
     } else {
       // Not bidding - just play normally
@@ -165,7 +166,7 @@ async function playHand(initialState: GameState) {
         gameState = executeAction(gameState, chosenTransition.action);
       } else {
         // AI couldn't choose, pick first valid
-        gameState = executeAction(gameState, transitions[0].action);
+        gameState = executeAction(gameState, transitions[0]!.action);
       }
       
       // Check if we've completed scoring (one hand is done)
@@ -188,11 +189,11 @@ async function playHand(initialState: GameState) {
     handComplete = true; // Mark as complete to avoid double-counting
     // Use the game's own score tracking
     const biddingTeam = winningBidInfo.teamId;
-    const teamScore = gameState.teamScores[biddingTeam];
+    const teamScore = gameState.teamScores[biddingTeam] || 0;
     
     // Record the outcome
-    const madeBid = teamScore >= winningBidInfo.bidValue;
-    const margin = teamScore - winningBidInfo.bidValue;
+    const madeBid = (teamScore || 0) >= winningBidInfo.bidValue;
+    const margin = (teamScore || 0) - winningBidInfo.bidValue;
     
     // Track laydown results silently
     
@@ -203,7 +204,7 @@ async function playHand(initialState: GameState) {
       bidType: winningBidInfo.bidType || 'points',
       marksValue: winningBidInfo.marksValue,
       handStrength: winningBidInfo.handStrength,
-      actualScore: teamScore,
+      actualScore: teamScore || 0,
       madeBid: madeBid,
       margin: margin,
       trump: gameState.trump
@@ -253,11 +254,13 @@ function analyzeResults() {
   }
   
   // Group by bid level
-  const bidLevels: { [key: number]: {
+  const bidLevels: { [key: string]: {
     total: number;
     made: number;
     totalMargin: number;
     strengths: number[];
+    madeStrengths: number[];
+    failedStrengths: number[];
     margins: number[];
   }} = {};
   
@@ -272,22 +275,22 @@ function analyzeResults() {
         made: 0,
         totalMargin: 0,
         strengths: [],
-        madeStrengths: [],  // Track strengths of successful bids
-        failedStrengths: [], // Track strengths of failed bids
+        madeStrengths: [],
+        failedStrengths: [],
         margins: []
       };
     }
     
-    bidLevels[level].total++;
+    bidLevels[level]!.total++;
     if (outcome.madeBid) {
-      bidLevels[level].made++;
-      bidLevels[level].madeStrengths.push(outcome.handStrength);
+      bidLevels[level]!.made++;
+      bidLevels[level]!.madeStrengths.push(outcome.handStrength);
     } else {
-      bidLevels[level].failedStrengths.push(outcome.handStrength);
+      bidLevels[level]!.failedStrengths.push(outcome.handStrength);
     }
-    bidLevels[level].totalMargin += outcome.margin;
-    bidLevels[level].strengths.push(outcome.handStrength);
-    bidLevels[level].margins.push(outcome.margin);
+    bidLevels[level]!.totalMargin += outcome.margin;
+    bidLevels[level]!.strengths.push(outcome.handStrength);
+    bidLevels[level]!.margins.push(outcome.margin);
   }
   
   // Report by bid level
@@ -309,17 +312,17 @@ function analyzeResults() {
     return parseInt(a) - parseInt(b);
   });
   for (const level of sortedLevels) {
-    const data = bidLevels[level]; // Use level directly, not parseInt
+    const data = bidLevels[level]!;
     const successRate = (data.made / data.total * 100).toFixed(1);
     const avgMargin = (data.totalMargin / data.total).toFixed(1);
-    const avgStrength = (data.strengths.reduce((a, b) => a + b, 0) / data.strengths.length).toFixed(1);
+    const avgStrength = (data.strengths.reduce((a: number, b: number) => a + b, 0) / data.strengths.length).toFixed(1);
     
     // Calculate average strengths for made vs failed bids
     const avgMadeStr = data.madeStrengths.length > 0 
-      ? (data.madeStrengths.reduce((a, b) => a + b, 0) / data.madeStrengths.length).toFixed(1)
+      ? (data.madeStrengths.reduce((a: number, b: number) => a + b, 0) / data.madeStrengths.length).toFixed(1)
       : 'N/A';
     const avgFailedStr = data.failedStrengths.length > 0
-      ? (data.failedStrengths.reduce((a, b) => a + b, 0) / data.failedStrengths.length).toFixed(1)
+      ? (data.failedStrengths.reduce((a: number, b: number) => a + b, 0) / data.failedStrengths.length).toFixed(1)
       : 'N/A';
     
     console.log(`${level.padEnd(3)} | ${data.total.toString().padEnd(5)} | ${successRate.padStart(8)}% | ${avgMargin.padStart(10)} | ${avgStrength.padStart(12)} | ${avgMadeStr.padStart(8)} | ${avgFailedStr.padStart(10)}`);
