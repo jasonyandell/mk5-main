@@ -958,6 +958,9 @@ export const sectionActions = {
     // Start a one-hand section
     // TODO: Handle consensus as part of game state machine
     const runner = startSection(oneHandPreset());
+    // Allow progression now that runner is listening
+    dispatcher.setFrozen(false);
+    startGameLoop();
     // Show overlay as soon as we reach scoring/game_end
     let completed = false;
     const checkCompletion = (state: GameState) => {
@@ -1041,5 +1044,11 @@ export const sectionActions = {
     sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
     setURLToMinimal(get(initialState));
     unsubscribe();
+  },
+  newOneHand: async () => {
+    // Clear overlay first to prevent immediate re-triggering
+    sectionOverlay.set(null);
+    // Then start the seed finder flow
+    await sectionActions.startOneHand();
   }
 };

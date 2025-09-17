@@ -8,9 +8,8 @@
   import { buildUrl } from '../../stores/utils/urlManager';
   const newRun = () => {
     if (typeof window !== 'undefined') {
-      // Generate a new random seed and restart
-      const newSeed = Math.floor(Math.random() * 1000000);
-      sectionActions.restartOneHand(newSeed);
+      // Start a new game with seed finder
+      sectionActions.newOneHand();
     }
   };
   const retry = () => {
