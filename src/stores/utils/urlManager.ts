@@ -169,9 +169,13 @@ export function updateURLWithState(initialState: GameState, actions: StateTransi
     // Compact consensus: filter out agree-* actions from URL/history encoding
     const compactActionIds = actions.map(a => a.id).filter(id => !id.startsWith('agree-'));
 
+    // Preserve testMode parameter if present
+    const currentParams = new URLSearchParams(window.location.search);
+    const testMode = currentParams.get('testMode');
+    
     // Use v2 compressed format with theme as first-class citizen
     // Always encode URL properly, even with no actions (preserves theme)
-    const newURL = window.location.pathname + encodeGameUrl(
+    let newURL = window.location.pathname + encodeGameUrl(
       initialState.shuffleSeed,
       compactActionIds,
       initialState.playerTypes,
@@ -181,6 +185,11 @@ export function updateURLWithState(initialState: GameState, actions: StateTransi
       filteredOverrides,
       currentScenario || undefined
     );
+    
+    // Append testMode if it was present
+    if (testMode === 'true') {
+      newURL = `${newURL}${newURL.includes('?') ? '&' : '?'}testMode=true`;
+    }
     
     // Store state in history for easy access
     const historyState = { initialState, actions: compactActionIds, timestamp: Date.now() };
@@ -196,7 +205,12 @@ export function updateURLWithState(initialState: GameState, actions: StateTransi
 // Utility: reset URL to minimal (initial state only), discarding action list
 export function setURLToMinimal(initial: GameState): void {
   if (typeof window === 'undefined') return;
-  const newURL = window.location.pathname + encodeGameUrl(
+  
+  // Preserve testMode parameter if present
+  const currentParams = new URLSearchParams(window.location.search);
+  const testMode = currentParams.get('testMode');
+  
+  let newURL = window.location.pathname + encodeGameUrl(
     initial.shuffleSeed,
     [],
     initial.playerTypes,
@@ -205,6 +219,12 @@ export function setURLToMinimal(initial: GameState): void {
     initial.theme,
     initial.colorOverrides
   );
+  
+  // Append testMode if it was present
+  if (testMode === 'true') {
+    newURL = `${newURL}${newURL.includes('?') ? '&' : '?'}testMode=true`;
+  }
+  
   const historyState = { initialState: initial, actions: [], timestamp: Date.now() };
   window.history.replaceState(historyState, '', newURL);
 }

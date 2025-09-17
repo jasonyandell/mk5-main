@@ -8,19 +8,9 @@
   import { buildUrl } from '../../stores/utils/urlManager';
   const newRun = () => {
     if (typeof window !== 'undefined') {
-      const url = buildUrl({
-        initialState: $initialState,
-        actionIds: [],
-        scenarioName: 'one_hand',
-        includeSeed: false,
-        includeActions: false,
-        includeScenario: true,
-        includeTheme: true,
-        includeOverrides: false,
-        preserveUnknownParams: true,
-        absolute: true
-      });
-      window.location.assign(url);
+      // Generate a new random seed and restart
+      const newSeed = Math.floor(Math.random() * 1000000);
+      sectionActions.restartOneHand(newSeed);
     }
   };
   const retry = () => {
@@ -46,7 +36,7 @@
         absolute: true
       });
       const challengeText = tries === 1 
-        ? "42 🁠 Skunked 'em on the first try!" 
+        ? "42 🁠" 
         : `42 🁠 Got it in ${tries} tries! Can you beat that?`;
       const text = `${challengeText}\n${url}`;
       try {

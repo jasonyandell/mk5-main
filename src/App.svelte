@@ -7,6 +7,7 @@
   import SectionCompleteModal from './lib/components/SectionCompleteModal.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
+  import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
   import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
@@ -177,3 +178,4 @@
 
 <QuickplayError />
 <SectionCompleteModal />
+<SeedFinderModal />

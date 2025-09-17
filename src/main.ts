@@ -8,6 +8,8 @@ import { setAISpeedProfile } from './game/core/ai-scheduler';
 import { getNextStates } from './game';
 import { dispatcher } from './stores/gameStore';
 import { quickplayActions, quickplayState } from './stores/quickplayStore';
+import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
+import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameState, StateTransition } from './game/types';
 
 const app = mount(App, {
@@ -39,6 +41,8 @@ declare global {
     getNextStates: typeof getNextStates;
     viewProjection: typeof viewProjection;
     playFirstAction: () => void;
+    SEED_FINDER_CONFIG: typeof SEED_FINDER_CONFIG;
+    seedFinderStore: typeof seedFinderStore;
   }
 }
 
@@ -49,6 +53,8 @@ if (typeof window !== 'undefined') {
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);
   window.gameActions = gameActions;
+  window.SEED_FINDER_CONFIG = SEED_FINDER_CONFIG;
+  window.seedFinderStore = seedFinderStore;
   // Properly expose the store with its methods
   window.gameState = {
     set: (state: GameState) => gameState.set(state),

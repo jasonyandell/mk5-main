@@ -10,6 +10,8 @@ import { selectAIAction, resetAISchedule, setAISpeedProfile } from '../game/core
 import { startSection } from '../game/core/sectionRunner';
 import { oneHand as oneHandPreset, fromSlug as sectionFromSlug } from '../game/core/sectionPresets';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
+import { findBalancedSeed, evaluateSeed } from '../game/core/seedFinder';
+import { seedFinderStore } from './seedFinderStore';
 
 // Import extracted utilities
 import { deepClone, deepCompare } from './utils/deepUtils';
@@ -251,7 +253,7 @@ export const gameActions = {
     controllerManager.onStateChange(state);
   },
   
-  loadFromURL: () => {
+  loadFromURL: async () => {
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -259,12 +261,85 @@ export const gameActions = {
           // Supply a seed if missing and update URL (preserving scenario if present)
           // Reuse existing URL decode to capture theme/overrides even without seed
           const { theme: urlTheme, colorOverrides: urlColorOverrides } = decodeGameUrl(window.location.search);
+          const scenarioParam = params.get('h') || '';
+          
+          // For one_hand scenario without seed, use balanced seed finder
+          let seedToUse: number | undefined;
+          if (scenarioParam === 'one_hand') {
+            if (testMode) {
+              // In test mode, skip seed finder and use default seed
+              seedToUse = 424242;
+            } else {
+              // Helper to find and confirm a seed
+              const findAndConfirmSeed = async (): Promise<number | null> => {
+                // Start seed search UI
+                seedFinderStore.startSearch();
+                
+                try {
+                  const balancedSeed = await findBalancedSeed(
+                    (progress) => {
+                      // Check if cancelled
+                      if (seedFinderStore.isCancelled()) {
+                        throw new Error('Seed search cancelled');
+                      }
+                      seedFinderStore.updateProgress(progress);
+                    }
+                  );
+                  
+                  // Get the actual win rate for display
+                  const winRate = await evaluateSeed(balancedSeed);
+                  
+                  // Show confirmation modal
+                  seedFinderStore.setSeedFound(balancedSeed, winRate.winRate);
+                  
+                  // Wait for user confirmation or regeneration
+                  return new Promise((resolve) => {
+                    const checkConfirmation = () => {
+                      const unsubscribe = seedFinderStore.subscribe(state => {
+                        if (!state.waitingForConfirmation) {
+                          unsubscribe();
+                          if (state.cancelled) {
+                            resolve(null);
+                          } else {
+                            resolve(balancedSeed);
+                          }
+                        }
+                      });
+                    };
+                    
+                    // Listen for regenerate event
+                    const handleRegenerate = () => {
+                      window.removeEventListener('regenerate-seed', handleRegenerate);
+                      // Recursively find another seed
+                      findAndConfirmSeed().then(resolve);
+                    };
+                    window.addEventListener('regenerate-seed', handleRegenerate);
+                    
+                    checkConfirmation();
+                  });
+                } catch {
+                  // If cancelled or error, stop search and return
+                  seedFinderStore.stopSearch();
+                  return null;
+                }
+              };
+              
+              // Find new balanced seed  
+              const balancedSeed = await findAndConfirmSeed();
+              if (!balancedSeed) {
+                return; // User cancelled
+              }
+              
+              seedToUse = balancedSeed;
+            }
+          }
+          
           const supplied = createInitialState({
             playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
             theme: urlTheme,
-            colorOverrides: urlColorOverrides
+            colorOverrides: urlColorOverrides,
+            ...(seedToUse !== undefined && { shuffleSeed: seedToUse }) // Only include if defined
           });
-          const scenarioParam = params.get('h') || '';
           setCurrentScenario(scenarioParam || null);
 
           // Initialize stores
@@ -794,8 +869,83 @@ if (typeof window !== 'undefined') {
 // High-level section actions
 export const sectionActions = {
   startOneHand: async () => {
-    // Prepare a deterministic hand and load it, preserving current theme settings
-    const prepared = await prepareDeterministicHand(424242);
+    let balancedSeed: number;
+    
+    if (testMode) {
+      // In test mode, skip seed finder and use default seed
+      balancedSeed = 424242;
+    } else {
+      // Helper to find and confirm a seed
+      const findAndConfirmSeed = async (): Promise<number | null> => {
+        // Start seed search UI
+        seedFinderStore.startSearch();
+        
+        try {
+          const foundSeed = await findBalancedSeed(
+            (progress) => {
+              // Check if cancelled
+              if (seedFinderStore.isCancelled()) {
+                throw new Error('Seed search cancelled');
+              }
+              seedFinderStore.updateProgress(progress);
+            }
+          );
+          
+          // Get the actual win rate for display
+          const winRate = await evaluateSeed(foundSeed);
+          
+          // Show confirmation modal
+          seedFinderStore.setSeedFound(foundSeed, winRate.winRate);
+          
+          // Wait for user confirmation or regeneration
+          return new Promise((resolve) => {
+            const checkConfirmation = () => {
+              const unsubscribe = seedFinderStore.subscribe(state => {
+                if (!state.waitingForConfirmation) {
+                  unsubscribe();
+                  if (state.cancelled) {
+                    resolve(null);
+                  } else {
+                    resolve(foundSeed);
+                  }
+                }
+              });
+            };
+            
+            // Listen for regenerate event
+            const handleRegenerate = () => {
+              window.removeEventListener('regenerate-seed', handleRegenerate);
+              // Recursively find another seed
+              findAndConfirmSeed().then(resolve);
+            };
+            window.addEventListener('regenerate-seed', handleRegenerate);
+            
+            checkConfirmation();
+          });
+        } catch {
+          // If cancelled or error, stop search and return
+          seedFinderStore.stopSearch();
+          return null;
+        }
+      };
+      
+      // Find new balanced seed
+      const foundSeed = await findAndConfirmSeed();
+      if (!foundSeed) {
+        return; // User cancelled
+      }
+      
+      // Check if cancelled during search
+      if (seedFinderStore.isCancelled()) {
+        seedFinderStore.stopSearch(); // Make sure UI is cleaned up
+        return; // Exit without starting game
+      }
+      
+      balancedSeed = foundSeed;
+    }
+    
+    // Prepare a deterministic hand with the balanced seed, preserving current theme settings
+    const prepared = await prepareDeterministicHand(balancedSeed);
     const currentTheme = get(gameState).theme;
     const currentOverrides = get(gameState).colorOverrides;
     const preparedWithTheme = { ...prepared, theme: currentTheme, colorOverrides: currentOverrides };

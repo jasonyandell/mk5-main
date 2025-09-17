@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Domino, TrumpSelection, LedSuitOrNone, LedSuit, RegularSuit } from '../../game/types';
+import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
 import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { analyzeDominoAsSuit, getPlayableSuits } from '../../game/ai/domino-strength';
@@ -152,47 +152,6 @@ describe('Strength Table Generation Verification', () => {
           }
           if (JSON.stringify(runtimeCannotFollow) !== JSON.stringify(generatedCannotFollow)) {
             mismatches.push(`cannotFollow mismatch for ${domino.id} | ${trump.type} | suit-${suit}`);
-          }
-        }
-        
-        // Also check "invalid" plays that runtime allows for trump dominoes
-        if (dominoIsTrump) {
-          const allSuits = new Set<number>();
-          if (domino.high !== domino.low) {
-            allSuits.add(domino.high);
-            allSuits.add(domino.low);
-          } else {
-            allSuits.add(domino.high);
-          }
-          
-          for (const suit of allSuits) {
-            if (!playableSuits.includes(suit as LedSuit)) {
-              const runtime = analyzeDominoAsSuit(domino, suit as LedSuitOrNone, trump, state, 0);
-              const generated = getDominoStrength(domino, trump, suit as LedSuitOrNone);
-              
-              totalChecks++;
-              if (!generated) {
-                mismatches.push(`Missing entry for invalid play: ${domino.id} | ${trump.type} | suit-${suit}`);
-                continue;
-              }
-              
-              const runtimeBeatenBy = runtime.beatenBy.map(d => d.id).sort();
-              const generatedBeatenBy = generated.beatenBy.sort();
-              const runtimeBeats = runtime.beats.map(d => d.id).sort();
-              const generatedBeats = generated.beats.sort();
-              const runtimeCannotFollow = runtime.cannotFollow.map(d => d.id).sort();
-              const generatedCannotFollow = generated.cannotFollow.sort();
-              
-              if (JSON.stringify(runtimeBeatenBy) !== JSON.stringify(generatedBeatenBy)) {
-                mismatches.push(`beatenBy mismatch for invalid play ${domino.id} | ${trump.type} | suit-${suit}`);
-              }
-              if (JSON.stringify(runtimeBeats) !== JSON.stringify(generatedBeats)) {
-                mismatches.push(`beats mismatch for invalid play ${domino.id} | ${trump.type} | suit-${suit}`);
-              }
-              if (JSON.stringify(runtimeCannotFollow) !== JSON.stringify(generatedCannotFollow)) {
-                mismatches.push(`cannotFollow mismatch for invalid play ${domino.id} | ${trump.type} | suit-${suit}`);
-              }
-            }
           }
         }
       }

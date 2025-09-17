@@ -47,3 +47,11 @@ CRITICAL: setTimeout() is BANNED and can NEVER be used in playwright tests
 ** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
 
 ** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
+
+## Running TypeScript scripts
+- This project uses `"type": "module"` in package.json - ES modules only!
+- When creating test scripts:
+  - Use `.ts` extension for TypeScript files
+  - Use ES module imports: `import { thing } from './path'`
+  - NOT CommonJS: ~~`const { thing } = require('./path')`~~
+- Common pitfall: npm run build outputs to dist/ which may not exist yet

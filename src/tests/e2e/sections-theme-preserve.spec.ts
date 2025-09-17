@@ -24,8 +24,8 @@ test.describe('Sections: Theme preservation', () => {
   });
 
   test('New Game from completion modal preserves theme parameter and DOM theme across multiple runs', async ({ page }) => {
-    // Start section with explicit theme
-    await page.goto('/?h=one_hand&t=dark', { waitUntil: 'networkidle' });
+    // Start section with explicit theme and testMode to skip seed finder
+    await page.goto('/?h=one_hand&t=dark&testMode=true', { waitUntil: 'networkidle' });
     await page.waitForSelector('.app-container');
 
     // Speed up AI and drive to completion

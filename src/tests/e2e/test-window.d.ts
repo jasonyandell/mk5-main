@@ -35,5 +35,20 @@ export interface TestWindow {
     aiPlayers: Set<number>;
   };
   getNextStates?: (state: unknown) => Array<{ id: string; action: unknown }>;
+  SEED_FINDER_CONFIG?: {
+    MAX_SEEDS_TO_TRY: number;
+    GAMES_PER_SEED: number;
+    SEARCH_TIMEOUT_MS: number;
+    PROGRESS_REPORT_INTERVAL: number;
+    MAX_ACTIONS_PER_GAME: number;
+    TARGET_WIN_RATE_MIN: number;
+    TARGET_WIN_RATE_MAX: number;
+    FALLBACK_SEED: number;
+  };
+  seedFinderStore?: {
+    confirmSeed: () => void;
+    setSeedFound: (seed: number, winRate: number) => void;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
