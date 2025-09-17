@@ -2,6 +2,7 @@ import type { GameState, StateTransition } from '../../game/types';
 import { createInitialState, getNextStates } from '../../game';
 import { deepClone } from './deepUtils';
 import { getAttempts, recordWin } from './oneHandStats';
+import { BeginnerAIStrategy } from '../../game/controllers/strategies';
 
 // Helper: determine if "we" (team 0; players 0 and 2) won the hand
 // Returns true if we definitively won, false if definitively not, or null if undetermined
@@ -158,28 +159,34 @@ export async function prepareDeterministicHand(seed = 424242): Promise<GameState
 export function buildActionsToPlayingFromState(initial: GameState): string[] {
   let state = deepClone(initial);
   const actions: string[] = [];
-  // Follow: pass, bid-30, pass, pass regardless of dealer/currentPlayer order
+  const aiStrategy = new BeginnerAIStrategy();
+  
+  // Process bidding phase
   for (let i = 0; i < 4 && state.phase === 'bidding'; i++) {
     const ts = getNextStates(state);
     let pick: StateTransition | undefined;
-    // If current player is human (P0), pass; otherwise bid-30 if possible
-    if (state.currentPlayer === 0) {
-      pick = ts.find((t) => t.id === 'pass') || ts.find((t) => t.id.startsWith('bid-'));
+    
+    // If current player is human (P0), always pass
+    if (state.currentPlayer !== 3) {
+      pick = ts.find((t) => t.id === 'pass');
     } else {
-      pick = ts.find((t) => t.id === 'bid-30') || ts.find((t) => t.id.startsWith('bid-')) || ts.find((t) => t.id === 'pass');
+      pick = ts.find((t) => t.id === 'bid-30');
     }
-    if (!pick) break;
+    
+    if (!pick) throw Error(`${state.currentPlayer} couldn't pass or bid 30`);
     actions.push(pick.id);
     state = pick.newState;
   }
-  // Include trump selection explicitly to ensure we reach playing deterministically
+  
+  // Handle trump selection using AI strategy
   if (state.phase === 'trump_selection') {
     const ts = getNextStates(state);
-    const trump = ts.find((t) => t.id.startsWith('trump-'));
+    const trump = aiStrategy.chooseAction(state, ts);
     if (trump) {
       actions.push(trump.id);
       state = trump.newState;
     }
   }
+  
   return actions;
 }

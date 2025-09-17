@@ -269,12 +269,19 @@
       {/if}
 
       {#if activeTab === 'history'}
+        {@const humanActions = $actionHistory
+          .map((action, index) => ({ action, originalIndex: index }))
+          .filter(({ action }) => {
+            // Only include actions that have a player field and that player is human
+            return action.newState.currentPlayer !== undefined && 
+                   $gameState.playerTypes[action.newState.currentPlayer] === 'human';
+          })}
         <div class="space-y-4">
           <!-- Header with count -->
           <div class="flex items-center justify-between">
             <h3 class="text-base font-semibold">
               History 
-              <span class="badge badge-neutral ml-2">{$actionHistory.length}</span>
+              <span class="badge badge-neutral ml-2">{humanActions.length}</span>
             </h3>
           </div>
 
@@ -302,28 +309,27 @@
           </div>
           
           <!-- History list -->
-          {#if $actionHistory.length === 0}
+          {#if humanActions.length === 0}
             <div class="alert">
               <Icon name="informationCircle" size="lg" />
-              <span>No moves yet. Start playing!</span>
+              <span>No human player moves yet. Start playing!</span>
             </div>
           {:else}
             <div class="space-y-2">
-              {#each [...$actionHistory].reverse() as action, reverseIndex}
-                {@const actualIndex = $actionHistory.length - 1 - reverseIndex}
+              {#each [...humanActions].reverse() as { action, originalIndex }, reverseIndex}
                 <!-- Make entire card clickable on mobile -->
                 <button 
                   class="card bg-base-200 w-full text-left active:scale-95 transition-transform"
                   data-testid="history-item"
-                  onclick={() => timeTravel(actualIndex)}
+                  onclick={() => timeTravel(originalIndex)}
                   onpointerdown={(e) => {
                     e.preventDefault();
-                    timeTravel(actualIndex);
+                    timeTravel(originalIndex);
                   }}
                 >
                   <div class="card-body p-3 flex-row items-center gap-3">
                     <div class="badge badge-lg badge-primary font-bold">
-                      {actualIndex + 1}
+                      {humanActions.length - reverseIndex}
                     </div>
                     <div class="flex-1 text-sm">
                       {action.label}

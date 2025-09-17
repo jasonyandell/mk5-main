@@ -4,19 +4,22 @@ import { BID_TYPES } from '../constants';
 import { calculateTrickWinner } from '../core/scoring';
 import { analyzeHand } from '../ai/utilities';
 import { 
-  calculateHandStrengthWithTrump, 
+//  calculateHandStrengthWithTrump, 
   determineBestTrump,
   LAYDOWN_SCORE,
   BID_THRESHOLDS 
 } from '../ai/hand-strength';
+import { calculateLexicographicStrength } from '../ai/lexicographic-strength';
 
 
 /**
  * Random AI strategy - picks random action
  */
 export class RandomAIStrategy implements AIStrategy {
-  chooseAction(_state: GameState, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
+  chooseAction(_state: GameState, transitions: StateTransition[]): StateTransition {
+    if (transitions.length === 0) {
+      throw new Error('RandomAIStrategy: No transitions available to choose from');
+    }
     
     // Still prioritize consensus for game flow
     const consensusAction = transitions.find(t =>
@@ -30,7 +33,11 @@ export class RandomAIStrategy implements AIStrategy {
     
     // Random choice from available actions
     const index = Math.floor(Math.random() * transitions.length);
-    return transitions[index] || null;
+    const chosen = transitions[index];
+    if (!chosen) {
+      throw new Error(`RandomAIStrategy: Failed to select transition at index ${index} from ${transitions.length} transitions`);
+    }
+    return chosen;
   }
   
   getThinkingTime(actionType: string): number {
@@ -51,8 +58,10 @@ export class RandomAIStrategy implements AIStrategy {
  * Beginner AI strategy - makes basic intelligent decisions
  */
 export class BeginnerAIStrategy implements AIStrategy {
-  chooseAction(state: GameState, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
+  chooseAction(state: GameState, transitions: StateTransition[]): StateTransition {
+    if (transitions.length === 0) {
+      throw new Error('BeginnerAIStrategy: No transitions available to choose from');
+    }
     
     // Prioritize consensus
     const consensusAction = transitions.find(t =>
@@ -66,7 +75,9 @@ export class BeginnerAIStrategy implements AIStrategy {
     
     // Get current player for context
     const currentPlayer = state.players[state.currentPlayer];
-    if (!currentPlayer) return transitions[0] || null;
+    if (!currentPlayer) {
+      throw new Error(`BeginnerAIStrategy: Current player ${state.currentPlayer} not found in state`);
+    }
     
     // Use phase-specific logic
     switch (state.phase) {
@@ -77,16 +88,22 @@ export class BeginnerAIStrategy implements AIStrategy {
       case 'playing':
         return this.makePlayDecision(state, currentPlayer, transitions);
       default:
-        return transitions[0] || null;
+        const fallback = transitions[0];
+        if (!fallback) {
+          throw new Error(`BeginnerAIStrategy: No fallback transition available for phase ${state.phase}`);
+        }
+        return fallback;
     }
   }
   
-  private makeBidDecision(state: GameState, player: Player, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
+  private makeBidDecision(state: GameState, player: Player, transitions: StateTransition[]): StateTransition {
+    if (transitions.length === 0) {
+      throw new Error('BeginnerAIStrategy.makeBidDecision: No transitions available');
+    }
     
     // Calculate hand strength using shared utility
     // Pass undefined to force proper trump analysis for bidding decisions
-    const handStrength = calculateHandStrengthWithTrump(player.hand, undefined);
+    const handStrength = calculateLexicographicStrength(player.hand, state.trump, state);
     
     // Find pass action
     const passAction = transitions.find(t => t.id === 'pass');
@@ -96,7 +113,12 @@ export class BeginnerAIStrategy implements AIStrategy {
     
     // Weak hand - pass if can't bid 30
     if (handStrength < 30 && currentBidValue >= 30) {
-      return passAction || transitions[0] || null;
+      if (passAction) return passAction;
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass action or fallback available for weak hand');
+      }
+      return fallback;
     }
     
     // Calculate bid based on hand strength with non-linear scoring
@@ -143,12 +165,21 @@ export class BeginnerAIStrategy implements AIStrategy {
       if (bid30) return bid30;
       
       // Fallback
-      return transitions[0] || null;
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makeBidDecision: No fallback available for laydown hand');
+      }
+      return fallback;
     }
     
     // Pass should be the most common bid!
     if (handStrength < BID_THRESHOLDS.PASS) {
-      return passAction || transitions[0] || null;
+      if (passAction) return passAction;
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass action or fallback available');
+      }
+      return fallback;
     }
     
     // Determine target bid using shared thresholds
@@ -178,15 +209,26 @@ export class BeginnerAIStrategy implements AIStrategy {
         const bValue = bParts.length >= 2 && bParts[1] ? parseInt(bParts[1]) : 0;
         return aValue - bValue;
       });
-      return validBids[0] || null;
+      const chosen = validBids[0];
+      if (!chosen) {
+        throw new Error('BeginnerAIStrategy.makeBidDecision: No valid bid found after sorting');
+      }
+      return chosen;
     }
     
     // Can't make desired bid - pass
-    return passAction || transitions[0] || null;
+    if (passAction) return passAction;
+    const fallback = transitions[0];
+    if (!fallback) {
+      throw new Error('BeginnerAIStrategy.makeBidDecision: Cannot make desired bid and no pass/fallback available');
+    }
+    return fallback;
   }
   
-  private makeTrumpDecision(_state: GameState, player: Player, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
+  private makeTrumpDecision(_state: GameState, player: Player, transitions: StateTransition[]): StateTransition {
+    if (transitions.length === 0) {
+      throw new Error('BeginnerAIStrategy.makeTrumpDecision: No transitions available');
+    }
     
     // Use the shared utility to determine best trump
     const bestTrump = determineBestTrump(player.hand, player.suitAnalysis);
@@ -202,11 +244,17 @@ export class BeginnerAIStrategy implements AIStrategy {
     }
     
     // Fallback
-    return transitions[0] || null;
+    const fallback = transitions[0];
+    if (!fallback) {
+      throw new Error('BeginnerAIStrategy.makeTrumpDecision: No trump selection available');
+    }
+    return fallback;
   }
   
-  private makePlayDecision(state: GameState, player: Player, transitions: StateTransition[]): StateTransition | null {
-    if (transitions.length === 0) return null;
+  private makePlayDecision(state: GameState, player: Player, transitions: StateTransition[]): StateTransition {
+    if (transitions.length === 0) {
+      throw new Error('BeginnerAIStrategy.makePlayDecision: No transitions available');
+    }
     
     // If completing a trick, do it
     const completeTrickAction = transitions.find(t => t.id === 'complete-trick');
@@ -214,7 +262,9 @@ export class BeginnerAIStrategy implements AIStrategy {
     
     // Extract dominoes from play actions
     const playActions = transitions.filter(t => t.id.startsWith('play-'));
-    if (playActions.length === 0) return transitions[0] || null;
+    if (playActions.length === 0) {
+      throw new Error('BeginnerAIStrategy.makePlayDecision: No play actions or fallback available');
+    }
     
     // Analyze hand using simplified interface
     const analysis = analyzeHand(state, player.id);
@@ -236,8 +286,12 @@ export class BeginnerAIStrategy implements AIStrategy {
         }
       }
       
-      // Fallback
-      return transitions[0] || null;
+      // Fallback when no suitable lead found
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makePlayDecision: No suitable lead play or fallback available');
+      }
+      return fallback;
     }
     
     // Following in a trick - determine who's currently winning
@@ -245,11 +299,19 @@ export class BeginnerAIStrategy implements AIStrategy {
     
     // Find current trick winner player id
     const currentWinnerPlayerId = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit);
-    if (currentWinnerPlayerId === -1) return transitions[0] || null;
+    if (currentWinnerPlayerId === -1) {
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makePlayDecision: Cannot determine trick winner and no fallback available');
+      }
+      return fallback;
+    }
     
     // Find the winning player
     const winnerPlayer = state.players[currentWinnerPlayerId];
-    if (!winnerPlayer) return transitions[0] || null;
+    if (!winnerPlayer) {
+      throw new Error(`BeginnerAIStrategy.makePlayDecision: Winner player ${currentWinnerPlayerId} not found in state`);
+    }
     
     const partnerCurrentlyWinning = winnerPlayer.teamId === myTeam;
     
@@ -259,14 +321,17 @@ export class BeginnerAIStrategy implements AIStrategy {
       const dominoId = action.id.replace('play-', '');
       const dominoAnalysis = analysis.dominoes.find(d => d.domino.id.toString() === dominoId);
       
-      if (!dominoAnalysis) return null;
+      if (!dominoAnalysis) {
+        // Skip actions that don't have analysis (should not normally happen)
+        return null;
+      }
       
       return {
         action,
         points: dominoAnalysis.points,
         canBeat: dominoAnalysis.wouldBeatTrick,
       };
-    }).filter(Boolean) as Array<{ action: StateTransition; points: number; canBeat: boolean }>;
+    }).filter((item): item is { action: StateTransition; points: number; canBeat: boolean } => item !== null);
     
     if (partnerCurrentlyWinning) {
       // Partner currently winning - PLAY COUNT (safe points!)
@@ -286,7 +351,11 @@ export class BeginnerAIStrategy implements AIStrategy {
       if (winningPlays.length > 0) {
         // Can win - use lowest count to win
         winningPlays.sort((a, b) => a.points - b.points);
-        return winningPlays[0]?.action || transitions[0] || null;
+        const chosen = winningPlays[0];
+        if (!chosen?.action) {
+          throw new Error('BeginnerAIStrategy.makePlayDecision: No winning play found after filtering');
+        }
+        return chosen.action;
       } else {
         // Can't win - play LOW count (don't give them points!)
         scoredActions.sort((a, b) => {
@@ -299,7 +368,15 @@ export class BeginnerAIStrategy implements AIStrategy {
       }
     }
     
-    return scoredActions[0]?.action || transitions[0] || null;
+    const chosen = scoredActions[0];
+    if (!chosen?.action) {
+      const fallback = transitions[0];
+      if (!fallback) {
+        throw new Error('BeginnerAIStrategy.makePlayDecision: No scored action or fallback available');
+      }
+      return fallback;
+    }
+    return chosen.action;
   }
   
   private getCurrentBidValue(state: GameState): number {

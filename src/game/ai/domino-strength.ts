@@ -178,7 +178,7 @@ export function analyzeDominoAsSuit(
   state: GameState,
   playerId: number
 ): DominoStrength {
-  const unplayed = getUnplayedDominoes(state, playerId);
+  const unplayed = [domino, ...getUnplayedDominoes(state, playerId)]; // Unplayed dominoes + this domino
   const beatenBy: Domino[] = [];
   const beats: Domino[] = [];
   const cannotFollow: Domino[] = [];

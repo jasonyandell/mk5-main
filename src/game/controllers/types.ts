@@ -35,7 +35,7 @@ export interface AIStrategy {
   /**
    * Choose an action from available transitions
    */
-  chooseAction(state: GameState, transitions: StateTransition[]): StateTransition | null;
+  chooseAction(state: GameState, transitions: StateTransition[]): StateTransition;
   
   /**
    * Get thinking time in milliseconds

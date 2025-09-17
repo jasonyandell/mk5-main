@@ -22,11 +22,11 @@ export const LAYDOWN_SCORE = 999;
 export const BID_THRESHOLDS = {
   PASS: 55,
   BID_30: 55,
-  BID_31: 75,
-  BID_32: 100,  // Adjusted to get better hands bidding 32
-  BID_33: 125,  // Raised to be more selective (target ~60%)
-  BID_34: 145,  // Raised to be more selective (target ~60%)
-  BID_35: 160   // Raised slightly for consistency
+  BID_31: 998,
+  BID_32: 998,  // Adjusted to get better hands bidding 32
+  BID_33: 998,  // Raised to be more selective (target ~60%)
+  BID_34: 998,  // Raised to be more selective (target ~60%)
+  BID_35: 998   // Raised slightly for consistency
 };
 
 /**

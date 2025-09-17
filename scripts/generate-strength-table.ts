@@ -7,7 +7,7 @@
 import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { Domino, TrumpSelection, GameState, LedSuitOrNone } from '../src/game/types';
+import type { Domino, TrumpSelection, GameState } from '../src/game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../src/game/types';
 import { analyzeDominoAsSuit, getPlayableSuits } from '../src/game/ai/domino-strength';
 import { isTrump } from '../src/game/core/dominoes';
@@ -113,6 +113,8 @@ function createMinimalState(): GameState {
     },
     actionHistory: [],
     aiSchedule: {},
+    theme: "none",
+    colorOverrides: {} 
   } as GameState;
 }
 
@@ -188,34 +190,7 @@ function generateTable(): void {
           cannotFollow: analysis.cannotFollow.map(d => d.id.toString())
         };
         entryCount++;
-      }
-      
-      // Also generate entries for "invalid" plays that the runtime allows
-      // (e.g., playing a trump domino as a non-trump suit)
-      if (dominoIsTrump) {
-        // For trump dominoes, also generate entries for all suits they contain
-        // This handles edge cases where the runtime allows analyzing invalid plays
-        const allSuits = new Set<number>();
-        if (domino.high !== domino.low) {
-          allSuits.add(domino.high);
-          allSuits.add(domino.low);
-        } else {
-          allSuits.add(domino.high);
-        }
-        
-        for (const suit of allSuits) {
-          if (!playableSuits.includes(suit)) {
-            const analysis = analyzeDominoAsSuit(domino, suit, trump, state, 0);
-            const key = `${domino.id}|${trumpKey}|${numberToSuitName(suit)}`;
-            table[key] = {
-              beatenBy: analysis.beatenBy.map(d => d.id.toString()),
-              beats: analysis.beats.map(d => d.id.toString()),
-              cannotFollow: analysis.cannotFollow.map(d => d.id.toString())
-            };
-            entryCount++;
-          }
-        }
-      }
+      }      
     }
   }
   

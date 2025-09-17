@@ -316,7 +316,6 @@ export const gameActions = {
                 const checkCompletion = (state: GameState) => {
                   if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
                     completed = true;
-                    console.log('[URL Section Complete] Showing overlay for oneHand (will finalize after runner)');
                     sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
                     setURLToMinimal(get(initialState));
                   }

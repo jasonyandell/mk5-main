@@ -1,17 +1,24 @@
+ServerState
+- game id
+- game state
+- players
+- consensus: new type of action, consensus.  server only proceeds once consensus collected.  once collected, individual consensus actions are irrelevant
+- AI runs on the server
+
+ClientState
+- gameStore
+
+Server has everything.  It can run in the browser, but the client doesn't know about it
+
+- sends messages to server
+
 ## Display
-- Fix dark theme AI thinking text visibility - currently just shows robot emoji with blank space
 - Display dominoes 4 over 3, horizontally centered, not wrapped - remove from bottom row first as played
-- get a bunch more themes, and overhaul the theme viewer
 
 ## Multiplayer
 - PartyKit
 - Implement offline mode first and first-class.
 - player sees what partykit sees, AI are real partykit players as far as events are concerned
-
-## Consensus
-- fix consensus
-- add a toggle to settings, "AI Speed" either sunshine emoji or lightning bolt emoji.  sunshine emoji makes the ai think for 3s.  lightning bolt emoji uses current speed    
-- Fix mushy click-to-skip AI plays - should zap immediately to next phase, especially during complete trick
 
 ## View States
 - Create test scenarios panel in settings: bidding, waiting on others, all bid, win the bid trumps, lose the bid, playing human turn, playing AI turn, early termination we/they made/set, full hand complete, game over, plunge, we won, we lost - clicking jumps directly via URL
