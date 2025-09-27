@@ -46,7 +46,7 @@ export class RandomAIStrategy implements AIStrategy {
       return 0;
     }
     
-    return 300 + Math.random() * 1000;
+    return 0;
   }
 }
 

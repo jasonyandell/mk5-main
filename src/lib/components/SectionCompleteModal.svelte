@@ -1,8 +1,9 @@
 <script lang="ts">
   import { sectionOverlay, sectionActions } from '../../stores/gameStore';
   import Icon from '../icons/Icon.svelte';
+  import { shareContent, canNativeShare } from '../utils/share';
 
-  let copySuccess = $state(false);
+  let shareSuccess = $state(false);
 
   import { initialState } from '../../stores/gameStore';
   import { buildUrl } from '../../stores/utils/urlManager';
@@ -34,16 +35,19 @@
         preserveUnknownParams: true,
         absolute: true
       });
-      const challengeText = tries === 1 
-        ? "42 🁠" 
+      const challengeText = tries === 1
+        ? "42 🁠"
         : `42 🁠 Got it in ${tries} tries! Can you beat that?`;
-      const text = `${challengeText}\n${url}`;
-      try {
-        await navigator.clipboard.writeText(text);
-        copySuccess = true;
-        setTimeout(() => copySuccess = false, 2000);
-      } catch (e) {
-        console.warn('Clipboard write failed', e);
+
+      const success = await shareContent({
+        title: '42 🁠 Challenge',
+        text: challengeText,
+        url: url
+      });
+
+      if (success) {
+        shareSuccess = true;
+        setTimeout(() => shareSuccess = false, 2000);
       }
     }
   };
@@ -70,13 +74,13 @@
           <button class="btn btn-accent w-full" onclick={retry}>Retry ({$sectionOverlay.attemptsCount ?? 1})</button>
         {/if}
         {#if $sectionOverlay.canChallenge}
-          <button class="btn {copySuccess ? 'btn-success' : 'btn-secondary'} w-full" onclick={challenge}>
-            {#if copySuccess}
+          <button class="btn {shareSuccess ? 'btn-success' : 'btn-secondary'} w-full" onclick={challenge}>
+            {#if shareSuccess}
               <Icon name="check" size="sm" />
-              Copied!
+              {canNativeShare() ? 'Shared!' : 'Copied!'}
             {:else}
-              <Icon name="link" size="sm" />
-              Challenge!
+              <Icon name={canNativeShare() ? 'share' : 'link'} size="sm" />
+              Share results
             {/if}
           </button>
         {/if}

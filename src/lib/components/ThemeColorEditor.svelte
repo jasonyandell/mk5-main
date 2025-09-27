@@ -5,6 +5,7 @@
   // No need to re-encode full URL for sharing; preserve current URL and patch theme if needed
   import ColorPicker from 'svelte-awesome-color-picker';
   import Icon from '../icons/Icon.svelte';
+  import { shareContent, canNativeShare } from '../utils/share';
   
   const dispatch = createEventDispatcher();
   
@@ -244,9 +245,6 @@
       absolute: true
     });
     showShareDialog = true;
-    navigator.clipboard.writeText(shareURL).catch(e => {
-      console.error('Could not copy to clipboard:', e);
-    });
   }
   
   // Export as CSS
@@ -449,20 +447,24 @@
           <div class="flex flex-col gap-2">
             <button
               class="btn btn-sm flex-1 {copySuccess === 'link' ? 'btn-success' : 'btn-primary'}"
-              onclick={() => {
-                navigator.clipboard.writeText(shareURL).then(() => {
+              onclick={async () => {
+                const theme = $gameState.theme || 'coffee';
+                const success = await shareContent({
+                  title: `Texas 42 - ${theme} Theme`,
+                  text: `Check out my custom ${theme} theme!`,
+                  url: shareURL
+                });
+                if (success) {
                   copySuccess = 'link';
                   setTimeout(() => copySuccess = null, 2000);
-                }).catch(e => {
-                  console.error('Failed to copy:', e);
-                });
+                }
               }}
               type="button"
             >
               {#if copySuccess === 'link'}
-                <Icon name="check" size="sm" /> Link
+                <Icon name="check" size="sm" /> {canNativeShare() ? 'Shared' : 'Link'}
               {:else}
-                <Icon name="clipboard" size="sm" /> Link
+                <Icon name={canNativeShare() ? 'share' : 'clipboard'} size="sm" /> {canNativeShare() ? 'Share' : 'Link'}
               {/if}
             </button>
             <button

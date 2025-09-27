@@ -10,6 +10,22 @@ ClientState
 
 Server has everything.  It can run in the browser, but the client doesn't know about it
 
+extract the core game. core game expochange the frontend. it's not a controller, it's a client.  the human is a client.  there is also a server.
+
+the core game server will expose these:
+receiveClientMessage
+sendToClient
+broadcastToAll
+logServer
+
+the client will connect to those.
+the web browser will no longer have direct access to the game server.  
+
+we don't need a ControllerManager do we?  how is it used.  
+
+a vision
+when the ai is playing, you can always skip. the game implementation naturally and by construction, makes that impossible to NOT happen.  it simply happens becuase everything about waiting or a human interaction is incredibly simple and obvious to find. 
+
 - sends messages to server
 
 ## Display

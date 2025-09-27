@@ -21,7 +21,7 @@ describe('Seed Finder', () => {
     it('should call progress callback during evaluation', async () => {
       let progressCalls = 0;
       let lastProgress = 0;
-      
+
       await evaluateSeed(12345, SEED_FINDER_CONFIG.GAMES_PER_SEED, (games, wins) => {
         progressCalls++;
         expect(games).toBeGreaterThan(lastProgress);
@@ -29,37 +29,39 @@ describe('Seed Finder', () => {
         expect(wins).toBeLessThanOrEqual(games);
         lastProgress = games;
       });
-      
-      // Should be called every 10 games (PROGRESS_REPORT_INTERVAL)
-      // With GAMES_PER_SEED=10, should be called once
-      expect(progressCalls).toBe(1);
+
+      // Calculate expected calls based on actual configuration
+      const expectedCalls = Math.floor(SEED_FINDER_CONFIG.GAMES_PER_SEED / SEED_FINDER_CONFIG.PROGRESS_REPORT_INTERVAL);
+      expect(progressCalls).toBe(expectedCalls);
       expect(lastProgress).toBe(SEED_FINDER_CONFIG.GAMES_PER_SEED);
     });
   });
 
   describe('findBalancedSeed', () => {
     it('should find a seed within acceptable win rate range', async () => {
-      
+
       // Use smaller limits for testing
       // For tests, the function now uses constants from seedFinder.ts
-      const seed = await findBalancedSeed(
+      const result = await findBalancedSeed(
         (progress) => {
           expect(progress.seedsTried).toBeGreaterThan(0);
           expect(progress.gamesPlayed).toBeLessThanOrEqual(progress.totalGames);
         }
       );
-      
-      expect(seed).toBeDefined();
-      expect(seed).toBeGreaterThan(0);
-      
+
+      expect(result).toBeDefined();
+      expect(result.seed).toBeGreaterThan(0);
+      expect(result.winRate).toBeGreaterThanOrEqual(0);
+      expect(result.winRate).toBeLessThanOrEqual(1);
+
       // The seed should be either balanced or the fallback
       // We can't guarantee finding a balanced seed in tests with limited tries
-      if (seed === 424242) {
+      if (result.seed === 424242) {
         // Fallback seed
-        expect(seed).toBe(424242);
+        expect(result.seed).toBe(424242);
       } else {
         // Should be a valid seed number
-        expect(seed).toBeLessThan(1000000);
+        expect(result.seed).toBeLessThan(1000000);
       }
     });
 

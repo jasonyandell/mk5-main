@@ -132,28 +132,34 @@ test.describe('Sections: One Hand from URL shows completion modal', () => {
     expect(seedAfterNew).toBeTruthy(); // Should have a valid seed
   });
 
-  test('Challenge button appears after win', async ({ page }) => {
+  test('Share results button appears after win', async ({ page }) => {
     // Find a seed that produces a win (allow up to 10 attempts)
     const winningSeed = await findSeedWithOutcome(page, 'won', 10);
-    
+
     // Now test with that seed
     await page.goto(`/?h=one_hand&s=${winningSeed}`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.app-container');
     await playOneHandToCompletion(page);
     await waitForModal(page);
-    
+
     // Verify we won
     const outcome = await getGameOutcome(page);
     expect(outcome).toBe('won');
-    
-    // Challenge button should be visible (only appears when won)
-    const challengeBtn = page.getByRole('button', { name: 'Challenge!' });
-    await expect(challengeBtn).toBeVisible();
-    
+
+    // Share results button should be visible (only appears when won)
+    // Use text locator since button has an icon
+    const shareBtn = page.getByRole('button').filter({ hasText: 'Share results' });
+    await expect(shareBtn).toBeVisible();
+
     // Click it to verify it works
-    await challengeBtn.click();
-    
-    // Should navigate to a new game with increased difficulty
-    // (exact behavior depends on implementation)
+    await shareBtn.click();
+
+    // Wait a bit for the clipboard operation and state change
+    await page.waitForTimeout(100);
+
+    // Should change to "Copied!" after clicking - button changes to btn-success class
+    // Try both selectors to see which one works
+    const copiedBtn = page.locator('button').filter({ has: page.locator('text=Copied!') });
+    await expect(copiedBtn).toBeVisible();
   });
 });

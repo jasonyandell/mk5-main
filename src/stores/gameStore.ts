@@ -10,7 +10,7 @@ import { selectAIAction, resetAISchedule, setAISpeedProfile } from '../game/core
 import { startSection } from '../game/core/sectionRunner';
 import { oneHand as oneHandPreset, fromSlug as sectionFromSlug } from '../game/core/sectionPresets';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
-import { findBalancedSeed, evaluateSeed } from '../game/core/seedFinder';
+import { findBalancedSeed } from '../game/core/seedFinder';
 import { seedFinderStore } from './seedFinderStore';
 
 // Import extracted utilities
@@ -23,6 +23,53 @@ import { prepareDeterministicHand, buildActionsToPlayingFromState, buildOverlayP
 
 // Re-export for backwards compatibility
 export { setCurrentScenario, beginUrlBatch, endUrlBatch };
+
+// Helper function for seed finding and confirmation flow
+async function findAndConfirmSeed(): Promise<number> {
+  // Start seed search UI
+  seedFinderStore.startSearch();
+
+  try {
+    const result = await findBalancedSeed(
+      (progress) => {
+        seedFinderStore.updateProgress(progress);
+      },
+      () => seedFinderStore.shouldUseBest()
+    );
+
+    // Show confirmation modal with the already-calculated win rate
+    seedFinderStore.setSeedFound(result.seed, result.winRate);
+
+    // Wait for user confirmation or regeneration
+    return new Promise((resolve) => {
+      const checkConfirmation = () => {
+        const unsubscribe = seedFinderStore.subscribe(state => {
+          if (!state.waitingForConfirmation) {
+            unsubscribe();
+            // Always resolve with the seed - user can't cancel out of the confirmation modal
+            resolve(result.seed);
+          }
+        });
+      };
+
+      // Listen for regenerate event
+      const handleRegenerate = () => {
+        window.removeEventListener('regenerate-seed', handleRegenerate);
+        // Recursively find another seed
+        findAndConfirmSeed().then(resolve);
+      };
+      window.addEventListener('regenerate-seed', handleRegenerate);
+
+      checkConfirmation();
+    });
+  } catch (error) {
+    // If there's an error during seed search (shouldn't happen in normal flow)
+    // Use fallback seed
+    seedFinderStore.stopSearch();
+    console.error('Error during seed search:', error);
+    return 424242; // Fallback seed
+  }
+}
 
 // Create the initial state once
 const urlParams = typeof window !== 'undefined' ? 
@@ -270,66 +317,9 @@ export const gameActions = {
               // In test mode, skip seed finder and use default seed
               seedToUse = 424242;
             } else {
-              // Helper to find and confirm a seed
-              const findAndConfirmSeed = async (): Promise<number | null> => {
-                // Start seed search UI
-                seedFinderStore.startSearch();
-                
-                try {
-                  const balancedSeed = await findBalancedSeed(
-                    (progress) => {
-                      // Check if cancelled
-                      if (seedFinderStore.isCancelled()) {
-                        throw new Error('Seed search cancelled');
-                      }
-                      seedFinderStore.updateProgress(progress);
-                    }
-                  );
-                  
-                  // Get the actual win rate for display
-                  const winRate = await evaluateSeed(balancedSeed);
-                  
-                  // Show confirmation modal
-                  seedFinderStore.setSeedFound(balancedSeed, winRate.winRate);
-                  
-                  // Wait for user confirmation or regeneration
-                  return new Promise((resolve) => {
-                    const checkConfirmation = () => {
-                      const unsubscribe = seedFinderStore.subscribe(state => {
-                        if (!state.waitingForConfirmation) {
-                          unsubscribe();
-                          if (state.cancelled) {
-                            resolve(null);
-                          } else {
-                            resolve(balancedSeed);
-                          }
-                        }
-                      });
-                    };
-                    
-                    // Listen for regenerate event
-                    const handleRegenerate = () => {
-                      window.removeEventListener('regenerate-seed', handleRegenerate);
-                      // Recursively find another seed
-                      findAndConfirmSeed().then(resolve);
-                    };
-                    window.addEventListener('regenerate-seed', handleRegenerate);
-                    
-                    checkConfirmation();
-                  });
-                } catch {
-                  // If cancelled or error, stop search and return
-                  seedFinderStore.stopSearch();
-                  return null;
-                }
-              };
-              
-              // Find new balanced seed  
+              // Find new balanced seed
               const balancedSeed = await findAndConfirmSeed();
-              if (!balancedSeed) {
-                return; // User cancelled
-              }
-              
+              // findAndConfirmSeed now always returns a seed (user can't cancel out of the flow)
               seedToUse = balancedSeed;
             }
           }
@@ -875,72 +865,9 @@ export const sectionActions = {
       // In test mode, skip seed finder and use default seed
       balancedSeed = 424242;
     } else {
-      // Helper to find and confirm a seed
-      const findAndConfirmSeed = async (): Promise<number | null> => {
-        // Start seed search UI
-        seedFinderStore.startSearch();
-        
-        try {
-          const foundSeed = await findBalancedSeed(
-            (progress) => {
-              // Check if cancelled
-              if (seedFinderStore.isCancelled()) {
-                throw new Error('Seed search cancelled');
-              }
-              seedFinderStore.updateProgress(progress);
-            }
-          );
-          
-          // Get the actual win rate for display
-          const winRate = await evaluateSeed(foundSeed);
-          
-          // Show confirmation modal
-          seedFinderStore.setSeedFound(foundSeed, winRate.winRate);
-          
-          // Wait for user confirmation or regeneration
-          return new Promise((resolve) => {
-            const checkConfirmation = () => {
-              const unsubscribe = seedFinderStore.subscribe(state => {
-                if (!state.waitingForConfirmation) {
-                  unsubscribe();
-                  if (state.cancelled) {
-                    resolve(null);
-                  } else {
-                    resolve(foundSeed);
-                  }
-                }
-              });
-            };
-            
-            // Listen for regenerate event
-            const handleRegenerate = () => {
-              window.removeEventListener('regenerate-seed', handleRegenerate);
-              // Recursively find another seed
-              findAndConfirmSeed().then(resolve);
-            };
-            window.addEventListener('regenerate-seed', handleRegenerate);
-            
-            checkConfirmation();
-          });
-        } catch {
-          // If cancelled or error, stop search and return
-          seedFinderStore.stopSearch();
-          return null;
-        }
-      };
-      
       // Find new balanced seed
       const foundSeed = await findAndConfirmSeed();
-      if (!foundSeed) {
-        return; // User cancelled
-      }
-      
-      // Check if cancelled during search
-      if (seedFinderStore.isCancelled()) {
-        seedFinderStore.stopSearch(); // Make sure UI is cleaned up
-        return; // Exit without starting game
-      }
-      
+      // findAndConfirmSeed now always returns a seed (user can't cancel out of the flow)
       balancedSeed = foundSeed;
     }
     

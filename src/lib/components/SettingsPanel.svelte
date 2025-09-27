@@ -6,6 +6,7 @@
   import { encodeGameUrl } from '../../game/core/url-compression';
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
+  import { shareContent, canNativeShare } from '../utils/share';
 
   interface Props {
     onclose: () => void;
@@ -22,14 +23,14 @@
     return JSON.stringify(obj, null, 2);
   }
 
-  // Copy to clipboard
+  // Copy to clipboard (for non-shareable content like JSON)
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text);
   }
 
   import { buildUrl } from '../../stores/utils/urlManager';
   // Generate shareable URL via encoder (canonical)
-  function copyShareableUrl() {
+  async function shareUrl() {
     const compactIds = $actionHistory.map(a => a.id).filter((id: string) => !id.startsWith('agree-'));
     const url = buildUrl({
       initialState: $initialState,
@@ -42,7 +43,12 @@
       preserveUnknownParams: true,
       absolute: true
     });
-    copyToClipboard(url);
+
+    await shareContent({
+      title: 'Texas 42 Game',
+      text: 'Check out this Texas 42 game!',
+      url: url
+    });
   }
 
   // Time travel to a specific action
@@ -242,13 +248,13 @@
                 Copy State
               </span>
             </button>
-            <button 
+            <button
               class="btn btn-secondary"
-              onclick={copyShareableUrl}
+              onclick={shareUrl}
             >
               <span class="flex items-center justify-center gap-1">
-                <Icon name="arrowPath" size="sm" />
-                Copy URL
+                <Icon name={canNativeShare() ? 'share' : 'arrowPath'} size="sm" />
+                {canNativeShare() ? 'Share' : 'Copy'} URL
               </span>
             </button>
           </div>
