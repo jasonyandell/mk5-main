@@ -25,7 +25,9 @@ export default [js.configs.recommended, {
       Element: 'readonly',
       HTMLElement: 'readonly',
       requestAnimationFrame: 'readonly',
-      cancelAnimationFrame: 'readonly'
+      cancelAnimationFrame: 'readonly',
+      navigator: 'readonly',
+      ShareData: 'readonly'
     }
   },
   plugins: {
