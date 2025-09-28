@@ -136,7 +136,7 @@ function isGoldPerfectHand(
   }
 
   // Any external beater for our trumps = not gold perfect
-  for (const beater of trumpBeaters) {
+  for (const beater of Array.from(trumpBeaters)) {
     if (!handIds.has(beater)) {
       return false; // External domino can beat our trump
     }
@@ -196,7 +196,7 @@ function isPlatinumPerfectHand(
   }
 
   // Perfect hand if ALL beaters are within the hand itself
-  for (const beater of allBeaters) {
+  for (const beater of Array.from(allBeaters)) {
     if (!handIds.has(beater)) {
       return false; // Found external domino that can beat
     }
@@ -270,15 +270,22 @@ function formatHand(hand: Domino[], trump: TrumpSelection): string {
 
 // Main search function
 async function findPerfectHands() {
-  console.log('Gold Perfect Hand Finder for Texas 42');
-  console.log('=====================================');
-  console.log('Based on docs/perfect-hand-plan2.md\n');
+  // Check for JSON output mode
+  const isJsonMode = process.argv.includes('--json');
+
+  if (!isJsonMode) {
+    console.log('Gold Perfect Hand Finder for Texas 42');
+    console.log('=====================================');
+    console.log('Based on docs/perfect-hand-plan2.md\n');
+  }
 
   const allDominoes = generateAllDominoes();
-  console.log(`Generated ${allDominoes.length} dominoes`);
+  if (!isJsonMode) {
+    console.log(`Generated ${allDominoes.length} dominoes`);
 
-  const totalCombinations = 1184040; // C(28, 7)
-  console.log(`Searching ${totalCombinations.toLocaleString()} possible hands...\n`);
+    const totalCombinations = 1184040; // C(28, 7)
+    console.log(`Searching ${totalCombinations.toLocaleString()} possible hands...\n`);
+  }
 
   // Define all trump types to test (focus on suit trumps for gold perfect)
   const trumpTypes: TrumpSelection[] = [
@@ -293,63 +300,120 @@ async function findPerfectHands() {
     { type: 'no-trump' },       // no-trump (for platinum only)
   ];
 
-  const allPlatinum: { trump: string; hand: string }[] = [];
-  const allGold: { trump: string; hand: string }[] = [];
+  const allPlatinum: { trump: string; hand: string; dominoes?: string[] }[] = [];
+  const allGold: { trump: string; hand: string; dominoes?: string[] }[] = [];
 
   for (const trump of trumpTypes) {
     const trumpName = getTrumpName(trump);
-    console.log(`\nSearching for ${trumpName} perfect hands...`);
+    if (!isJsonMode) {
+      console.log(`\nSearching for ${trumpName} perfect hands...`);
+    }
 
     let platinumCount = 0;
     let goldCount = 0;
     let handsChecked = 0;
 
+    // @ts-ignore - Generator iteration works correctly with tsx/ES2015+
     for (const hand of generateCombinations(allDominoes, 7)) {
       handsChecked++;
 
       // Show progress every 100,000 hands
-      if (handsChecked % 100000 === 0) {
+      if (!isJsonMode && handsChecked % 100000 === 0) {
         process.stdout.write(`\r  Checked ${handsChecked.toLocaleString()} hands...`);
       }
 
       // Check for platinum first (stricter condition)
       if (isPlatinumPerfectHand(hand, trump)) {
         const handStr = formatHand(hand, trump);
-        console.log(`\n  💎 Platinum: ${handStr}`);
+        if (!isJsonMode) {
+          console.log(`\n  💎 Platinum: ${handStr}`);
+        }
         platinumCount++;
-        allPlatinum.push({ trump: trumpName, hand: handStr });
+        if (isJsonMode) {
+          allPlatinum.push({
+            trump: trumpName,
+            hand: handStr,
+            dominoes: hand.map(d => d.id)
+          });
+        } else {
+          allPlatinum.push({ trump: trumpName, hand: handStr });
+        }
       }
       // Gold perfect applies to suit trump and doubles trump
       else if (trump.type !== 'no-trump' && isGoldPerfectHand(hand, trump)) {
         const handStr = formatHand(hand, trump);
-        console.log(`\n  🥇 Gold: ${handStr}`);
+        if (!isJsonMode) {
+          console.log(`\n  🥇 Gold: ${handStr}`);
+        }
         goldCount++;
-        allGold.push({ trump: trumpName, hand: handStr });
+        if (isJsonMode) {
+          allGold.push({
+            trump: trumpName,
+            hand: handStr,
+            dominoes: hand.map(d => d.id)
+          });
+        } else {
+          allGold.push({ trump: trumpName, hand: handStr });
+        }
       }
     }
 
-    console.log(`\n  ✅ Found ${platinumCount} platinum and ${goldCount} gold perfect hands for ${trumpName}`);
-  }
-
-  // Final summary
-  console.log('\n========================================');
-  console.log('FINAL SUMMARY');
-  console.log('========================================');
-  console.log(`Total Platinum Perfect Hands: ${allPlatinum.length}`);
-  console.log(`Total Gold Perfect Hands: ${allGold.length}`);
-
-  if (allPlatinum.length > 0) {
-    console.log('\nAll Platinum Perfect Hands:');
-    for (const { trump, hand } of allPlatinum) {
-      console.log(`  ${trump}: ${hand}`);
+    if (!isJsonMode) {
+      console.log(`\n  ✅ Found ${platinumCount} platinum and ${goldCount} gold perfect hands for ${trumpName}`);
     }
   }
 
-  if (allGold.length > 0) {
-    console.log('\nAll Gold Perfect Hands:');
-    console.log('(Hands with 4+ highest trumps where non-trumps are safe)\n');
-    for (const { trump, hand } of allGold) {
-      console.log(`  ${trump}: ${hand}`);
+  // Final output
+  if (isJsonMode) {
+    // JSON output mode
+    const allHands = [
+      ...allPlatinum.map(h => ({ ...h, type: 'platinum' })),
+      ...allGold.map(h => ({ ...h, type: 'gold' }))
+    ];
+
+    // Calculate summary statistics
+    const byTrump: Record<string, number> = {};
+    const byType = { gold: allGold.length, platinum: allPlatinum.length };
+
+    for (const hand of allHands) {
+      byTrump[hand.trump] = (byTrump[hand.trump] || 0) + 1;
+    }
+
+    const output = {
+      perfectHands: allHands.map(({ dominoes, trump, type }) => ({
+        dominoes,
+        trump,
+        type
+      })),
+      summary: {
+        total: allHands.length,
+        byTrump,
+        byType
+      }
+    };
+
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    // Human-readable output mode
+    console.log('\n========================================');
+    console.log('FINAL SUMMARY');
+    console.log('========================================');
+    console.log(`Total Platinum Perfect Hands: ${allPlatinum.length}`);
+    console.log(`Total Gold Perfect Hands: ${allGold.length}`);
+
+    if (allPlatinum.length > 0) {
+      console.log('\nAll Platinum Perfect Hands:');
+      for (const { trump, hand } of allPlatinum) {
+        console.log(`  ${trump}: ${hand}`);
+      }
+    }
+
+    if (allGold.length > 0) {
+      console.log('\nAll Gold Perfect Hands:');
+      console.log('(Hands with 4+ highest trumps where non-trumps are safe)\n');
+      for (const { trump, hand } of allGold) {
+        console.log(`  ${trump}: ${hand}`);
+      }
     }
   }
 }
