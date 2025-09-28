@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run postbuild",
+    "postbuild": "mkdir -p dist/perfects && cp dist/index.html dist/perfects/index.html && cp dist/index.html dist/404.html",
     "prebuild": "npm run generate:strength-table",
     "predev": "npm run generate:strength-table",
     "generate:strength-table": "npx tsx scripts/generate-strength-table.ts",
