@@ -48,9 +48,9 @@ function* generateCombinations(arr: Domino[], k: number): Generator<Domino[]> {
 
     if (i < 0) break;
 
-    indices[i]++;
+    indices[i]!++;
     for (let j = i + 1; j < k; j++) {
-      indices[j] = indices[j - 1] + 1;
+      indices[j] = indices[j - 1]! + 1;
     }
 
     yield indices.map(i => arr[i]!);
@@ -333,7 +333,7 @@ async function findPerfectHands() {
           allPlatinum.push({
             trump: trumpName,
             hand: handStr,
-            dominoes: hand.map(d => d.id)
+            dominoes: hand.map(d => d.id) as string[]
           });
         } else {
           allPlatinum.push({ trump: trumpName, hand: handStr });
@@ -350,7 +350,7 @@ async function findPerfectHands() {
           allGold.push({
             trump: trumpName,
             hand: handStr,
-            dominoes: hand.map(d => d.id)
+            dominoes: hand.map(d => d.id) as string[]
           });
         } else {
           allGold.push({ trump: trumpName, hand: handStr });

@@ -3,6 +3,7 @@ import { mount } from 'svelte';
 import { get } from 'svelte/store';
 import type { Writable, Readable } from 'svelte/store';
 import App from './App.svelte';
+import PerfectsApp from './PerfectsApp.svelte';
 import { gameActions, gameState, actionHistory, controllerManager, startGameLoop, stopGameLoop, sectionOverlay, viewProjection } from './stores/gameStore';
 import { setAISpeedProfile } from './game/core/ai-scheduler';
 import { getNextStates } from './game';
@@ -12,17 +13,24 @@ import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameState, StateTransition } from './game/types';
 
-const app = mount(App, {
+// Route to appropriate app based on URL path
+const pathname = window.location.pathname;
+const isPerfectsPage = pathname === '/perfects' || pathname === '/perfects/';
+
+const AppComponent = isPerfectsPage ? PerfectsApp : App;
+const app = mount(AppComponent, {
   target: document.getElementById('app')!,
 });
 
-window.addEventListener('popstate', (event) => {
-  if (event.state) {
-    gameActions.loadFromHistoryState(event.state);
-  } else {
-    gameActions.loadFromURL();
-  }
-});
+if (!isPerfectsPage) {
+  window.addEventListener('popstate', (event) => {
+    if (event.state) {
+      gameActions.loadFromHistoryState(event.state);
+    } else {
+      gameActions.loadFromURL();
+    }
+  });
+}
 
 declare global {
   interface Window {
@@ -46,7 +54,7 @@ declare global {
   }
 }
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !isPerfectsPage) {
   window.__actionHistory = actionHistory;
   window.controllerManager = controllerManager;
   window.quickplayActions = quickplayActions;

@@ -32,8 +32,8 @@ interface Solution {
 // Canonicalize a domino to high-low format
 function canonicalizeDomino(domino: string): string {
   const [a, b] = domino.split('-').map(Number);
-  const high = Math.max(a, b);
-  const low = Math.min(a, b);
+  const high = Math.max(a!, b!);
+  const low = Math.min(a!, b!);
   return `${high}-${low}`;
 }
 
@@ -84,7 +84,7 @@ class PartitionFinder {
     // Build inverted index
     this.dominoToHands = new Map();
     for (let i = 0; i < this.hands.length; i++) {
-      for (const domino of this.hands[i].canonical) {
+      for (const domino of this.hands[i]!.canonical) {
         if (!this.dominoToHands.has(domino)) {
           this.dominoToHands.set(domino, []);
         }
@@ -98,7 +98,7 @@ class PartitionFinder {
     for (let i = 0; i < this.hands.length; i++) {
       this.handOverlaps[i] = Array(this.hands.length);
       for (let j = 0; j < this.hands.length; j++) {
-        this.handOverlaps[i][j] = i === j || handsOverlap(this.hands[i], this.hands[j]);
+        this.handOverlaps[i]![j] = i === j || handsOverlap(this.hands[i]!, this.hands[j]!);
       }
     }
 
@@ -144,7 +144,7 @@ class PartitionFinder {
       if (usedDominoes.size === 28) {
         // Found a valid partition!
         this.solutions.push({
-          hands: usedHands.map(i => this.hands[i])
+          hands: usedHands.map(i => this.hands[i]!)
         });
         console.log(`\nFound solution #${this.solutions.length}!`);
       }
@@ -164,7 +164,7 @@ class PartitionFinder {
       // Skip if this hand overlaps with any used hand
       let overlaps = false;
       for (const usedIndex of usedHands) {
-        if (this.handOverlaps[i][usedIndex]) {
+        if (this.handOverlaps[i]![usedIndex]) {
           overlaps = true;
           break;
         }
@@ -174,7 +174,7 @@ class PartitionFinder {
       // Add this hand and recurse
       const newUsedHands = [...usedHands, i];
       const newUsedDominoes = new Set(usedDominoes);
-      for (const domino of hand.canonical) {
+      for (const domino of hand!.canonical) {
         newUsedDominoes.add(domino);
       }
 
@@ -231,7 +231,7 @@ class PartitionFinder {
     const allUsedDominoes = new Set<string>();
 
     for (let i = 0; i < solution.hands.length; i++) {
-      const hand = solution.hands[i];
+      const hand = solution.hands[i]!;
       const canonical = canonicalizeHand(hand.dominoes);
       console.log(`Hand ${i + 1} (${hand.trump}, ${hand.type}): ${canonical.join(', ')}`);
 
@@ -280,7 +280,7 @@ async function main() {
     if (solutions.length > 0) {
       console.log(`\nFound ${solutions.length} partition(s)!`);
       for (let i = 0; i < solutions.length; i++) {
-        finder.displaySolution(solutions[i], i);
+        finder.displaySolution(solutions[i]!, i);
       }
     } else {
       console.log('\nNo valid 4-hand partitions found.');
