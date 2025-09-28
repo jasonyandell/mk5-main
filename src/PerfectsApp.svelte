@@ -157,7 +157,7 @@
 <div class="min-h-screen bg-base-100">
   <header class="navbar bg-base-300 py-1 min-h-0 h-auto">
     <div class="flex-1">
-      <h1 class="text-sm font-bold px-2">Near Perfect 42 Sets</h1>
+      <h1 class="text-sm font-bold px-2">"Three Perfect Hands" 42 Challenge</h1>
     </div>
   </header>
 
@@ -170,13 +170,6 @@
         </div>
       </div>
     {:else}
-      <!-- Header with page info -->
-      <div class="sticky top-0 z-10 bg-base-100 border-b border-base-300 p-2">
-        <p class="text-xs opacity-75 text-center">
-          Set {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, partitions.length)} of {partitions.length}
-        </p>
-      </div>
-
       <!-- Horizontal scroll container -->
       <div
         bind:this={scrollContainer}

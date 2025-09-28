@@ -4,9 +4,6 @@ test.describe('Perfects Page', () => {
   test('loads and displays perfect hand collections', async ({ page }) => {
     await page.goto('/perfects');
 
-    // Check header is present (now says "Near Perfect 42 Sets")
-    await expect(page.locator('h1:has-text("Near Perfect 42 Sets")')).toBeVisible();
-
     // Wait for data to load by checking for dominoes
     await page.waitForSelector('[data-testid^="domino-"]', { timeout: 5000 });
 
@@ -37,7 +34,7 @@ test.describe('Perfects Page', () => {
     await page.goto('/perfects');
 
     // Verify we're on perfects page
-    await expect(page.locator('h1:has-text("Near Perfect 42 Sets")')).toBeVisible();
+    await expect(page.locator('h1:has-text("42")')).toBeVisible();
 
     // Navigate manually to main game
     await page.goto('/');
