@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import PerfectHandDisplay from './lib/components/PerfectHandDisplay.svelte';
   import Domino from './lib/components/Domino.svelte';
-  import { parseDomino } from './lib/utils/dominoHelpers';
+  import { parseDomino, computeExternalBeaters } from './lib/utils/dominoHelpers';
   import partitionsData from '../data/3hand-partitions.json';
 
   interface Partition {
@@ -100,6 +100,7 @@
           </div>
 
           {#if partition.leftover}
+            {@const externalBeaters = computeExternalBeaters(partition.leftover.dominoes, partition.leftover.bestTrump)}
             <div class="mt-1 p-1 bg-base-300">
               <div class="flex items-center gap-1 mb-1">
                 <span class="text-xs font-semibold">Leftover:</span>
@@ -109,17 +110,25 @@
                            partition.leftover.bestTrump.charAt(0).toUpperCase() + partition.leftover.bestTrump.slice(1)}
                   </span>
                 {/if}
-                {#if partition.leftover.externalBeaters !== undefined}
-                  <span class="badge badge-xs badge-error">
-                    {partition.leftover.externalBeaters} External Beaters
-                  </span>
-                {/if}
               </div>
               <div class="flex flex-wrap gap-0.5">
                 {#each partition.leftover.dominoes as dominoStr}
                   <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
                 {/each}
               </div>
+
+              {#if externalBeaters.length > 0}
+                <div class="mt-1">
+                  <div class="text-xs font-semibold mb-0.5">
+                    External Beaters ({externalBeaters.length}):
+                  </div>
+                  <div class="flex flex-wrap gap-0.5">
+                    {#each externalBeaters as dominoStr}
+                      <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
+                    {/each}
+                  </div>
+                </div>
+              {/if}
             </div>
           {/if}
         </div>

@@ -15,7 +15,11 @@ import type { GameState, StateTransition } from './game/types';
 
 // Route to appropriate app based on URL path
 const pathname = window.location.pathname;
-const isPerfectsPage = pathname === '/perfects' || pathname === '/perfects/';
+// Handle both local dev (/perfects) and GitHub Pages (/mk5-main/perfects)
+const isPerfectsPage = pathname === '/perfects' ||
+                      pathname === '/perfects/' ||
+                      pathname.endsWith('/perfects') ||
+                      pathname.endsWith('/perfects/');
 
 const AppComponent = isPerfectsPage ? PerfectsApp : App;
 const app = mount(AppComponent, {
