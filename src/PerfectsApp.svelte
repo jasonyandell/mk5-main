@@ -19,9 +19,11 @@
     };
   }
 
-  let partitions: Partition[] = $state([]);
+  let partitions: Partition[] = $state(partitionsData.partitions as Partition[]);
   let currentPage = $state(0);
   let itemsPerPage = $state(5);
+  let scrollContainer = $state<HTMLDivElement>();
+  let loadedPages = $state(5); // Start with 5 pages for better initial performance
 
   function isTrump(domino: DominoType, trumpStr: string): boolean {
     if (trumpStr === 'no-trump') return false;
@@ -61,78 +63,105 @@
     });
   }
 
-  onMount(() => {
-    partitions = partitionsData.partitions as Partition[];
+  // Pre-compute expensive operations for all partitions
+  interface ProcessedPartition extends Partition {
+    processed?: {
+      externalBeaters: string[];
+      sortedLeftovers: string[];
+      sortedBeaters: string[];
+    };
+  }
 
+  function processPartitions(): ProcessedPartition[] {
+    return partitions.map(partition => {
+      const processed: ProcessedPartition = { ...partition };
+      if (partition.leftover) {
+        const externalBeaters = computeExternalBeaters(partition.leftover.dominoes, partition.leftover.bestTrump);
+        processed.processed = {
+          externalBeaters,
+          sortedLeftovers: sortDominoes(partition.leftover.dominoes, partition.leftover.bestTrump),
+          sortedBeaters: sortDominoes(externalBeaters, partition.leftover.bestTrump)
+        };
+      }
+      return processed;
+    });
+  }
+
+  let processedPartitions = $state<ProcessedPartition[]>([]);
+
+  onMount(() => {
     // Always use business theme for this page
     document.documentElement.setAttribute('data-theme', 'business');
+    // Pre-process all partitions once
+    processedPartitions = processPartitions();
+  });
+
+  // Set up scroll listener when container becomes available
+  $effect(() => {
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => scrollContainer?.removeEventListener('scroll', handleScroll);
+    }
+    return undefined;
   });
 
   const totalPages = $derived(Math.ceil(partitions.length / itemsPerPage));
-  const currentPartitions = $derived(
-    partitions.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
-  );
 
-  function nextPage() {
-    if (currentPage < totalPages - 1) {
-      currentPage++;
-      window.scrollTo(0, 0);
-    }
+  // Get partitions for a specific page
+  function getPagePartitions(pageIndex: number): ProcessedPartition[] {
+    const start = pageIndex * itemsPerPage;
+    return processedPartitions.slice(start, start + itemsPerPage);
   }
 
-  function prevPage() {
-    if (currentPage > 0) {
-      currentPage--;
-      window.scrollTo(0, 0);
+  // Render all loaded pages (lazy loading approach)
+  const visiblePages = $derived(() => {
+    const pages = [];
+    const pagesToShow = Math.min(loadedPages, totalPages);
+
+    for (let i = 0; i < pagesToShow; i++) {
+      pages.push({
+        index: i,
+        partitions: getPagePartitions(i)
+      });
     }
-  }
+    return pages;
+  });
 
-  // Touch gesture support for mobile
-  let touchStartX = 0;
-  let touchStartY = 0;
+  let scrollTimeout: ReturnType<typeof setTimeout>;
 
-  function handleTouchStart(e: TouchEvent) {
-    const touch = e.touches[0];
-    if (touch) {
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-    }
-  }
+  function handleScroll() {
+    if (!scrollContainer) return;
 
-  function handleTouchEnd(e: TouchEvent) {
-    if (!e.changedTouches.length || !e.changedTouches[0]) return;
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      if (!scrollContainer) return;
+      const scrollPosition = scrollContainer.scrollLeft;
+      const containerWidth = scrollContainer.clientWidth;
+      const scrollIndex = Math.round(scrollPosition / containerWidth);
 
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const swipeX = touchEndX - touchStartX;
-    const swipeY = touchEndY - touchStartY;
-
-    // Only handle horizontal swipes that are significant enough
-    // and more horizontal than vertical
-    if (Math.abs(swipeX) > 50 && Math.abs(swipeX) > Math.abs(swipeY)) {
-      if (swipeX > 0) {
-        // Swipe right - go to previous page
-        prevPage();
-      } else {
-        // Swipe left - go to next page
-        nextPage();
+      // Update current page based on scroll position
+      if (scrollIndex >= 0 && scrollIndex !== currentPage) {
+        currentPage = scrollIndex;
       }
-    }
+
+      // Load more pages when approaching the end
+      if (scrollIndex >= loadedPages - 2 && loadedPages < totalPages) {
+        // Load 5 more pages at a time for smoother performance
+        loadedPages = Math.min(loadedPages + 5, totalPages);
+      }
+    }, 50); // Reduced debounce for snappier response
   }
+
 </script>
 
 <div class="min-h-screen bg-base-100">
   <header class="navbar bg-base-300 py-1 min-h-0 h-auto">
     <div class="flex-1">
-      <h1 class="text-sm font-bold px-2">Near Perfect 42 Deals</h1>
+      <h1 class="text-sm font-bold px-2">Near Perfect 42 Sets</h1>
     </div>
   </header>
 
-  <main
-    class="container mx-auto p-1 max-w-7xl"
-    ontouchstart={handleTouchStart}
-    ontouchend={handleTouchEnd}
-  >
+  <main class="relative overflow-hidden">
     {#if partitions.length === 0}
       <div class="flex items-center justify-center min-h-[50vh]">
         <div class="text-center">
@@ -141,46 +170,32 @@
         </div>
       </div>
     {:else}
-      <div class="mb-1 flex justify-between items-center px-1">
-        <p class="text-xs opacity-75">
-          Showing {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, partitions.length)} of {partitions.length}
+      <!-- Header with page info -->
+      <div class="sticky top-0 z-10 bg-base-100 border-b border-base-300 p-2">
+        <p class="text-xs opacity-75 text-center">
+          Set {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, partitions.length)} of {partitions.length}
         </p>
-        <div class="join">
-          <button
-            class="join-item btn btn-xs"
-            onclick={prevPage}
-            disabled={currentPage === 0}
-          >
-            «
-          </button>
-          <button class="join-item btn btn-xs">
-            {currentPage + 1}/{totalPages}
-          </button>
-          <button
-            class="join-item btn btn-xs"
-            onclick={nextPage}
-            disabled={currentPage >= totalPages - 1}
-          >
-            »
-          </button>
-        </div>
       </div>
 
-      <div class="transition-opacity duration-200">
-        {#each currentPartitions as partition, partitionIndex}
-          <div class="mb-2 p-1 bg-base-200">
-          <h2 class="text-xs font-bold mb-1">Deal {currentPage * itemsPerPage + partitionIndex + 1}</h2>
-          <div class="grid grid-cols-1 gap-1">
-            {#each partition.hands as hand, handIndex}
-              <PerfectHandDisplay {hand} index={handIndex} />
-            {/each}
-          </div>
+      <!-- Horizontal scroll container -->
+      <div
+        bind:this={scrollContainer}
+        class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+        style="-webkit-overflow-scrolling: touch;"
+      >
+        {#each visiblePages() as page}
+          <div class="min-w-full snap-start px-2 py-2">
+            {#each page.partitions as partition, partitionIndex}
+              <div class="mb-2 p-1 bg-base-200">
+                <h2 class="text-xs font-bold mb-1">Set {page.index * itemsPerPage + partitionIndex + 1}</h2>
+                <div class="grid grid-cols-1 gap-1">
+                  {#each partition.hands as hand, handIndex}
+                    <PerfectHandDisplay {hand} index={handIndex} />
+                  {/each}
+                </div>
 
-          {#if partition.leftover}
-            {@const externalBeaters = computeExternalBeaters(partition.leftover.dominoes, partition.leftover.bestTrump)}
-            {@const sortedLeftovers = sortDominoes(partition.leftover.dominoes, partition.leftover.bestTrump)}
-            {@const sortedBeaters = sortDominoes(externalBeaters, partition.leftover.bestTrump)}
-            <div class="mt-1 p-1 bg-base-300">
+                {#if partition.leftover && partition.processed}
+                  <div class="mt-1 p-1 bg-base-300">
               <div class="flex items-center gap-1 mb-1">
                 <span class="text-xs font-semibold">Leftover</span>
                 {#if partition.leftover.bestTrump}
@@ -191,50 +206,41 @@
                 {/if}
               </div>
               <div class="flex flex-wrap gap-0.5">
-                {#each sortedLeftovers as dominoStr}
+                {#each partition.processed.sortedLeftovers as dominoStr}
                   <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
                 {/each}
               </div>
 
-              {#if externalBeaters.length > 0}
+              {#if partition.processed.externalBeaters.length > 0}
                 <div class="mt-1">
                   <div class="text-xs font-semibold mb-0.5">
-                    External Beaters ({externalBeaters.length}):
+                    Vulnerable to ({partition.processed.externalBeaters.length})
                   </div>
                   <div class="flex flex-wrap gap-0.5">
-                    {#each sortedBeaters as dominoStr}
+                    {#each partition.processed.sortedBeaters as dominoStr}
                       <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
                     {/each}
                   </div>
                 </div>
               {/if}
-            </div>
-          {/if}
-        </div>
-      {/each}
-      </div>
-
-      <div class="flex justify-center mt-2 mb-2">
-        <div class="join">
-          <button
-            class="join-item btn btn-sm"
-            onclick={prevPage}
-            disabled={currentPage === 0}
-          >
-            « Prev
-          </button>
-          <button class="join-item btn btn-sm btn-active">
-            {currentPage + 1}/{totalPages}
-          </button>
-          <button
-            class="join-item btn btn-sm"
-            onclick={nextPage}
-            disabled={currentPage >= totalPages - 1}
-          >
-            Next »
-          </button>
-        </div>
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/each}
       </div>
     {/if}
   </main>
 </div>
+
+<style>
+  /* Hide scrollbar for cleaner mobile experience */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+</style>
