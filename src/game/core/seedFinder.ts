@@ -1,5 +1,5 @@
 import { createInitialState, getNextStates, type GameState } from '../index';
-import { RandomAIStrategy, BeginnerAIStrategy } from '../controllers/strategies';
+import { RandomAIStrategy, BeginnerAIStrategy } from '../ai/strategies';
 
 // Helper to yield control to UI thread
 const yieldToUI = () => new Promise(resolve => setTimeout(resolve, 0));

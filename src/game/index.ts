@@ -61,9 +61,6 @@ export { executeAction } from './core/actions';
 // Player view system
 export { getPlayerView } from './core/playerView';
 
-// Controller system
-export { ControllerManager } from './controllers';
-
 // Rule validation
 export { 
   isValidBid, 

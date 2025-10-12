@@ -1,8 +1,19 @@
 import type { GameState, StateTransition } from '../types';
-import { dispatcher } from '../../stores/gameStore';
-import { setCurrentScenario } from '../../stores/gameStore';
+import { gameActions } from '../../stores/gameStore';
 import type { StopWhen } from './stopConditions';
 import { setAISpeedProfile, getAISpeedProfile } from './ai-scheduler';
+
+// Deprecated - this module is not used in the new GameClient architecture
+function setCurrentScenario(_name: string | null) {
+  console.warn('setCurrentScenario() deprecated');
+}
+
+// Stub dispatcher for compatibility
+const dispatcher = {
+  setGate: (_gate: any) => console.warn('dispatcher.setGate() deprecated'),
+  clearGate: () => console.warn('dispatcher.clearGate() deprecated'),
+  onAfter: (_cb: any) => () => {}
+};
 
 export type Allow = (t: StateTransition, s: GameState) => boolean;
 

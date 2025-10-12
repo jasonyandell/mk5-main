@@ -1,6 +1,7 @@
 import { writable, get } from 'svelte/store';
-import { gameState, availableActions, gameActions, actionHistory, dispatcher, startGameLoop, stopGameLoop } from './gameStore';
+import { gameState, viewProjection, gameActions, actionHistory, gameClient } from './gameStore';
 import type { GameState, StateTransition, Domino, Player } from '../game/types';
+import { getNextStates } from '../game';
 import { BID_TYPES } from '../game/constants';
 import { getDominoPoints, countDoubles } from '../game/core/dominoes';
 import { getStrongestSuits } from '../game/core/suit-analysis';
@@ -245,14 +246,15 @@ let animationFrameId: number | null = null;
 function processAIMoves() {
   const $gameState = get(gameState);
   const $quickplayState = get(quickplayState);
-  const $availableActions = get(availableActions);
-    
+  const $viewProjection = get(viewProjection);
+  const availableActions = getNextStates($gameState);
+
   // Check if we should continue
   if (!$quickplayState.enabled || $quickplayState.isPaused) {
     animationFrameId = null;
     return;
   }
-  
+
   // Check if game is complete - start new game automatically
   if ($gameState.phase === 'game_end' && $gameState.isComplete) {
     // Debug logging
@@ -265,37 +267,37 @@ function processAIMoves() {
         handsEmpty: $gameState.players.every(p => p.hand.length === 0)
       });
     }
-    
+
     // Reset to new game
     gameActions.resetGame();
-    
+
     // Continue processing after a brief pause to ensure reset completes
     animationFrameId = requestAnimationFrame(() => {
       animationFrameId = requestAnimationFrame(processAIMoves);
     });
     return;
   }
-  
+
   // Check if current player is AI
   if (!$quickplayState.aiPlayers.has($gameState.currentPlayer)) {
     // Schedule next check
     animationFrameId = requestAnimationFrame(processAIMoves);
     return;
   }
-  
+
   // No actions available
-  if ($availableActions.length === 0) {
+  if (availableActions.length === 0) {
     // Schedule next check
     animationFrameId = requestAnimationFrame(processAIMoves);
     return;
   }
-  
+
   // Make AI decision immediately for instant speed
   if ($quickplayState.speed === 'instant') {
     try {
-      const decision = makeAIDecision($gameState, $availableActions);
+      const decision = makeAIDecision($gameState, availableActions);
       if (decision) {
-        dispatcher.requestTransition(decision, 'ai');
+        gameActions.executeAction(decision);
       }
     } catch (error) {
       // Log error details for debugging
@@ -304,27 +306,27 @@ function processAIMoves() {
         stack: error instanceof Error ? error.stack : undefined,
         phase: $gameState.phase,
         currentPlayer: $gameState.currentPlayer,
-        availableActions: $availableActions.map(a => a.id),
+        availableActions: availableActions.map(a => a.id),
         actionCount: get(actionHistory).length,
         currentTrick: $gameState.currentTrick,
         hands: $gameState.hands,
         trump: $gameState.trump
       });
-      
+
       // Store error in a new error store for UI display
       quickplayErrorStore.set({
         message: error instanceof Error ? error.message : 'Unknown error in AI decision',
         state: JSON.parse(JSON.stringify($gameState)),
-        availableActions: $availableActions.map(a => a.id),
+        availableActions: availableActions.map(a => a.id),
         timestamp: new Date().toISOString()
       });
-      
+
       // Stop quickplay on error
       quickplayState.update(state => ({ ...state, enabled: false }));
       animationFrameId = null;
       return;
     }
-    
+
     // Continue processing
     animationFrameId = requestAnimationFrame(processAIMoves);
   } else {
@@ -336,20 +338,13 @@ function processAIMoves() {
 
 export function startQuickplay() {
   if (animationFrameId !== null) return; // Already running
-  
+
   // Start the continuous processing loop
   animationFrameId = requestAnimationFrame(processAIMoves);
-  
+
   // Subscribe to state changes to detect when to stop
   if (!unsubscribe) {
     unsubscribe = quickplayState.subscribe(($quickplayState) => {
-      // Ensure only one AI driver is active
-      if ($quickplayState.enabled) {
-        stopGameLoop();
-      } else {
-        startGameLoop();
-      }
-
       // Apply AI speed profile
       const speed = $quickplayState.speed;
       if (speed === 'instant' || speed === 'fast' || speed === 'normal' || speed === 'slow') {
@@ -417,16 +412,16 @@ export const quickplayActions = {
   
   step: () => {
     const $gameState = get(gameState);
-    const $availableActions = get(availableActions);
+    const availableActions = getNextStates($gameState);
     const $quickplayState = get(quickplayState);
-    
+
     // Check if current player is AI
     if (!$quickplayState.aiPlayers.has($gameState.currentPlayer)) return;
-    
+
     try {
-      const decision = makeAIDecision($gameState, $availableActions);
+      const decision = makeAIDecision($gameState, availableActions);
       if (decision) {
-        dispatcher.requestTransition(decision, 'ai');
+        gameActions.executeAction(decision);
       }
     } catch (error) {
       console.error('[Quickplay] Step error:', {
@@ -434,20 +429,20 @@ export const quickplayActions = {
         stack: error instanceof Error ? error.stack : undefined,
         phase: $gameState.phase,
         currentPlayer: $gameState.currentPlayer,
-        availableActions: $availableActions.map(a => a.id),
+        availableActions: availableActions.map(a => a.id),
         actionCount: get(actionHistory).length,
         currentTrick: $gameState.currentTrick,
         hands: $gameState.hands
       });
-      
+
       // Store error for UI display
       quickplayErrorStore.set({
         message: error instanceof Error ? error.message : 'Unknown error in AI step',
         state: JSON.parse(JSON.stringify($gameState)),
-        availableActions: $availableActions.map(a => a.id),
+        availableActions: availableActions.map(a => a.id),
         timestamp: new Date().toISOString()
       });
-      
+
       return;
     }
   },
@@ -455,18 +450,18 @@ export const quickplayActions = {
   playToEndOfHand: () => {
     const runToHandEnd = () => {
       const $gameState = get(gameState);
-      const $availableActions = get(availableActions);
-      
+      const availableActions = getNextStates($gameState);
+
       // Stop if we've reached scoring phase
       if ($gameState.phase === 'scoring' || $gameState.phase === 'game_end') {
         return;
       }
-      
+
       // Execute one action
       try {
-        const decision = makeAIDecision($gameState, $availableActions);
+        const decision = makeAIDecision($gameState, availableActions);
         if (decision) {
-          dispatcher.requestTransition(decision, 'ai');
+          gameActions.executeAction(decision);
           // Continue with next action
           setTimeout(runToHandEnd, 0);
         }
@@ -475,25 +470,25 @@ export const quickplayActions = {
         return;
       }
     };
-    
+
     runToHandEnd();
   },
-  
+
   playToEndOfGame: () => {
     const runToGameEnd = () => {
       const $gameState = get(gameState);
-      const $availableActions = get(availableActions);
-      
+      const availableActions = getNextStates($gameState);
+
       // Stop if game is complete
       if ($gameState.phase === 'game_end' && $gameState.isComplete) {
         return;
       }
-      
+
       // Execute one action
       try {
-        const decision = makeAIDecision($gameState, $availableActions);
+        const decision = makeAIDecision($gameState, availableActions);
         if (decision) {
-          dispatcher.requestTransition(decision, 'ai');
+          gameActions.executeAction(decision);
           // Continue with next action
           setTimeout(runToGameEnd, 0);
         }
@@ -502,7 +497,7 @@ export const quickplayActions = {
         return;
       }
     };
-    
+
     runToGameEnd();
   }
 };

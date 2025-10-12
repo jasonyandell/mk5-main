@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager, availableActions, dispatcher } from '../../stores/gameStore';
+  import { gameActions, viewProjection, playerSessions } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -7,19 +7,35 @@
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
-  
+
   const dispatch = createEventDispatcher();
 
   // Handle domino click
   function handleDominoClick(event: CustomEvent<DominoType>) {
     const domino = event.detail;
-    const playAction = $availableActions.find(
-      action => action.id === `play-${domino.high}-${domino.low}` ||
-                action.id === `play-${domino.low}-${domino.high}`
-    );
-    
-    if (playAction) {
-      dispatcher.requestTransition(playAction, 'ui');
+    const playAction = $viewProjection.actions.proceed;
+
+    // Check if there's a play action for this domino
+    const dominoId1 = `play-${domino.high}-${domino.low}`;
+    const dominoId2 = `play-${domino.low}-${domino.high}`;
+
+    if (playAction && (playAction.id === dominoId1 || playAction.id === dominoId2)) {
+      gameActions.executeAction(playAction);
+    } else {
+      // Look through all available actions (from hand metadata)
+      const handDomino = $viewProjection.hand.find(
+        hd => (hd.domino.high === domino.high && hd.domino.low === domino.low) ||
+              (hd.domino.high === domino.low && hd.domino.low === domino.high)
+      );
+
+      if (handDomino?.isPlayable) {
+        // Construct the play action
+        gameActions.requestAction(0, {
+          type: 'play',
+          player: 0,
+          domino: domino
+        });
+      }
     }
   }
 
@@ -61,34 +77,22 @@
   function handleProceedAction() {
     const proceedAction = $viewProjection.actions.proceed;
     if (!proceedAction || actionPending) return;
-    
+
     // Set debounce flag
     actionPending = true;
-    
-    // Find which human controller should handle this
-    const playerId = 'player' in proceedAction.action ? proceedAction.action.player : 0;
-    const humanController = controllerManager.getHumanController(playerId);
-    if (humanController) {
-      humanController.handleUserAction(proceedAction);
-    } else {
-      // Fallback to unified dispatcher
-      dispatcher.requestTransition(proceedAction, 'ui');
-    }
-    
-    // Panel switching is handled by reactive statement above
-    
-    // Clear debounce flag synchronously
-    actionPending = false;
+
+    // Execute the action
+    gameActions.executeAction(proceedAction).finally(() => {
+      // Clear debounce flag
+      actionPending = false;
+    });
   }
-  
-  // Handle table click to skip AI delays
+
+  // Handle table click
   function handleTableClick() {
     // If there's a proceed action, handle it
     if ($viewProjection.actions.proceed) {
       handleProceedAction();
-    } else {
-      // Otherwise, skip AI delays
-      gameActions.skipAIDelays();
     }
   }
 
@@ -298,7 +302,7 @@
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
                 <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
-                  <Icon name={controllerManager.isAIControlled(position) ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
+                  <Icon name={$playerSessions[position]?.type === 'ai' ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
                 </span>
                 <span class="text-sm font-bold text-base-100/60">P{position}</span>
               </div>

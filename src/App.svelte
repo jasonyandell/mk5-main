@@ -8,7 +8,7 @@
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
-  import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
+  import { gameActions, gameState, viewProjection } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showSettingsPanel = $state(false);
@@ -27,22 +27,12 @@
       } else if (showSettingsPanel) {
         showSettingsPanel = false;
       }
-    } else if (e.ctrlKey && e.key === 'z' && !showSettingsPanel) {
-      e.preventDefault();
-      gameActions.undo();
     }
   }
 
   onMount(() => {
-    // Start the game loop for interactive play (not in test mode)
-    const urlParams = new URLSearchParams(window.location.search);
-    const testMode = urlParams.get('testMode') === 'true';
-    if (!testMode) {
-      startGameLoop();
-    }
-    
+    // No setup needed - AI scheduler runs automatically in LocalGameClient
     // Try to load from URL on mount (theme will be applied reactively)
-    // IMPORTANT: This must happen AFTER startGameLoop() so sections can progress
     gameActions.loadFromURL();
   });
   

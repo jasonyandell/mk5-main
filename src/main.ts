@@ -4,10 +4,9 @@ import { get } from 'svelte/store';
 import type { Writable, Readable } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { gameActions, gameState, actionHistory, controllerManager, startGameLoop, stopGameLoop, sectionOverlay, viewProjection } from './stores/gameStore';
+import { gameActions, gameState, actionHistory, sectionOverlay, viewProjection } from './stores/gameStore';
 import { setAISpeedProfile } from './game/core/ai-scheduler';
 import { getNextStates } from './game';
-import { dispatcher } from './stores/gameStore';
 import { quickplayActions, quickplayState } from './stores/quickplayStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
@@ -39,7 +38,6 @@ if (!isPerfectsPage) {
 declare global {
   interface Window {
     __actionHistory?: typeof actionHistory;
-    controllerManager?: typeof controllerManager;
     quickplayActions: typeof quickplayActions;
     quickplayState: typeof quickplayState;
     getQuickplayState: () => ReturnType<typeof get>;
@@ -47,8 +45,6 @@ declare global {
     gameState: typeof gameState;
     getGameState: () => ReturnType<typeof get>;
     getSectionOverlay: () => unknown;
-    startGameLoop: typeof startGameLoop;
-    stopGameLoop: typeof stopGameLoop;
     setAISpeedProfile: typeof setAISpeedProfile;
     getNextStates: typeof getNextStates;
     viewProjection: typeof viewProjection;
@@ -60,7 +56,6 @@ declare global {
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
   window.__actionHistory = actionHistory;
-  window.controllerManager = controllerManager;
   window.quickplayActions = quickplayActions;
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);
@@ -76,8 +71,6 @@ if (typeof window !== 'undefined' && !isPerfectsPage) {
   } as Writable<GameState> & { get: () => GameState };
   window.getGameState = () => get(gameState);
   window.getSectionOverlay = () => get(sectionOverlay as Readable<unknown>);
-  window.startGameLoop = startGameLoop;
-  window.stopGameLoop = stopGameLoop;
   window.setAISpeedProfile = setAISpeedProfile;
   window.getNextStates = getNextStates;
   window.viewProjection = viewProjection;
@@ -96,7 +89,7 @@ if (typeof window !== 'undefined' && !isPerfectsPage) {
       ts.find((t: StateTransition) => (t?.action?.type === 'bid' || t?.action?.type === 'pass') && isP0(t)) ||
       ts.find((t: StateTransition) => t?.action?.type === 'select-trump') ||
       ts[0];
-    if (first) dispatcher.requestTransition(first, 'ui');
+    if (first) gameActions.executeAction(first);
   };
 }
 

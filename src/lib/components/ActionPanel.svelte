@@ -1,19 +1,18 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager, dispatcher } from '../../stores/gameStore';
+  import { gameActions, viewProjection } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import Icon from '../icons/Icon.svelte';
-  
+
   interface Props {
     onswitchToPlay?: () => void;
   }
-  
-  let { onswitchToPlay }: Props = $props();
 
+  let { onswitchToPlay }: Props = $props();
 
   let shakeActionId = $state<string | null>(null);
   let previousPhase = $state($viewProjection.phase);
-  
+
   // React to phase changes for panel switching
   $effect(() => {
     if ($viewProjection.phase === 'playing' && previousPhase === 'trump_selection') {
@@ -24,19 +23,7 @@
 
   async function executeAction(action: StateTransition) {
     try {
-      // Find which human controller should handle this
-      const playerId = 'player' in action.action ? action.action.player : 0;
-      const humanController = controllerManager.getHumanController(playerId);
-      
-      if (humanController) {
-        humanController.handleUserAction(action);
-      } else {
-        // Fallback to unified dispatcher (used in testMode)
-        console.log('[ActionPanel] Direct execution (no controller):', action.label, 'for player', playerId);
-        dispatcher.requestTransition(action, 'ui');
-      }
-      
-      // Panel switching is handled by the reactive effect above
+      await gameActions.executeAction(action);
     } catch (error) {
       // Trigger shake animation on error
       shakeActionId = action.id;
@@ -61,26 +48,6 @@
     }
   }
 
-  
-  // Track skip attempts for automatic retry
-  let skipAttempts = $state(0);
-  
-  // Reactive skip logic - automatically retry skip in bidding/trump phases
-  $effect(() => {
-    if (($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') && 
-        $viewProjection.ui.isAIThinking && skipAttempts > 0 && skipAttempts < 3) {
-      // Automatically try skip on state change
-      gameActions.skipAIDelays();
-      skipAttempts++;
-    }
-  });
-  
-  // Reset skip attempts when not AI thinking
-  $effect(() => {
-    if (!$viewProjection.ui.isAIThinking) {
-      skipAttempts = 0;
-    }
-  });
 </script>
 
 <div class="action-panel h-full flex flex-col bg-base-200 overflow-hidden" data-testid="action-panel">
@@ -157,24 +124,10 @@
     {/if}
     
     {#if $viewProjection.ui.isWaiting && $viewProjection.ui.isAIThinking}
-      <button 
-        class="w-full p-5 text-center text-base-content/60 flex items-center justify-center gap-2 animate-pulse bg-transparent border-none font-inherit cursor-pointer transition-transform hover:scale-105 active:scale-[0.98] ai-thinking-indicator"
-        onclick={() => {
-          // Skip current AI delay
-          gameActions.skipAIDelays();
-          // Enable automatic retry for bidding/trump phases
-          if ($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') {
-            skipAttempts = 1; // Start retry counter
-          }
-        }}
-        type="button"
-        aria-label="Click to skip AI thinking"
-        title="Click to skip AI thinking"
-      >
+      <div class="w-full p-5 text-center text-base-content/60 flex items-center justify-center gap-2 animate-pulse">
         <Icon name="cpuChip" size="md" />
         <span class="text-sm">P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
-        <span class="text-xs opacity-70 ml-1">(tap to skip)</span>
-      </button>
+      </div>
     {/if}
     
     {#if $viewProjection.phase === 'bidding' && $viewProjection.actions.bidding.length > 0}

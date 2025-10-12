@@ -1,6 +1,6 @@
 import type { GameState, StateTransition } from '../types';
-import { BeginnerAIStrategy, RandomAIStrategy } from '../controllers/strategies';
-import type { AIStrategy } from '../controllers/types';
+import { BeginnerAIStrategy, RandomAIStrategy } from '../ai/strategies';
+import type { AIStrategy } from '../ai/types';
 
 // Strategy instances - reused for pure functions
 const strategies = {
