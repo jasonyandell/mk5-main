@@ -29,11 +29,12 @@
       );
 
       if (handDomino?.isPlayable) {
-        // Construct the play action
+        // Construct the play action with dominoId
+        const dominoId = `${domino.high}-${domino.low}`;
         gameActions.requestAction(0, {
           type: 'play',
           player: 0,
-          domino: domino
+          dominoId: dominoId
         });
       }
     }

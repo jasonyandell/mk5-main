@@ -10,10 +10,10 @@ describe('Authorization', () => {
   function createTestMPState(gameState?: GameState): MultiplayerGameState {
     const state = gameState || createInitialState();
     const sessions: PlayerSession[] = [
-      { playerId: 0, sessionId: 'session-0', type: 'human' },
-      { playerId: 1, sessionId: 'session-1', type: 'ai' },
-      { playerId: 2, sessionId: 'session-2', type: 'ai' },
-      { playerId: 3, sessionId: 'session-3', type: 'ai' }
+      { playerId: 'player-0', playerIndex: 0, controlType: 'human' },
+      { playerId: 'ai-1', playerIndex: 1, controlType: 'ai' },
+      { playerId: 'ai-2', playerIndex: 2, controlType: 'ai' },
+      { playerId: 'ai-3', playerIndex: 3, controlType: 'ai' }
     ];
     return { state, sessions };
   }
@@ -123,9 +123,8 @@ describe('Authorization', () => {
 
       // Pass action should be valid for current player
       const result = authorizeAndExecute(mpState, {
-        playerId: currentPlayer,
-        action: { type: 'pass', player: currentPlayer },
-        sessionId: `session-${currentPlayer}`
+        playerId: `player-${currentPlayer}`,
+        action: { type: 'pass', player: currentPlayer }
       });
 
       expect(result.ok).toBe(true);
@@ -141,9 +140,8 @@ describe('Authorization', () => {
       const wrongPlayer = getNextPlayer(currentPlayer);
 
       const result = authorizeAndExecute(mpState, {
-        playerId: wrongPlayer,
-        action: { type: 'pass', player: currentPlayer }, // Try to act as different player
-        sessionId: `session-${wrongPlayer}`
+        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
+        action: { type: 'pass', player: currentPlayer } // Try to act as different player
       });
 
       expect(result.ok).toBe(false);
@@ -156,30 +154,13 @@ describe('Authorization', () => {
       const mpState = createTestMPState();
 
       const result = authorizeAndExecute(mpState, {
-        playerId: 99, // Invalid player ID
-        action: { type: 'complete-trick' },
-        sessionId: 'session-99'
+        playerId: 'invalid-player-99', // Invalid player ID
+        action: { type: 'complete-trick' }
       });
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error).toContain('Invalid player ID');
-      }
-    });
-
-    it('rejects invalid session ID', () => {
-      const mpState = createTestMPState();
-      const currentPlayer = mpState.state.currentPlayer;
-
-      const result = authorizeAndExecute(mpState, {
-        playerId: currentPlayer,
-        action: { type: 'pass', player: currentPlayer },
-        sessionId: 'wrong-session-id'
-      });
-
-      expect(result.ok).toBe(false);
-      if (!result.ok) {
-        expect(result.error).toContain('Invalid session ID');
+        expect(result.error).toContain('No player found');
       }
     });
 
@@ -188,9 +169,8 @@ describe('Authorization', () => {
       const currentPlayer = mpState.state.currentPlayer;
 
       const result = authorizeAndExecute(mpState, {
-        playerId: currentPlayer,
+        playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer }
-        // No sessionId provided
       });
 
       expect(result.ok).toBe(true);
@@ -202,9 +182,8 @@ describe('Authorization', () => {
 
       // Try to play a domino during bidding phase
       const result = authorizeAndExecute(mpState, {
-        playerId: currentPlayer,
-        action: { type: 'play', player: currentPlayer, dominoId: '0-0' },
-        sessionId: `session-${currentPlayer}`
+        playerId: `player-${currentPlayer}`,
+        action: { type: 'play', player: currentPlayer, dominoId: '0-0' }
       });
 
       expect(result.ok).toBe(false);
@@ -218,9 +197,8 @@ describe('Authorization', () => {
       const currentPlayer = mpState.state.currentPlayer;
 
       const result = authorizeAndExecute(mpState, {
-        playerId: currentPlayer,
-        action: { type: 'pass', player: currentPlayer },
-        sessionId: `session-${currentPlayer}`
+        playerId: `player-${currentPlayer}`,
+        action: { type: 'pass', player: currentPlayer }
       });
 
       expect(result.ok).toBe(true);
@@ -232,7 +210,6 @@ describe('Authorization', () => {
 
     it('correctly handles neutral actions from any player', () => {
       // Create state where trick is complete and waiting for consensus
-      const initialState = createInitialState();
       // We need to manually construct a state in playing phase with complete trick
       // For now, just test that neutral actions are allowed
 
@@ -240,7 +217,7 @@ describe('Authorization', () => {
 
       // Complete-trick is a neutral action
       const result = authorizeAndExecute(mpState, {
-        playerId: 0, // Any player
+        playerId: 'player-0', // Any player
         action: { type: 'complete-trick' }
       });
 
@@ -263,17 +240,17 @@ describe('Authorization', () => {
       expect(canPlayerExecuteAction(0, action, state)).toBe(false);
     });
 
-    it('handles player IDs >= 4', () => {
+    it('handles invalid player IDs', () => {
       const mpState = createTestMPState();
 
       const result = authorizeAndExecute(mpState, {
-        playerId: 4,
+        playerId: 'player-99',
         action: { type: 'complete-trick' }
       });
 
       expect(result.ok).toBe(false);
       if (!result.ok) {
-        expect(result.error).toContain('Invalid player ID');
+        expect(result.error).toContain('No player found');
       }
     });
   });

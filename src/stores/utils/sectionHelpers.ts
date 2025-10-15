@@ -2,7 +2,7 @@ import type { GameState, StateTransition } from '../../game/types';
 import { createInitialState, getNextStates } from '../../game';
 import { deepClone } from './deepUtils';
 import { getAttempts, recordWin } from './oneHandStats';
-import { BeginnerAIStrategy } from '../../game/controllers/strategies';
+import { BeginnerAIStrategy } from '../../game/ai/strategies';
 
 // Helper: determine if "we" (team 0; players 0 and 2) won the hand
 // Returns true if we definitively won, false if definitively not, or null if undetermined

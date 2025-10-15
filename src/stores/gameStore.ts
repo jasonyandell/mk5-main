@@ -1,13 +1,17 @@
 import { writable, derived, get } from 'svelte/store';
-import type { GameState, GameAction, StateTransition } from '../game/types';
-import { createInitialState, getNextStates } from '../game';
-import { LocalGameClient } from '../game/multiplayer/LocalGameClient';
+import type { GameAction, StateTransition } from '../game/types';
+import { getNextStates } from '../game';
+import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
+import { InProcessAdapter } from '../server/offline/InProcessAdapter';
+import type { GameClient } from '../game/multiplayer/GameClient';
 import type { MultiplayerGameState } from '../game/multiplayer/types';
+import type { GameConfig } from '../shared/multiplayer/protocol';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 
 /**
- * New gameStore - ruthlessly simplified.
- * Everything flows through GameClient - the ONLY source of truth.
+ * Pure client/server gameStore.
+ * Everything flows through protocol-based GameClient.
+ * Client is dumb - server handles ALL game logic via variants.
  */
 
 // Detect test mode
@@ -15,26 +19,33 @@ const urlParams = typeof window !== 'undefined' ?
   new URLSearchParams(window.location.search) : null;
 const testMode = urlParams?.get('testMode') === 'true';
 
-// Create initial state
-const initialGameState = createInitialState({
-  playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-});
+// Player types configuration
+const playerTypes = testMode ?
+  ['human', 'human', 'human', 'human'] as ('human' | 'ai')[] :
+  ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[];
 
-// Create the GameClient - single source of truth
-export const gameClient = new LocalGameClient(
-  initialGameState,
-  testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-);
+// Create the GameClient with new architecture
+let gameClient: GameClient;
+const adapter = new InProcessAdapter();
+const config: GameConfig = {
+  playerTypes,
+  shuffleSeed: Math.floor(Math.random() * 1000000)
+};
+
+gameClient = new NetworkGameClient(adapter, config);
+
+// Export as const to prevent reassignment
+export { gameClient };
 
 // Writable store that tracks GameClient state
-const clientState = writable<MultiplayerGameState>(gameClient.getState());
+export const clientState = writable<MultiplayerGameState>(gameClient.getState());
 
 // Subscribe to GameClient updates
 gameClient.subscribe(state => {
   clientState.set(state);
 });
 
-// Derived store for just the GameState (for backwards compatibility)
+// Derived store for just the GameState
 export const gameState = derived(clientState, $clientState => $clientState.state);
 
 // Derived store for player sessions
@@ -42,25 +53,6 @@ export const playerSessions = derived(clientState, $clientState => $clientState.
 
 // Current player ID for primary view (typically 0 for single-device play)
 export const currentPlayerId = writable<number>(0);
-
-// Initial state export (for compatibility)
-export const initialState = writable<GameState>(initialGameState);
-
-// Action history (deprecated - GameClient tracks this internally via actionHistory in state)
-export const actionHistory = derived(gameState, $gameState => {
-  // Convert actionHistory to StateTransitions for compatibility
-  return $gameState.actionHistory.map(action => {
-    const allTransitions = getNextStates($gameState);
-    // Find matching transition (this is a simplification)
-    const found = allTransitions.find(t => t.action.type === action.type);
-    return found || {
-      id: action.type,
-      label: action.type,
-      action: action,
-      newState: $gameState
-    };
-  });
-});
 
 // View projection - derived from gameState only
 export const viewProjection = derived<typeof gameState, ViewProjection>(
@@ -83,10 +75,41 @@ export const viewProjection = derived<typeof gameState, ViewProjection>(
       testMode,
       (player: number) => {
         const sessions = get(playerSessions);
-        const session = sessions[player];
-        return session ? session.type === 'ai' : false;
+        const session = sessions.find(s => s.playerIndex === player);
+        return session ? session.controlType === 'ai' : false;
       }
     );
+  }
+);
+
+// Store for tracking current game variant
+export const gameVariant = derived(clientState, () => {
+  // Extract variant from game view metadata if available
+  const client = gameClient as NetworkGameClient;
+  const view = client['cachedView']; // Access cached view
+  return view?.metadata?.variant;
+});
+
+// Store for one-hand mode state (derived from game state)
+export const oneHandState = derived(
+  [gameState, gameVariant],
+  ([$gameState, $gameVariant]) => {
+    const isOneHand = $gameVariant?.type === 'one-hand';
+    const isComplete = isOneHand && $gameState.phase === 'game_end';
+    const seed = $gameVariant?.config?.originalSeed;
+    const attempts = $gameVariant?.config?.attempts || 1;
+
+    return {
+      active: isOneHand,
+      complete: isComplete,
+      seed,
+      attempts,
+      scores: isComplete ? {
+        us: $gameState.teamScores[0],
+        them: $gameState.teamScores[1],
+        won: $gameState.teamScores[0] > $gameState.teamScores[1]
+      } : null
+    };
   }
 );
 
@@ -125,23 +148,25 @@ export const gameActions = {
     // Destroy old client
     gameClient.destroy();
 
-    // Create new initial state
-    const newInitialState = createInitialState({
-      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-    });
+    // Create new adapter and client
+    const newAdapter = new InProcessAdapter();
+    const newConfig: GameConfig = {
+      playerTypes,
+      shuffleSeed: Math.floor(Math.random() * 1000000)
+    };
 
-    // Create new client
-    const newClient = new LocalGameClient(
-      newInitialState,
-      testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-    );
+    const newClient = new NetworkGameClient(newAdapter, newConfig);
 
     // Replace global client reference
     Object.assign(gameClient, newClient);
 
+    // Subscribe to updates
+    newClient.subscribe(state => {
+      clientState.set(state);
+    });
+
     // Update stores
-    initialState.set(newInitialState);
-    clientState.set(gameClient.getState());
+    clientState.set(newClient.getState());
   },
 
   /**
@@ -158,24 +183,76 @@ export const gameActions = {
     await gameClient.setPlayerControl(1, 'ai');
     await gameClient.setPlayerControl(2, 'ai');
     await gameClient.setPlayerControl(3, 'ai');
+  }
+};
+
+/**
+ * Game variant actions - for special game modes
+ */
+export const gameVariants = {
+  /**
+   * Start a one-hand challenge game
+   */
+  startOneHand: async (seed?: number) => {
+    // Destroy current game
+    gameClient.destroy();
+
+    // Create new game with one-hand variant
+    const newAdapter = new InProcessAdapter();
+    const newConfig: GameConfig = {
+      playerTypes,
+      ...(seed ? { shuffleSeed: seed } : {}),  // Only add if seed is defined
+      variant: {
+        type: 'one-hand',
+        config: seed ? {
+          targetHand: 1,
+          maxAttempts: 999,
+          originalSeed: seed
+        } : {
+          targetHand: 1,
+          maxAttempts: 999
+        }
+      }
+    };
+
+    const newClient = new NetworkGameClient(newAdapter, newConfig);
+
+    // Replace global client
+    Object.assign(gameClient, newClient);
+
+    // Subscribe to updates
+    newClient.subscribe(state => {
+      clientState.set(state);
+    });
+
+    // Update stores
+    clientState.set(newClient.getState());
   },
 
-  // Deprecated stubs for backwards compatibility
-  undo: () => console.warn('undo() not supported'),
-  loadFromURL: async () => console.warn('loadFromURL() deprecated'),
-  loadState: (_state: GameState) => console.warn('loadState() deprecated'),
-  updateTheme: (_theme: string, _overrides?: Record<string, string>) => console.warn('updateTheme() deprecated'),
+  /**
+   * Retry the same one-hand challenge
+   */
+  retryOneHand: async () => {
+    const state = get(oneHandState);
+    if (!state.seed) {
+      console.error('No seed to retry');
+      return;
+    }
+
+    // Start new game with same seed, incremented attempts
+    await gameVariants.startOneHand(state.seed);
+  },
+
+  /**
+   * Exit variant mode and return to standard game
+   */
+  exitVariant: async () => {
+    await gameActions.resetGame();
+  }
 };
 
-// Deprecated exports for backwards compatibility
-export const sectionOverlay = writable<null>(null);
-export const sectionActions = {
-  startOneHand: async () => {},
-  clearOverlay: () => {},
-  restartOneHand: async () => {},
-  newOneHand: async () => {}
-};
-export const stateValidationError = writable<string | null>(null);
+// Store to track if we're finding a seed (derived from adapter state)
+export const findingSeed = writable(false);
 
 // Clean up on page unload
 if (typeof window !== 'undefined') {

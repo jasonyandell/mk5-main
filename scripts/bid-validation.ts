@@ -8,7 +8,7 @@
  */
 
 import { createInitialState, getNextStates, executeAction } from '../src/game';
-import { BeginnerAIStrategy } from '../src/game/controllers/strategies';
+import { BeginnerAIStrategy } from '../src/game/ai/strategies';
 import { calculateHandStrengthWithTrump } from '../src/game/ai/hand-strength';
 import type { GameState, TrumpSelection } from '../src/game/types';
 

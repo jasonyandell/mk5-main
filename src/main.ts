@@ -1,16 +1,15 @@
 import './styles/app.css';
 import { mount } from 'svelte';
 import { get } from 'svelte/store';
-import type { Writable, Readable } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { gameActions, gameState, actionHistory, sectionOverlay, viewProjection } from './stores/gameStore';
+import { gameActions, gameState, viewProjection } from './stores/gameStore';
 import { setAISpeedProfile } from './game/core/ai-scheduler';
 import { getNextStates } from './game';
 import { quickplayActions, quickplayState } from './stores/quickplayStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
-import type { GameState, StateTransition } from './game/types';
+import type { StateTransition } from './game/types';
 
 // Route to appropriate app based on URL path
 const pathname = window.location.pathname;
@@ -26,25 +25,21 @@ const app = mount(AppComponent, {
 });
 
 if (!isPerfectsPage) {
-  window.addEventListener('popstate', (event) => {
-    if (event.state) {
-      gameActions.loadFromHistoryState(event.state);
-    } else {
-      gameActions.loadFromURL();
-    }
+  window.addEventListener('popstate', () => {
+    // History loading is deprecated in the new GameClient architecture
+    // URL-based game state loading would need to be reimplemented if needed
+    console.warn('History state loading not yet implemented in new architecture');
   });
 }
 
 declare global {
   interface Window {
-    __actionHistory?: typeof actionHistory;
     quickplayActions: typeof quickplayActions;
     quickplayState: typeof quickplayState;
     getQuickplayState: () => ReturnType<typeof get>;
     gameActions: typeof gameActions;
     gameState: typeof gameState;
     getGameState: () => ReturnType<typeof get>;
-    getSectionOverlay: () => unknown;
     setAISpeedProfile: typeof setAISpeedProfile;
     getNextStates: typeof getNextStates;
     viewProjection: typeof viewProjection;
@@ -55,22 +50,15 @@ declare global {
 }
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
-  window.__actionHistory = actionHistory;
   window.quickplayActions = quickplayActions;
   window.quickplayState = quickplayState;
   window.getQuickplayState = () => get(quickplayState);
   window.gameActions = gameActions;
   window.SEED_FINDER_CONFIG = SEED_FINDER_CONFIG;
   window.seedFinderStore = seedFinderStore;
-  // Properly expose the store with its methods
-  window.gameState = {
-    set: (state: GameState) => gameState.set(state),
-    update: (fn: (state: GameState) => GameState) => gameState.update(fn),
-    subscribe: gameState.subscribe,
-    get: () => get(gameState)
-  } as Writable<GameState> & { get: () => GameState };
+  // Expose gameState as a readable store (it's derived, not writable)
+  window.gameState = gameState;
   window.getGameState = () => get(gameState);
-  window.getSectionOverlay = () => get(sectionOverlay as Readable<unknown>);
   window.setAISpeedProfile = setAISpeedProfile;
   window.getNextStates = getNextStates;
   window.viewProjection = viewProjection;

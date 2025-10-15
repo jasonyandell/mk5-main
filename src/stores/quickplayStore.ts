@@ -1,5 +1,5 @@
 import { writable, get } from 'svelte/store';
-import { gameState, viewProjection, gameActions, actionHistory, gameClient } from './gameStore';
+import { gameState, gameActions } from './gameStore';
 import type { GameState, StateTransition, Domino, Player } from '../game/types';
 import { getNextStates } from '../game';
 import { BID_TYPES } from '../game/constants';
@@ -246,7 +246,6 @@ let animationFrameId: number | null = null;
 function processAIMoves() {
   const $gameState = get(gameState);
   const $quickplayState = get(quickplayState);
-  const $viewProjection = get(viewProjection);
   const availableActions = getNextStates($gameState);
 
   // Check if we should continue
@@ -263,7 +262,7 @@ function processAIMoves() {
         phase: $gameState.phase,
         isComplete: $gameState.isComplete,
         marks: $gameState.teamMarks,
-        actionCount: get(actionHistory).length,
+        actionCount: $gameState.actionHistory.length,
         handsEmpty: $gameState.players.every(p => p.hand.length === 0)
       });
     }
@@ -307,7 +306,7 @@ function processAIMoves() {
         phase: $gameState.phase,
         currentPlayer: $gameState.currentPlayer,
         availableActions: availableActions.map(a => a.id),
-        actionCount: get(actionHistory).length,
+        actionCount: $gameState.actionHistory.length,
         currentTrick: $gameState.currentTrick,
         hands: $gameState.hands,
         trump: $gameState.trump
@@ -430,7 +429,7 @@ export const quickplayActions = {
         phase: $gameState.phase,
         currentPlayer: $gameState.currentPlayer,
         availableActions: availableActions.map(a => a.id),
-        actionCount: get(actionHistory).length,
+        actionCount: $gameState.actionHistory.length,
         currentTrick: $gameState.currentTrick,
         hands: $gameState.hands
       });

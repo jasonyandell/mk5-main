@@ -7,36 +7,43 @@ import { getValidActions } from '../core/gameEngine';
 /**
  * Checks if a player is authorized to execute a specific action.
  *
- * Authorization rules (extracted from playerView.ts filtering logic):
+ * Authorization rules:
  * 1. Actions without a 'player' field are neutral (consensus) - any player can execute
  * 2. Actions with a 'player' field can only be executed by that specific player
+ *
+ * @param playerIndex - The player's seat index (0-3), not their identity
+ * @param action - The action to check authorization for
+ * @param _state - Game state (currently unused but kept for future authorization rules)
  */
 export function canPlayerExecuteAction(
-  playerId: number,
+  playerIndex: number,
   action: GameAction,
-  state: GameState
+  _state: GameState
 ): boolean {
   // Neutral actions (no player field) are available to everyone
   if (!('player' in action)) {
     return true;
   }
 
-  // Actions with player field are only for that specific player
-  return action.player === playerId;
+  // Actions with player field are only for that specific player index
+  return action.player === playerIndex;
 }
 
 /**
  * Gets all valid actions that a specific player can execute.
  * Composes getValidActions with authorization filtering.
+ *
+ * @param state - Current game state
+ * @param playerIndex - The player's seat index (0-3), not their identity
  */
 export function getValidActionsForPlayer(
   state: GameState,
-  playerId: number
+  playerIndex: number
 ): GameAction[] {
   const allActions = getValidActions(state);
 
   return allActions.filter(action =>
-    canPlayerExecuteAction(playerId, action, state)
+    canPlayerExecuteAction(playerIndex, action, state)
   );
 }
 
@@ -51,29 +58,21 @@ export function authorizeAndExecute(
   mpState: MultiplayerGameState,
   request: ActionRequest
 ): Result<MultiplayerGameState> {
-  const { playerId, action, sessionId } = request;
+  const { playerId, action } = request;
   const { state, sessions } = mpState;
 
-  // Validate player ID
-  if (playerId < 0 || playerId >= 4) {
-    return err(`Invalid player ID: ${playerId}`);
+  // Find player by playerId
+  const player = sessions.find(s => s.playerId === playerId);
+  if (!player) {
+    return err(`No player found with ID: ${playerId}`);
   }
 
-  // Validate session if sessionId provided
-  if (sessionId !== undefined) {
-    const session = sessions.find(s => s.playerId === playerId);
-    if (!session) {
-      return err(`No session found for player ${playerId}`);
-    }
-    if (session.sessionId !== sessionId) {
-      return err(`Invalid session ID for player ${playerId}`);
-    }
-  }
+  const playerIndex = player.playerIndex;
 
   // Check authorization
-  if (!canPlayerExecuteAction(playerId, action, state)) {
+  if (!canPlayerExecuteAction(playerIndex, action, state)) {
     return err(
-      `Player ${playerId} is not authorized to execute action: ${action.type}`
+      `Player ${playerId} (index ${playerIndex}) is not authorized to execute action: ${action.type}`
     );
   }
 

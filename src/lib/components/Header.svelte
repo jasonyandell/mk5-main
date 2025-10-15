@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewProjection, gameActions } from '../../stores/gameStore';
+  import { viewProjection, gameActions, gameVariants, oneHandState } from '../../stores/gameStore';
   import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
@@ -95,6 +95,24 @@
                 <Icon name="dice" size="sm" />
                 New Game
               </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="one-hand-btn flex items-center justify-between"
+              onclick={() => {
+                gameVariants.startOneHand();
+                closeMenu();
+              }}
+              disabled={$oneHandState.active}
+            >
+              <span class="flex items-center gap-2">
+                <Icon name="handRaised" size="sm" />
+                Play One Hand
+              </span>
+              {#if $oneHandState.active}
+                <span class="badge badge-primary badge-xs">ACTIVE</span>
+              {/if}
             </button>
           </li>
           <li>

@@ -2,11 +2,15 @@ import type { GameState, GameAction } from '../types';
 
 /**
  * Player session information for multiplayer games
+ * Separates identity (playerId) from seat position (playerIndex)
  */
 export interface PlayerSession {
-  playerId: number;
-  sessionId: string;
-  type: 'human' | 'ai';
+  playerId: string;              // Unique identifier: "player-0", "ai-1", "alice", etc
+  playerIndex: 0 | 1 | 2 | 3;   // Seat position in the game
+  controlType: 'human' | 'ai';   // Who controls this player
+  isConnected?: boolean;          // Connection status (optional, defaults to true)
+  name?: string;                  // Display name (optional)
+  capabilities?: string[];        // Future: what this player can do/see (optional)
 }
 
 /**
@@ -21,9 +25,8 @@ export interface MultiplayerGameState {
  * Request to execute an action on behalf of a player
  */
 export interface ActionRequest {
-  playerId: number;
+  playerId: string;  // Player identity (e.g., "player-0", "ai-1")
   action: GameAction;
-  sessionId?: string; // Optional for local games, required for network games
 }
 
 /**

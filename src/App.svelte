@@ -4,17 +4,17 @@
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import SettingsPanel from './lib/components/SettingsPanel.svelte';
-  import SectionCompleteModal from './lib/components/SectionCompleteModal.svelte';
   import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
-  import { gameActions, gameState, viewProjection } from './stores/gameStore';
+  import OneHandCompleteModal from './lib/components/OneHandCompleteModal.svelte';
+  import { gameState, viewProjection, gameVariants } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showSettingsPanel = $state(false);
   let showThemeEditor = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
-  let settingsInitialTab = $state<'state' | 'history' | 'theme'>('state');
+  let settingsInitialTab = $state<'state' | 'theme'>('state');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -31,9 +31,21 @@
   }
 
   onMount(() => {
-    // No setup needed - AI scheduler runs automatically in LocalGameClient
-    // Try to load from URL on mount (theme will be applied reactively)
-    gameActions.loadFromURL();
+    // Check for one-hand URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const oneHandParam = urlParams.get('onehand');
+
+    if (oneHandParam === 'auto') {
+      // Start with competitive seed (server finds one)
+      gameVariants.startOneHand();
+    } else if (oneHandParam) {
+      // Start with specific seed
+      const seed = parseInt(oneHandParam, 10);
+      if (!isNaN(seed)) {
+        gameVariants.startOneHand(seed);
+      }
+    }
+    // Note: loadFromURL is deprecated - server handles all state
   });
   
   // Smart panel switching based on game phase
@@ -167,5 +179,5 @@
 />
 
 <QuickplayError />
-<SectionCompleteModal />
 <SeedFinderModal />
+<OneHandCompleteModal />

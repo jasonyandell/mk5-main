@@ -1,16 +1,12 @@
 <script lang="ts">
-  import { gameState, actionHistory, gameActions, initialState } from '../../stores/gameStore';
-  import { startSection } from '../../game/core/sectionRunner';
-  import { onePlay, oneTrick } from '../../game/core/sectionPresets';
-  import { sectionActions } from '../../stores/gameStore';
-  import { encodeGameUrl } from '../../game/core/url-compression';
+  import { gameState, gameActions } from '../../stores/gameStore';
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
   import { shareContent, canNativeShare } from '../utils/share';
 
   interface Props {
     onclose: () => void;
-    initialTab?: 'state' | 'history' | 'theme';
+    initialTab?: 'state' | 'theme';
   }
 
   let { onclose, initialTab = 'state' }: Props = $props();
@@ -28,58 +24,17 @@
     navigator.clipboard.writeText(text);
   }
 
-  import { buildUrl } from '../../stores/utils/urlManager';
-  // Generate shareable URL via encoder (canonical)
+  // Generate shareable URL (simplified for new architecture)
   async function shareUrl() {
-    const compactIds = $actionHistory.map(a => a.id).filter((id: string) => !id.startsWith('agree-'));
-    const url = buildUrl({
-      initialState: $initialState,
-      actionIds: compactIds,
-      includeSeed: true,
-      includeActions: true,
-      includeScenario: true,
-      includeTheme: true,
-      includeOverrides: true,
-      preserveUnknownParams: true,
-      absolute: true
-    });
+    // In the new architecture, we don't have action history
+    // Just share the current URL with game seed
+    const url = window.location.href;
 
     await shareContent({
       title: 'Texas 42 Game',
       text: 'Check out this Texas 42 game!',
       url: url
     });
-  }
-
-  // Time travel to a specific action
-  function timeTravel(index: number) {
-    // Get actions up to the specified index
-    const actionsToReplay = $actionHistory.slice(0, index + 1);
-    
-    // Use gameActions to properly load the state
-    // This ensures controllers are notified and state is properly managed
-    const historyState = {
-      initialState: $initialState,
-      actions: actionsToReplay.map(a => a.id),
-      timestamp: Date.now()
-    };
-    
-    // Use loadFromHistoryState which handles everything correctly:
-    // - Deep clones to prevent mutations
-    // - Updates all stores properly
-    // - Notifies controllers for AI
-    gameActions.loadFromHistoryState(historyState);
-    
-    // Update URL to reflect the new state
-    const compactIds = actionsToReplay.map(a => a.id).filter((id) => !id.startsWith('agree-'));
-    const newURL = window.location.pathname + encodeGameUrl(
-      $initialState.shuffleSeed,
-      compactIds,
-      $initialState.playerTypes
-    );
-    
-    // Update browser history
-    window.history.pushState(historyState, '', newURL);
   }
 
 </script>
@@ -91,7 +46,7 @@
     <div class="flex-1">
       <h2 class="text-lg font-semibold">Settings</h2>
     </div>
-    <button 
+    <button
       class="btn btn-ghost btn-square"
       data-testid="settings-close-button"
       onclick={onclose}
@@ -128,23 +83,23 @@
           { value: 'coffee', icon: 'coffee' as const, name: 'Coffee' },
           { value: 'winter', icon: 'snowflake' as const, name: 'Winter' }
         ]}
-        
-        {@const currentTheme = typeof document !== 'undefined' ? 
-          document.documentElement.getAttribute('data-theme') || 'coffee' : 
+
+        {@const currentTheme = typeof document !== 'undefined' ?
+          document.documentElement.getAttribute('data-theme') || 'coffee' :
           'coffee'}
-        
+
         <div class="space-y-4">
           <div class="prose prose-sm">
             <h3>Choose Theme</h3>
           </div>
-          
+
           <div class="grid grid-cols-2 gap-3">
             {#each themes as theme}
               <button
                 class="relative overflow-hidden rounded-lg transition-transform active:scale-95 {currentTheme === theme.value ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''}"
                 onclick={() => {
-                  // Use gameActions to update theme (first-class state)
-                  gameActions.updateTheme(theme.value, {});
+                  // In new architecture, themes are handled client-side only
+                  document.documentElement.setAttribute('data-theme', theme.value);
                 }}
               >
                 <div data-theme={theme.value} class="bg-base-100 p-3">
@@ -155,13 +110,13 @@
                     <div class="bg-accent w-6 h-6 rounded-full"></div>
                     <div class="bg-neutral w-6 h-6 rounded-full"></div>
                   </div>
-                  
+
                   <!-- Theme name -->
                   <div class="flex items-center gap-1 text-sm font-medium text-base-content">
                     <Icon name={theme.icon} size="sm" />
                     <span>{theme.name}</span>
                   </div>
-                  
+
                   <!-- Mini component preview -->
                   <div class="flex gap-1 mt-2">
                     <div class="badge badge-primary badge-xs">A</div>
@@ -169,7 +124,7 @@
                     <div class="bg-base-200 rounded px-1 text-xs text-base-content">C</div>
                   </div>
                 </div>
-                
+
                 <!-- Selected indicator -->
                 {#if currentTheme === theme.value}
                   <div class="absolute top-1 right-1 bg-primary text-primary-content rounded-full p-0.5">
@@ -179,13 +134,13 @@
               </button>
             {/each}
           </div>
-          
+
           <!-- Reset Game button -->
           <div class="divider">Game Controls</div>
-          <button 
+          <button
             class="btn btn-warning btn-block"
             onclick={() => {
-              // Reset the game state (theme is now preserved automatically)
+              // Reset the game state
               gameActions.resetGame();
             }}
           >
@@ -195,41 +150,20 @@
             </span>
           </button>
           <p class="text-xs text-base-content/60 text-center mt-2">
-            Starts a new game while keeping your theme settings
+            Starts a new game
           </p>
         </div>
       {/if}
 
       {#if activeTab === 'state'}
         <div class="space-y-4">
-          <!-- Sections quick actions -->
-          <div class="card bg-base-100 shadow-md">
-            <div class="card-body gap-3">
-              <h3 class="card-title text-sm">Sections</h3>
-              <div class="grid grid-cols-2 gap-2">
-                <button class="btn btn-primary" onclick={async () => {
-                  const runner = startSection(onePlay());
-                  await runner.done;
-                }}>Play One Domino</button>
-                <button class="btn btn-secondary" onclick={async () => {
-                  const runner = startSection(oneTrick());
-                  await runner.done;
-                }}>Play One Trick</button>
-                <button class="btn btn-accent col-span-2" onclick={async () => {
-                  await sectionActions.startOneHand();
-                }}>Play One Hand</button>
-              </div>
-              <p class="text-xs opacity-60">Runs a bounded section and returns control after completion.</p>
-            </div>
-          </div>
-
           <!-- Toggle switches -->
           <div class="flex flex-col gap-3">
             <div class="form-control">
               <label class="label cursor-pointer">
                 <span class="label-text">Tree View</span>
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   class="toggle toggle-primary"
                   bind:checked={showTreeView}
                 />
@@ -239,7 +173,7 @@
 
           <!-- Action buttons -->
           <div class="grid grid-cols-2 gap-2">
-            <button 
+            <button
               class="btn btn-primary"
               onclick={() => copyToClipboard(prettyJson($gameState))}
             >
@@ -258,12 +192,12 @@
               </span>
             </button>
           </div>
-          
+
           <!-- State viewer -->
           <div class="bg-base-200 rounded-lg p-3 max-h-96 overflow-auto">
             {#if showTreeView}
-              <StateTreeView 
-                data={$gameState} 
+              <StateTreeView
+                data={$gameState}
                 searchQuery=""
                 changedPaths={new Set()}
               />
@@ -273,103 +207,18 @@
           </div>
         </div>
       {/if}
-
-      {#if activeTab === 'history'}
-        {@const humanActions = $actionHistory
-          .map((action, index) => ({ action, originalIndex: index }))
-          .filter(({ action }) => {
-            // Only include actions that have a player field and that player is human
-            return action.newState.currentPlayer !== undefined && 
-                   $gameState.playerTypes[action.newState.currentPlayer] === 'human';
-          })}
-        <div class="space-y-4">
-          <!-- Header with count -->
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold">
-              History 
-              <span class="badge badge-neutral ml-2">{humanActions.length}</span>
-            </h3>
-          </div>
-
-          <!-- Action buttons -->
-          <div class="grid grid-cols-2 gap-2">
-            <button 
-              class="btn btn-warning"
-              onclick={gameActions.undo}
-              disabled={$actionHistory.length === 0}
-            >
-              <span class="flex items-center justify-center gap-1">
-                <Icon name="arrowUturnLeft" size="sm" />
-                Undo
-              </span>
-            </button>
-            <button 
-              class="btn btn-error"
-              onclick={gameActions.resetGame}
-            >
-              <span class="flex items-center justify-center gap-1">
-                <Icon name="arrowPath" size="sm" />
-                Reset
-              </span>
-            </button>
-          </div>
-          
-          <!-- History list -->
-          {#if humanActions.length === 0}
-            <div class="alert">
-              <Icon name="informationCircle" size="lg" />
-              <span>No human player moves yet. Start playing!</span>
-            </div>
-          {:else}
-            <div class="space-y-2">
-              {#each [...humanActions].reverse() as { action, originalIndex }, reverseIndex}
-                <!-- Make entire card clickable on mobile -->
-                <button 
-                  class="card bg-base-200 w-full text-left active:scale-95 transition-transform"
-                  data-testid="history-item"
-                  onclick={() => timeTravel(originalIndex)}
-                  onpointerdown={(e) => {
-                    e.preventDefault();
-                    timeTravel(originalIndex);
-                  }}
-                >
-                  <div class="card-body p-3 flex-row items-center gap-3">
-                    <div class="badge badge-lg badge-primary font-bold">
-                      {humanActions.length - reverseIndex}
-                    </div>
-                    <div class="flex-1 text-sm">
-                      {action.label}
-                    </div>
-                    <div class="text-primary">
-                      <Icon name="arrowUturnLeft" size="md" />
-                    </div>
-                  </div>
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
     </div>
-    
+
     <!-- Bottom navigation tabs -->
     <div class="btm-nav btm-nav-sm bg-base-200 border-t border-base-300">
-      <button 
+      <button
         class="{activeTab === 'state' ? 'active text-primary' : ''}"
         onclick={() => activeTab = 'state'}
       >
         <Icon name="code" size="md" />
         <span class="btm-nav-label">State</span>
       </button>
-      <button 
-        class="{activeTab === 'history' ? 'active text-primary' : ''}"
-        data-testid="history-tab"
-        onclick={() => activeTab = 'history'}
-      >
-        <Icon name="clock" size="md" />
-        <span class="btm-nav-label">History</span>
-      </button>
-      <button 
+      <button
         class="{activeTab === 'theme' ? 'active text-primary' : ''}"
         onclick={() => activeTab = 'theme'}
       >
@@ -378,7 +227,7 @@
       </button>
     </div>
   </div>
-  
+
   <!-- Modal backdrop click to close -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->

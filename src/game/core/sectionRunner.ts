@@ -1,5 +1,4 @@
 import type { GameState, StateTransition } from '../types';
-import { gameActions } from '../../stores/gameStore';
 import type { StopWhen } from './stopConditions';
 import { setAISpeedProfile, getAISpeedProfile } from './ai-scheduler';
 
@@ -10,8 +9,10 @@ function setCurrentScenario(_name: string | null) {
 
 // Stub dispatcher for compatibility
 const dispatcher = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   setGate: (_gate: any) => console.warn('dispatcher.setGate() deprecated'),
   clearGate: () => console.warn('dispatcher.clearGate() deprecated'),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onAfter: (_cb: any) => () => {}
 };
 
@@ -47,7 +48,7 @@ export function startSection(spec: SectionSpec) {
     setAISpeedProfile(spec.aiSpeed);
   }
 
-  const off = dispatcher.onAfter(({ prev, next, transition }) => {
+  const off = dispatcher.onAfter(({ prev, next, transition }: { prev: GameState; next: GameState; transition: StateTransition }) => {
     executed.push(transition);
 
     if (spec.stopWhen({ prev, next, transition })) {
