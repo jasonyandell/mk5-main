@@ -2,7 +2,6 @@
 // TODO: Rewrite for new variant system (old section-runner removed)
 
 import { test, expect } from '@playwright/test';
-import type { TestWindow } from './test-window';
 
 test.describe('Sections: Theme preservation', () => {
   test('h=one_hand with t=dark preserves theme on seed injection and into playing', async ({ page }) => {
@@ -33,14 +32,14 @@ test.describe('Sections: Theme preservation', () => {
 
     // Speed up AI and drive to completion
     await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
+      const w = window as any;
       if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
     });
 
     const start = Date.now();
     while (Date.now() - start < 20000) {
       const done = await page.evaluate(() => {
-        const w = window as unknown as TestWindow;
+        const w = window as any;
         const overlay = w.getSectionOverlay?.();
         if (overlay && overlay.type === 'oneHand') return true;
         if (w.playFirstAction) w.playFirstAction();
@@ -65,7 +64,7 @@ test.describe('Sections: Theme preservation', () => {
       const start = Date.now();
       while (Date.now() - start < 20000) {
         const done = await page.evaluate(() => {
-          const w = window as unknown as TestWindow;
+          const w = window as any;
           const overlay = w.getSectionOverlay?.();
           if (overlay && overlay.type === 'oneHand') return true;
           if (w.playFirstAction) w.playFirstAction();

@@ -2,7 +2,6 @@
 
 // TODO: Rewrite for new variant system (old section-runner removed)
 import { test, expect } from '@playwright/test';
-import type { TestWindow } from './test-window';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 
 test.describe('URL/History compact-consensus encoding', () => {
@@ -20,13 +19,13 @@ test.describe('URL/History compact-consensus encoding', () => {
 
     // Drive completion without quickplay
     await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
+      const w = window as any;
       if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
     });
     const start = Date.now();
     while (Date.now() - start < 20000) {
       const done = await page.evaluate(() => {
-        const w = window as unknown as TestWindow;
+        const w = window as any;
         const overlay = w.getSectionOverlay?.();
         if (overlay && overlay.type === 'oneHand') return true;
         if (w.playFirstAction) w.playFirstAction();
@@ -35,7 +34,7 @@ test.describe('URL/History compact-consensus encoding', () => {
       if (done) break;
       await page.waitForTimeout(10);
     }
-    const overlayType = await page.evaluate(() => (window as unknown as TestWindow).getSectionOverlay?.()?.type);
+    const overlayType = await page.evaluate(() => (window as any).getSectionOverlay?.()?.type);
     expect(overlayType).toBe('oneHand');
     await expect(page.locator('.modal-box')).toBeVisible({ timeout: 5000 });
     // Title indicates outcome

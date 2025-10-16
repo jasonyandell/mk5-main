@@ -1,4 +1,4 @@
-# Game Onboarding - Texas 42 Architecture
+# Game Onboarding - Texas 42 Architecture 
 
 **Purpose**: Get new developers productive quickly with the Texas 42 codebase architecture.
 

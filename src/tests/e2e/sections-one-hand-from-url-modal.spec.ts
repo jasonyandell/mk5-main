@@ -3,7 +3,6 @@
 
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import type { TestWindow } from './test-window';
 import { findSeedWithOutcome } from './helpers/seed-finder';
 
 test.setTimeout(30000);
@@ -13,7 +12,7 @@ test.setTimeout(30000);
 const playOneHandToCompletion = async (page: Page): Promise<void> => {
   // Set AI to instant speed
   await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
+    const w = window as any;
     if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
   });
   
@@ -21,7 +20,7 @@ const playOneHandToCompletion = async (page: Page): Promise<void> => {
   const start = Date.now();
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
+      const w = window as any;
       const overlay = w.getSectionOverlay?.();
       if (overlay && overlay.type === 'oneHand') return true;
       if (w.playFirstAction) w.playFirstAction();
@@ -34,7 +33,7 @@ const playOneHandToCompletion = async (page: Page): Promise<void> => {
 
 const getGameOutcome = async (page: Page): Promise<'won' | 'lost'> => {
   return await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
+    const w = window as any;
     const overlay = w.getSectionOverlay?.();
     const state = w.getGameState?.();
     
@@ -132,7 +131,7 @@ test.describe('Sections: One Hand from URL shows completion modal', () => {
     
     // Verify different seed was generated
     const seedAfterNew = await page.evaluate(() => 
-      (window as unknown as TestWindow).getGameState?.()?.shuffleSeed as number
+      (window as any).getGameState?.()?.shuffleSeed as number
     );
     expect(seedAfterNew).not.toBe(winningSeed);
     expect(seedAfterNew).toBeTruthy(); // Should have a valid seed

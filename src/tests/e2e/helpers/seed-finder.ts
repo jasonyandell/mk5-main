@@ -1,5 +1,4 @@
 import type { Page } from '@playwright/test';
-import type { TestWindow } from '../test-window';
 
 /**
  * Helper function to play one hand to completion
@@ -7,7 +6,7 @@ import type { TestWindow } from '../test-window';
 async function playOneHandToCompletion(page: Page): Promise<void> {
   // Set AI to instant speed
   await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
+    const w = window as any;
     if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
   });
 
@@ -15,7 +14,7 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
+      const w = window as any;
       const state = w.getGameState?.();
       // Check if game ended
       if (state?.phase === 'game_end') return true;
@@ -34,7 +33,7 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
  */
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
+    const w = window as any;
     const state = w.getGameState?.();
 
     // Check team scores (for one hand, higher score wins)

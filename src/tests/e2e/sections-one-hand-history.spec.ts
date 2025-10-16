@@ -1,7 +1,6 @@
 // TODO: Rewrite for new variant system (old section-runner removed)
 
 import { test, expect } from '@playwright/test';
-import type { TestWindow } from './test-window';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 
 test.describe('Sections: One Hand history stays small and terminal', () => {
@@ -39,7 +38,7 @@ test.describe('Sections: One Hand history stays small and terminal', () => {
 
     // Verify action history directly via window state to avoid heavy UI rendering
     const count = await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
+      const w = window as any;
       return w.getGameState?.()?.actionHistory?.length as number;
     });
     expect(count).toBeLessThan(100);

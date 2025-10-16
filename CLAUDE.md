@@ -37,12 +37,74 @@ Official rules are in docs/rules.md
       - `--compact` - One line per action with score changes
       - `--stop-at N` - Stop replay at action N
 
-** Unit Tests ** - for pure game logic and pasted URLs.
+## Testing Strategy
 
-** Playwright ** - 
-Use src/tests/e2e/helpers/game-helper.ts for all interactions
-Locators go in game-helper.ts, NOT in tests
-CRITICAL: setTimeout() is BANNED and can NEVER be used in playwright tests
+### Unit Tests
+- For pure game logic and pasted URLs
+- Test core functions in isolation
+
+### E2E Tests (Playwright)
+
+**Architecture Principles:**
+- **Clean separation**: Tests interact with UI, not game internals
+- **Minimal window API**: Prefer DOM inspection over `window.getGameState()`
+- **Use game-helper.ts**: All DOM interactions through PlaywrightGameHelper
+- **No setTimeout()**: BANNED - use proper waits instead
+
+**Three Test Types:**
+
+1. **UI Tests** (most tests)
+   - Test user interactions and DOM behavior
+   - Use `helper.goto(seed)` for setup
+   - Use `helper.loadStateWithActions()` for specific scenarios
+   - Verify via DOM inspection (phase attributes, visible buttons, etc.)
+   - Example: `basic-gameplay-new.spec.ts`
+
+2. **Protocol Tests** (when needed)
+   - Verify client-server message protocol
+   - Use SpyAdapter to wrap InProcessAdapter
+   - Assert on message sequences
+   - Example: Testing EXECUTE_ACTION messages
+
+3. **Integration Tests** (1-2 tests)
+   - Full end-to-end game flow
+   - Real InProcessAdapter + GameHost
+   - Complete game from bidding to scoring
+
+**Available Test Infrastructure:**
+
+- **MockAdapter** (`src/tests/adapters/MockAdapter.ts`)
+  - Pre-configured state sequences
+  - Fast, deterministic tests
+  - No game logic execution
+
+- **SpyAdapter** (`src/tests/adapters/SpyAdapter.ts`)
+  - Wraps real adapter, records messages
+  - Protocol verification
+  - Message assertions
+
+- **Game State Fixtures** (`src/tests/fixtures/game-states.ts`)
+  - Pre-built GameView objects
+  - Common scenarios (bidding, playing, scoring)
+  - Reusable across tests
+
+**Window API Usage:**
+
+Minimal exposure in `main.ts`:
+- `window.getGameState()` - Read-only state inspection (use sparingly)
+- `window.quickplayActions` - Feature toggle (legitimate)
+- `window.gameActions` - Console debugging
+
+**IMPORTANT**: Prefer DOM inspection over window access:
+```typescript
+// ✅ GOOD - Test what user sees
+const phase = await helper.getCurrentPhase(); // Reads data-phase attribute
+await expect(page.locator('[data-testid="pass"]')).toBeVisible();
+
+// ⚠️ USE SPARINGLY - Only when DOM doesn't reflect state
+const state = await page.evaluate(() => window.getGameState());
+expect(state.currentTrick.length).toBe(1);
+```
 
 ** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
 

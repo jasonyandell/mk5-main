@@ -1,7 +1,6 @@
 // TODO: Rewrite for new variant system (old section-runner removed)
 
 import { test, expect } from '@playwright/test';
-import type { TestWindow } from './test-window';
 
 test.describe('Sections: Load from URL slug', () => {
   test('h=one_hand starts section and persists in URL (no quickplay)', async ({ page }) => {
@@ -37,7 +36,7 @@ test.describe('Sections: Load from URL slug', () => {
     expect(phaseAfter).toBe('playing');
 
     // Ensure we did not silently navigate away or reset
-    const state = await page.evaluate(() => (window as unknown as TestWindow).getGameState?.());
+    const state = await page.evaluate(() => (window as any).getGameState?.());
     expect(state).toBeTruthy();
     expect(state?.shuffleSeed).toBe(parseInt('93ci', 36));
   });
