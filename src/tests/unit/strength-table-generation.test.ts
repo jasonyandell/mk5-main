@@ -8,6 +8,12 @@ import type { GameState } from '../../game/types';
 
 function createMinimalState(): GameState {
   return {
+    initialConfig: {
+      playerTypes: ['ai', 'ai', 'ai', 'ai'],
+      shuffleSeed: 0,
+      theme: 'coffee',
+      colorOverrides: {}
+    },
     phase: 'playing',
     players: [
       { id: 0, name: 'P0', hand: [], teamId: 0, marks: 0 },
@@ -27,7 +33,6 @@ function createMinimalState(): GameState {
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 7,
-    tournamentMode: false,
     shuffleSeed: 0,
     playerTypes: ['ai', 'ai', 'ai', 'ai'],
     consensus: {

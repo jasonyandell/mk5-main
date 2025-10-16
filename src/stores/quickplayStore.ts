@@ -255,12 +255,11 @@ function processAIMoves() {
   }
 
   // Check if game is complete - start new game automatically
-  if ($gameState.phase === 'game_end' && $gameState.isComplete) {
+  if ($gameState.phase === 'game_end') {
     // Debug logging
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
       console.log('[Quickplay] Game complete, resetting...', {
         phase: $gameState.phase,
-        isComplete: $gameState.isComplete,
         marks: $gameState.teamMarks,
         actionCount: $gameState.actionHistory.length,
         handsEmpty: $gameState.players.every(p => p.hand.length === 0)
@@ -308,7 +307,6 @@ function processAIMoves() {
         availableActions: availableActions.map(a => a.id),
         actionCount: $gameState.actionHistory.length,
         currentTrick: $gameState.currentTrick,
-        hands: $gameState.hands,
         trump: $gameState.trump
       });
 
@@ -430,8 +428,7 @@ export const quickplayActions = {
         currentPlayer: $gameState.currentPlayer,
         availableActions: availableActions.map(a => a.id),
         actionCount: $gameState.actionHistory.length,
-        currentTrick: $gameState.currentTrick,
-        hands: $gameState.hands
+        currentTrick: $gameState.currentTrick
       });
 
       // Store error for UI display
@@ -479,7 +476,7 @@ export const quickplayActions = {
       const availableActions = getNextStates($gameState);
 
       // Stop if game is complete
-      if ($gameState.phase === 'game_end' && $gameState.isComplete) {
+      if ($gameState.phase === 'game_end') {
         return;
       }
 

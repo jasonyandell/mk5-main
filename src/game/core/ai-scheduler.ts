@@ -107,7 +107,6 @@ export function getAIDelayTicks(action: StateTransition): number {
  * Pure function - Skip all AI delays (for compatibility)
  */
 export function skipAIDelays(state: GameState): GameState {
-  // Now handled by dispatcher.executeAllScheduled()
   return state;
 }
 
@@ -117,6 +116,5 @@ export function skipAIDelays(state: GameState): GameState {
  * Pure function - Reset AI scheduling (for navigation/restore)
  */
 export function resetAISchedule(state: GameState): GameState {
-  // AI schedule reset no longer needed - handled by dispatcher
   return state;
 }

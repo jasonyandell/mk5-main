@@ -10,14 +10,16 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
     const w = window as unknown as TestWindow;
     if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
   });
-  
-  // Play loop: nudge human turns until overlay appears
+
+  // Play loop: nudge human turns until game ends
   const start = Date.now();
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
       const w = window as unknown as TestWindow;
-      const overlay = w.getSectionOverlay?.();
-      if (overlay && overlay.type === 'oneHand') return true;
+      const state = w.getGameState?.();
+      // Check if game ended
+      if (state?.phase === 'game_end') return true;
+      // Otherwise play next action
       if (w.playFirstAction) w.playFirstAction();
       return false;
     });
@@ -28,23 +30,18 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
 
 /**
  * Helper function to determine game outcome
+ * TODO: Rewrite for new variant system (getSectionOverlay removed)
  */
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
     const w = window as unknown as TestWindow;
-    const overlay = w.getSectionOverlay?.();
     const state = w.getGameState?.();
-    
-    // Check the overlay for outcome information
-    if (overlay && 'weWon' in overlay) {
-      return overlay.weWon ? 'won' : 'lost';
-    }
-    
-    // Fallback: check team scores (for one hand, higher score wins)
+
+    // Check team scores (for one hand, higher score wins)
     if (state?.teamScores && Array.isArray(state.teamScores)) {
       return state.teamScores[0] > state.teamScores[1] ? 'won' : 'lost';
     }
-    
+
     // Default to lost if we can't determine
     return 'lost';
   });

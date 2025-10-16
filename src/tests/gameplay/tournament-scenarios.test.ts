@@ -8,32 +8,41 @@ import type { Bid, GameState } from '../../game/types';
 describe('Tournament Scenarios', () => {
   function createTournamentState(): GameState {
     const state = createInitialState();
-    state.tournamentMode = true;
     state.gameTarget = 10; // Tournament typically plays to 10 marks
     return state;
   }
 
   describe('Tournament Bidding Rules', () => {
-    it('should enforce minimum opening bid in tournament mode', () => {
-      const state = createTournamentState();
-      
-      // Tournament mode should require higher minimum bid
+    it('should enforce minimum opening bid', () => {
+      // Minimum bid is 30 points
       const lowBid: Bid = { type: BID_TYPES.POINTS, value: 25, player: 0 };
       const validBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 0 };
-      
-      expect(isValidOpeningBid(lowBid, undefined, state.tournamentMode)).toBe(false);
-      expect(isValidOpeningBid(validBid, undefined, state.tournamentMode)).toBe(true);
+
+      expect(isValidOpeningBid(lowBid, undefined)).toBe(false);
+      expect(isValidOpeningBid(validBid, undefined)).toBe(true);
     });
 
-    it('should prohibit special contracts in tournament mode', () => {
-      
+    it('should allow special contracts in base engine', () => {
+      // Base engine now generates special contracts (tournament variant filters them)
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 3, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      expect(isValidOpeningBid(nelloBid, undefined, true)).toBe(false);
-      expect(isValidOpeningBid(splashBid, undefined, true)).toBe(false);
-      expect(isValidOpeningBid(plungeBid, undefined, true)).toBe(false);
+
+      // Create a hand with enough doubles for splash (3+) and plunge (4+)
+      const adequateHand = [
+        { high: 0, low: 0, id: '0-0' }, // double blank
+        { high: 1, low: 1, id: '1-1' }, // double one
+        { high: 2, low: 2, id: '2-2' }, // double two
+        { high: 3, low: 3, id: '3-3' }, // double three
+        { high: 5, low: 4, id: '5-4' },
+        { high: 6, low: 0, id: '6-0' },
+        { high: 5, low: 1, id: '5-1' }
+      ];
+
+      // These are now valid in base engine (with proper hand validation)
+      expect(isValidOpeningBid(nelloBid, undefined)).toBe(true);
+      expect(isValidOpeningBid(splashBid, adequateHand)).toBe(true);
+      expect(isValidOpeningBid(plungeBid, adequateHand)).toBe(true);
     });
 
     it('should enforce proper bid increments', () => {
@@ -57,15 +66,16 @@ describe('Tournament Scenarios', () => {
       });
     });
 
-    it('should prohibit special contracts even when overbidding', () => {
+    it('should allow special contracts in base engine when overbidding', () => {
       const state = createTournamentState();
       state.bids = [{ type: BID_TYPES.POINTS, value: 35, player: 0 }];
       state.currentPlayer = 1;
-      
+
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 1 };
       const markBid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
-      
-      expect(isValidBid(state, nelloBid)).toBe(false); // Special contracts not allowed in tournament mode
+
+      // Base engine allows special contracts (tournament variant will filter at action level)
+      expect(isValidBid(state, nelloBid)).toBe(true);
       expect(isValidBid(state, markBid)).toBe(true);   // Regular mark bids are allowed
     });
   });
@@ -73,10 +83,9 @@ describe('Tournament Scenarios', () => {
   describe('Tournament Scoring', () => {
     it('should track marks correctly to tournament target', () => {
       const state = createTournamentState();
-      
+
       expect(state.gameTarget).toBe(10);
-      expect(state.tournamentMode).toBe(true);
-      
+
       // Simulate reaching tournament target
       state.teamMarks = [10, 7];
       expect(state.teamMarks[0]).toBeGreaterThanOrEqual(state.gameTarget);
@@ -136,14 +145,13 @@ describe('Tournament Scenarios', () => {
   describe('Tournament Game Flow', () => {
     it('should handle tournament timing constraints', () => {
       const state = createTournamentState();
-      
+
       // Tournament games should track timing (simulated)
       const startTime = Date.now();
-      
+
       // Verify state allows for tournament play
-      expect(state.tournamentMode).toBe(true);
       expect(state.players).toHaveLength(4);
-      
+
       // Tournament should be completable within reasonable time
       const maxTournamentTime = 30 * 60 * 1000; // 30 minutes
       expect(Date.now() - startTime).toBeLessThan(maxTournamentTime);

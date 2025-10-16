@@ -263,6 +263,12 @@ export class NetworkGameClient implements GameClient {
   private createEmptyState(): GameState {
     // This is a minimal empty state that matches the GameState interface
     return {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
       theme: 'business',
       colorOverrides: {},
       phase: 'setup',
@@ -284,7 +290,6 @@ export class NetworkGameClient implements GameClient {
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: 250,
-      tournamentMode: false,
       shuffleSeed: 0,
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       consensus: {

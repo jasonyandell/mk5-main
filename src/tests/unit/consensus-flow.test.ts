@@ -2,8 +2,21 @@ import { describe, test, expect } from 'vitest';
 import { getNextStates } from '../../game/core/gameEngine';
 import { executeAction } from '../../game/core/actions';
 import { createInitialState } from '../../game/core/state';
-import { prepareDeterministicHand } from '../../stores/utils/sectionHelpers';
 import type { GameAction, StateTransition } from '../../game/types';
+
+// Helper to prepare a state at playing phase
+async function prepareDeterministicHand(seed: number) {
+  let state = createInitialState({ shuffleSeed: seed });
+
+  // Fast-forward through bidding and trump selection to playing phase
+  while (state.phase !== 'playing') {
+    const transitions = getNextStates(state);
+    if (transitions.length === 0) break;
+    state = executeAction(state, transitions[0]!.action);
+  }
+
+  return state;
+}
 
 // Type guard for agree-complete-trick transitions
 function isAgreeCompleteTrick(

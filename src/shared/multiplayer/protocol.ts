@@ -161,11 +161,20 @@ export interface GameConfig {
   /** Player control types */
   playerTypes: ('human' | 'ai')[];
 
-  /** Game variant (standard, one-hand, etc.) */
+  /** Game variant (standard, one-hand, etc.) - DEPRECATED, use variants array */
   variant?: GameVariant;
+
+  /** New: Composable variants array (replaces single variant) */
+  variants?: VariantConfig[];
 
   /** Random seed for deterministic games */
   shuffleSeed?: number;
+
+  /** Theme configuration */
+  theme?: string;
+
+  /** Color overrides for theme */
+  colorOverrides?: Record<string, string>;
 
   /** AI difficulty levels (optional) */
   aiDifficulty?: ('beginner' | 'intermediate' | 'expert')[];
@@ -175,6 +184,15 @@ export interface GameConfig {
     perAction?: number; // ms
     perHand?: number; // ms
   };
+}
+
+/**
+ * Serializable variant configuration
+ */
+export interface VariantConfig {
+  type: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config?: Record<string, any>;
 }
 
 /**

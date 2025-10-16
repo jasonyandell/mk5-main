@@ -24,7 +24,8 @@ import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer
 import { createInitialState } from '../../game/core/state';
 import { getValidActions } from '../../game/core/gameEngine';
 import { getNextStates } from '../../game/core/gameEngine';
-import { VariantRegistry, type VariantState } from './VariantRegistry';
+import { applyVariants } from '../../game/variants/registry';
+import type { VariantConfig, StateMachine } from '../../game/variants/types';
 
 /**
  * Unique game instance
@@ -43,22 +44,17 @@ export class GameHost {
   private mpState: MultiplayerGameState;
   private gameId: string;
   private variant: GameVariant | undefined;
-  private variantState: VariantState = {};
   private created: number;
   private lastUpdate: number;
   private listeners: Map<string, (view: GameView) => void> = new Map(); // playerId -> listener
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
+  private getValidActionsComposed: StateMachine;
 
   constructor(gameId: string, config: GameConfig, players: PlayerSession[]) {
     this.gameId = gameId;
     this.variant = config.variant;
     this.created = Date.now();
     this.lastUpdate = this.created;
-
-    // Initialize variant state if variant is specified
-    if (this.variant) {
-      this.variantState = VariantRegistry.initializeVariantState(this.variant);
-    }
 
     // Validate players
     if (players.length !== 4) {
@@ -74,8 +70,22 @@ export class GameHost {
     // Store players by playerId
     this.players = new Map(players.map(p => [p.playerId, p]));
 
+    // Compose variants into single getValidActions function
+    const baseGetValidActions = getValidActions;
+
+    // Convert old variant format to new if needed
+    const variantConfigs: VariantConfig[] = config.variant
+      ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
+      : [];
+
+    // Compose variants
+    this.getValidActionsComposed = applyVariants(baseGetValidActions, variantConfigs);
+
     // Create initial game state
-    const initialState = this.createInitialStateForVariant(config);
+    const initialState = createInitialState({
+      playerTypes: config.playerTypes,
+      ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {})
+    });
 
     this.mpState = {
       state: initialState,
@@ -106,21 +116,8 @@ export class GameHost {
       return { ok: false, error: result.error };
     }
 
-    // Update variant state if needed
-    if (this.variant) {
-      this.variantState = VariantRegistry.updateVariantState(
-        result.value.state,
-        this.variantState,
-        action,
-        this.variant
-      );
-    }
-
-    // Apply variant-specific state modifications if needed
-    const modifiedState = this.applyVariantRules(result.value, action);
-
     // Update state
-    this.mpState = modifiedState;
+    this.mpState = result.value;
     this.lastUpdate = Date.now();
 
     // Notify all listeners
@@ -202,66 +199,14 @@ export class GameHost {
   }
 
   /**
-   * Private: Create initial state based on variant
-   */
-  private createInitialStateForVariant(config: GameConfig): GameState {
-    const baseConfig: Parameters<typeof createInitialState>[0] = {
-      playerTypes: config.playerTypes,
-      ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {})
-    };
-
-    let state = createInitialState(baseConfig);
-
-    // Apply variant-specific initialization
-    if (config.variant) {
-      state = VariantRegistry.initialize(state, config.variant);
-    }
-
-    return state;
-  }
-
-  /**
-   * Private: Apply variant-specific rules after action execution
-   */
-  private applyVariantRules(mpState: MultiplayerGameState, action: GameAction): MultiplayerGameState {
-    if (!this.variant) {
-      return mpState;
-    }
-
-    // Check if game should end based on variant rules
-    if (VariantRegistry.checkGameEnd(mpState.state, this.variantState, this.variant)) {
-      return {
-        ...mpState,
-        state: {
-          ...mpState.state,
-          phase: 'game_end'
-        }
-      };
-    }
-
-    // Apply variant-specific state modifications
-    const modifiedState = VariantRegistry.afterAction(
-      mpState.state,
-      this.variantState,
-      action,
-      this.variant
-    );
-
-    return {
-      ...mpState,
-      state: modifiedState
-    };
-  }
-
-  /**
    * Private: Create view for clients
    * @param forPlayerId - Optional player ID to filter actions for
    */
   private createView(forPlayerId?: string): GameView {
     const { state, sessions } = this.mpState;
 
-    // Get all valid actions
-    const allValidActions = getValidActions(state);
+    // Get all valid actions using composed function
+    const allValidActions = this.getValidActionsComposed(state);
 
     // Get transitions for labels
     const transitions = getNextStates(state);

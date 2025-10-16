@@ -303,7 +303,7 @@
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
                 <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
-                  <Icon name={$playerSessions[position]?.type === 'ai' ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
+                  <Icon name={$playerSessions[position]?.controlType === 'ai' ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
                 </span>
                 <span class="text-sm font-bold text-base-100/60">P{position}</span>
               </div>

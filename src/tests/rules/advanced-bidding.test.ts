@@ -101,12 +101,9 @@ describe('Advanced Bidding Rules', () => {
         phase: 'bidding',
         dealer: 0,
         currentPlayer: 1,
-        bids: [],
-        tournamentMode: false,
-        hands: {
-          1: handWithFourDoubles
-        }
+        bids: []
       });
+      plungeEligibleState.players[1]!.hand = handWithFourDoubles;
 
       // With 4+ doubles, should be able to Plunge (bid 4+ marks from opening)
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
@@ -119,12 +116,9 @@ describe('Advanced Bidding Rules', () => {
         phase: 'bidding',
         dealer: 0,
         currentPlayer: 1,
-        bids: [],
-        tournamentMode: false,
-        hands: {
-          1: handWithThreeDoubles
-        }
+        bids: []
       });
+      notPlungeEligibleState.players[1]!.hand = handWithThreeDoubles;
 
       // Without 4+ doubles, should NOT be able to Plunge
       const invalidPlungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
@@ -136,15 +130,13 @@ describe('Advanced Bidding Rules', () => {
       
       const plungeState = createTestState({
         phase: 'trump_selection',
-        bidWinner: 1,
+        winningBidder: 1,
         currentPlayer: 1,
         bids: [
           { type: BID_TYPES.MARKS, value: 4, player: 1 }
-        ],
-        hands: {
-          1: handWithFourDoubles
-        }
+        ]
       });
+      plungeState.players[1]!.hand = handWithFourDoubles;
 
       // For Plunge bids, trump must be doubles
       const plungeWithDoublesTrump = { ...plungeState, trump: { type: 'doubles' } };

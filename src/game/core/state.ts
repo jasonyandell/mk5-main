@@ -8,16 +8,30 @@ import { analyzeSuits } from './suit-analysis';
 /**
  * Creates the initial game state in setup phase
  */
-export function createSetupState(options?: { 
-  shuffleSeed?: number, 
-  dealer?: number, 
-  tournamentMode?: boolean,
-  playerTypes?: ('human' | 'ai')[]
+export function createSetupState(options?: {
+  shuffleSeed?: number,
+  dealer?: number,
+  playerTypes?: ('human' | 'ai')[],
+  theme?: string,
+  colorOverrides?: Record<string, string>
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
-  
+  const shuffleSeed = options?.shuffleSeed ?? Date.now();
+  const playerTypes = options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'];
+
+  const theme = options?.theme ?? 'business';
+  const colorOverrides = options?.colorOverrides ?? {};
+
   return {
+    // Event sourcing: initial configuration
+    initialConfig: {
+      playerTypes,
+      shuffleSeed,
+      theme,
+      colorOverrides
+    },
+
     phase: 'setup',
     players: [
       { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
@@ -37,10 +51,9 @@ export function createSetupState(options?: {
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-    tournamentMode: options?.tournamentMode ?? true,
-    shuffleSeed: options?.shuffleSeed ?? Date.now(), // Initial seed for when dealing happens
+    shuffleSeed,
     // Player control types - default: player 0 human, rest AI
-    playerTypes: options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'],
+    playerTypes,
     // Consensus tracking for neutral actions
     consensus: {
       completeTrick: new Set<number>(),
@@ -48,40 +61,45 @@ export function createSetupState(options?: {
     },
     // Action history for replay and debugging
     actionHistory: [],
-    // Test compatibility properties - empty hands in setup
-    hands: {},
-    bidWinner: -1, // -1 instead of null
-    isComplete: false,
-    winner: -1, // -1 instead of null
     // Theme as first-class citizen
-    theme: 'business',
-    colorOverrides: {}
+    theme,
+    colorOverrides
   };
 }
 
 /**
  * Creates the initial game state with fresh hands dealt ready for bidding
  */
-export function createInitialState(options?: { 
-  shuffleSeed?: number, 
-  dealer?: number, 
-  tournamentMode?: boolean,
+export function createInitialState(options?: {
+  shuffleSeed?: number,
+  dealer?: number,
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
   colorOverrides?: Record<string, string>
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
-  
+
   // Generate initial seed for deterministic shuffling
   const shuffleSeed = options?.shuffleSeed ?? Date.now();
   const hands = dealDominoesWithSeed(shuffleSeed);
-  
+  const playerTypes = options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'];
+  const theme = options?.theme ?? 'business';
+  const colorOverrides = options?.colorOverrides ?? {};
+
   const initialState = {
+    // Event sourcing: initial configuration
+    initialConfig: {
+      playerTypes,
+      shuffleSeed,
+      theme,
+      colorOverrides
+    },
+
     // Theme configuration (first-class citizen)
-    theme: options?.theme ?? 'business',
-    colorOverrides: options?.colorOverrides ?? {},
-    
+    theme,
+    colorOverrides,
+
     // Game state
     phase: 'bidding' as const,
     players: [
@@ -102,29 +120,18 @@ export function createInitialState(options?: {
     teamScores: [0, 0] as [number, number],
     teamMarks: [0, 0] as [number, number],
     gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-    tournamentMode: options?.tournamentMode ?? true,
     shuffleSeed,
     // Player control types - default: player 0 human, rest AI
-    playerTypes: options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'],
+    playerTypes,
     // Consensus tracking for neutral actions
     consensus: {
       completeTrick: new Set<number>(),
       scoreHand: new Set<number>()
     },
     // Action history for replay and debugging
-    actionHistory: [],
-    // Test compatibility properties
-    hands: {
-      0: hands[0],
-      1: hands[1],
-      2: hands[2],
-      3: hands[3]
-    },
-    bidWinner: -1, // -1 instead of null
-    isComplete: false,
-    winner: -1, // -1 instead of null
+    actionHistory: []
   };
-  
+
   return initialState;
 }
 
@@ -134,12 +141,19 @@ export function createInitialState(options?: {
 export function cloneGameState(state: GameState): GameState {
   const clonedState: GameState = {
     ...state,
+    // Clone initialConfig (spread all fields, then override arrays/objects that need cloning)
+    initialConfig: {
+      ...state.initialConfig,
+      playerTypes: [...state.initialConfig.playerTypes],
+      ...(state.initialConfig.variants ? { variants: [...state.initialConfig.variants] } : {}),
+      ...(state.initialConfig.colorOverrides ? { colorOverrides: { ...state.initialConfig.colorOverrides } } : {})
+    },
     players: state.players.map(player => {
       const clonedPlayer: Player = {
         ...player,
         hand: [...player.hand]
       };
-      
+
       if (player.suitAnalysis) {
         clonedPlayer.suitAnalysis = {
           count: { ...player.suitAnalysis.count },
@@ -156,7 +170,7 @@ export function cloneGameState(state: GameState): GameState {
           }
         };
       }
-      
+
       return clonedPlayer;
     }),
     bids: [...state.bids],
@@ -176,17 +190,7 @@ export function cloneGameState(state: GameState): GameState {
     // Clone action history
     actionHistory: [...state.actionHistory]
   };
-  
-  // Clone the hands object if it exists
-  if (state.hands) {
-    clonedState.hands = Object.fromEntries(
-      Object.entries(state.hands).map(([playerId, hand]) => [
-        playerId, 
-        [...hand]
-      ])
-    );
-  }
-  
+
   return clonedState;
 }
 

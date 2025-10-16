@@ -218,12 +218,11 @@ export function calculateGameScore(playerScores: [number, number, number, number
  */
 export function calculateGameSummary(state: GameState) {
   const winningTeam = getWinningTeam(state.teamMarks, state.gameTarget);
-  
+
   return {
     winningTeam,
     finalMarks: state.teamMarks,
     handsPlayed: Math.max(...state.teamMarks),
-    gameTarget: state.gameTarget,
-    tournamentMode: state.tournamentMode
+    gameTarget: state.gameTarget
   };
 }

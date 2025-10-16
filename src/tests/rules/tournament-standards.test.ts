@@ -97,16 +97,16 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
     it('enforces 7 marks to win game', () => {
       const helper = new GameTestHelper();
-      
+
       // Game should not be complete with 6 marks
       let state = helper.createGameWithMarks(6, 0);
-      expect(state.isComplete).toBe(false);
-      
+      expect(state.phase).not.toBe('game_end');
+
       // Game should be complete with 7 marks
       state = helper.createGameWithMarks(7, 0);
-      expect(state.isComplete).toBe(true);
-      expect(state.winner).toBe(0); // team 0 wins
-      
+      expect(state.phase).toBe('game_end');
+      expect(state.teamMarks[0]).toBeGreaterThanOrEqual(state.gameTarget); // team 0 wins
+
       // Test with isGameComplete function directly
       expect(isGameComplete(6, 0)).toBe(false);
       expect(isGameComplete(7, 0)).toBe(true);
@@ -186,7 +186,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
     it('bid winner must declare trump suit', () => {
       const state = createTestState({
         phase: 'trump_selection',
-        bidWinner: 1,
+        winningBidder: 1,
         currentPlayer: 1,
         bids: [
           { type: BID_TYPES.POINTS, value: 30, player: 1 },
@@ -196,7 +196,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
         ]
       });
 
-      expect(state.bidWinner).toBe(1);
+      expect(state.winningBidder).toBe(1);
       expect(state.currentPlayer).toBe(1);
       expect(state.phase).toBe('trump_selection');
     });
@@ -232,7 +232,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
     it('bid winner leads first trick', () => {
       const state = createTestState({
         phase: 'playing',
-        bidWinner: 2,
+        winningBidder: 2,
         currentPlayer: 2,
         trump: { type: 'suit', suit: ACES },
         currentTrick: []

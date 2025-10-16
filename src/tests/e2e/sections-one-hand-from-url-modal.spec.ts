@@ -1,3 +1,6 @@
+// TODO: Rewrite for new variant system (old section-runner removed)
+// TODO: Rewrite for new variant system (old section-runner removed)
+
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { TestWindow } from './test-window';

@@ -13,39 +13,38 @@ describe('Basic Game Flow', () => {
   describe('Game Initialization', () => {
     it('creates initial game state correctly', () => {
       const state = createSetupState();
-      
+
       expect(state.phase).toBe('setup');
       expect(state.dealer).toBeGreaterThanOrEqual(0);
       expect(state.dealer).toBeLessThan(4);
       expect(state.currentPlayer).toBe(getPlayerLeftOfDealer(state.dealer));
       expect(state.bids).toHaveLength(0);
-      expect(state.hands).toEqual({});
+      expect(state.players.every(p => p.hand.length === 0)).toBe(true);
       expect(state.tricks).toHaveLength(0);
       expect(state.currentTrick).toHaveLength(0);
       expect(state.trump).toEqual({ type: 'not-selected' });
       expect(state.winningBidder).toBe(-1);
-      // isComplete and winner are determined by scoring functions
     });
 
     it('deals dominoes correctly', () => {
       const state = createInitialState();
       const helper = new GameTestHelper();
-      
+
       // Deal dominoes to all players
       const dealtState = helper.dealDominoes(state);
-      
-      expect(Object.keys(dealtState.hands || {})).toHaveLength(4);
-      expect(dealtState.hands?.[0]).toHaveLength(7);
-      expect(dealtState.hands?.[1]).toHaveLength(7);
-      expect(dealtState.hands?.[2]).toHaveLength(7);
-      expect(dealtState.hands?.[3]).toHaveLength(7);
-      
+
+      expect(dealtState.players).toHaveLength(4);
+      expect(dealtState.players[0]!.hand).toHaveLength(7);
+      expect(dealtState.players[1]!.hand).toHaveLength(7);
+      expect(dealtState.players[2]!.hand).toHaveLength(7);
+      expect(dealtState.players[3]!.hand).toHaveLength(7);
+
       // Total dominoes dealt should be 28
-      const totalDominoes = Object.values(dealtState.hands || {}).flat().length;
+      const totalDominoes = dealtState.players.flatMap(p => p.hand).length;
       expect(totalDominoes).toBe(28);
-      
+
       // All dominoes should be unique
-      const allDominoes = Object.values(dealtState.hands || {}).flat();
+      const allDominoes = dealtState.players.flatMap(p => p.hand);
       const uniqueIds = new Set(allDominoes.map(d => d.id));
       expect(uniqueIds.size).toBe(28);
     });
@@ -214,7 +213,7 @@ describe('Basic Game Flow', () => {
     it('bid winner leads first trick', () => {
       const state = createTestState({
         phase: 'playing',
-        bidWinner: 2,
+        winningBidder: 2,
         currentPlayer: 2,
         trump: { type: 'suit', suit: ACES },
         currentTrick: []
@@ -235,14 +234,14 @@ describe('Basic Game Flow', () => {
       const state = createTestState({
         phase: 'playing',
         trump: { type: 'suit', suit: ACES }, // ones trump
-        currentTrick: [],
-        hands: {
-          0: [testDominoes[0]!],
-          1: [testDominoes[1]!],
-          2: [testDominoes[2]!],
-          3: [testDominoes[3]!]
-        }
+        currentTrick: []
       });
+
+      // Set player hands
+      state.players[0]!.hand = [testDominoes[0]!];
+      state.players[1]!.hand = [testDominoes[1]!];
+      state.players[2]!.hand = [testDominoes[2]!];
+      state.players[3]!.hand = [testDominoes[3]!];
 
       // Play each domino in turn
       const plays = [
@@ -252,9 +251,8 @@ describe('Basic Game Flow', () => {
         { player: 3, domino: testDominoes[3]! }
       ];
 
-      // Initialize players with their hands and suit analysis
-      state.players.forEach((player, idx) => {
-        player.hand = state.hands?.[idx] || [];
+      // Initialize players with suit analysis
+      state.players.forEach((player) => {
         player.suitAnalysis = analyzeSuits(player.hand, state.trump!);
       });
       
@@ -314,8 +312,8 @@ describe('Basic Game Flow', () => {
     it('determines game winner correctly', () => {
       const helper = new GameTestHelper();
       const completedState = helper.createCompletedGame(0); // team 0 wins
-      
-      expect(completedState.isComplete).toBe(true);
+
+      expect(completedState.phase).toBe('game_end');
       // Winner determined by scoring logic
     });
 

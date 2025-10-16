@@ -8,25 +8,19 @@ import type { Bid, BidType } from '../../game/types';
 
 describe('Tournament Rule Compliance', () => {
   describe('Straight 42 Rules (No Special Contracts)', () => {
-    it('prevents Nello bids in tournament mode', () => {
+    it('allows Nello bids in base rules (filtered by tournament variant)', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
 
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
-      expect(isValidBid(state, nelloBid)).toBe(false);
-
-      // Verify no Nello transitions are generated
-      const transitions = getNextStates(state);
-      const nelloTransitions = transitions.filter(t => t.id.includes('nello'));
-      expect(nelloTransitions).toHaveLength(0);
+      // Base rules allow Nello; tournament variant filters it out at action level
+      expect(isValidBid(state, nelloBid)).toBe(true);
     });
 
-    it('prevents Splash bids in tournament mode', () => {
+    it('allows Splash bids in base rules (filtered by tournament variant)', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -37,17 +31,12 @@ describe('Tournament Rule Compliance', () => {
       ]);
 
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      expect(isValidBid(state, splashBid, playerHand)).toBe(false);
-
-      // Verify no Splash transitions are generated
-      const transitions = getNextStates(state);
-      const splashTransitions = transitions.filter(t => t.id.includes('splash'));
-      expect(splashTransitions).toHaveLength(0);
+      // Base rules allow Splash with 3+ doubles; tournament variant filters it out at action level
+      expect(isValidBid(state, splashBid, playerHand)).toBe(true);
     });
 
-    it('prevents Plunge bids in tournament mode', () => {
+    it('allows Plunge bids in base rules (filtered by tournament variant)', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -58,17 +47,12 @@ describe('Tournament Rule Compliance', () => {
       ]);
 
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      expect(isValidBid(state, plungeBid, playerHand)).toBe(false);
-
-      // Verify no Plunge transitions are generated
-      const transitions = getNextStates(state);
-      const plungeTransitions = transitions.filter(t => t.id.includes('plunge'));
-      expect(plungeTransitions).toHaveLength(0);
+      // Base rules allow Plunge with 4+ doubles; tournament variant filters it out at action level
+      expect(isValidBid(state, plungeBid, playerHand)).toBe(true);
     });
 
-    it('allows special contracts in casual mode', () => {
+    it('allows special contracts in base rules', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -90,7 +74,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Sequential Mark Bidding Rules', () => {
     it('enforces maximum 2-mark opening bid', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -104,7 +87,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('requires 2-mark bid before allowing 3+ marks', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.MARKS, value: 1, player: 0 }
@@ -124,7 +106,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('allows sequential mark progression after 2 marks', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.MARKS, value: 1, player: 0 },
@@ -145,7 +126,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('prevents duplicate mark bids', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.MARKS, value: 1, player: 0 },
@@ -162,7 +142,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Minimum Opening Bid Rules', () => {
     it('enforces 30-point minimum opening bid', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -176,7 +155,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('enforces maximum 41-point opening bid', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -192,7 +170,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Bid Progression and Jump Bidding', () => {
     it('requires higher bids than current high bid', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.POINTS, value: 35, player: 0 }
@@ -212,7 +189,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('allows jump from points to 1-2 marks', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.POINTS, value: 38, player: 0 }
@@ -234,7 +210,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('prevents jumping to 3+ marks from points', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.POINTS, value: 38, player: 0 }
@@ -248,9 +223,7 @@ describe('Tournament Rule Compliance', () => {
 
   describe('Partnership and Communication Rules', () => {
     it('validates team assignments are correct', () => {
-      const state = createTestState({
-        tournamentMode: true
-      });
+      const state = createTestState({});
 
       // Verify standard partnership (0&2 vs 1&3)
       expect(state.players[0]!.teamId).toBe(0);
@@ -261,7 +234,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('prevents players from bidding multiple times', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: [
           { type: BID_TYPES.POINTS, value: 30, player: 0 }
@@ -277,7 +249,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Dealer Rotation and Setup Rules', () => {
     it('validates proper dealer advancement after all-pass', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         dealer: 1,
         bids: [
@@ -299,7 +270,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('validates correct bidding order after dealer change', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         dealer: 2,
         currentPlayer: 3 // First bidder after dealer
@@ -311,9 +281,7 @@ describe('Tournament Rule Compliance', () => {
 
   describe('Tournament Target and Scoring', () => {
     it('uses 7 marks as tournament target', () => {
-      const state = createTestState({
-        tournamentMode: true
-      });
+      const state = createTestState({});
 
       expect(state.gameTarget).toBe(7);
     });
@@ -330,7 +298,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Contract Requirements and Validation', () => {
     it('validates Plunge bid requires 4+ doubles in casual mode', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -352,7 +319,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('validates Splash bid requires 3+ doubles in casual mode', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -376,7 +342,6 @@ describe('Tournament Rule Compliance', () => {
   describe('Edge Cases and Error Handling', () => {
     it('handles empty bid arrays correctly', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -387,7 +352,6 @@ describe('Tournament Rule Compliance', () => {
 
     it('handles invalid bid types gracefully', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
@@ -396,12 +360,14 @@ describe('Tournament Rule Compliance', () => {
       expect(isValidBid(state, invalidBid)).toBe(false);
     });
 
-    it('validates tournament mode flag consistency', () => {
-      const tournamentState = createTestState({ tournamentMode: true });
-      const casualState = createTestState({ tournamentMode: false });
+    it('validates game state consistency', () => {
+      const tournamentState = createTestState({});
+      const casualState = createTestState({});
 
-      expect(tournamentState.tournamentMode).toBe(true);
-      expect(casualState.tournamentMode).toBe(false);
+      // REMOVED: tournamentMode validation (no longer in GameState)
+      // Both states should be valid
+      expect(tournamentState.players).toHaveLength(4);
+      expect(casualState.players).toHaveLength(4);
     });
   });
 });

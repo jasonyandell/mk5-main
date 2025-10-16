@@ -32,7 +32,7 @@ describe('Feature: Special Bids', () => {
       gameState.phase = 'bidding';
       gameState.dealer = 3;
       gameState.currentPlayer = getPlayerLeftOfDealer(3); // Player 0
-      gameState.tournamentMode = true;
+      // REMOVED: gameState.tournamentMode = true;
       gameState.bids = [];
 
       // Simulate all players passing
@@ -67,7 +67,6 @@ describe('Feature: Special Bids', () => {
           { type: 'pass', player: 1 },
           { type: 'pass', player: 2 },
         ],
-        tournamentMode: false, // Not tournament mode - common variation
       };
 
       // When it's the dealer's turn and all others have passed

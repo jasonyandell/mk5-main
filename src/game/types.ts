@@ -148,11 +148,14 @@ export interface Trick {
 export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end';
 
 export interface GameState {
+  // Event sourcing: source of truth (config + actions = state)
+  initialConfig: import('../shared/multiplayer/protocol').GameConfig;
+
   // Theme configuration (first-class citizen)
   theme: string; // DaisyUI theme name (default: 'business')
   colorOverrides: Record<string, string>; // CSS variable overrides (e.g., '--p': '71.9967% 0.123825 62.756393')
 
-  // Game state
+  // Game state (all derived from initialConfig + actionHistory)
   phase: GamePhase;
   players: Player[];
   currentPlayer: number;
@@ -167,7 +170,6 @@ export interface GameState {
   teamScores: [number, number];
   teamMarks: [number, number];
   gameTarget: number;
-  tournamentMode: boolean;
   shuffleSeed: number; // Seed for deterministic shuffling
   // Player control types - who is human vs AI (supports drop-in/drop-out)
   playerTypes: ('human' | 'ai')[];
@@ -178,11 +180,6 @@ export interface GameState {
   };
   // Action history for replay and debugging
   actionHistory: GameAction[];
-  // Additional properties for test compatibility
-  hands?: { [playerId: number]: Domino[] };
-  bidWinner?: number; // -1 instead of null
-  isComplete?: boolean;
-  winner?: number; // -1 instead of null
 }
 
 export interface StateTransition {
@@ -193,16 +190,17 @@ export interface StateTransition {
 }
 
 // Simplified Game Action types - pure data, no nesting
-export type GameAction = 
-  | { type: 'bid'; player: number; bid: BidType; value?: number }
-  | { type: 'pass'; player: number }
-  | { type: 'select-trump'; player: number; trump: TrumpSelection }
-  | { type: 'play'; player: number; dominoId: string }
-  | { type: 'agree-complete-trick'; player: number }  // Consensus action
-  | { type: 'agree-score-hand'; player: number }     // Consensus action
-  | { type: 'complete-trick' }  // Executed when all agree
-  | { type: 'score-hand' }      // Executed when all agree
-  | { type: 'redeal' }
+// Note: autoExecute and meta are optional variant extensions (not core game logic)
+export type GameAction =
+  | { type: 'bid'; player: number; bid: BidType; value?: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'pass'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'select-trump'; player: number; trump: TrumpSelection; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'play'; player: number; dominoId: string; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'agree-complete-trick'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }  // Consensus action
+  | { type: 'agree-score-hand'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }     // Consensus action
+  | { type: 'complete-trick'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Executed when all agree
+  | { type: 'score-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }      // Executed when all agree
+  | { type: 'redeal'; autoExecute?: boolean; meta?: Record<string, unknown> }
 
 // History tracking for undo/redo
 export interface GameHistory {

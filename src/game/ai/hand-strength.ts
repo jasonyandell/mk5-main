@@ -91,6 +91,12 @@ export function calculateHandStrengthWithTrump(
   // Create minimal state for analysis
   const analyzingPlayerId = 0;
   const minimalState: GameState = {
+    initialConfig: {
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      shuffleSeed: 0,
+      theme: 'coffee',
+      colorOverrides: {}
+    },
     phase: 'playing',
     players: [
       { id: 0, name: 'Analyzer', hand, teamId: 0, marks: 0 },
@@ -110,7 +116,6 @@ export function calculateHandStrengthWithTrump(
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 250,
-    tournamentMode: false,
     shuffleSeed: 0,
     playerTypes: ['human', 'ai', 'ai', 'ai'],
     consensus: { completeTrick: new Set(), scoreHand: new Set() },
@@ -224,6 +229,12 @@ export function getHandStrengthBreakdown(
   
   // Create minimal state for analysis
   const minimalState: GameState = {
+    initialConfig: {
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      shuffleSeed: 0,
+      theme: 'coffee',
+      colorOverrides: {}
+    },
     phase: 'playing',
     players: [
       { id: 0, name: 'Analyzer', hand, teamId: 0, marks: 0 },
@@ -243,7 +254,6 @@ export function getHandStrengthBreakdown(
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 250,
-    tournamentMode: false,
     shuffleSeed: 0,
     playerTypes: ['human', 'ai', 'ai', 'ai'],
     consensus: { completeTrick: new Set(), scoreHand: new Set() },

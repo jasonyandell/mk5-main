@@ -78,7 +78,6 @@ describe('Bidding Rules', () => {
   describe('Plunge Bid Validation (4+ Doubles Requirement)', () => {
     it('should require 4+ doubles for Plunge bid in casual mode', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -92,7 +91,6 @@ describe('Bidding Rules', () => {
 
     it('should allow Plunge bid with exactly 4 doubles', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -105,7 +103,6 @@ describe('Bidding Rules', () => {
 
     it('should allow Plunge bid with more than 4 doubles', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -118,7 +115,6 @@ describe('Bidding Rules', () => {
 
     it('should validate higher Plunge bids with sufficient doubles', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -132,22 +128,22 @@ describe('Bidding Rules', () => {
       }
     });
 
-    it('should prevent Plunge bids in tournament mode regardless of doubles', () => {
+    it('should allow Plunge bids in base engine with proper doubles', () => {
       const state = createTestState({
-        tournamentMode: true,
         phase: 'bidding',
         bids: []
       });
 
       const perfectHand = createHandWithDoubles(7);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      expect(isValidBid(state, plungeBid, perfectHand)).toBe(false);
+
+      // Base engine allows plunge with 7 doubles
+      // Tournament variant will filter this at action level
+      expect(isValidBid(state, plungeBid, perfectHand)).toBe(true);
     });
 
     it('should validate Splash bid requires 3+ doubles', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -164,7 +160,6 @@ describe('Bidding Rules', () => {
 
     it('should require minimum 4 marks for Plunge bids', () => {
       const state = createTestState({
-        tournamentMode: false,
         phase: 'bidding',
         bids: []
       });
@@ -290,26 +285,26 @@ describe('Bidding Rules', () => {
       expect(isValidBid(state, fourMarkBid)).toBe(false);
     });
     
-    it('should reject special contracts in tournament mode', () => {
+    it('should allow special contracts in base engine', () => {
       const state = createInitialState();
-      expect(state.tournamentMode).toBe(true);
-      
+      // Base engine is maximally permissive - tournament variant will filter at action level
+
       const testHand = GameTestHelper.createTestHand([
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
       ]);
-      
+
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      expect(isValidBid(state, nelloBid, testHand)).toBe(false);
-      expect(isValidBid(state, splashBid, testHand)).toBe(false);
-      expect(isValidBid(state, plungeBid, testHand)).toBe(false);
+
+      expect(isValidBid(state, nelloBid, testHand)).toBe(true);
+      expect(isValidBid(state, splashBid, testHand)).toBe(true);
+      expect(isValidBid(state, plungeBid, testHand)).toBe(true);
     });
     
     it('should allow special contracts in casual mode', () => {
       const state = createInitialState();
-      state.tournamentMode = false;
+      // REMOVED: state.tournamentMode = false;
       
       const testHand = GameTestHelper.createTestHand([
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]

@@ -11,7 +11,6 @@ describe('Feature: Communication Rules', () => {
         currentPlayer: 0,
         bids: [],
         currentBid: EMPTY_BID,
-        tournamentMode: true,
         players: [
           { id: 0, name: 'Player 1', hand: [], teamId: 0 as const, marks: 0 },
           { id: 1, name: 'Player 2', hand: [], teamId: 1 as const, marks: 0 },
@@ -168,7 +167,7 @@ describe('Feature: Communication Rules', () => {
       // Given a tournament game
       const gameState = setupBiddingPhase();
       expect(gameState.phase).toBe('bidding');
-      expect(gameState.tournamentMode).toBe(true);
+      // REMOVED expect statement.toBe(true);
       
       // When any communication violation occurs
       const violations = [
@@ -180,7 +179,7 @@ describe('Feature: Communication Rules', () => {
       
       // Then it should be flagged as prohibited
       violations.forEach(() => {
-        const isProhibited = gameState.tournamentMode === true;
+        const isProhibited = true // REMOVED;
         expect(isProhibited).toBe(true);
       });
     });

@@ -58,6 +58,13 @@ export {
 // Pure action execution
 export { executeAction } from './core/actions';
 
+// Event sourcing / replay
+export {
+  replayActions,
+  createInitialStateWithVariants,
+  applyActionWithHistory
+} from './core/replay';
+
 // Player view system
 export { getPlayerView } from './core/playerView';
 

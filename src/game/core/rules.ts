@@ -12,20 +12,20 @@ export function isValidBid(state: GameState, bid: Bid, playerHand?: Domino[]): b
   if (!state.bids) return false;
   const playerBids = state.bids.filter(b => b.player === bid.player);
   if (playerBids.length > 0) return false;
-  
+
   // Check turn order only if we're in an active bidding phase
   if (state.phase === 'bidding' && state.currentPlayer !== bid.player) return false;
-  
+
   // Pass is always valid if player hasn't bid yet
   if (bid.type === BID_TYPES.PASS) return true;
-  
+
   const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
-  
+
   // Opening bid constraints
   if (previousBids.length === 0) {
-    return isValidOpeningBid(bid, playerHand, state.tournamentMode);
+    return isValidOpeningBid(bid, playerHand);
   }
-  
+
   // All subsequent bids must be higher than current high bid
   const lastBid = previousBids[previousBids.length - 1];
   if (!lastBid) {
@@ -33,48 +33,46 @@ export function isValidBid(state: GameState, bid: Bid, playerHand?: Domino[]): b
   }
   const lastBidValue = getBidComparisonValue(lastBid);
   const currentBidValue = getBidComparisonValue(bid);
-  
+
   if (currentBidValue <= lastBidValue) return false;
-  
-  return isValidSubsequentBid(bid, lastBid, previousBids, playerHand, state.tournamentMode);
+
+  return isValidSubsequentBid(bid, lastBid, previousBids, playerHand);
 }
 
 /**
  * Validates opening bids
+ * Base engine is maximally permissive - variants will filter actions
  */
-export function isValidOpeningBid(bid: Bid, playerHand?: Domino[], tournamentMode: boolean = true): boolean {
+export function isValidOpeningBid(bid: Bid, playerHand?: Domino[]): boolean {
   switch (bid.type) {
     case BID_TYPES.POINTS:
-      return bid.value !== undefined && 
-             bid.value >= GAME_CONSTANTS.MIN_BID && 
+      return bid.value !== undefined &&
+             bid.value >= GAME_CONSTANTS.MIN_BID &&
              bid.value <= GAME_CONSTANTS.MAX_BID;
-    
+
     case BID_TYPES.MARKS:
-      // Tournament rules: maximum opening bid is 2 marks
+      // Maximum opening bid is 2 marks
       return bid.value !== undefined && bid.value >= 1 && bid.value <= 2;
-    
+
     case BID_TYPES.NELLO:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
+      // Always allowed in base engine
       return bid.value !== undefined && bid.value >= 1;
-    
+
     case BID_TYPES.SPLASH:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
-      return bid.value !== undefined && 
-             bid.value >= 2 && 
-             bid.value <= 3 && 
-             playerHand !== undefined && 
+      // Always allowed in base engine if player has enough doubles
+      return bid.value !== undefined &&
+             bid.value >= 2 &&
+             bid.value <= 3 &&
+             playerHand !== undefined &&
              countDoubles(playerHand) >= 3;
-    
+
     case BID_TYPES.PLUNGE:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
-      return bid.value !== undefined && 
-             bid.value >= 4 && 
-             playerHand !== undefined && 
+      // Always allowed in base engine if player has enough doubles
+      return bid.value !== undefined &&
+             bid.value >= 4 &&
+             playerHand !== undefined &&
              countDoubles(playerHand) >= 4;
-    
+
     default:
       return false;
   }
@@ -82,45 +80,42 @@ export function isValidOpeningBid(bid: Bid, playerHand?: Domino[], tournamentMod
 
 /**
  * Validates subsequent bids
+ * Base engine is maximally permissive - variants will filter actions
  */
 function isValidSubsequentBid(
-  bid: Bid, 
-  lastBid: Bid, 
-  previousBids: Bid[], 
-  playerHand?: Domino[],
-  tournamentMode: boolean = true
+  bid: Bid,
+  lastBid: Bid,
+  previousBids: Bid[],
+  playerHand?: Domino[]
 ): boolean {
   switch (bid.type) {
     case BID_TYPES.POINTS:
-      return bid.value !== undefined && 
+      return bid.value !== undefined &&
              bid.value <= GAME_CONSTANTS.MAX_BID &&
              (lastBid.type !== BID_TYPES.POINTS || bid.value > lastBid.value!);
-    
+
     case BID_TYPES.MARKS:
       return isValidMarkBid(bid, lastBid, previousBids);
-    
+
     case BID_TYPES.NELLO:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
+      // Always allowed in base engine
       return bid.value !== undefined && bid.value >= 1;
-    
+
     case BID_TYPES.SPLASH:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
-      return bid.value !== undefined && 
-             bid.value >= 2 && 
-             bid.value <= 3 && 
-             playerHand !== undefined && 
+      // Always allowed in base engine if player has enough doubles
+      return bid.value !== undefined &&
+             bid.value >= 2 &&
+             bid.value <= 3 &&
+             playerHand !== undefined &&
              countDoubles(playerHand) >= 3;
-    
+
     case BID_TYPES.PLUNGE:
-      // Special contracts not allowed in tournament mode
-      if (tournamentMode) return false;
-      return bid.value !== undefined && 
-             bid.value >= 4 && 
-             playerHand !== undefined && 
+      // Always allowed in base engine if player has enough doubles
+      return bid.value !== undefined &&
+             bid.value >= 4 &&
+             playerHand !== undefined &&
              countDoubles(playerHand) >= 4;
-    
+
     default:
       return false;
   }

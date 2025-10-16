@@ -34,11 +34,11 @@ describe('Console Validation and Error Detection', () => {
     it('should not produce console errors during domino dealing', () => {
       const helper = new GameTestHelper();
       const state = createInitialState();
-      
+
       const dealtState = helper.dealDominoes(state);
-      
-      expect(dealtState.hands).toBeDefined();
-      expect(Object.keys(dealtState.hands || {})).toHaveLength(4);
+
+      expect(dealtState.players).toBeDefined();
+      expect(dealtState.players.every(p => p.hand.length > 0)).toBe(true);
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
@@ -70,7 +70,7 @@ describe('Console Validation and Error Detection', () => {
         // These should not throw or produce console errors
         const state = createInitialState();
         state.trump = { type: 'not-selected' }; // Valid none state
-        // state.bidWinner and state.winner don't exist in new types
+        // state.winningBidder and state.winner don't exist in new types
       }).not.toThrow();
       
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -133,14 +133,14 @@ describe('Console Validation and Error Detection', () => {
     it('should maintain consistent domino count throughout game', () => {
       const helper = new GameTestHelper();
       const state = helper.createGameInProgress();
-      
+
       // Count total dominoes in hands + tricks + current trick
-      const handsCount = Object.values(state.hands || {}).reduce((sum, hand) => sum + hand.length, 0);
+      const handsCount = state.players.reduce((sum, p) => sum + p.hand.length, 0);
       const tricksCount = state.tricks.reduce((sum, trick) => sum + trick.plays.length, 0);
       const currentTrickCount = state.currentTrick.length;
-      
+
       const totalDominoes = handsCount + tricksCount + currentTrickCount;
-      
+
       // Should always be 28 dominoes total
       expect(totalDominoes).toBeLessThanOrEqual(28);
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -156,9 +156,9 @@ describe('Console Validation and Error Detection', () => {
       expect(state.currentPlayer).toBeGreaterThanOrEqual(0);
       expect(state.currentPlayer).toBeLessThan(4);
       
-      if (state.bidWinner !== null && state.bidWinner !== undefined && state.bidWinner !== -1) {
-        expect(state.bidWinner).toBeGreaterThanOrEqual(0);
-        expect(state.bidWinner).toBeLessThan(4);
+      if (state.winningBidder !== null && state.winningBidder !== undefined && state.winningBidder !== -1) {
+        expect(state.winningBidder).toBeGreaterThanOrEqual(0);
+        expect(state.winningBidder).toBeLessThan(4);
       }
       
       expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -214,23 +214,23 @@ describe('Console Validation and Error Detection', () => {
   describe('Integration Stability', () => {
     it('should complete full game without console errors', () => {
       const helper = new GameTestHelper();
-      
+
       // Run through complete game simulation
       const finalState = helper.createCompletedGame(0);
-      
-      expect(finalState.isComplete).toBe(true);
-      expect(finalState.winner).toBeDefined();
+
+      expect(finalState.phase).toBe('game_end');
+      expect(finalState.teamMarks.some(m => m >= finalState.gameTarget)).toBe(true);
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
 
     it('should handle multiple game cycles cleanly', () => {
       const helper = new GameTestHelper();
-      
+
       // Run multiple complete games
       for (let gameNum = 0; gameNum < 5; gameNum++) {
         const finalState = helper.createCompletedGame(gameNum % 2);
-        expect(finalState.isComplete).toBe(true);
+        expect(finalState.phase).toBe('game_end');
         expect(consoleErrorSpy).not.toHaveBeenCalled();
       }
     });

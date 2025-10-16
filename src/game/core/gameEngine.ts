@@ -141,13 +141,32 @@ function getBiddingActions(state: GameState): GameAction[] {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.MARKS, value: marks });
     }
   }
-  
-  // Special contracts in non-tournament mode
-  if (!state.tournamentMode) {
-    // Nello, Splash, Plunge - similar logic as above
-    // Implementation omitted for brevity but would follow same pattern
+
+  // Special contracts - always generate in base engine (variants will filter)
+  // Nello bids
+  for (let marks = 1; marks <= 4; marks++) {
+    const bid: Bid = { type: BID_TYPES.NELLO, value: marks, player: state.currentPlayer };
+    if (isValidBid(state, bid, currentPlayerHand)) {
+      actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.NELLO, value: marks });
+    }
   }
-  
+
+  // Splash bids
+  for (let marks = 2; marks <= 3; marks++) {
+    const bid: Bid = { type: BID_TYPES.SPLASH, value: marks, player: state.currentPlayer };
+    if (isValidBid(state, bid, currentPlayerHand)) {
+      actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.SPLASH, value: marks });
+    }
+  }
+
+  // Plunge bids
+  for (let marks = 4; marks <= 6; marks++) {
+    const bid: Bid = { type: BID_TYPES.PLUNGE, value: marks, player: state.currentPlayer };
+    if (isValidBid(state, bid, currentPlayerHand)) {
+      actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.PLUNGE, value: marks });
+    }
+  }
+
   return actions;
 }
 

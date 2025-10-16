@@ -20,15 +20,13 @@ export class GameTestHelper {
    */
   dealDominoes(state: GameState): GameState {
     const hands = dealDominoesWithSeed(state.shuffleSeed || 12345);
-    
+
     return {
       ...state,
-      hands: {
-        0: hands[0],
-        1: hands[1], 
-        2: hands[2],
-        3: hands[3]
-      }
+      players: state.players.map((player, index) => ({
+        ...player,
+        hand: hands[index] || []
+      }))
     };
   }
   
@@ -71,10 +69,8 @@ export class GameTestHelper {
     const state = this.createGameInProgress();
     return {
       ...state,
-      phase: 'scoring',
-      isComplete: true,
-      winner: winningTeam === -1 ? -1 : winningTeam,
-      teamScores: winningTeam === 0 ? [7, 0] : [0, 7]
+      phase: 'game_end',
+      teamMarks: winningTeam === 0 ? [7, 0] : [0, 7]
     };
   }
   
@@ -99,7 +95,10 @@ export class GameTestHelper {
     return {
       ...state,
       tricks,
-      hands: { 0: [], 1: [], 2: [], 3: [] } // All dominoes played
+      players: state.players.map(player => ({
+        ...player,
+        hand: [] // All dominoes played
+      }))
     };
   }
   
@@ -108,11 +107,11 @@ export class GameTestHelper {
    */
   createGameWithMarks(team0Marks: number, team1Marks: number): GameState {
     const state = createInitialState();
+    const isComplete = team0Marks >= 7 || team1Marks >= 7;
     return {
       ...state,
-      teamScores: [team0Marks, team1Marks],
-      isComplete: team0Marks >= 7 || team1Marks >= 7,
-      winner: team0Marks >= 7 ? 0 : (team1Marks >= 7 ? 1 : -1)
+      teamMarks: [team0Marks, team1Marks],
+      phase: isComplete ? 'game_end' : state.phase
     };
   }
   
@@ -203,7 +202,11 @@ export class GameTestHelper {
 
     // Add hands if provided
     if (options.hands) {
-      baseState.hands = options.hands;
+      const updatedPlayers = baseState.players.map((player, index) => ({
+        ...player,
+        hand: options.hands?.[index] || player.hand
+      }));
+      return { ...baseState, players: updatedPlayers };
     }
 
     return baseState;
@@ -423,27 +426,23 @@ export class GameTestHelper {
    */
   static validateTournamentRules(state: GameState): string[] {
     const errors: string[] = [];
-    
-    if (!state.tournamentMode) {
-      return errors; // Tournament rules don't apply
-    }
-    
-    // Check for special contracts in tournament mode
-    const specialBids = state.bids.filter(bid => 
-      bid.type === BID_TYPES.NELLO || 
-      bid.type === BID_TYPES.SPLASH || 
+
+    // Check for special contracts (tournament mode now enforced via variants)
+    const specialBids = state.bids.filter(bid =>
+      bid.type === BID_TYPES.NELLO ||
+      bid.type === BID_TYPES.SPLASH ||
       bid.type === BID_TYPES.PLUNGE
     );
-    
+
     if (specialBids.length > 0) {
       errors.push('Special contracts not allowed in tournament mode');
     }
-    
+
     // Check game target is 7 marks
     if (state.gameTarget !== 7) {
       errors.push('Tournament play requires 7-mark games');
     }
-    
+
     return errors;
   }
 

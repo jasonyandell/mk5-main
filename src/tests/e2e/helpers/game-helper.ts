@@ -609,13 +609,12 @@ export class PlaywrightGameHelper {
    * Load game state from URL
    */
   async loadStateWithActions(
-    seed: number, 
-    actions: string[], 
+    seed: number,
+    actions: string[],
     playerTypes: ('human' | 'ai')[] = ['human', 'human', 'human', 'human'],
-    dealer?: number,
-    tournamentMode?: boolean
+    dealer?: number
   ): Promise<void> {
-    const urlStr = encodeGameUrl(seed, actions, playerTypes, dealer, tournamentMode);
+    const urlStr = encodeGameUrl(seed, actions, playerTypes, dealer);
     
     // Include testMode=true to disable controllers, but AI will execute synchronously
     // when explicitly specified in the URL data

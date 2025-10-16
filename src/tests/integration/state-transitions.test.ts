@@ -259,6 +259,12 @@ describe('State Transitions Integration', () => {
     it('should provide trump selection moves with exact user-provided state', () => {
       // Create state exactly matching the user's provided JSON
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'trump_selection',
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -340,48 +346,6 @@ describe('State Transitions Integration', () => {
         teamScores: [0, 0],
         teamMarks: [0, 0],
         gameTarget: 7,
-        tournamentMode: true,
-        hands: {
-          '0': [
-            { high: 1, low: 2, id: '1-2' },
-            { high: 2, low: 5, id: '2-5' },
-            { high: 1, low: 6, id: '1-6' },
-            { high: 3, low: 4, id: '3-4' },
-            { high: 5, low: 5, id: '5-5' },
-            { high: 0, low: 0, id: '0-0' },
-            { high: 5, low: 6, id: '5-6' }
-          ],
-          '1': [
-            { high: 1, low: 4, id: '1-4' },
-            { high: 4, low: 4, id: '4-4' },
-            { high: 2, low: 2, id: '2-2' },
-            { high: 1, low: 5, id: '1-5' },
-            { high: 0, low: 6, id: '0-6' },
-            { high: 1, low: 3, id: '1-3' },
-            { high: 0, low: 5, id: '0-5' }
-          ],
-          '2': [
-            { high: 3, low: 5, id: '3-5' },
-            { high: 2, low: 6, id: '2-6' },
-            { high: 4, low: 6, id: '4-6' },
-            { high: 0, low: 1, id: '0-1' },
-            { high: 3, low: 6, id: '3-6' },
-            { high: 6, low: 6, id: '6-6' },
-            { high: 2, low: 3, id: '2-3' }
-          ],
-          '3': [
-            { high: 3, low: 3, id: '3-3' },
-            { high: 0, low: 3, id: '0-3' },
-            { high: 0, low: 2, id: '0-2' },
-            { high: 2, low: 4, id: '2-4' },
-            { high: 4, low: 5, id: '4-5' },
-            { high: 0, low: 4, id: '0-4' },
-            { high: 1, low: 1, id: '1-1' }
-          ]
-        },
-        bidWinner: -1,
-        isComplete: false,
-        winner: -1,
         shuffleSeed: 12345,
         actionHistory: [],
         consensus: {

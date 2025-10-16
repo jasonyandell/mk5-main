@@ -166,7 +166,6 @@ export function encodeGameUrl(
   actions: string[],
   playerTypes?: ('human' | 'ai')[],
   dealer?: number,
-  tournamentMode?: boolean,
   theme?: string,
   colorOverrides?: Record<string, string>,
   sectionName?: string
@@ -239,12 +238,7 @@ export function encodeGameUrl(
   if (dealer !== undefined && dealer !== 3) {
     params.set('d', dealer.toString());
   }
-  
-  // Only include tournament mode if not default (true)
-  if (tournamentMode !== undefined && tournamentMode !== true) {
-    params.set('tm', '0');
-  }
-  
+
   // Compressed actions - always last since it's the longest
   params.set('a', compressEvents(actions));
   
@@ -264,7 +258,6 @@ export function decodeGameUrl(urlString: string): {
   actions: string[];
   playerTypes: ('human' | 'ai')[];
   dealer: number;
-  tournamentMode: boolean;
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
@@ -286,7 +279,6 @@ export function decodeGameUrl(urlString: string): {
       actions: [],
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       dealer: 3,
-      tournamentMode: true,
       theme: 'business',
       colorOverrides: {},
       scenario: ''
@@ -358,7 +350,6 @@ export function decodeGameUrl(urlString: string): {
       actions: [],
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       dealer: 3,
-      tournamentMode: true,
       theme,
       colorOverrides,
       scenario
@@ -400,12 +391,8 @@ export function decodeGameUrl(urlString: string): {
   if (isNaN(dealer) || dealer < 0 || dealer > 3) {
     throw new Error('Invalid URL: dealer must be 0-3');
   }
-  
-  // Parse tournament mode (default true) - now 'tm' since 't' is theme
-  const tournamentStr = params.get('tm');
-  const tournamentMode = tournamentStr !== '0';
-  
-  return { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides, scenario };
+
+  return { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
 }
 
 // Export types for use in other modules
@@ -414,7 +401,6 @@ export interface URLData {
   actions: string[];
   playerTypes: ('human' | 'ai')[];
   dealer: number;
-  tournamentMode: boolean;
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;

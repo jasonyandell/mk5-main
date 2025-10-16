@@ -58,7 +58,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
   describe('Extreme Bidding Scenarios', () => {
     it('should handle bidding escalation to maximum marks', () => {
       let state = createInitialState();
-      state.tournamentMode = false; // Enable high mark bids
+      // REMOVED: state.tournamentMode = false; // Enable high mark bids
       
       // Simulate escalating mark bids
       const biddingSequence = [

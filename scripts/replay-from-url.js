@@ -66,7 +66,7 @@ for (let i = 1; i < args.length; i++) {
 
 // Create TypeScript code to execute
 const tempScript = `
-import { replayFromUrl } from '../src/game/utils/replay';
+import { replayFromUrl } from '../src/game/utils/urlReplay';
 
 const url = ${JSON.stringify(url)};
 const options = {

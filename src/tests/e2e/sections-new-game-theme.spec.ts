@@ -1,3 +1,5 @@
+// TODO: Rewrite for new variant system (old section-runner removed)
+
 import { test, expect } from '@playwright/test';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 

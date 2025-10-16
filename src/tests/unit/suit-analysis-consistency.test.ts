@@ -92,11 +92,10 @@ describe('Suit Analysis Consistency', () => {
     if (initialState.players[0]) {
       initialState.players[0].hand = player0Hand;
     }
-    initialState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits for this player
     const analysis1 = analyzeSuits(player0Hand, { type: 'not-selected' });
-    
+
     // Simulate what happens after a bid (trump selection phase)
     const afterBidState = createTestState({
       phase: 'trump_selection',
@@ -109,7 +108,6 @@ describe('Suit Analysis Consistency', () => {
     if (afterBidState.players[0]) {
       afterBidState.players[0].hand = player0Hand;
     }
-    afterBidState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
 
     // Analyze suits again - should be identical when trump is none
     const analysis2 = analyzeSuits(player0Hand, { type: 'not-selected' });

@@ -1,15 +1,18 @@
 // Pure lookup - no registration, no side effects
 import type { VariantFactory, Variant, VariantConfig, StateMachine } from './types';
 import { tournamentVariant } from './tournament';
+import { oneHandVariant } from './oneHand';
 
 // Registry will be populated as variants are implemented
 const VARIANT_REGISTRY: Record<string, VariantFactory> = {
-  'tournament': tournamentVariant
+  'tournament': tournamentVariant,
+  'one-hand': oneHandVariant
 };
 
 /**
  * Get variant by type. Pure lookup - no side effects.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function getVariant(type: string, config?: any): Variant {
   const factory = VARIANT_REGISTRY[type];
   if (!factory) {

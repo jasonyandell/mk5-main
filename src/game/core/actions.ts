@@ -413,10 +413,7 @@ function executeScoreHand(state: GameState): GameState {
 
   // Check if game is complete
   if (isGameComplete(newMarks, state.gameTarget)) {
-    // Game over
-    const winner = newMarks[0] >= state.gameTarget ? 0 : 1;
-    
-    // Clear hands
+    // Game over - clear hands
     const newPlayers = state.players.map(p => ({
       ...p,
       hand: []
@@ -426,8 +423,6 @@ function executeScoreHand(state: GameState): GameState {
       ...state,
       phase: 'game_end',
       teamMarks: newMarks,
-      isComplete: true,
-      winner,
       players: newPlayers,
       consensus: {
         completeTrick: new Set(),

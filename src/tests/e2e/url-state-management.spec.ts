@@ -321,27 +321,27 @@ test.describe('URL State Management', () => {
       }
     });
 
-    test('should preserve tournament mode setting', async ({ page }) => {
+    test('should preserve game target setting', async ({ page }) => {
       const helper = new PlaywrightGameHelper(page);
-      
-      // Create URL with tournament mode disabled
-      const urlStr = encodeGameUrl(12345, [], undefined, undefined, false);
-      
-      // Load with tournament mode disabled
+
+      // Create URL with default settings
+      const urlStr = encodeGameUrl(12345, [], undefined, undefined);
+
+      // Load game
       await page.goto(`${urlStr}&testMode=true`);
       await helper.waitForGameReady();
-      
-      // Verify tournament mode
+
+      // Verify game target is default
       const gameState = await page.evaluate((): PartialGameState | null => {
         const state = (window as any).getGameState?.();
         if (!state) return null;
         return {
-          tournamentMode: state.tournamentMode
+          gameTarget: state.gameTarget
         };
       });
-      
+
       if (gameState) {
-        expect(gameState.tournamentMode).toBe(false);
+        expect(gameState.gameTarget).toBe(7);
       }
     });
   });
@@ -507,13 +507,13 @@ test.describe('URL State Management', () => {
 
         test('should handle minimal state representation', async ({ page }) => {
       const helper = new PlaywrightGameHelper(page);
-      
+
       // URL with only seed (all defaults)
       const urlStr = encodeGameUrl(99999, []);
-      
+
       await page.goto(`${urlStr}&testMode=true`);
       await helper.waitForGameReady();
-      
+
       // Should load with defaults
       const gameState = await page.evaluate((): PartialGameState | null => {
         const state = (window as any).getGameState?.();
@@ -521,16 +521,14 @@ test.describe('URL State Management', () => {
         return {
           shuffleSeed: state.shuffleSeed,
           dealer: state.dealer,
-          gameTarget: state.gameTarget,
-          tournamentMode: state.tournamentMode
+          gameTarget: state.gameTarget
         };
       });
-      
+
       if (gameState) {
         expect(gameState.shuffleSeed).toBe(99999);
         expect(gameState.dealer).toBe(3); // default
         expect(gameState.gameTarget).toBe(7); // default
-        expect(gameState.tournamentMode).toBe(true); // default
       }
     });
   });

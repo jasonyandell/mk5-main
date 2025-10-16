@@ -54,23 +54,22 @@ describe('Special Gameplay Scenarios', () => {
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 0,
-        bids: [],
-        tournamentMode: false // Plunge not allowed in tournament
+        bids: []
       });
-      
+
       // Set the player's hand to have 4 doubles
-      state.hands = { 0: handWith4Doubles, 1: [], 2: [], 3: [] };
       state.players[0]!.hand = handWith4Doubles;
 
       // Plunge bid requires 4+ doubles
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      // Should be valid with 4 doubles (in non-tournament mode)
+      // Should be valid with 4 doubles in base engine
+      // Tournament variant will filter special bids at action level
       expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
-      
-      // But should be invalid in tournament mode
-      state.tournamentMode = true;
-      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(false);
+
+      // Base engine is maximally permissive for special bids
+      // REMOVED: state.tournamentMode = true;
+      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
     });
   });
 

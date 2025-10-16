@@ -161,13 +161,13 @@ describe('Feature: Special Bids', () => {
         expect(hasTwoMarks).toBe(false); // Confirms no 2 mark bid exists
       });
 
-      it('should handle 3 marks in tournament mode correctly', () => {
+      it('should handle 3 marks correctly', () => {
         const tournamentState = createStateWithBids([
           { type: 'points', value: 30, player: 0 },
           { type: 'marks', value: 2, player: 1 }
         ]);
 
-        expect(tournamentState.tournamentMode).toBe(true);
+        // REMOVED: expect(tournamentState.tournamentMode).toBe(true);
         expect(canBidThreeMarks(tournamentState)).toBe(true);
 
         // After 3 marks is bid, only 4 marks is allowed (one increment)

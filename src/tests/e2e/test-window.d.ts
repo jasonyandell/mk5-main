@@ -2,12 +2,11 @@
 export interface TestWindow {
   setAISpeedProfile?: (profile: string) => void;
   playFirstAction?: () => void;
-  getSectionOverlay?: () => { type?: string; config?: unknown };
+  // Deprecated - for skipped section tests only
+  getSectionOverlay?: () => { type?: string; config?: unknown; weWon?: boolean; [key: string]: unknown };
   gameActions?: {
     startSection?: (config: unknown) => void;
     resumeSection?: () => void;
-    continueOneHand?: () => void;
-    requestNewHand?: () => void;
     leaveSection?: () => void;
     [key: string]: unknown;
   };
