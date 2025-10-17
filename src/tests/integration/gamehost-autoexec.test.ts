@@ -8,8 +8,8 @@ function createPlayers(config: GameConfig) {
     playerIndex: i as 0 | 1 | 2 | 3,
     controlType: type,
     capabilities: [
-      { type: 'act-as-player', playerIndex: i as 0 | 1 | 2 | 3 },
-      { type: 'observe-own-hand' },
+      { type: 'act-as-player' as const, playerIndex: i as 0 | 1 | 2 | 3 },
+      { type: 'observe-own-hand' as const },
       ...(type === 'ai' ? [{ type: 'replace-ai' as const }] : [])
     ]
   }));

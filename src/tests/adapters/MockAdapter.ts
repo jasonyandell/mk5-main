@@ -99,7 +99,7 @@ export class MockAdapter implements IGameAdapter {
         break;
 
       default:
-        throw new Error(`MockAdapter: Unsupported message type: ${(message as any).type}`);
+        throw new Error(`MockAdapter: Unsupported message type: ${(message as { type: string }).type}`);
     }
   }
 

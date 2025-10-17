@@ -114,8 +114,10 @@ export function filterActionForSession(
   const filteredMeta = pruneMetadata(session, meta);
 
   if (Object.keys(filteredMeta).length === 0) {
-    const { meta: _ignored, ...rest } = action;
-    return { ...rest } as GameAction;
+    // Remove meta property
+    const { meta, ...actionWithoutMeta } = action;
+    void meta; // Acknowledge we're intentionally ignoring this
+    return { ...actionWithoutMeta } as GameAction;
   }
 
   return { ...action, meta: filteredMeta } as GameAction;
@@ -148,25 +150,39 @@ export function getVisibleStateForSession(
   state: GameState,
   session: PlayerSession
 ): FilteredGameState {
-  if (hasCapabilityType(session, 'observe-full-state')) {
-    return state;
-  }
-
   const clone = cloneGameState(state);
 
-  clone.players = clone.players.map((player, index) => {
-    if (canSeeHand(session, index)) {
-      return player;
+  // Convert to FilteredGameState format with handCount
+  const filteredPlayers = clone.players.map((player, index) => {
+    const canSee = hasCapabilityType(session, 'observe-full-state') || canSeeHand(session, index);
+
+    if (canSee) {
+      return {
+        id: player.id,
+        name: player.name,
+        teamId: player.teamId,
+        marks: player.marks,
+        hand: player.hand,
+        handCount: player.hand.length,
+        ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+      };
     }
 
-    const { suitAnalysis: _ignored, ...rest } = player;
+    // Hide hand but keep handCount
     return {
-      ...rest,
-      hand: []
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: [],
+      handCount: player.hand.length
     };
   });
 
-  return clone;
+  return {
+    ...clone,
+    players: filteredPlayers
+  };
 }
 
 /**

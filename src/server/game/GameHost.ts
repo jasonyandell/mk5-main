@@ -97,18 +97,29 @@ export class GameHost {
       variants: this.variantConfigs
     });
 
-    this.mpState = {
-      state: initialState,
-      sessions: normalizedPlayers
-    };
+    // Convert to FilteredGameState format with handCount
+    const filteredPlayers = initialState.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: player.hand,
+      handCount: player.hand.length,
+      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+    }));
 
-    // Ensure initial config persists variants for replay
-    this.mpState.state = {
-      ...this.mpState.state,
+    const filteredInitialState = {
+      ...initialState,
+      players: filteredPlayers,
       initialConfig: {
-        ...this.mpState.state.initialConfig,
+        ...initialState.initialConfig,
         variants: this.variantConfigs
       }
+    };
+
+    this.mpState = {
+      state: filteredInitialState,
+      sessions: normalizedPlayers
     };
 
     // Process any immediate scripted actions emitted at startup
@@ -176,13 +187,13 @@ export class GameHost {
     }
 
     // Update state playerTypes to match
-    const newState = {
+    const updatedState = {
       ...this.mpState.state,
       playerTypes: sessions.map(s => s.controlType) as ('human' | 'ai')[]
     };
 
     this.mpState = {
-      state: newState,
+      state: updatedState,
       sessions
     };
 

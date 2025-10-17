@@ -3,7 +3,7 @@ import { mount } from 'svelte';
 import { get } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { gameActions, gameState } from './stores/gameStore';
+import { gameActions, gameState, gameClient } from './stores/gameStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameView } from './shared/multiplayer/protocol';
@@ -56,7 +56,26 @@ declare global {
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
   // Read-only state inspection (minimal exposure for testing/debugging)
-  window.getGameView = () => get(gameState);
+  window.getGameView = () => {
+    // Access the private cachedView via bracket notation to bypass type checking
+    const client = gameClient as unknown as { cachedView?: GameView };
+    const cachedView = client.cachedView;
+    if (!cachedView) {
+      // Return a minimal GameView structure
+      const state = get(gameState);
+      return {
+        state,
+        validActions: [],
+        players: [],
+        metadata: {
+          gameId: 'unknown',
+          created: Date.now(),
+          lastUpdate: Date.now()
+        }
+      };
+    }
+    return cachedView;
+  };
 
   // Development tools (execute actions from browser console)
   window.gameActions = gameActions;

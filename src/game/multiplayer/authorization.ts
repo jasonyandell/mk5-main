@@ -114,9 +114,25 @@ export function authorizeAndExecute(
   // Execute the action (pure state transition)
   const newState = executeAction(state, action);
 
+  // Convert to FilteredGameState format with handCount
+  const filteredPlayers = newState.players.map(player => ({
+    id: player.id,
+    name: player.name,
+    teamId: player.teamId,
+    marks: player.marks,
+    hand: player.hand,
+    handCount: player.hand.length,
+    ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+  }));
+
+  const filteredState: import('../types').FilteredGameState = {
+    ...newState,
+    players: filteredPlayers
+  };
+
   // Return new multiplayer state with updated game state
   return ok({
-    state: newState,
+    state: filteredState,
     sessions
   });
 }

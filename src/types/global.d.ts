@@ -1,5 +1,3 @@
-import type { GameState } from '../game/types';
-import type { Writable } from 'svelte/store';
 import type { GameView } from '../shared/multiplayer/protocol';
 
 declare global {

@@ -8,10 +8,14 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
   const start = Date.now();
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
-      const w = window as any;
+      type WindowWithGame = typeof window & {
+        getGameView?: () => import('../../../shared/multiplayer/protocol').GameView;
+        playFirstAction?: () => void;
+      };
+      const w = window as WindowWithGame;
       const view = w.getGameView?.();
       // Check if game ended
-      if (view?.phase === 'game_end') return true;
+      if (view?.state?.phase === 'game_end') return true;
       // Otherwise play next action
       if (w.playFirstAction) w.playFirstAction();
       return false;
@@ -27,12 +31,16 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
  */
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
-    const w = window as any;
+    type WindowWithGame = typeof window & {
+      getGameView?: () => import('../../../shared/multiplayer/protocol').GameView;
+    };
+    const w = window as WindowWithGame;
     const view = w.getGameView?.();
 
     // Check team scores (for one hand, higher score wins)
-    if (view?.teamScores && Array.isArray(view.teamScores)) {
-      return view.teamScores[0] > view.teamScores[1] ? 'won' : 'lost';
+    const teamScores = view?.state?.teamScores;
+    if (teamScores && Array.isArray(teamScores)) {
+      return teamScores[0] > teamScores[1] ? 'won' : 'lost';
     }
 
     // Default to lost if we can't determine

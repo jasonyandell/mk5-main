@@ -42,6 +42,9 @@ gameClient = new NetworkGameClient(adapter, config);
 // Export as const to prevent reassignment
 export { gameClient };
 
+// Default session ID constant
+const DEFAULT_SESSION_ID = 'player-0';
+
 // Writable store that tracks GameClient state
 export const clientState = writable<MultiplayerGameState>(gameClient.getState());
 
@@ -58,7 +61,6 @@ export const gameState: Readable<FilteredGameState> = derived(clientState, $clie
 // Derived store for player sessions
 export const playerSessions = derived(clientState, $clientState => $clientState.sessions);
 
-const DEFAULT_SESSION_ID = 'player-0';
 const currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
 
 export const currentSessionId = derived(currentSessionIdStore, (value) => value);
@@ -91,8 +93,9 @@ playerSessions.subscribe(($sessions) => {
   }
 
   const current = get(currentSessionIdStore);
-  if (!$sessions.some(session => session.playerId === current)) {
-    void setPerspective($sessions[0].playerId);
+  const firstSession = $sessions[0];
+  if (!$sessions.some(session => session.playerId === current) && firstSession) {
+    void setPerspective(firstSession.playerId);
   }
 });
 
@@ -103,7 +106,6 @@ export const viewProjection = derived<[typeof gameState, typeof playerSessions, 
   [gameState, playerSessions, currentSessionId],
   ([$gameState, $sessions, $sessionId]) => {
     const session = $sessions.find(s => s.playerId === $sessionId) ?? $sessions[0];
-    const perspectiveIndex = session?.playerIndex ?? 0;
     const canAct = !!(session && hasCapabilityType(session, 'act-as-player'));
 
     const allowedActions = (gameClient as NetworkGameClient).getValidActions(session ? session.playerIndex : undefined);
@@ -114,19 +116,26 @@ export const viewProjection = derived<[typeof gameState, typeof playerSessions, 
       ? allTransitions
       : allTransitions.filter(transition => allowedKeys.has(actionKey(transition.action)));
 
-    return createViewProjection(
-      $gameState,
-      usedTransitions,
-      {
-        isTestMode: testMode,
-        viewingPlayerIndex: session?.playerIndex,
-        canAct,
-        isAIControlled: (player: number) => {
-          const seat = $sessions.find(s => s.playerIndex === player);
-          return seat ? seat.controlType === 'ai' : false;
-        }
+    const viewProjectionOptions: {
+      isTestMode?: boolean;
+      viewingPlayerIndex?: number;
+      canAct?: boolean;
+      isAIControlled?: (player: number) => boolean;
+    } = {
+      isTestMode: testMode,
+      canAct,
+      isAIControlled: (player: number) => {
+        const seat = $sessions.find(s => s.playerIndex === player);
+        return seat ? seat.controlType === 'ai' : false;
       }
-    );
+    };
+
+    // Only add viewingPlayerIndex if it's defined
+    if (session?.playerIndex !== undefined) {
+      viewProjectionOptions.viewingPlayerIndex = session.playerIndex;
+    }
+
+    return createViewProjection($gameState, usedTransitions, viewProjectionOptions);
   }
 );
 

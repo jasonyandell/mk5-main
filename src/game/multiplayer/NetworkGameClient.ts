@@ -196,9 +196,9 @@ export class NetworkGameClient implements GameClient {
         this.gameId = message.gameId;
         this.cachedView = message.view;
         this.notifyListeners();
-        if (this.pendingSubscriptionPlayerId) {
+        if (this.pendingSubscriptionPlayerId !== undefined) {
           void this.sendSubscription(this.pendingSubscriptionPlayerId);
-          this.pendingSubscriptionPlayerId = undefined;
+          delete this.pendingSubscriptionPlayerId;
         }
         break;
 
@@ -335,7 +335,7 @@ export class NetworkGameClient implements GameClient {
 
     if (this.gameId) {
       await this.sendSubscription(targetPlayerId);
-      this.pendingSubscriptionPlayerId = undefined;
+      delete this.pendingSubscriptionPlayerId;
     }
   }
 
@@ -363,12 +363,22 @@ export class NetworkGameClient implements GameClient {
   private async sendSubscription(playerId?: string): Promise<void> {
     if (!this.gameId) return;
     try {
-      await this.adapter.send({
+      const message: {
+        type: 'SUBSCRIBE';
+        gameId: string;
+        clientId: string;
+        playerId?: string;
+      } = {
         type: 'SUBSCRIBE',
         gameId: this.gameId,
-        clientId: this.sessionId,
-        playerId
-      });
+        clientId: this.sessionId
+      };
+
+      if (playerId !== undefined) {
+        message.playerId = playerId;
+      }
+
+      await this.adapter.send(message);
     } catch (error) {
       console.error('Failed to update subscription:', error);
     }

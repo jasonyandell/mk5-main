@@ -15,8 +15,8 @@ describe('Authorization', () => {
         playerIndex: 0,
         controlType: 'human',
         capabilities: [
-          { type: 'act-as-player', playerIndex: 0 },
-          { type: 'observe-own-hand' }
+          { type: 'act-as-player' as const, playerIndex: 0 },
+          { type: 'observe-own-hand' as const }
         ]
       },
       {
@@ -24,9 +24,9 @@ describe('Authorization', () => {
         playerIndex: 1,
         controlType: 'ai',
         capabilities: [
-          { type: 'act-as-player', playerIndex: 1 },
-          { type: 'observe-own-hand' },
-          { type: 'replace-ai' }
+          { type: 'act-as-player' as const, playerIndex: 1 },
+          { type: 'observe-own-hand' as const },
+          { type: 'replace-ai' as const }
         ]
       },
       {
@@ -34,9 +34,9 @@ describe('Authorization', () => {
         playerIndex: 2,
         controlType: 'ai',
         capabilities: [
-          { type: 'act-as-player', playerIndex: 2 },
-          { type: 'observe-own-hand' },
-          { type: 'replace-ai' }
+          { type: 'act-as-player' as const, playerIndex: 2 },
+          { type: 'observe-own-hand' as const },
+          { type: 'replace-ai' as const }
         ]
       },
       {
@@ -44,13 +44,27 @@ describe('Authorization', () => {
         playerIndex: 3,
         controlType: 'ai',
         capabilities: [
-          { type: 'act-as-player', playerIndex: 3 },
-          { type: 'observe-own-hand' },
-          { type: 'replace-ai' }
+          { type: 'act-as-player' as const, playerIndex: 3 },
+          { type: 'observe-own-hand' as const },
+          { type: 'replace-ai' as const }
         ]
       }
     ];
-    return { state, sessions };
+    // Convert state to FilteredGameState
+    const filteredPlayers = state.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: player.hand,
+      handCount: player.hand.length,
+      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+    }));
+
+    return {
+      state: { ...state, players: filteredPlayers },
+      sessions
+    };
   }
 
   describe('canPlayerExecuteAction', () => {

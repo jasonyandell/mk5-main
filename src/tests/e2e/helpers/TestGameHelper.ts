@@ -87,23 +87,26 @@ export class TestGameHelper {
    */
   private async initialize(): Promise<void> {
     // Expose adapter to page context for client to use
-    await this.page.exposeFunction('__testAdapter_send', async (message: any) => {
-      await this.adapter.send(message);
+    await this.page.exposeFunction('__testAdapter_send', async (message: unknown) => {
+      await this.adapter.send(message as import('../../../shared/multiplayer/protocol').ClientMessage);
     });
 
     await this.page.exposeFunction('__testAdapter_subscribe', (handlerId: string) => {
       const unsubscribe = this.adapter.subscribe((message) => {
         this.page.evaluate(
           ({ handlerId, message }) => {
-            (window as any).__testAdapter_handlers?.[handlerId]?.(message);
+            const handlers = (window as { __testAdapter_handlers?: Record<string, (msg: unknown) => void> }).__testAdapter_handlers;
+            handlers?.[handlerId]?.(message);
           },
           { handlerId, message }
         );
       });
 
       // Store unsubscribe function
-      (this.adapter as any).__unsubscribers = (this.adapter as any).__unsubscribers || {};
-      (this.adapter as any).__unsubscribers[handlerId] = unsubscribe;
+      type AdapterWithUnsubscribers = typeof this.adapter & { __unsubscribers?: Record<string, () => void> };
+      const adapterWithUnsubscribers = this.adapter as AdapterWithUnsubscribers;
+      adapterWithUnsubscribers.__unsubscribers = adapterWithUnsubscribers.__unsubscribers || {};
+      adapterWithUnsubscribers.__unsubscribers[handlerId] = unsubscribe;
     });
 
     // Navigate to app with test flag
@@ -313,7 +316,7 @@ export class TestGameHelper {
   /**
    * Get all messages sent to server.
    */
-  getSentMessages(): any[] {
+  getSentMessages(): import('../../../shared/multiplayer/protocol').ClientMessage[] {
     if (this.adapter instanceof SpyAdapter || this.adapter instanceof MockAdapter) {
       return this.adapter.getSentMessages();
     }
@@ -323,7 +326,7 @@ export class TestGameHelper {
   /**
    * Get all messages received from server.
    */
-  getReceivedMessages(): any[] {
+  getReceivedMessages(): import('../../../shared/multiplayer/protocol').ServerMessage[] {
     if (this.adapter instanceof SpyAdapter || this.adapter instanceof MockAdapter) {
       return this.adapter.getReceivedMessages();
     }

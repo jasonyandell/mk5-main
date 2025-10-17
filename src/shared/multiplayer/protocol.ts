@@ -11,7 +11,7 @@
  * - Protocol is transport-agnostic (works over WebSocket, Worker, or direct calls)
  */
 
-import type { GameState, GameAction, FilteredGameState } from '../../game/types';
+import type { GameAction, FilteredGameState } from '../../game/types';
 import type { GameConfig, VariantConfig, GameVariant } from '../../game/types/config';
 import type { Capability } from '../../game/multiplayer/types';
 
