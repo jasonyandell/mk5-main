@@ -3,10 +3,19 @@
  * Uses base66 encoding: 1 character = 1 event
  * Reduces URLs by ~96% (8KB -> 350 chars)
  * Seeds use base36 encoding for additional compression
- * 
+ *
  * IMPORTANT: Completeness comes first - the URL must capture the complete game state
  * to enable proper replay and sharing. After ensuring completeness, we optimize for
  * minimal URL length.
+ */
+
+/**
+ * FUTURE: replay-url capability
+ * This module's encodeGameUrl() and decodeGameUrl() will be integrated
+ * into the protocol layer to enable URL-based game replay:
+ * - GameHost.createView() will generate replayUrl for sessions with 'replay-url' capability
+ * - Clients can use replayUrl to replay full game without storing full state
+ * - See src/server/game/GameHost.ts and src/shared/multiplayer/protocol.ts
  */
 
 // Primary tier: 65 most common events (1 char each)

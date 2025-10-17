@@ -1,4 +1,4 @@
-import type { GameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
+import type { FilteredGameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from './types';
 import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
@@ -136,7 +136,7 @@ export interface ViewProjection {
 
 // Create view projection from game state and available actions
 export function createViewProjection(
-  gameState: GameState,
+  gameState: FilteredGameState,
   availableActions: StateTransition[],
   options: {
     isTestMode?: boolean;
@@ -330,7 +330,7 @@ export function createViewProjection(
 // Helper to get domino tooltip
 function getDominoTooltip(
   domino: Domino,
-  gameState: GameState,
+  gameState: FilteredGameState,
   playableDominoIds: Set<string>
 ): string {
   const dominoStr = `${domino.high}-${domino.low}`;
@@ -414,7 +414,7 @@ function calculateTeamPoints(tricks: Trick[]): [number, number] {
 }
 
 // Helper to calculate hand results with perspective-aware messages
-function calculateHandResults(gameState: GameState, playerPerspective: number = 0): HandResults | null {
+function calculateHandResults(gameState: FilteredGameState, playerPerspective: number = 0): HandResults | null {
   const tricks = gameState.tricks;
   const [team0Points, team1Points] = calculateTeamPoints(tricks);
   

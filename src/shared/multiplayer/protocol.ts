@@ -11,7 +11,7 @@
  * - Protocol is transport-agnostic (works over WebSocket, Worker, or direct calls)
  */
 
-import type { GameState, GameAction } from '../../game/types';
+import type { GameState, GameAction, FilteredGameState } from '../../game/types';
 import type { GameConfig, VariantConfig, GameVariant } from '../../game/types/config';
 import type { Capability } from '../../game/multiplayer/types';
 
@@ -168,7 +168,7 @@ export type ServerMessage =
  */
 export interface GameView {
   /** Current game state */
-  state: GameState;
+  state: FilteredGameState;
 
   /** Pre-calculated valid actions for current player */
   validActions: ValidAction[];
@@ -184,6 +184,14 @@ export interface GameView {
     created: number; // timestamp
     lastUpdate: number; // timestamp
   };
+
+  // TODO: Add replay-url capability
+  // When session has { type: 'replay-url' } capability:
+  //   1. GameHost generates compressed URL via encodeGameUrl(seed, actions)
+  //   2. Include replayUrl in GameView response
+  //   3. Client can use replayUrl for full game replay without storing full actionHistory
+  //   4. Benefits: Smaller state payloads, URL-shareable games, works across sessions
+  // replayUrl?: string;
 }
 
 /**

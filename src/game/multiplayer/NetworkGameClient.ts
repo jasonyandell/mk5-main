@@ -12,7 +12,7 @@
  */
 
 import type { GameClient } from './GameClient';
-import type { GameState, GameAction } from '../types';
+import type { GameAction, FilteredGameState } from '../types';
 import type { MultiplayerGameState, PlayerSession, Result } from './types';
 import { ok, err } from './types';
 import type {
@@ -55,7 +55,7 @@ export class NetworkGameClient implements GameClient {
   /**
    * Get current state (synchronous, from cache)
    */
-  getState(): MultiplayerGameState {
+  getState(): MultiplayerGameState & { state: FilteredGameState } {
     if (!this.cachedView) {
       // Return empty state if not initialized
       return {
@@ -253,7 +253,7 @@ export class NetworkGameClient implements GameClient {
   /**
    * Convert GameView to MultiplayerGameState
    */
-  private viewToMultiplayerState(view: GameView): MultiplayerGameState {
+  private viewToMultiplayerState(view: GameView): MultiplayerGameState & { state: FilteredGameState } {
     // Convert player info to sessions
     const sessions: PlayerSession[] = view.players.map(player => ({
       playerId: player.sessionId || `player-${player.playerId}`,
@@ -263,7 +263,7 @@ export class NetworkGameClient implements GameClient {
     }));
 
     return {
-      state: view.state,
+      state: view.state,  // view.state is FilteredGameState
       sessions
     };
   }
@@ -271,8 +271,8 @@ export class NetworkGameClient implements GameClient {
   /**
    * Create empty game state (before initialization)
    */
-  private createEmptyState(): GameState {
-    // This is a minimal empty state that matches the GameState interface
+  private createEmptyState(): FilteredGameState {
+    // This is a minimal empty state that matches the FilteredGameState interface
     return {
       initialConfig: {
         playerTypes: ['human', 'ai', 'ai', 'ai'],
@@ -284,10 +284,10 @@ export class NetworkGameClient implements GameClient {
       colorOverrides: {},
       phase: 'setup',
       players: [
-        { id: 0, name: 'Player 1', hand: [], teamId: 0, marks: 0 },
-        { id: 1, name: 'Player 2', hand: [], teamId: 1, marks: 0 },
-        { id: 2, name: 'Player 3', hand: [], teamId: 0, marks: 0 },
-        { id: 3, name: 'Player 4', hand: [], teamId: 1, marks: 0 }
+        { id: 0, name: 'Player 1', hand: [], handCount: 0, teamId: 0, marks: 0 },
+        { id: 1, name: 'Player 2', hand: [], handCount: 0, teamId: 1, marks: 0 },
+        { id: 2, name: 'Player 3', hand: [], handCount: 0, teamId: 0, marks: 0 },
+        { id: 3, name: 'Player 4', hand: [], handCount: 0, teamId: 1, marks: 0 }
       ],
       currentPlayer: 0,
       dealer: 0,

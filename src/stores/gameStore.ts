@@ -1,10 +1,10 @@
-import { writable, derived, get } from 'svelte/store';
-import type { GameAction, StateTransition } from '../game/types';
+import { writable, derived, get, type Readable } from 'svelte/store';
+import type { GameAction, StateTransition, FilteredGameState } from '../game/types';
 import { getNextStates } from '../game';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
 import { InProcessAdapter } from '../server/offline/InProcessAdapter';
 import type { GameClient } from '../game/multiplayer/GameClient';
-import type { MultiplayerGameState, PlayerSession } from '../game/multiplayer/types';
+import type { MultiplayerGameState } from '../game/multiplayer/types';
 import { hasCapabilityType } from '../game/multiplayer/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
@@ -52,8 +52,8 @@ gameClient.subscribe(state => {
 
 void setPerspective(DEFAULT_SESSION_ID);
 
-// Derived store for just the GameState
-export const gameState = derived(clientState, $clientState => $clientState.state);
+// Derived store for just the GameState (filtered view)
+export const gameState: Readable<FilteredGameState> = derived(clientState, $clientState => $clientState.state);
 
 // Derived store for player sessions
 export const playerSessions = derived(clientState, $clientState => $clientState.sessions);

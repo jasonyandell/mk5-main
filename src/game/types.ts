@@ -182,6 +182,18 @@ export interface GameState {
   actionHistory: GameAction[];
 }
 
+export type FilteredGameState = Omit<GameState, 'players'> & {
+  players: Array<{
+    id: number;
+    name: string;
+    teamId: 0 | 1;
+    marks: number;
+    hand: Domino[];  // Empty array if observer can't see this hand
+    handCount: number;
+    suitAnalysis?: SuitAnalysis;
+  }>;
+};
+
 export interface StateTransition {
   id: string;
   label: string;

@@ -149,11 +149,11 @@ export class PlaywrightGameHelper {
       () => {
         const container = document.querySelector('.app-container');
         const phase = container?.getAttribute('data-phase');
-        const gameState = (window as any).getGameState?.();
-        
-        // Check that we have both a phase and a game state
+        const gameView = (window as any).getGameView?.();
+
+        // Check that we have both a phase and a game view
         // and that the game is not in a transitional state
-        return !!(phase && gameState && !gameState.isProcessing);
+        return !!(phase && gameView && !gameView.isProcessing);
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -164,11 +164,11 @@ export class PlaywrightGameHelper {
    * Simply waits for game state to be ready after navigation
    */
   async waitForNavigationRestore(): Promise<void> {
-    // Wait for game state to exist and be stable
+    // Wait for game view to exist and be stable
     await this.page.waitForFunction(
       () => {
-        const gameState = (window as any).getGameState?.();
-        return !!gameState && !('isProcessing' in gameState && gameState.isProcessing);
+        const gameView = (window as any).getGameView?.();
+        return !!gameView && !('isProcessing' in gameView && gameView.isProcessing);
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -423,8 +423,8 @@ export class PlaywrightGameHelper {
     // Use waitForFunction to detect when game processes the move
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        return state && !(state as any).isProcessing;
+        const view = (window as any).getGameView?.();
+        return view && !(view as any).isProcessing;
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
     );
@@ -528,12 +528,12 @@ export class PlaywrightGameHelper {
   async playFullTrick(): Promise<void> {
     // Check if AI is already enabled for players 1-3
     const needsAI = await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state || !state.playerTypes) return true;
+      const view = (window as any).getGameView?.();
+      if (!view || !view.playerTypes) return true;
       // Check if players 1-3 are already AI
-      return state.playerTypes[1] !== 'ai' || 
-             state.playerTypes[2] !== 'ai' || 
-             state.playerTypes[3] !== 'ai';
+      return view.playerTypes[1] !== 'ai' ||
+             view.playerTypes[2] !== 'ai' ||
+             view.playerTypes[3] !== 'ai';
     });
     
     // Only enable AI if not already enabled
@@ -548,8 +548,8 @@ export class PlaywrightGameHelper {
     // Just verify trick is complete (should have 4 dominoes)
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        return state && state.currentTrick && state.currentTrick.length === 4;
+        const view = (window as any).getGameView?.();
+        return view && view.currentTrick && view.currentTrick.length === 4;
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );
@@ -603,12 +603,12 @@ export class PlaywrightGameHelper {
     if (playerTypes.some(t => t === 'ai')) {
       await this.page.waitForFunction(
         () => {
-          const state = (window as any).getGameState?.();
-          if (!state) return false;
+          const view = (window as any).getGameView?.();
+          if (!view) return false;
           // State is stable when current player is human or game ended
-          return state.playerTypes[state.currentPlayer] === 'human' ||
-                 state.phase === 'scoring' ||
-                 state.phase === 'game_over';
+          return view.playerTypes[view.currentPlayer] === 'human' ||
+                 view.phase === 'scoring' ||
+                 view.phase === 'game_over';
         },
         { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
       );
@@ -676,11 +676,11 @@ export class PlaywrightGameHelper {
         gameWindow.gameActions.enableAI();
       } else {
         // Fallback to direct state update if action not available
-        if (gameWindow.gameState && gameWindow.getGameState) {
-          const currentState = gameWindow.getGameState();
+        if (gameWindow.gameState && gameWindow.getGameView) {
+          const currentView = gameWindow.getGameView();
           // Set players 1-3 as AI
           const newState = {
-            ...currentState,
+            ...currentView,
             playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[]
           };
           // Update the game state directly - gameState now has methods exposed
@@ -703,13 +703,13 @@ export class PlaywrightGameHelper {
     // In test mode, AI executes synchronously, so just verify state has changed
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        if (!state) return false;
-        
+        const view = (window as any).getGameView?.();
+        if (!view) return false;
+
         // AI has finished if it's human's turn or game phase changed
-        return state.playerTypes[state.currentPlayer] === 'human' ||
-               state.phase === 'scoring' ||
-               state.phase === 'game_over';
+        return view.playerTypes[view.currentPlayer] === 'human' ||
+               view.phase === 'scoring' ||
+               view.phase === 'game_over';
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );
@@ -767,9 +767,9 @@ export class PlaywrightGameHelper {
    */
   async isCurrentPlayerHuman(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return true; // Default to human if no state
-      return state.playerTypes[state.currentPlayer] === 'human';
+      const view = (window as any).getGameView?.();
+      if (!view) return true; // Default to human if no view
+      return view.playerTypes[view.currentPlayer] === 'human';
     });
   }
 
@@ -778,9 +778,9 @@ export class PlaywrightGameHelper {
    */
   async isAITurn(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return false;
-      return state.playerTypes[state.currentPlayer] === 'ai';
+      const view = (window as any).getGameView?.();
+      if (!view) return false;
+      return view.playerTypes[view.currentPlayer] === 'ai';
     });
   }
 
@@ -790,12 +790,12 @@ export class PlaywrightGameHelper {
   async waitForHumanTurn(): Promise<void> {
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        if (!state) return false;
+        const view = (window as any).getGameView?.();
+        if (!view) return false;
         // Wait for human turn or game end
-        return state.playerTypes[state.currentPlayer] === 'human' ||
-               state.phase === 'scoring' ||
-               state.phase === 'game_over';
+        return view.playerTypes[view.currentPlayer] === 'human' ||
+               view.phase === 'scoring' ||
+               view.phase === 'game_over';
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -806,11 +806,11 @@ export class PlaywrightGameHelper {
    */
   async canPlayerAct(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return false;
+      const view = (window as any).getGameView?.();
+      if (!view) return false;
       // Player 0 can act if it's their turn or there are consensus actions
-      return state.currentPlayer === 0 || 
-             (window as any).getAvailableActions?.().some((a: any) => 
+      return view.currentPlayer === 0 ||
+             (window as any).getAvailableActions?.().some((a: any) =>
                a.id.includes('agree-') || a.id === 'complete-trick' || a.id === 'score-hand'
              );
     });

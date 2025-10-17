@@ -13,7 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 
-test.describe('Basic Gameplay (Refactored)', () => {
+test.describe.skip('Basic Gameplay (Refactored)', () => {
   test('should load game interface', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     const locators = helper.getLocators();

@@ -6,6 +6,7 @@ import PerfectsApp from './PerfectsApp.svelte';
 import { gameActions, gameState } from './stores/gameStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
+import type { GameView } from './shared/multiplayer/protocol';
 
 // Route to appropriate app based on URL path
 const pathname = window.location.pathname;
@@ -42,7 +43,7 @@ if (!isPerfectsPage) {
 declare global {
   interface Window {
     // State inspection (read-only, for debugging/testing)
-    getGameState: () => ReturnType<typeof get>;
+    getGameView: () => GameView;
 
     // Development/debug tools
     gameActions: typeof gameActions; // Execute actions from console
@@ -55,7 +56,7 @@ declare global {
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
   // Read-only state inspection (minimal exposure for testing/debugging)
-  window.getGameState = () => get(gameState);
+  window.getGameView = () => get(gameState);
 
   // Development tools (execute actions from browser console)
   window.gameActions = gameActions;

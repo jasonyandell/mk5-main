@@ -9,9 +9,9 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
       const w = window as any;
-      const state = w.getGameState?.();
+      const view = w.getGameView?.();
       // Check if game ended
-      if (state?.phase === 'game_end') return true;
+      if (view?.phase === 'game_end') return true;
       // Otherwise play next action
       if (w.playFirstAction) w.playFirstAction();
       return false;
@@ -28,11 +28,11 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
     const w = window as any;
-    const state = w.getGameState?.();
+    const view = w.getGameView?.();
 
     // Check team scores (for one hand, higher score wins)
-    if (state?.teamScores && Array.isArray(state.teamScores)) {
-      return state.teamScores[0] > state.teamScores[1] ? 'won' : 'lost';
+    if (view?.teamScores && Array.isArray(view.teamScores)) {
+      return view.teamScores[0] > view.teamScores[1] ? 'won' : 'lost';
     }
 
     // Default to lost if we can't determine

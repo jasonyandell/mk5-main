@@ -236,6 +236,13 @@ export class GameHost {
    * @param forPlayerId - Optional player ID to filter actions for
    */
   private createView(forPlayerId?: string): GameView {
+    // TODO: Add replay-url capability support
+    // When forPlayerId session has 'replay-url' capability:
+    //   1. Call encodeGameUrl(state.initialConfig.seed, state.actionHistory)
+    //   2. Add compressed URL to GameView.replayUrl
+    //   3. This enables URL-based replay without sending full actionHistory
+    // Reference: src/game/core/url-compression.ts
+
     const { state, sessions } = this.mpState;
 
     // Get all valid actions using composed function

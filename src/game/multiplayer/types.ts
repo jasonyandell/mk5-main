@@ -1,4 +1,4 @@
-import type { GameState, GameAction } from '../types';
+import type { FilteredGameState, GameAction } from '../types';
 
 /**
  * Capability tokens control what a session can see or do.
@@ -58,10 +58,11 @@ export interface PlayerSession {
 }
 
 /**
- * Multiplayer game state wraps GameState with session management
+ * Multiplayer game state wraps FilteredGameState with session management
+ * The state is always filtered based on the current perspective's capabilities
  */
 export interface MultiplayerGameState {
-  state: GameState;
+  state: FilteredGameState;
   sessions: PlayerSession[];
 }
 

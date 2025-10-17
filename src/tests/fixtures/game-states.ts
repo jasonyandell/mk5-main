@@ -5,9 +5,9 @@
  * Use these instead of creating GameHost instances in tests.
  */
 
-import type { GameView, PlayerInfo } from '../../shared/multiplayer/protocol';
+import type { GameView, PlayerInfo, ValidAction } from '../../shared/multiplayer/protocol';
 import type { GameConfig } from '../../game/types/config';
-import type { GameState, Domino, Player, TrumpSelection } from '../../game/types';
+import type { GameState, FilteredGameState, Domino, Player, TrumpSelection, SuitAnalysis } from '../../game/types';
 import type { Capability } from '../../game/multiplayer/types';
 
 // ============================================================================
@@ -153,10 +153,145 @@ function createDefaultPlayerInfo(): PlayerInfo[] {
 
 /**
  * Create a GameView with sensible defaults.
+ *
+ * In tests, we often have full GameState objects with complete player hands.
+ * This function converts them to FilteredGameState format for use in GameView.
+ * By default, it shows all hands (for testing convenience). For realistic filtering,
+ * use createObserverGameView() instead.
  */
-function createGameView(state: GameState, validActions: any[] = []): GameView {
+function createGameView(state: GameState, validActions: ValidAction[] = []): GameView {
+  // Convert GameState players to FilteredGameState players by adding handCount
+  const filteredState: FilteredGameState = {
+    ...state,
+    players: state.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: player.hand, // In basic test fixtures, show all hands
+      handCount: player.hand.length,
+      ...(player.suitAnalysis && { suitAnalysis: player.suitAnalysis }),
+    })),
+  };
+
   return {
-    state,
+    state: filteredState,
+    validActions,
+    players: createDefaultPlayerInfo(),
+    metadata: {
+      gameId: 'test-game-123',
+      created: Date.now(),
+      lastUpdate: Date.now(),
+    },
+  };
+}
+
+/**
+ * Create a GameView from a GameState with custom player info and valid actions.
+ *
+ * This is useful when you need full control over the GameView structure,
+ * including custom player capabilities or specific valid actions.
+ *
+ * @param state - The game state (will be converted to FilteredGameState)
+ * @param players - Player information with capabilities
+ * @param validActions - List of valid actions for the current player
+ * @returns A complete GameView object for testing
+ */
+export function createCustomGameView(
+  state: GameState,
+  players: PlayerInfo[],
+  validActions: ValidAction[] = []
+): GameView {
+  // Convert GameState to FilteredGameState by adding handCount
+  const filteredState: FilteredGameState = {
+    ...state,
+    players: state.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: player.hand, // Show all hands in custom views by default
+      handCount: player.hand.length,
+      ...(player.suitAnalysis && { suitAnalysis: player.suitAnalysis }),
+    })),
+  };
+
+  return {
+    state: filteredState,
+    validActions,
+    players,
+    metadata: {
+      gameId: 'test-game-123',
+      created: Date.now(),
+      lastUpdate: Date.now(),
+    },
+  };
+}
+
+/**
+ * Create a filtered game state from a full GameState, hiding hands based on observer permissions.
+ *
+ * This simulates what the server would send to a client with limited observation capabilities.
+ * Use this when you want to test realistic scenarios where a player can't see other players' hands.
+ *
+ * @param state - The full game state
+ * @param observerPlayerIndex - Which player's perspective to use (can see own hand only)
+ * @returns A FilteredGameState with hidden hands
+ */
+export function createFilteredState(
+  state: GameState,
+  observerPlayerIndex: number
+): FilteredGameState {
+  return {
+    ...state,
+    players: state.players.map((player, index) => {
+      const filtered: {
+        id: number;
+        name: string;
+        teamId: 0 | 1;
+        marks: number;
+        hand: Domino[];
+        handCount: number;
+        suitAnalysis?: SuitAnalysis;
+      } = {
+        id: player.id,
+        name: player.name,
+        teamId: player.teamId,
+        marks: player.marks,
+        hand: index === observerPlayerIndex ? player.hand : [], // Only show observer's own hand
+        handCount: player.hand.length,
+      };
+
+      // Only add suitAnalysis if it exists and this is the observer
+      if (index === observerPlayerIndex && player.suitAnalysis) {
+        filtered.suitAnalysis = player.suitAnalysis;
+      }
+
+      return filtered;
+    }),
+  };
+}
+
+/**
+ * Create a GameView with properly filtered state based on observer permissions.
+ *
+ * This creates a realistic GameView as the server would send it to a client.
+ * The observer can only see their own hand, not other players' hands.
+ *
+ * @param state - The full game state
+ * @param observerPlayerIndex - Which player is observing (0-3)
+ * @param validActions - Valid actions for the observer
+ * @returns A GameView with filtered state
+ */
+export function createObserverGameView(
+  state: GameState,
+  observerPlayerIndex: number,
+  validActions: ValidAction[] = []
+): GameView {
+  const filteredState = createFilteredState(state, observerPlayerIndex);
+
+  return {
+    state: filteredState,
     validActions,
     players: createDefaultPlayerInfo(),
     metadata: {
@@ -181,21 +316,21 @@ export function createBiddingPhaseView(): GameView {
     dealer: 0,
   });
 
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: { type: 'pass' as const, player: 0 },
-      description: 'Pass',
-      isRecommended: false,
+      label: 'Pass',
+      recommended: false,
     },
     {
       action: { type: 'bid' as const, player: 0, bid: 'points' as const, value: 30 },
-      description: 'Bid 30',
-      isRecommended: false,
+      label: 'Bid 30',
+      recommended: false,
     },
     {
       action: { type: 'bid' as const, player: 0, bid: 'points' as const, value: 32 },
-      description: 'Bid 32',
-      isRecommended: true,
+      label: 'Bid 32',
+      recommended: true,
     },
   ];
 
@@ -217,16 +352,16 @@ export function createMidBiddingPhaseView(): GameView {
     currentBid: { type: 'points', player: 1, value: 32 },
   });
 
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: { type: 'pass' as const, player: 2 },
-      description: 'Pass',
-      isRecommended: false,
+      label: 'Pass',
+      recommended: false,
     },
     {
       action: { type: 'bid' as const, player: 2, bid: 'points' as const, value: 34 },
-      description: 'Bid 34',
-      isRecommended: true,
+      label: 'Bid 34',
+      recommended: true,
     },
   ];
 
@@ -251,15 +386,15 @@ export function createTrumpSelectionPhaseView(): GameView {
     winningBidder: 0,
   });
 
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: {
         type: 'select-trump' as const,
         player: 0,
         trump: { type: 'suit', suit: 0 } as TrumpSelection,
       },
-      description: 'Trump: Blanks',
-      isRecommended: false,
+      label: 'Trump: Blanks',
+      recommended: false,
     },
     {
       action: {
@@ -267,8 +402,8 @@ export function createTrumpSelectionPhaseView(): GameView {
         player: 0,
         trump: { type: 'suit', suit: 1 } as TrumpSelection,
       },
-      description: 'Trump: Ones',
-      isRecommended: true,
+      label: 'Trump: Ones',
+      recommended: true,
     },
     {
       action: {
@@ -276,8 +411,8 @@ export function createTrumpSelectionPhaseView(): GameView {
         player: 0,
         trump: { type: 'doubles' } as TrumpSelection,
       },
-      description: 'Trump: Doubles',
-      isRecommended: false,
+      label: 'Trump: Doubles',
+      recommended: false,
     },
   ];
 
@@ -306,10 +441,10 @@ export function createPlayingPhaseView(): GameView {
     currentSuit: -1,
   });
 
-  const validActions = state.players[1]!.hand.map(domino => ({
-    action: { type: 'play' as const, player: 1, dominoId: domino.id },
-    description: `Play ${domino.id}`,
-    isRecommended: false,
+  const validActions: ValidAction[] = state.players[1]!.hand.map(domino => ({
+    action: { type: 'play' as const, player: 1, dominoId: String(domino.id) },
+    label: `Play ${domino.id}`,
+    recommended: false,
   }));
 
   return createGameView(state, validActions);
@@ -340,16 +475,16 @@ export function createMidTrickPhaseView(): GameView {
   });
 
   // Only dominoes with 3 are valid (follow suit)
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: { type: 'play' as const, player: 2, dominoId: '6-3' },
-      description: 'Play 6-3',
-      isRecommended: true,
+      label: 'Play 6-3',
+      recommended: true,
     },
     {
       action: { type: 'play' as const, player: 2, dominoId: '5-3' },
-      description: 'Play 5-3',
-      isRecommended: false,
+      label: 'Play 5-3',
+      recommended: false,
     },
   ];
 
@@ -387,11 +522,11 @@ export function createTrickCompletionPhaseView(): GameView {
     },
   });
 
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: { type: 'agree-complete-trick' as const, player: 0 },
-      description: 'Complete Trick',
-      isRecommended: true,
+      label: 'Complete Trick',
+      recommended: true,
     },
   ];
 
@@ -429,11 +564,11 @@ export function createScoringPhaseView(): GameView {
     },
   });
 
-  const validActions = [
+  const validActions: ValidAction[] = [
     {
       action: { type: 'agree-score-hand' as const, player: 0 },
-      description: 'Score Hand',
-      isRecommended: true,
+      label: 'Score Hand',
+      recommended: true,
     },
   ];
 

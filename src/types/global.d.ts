@@ -1,9 +1,10 @@
 import type { GameState } from '../game/types';
 import type { Writable } from 'svelte/store';
+import type { GameView } from '../shared/multiplayer/protocol';
 
 declare global {
   interface Window {
-    getGameState: () => GameState;
+    getGameView: () => GameView;
     gameActions: {
       executeAction: (action: import('../game/types').GameAction) => void;
       loadFromURL: () => void;

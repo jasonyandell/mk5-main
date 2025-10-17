@@ -1,5 +1,5 @@
 import { cloneGameState } from '../core/state';
-import type { GameAction, GameState } from '../types';
+import type { GameAction, GameState, FilteredGameState } from '../types';
 import type { PlayerSession, Capability } from './types';
 import { hasCapability, hasCapabilityType } from './types';
 
@@ -147,7 +147,7 @@ export function filterActionsForSession(
 export function getVisibleStateForSession(
   state: GameState,
   session: PlayerSession
-): GameState {
+): FilteredGameState {
   if (hasCapabilityType(session, 'observe-full-state')) {
     return state;
   }
