@@ -396,7 +396,7 @@ Where:
 **File**: `src/game/core/url-encoding.ts` (NEW)
 
 ```typescript
-import type { GameConfig } from '../../shared/multiplayer/protocol';
+import type { GameConfig } from '../../game/types/config';
 import type { GameAction } from '../types';
 import { replayActions } from './replay';
 

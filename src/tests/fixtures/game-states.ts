@@ -5,8 +5,10 @@
  * Use these instead of creating GameHost instances in tests.
  */
 
-import type { GameView, GameConfig, PlayerInfo } from '../../shared/multiplayer/protocol';
+import type { GameView, PlayerInfo } from '../../shared/multiplayer/protocol';
+import type { GameConfig } from '../../game/types/config';
 import type { GameState, Domino, Player, TrumpSelection } from '../../game/types';
+import type { Capability } from '../../game/multiplayer/types';
 
 // ============================================================================
 // Helper Functions
@@ -112,30 +114,39 @@ function createHand(dominoIds: string[]): Domino[] {
  * Create default player info.
  */
 function createDefaultPlayerInfo(): PlayerInfo[] {
+  const baseCapabilities = (index: number): Capability[] => ([
+    { type: 'act-as-player', playerIndex: index as 0 | 1 | 2 | 3 },
+    { type: 'observe-own-hand' }
+  ]);
+
   return [
     {
       playerId: 0,
       controlType: 'human',
       connected: true,
       name: 'Player 0',
+      capabilities: baseCapabilities(0)
     },
     {
       playerId: 1,
       controlType: 'ai',
       connected: true,
       name: 'Player 1',
+      capabilities: [...baseCapabilities(1), { type: 'replace-ai' }]
     },
     {
       playerId: 2,
       controlType: 'ai',
       connected: true,
       name: 'Player 2',
+      capabilities: [...baseCapabilities(2), { type: 'replace-ai' }]
     },
     {
       playerId: 3,
       controlType: 'ai',
       connected: true,
       name: 'Player 3',
+      capabilities: [...baseCapabilities(3), { type: 'replace-ai' }]
     },
   ];
 }

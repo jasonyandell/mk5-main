@@ -31,7 +31,12 @@ describe('GameHost', () => {
     const players = config.playerTypes.map((type, i) => ({
       playerId: type === 'human' ? `player-${i}` : `ai-${i}`,
       playerIndex: i as 0 | 1 | 2 | 3,
-      controlType: type
+      controlType: type,
+      capabilities: [
+        { type: 'act-as-player', playerIndex: i as 0 | 1 | 2 | 3 },
+        { type: 'observe-own-hand' },
+        ...(type === 'ai' ? [{ type: 'replace-ai' as const }] : [])
+      ]
     }));
     host = new GameHost(gameId, config, players);
   });
@@ -184,6 +189,28 @@ describe('Protocol Flow', () => {
     ) as any;
     expect(playerStatus).toBeDefined();
     expect(playerStatus?.controlType).toBe('ai');
+  });
+
+  it('should switch perspective to another player', async () => {
+    const config: GameConfig = {
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      shuffleSeed: 13579
+    };
+
+    client = new NetworkGameClient(adapter, config);
+
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const initialState = client.getState();
+    expect(initialState.state.players[1]?.hand).toHaveLength(0);
+
+    const seatOneId = initialState.sessions.find(s => s.playerIndex === 1)?.playerId ?? 'player-1';
+
+    await client.setPlayerId(seatOneId);
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const switchedState = client.getState();
+    expect(switchedState.state.players[1]?.hand.length).toBeGreaterThan(0);
   });
 });
 

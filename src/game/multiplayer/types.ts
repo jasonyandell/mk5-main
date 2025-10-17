@@ -1,6 +1,50 @@
 import type { GameState, GameAction } from '../types';
 
 /**
+ * Capability tokens control what a session can see or do.
+ * They are composable and purely descriptive.
+ */
+export type Capability =
+  | { type: 'act-as-player'; playerIndex: number }
+  | { type: 'observe-own-hand' }
+  | { type: 'observe-hand'; playerIndex: number }
+  | { type: 'observe-all-hands' }
+  | { type: 'observe-full-state' }
+  | { type: 'see-hints' }
+  | { type: 'see-ai-intent' }
+  | { type: 'replace-ai' }
+  | { type: 'configure-variant' }
+  | { type: 'undo-actions' };
+
+/**
+ * Utility: create a capability matcher for comparisons.
+ */
+function capabilityMatches(candidate: Capability, target: Capability): boolean {
+  if (candidate.type !== target.type) {
+    return false;
+  }
+
+  switch (candidate.type) {
+    case 'act-as-player':
+    case 'observe-hand':
+      return candidate.playerIndex === (target as typeof candidate).playerIndex;
+    default:
+      return true;
+  }
+}
+
+export function hasCapability(session: PlayerSession, target: Capability): boolean {
+  return session.capabilities.some(cap => capabilityMatches(cap, target));
+}
+
+export function hasCapabilityType<C extends Capability['type']>(
+  session: PlayerSession,
+  type: C
+): boolean {
+  return session.capabilities.some(cap => cap.type === type);
+}
+
+/**
  * Player session information for multiplayer games
  * Separates identity (playerId) from seat position (playerIndex)
  */
@@ -10,7 +54,7 @@ export interface PlayerSession {
   controlType: 'human' | 'ai';   // Who controls this player
   isConnected?: boolean;          // Connection status (optional, defaults to true)
   name?: string;                  // Display name (optional)
-  capabilities?: string[];        // Future: what this player can do/see (optional)
+  capabilities: Capability[];     // Capability tokens determining visibility/authority
 }
 
 /**

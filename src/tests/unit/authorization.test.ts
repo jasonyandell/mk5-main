@@ -10,10 +10,45 @@ describe('Authorization', () => {
   function createTestMPState(gameState?: GameState): MultiplayerGameState {
     const state = gameState || createInitialState();
     const sessions: PlayerSession[] = [
-      { playerId: 'player-0', playerIndex: 0, controlType: 'human' },
-      { playerId: 'ai-1', playerIndex: 1, controlType: 'ai' },
-      { playerId: 'ai-2', playerIndex: 2, controlType: 'ai' },
-      { playerId: 'ai-3', playerIndex: 3, controlType: 'ai' }
+      {
+        playerId: 'player-0',
+        playerIndex: 0,
+        controlType: 'human',
+        capabilities: [
+          { type: 'act-as-player', playerIndex: 0 },
+          { type: 'observe-own-hand' }
+        ]
+      },
+      {
+        playerId: 'ai-1',
+        playerIndex: 1,
+        controlType: 'ai',
+        capabilities: [
+          { type: 'act-as-player', playerIndex: 1 },
+          { type: 'observe-own-hand' },
+          { type: 'replace-ai' }
+        ]
+      },
+      {
+        playerId: 'ai-2',
+        playerIndex: 2,
+        controlType: 'ai',
+        capabilities: [
+          { type: 'act-as-player', playerIndex: 2 },
+          { type: 'observe-own-hand' },
+          { type: 'replace-ai' }
+        ]
+      },
+      {
+        playerId: 'ai-3',
+        playerIndex: 3,
+        controlType: 'ai',
+        capabilities: [
+          { type: 'act-as-player', playerIndex: 3 },
+          { type: 'observe-own-hand' },
+          { type: 'replace-ai' }
+        ]
+      }
     ];
     return { state, sessions };
   }

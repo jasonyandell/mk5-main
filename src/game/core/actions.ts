@@ -10,7 +10,7 @@ import { analyzeSuits } from './suit-analysis';
 
 /**
  * Pure function that executes an action on a game state.
- * Never throws errors - invalid actions return unchanged state.
+ * Throws errors on invalid actions.
  * Always appends to actionHistory for complete audit trail.
  */
 export function executeAction(state: GameState, action: GameAction): GameState {

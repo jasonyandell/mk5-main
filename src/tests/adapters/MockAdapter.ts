@@ -253,6 +253,7 @@ export class MockAdapter implements IGameAdapter {
       playerId: message.playerId,
       status: 'control_changed',
       controlType: message.controlType,
+      capabilities: []
     });
   }
 

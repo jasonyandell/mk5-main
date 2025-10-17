@@ -298,9 +298,10 @@ export function replayActions(
 - **gameStore.ts:28-35**: Initial client setup
 - **gameStore.ts:196**: `startOneHand()` - variant creation example
 
-### Protocol (src/shared/multiplayer/)
+### Protocol & Shared Types
 
-- **protocol.ts**: `GameConfig`, `VariantConfig`, message types
+- **game/types/config.ts**: `GameConfig`, `VariantConfig`, `GameVariant`
+- **shared/multiplayer/protocol.ts**: Message envelopes (`GameView`, `ValidAction`, `PlayerInfo.capabilities`, etc.)
 
 ---
 
@@ -397,6 +398,8 @@ const VARIANT_REGISTRY: Record<string, VariantFactory> = {
 3. **Use variant**: `src/stores/gameStore.ts`
 
 ```typescript
+import type { GameConfig } from '../game/types/config';
+
 const config: GameConfig = {
   playerTypes: ['human', 'ai', 'ai', 'ai'],
   variant: { type: 'my-variant', config: { /* params */ } }

@@ -56,7 +56,8 @@ export function getValidActionsForPlayer(
  */
 export function authorizeAndExecute(
   mpState: MultiplayerGameState,
-  request: ActionRequest
+  request: ActionRequest,
+  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions
 ): Result<MultiplayerGameState> {
   const { playerId, action } = request;
   const { state, sessions } = mpState;
@@ -77,7 +78,7 @@ export function authorizeAndExecute(
   }
 
   // Validate action is legal in current state
-  const validActions = getValidActions(state);
+  const validActions = getValidActionsFn(state);
   const isValidAction = validActions.some(validAction => {
     // Compare action types and player fields
     if (validAction.type !== action.type) return false;

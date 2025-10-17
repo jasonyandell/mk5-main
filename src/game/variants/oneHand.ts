@@ -17,37 +17,41 @@ export const oneHandVariant: VariantFactory = () => (base) => (state) => {
   const baseActions = base(state);
 
   // At start of bidding (no bids yet), inject scripted sequence
-  if (state.phase === 'bidding' && state.bids.length === 0) {
-    return [
-      // Player 3 bids 30 points
-      {
-        type: 'bid' as const,
-        player: 3,
-        bid: 'points' as const,
-        value: 30,
-        autoExecute: true,
-        meta: { scriptId: 'one-hand-setup', step: 1 }
-      },
-      // Other players pass
-      {
-        type: 'pass' as const,
-        player: 0,
-        autoExecute: true,
-        meta: { scriptId: 'one-hand-setup', step: 2 }
-      },
-      {
-        type: 'pass' as const,
-        player: 1,
-        autoExecute: true,
-        meta: { scriptId: 'one-hand-setup', step: 3 }
-      },
-      {
-        type: 'pass' as const,
-        player: 2,
-        autoExecute: true,
-        meta: { scriptId: 'one-hand-setup', step: 4 }
-      }
-    ];
+  if (state.phase === 'bidding') {
+    switch (state.bids.length) {
+      case 0:
+        return [{
+          type: 'pass' as const,
+          player: 0,
+          autoExecute: true,
+          meta: { scriptId: 'one-hand-setup', step: 1 }
+        }];
+      case 1:
+        return [{
+          type: 'pass' as const,
+          player: 1,
+          autoExecute: true,
+          meta: { scriptId: 'one-hand-setup', step: 2 }
+        }];
+      case 2:
+        return [{
+          type: 'pass' as const,
+          player: 2,
+          autoExecute: true,
+          meta: { scriptId: 'one-hand-setup', step: 3 }
+        }];
+      case 3:
+        return [{
+          type: 'bid' as const,
+          player: 3,
+          bid: 'points' as const,
+          value: 30,
+          autoExecute: true,
+          meta: { scriptId: 'one-hand-setup', step: 4 }
+        }];
+      default:
+        break;
+    }
   }
 
   // During trump selection, inject scripted trump choice

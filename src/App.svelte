@@ -4,7 +4,6 @@
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import SettingsPanel from './lib/components/SettingsPanel.svelte';
-  import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
   import OneHandCompleteModal from './lib/components/OneHandCompleteModal.svelte';
@@ -178,6 +177,5 @@
   }}
 />
 
-<QuickplayError />
 <SeedFinderModal />
 <OneHandCompleteModal />

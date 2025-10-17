@@ -12,6 +12,10 @@
  */
 
 import type { GameState, GameAction } from '../../game/types';
+import type { GameConfig, VariantConfig, GameVariant } from '../../game/types/config';
+import type { Capability } from '../../game/multiplayer/types';
+
+export type { GameConfig, VariantConfig, GameVariant };
 
 // ============================================================================
 // Client -> Server Messages
@@ -63,6 +67,7 @@ export interface SubscribeMessage {
   type: 'SUBSCRIBE';
   gameId: string;
   clientId: string;
+  playerId?: string;
 }
 
 /**
@@ -72,6 +77,7 @@ export interface UnsubscribeMessage {
   type: 'UNSUBSCRIBE';
   gameId: string;
   clientId: string;
+  playerId?: string;
 }
 
 /**
@@ -127,6 +133,7 @@ export interface PlayerStatusMessage {
   playerId: number;
   status: 'joined' | 'left' | 'control_changed';
   controlType?: 'human' | 'ai';
+  capabilities?: Capability[];
 }
 
 /**
@@ -155,68 +162,6 @@ export type ServerMessage =
 // ============================================================================
 
 /**
- * Game configuration for creating new games
- */
-export interface GameConfig {
-  /** Player control types */
-  playerTypes: ('human' | 'ai')[];
-
-  /** Game variant (standard, one-hand, etc.) - DEPRECATED, use variants array */
-  variant?: GameVariant;
-
-  /** New: Composable variants array (replaces single variant) */
-  variants?: VariantConfig[];
-
-  /** Random seed for deterministic games */
-  shuffleSeed?: number;
-
-  /** Theme configuration */
-  theme?: string;
-
-  /** Color overrides for theme */
-  colorOverrides?: Record<string, string>;
-
-  /** AI difficulty levels (optional) */
-  aiDifficulty?: ('beginner' | 'intermediate' | 'expert')[];
-
-  /** Time limits (optional) */
-  timeLimits?: {
-    perAction?: number; // ms
-    perHand?: number; // ms
-  };
-}
-
-/**
- * Serializable variant configuration
- */
-export interface VariantConfig {
-  type: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config?: Record<string, any>;
-}
-
-/**
- * Game variant configuration
- */
-export interface GameVariant {
-  type: 'standard' | 'one-hand' | 'tournament';
-
-  config?: {
-    // For one-hand mode
-    targetHand?: number;
-    maxAttempts?: number;
-    originalSeed?: number;
-
-    // For tournament mode
-    bestOf?: number;
-
-    // Future variants can add their config here
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any;
-  };
-}
-
-/**
  * Complete view of game for a client.
  * This is everything a client needs to render the game.
  * NO client-side game logic required!
@@ -235,6 +180,7 @@ export interface GameView {
   metadata: {
     gameId: string;
     variant?: GameVariant;
+    variants?: VariantConfig[];
     created: number; // timestamp
     lastUpdate: number; // timestamp
   };
@@ -270,6 +216,7 @@ export interface PlayerInfo {
   connected: boolean;
   name?: string;
   avatar?: string;
+  capabilities?: Capability[];
 }
 
 // ============================================================================

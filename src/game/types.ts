@@ -149,7 +149,7 @@ export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 's
 
 export interface GameState {
   // Event sourcing: source of truth (config + actions = state)
-  initialConfig: import('../shared/multiplayer/protocol').GameConfig;
+  initialConfig: import('./types/config').GameConfig;
 
   // Theme configuration (first-class citizen)
   theme: string; // DaisyUI theme name (default: 'business')

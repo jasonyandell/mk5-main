@@ -1,5 +1,5 @@
 import type { GameState, GameAction } from '../types';
-import type { GameConfig } from '../../shared/multiplayer/protocol';
+import type { GameConfig } from '../types/config';
 import { createInitialState } from './state';
 import { executeAction as baseExecuteAction } from './actions';
 
@@ -13,22 +13,33 @@ export function replayActions(
   config: GameConfig,
   actions: GameAction[]
 ): GameState {
-  // Note: Variants are stored in state.initialConfig but not yet used in replay
-  // They will be applied later when needed for getValidActions
-  // Currently variants only affect getValidActions, not executeAction
+  // Variants do not change execution: we simply reapply the recorded actions.
+  // We capture the active variant configuration so that any caller asking for
+  // valid actions after replay can compose the same variant pipeline.
+
+  const variantConfigs = [
+    ...(config.variant
+      ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
+      : []),
+    ...(config.variants ?? [])
+  ];
 
   // Create initial state with proper optional handling
   let state = createInitialState({
     playerTypes: config.playerTypes,
     ...(config.shuffleSeed !== undefined && { shuffleSeed: config.shuffleSeed }),
     ...(config.theme !== undefined && { theme: config.theme }),
-    ...(config.colorOverrides !== undefined && { colorOverrides: config.colorOverrides })
+    ...(config.colorOverrides !== undefined && { colorOverrides: config.colorOverrides }),
+    ...(variantConfigs.length ? { variants: variantConfigs } : {})
   });
 
   // Add initialConfig to state
   state = {
     ...state,
-    initialConfig: config
+    initialConfig: {
+      ...config,
+      ...(variantConfigs.length ? { variants: variantConfigs } : {})
+    }
   };
 
   // Replay all actions using base executor

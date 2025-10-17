@@ -13,10 +13,10 @@
  */
 
 import type { IGameAdapter } from '../adapters/IGameAdapter';
+import type { GameConfig } from '../../game/types/config';
 import type {
   ClientMessage,
-  ServerMessage,
-  GameConfig
+  ServerMessage
 } from '../../shared/multiplayer/protocol';
 import { GameRegistry } from '../game/GameHost';
 import { AIClient } from '../../game/multiplayer/AIClient';
@@ -30,6 +30,7 @@ interface GameSession {
   aiClients: Map<number, AIClient>;
   subscribers: Set<() => void>; // Changed to just store cleanup functions
   aiHandlers: Map<number, (message: ServerMessage) => void>; // Track AI client handlers by playerId
+  viewSubscriptions: Map<string, { unsubscribe: () => void }>; // clientId -> unsubscribe
 }
 
 /**
@@ -100,6 +101,25 @@ export class InProcessAdapter implements IGameAdapter {
 
     // Destroy all game sessions
     for (const session of this.sessions.values()) {
+      // Clean up view subscriptions
+      for (const { unsubscribe } of session.viewSubscriptions.values()) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('Error unsubscribing view:', error);
+        }
+      }
+      session.viewSubscriptions.clear();
+
+      for (const cleanup of session.subscribers) {
+        try {
+          cleanup();
+        } catch (error) {
+          console.error('Error during subscriber cleanup:', error);
+        }
+      }
+      session.subscribers.clear();
+
       // Kill AI clients
       for (const aiClient of session.aiClients.values()) {
         aiClient.destroy();
@@ -141,11 +161,11 @@ export class InProcessAdapter implements IGameAdapter {
         break;
 
       case 'SUBSCRIBE':
-        // In-process adapter auto-subscribes on create
+        this.handleSubscribe(message.gameId, message.clientId, message.playerId);
         break;
 
       case 'UNSUBSCRIBE':
-        // In-process adapter manages its own cleanup
+        this.handleUnsubscribe(message.gameId, message.clientId);
         break;
 
       default:
@@ -157,7 +177,7 @@ export class InProcessAdapter implements IGameAdapter {
   /**
    * Private: Handle CREATE_GAME
    */
-  private async handleCreateGame(config: GameConfig, _clientId: string): Promise<void> {
+  private async handleCreateGame(config: GameConfig, clientId: string): Promise<void> {
     // Check if we need to find a competitive seed for one-hand mode
     if (config.variant?.type === 'one-hand' && !config.shuffleSeed) {
       config = await this.findCompetitiveSeed(config);
@@ -172,22 +192,14 @@ export class InProcessAdapter implements IGameAdapter {
       instance,
       aiClients: new Map(),
       subscribers: new Set(),
-      aiHandlers: new Map()
+      aiHandlers: new Map(),
+      viewSubscriptions: new Map()
     };
 
     this.sessions.set(instance.id, session);
 
-    // Subscribe main client to game updates (player-0's view)
-    const unsubscribe = instance.host.subscribe('player-0', (view) => {
-      this.broadcastToSession(session, {
-        type: 'STATE_UPDATE',
-        gameId: instance.id,
-        view
-      });
-    });
-
-    // Store unsubscribe for cleanup
-    session.subscribers.add(() => unsubscribe());
+    // Subscribe main client to game updates (player-0's view by default)
+    this.subscribeClientToView(session, clientId, 'player-0');
 
     // Spawn AI clients for AI players
     const players = instance.host.getPlayers();
@@ -273,7 +285,8 @@ export class InProcessAdapter implements IGameAdapter {
       gameId,
       playerId: playerIndex,
       status: 'control_changed',
-      controlType
+      controlType,
+      capabilities: player.capabilities.map(cap => ({ ...cap }))
     });
   }
 
@@ -330,14 +343,71 @@ export class InProcessAdapter implements IGameAdapter {
     // Start AI
     aiClient.start();
 
+    const player = session.instance.host.getPlayers().find(p => p.playerIndex === playerIndex);
+    const capabilities = player ? player.capabilities.map(cap => ({ ...cap })) : [];
+
     // Send status update
     this.broadcast({
       type: 'PLAYER_STATUS',
       gameId,
       playerId: playerIndex,
       status: 'joined',
-      controlType: 'ai'
+      controlType: 'ai',
+      capabilities
     });
+  }
+
+  /**
+   * Private: Subscribe a client to a particular player perspective
+   */
+  private subscribeClientToView(
+    session: GameSession,
+    clientId: string,
+    playerId?: string
+  ): void {
+    const existing = session.viewSubscriptions.get(clientId);
+    if (existing) {
+      existing.unsubscribe();
+      session.viewSubscriptions.delete(clientId);
+    }
+
+    const unsubscribe = session.instance.host.subscribe(playerId, (view) => {
+      this.broadcastToSession(session, {
+        type: 'STATE_UPDATE',
+        gameId: session.instance.id,
+        view
+      });
+    });
+
+    session.viewSubscriptions.set(clientId, { unsubscribe });
+    session.subscribers.add(() => {
+      if (session.viewSubscriptions.get(clientId)?.unsubscribe === unsubscribe) {
+        session.viewSubscriptions.delete(clientId);
+      }
+      unsubscribe();
+    });
+  }
+
+  private handleSubscribe(gameId: string, clientId: string, playerId?: string): void {
+    const session = this.sessions.get(gameId);
+    if (!session) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    this.subscribeClientToView(session, clientId, playerId);
+  }
+
+  private handleUnsubscribe(gameId: string, clientId: string): void {
+    const session = this.sessions.get(gameId);
+    if (!session) {
+      return;
+    }
+
+    const existing = session.viewSubscriptions.get(clientId);
+    if (existing) {
+      existing.unsubscribe();
+      session.viewSubscriptions.delete(clientId);
+    }
   }
 
   /**

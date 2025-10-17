@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { viewProjection, gameActions, gameVariants, oneHandState } from '../../stores/gameStore';
-  import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
+  import { viewProjection, gameActions, gameVariants, oneHandState, availablePerspectives, currentSessionId, setPerspective } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   import Icon from '../icons/Icon.svelte';
@@ -27,10 +26,6 @@
     [GAME_PHASES.GAME_END]: 'Game End'
   };
 
-  function toggleQuickPlay() {
-    quickplayActions.toggle();
-  }
-
   // Track phase changes for animation
   let previousPhase = $state($viewProjection.phase);
   let phaseKey = $state(0);
@@ -43,6 +38,16 @@
 
   // Dropdown menu state
   let menuOpen = $state(false);
+  let selectedPerspective = $state($currentSessionId);
+  $effect(() => {
+    selectedPerspective = $currentSessionId;
+  });
+
+  async function handlePerspectiveChange(event: Event) {
+    const target = event.currentTarget as HTMLSelectElement;
+    const sessionId = target.value;
+    await setPerspective(sessionId);
+  }
   
   function closeMenu() {
     menuOpen = false;
@@ -83,6 +88,21 @@
           class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300 z-50"
           onmouseleave={closeMenu}
         >
+          <li class="px-2 py-1 text-xs uppercase opacity-60">View As</li>
+          <li class="px-2 pb-2">
+            <select
+              class="select select-ghost select-xs w-full"
+              bind:value={selectedPerspective}
+              onchange={async (event) => {
+                await handlePerspectiveChange(event);
+                closeMenu();
+              }}
+            >
+              {#each $availablePerspectives as option}
+                <option value={option.id}>{option.label}</option>
+              {/each}
+            </select>
+          </li>
           <li>
             <button
               class="new-game-btn flex items-center justify-between"
@@ -127,28 +147,6 @@
                 <Icon name="paintBrush" size="sm" />
                 Colors
               </span>
-            </button>
-          </li>
-          <li>
-            <button
-              class="flex items-center justify-between"
-              onclick={() => {
-                toggleQuickPlay();
-                closeMenu();
-              }}
-            >
-              <span class="flex items-center gap-2">
-                {#if $quickplayState.enabled}
-                  <Icon name="handRaised" size="sm" />
-                  Manual Play
-                {:else}
-                  <Icon name="cpuChip" size="sm" />
-                  Auto Play
-                {/if}
-              </span>
-              {#if $quickplayState.enabled}
-                <span class="badge badge-success badge-xs animate-pulse">AUTO</span>
-              {/if}
             </button>
           </li>
           <li class="text-base-content/50 text-xs mt-2">

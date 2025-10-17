@@ -106,7 +106,12 @@
     {#if ($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') && $viewProjection.hand.length > 0}
       <div class="card bg-base-100 shadow-xl mb-4 animate-fadeInDown">
         <div class="card-body p-4">
-          <h3 class="card-title text-sm uppercase tracking-wider justify-center mb-4">Your Hand</h3>
+          <h3 class="card-title text-sm uppercase tracking-wider justify-center mb-4">
+            {$viewProjection.canAct ? 'Your Hand' : 'Selected Hand'}
+          </h3>
+          {#if !$viewProjection.canAct}
+            <p class="text-center text-xs opacity-60 mb-2">Viewing only — actions disabled.</p>
+          {/if}
           <div class="grid grid-cols-[repeat(auto-fit,minmax(45px,1fr))] gap-2 max-w-full justify-items-center">
           {#each $viewProjection.hand as handDomino, i (handDomino.domino.high + '-' + handDomino.domino.low)}
             <div class="animate-handFadeIn" style="--delay: {i * 30}ms; animation-delay: var(--delay)">
@@ -114,7 +119,7 @@
                 domino={handDomino.domino}
                 small={true}
                 showPoints={true}
-                clickable={true}
+                clickable={$viewProjection.canAct}
               />
             </div>
           {/each}
@@ -130,7 +135,7 @@
       </div>
     {/if}
     
-    {#if $viewProjection.phase === 'bidding' && $viewProjection.actions.bidding.length > 0}
+    {#if $viewProjection.canAct && $viewProjection.phase === 'bidding' && $viewProjection.actions.bidding.length > 0}
       <div class="mb-6 animate-fadeInUp">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Bidding</h3>
         <div class="grid grid-cols-3 gap-3 max-w-[400px] mx-auto">
@@ -178,7 +183,7 @@
       </div>
     {/if}
 
-    {#if $viewProjection.phase === 'trump_selection' && $viewProjection.actions.trump.length > 0}
+    {#if $viewProjection.canAct && $viewProjection.phase === 'trump_selection' && $viewProjection.actions.trump.length > 0}
       <div class="mb-6 animate-fadeInUp">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Select Trump</h3>
         <div class="flex flex-col gap-3 max-w-[320px] mx-auto">
@@ -192,6 +197,12 @@
             </button>
           {/each}
         </div>
+      </div>
+    {/if}
+
+    {#if !$viewProjection.canAct}
+      <div class="mt-6 text-xs text-center opacity-60">
+        Viewing perspective only — no actions available.
       </div>
     {/if}
 

@@ -4,8 +4,9 @@ import { getNextStates } from '../game';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
 import { InProcessAdapter } from '../server/offline/InProcessAdapter';
 import type { GameClient } from '../game/multiplayer/GameClient';
-import type { MultiplayerGameState } from '../game/multiplayer/types';
-import type { GameConfig } from '../shared/multiplayer/protocol';
+import type { MultiplayerGameState, PlayerSession } from '../game/multiplayer/types';
+import { hasCapabilityType } from '../game/multiplayer/types';
+import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 
 /**
@@ -23,6 +24,10 @@ const testMode = urlParams?.get('testMode') === 'true';
 const playerTypes = testMode ?
   ['human', 'human', 'human', 'human'] as ('human' | 'ai')[] :
   ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[];
+
+function actionKey(action: GameAction): string {
+  return JSON.stringify(action);
+}
 
 // Create the GameClient with new architecture
 let gameClient: GameClient;
@@ -45,38 +50,81 @@ gameClient.subscribe(state => {
   clientState.set(state);
 });
 
+void setPerspective(DEFAULT_SESSION_ID);
+
 // Derived store for just the GameState
 export const gameState = derived(clientState, $clientState => $clientState.state);
 
 // Derived store for player sessions
 export const playerSessions = derived(clientState, $clientState => $clientState.sessions);
 
+const DEFAULT_SESSION_ID = 'player-0';
+const currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
+
+export const currentSessionId = derived(currentSessionIdStore, (value) => value);
+
+export const currentSession = derived(
+  [playerSessions, currentSessionId],
+  ([$sessions, $sessionId]) => $sessions.find(session => session.playerId === $sessionId)
+);
+
+export const availablePerspectives = derived(playerSessions, ($sessions) =>
+  $sessions.map((session) => ({
+    id: session.playerId,
+    label: session.name ? `${session.name}` : `P${session.playerIndex}`,
+    session
+  }))
+);
+
+export async function setPerspective(sessionId: string): Promise<void> {
+  const current = get(currentSessionIdStore);
+  if (current !== sessionId) {
+    currentSessionIdStore.set(sessionId);
+  }
+
+  await (gameClient as NetworkGameClient).setPlayerId(sessionId);
+}
+
+playerSessions.subscribe(($sessions) => {
+  if ($sessions.length === 0) {
+    return;
+  }
+
+  const current = get(currentSessionIdStore);
+  if (!$sessions.some(session => session.playerId === current)) {
+    void setPerspective($sessions[0].playerId);
+  }
+});
+
 // Current player ID for primary view (typically 0 for single-device play)
-export const currentPlayerId = writable<number>(0);
 
 // View projection - derived from gameState only
-export const viewProjection = derived<typeof gameState, ViewProjection>(
-  gameState,
-  ($gameState) => {
-    const allTransitions = getNextStates($gameState);
+export const viewProjection = derived<[typeof gameState, typeof playerSessions, typeof currentSessionId], ViewProjection>(
+  [gameState, playerSessions, currentSessionId],
+  ([$gameState, $sessions, $sessionId]) => {
+    const session = $sessions.find(s => s.playerId === $sessionId) ?? $sessions[0];
+    const perspectiveIndex = session?.playerIndex ?? 0;
+    const canAct = !!(session && hasCapabilityType(session, 'act-as-player'));
 
-    // In test mode, show all actions for current player
-    // In normal mode, only show actions for player 0
-    const availableActions = testMode
+    const allowedActions = (gameClient as NetworkGameClient).getValidActions(session ? session.playerIndex : undefined);
+    const allowedKeys = new Set(allowedActions.map(actionKey));
+
+    const allTransitions = getNextStates($gameState);
+    const usedTransitions = testMode
       ? allTransitions
-      : allTransitions.filter(action => {
-          if (!('player' in action.action)) return true;
-          return action.action.player === 0;
-        });
+      : allTransitions.filter(transition => allowedKeys.has(actionKey(transition.action)));
 
     return createViewProjection(
       $gameState,
-      availableActions,
-      testMode,
-      (player: number) => {
-        const sessions = get(playerSessions);
-        const session = sessions.find(s => s.playerIndex === player);
-        return session ? session.controlType === 'ai' : false;
+      usedTransitions,
+      {
+        isTestMode: testMode,
+        viewingPlayerIndex: session?.playerIndex,
+        canAct,
+        isAIControlled: (player: number) => {
+          const seat = $sessions.find(s => s.playerIndex === player);
+          return seat ? seat.controlType === 'ai' : false;
+        }
       }
     );
   }
@@ -121,8 +169,16 @@ export const gameActions = {
    * Execute an action via StateTransition (for compatibility with old UI)
    */
   executeAction: async (transition: StateTransition): Promise<void> => {
-    const playerId = 'player' in transition.action ? transition.action.player : 0;
-    const result = await gameClient.requestAction(playerId, transition.action);
+    const session = get(currentSession);
+    if (!session || !hasCapabilityType(session, 'act-as-player')) {
+      throw new Error('Current perspective cannot execute actions');
+    }
+
+    if ('player' in transition.action && transition.action.player !== session.playerIndex) {
+      throw new Error('Action not available for this perspective');
+    }
+
+    const result = await gameClient.requestAction(session.playerIndex, transition.action);
 
     if (!result.ok) {
       console.error('Action failed:', result.error);
@@ -133,8 +189,18 @@ export const gameActions = {
   /**
    * Execute action directly (simpler API)
    */
-  requestAction: async (playerId: number, action: GameAction): Promise<void> => {
-    const result = await gameClient.requestAction(playerId, action);
+  requestAction: async (_playerId: number, action: GameAction): Promise<void> => {
+    const session = get(currentSession);
+    if (!session || !hasCapabilityType(session, 'act-as-player')) {
+      throw new Error('Current perspective cannot execute actions');
+    }
+
+    const preparedAction = { ...action } as GameAction;
+    if ('player' in preparedAction) {
+      preparedAction.player = session.playerIndex;
+    }
+
+    const result = await gameClient.requestAction(session.playerIndex, preparedAction);
     if (!result.ok) {
       console.error('Action failed:', result.error);
       throw new Error(result.error);
@@ -167,6 +233,7 @@ export const gameActions = {
 
     // Update stores
     clientState.set(newClient.getState());
+    void setPerspective(DEFAULT_SESSION_ID);
   },
 
   /**
@@ -227,6 +294,7 @@ export const gameVariants = {
 
     // Update stores
     clientState.set(newClient.getState());
+    void setPerspective(DEFAULT_SESSION_ID);
   },
 
   /**

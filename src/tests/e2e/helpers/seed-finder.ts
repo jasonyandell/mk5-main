@@ -4,12 +4,6 @@ import type { Page } from '@playwright/test';
  * Helper function to play one hand to completion
  */
 async function playOneHandToCompletion(page: Page): Promise<void> {
-  // Set AI to instant speed
-  await page.evaluate(() => {
-    const w = window as any;
-    if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
-  });
-
   // Play loop: nudge human turns until game ends
   const start = Date.now();
   while (Date.now() - start < 20000) {

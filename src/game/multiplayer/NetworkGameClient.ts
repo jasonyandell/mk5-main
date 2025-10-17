@@ -35,6 +35,7 @@ export class NetworkGameClient implements GameClient {
   private playerId: string = 'player-0'; // Default to player-0
   private playerIndex: number = 0; // Default to index 0
   private sessionId: string;
+  private pendingSubscriptionPlayerId?: string;
 
   constructor(adapter: IGameAdapter, config?: GameConfig) {
     this.adapter = adapter;
@@ -195,6 +196,10 @@ export class NetworkGameClient implements GameClient {
         this.gameId = message.gameId;
         this.cachedView = message.view;
         this.notifyListeners();
+        if (this.pendingSubscriptionPlayerId) {
+          void this.sendSubscription(this.pendingSubscriptionPlayerId);
+          this.pendingSubscriptionPlayerId = undefined;
+        }
         break;
 
       case 'STATE_UPDATE':
@@ -213,8 +218,13 @@ export class NetworkGameClient implements GameClient {
         if (message.gameId === this.gameId && this.cachedView) {
           // Update player info in cached view
           const player = this.cachedView.players.find(p => p.playerId === message.playerId);
-          if (player && message.controlType !== undefined) {
-            player.controlType = message.controlType;
+          if (player) {
+            if (message.controlType !== undefined) {
+              player.controlType = message.controlType;
+            }
+            if (message.capabilities) {
+              player.capabilities = message.capabilities.map(cap => ({ ...cap }));
+            }
           }
           this.notifyListeners();
         }
@@ -248,7 +258,8 @@ export class NetworkGameClient implements GameClient {
     const sessions: PlayerSession[] = view.players.map(player => ({
       playerId: player.sessionId || `player-${player.playerId}`,
       playerIndex: player.playerId as 0 | 1 | 2 | 3,
-      controlType: player.controlType
+      controlType: player.controlType,
+      capabilities: (player.capabilities ?? []).map(cap => ({ ...cap }))
     }));
 
     return {
@@ -303,18 +314,28 @@ export class NetworkGameClient implements GameClient {
   /**
    * Set the current player ID (for UI perspective)
    */
-  setPlayerId(playerIdOrIndex: number | string): void {
+  async setPlayerId(playerIdOrIndex: number | string): Promise<void> {
     if (typeof playerIdOrIndex === 'string') {
       this.playerId = playerIdOrIndex;
       // Try to extract index from playerId like "player-0", "ai-1"
       const match = playerIdOrIndex.match(/-(\d+)$/);
       if (match && match[1]) {
         this.playerIndex = parseInt(match[1], 10);
+      } else {
+        this.playerIndex = 0;
       }
     } else {
       // Legacy: accept number and convert to playerId
       this.playerIndex = playerIdOrIndex;
       this.playerId = `player-${playerIdOrIndex}`;
+    }
+
+    const targetPlayerId = this.playerId;
+    this.pendingSubscriptionPlayerId = targetPlayerId;
+
+    if (this.gameId) {
+      await this.sendSubscription(targetPlayerId);
+      this.pendingSubscriptionPlayerId = undefined;
     }
   }
 
@@ -337,5 +358,19 @@ export class NetworkGameClient implements GameClient {
         return action.player === targetPlayer;
       })
       .map(va => va.action);
+  }
+
+  private async sendSubscription(playerId?: string): Promise<void> {
+    if (!this.gameId) return;
+    try {
+      await this.adapter.send({
+        type: 'SUBSCRIBE',
+        gameId: this.gameId,
+        clientId: this.sessionId,
+        playerId
+      });
+    } catch (error) {
+      console.error('Failed to update subscription:', error);
+    }
   }
 }

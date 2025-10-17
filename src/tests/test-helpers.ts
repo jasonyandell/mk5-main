@@ -3,7 +3,7 @@
  */
 
 import type { GameState } from '../game/types';
-import type { GameConfig } from '../shared/multiplayer/protocol';
+import type { GameConfig } from '../game/types/config';
 
 /**
  * Default initialConfig for tests

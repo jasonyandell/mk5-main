@@ -69,6 +69,9 @@ export interface ViewProjection {
   phase: GamePhase;
   currentPlayer: number;
   isPlayer0Turn: boolean;
+  isPerspectiveTurn: boolean;
+  perspectiveIndex: number;
+  canAct: boolean;
   
   // Player's hand
   hand: HandDomino[];
@@ -135,12 +138,24 @@ export interface ViewProjection {
 export function createViewProjection(
   gameState: GameState,
   availableActions: StateTransition[],
-  isTestMode: boolean = false,
-  isAIControlled: (player: number) => boolean = () => false
+  options: {
+    isTestMode?: boolean;
+    viewingPlayerIndex?: number;
+    canAct?: boolean;
+    isAIControlled?: (player: number) => boolean;
+  } = {}
 ): ViewProjection {
+  const {
+    isTestMode = false,
+    viewingPlayerIndex,
+    canAct = true,
+    isAIControlled = () => false
+  } = options;
+
   const phase = gameState.phase;
   const currentPlayer = gameState.currentPlayer;
-  const isPlayer0Turn = currentPlayer === 0;
+  const perspectiveIndex = viewingPlayerIndex ?? 0;
+  const isPerspectiveTurn = currentPlayer === perspectiveIndex;
   
   // Group actions by type
   const biddingActions = availableActions.filter(a =>
@@ -167,7 +182,7 @@ export function createViewProjection(
   // Get player hand (player 0 unless in test mode)
   const playerHand = isTestMode
     ? (gameState.players[currentPlayer]?.hand || [])
-    : (gameState.players[0]?.hand || []);
+    : (gameState.players[perspectiveIndex]?.hand || []);
   
   // Build hand with metadata
   const hand: HandDomino[] = playerHand.map(domino => ({
@@ -181,11 +196,11 @@ export function createViewProjection(
   const alwaysShowActions = ['complete-trick', 'score-hand'];
   const proceedAction = availableActions.find(a =>
     alwaysShowActions.includes(a.id) ||
-    (isPlayer0Turn && (a.id === 'start-hand' || a.id === 'continue' || a.id === 'next-trick'))
+    (isPerspectiveTurn && (a.id === 'start-hand' || a.id === 'continue' || a.id === 'next-trick'))
   ) || null;
-  
+
   const consensusAction = availableActions.find(a =>
-    a.id === 'agree-complete-trick-0' || a.id === 'agree-score-hand-0'
+    a.id === `agree-complete-trick-${perspectiveIndex}` || a.id === `agree-score-hand-${perspectiveIndex}`
   ) || null;
   
   // Build bidding statuses
@@ -225,11 +240,12 @@ export function createViewProjection(
   
   // Hand results (only during scoring)
   // Use current player's perspective in test mode, otherwise always player 0
-  const playerPerspective = isTestMode ? currentPlayer : 0;
+  const playerPerspective = isTestMode ? currentPlayer : perspectiveIndex;
   const handResults = phase === 'scoring' ? calculateHandResults(gameState, playerPerspective) : null;
   
   // Determine waiting state
-  const playerActions = availableActions.filter(a => {
+  const actionableActions = canAct ? availableActions : [];
+  const playerActions = actionableActions.filter(a => {
     if (a.id.startsWith('bid-') || a.id === 'pass' || a.id === 'redeal') return true;
     if (a.id.startsWith('trump-')) return true;
     if (a.id.startsWith('play-')) return true;
@@ -240,14 +256,14 @@ export function createViewProjection(
   const hasActions = playerActions.length > 0;
   
   // Check if we're in a consensus phase (only agree actions available)
-  const isConsensusPhase = availableActions.length > 0 && 
-    availableActions.every(a => a.id.startsWith('agree-'));
+  const isConsensusPhase = actionableActions.length > 0 && 
+    actionableActions.every(a => a.id.startsWith('agree-'));
   
-  const isWaitingDuringBidding = phase === 'bidding' && (!isPlayer0Turn || !hasActions);
-  const isWaitingDuringTrump = phase === 'trump_selection' && (!isPlayer0Turn || !hasActions);
-  const isWaitingDuringPlay = phase === 'playing' && (!isPlayer0Turn || !hasActions);
+  const isWaitingDuringBidding = phase === 'bidding' && canAct && (!isPerspectiveTurn || !hasActions);
+  const isWaitingDuringTrump = phase === 'trump_selection' && canAct && (!isPerspectiveTurn || !hasActions);
+  const isWaitingDuringPlay = phase === 'playing' && canAct && (!isPerspectiveTurn || !hasActions);
   const isWaiting = isWaitingDuringBidding || isWaitingDuringTrump || isWaitingDuringPlay;
-  const waitingOnPlayer = (!isPlayer0Turn || !hasActions) ? currentPlayer : -1;
+  const waitingOnPlayer = (canAct && (!isPerspectiveTurn || !hasActions)) ? currentPlayer : -1;
   // Don't show AI thinking during consensus phases
   const isAIThinking = waitingOnPlayer >= 0 && isAIControlled(waitingOnPlayer) && !isConsensusPhase;
   
@@ -260,13 +276,16 @@ export function createViewProjection(
   return {
     phase,
     currentPlayer,
-    isPlayer0Turn,
+    isPlayer0Turn: isPerspectiveTurn,
+    isPerspectiveTurn,
+    perspectiveIndex,
+    canAct,
     hand,
     actions: {
-      bidding: biddingActions,
-      trump: trumpActions,
-      proceed: proceedAction || consensusAction,
-      consensus: consensusAction
+      bidding: canAct ? biddingActions : [],
+      trump: canAct ? trumpActions : [],
+      proceed: canAct ? (proceedAction || consensusAction) : null,
+      consensus: canAct ? consensusAction : null
     },
     bidding: {
       currentBid: gameState.currentBid,
@@ -294,7 +313,7 @@ export function createViewProjection(
       handResults
     },
     ui: {
-      showActionPanel: phase === 'bidding' || phase === 'trump_selection',
+      showActionPanel: canAct && (phase === 'bidding' || phase === 'trump_selection'),
       showBiddingTable: isWaitingDuringBidding && !isTestMode,
       isWaiting,
       waitingOnPlayer,
@@ -302,7 +321,7 @@ export function createViewProjection(
       activeView
     },
     tooltips: {
-      proceedAction: proceedAction?.label || consensusAction?.label || null,
+      proceedAction: canAct ? (proceedAction?.label || consensusAction?.label || null) : null,
       skipAction: isAIThinking ? `P${waitingOnPlayer} is thinking...` : ''
     }
   };

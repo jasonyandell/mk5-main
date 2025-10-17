@@ -4,7 +4,6 @@ import { get } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
 import { gameActions, gameState } from './stores/gameStore';
-import { quickplayActions, quickplayState } from './stores/quickplayStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
 
@@ -35,7 +34,6 @@ if (!isPerfectsPage) {
 // Minimal exposure for:
 // 1. Browser console debugging (game developers)
 // 2. E2E test verification (read-only state inspection)
-// 3. Feature toggles (quickplay)
 //
 // IMPORTANT: Tests should prefer DOM inspection over window access.
 // Only use window API when DOM doesn't reflect the state you need to verify.
@@ -43,10 +41,6 @@ if (!isPerfectsPage) {
 
 declare global {
   interface Window {
-    // Feature toggles (legitimate user-facing features)
-    quickplayActions: typeof quickplayActions;
-    getQuickplayState: () => ReturnType<typeof get>;
-
     // State inspection (read-only, for debugging/testing)
     getGameState: () => ReturnType<typeof get>;
 
@@ -60,10 +54,6 @@ declare global {
 }
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
-  // Feature toggles (legitimate UI features)
-  window.quickplayActions = quickplayActions;
-  window.getQuickplayState = () => get(quickplayState);
-
   // Read-only state inspection (minimal exposure for testing/debugging)
   window.getGameState = () => get(gameState);
 

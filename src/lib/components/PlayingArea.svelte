@@ -12,8 +12,11 @@
 
   // Handle domino click
   function handleDominoClick(event: CustomEvent<DominoType>) {
+    if (!$viewProjection.canAct) return;
+
     const domino = event.detail;
     const playAction = $viewProjection.actions.proceed;
+    const perspectiveIndex = $viewProjection.perspectiveIndex;
 
     // Check if there's a play action for this domino
     const dominoId1 = `play-${domino.high}-${domino.low}`;
@@ -31,9 +34,9 @@
       if (handDomino?.isPlayable) {
         // Construct the play action with dominoId
         const dominoId = `${domino.high}-${domino.low}`;
-        gameActions.requestAction(0, {
+        gameActions.requestAction(perspectiveIndex, {
           type: 'play',
-          player: 0,
+          player: perspectiveIndex,
           dominoId: dominoId
         });
       }
@@ -76,6 +79,7 @@
   
   // Handle action execution
   function handleProceedAction() {
+    if (!$viewProjection.canAct) return;
     const proceedAction = $viewProjection.actions.proceed;
     if (!proceedAction || actionPending) return;
 
@@ -91,6 +95,7 @@
 
   // Handle table click
   function handleTableClick() {
+    if (!$viewProjection.canAct) return;
     // If there's a proceed action, handle it
     if ($viewProjection.actions.proceed) {
       handleProceedAction();
@@ -191,7 +196,7 @@
           {@const bid = status.bid}
           {@const isCurrentTurn = status.isCurrentTurn}
           {@const isAI = status.isThinking}
-          {@const isYou = playerId === 0}
+          {@const isYou = playerId === $viewProjection.perspectiveIndex}
           
           <div class="flex justify-between px-3 py-2 rounded-md bg-base-200 transition-all {isCurrentTurn ? 'bg-info/20 ring-1 ring-info' : ''} {isYou ? 'font-semibold bg-primary/10' : ''}">
             <span class="flex items-center gap-1">

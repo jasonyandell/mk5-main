@@ -27,20 +27,6 @@ interface GotoOptions {
   testMode?: boolean; // default true; when false, main loop runs
 }
 
-interface QuickplayState {
-  enabled: boolean;
-  aiPlayers: Set<number>;
-}
-
-interface QuickplayActions {
-  toggle(): void;
-  togglePlayer(playerId: number): void;
-}
-
-interface GameWindow {
-  quickplayActions?: QuickplayActions;
-  getQuickplayState?: () => QuickplayState;
-}
 
 export class PlaywrightGameHelper {
   private page: Page;
@@ -142,19 +128,7 @@ export class PlaywrightGameHelper {
         }
       `;
       document.head.appendChild(style);
-      
-      // Disable AI for all players
-      const gameWindow = window as GameWindow;
-      if (gameWindow.quickplayActions && gameWindow.getQuickplayState) {
-        const state = gameWindow.getQuickplayState();
-        if (state.enabled) {
-          gameWindow.quickplayActions.toggle();
-        }
-        for (const playerId of state.aiPlayers) {
-          gameWindow.quickplayActions.togglePlayer(playerId);
-        }
-      }
-      
+
       // Disable URL updates unless explicitly enabled
       if (opts?.disableUrlUpdates !== false) {
         window.history.pushState = () => {};
@@ -716,19 +690,6 @@ export class PlaywrightGameHelper {
             // Already an object with set method
             gameWindow.gameState.set(newState);
           }
-        }
-      }
-      
-      // Also enable quickplay if available (for backward compatibility)
-      if (gameWindow.quickplayActions && gameWindow.getQuickplayState) {
-        const state = gameWindow.getQuickplayState();
-        for (let i = 1; i <= 3; i++) {
-          if (!state.aiPlayers.has(i)) {
-            gameWindow.quickplayActions.togglePlayer(i);
-          }
-        }
-        if (!state.enabled) {
-          gameWindow.quickplayActions.toggle();
         }
       }
     });
