@@ -1,374 +1,26 @@
-# Remixed Architecture - Outstanding Work
- 
-**Last Updated**: 2025-01-15
-**Status**: Post-refactor tracking document
-**Context**: Variant composition refactor completed, event sourcing foundation in place
+# Remixed Architecture - TODO List
+
+**Last Updated**: 2025-01-18
+**Status**: Remaining work after variant composition refactor
+**Context**: Core refactor complete (composition, event sourcing, auto-execute, capabilities). This document tracks remaining features.
 
 ---
 
 ## Executive Summary
 
-The variant composition refactor successfully migrated from imperative hooks to pure functional composition with event sourcing. However, several features from the original vision document (`remixed-855ccfd5.md`) remain unimplemented or partially complete.
+The variant composition refactor is complete with all core infrastructure in place. The following features from the original vision document (`remixed-855ccfd5.md`) remain unimplemented:
 
-### ✅ Completed
-- Single transformer surface for variants
-- Pure functional composition (`applyVariants`)
-- Event sourcing foundation (`replayActions`)
-- Tournament and one-hand variants
-- Base engine made maximally permissive
-- Zero TypeScript compilation errors
-
-### ⚠️ Partially Implemented
-- Scripted actions (defined, not auto-executed by host)
-- Capability system (types defined, not enforced)
-
-### ❌ Not Implemented
-- Auto-execute handler in GameHost
-- Capability-based visibility filtering
-- URL encoding updates for event sourcing
+### Remaining Work
+- URL encoding updates for event sourcing (config + actions format)
 - Speed mode variant
 - Daily challenge variant
 - Seed finder system
+- Test coverage for completed features
+- Documentation updates
 
 ---
 
-## 1. Auto-Execute Handler ⚠️ CRITICAL
-
-### Status: Partially Implemented
-
-**What Exists:**
-- One-hand variant emits actions with `autoExecute: true`
-- Actions include `meta.scriptId` for debugging
-- GameHost receives these actions in valid action list
-
-**What's Missing:**
-The GameHost loop that automatically executes scripted actions.
-
-### Required Implementation
-
-**File**: `src/server/game/GameHost.ts`
-
-Add method:
-```typescript
-/**
- * Auto-execute scripted actions until none remain.
- * Guards against runaway scripts with max iteration limit.
- */
-private async processAutoExecuteActions(): Promise<void> {
-  const MAX_AUTO_EXEC = 50; // Prevent infinite loops
-  let iterations = 0;
-
-  while (iterations < MAX_AUTO_EXEC) {
-    const actions = this.getValidActionsComposed(this.mpState.state);
-
-    // Find first auto-execute action
-    const autoAction = actions.find(a => a.autoExecute === true);
-    if (!autoAction) break; // No more scripted actions
-
-    // Execute it (find which player can execute it)
-    const player = 'player' in autoAction
-      ? this.getPlayerByIndex(autoAction.player)
-      : this.mpState.sessions[0]; // Neutral actions: any player
-
-    const result = await this.executeAction(player.playerId, autoAction);
-
-    if (!result.ok) {
-      console.error(`Auto-execute failed at step ${iterations}:`, result.error);
-      break;
-    }
-
-    iterations++;
-  }
-
-  if (iterations === MAX_AUTO_EXEC) {
-    console.error('Auto-execute limit reached - possible infinite loop', {
-      scriptId: autoAction?.meta?.scriptId
-    });
-  }
-}
-```
-
-Call after state changes:
-```typescript
-executeAction(playerId: string, action: GameAction) {
-  // ... existing code ...
-
-  this.mpState = result.value;
-  this.lastUpdate = Date.now();
-
-  // NEW: Process any auto-execute actions
-  await this.processAutoExecuteActions();
-
-  this.notifyListeners();
-  return { ok: true };
-}
-```
-
-### Impact
-
-**Without this:**
-- One-hand variant doesn't actually skip bidding
-- Users see scripted actions in UI (confusing)
-- Manual execution required for each scripted step
-
-**With this:**
-- One-hand mode works as designed (instant skip to playing)
-- Scripted sequences execute automatically
-- Cleaner UX (no intermediate states shown)
-
-### Testing Pattern
-
-```typescript
-test('auto-executes one-hand bidding sequence', async () => {
-  const host = new GameHost(gameId, {
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    variant: { type: 'one-hand' }
-  }, players);
-
-  const view = host.getView();
-
-  // Should be at playing phase after auto-exec
-  expect(view.state.phase).toBe('playing');
-  expect(view.state.bids).toHaveLength(4);
-  expect(view.state.trump.type).not.toBe('not-selected');
-});
-```
-
----
-
-## 2. Capability System ❌ NOT IMPLEMENTED
-
-### Status: Types Defined, Not Enforced
-
-**What Exists:**
-- `PlayerSession` has capabilities concept
-- Authorization checks player index
-- Protocol supports metadata on actions
-
-**What's Missing:**
-Fine-grained capability-based action visibility and execution control.
-
-### Design Overview
-
-From `remixed-855ccfd5.md` Section 4.5:
-
-```
-Action Pipeline: Capability → Authorization → Visibility
-
-1. Variant emits actions with metadata
-2. Authorization filters by canExecute capability
-3. Visibility filters metadata by viewing capability
-```
-
-### Required Types
-
-**File**: `src/game/multiplayer/types.ts`
-
-```typescript
-// Capability tokens
-export type Capability =
-  | 'execute-action'      // Can execute this action
-  | 'see-hidden-info'     // Can see opponent hands (spectator)
-  | 'see-ai-intent'       // Can see AI hints (coach mode)
-  | 'see-hints'           // Can see gameplay hints (tutorial)
-  | 'observe-all-hands'   // Full visibility (spectator/replay)
-  | 'control-player'      // Can control this player seat
-  ;
-
-export interface PlayerSession {
-  playerId: string;
-  playerIndex: 0 | 1 | 2 | 3;
-  controlType: 'human' | 'ai';
-  isConnected: boolean;
-  name?: string;
-
-  // NEW: Capability set
-  capabilities: Set<Capability>;
-}
-
-export interface ActionMetadata {
-  // Visibility control
-  requiredCapability?: Capability;  // Need this to see metadata
-
-  // Execution control
-  canExecute?: Capability[];       // Need one of these to execute
-
-  // Hints and annotations
-  hint?: string;                   // Gameplay hint (requires see-hints)
-  aiIntent?: string;              // AI reasoning (requires see-ai-intent)
-  recommendation?: 'strong' | 'weak';
-}
-```
-
-### Required Implementation
-
-**File**: `src/game/multiplayer/authorization.ts`
-
-```typescript
-/**
- * Filter actions by execution capability.
- * Player can only execute actions they have capability for.
- */
-export function getExecutableActions(
-  session: PlayerSession,
-  actions: GameAction[]
-): GameAction[] {
-  return actions.filter(action => {
-    // Check execution capability
-    if (action.canExecute && action.canExecute.length > 0) {
-      return action.canExecute.some(cap => session.capabilities.has(cap));
-    }
-
-    // Default: player-specific actions require control-player
-    if ('player' in action) {
-      return session.capabilities.has('control-player')
-        && action.player === session.playerIndex;
-    }
-
-    // Neutral actions: anyone can execute
-    return true;
-  });
-}
-
-/**
- * Filter action metadata by viewing capability.
- * Strips metadata the player cannot see.
- */
-export function getVisibleActions(
-  session: PlayerSession,
-  actions: GameAction[]
-): GameAction[] {
-  return actions.map(action => {
-    const metadata = action.metadata;
-    if (!metadata) return action;
-
-    // Filter metadata by capability
-    const visibleMetadata: Partial<ActionMetadata> = {};
-
-    if (metadata.hint && session.capabilities.has('see-hints')) {
-      visibleMetadata.hint = metadata.hint;
-    }
-
-    if (metadata.aiIntent && session.capabilities.has('see-ai-intent')) {
-      visibleMetadata.aiIntent = metadata.aiIntent;
-    }
-
-    // Always show recommendation if present
-    if (metadata.recommendation) {
-      visibleMetadata.recommendation = metadata.recommendation;
-    }
-
-    return {
-      ...action,
-      metadata: visibleMetadata
-    };
-  });
-}
-```
-
-### Usage in GameHost
-
-```typescript
-private createView(forPlayerId?: string): GameView {
-  const { state, sessions } = this.mpState;
-
-  // Get all valid actions from composed variants
-  const allValidActions = this.getValidActionsComposed(state);
-
-  if (forPlayerId) {
-    const session = this.players.get(forPlayerId);
-    if (session) {
-      // Apply capability filters
-      let filtered = getExecutableActions(session, allValidActions);
-      filtered = getVisibleActions(session, filtered);
-
-      return { state, validActions: filtered, ... };
-    }
-  }
-
-  // Unfiltered view (admin/debug)
-  return { state, validActions: allValidActions, ... };
-}
-```
-
-### Example Variant Using Capabilities
-
-**File**: `src/game/variants/tutorial.ts`
-
-```typescript
-export const tutorialVariant: VariantFactory = () => (base) => (state) => {
-  const actions = base(state);
-
-  // Annotate actions with hints
-  return actions.map(action => {
-    if (action.type === 'bid') {
-      return {
-        ...action,
-        metadata: {
-          hint: getHintForBid(action, state),
-          requiredCapability: 'see-hints',
-          recommendation: evaluateBid(action, state) > 0.7 ? 'strong' : 'weak'
-        }
-      };
-    }
-
-    if (action.type === 'play') {
-      return {
-        ...action,
-        metadata: {
-          hint: getHintForPlay(action, state),
-          aiIntent: getAIReasoning(action, state),
-          requiredCapability: 'see-hints'
-        }
-      };
-    }
-
-    return action;
-  });
-};
-```
-
-### Session Creation with Capabilities
-
-```typescript
-function createPlayerSession(
-  playerIndex: number,
-  controlType: 'human' | 'ai',
-  role: 'player' | 'spectator' | 'coach' = 'player'
-): PlayerSession {
-  const capabilities = new Set<Capability>();
-
-  switch (role) {
-    case 'player':
-      capabilities.add('execute-action');
-      capabilities.add('control-player');
-      break;
-
-    case 'spectator':
-      capabilities.add('observe-all-hands');
-      capabilities.add('see-hidden-info');
-      break;
-
-    case 'coach':
-      capabilities.add('see-ai-intent');
-      capabilities.add('see-hints');
-      capabilities.add('observe-all-hands');
-      break;
-  }
-
-  return {
-    playerId: `${role}-${playerIndex}`,
-    playerIndex,
-    controlType,
-    isConnected: true,
-    capabilities
-  };
-}
-```
-
----
-
-## 3. URL Encoding for Event Sourcing ❌ NOT IMPLEMENTED
+## 1. URL Encoding for Event Sourcing ❌ NOT IMPLEMENTED
 
 ### Status: Old URL System Exists, Not Updated
 
@@ -487,7 +139,7 @@ gameClient.subscribe(state => {
 
 ---
 
-## 4. Speed Mode Variant ❌ NOT IMPLEMENTED
+## 2. Speed Mode Variant ❌ NOT IMPLEMENTED
 
 ### Status: Mentioned in Docs, Not Created
 
@@ -558,7 +210,7 @@ const config: GameConfig = {
 
 ---
 
-## 5. Daily Challenge Variant ❌ NOT IMPLEMENTED
+## 3. Daily Challenge Variant ❌ NOT IMPLEMENTED
 
 ### Status: Concept Only
 
@@ -621,7 +273,7 @@ if (action.type === 'end-game' && action.meta?.stars) {
 
 ---
 
-## 6. Seed Finder System ❌ NOT IMPLEMENTED
+## 4. Seed Finder System ❌ NOT IMPLEMENTED
 
 ### Status: Removed During Refactor
 
@@ -716,7 +368,7 @@ gameVariants.findAndStartOneHand = async () => {
 
 ---
 
-## 7. Testing Gaps
+## 5. Testing Gaps
 
 ### Missing Test Coverage
 
@@ -783,7 +435,7 @@ test('encodes and decodes state perfectly', () => {
 
 ---
 
-## 8. Documentation Gaps
+## 6. Documentation Gaps
 
 ### Missing Docs
 
@@ -823,41 +475,35 @@ GameHost processes these in `processAutoExecuteActions()` loop.
 
 ## Priority Ranking
 
-### P0 - Critical for Core Functionality
-1. **Auto-execute handler** - One-hand variant doesn't work without it
-2. **Fix any failing tests** - Ensure refactor didn't break existing features
-
 ### P1 - High Value, Low Effort
-3. **Speed mode variant** - Simple, high UX value
-4. **URL encoding update** - Enables sharing/debugging
+1. **Speed mode variant** - Simple, high UX value
+2. **URL encoding update** - Enables sharing/debugging (config + actions format)
 
 ### P2 - Medium Priority
-5. **Capability system** - Foundation for future features
-6. **Daily challenge variant** - Nice-to-have
+3. **Daily challenge variant** - Nice-to-have
 
 ### P3 - Low Priority / Future
-7. **Seed finder** - Useful but not essential
-8. **Additional test coverage** - Incrementally improve
+4. **Seed finder** - Useful but not essential
+5. **Additional test coverage** - Incrementally improve
 
 ---
 
 ## Getting Started
 
-### Implement Auto-Execute (P0)
-
-1. Read this section: **#1. Auto-Execute Handler**
-2. Add `processAutoExecuteActions()` to GameHost
-3. Call it after `executeAction()`
-4. Test with one-hand variant
-5. Verify bidding sequence auto-runs
-
 ### Implement Speed Mode (P1)
 
-1. Read this section: **#4. Speed Mode Variant**
+1. Read this section: **#2. Speed Mode Variant**
 2. Create `src/game/variants/speedMode.ts`
 3. Register in `registry.ts`
 4. Test in UI
 5. Verify single-option plays auto-execute
+
+### Implement URL Encoding (P1)
+
+1. Read this section: **#1. URL Encoding for Event Sourcing**
+2. Update `src/game/core/url-compression.ts` to use config + actions format
+3. Test encode/decode round-trip
+4. Verify exact state reconstruction
 
 ### Test Everything
 

@@ -10,6 +10,7 @@ This document describes the message sequences for various game operations in the
 2. **Server is authoritative**: All game rules and validation happen server-side
 3. **Protocol is transport-agnostic**: Same messages work over WebSocket, Worker, or direct calls
 4. **AI clients are just clients**: They speak the same protocol as human clients
+5. **State is filtered**: Clients receive only the information they're authorized to see based on capabilities
 
 ## Message Flows
 
@@ -26,7 +27,7 @@ Client                          Server
   |                               |
   |<------- GAME_CREATED ---------|
   |  gameId: "abc123"             |
-  |  view: { state, validActions }|
+  |  view: { filteredState, ... } |
   |                               |
   |<------ PLAYER_STATUS ---------|  (Server spawns AI clients)
   |  playerId: 1                  |
@@ -44,8 +45,8 @@ Client                          Server
   |  playerId: 0                  |
   |  action: { type: "bid", ... } |
   |                               |
-  |<------- STATE_UPDATE ---------|
-  |  view: { state, validActions }|
+  |<------- STATE_UPDATE ---------|  (Filtered based on capabilities)
+  |  view: { filteredState, ... } |
   |  lastAction: { ... }          |
 ```
 
@@ -54,8 +55,8 @@ Client                          Server
 ```
 AI Client                       Server
   |                               |
-  |<------- STATE_UPDATE ---------|  (AI receives state like any client)
-  |  view: { state, validActions }|
+  |<------- STATE_UPDATE ---------|  (AI receives filtered state like any client)
+  |  view: { filteredState, ... } |  (Only sees own hand, not opponents')
   |                               |
   | [AI selects from validActions]|
   |                               |
@@ -64,8 +65,8 @@ AI Client                       Server
   |  playerId: 1                  |
   |  action: { type: "play", ... }|
   |                               |
-  |<------- STATE_UPDATE ---------|  (Broadcast to all clients)
-  |  view: { state, validActions }|
+  |<------- STATE_UPDATE ---------|  (Broadcast to all clients, each filtered)
+  |  view: { filteredState, ... } |
 ```
 
 ### 4. Change Player Control (Human -> AI)
@@ -87,7 +88,8 @@ Client                          Server
                                   |
 AI Client <----- SUBSCRIBE -------|
   |                               |
-  |<------- STATE_UPDATE ---------|
+  |<------- STATE_UPDATE ---------|  (Filtered for player 0's view)
+  |  view: { filteredState, ... } |
 ```
 
 ### 5. Change Player Control (AI -> Human)
@@ -126,7 +128,7 @@ Client                          Server
   |  progress: 50                 |
   |                               |
   |<------- GAME_CREATED ---------|
-  |  view: { state, validActions }|
+  |  view: { filteredState, ... } |
 ```
 
 ### 7. Error Handling
@@ -156,8 +158,8 @@ The `GameView` sent in `STATE_UPDATE` messages contains:
 
 ```typescript
 {
-  state: GameState,           // Complete game state
-  validActions: [              // Pre-calculated valid moves
+  state: FilteredGameState,    // Filtered based on client capabilities
+  validActions: [               // Pre-calculated valid moves for this client
     {
       action: { type: "bid", ... },
       label: "Bid 30",
@@ -165,13 +167,91 @@ The `GameView` sent in `STATE_UPDATE` messages contains:
     },
     ...
   ],
-  players: [                   // Player metadata
-    { playerId: 0, controlType: "human", connected: true },
+  players: [                    // Player metadata with capabilities
+    { playerId: 0, controlType: "human", connected: true, capabilities: [...] },
     ...
   ],
   metadata: { ... }
 }
 ```
+
+**State Filtering**:
+
+The `FilteredGameState` is created by `GameHost.createView()` which:
+1. Calls `getVisibleStateForSession(state, session)` to filter based on capabilities
+2. Hides opponent hands unless client has `observe-all-hands` capability
+3. Filters action metadata based on capabilities (hints, AI intent, etc.)
+4. Returns only information the client is authorized to see
+
+**Capability-Based Views**:
+
+Different clients receive different views of the same game state:
+
+- **Player (default)**: Can see only their own hand
+  - Capabilities: `act-as-player`, `observe-own-hand`
+  - Other players' hands appear as empty arrays with `handCount` only
+
+- **Spectator**: Can see all hands
+  - Capabilities: `observe-all-hands`, `observe-full-state`
+  - Full visibility for observation/coaching
+
+- **Debug/Admin**: Can see everything including internal metadata
+  - Capabilities: `observe-full-state`, `see-hints`, `see-ai-intent`
+  - No filtering applied
+
+**Implementation**: `src/game/multiplayer/capabilityUtils.ts:getVisibleStateForSession()`
+
+## Security & Information Hiding
+
+### Client Can Only See What They Should
+
+The protocol enforces information hiding through type-safe filtering:
+
+1. **Server-side filtering**: `GameHost.createView()` filters state before transmission
+2. **Type safety**: `FilteredGameState` type ensures clients can't access unfiltered data
+3. **Capability-based**: Different clients receive different views based on their role
+
+### Example: Player View vs Spectator View
+
+**Same game state, different views**:
+
+```typescript
+// Player 0's view (observe-own-hand capability)
+{
+  state: {
+    players: [
+      { id: 0, hand: [<7 dominoes>], handCount: 7 },      // Own hand visible
+      { id: 1, hand: [], handCount: 7 },                   // Hidden
+      { id: 2, hand: [], handCount: 7 },                   // Hidden
+      { id: 3, hand: [], handCount: 7 }                    // Hidden
+    ],
+    // ... rest of state
+  }
+}
+
+// Spectator's view (observe-all-hands capability)
+{
+  state: {
+    players: [
+      { id: 0, hand: [<7 dominoes>], handCount: 7 },      // Visible
+      { id: 1, hand: [<7 dominoes>], handCount: 7 },      // Visible
+      { id: 2, hand: [<7 dominoes>], handCount: 7 },      // Visible
+      { id: 3, hand: [<7 dominoes>], handCount: 7 }       // Visible
+    ],
+    // ... rest of state
+  }
+}
+```
+
+### AI Clients Receive Filtered Views Too
+
+AI clients are just clients - they receive the same filtered `GameView`:
+
+- AI for player 1 receives view with only player 1's hand visible
+- AI cannot peek at opponent hands (type system prevents it)
+- AI strategies work with `FilteredGameState` (structurally compatible)
+
+This ensures AI plays fairly without access to hidden information.
 
 ## Transport Adapters
 

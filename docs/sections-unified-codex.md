@@ -1,3 +1,9 @@
+# FAILED PLAN. COST ME SO MUCH TIME. KEPT TO SHOW LLMS AN EXAMPLE OF A PLAN THAT DOES NOT WORK
+
+This plan had a critical flaw.  The dispatcher was a total disaster.  It ended
+up making new, worse race conditions.  It introduced mutation to the core game state, breaking the pure combinators at the heart of the project.  
+I passed this through Opus 4.1 and GPT5-high and both were absolutely convinced that it was a great idea where nothing could possibly go wrong.
+
 # Sections: Unified Codex Approach
 
 This document consolidates the best overall approach to: (1) fix timing/skips reliably and (2) enable playing bounded sections (one transition, one play, one trick, one hand, full game) with clean composition.
