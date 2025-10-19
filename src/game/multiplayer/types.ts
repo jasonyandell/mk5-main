@@ -1,4 +1,5 @@
-import type { FilteredGameState, GameAction } from '../types';
+import type { GameAction, GameState } from '../types';
+import type { VariantConfig } from '../types/config';
 
 /**
  * Capability tokens control what a session can see or do.
@@ -58,12 +59,17 @@ export interface PlayerSession {
 }
 
 /**
- * Multiplayer game state wraps FilteredGameState with session management
- * The state is always filtered based on the current perspective's capabilities
+ * Multiplayer game state stores pure GameState and filters on-demand.
+ * This is the canonical type from the vision document (remixed-855ccfd5.md lines 108-115).
+ * Authority stores pure state; filtering happens per-client in createView().
  */
 export interface MultiplayerGameState {
-  state: FilteredGameState;
-  sessions: PlayerSession[];
+  gameId: string;                           // Unique game identifier
+  coreState: GameState;                     // Pure GameState (NOT filtered)
+  players: readonly PlayerSession[];        // Immutable player sessions
+  createdAt: number;                        // Timestamp when game created
+  lastActionAt: number;                     // Last activity timestamp
+  enabledVariants: VariantConfig[];         // Active rule modifications
 }
 
 /**

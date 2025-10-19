@@ -79,7 +79,7 @@ export async function applyConfiguration(config: PlayerConfig[]): Promise<void> 
  */
 export async function togglePlayerControl(playerId: number): Promise<void> {
   const currentState = gameClient.getState();
-  const currentSession = currentState.sessions.find(s => s.playerIndex === playerId);
+  const currentSession = Array.from(currentState.players).find(s => s.playerIndex === playerId);
   const isHuman = currentSession?.controlType === 'human';
 
   const newType = isHuman ? 'ai' : 'human';

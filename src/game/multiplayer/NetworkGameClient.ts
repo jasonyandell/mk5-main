@@ -33,9 +33,10 @@ export class NetworkGameClient implements GameClient {
   private unsubscribe: (() => void) | undefined;
   private initPromise?: Promise<void>;
   private playerId: string = 'player-0'; // Default to player-0
-  private playerIndex: number = 0; // Default to index 0
   private sessionId: string;
   private pendingSubscriptionPlayerId?: string;
+  private createGameResolver?: (value: { gameId: string; view: GameView }) => void;
+  private createGameRejecter?: (error: Error) => void;
 
   constructor(adapter: IGameAdapter, config?: GameConfig) {
     this.adapter = adapter;
@@ -55,12 +56,17 @@ export class NetworkGameClient implements GameClient {
   /**
    * Get current state (synchronous, from cache)
    */
-  getState(): MultiplayerGameState & { state: FilteredGameState } {
+  getState(): MultiplayerGameState {
     if (!this.cachedView) {
       // Return empty state if not initialized
+      const emptyState = this.createEmptyState();
       return {
-        state: this.createEmptyState(),
-        sessions: []
+        gameId: 'initializing',
+        coreState: emptyState,
+        players: [],
+        createdAt: Date.now(),
+        lastActionAt: Date.now(),
+        enabledVariants: []
       };
     }
 
@@ -155,32 +161,34 @@ export class NetworkGameClient implements GameClient {
   }
 
   /**
-   * Create a new game
+   * Create a new game - returns promise that resolves when GAME_CREATED received
    */
   private async createGame(config: GameConfig): Promise<void> {
     try {
+      // Create promise that will be resolved in handleServerMessage
+      const gameCreatedPromise = new Promise<{ gameId: string; view: GameView }>((resolve, reject) => {
+        this.createGameResolver = resolve;
+        this.createGameRejecter = reject;
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          if (this.createGameResolver) {
+            this.createGameRejecter?.(new Error('Game creation timeout'));
+            delete this.createGameResolver;
+            delete this.createGameRejecter;
+          }
+        }, 5000);
+      });
+
+      // Send CREATE_GAME message
       await this.adapter.send({
         type: 'CREATE_GAME',
         config,
         clientId: this.sessionId
       });
 
-      // Wait for GAME_CREATED response (handled in handleServerMessage)
-      // This is a simplified approach - production would use promises
-      await new Promise<void>((resolve) => {
-        const checkInterval = window.setInterval(() => {
-          if (this.gameId) {
-            window.clearInterval(checkInterval);
-            resolve();
-          }
-        }, 10);
-
-        // Timeout after 5 seconds
-        window.setTimeout(() => {
-          window.clearInterval(checkInterval);
-          resolve();
-        }, 5000);
-      });
+      // Wait for GAME_CREATED response (promise resolved in handleServerMessage)
+      await gameCreatedPromise;
     } catch (error) {
       console.error('Failed to create game:', error);
       throw error;
@@ -195,6 +203,14 @@ export class NetworkGameClient implements GameClient {
       case 'GAME_CREATED':
         this.gameId = message.gameId;
         this.cachedView = message.view;
+
+        // Resolve createGame promise if waiting
+        if (this.createGameResolver) {
+          this.createGameResolver({ gameId: message.gameId, view: message.view });
+          delete this.createGameResolver;
+          delete this.createGameRejecter;
+        }
+
         this.notifyListeners();
         if (this.pendingSubscriptionPlayerId !== undefined) {
           void this.sendSubscription(this.pendingSubscriptionPlayerId);
@@ -253,9 +269,9 @@ export class NetworkGameClient implements GameClient {
   /**
    * Convert GameView to MultiplayerGameState
    */
-  private viewToMultiplayerState(view: GameView): MultiplayerGameState & { state: FilteredGameState } {
+  private viewToMultiplayerState(view: GameView): MultiplayerGameState {
     // Convert player info to sessions
-    const sessions: PlayerSession[] = view.players.map(player => ({
+    const players: PlayerSession[] = view.players.map(player => ({
       playerId: player.sessionId || `player-${player.playerId}`,
       playerIndex: player.playerId as 0 | 1 | 2 | 3,
       controlType: player.controlType,
@@ -263,8 +279,12 @@ export class NetworkGameClient implements GameClient {
     }));
 
     return {
-      state: view.state,  // view.state is FilteredGameState
-      sessions
+      gameId: view.metadata.gameId,
+      coreState: view.state,  // view.state is FilteredGameState, we treat it as coreState for now
+      players: players,
+      createdAt: view.metadata.created,
+      lastActionAt: view.metadata.lastUpdate,
+      enabledVariants: view.metadata.variants || []
     };
   }
 
@@ -317,16 +337,8 @@ export class NetworkGameClient implements GameClient {
   async setPlayerId(playerIdOrIndex: number | string): Promise<void> {
     if (typeof playerIdOrIndex === 'string') {
       this.playerId = playerIdOrIndex;
-      // Try to extract index from playerId like "player-0", "ai-1"
-      const match = playerIdOrIndex.match(/-(\d+)$/);
-      if (match && match[1]) {
-        this.playerIndex = parseInt(match[1], 10);
-      } else {
-        this.playerIndex = 0;
-      }
     } else {
       // Legacy: accept number and convert to playerId
-      this.playerIndex = playerIdOrIndex;
       this.playerId = `player-${playerIdOrIndex}`;
     }
 
@@ -341,23 +353,13 @@ export class NetworkGameClient implements GameClient {
 
   /**
    * Get valid actions for current player
-   * (Extracted from cached view, not computed)
+   * Server already filtered these based on our subscription playerId
    */
-  getValidActions(playerIndex?: number): GameAction[] {
+  getValidActions(): GameAction[] {
     if (!this.cachedView) return [];
 
-    const targetPlayer = playerIndex ?? this.playerIndex;
-
-    // Filter valid actions for this player
-    return this.cachedView.validActions
-      .filter(va => {
-        const action = va.action;
-        // Neutral actions available to all
-        if (!('player' in action)) return true;
-        // Player-specific actions
-        return action.player === targetPlayer;
-      })
-      .map(va => va.action);
+    // Server already filtered actions for our playerId - trust the server
+    return this.cachedView.validActions.map(va => va.action);
   }
 
   private async sendSubscription(playerId?: string): Promise<void> {

@@ -27,16 +27,6 @@ import { applyVariants } from '../../game/variants/registry';
 import type { VariantConfig, StateMachine } from '../../game/variants/types';
 
 /**
- * Unique game instance
- */
-export interface GameInstance {
-  id: string;
-  host: GameHost;
-  created: number;
-  lastUpdate: number;
-}
-
-/**
  * GameHost - Pure game server authority
  */
 export class GameHost {
@@ -97,29 +87,15 @@ export class GameHost {
       variants: this.variantConfigs
     });
 
-    // Convert to FilteredGameState format with handCount
-    const filteredPlayers = initialState.players.map(player => ({
-      id: player.id,
-      name: player.name,
-      teamId: player.teamId,
-      marks: player.marks,
-      hand: player.hand,
-      handCount: player.hand.length,
-      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
-    }));
-
-    const filteredInitialState = {
-      ...initialState,
-      players: filteredPlayers,
-      initialConfig: {
-        ...initialState.initialConfig,
-        variants: this.variantConfigs
-      }
-    };
-
+    // Store pure GameState (NO filtering - filtering happens in createView())
+    const now = Date.now();
     this.mpState = {
-      state: filteredInitialState,
-      sessions: normalizedPlayers
+      gameId,
+      coreState: initialState,
+      players: normalizedPlayers,
+      createdAt: now,
+      lastActionAt: now,
+      enabledVariants: this.variantConfigs
     };
 
     // Process any immediate scripted actions emitted at startup
@@ -169,7 +145,7 @@ export class GameHost {
    */
   setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
     // Find player by index
-    const sessions = this.mpState.sessions.map(session => {
+    const updatedPlayers = this.mpState.players.map(session => {
       if (session.playerIndex !== playerIndex) {
         return session;
       }
@@ -182,19 +158,20 @@ export class GameHost {
     });
 
     // Update players map
-    for (const session of sessions) {
+    for (const session of updatedPlayers) {
       this.players.set(session.playerId, session);
     }
 
-    // Update state playerTypes to match
-    const updatedState = {
-      ...this.mpState.state,
-      playerTypes: sessions.map(s => s.controlType) as ('human' | 'ai')[]
+    // Update core state playerTypes to match
+    const updatedCoreState = {
+      ...this.mpState.coreState,
+      playerTypes: updatedPlayers.map(s => s.controlType) as ('human' | 'ai')[]
     };
 
     this.mpState = {
-      state: updatedState,
-      sessions
+      ...this.mpState,
+      coreState: updatedCoreState,
+      players: updatedPlayers
     };
 
     this.lastUpdate = Date.now();
@@ -204,8 +181,8 @@ export class GameHost {
   /**
    * Get player sessions
    */
-  getPlayers(): PlayerSession[] {
-    return this.mpState.sessions;
+  getPlayers(): readonly PlayerSession[] {
+    return this.mpState.players;
   }
 
   /**
@@ -254,18 +231,24 @@ export class GameHost {
     //   3. This enables URL-based replay without sending full actionHistory
     // Reference: src/game/core/url-compression.ts
 
-    const { state, sessions } = this.mpState;
+    const { coreState, players } = this.mpState;
 
     // Get all valid actions using composed function
-    const allValidActions = this.getValidActionsComposed(state);
+    const allValidActions = this.getValidActionsComposed(coreState);
     const session = forPlayerId ? this.players.get(forPlayerId) : undefined;
-    const visibleState = session ? getVisibleStateForSession(state, session) : state;
+
+    // Always convert to FilteredGameState format (with handCount)
+    // If session provided, filter based on capabilities; otherwise show all
+    const visibleState: import('../../game/types').FilteredGameState = session
+      ? getVisibleStateForSession(coreState, session)
+      : this.convertToFilteredState(coreState);
+
     const sessionActions = session
       ? filterActionsForSession(session, allValidActions)
       : allValidActions;
 
     // Get transitions for labels
-    const transitions = getNextStates(state);
+    const transitions = getNextStates(coreState);
 
     // Convert to ValidAction format with labels
     let validActions: ValidAction[] = sessionActions.map(action => {
@@ -300,7 +283,7 @@ export class GameHost {
         label: transition?.label || action.type,
         ...(this.getActionGroup(action) ? { group: this.getActionGroup(action) } : {}),
         ...(this.getActionShortcut(action) ? { shortcut: this.getActionShortcut(action) } : {}),
-        recommended: this.isRecommendedAction(action, state)
+        recommended: this.isRecommendedAction(action, coreState)
       } as ValidAction;
     });
 
@@ -309,19 +292,19 @@ export class GameHost {
     }
 
     // Create player info
-    const players: PlayerInfo[] = sessions.map(session => ({
-      playerId: session.playerIndex, // Still uses numeric ID for protocol compatibility
-      controlType: session.controlType,
-      sessionId: session.playerId, // Use string playerId in sessionId field for now
-      connected: session.isConnected ?? true,
-      name: session.name || `Player ${session.playerIndex + 1}`,
-      capabilities: session.capabilities.map(cap => ({ ...cap }))
+    const playerInfoList: PlayerInfo[] = Array.from(players).map(playerSession => ({
+      playerId: playerSession.playerIndex, // Still uses numeric ID for protocol compatibility
+      controlType: playerSession.controlType,
+      sessionId: playerSession.playerId, // Use string playerId in sessionId field for now
+      connected: playerSession.isConnected ?? true,
+      name: playerSession.name || `Player ${playerSession.playerIndex + 1}`,
+      capabilities: playerSession.capabilities.map(cap => ({ ...cap }))
     }));
 
     return {
       state: visibleState,
       validActions,
-      players,
+      players: playerInfoList,
       metadata: {
         gameId: this.gameId,
         ...(this.variant ? { variant: this.variant } : {}),
@@ -329,6 +312,26 @@ export class GameHost {
         created: this.created,
         lastUpdate: this.lastUpdate
       }
+    };
+  }
+
+  /**
+   * Convert pure GameState to FilteredGameState format (adds handCount to players)
+   */
+  private convertToFilteredState(state: GameState): import('../../game/types').FilteredGameState {
+    const filteredPlayers = state.players.map(player => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: player.hand,
+      handCount: player.hand.length,
+      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+    }));
+
+    return {
+      ...state,
+      players: filteredPlayers
     };
   }
 
@@ -396,14 +399,14 @@ export class GameHost {
     let executed = false;
 
     while (iterations < MAX_AUTO_EXEC) {
-      const actions = this.getValidActionsComposed(this.mpState.state);
+      const actions = this.getValidActionsComposed(this.mpState.coreState);
       const autoAction = actions.find(a => a.autoExecute === true);
 
       if (!autoAction) {
         break;
       }
 
-      const session = resolveSessionForAction(this.mpState.sessions, autoAction);
+      const session = resolveSessionForAction(Array.from(this.mpState.players), autoAction);
 
       if (!session) {
         console.error('Auto-execute failed: no capable session', {
@@ -457,74 +460,3 @@ export class GameHost {
   }
 }
 
-/**
- * Game registry for managing multiple games
- */
-export class GameRegistry {
-  private games = new Map<string, GameInstance>();
-
-  /**
-   * Create a new game
-   */
-  createGame(config: GameConfig): GameInstance {
-    const gameId = this.generateGameId();
-
-    // Create player sessions before GameHost
-    const players: PlayerSession[] = config.playerTypes.map((type, i) => {
-      const baseCapabilities: Capability[] = [
-        { type: 'act-as-player', playerIndex: i as 0 | 1 | 2 | 3 },
-        { type: 'observe-own-hand' }
-      ];
-
-      if (type === 'ai') {
-        baseCapabilities.push({ type: 'replace-ai' });
-      }
-
-      return {
-        playerId: `${type === 'human' ? 'player' : 'ai'}-${i}`,
-        playerIndex: i as 0 | 1 | 2 | 3,
-        controlType: type,
-        isConnected: true,
-        name: `Player ${i + 1}`,
-        capabilities: baseCapabilities
-      };
-    });
-
-    const host = new GameHost(gameId, config, players);
-
-    const instance: GameInstance = {
-      id: gameId,
-      host,
-      created: Date.now(),
-      lastUpdate: Date.now()
-    };
-
-    this.games.set(gameId, instance);
-    return instance;
-  }
-
-  /**
-   * Get game by ID
-   */
-  getGame(gameId: string): GameInstance | undefined {
-    return this.games.get(gameId);
-  }
-
-  /**
-   * Remove game
-   */
-  removeGame(gameId: string): void {
-    const game = this.games.get(gameId);
-    if (game) {
-      game.host.destroy();
-      this.games.delete(gameId);
-    }
-  }
-
-  /**
-   * Generate unique game ID
-   */
-  private generateGameId(): string {
-    return `game-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  }
-}

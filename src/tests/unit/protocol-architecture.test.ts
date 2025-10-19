@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GameHost, GameRegistry } from '../../server/game/GameHost';
+import { GameHost } from '../../server/game/GameHost';
 import { InProcessAdapter } from '../../server/offline/InProcessAdapter';
 import { NetworkGameClient } from '../../game/multiplayer/NetworkGameClient';
 import { AIClient } from '../../game/multiplayer/AIClient';
@@ -157,7 +157,7 @@ describe('Protocol Flow', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     // Get valid actions from client
-    const validActions = client.getValidActions(0);
+    const validActions = client.getValidActions();
     if (validActions.length > 0 && validActions[0]) {
       // Execute action
       const result = await client.requestAction(0, validActions[0]);
@@ -202,15 +202,15 @@ describe('Protocol Flow', () => {
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const initialState = client.getState();
-    expect(initialState.state.players[1]?.hand).toHaveLength(0);
+    expect(initialState.coreState.players[1]?.hand).toHaveLength(0);
 
-    const seatOneId = initialState.sessions.find(s => s.playerIndex === 1)?.playerId ?? 'player-1';
+    const seatOneId = Array.from(initialState.players).find(s => s.playerIndex === 1)?.playerId ?? 'player-1';
 
     await client.setPlayerId(seatOneId);
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const switchedState = client.getState();
-    expect(switchedState.state.players[1]?.hand.length).toBeGreaterThan(0);
+    expect(switchedState.coreState.players[1]?.hand.length).toBeGreaterThan(0);
   });
 });
 
@@ -301,39 +301,6 @@ describe('AI Client', () => {
   });
 });
 
-describe('GameRegistry', () => {
-  let registry: GameRegistry;
-
-  beforeEach(() => {
-    registry = new GameRegistry();
-  });
-
-  it('should create and manage games', () => {
-    const config: GameConfig = {
-      playerTypes: ['human', 'ai', 'ai', 'ai']
-    };
-
-    const instance = registry.createGame(config);
-    expect(instance.id).toBeDefined();
-    expect(instance.host).toBeDefined();
-
-    const retrieved = registry.getGame(instance.id);
-    expect(retrieved).toBe(instance);
-  });
-
-  it('should remove games', () => {
-    const config: GameConfig = {
-      playerTypes: ['human', 'ai', 'ai', 'ai']
-    };
-
-    const instance = registry.createGame(config);
-    registry.removeGame(instance.id);
-
-    const retrieved = registry.getGame(instance.id);
-    expect(retrieved).toBeUndefined();
-  });
-});
-
 describe('Backwards Compatibility', () => {
   it('should maintain GameClient interface', async () => {
     const adapter = new InProcessAdapter();
@@ -353,8 +320,8 @@ describe('Backwards Compatibility', () => {
 
     // Test that methods work
     const state = client.getState();
-    expect(state.state).toBeDefined();
-    expect(state.sessions).toBeDefined();
+    expect(state.coreState).toBeDefined();
+    expect(state.players).toBeDefined();
 
     client.destroy();
   });

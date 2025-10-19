@@ -1,22 +1,22 @@
 import type { GameState, GameAction } from '../types';
-import type { MultiplayerGameState, ActionRequest, Result } from './types';
-import { ok, err } from './types';
+import type { MultiplayerGameState, ActionRequest, Result, PlayerSession } from './types';
+import { ok, err, hasCapability } from './types';
 import { executeAction } from '../core/actions';
 import { getValidActions } from '../core/gameEngine';
 
 /**
- * Checks if a player is authorized to execute a specific action.
+ * Checks if a player session is authorized to execute a specific action.
  *
- * Authorization rules:
+ * Authorization rules (per vision document lines 152-183):
  * 1. Actions without a 'player' field are neutral (consensus) - any player can execute
- * 2. Actions with a 'player' field can only be executed by that specific player
+ * 2. Actions with a 'player' field require 'act-as-player' capability for that player index
  *
- * @param playerIndex - The player's seat index (0-3), not their identity
+ * @param session - The player session with capabilities
  * @param action - The action to check authorization for
  * @param _state - Game state (currently unused but kept for future authorization rules)
  */
 export function canPlayerExecuteAction(
-  playerIndex: number,
+  session: PlayerSession,
   action: GameAction,
   _state: GameState
 ): boolean {
@@ -25,26 +25,15 @@ export function canPlayerExecuteAction(
     return true;
   }
 
-  // Actions with player field are only for that specific player index
-  return action.player === playerIndex;
-}
+  // Player-specific actions require act-as-player capability for that index
+  if ('player' in action && typeof action.player === 'number') {
+    return hasCapability(session, {
+      type: 'act-as-player',
+      playerIndex: action.player
+    });
+  }
 
-/**
- * Gets all valid actions that a specific player can execute.
- * Composes getValidActions with authorization filtering.
- *
- * @param state - Current game state
- * @param playerIndex - The player's seat index (0-3), not their identity
- */
-export function getValidActionsForPlayer(
-  state: GameState,
-  playerIndex: number
-): GameAction[] {
-  const allActions = getValidActions(state);
-
-  return allActions.filter(action =>
-    canPlayerExecuteAction(playerIndex, action, state)
-  );
+  return false;
 }
 
 /**
@@ -60,25 +49,23 @@ export function authorizeAndExecute(
   getValidActionsFn: (state: GameState) => GameAction[] = getValidActions
 ): Result<MultiplayerGameState> {
   const { playerId, action } = request;
-  const { state, sessions } = mpState;
+  const { coreState, players } = mpState;
 
   // Find player by playerId
-  const player = sessions.find(s => s.playerId === playerId);
+  const player = players.find(p => p.playerId === playerId);
   if (!player) {
     return err(`No player found with ID: ${playerId}`);
   }
 
-  const playerIndex = player.playerIndex;
-
-  // Check authorization
-  if (!canPlayerExecuteAction(playerIndex, action, state)) {
+  // Check authorization using capability system
+  if (!canPlayerExecuteAction(player, action, coreState)) {
     return err(
-      `Player ${playerId} (index ${playerIndex}) is not authorized to execute action: ${action.type}`
+      `Player ${playerId} lacks capability to execute action: ${action.type}`
     );
   }
 
   // Validate action is legal in current state
-  const validActions = getValidActionsFn(state);
+  const validActions = getValidActionsFn(coreState);
   const isValidAction = validActions.some(validAction => {
     // Compare action types and player fields
     if (validAction.type !== action.type) return false;
@@ -112,27 +99,13 @@ export function authorizeAndExecute(
   }
 
   // Execute the action (pure state transition)
-  const newState = executeAction(state, action);
+  const newCoreState = executeAction(coreState, action);
 
-  // Convert to FilteredGameState format with handCount
-  const filteredPlayers = newState.players.map(player => ({
-    id: player.id,
-    name: player.name,
-    teamId: player.teamId,
-    marks: player.marks,
-    hand: player.hand,
-    handCount: player.hand.length,
-    ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
-  }));
-
-  const filteredState: import('../types').FilteredGameState = {
-    ...newState,
-    players: filteredPlayers
-  };
-
-  // Return new multiplayer state with updated game state
+  // Return new multiplayer state with updated pure state
+  // NO filtering here - filtering happens in createView()
   return ok({
-    state: filteredState,
-    sessions
+    ...mpState,
+    coreState: newCoreState,
+    lastActionAt: Date.now()
   });
 }

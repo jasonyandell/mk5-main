@@ -18,15 +18,18 @@ import type {
   ClientMessage,
   ServerMessage
 } from '../../shared/multiplayer/protocol';
-import { GameRegistry } from '../game/GameHost';
+import { createGameAuthority } from '../game/createGameAuthority';
 import { AIClient } from '../../game/multiplayer/AIClient';
-import type { GameInstance } from '../game/GameHost';
+import type { GameHost } from '../game/GameHost';
 
 /**
  * In-process game session
  */
 interface GameSession {
-  instance: GameInstance;
+  id: string;
+  host: GameHost;
+  created: number;
+  lastUpdate: number;
   aiClients: Map<number, AIClient>;
   subscribers: Set<() => void>; // Changed to just store cleanup functions
   aiHandlers: Map<number, (message: ServerMessage) => void>; // Track AI client handlers by playerId
@@ -38,7 +41,6 @@ interface GameSession {
  */
 export class InProcessAdapter implements IGameAdapter {
   private sessions = new Map<string, GameSession>();
-  private registry = new GameRegistry();
   private currentGameId?: string;
   private messageHandlers = new Set<(message: ServerMessage) => void>();
   private destroyed = false;
@@ -127,7 +129,7 @@ export class InProcessAdapter implements IGameAdapter {
       session.aiClients.clear();
 
       // Destroy game host
-      session.instance.host.destroy();
+      session.host.destroy();
     }
 
     this.sessions.clear();
@@ -183,37 +185,40 @@ export class InProcessAdapter implements IGameAdapter {
       config = await this.findCompetitiveSeed(config);
     }
 
-    // Create game instance (GameRegistry creates players internally now)
-    const instance = this.registry.createGame(config);
-    this.currentGameId = instance.id;
+    // Create game instance
+    const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const authority = createGameAuthority(gameId, config);
 
-    // Create session
     const session: GameSession = {
-      instance,
+      id: gameId,
+      host: authority,
+      created: Date.now(),
+      lastUpdate: Date.now(),
       aiClients: new Map(),
       subscribers: new Set(),
       aiHandlers: new Map(),
       viewSubscriptions: new Map()
     };
 
-    this.sessions.set(instance.id, session);
+    this.currentGameId = gameId;
+    this.sessions.set(gameId, session);
 
     // Subscribe main client to game updates (player-0's view by default)
     this.subscribeClientToView(session, clientId, 'player-0');
 
     // Spawn AI clients for AI players
-    const players = instance.host.getPlayers();
+    const players = session.host.getPlayers();
     for (const player of players) {
       if (player.controlType === 'ai') {
-        await this.spawnAIClient(instance.id, player.playerId, player.playerIndex);
+        await this.spawnAIClient(gameId, player.playerId, player.playerIndex);
       }
     }
 
     // Send GAME_CREATED message with filtered view for main client
     this.broadcast({
       type: 'GAME_CREATED',
-      gameId: instance.id,
-      view: instance.host.getView('player-0')
+      gameId: gameId,
+      view: session.host.getView('player-0')
     });
   }
 
@@ -231,7 +236,7 @@ export class InProcessAdapter implements IGameAdapter {
       throw new Error(`Game not found: ${gameId}`);
     }
 
-    const result = session.instance.host.executeAction(playerId, action);
+    const result = session.host.executeAction(playerId, action);
 
     if (!result.ok) {
       throw new Error(result.error);
@@ -255,10 +260,10 @@ export class InProcessAdapter implements IGameAdapter {
     }
 
     // Update control type in host
-    session.instance.host.setPlayerControl(playerIndex, controlType);
+    session.host.setPlayerControl(playerIndex, controlType);
 
     // Get player by index
-    const players = session.instance.host.getPlayers();
+    const players = session.host.getPlayers();
     const player = players.find(p => p.playerIndex === playerIndex);
     if (!player) {
       throw new Error(`Player ${playerIndex} not found`);
@@ -319,7 +324,7 @@ export class InProcessAdapter implements IGameAdapter {
     session.aiHandlers.set(playerIndex, aiHandler);
 
     // Subscribe the AI client to game updates with their playerId
-    const unsubscribe = session.instance.host.subscribe(playerId, (view) => {
+    const unsubscribe = session.host.subscribe(playerId, (view) => {
       // Send STATE_UPDATE directly to this AI client's handler
       const handler = session.aiHandlers.get(playerIndex);
       if (handler) {
@@ -343,7 +348,7 @@ export class InProcessAdapter implements IGameAdapter {
     // Start AI
     aiClient.start();
 
-    const player = session.instance.host.getPlayers().find(p => p.playerIndex === playerIndex);
+    const player = session.host.getPlayers().find(p => p.playerIndex === playerIndex);
     const capabilities = player ? player.capabilities.map(cap => ({ ...cap })) : [];
 
     // Send status update
@@ -371,10 +376,10 @@ export class InProcessAdapter implements IGameAdapter {
       session.viewSubscriptions.delete(clientId);
     }
 
-    const unsubscribe = session.instance.host.subscribe(playerId, (view) => {
+    const unsubscribe = session.host.subscribe(playerId, (view) => {
       this.broadcastToSession(session, {
         type: 'STATE_UPDATE',
-        gameId: session.instance.id,
+        gameId: session.id,
         view
       });
     });

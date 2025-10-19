@@ -56,10 +56,18 @@ gameClient.subscribe(state => {
 void setPerspective(DEFAULT_SESSION_ID);
 
 // Derived store for just the GameState (filtered view)
-export const gameState: Readable<FilteredGameState> = derived(clientState, $clientState => $clientState.state);
+// Note: This will be updated once we have proper filtering from the client
+export const gameState: Readable<FilteredGameState> = derived(clientState, $clientState => {
+  // For now, convert coreState to FilteredGameState format
+  const players = $clientState.coreState.players.map(p => ({
+    ...p,
+    handCount: p.hand.length
+  }));
+  return { ...$clientState.coreState, players };
+});
 
 // Derived store for player sessions
-export const playerSessions = derived(clientState, $clientState => $clientState.sessions);
+export const playerSessions = derived(clientState, $clientState => Array.from($clientState.players));
 
 const currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
 
@@ -108,7 +116,7 @@ export const viewProjection = derived<[typeof gameState, typeof playerSessions, 
     const session = $sessions.find(s => s.playerId === $sessionId) ?? $sessions[0];
     const canAct = !!(session && hasCapabilityType(session, 'act-as-player'));
 
-    const allowedActions = (gameClient as NetworkGameClient).getValidActions(session ? session.playerIndex : undefined);
+    const allowedActions = (gameClient as NetworkGameClient).getValidActions();
     const allowedKeys = new Set(allowedActions.map(actionKey));
 
     const allTransitions = getNextStates($gameState);
