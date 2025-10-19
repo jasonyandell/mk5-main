@@ -195,9 +195,9 @@ export const gameActions = {
       throw new Error('Action not available for this perspective');
     }
 
-    const result = await gameClient.requestAction(session.playerIndex, transition.action);
+    const result = await gameClient.requestAction(session.playerId, transition.action);
 
-    if (!result.ok) {
+    if (!result.success) {
       console.error('Action failed:', result.error);
       throw new Error(result.error);
     }
@@ -206,7 +206,7 @@ export const gameActions = {
   /**
    * Execute action directly (simpler API)
    */
-  requestAction: async (_playerId: number, action: GameAction): Promise<void> => {
+  requestAction: async (_playerId: string, action: GameAction): Promise<void> => {
     const session = get(currentSession);
     if (!session || !hasCapabilityType(session, 'act-as-player')) {
       throw new Error('Current perspective cannot execute actions');
@@ -217,8 +217,8 @@ export const gameActions = {
       preparedAction.player = session.playerIndex;
     }
 
-    const result = await gameClient.requestAction(session.playerIndex, preparedAction);
-    if (!result.ok) {
+    const result = await gameClient.requestAction(session.playerId, preparedAction);
+    if (!result.success) {
       console.error('Action failed:', result.error);
       throw new Error(result.error);
     }

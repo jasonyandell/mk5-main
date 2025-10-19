@@ -24,9 +24,10 @@ export interface GameClient {
    * Request to execute an action on behalf of a player.
    * Authorization and validation happen inside - may fail with error.
    *
-   * @returns Promise<Result<void>> - ok if action executed, error otherwise
+   * @param playerId - String player ID (e.g., "player-0", "ai-1")
+   * @returns Promise<Result<void>> - success if action executed, error otherwise
    */
-  requestAction(playerId: number, action: GameAction): Promise<Result<void>>;
+  requestAction(playerId: string, action: GameAction): Promise<Result<void>>;
 
   /**
    * Subscribe to state changes.
@@ -40,10 +41,10 @@ export interface GameClient {
    * Change player control type (human <-> AI).
    * This manages AI lifecycle - spawning/killing AI workers as needed.
    *
-   * @param playerId - Player to change control for
+   * @param playerIndex - Player index (0-3) to change control for
    * @param type - 'human' or 'ai'
    */
-  setPlayerControl(playerId: number, type: 'human' | 'ai'): Promise<void>;
+  setPlayerControl(playerIndex: number, type: 'human' | 'ai'): Promise<void>;
 
   /**
    * Destroy the client and clean up resources.

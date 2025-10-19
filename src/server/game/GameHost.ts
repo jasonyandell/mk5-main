@@ -21,10 +21,12 @@ import type {
 import { authorizeAndExecute } from '../../game/multiplayer/authorization';
 import type { MultiplayerGameState, PlayerSession, Capability } from '../../game/multiplayer/types';
 import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../../game/multiplayer/capabilityUtils';
+import { humanCapabilities, aiCapabilities } from '../../game/multiplayer/capabilities';
 import { createInitialState } from '../../game/core/state';
 import { getValidActions, getNextStates } from '../../game/core/gameEngine';
 import { applyVariants } from '../../game/variants/registry';
 import type { VariantConfig, StateMachine } from '../../game/variants/types';
+import { createMultiplayerGame, updatePlayerSession } from '../../game/multiplayer/stateLifecycle';
 
 /**
  * GameHost - Pure game server authority
@@ -89,14 +91,15 @@ export class GameHost {
 
     // Store pure GameState (NO filtering - filtering happens in createView())
     const now = Date.now();
-    this.mpState = {
+    this.mpState = createMultiplayerGame({
       gameId,
       coreState: initialState,
       players: normalizedPlayers,
+      enabledVariants: this.variantConfigs,
       createdAt: now,
-      lastActionAt: now,
-      enabledVariants: this.variantConfigs
-    };
+      lastActionAt: now
+    });
+    this.players = new Map(this.mpState.players.map(p => [p.playerId, p]));
 
     // Process any immediate scripted actions emitted at startup
     this.processAutoExecuteActions();
@@ -113,16 +116,17 @@ export class GameHost {
   /**
    * Execute an action with authorization
    */
-  executeAction(playerId: string, action: GameAction): { ok: boolean; error?: string } {
+  executeAction(playerId: string, action: GameAction, timestamp: number): { success: boolean; error?: string } {
     const request = {
       playerId,
-      action
+      action,
+      timestamp
     };
 
     const result = authorizeAndExecute(this.mpState, request, this.getValidActionsComposed);
 
-    if (!result.ok) {
-      return { ok: false, error: result.error };
+    if (!result.success) {
+      return { success: false, error: result.error };
     }
 
     // Update state
@@ -137,25 +141,29 @@ export class GameHost {
     }
     this.notifyListeners();
 
-    return { ok: true };
+    return { success: true };
   }
 
   /**
    * Change player control type
    */
   setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
-    // Find player by index
-    const updatedPlayers = this.mpState.players.map(session => {
-      if (session.playerIndex !== playerIndex) {
-        return session;
-      }
+    const targetSession = this.mpState.players.find(session => session.playerIndex === playerIndex);
+    if (!targetSession) {
+      throw new Error(`Player ${playerIndex} not found`);
+    }
 
-      return {
-        ...session,
-        controlType: type,
-        capabilities: this.buildBaseCapabilities(session.playerIndex, type)
-      };
+    const capabilities = this.buildBaseCapabilities(playerIndex, type);
+    const updatedStateResult = updatePlayerSession(this.mpState, targetSession.playerId, {
+      controlType: type,
+      capabilities
     });
+
+    if (!updatedStateResult.success) {
+      throw new Error(updatedStateResult.error);
+    }
+
+    const updatedPlayers = updatedStateResult.value.players;
 
     // Update players map
     for (const session of updatedPlayers) {
@@ -169,12 +177,12 @@ export class GameHost {
     };
 
     this.mpState = {
-      ...this.mpState,
+      ...updatedStateResult.value,
       coreState: updatedCoreState,
-      players: updatedPlayers
+      lastActionAt: Date.now()
     };
 
-    this.lastUpdate = Date.now();
+    this.lastUpdate = this.mpState.lastActionAt;
     this.notifyListeners();
   }
 
@@ -376,18 +384,13 @@ export class GameHost {
 
   /**
    * Private: Base capability set per control type.
+   * Uses standard capability builders from vision spec §4.3
    */
   private buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai'): Capability[] {
-    const capabilities: Capability[] = [
-      { type: 'act-as-player', playerIndex },
-      { type: 'observe-own-hand' }
-    ];
-
-    if (controlType === 'ai') {
-      capabilities.push({ type: 'replace-ai' });
-    }
-
-    return capabilities;
+    const idx = playerIndex as 0 | 1 | 2 | 3;
+    return controlType === 'human'
+      ? humanCapabilities(idx)
+      : aiCapabilities(idx);
   }
 
   /**
@@ -418,11 +421,11 @@ export class GameHost {
 
       const result = authorizeAndExecute(
         this.mpState,
-        { playerId: session.playerId, action: autoAction },
+        { playerId: session.playerId, action: autoAction, timestamp: Date.now() },
         this.getValidActionsComposed
       );
 
-      if (!result.ok) {
+      if (!result.success) {
         console.error('Auto-execute failed', {
           gameId: this.gameId,
           action: autoAction,
@@ -459,4 +462,3 @@ export class GameHost {
     }
   }
 }
-

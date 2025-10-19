@@ -147,9 +147,9 @@ describe('Tournament Variant Authority', () => {
       player: currentPlayer,
       bid: 'nello',
       value: 1
-    });
+    }, Date.now());
 
-    expect(result.ok).toBe(false);
+    expect(result.success).toBe(false);
 
     const validActions = host.getView(`player-${currentPlayer}`).validActions;
     const hasNello = validActions.some(a => a.action.type === 'bid' && a.action.bid === 'nello');

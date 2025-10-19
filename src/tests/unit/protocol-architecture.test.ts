@@ -62,8 +62,8 @@ describe('GameHost', () => {
     const validAction = view.validActions[0];
 
     if (validAction) {
-      const result = host.executeAction(playerId, validAction.action);
-      expect(result.ok).toBe(true);
+      const result = host.executeAction(playerId, validAction.action, Date.now());
+      expect(result.success).toBe(true);
 
       const newView = host.getView(playerId);
       expect(newView.state.actionHistory).toHaveLength(1);
@@ -78,8 +78,8 @@ describe('GameHost', () => {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = host.executeAction('player-0', invalidAction as any);
-    expect(result.ok).toBe(false);
+    const result = host.executeAction('player-0', invalidAction as any, Date.now());
+    expect(result.success).toBe(false);
     expect(result.error).toBeDefined();
   });
 
@@ -107,7 +107,7 @@ describe('GameHost', () => {
     const validAction = view.validActions[0];
 
     if (validAction) {
-      host.executeAction(playerId, validAction.action);
+      host.executeAction(playerId, validAction.action, Date.now());
       expect(listener).toHaveBeenCalledTimes(2);
     }
 
@@ -160,8 +160,8 @@ describe('Protocol Flow', () => {
     const validActions = client.getValidActions();
     if (validActions.length > 0 && validActions[0]) {
       // Execute action
-      const result = await client.requestAction(0, validActions[0]);
-      expect(result.ok).toBe(true);
+      const result = await client.requestAction('player-0', validActions[0]);
+      expect(result.success).toBe(true);
 
       // Should receive STATE_UPDATE message
       const stateUpdate = receivedMessages.find(m => m.type === 'STATE_UPDATE');

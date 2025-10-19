@@ -76,7 +76,7 @@ export class NetworkGameClient implements GameClient {
   /**
    * Request action execution
    */
-  async requestAction(_playerId: number, action: GameAction): Promise<Result<void>> {
+  async requestAction(playerId: string, action: GameAction): Promise<Result<void>> {
     // Wait for initialization if needed
     if (this.initPromise) {
       await this.initPromise;
@@ -86,13 +86,14 @@ export class NetworkGameClient implements GameClient {
       return err('Game not initialized');
     }
 
-    // Send EXECUTE_ACTION message using our playerId
+    // Send EXECUTE_ACTION message
     try {
       await this.adapter.send({
         type: 'EXECUTE_ACTION',
         gameId: this.gameId,
-        playerId: this.playerId, // Use our playerId, not the parameter
-        action
+        playerId: playerId, // Use the provided playerId
+        action,
+        timestamp: Date.now()
       });
 
       // Success is assumed if send doesn't throw

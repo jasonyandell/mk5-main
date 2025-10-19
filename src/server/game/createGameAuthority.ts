@@ -6,7 +6,8 @@
 
 import { GameHost } from './GameHost';
 import type { GameConfig } from '../../game/types/config';
-import type { PlayerSession, Capability } from '../../game/multiplayer/types';
+import type { PlayerSession } from '../../game/multiplayer/types';
+import { humanCapabilities, aiCapabilities } from '../../game/multiplayer/capabilities';
 
 /**
  * Create a new game authority with given configuration
@@ -23,28 +24,25 @@ export function createGameAuthority(
 }
 
 /**
- * Generate default player sessions from player types
+ * Generate default player sessions from player types.
+ * Uses standard capability builders from vision spec §4.3
  */
 function generateDefaultSessions(
   playerTypes: ('human' | 'ai')[]
 ): PlayerSession[] {
   return playerTypes.map((type, i) => {
-    const baseCapabilities: Capability[] = [
-      { type: 'act-as-player', playerIndex: i as 0 | 1 | 2 | 3 },
-      { type: 'observe-own-hand' }
-    ];
-
-    if (type === 'ai') {
-      baseCapabilities.push({ type: 'replace-ai' });
-    }
+    const idx = i as 0 | 1 | 2 | 3;
+    const capabilities = type === 'human'
+      ? humanCapabilities(idx)
+      : aiCapabilities(idx);
 
     return {
       playerId: `${type === 'human' ? 'player' : 'ai'}-${i}`,
-      playerIndex: i as 0 | 1 | 2 | 3,
+      playerIndex: idx,
       controlType: type,
       isConnected: true,
       name: `Player ${i + 1}`,
-      capabilities: baseCapabilities
+      capabilities
     };
   });
 }

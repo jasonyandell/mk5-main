@@ -150,7 +150,8 @@ export class InProcessAdapter implements IGameAdapter {
         await this.handleExecuteAction(
           message.gameId,
           message.playerId,
-          message.action
+          message.action,
+          message.timestamp
         );
         break;
 
@@ -229,16 +230,17 @@ export class InProcessAdapter implements IGameAdapter {
     gameId: string,
     playerId: string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    action: any
+    action: any,
+    timestamp: number
   ): Promise<void> {
     const session = this.sessions.get(gameId);
     if (!session) {
       throw new Error(`Game not found: ${gameId}`);
     }
 
-    const result = session.host.executeAction(playerId, action);
+    const result = session.host.executeAction(playerId, action, timestamp);
 
-    if (!result.ok) {
+    if (!result.success) {
       throw new Error(result.error);
     }
 

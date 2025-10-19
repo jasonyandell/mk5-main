@@ -154,6 +154,60 @@ if (canSee) {
 
 **Authorization**: `canPlayerExecuteAction()` checks `act-as-player` capability before allowing actions.
 
+### Standard Capability Builders (Vision §4.3)
+
+The codebase provides standard builders for common player types:
+
+**File**: `src/game/multiplayer/capabilities.ts`
+
+```typescript
+// Human player
+humanCapabilities(playerIndex) → [
+  { type: 'act-as-player', playerIndex },
+  { type: 'observe-own-hand' }
+]
+
+// AI player (can be replaced)
+aiCapabilities(playerIndex) → [
+  { type: 'act-as-player', playerIndex },
+  { type: 'observe-own-hand' },
+  { type: 'replace-ai' }
+]
+
+// Spectator (watch only)
+spectatorCapabilities() → [
+  { type: 'observe-all-hands' },
+  { type: 'observe-full-state' }
+]
+
+// Coach (see student's hand + hints)
+coachCapabilities(studentIndex) → [
+  { type: 'observe-hand', playerIndex: studentIndex },
+  { type: 'see-hints' }
+]
+
+// Tutorial student (hints + undo)
+tutorialCapabilities(playerIndex) → [
+  { type: 'act-as-player', playerIndex },
+  { type: 'observe-own-hand' },
+  { type: 'see-hints' },
+  { type: 'undo-actions' }
+]
+```
+
+**Fluent Builder API:**
+```typescript
+import { buildCapabilities } from 'src/game/multiplayer/capabilities';
+
+const customCaps = buildCapabilities()
+  .actAsPlayer(0)
+  .observeOwnHand()
+  .seeHints()
+  .build();
+```
+
+**Used in**: `GameHost.buildBaseCapabilities()`, `createGameAuthority.generateDefaultSessions()`
+
 ---
 
 ## Initialization Flow
@@ -650,32 +704,33 @@ export function replayActions(
 - **tournament.ts**: Tournament mode (filter special bids)
 - **oneHand.ts**: One-hand mode (scripted actions)
 
-### Server (src/server/)
-
-- **game/GameHost.ts**: Game authority, composition happens here
-- **game/GameHost.ts:53-113**: Constructor with variant composition ⭐
-- **game/GameHost.ts:81-89**: Variant composition code
-- **game/GameHost.ts:235-325**: `createView()` filters on-demand ⭐
-- **game/createGameAuthority.ts**: Factory for creating GameHost instances ⭐
-- **offline/InProcessAdapter.ts**: In-memory game adapter
+- **server/game/GameHost.ts**: Game authority, composes variant-aware state machine and routes all mutations
+  - `constructor` - builds canonical multiplayer state via `createMultiplayerGame()` and composes variants
+  - `executeAction()` - requires timestamped requests, delegates to `authorizeAndExecute()`
+  - `createView()` - filters `coreState` on demand
+- **server/game/createGameAuthority.ts**: Factory for creating `GameHost` instances ⭐
+- **server/offline/InProcessAdapter.ts**: In-memory adapter that forwards protocol messages to `GameHost`
 
 ### Multiplayer (src/game/multiplayer/)
 
-- **NetworkGameClient.ts**: Client-side game interface (caches FilteredGameState)
-- **NetworkGameClient.ts:167-197**: `createGame()` - clean async, no polling ⭐
-- **NetworkGameClient.ts:367-372**: `getValidActions()` - trusts server ⭐
-- **NetworkGameClient.ts:202-242**: `handleServerMessage()` - processes server messages
-- **authorization.ts**: `authorizeAndExecute()` - validate actions
-- **authorization.ts:18-37**: `canPlayerExecuteAction()` - capability-based auth ⭐
-- **capabilityUtils.ts**: State filtering logic, `getVisibleStateForSession()`
-- **types.ts**: `MultiplayerGameState`, `PlayerSession`, `Capability` types
+- **capabilities.ts**: Standard capability builders per Vision §4.3 ⭐
+  - `humanCapabilities()`, `aiCapabilities()`, `spectatorCapabilities()`
+  - `coachCapabilities()`, `tutorialCapabilities()`
+  - `CapabilityBuilder` - Fluent API for custom sets
+- **NetworkGameClient.ts**: Protocol-speaking client that sends timestamped `EXECUTE_ACTION` messages and caches filtered views (core state remains canonical on the host)
+- **authorization.ts**: `authorizeAndExecute()` first verifies an action exists in the composed variant state machine, then re-validates against capability-filtered visibility ⭐
+  - `canPlayerExecuteAction()` - Checks if session can execute specific action
+  - `getValidActionsForPlayer()` - Pure function (Vision §3.2.3) that composes variants and filters by capabilities ⭐
+- **stateLifecycle.ts**: Pure helpers for creating/updating multiplayer state (`createMultiplayerGame`, `addPlayer`, `updatePlayerSession`, `removePlayer`)
+- **capabilityUtils.ts**: Filters actions/state per session capability set
+- **types.ts**: Canonical multiplayer data structures (`MultiplayerGameState`, `ActionRequest` with timestamp, `Result<T>` with `success` field)
 
 ### Stores (src/stores/)
 
 - **gameStore.ts**: Svelte reactive stores, client creation
 - **gameStore.ts:34-40**: Initial client setup (adapter + NetworkGameClient)
 - **gameStore.ts:49-54**: clientState writable + subscription
-- **gameStore.ts:60-67**: gameState derived store (converts coreState) ⭐
+- **gameStore.ts:60-67**: Derived `gameState` currently rewraps `coreState`; server now provides canonical `coreState`, so client-side conversion will be removed once filtered views ship separately ⭐
 - **gameStore.ts:70**: playerSessions derived store
 - **gameStore.ts:113-145**: viewProjection derived store
 - **gameStore.ts:180-196**: executeAction() - send actions to server
@@ -685,8 +740,13 @@ export function replayActions(
 - **game/types.ts**: `GameState`, `FilteredGameState`, `GameAction` core types
 - **game/types/config.ts**: `GameConfig`, `VariantConfig`, `GameVariant`
 - **shared/multiplayer/protocol.ts**: Message envelopes (`GameView`, `ValidAction`, `PlayerInfo`)
+  - `EXECUTE_ACTION` messages include `timestamp` to keep authority time monotonic
   - `GameView.state` contains `FilteredGameState` (capability-filtered)
-  - Protocol layer enforces client never receives unfiltered state
+  - `Result<T>` - Standardized as `{ success: true; value: T } | { success: false; error: string }`
+- **game/multiplayer/types.ts**: Multiplayer domain types
+  - `ActionRequest` - Requires `{ playerId: string, action, timestamp }`
+  - `Result<T>` - Uses same `success` field (aligned with protocol layer)
+  - `PlayerSession` - Player identity with `playerId: string` and capabilities
 
 ---
 
@@ -699,22 +759,23 @@ export function replayActions(
    └─> gameActions.executeAction(transition)
 
 2. src/stores/gameStore.ts:180-196
-   └─> gameClient.requestAction(playerId, action)
+   └─> gameClient.requestAction(playerId: string, action)
 
-3. src/game/multiplayer/NetworkGameClient.ts:73-98
-   └─> adapter.send({ type: 'EXECUTE_ACTION', gameId, playerId, action })
+3. src/game/multiplayer/NetworkGameClient.ts:79-104
+   └─> adapter.send({ type: 'EXECUTE_ACTION', gameId, playerId: string, action, timestamp: Date.now() })
+   // Note: playerId is string (e.g., "player-0", "ai-1"), not number
 
 4. src/server/offline/InProcessAdapter.ts
-   └─> GameHost.executeAction(playerId, action)
+   └─> GameHost.executeAction(playerId, action, timestamp)
 
-5. src/server/game/GameHost.ts:140-165
-   └─> authorizeAndExecute(mpState, request, getValidActionsComposed)
+5. src/server/game/GameHost.ts:118-184
+   └─> authorizeAndExecute(mpState, { playerId, action, timestamp }, getValidActionsComposed) // composed variants
 
-6. src/game/multiplayer/authorization.ts:57-124
+6. src/game/multiplayer/authorization.ts:38-106
    ├─> Find player session by playerId
-   ├─> Check: canPlayerExecuteAction(session, action, coreState) ⭐
-   ├─> Check: Is action in getValidActions(coreState)?
-   └─> Execute: executeAction(coreState, action)
+   ├─> Verify action exists in composed `getValidActions(coreState)` (variants applied)
+   ├─> Filter actions through capability pipeline (`filterActionsForSession`)
+   └─> Execute: `executeAction(coreState, action)` and update `lastActionAt`
 
 7. src/game/core/actions.ts:16
    └─> Pure state transition, returns new state
@@ -974,8 +1035,10 @@ console.log('State at action 50:', stateAtAction50);
 **Composition Point**: `src/server/game/GameHost.ts:81-89` ⭐
 **State Filtering**: `src/game/multiplayer/capabilityUtils.ts:getVisibleStateForSession()` ⭐
 **Capability Auth**: `src/game/multiplayer/authorization.ts:canPlayerExecuteAction()` ⭐
+**Standard Capabilities**: `src/game/multiplayer/capabilities.ts` ⭐
+**Get Valid Actions (Pure)**: `src/game/multiplayer/authorization.ts:getValidActionsForPlayer()` ⭐
 **Client Init**: `src/game/multiplayer/NetworkGameClient.ts:167-197` (no polling) ⭐
-**Client Actions**: `src/game/multiplayer/NetworkGameClient.ts:367-372` (trusts server) ⭐
+**Client Actions**: `src/game/multiplayer/NetworkGameClient.ts:79` (string playerIds) ⭐
 **Variant Template**: `src/game/variants/tournament.ts` (simple) or `oneHand.ts` (complex)
 **Replay Function**: `src/game/core/replay.ts:16`
 **Action Execution**: `src/game/core/actions.ts:16`

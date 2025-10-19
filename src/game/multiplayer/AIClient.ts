@@ -298,7 +298,8 @@ export class AIClient {
       type: 'EXECUTE_ACTION',
       gameId: this.gameId,
       playerId: this.playerId,
-      action: validAction.action
+      action: validAction.action,
+      timestamp: Date.now()
     }).catch(error => {
       console.error(`AI ${this.playerId} action failed:`, error);
     });

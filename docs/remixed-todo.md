@@ -8,15 +8,22 @@
 
 ## Executive Summary
 
-The variant composition refactor is complete with all core infrastructure in place. The following features from the original vision document (`remixed-855ccfd5.md`) remain unimplemented:
+The variant composition refactor is complete with all core infrastructure in place. Architecture alignment with the vision document is now complete.
+
+### Completed (2025-01-18)
+- ✅ Result type standardization (`success` field everywhere)
+- ✅ PlayerId type unification (string throughout)
+- ✅ Standard capability builders (Vision §4.3)
+- ✅ `getValidActionsForPlayer` pure function (Vision §3.2.3)
+- ✅ Documentation updates (GAME_ONBOARDING.md, CAPABILITY_SYSTEM.md)
 
 ### Remaining Work
 - URL encoding updates for event sourcing (config + actions format)
-- Speed mode variant
+- Speed mode variant (infrastructure ready, needs implementation)
+- Show hints variant (infrastructure ready, needs implementation)
 - Daily challenge variant
 - Seed finder system
 - Test coverage for completed features
-- Documentation updates
 
 ---
 

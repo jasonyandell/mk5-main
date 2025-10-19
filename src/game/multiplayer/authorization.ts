@@ -1,8 +1,41 @@
 import type { GameState, GameAction } from '../types';
 import type { MultiplayerGameState, ActionRequest, Result, PlayerSession } from './types';
-import { ok, err, hasCapability } from './types';
+import { ok, err } from './types';
 import { executeAction } from '../core/actions';
 import { getValidActions } from '../core/gameEngine';
+import { filterActionsForSession } from './capabilityUtils';
+import type { StateMachine } from '../variants/types';
+import { applyVariants } from '../variants/registry';
+
+function actionsMatch(expected: GameAction, actual: GameAction): boolean {
+  if (expected.type !== actual.type) {
+    return false;
+  }
+
+  if ('player' in expected || 'player' in actual) {
+    if (!('player' in expected) || !('player' in actual)) {
+      return false;
+    }
+    if (expected.player !== actual.player) {
+      return false;
+    }
+  }
+
+  switch (actual.type) {
+    case 'bid':
+      return 'bid' in expected &&
+        expected.bid === actual.bid &&
+        expected.value === actual.value;
+    case 'select-trump':
+      return 'trump' in expected &&
+        JSON.stringify(expected.trump) === JSON.stringify(actual.trump);
+    case 'play':
+      return 'dominoId' in expected &&
+        expected.dominoId === actual.dominoId;
+    default:
+      return true;
+  }
+}
 
 /**
  * Checks if a player session is authorized to execute a specific action.
@@ -18,22 +51,44 @@ import { getValidActions } from '../core/gameEngine';
 export function canPlayerExecuteAction(
   session: PlayerSession,
   action: GameAction,
-  _state: GameState
+  state: GameState,
+  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions
 ): boolean {
-  // Neutral actions (no player field) are available to everyone
-  if (!('player' in action)) {
-    return true;
+  const validActions = getValidActionsFn(state);
+  const visibleActions = filterActionsForSession(session, validActions);
+  return visibleActions.some(candidate => actionsMatch(candidate, action));
+}
+
+/**
+ * Get all valid actions for a specific player.
+ * Pure function per vision document §3.2.3
+ *
+ * @param mpState - Multiplayer game state
+ * @param playerId - String player ID (e.g., "player-0", "ai-1")
+ * @param getValidActionsFn - Optional custom state machine (for testing)
+ * @returns Array of actions the player can execute
+ */
+export function getValidActionsForPlayer(
+  mpState: MultiplayerGameState,
+  playerId: string,
+  getValidActionsFn: StateMachine = getValidActions
+): GameAction[] {
+  const { coreState, players, enabledVariants } = mpState;
+
+  // Find player session
+  const session = players.find(p => p.playerId === playerId);
+  if (!session || !session.isConnected) {
+    return [];
   }
 
-  // Player-specific actions require act-as-player capability for that index
-  if ('player' in action && typeof action.player === 'number') {
-    return hasCapability(session, {
-      type: 'act-as-player',
-      playerIndex: action.player
-    });
-  }
+  // Compose variants with base state machine
+  const composedMachine = applyVariants(getValidActionsFn, enabledVariants);
 
-  return false;
+  // Get all valid actions from composed machine
+  const allValidActions = composedMachine(coreState);
+
+  // Filter by player's capabilities
+  return filterActionsForSession(session, allValidActions);
 }
 
 /**
@@ -52,49 +107,24 @@ export function authorizeAndExecute(
   const { coreState, players } = mpState;
 
   // Find player by playerId
-  const player = players.find(p => p.playerId === playerId);
-  if (!player) {
+  const session = players.find(p => p.playerId === playerId);
+  if (!session) {
     return err(`No player found with ID: ${playerId}`);
   }
 
   // Check authorization using capability system
-  if (!canPlayerExecuteAction(player, action, coreState)) {
-    return err(
-      `Player ${playerId} lacks capability to execute action: ${action.type}`
-    );
+  const validActions = getValidActionsFn(coreState);
+  const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
+  if (!isStructurallyValid) {
+    return err(`Action is not valid in current game state: ${action.type}`);
   }
 
-  // Validate action is legal in current state
-  const validActions = getValidActionsFn(coreState);
-  const isValidAction = validActions.some(validAction => {
-    // Compare action types and player fields
-    if (validAction.type !== action.type) return false;
+  const allowedActions = filterActionsForSession(session, validActions);
+  const matchedAction = allowedActions.find(candidate => actionsMatch(candidate, action));
 
-    // For actions with player field, compare player IDs
-    if ('player' in validAction && 'player' in action) {
-      if (validAction.player !== action.player) return false;
-    }
-
-    // For specific action types, compare additional fields
-    switch (action.type) {
-      case 'bid':
-        return 'bid' in validAction &&
-               validAction.bid === action.bid &&
-               validAction.value === action.value;
-      case 'select-trump':
-        return 'trump' in validAction &&
-               JSON.stringify(validAction.trump) === JSON.stringify(action.trump);
-      case 'play':
-        return 'dominoId' in validAction &&
-               validAction.dominoId === action.dominoId;
-      default:
-        return true;
-    }
-  });
-
-  if (!isValidAction) {
+  if (!matchedAction) {
     return err(
-      `Action is not valid in current game state: ${action.type}`
+      `Player ${playerId} lacks capability to execute action: ${action.type}`
     );
   }
 
@@ -106,6 +136,6 @@ export function authorizeAndExecute(
   return ok({
     ...mpState,
     coreState: newCoreState,
-    lastActionAt: Date.now()
+    lastActionAt: Math.max(mpState.lastActionAt, request.timestamp)
   });
 }

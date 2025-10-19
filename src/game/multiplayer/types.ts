@@ -78,25 +78,26 @@ export interface MultiplayerGameState {
 export interface ActionRequest {
   playerId: string;  // Player identity (e.g., "player-0", "ai-1")
   action: GameAction;
+  timestamp: number;
 }
 
 /**
  * Result type for operations that can fail
  */
 export type Result<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: string };
+  | { success: true; value: T }
+  | { success: false; error: string };
 
 /**
  * Helper to create success result
  */
 export function ok<T>(value: T): Result<T> {
-  return { ok: true, value };
+  return { success: true, value };
 }
 
 /**
  * Helper to create error result
  */
 export function err<T>(error: string): Result<T> {
-  return { ok: false, error };
+  return { success: false, error };
 }
