@@ -17,7 +17,7 @@ import type {
   ValidAction
 } from '../../shared/multiplayer/protocol';
 import type { IGameAdapter } from '../../server/adapters/IGameAdapter';
-import { selectAIAction } from '../core/ai-scheduler';
+import { selectAIAction } from '../ai/actionSelector';
 import { getNextStates } from '../core/gameEngine';
 
 /**

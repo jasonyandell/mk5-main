@@ -3,7 +3,9 @@ import type {
   ClientMessage,
   ServerMessage,
   GameView,
+  ValidAction,
 } from '../../shared/multiplayer/protocol';
+import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer/types';
 
 /**
  * Mock adapter for testing that provides pre-configured game states.
@@ -154,10 +156,14 @@ export class MockAdapter implements IGameAdapter {
   advanceState(): void {
     if (this.currentStateIndex < this.states.length - 1) {
       this.currentStateIndex++;
+      const view = this.states[this.currentStateIndex]!;
       this.broadcast({
         type: 'STATE_UPDATE',
         gameId: this.gameId,
-        view: this.states[this.currentStateIndex]!,
+        view,
+        state: this.viewToMultiplayerState(view),
+        actions: this.buildActionsFromView(view),
+        ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     }
   }
@@ -170,10 +176,14 @@ export class MockAdapter implements IGameAdapter {
       throw new Error(`Invalid state index: ${index} (max: ${this.states.length - 1})`);
     }
     this.currentStateIndex = index;
+    const view = this.states[index]!;
     this.broadcast({
       type: 'STATE_UPDATE',
       gameId: this.gameId,
-      view: this.states[index]!,
+      view,
+      state: this.viewToMultiplayerState(view),
+      actions: this.buildActionsFromView(view),
+      ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
     });
   }
 
@@ -220,27 +230,38 @@ export class MockAdapter implements IGameAdapter {
 
   private async handleCreateGame(): Promise<void> {
     this.currentStateIndex = 0;
+    const view = this.states[0]!;
     this.broadcast({
       type: 'GAME_CREATED',
       gameId: this.gameId,
-      view: this.states[0]!,
+      view,
+      state: this.viewToMultiplayerState(view),
+      actions: this.buildActionsFromView(view)
     });
   }
 
   private async handleExecuteAction(_message: ClientMessage & { type: 'EXECUTE_ACTION' }): Promise<void> {
     if (this.autoAdvance && this.currentStateIndex < this.states.length - 1) {
       this.currentStateIndex++;
+      const view = this.states[this.currentStateIndex]!;
       this.broadcast({
         type: 'STATE_UPDATE',
         gameId: this.gameId,
-        view: this.states[this.currentStateIndex]!,
+        view,
+        state: this.viewToMultiplayerState(view),
+        actions: this.buildActionsFromView(view),
+        ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     } else {
       // Stay on current state, just re-broadcast it
+      const view = this.states[this.currentStateIndex]!;
       this.broadcast({
         type: 'STATE_UPDATE',
         gameId: this.gameId,
-        view: this.states[this.currentStateIndex]!,
+        view,
+        state: this.viewToMultiplayerState(view),
+        actions: this.buildActionsFromView(view),
+        ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     }
   }
@@ -251,10 +272,54 @@ export class MockAdapter implements IGameAdapter {
       type: 'PLAYER_STATUS',
       gameId: this.gameId,
       playerId: message.playerId,
+      sessionId: `player-${message.playerId}`,
       status: 'control_changed',
       controlType: message.controlType,
       capabilities: []
     });
+  }
+
+  private viewToMultiplayerState(view: GameView): MultiplayerGameState {
+    const players: PlayerSession[] = view.players.map(player => {
+      const session: PlayerSession = {
+        playerId: player.sessionId ?? `player-${player.playerId}`,
+        playerIndex: player.playerId as 0 | 1 | 2 | 3,
+        controlType: player.controlType,
+        isConnected: player.connected,
+        capabilities: player.capabilities?.map(cap => ({ ...cap })) ?? []
+      };
+
+      if (player.name !== undefined) {
+        session.name = player.name;
+      }
+
+      return session;
+    });
+
+    return {
+      gameId: view.metadata.gameId || this.gameId,
+      coreState: view.state as unknown as MultiplayerGameState['coreState'],
+      players,
+      createdAt: view.metadata.created,
+      lastActionAt: view.metadata.lastUpdate,
+      enabledVariants: view.metadata.variants || []
+    };
+  }
+
+  private buildActionsFromView(view: GameView): Record<string, ValidAction[]> {
+    const actions: Record<string, ValidAction[]> = {};
+    const perspectiveActions = view.validActions.map(valid => ({
+      ...valid,
+      action: { ...valid.action }
+    }));
+
+    for (const player of view.players) {
+      const sessionId = player.sessionId ?? `player-${player.playerId}`;
+      actions[sessionId] = perspectiveActions;
+    }
+
+    actions['__unfiltered__'] = perspectiveActions;
+    return actions;
   }
 
   private broadcast(message: ServerMessage): void {

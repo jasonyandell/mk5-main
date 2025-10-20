@@ -13,7 +13,11 @@
 
 import type { GameAction, FilteredGameState } from '../../game/types';
 import type { GameConfig, VariantConfig, GameVariant } from '../../game/types/config';
-import type { Capability } from '../../game/multiplayer/types';
+import type {
+  Capability,
+  MultiplayerGameState,
+  PlayerSession
+} from '../../game/multiplayer/types';
 
 export type { GameConfig, VariantConfig, GameVariant };
 
@@ -28,6 +32,7 @@ export interface CreateGameMessage {
   type: 'CREATE_GAME';
   config: GameConfig;
   clientId: string;
+  sessions?: PlayerSession[];
 }
 
 /**
@@ -57,7 +62,17 @@ export interface SetPlayerControlMessage {
 export interface JoinGameMessage {
   type: 'JOIN_GAME';
   gameId: string;
-  playerId: number;
+  session: PlayerSession;
+  clientId: string;
+}
+
+/**
+ * Request to disconnect a player session
+ */
+export interface LeaveGameMessage {
+  type: 'LEAVE_GAME';
+  gameId: string;
+  playerId: string;
   clientId: string;
 }
 
@@ -89,6 +104,7 @@ export type ClientMessage =
   | ExecuteActionMessage
   | SetPlayerControlMessage
   | JoinGameMessage
+  | LeaveGameMessage
   | SubscribeMessage
   | UnsubscribeMessage;
 
@@ -103,6 +119,8 @@ export interface GameCreatedMessage {
   type: 'GAME_CREATED';
   gameId: string;
   view: GameView;
+  state: MultiplayerGameState;
+  actions: Record<string, ValidAction[]>;
 }
 
 /**
@@ -112,6 +130,9 @@ export interface StateUpdateMessage {
   type: 'STATE_UPDATE';
   gameId: string;
   view: GameView;
+  state: MultiplayerGameState;
+  actions: Record<string, ValidAction[]>;
+  perspective?: string;
   lastAction?: GameAction; // What action caused this update
 }
 
@@ -132,6 +153,7 @@ export interface PlayerStatusMessage {
   type: 'PLAYER_STATUS';
   gameId: string;
   playerId: number;
+  sessionId: string;
   status: 'joined' | 'left' | 'control_changed';
   controlType?: 'human' | 'ai';
   capabilities?: Capability[];

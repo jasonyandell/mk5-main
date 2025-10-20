@@ -19,7 +19,7 @@ import type {
  * const spy = new SpyAdapter(realAdapter);
  * const client = new NetworkGameClient(spy);
  *
- * await client.requestAction('player-0', { type: 'bid', ... });
+ * await client.executeAction({ playerId: 'player-0', action: { type: 'bid', ... }, timestamp: Date.now() });
  *
  * // Verify protocol
  * expect(spy.getSentMessages()).toContainEqual({

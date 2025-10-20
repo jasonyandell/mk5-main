@@ -2,11 +2,15 @@
 import type { VariantFactory, Variant, VariantConfig, StateMachine } from './types';
 import { tournamentVariant } from './tournament';
 import { oneHandVariant } from './oneHand';
+import { speedVariant } from './speed';
+import { hintsVariant } from './hints';
 
 // Registry will be populated as variants are implemented
 const VARIANT_REGISTRY: Record<string, VariantFactory> = {
   'tournament': tournamentVariant,
-  'one-hand': oneHandVariant
+  'one-hand': oneHandVariant,
+  'speed': speedVariant,
+  'hints': hintsVariant
 };
 
 /**

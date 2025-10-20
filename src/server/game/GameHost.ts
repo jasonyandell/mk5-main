@@ -19,14 +19,24 @@ import type {
   PlayerInfo
 } from '../../shared/multiplayer/protocol';
 import { authorizeAndExecute } from '../../game/multiplayer/authorization';
-import type { MultiplayerGameState, PlayerSession, Capability } from '../../game/multiplayer/types';
+import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../../game/multiplayer/types';
+import { ok, err } from '../../game/multiplayer/types';
 import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../../game/multiplayer/capabilityUtils';
 import { humanCapabilities, aiCapabilities } from '../../game/multiplayer/capabilities';
-import { createInitialState } from '../../game/core/state';
+import { createInitialState, cloneGameState } from '../../game/core/state';
 import { getValidActions, getNextStates } from '../../game/core/gameEngine';
 import { applyVariants } from '../../game/variants/registry';
 import type { VariantConfig, StateMachine } from '../../game/variants/types';
 import { createMultiplayerGame, updatePlayerSession } from '../../game/multiplayer/stateLifecycle';
+
+interface HostViewUpdate {
+  view: GameView;
+  state: MultiplayerGameState;
+  actions: Record<string, ValidAction[]>;
+  perspective?: string;
+}
+
+const UNFILTERED_KEY = '__unfiltered__';
 
 /**
  * GameHost - Pure game server authority
@@ -38,7 +48,7 @@ export class GameHost {
   private variantConfigs: VariantConfig[];
   private created: number;
   private lastUpdate: number;
-  private listeners: Map<string, (view: GameView) => void> = new Map(); // playerId -> listener
+  private listeners: Map<string, { perspective?: string; listener: (update: HostViewUpdate) => void }> = new Map();
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
   private getValidActionsComposed: StateMachine;
 
@@ -105,12 +115,172 @@ export class GameHost {
     this.processAutoExecuteActions();
   }
 
+  private buildUpdate(forPlayerId?: string): HostViewUpdate {
+    const stateSnapshot = this.cloneMultiplayerState(this.mpState);
+    const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
+    const transitions = getNextStates(stateSnapshot.coreState);
+    const actionsByPlayer = this.buildActionsMap(
+      stateSnapshot.players,
+      allValidActions,
+      transitions,
+      stateSnapshot.coreState
+    );
+
+    const view = this.createView(forPlayerId, {
+      state: stateSnapshot,
+      allActions: allValidActions,
+      transitions,
+      actionsByPlayer
+    });
+
+    const update: HostViewUpdate = {
+      view,
+      state: stateSnapshot,
+      actions: actionsByPlayer
+    };
+
+    if (forPlayerId !== undefined) {
+      update.perspective = forPlayerId;
+    }
+
+    return update;
+  }
+
+  private buildActionsMap(
+    sessions: readonly PlayerSession[],
+    allValidActions: GameAction[],
+    transitions: ReturnType<typeof getNextStates>,
+    coreState: GameState
+  ): Record<string, ValidAction[]> {
+    const map: Record<string, ValidAction[]> = {};
+    for (const session of sessions) {
+      map[session.playerId] = this.buildValidActionsForSession(
+        session,
+        allValidActions,
+        transitions,
+        coreState
+      );
+    }
+
+    map[UNFILTERED_KEY] = this.buildValidActionsForSession(
+      undefined,
+      allValidActions,
+      transitions,
+      coreState
+    );
+
+    return map;
+  }
+
+  private buildValidActionsForSession(
+    session: PlayerSession | undefined,
+    allValidActions: GameAction[],
+    transitions: ReturnType<typeof getNextStates>,
+    coreState: GameState
+  ): ValidAction[] {
+    const availableActions = session
+      ? filterActionsForSession(session, allValidActions)
+      : allValidActions;
+
+    return availableActions.map(action => {
+      const transition = this.findMatchingTransition(action, transitions);
+      const actionClone: GameAction = { ...action };
+      const group = this.getActionGroup(action);
+      const shortcut = this.getActionShortcut(action);
+      const recommended = this.isRecommendedAction(action, coreState);
+
+      if ('meta' in action && action.meta) {
+        (actionClone as { meta?: unknown }).meta = JSON.parse(JSON.stringify(action.meta));
+      }
+
+      const validAction: ValidAction = {
+        action: actionClone,
+        label: transition?.label || action.type,
+        recommended
+      };
+
+      if (group !== undefined) {
+        validAction.group = group;
+      }
+
+      if (shortcut !== undefined) {
+        validAction.shortcut = shortcut;
+      }
+
+      return validAction;
+    });
+  }
+
+  private findMatchingTransition(
+    action: GameAction,
+    transitions: ReturnType<typeof getNextStates>
+  ) {
+    return transitions.find(t => {
+      if (t.action.type !== action.type) return false;
+
+      if ('player' in t.action && 'player' in action) {
+        if (t.action.player !== action.player) return false;
+      }
+
+      switch (action.type) {
+        case 'bid':
+          return 'bid' in t.action &&
+            t.action.bid === action.bid &&
+            t.action.value === action.value;
+        case 'select-trump':
+          return 'trump' in t.action &&
+            JSON.stringify(t.action.trump) === JSON.stringify(action.trump);
+        case 'play':
+          return 'dominoId' in t.action && 'dominoId' in action &&
+            t.action.dominoId === action.dominoId;
+        default:
+          return true;
+      }
+    });
+  }
+
   /**
    * Get current game view for clients
    * @param forPlayerId - Optional player ID to filter actions for
    */
   getView(forPlayerId?: string): GameView {
-    return this.createView(forPlayerId);
+    return this.buildUpdate(forPlayerId).view;
+  }
+
+  /**
+   * Get full multiplayer state snapshot.
+   */
+  getState(): MultiplayerGameState {
+    return this.cloneMultiplayerState(this.mpState);
+  }
+
+  /**
+   * Get valid actions for the given player session.
+   */
+  getActionsForPlayer(playerId: string): ValidAction[] {
+    const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
+    const transitions = getNextStates(this.mpState.coreState);
+    const actionsMap = this.buildActionsMap(
+      this.mpState.players,
+      allValidActions,
+      transitions,
+      this.mpState.coreState
+    );
+    return actionsMap[playerId] ?? [];
+  }
+
+  /**
+   * Get valid actions for all player sessions.
+   */
+  getActionsMap(): Record<string, ValidAction[]> {
+    const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
+    const transitions = getNextStates(this.mpState.coreState);
+    return this.buildActionsMap(
+      this.mpState.players,
+      allValidActions,
+      transitions,
+      this.mpState.coreState
+    );
   }
 
   /**
@@ -187,6 +357,70 @@ export class GameHost {
   }
 
   /**
+   * Connect or replace a player session.
+   */
+  joinPlayer(session: PlayerSession): Result<PlayerSession> {
+    const existing = this.players.get(session.playerId);
+    if (!existing) {
+      return err(`Player ${session.playerId} not found`);
+    }
+
+    const merged: PlayerSession = {
+      ...existing,
+      ...session,
+      isConnected: true,
+      capabilities: (session.capabilities ?? existing.capabilities).map(cap => ({ ...cap }))
+    };
+
+    const result = updatePlayerSession(this.mpState, existing.playerId, merged);
+    if (!result.success) {
+      return err(result.error);
+    }
+
+    this.mpState = {
+      ...result.value,
+      lastActionAt: Date.now()
+    };
+
+    this.players.set(merged.playerId, merged);
+    this.lastUpdate = this.mpState.lastActionAt;
+    this.notifyListeners();
+
+    return ok(merged);
+  }
+
+  /**
+   * Disconnect a player session.
+   */
+  leavePlayer(playerId: string): Result<PlayerSession> {
+    const existing = this.players.get(playerId);
+    if (!existing) {
+      return err(`Player ${playerId} not found`);
+    }
+
+    const updated: PlayerSession = {
+      ...existing,
+      isConnected: false
+    };
+
+    const result = updatePlayerSession(this.mpState, playerId, updated);
+    if (!result.success) {
+      return err(result.error);
+    }
+
+    this.mpState = {
+      ...result.value,
+      lastActionAt: Date.now()
+    };
+
+    this.players.set(playerId, updated);
+    this.lastUpdate = this.mpState.lastActionAt;
+    this.notifyListeners();
+
+    return ok(updated);
+  }
+
+  /**
    * Get player sessions
    */
   getPlayers(): readonly PlayerSession[] {
@@ -204,15 +438,21 @@ export class GameHost {
    * Subscribe to game updates
    * @param playerId - Player ID to filter views for (or undefined for unfiltered)
    */
-  subscribe(playerId: string | undefined, listener: (view: GameView) => void): () => void {
-    // Use a unique key for undefined player IDs
-    const listenerKey = playerId || `unfiltered-${Date.now()}-${Math.random()}`;
+  subscribe(playerId: string | undefined, listener: (update: HostViewUpdate) => void): () => void {
+    const listenerKey = playerId ?? `unfiltered-${Date.now()}-${Math.random()}`;
+
+    const record: { perspective?: string; listener: (update: HostViewUpdate) => void } = {
+      listener
+    };
+
+    if (playerId !== undefined) {
+      record.perspective = playerId;
+    }
+
+    this.listeners.set(listenerKey, record);
 
     // Send current state immediately
-    listener(this.createView(playerId));
-
-    // Add to listeners
-    this.listeners.set(listenerKey, listener);
+    listener(this.buildUpdate(playerId));
 
     // Return unsubscribe function
     return () => {
@@ -231,79 +471,45 @@ export class GameHost {
    * Private: Create view for clients
    * @param forPlayerId - Optional player ID to filter actions for
    */
-  private createView(forPlayerId?: string): GameView {
-    // TODO: Add replay-url capability support
-    // When forPlayerId session has 'replay-url' capability:
-    //   1. Call encodeGameUrl(state.initialConfig.seed, state.actionHistory)
-    //   2. Add compressed URL to GameView.replayUrl
-    //   3. This enables URL-based replay without sending full actionHistory
-    // Reference: src/game/core/url-compression.ts
+  private createView(
+    forPlayerId?: string,
+    context?: {
+      state: MultiplayerGameState;
+      allActions: GameAction[];
+      transitions: ReturnType<typeof getNextStates>;
+      actionsByPlayer: Record<string, ValidAction[]>;
+    }
+  ): GameView {
+    const stateContext = context?.state ?? this.cloneMultiplayerState(this.mpState);
+    const { coreState, players } = stateContext;
+    const allValidActions = context?.allActions ?? this.getValidActionsComposed(coreState);
+    const transitions = context?.transitions ?? getNextStates(coreState);
+    const actionsByPlayer =
+      context?.actionsByPlayer ??
+      this.buildActionsMap(players, allValidActions, transitions, coreState);
 
-    const { coreState, players } = this.mpState;
+    const session = forPlayerId ? players.find(p => p.playerId === forPlayerId) : undefined;
 
-    // Get all valid actions using composed function
-    const allValidActions = this.getValidActionsComposed(coreState);
-    const session = forPlayerId ? this.players.get(forPlayerId) : undefined;
-
-    // Always convert to FilteredGameState format (with handCount)
-    // If session provided, filter based on capabilities; otherwise show all
     const visibleState: import('../../game/types').FilteredGameState = session
       ? getVisibleStateForSession(coreState, session)
       : this.convertToFilteredState(coreState);
 
-    const sessionActions = session
-      ? filterActionsForSession(session, allValidActions)
-      : allValidActions;
+    let validActions: ValidAction[];
 
-    // Get transitions for labels
-    const transitions = getNextStates(coreState);
-
-    // Convert to ValidAction format with labels
-    let validActions: ValidAction[] = sessionActions.map(action => {
-      // Find matching transition for label
-      const transition = transitions.find(t => {
-        if (t.action.type !== action.type) return false;
-
-        // Match player if present
-        if ('player' in t.action && 'player' in action) {
-          if (t.action.player !== action.player) return false;
-        }
-
-        // Match other fields based on action type
-        switch (action.type) {
-          case 'bid':
-            return 'bid' in t.action &&
-                   t.action.bid === action.bid &&
-                   t.action.value === action.value;
-          case 'select-trump':
-            return 'trump' in t.action &&
-                   JSON.stringify(t.action.trump) === JSON.stringify(action.trump);
-          case 'play':
-            return 'dominoId' in t.action && 'dominoId' in action &&
-                   t.action.dominoId === action.dominoId;
-          default:
-            return true;
-        }
-      });
-
-      return {
-        action,
-        label: transition?.label || action.type,
-        ...(this.getActionGroup(action) ? { group: this.getActionGroup(action) } : {}),
-        ...(this.getActionShortcut(action) ? { shortcut: this.getActionShortcut(action) } : {}),
-        recommended: this.isRecommendedAction(action, coreState)
-      } as ValidAction;
-    });
-
-    if (forPlayerId && !session) {
+    if (session) {
+      validActions = actionsByPlayer[session.playerId] ?? [];
+    } else if (forPlayerId) {
+      // Requested perspective but no session found
       validActions = [];
+    } else {
+      validActions = actionsByPlayer[UNFILTERED_KEY] ??
+        this.buildValidActionsForSession(undefined, allValidActions, transitions, coreState);
     }
 
-    // Create player info
     const playerInfoList: PlayerInfo[] = Array.from(players).map(playerSession => ({
-      playerId: playerSession.playerIndex, // Still uses numeric ID for protocol compatibility
+      playerId: playerSession.playerIndex,
       controlType: playerSession.controlType,
-      sessionId: playerSession.playerId, // Use string playerId in sessionId field for now
+      sessionId: playerSession.playerId,
       connected: playerSession.isConnected ?? true,
       name: playerSession.name || `Player ${playerSession.playerIndex + 1}`,
       capabilities: playerSession.capabilities.map(cap => ({ ...cap }))
@@ -340,6 +546,37 @@ export class GameHost {
     return {
       ...state,
       players: filteredPlayers
+    };
+  }
+
+  private cloneActionsMap(actions: Record<string, ValidAction[]>): Record<string, ValidAction[]> {
+    const clone: Record<string, ValidAction[]> = {};
+    for (const [key, list] of Object.entries(actions)) {
+      clone[key] = list.map(valid => {
+        const actionClone: GameAction = { ...valid.action };
+        if ('meta' in actionClone && actionClone.meta) {
+          actionClone.meta = JSON.parse(JSON.stringify(actionClone.meta));
+        }
+        return {
+          ...valid,
+          action: actionClone
+        };
+      });
+    }
+    return clone;
+  }
+
+  private cloneMultiplayerState(state: MultiplayerGameState): MultiplayerGameState {
+    return {
+      gameId: state.gameId,
+      coreState: cloneGameState(state.coreState),
+      players: state.players.map(session => ({
+        ...session,
+        capabilities: session.capabilities.map(cap => ({ ...cap }))
+      })),
+      createdAt: state.createdAt,
+      lastActionAt: state.lastActionAt,
+      enabledVariants: state.enabledVariants.map(variant => ({ ...variant }))
     };
   }
 
@@ -453,12 +690,40 @@ export class GameHost {
    * Private: Notify all listeners
    */
   private notifyListeners(): void {
-    // Send each listener a view filtered for their player
-    for (const [playerKey, listener] of this.listeners) {
-      // Check if this is a player ID or an unfiltered key
-      const playerId = playerKey.startsWith('unfiltered-') ? undefined : playerKey;
-      const view = this.createView(playerId);
-      listener(view);
+    if (this.listeners.size === 0) {
+      return;
+    }
+
+    const stateSnapshot = this.cloneMultiplayerState(this.mpState);
+    const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
+    const transitions = getNextStates(stateSnapshot.coreState);
+    const actionsMap = this.buildActionsMap(
+      stateSnapshot.players,
+      allValidActions,
+      transitions,
+      stateSnapshot.coreState
+    );
+
+    for (const [listenerKey, record] of this.listeners) {
+      const perspective = record.perspective ?? (listenerKey.startsWith('unfiltered-') ? undefined : listenerKey);
+      const view = this.createView(perspective, {
+        state: stateSnapshot,
+        allActions: allValidActions,
+        transitions,
+        actionsByPlayer: actionsMap
+      });
+
+      const payload: HostViewUpdate = {
+        view,
+        state: this.cloneMultiplayerState(stateSnapshot),
+        actions: this.cloneActionsMap(actionsMap)
+      };
+
+      if (perspective !== undefined) {
+        payload.perspective = perspective;
+      }
+
+      record.listener(payload);
     }
   }
 }

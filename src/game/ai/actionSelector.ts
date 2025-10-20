@@ -1,6 +1,6 @@
 import type { GameState, StateTransition } from '../types';
-import { BeginnerAIStrategy, RandomAIStrategy } from '../ai/strategies';
-import type { AIStrategy } from '../ai/types';
+import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
+import type { AIStrategy } from './types';
 
 // Strategy instances - reused for pure functions
 const strategies = {
@@ -18,7 +18,8 @@ function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy 
 }
 
 /**
- * Pure function - Select AI action for a player
+ * Pure function - Select AI action for a player.
+ * This belongs in the AI layer, not core, because it makes AI decisions.
  */
 export function selectAIAction(
   state: GameState,
@@ -34,19 +35,18 @@ export function selectAIAction(
     // Actions with a player field are only for that player
     return t.action.player === playerId;
   });
-  
+
   if (myTransitions.length === 0) return null;
-  
+
   // AI players should immediately agree to consensus actions
-  const consensusAction = myTransitions.find(t => 
-    t.action.type === 'agree-complete-trick' || 
+  const consensusAction = myTransitions.find(t =>
+    t.action.type === 'agree-complete-trick' ||
     t.action.type === 'agree-score-hand'
   );
   if (consensusAction) {
     return consensusAction;
   }
-  
+
   const strategy = getStrategyForPlayer(playerId, state);
   return strategy.chooseAction(state, myTransitions);
 }
-

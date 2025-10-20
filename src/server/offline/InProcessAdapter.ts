@@ -20,6 +20,7 @@ import type {
 } from '../../shared/multiplayer/protocol';
 import { createGameAuthority } from '../game/createGameAuthority';
 import { AIClient } from '../../game/multiplayer/AIClient';
+import type { PlayerSession } from '../../game/multiplayer/types';
 import type { GameHost } from '../game/GameHost';
 
 /**
@@ -143,7 +144,7 @@ export class InProcessAdapter implements IGameAdapter {
   private async handleMessage(message: ClientMessage): Promise<void> {
     switch (message.type) {
       case 'CREATE_GAME':
-        await this.handleCreateGame(message.config, message.clientId);
+        await this.handleCreateGame(message.config, message.clientId, message.sessions);
         break;
 
       case 'EXECUTE_ACTION':
@@ -163,6 +164,14 @@ export class InProcessAdapter implements IGameAdapter {
         );
         break;
 
+      case 'JOIN_GAME':
+        await this.handleJoinGame(message.gameId, message.session, message.clientId);
+        break;
+
+      case 'LEAVE_GAME':
+        await this.handleLeaveGame(message.gameId, message.playerId, message.clientId);
+        break;
+
       case 'SUBSCRIBE':
         this.handleSubscribe(message.gameId, message.clientId, message.playerId);
         break;
@@ -180,7 +189,11 @@ export class InProcessAdapter implements IGameAdapter {
   /**
    * Private: Handle CREATE_GAME
    */
-  private async handleCreateGame(config: GameConfig, clientId: string): Promise<void> {
+  private async handleCreateGame(
+    config: GameConfig,
+    clientId: string,
+    sessions?: PlayerSession[]
+  ): Promise<void> {
     // Check if we need to find a competitive seed for one-hand mode
     if (config.variant?.type === 'one-hand' && !config.shuffleSeed) {
       config = await this.findCompetitiveSeed(config);
@@ -188,7 +201,7 @@ export class InProcessAdapter implements IGameAdapter {
 
     // Create game instance
     const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    const authority = createGameAuthority(gameId, config);
+    const authority = createGameAuthority(gameId, config, sessions);
 
     const session: GameSession = {
       id: gameId,
@@ -215,11 +228,16 @@ export class InProcessAdapter implements IGameAdapter {
       }
     }
 
-    // Send GAME_CREATED message with filtered view for main client
+    const initialState = session.host.getState();
+    const initialActions = session.host.getActionsMap();
+    const initialView = session.host.getView('player-0');
+
     this.broadcast({
       type: 'GAME_CREATED',
       gameId: gameId,
-      view: session.host.getView('player-0')
+      view: initialView,
+      state: initialState,
+      actions: initialActions
     });
   }
 
@@ -291,9 +309,81 @@ export class InProcessAdapter implements IGameAdapter {
       type: 'PLAYER_STATUS',
       gameId,
       playerId: playerIndex,
+      sessionId: player.playerId,
       status: 'control_changed',
       controlType,
       capabilities: player.capabilities.map(cap => ({ ...cap }))
+    });
+  }
+
+  private async handleJoinGame(
+    gameId: string,
+    sessionData: PlayerSession,
+    clientId: string
+  ): Promise<void> {
+    const session = this.sessions.get(gameId);
+    if (!session) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const result = session.host.joinPlayer(sessionData);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    const joined = result.value;
+
+    if (joined.controlType === 'ai') {
+      if (!session.aiClients.has(joined.playerIndex)) {
+        await this.spawnAIClient(gameId, joined.playerId, joined.playerIndex);
+      }
+    } else {
+      const aiClient = session.aiClients.get(joined.playerIndex);
+      if (aiClient) {
+        aiClient.destroy();
+        session.aiClients.delete(joined.playerIndex);
+      }
+    }
+
+    this.subscribeClientToView(session, clientId, joined.playerId);
+
+    this.broadcast({
+      type: 'PLAYER_STATUS',
+      gameId,
+      playerId: joined.playerIndex,
+      sessionId: joined.playerId,
+      status: 'joined',
+      controlType: joined.controlType,
+      capabilities: joined.capabilities.map(cap => ({ ...cap }))
+    });
+  }
+
+  private async handleLeaveGame(
+    gameId: string,
+    playerId: string,
+    clientId: string
+  ): Promise<void> {
+    const session = this.sessions.get(gameId);
+    if (!session) {
+      throw new Error(`Game not found: ${gameId}`);
+    }
+
+    const result = session.host.leavePlayer(playerId);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+
+    const left = result.value;
+    this.handleUnsubscribe(gameId, clientId);
+
+    this.broadcast({
+      type: 'PLAYER_STATUS',
+      gameId,
+      playerId: left.playerIndex,
+      sessionId: left.playerId,
+      status: 'left',
+      controlType: left.controlType,
+      capabilities: left.capabilities.map(cap => ({ ...cap }))
     });
   }
 
@@ -326,15 +416,20 @@ export class InProcessAdapter implements IGameAdapter {
     session.aiHandlers.set(playerIndex, aiHandler);
 
     // Subscribe the AI client to game updates with their playerId
-    const unsubscribe = session.host.subscribe(playerId, (view) => {
+    const unsubscribe = session.host.subscribe(playerId, (update) => {
       // Send STATE_UPDATE directly to this AI client's handler
       const handler = session.aiHandlers.get(playerIndex);
       if (handler) {
-        handler({
+        const message: ServerMessage = {
           type: 'STATE_UPDATE',
           gameId,
-          view
-        });
+          view: update.view,
+          state: update.state,
+          actions: update.actions,
+          ...(update.perspective !== undefined ? { perspective: update.perspective } : {})
+        };
+
+        handler(message);
       }
     });
 
@@ -358,6 +453,7 @@ export class InProcessAdapter implements IGameAdapter {
       type: 'PLAYER_STATUS',
       gameId,
       playerId: playerIndex,
+      sessionId: player ? player.playerId : `player-${playerIndex}`,
       status: 'joined',
       controlType: 'ai',
       capabilities
@@ -378,12 +474,17 @@ export class InProcessAdapter implements IGameAdapter {
       session.viewSubscriptions.delete(clientId);
     }
 
-    const unsubscribe = session.host.subscribe(playerId, (view) => {
-      this.broadcastToSession(session, {
+    const unsubscribe = session.host.subscribe(playerId, (update) => {
+      const message: ServerMessage = {
         type: 'STATE_UPDATE',
         gameId: session.id,
-        view
-      });
+        view: update.view,
+        state: update.state,
+        actions: update.actions,
+        ...(update.perspective !== undefined ? { perspective: update.perspective } : {})
+      };
+
+      this.broadcastToSession(session, message);
     });
 
     session.viewSubscriptions.set(clientId, { unsubscribe });

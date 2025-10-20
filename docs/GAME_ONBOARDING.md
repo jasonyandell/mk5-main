@@ -38,7 +38,8 @@
 ┌─────────────────────────────────┐
 │  Client Layer                   │  src/game/multiplayer/
 │  NetworkGameClient, protocol    │
-│  Caches: FilteredGameState      │
+│  Caches: MultiplayerGameState + │
+│          per-seat ValidAction[] │
 │  Trust: Server-filtered actions │
 └─────────────────────────────────┘
               ↕ (GameView via protocol)
@@ -68,17 +69,18 @@
 ### Client-Server Boundary
 
 **Server-side (GameHost)**:
-- Stores **pure GameState** with all information
+- Stores **pure GameState** with all information (authoritative truth)
 - Filters state **on-demand** per client request
 - Returns **FilteredGameState** via `getVisibleStateForSession()`
-- Single source of truth - no pre-filtered storage
+- Produces per-session `ValidAction[]` via the capability system
+- Sends snapshots shaped like `MultiplayerGameState`, but with **already-filtered** `coreState` values tailored to the subscribing session
 
 **Client-side (NetworkGameClient)**:
-- Receives **FilteredGameState** (not full GameState)
-- Opponent hands filtered to empty arrays
-- Cannot access information player shouldn't see
-- Type system enforces this at compile time
-- **Trusts server** - no client-side filtering logic
+- Receives **host-filtered** `MultiplayerGameState` snapshots plus seat-specific `ValidAction[]`
+- Caches both for synchronous reads; exposes async `getState()` / `getActions()` APIs
+- Never reconstructs hidden information—whatever the host removed remains absent
+- Opponent hands remain filtered in the delivered `FilteredGameState` views
+- **Trusts server** – no client-side filtering logic, simply hydrates what the authority supplied
 
 ### MultiplayerGameState (Authority Storage)
 
@@ -93,6 +95,8 @@ interface MultiplayerGameState {
   enabledVariants: VariantConfig[];  // Active rule modifications
 }
 ```
+
+> ℹ️ **Host vs. client snapshots**: On the authority, `coreState` truly is the unfiltered `GameState`. When a snapshot is serialized for a specific client, GameHost redacts any data that viewer cannot see (for example, other players' hands) but leaves the shape as `MultiplayerGameState`. NetworkGameClient caches that redacted snapshot exactly as delivered—it never attempts to reconstruct hidden fields.
 
 **Key Change from Spike**: Authority now stores pure `GameState` instead of pre-filtered `FilteredGameState`. Filtering happens on-demand in `createView()`.
 
@@ -368,7 +372,7 @@ this.mpState = {
 // NEW (Pure storage, filter on-demand)
 this.mpState = {
   gameId: 'game-123',
-  coreState: pureGameState,  // NOT filtered
+  coreState: pureGameState,  // Host-side canonical state (unfiltered)
   players: playerSessions,
   createdAt: Date.now(),
   lastActionAt: Date.now(),
@@ -409,54 +413,73 @@ The client uses **Svelte stores** for reactive state management. Data flows from
 
 ```
 gameClient (NetworkGameClient instance)
-    ↓ (subscription)
+    ↓ (async hydrate + subscription)
 clientState (writable<MultiplayerGameState>)
-    ↓ (derived)
-    ├─> gameState (derived<FilteredGameState>)
-    ├─> playerSessions (derived<PlayerSession[]>)
-    └─> viewProjection (derived<ViewProjection>)
+    └─> actionsByPlayer (writable<Record<string, ValidAction[]>>)
             ↓
-         UI Components
+    derived stores
+        ├─> gameState (FilteredGameState for current perspective)
+        ├─> playerSessions (session list)
+        ├─> allowedActionsStore (ValidAction[] for current session)
+        └─> viewProjection (ViewProjection for UI)
+                ↓
+             UI Components
 ```
 
 ### Core Stores
 
-**1. gameClient** (gameStore.ts:40)
+**1. gameClient / networkClient** (gameStore.ts:44-89)
 ```typescript
 const gameClient = new NetworkGameClient(adapter, config);
 ```
 - **Type**: `NetworkGameClient` instance (not a store)
 - **Purpose**: Client interface to game server
-- **Methods**: `requestAction()`, `setPlayerControl()`, `subscribe()`
+- **Methods**: `getState()`, `getActions(playerId)`, `executeAction(request)`, `joinGame(session)`, `leaveGame(playerId)`, `setPlayerControl()`, `subscribe()`
 
-**2. clientState** (gameStore.ts:49)
+**2. clientState & actionsByPlayer** (gameStore.ts:90-124)
 ```typescript
-export const clientState = writable<MultiplayerGameState>(gameClient.getState());
+export const clientState = writable<MultiplayerGameState>(createPendingState());
 
-gameClient.subscribe(state => {
+gameClient.getState()
+  .then(state => {
+    clientState.set(state);
+    actionsByPlayer.set(networkClient.getCachedActionsMap());
+  })
+  .catch(error => {
+    console.error('Failed to obtain initial game state:', error);
+  });
+
+unsubscribeFromClient = gameClient.subscribe(state => {
   clientState.set(state);
+  actionsByPlayer.set(networkClient.getCachedActionsMap());
 });
-```
-- **Type**: `writable<MultiplayerGameState>`
-- **Purpose**: Primary store tracking game state + sessions
-- **Updates**: Whenever GameHost broadcasts state changes
-- **Contains**: `{ gameId, coreState, players, createdAt, lastActionAt, enabledVariants }`
 
-**3. gameState** (gameStore.ts:60-67)
+const actionsByPlayer = writable<Record<string, ValidAction[]>>({});
+const allowedActionsStore = derived(
+  [actionsByPlayer, currentSessionId],
+  ([$actions, $sessionId]) => $actions[$sessionId] ?? $actions['__unfiltered__'] ?? []
+);
+```
+- **Type**: `writable<MultiplayerGameState>` plus a companion `writable<Record<string, ValidAction[]>>`
+- **Purpose**: Track authoritative multiplayer state and the host-supplied per-session action lists
+- **Hydration**: Starts from a placeholder, then hydrates asynchronously once the authority responds
+- **Contains**: `{ gameId, coreState, players, createdAt, lastActionAt, enabledVariants }`
+- **Action cache**: Mirrors the host’s filtered `ValidAction[]` map so the UI never refilters client-side
+
+**3. gameState** (gameStore.ts:137-145)
 ```typescript
-export const gameState: Readable<FilteredGameState> = derived(clientState, $clientState => {
-  // Convert coreState to FilteredGameState format
-  const players = $clientState.coreState.players.map(p => ({
-    ...p,
-    handCount: p.hand.length
-  }));
-  return { ...$clientState.coreState, players };
-});
+export const gameState = derived(
+  [clientState, currentSession],
+  ([$clientState, $session]) =>
+    $session
+      ? getVisibleStateForSession($clientState.coreState, $session)
+      : convertToFilteredState($clientState.coreState)
+);
 ```
 - **Type**: `Readable<FilteredGameState>`
-- **Purpose**: Extract just the game state (no sessions)
-- **Used by**: UI components that don't need session info
-- **Security**: Already filtered by GameHost based on capabilities
+- **Purpose**: Deliver per-view filtered state using the shared capability helper
+- **Used by**: UI components that render the board
+- **Security**: Host already filtered; store simply mirrors the authoritative projection
 
 **4. playerSessions** (gameStore.ts:70)
 ```typescript
@@ -1007,10 +1030,10 @@ console.log('State at action 50:', stateAtAction50);
 
 ### Client Not Getting Actions
 
-1. Verify server sends `GameView.validActions`
-2. Check client doesn't filter (should trust server)
-3. Verify `gameClient.getValidActions()` returns cached view's actions
-4. Check subscription is active
+1. Verify `GameHost` is broadcasting the `actions` map alongside each `STATE_UPDATE`
+2. Check `NetworkGameClient.getActions(playerId)` returns the cached list (state must be hydrated first)
+3. Ensure `actionsByPlayer` / `allowedActionsStore` wiring in `gameStore.ts` is updating
+4. Confirm the subscription from `NetworkGameClient.subscribe()` is still active
 
 ---
 
@@ -1037,8 +1060,10 @@ console.log('State at action 50:', stateAtAction50);
 **Capability Auth**: `src/game/multiplayer/authorization.ts:canPlayerExecuteAction()` ⭐
 **Standard Capabilities**: `src/game/multiplayer/capabilities.ts` ⭐
 **Get Valid Actions (Pure)**: `src/game/multiplayer/authorization.ts:getValidActionsForPlayer()` ⭐
-**Client Init**: `src/game/multiplayer/NetworkGameClient.ts:167-197` (no polling) ⭐
-**Client Actions**: `src/game/multiplayer/NetworkGameClient.ts:79` (string playerIds) ⭐
+**Client Init**: `src/stores/gameStore.ts:44-124` (NetworkGameClient setup + async hydration) ⭐
+**Client Actions**: `src/game/multiplayer/NetworkGameClient.ts:60-190` (async API, per-seat caches) ⭐
+**Host Subscriptions**: `src/server/game/GameHost.ts:207-262` (HostViewUpdate payloads) ⭐
+**Action Cache Store**: `src/stores/gameStore.ts:118-124` (per-session ValidAction map) ⭐
 **Variant Template**: `src/game/variants/tournament.ts` (simple) or `oneHand.ts` (complex)
 **Replay Function**: `src/game/core/replay.ts:16`
 **Action Execution**: `src/game/core/actions.ts:16`

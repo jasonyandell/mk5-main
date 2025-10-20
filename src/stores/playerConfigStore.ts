@@ -78,7 +78,7 @@ export async function applyConfiguration(config: PlayerConfig[]): Promise<void> 
  * Switch a specific player between human and AI
  */
 export async function togglePlayerControl(playerId: number): Promise<void> {
-  const currentState = gameClient.getState();
+  const currentState = await gameClient.getState();
   const currentSession = Array.from(currentState.players).find(s => s.playerIndex === playerId);
   const isHuman = currentSession?.controlType === 'human';
 

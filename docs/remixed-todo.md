@@ -375,7 +375,110 @@ gameVariants.findAndStartOneHand = async () => {
 
 ---
 
-## 5. Testing Gaps
+## 5. Architecture Alignment Completed ✅
+
+### Status: COMPLETE (2025-01-18)
+
+These items from the vision document (remixed-855ccfd5.md) have been fully implemented:
+
+### 5.1 Result Type Standardization
+
+**Problem**: Two incompatible `Result<T>` types existed
+- Protocol layer used `{ ok: true/false }`
+- Multiplayer layer used `{ success: true/false }`
+
+**Solution**: Standardized on `{ success: true/false }` everywhere
+- Updated `src/shared/multiplayer/protocol.ts:278-293`
+- Updated `src/server/game/GameHost.ts:118`
+- Fixed all tests to use `.success` instead of `.ok`
+
+**Files Changed**:
+- `src/shared/multiplayer/protocol.ts`
+- `src/server/game/GameHost.ts`
+- `src/tests/unit/authorization.test.ts`
+- `src/tests/unit/protocol-architecture.test.ts`
+
+### 5.2 PlayerId Type Unification
+
+**Problem**: Inconsistent player identification
+- `GameClient.requestAction()` took `number`
+- But `PlayerSession.playerId` is `string`
+- NetworkGameClient ignored the parameter entirely
+
+**Solution**: Use `string` playerId consistently
+- Changed `GameClient.requestAction(playerId: string, ...)`
+- Updated `NetworkGameClient` to use provided playerId
+- Updated all call sites to pass string IDs (e.g., "player-0", "ai-1")
+
+**Files Changed**:
+- `src/game/multiplayer/GameClient.ts:30`
+- `src/game/multiplayer/NetworkGameClient.ts:79`
+- `src/stores/gameStore.ts:198,220`
+- `src/tests/unit/protocol-architecture.test.ts:163`
+
+### 5.3 Standard Capability Builders (Vision §4.3)
+
+**Created**: `src/game/multiplayer/capabilities.ts`
+
+Provides standard builders:
+- `humanCapabilities(playerIndex)` - Human player
+- `aiCapabilities(playerIndex)` - AI with replace-ai
+- `spectatorCapabilities()` - Observe all, no actions
+- `coachCapabilities(studentIndex)` - See student hand + hints
+- `tutorialCapabilities(playerIndex)` - Player + hints + undo
+- `CapabilityBuilder` - Fluent API for custom composition
+
+**Integrated in**:
+- `src/server/game/GameHost.ts:389-393`
+- `src/server/game/createGameAuthority.ts:34-37`
+
+### 5.4 getValidActionsForPlayer Pure Function (Vision §3.2.3)
+
+**Added**: `src/game/multiplayer/authorization.ts:71-92`
+
+Pure function that:
+- Takes `MultiplayerGameState` and `playerId`
+- Composes variants with base state machine
+- Filters by player's capabilities
+- Returns array of executable actions
+
+Signature:
+```typescript
+getValidActionsForPlayer(
+  mpState: MultiplayerGameState,
+  playerId: string,
+  getValidActionsFn?: StateMachine
+) → GameAction[]
+```
+
+### 5.5 Documentation Updates
+
+**Updated**: `docs/GAME_ONBOARDING.md`
+- Added capability builders section with examples
+- Updated multiplayer section with `getValidActionsForPlayer`
+- Fixed Result type documentation (`success` not `ok`)
+- Updated action flow with string playerIds
+- Added quick reference entries
+
+**Created**: `docs/CAPABILITY_SYSTEM.md`
+- Comprehensive capability reference
+- All standard builders documented
+- Usage examples for each player type
+- Integration patterns
+- Testing examples
+
+### 5.6 Test Fixes
+
+**Fixed**: All TypeScript compilation errors
+- Added `timestamp` fields to `ActionRequest` objects
+- Updated Result assertions to use `.success`
+- Fixed `requestAction` signatures to use string playerIds
+
+**Verification**: `npm run typecheck` passes with zero errors
+
+---
+
+## 6. Testing Gaps
 
 ### Missing Test Coverage
 
@@ -442,7 +545,7 @@ test('encodes and decodes state perfectly', () => {
 
 ---
 
-## 6. Documentation Gaps
+## 7. Documentation Gaps
 
 ### Missing Docs
 

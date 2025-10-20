@@ -1,5 +1,10 @@
-import type { GameAction } from '../types';
-import type { MultiplayerGameState, Result } from './types';
+import type {
+  ActionRequest,
+  MultiplayerGameState,
+  PlayerSession,
+  Result
+} from './types';
+import type { ValidAction } from '../../shared/multiplayer/protocol';
 
 /**
  * GameClient - The single source of truth for game state.
@@ -15,23 +20,39 @@ import type { MultiplayerGameState, Result } from './types';
  */
 export interface GameClient {
   /**
-   * Get the current game state (read-only).
-   * This is a synchronous snapshot - state may change after read.
+   * Get the current multiplayer game state.
+   * Returns a promise to support async transports.
    */
-  getState(): MultiplayerGameState;
+  getState(): Promise<MultiplayerGameState>;
 
   /**
-   * Request to execute an action on behalf of a player.
-   * Authorization and validation happen inside - may fail with error.
+   * Execute an action on behalf of a player session.
+   * Authorization/validation occurs inside the multiplayer layer.
    *
-   * @param playerId - String player ID (e.g., "player-0", "ai-1")
-   * @returns Promise<Result<void>> - success if action executed, error otherwise
+   * @returns Promise<Result<MultiplayerGameState>> - new state or error
    */
-  requestAction(playerId: string, action: GameAction): Promise<Result<void>>;
+  executeAction(request: ActionRequest): Promise<Result<MultiplayerGameState>>;
+
+  /**
+   * Join or reconnect a player session.
+   *
+   * @returns Promise<Result<PlayerSession>> - confirmed session or error
+   */
+  joinGame(session: PlayerSession): Promise<Result<PlayerSession>>;
+
+  /**
+   * Leave (or disconnect) a session.
+   */
+  leaveGame(playerId: string): Promise<void>;
+
+  /**
+   * Get valid actions available to a session (already filtered for capabilities).
+   */
+  getActions(playerId: string): Promise<ValidAction[]>;
 
   /**
    * Subscribe to state changes.
-   * Listener is called immediately with current state, then on every state change.
+   * Listener will be invoked whenever core multiplayer state updates.
    *
    * @returns Unsubscribe function
    */

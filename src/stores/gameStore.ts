@@ -1,5 +1,5 @@
 import { writable, derived, get, type Readable } from 'svelte/store';
-import type { GameAction, StateTransition, FilteredGameState } from '../game/types';
+import type { GameAction, StateTransition, FilteredGameState, GameState } from '../game/types';
 import { getNextStates } from '../game';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
 import { InProcessAdapter } from '../server/offline/InProcessAdapter';
@@ -8,6 +8,10 @@ import type { MultiplayerGameState } from '../game/multiplayer/types';
 import { hasCapabilityType } from '../game/multiplayer/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
+import { getVisibleStateForSession } from '../game/multiplayer/capabilityUtils';
+import { createSetupState } from '../game/core/state';
+import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
+import type { ValidAction } from '../shared/multiplayer/protocol';
 
 /**
  * Pure client/server gameStore.
@@ -29,6 +33,46 @@ function actionKey(action: GameAction): string {
   return JSON.stringify(action);
 }
 
+function convertToFilteredState(state: GameState): FilteredGameState {
+  return {
+    ...state,
+    players: state.players.map(player => ({
+      ...player,
+      hand: [...player.hand],
+      handCount: player.hand.length,
+      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+    }))
+  };
+}
+
+function createPendingState(): MultiplayerGameState {
+  const placeholderState = createSetupState({ playerTypes });
+  const sessions = playerTypes.map((type, index) => {
+    const idx = index as 0 | 1 | 2 | 3;
+    const capabilities = type === 'human'
+      ? humanCapabilities(idx)
+      : aiCapabilities(idx);
+
+    return {
+      playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+      playerIndex: idx,
+      controlType: type,
+      isConnected: true,
+      name: `Player ${index + 1}`,
+      capabilities: capabilities.map(cap => ({ ...cap }))
+    };
+  });
+
+  return {
+    gameId: 'initializing',
+    coreState: placeholderState,
+    players: sessions,
+    createdAt: Date.now(),
+    lastActionAt: Date.now(),
+    enabledVariants: []
+  };
+}
+
 // Create the GameClient with new architecture
 let gameClient: GameClient;
 const adapter = new InProcessAdapter();
@@ -38,6 +82,33 @@ const config: GameConfig = {
 };
 
 gameClient = new NetworkGameClient(adapter, config);
+let networkClient: NetworkGameClient = gameClient as NetworkGameClient;
+
+async function installNewClient(newClient: NetworkGameClient): Promise<void> {
+  networkClient.destroy();
+  unsubscribeFromClient?.();
+
+  gameClient = newClient;
+  networkClient = newClient;
+
+  clientState.set(createPendingState());
+  actionsByPlayer.set({});
+
+  try {
+    const state = await newClient.getState();
+    clientState.set(state);
+    actionsByPlayer.set(networkClient.getCachedActionsMap());
+  } catch (error) {
+    console.error('Failed to initialize game state:', error);
+  }
+
+  unsubscribeFromClient = newClient.subscribe(state => {
+    clientState.set(state);
+    actionsByPlayer.set(networkClient.getCachedActionsMap());
+  });
+
+  await setPerspective(DEFAULT_SESSION_ID);
+}
 
 // Export as const to prevent reassignment
 export { gameClient };
@@ -45,27 +116,27 @@ export { gameClient };
 // Default session ID constant
 const DEFAULT_SESSION_ID = 'player-0';
 
-// Writable store that tracks GameClient state
-export const clientState = writable<MultiplayerGameState>(gameClient.getState());
+// Writable stores for state and per-player actions
+export const clientState = writable<MultiplayerGameState>(createPendingState());
+const actionsByPlayer = writable<Record<string, ValidAction[]>>({});
+let unsubscribeFromClient: (() => void) | undefined;
+
+gameClient.getState()
+  .then(state => {
+    clientState.set(state);
+    actionsByPlayer.set(networkClient.getCachedActionsMap());
+  })
+  .catch(error => {
+    console.error('Failed to obtain initial game state:', error);
+  });
 
 // Subscribe to GameClient updates
-gameClient.subscribe(state => {
+unsubscribeFromClient = gameClient.subscribe(state => {
   clientState.set(state);
+  actionsByPlayer.set(networkClient.getCachedActionsMap());
 });
 
 void setPerspective(DEFAULT_SESSION_ID);
-
-// Derived store for just the GameState (filtered view)
-// Note: This will be updated once we have proper filtering from the client
-export const gameState: Readable<FilteredGameState> = derived(clientState, $clientState => {
-  // For now, convert coreState to FilteredGameState format
-  const players = $clientState.coreState.players.map(p => ({
-    ...p,
-    handCount: p.hand.length
-  }));
-  return { ...$clientState.coreState, players };
-});
-
 // Derived store for player sessions
 export const playerSessions = derived(clientState, $clientState => Array.from($clientState.players));
 
@@ -76,6 +147,21 @@ export const currentSessionId = derived(currentSessionIdStore, (value) => value)
 export const currentSession = derived(
   [playerSessions, currentSessionId],
   ([$sessions, $sessionId]) => $sessions.find(session => session.playerId === $sessionId)
+);
+
+export const gameState: Readable<FilteredGameState> = derived(
+  [clientState, currentSession],
+  ([$clientState, $session]) => {
+    if ($session) {
+      return getVisibleStateForSession($clientState.coreState, $session);
+    }
+    return convertToFilteredState($clientState.coreState);
+  }
+);
+
+const allowedActionsStore = derived(
+  [actionsByPlayer, currentSessionId],
+  ([$actions, $sessionId]) => $actions[$sessionId] ?? $actions['__unfiltered__'] ?? []
 );
 
 export const availablePerspectives = derived(playerSessions, ($sessions) =>
@@ -92,7 +178,8 @@ export async function setPerspective(sessionId: string): Promise<void> {
     currentSessionIdStore.set(sessionId);
   }
 
-  await (gameClient as NetworkGameClient).setPlayerId(sessionId);
+  await networkClient.setPlayerId(sessionId);
+  actionsByPlayer.set(networkClient.getCachedActionsMap());
 }
 
 playerSessions.subscribe(($sessions) => {
@@ -110,19 +197,27 @@ playerSessions.subscribe(($sessions) => {
 // Current player ID for primary view (typically 0 for single-device play)
 
 // View projection - derived from gameState only
-export const viewProjection = derived<[typeof gameState, typeof playerSessions, typeof currentSessionId], ViewProjection>(
-  [gameState, playerSessions, currentSessionId],
-  ([$gameState, $sessions, $sessionId]) => {
+export const viewProjection = derived<
+  [typeof gameState, typeof playerSessions, typeof currentSessionId, typeof allowedActionsStore],
+  ViewProjection
+>([
+  gameState,
+  playerSessions,
+  currentSessionId,
+  allowedActionsStore
+],
+  ([$gameState, $sessions, $sessionId, $allowedActions]) => {
     const session = $sessions.find(s => s.playerId === $sessionId) ?? $sessions[0];
     const canAct = !!(session && hasCapabilityType(session, 'act-as-player'));
 
-    const allowedActions = (gameClient as NetworkGameClient).getValidActions();
-    const allowedKeys = new Set(allowedActions.map(actionKey));
+    const allowedKeys = new Set($allowedActions.map(valid => actionKey(valid.action)));
 
     const allTransitions = getNextStates($gameState);
     const usedTransitions = testMode
       ? allTransitions
-      : allTransitions.filter(transition => allowedKeys.has(actionKey(transition.action)));
+      : allowedKeys.size === 0
+        ? allTransitions
+        : allTransitions.filter(transition => allowedKeys.has(actionKey(transition.action)));
 
     const viewProjectionOptions: {
       isTestMode?: boolean;
@@ -150,8 +245,7 @@ export const viewProjection = derived<[typeof gameState, typeof playerSessions, 
 // Store for tracking current game variant
 export const gameVariant = derived(clientState, () => {
   // Extract variant from game view metadata if available
-  const client = gameClient as NetworkGameClient;
-  const view = client['cachedView']; // Access cached view
+  const view = networkClient.getCachedView();
   return view?.metadata?.variant;
 });
 
@@ -195,7 +289,11 @@ export const gameActions = {
       throw new Error('Action not available for this perspective');
     }
 
-    const result = await gameClient.requestAction(session.playerId, transition.action);
+    const result = await gameClient.executeAction({
+      playerId: session.playerId,
+      action: transition.action,
+      timestamp: Date.now()
+    });
 
     if (!result.success) {
       console.error('Action failed:', result.error);
@@ -217,7 +315,11 @@ export const gameActions = {
       preparedAction.player = session.playerIndex;
     }
 
-    const result = await gameClient.requestAction(session.playerId, preparedAction);
+    const result = await gameClient.executeAction({
+      playerId: session.playerId,
+      action: preparedAction,
+      timestamp: Date.now()
+    });
     if (!result.success) {
       console.error('Action failed:', result.error);
       throw new Error(result.error);
@@ -227,11 +329,7 @@ export const gameActions = {
   /**
    * Reset the game (create new client with fresh state)
    */
-  resetGame: () => {
-    // Destroy old client
-    gameClient.destroy();
-
-    // Create new adapter and client
+  resetGame: async () => {
     const newAdapter = new InProcessAdapter();
     const newConfig: GameConfig = {
       playerTypes,
@@ -239,18 +337,7 @@ export const gameActions = {
     };
 
     const newClient = new NetworkGameClient(newAdapter, newConfig);
-
-    // Replace global client reference
-    Object.assign(gameClient, newClient);
-
-    // Subscribe to updates
-    newClient.subscribe(state => {
-      clientState.set(state);
-    });
-
-    // Update stores
-    clientState.set(newClient.getState());
-    void setPerspective(DEFAULT_SESSION_ID);
+    await installNewClient(newClient);
   },
 
   /**
@@ -278,10 +365,6 @@ export const gameVariants = {
    * Start a one-hand challenge game
    */
   startOneHand: async (seed?: number) => {
-    // Destroy current game
-    gameClient.destroy();
-
-    // Create new game with one-hand variant
     const newAdapter = new InProcessAdapter();
     const newConfig: GameConfig = {
       playerTypes,
@@ -300,18 +383,7 @@ export const gameVariants = {
     };
 
     const newClient = new NetworkGameClient(newAdapter, newConfig);
-
-    // Replace global client
-    Object.assign(gameClient, newClient);
-
-    // Subscribe to updates
-    newClient.subscribe(state => {
-      clientState.set(state);
-    });
-
-    // Update stores
-    clientState.set(newClient.getState());
-    void setPerspective(DEFAULT_SESSION_ID);
+    await installNewClient(newClient);
   },
 
   /**

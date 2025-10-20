@@ -4,11 +4,10 @@
  */
 
 import type { GameState, GameAction } from '../types';
-import { createInitialState } from './state';
-import { getValidActions } from './gameEngine';
-import { executeAction } from './actions';
-import { selectAIAction } from './ai-scheduler';
-import { getNextStates } from './gameEngine';
+import { createInitialState } from '../core/state';
+import { getValidActions, getNextStates } from '../core/gameEngine';
+import { executeAction } from '../core/actions';
+import { selectAIAction } from './actionSelector';
 
 /**
  * Options for game simulation

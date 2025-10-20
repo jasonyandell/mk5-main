@@ -92,7 +92,11 @@ describe('GameHost', () => {
 
   it('should notify subscribers on state changes', () => {
     const listener = vi.fn();
-    const unsubscribe = host.subscribe(undefined, listener);
+    let lastUpdate: unknown;
+    const unsubscribe = host.subscribe(undefined, (update) => {
+      lastUpdate = update;
+      listener();
+    });
 
     // Should get immediate call with current state
     expect(listener).toHaveBeenCalledTimes(1);
@@ -109,6 +113,7 @@ describe('GameHost', () => {
     if (validAction) {
       host.executeAction(playerId, validAction.action, Date.now());
       expect(listener).toHaveBeenCalledTimes(2);
+      expect(lastUpdate).toBeDefined();
     }
 
     unsubscribe();
@@ -156,16 +161,22 @@ describe('Protocol Flow', () => {
     // Wait for game creation
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Get valid actions from client
-    const validActions = client.getValidActions();
-    if (validActions.length > 0 && validActions[0]) {
-      // Execute action
-      const result = await client.requestAction('player-0', validActions[0]);
+    const state = await client.getState();
+    expect(state.gameId).toBeDefined();
+
+    const actions = await client.getActions('player-0');
+    const firstAction = actions[0];
+    if (firstAction) {
+      const result = await client.executeAction({
+        playerId: 'player-0',
+        action: firstAction.action,
+        timestamp: Date.now()
+      });
       expect(result.success).toBe(true);
 
-      // Should receive STATE_UPDATE message
       const stateUpdate = receivedMessages.find(m => m.type === 'STATE_UPDATE');
       expect(stateUpdate).toBeDefined();
+      expect((stateUpdate as typeof stateUpdate & { actions?: Record<string, unknown> })?.actions).toBeDefined();
     }
   });
 
@@ -201,16 +212,17 @@ describe('Protocol Flow', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    const initialState = client.getState();
-    expect(initialState.coreState.players[1]?.hand).toHaveLength(0);
+    const initialState = await client.getState();
+    const initialView = (client as NetworkGameClient).getCachedView();
+    expect(initialView?.state.players[1]?.hand).toHaveLength(0);
 
     const seatOneId = Array.from(initialState.players).find(s => s.playerIndex === 1)?.playerId ?? 'player-1';
 
     await client.setPlayerId(seatOneId);
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    const switchedState = client.getState();
-    expect(switchedState.coreState.players[1]?.hand.length).toBeGreaterThan(0);
+    const switchedView = (client as NetworkGameClient).getCachedView();
+    expect(switchedView?.state.players[1]?.hand.length ?? 0).toBeGreaterThan(0);
   });
 });
 
@@ -313,15 +325,20 @@ describe('Backwards Compatibility', () => {
 
     // Test GameClient methods
     expect(client.getState).toBeDefined();
-    expect(client.requestAction).toBeDefined();
+    expect(client.executeAction).toBeDefined();
+    expect(client.getActions).toBeDefined();
+    expect(client.joinGame).toBeDefined();
+    expect(client.leaveGame).toBeDefined();
     expect(client.subscribe).toBeDefined();
     expect(client.setPlayerControl).toBeDefined();
     expect(client.destroy).toBeDefined();
 
     // Test that methods work
-    const state = client.getState();
+    const state = await client.getState();
     expect(state.coreState).toBeDefined();
     expect(state.players).toBeDefined();
+    const actions = await client.getActions('player-0');
+    expect(Array.isArray(actions)).toBe(true);
 
     client.destroy();
   });

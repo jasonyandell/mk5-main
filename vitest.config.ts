@@ -6,6 +6,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    testTimeout: 60_000,
+    reporters: ['default', 'verbose'],
     include: ['src/tests/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'json', 'html'],

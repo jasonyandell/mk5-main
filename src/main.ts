@@ -7,6 +7,7 @@ import { gameActions, gameState, gameClient } from './stores/gameStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameView } from './shared/multiplayer/protocol';
+import { NetworkGameClient } from './game/multiplayer/NetworkGameClient';
 
 // Route to appropriate app based on URL path
 const pathname = window.location.pathname;
@@ -57,9 +58,8 @@ declare global {
 if (typeof window !== 'undefined' && !isPerfectsPage) {
   // Read-only state inspection (minimal exposure for testing/debugging)
   window.getGameView = () => {
-    // Access the private cachedView via bracket notation to bypass type checking
-    const client = gameClient as unknown as { cachedView?: GameView };
-    const cachedView = client.cachedView;
+    const client = gameClient as NetworkGameClient;
+    const cachedView = client.getCachedView();
     if (!cachedView) {
       // Return a minimal GameView structure
       const state = get(gameState);

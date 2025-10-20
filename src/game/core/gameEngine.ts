@@ -340,3 +340,4 @@ export function getNextStates(state: GameState): StateTransition[] {
     newState: executeAction(state, action)  // Use pure executeAction
   }));
 }
+
