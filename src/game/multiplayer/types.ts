@@ -70,6 +70,7 @@ export interface MultiplayerGameState {
   createdAt: number;                        // Timestamp when game created
   lastActionAt: number;                     // Last activity timestamp
   enabledVariants: VariantConfig[];         // Active rule modifications
+  enabledLayers?: string[];                 // Active rule layers (e.g., ['nello', 'plunge'])
 }
 
 /**

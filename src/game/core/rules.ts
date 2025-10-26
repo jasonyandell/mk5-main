@@ -283,31 +283,37 @@ export function getValidPlays(
   
   // Handle doubles trump special case
   if (leadSuit === 7) {
-    const doubles = player.suitAnalysis.rank.doubles;
-    if (doubles && doubles.length > 0) {
-      return doubles;
+    const doubles = player.suitAnalysis.rank.doubles || [];
+    // Filter to only include doubles still in hand
+    const handIds = new Set(player.hand.map(d => d.id));
+    const validDoubles = doubles.filter(d => handIds.has(d.id));
+    if (validDoubles.length > 0) {
+      return validDoubles;
     }
     return [...player.hand]; // Can't follow doubles, all plays valid
   }
-  
+
   // Check if trump is being led
   const trumpSuit = getTrumpSuit(state.trump);
   if (trumpSuit === leadSuit) {
     // Trump is led - must follow with trump if possible
-    const trumpDominoes = player.suitAnalysis.rank.trump;
-    if (trumpDominoes && trumpDominoes.length > 0) {
-      return trumpDominoes;
+    const trumpDominoes = player.suitAnalysis.rank.trump || [];
+    // Filter to only include trump dominoes still in hand
+    const handIds = new Set(player.hand.map(d => d.id));
+    const validTrumpPlays = trumpDominoes.filter(d => handIds.has(d.id));
+    if (validTrumpPlays.length > 0) {
+      return validTrumpPlays;
     }
     return [...player.hand]; // Can't follow trump, all plays valid
   }
   
   // Get dominoes that can follow the led suit from suit analysis
   const suitDominoes = leadSuit >= 0 && leadSuit <= 6
-    ? player.suitAnalysis.rank[leadSuit as RegularSuit]
-    : undefined;
-  
+    ? (player.suitAnalysis.rank[leadSuit as RegularSuit] || [])
+    : [];
+
   // Filter out trump dominoes - they can't follow non-trump suits
-  const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
+  const nonTrumpSuitDominoes = suitDominoes.filter(d => {
     // If trump is a regular suit, dominoes containing that suit are trump
     if (trumpSuit >= 0 && trumpSuit <= 6) {
       return d.high !== trumpSuit && d.low !== trumpSuit;
@@ -317,13 +323,18 @@ export function getValidPlays(
       return d.high !== d.low;
     }
     return true;
-  }) : [];
-  
+  });
+
+  // IMPORTANT: Suit analysis may be stale after plays, so filter to only include
+  // dominoes still in the player's hand
+  const handIds = new Set(player.hand.map(d => d.id));
+  const validSuitPlays = nonTrumpSuitDominoes.filter(d => handIds.has(d.id));
+
   // If player has non-trump dominoes in the led suit, must play one of them
-  if (nonTrumpSuitDominoes.length > 0) {
-    return nonTrumpSuitDominoes;
+  if (validSuitPlays.length > 0) {
+    return validSuitPlays;
   }
-  
+
   // If player can't follow suit (no non-trump dominoes in that suit), all dominoes are valid
   return [...player.hand];
 }
@@ -356,7 +367,7 @@ export function isValidTrump(trump: TrumpSelection): boolean {
   if (trump.type === 'suit') {
     return trump.suit !== undefined && trump.suit >= 0 && trump.suit <= 6;
   }
-  return trump.type === 'doubles' || trump.type === 'no-trump';
+  return trump.type === 'doubles' || trump.type === 'no-trump' || trump.type === 'nello' || trump.type === 'sevens';
 }
 
 /**
@@ -368,6 +379,8 @@ export function getTrumpValue(trump: TrumpSelection): number {
     case 'suit': return trump.suit!;
     case 'doubles': return 7;
     case 'no-trump': return 8;
+    case 'nello': return -1; // Nello has no trump value
+    case 'sevens': return -1; // Sevens has no trump value
   }
 }
 

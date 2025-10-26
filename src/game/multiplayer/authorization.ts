@@ -6,6 +6,11 @@ import { getValidActions } from '../core/gameEngine';
 import { filterActionsForSession } from './capabilityUtils';
 import type { StateMachine } from '../variants/types';
 import { applyVariants } from '../variants/registry';
+import type { GameRules } from '../layers/types';
+import { composeRules, baseLayer } from '../layers';
+
+// Default rules (base layer only, no special contracts)
+const defaultRules = composeRules([baseLayer]);
 
 function actionsMatch(expected: GameAction, actual: GameAction): boolean {
   if (expected.type !== actual.type) {
@@ -96,12 +101,17 @@ export function getValidActionsForPlayer(
  * This is the fundamental operation for multiplayer - ensures only authorized
  * actions can mutate state.
  *
+ * @param mpState - Current multiplayer game state
+ * @param request - Action request from a player
+ * @param getValidActionsFn - State machine for generating valid actions (with variants applied)
+ * @param rules - Game rules for execution (defaults to base layer if not provided)
  * @returns Result containing new MultiplayerGameState or error message
  */
 export function authorizeAndExecute(
   mpState: MultiplayerGameState,
   request: ActionRequest,
-  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions
+  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions,
+  rules: GameRules = defaultRules
 ): Result<MultiplayerGameState> {
   const { playerId, action } = request;
   const { coreState, players } = mpState;
@@ -128,8 +138,8 @@ export function authorizeAndExecute(
     );
   }
 
-  // Execute the action (pure state transition)
-  const newCoreState = executeAction(coreState, action);
+  // Execute the action (pure state transition) with threaded rules
+  const newCoreState = executeAction(coreState, action, rules);
 
   // Return new multiplayer state with updated pure state
   // NO filtering here - filtering happens in createView()

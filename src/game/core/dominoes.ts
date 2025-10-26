@@ -68,6 +68,8 @@ export function getTrumpSuit(trump: TrumpSelection): TrumpSuitOrNone {
     case 'suit': return trump.suit!;
     case 'doubles': return DOUBLES_AS_TRUMP;
     case 'no-trump': return NO_TRUMP;
+    case 'nello': return TRUMP_NOT_SELECTED; // Nello has no trump
+    case 'sevens': return TRUMP_NOT_SELECTED; // Sevens has no trump hierarchy
   }
 }
 

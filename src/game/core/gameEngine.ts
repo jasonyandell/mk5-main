@@ -3,6 +3,7 @@ import { cloneGameState } from './state';
 import { executeAction } from './actions';
 import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
 import { isValidBid, getValidPlays } from './rules';
+import { composeActions } from '../layers/compose';
 
 /**
  * Game Engine with action-based state management and history tracking
@@ -79,19 +80,32 @@ export class GameEngine {
 /**
  * Gets all valid actions for the current state
  */
-export function getValidActions(state: GameState): GameAction[] {
+export function getValidActions(state: GameState, layers?: import('../layers/types').GameLayer[], rules?: import('../layers/types').GameRules): GameAction[] {
+  let baseActions: GameAction[];
+
   switch (state.phase) {
     case 'bidding':
-      return getBiddingActions(state);
+      baseActions = getBiddingActions(state);
+      break;
     case 'trump_selection':
-      return getTrumpSelectionActions(state);
+      baseActions = getTrumpSelectionActions(state);
+      break;
     case 'playing':
-      return getPlayingActions(state);
+      baseActions = getPlayingActions(state, rules);
+      break;
     case 'scoring':
-      return getScoringActions(state);
+      baseActions = getScoringActions(state);
+      break;
     default:
-      return [];
+      baseActions = [];
   }
+
+  // Apply layer transformations if provided
+  if (layers && layers.length > 0) {
+    return composeActions(layers, state, baseActions);
+  }
+
+  return baseActions;
 }
 
 /**
@@ -175,36 +189,40 @@ function getBiddingActions(state: GameState): GameAction[] {
  */
 function getTrumpSelectionActions(state: GameState): GameAction[] {
   const actions: GameAction[] = [];
-  
+
   if (state.winningBidder === -1) return actions;
-  
+
   // Generate trump selection actions
+  // Use currentPlayer (which may be partner for plunge/splash) not winningBidder
   Object.values(TRUMP_SELECTIONS).forEach(trumpSelection => {
     actions.push({
       type: 'select-trump',
-      player: state.winningBidder,
+      player: state.currentPlayer,
       trump: trumpSelection as TrumpSelection
     });
   });
-  
+
   return actions;
 }
 
 /**
  * Gets valid playing actions
  */
-function getPlayingActions(state: GameState): GameAction[] {
+function getPlayingActions(state: GameState, rules?: import('../layers/types').GameRules): GameAction[] {
   const actions: GameAction[] = [];
-  
+
   if (state.trump.type === 'not-selected') return actions;
-  
+
+  // Check if trick is complete (use rules if provided, otherwise default to 4)
+  const isTrickComplete = rules ? rules.isTrickComplete(state) : state.currentTrick.length === 4;
+
   // If trick is complete, add consensus actions
-  if (state.currentTrick.length === 4) {
+  if (isTrickComplete) {
     // Only the current player can agree to complete the trick
     if (!state.consensus.completeTrick.has(state.currentPlayer)) {
       actions.push({ type: 'agree-complete-trick', player: state.currentPlayer });
     }
-    
+
     // If all have agreed, the trick can be completed
     if (state.consensus.completeTrick.size === 4) {
       actions.push({ type: 'complete-trick' });
@@ -330,14 +348,22 @@ export function actionToLabel(action: GameAction): string {
 /**
  * Core state machine function that returns all possible next states
  * Now internally uses the action system for consistency
+ *
+ * @param state Current game state
+ * @param layers Optional array of layers to compose for action generation
+ * @param rules Optional composed rules for action execution
  */
-export function getNextStates(state: GameState): StateTransition[] {
-  const validActions = getValidActions(state);
+export function getNextStates(
+  state: GameState,
+  layers?: import('../layers/types').GameLayer[],
+  rules?: import('../layers/types').GameRules
+): StateTransition[] {
+  const validActions = getValidActions(state, layers, rules);
   return validActions.map(action => ({
     id: actionToId(action),
     label: actionToLabel(action),
     action: action,  // Include the action for audit trail
-    newState: executeAction(state, action)  // Use pure executeAction
+    newState: executeAction(state, action, rules)  // Use pure executeAction with optional rules
   }));
 }
 

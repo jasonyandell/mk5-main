@@ -28,6 +28,8 @@ import { getValidActions, getNextStates } from '../../game/core/gameEngine';
 import { applyVariants } from '../../game/variants/registry';
 import type { VariantConfig, StateMachine } from '../../game/variants/types';
 import { createMultiplayerGame, updatePlayerSession } from '../../game/multiplayer/stateLifecycle';
+import { composeRules, baseLayer, getLayersByNames } from '../../game/layers';
+import type { GameRules } from '../../game/layers/types';
 
 interface HostViewUpdate {
   view: GameView;
@@ -51,6 +53,7 @@ export class GameHost {
   private listeners: Map<string, { perspective?: string; listener: (update: HostViewUpdate) => void }> = new Map();
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
   private getValidActionsComposed: StateMachine;
+  private rules: GameRules;
 
   constructor(gameId: string, config: GameConfig, players: PlayerSession[]) {
     this.gameId = gameId;
@@ -90,6 +93,14 @@ export class GameHost {
     // Compose variants
     this.getValidActionsComposed = applyVariants(baseGetValidActions, this.variantConfigs);
 
+    // Compose layers into rules
+    const enabledLayerNames = config.enabledLayers ?? [];
+    const enabledLayers = enabledLayerNames.length > 0
+      ? getLayersByNames(enabledLayerNames)
+      : [];
+
+    this.rules = composeRules([baseLayer, ...enabledLayers]);
+
     // Create initial game state
     const initialState = createInitialState({
       playerTypes: config.playerTypes,
@@ -106,6 +117,7 @@ export class GameHost {
       coreState: initialState,
       players: normalizedPlayers,
       enabledVariants: this.variantConfigs,
+      enabledLayers: config.enabledLayers ?? [],
       createdAt: now,
       lastActionAt: now
     });
@@ -293,7 +305,7 @@ export class GameHost {
       timestamp
     };
 
-    const result = authorizeAndExecute(this.mpState, request, this.getValidActionsComposed);
+    const result = authorizeAndExecute(this.mpState, request, this.getValidActionsComposed, this.rules);
 
     if (!result.success) {
       return { success: false, error: result.error };
@@ -576,7 +588,8 @@ export class GameHost {
       })),
       createdAt: state.createdAt,
       lastActionAt: state.lastActionAt,
-      enabledVariants: state.enabledVariants.map(variant => ({ ...variant }))
+      enabledVariants: state.enabledVariants.map(variant => ({ ...variant })),
+      enabledLayers: state.enabledLayers ?? []
     };
   }
 
@@ -659,7 +672,8 @@ export class GameHost {
       const result = authorizeAndExecute(
         this.mpState,
         { playerId: session.playerId, action: autoAction, timestamp: Date.now() },
-        this.getValidActionsComposed
+        this.getValidActionsComposed,
+        this.rules
       );
 
       if (!result.success) {

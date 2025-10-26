@@ -46,6 +46,9 @@ export interface GameConfig {
   /** Composable variants */
   variants?: VariantConfig[];
 
+  /** Enabled rule layers (e.g., ['nello', 'plunge']) */
+  enabledLayers?: string[];
+
   /** Random seed for deterministic games */
   shuffleSeed?: number;
 

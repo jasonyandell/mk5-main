@@ -107,7 +107,7 @@ export type BidType = 'pass' | 'points' | 'marks' | 'nello' | 'splash' | 'plunge
 
 // Clean Trump type - no legacy support
 export interface TrumpSelection {
-  type: 'not-selected' | 'suit' | 'doubles' | 'no-trump';
+  type: 'not-selected' | 'suit' | 'doubles' | 'no-trump' | 'nello' | 'sevens';
   suit?: RegularSuit;  // Only when type === 'suit'
 }
 

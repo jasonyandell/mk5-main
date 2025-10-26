@@ -1,0 +1,52 @@
+/**
+ * Layer registry - Central location for all available game layers.
+ *
+ * Layers can be enabled/disabled by configuration to compose different
+ * game rule sets (standard, with special contracts, tournament mode, etc.)
+ */
+
+import type { GameLayer } from './types';
+import { baseLayer } from './base';
+import { nelloLayer } from './nello';
+import { plungeLayer } from './plunge';
+import { splashLayer } from './splash';
+import { sevensLayer } from './sevens';
+
+/**
+ * Registry of all available layers.
+ *
+ * Note: Base layer should always be included first in composition.
+ * Other layers can be enabled/disabled via configuration.
+ */
+export const LAYER_REGISTRY: Record<string, GameLayer> = {
+  'base': baseLayer,
+  'nello': nelloLayer,
+  'plunge': plungeLayer,
+  'splash': splashLayer,
+  'sevens': sevensLayer
+};
+
+/**
+ * Get a layer by name from the registry.
+ *
+ * @param name Layer name (e.g., 'nello', 'plunge')
+ * @returns The requested layer
+ * @throws Error if layer not found
+ */
+export function getLayerByName(name: string): GameLayer {
+  const layer = LAYER_REGISTRY[name];
+  if (!layer) {
+    throw new Error(`Unknown layer: ${name}`);
+  }
+  return layer;
+}
+
+/**
+ * Get multiple layers by names.
+ *
+ * @param names Array of layer names
+ * @returns Array of layers
+ */
+export function getLayersByNames(names: string[]): GameLayer[] {
+  return names.map(getLayerByName);
+}
