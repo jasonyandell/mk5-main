@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
 import { EMPTY_BID } from '../../../game/types';
-import { isValidOpeningBid, isValidBid, createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { composeRules, baseLayer, plungeLayer } from '../../../game/layers';
+
+// Opening bid constraints include plunge as valid exception (casual rules)
+const rules = composeRules([baseLayer, plungeLayer]);
 
 describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
   describe('Scenario: Opening Bid Constraints', () => {
@@ -32,7 +36,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
       
       pointsBids.forEach(({ bid, valid }) => {
-        expect(isValidOpeningBid(bid, gameState.players[0]!.hand)).toBe(valid);
+        expect(rules.isValidBid(gameState,bid, gameState.players[0]!.hand)).toBe(valid);
       });
 
       // And the maximum opening bid is 2 marks (84 points)
@@ -44,7 +48,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
       
       markBids.forEach(({ bid, valid }) => {
-        expect(isValidOpeningBid(bid, gameState.players[0]!.hand)).toBe(valid);
+        expect(rules.isValidBid(gameState,bid, gameState.players[0]!.hand)).toBe(valid);
       });
       
       // Verify 2 marks equals 84 points
@@ -55,7 +59,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
 
       // Test invalid plunge first (with current hand - not enough doubles)
       const invalidPlunge: Bid = { type: 'plunge' as const, value: 3, player: 0 };
-      expect(isValidOpeningBid(invalidPlunge, gameState.players[0]!.hand)).toBe(false);
+      expect(rules.isValidBid(gameState,invalidPlunge, gameState.players[0]!.hand)).toBe(false);
 
       // Now give player 4 doubles for valid plunge tests
       const handWith4Doubles = [
@@ -71,13 +75,13 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       const validPlunge4: Bid = { type: 'plunge' as const, value: 4, player: 0 };
       const validPlunge5: Bid = { type: 'plunge' as const, value: 5, player: 0 };
 
-      expect(isValidOpeningBid(validPlunge4, handWith4Doubles)).toBe(true);
-      expect(isValidOpeningBid(validPlunge5, handWith4Doubles)).toBe(true);
+      expect(rules.isValidBid(gameState,validPlunge4, handWith4Doubles)).toBe(true);
+      expect(rules.isValidBid(gameState,validPlunge5, handWith4Doubles)).toBe(true);
 
       // Pass is always valid (but handled separately, not through isValidOpeningBid)
       const passBid: Bid = { type: 'pass', player: 0 };
       // Pass bids are handled by isValidBid, not isValidOpeningBid
-      expect(isValidBid(gameState, passBid)).toBe(true);
+      expect(rules.isValidBid(gameState, passBid)).toBe(true);
     });
 
     it('should create valid opening bids', () => {
@@ -106,16 +110,16 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
 
       validOpeningBids.forEach(bid => {
-        expect(isValidOpeningBid(bid, gameState.players[0]!.hand)).toBe(true);
+        expect(rules.isValidBid(gameState,bid, gameState.players[0]!.hand)).toBe(true);
       });
 
       // Pass is handled by isValidBid
       const passBid: Bid = { type: 'pass', player: 0 };
-      expect(isValidBid(gameState, passBid)).toBe(true);
+      expect(rules.isValidBid(gameState, passBid)).toBe(true);
 
       // Plunge is valid with 4+ doubles (base engine generates it)
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
-      expect(isValidOpeningBid(plungeBid, gameState.players[0]!.hand)).toBe(true);
+      expect(rules.isValidBid(gameState,plungeBid, gameState.players[0]!.hand)).toBe(true);
     });
 
     it('should reject invalid opening bids', () => {
@@ -142,7 +146,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       ];
 
       invalidOpeningBids.forEach(bid => {
-        expect(isValidOpeningBid(bid, gameState.players[0]!.hand)).toBe(false);
+        expect(rules.isValidBid(gameState,bid, gameState.players[0]!.hand)).toBe(false);
       });
     });
   });

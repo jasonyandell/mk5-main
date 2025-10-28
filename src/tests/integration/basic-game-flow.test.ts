@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, createSetupState } from '../../game/core/state';
-import { isValidBid, isValidPlay } from '../../game/core/rules';
+import { composeRules, baseLayer } from '../../game/layers';
 import { shuffleDominoesWithSeed } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
@@ -8,6 +8,8 @@ import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
 import type { Bid, Domino } from '../../game/types';
 import { ACES, DEUCES, TRES } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Basic Game Flow', () => {
   describe('Game Initialization', () => {
@@ -165,7 +167,7 @@ describe('Basic Game Flow', () => {
 
       // Validate each bid
       bids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -195,7 +197,7 @@ describe('Basic Game Flow', () => {
       ];
 
       allPassBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -260,7 +262,7 @@ describe('Basic Game Flow', () => {
       state.currentSuit = TRES; // threes led (3-2 high end is 3)
       
       plays.forEach(play => {
-        expect(isValidPlay(state, play.domino, play.player)).toBe(true);
+        expect(rules.isValidPlay(state, play.domino, play.player)).toBe(true);
         state.currentTrick.push(play);
       });
 
@@ -353,11 +355,11 @@ describe('Basic Game Flow', () => {
 
       // Invalid bid - below minimum
       const invalidBid: Bid = { type: BID_TYPES.POINTS, value: 25, player: 1 };
-      expect(isValidBid(state, invalidBid)).toBe(false);
+      expect(rules.isValidBid(state, invalidBid)).toBe(false);
       
       // Invalid bid - wrong player
       const wrongPlayerBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 2 };
-      expect(isValidBid(state, wrongPlayerBid)).toBe(false);
+      expect(rules.isValidBid(state, wrongPlayerBid)).toBe(false);
     });
 
     it('handles invalid plays gracefully', () => {
@@ -385,12 +387,12 @@ describe('Basic Game Flow', () => {
       const firstDomino = playerHand[0];
       const secondDomino = playerHand[1];
       if (firstDomino) {
-        expect(isValidPlay(state, firstDomino, 1)).toBe(true);
+        expect(rules.isValidPlay(state, firstDomino, 1)).toBe(true);
       }
       
       // Invalid play - not following suit when able
       if (secondDomino) {
-        expect(isValidPlay(state, secondDomino, 1)).toBe(false);
+        expect(rules.isValidPlay(state, secondDomino, 1)).toBe(false);
       }
     });
 
@@ -403,11 +405,11 @@ describe('Basic Game Flow', () => {
 
       // Valid bid by current player
       const validBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 1 };
-      expect(isValidBid(state, validBid)).toBe(true);
+      expect(rules.isValidBid(state, validBid)).toBe(true);
       
       // Invalid bid by non-current player
       const outOfTurnBid: Bid = { type: BID_TYPES.POINTS, value: 31, player: 2 };
-      expect(isValidBid(state, outOfTurnBid)).toBe(false);
+      expect(rules.isValidBid(state, outOfTurnBid)).toBe(false);
     });
   });
 });

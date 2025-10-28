@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
-import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Trump Suit Following Rules', () => {
   describe('Cannot Play Trump When Can Follow Suit', () => {
@@ -33,11 +36,11 @@ describe('Trump Suit Following Rules', () => {
       });
 
       // Check that 6-5 is NOT valid because player can follow suit with 6-2
-      expect(isValidPlay(state, { id: '6-5', high: 6, low: 5, points: 0 }, 1)).toBe(false);
-      expect(isValidPlay(state, { id: '6-2', high: 6, low: 2, points: 0 }, 1)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '6-5', high: 6, low: 5, points: 0 }, 1)).toBe(false);
+      expect(rules.isValidPlay(state, { id: '6-2', high: 6, low: 2, points: 0 }, 1)).toBe(true);
       
       // Valid plays should only include 6-2, not 6-5
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       const firstValidPlay = validPlays[0];
       if (!firstValidPlay) throw new Error('First valid play is undefined');
@@ -70,13 +73,13 @@ describe('Trump Suit Following Rules', () => {
       });
 
       // Since player has no non-trump 6s, they can play any domino
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3); // All dominoes are valid
       
       // All plays should be valid since player cannot follow suit without trump
-      expect(isValidPlay(state, { id: '6-5', high: 6, low: 5, points: 0 }, 1)).toBe(true);
-      expect(isValidPlay(state, { id: '5-4', high: 5, low: 4, points: 0 }, 1)).toBe(true);
-      expect(isValidPlay(state, { id: '3-1', high: 3, low: 1, points: 0 }, 1)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '6-5', high: 6, low: 5, points: 0 }, 1)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '5-4', high: 5, low: 4, points: 0 }, 1)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '3-1', high: 3, low: 1, points: 0 }, 1)).toBe(true);
     });
 
     it('prevents playing trump when multiple non-trump options exist to follow suit', () => {
@@ -104,7 +107,7 @@ describe('Trump Suit Following Rules', () => {
         ]
       });
 
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       
       // Should only be able to play the non-trump 4s
       expect(validPlays).toHaveLength(2);

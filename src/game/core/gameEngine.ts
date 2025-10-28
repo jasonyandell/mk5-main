@@ -2,8 +2,8 @@ import type { GameState, GameAction, StateTransition, Bid, TrumpSelection, Domin
 import { cloneGameState } from './state';
 import { executeAction } from './actions';
 import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
-import { isValidBid, getValidPlays } from './rules';
-import { composeActions } from '../layers/compose';
+import { composeActions, composeRules } from '../layers/compose';
+import { baseLayer } from '../layers';
 
 /**
  * Game Engine with action-based state management and history tracking
@@ -85,7 +85,7 @@ export function getValidActions(state: GameState, layers?: import('../layers/typ
 
   switch (state.phase) {
     case 'bidding':
-      baseActions = getBiddingActions(state);
+      baseActions = getBiddingActions(state, rules);
       break;
     case 'trump_selection':
       baseActions = getTrumpSelectionActions(state);
@@ -111,9 +111,9 @@ export function getValidActions(state: GameState, layers?: import('../layers/typ
 /**
  * Gets valid bidding actions
  */
-function getBiddingActions(state: GameState): GameAction[] {
+function getBiddingActions(state: GameState, rules?: import('../layers/types').GameRules): GameAction[] {
   const actions: GameAction[] = [];
-  
+
   // Check if bidding is complete
   if (state.bids.length === 4) {
     const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
@@ -125,33 +125,38 @@ function getBiddingActions(state: GameState): GameAction[] {
     // Otherwise, bidding is complete - no more actions
     return actions;
   }
-  
+
   // Check if current player has already bid
   if (state.bids.some(b => b.player === state.currentPlayer)) {
     return actions;
   }
-  
+
   const currentPlayerData = state.players[state.currentPlayer];
   if (!currentPlayerData) {
     throw new Error(`Invalid current player index: ${state.currentPlayer}`);
   }
   const currentPlayerHand = currentPlayerData.hand;
-  
+
+  // Helper to validate bids using composed rules or base layer as fallback
+  const defaultRules = rules || composeRules([baseLayer]);
+  const validateBid = (bid: Bid, hand?: Domino[]) =>
+    defaultRules.isValidBid(state, bid, hand);
+
   // Pass action
   actions.push({ type: 'pass', player: state.currentPlayer });
-  
+
   // Point bids
   for (let points = GAME_CONSTANTS.MIN_BID; points <= GAME_CONSTANTS.MAX_BID; points++) {
     const bid: Bid = { type: BID_TYPES.POINTS, value: points, player: state.currentPlayer };
-    if (isValidBid(state, bid, currentPlayerHand)) {
+    if (validateBid(bid, currentPlayerHand)) {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.POINTS, value: points });
     }
   }
-  
+
   // Mark bids
   for (let marks = 1; marks <= 4; marks++) {
     const bid: Bid = { type: BID_TYPES.MARKS, value: marks, player: state.currentPlayer };
-    if (isValidBid(state, bid, currentPlayerHand)) {
+    if (validateBid(bid, currentPlayerHand)) {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.MARKS, value: marks });
     }
   }
@@ -160,7 +165,7 @@ function getBiddingActions(state: GameState): GameAction[] {
   // Nello bids
   for (let marks = 1; marks <= 4; marks++) {
     const bid: Bid = { type: BID_TYPES.NELLO, value: marks, player: state.currentPlayer };
-    if (isValidBid(state, bid, currentPlayerHand)) {
+    if (validateBid(bid, currentPlayerHand)) {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.NELLO, value: marks });
     }
   }
@@ -168,7 +173,7 @@ function getBiddingActions(state: GameState): GameAction[] {
   // Splash bids
   for (let marks = 2; marks <= 3; marks++) {
     const bid: Bid = { type: BID_TYPES.SPLASH, value: marks, player: state.currentPlayer };
-    if (isValidBid(state, bid, currentPlayerHand)) {
+    if (validateBid(bid, currentPlayerHand)) {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.SPLASH, value: marks });
     }
   }
@@ -176,7 +181,7 @@ function getBiddingActions(state: GameState): GameAction[] {
   // Plunge bids
   for (let marks = 4; marks <= 6; marks++) {
     const bid: Bid = { type: BID_TYPES.PLUNGE, value: marks, player: state.currentPlayer };
-    if (isValidBid(state, bid, currentPlayerHand)) {
+    if (validateBid(bid, currentPlayerHand)) {
       actions.push({ type: 'bid', player: state.currentPlayer, bid: BID_TYPES.PLUNGE, value: marks });
     }
   }
@@ -218,9 +223,12 @@ function getPlayingActions(state: GameState, rules?: import('../layers/types').G
 
   // If trick is complete, add consensus actions
   if (isTrickComplete) {
-    // Only the current player can agree to complete the trick
-    if (!state.consensus.completeTrick.has(state.currentPlayer)) {
-      actions.push({ type: 'agree-complete-trick', player: state.currentPlayer });
+    // All players who haven't agreed yet can agree (not just current player)
+    // This is important for nello where the partner sits out but still needs to agree
+    for (let playerId = 0; playerId < 4; playerId++) {
+      if (!state.consensus.completeTrick.has(playerId)) {
+        actions.push({ type: 'agree-complete-trick', player: playerId });
+      }
     }
 
     // If all have agreed, the trick can be completed
@@ -230,8 +238,9 @@ function getPlayingActions(state: GameState, rules?: import('../layers/types').G
     return actions;
   }
   
-  // Get valid plays for current player
-  const validPlays = getValidPlays(state, state.currentPlayer);
+  // Get valid plays for current player using threaded rules
+  const threadedRules = rules || composeRules([baseLayer]);
+  const validPlays = threadedRules.getValidPlays(state, state.currentPlayer);
   validPlays.forEach((domino: Domino) => {
     actions.push({
       type: 'play',
@@ -239,7 +248,7 @@ function getPlayingActions(state: GameState, rules?: import('../layers/types').G
       dominoId: domino.id.toString()
     });
   });
-  
+
   return actions;
 }
 

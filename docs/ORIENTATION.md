@@ -1,0 +1,378 @@
+# Texas 42 - Architecture Orientation
+
+**New to the codebase?** This document provides the mental models needed to navigate the architecture. For deep dives, see `remixed-855ccfd5.md` (multiplayer spec), `pure-layers-threaded-rules.md` (layer system), and `GAME_ONBOARDING.md` (detailed guide).
+
+---
+
+## Philosophy
+
+1. **Event Sourcing**: `state = replayActions(initialConfig, actionHistory)` - state is derived, actions are truth
+2. **Pure Functions**: All state transitions are pure, reproducible, testable
+3. **Composition Over Configuration**: `f(g(h(base)))` instead of flags and conditionals
+4. **Zero Coupling**: Core engine has no multiplayer/variant awareness
+5. **Parametric Polymorphism**: Executors delegate to injected rules, never inspect state
+
+---
+
+## The Stack
+
+```
+┌─────────────────────────────────┐
+│  UI Components (Svelte)         │  Reactive views
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  Svelte Stores                  │  Reactive state + derived views
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  NetworkGameClient              │  Caches filtered state + actions
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  GameHost (Authority)           │  ★ COMPOSITION POINT ★
+│  - Composes layers → rules      │  Pure state storage
+│  - Composes variants → actions  │  Per-request filtering
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  Variant System                 │  Transform actions (what's possible)
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  Layer System                   │  Provide rules (how execution works)
+│  13 GameRules methods           │  Special contracts live here
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  Core Engine                    │  Pure utilities, zero coupling
+└─────────────────────────────────┘
+```
+
+---
+
+## Two-Level Composition (The Key Insight)
+
+**Problem**: Special contracts (nello, splash, plunge, sevens) need to change BOTH what's possible AND how execution works.
+
+**Solution**: Two orthogonal composition surfaces.
+
+### Level 1: Layers → Execution Rules
+
+**Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
+
+**Interface**: `GameRules` - 13 pure methods grouped into:
+- **WHO** (3): getTrumpSelector, getFirstLeader, getNextPlayer
+- **WHEN** (2): isTrickComplete, checkHandOutcome
+- **HOW** (2): getLedSuit, calculateTrickWinner
+- **VALIDATION** (3): isValidPlay, getValidPlays, isValidBid
+- **SCORING** (3): getBidComparisonValue, isValidTrump, calculateScore
+
+**Composition**: Layers override only what differs from base. Compose via reduce:
+```typescript
+const rules = composeRules([baseLayer, nelloLayer, splashLayer]);
+// nelloLayer.isTrickComplete overrides base (3 plays not 4)
+// Other rules pass through unchanged
+```
+
+**Example**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
+
+### Level 2: Variants → Action Transformation
+
+**Purpose**: Transform WHAT actions are possible (filter, annotate, script, replace)
+
+**Interface**: `Variant = (StateMachine) → StateMachine` where `StateMachine = (state) => GameAction[]`
+
+**Operations**:
+- **Filter**: Remove actions (tournament removes special bids)
+- **Annotate**: Add metadata (hints, autoExecute flags)
+- **Script**: Inject actions (oneHand scripts bidding)
+- **Replace**: Swap action types (oneHand replaces score-hand with end-game)
+
+**Composition**: Variants wrap the state machine via reduce:
+```typescript
+const composed = applyVariants(baseStateMachine, [tournament, oneHand]);
+// tournament filters, then oneHand scripts
+```
+
+### The Composition Point (GameHost Constructor)
+
+**ONE place** where everything composes:
+
+```typescript
+// 1. Layers provide rules
+const layers = [baseLayer, ...getEnabledLayers(config)];
+const rules = composeRules(layers);
+
+// 2. Thread layers through base state machine
+const baseWithLayers = (state) => getValidActions(state, layers, rules);
+
+// 3. Variants transform the layered actions
+const composed = applyVariants(baseWithLayers, variantConfigs);
+
+// 4. Use composed function everywhere
+this.getValidActionsComposed = composed;
+```
+
+**Result**: Layers change execution semantics, variants change action availability. Executors have ZERO conditional logic - they call `rules.method()` and trust the result.
+
+---
+
+## File Map
+
+**Core Engine** (pure utilities):
+- `src/game/core/gameEngine.ts` - State machine, action generation
+- `src/game/core/actions.ts` - Action executors (thread rules through)
+- `src/game/core/rules.ts` - Pure game rules (suit following, trump)
+- `src/game/types.ts` - Core types (GameState, GameAction, etc)
+
+**Layer System** (execution semantics):
+- `src/game/layers/types.ts` - GameRules interface (13 methods), GameLayer
+- `src/game/layers/compose.ts` - composeRules() - reduce pattern
+- `src/game/layers/base.ts` - Standard Texas 42
+- `src/game/layers/{nello,splash,plunge,sevens}.ts` - Special contracts
+- `src/game/layers/utilities.ts` - getEnabledLayers() - config → layers
+
+**Variant System** (action transformation):
+- `src/game/variants/registry.ts` - applyVariants() - composition
+- `src/game/variants/{tournament,oneHand}.ts` - Variant implementations
+
+**Multiplayer** (authorization, visibility):
+- `src/game/multiplayer/types.ts` - MultiplayerGameState, PlayerSession, Capability
+- `src/game/multiplayer/authorization.ts` - authorizeAndExecute(), filterActionsForSession()
+- `src/game/multiplayer/capabilityUtils.ts` - getVisibleStateForSession()
+- `src/game/multiplayer/capabilities.ts` - Standard capability builders
+
+**Server** (authority):
+- `src/server/game/GameHost.ts` - Authority, composition point, filtering
+- `src/server/game/createGameAuthority.ts` - Factory function
+- `src/server/offline/InProcessAdapter.ts` - In-browser game adapter
+
+**Client** (trust boundary):
+- `src/game/multiplayer/NetworkGameClient.ts` - Client interface, caches filtered state
+- `src/stores/gameStore.ts` - Svelte stores, reactive state management
+- `src/App.svelte` - UI entry point
+
+---
+
+## Key Abstractions
+
+### GameRules (13 Methods)
+
+Interface executors call to determine behavior. Layers override specific methods:
+
+```typescript
+interface GameRules {
+  // WHO: Player determination
+  getTrumpSelector(state, winningBid): number
+  getFirstLeader(state, trumpSelector, trump): number
+  getNextPlayer(state, currentPlayer): number
+
+  // WHEN: Timing and completion
+  isTrickComplete(state): boolean
+  checkHandOutcome(state): HandOutcome | null
+
+  // HOW: Game mechanics
+  getLedSuit(state, domino): LedSuit
+  calculateTrickWinner(state, trick): number
+
+  // VALIDATION: Legality
+  isValidPlay(state, domino, playerId): boolean
+  getValidPlays(state, playerId): Domino[]
+  isValidBid(state, bid, playerHand?): boolean
+
+  // SCORING: Outcomes
+  getBidComparisonValue(bid): number
+  isValidTrump(trump): boolean
+  calculateScore(state): [number, number]
+}
+```
+
+**Key**: Each rule gets `prev` parameter - delegate to previous layer or override. Compose via reduce.
+
+### GameLayer
+
+Layer that overrides specific rules and/or transforms actions:
+
+```typescript
+interface GameLayer {
+  name: string;
+  rules?: Partial<GameRules>;  // Override execution behavior
+  getValidActions?: (state, prev) => GameAction[];  // Transform actions
+}
+```
+
+**Pattern**: Check state, return override or pass through `prev`.
+
+### Variant
+
+Function that transforms the state machine:
+
+```typescript
+type StateMachine = (state: GameState) => GameAction[];
+type Variant = (base: StateMachine) => StateMachine;
+```
+
+**Pattern**: Call base, then filter/annotate/replace actions.
+
+### Capability
+
+Token that grants permission to act or observe:
+
+```typescript
+type Capability =
+  | { type: 'act-as-player'; playerIndex: number }
+  | { type: 'observe-own-hand' }
+  | { type: 'observe-all-hands' }
+  | { type: 'see-hints' }
+  // ... 5 more
+```
+
+**Purpose**: Replace boolean flags with composable permissions. Determines:
+1. What actions player can execute (authorization)
+2. What information player can see (visibility)
+
+---
+
+## Request Flow
+
+```
+User clicks button
+  ↓
+gameStore.executeAction({ playerId, action, timestamp })
+  ↓
+NetworkGameClient.executeAction() → adapter.send(EXECUTE_ACTION)
+  ↓
+InProcessAdapter → GameHost.executeAction()
+  ↓
+authorizeAndExecute():
+  - Find session by playerId
+  - Get all valid actions via composed state machine
+  - Filter by session capabilities
+  - Execute: executeAction(coreState, action, rules)
+  - Update lastActionAt
+  ↓
+GameHost.notifyListeners():
+  - For each subscriber
+  - getVisibleStateForSession(coreState, session) → filter state
+  - filterActionsForSession(session, allActions) → filter actions
+  - Send { state: FilteredGameState, validActions: ValidAction[] }
+  ↓
+NetworkGameClient.handleServerMessage()
+  - Cache filtered state + actions map
+  - Call notifyListeners()
+  ↓
+gameStore subscription fires
+  - clientState.set(state)
+  - actionsByPlayer.set(actionsMap)
+  ↓
+Derived stores recompute
+  - gameState (FilteredGameState)
+  - viewProjection (UI metadata)
+  ↓
+UI components reactively update
+```
+
+**Key**: Server filters once per subscriber, client trusts filtered data.
+
+---
+
+## How to Extend
+
+### Add a New Layer (Special Contract)
+
+1. Create `src/game/layers/myContract.ts`:
+```typescript
+export const myContractLayer: GameLayer = {
+  name: 'my-contract',
+  rules: {
+    // Override only what differs from base
+    isTrickComplete: (state, prev) =>
+      state.trump.type === 'my-contract' ? customLogic : prev,
+    calculateScore: (state, prev) =>
+      state.currentBid.type === 'MY_CONTRACT' ? customScore : prev
+  }
+};
+```
+
+2. Add to `src/game/layers/utilities.ts:getEnabledLayers()`:
+```typescript
+if (config.enableMyContract) layers.push(myContractLayer);
+```
+
+3. Add config flag to `GameConfig` type
+
+**That's it**. No changes to core executors.
+
+### Add a New Variant
+
+1. Create `src/game/variants/myVariant.ts`:
+```typescript
+export const myVariant: VariantFactory = (config) => (base) => (state) => {
+  const actions = base(state);
+  // Filter, annotate, script, or replace
+  return modifiedActions;
+};
+```
+
+2. Register in `src/game/variants/registry.ts`
+
+3. Use in config: `{ variant: { type: 'my-variant' } }`
+
+### Enable a Feature
+
+Most features are config flags:
+```typescript
+const config: GameConfig = {
+  enableNello: true,      // Adds nello layer
+  enableSplash: true,     // Adds splash layer
+  enablePlunge: true,     // Adds plunge layer
+  enableSevens: true,     // Adds sevens layer
+  variant: { type: 'tournament' }  // Applies tournament variant
+};
+```
+
+Flags → getEnabledLayers() → compose in GameHost constructor.
+
+---
+
+## Architectural Invariants
+
+1. **Pure State Storage**: GameHost stores unfiltered GameState, filters on-demand per request
+2. **Server Authority**: Client trusts server's validActions list, never refilters
+3. **Capability-Based Access**: Permissions via capability tokens, not identity checks
+4. **Single Composition Point**: GameHost constructor is ONLY place layers/variants compose
+5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/variants/special contracts
+6. **Parametric Polymorphism**: Executors call `rules.method()`, never `if (nello)`
+7. **Event Sourcing**: State derivable from `replayActions(config, history)`
+8. **No Polling**: Promise-based async with stored resolvers
+
+**Violation of any invariant = architectural regression.**
+
+---
+
+## What's Not Here Yet
+
+- **Offline Mode**: Web Worker transport (spec ready, not implemented)
+- **Online Mode**: Cloudflare Workers/Durable Objects (spec ready, not implemented)
+- **Progressive Enhancement**: Offline → online transition (spec ready, not implemented)
+
+Current transport: `InProcessAdapter` (in-browser, single-process)
+
+---
+
+## Quick Commands
+
+```bash
+npm run typecheck   # Ensure zero errors
+npm test           # Run all tests
+npm run dev        # Start dev server
+```
+
+**When stuck**: Read the types. The architecture is type-driven - follow `GameRules`, `GameLayer`, `Variant`, `Capability` through the codebase.
+
+**When debugging**: Add console.log in GameHost constructor to see layer/variant composition. Add logging in `authorizeAndExecute` to see action filtering.
+
+---
+
+**That's the architecture.** Everything else is implementation details discoverable in the code.

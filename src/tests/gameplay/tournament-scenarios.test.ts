@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { isValidOpeningBid, isValidBid } from '../../game/core/rules';
+import { composeRules, baseLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Tournament Scenarios', () => {
   function createTournamentState(): GameState {
@@ -15,15 +17,25 @@ describe('Tournament Scenarios', () => {
   describe('Tournament Bidding Rules', () => {
     it('should enforce minimum opening bid', () => {
       // Minimum bid is 30 points
+      const state = createTournamentState();
+      state.phase = 'bidding';
+      state.bids = [];
+      state.currentPlayer = 0;
+
       const lowBid: Bid = { type: BID_TYPES.POINTS, value: 25, player: 0 };
       const validBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 0 };
 
-      expect(isValidOpeningBid(lowBid, undefined)).toBe(false);
-      expect(isValidOpeningBid(validBid, undefined)).toBe(true);
+      expect(rules.isValidBid(state, lowBid, undefined)).toBe(false);
+      expect(rules.isValidBid(state, validBid, undefined)).toBe(true);
     });
 
-    it('should allow special contracts in base engine', () => {
-      // Base engine now generates special contracts (tournament variant filters them)
+    it('should reject special contracts in tournament rules', () => {
+      // Tournament rules (baseLayer only) do not support special contracts
+      const state = createTournamentState();
+      state.phase = 'bidding';
+      state.bids = [];
+      state.currentPlayer = 0;
+
       const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 3, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
@@ -39,10 +51,10 @@ describe('Tournament Scenarios', () => {
         { high: 5, low: 1, id: '5-1' }
       ];
 
-      // These are now valid in base engine (with proper hand validation)
-      expect(isValidOpeningBid(nelloBid, undefined)).toBe(true);
-      expect(isValidOpeningBid(splashBid, adequateHand)).toBe(true);
-      expect(isValidOpeningBid(plungeBid, adequateHand)).toBe(true);
+      // Tournament rules reject special contracts
+      expect(rules.isValidBid(state, nelloBid, undefined)).toBe(false);
+      expect(rules.isValidBid(state, splashBid, adequateHand)).toBe(false);
+      expect(rules.isValidBid(state, plungeBid, adequateHand)).toBe(false);
     });
 
     it('should enforce proper bid increments', () => {
@@ -57,26 +69,24 @@ describe('Tournament Scenarios', () => {
       
       validIncrements.forEach(value => {
         const bid: Bid = { type: BID_TYPES.POINTS, value, player: 1 };
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       });
       
       invalidIncrements.forEach(value => {
         const bid: Bid = { type: BID_TYPES.POINTS, value, player: 1 };
-        expect(isValidBid(state, bid)).toBe(false);
+        expect(rules.isValidBid(state, bid)).toBe(false);
       });
     });
 
-    it('should allow special contracts in base engine when overbidding', () => {
+    it('should allow mark bids when overbidding', () => {
       const state = createTournamentState();
       state.bids = [{ type: BID_TYPES.POINTS, value: 35, player: 0 }];
       state.currentPlayer = 1;
 
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 1 };
       const markBid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
 
-      // Base engine allows special contracts (tournament variant will filter at action level)
-      expect(isValidBid(state, nelloBid)).toBe(true);
-      expect(isValidBid(state, markBid)).toBe(true);   // Regular mark bids are allowed
+      // Mark bids are allowed in tournament rules
+      expect(rules.isValidBid(state, markBid)).toBe(true);
     });
   });
 
@@ -109,38 +119,6 @@ describe('Tournament Scenarios', () => {
     });
   });
 
-  describe('Tournament Special Contracts', () => {
-    it('should validate Nello requirements in tournament', () => {
-      
-      // Nello typically requires no face cards or high-count dominoes
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
-      
-      // Verify the bid type and value are correct for tournament
-      expect(nelloBid.type).toBe(BID_TYPES.NELLO);
-      expect(nelloBid.value).toBeGreaterThanOrEqual(1);
-      expect(nelloBid.value).toBeLessThanOrEqual(4);
-    });
-
-    it('should validate Splash requirements in tournament', () => {
-      
-      // Splash requires taking all 7 tricks
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 4, player: 0 };
-      
-      expect(splashBid.type).toBe(BID_TYPES.SPLASH);
-      expect(splashBid.value).toBeGreaterThanOrEqual(2);
-      expect(splashBid.value).toBeLessThanOrEqual(6);
-    });
-
-    it('should validate Plunge requirements in tournament', () => {
-      
-      // Plunge requires all 42 points and all 7 tricks
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 6, player: 0 };
-      
-      expect(plungeBid.type).toBe(BID_TYPES.PLUNGE);
-      expect(plungeBid.value).toBeGreaterThanOrEqual(4);
-      expect(plungeBid.value).toBeLessThanOrEqual(8);
-    });
-  });
 
   describe('Tournament Game Flow', () => {
     it('should handle tournament timing constraints', () => {

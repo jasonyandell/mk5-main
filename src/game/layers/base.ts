@@ -17,8 +17,25 @@ import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit } from '../t
 import type { GameLayer } from './types';
 import { getDominoValue, getTrumpSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
-import { GAME_CONSTANTS } from '../constants';
+import { GAME_CONSTANTS, BID_TYPES } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
+import { isValidMarkBid } from '../core/rules';
+import { calculateRoundScore } from '../core/scoring';
+
+/**
+ * Helper function to get bid comparison value for internal use
+ */
+function getBidValue(bid: Bid): number {
+  if (bid.value === undefined) return 0;
+  switch (bid.type) {
+    case BID_TYPES.POINTS:
+      return bid.value;
+    case BID_TYPES.MARKS:
+      return bid.value * 42;
+    default:
+      return 0;
+  }
+}
 
 /**
  * Checks if a domino follows the led suit (contains the led suit number)
@@ -58,6 +75,29 @@ function trumpToNumeric(trump: TrumpSelection): number | null {
 
 export const baseLayer: GameLayer = {
   name: 'base',
+
+  /**
+   * Filter out special contract bids and trump selections.
+   * Base layer only supports standard bidding (points, marks) and standard trumps (suits, doubles, no-trump).
+   * Special contracts (nello, plunge, splash, sevens) are added by their respective layers.
+   */
+  getValidActions: (_state, prev) => {
+    return prev.filter(action => {
+      // Filter out special contract bids
+      if (action.type === 'bid' &&
+          (action.bid === 'nello' || action.bid === 'plunge' || action.bid === 'splash')) {
+        return false;
+      }
+
+      // Filter out special trump selections
+      if (action.type === 'select-trump' &&
+          (action.trump?.type === 'nello' || action.trump?.type === 'sevens')) {
+        return false;
+      }
+
+      return true;
+    });
+  },
 
   rules: {
     /**
@@ -151,7 +191,7 @@ export const baseLayer: GameLayer = {
      * 3. Following suit beats non-following
      * 4. Higher value wins among followers
      */
-    calculateTrickWinner(state: GameState, trick: Play[]): number {
+    calculateTrickWinner(state: GameState, trick: Play[], _prev: number): number {
       if (trick.length === 0) {
         throw new Error('Trick cannot be empty');
       }
@@ -198,6 +238,119 @@ export const baseLayer: GameLayer = {
       }
 
       return winningPlay.player;
+    },
+
+    // ============================================
+    // VALIDATION RULES
+    // ============================================
+
+    isValidPlay: (_state: GameState, _domino: Domino, _playerId: number, prev: boolean): boolean => {
+      // Base implementation is in compose.ts - just pass through
+      return prev;
+    },
+
+    getValidPlays: (_state: GameState, _playerId: number, prev: Domino[]): Domino[] => {
+      // Base implementation is in compose.ts - just pass through
+      return prev;
+    },
+
+    isValidBid: (state: GameState, bid: Bid, _playerHand: Domino[] | undefined, _prev: boolean): boolean => {
+      // Check if bids array exists and player has already bid
+      if (!state.bids) return false;
+      const playerBids = state.bids.filter(b => b.player === bid.player);
+      if (playerBids.length > 0) return false;
+
+      // Check turn order only if we're in an active bidding phase
+      if (state.phase === 'bidding' && state.currentPlayer !== bid.player) return false;
+
+      // Pass is always valid if player hasn't bid yet
+      if (bid.type === BID_TYPES.PASS) return true;
+
+      const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+
+      // Opening bid constraints
+      if (previousBids.length === 0) {
+        // Opening bid validation for POINTS and MARKS only
+        switch (bid.type) {
+          case BID_TYPES.POINTS:
+            return bid.value !== undefined &&
+                   bid.value >= GAME_CONSTANTS.MIN_BID &&
+                   bid.value <= GAME_CONSTANTS.MAX_BID;
+          case BID_TYPES.MARKS:
+            // Maximum opening bid is 2 marks
+            return bid.value !== undefined && bid.value >= 1 && bid.value <= 2;
+          default:
+            return false;
+        }
+      }
+
+      // All subsequent bids must be higher than current high bid
+      const lastBid = previousBids[previousBids.length - 1];
+      if (!lastBid) {
+        throw new Error('No previous bid found when validating subsequent bid');
+      }
+
+      // Get comparison values using helper function
+      const lastBidValue = getBidValue(lastBid);
+      const currentBidValue = getBidValue(bid);
+
+      if (currentBidValue <= lastBidValue) return false;
+
+      // Subsequent bid validation for POINTS and MARKS only
+      switch (bid.type) {
+        case BID_TYPES.POINTS:
+          return bid.value !== undefined &&
+                 bid.value <= GAME_CONSTANTS.MAX_BID &&
+                 (lastBid.type !== BID_TYPES.POINTS || bid.value > lastBid.value!);
+        case BID_TYPES.MARKS:
+          return isValidMarkBid(bid, lastBid, previousBids);
+        default:
+          return false;
+      }
+    },
+
+    /**
+     * HOW do we compare bids for bidding order?
+     *
+     * Base: POINTS and MARKS only
+     * - Points bids compare by value (30-41)
+     * - Marks bids worth 42 points each (value * 42)
+     */
+    getBidComparisonValue: (bid: Bid, _prev: number): number => {
+      if (bid.value === undefined) return 0;
+      switch (bid.type) {
+        case BID_TYPES.POINTS:
+          return bid.value;
+        case BID_TYPES.MARKS:
+          return bid.value * 42;
+        default:
+          return 0;
+      }
+    },
+
+    /**
+     * HOW do we validate trump selection?
+     *
+     * Base: Standard trump types only
+     * - Suit trump (0-6): blanks, ones, twos, threes, fours, fives, sixes
+     * - Doubles trump
+     * - No trump
+     */
+    isValidTrump: (trump: TrumpSelection, _prev: boolean): boolean => {
+      if (trump.type === 'suit') {
+        return trump.suit !== undefined && trump.suit >= 0 && trump.suit <= 6;
+      }
+      return trump.type === 'doubles' || trump.type === 'no-trump';
+    },
+
+    /**
+     * HOW do we calculate final score at end of hand?
+     *
+     * Base: Delegate to core scoring function
+     * Determines marks awarded based on bid type and team performance
+     */
+    calculateScore: (state: GameState, _prev: [number, number]): [number, number] => {
+      return calculateRoundScore(state);
     }
   }
 };

@@ -1,17 +1,21 @@
 # Texas 42
 
+## Quick Start
+
+**New to the codebase?** Read [docs/ORIENTATION.md](docs/ORIENTATION.md) first for architecture overview.
+
+**Detailed references:**
+- [docs/remixed-855ccfd5.md](docs/remixed-855ccfd5.md) - Full multiplayer architecture specification
+- [docs/pure-layers-threaded-rules.md](docs/pure-layers-threaded-rules.md) - Layer system deep-dive
+- [docs/GAME_ONBOARDING.md](docs/GAME_ONBOARDING.md) - Detailed implementation guide
+- [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
+
 ## Overview
-Web implementation of Texas 42 dominoes game
-- Complete rule enforcement and scoring
-- Svelte/TypeScript/Vite/Tailwind CSS SPA with real-time gameplay
-  - GameState type: src/game/types.ts:150-183 — Single source of truth
-  - GameAction type: src/game/types.ts:206-219 — Event sourcing primitives
-  - MultiplayerGameState: src/game/multiplayer/types.ts:66-73 — Wraps core state with players & capabilities
-  - State store: src/stores/gameStore.ts:120 — Reactive state container
-  - Action handlers: src/stores/gameStore.ts:278-419 — Pure state transitions
-  - Capabilities: src/game/multiplayer/capabilities.ts — Standard capability builders
-  - UI root: src/App.svelte — View layer entry point
-Official rules are in docs/rules.md
+Web implementation of Texas 42 dominoes game with pure functional architecture:
+- Event sourcing: `state = replayActions(config, history)`
+- Two-level composition: Layers (execution) + Variants (actions)
+- Capability-based multiplayer with filtered views
+- Zero coupling between core engine and variants/multiplayer
 
 ## Philosophy
 - Immutable state transitions

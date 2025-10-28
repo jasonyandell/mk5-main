@@ -1,9 +1,12 @@
 import { describe, test, expect } from 'vitest';
-import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { createTestState } from '../helpers/gameTestHelper';
 import type { Domino, GameState, TrumpSelection, LedSuitOrNone } from '../../game/types';
 import { FIVES, SIXES, DOUBLES_AS_TRUMP, NO_LEAD_SUIT } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Doubles Trump Renege Validation', () => {
   const doublesAreTrump: TrumpSelection = { type: 'doubles' };
@@ -38,7 +41,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWithDouble, currentTrick, doublesAreTrump, DOUBLES_AS_TRUMP); // Doubles led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe("2-2");
     });
@@ -55,7 +58,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWith6sAndDoubles, currentTrick, doublesAreTrump, SIXES); // 6s led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe("6-2");
     });
@@ -70,7 +73,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWith5sAndDoubles, currentTrick, fivesAreTrump, FIVES); // 5s led (trump)
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe("5-2");
     });
@@ -84,8 +87,8 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(hand, currentTrick, doublesAreTrump, DOUBLES_AS_TRUMP); // Doubles led
-      expect(isValidPlay(state, { high: 6, low: 3, id: "6-3" }, 1)).toBe(false);
-      expect(isValidPlay(state, { high: 1, low: 1, id: "1-1" }, 1)).toBe(true);
+      expect(rules.isValidPlay(state, { high: 6, low: 3, id: "6-3" }, 1)).toBe(false);
+      expect(rules.isValidPlay(state, { high: 1, low: 1, id: "1-1" }, 1)).toBe(true);
     });
 
     test('Multiple doubles available - all are valid', () => {
@@ -98,7 +101,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWithMultipleDoubles, currentTrick, doublesAreTrump, DOUBLES_AS_TRUMP); // Doubles led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(2);
       expect(validPlays.every(d => d.high === d.low)).toBe(true);
     });
@@ -115,7 +118,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWith6s, currentTrick, sixesAreTrump, SIXES); // 6s led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe("6-2");
     });
@@ -130,7 +133,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWith5sAnd6s, currentTrick, sixesAreTrump, FIVES); // 5s led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);  
       expect(validPlays[0]?.id).toBe("5-3");
     });
@@ -147,7 +150,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(hand, currentTrick, sixesAreTrump, SIXES); // 6s led (trump)
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(2);
       expect(validPlays.every(d => d.high === 6 || d.low === 6)).toBe(true);
     });
@@ -165,7 +168,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(hand, currentTrick, noTrump, SIXES); // 6s led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe("6-3");
     });
@@ -180,7 +183,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(hand, emptyTrick, doublesAreTrump, NO_LEAD_SUIT); // No suit led yet
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
     });
 
@@ -194,7 +197,7 @@ describe('Doubles Trump Renege Validation', () => {
       ];
       
       const state = createTestStateWithHand(handWithoutDoubles, currentTrick, doublesAreTrump, DOUBLES_AS_TRUMP); // Doubles led
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3); // All valid when can't follow
     });
 
@@ -234,13 +237,13 @@ describe('Doubles Trump Renege Validation', () => {
         scenario.expectedValid.forEach(dominoId => {
           const domino = scenario.hand.find(d => d.id === dominoId);
           if (!domino) throw new Error(`Domino ${dominoId} not found in hand`);
-          expect(isValidPlay(state, domino, 1)).toBe(true);
+          expect(rules.isValidPlay(state, domino, 1)).toBe(true);
         });
 
         scenario.expectedInvalid.forEach(dominoId => {
           const domino = scenario.hand.find(d => d.id === dominoId);
           if (!domino) throw new Error(`Domino ${dominoId} not found in hand`);
-          expect(isValidPlay(state, domino, 1)).toBe(false);
+          expect(rules.isValidPlay(state, domino, 1)).toBe(false);
         });
       });
     });

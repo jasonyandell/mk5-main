@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
-import { isValidPlay, canFollowSuit, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
+import { canFollowSuit } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, TrumpSelection } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {
@@ -33,7 +37,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       // Can only play twos suit when able to follow
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe('follow-1');
       
@@ -44,9 +48,9 @@ describe('Renege Detection and Prevention', () => {
       if (!domino0 || !domino1 || !domino2) {
         throw new Error('Missing dominoes in player hand');
       }
-      expect(isValidPlay(state, domino0, 1)).toBe(true);  // Following suit
-      expect(isValidPlay(state, domino1, 1)).toBe(false); // Trump when can follow
-      expect(isValidPlay(state, domino2, 1)).toBe(false); // Other suit when can follow
+      expect(rules.isValidPlay(state, domino0, 1)).toBe(true);  // Following suit
+      expect(rules.isValidPlay(state, domino1, 1)).toBe(false); // Trump when can follow
+      expect(rules.isValidPlay(state, domino2, 1)).toBe(false); // Other suit when can follow
     });
 
     it('allows any play when cannot follow suit', () => {
@@ -74,12 +78,12 @@ describe('Renege Detection and Prevention', () => {
       });
 
       // All plays valid when can't follow suit
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
       
       // All dominoes should be valid when can't follow suit
       playerHand.forEach(domino => {
-        expect(isValidPlay(state, domino, 1)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 1)).toBe(true);
       });
     });
 
@@ -119,8 +123,8 @@ describe('Renege Detection and Prevention', () => {
       });
 
       expect(canFollowSuit(state.players[1]!, DEUCES)).toBe(false);
-      expect(isValidPlay(state, playerHand[0]!, 1)).toBe(true); // Trump play allowed
-      expect(isValidPlay(state, playerHand[1]!, 1)).toBe(true); // Any play allowed
+      expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true); // Trump play allowed
+      expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(true); // Any play allowed
     });
 
     it('prevents trump when can follow suit', () => {
@@ -147,8 +151,8 @@ describe('Renege Detection and Prevention', () => {
       });
 
       expect(canFollowSuit(state.players[1]!, DEUCES)).toBe(true);
-      expect(isValidPlay(state, playerHand[0]!, 1)).toBe(true);  // Following suit
-      expect(isValidPlay(state, playerHand[1]!, 1)).toBe(false); // Trump when can follow
+      expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true);  // Following suit
+      expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(false); // Trump when can follow
     });
   });
 
@@ -178,7 +182,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       // Must follow threes suit, not doubles trump
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe('follow-1');
     });
@@ -208,11 +212,11 @@ describe('Renege Detection and Prevention', () => {
       });
 
       // Cannot follow threes suit, all plays valid
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(3);
       
       playerHand.forEach(domino => {
-        expect(isValidPlay(state, domino, 1)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 1)).toBe(true);
       });
     });
   });
@@ -242,7 +246,7 @@ describe('Renege Detection and Prevention', () => {
         ]
       });
 
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe('follow-1');
     });
@@ -270,11 +274,11 @@ describe('Renege Detection and Prevention', () => {
         ]
       });
 
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays).toHaveLength(3);
       
       playerHand.forEach(domino => {
-        expect(isValidPlay(state, domino, 0)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 0)).toBe(true);
       });
     });
   });
@@ -286,7 +290,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       const domino: Domino = { id: 'test', high: 1, low: 2, points: 0 };
-      expect(isValidPlay(state, domino, 0)).toBe(false);
+      expect(rules.isValidPlay(state, domino, 0)).toBe(false);
     });
 
     it('handles missing trump declaration', () => {
@@ -296,7 +300,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       const domino: Domino = { id: 'test', high: 1, low: 2, points: 0 };
-      expect(isValidPlay(state, domino, 0)).toBe(false);
+      expect(rules.isValidPlay(state, domino, 0)).toBe(false);
     });
 
     it('prevents playing dominoes not in hand', () => {
@@ -307,7 +311,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       const notInHand: Domino = { id: 'not-owned', high: 1, low: 2, points: 0 };
-      expect(isValidPlay(state, notInHand, 0)).toBe(false);
+      expect(rules.isValidPlay(state, notInHand, 0)).toBe(false);
     });
 
     it('validates player bounds', () => {
@@ -318,8 +322,8 @@ describe('Renege Detection and Prevention', () => {
       });
 
       const domino: Domino = { id: 'test', high: 1, low: 2, points: 0 };
-      expect(isValidPlay(state, domino, -1)).toBe(false); // Invalid player
-      expect(isValidPlay(state, domino, 4)).toBe(false);  // Invalid player
+      expect(rules.isValidPlay(state, domino, -1)).toBe(false); // Invalid player
+      expect(rules.isValidPlay(state, domino, 4)).toBe(false);  // Invalid player
     });
   });
 
@@ -349,7 +353,7 @@ describe('Renege Detection and Prevention', () => {
       });
 
       // Must still follow original suit despite trumps played
-      const validPlays = getValidPlays(state, 3);
+      const validPlays = rules.getValidPlays(state, 3);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe('follow-1');
     });
@@ -379,7 +383,7 @@ describe('Renege Detection and Prevention', () => {
         ]
       });
 
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       
       // Must play one of the fives suit dominoes
       expect(validPlays).toHaveLength(2);

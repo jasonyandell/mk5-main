@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, GameTestHelper } from '../helpers/gameTestHelper';
-import { isValidBid } from '../../game/core/rules';
+import { composeRules, baseLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
@@ -25,7 +27,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       specialBids.forEach(bid => {
-        expect(isValidBid(state, bid as Bid)).toBe(false);
+        expect(rules.isValidBid(state, bid as Bid)).toBe(false);
       });
 
       // Valid standard bids should work
@@ -36,7 +38,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       validBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       });
     });
 
@@ -55,7 +57,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       validMarkBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       });
       
       // Invalid opening mark bids (3+ marks)
@@ -65,7 +67,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       invalidMarkBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(false);
+        expect(rules.isValidBid(state, bid)).toBe(false);
       });
     });
 
@@ -80,7 +82,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       // Valid point bids (30-41)
       for (let points = 30; points <= 41; points++) {
         const bid = { type: BID_TYPES.POINTS, value: points, player: 1 };
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       }
       
       // Invalid point bids (below 30)
@@ -91,7 +93,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       invalidBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(false);
+        expect(rules.isValidBid(state, bid)).toBe(false);
       });
     });
 
@@ -127,7 +129,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
       // After player 3 bids, should advance to player 0
       const passBid: Bid = { type: BID_TYPES.PASS, player: 3 };
-      expect(isValidBid(state, passBid)).toBe(true);
+      expect(rules.isValidBid(state, passBid)).toBe(true);
     });
 
     it('each player gets exactly one bid opportunity per round', () => {
@@ -147,7 +149,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
 
       bids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -294,3 +296,6 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
   });
 });
+
+// Note: Tournament rules (baseLayer) do not support special contracts (Nello, Splash, Plunge)
+// Those require their respective layers to be added to the composition

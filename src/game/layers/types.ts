@@ -18,12 +18,14 @@ export interface HandOutcome {
 }
 
 /**
- * GameRules interface - 7 composable rules that define game execution semantics.
+ * GameRules interface - 13 composable rules that define game execution semantics.
  *
- * Rules are grouped into three categories:
- * - WHO: Determine which player acts
- * - WHEN: Determine timing and completion
- * - HOW: Determine game mechanics
+ * Rules are grouped into four categories:
+ * - WHO: Determine which player acts (3 rules)
+ * - WHEN: Determine timing and completion (2 rules)
+ * - HOW: Determine game mechanics (2 rules)
+ * - VALIDATION: Determine what's legal (3 rules)
+ * - SCORING: Determine bid ordering and final marks (3 rules)
  *
  * Executors call these rules instead of hardcoding behavior, enabling
  * special contracts to override specific rules without touching executor code.
@@ -104,6 +106,67 @@ export interface GameRules {
    * Sevens: Closest to 7 total pips wins (no trump/suit)
    */
   calculateTrickWinner(state: GameState, trick: Play[]): number;
+
+  // ============================================
+  // VALIDATION RULES: Determine what's legal
+  // ============================================
+
+  /**
+   * Is this domino play valid for this player?
+   *
+   * Base: Standard follow-suit logic
+   * Sevens: No follow-suit requirement (always valid if domino in hand)
+   */
+  isValidPlay(state: GameState, domino: Domino, playerId: number): boolean;
+
+  /**
+   * Get all valid plays for this player.
+   *
+   * Base: Follow-suit constrained
+   * Sevens: All dominoes in hand
+   */
+  getValidPlays(state: GameState, playerId: number): Domino[];
+
+  /**
+   * Is this bid valid?
+   *
+   * Base: Standard bid validation
+   * Layers can override for special bid rules
+   */
+  isValidBid(state: GameState, bid: Bid, playerHand?: Domino[]): boolean;
+
+  // ============================================
+  // SCORING RULES: Determine bid ordering and final marks
+  // ============================================
+
+  /**
+   * Get bid comparison value for ordering (e.g., 30 points vs 2 marks).
+   *
+   * Base: Points = value, Marks = value * 42
+   * Special contracts will override to add their types
+   */
+  getBidComparisonValue(bid: Bid): number;
+
+  /**
+   * Is this trump selection valid?
+   *
+   * Base: suit/doubles/no-trump
+   * Nello: Also allows 'nello' trump type
+   * Sevens: Also allows 'sevens' trump type
+   */
+  isValidTrump(trump: TrumpSelection): boolean;
+
+  /**
+   * Calculate final marks awarded for the hand.
+   *
+   * Base: Standard points/marks scoring
+   * Nello: 0 tricks required
+   * Splash/Plunge: All tricks required
+   * Sevens: All tricks required with sevens trump
+   *
+   * Returns [team0Marks, team1Marks]
+   */
+  calculateScore(state: GameState): [number, number];
 }
 
 /**
@@ -153,5 +216,11 @@ export interface GameLayer {
     checkHandOutcome?: (state: GameState, prev: HandOutcome | null) => HandOutcome | null;
     getLedSuit?: (state: GameState, domino: Domino, prev: LedSuit) => LedSuit;
     calculateTrickWinner?: (state: GameState, trick: Play[], prev: number) => number;
+    isValidPlay?: (state: GameState, domino: Domino, playerId: number, prev: boolean) => boolean;
+    getValidPlays?: (state: GameState, playerId: number, prev: Domino[]) => Domino[];
+    isValidBid?: (state: GameState, bid: Bid, playerHand: Domino[] | undefined, prev: boolean) => boolean;
+    getBidComparisonValue?: (bid: Bid, prev: number) => number;
+    isValidTrump?: (trump: TrumpSelection, prev: boolean) => boolean;
+    calculateScore?: (state: GameState, prev: [number, number]) => [number, number];
   };
 }

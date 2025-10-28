@@ -528,4 +528,109 @@ describe('Sevens Layer Rules', () => {
       expect(winner).toBe(0);
     });
   });
+
+  describe('getValidPlays', () => {
+    it('enforces must play closest to 7 rule', () => {
+      const state = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'sevens' },
+        currentPlayer: 0,
+        players: [
+          {
+            id: 0,
+            name: 'P0',
+            teamId: 0,
+            marks: 0,
+            hand: [
+              { id: '6-1', high: 6, low: 1 }, // 7 total - distance 0 ✓
+              { id: '5-2', high: 5, low: 2 }, // 7 total - distance 0 ✓
+              { id: '4-0', high: 4, low: 0 }, // 4 total - distance 3 ✗
+              { id: '3-0', high: 3, low: 0 }, // 3 total - distance 4 ✗
+            ]
+          },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] },
+        ]
+      });
+
+      const validPlays = rules.getValidPlays(state, 0);
+
+      // Should only return dominoes with distance 0 (6-1 and 5-2)
+      expect(validPlays.length).toBe(2);
+      expect(validPlays.map(d => d.id).sort()).toEqual(['5-2', '6-1']);
+
+      // Verify isValidPlay matches
+      expect(rules.isValidPlay(state, { id: '6-1', high: 6, low: 1 }, 0)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '5-2', high: 5, low: 2 }, 0)).toBe(true);
+      expect(rules.isValidPlay(state, { id: '4-0', high: 4, low: 0 }, 0)).toBe(false);
+      expect(rules.isValidPlay(state, { id: '3-0', high: 3, low: 0 }, 0)).toBe(false);
+    });
+
+    it('winner of trick leads next trick', () => {
+      const state = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'sevens' },
+        currentPlayer: 0,
+        currentTrick: [],
+        tricks: [
+          {
+            plays: [
+              { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
+              { player: 1, domino: { id: '4-3', high: 4, low: 3 } }, // distance 0 ✓ WINNER
+              { player: 2, domino: { id: '6-2', high: 6, low: 2 } }, // distance 1
+              { player: 3, domino: { id: '3-1', high: 3, low: 1 } }, // distance 3
+            ],
+            winner: 1, // Player 1 won with 4-3 (7 total)
+            points: 0,
+            ledSuit: 5
+          }
+        ]
+      });
+
+      // Winner (player 1) should lead next trick
+      const nextPlayer = rules.getNextPlayer(state, state.currentPlayer);
+      expect(nextPlayer).toBe(1);
+    });
+
+    it('user scenario: partner wins with 7, not set', () => {
+      // I (player 0) lead 5-0 (distance 2)
+      // Opponent (player 1) plays 6-0 (distance 1)
+      // My partner (player 2) plays 6-1 (distance 0 = 7 total) ✓ WINS
+      // Bidding team = 0 (players 0 and 2)
+
+      const state = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'sevens' },
+        winningBidder: 0,
+        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
+        tricks: [
+          {
+            plays: [
+              { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
+              { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // distance 1
+              { player: 2, domino: { id: '6-1', high: 6, low: 1 } }, // distance 0 ✓ WINS
+              { player: 3, domino: { id: '4-0', high: 4, low: 0 } }, // distance 3
+            ],
+            winner: 2, // Partner won
+            points: 0,
+            ledSuit: 5
+          }
+        ],
+        players: [
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] }, // Partner
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] },
+        ]
+      });
+
+      // Check that bidding team is NOT set (partner won)
+      const outcome = rules.checkHandOutcome(state);
+      expect(outcome).toBeNull(); // Not determined, continue playing
+
+      // Partner (player 2) should lead next trick
+      expect(rules.getNextPlayer(state, 0)).toBe(2);
+    });
+  });
 });

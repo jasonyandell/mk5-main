@@ -14,6 +14,7 @@ import type { GameLayer } from './types';
 import type { LedSuit } from '../types';
 import { getPartner, getPlayerTeam, checkMustWinAllTricks } from './helpers';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
+import { BID_TYPES } from '../constants';
 
 export const nelloLayer: GameLayer = {
   name: 'nello',
@@ -33,6 +34,59 @@ export const nelloLayer: GameLayer = {
   },
 
   rules: {
+    // Allow NELLO bids
+    isValidBid: (state, bid, _playerHand, prev) => {
+      if (bid.type === BID_TYPES.NELLO) {
+        // Basic validation
+        if (bid.value === undefined || bid.value < 1) return false;
+
+        // Opening bid constraints
+        const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+        if (previousBids.length === 0) {
+          return bid.value >= 1; // Nello allowed as opening bid
+        }
+
+        return bid.value >= 1; // Nello allowed as subsequent bid
+      }
+      return prev;
+    },
+
+    getBidComparisonValue: (bid, prev) => {
+      if (bid.type === BID_TYPES.NELLO) {
+        return bid.value! * 42;
+      }
+      return prev;
+    },
+
+    isValidTrump: (trump, prev) => {
+      if (trump.type === 'nello') return true;
+      return prev;
+    },
+
+    calculateScore: (state, prev) => {
+      if (state.currentBid.type !== BID_TYPES.NELLO) return prev;
+
+      // Nello scoring: bidding team must take no tricks
+      const bidder = state.players[state.winningBidder];
+      if (!bidder) return prev;
+
+      const biddingTeam = bidder.teamId;
+      const biddingTeamTricks = state.tricks.filter(trick => {
+        if (trick.winner === undefined) return false;
+        const winner = state.players[trick.winner];
+        if (!winner) return false;
+        return winner.teamId === biddingTeam;
+      }).length;
+
+      const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
+      if (biddingTeamTricks === 0) {
+        newMarks[biddingTeam] += state.currentBid.value!;
+      } else {
+        newMarks[biddingTeam === 0 ? 1 : 0] += state.currentBid.value!;
+      }
+      return newMarks;
+    },
+
     // Bidder leads normally in nello (no override needed)
     // getFirstLeader passes through prev
 

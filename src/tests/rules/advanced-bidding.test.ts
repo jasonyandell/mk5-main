@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
-import { isValidBid } from '../../game/core/rules';
+import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { getNextDealer } from '../../game/core/players';
 import type { Bid } from '../../game/types';
+
+// Advanced bidding tests include plunge bids (casual rules)
+const rules = composeRules([baseLayer, plungeLayer]);
 
 describe('Advanced Bidding Rules', () => {
   describe('Sequential Bidding Requirements', () => {
@@ -17,7 +20,7 @@ describe('Advanced Bidding Rules', () => {
       });
 
       const threeMarkOpeningBid = { type: BID_TYPES.MARKS, value: 3, player: 1 };
-      expect(isValidBid(openingState, threeMarkOpeningBid)).toBe(false);
+      expect(rules.isValidBid(openingState, threeMarkOpeningBid)).toBe(false);
 
       // Test after 2 marks bid - 3 marks should be valid
       const afterTwoMarksState = createTestState({
@@ -30,7 +33,7 @@ describe('Advanced Bidding Rules', () => {
       });
 
       const threeMarkBid = { type: BID_TYPES.MARKS, value: 3, player: 2 };
-      expect(isValidBid(afterTwoMarksState, threeMarkBid)).toBe(true);
+      expect(rules.isValidBid(afterTwoMarksState, threeMarkBid)).toBe(true);
     });
 
     it('4 marks can ONLY be bid after 3 marks has been bid', () => {
@@ -45,7 +48,7 @@ describe('Advanced Bidding Rules', () => {
       });
 
       const fourMarkBid = { type: BID_TYPES.MARKS, value: 4, player: 2 };
-      expect(isValidBid(afterTwoMarksState, fourMarkBid)).toBe(false);
+      expect(rules.isValidBid(afterTwoMarksState, fourMarkBid)).toBe(false);
 
       // Test after 3 marks - 4 marks should be valid
       const afterThreeMarksState = createTestState({
@@ -59,7 +62,7 @@ describe('Advanced Bidding Rules', () => {
       });
 
       const fourMarkAfter = { type: BID_TYPES.MARKS, value: 4, player: 3 };
-      expect(isValidBid(afterThreeMarksState, fourMarkAfter)).toBe(true);
+      expect(rules.isValidBid(afterThreeMarksState, fourMarkAfter)).toBe(true);
     });
 
     it('prevents jump bidding except for valid Plunge scenarios', () => {
@@ -83,12 +86,12 @@ describe('Advanced Bidding Rules', () => {
       ];
       
       validBids.forEach(bid => {
-        expect(isValidBid(normalState, bid)).toBe(true);
+        expect(rules.isValidBid(normalState, bid)).toBe(true);
       });
       
       // Invalid jump to higher marks without proper sequence
       const invalidJumpBid = { type: BID_TYPES.MARKS, value: 3, player: 2 };
-      expect(isValidBid(normalState, invalidJumpBid)).toBe(false);
+      expect(rules.isValidBid(normalState, invalidJumpBid)).toBe(false);
     });
   });
 
@@ -107,7 +110,7 @@ describe('Advanced Bidding Rules', () => {
 
       // With 4+ doubles, should be able to Plunge (bid 4+ marks from opening)
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
-      expect(isValidBid(plungeEligibleState, plungeBid, handWithFourDoubles)).toBe(true);
+      expect(rules.isValidBid(plungeEligibleState, plungeBid, handWithFourDoubles)).toBe(true);
 
       // Create hand with fewer than 4 doubles
       const handWithThreeDoubles = createHandWithDoubles(3);
@@ -122,7 +125,7 @@ describe('Advanced Bidding Rules', () => {
 
       // Without 4+ doubles, should NOT be able to Plunge
       const invalidPlungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
-      expect(isValidBid(notPlungeEligibleState, invalidPlungeBid, handWithThreeDoubles)).toBe(false);
+      expect(rules.isValidBid(notPlungeEligibleState, invalidPlungeBid, handWithThreeDoubles)).toBe(false);
     });
 
     it('Plunge requires all 7 doubles as trump', () => {
@@ -163,14 +166,14 @@ describe('Advanced Bidding Rules', () => {
       // Valid point bids
       for (let points = 30; points <= 41; points++) {
         const validBid: Bid = { type: BID_TYPES.POINTS, value: points, player: 1 };
-        expect(isValidBid(state, validBid)).toBe(true);
+        expect(rules.isValidBid(state, validBid)).toBe(true);
       }
 
       // Invalid point bids
       const invalidPoints = [29, 42, 0, -1, 50];
       invalidPoints.forEach(points => {
         const invalidBid: Bid = { type: BID_TYPES.POINTS, value: points, player: 1 };
-        expect(isValidBid(state, invalidBid)).toBe(false);
+        expect(rules.isValidBid(state, invalidBid)).toBe(false);
       });
     });
 
@@ -186,14 +189,14 @@ describe('Advanced Bidding Rules', () => {
       const validMarkBids = [1, 2];
       validMarkBids.forEach(marks => {
         const validBid: Bid = { type: BID_TYPES.MARKS, value: marks, player: 1 };
-        expect(isValidBid(state, validBid)).toBe(true);
+        expect(rules.isValidBid(state, validBid)).toBe(true);
       });
 
       // Invalid opening mark bids (3+ marks without prior bidding)
       const invalidMarkBids = [3, 4, 5, 6, 7];
       invalidMarkBids.forEach(marks => {
         const invalidBid: Bid = { type: BID_TYPES.MARKS, value: marks, player: 1 };
-        expect(isValidBid(state, invalidBid)).toBe(false);
+        expect(rules.isValidBid(state, invalidBid)).toBe(false);
       });
     });
   });

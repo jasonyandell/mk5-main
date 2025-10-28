@@ -120,53 +120,13 @@ export function calculateRoundScore(state: GameState): [number, number] {
     }
       
     case BID_TYPES.MARKS: {
-      const requiredMarksScore = 42; // Mark bids always require 42 points
+      // Standard marks bid: require 42 points
       const markValue = bid.value!;
+      const requiredMarksScore = 42;
       if (biddingTeamScore >= requiredMarksScore) {
-        // Mark bid made - award bid value in marks to bidding team
         newMarks[biddingTeam] += markValue;
       } else {
-        // Mark bid failed - award bid value in marks to opponents
         newMarks[opponentTeam] += markValue;
-      }
-      break;
-    }
-      
-    case BID_TYPES.NELLO: {
-      // Nello: bidding team must take no tricks
-      const biddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === biddingTeam;
-      }).length;
-      
-      if (biddingTeamTricks === 0) {
-        newMarks[biddingTeam] += bid.value!;
-      } else {
-        newMarks[opponentTeam] += bid.value!;
-      }
-      break;
-    }
-      
-    case BID_TYPES.SPLASH:
-    case BID_TYPES.PLUNGE: {
-      // Special contracts: bidding team must take all tricks
-      const nonBiddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === opponentTeam;
-      }).length;
-      
-      if (nonBiddingTeamTricks === 0) {
-        newMarks[biddingTeam] += bid.value!;
-      } else {
-        newMarks[opponentTeam] += bid.value!;
       }
       break;
     }

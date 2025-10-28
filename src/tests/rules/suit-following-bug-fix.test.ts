@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
-import { isValidPlay } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 import { ACES, FIVES, SIXES } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Suit Following Bug Fix', () => {
   it('should allow any domino when only trump dominoes contain the led suit', () => {
@@ -46,13 +49,13 @@ describe('Suit Following Bug Fix', () => {
     // Player has NO dominoes that can follow 5s (non-trump 5s)
     // Therefore ALL dominoes should be playable
     const domino_1_1 = playerHand.find(d => d.id === '1-1')!;
-    expect(isValidPlay(state, domino_1_1, 2)).toBe(true);
+    expect(rules.isValidPlay(state, domino_1_1, 2)).toBe(true);
 
     const domino_5_1 = playerHand.find(d => d.id === '5-1')!;
-    expect(isValidPlay(state, domino_5_1, 2)).toBe(true);
+    expect(rules.isValidPlay(state, domino_5_1, 2)).toBe(true);
 
     const domino_3_2 = playerHand.find(d => d.id === '3-2')!;
-    expect(isValidPlay(state, domino_3_2, 2)).toBe(true);
+    expect(rules.isValidPlay(state, domino_3_2, 2)).toBe(true);
   });
 
   it('should allow playing trump dominoes that also contain the led suit', () => {
@@ -98,9 +101,9 @@ describe('Suit Following Bug Fix', () => {
       throw new Error('Player hand dominoes cannot be undefined');
     }
     
-    expect(isValidPlay(state, domino0, 1)).toBe(true); // 5-1
-    expect(isValidPlay(state, domino1, 1)).toBe(true); // 5-3
-    expect(isValidPlay(state, domino2, 1)).toBe(true); // 1-2
-    expect(isValidPlay(state, domino3, 1)).toBe(true); // 3-4
+    expect(rules.isValidPlay(state, domino0, 1)).toBe(true); // 5-1
+    expect(rules.isValidPlay(state, domino1, 1)).toBe(true); // 5-3
+    expect(rules.isValidPlay(state, domino2, 1)).toBe(true); // 1-2
+    expect(rules.isValidPlay(state, domino3, 1)).toBe(true); // 3-4
   });
 });

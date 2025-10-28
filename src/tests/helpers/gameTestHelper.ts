@@ -1,13 +1,15 @@
 import type { GameState, Domino, Bid, Player, TrumpSelection, LedSuitOrNone } from '../../game/types';
-import { 
-  createInitialState, 
-  getNextStates, 
-  isValidBid,
+import {
+  createInitialState,
+  getNextStates,
   dealDominoesWithSeed
 } from '../../game';
+import { composeRules, baseLayer } from '../../game/layers';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
 import { BLANKS, ACES } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 /**
  * Comprehensive test helper for Texas 42 game testing
@@ -329,7 +331,7 @@ export class GameTestHelper {
       for (let i = 1; i < state.bids.length; i++) {
         const currentBid = state.bids[i];
         
-        if (currentBid && !isValidBid(state, currentBid)) {
+        if (currentBid && !rules.isValidBid(state, currentBid)) {
           errors.push(`Invalid bid at position ${i}: ${JSON.stringify(currentBid)}`);
         }
       }

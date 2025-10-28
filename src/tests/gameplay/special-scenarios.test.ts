@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
-import { isValidPlay, getValidPlays, isValidBid } from '../../game/core/rules';
+import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
 import type { Domino, Bid } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
+
+// Special scenarios include plunge bids (casual rules)
+const rules = composeRules([baseLayer, plungeLayer]);
 
 describe('Special Gameplay Scenarios', () => {
   describe('High Stakes Bidding', () => {
@@ -24,11 +27,11 @@ describe('Special Gameplay Scenarios', () => {
 
       // Player 3 can bid 7 marks (one more than current 6)
       const sevenMarkBid: Bid = { type: BID_TYPES.MARKS, value: 7, player: 3 };
-      expect(isValidBid(state, sevenMarkBid)).toBe(true);
+      expect(rules.isValidBid(state, sevenMarkBid)).toBe(true);
       
       // But cannot jump to 8 marks (would need to bid 7 first)
       const eightMarkBid: Bid = { type: BID_TYPES.MARKS, value: 8, player: 3 };
-      expect(isValidBid(state, eightMarkBid)).toBe(false);
+      expect(rules.isValidBid(state, eightMarkBid)).toBe(false);
     });
 
     it('handles minimum 30 bid enforcement', () => {
@@ -43,8 +46,8 @@ describe('Special Gameplay Scenarios', () => {
       const minBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 0 };
       
       // 29 should be invalid, 30 should be valid
-      expect(isValidBid(state, belowMinBid)).toBe(false);
-      expect(isValidBid(state, minBid)).toBe(true);
+      expect(rules.isValidBid(state, belowMinBid)).toBe(false);
+      expect(rules.isValidBid(state, minBid)).toBe(true);
     });
 
     it('handles plunge bid requirements', () => {
@@ -62,14 +65,9 @@ describe('Special Gameplay Scenarios', () => {
 
       // Plunge bid requires 4+ doubles
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      // Should be valid with 4 doubles in base engine
-      // Tournament variant will filter special bids at action level
-      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
 
-      // Base engine is maximally permissive for special bids
-      // REMOVED: state.tournamentMode = true;
-      expect(isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
+      // Should be valid with 4 doubles (plungeLayer enabled)
+      expect(rules.isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
     });
   });
 
@@ -109,10 +107,10 @@ describe('Special Gameplay Scenarios', () => {
 
       // All dominoes should be valid plays
       allTrumpHand.forEach(domino => {
-        expect(isValidPlay(state, domino, 0)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 0)).toBe(true);
       });
 
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays).toHaveLength(7);
     });
 
@@ -149,7 +147,7 @@ describe('Special Gameplay Scenarios', () => {
       });
 
       // With no trump, all dominoes should be playable initially
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays.length).toBeGreaterThan(0);
     });
 
@@ -189,7 +187,7 @@ describe('Special Gameplay Scenarios', () => {
       const doubles = handWithDoubles.filter(d => d.high === d.low);
       expect(doubles).toHaveLength(4);
 
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays).toHaveLength(7); // All should be playable initially
     });
   });
@@ -322,7 +320,7 @@ describe('Special Gameplay Scenarios', () => {
         ]
       });
       
-      const validPlays = getValidPlays(state, 1);
+      const validPlays = rules.getValidPlays(state, 1);
       
       // Should be forced to play the threes suit domino
       expect(validPlays).toHaveLength(1);

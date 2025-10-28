@@ -1,6 +1,6 @@
 # Capability System Reference
 
-**Last Updated**: 2025-01-18
+**Last Updated**: 2025-10-26
 
 The capability system controls what players can see (visibility) and do (authorization) through composable capability tokens.
 
@@ -214,7 +214,14 @@ host.subscribe(sessionId, ({ view, state, actions }) => {
 // Pure function checks capabilities
 getValidActionsForPlayer(mpState, playerId) {
   const session = mpState.players.find(p => p.playerId === playerId);
+
+  // Composed state machine includes BOTH layers AND variants:
+  // 1. Layers define game mechanics (base, nello, splash, plunge, sevens)
+  // 2. Variants filter/annotate actions (tournament, oneHand)
+  // 3. Result: Actions that are mechanically valid + variant-appropriate
   const allActions = composedStateMachine(mpState.coreState);
+
+  // Capability filtering is the final step (authorization)
   return filterActionsForSession(session, allActions);
 }
 
@@ -243,9 +250,59 @@ test('spectator sees all hands but cannot act', () => {
 });
 ```
 
+## Interaction with Layer System
+
+**Capabilities filter layer-generated actions:**
+
+```typescript
+// GameHost creates view for a session
+createView(playerId) {
+  // 1. Compose layers (game mechanics)
+  const rules = composeRules([baseLayer, nelloLayer, ...]);
+
+  // 2. Generate actions with composed rules
+  const layeredActions = getValidActions(state, layers, rules);
+  // → Includes NELLO bids if nello layer enabled
+
+  // 3. Apply variants (availability filters)
+  const variantActions = applyVariants(layeredActions, variantConfigs);
+  // → May remove NELLO if tournament variant active
+
+  // 4. Filter by capabilities (authorization)
+  const session = getSession(playerId);
+  const authorizedActions = filterActionsForSession(session, variantActions);
+  // → Only actions this session can execute
+
+  return { state: filteredState, validActions: authorizedActions };
+}
+```
+
+**Separation of Concerns:**
+- **Layers**: Define HOW special contracts work (mechanics)
+- **Variants**: Define WHEN special contracts are allowed (availability)
+- **Capabilities**: Define WHO can execute actions (authorization)
+
+**Example:**
+```typescript
+// Nello layer adds nello mechanics
+const nelloAction = { type: 'bid', bid: 'nello', value: 2, player: 0 };
+
+// Tournament variant removes it (filtering)
+const tournamentActions = actions.filter(a => a.bid !== 'nello');
+
+// Capabilities check authorization (act-as-player for player 0)
+const session = { capabilities: [{ type: 'act-as-player', playerIndex: 0 }] };
+const allowed = filterActionsForSession(session, actions);
+// → Only player 0's actions
+```
+
+---
+
 ## References
 
 - Vision Document: `docs/remixed-855ccfd5.md` §4
+- Layer System: `docs/GAME_ONBOARDING.md` "Layer System Architecture"
 - Implementation: `src/game/multiplayer/capabilities.ts`
 - Filtering: `src/game/multiplayer/capabilityUtils.ts`
 - Authorization: `src/game/multiplayer/authorization.ts`
+- Layer Types: `src/game/layers/types.ts`

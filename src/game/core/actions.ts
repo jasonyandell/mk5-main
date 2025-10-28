@@ -3,9 +3,8 @@ import type { GameRules } from '../layers/types';
 import { composeRules, baseLayer } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
-import { isValidBid, getValidPlays, getBidComparisonValue, isValidTrump } from './rules';
 import { dealDominoesWithSeed } from './dominoes';
-import { calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
+import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
 
@@ -52,7 +51,7 @@ export function executeAction(state: GameState, action: GameAction, rules: GameR
       return executeCompleteTrick(newState, rules);
 
     case 'score-hand':
-      return executeScoreHand(newState);
+      return executeScoreHand(newState, rules);
 
     case 'redeal':
       return executeRedeal(newState);
@@ -116,7 +115,7 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
     : { type: bidType, player };
 
   // Validate bid legality
-  if (!isValidBid(state, bid, playerData.hand)) {
+  if (!rules.isValidBid(state, bid, playerData.hand)) {
     throw new Error('Invalid bid');
 //    return state; // Invalid bid, no-op
   }
@@ -135,8 +134,8 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
     if (nonPassBids.length > 0) {
       // Find winning bidder
       const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = getBidComparisonValue(highest);
-        const currentValue = getBidComparisonValue(current);
+        const highestValue = rules.getBidComparisonValue(highest);
+        const currentValue = rules.getBidComparisonValue(current);
         return currentValue > highestValue ? current : highest;
       });
 
@@ -178,7 +177,7 @@ function executePass(state: GameState, player: number, rules: GameRules): GameSt
   const passBid: Bid = { type: BID_TYPES.PASS, player };
 
   // Validate pass legality
-  if (!isValidBid(state, passBid, playerData.hand)) {
+  if (!rules.isValidBid(state, passBid, playerData.hand)) {
     throw new Error('Invalid pass');
 //    return state; // Invalid pass, no-op
   }
@@ -197,8 +196,8 @@ function executePass(state: GameState, player: number, rules: GameRules): GameSt
     if (nonPassBids.length > 0) {
       // Find winning bidder
       const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = getBidComparisonValue(highest);
-        const currentValue = getBidComparisonValue(current);
+        const highestValue = rules.getBidComparisonValue(highest);
+        const currentValue = rules.getBidComparisonValue(current);
         return currentValue > highestValue ? current : highest;
       });
 
@@ -238,7 +237,7 @@ function executeTrumpSelection(state: GameState, player: number, selection: Trum
   }
 
   // Validate trump selection
-  if (!isValidTrump(selection)) {
+  if (!rules.isValidTrump(selection)) {
     throw new Error('Invalid trump selection');
 //    return state; // Invalid trump, no-op
   }
@@ -291,7 +290,7 @@ function executePlay(state: GameState, player: number, dominoId: string, rules: 
   }
 
   // Validate play legality
-  const validPlays = getValidPlays(state, player);
+  const validPlays = rules.getValidPlays(state, player);
   const isValid = validPlays.some(d => d.id === dominoId);
 
   if (!isValid) {
@@ -344,6 +343,7 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
   }
 
   // Check consensus (all 4 players must agree)
+  // Even in nello where only 3 play, all 4 players must agree to advance
   if (state.consensus.completeTrick.size !== 4) {
     throw new Error('Not all players agreed to complete trick');
 //    return state; // Not all agreed, no-op
@@ -417,7 +417,7 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
 /**
  * Executes hand scoring
  */
-function executeScoreHand(state: GameState): GameState {
+function executeScoreHand(state: GameState, rules: GameRules = defaultRules): GameState {
   // Validate phase
   if (state.phase !== 'scoring') {
     throw new Error('Invalid phase for scoring');
@@ -431,7 +431,7 @@ function executeScoreHand(state: GameState): GameState {
   }
 
   // Calculate round score
-  const newMarks = calculateRoundScore(state);
+  const newMarks = rules.calculateScore(state);
 
   // Check if game is complete
   if (isGameComplete(newMarks, state.gameTarget)) {

@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { isValidPlay, getTrickWinner, getTrickPoints, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
+import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { TrumpSelection, Play, Domino, GameState, LedSuitOrNone } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
+
+const rules = composeRules([baseLayer]);
 
 // Helper function to create dominoes for testing
 function createDomino(high: number, low: number): Domino {
@@ -54,7 +58,7 @@ describe('Trick Validation', () => {
       const state = createTestState([hand, [], [], []], trump);
       
       hand.forEach(domino => {
-        expect(isValidPlay(state, domino, 0)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 0)).toBe(true);
       });
     });
 
@@ -69,9 +73,9 @@ describe('Trick Validation', () => {
       ];
       const state = createTestState([hand, [], [], []], trump, currentTrick);
       
-      expect(isValidPlay(state, hand[0]!, 0)).toBe(true);  // must follow
-      expect(isValidPlay(state, hand[1]!, 0)).toBe(false); // can't play off-suit
-      expect(isValidPlay(state, hand[2]!, 0)).toBe(false); // can't play off-suit
+      expect(rules.isValidPlay(state, hand[0]!, 0)).toBe(true);  // must follow
+      expect(rules.isValidPlay(state, hand[1]!, 0)).toBe(false); // can't play off-suit
+      expect(rules.isValidPlay(state, hand[2]!, 0)).toBe(false); // can't play off-suit
     });
 
     it('should allow any domino when cannot follow suit', () => {
@@ -86,7 +90,7 @@ describe('Trick Validation', () => {
       const state = createTestState([hand, [], [], []], trump, currentTrick);
       
       hand.forEach(domino => {
-        expect(isValidPlay(state, domino, 0)).toBe(true);
+        expect(rules.isValidPlay(state, domino, 0)).toBe(true);
       });
     });
 
@@ -109,9 +113,9 @@ describe('Trick Validation', () => {
       const nonTrumpDomino2 = hand[2];
       if (!trumpDomino || !nonTrumpDomino1 || !nonTrumpDomino2) throw new Error('Hand dominoes are undefined');
       
-      expect(isValidPlay(state, trumpDomino, 0)).toBe(true);  // can follow trump
-      expect(isValidPlay(state, nonTrumpDomino1, 0)).toBe(false); // must follow trump
-      expect(isValidPlay(state, nonTrumpDomino2, 0)).toBe(false); // must follow trump
+      expect(rules.isValidPlay(state, trumpDomino, 0)).toBe(true);  // can follow trump
+      expect(rules.isValidPlay(state, nonTrumpDomino1, 0)).toBe(false); // must follow trump
+      expect(rules.isValidPlay(state, nonTrumpDomino2, 0)).toBe(false); // must follow trump
     });
   });
 
@@ -120,7 +124,7 @@ describe('Trick Validation', () => {
       const hand = [createDomino(0, 0), createDomino(1, 2), createDomino(3, 4)];
       const state = createTestState([hand, [], [], []], trump);
       
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays).toHaveLength(3);
       expect(validPlays).toEqual(expect.arrayContaining(hand));
     });
@@ -136,7 +140,7 @@ describe('Trick Validation', () => {
       ];
       const state = createTestState([hand, [], [], []], trump, currentTrick);
       
-      const validPlays = getValidPlays(state, 0);
+      const validPlays = rules.getValidPlays(state, 0);
       expect(validPlays).toHaveLength(2);
       const firstSuitDomino = hand[0];
       const secondSuitDomino = hand[1];

@@ -53,6 +53,7 @@ export class GameHost {
   private listeners: Map<string, { perspective?: string; listener: (update: HostViewUpdate) => void }> = new Map();
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
   private getValidActionsComposed: StateMachine;
+  private layers: import('../../game/layers/types').GameLayer[];
   private rules: GameRules;
 
   constructor(gameId: string, config: GameConfig, players: PlayerSession[]) {
@@ -90,16 +91,22 @@ export class GameHost {
       ...(config.variants ?? [])
     ];
 
-    // Compose variants
-    this.getValidActionsComposed = applyVariants(baseGetValidActions, this.variantConfigs);
-
-    // Compose layers into rules
+    // Compose layers into rules FIRST (needed for variant composition)
     const enabledLayerNames = config.enabledLayers ?? [];
     const enabledLayers = enabledLayerNames.length > 0
       ? getLayersByNames(enabledLayerNames)
       : [];
 
-    this.rules = composeRules([baseLayer, ...enabledLayers]);
+    // Store layers for passing to getValidActions
+    this.layers = [baseLayer, ...enabledLayers];
+    this.rules = composeRules(this.layers);
+
+    // Compose variants with layers/rules threaded through
+    // Create a wrapper that calls getValidActions with our layers/rules
+    const baseWithLayers: StateMachine = (state: GameState) =>
+      baseGetValidActions(state, this.layers, this.rules);
+
+    this.getValidActionsComposed = applyVariants(baseWithLayers, this.variantConfigs);
 
     // Create initial game state
     const initialState = createInitialState({
@@ -130,7 +137,7 @@ export class GameHost {
   private buildUpdate(forPlayerId?: string): HostViewUpdate {
     const stateSnapshot = this.cloneMultiplayerState(this.mpState);
     const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
-    const transitions = getNextStates(stateSnapshot.coreState);
+    const transitions = getNextStates(stateSnapshot.coreState, this.layers, this.rules);
     const actionsByPlayer = this.buildActionsMap(
       stateSnapshot.players,
       allValidActions,
@@ -271,7 +278,7 @@ export class GameHost {
    */
   getActionsForPlayer(playerId: string): ValidAction[] {
     const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
-    const transitions = getNextStates(this.mpState.coreState);
+    const transitions = getNextStates(this.mpState.coreState, this.layers, this.rules);
     const actionsMap = this.buildActionsMap(
       this.mpState.players,
       allValidActions,
@@ -286,7 +293,7 @@ export class GameHost {
    */
   getActionsMap(): Record<string, ValidAction[]> {
     const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
-    const transitions = getNextStates(this.mpState.coreState);
+    const transitions = getNextStates(this.mpState.coreState, this.layers, this.rules);
     return this.buildActionsMap(
       this.mpState.players,
       allValidActions,
@@ -495,7 +502,7 @@ export class GameHost {
     const stateContext = context?.state ?? this.cloneMultiplayerState(this.mpState);
     const { coreState, players } = stateContext;
     const allValidActions = context?.allActions ?? this.getValidActionsComposed(coreState);
-    const transitions = context?.transitions ?? getNextStates(coreState);
+    const transitions = context?.transitions ?? getNextStates(coreState, this.layers, this.rules);
     const actionsByPlayer =
       context?.actionsByPlayer ??
       this.buildActionsMap(players, allValidActions, transitions, coreState);
@@ -710,7 +717,7 @@ export class GameHost {
 
     const stateSnapshot = this.cloneMultiplayerState(this.mpState);
     const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
-    const transitions = getNextStates(stateSnapshot.coreState);
+    const transitions = getNextStates(stateSnapshot.coreState, this.layers, this.rules);
     const actionsMap = this.buildActionsMap(
       stateSnapshot.players,
       allValidActions,

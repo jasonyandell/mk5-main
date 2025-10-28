@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { isValidBid, getBidComparisonValue } from '../../game/core/rules';
+import { composeRules, baseLayer, nelloLayer, plungeLayer, splashLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
 import { getNextPlayer, getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
+
+// General bidding tests - includes special contracts (casual rules)
+const rules = composeRules([baseLayer, nelloLayer, plungeLayer, splashLayer]);
 
 describe('Bidding Rules', () => {
   describe('All-Pass Redeal Scenarios', () => {
@@ -26,7 +29,7 @@ describe('Bidding Rules', () => {
 
       // Add each pass bid and verify they're valid
       passBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -86,7 +89,7 @@ describe('Bidding Rules', () => {
       const insufficientHand = createHandWithDoubles(3);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(isValidBid(state, plungeBid, insufficientHand)).toBe(false);
+      expect(rules.isValidBid(state, plungeBid, insufficientHand)).toBe(false);
     });
 
     it('should allow Plunge bid with exactly 4 doubles', () => {
@@ -98,7 +101,7 @@ describe('Bidding Rules', () => {
       const sufficientHand = createHandWithDoubles(4);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(isValidBid(state, plungeBid, sufficientHand)).toBe(true);
+      expect(rules.isValidBid(state, plungeBid, sufficientHand)).toBe(true);
     });
 
     it('should allow Plunge bid with more than 4 doubles', () => {
@@ -110,7 +113,7 @@ describe('Bidding Rules', () => {
       const abundantHand = createHandWithDoubles(6);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(isValidBid(state, plungeBid, abundantHand)).toBe(true);
+      expect(rules.isValidBid(state, plungeBid, abundantHand)).toBe(true);
     });
 
     it('should validate higher Plunge bids with sufficient doubles', () => {
@@ -124,11 +127,11 @@ describe('Bidding Rules', () => {
       // Test various Plunge bid levels
       for (let marks = 4; marks <= 6; marks++) {
         const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: marks, player: 0 };
-        expect(isValidBid(state, plungeBid, maxDoublesHand)).toBe(true);
+        expect(rules.isValidBid(state, plungeBid, maxDoublesHand)).toBe(true);
       }
     });
 
-    it('should allow Plunge bids in base engine with proper doubles', () => {
+    it('should allow Plunge bids with proper doubles', () => {
       const state = createTestState({
         phase: 'bidding',
         bids: []
@@ -137,9 +140,8 @@ describe('Bidding Rules', () => {
       const perfectHand = createHandWithDoubles(7);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
-      // Base engine allows plunge with 7 doubles
-      // Tournament variant will filter this at action level
-      expect(isValidBid(state, plungeBid, perfectHand)).toBe(true);
+      // Plunge layer allows plunge bids with sufficient doubles
+      expect(rules.isValidBid(state, plungeBid, perfectHand)).toBe(true);
     });
 
     it('should validate Splash bid requires 3+ doubles', () => {
@@ -151,11 +153,11 @@ describe('Bidding Rules', () => {
       // Test insufficient doubles (2)
       const insufficientHand = createHandWithDoubles(2);
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      expect(isValidBid(state, splashBid, insufficientHand)).toBe(false);
+      expect(rules.isValidBid(state, splashBid, insufficientHand)).toBe(false);
 
       // Test sufficient doubles (3)
       const sufficientHand = createHandWithDoubles(3);
-      expect(isValidBid(state, splashBid, sufficientHand)).toBe(true);
+      expect(rules.isValidBid(state, splashBid, sufficientHand)).toBe(true);
     });
 
     it('should require minimum 4 marks for Plunge bids', () => {
@@ -170,8 +172,8 @@ describe('Bidding Rules', () => {
       const invalidPlunge: Bid = { type: BID_TYPES.PLUNGE, value: 3, player: 0 };
       const validPlunge: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(isValidBid(state, invalidPlunge, adequateHand)).toBe(false);
-      expect(isValidBid(state, validPlunge, adequateHand)).toBe(true);
+      expect(rules.isValidBid(state, invalidPlunge, adequateHand)).toBe(false);
+      expect(rules.isValidBid(state, validPlunge, adequateHand)).toBe(true);
     });
   });
 
@@ -180,7 +182,7 @@ describe('Bidding Rules', () => {
       const state = createInitialState();
       const passBid: Bid = { type: BID_TYPES.PASS, player: 0 };
       
-      expect(isValidBid(state, passBid)).toBe(true);
+      expect(rules.isValidBid(state, passBid)).toBe(true);
     });
     
     it('should allow opening point bids 30-41', () => {
@@ -188,7 +190,7 @@ describe('Bidding Rules', () => {
       
       for (let points = 30; points <= 41; points++) {
         const bid: Bid = { type: BID_TYPES.POINTS, value: points, player: 0 };
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       }
     });
     
@@ -196,14 +198,14 @@ describe('Bidding Rules', () => {
       const state = createInitialState();
       const bid: Bid = { type: BID_TYPES.POINTS, value: 29, player: 0 };
       
-      expect(isValidBid(state, bid)).toBe(false);
+      expect(rules.isValidBid(state, bid)).toBe(false);
     });
     
     it('should reject point bids above 41', () => {
       const state = createInitialState();
       const bid: Bid = { type: BID_TYPES.POINTS, value: 42, player: 0 };
       
-      expect(isValidBid(state, bid)).toBe(false);
+      expect(rules.isValidBid(state, bid)).toBe(false);
     });
     
     it('should allow opening mark bids 1-2 in tournament mode', () => {
@@ -212,15 +214,15 @@ describe('Bidding Rules', () => {
       const bid1: Bid = { type: BID_TYPES.MARKS, value: 1, player: 0 };
       const bid2: Bid = { type: BID_TYPES.MARKS, value: 2, player: 0 };
       
-      expect(isValidBid(state, bid1)).toBe(true);
-      expect(isValidBid(state, bid2)).toBe(true);
+      expect(rules.isValidBid(state, bid1)).toBe(true);
+      expect(rules.isValidBid(state, bid2)).toBe(true);
     });
     
     it('should reject opening mark bids above 2 in tournament mode', () => {
       const state = createInitialState();
       const bid: Bid = { type: BID_TYPES.MARKS, value: 3, player: 0 };
       
-      expect(isValidBid(state, bid)).toBe(false);
+      expect(rules.isValidBid(state, bid)).toBe(false);
     });
     
     it('should prevent duplicate bids from same player', () => {
@@ -230,7 +232,7 @@ describe('Bidding Rules', () => {
       
       state.bids.push(firstBid);
       
-      expect(isValidBid(state, secondBid)).toBe(false);
+      expect(rules.isValidBid(state, secondBid)).toBe(false);
     });
     
     it('should require higher bids than current', () => {
@@ -242,8 +244,8 @@ describe('Bidding Rules', () => {
       state.bids.push(firstBid);
       state.currentBid = firstBid;
       
-      expect(isValidBid(state, lowerBid)).toBe(false);
-      expect(isValidBid(state, equalBid)).toBe(false);
+      expect(rules.isValidBid(state, lowerBid)).toBe(false);
+      expect(rules.isValidBid(state, equalBid)).toBe(false);
     });
     
     it('should allow higher point bids', () => {
@@ -255,7 +257,7 @@ describe('Bidding Rules', () => {
       state.currentBid = firstBid;
       state.currentPlayer = 1; // Set current player to match the bid being tested
       
-      expect(isValidBid(state, higherBid)).toBe(true);
+      expect(rules.isValidBid(state, higherBid)).toBe(true);
     });
     
     it('should enforce mark bid progression rules', () => {
@@ -269,7 +271,7 @@ describe('Bidding Rules', () => {
       
       // Can bid 2 marks
       const twoMarkBid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
-      expect(isValidBid(state, twoMarkBid)).toBe(true);
+      expect(rules.isValidBid(state, twoMarkBid)).toBe(true);
       
       // Add the 2 mark bid
       state.bids.push(twoMarkBid);
@@ -278,16 +280,16 @@ describe('Bidding Rules', () => {
       
       // Now can bid 3 marks (after 2 marks has been bid)
       const threeMarkBid: Bid = { type: BID_TYPES.MARKS, value: 3, player: 2 };
-      expect(isValidBid(state, threeMarkBid)).toBe(true);
+      expect(rules.isValidBid(state, threeMarkBid)).toBe(true);
       
       // Cannot jump to 4 marks without progression
       const fourMarkBid: Bid = { type: BID_TYPES.MARKS, value: 4, player: 2 };
-      expect(isValidBid(state, fourMarkBid)).toBe(false);
+      expect(rules.isValidBid(state, fourMarkBid)).toBe(false);
     });
     
-    it('should allow special contracts in base engine', () => {
+    it('should allow special contracts in casual rules', () => {
       const state = createInitialState();
-      // Base engine is maximally permissive - tournament variant will filter at action level
+      // Casual rules (with special contract layers) allow these bids
 
       const testHand = GameTestHelper.createTestHand([
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
@@ -297,9 +299,9 @@ describe('Bidding Rules', () => {
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
-      expect(isValidBid(state, nelloBid, testHand)).toBe(true);
-      expect(isValidBid(state, splashBid, testHand)).toBe(true);
-      expect(isValidBid(state, plungeBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, nelloBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, plungeBid, testHand)).toBe(true);
     });
     
     it('should allow special contracts in casual mode', () => {
@@ -314,21 +316,21 @@ describe('Bidding Rules', () => {
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(isValidBid(state, nelloBid, testHand)).toBe(true);
-      expect(isValidBid(state, splashBid, testHand)).toBe(true);
-      expect(isValidBid(state, plungeBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, nelloBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
+      expect(rules.isValidBid(state, plungeBid, testHand)).toBe(true);
     });
   });
   
   describe('getBidComparisonValue', () => {
     it('should return point value for point bids', () => {
       const bid: Bid = { type: BID_TYPES.POINTS, value: 35, player: 0 };
-      expect(getBidComparisonValue(bid)).toBe(35);
+      expect(rules.getBidComparisonValue(bid)).toBe(35);
     });
     
     it('should return 42x multiplier for mark bids', () => {
       const bid: Bid = { type: BID_TYPES.MARKS, value: 2, player: 0 };
-      expect(getBidComparisonValue(bid)).toBe(84);
+      expect(rules.getBidComparisonValue(bid)).toBe(84);
     });
     
     it('should return 42x multiplier for special contracts', () => {
@@ -336,14 +338,14 @@ describe('Bidding Rules', () => {
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
       
-      expect(getBidComparisonValue(nelloBid)).toBe(42);
-      expect(getBidComparisonValue(splashBid)).toBe(84);
-      expect(getBidComparisonValue(plungeBid)).toBe(168);
+      expect(rules.getBidComparisonValue(nelloBid)).toBe(42);
+      expect(rules.getBidComparisonValue(splashBid)).toBe(84);
+      expect(rules.getBidComparisonValue(plungeBid)).toBe(168);
     });
     
     it('should return 0 for pass bids', () => {
       const bid: Bid = { type: BID_TYPES.PASS, player: 0 };
-      expect(getBidComparisonValue(bid)).toBe(0);
+      expect(rules.getBidComparisonValue(bid)).toBe(0);
     });
   });
   
@@ -358,7 +360,7 @@ describe('Bidding Rules', () => {
       ] as Bid[];
       
       passBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -377,7 +379,7 @@ describe('Bidding Rules', () => {
       ] as Bid[];
       
       biddingSequence.forEach((bid) => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
         if (bid.type !== BID_TYPES.PASS) {
@@ -387,7 +389,7 @@ describe('Bidding Rules', () => {
       
       // Final bid should be 2 marks (84 points equivalent)
       expect(state.currentBid?.value).toBe(2);
-      expect(getBidComparisonValue(state.currentBid!)).toBe(84);
+      expect(rules.getBidComparisonValue(state.currentBid!)).toBe(84);
     });
   });
 });

@@ -1,13 +1,15 @@
 import { describe, test, expect } from 'vitest';
-import { 
-  createInitialState, 
-  getValidPlays, 
-  canFollowSuit, 
-  isValidPlay,
+import {
+  createInitialState,
+  canFollowSuit,
   type Domino
 } from '../../../game';
+import { composeRules } from '../../../game/layers/compose';
+import { baseLayer } from '../../../game/layers';
 import { analyzeSuits } from '../../../game/core/suit-analysis';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Feature: Playing Tricks', () => {
   describe('Scenario: Following Suit', () => {
@@ -69,7 +71,7 @@ describe('Feature: Playing Tricks', () => {
       gameState.players[1]!.hand = playerHand;
       gameState.players[1]!.suitAnalysis = analyzeSuits(playerHand, gameState.trump);
       
-      const validPlays = getValidPlays(gameState, 1);
+      const validPlays = rules.getValidPlays(gameState, 1);
       
       // Should be able to follow suit with dominoes containing 6
       const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES);
@@ -82,7 +84,7 @@ describe('Feature: Playing Tricks', () => {
       
       // Verify each valid play is actually valid
       validPlays.forEach(domino => {
-        expect(isValidPlay(gameState, domino, 1)).toBe(true);
+        expect(rules.isValidPlay(gameState, domino, 1)).toBe(true);
       });
     });
 
@@ -110,7 +112,7 @@ describe('Feature: Playing Tricks', () => {
       expect(canFollowSuitResult).toBe(false);
       
       // Since can't follow suit, all dominoes are valid (including trump)
-      const validPlays = getValidPlays(gameState, 1);
+      const validPlays = rules.getValidPlays(gameState, 1);
       expect(validPlays).toHaveLength(4); // All dominoes are valid
       
       // Verify trump dominoes are valid plays
@@ -121,7 +123,7 @@ describe('Feature: Playing Tricks', () => {
       
       trumpDominoes.forEach(domino => {
         expect(validPlays).toContainEqual(domino);
-        expect(isValidPlay(gameState, domino, 1)).toBe(true);
+        expect(rules.isValidPlay(gameState, domino, 1)).toBe(true);
       });
     });
 
@@ -155,13 +157,13 @@ describe('Feature: Playing Tricks', () => {
       expect(hasTrump).toBe(false);
       
       // Since can't follow suit or trump, any domino is valid
-      const validPlays = getValidPlays(gameState, 1);
+      const validPlays = rules.getValidPlays(gameState, 1);
       expect(validPlays).toHaveLength(4);
       expect(validPlays).toEqual(playerHand);
       
       // Verify all dominoes are valid plays in this situation
       playerHand.forEach(domino => {
-        expect(isValidPlay(gameState, domino, 1)).toBe(true);
+        expect(rules.isValidPlay(gameState, domino, 1)).toBe(true);
       });
     });
 
@@ -189,15 +191,15 @@ describe('Feature: Playing Tricks', () => {
       expect(canFollowSuitResult).toBe(true);
       
       // Only dominoes that can follow suit should be valid
-      const validPlays = getValidPlays(gameState, 1);
+      const validPlays = rules.getValidPlays(gameState, 1);
       expect(validPlays).toHaveLength(1);
       expect(validPlays).toContainEqual({ high: 5, low: 4, id: '5-4' });
       
       // Verify the 5-4 is a valid play
-      expect(isValidPlay(gameState, { high: 5, low: 4, id: '5-4' }, 1)).toBe(true);
+      expect(rules.isValidPlay(gameState, { high: 5, low: 4, id: '5-4' }, 1)).toBe(true);
       
       // Verify other dominoes are not valid (must follow suit)
-      expect(isValidPlay(gameState, { high: 6, low: 6, id: '6-6' }, 1)).toBe(false);
+      expect(rules.isValidPlay(gameState, { high: 6, low: 6, id: '6-6' }, 1)).toBe(false);
     });
 
     test('And trump dominoes do not have to follow suit (they trump)', () => {
@@ -221,12 +223,12 @@ describe('Feature: Playing Tricks', () => {
       expect(canFollowSuitResult).toBe(false);
       
       // Since can't follow suit, all dominoes are valid
-      const validPlays = getValidPlays(gameState, 1);
+      const validPlays = rules.getValidPlays(gameState, 1);
       expect(validPlays).toHaveLength(2);
       
       // Trump domino is valid even though it doesn't contain 6
-      expect(isValidPlay(gameState, { high: 3, low: 2, id: '3-2' }, 1)).toBe(true);
-      expect(isValidPlay(gameState, { high: 4, low: 1, id: '4-1' }, 1)).toBe(true);
+      expect(rules.isValidPlay(gameState, { high: 3, low: 2, id: '3-2' }, 1)).toBe(true);
+      expect(rules.isValidPlay(gameState, { high: 4, low: 1, id: '4-1' }, 1)).toBe(true);
     });
   });
 });
