@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../game/types/config';
-import { GameHost } from '../../server/game/GameHost';
+import { GameKernel } from '../../kernel/GameKernel';
 
 function createPlayers(config: GameConfig) {
   return config.playerTypes.map((type, i) => ({
@@ -15,7 +15,7 @@ function createPlayers(config: GameConfig) {
   }));
 }
 
-describe('GameHost auto-execute', () => {
+describe('GameKernel auto-execute', () => {
   it('runs introductory scripts for one-hand variant automatically', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
@@ -23,8 +23,8 @@ describe('GameHost auto-execute', () => {
       shuffleSeed: 777777
     };
 
-    const host = new GameHost('one-hand-autoplay', config, createPlayers(config));
-    const view = host.getView('player-0');
+    const kernel = new GameKernel('one-hand-autoplay', config, createPlayers(config));
+    const view = kernel.getView('player-0');
 
     expect(view.state.phase).toBe('playing');
     expect(view.state.bids.length).toBeGreaterThanOrEqual(4);

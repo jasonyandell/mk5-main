@@ -1,37 +1,38 @@
 /**
- * GameHost - Pure game authority server.
+ * GameKernel - Pure game authority engine.
  *
  * This is the ONLY place where game state mutations happen.
- * NO AI code here - AI is external via AIClient.
+ * NO transport, AI, or multiplayer concerns here - just pure game logic.
  *
  * Design principles:
  * - Pure state management (no transport concerns)
  * - Authorization via existing authorizeAndExecute
  * - Variant support via composition
  * - Observable via subscriptions
+ * - Deployable anywhere (local, Worker, Cloudflare)
  */
 
-import type { GameState, GameAction } from '../../game/types';
-import type { GameConfig, GameVariant } from '../../game/types/config';
+import type { GameState, GameAction } from '../game/types';
+import type { GameConfig, GameVariant } from '../game/types/config';
 import type {
   GameView,
   ValidAction,
   PlayerInfo
-} from '../../shared/multiplayer/protocol';
-import { authorizeAndExecute } from '../../game/multiplayer/authorization';
-import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../../game/multiplayer/types';
-import { ok, err } from '../../game/multiplayer/types';
-import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../../game/multiplayer/capabilityUtils';
-import { humanCapabilities, aiCapabilities } from '../../game/multiplayer/capabilities';
-import { createInitialState, cloneGameState } from '../../game/core/state';
-import { getValidActions, getNextStates } from '../../game/core/gameEngine';
-import { applyVariants } from '../../game/variants/registry';
-import type { VariantConfig, StateMachine } from '../../game/variants/types';
-import { createMultiplayerGame, updatePlayerSession } from '../../game/multiplayer/stateLifecycle';
-import { composeRules, baseLayer, getLayersByNames } from '../../game/layers';
-import type { GameRules } from '../../game/layers/types';
+} from '../shared/multiplayer/protocol';
+import { authorizeAndExecute } from '../game/multiplayer/authorization';
+import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
+import { ok, err } from '../game/multiplayer/types';
+import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../game/multiplayer/capabilityUtils';
+import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
+import { createInitialState, cloneGameState } from '../game/core/state';
+import { getValidActions, getNextStates } from '../game/core/gameEngine';
+import { applyVariants } from '../game/variants/registry';
+import type { VariantConfig, StateMachine } from '../game/variants/types';
+import { createMultiplayerGame, updatePlayerSession } from '../game/multiplayer/stateLifecycle';
+import { composeRules, baseLayer, getLayersByNames } from '../game/layers';
+import type { GameRules } from '../game/layers/types';
 
-interface HostViewUpdate {
+export interface KernelUpdate {
   view: GameView;
   state: MultiplayerGameState;
   actions: Record<string, ValidAction[]>;
@@ -41,19 +42,32 @@ interface HostViewUpdate {
 const UNFILTERED_KEY = '__unfiltered__';
 
 /**
- * GameHost - Pure game server authority
+ * GameKernel - Pure game logic engine
+ *
+ * Responsibilities:
+ * - Pure state management (no mutations, only replacements)
+ * - Action authorization and execution
+ * - View generation with capability-based filtering
+ * - Subscription management for state updates
+ * - Variant and layer composition
+ *
+ * NOT responsible for:
+ * - Transport/networking
+ * - AI client lifecycle
+ * - Protocol message routing
+ * - Client connections
  */
-export class GameHost {
+export class GameKernel {
   private mpState: MultiplayerGameState;
   private gameId: string;
   private variant: GameVariant | undefined;
   private variantConfigs: VariantConfig[];
   private created: number;
   private lastUpdate: number;
-  private listeners: Map<string, { perspective?: string; listener: (update: HostViewUpdate) => void }> = new Map();
+  private listeners: Map<string, { perspective?: string; listener: (update: KernelUpdate) => void }> = new Map();
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
   private getValidActionsComposed: StateMachine;
-  private layers: import('../../game/layers/types').GameLayer[];
+  private layers: import('../game/layers/types').GameLayer[];
   private rules: GameRules;
 
   constructor(gameId: string, config: GameConfig, players: PlayerSession[]) {
@@ -128,13 +142,13 @@ export class GameHost {
       createdAt: now,
       lastActionAt: now
     });
-    this.players = new Map(this.mpState.players.map(p => [p.playerId, p]));
+    this.players = new Map(this.mpState.players.map((p: PlayerSession) => [p.playerId, p]));
 
     // Process any immediate scripted actions emitted at startup
     this.processAutoExecuteActions();
   }
 
-  private buildUpdate(forPlayerId?: string): HostViewUpdate {
+  private buildUpdate(forPlayerId?: string): KernelUpdate {
     const stateSnapshot = this.cloneMultiplayerState(this.mpState);
     const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
     const transitions = getNextStates(stateSnapshot.coreState, this.layers, this.rules);
@@ -152,7 +166,7 @@ export class GameHost {
       actionsByPlayer
     });
 
-    const update: HostViewUpdate = {
+    const update: KernelUpdate = {
       view,
       state: stateSnapshot,
       actions: actionsByPlayer
@@ -201,7 +215,7 @@ export class GameHost {
       ? filterActionsForSession(session, allValidActions)
       : allValidActions;
 
-    return availableActions.map(action => {
+    return availableActions.map((action: GameAction) => {
       const transition = this.findMatchingTransition(action, transitions);
       const actionClone: GameAction = { ...action };
       const group = this.getActionGroup(action);
@@ -234,7 +248,7 @@ export class GameHost {
     action: GameAction,
     transitions: ReturnType<typeof getNextStates>
   ) {
-    return transitions.find(t => {
+    return transitions.find((t) => {
       if (t.action.type !== action.type) return false;
 
       if ('player' in t.action && 'player' in action) {
@@ -337,7 +351,7 @@ export class GameHost {
    * Change player control type
    */
   setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
-    const targetSession = this.mpState.players.find(session => session.playerIndex === playerIndex);
+    const targetSession = this.mpState.players.find((session: PlayerSession) => session.playerIndex === playerIndex);
     if (!targetSession) {
       throw new Error(`Player ${playerIndex} not found`);
     }
@@ -362,7 +376,7 @@ export class GameHost {
     // Update core state playerTypes to match
     const updatedCoreState = {
       ...this.mpState.coreState,
-      playerTypes: updatedPlayers.map(s => s.controlType) as ('human' | 'ai')[]
+      playerTypes: updatedPlayers.map((s: PlayerSession) => s.controlType) as ('human' | 'ai')[]
     };
 
     this.mpState = {
@@ -388,7 +402,7 @@ export class GameHost {
       ...existing,
       ...session,
       isConnected: true,
-      capabilities: (session.capabilities ?? existing.capabilities).map(cap => ({ ...cap }))
+      capabilities: (session.capabilities ?? existing.capabilities).map((cap: Capability) => ({ ...cap }))
     };
 
     const result = updatePlayerSession(this.mpState, existing.playerId, merged);
@@ -457,10 +471,10 @@ export class GameHost {
    * Subscribe to game updates
    * @param playerId - Player ID to filter views for (or undefined for unfiltered)
    */
-  subscribe(playerId: string | undefined, listener: (update: HostViewUpdate) => void): () => void {
+  subscribe(playerId: string | undefined, listener: (update: KernelUpdate) => void): () => void {
     const listenerKey = playerId ?? `unfiltered-${Date.now()}-${Math.random()}`;
 
-    const record: { perspective?: string; listener: (update: HostViewUpdate) => void } = {
+    const record: { perspective?: string; listener: (update: KernelUpdate) => void } = {
       listener
     };
 
@@ -480,7 +494,7 @@ export class GameHost {
   }
 
   /**
-   * Destroy the game host
+   * Destroy the game kernel
    */
   destroy(): void {
     this.listeners.clear();
@@ -507,9 +521,9 @@ export class GameHost {
       context?.actionsByPlayer ??
       this.buildActionsMap(players, allValidActions, transitions, coreState);
 
-    const session = forPlayerId ? players.find(p => p.playerId === forPlayerId) : undefined;
+    const session = forPlayerId ? players.find((p: PlayerSession) => p.playerId === forPlayerId) : undefined;
 
-    const visibleState: import('../../game/types').FilteredGameState = session
+    const visibleState: import('../game/types').FilteredGameState = session
       ? getVisibleStateForSession(coreState, session)
       : this.convertToFilteredState(coreState);
 
@@ -525,13 +539,13 @@ export class GameHost {
         this.buildValidActionsForSession(undefined, allValidActions, transitions, coreState);
     }
 
-    const playerInfoList: PlayerInfo[] = Array.from(players).map(playerSession => ({
+    const playerInfoList: PlayerInfo[] = Array.from(players).map((playerSession: PlayerSession) => ({
       playerId: playerSession.playerIndex,
       controlType: playerSession.controlType,
       sessionId: playerSession.playerId,
       connected: playerSession.isConnected ?? true,
       name: playerSession.name || `Player ${playerSession.playerIndex + 1}`,
-      capabilities: playerSession.capabilities.map(cap => ({ ...cap }))
+      capabilities: playerSession.capabilities.map((cap: Capability) => ({ ...cap }))
     }));
 
     return {
@@ -551,8 +565,8 @@ export class GameHost {
   /**
    * Convert pure GameState to FilteredGameState format (adds handCount to players)
    */
-  private convertToFilteredState(state: GameState): import('../../game/types').FilteredGameState {
-    const filteredPlayers = state.players.map(player => ({
+  private convertToFilteredState(state: GameState): import('../game/types').FilteredGameState {
+    const filteredPlayers = state.players.map((player: GameState['players'][number]) => ({
       id: player.id,
       name: player.name,
       teamId: player.teamId,
@@ -589,13 +603,13 @@ export class GameHost {
     return {
       gameId: state.gameId,
       coreState: cloneGameState(state.coreState),
-      players: state.players.map(session => ({
+      players: state.players.map((session: PlayerSession) => ({
         ...session,
-        capabilities: session.capabilities.map(cap => ({ ...cap }))
+        capabilities: session.capabilities.map((cap: Capability) => ({ ...cap }))
       })),
       createdAt: state.createdAt,
       lastActionAt: state.lastActionAt,
-      enabledVariants: state.enabledVariants.map(variant => ({ ...variant })),
+      enabledVariants: state.enabledVariants.map((variant: VariantConfig) => ({ ...variant })),
       enabledLayers: state.enabledLayers ?? []
     };
   }
@@ -660,7 +674,7 @@ export class GameHost {
 
     while (iterations < MAX_AUTO_EXEC) {
       const actions = this.getValidActionsComposed(this.mpState.coreState);
-      const autoAction = actions.find(a => a.autoExecute === true);
+      const autoAction = actions.find((a: GameAction) => a.autoExecute === true);
 
       if (!autoAction) {
         break;
@@ -734,7 +748,7 @@ export class GameHost {
         actionsByPlayer: actionsMap
       });
 
-      const payload: HostViewUpdate = {
+      const payload: KernelUpdate = {
         view,
         state: this.cloneMultiplayerState(stateSnapshot),
         actions: this.cloneActionsMap(actionsMap)

@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../game/types/config';
-import { GameHost } from '../../server/game/GameHost';
+import { GameKernel } from '../../kernel/GameKernel';
 
 // Tournament rules (baseLayer only) do not allow special contracts
-// These tests verify that at the GameHost level (action generation)
+// These tests verify that at the GameKernel level (action generation)
 
 describe('Tournament Variant Authority', () => {
   it('prevents executing bids that variants remove', () => {
@@ -23,12 +23,12 @@ describe('Tournament Variant Authority', () => {
       ]
     }));
 
-    const host = new GameHost('tournament-test', config, players);
+    const kernel = new GameKernel('tournament-test', config, players);
 
-    const currentPlayer = host.getView('player-0').state.currentPlayer;
+    const currentPlayer = kernel.getView('player-0').state.currentPlayer;
 
     // Attempt to force a nello bid which tournament variant removes
-    const result = host.executeAction(`player-${currentPlayer}`, {
+    const result = kernel.executeAction(`player-${currentPlayer}`, {
       type: 'bid',
       player: currentPlayer,
       bid: 'nello',
@@ -37,7 +37,7 @@ describe('Tournament Variant Authority', () => {
 
     expect(result.success).toBe(false);
 
-    const validActions = host.getView(`player-${currentPlayer}`).validActions;
+    const validActions = kernel.getView(`player-${currentPlayer}`).validActions;
     const hasNello = validActions.some(a => a.action.type === 'bid' && a.action.bid === 'nello');
     expect(hasNello).toBe(false);
   });

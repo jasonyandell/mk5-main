@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../../game/types/config';
-import { GameHost } from '../../../server/game/GameHost';
+import { GameKernel } from '../../../kernel/GameKernel';
 import { createHandWithDoubles } from '../../helpers/gameTestHelper';
 import type { PlayerSession } from '../../../game/multiplayer/types';
 
@@ -19,7 +19,7 @@ function createPlayers(config: GameConfig): PlayerSession[] {
   }));
 }
 
-describe('GameHost Layers Integration', () => {
+describe('GameKernel Layers Integration', () => {
   describe('Layer Composition', () => {
     it('should compose rules from config.enabledLayers', () => {
       const config: GameConfig = {
@@ -28,8 +28,8 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 123456
       };
 
-      const host = new GameHost('layers-test', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('layers-test', config, createPlayers(config));
+      const state = kernel.getState();
 
       // Verify layers are stored in state
       expect(state.enabledLayers).toEqual(['nello', 'plunge']);
@@ -42,27 +42,27 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 789012
       };
 
-      const host = new GameHost('nello-execute', config, createPlayers(config));
+      const kernel = new GameKernel('nello-execute', config, createPlayers(config));
 
       // Bid marks
-      let view = host.getView('player-0');
+      let view = kernel.getView('player-0');
       const marksBid = view.validActions.find(a =>
         a.action.type === 'bid' &&
         a.action.bid === 'marks'
       );
       expect(marksBid).toBeDefined();
 
-      host.executeAction('player-0', marksBid!.action, Date.now());
+      kernel.executeAction('player-0', marksBid!.action, Date.now());
 
       // Others pass
       for (let i = 1; i <= 3; i++) {
-        view = host.getView(`ai-${i}`);
+        view = kernel.getView(`ai-${i}`);
         const pass = view.validActions.find(a => a.action.type === 'pass');
-        host.executeAction(`ai-${i}`, pass!.action, Date.now());
+        kernel.executeAction(`ai-${i}`, pass!.action, Date.now());
       }
 
       // Verify nello is available in trump selection
-      view = host.getView('player-0');
+      view = kernel.getView('player-0');
       expect(view.state.phase).toBe('trump_selection');
 
       const nelloOption = view.validActions.find(a =>
@@ -79,8 +79,8 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 345678
       };
 
-      const host = new GameHost('multi-layers', config, createPlayers(config));
-      const mpState = host.getState();
+      const kernel = new GameKernel('multi-layers', config, createPlayers(config));
+      const mpState = kernel.getState();
 
       expect(mpState.enabledLayers).toBeDefined();
       expect(mpState.enabledLayers).toEqual(['splash', 'sevens']);
@@ -93,14 +93,14 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 901234
       };
 
-      const host = new GameHost('plunge-rules', config, createPlayers(config));
+      const kernel = new GameKernel('plunge-rules', config, createPlayers(config));
 
       // Give player 0 enough doubles for plunge
-      const state = host.getState();
+      const state = kernel.getState();
       state.coreState.players[0]!.hand = createHandWithDoubles(4);
 
       // Check plunge bid is available
-      const view = host.getView('player-0');
+      const view = kernel.getView('player-0');
       const plungeBid = view.validActions.find(a =>
         a.action.type === 'bid' &&
         a.action.bid === 'plunge'
@@ -119,8 +119,8 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 567890
       };
 
-      const host = new GameHost('all-layers', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('all-layers', config, createPlayers(config));
+      const state = kernel.getState();
 
       expect(state.enabledLayers).toEqual(['nello', 'plunge', 'splash', 'sevens']);
       expect(state.coreState.phase).toBe('bidding');
@@ -133,13 +133,13 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 111111
       };
 
-      const host = new GameHost('base-only', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('base-only', config, createPlayers(config));
+      const state = kernel.getState();
 
       expect(state.enabledLayers).toEqual([]);
 
       // Verify no special bids available
-      const view = host.getView('player-0');
+      const view = kernel.getView('player-0');
       const specialBids = view.validActions.filter(a =>
         a.action.type === 'bid' &&
         (a.action.bid === 'nello' || a.action.bid === 'plunge' || a.action.bid === 'splash')
@@ -156,8 +156,8 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 222222
       };
 
-      const host = new GameHost('selective-layers', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('selective-layers', config, createPlayers(config));
+      const state = kernel.getState();
 
       expect(state.enabledLayers).toEqual(['nello', 'sevens']);
     });
@@ -171,31 +171,31 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 333333
       };
 
-      const host = new GameHost('nello-threading', config, createPlayers(config));
+      const kernel = new GameKernel('nello-threading', config, createPlayers(config));
 
       // Bid marks
-      let view = host.getView('player-0');
+      let view = kernel.getView('player-0');
       const marksBid = view.validActions.find(a =>
         a.action.type === 'bid' && a.action.bid === 'marks'
       );
-      host.executeAction('player-0', marksBid!.action, Date.now());
+      kernel.executeAction('player-0', marksBid!.action, Date.now());
 
       // Others pass
       for (let i = 1; i <= 3; i++) {
-        view = host.getView(`ai-${i}`);
+        view = kernel.getView(`ai-${i}`);
         const pass = view.validActions.find(a => a.action.type === 'pass');
-        host.executeAction(`ai-${i}`, pass!.action, Date.now());
+        kernel.executeAction(`ai-${i}`, pass!.action, Date.now());
       }
 
       // Select nello
-      view = host.getView('player-0');
+      view = kernel.getView('player-0');
       const nelloTrump = view.validActions.find(a =>
         a.action.type === 'select-trump' && a.action.trump?.type === 'nello'
       );
-      host.executeAction('player-0', nelloTrump!.action, Date.now());
+      kernel.executeAction('player-0', nelloTrump!.action, Date.now());
 
       // Verify playing phase
-      view = host.getView('player-0');
+      view = kernel.getView('player-0');
       expect(view.state.phase).toBe('playing');
       expect(view.state.trump.type).toBe('nello');
 
@@ -210,32 +210,32 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 444444
       };
 
-      const host = new GameHost('plunge-threading', config, createPlayers(config));
+      const kernel = new GameKernel('plunge-threading', config, createPlayers(config));
 
       // Manually set up plunge scenario
-      const state = host.getState();
+      const state = kernel.getState();
       state.coreState.players[0]!.hand = createHandWithDoubles(4);
 
       // Bid plunge
-      let view = host.getView('player-0');
+      let view = kernel.getView('player-0');
       const plungeBid = view.validActions.find(a =>
         a.action.type === 'bid' && a.action.bid === 'plunge'
       );
 
       if (plungeBid) {
-        host.executeAction('player-0', plungeBid.action, Date.now());
+        kernel.executeAction('player-0', plungeBid.action, Date.now());
 
         // Others pass
         for (let i = 1; i <= 3; i++) {
-          view = host.getView(`ai-${i}`);
+          view = kernel.getView(`ai-${i}`);
           const pass = view.validActions.find(a => a.action.type === 'pass');
           if (pass) {
-            host.executeAction(`ai-${i}`, pass.action, Date.now());
+            kernel.executeAction(`ai-${i}`, pass.action, Date.now());
           }
         }
 
         // Verify partner (player 2) is trump selector
-        view = host.getView('player-2');
+        view = kernel.getView('player-2');
         expect(view.state.phase).toBe('trump_selection');
         expect(view.state.currentPlayer).toBe(2);
       }
@@ -248,24 +248,24 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 555555
       };
 
-      const host = new GameHost('sevens-threading', config, createPlayers(config));
+      const kernel = new GameKernel('sevens-threading', config, createPlayers(config));
 
       // Bid marks
-      let view = host.getView('player-0');
+      let view = kernel.getView('player-0');
       const marksBid = view.validActions.find(a =>
         a.action.type === 'bid' && a.action.bid === 'marks'
       );
-      host.executeAction('player-0', marksBid!.action, Date.now());
+      kernel.executeAction('player-0', marksBid!.action, Date.now());
 
       // Others pass
       for (let i = 1; i <= 3; i++) {
-        view = host.getView(`ai-${i}`);
+        view = kernel.getView(`ai-${i}`);
         const pass = view.validActions.find(a => a.action.type === 'pass');
-        host.executeAction(`ai-${i}`, pass!.action, Date.now());
+        kernel.executeAction(`ai-${i}`, pass!.action, Date.now());
       }
 
       // Verify sevens is available
-      view = host.getView('player-0');
+      view = kernel.getView('player-0');
       const sevensTrump = view.validActions.find(a =>
         a.action.type === 'select-trump' && a.action.trump?.type === 'sevens'
       );
@@ -282,7 +282,7 @@ describe('GameHost Layers Integration', () => {
       };
 
       expect(() => {
-        new GameHost('empty-layers', config, createPlayers(config));
+        new GameKernel('empty-layers', config, createPlayers(config));
       }).not.toThrow();
     });
 
@@ -294,11 +294,11 @@ describe('GameHost Layers Integration', () => {
       };
 
       expect(() => {
-        new GameHost('undefined-layers', config, createPlayers(config));
+        new GameKernel('undefined-layers', config, createPlayers(config));
       }).not.toThrow();
 
-      const host = new GameHost('undefined-layers-2', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('undefined-layers-2', config, createPlayers(config));
+      const state = kernel.getState();
 
       // Should default to empty array
       expect(state.enabledLayers).toEqual([]);
@@ -311,8 +311,8 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 888888
       };
 
-      const host = new GameHost('layer-order', config, createPlayers(config));
-      const state = host.getState();
+      const kernel = new GameKernel('layer-order', config, createPlayers(config));
+      const state = kernel.getState();
 
       expect(state.enabledLayers).toEqual(['sevens', 'nello', 'plunge', 'splash']);
     });
@@ -326,7 +326,7 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 999999
       };
 
-      const host = new GameHost('action-validation', config, createPlayers(config));
+      const kernel = new GameKernel('action-validation', config, createPlayers(config));
 
       // Try to select nello without marks bid (should fail)
       const invalidAction = {
@@ -335,7 +335,7 @@ describe('GameHost Layers Integration', () => {
         trump: { type: 'nello' as const }
       };
 
-      const result = host.executeAction('player-0', invalidAction, Date.now());
+      const result = kernel.executeAction('player-0', invalidAction, Date.now());
       expect(result.success).toBe(false);
     });
 
@@ -346,7 +346,7 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 101010
       };
 
-      const host = new GameHost('valid-actions', config, createPlayers(config));
+      const kernel = new GameKernel('valid-actions', config, createPlayers(config));
 
       // Pass should be valid
       const passAction = {
@@ -354,7 +354,7 @@ describe('GameHost Layers Integration', () => {
         player: 0
       };
 
-      const result = host.executeAction('player-0', passAction, Date.now());
+      const result = kernel.executeAction('player-0', passAction, Date.now());
       expect(result.success).toBe(true);
     });
   });
@@ -367,24 +367,24 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 121212
       };
 
-      const host = new GameHost('view-actions', config, createPlayers(config));
+      const kernel = new GameKernel('view-actions', config, createPlayers(config));
 
       // Bid marks
-      let view = host.getView('player-0');
+      let view = kernel.getView('player-0');
       const marksBid = view.validActions.find(a =>
         a.action.type === 'bid' && a.action.bid === 'marks'
       );
-      host.executeAction('player-0', marksBid!.action, Date.now());
+      kernel.executeAction('player-0', marksBid!.action, Date.now());
 
       // Others pass
       for (let i = 1; i <= 3; i++) {
-        view = host.getView(`ai-${i}`);
+        view = kernel.getView(`ai-${i}`);
         const pass = view.validActions.find(a => a.action.type === 'pass');
-        host.executeAction(`ai-${i}`, pass!.action, Date.now());
+        kernel.executeAction(`ai-${i}`, pass!.action, Date.now());
       }
 
       // Check trump options include both nello and sevens
-      view = host.getView('player-0');
+      view = kernel.getView('player-0');
       const nelloOption = view.validActions.find(a =>
         a.action.type === 'select-trump' && a.action.trump?.type === 'nello'
       );
@@ -403,10 +403,10 @@ describe('GameHost Layers Integration', () => {
         shuffleSeed: 131313
       };
 
-      const host = new GameHost('capability-filter', config, createPlayers(config));
+      const kernel = new GameKernel('capability-filter', config, createPlayers(config));
 
       // Player 0's view should only show their actions
-      const view0 = host.getView('player-0');
+      const view0 = kernel.getView('player-0');
       const player0Actions = view0.validActions.filter(a =>
         'player' in a.action && a.action.player === 0
       );

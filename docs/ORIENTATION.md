@@ -30,7 +30,17 @@
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  GameHost (Authority)           │  ★ COMPOSITION POINT ★
+│  Transport Layer                │  Message routing (in-process/Worker/WS)
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  GameServer (Orchestrator)      │  Routes messages, manages lifecycle
+│  - Creates and owns GameKernel  │  Spawns/destroys AI clients
+│  - Broadcasts state updates     │  Handles player sessions
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  GameKernel (Authority)         │  ★ COMPOSITION POINT ★
 │  - Composes layers → rules      │  Pure state storage
 │  - Composes variants → actions  │  Per-request filtering
 └─────────────────────────────────┘
@@ -95,7 +105,7 @@ const composed = applyVariants(baseStateMachine, [tournament, oneHand]);
 // tournament filters, then oneHand scripts
 ```
 
-### The Composition Point (GameHost Constructor)
+### The Composition Point (GameKernel Constructor)
 
 **ONE place** where everything composes:
 
@@ -143,10 +153,11 @@ this.getValidActionsComposed = composed;
 - `src/game/multiplayer/capabilityUtils.ts` - getVisibleStateForSession()
 - `src/game/multiplayer/capabilities.ts` - Standard capability builders
 
-**Server** (authority):
-- `src/server/game/GameHost.ts` - Authority, composition point, filtering
-- `src/server/game/createGameAuthority.ts` - Factory function
-- `src/server/offline/InProcessAdapter.ts` - In-browser game adapter
+**Server** (orchestration + authority):
+- `src/server/GameServer.ts` - Orchestrator, routes messages, manages lifecycle
+- `src/kernel/GameKernel.ts` - Authority, composition point, pure game logic
+- `src/server/transports/Transport.ts` - Transport abstraction interface
+- `src/server/transports/InProcessTransport.ts` - In-browser transport
 
 **Client** (trust boundary):
 - `src/game/multiplayer/NetworkGameClient.ts` - Client interface, caches filtered state
@@ -241,22 +252,30 @@ User clicks button
   ↓
 gameStore.executeAction({ playerId, action, timestamp })
   ↓
-NetworkGameClient.executeAction() → adapter.send(EXECUTE_ACTION)
+NetworkGameClient.executeAction() → connection.send(EXECUTE_ACTION)
   ↓
-InProcessAdapter → GameHost.executeAction()
+Transport.send() → GameServer.handleMessage()
   ↓
-authorizeAndExecute():
+GameServer routes to GameKernel.executeAction()
+  ↓
+GameKernel.executeAction():
+  - authorizeAndExecute(mpState, request, composedStateMachine, rules)
   - Find session by playerId
   - Get all valid actions via composed state machine
   - Filter by session capabilities
   - Execute: executeAction(coreState, action, rules)
   - Update lastActionAt
+  - Process auto-execute actions
   ↓
-GameHost.notifyListeners():
-  - For each subscriber
+GameKernel.notifyListeners():
+  - For each subscriber (with perspective)
   - getVisibleStateForSession(coreState, session) → filter state
   - filterActionsForSession(session, allActions) → filter actions
-  - Send { state: FilteredGameState, validActions: ValidAction[] }
+  - Build KernelUpdate { view, state, actions }
+  ↓
+GameServer receives update and broadcasts via Transport
+  ↓
+Transport.send() → connection.onMessage(STATE_UPDATE)
   ↓
 NetworkGameClient.handleServerMessage()
   - Cache filtered state + actions map
@@ -273,7 +292,7 @@ Derived stores recompute
 UI components reactively update
 ```
 
-**Key**: Server filters once per subscriber, client trusts filtered data.
+**Key**: GameKernel filters once per subscriber perspective, Transport routes messages, client trusts filtered data.
 
 ---
 
@@ -332,20 +351,20 @@ const config: GameConfig = {
 };
 ```
 
-Flags → getEnabledLayers() → compose in GameHost constructor.
+Flags → getEnabledLayers() → compose in GameKernel constructor.
 
 ---
 
 ## Architectural Invariants
 
-1. **Pure State Storage**: GameHost stores unfiltered GameState, filters on-demand per request
+1. **Pure State Storage**: GameKernel stores unfiltered GameState, filters on-demand per request
 2. **Server Authority**: Client trusts server's validActions list, never refilters
 3. **Capability-Based Access**: Permissions via capability tokens, not identity checks
-4. **Single Composition Point**: GameHost constructor is ONLY place layers/variants compose
+4. **Single Composition Point**: GameKernel constructor is ONLY place layers/variants compose
 5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/variants/special contracts
 6. **Parametric Polymorphism**: Executors call `rules.method()`, never `if (nello)`
 7. **Event Sourcing**: State derivable from `replayActions(config, history)`
-8. **No Polling**: Promise-based async with stored resolvers
+8. **Clean Separation**: GameServer orchestrates, GameKernel executes, Transport routes
 
 **Violation of any invariant = architectural regression.**
 
@@ -357,7 +376,7 @@ Flags → getEnabledLayers() → compose in GameHost constructor.
 - **Online Mode**: Cloudflare Workers/Durable Objects (spec ready, not implemented)
 - **Progressive Enhancement**: Offline → online transition (spec ready, not implemented)
 
-Current transport: `InProcessAdapter` (in-browser, single-process)
+Current transport: `InProcessTransport` (in-browser, single-process)
 
 ---
 
@@ -371,7 +390,7 @@ npm run dev        # Start dev server
 
 **When stuck**: Read the types. The architecture is type-driven - follow `GameRules`, `GameLayer`, `Variant`, `Capability` through the codebase.
 
-**When debugging**: Add console.log in GameHost constructor to see layer/variant composition. Add logging in `authorizeAndExecute` to see action filtering.
+**When debugging**: Add console.log in GameKernel constructor to see layer/variant composition. Add logging in `authorizeAndExecute` to see action filtering. Check GameServer.handleMessage() for message routing issues.
 
 ---
 

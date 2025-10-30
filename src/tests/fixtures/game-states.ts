@@ -2,7 +2,7 @@
  * Pre-configured game states for testing.
  *
  * These fixtures provide realistic GameView objects for common test scenarios.
- * Use these instead of creating GameHost instances in tests.
+ * Use these instead of creating GameKernel instances in tests.
  */
 
 import type { GameView, PlayerInfo, ValidAction } from '../../shared/multiplayer/protocol';

@@ -10,13 +10,14 @@ import type {
  * This adapter is useful for protocol verification tests where you want to:
  * - Verify the client sends correct messages
  * - Verify the UI responds correctly to server messages
- * - Test the actual game logic (via wrapped InProcessAdapter)
+ * - Test the actual game logic (via wrapped adapter implementation)
  * - Assert on message sequences
  *
  * @example
  * ```typescript
- * const realAdapter = new InProcessAdapter();
- * const spy = new SpyAdapter(realAdapter);
+ * const transport = new InProcessTransport();
+ * const adapter = transport.createAdapter('player-0');
+ * const spy = new SpyAdapter(adapter);
  * const client = new NetworkGameClient(spy);
  *
  * await client.executeAction({ playerId: 'player-0', action: { type: 'bid', ... }, timestamp: Date.now() });

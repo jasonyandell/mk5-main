@@ -35,7 +35,9 @@ Layer System (13 threaded rules via GameRules interface)
     ↓
 Variant System (transforms actions from layered state machine)
     ↓
-GameHost (composes layers + variants, stores pure state)
+GameKernel (composes layers + variants, stores pure state)
+    ↓
+GameServer (orchestrates kernel, AI, and transport)
     ↓
 NetworkGameClient (caches filtered views, trusts server)
     ↓
@@ -53,18 +55,22 @@ executeAction({ playerId, action, timestamp })
     ↓
 NetworkGameClient.executeAction() → adapter.send(EXECUTE_ACTION)
     ↓
-InProcessAdapter → GameHost.executeAction()
+Adapter → Transport → GameServer.handleMessage()
+    ↓
+GameServer → GameKernel.executeAction()
     ↓
 authorizeAndExecute() checks capabilities & validates action
     ↓
 executeAction(coreState, action, rules) → new coreState
     ↓
-GameHost.notifyListeners() → createView() for each subscriber
+GameKernel.notifyListeners() → createView() for each subscriber
     ↓
 getVisibleStateForSession(coreState, session) → FilteredGameState
 filterActionsForSession(session, allActions) → ValidAction[]
     ↓
-adapter.send(STATE_UPDATE) → { state, validActions }
+GameServer.subscribeToKernel() → broadcast to all clients
+    ↓
+Transport → adapter.send(STATE_UPDATE) → { state, validActions }
     ↓
 NetworkGameClient caches state + actions map
     ↓
@@ -77,7 +83,7 @@ UI components reactively update
 
 ### Key Composition Points
 
-**1. Single Composition Point (GameHost constructor)**:
+**1. Single Composition Point (GameKernel constructor)**:
 - The ONLY place layers thread through base state machine and variants wrap the result
 - Creates `getValidActionsComposed` used for ALL action generation throughout the game
 - Two-level composition:
@@ -86,15 +92,17 @@ UI components reactively update
 - Result: `applyVariants(getValidActions(state, layers, rules), variantConfigs)`
 - Ensures variants see layer-modified actions (e.g., nello bids if layer enabled)
 
-**2. Trust Boundary (GameHost ↔ NetworkGameClient)**:
-- **Server (GameHost)**: Authority stores pure GameState, filters on-demand per request
+**2. Trust Boundary (GameServer/GameKernel ↔ NetworkGameClient)**:
+- **Server (GameServer + GameKernel)**: Authority stores pure GameState, filters on-demand per request
+  - **GameKernel**: Pure game logic, state management, and capability-based filtering
+  - **GameServer**: Orchestrates kernel, manages AI lifecycle, routes protocol messages
 - **Client (NetworkGameClient)**: Trusts server-filtered data, never reconstructs hidden info
-- **Protocol**: Host sends `{ state: FilteredGameState, validActions: ValidAction[] }`
+- **Protocol**: Server sends `{ state: FilteredGameState, validActions: ValidAction[] }`
 - **Security**: Client receives already-filtered data shaped for that session's capabilities
 
 **3. Perspective Management**:
 - Client can switch which player's view to display: `setPerspective('player-2')`
-- Server refilters state for new perspective's capabilities
+- GameKernel refilters state for new perspective's capabilities
 - Client caches the new filtered view
 - UI shows new player's hand and valid actions
 
@@ -122,8 +130,9 @@ See [Client-Side Store Architecture](#client-side-store-architecture) for reacti
 └─────────────────────────────────┘
               ↕ (GameView via protocol)
 ┌─────────────────────────────────┐
-│  Server Layer (Authority)       │  src/server/
-│  GameHost - created via factory │
+│  Server Layer (Authority)       │  src/server/ + src/kernel/
+│  GameServer (orchestrator)      │
+│  GameKernel (pure logic)        │
 │  **LAYER+VARIANT COMP HERE**    │
 │  Threads layers + applies vars  │
 │  Stores: Pure GameState         │
@@ -298,7 +307,7 @@ export function executeAction(
 }
 ```
 
-**3. GameHost integration (src/server/game/GameHost.ts)**:
+**3. GameKernel integration (src/kernel/GameKernel.ts)**:
 ```typescript
 constructor(gameId, config, sessions) {
   // Compose layers based on config
@@ -316,6 +325,8 @@ constructor(gameId, config, sessions) {
   );
 }
 ```
+
+**Note**: GameServer creates the GameKernel in its constructor and delegates all game logic operations to it.
 
 ### Available Layers
 
@@ -457,12 +468,12 @@ export const tournamentVariant: VariantFactory = () => (base) => (state) => {
 
 ### Client-Server Boundary
 
-**Server-side (GameHost)**:
-- Stores **pure GameState** with all information (authoritative truth)
-- Filters state **on-demand** per client request
+**Server-side (GameServer + GameKernel)**:
+- **GameKernel** stores **pure GameState** with all information (authoritative truth)
+- **GameKernel** filters state **on-demand** per client request
 - Returns **FilteredGameState** via `getVisibleStateForSession()`
 - Produces per-session `ValidAction[]` via the capability system
-- Sends snapshots shaped like `MultiplayerGameState`, but with **already-filtered** `coreState` values tailored to the subscribing session
+- **GameServer** broadcasts snapshots shaped like `MultiplayerGameState`, with **already-filtered** `coreState` values tailored to the subscribing session
 
 **Client-side (NetworkGameClient)**:
 - Receives **host-filtered** `MultiplayerGameState` snapshots plus seat-specific `ValidAction[]`
@@ -486,7 +497,7 @@ interface MultiplayerGameState {
 }
 ```
 
-> ℹ️ **Host vs. client snapshots**: On the authority, `coreState` truly is the unfiltered `GameState`. When a snapshot is serialized for a specific client, GameHost redacts any data that viewer cannot see (for example, other players' hands) but leaves the shape as `MultiplayerGameState`. NetworkGameClient caches that redacted snapshot exactly as delivered—it never attempts to reconstruct hidden fields.
+> ℹ️ **Server vs. client snapshots**: On the authority, `coreState` truly is the unfiltered `GameState`. When a snapshot is serialized for a specific client, GameKernel redacts any data that viewer cannot see (for example, other players' hands) but leaves the shape as `MultiplayerGameState`. GameServer broadcasts these filtered snapshots via its transport. NetworkGameClient caches that redacted snapshot exactly as delivered—it never attempts to reconstruct hidden fields.
 
 ### FilteredGameState Type
 
@@ -599,7 +610,7 @@ const customCaps = buildCapabilities()
   .build();
 ```
 
-**Used in**: `GameHost.buildBaseCapabilities()`, `createGameAuthority.generateDefaultSessions()`
+**Used in**: `GameKernel.buildBaseCapabilities()`, `createGameAuthority.generateDefaultSessions()`
 
 ---
 
@@ -614,7 +625,8 @@ const customCaps = buildCapabilities()
 
 **Phase 2: Async Initialization**
 - CREATE_GAME message sent to adapter
-- GameHost created via factory with variant composition
+- GameServer created (which creates GameKernel internally)
+- GameKernel composes layers + variants
 - Initial state computed and cached
 - Promise resolves when GAME_CREATED received
 - Subscriptions established, UI ready
@@ -657,25 +669,28 @@ const customCaps = buildCapabilities()
    ├─ Sends CREATE_GAME message via adapter.send() (lines 185-189)
    └─> Waits for promise resolution (no polling, clean async)
 
-6. InProcessAdapter.handleCreateGame() (InProcessAdapter.ts)
+6. Adapter.handleCreateGame()
    ├─ Generates gameId: `game-${Date.now()}-${random}`
-   ├─ Calls createGameAuthority(gameId, config)
-   └─> Creates GameHost instance
+   ├─ Creates GameServer instance
+   └─> GameServer constructor called
 
-7. createGameAuthority() (createGameAuthority.ts:14-22)
-   ├─ Generates default PlayerSessions if not provided (lines 21)
-   │   └─ Each session has: playerId, playerIndex, controlType, capabilities
-   └─ Returns new GameHost(gameId, config, sessions) (line 22)
+7. GameServer constructor (GameServer.ts:62-81)
+   ├─ Stores gameId and adapter reference
+   ├─ Creates GameKernel(gameId, config, playerSessions)
+   ├─ Subscribes to kernel updates for broadcasting
+   ├─ Creates AIManager for AI lifecycle management
+   └─> Spawns AI clients for AI-controlled players
 
-8. GameHost constructor (GameHost.ts:53-113)
-   ├─ Normalizes variant configs to array (lines 81-86)
+8. GameKernel constructor (GameKernel.ts:73-149)
+   ├─ Validates player sessions (lines 79-93)
+   ├─ Normalizes variant configs to array (lines 101-106)
    │
-   ├─ **Composes LAYERS**
-   │   const enabledLayers = getEnabledLayers(config);  // Based on config
+   ├─ **Composes LAYERS** (lines 108-116)
+   │   const enabledLayers = getLayersByNames(config.enabledLayers);
    │   this.layers = [baseLayer, ...enabledLayers];
    │   this.rules = composeRules(this.layers);  // 13 threaded rules
    │
-   ├─ **Composes VARIANTS with layers** (line 89-98)
+   ├─ **Composes VARIANTS with layers** (lines 118-123)
    │   // Thread layers through base state machine
    │   const baseWithLayers = (state: GameState) =>
    │     getValidActions(state, this.layers, this.rules);
@@ -686,23 +701,24 @@ const customCaps = buildCapabilities()
    │     variantConfigs
    │   );
    │
-   ├─ Creates initial pure GameState (line 92)
+   ├─ Creates initial pure GameState (lines 125-132)
    │   └─> createInitialState({ playerTypes, shuffleSeed, ... })
    │
-   ├─ Stores in MultiplayerGameState (lines 101-109)
+   ├─ Stores in MultiplayerGameState (lines 136-144)
    │   {
    │     gameId,
    │     coreState: initialState,  // PURE GameState
    │     players: normalizedPlayers,
    │     createdAt: Date.now(),
    │     lastActionAt: Date.now(),
-   │     enabledVariants: variantConfigs
+   │     enabledVariants: variantConfigs,
+   │     enabledLayers: config.enabledLayers ?? []
    │   }
    │
-   └─ Processes auto-execute actions (line 112)
+   └─ Processes auto-execute actions (line 148)
        └─> Variants can inject scripted actions with autoExecute: true
 
-9. InProcessAdapter sends GAME_CREATED (InProcessAdapter.ts)
+9. GameServer sends GAME_CREATED via Transport
    └─> Broadcasts { type: 'GAME_CREATED', gameId, view }
 
 10. NetworkGameClient.handleServerMessage() (NetworkGameClient.ts:204-220)
@@ -732,7 +748,7 @@ const customCaps = buildCapabilities()
 The **ONLY** place layer + variant composition happens:
 
 ```typescript
-// GameHost.ts:81-98
+// GameKernel.ts:101-123
 // 1. Normalize variant configs
 const variantConfigs: VariantConfig[] = [
   ...(config.variant
@@ -742,7 +758,10 @@ const variantConfigs: VariantConfig[] = [
 ];
 
 // 2. Compose layers based on config
-const enabledLayers = getEnabledLayers(config);
+const enabledLayerNames = config.enabledLayers ?? [];
+const enabledLayers = enabledLayerNames.length > 0
+  ? getLayersByNames(enabledLayerNames)
+  : [];
 this.layers = [baseLayer, ...enabledLayers];
 this.rules = composeRules(this.layers);
 
@@ -757,9 +776,11 @@ this.getValidActionsComposed = applyVariants(
 );
 ```
 
-This composed function is stored and used for ALL `getValidActions()` calls throughout the game.
+This composed function is stored in GameKernel and used for ALL `getValidActions()` calls throughout the game.
 
 **Two-level composition**: Layers provide the rules (13 methods), variants transform the actions produced by those rules.
+
+**Note**: GameServer creates the GameKernel and delegates all pure game logic to it. GameServer itself focuses on orchestration: managing the transport layer, coordinating AI clients via AIManager, and routing protocol messages.
 
 ---
 
@@ -767,7 +788,7 @@ This composed function is stored and used for ALL `getValidActions()` calls thro
 
 ### Overview
 
-The client uses **Svelte stores** for reactive state management. Data flows from GameHost → NetworkGameClient → Svelte stores → UI components.
+The client uses **Svelte stores** for reactive state management. Data flows from GameKernel → GameServer → NetworkGameClient → Svelte stores → UI components.
 
 ### Store Hierarchy
 
@@ -802,7 +823,7 @@ gameClient = new NetworkGameClient(adapter, config);
 let networkClient: NetworkGameClient = gameClient as NetworkGameClient;
 ```
 - **Type**: `NetworkGameClient` instance (not a store)
-- **Purpose**: Client interface to game server
+- **Purpose**: Client interface to GameServer via adapter/transport
 - **Methods**: `getState()`, `executeAction(request)`, `setPlayerControl()`, `subscribe()`
 - **Lifecycle**: Created at module load, destroyed on page unload
 
@@ -923,22 +944,27 @@ export async function setPerspective(sessionId: string): Promise<void> {
 1. User selects perspective from dropdown
 2. `setPerspective('player-2')` called
 3. GameClient subscribes to that player's view
-4. GameHost filters state for that player's capabilities
-5. clientState updates with new filtered view
-6. UI shows player-2's perspective (their hand, their valid actions)
+4. GameKernel filters state for that player's capabilities
+5. GameServer broadcasts the filtered view
+6. clientState updates with new filtered view
+7. UI shows player-2's perspective (their hand, their valid actions)
 
 ### Subscription Chain
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│ Server Side (GameHost)                                   │
+│ Server Side (GameKernel + GameServer)                    │
 │                                                           │
-│ Action executed → state changed → notifyListeners()      │
+│ GameKernel: Action executed → state changed              │
+│            → notifyListeners()                           │
 │   ↓                                                       │
-│ createView(playerId) for each subscriber                │
+│ GameKernel: createView(playerId) for each subscriber    │
 │   ↓                                                       │
-│ getVisibleStateForSession(coreState, session)           │
-│ filterActionsForSession(session, allActions)            │
+│ GameKernel: getVisibleStateForSession(coreState, session)│
+│            filterActionsForSession(session, allActions)  │
+│   ↓                                                       │
+│ GameServer: subscribeToKernel() receives update         │
+│            → broadcasts via Transport                    │
 └──────────────────────────────────────────────────────────┘
                            ↓
               (filtered GameView for each player)
@@ -989,43 +1015,51 @@ export async function setPerspective(sessionId: string): Promise<void> {
    └─> adapter.send({ type: 'EXECUTE_ACTION', gameId, playerId: string, action, timestamp: Date.now() })
    // Note: playerId is string (e.g., "player-0", "ai-1"), not number
 
-4. src/server/offline/InProcessAdapter.ts
-   └─> GameHost.executeAction(playerId, action, timestamp)
+4. Adapter → Transport → GameServer.handleMessage()
+   └─> GameServer routes EXECUTE_ACTION to kernel
 
-5. src/server/game/GameHost.ts:308-334
+5. src/server/GameServer.ts:244-259
+   └─> GameKernel.executeAction(playerId, action, timestamp)
+
+6. src/kernel/GameKernel.ts:322-348
    └─> authorizeAndExecute(mpState, { playerId, action, timestamp }, getValidActionsComposed, rules) // composed variants
 
-6. src/game/multiplayer/authorization.ts:110-151
+7. src/game/multiplayer/authorization.ts:110-151
    ├─> Find player session by playerId
    ├─> Verify action exists in composed `getValidActions(coreState)` (variants applied)
    ├─> Filter actions through capability pipeline (`filterActionsForSession`)
    └─> Execute: `executeAction(coreState, action, rules)` and update `lastActionAt`
 
-7. src/game/core/actions.ts:16
+8. src/game/core/actions.ts:16
    └─> Pure state transition, returns new state
 
-8. GameHost.notifyListeners() (GameHost.ts:713-749)
+9. GameKernel.notifyListeners() (GameKernel.ts:727-763)
    ├─> Creates filtered view for each listener
    │   └─> getVisibleStateForSession(coreState, session)
-   └─> Calls listener(view) for all subscribers
+   └─> Calls listener(update) for all subscribers
 
-9. NetworkGameClient.handleServerMessage() (NetworkGameClient.ts:276-304)
+10. GameServer.subscribeToKernel() (GameServer.ts:199-219)
+    ├─> Receives KernelUpdate for each perspective
+    ├─> Builds client-specific update
+    └─> Broadcasts via Transport to each client
+
+11. NetworkGameClient.handleServerMessage() (NetworkGameClient.ts:276-304)
    ├─> Updates cachedView
    └─> Calls notifyListeners()
 
-10. gameStore subscription fires (gameStore.ts:134-137)
+12. gameStore subscription fires (gameStore.ts:134-137)
     └─> clientState.set(state)
 
-11. Derived stores recompute
+13. Derived stores recompute
     └─> viewProjection, gameState update
 
-12. UI Re-renders (Svelte reactivity)
+14. UI Re-renders (Svelte reactivity)
 ```
 
 ### Valid Actions Flow
 
 ```
-GameHost.createView() called for specific playerId
+GameKernel.createView() called for specific playerId
   ↓
 1. Get all valid actions from composed state machine:
    this.getValidActionsComposed(coreState)
@@ -1047,6 +1081,8 @@ GameHost.createView() called for specific playerId
    - state: getVisibleStateForSession(coreState, session)
    - validActions: filtered list (server-side authority)
    - players: session info
+  ↓
+GameServer broadcasts GameView via Transport
   ↓
 Client receives GameView
   ↓
@@ -1134,11 +1170,11 @@ This keeps game logic centralized on the server. Changes to authorization rules 
 
 ### Factory Function Pattern
 
-Game instances are created via a simple factory function: `createGameAuthority(gameId, config)`. This function returns a new `GameAuthority` instance with no registry or instance tracking.
+Game instances are created by instantiating GameServer directly: `new GameServer(gameId, config, adapter, sessions)`. The GameServer constructor creates the GameKernel internally with no registry or instance tracking.
 
-The caller (typically an adapter like `RoomAdapter`) owns the returned instance and manages its lifecycle. There is no global registry maintaining references to active games.
+The caller (typically an adapter or transport) owns the returned instance and manages its lifecycle. There is no global registry maintaining references to active games.
 
-This pattern stays direct and testable. Creating a game is just a function call. Testing requires no setup of registry state. The factory returns a clean instance each time.
+This pattern stays direct and testable. Creating a game is just a constructor call. Testing requires no setup of registry state. Each instantiation creates clean GameServer and GameKernel instances.
 
 ### Promise-Based Initialization
 
@@ -1186,7 +1222,7 @@ const config: GameConfig = {
 };
 
 // getEnabledLayers(config) will return the appropriate layers
-// They compose in GameHost constructor
+// They compose in GameKernel constructor (created by GameServer)
 ```
 
 ### Add a New Layer
@@ -1246,7 +1282,7 @@ const client = new NetworkGameClient(adapter, config);
 ### Check Layer + Variant Composition
 
 ```typescript
-// In GameHost constructor
+// In GameKernel constructor
 console.log('Layers:', this.layers.map(l => l.name));
 console.log('Variants:', variantConfigs);
 
@@ -1289,9 +1325,9 @@ console.log('State at action 50:', stateAtAction50);
 
 ### Layer Not Applying
 
-1. Check `getEnabledLayers()` includes your layer based on config flag
-2. Verify config flag is set (e.g., `enableNello: true`)
-3. Add logging in GameHost constructor: `console.log('Layers:', this.layers.map(l => l.name))`
+1. Check `getLayersByNames()` includes your layer based on config flag
+2. Verify config flag is set and layer name in `enabledLayers` array
+3. Add logging in GameKernel constructor: `console.log('Layers:', this.layers.map(l => l.name))`
 4. Check layer rules are returning correct values (not `undefined`)
 5. Verify `prev` parameter is being used to delegate to other layers
 
@@ -1306,7 +1342,7 @@ console.log('State at action 50:', stateAtAction50);
 
 1. Check registration in `registry.ts`
 2. Check variant config in GameConfig
-3. Add logging in GameHost constructor
+3. Add logging in GameKernel constructor
 4. Verify variant function returns modified actions
 5. Remember: variants work on top of layers (layers first, then variants)
 
@@ -1315,7 +1351,7 @@ console.log('State at action 50:', stateAtAction50);
 1. Check `getValidActionsComposed(coreState)` includes action
 2. Check session has `act-as-player` capability for action.player
 3. Add logging in `canPlayerExecuteAction()`
-4. Verify GameHost is using composed function
+4. Verify GameKernel is using composed function
 
 ### State Filtering Issues
 
@@ -1326,7 +1362,7 @@ console.log('State at action 50:', stateAtAction50);
 
 ### Client Not Getting Actions
 
-1. Verify `GameHost` is broadcasting the `actions` map alongside each `STATE_UPDATE`
+1. Verify `GameKernel` is creating the `actions` map and `GameServer` is broadcasting it alongside each `STATE_UPDATE`
 2. Check `NetworkGameClient.getActions(playerId)` returns the cached list (state must be hydrated first)
 3. Ensure `actionsByPlayer` / `allowedActionsStore` wiring in `gameStore.ts` is updating
 4. Confirm the subscription from `NetworkGameClient.subscribe()` is still active
@@ -1353,14 +1389,15 @@ console.log('State at action 50:', stateAtAction50);
 2. Read `src/game/layers/base.ts` - Standard Texas 42
 3. Read `src/game/layers/nello.ts` - How layers override rules
 4. Read `src/game/layers/compose.ts` - How reduce pattern works
-5. Trace how layers thread through GameHost → getValidActions → executeAction
+5. Trace how layers thread through GameKernel → getValidActions → executeAction
 
 ---
 
 ## Quick Reference
 
-**Factory Function**: `src/server/game/createGameAuthority.ts`
-**Layer+Variant Composition**: `src/server/game/GameHost.ts:81-98`
+**Game Orchestrator**: `src/server/GameServer.ts` (manages kernel, AI, transport)
+**Pure Game Logic**: `src/kernel/GameKernel.ts` (state management, composition)
+**Layer+Variant Composition**: `src/kernel/GameKernel.ts:101-123`
 **Layer Composition**: `src/game/layers/compose.ts:composeRules()`
 **GameRules Interface**: `src/game/layers/types.ts` (13 methods)
 **Base Layer**: `src/game/layers/base.ts` (standard Texas 42)
@@ -1371,7 +1408,8 @@ console.log('State at action 50:', stateAtAction50);
 **Get Valid Actions (Pure)**: `src/game/multiplayer/authorization.ts:getValidActionsForPlayer()`
 **Client Init**: `src/stores/gameStore.ts:78-137` (NetworkGameClient setup + async hydration)
 **Client Actions**: `src/game/multiplayer/NetworkGameClient.ts:60-190` (async API, per-seat caches)
-**Host Subscriptions**: `src/server/game/GameHost.ts:207-262` (HostViewUpdate payloads)
+**Kernel Subscriptions**: `src/kernel/GameKernel.ts:474-494` (KernelUpdate payloads)
+**Server Broadcasting**: `src/server/GameServer.ts:199-219` (subscribes to kernel, broadcasts to clients)
 **Action Cache Store**: `src/stores/gameStore.ts:120-137` (per-session ValidAction map)
 **Variant Template**: `src/game/variants/tournament.ts` (simple) or `oneHand.ts` (complex)
 **Replay Function**: `src/game/core/replay.ts:16`
@@ -1381,12 +1419,13 @@ console.log('State at action 50:', stateAtAction50);
 **Client State**: `src/stores/gameStore.ts:120-137` (writable + subscription)
 **Derived Stores**: `src/stores/gameStore.ts:141, 143-165, 200-243`
 
-**Pattern**: Layers → Variants → Execute → Filter → Trust → React
+**Pattern**: Layers → Variants → Execute → Filter → Broadcast → Trust → React
 **Two-Level Composition**: Layers define rules (13 methods) → Variants transform actions
 
 **Key Architectural Invariants**:
-- Authority stores pure `GameState`, filters on-demand
+- GameKernel stores pure `GameState`, filters on-demand
+- GameServer orchestrates kernel + AI + transport (no game logic)
 - Client trusts server's `validActions`, never filters
 - Capabilities determine visibility and authorization
 - No polling - clean promise-based async
-- Factory pattern, not registry pattern
+- Direct instantiation pattern, not registry pattern

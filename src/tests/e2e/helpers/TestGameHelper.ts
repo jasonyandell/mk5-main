@@ -22,14 +22,14 @@
 
 import type { Page } from '@playwright/test';
 import type { GameView } from '../../../shared/multiplayer/protocol';
+import type { IGameAdapter } from '../../../shared/multiplayer/protocol';
 import { MockAdapter } from '../../adapters/MockAdapter';
 import { SpyAdapter } from '../../adapters/SpyAdapter';
-import { InProcessAdapter } from '../../../server/offline/InProcessAdapter';
 
 export class TestGameHelper {
   private constructor(
     private page: Page,
-    private adapter: MockAdapter | SpyAdapter | InProcessAdapter
+    private adapter: IGameAdapter
   ) {}
 
   /**
@@ -58,13 +58,19 @@ export class TestGameHelper {
    * Create helper with spy adapter (for protocol verification tests).
    *
    * @param page - Playwright page
-   * @param wrappedAdapter - Adapter to wrap (usually InProcessAdapter)
+   * @param wrappedAdapter - Adapter to wrap (usually a real adapter)
    */
   static async createWithSpy(
     page: Page,
-    wrappedAdapter?: InProcessAdapter
+    wrappedAdapter?: IGameAdapter
   ): Promise<TestGameHelper> {
-    const adapter = new SpyAdapter(wrappedAdapter || new InProcessAdapter());
+    // This method is used internally by tests - provide a wrapped real adapter if not provided
+    if (!wrappedAdapter) {
+      throw new Error(
+        'createWithSpy() requires a wrappedAdapter. Use createWithRealGame() instead for a simple real game test.'
+      );
+    }
+    const adapter = new SpyAdapter(wrappedAdapter);
     const helper = new TestGameHelper(page, adapter);
     await helper.initialize();
     return helper;
@@ -74,10 +80,10 @@ export class TestGameHelper {
    * Create helper with real game (for integration tests).
    *
    * @param page - Playwright page
+   * @param realAdapter - A real adapter implementation that runs actual game logic
    */
-  static async createWithRealGame(page: Page): Promise<TestGameHelper> {
-    const adapter = new InProcessAdapter();
-    const helper = new TestGameHelper(page, adapter);
+  static async createWithRealGame(page: Page, realAdapter: IGameAdapter): Promise<TestGameHelper> {
+    const helper = new TestGameHelper(page, realAdapter);
     await helper.initialize();
     return helper;
   }
@@ -374,7 +380,7 @@ export class TestGameHelper {
   /**
    * Get adapter for advanced operations.
    */
-  getAdapter(): MockAdapter | SpyAdapter | InProcessAdapter {
+  getAdapter(): IGameAdapter {
     return this.adapter;
   }
 

@@ -2,7 +2,6 @@ import { writable, derived, get, type Readable } from 'svelte/store';
 import type { GameAction, StateTransition, FilteredGameState, GameState } from '../game/types';
 import { getNextStates } from '../game';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
-import { InProcessAdapter } from '../server/offline/InProcessAdapter';
 import type { GameClient } from '../game/multiplayer/GameClient';
 import type { MultiplayerGameState } from '../game/multiplayer/types';
 import { hasCapabilityType } from '../game/multiplayer/types';
@@ -74,18 +73,96 @@ function createPendingState(): MultiplayerGameState {
 }
 
 // Create the GameClient with new architecture
-let gameClient: GameClient;
-const adapter = new InProcessAdapter();
-const config: GameConfig = {
-  playerTypes,
-  shuffleSeed: Math.floor(Math.random() * 1000000)
-};
+let gameClient: GameClient | undefined;
+let networkClient: NetworkGameClient | undefined;
 
-gameClient = new NetworkGameClient(adapter, config);
-let networkClient: NetworkGameClient = gameClient as NetworkGameClient;
+// Default session ID constant
+const DEFAULT_SESSION_ID = 'player-0';
+
+// Writable stores for state and per-player actions
+export const clientState = writable<MultiplayerGameState>(createPendingState());
+const actionsByPlayer = writable<Record<string, ValidAction[]>>({});
+let unsubscribeFromClient: (() => void) | undefined;
+
+// Initialize function that creates GameServer + Transport + Client
+async function initializeGameClient(): Promise<void> {
+  const { GameServer } = await import('../server/GameServer');
+  const { InProcessTransport } = await import('../server/transports/InProcessTransport');
+
+  const config: GameConfig = {
+    playerTypes,
+    shuffleSeed: Math.floor(Math.random() * 1000000)
+  };
+
+  // Create game ID
+  const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+  // Create player sessions from config
+  const sessions = playerTypes.map((type, index) => {
+    const idx = index as 0 | 1 | 2 | 3;
+    const capabilities = type === 'human'
+      ? humanCapabilities(idx)
+      : aiCapabilities(idx);
+
+    return {
+      playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+      playerIndex: idx,
+      controlType: type,
+      isConnected: true,
+      name: `Player ${index + 1}`,
+      capabilities: capabilities.map((cap: any) => ({ ...cap }))
+    };
+  });
+
+  // Create dummy adapter (GameServer still requires one, but it's only used for AI)
+  const dummyAdapter = {
+    send: async () => {},
+    subscribe: () => () => {},
+    destroy: () => {},
+    isConnected: () => true,
+    getMetadata: () => ({ type: 'in-process' as const })
+  };
+
+  // 1. Create GameServer
+  const gameServer = new GameServer(gameId, config, dummyAdapter, sessions);
+
+  // 2. Create Transport
+  const transport = new InProcessTransport();
+
+  // 3. Wire them together
+  gameServer.setTransport(transport);
+  transport.setGameServer(gameServer);
+
+  // 4. Create adapter from transport that implements IGameAdapter
+  const adapter = transport.createAdapter('player-0');
+  gameClient = new NetworkGameClient(adapter, config);
+  networkClient = gameClient as NetworkGameClient;
+
+  // Now set up state listeners
+  try {
+    const state = await gameClient.getState();
+    clientState.set(state);
+    actionsByPlayer.set(networkClient!.getCachedActionsMap());
+
+    // Subscribe to GameClient updates
+    unsubscribeFromClient = gameClient.subscribe(state => {
+      clientState.set(state);
+      actionsByPlayer.set(networkClient!.getCachedActionsMap());
+    });
+
+    await setPerspective(DEFAULT_SESSION_ID);
+  } catch (error) {
+    console.error('Failed to initialize game client:', error);
+  }
+}
+
+// Initialize immediately
+void initializeGameClient();
 
 async function installNewClient(newClient: NetworkGameClient): Promise<void> {
-  networkClient.destroy();
+  if (networkClient) {
+    networkClient.destroy();
+  }
   unsubscribeFromClient?.();
 
   gameClient = newClient;
@@ -97,46 +174,31 @@ async function installNewClient(newClient: NetworkGameClient): Promise<void> {
   try {
     const state = await newClient.getState();
     clientState.set(state);
-    actionsByPlayer.set(networkClient.getCachedActionsMap());
+    actionsByPlayer.set(networkClient!.getCachedActionsMap());
   } catch (error) {
     console.error('Failed to initialize game state:', error);
   }
 
   unsubscribeFromClient = newClient.subscribe(state => {
     clientState.set(state);
-    actionsByPlayer.set(networkClient.getCachedActionsMap());
+    actionsByPlayer.set(networkClient!.getCachedActionsMap());
   });
 
   await setPerspective(DEFAULT_SESSION_ID);
 }
 
-// Export as const to prevent reassignment
+// Export getter that ensures client is initialized
+export function getGameClient(): GameClient {
+  if (!gameClient) {
+    throw new Error('Game client not yet initialized');
+  }
+  return gameClient;
+}
+
+// gameClient is exported as a getter function, use getGameClient() instead
+// For backward compatibility, we also export the variable (will be undefined until initialized)
 export { gameClient };
 
-// Default session ID constant
-const DEFAULT_SESSION_ID = 'player-0';
-
-// Writable stores for state and per-player actions
-export const clientState = writable<MultiplayerGameState>(createPendingState());
-const actionsByPlayer = writable<Record<string, ValidAction[]>>({});
-let unsubscribeFromClient: (() => void) | undefined;
-
-gameClient.getState()
-  .then(state => {
-    clientState.set(state);
-    actionsByPlayer.set(networkClient.getCachedActionsMap());
-  })
-  .catch(error => {
-    console.error('Failed to obtain initial game state:', error);
-  });
-
-// Subscribe to GameClient updates
-unsubscribeFromClient = gameClient.subscribe(state => {
-  clientState.set(state);
-  actionsByPlayer.set(networkClient.getCachedActionsMap());
-});
-
-void setPerspective(DEFAULT_SESSION_ID);
 // Derived store for player sessions
 export const playerSessions = derived(clientState, $clientState => Array.from($clientState.players));
 
@@ -176,6 +238,10 @@ export async function setPerspective(sessionId: string): Promise<void> {
   const current = get(currentSessionIdStore);
   if (current !== sessionId) {
     currentSessionIdStore.set(sessionId);
+  }
+
+  if (!networkClient) {
+    throw new Error('Game client not yet initialized');
   }
 
   await networkClient.setPlayerId(sessionId);
@@ -245,6 +311,7 @@ export const viewProjection = derived<
 // Store for tracking current game variant
 export const gameVariant = derived(clientState, () => {
   // Extract variant from game view metadata if available
+  if (!networkClient) return undefined;
   const view = networkClient.getCachedView();
   return view?.metadata?.variant;
 });
@@ -289,7 +356,7 @@ export const gameActions = {
       throw new Error('Action not available for this perspective');
     }
 
-    const result = await gameClient.executeAction({
+    const result = await getGameClient().executeAction({
       playerId: session.playerId,
       action: transition.action,
       timestamp: Date.now()
@@ -315,7 +382,7 @@ export const gameActions = {
       preparedAction.player = session.playerIndex;
     }
 
-    const result = await gameClient.executeAction({
+    const result = await getGameClient().executeAction({
       playerId: session.playerId,
       action: preparedAction,
       timestamp: Date.now()
@@ -330,13 +397,56 @@ export const gameActions = {
    * Reset the game (create new client with fresh state)
    */
   resetGame: async () => {
-    const newAdapter = new InProcessAdapter();
+    const { GameServer } = await import('../server/GameServer');
+    const { InProcessTransport } = await import('../server/transports/InProcessTransport');
+
     const newConfig: GameConfig = {
       playerTypes,
       shuffleSeed: Math.floor(Math.random() * 1000000)
     };
 
-    const newClient = new NetworkGameClient(newAdapter, newConfig);
+    // Create game ID
+    const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    // Create player sessions from config
+    const sessions = playerTypes.map((type, index) => {
+      const idx = index as 0 | 1 | 2 | 3;
+      const capabilities = type === 'human'
+        ? humanCapabilities(idx)
+        : aiCapabilities(idx);
+
+      return {
+        playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+        playerIndex: idx,
+        controlType: type,
+        isConnected: true,
+        name: `Player ${index + 1}`,
+        capabilities: capabilities.map((cap: any) => ({ ...cap }))
+      };
+    });
+
+    // Create dummy adapter
+    const dummyAdapter = {
+      send: async () => {},
+      subscribe: () => () => {},
+      destroy: () => {},
+      isConnected: () => true,
+      getMetadata: () => ({ type: 'in-process' as const })
+    };
+
+    // 1. Create GameServer
+    const gameServer = new GameServer(gameId, newConfig, dummyAdapter, sessions);
+
+    // 2. Create Transport
+    const transport = new InProcessTransport();
+
+    // 3. Wire them together
+    gameServer.setTransport(transport);
+    transport.setGameServer(gameServer);
+
+    // 4. Create adapter from transport that implements IGameAdapter
+    const adapter = transport.createAdapter('player-0');
+    const newClient = new NetworkGameClient(adapter, newConfig);
     await installNewClient(newClient);
   },
 
@@ -344,16 +454,16 @@ export const gameActions = {
    * Switch player control type
    */
   setPlayerControl: async (playerId: number, type: 'human' | 'ai'): Promise<void> => {
-    await gameClient.setPlayerControl(playerId, type);
+    await getGameClient().setPlayerControl(playerId, type);
   },
 
   /**
    * Enable AI for all non-human players
    */
   enableAI: async () => {
-    await gameClient.setPlayerControl(1, 'ai');
-    await gameClient.setPlayerControl(2, 'ai');
-    await gameClient.setPlayerControl(3, 'ai');
+    await getGameClient().setPlayerControl(1, 'ai');
+    await getGameClient().setPlayerControl(2, 'ai');
+    await getGameClient().setPlayerControl(3, 'ai');
   }
 };
 
@@ -365,7 +475,9 @@ export const gameVariants = {
    * Start a one-hand challenge game
    */
   startOneHand: async (seed?: number) => {
-    const newAdapter = new InProcessAdapter();
+    const { GameServer } = await import('../server/GameServer');
+    const { InProcessTransport } = await import('../server/transports/InProcessTransport');
+
     const newConfig: GameConfig = {
       playerTypes,
       ...(seed ? { shuffleSeed: seed } : {}),  // Only add if seed is defined
@@ -382,7 +494,48 @@ export const gameVariants = {
       }
     };
 
-    const newClient = new NetworkGameClient(newAdapter, newConfig);
+    // Create game ID
+    const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+    // Create player sessions from config
+    const sessions = playerTypes.map((type, index) => {
+      const idx = index as 0 | 1 | 2 | 3;
+      const capabilities = type === 'human'
+        ? humanCapabilities(idx)
+        : aiCapabilities(idx);
+
+      return {
+        playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+        playerIndex: idx,
+        controlType: type,
+        isConnected: true,
+        name: `Player ${index + 1}`,
+        capabilities: capabilities.map((cap: any) => ({ ...cap }))
+      };
+    });
+
+    // Create dummy adapter
+    const dummyAdapter = {
+      send: async () => {},
+      subscribe: () => () => {},
+      destroy: () => {},
+      isConnected: () => true,
+      getMetadata: () => ({ type: 'in-process' as const })
+    };
+
+    // 1. Create GameServer
+    const gameServer = new GameServer(gameId, newConfig, dummyAdapter, sessions);
+
+    // 2. Create Transport
+    const transport = new InProcessTransport();
+
+    // 3. Wire them together
+    gameServer.setTransport(transport);
+    transport.setGameServer(gameServer);
+
+    // 4. Create adapter from transport that implements IGameAdapter
+    const adapter = transport.createAdapter('player-0');
+    const newClient = new NetworkGameClient(adapter, newConfig);
     await installNewClient(newClient);
   },
 
@@ -414,6 +567,8 @@ export const findingSeed = writable(false);
 // Clean up on page unload
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    gameClient.destroy();
+    if (gameClient) {
+      gameClient.destroy();
+    }
   });
 }
