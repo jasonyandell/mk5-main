@@ -21,9 +21,8 @@
 
   let partitions: Partition[] = $state(partitionsData.partitions as Partition[]);
   let currentPage = $state(0);
-  let itemsPerPage = $state(5);
   let scrollContainer = $state<HTMLDivElement>();
-  let loadedPages = $state(5); // Start with 5 pages for better initial performance
+  let loadedPages = $state(15); // Start with 15 pages (5 sets × 3 hands) for better initial performance
 
   function isTrump(domino: DominoType, trumpStr: string): boolean {
     if (trumpStr === 'no-trump') return false;
@@ -72,6 +71,20 @@
     };
   }
 
+  // Interface for flattened hand pages
+  interface HandPage {
+    hand: {
+      dominoes: string[];
+      trump: string;
+      type: string;
+    };
+    handIndex: number; // 0, 1, or 2
+    setIndex: number; // Which partition set
+    isLastHandInSet: boolean;
+    leftover?: ProcessedPartition['leftover'];
+    processed?: ProcessedPartition['processed'];
+  }
+
   function processPartitions(): ProcessedPartition[] {
     return partitions.map(partition => {
       const processed: ProcessedPartition = { ...partition };
@@ -88,12 +101,25 @@
   }
 
   let processedPartitions = $state<ProcessedPartition[]>([]);
+  let flattenedHands = $state<HandPage[]>([]);
 
   onMount(() => {
     // Always use business theme for this page
     document.documentElement.setAttribute('data-theme', 'business');
     // Pre-process all partitions once
     processedPartitions = processPartitions();
+
+    // Flatten into individual hand pages
+    flattenedHands = processedPartitions.flatMap((partition, setIndex) =>
+      partition.hands.map((hand, handIndex) => ({
+        hand,
+        handIndex,
+        setIndex,
+        isLastHandInSet: handIndex === partition.hands.length - 1,
+        leftover: partition.leftover,
+        processed: partition.processed
+      }))
+    );
   });
 
   // Set up scroll listener when container becomes available
@@ -105,26 +131,12 @@
     return undefined;
   });
 
-  const totalPages = $derived(Math.ceil(partitions.length / itemsPerPage));
-
-  // Get partitions for a specific page
-  function getPagePartitions(pageIndex: number): ProcessedPartition[] {
-    const start = pageIndex * itemsPerPage;
-    return processedPartitions.slice(start, start + itemsPerPage);
-  }
+  const totalPages = $derived(flattenedHands.length);
 
   // Render all loaded pages (lazy loading approach)
   const visiblePages = $derived(() => {
-    const pages = [];
     const pagesToShow = Math.min(loadedPages, totalPages);
-
-    for (let i = 0; i < pagesToShow; i++) {
-      pages.push({
-        index: i,
-        partitions: getPagePartitions(i)
-      });
-    }
-    return pages;
+    return flattenedHands.slice(0, pagesToShow);
   });
 
   let scrollTimeout: ReturnType<typeof setTimeout>;
@@ -145,9 +157,9 @@
       }
 
       // Load more pages when approaching the end
-      if (scrollIndex >= loadedPages - 2 && loadedPages < totalPages) {
-        // Load 5 more pages at a time for smoother performance
-        loadedPages = Math.min(loadedPages + 5, totalPages);
+      if (scrollIndex >= loadedPages - 5 && loadedPages < totalPages) {
+        // Load 10 more pages at a time for smoother performance (10 hands)
+        loadedPages = Math.min(loadedPages + 10, totalPages);
       }
     }, 50); // Reduced debounce for snappier response
   }
@@ -176,50 +188,51 @@
         class="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
         style="-webkit-overflow-scrolling: touch;"
       >
-        {#each visiblePages() as page}
-          <div class="min-w-full snap-start px-2 py-2">
-            {#each page.partitions as partition, partitionIndex}
-              <div class="mb-2 p-1 bg-base-200">
-                <h2 class="text-xs font-bold mb-1">Set {page.index * itemsPerPage + partitionIndex + 1}</h2>
-                <div class="grid grid-cols-1 gap-1">
-                  {#each partition.hands as hand, handIndex}
-                    <PerfectHandDisplay {hand} index={handIndex} />
-                  {/each}
-                </div>
+        {#each visiblePages() as handPage, pageIndex}
+          <div class="min-w-full snap-start px-2 py-2 flex flex-col items-center justify-center min-h-[80vh]">
+            <div class="w-full max-w-md">
+              <h2 class="text-sm font-bold mb-2 text-center">
+                Set {handPage.setIndex + 1} - Hand {handPage.handIndex + 1}
+              </h2>
 
-                {#if partition.leftover && partition.processed}
-                  <div class="mt-1 p-1 bg-base-300">
-              <div class="flex items-center gap-1 mb-1">
-                <span class="text-xs font-semibold">Leftover</span>
-                {#if partition.leftover.bestTrump}
-                  <span class="badge badge-xs badge-info">
-                    {partition.leftover.bestTrump === 'no-trump' ? 'No Trump' :
-                     partition.leftover.bestTrump.charAt(0).toUpperCase() + partition.leftover.bestTrump.slice(1)}
-                  </span>
-                {/if}
-              </div>
-              <div class="flex flex-wrap gap-0.5">
-                {#each partition.processed.sortedLeftovers as dominoStr}
-                  <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
-                {/each}
-              </div>
+              <PerfectHandDisplay hand={handPage.hand} index={handPage.handIndex} />
 
-              {#if partition.processed.externalBeaters.length > 0}
-                <div class="mt-1">
-                  <div class="text-xs font-semibold mb-0.5">
-                    Vulnerable to ({partition.processed.externalBeaters.length})
+              {#if handPage.isLastHandInSet && handPage.leftover && handPage.processed}
+                <div class="mt-3 p-2 bg-base-300 rounded-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                    <span class="text-sm font-semibold">Leftover Dominoes</span>
+                    {#if handPage.leftover.bestTrump}
+                      <span class="badge badge-sm badge-info">
+                        {handPage.leftover.bestTrump === 'no-trump' ? 'No Trump' :
+                         handPage.leftover.bestTrump.charAt(0).toUpperCase() + handPage.leftover.bestTrump.slice(1)}
+                      </span>
+                    {/if}
                   </div>
-                  <div class="flex flex-wrap gap-0.5">
-                    {#each partition.processed.sortedBeaters as dominoStr}
+                  <div class="flex flex-wrap gap-1 justify-center">
+                    {#each handPage.processed.sortedLeftovers as dominoStr}
                       <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
                     {/each}
                   </div>
+
+                  {#if handPage.processed.externalBeaters.length > 0}
+                    <div class="mt-2">
+                      <div class="text-sm font-semibold mb-1">
+                        Vulnerable to ({handPage.processed.externalBeaters.length} dominoes)
+                      </div>
+                      <div class="flex flex-wrap gap-1 justify-center">
+                        {#each handPage.processed.sortedBeaters as dominoStr}
+                          <Domino domino={parseDomino(dominoStr)} micro={true} showPoints={false} />
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
                 </div>
               {/if}
-                  </div>
-                {/if}
+
+              <div class="text-center mt-4 text-sm text-base-content/60">
+                Page {pageIndex + 1} of {totalPages}
               </div>
-            {/each}
+            </div>
           </div>
         {/each}
       </div>
