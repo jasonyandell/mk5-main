@@ -311,18 +311,25 @@ export function executeAction(
 ```typescript
 constructor(gameId, config, sessions) {
   // Compose layers based on config
-  this.layers = [baseLayer, ...getEnabledLayers(config)];
-  this.rules = composeRules(this.layers);
+  const layers = [baseLayer, ...getEnabledLayers(config)];
+  const rules = composeRules(layers);
 
   // Thread layers through base state machine
   const baseWithLayers = (state) =>
-    getValidActions(state, this.layers, this.rules);
+    getValidActions(state, layers, rules);
 
   // Apply variants on top of layered actions
-  this.getValidActionsComposed = applyVariants(
+  const getValidActionsComposed = applyVariants(
     baseWithLayers,
     variantConfigs
   );
+
+  // Create execution context (immutable after this point)
+  this.ctx = Object.freeze({
+    layers: Object.freeze(layers),
+    rules,
+    getValidActions: getValidActionsComposed
+  });
 }
 ```
 
@@ -748,7 +755,7 @@ const customCaps = buildCapabilities()
 The **ONLY** place layer + variant composition happens:
 
 ```typescript
-// GameKernel.ts:101-123
+// GameKernel.ts:113-132
 // 1. Normalize variant configs
 const variantConfigs: VariantConfig[] = [
   ...(config.variant
@@ -762,23 +769,32 @@ const enabledLayerNames = config.enabledLayers ?? [];
 const enabledLayers = enabledLayerNames.length > 0
   ? getLayersByNames(enabledLayerNames)
   : [];
-this.layers = [baseLayer, ...enabledLayers];
-this.rules = composeRules(this.layers);
+const layers = [baseLayer, ...enabledLayers];
+const rules = composeRules(layers);
 
 // 3. Thread layers through base state machine
 const baseWithLayers = (state: GameState) =>
-  getValidActions(state, this.layers, this.rules);
+  getValidActions(state, layers, rules);
 
 // 4. Apply variants on top of layered actions
-this.getValidActionsComposed = applyVariants(
+const getValidActionsComposed = applyVariants(
   baseWithLayers,  // Layers already threaded
   variantConfigs   // Array of variant descriptors
 );
+
+// 5. Create ExecutionContext (groups layers + rules + state machine)
+this.ctx = Object.freeze({
+  layers: Object.freeze(layers),
+  rules,
+  getValidActions: getValidActionsComposed
+});
 ```
 
-This composed function is stored in GameKernel and used for ALL `getValidActions()` calls throughout the game.
+This ExecutionContext is stored in GameKernel and used for ALL action-related operations throughout the game.
 
 **Two-level composition**: Layers provide the rules (13 methods), variants transform the actions produced by those rules.
+
+**ExecutionContext**: Unifies the three always-traveling-together parameters (layers, rules, getValidActions) into a single immutable object, reducing parameter passing throughout the codebase.
 
 **Note**: GameServer creates the GameKernel and delegates all pure game logic to it. GameServer itself focuses on orchestration: managing the transport layer, coordinating AI clients via AIManager, and routing protocol messages.
 

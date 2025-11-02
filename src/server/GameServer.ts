@@ -63,9 +63,6 @@ export class GameServer {
     // Create GameKernel with pure game logic
     this.kernel = new GameKernel(gameId, config, playerSessions);
 
-    // Subscribe to kernel updates
-    this.subscribeToKernel();
-
     // Create AIManager with adapter
     this.aiManager = new AIManager(adapter, 'beginner');
 
@@ -180,39 +177,10 @@ export class GameServer {
       this.aiManager = null;
     }
 
-    if (this.kernel) {
-      this.kernel.destroy();
-      this.kernel = null;
-    }
-
+    this.kernel = null;
     this.subscriptions.clear();
     this.subscribers.clear();
     this.transport = null;
-  }
-
-  /**
-   * Private: Subscribe to kernel updates
-   */
-  private subscribeToKernel(): void {
-    if (!this.kernel) return;
-
-    this.kernel.subscribe(undefined, (update: KernelUpdate) => {
-      // Broadcast to all subscribers
-      for (const [clientId, subscriber] of this.subscribers) {
-        const sub = this.subscriptions.get(clientId);
-        if (sub) {
-          // Build update for this client's perspective
-          const view = this.kernel!.getView(sub.perspective);
-          const clientUpdate: KernelUpdate = {
-            view,
-            state: update.state,
-            actions: update.actions,
-            ...(sub.perspective ? { perspective: sub.perspective } : {})
-          };
-          subscriber(clientUpdate);
-        }
-      }
-    });
   }
 
   /**
@@ -252,7 +220,11 @@ export class GameServer {
     const result = this.kernel.executeAction(playerId, action, timestamp ?? Date.now());
     if (!result.success) {
       this.sendError(clientId, result.error || 'Action execution failed', 'EXECUTE_ACTION');
+      return;
     }
+
+    // Broadcast state update to all subscribers
+    this.broadcastToAllClients();
   }
 
   /**
@@ -270,15 +242,20 @@ export class GameServer {
     }
 
     try {
-      this.kernel.setPlayerControl(playerIndex, controlType);
+      // Convert playerIndex to playerId for kernel API
+      const playerId = playerIndex < 2 ? `human-${playerIndex}` : `ai-${playerIndex}`;
+      this.kernel.setPlayerControl(playerId, controlType);
 
       // Manage AI lifecycle
       if (controlType === 'ai') {
-        const playerId = `ai-${playerIndex}`;
-        this.aiManager.spawnAI(playerIndex, this.gameId, playerId);
+        const aiPlayerId = `ai-${playerIndex}`;
+        this.aiManager.spawnAI(playerIndex, this.gameId, aiPlayerId);
       } else {
         this.aiManager.destroyAI(playerIndex);
       }
+
+      // Broadcast state update to all subscribers
+      this.broadcastToAllClients();
     } catch (error) {
       this.sendError(clientId, `Failed to set player control: ${error instanceof Error ? error.message : 'Unknown error'}`, 'SET_PLAYER_CONTROL');
     }
@@ -322,6 +299,9 @@ export class GameServer {
       controlType: session.controlType,
       capabilities: session.capabilities
     });
+
+    // Broadcast state update to all subscribers
+    this.broadcastToAllClients();
   }
 
   /**
@@ -365,6 +345,9 @@ export class GameServer {
       sessionId: playerId,
       status: 'left'
     });
+
+    // Broadcast state update to all subscribers
+    this.broadcastToAllClients();
   }
 
   /**
@@ -437,6 +420,36 @@ export class GameServer {
     if (sub && sub.playerId === playerId) {
       this.subscriptions.delete(clientId);
       this.subscribers.delete(clientId);
+    }
+  }
+
+  /**
+   * Private: Broadcast current state to all subscribed clients
+   */
+  private broadcastToAllClients(): void {
+    if (!this.kernel) return;
+
+    for (const [clientId, subscriber] of this.subscribers) {
+      const sub = this.subscriptions.get(clientId);
+      if (sub) {
+        const view = this.kernel.getView(sub.perspective);
+        const state = this.kernel.getState();
+        const actions = this.kernel.getActionsMap();
+
+        const msg: ServerMessage = {
+          type: 'STATE_UPDATE',
+          gameId: this.gameId,
+          view,
+          state,
+          actions
+        };
+
+        if (sub.perspective) {
+          (msg as any).perspective = sub.perspective;
+        }
+
+        subscriber(msg);
+      }
     }
   }
 

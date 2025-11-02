@@ -1,8 +1,29 @@
 # Texas 42 - Architecture Orientation
 
-**New to the codebase?** This document provides the mental models needed to navigate the architecture. For deep dives, see `remixed-855ccfd5.md` (multiplayer spec), `pure-layers-threaded-rules.md` (layer system), and `GAME_ONBOARDING.md` (detailed guide).
+**New to the codebase?** This document provides the mental models needed to navigate the architecture.
+
+## Related Documentation
+- **Concepts**: [CONCEPTS.md](CONCEPTS.md) - Complete reference of all architectural concepts
+- **Synthesis**: [ARCHITECTURE_SYNTHESIS.md](ARCHITECTURE_SYNTHESIS.md) - Distilled overview of core components
+- **Deep Dives**:
+  - [remixed-855ccfd5.md](remixed-855ccfd5.md) - Multiplayer architecture specification
+  - [pure-layers-threaded-rules.md](pure-layers-threaded-rules.md) - Layer system implementation
+  - [GAME_ONBOARDING.md](GAME_ONBOARDING.md) - Detailed implementation guide
 
 ---
+
+## Core Architecture Pattern
+
+The entire system is built around this fundamental transformation:
+
+```
+STATE → ACTION → NEW STATE
+```
+
+Everything else exists to:
+1. **Generate** valid actions (what can happen)
+2. **Execute** actions deterministically (make it happen)
+3. **Filter** results (who sees what)
 
 ## Philosophy
 
@@ -61,11 +82,25 @@
 
 ---
 
+## Mental Models
+
+Think of the system as:
+- **A state machine** - Games flow through well-defined positions via actions
+- **A composition system** - Behaviors stack like camera filters
+- **A pure function** - `newState = f(oldState, action)`
+- **A trust hierarchy** - Server validates, clients display
+
+---
+
 ## Two-Level Composition (The Key Insight)
 
 **Problem**: Special contracts (nello, splash, plunge, sevens) need to change BOTH what's possible AND how execution works.
 
-**Solution**: Two orthogonal composition surfaces.
+**Solution**: Two orthogonal composition surfaces:
+
+```
+LAYERS (execution rules) × VARIANTS (action transformation) = Game Configuration
+```
 
 ### Level 1: Layers → Execution Rules
 
@@ -118,13 +153,21 @@ const rules = composeRules(layers);
 const baseWithLayers = (state) => getValidActions(state, layers, rules);
 
 // 3. Variants transform the layered actions
-const composed = applyVariants(baseWithLayers, variantConfigs);
+const getValidActionsComposed = applyVariants(baseWithLayers, variantConfigs);
 
-// 4. Use composed function everywhere
-this.getValidActionsComposed = composed;
+// 4. Create ExecutionContext (groups the triple together)
+this.ctx = Object.freeze({
+  layers: Object.freeze(layers),
+  rules,
+  getValidActions: getValidActionsComposed
+});
+
+// 5. Use context everywhere
+// buildKernelView(state, forPlayerId, this.ctx, metadata)
+// executeKernelAction(mpState, playerId, action, timestamp, this.ctx)
 ```
 
-**Result**: Layers change execution semantics, variants change action availability. Executors have ZERO conditional logic - they call `rules.method()` and trust the result.
+**Result**: Layers change execution semantics, variants change action availability. Executors have ZERO conditional logic - they call `ctx.rules.method()` and trust the result. ExecutionContext groups the always-traveling-together parameters (layers, rules, getValidActions) into a single immutable object.
 
 ---
 
@@ -163,6 +206,22 @@ this.getValidActionsComposed = composed;
 - `src/game/multiplayer/NetworkGameClient.ts` - Client interface, caches filtered state
 - `src/stores/gameStore.ts` - Svelte stores, reactive state management
 - `src/App.svelte` - UI entry point
+
+---
+
+## Essential Components Summary
+
+| Component | Purpose | Key Insight |
+|-----------|---------|-------------|
+| **GameState** | Immutable game position | Never mutated, only transformed |
+| **GameAction** | State transition unit | Source of truth via event sourcing |
+| **GameRules** | 13 execution methods | Injected, never inspected |
+| **GameLayer** | Rule overrides | Compose via reduce pattern |
+| **Variant** | Action transformer | Wrap state machine functions |
+| **Capability** | Permission token | Replace identity with permissions |
+| **ExecutionContext** | Composed configuration | Bundles layers + rules + actions |
+| **GameKernel** | Game authority | Single composition point |
+| **GameServer** | Orchestrator | Manages lifecycle, not logic |
 
 ---
 
@@ -370,6 +429,20 @@ Flags → getEnabledLayers() → compose in GameKernel constructor.
 
 ---
 
+## Common Pitfalls & Solutions
+
+| Pitfall | Solution |
+|---------|----------|
+| Adding conditional logic in executors | Use parametric polymorphism - delegate to `rules.method()` |
+| Modifying state directly | Create new state objects via spread operator |
+| Checking player identity for permissions | Use capability tokens instead |
+| Adding game logic to GameServer | Put it in GameKernel or layers |
+| Filtering state at storage | Store unfiltered, filter on-demand per request |
+| Client-side validation | Trust server's validActions list completely |
+| Deep coupling between layers | Keep layers focused on single responsibility |
+
+---
+
 ## What's Not Here Yet
 
 - **Offline Mode**: Web Worker transport (spec ready, not implemented)
@@ -380,18 +453,41 @@ Current transport: `InProcessTransport` (in-browser, single-process)
 
 ---
 
-## Quick Commands
+## Quick Start Guide
 
+### Commands
 ```bash
-npm run typecheck   # Ensure zero errors
+npm run typecheck   # Ensure zero errors (run this often!)
 npm test           # Run all tests
 npm run dev        # Start dev server
+npm run build      # Production build
 ```
 
-**When stuck**: Read the types. The architecture is type-driven - follow `GameRules`, `GameLayer`, `Variant`, `Capability` through the codebase.
+### Debugging Tips
 
-**When debugging**: Add console.log in GameKernel constructor to see layer/variant composition. Add logging in `authorizeAndExecute` to see action filtering. Check GameServer.handleMessage() for message routing issues.
+| Issue | Where to Look |
+|-------|---------------|
+| Action not available | GameKernel constructor (composition), `authorizeAndExecute` (filtering) |
+| Wrong game behavior | Layer implementation, `GameRules` methods |
+| State not updating | `executeAction`, check if action is authorized |
+| UI not reactive | Svelte stores, `ViewProjection` computation |
+| Message not routing | `GameServer.handleMessage()`, Transport layer |
+
+### Understanding the Code
+
+1. **Start with types** - The architecture is type-driven. Follow these key types:
+   - `GameRules` → Understand execution semantics
+   - `GameLayer` → See how rules compose
+   - `Variant` → Learn action transformation
+   - `Capability` → Grasp permission model
+
+2. **Trace a request** - Follow an action from click to UI update using the Request Flow diagram above
+
+3. **Read the tests** - Tests demonstrate intended usage and edge cases
 
 ---
 
-**That's the architecture.** Everything else is implementation details discoverable in the code.
+**Next Steps**:
+- For detailed concepts → [CONCEPTS.md](CONCEPTS.md)
+- For implementation guide → [GAME_ONBOARDING.md](GAME_ONBOARDING.md)
+- For multiplayer details → [remixed-855ccfd5.md](remixed-855ccfd5.md)

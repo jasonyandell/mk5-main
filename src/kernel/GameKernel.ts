@@ -5,32 +5,38 @@
  * NO transport, AI, or multiplayer concerns here - just pure game logic.
  *
  * Design principles:
- * - Pure state management (no transport concerns)
+ * - Pure state management via kernel.ts pure functions
+ * - Thin stateful wrapper for state management only
  * - Authorization via existing authorizeAndExecute
  * - Variant support via composition
- * - Observable via subscriptions
  * - Deployable anywhere (local, Worker, Cloudflare)
+ * - No orchestration or subscription management (GameServer handles that)
  */
 
 import type { GameState, GameAction } from '../game/types';
 import type { GameConfig, GameVariant } from '../game/types/config';
 import type {
   GameView,
-  ValidAction,
-  PlayerInfo
+  ValidAction
 } from '../shared/multiplayer/protocol';
-import { authorizeAndExecute } from '../game/multiplayer/authorization';
 import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
 import { ok, err } from '../game/multiplayer/types';
-import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../game/multiplayer/capabilityUtils';
 import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
-import { createInitialState, cloneGameState } from '../game/core/state';
-import { getValidActions, getNextStates } from '../game/core/gameEngine';
+import { createInitialState } from '../game/core/state';
+import { getValidActions } from '../game/core/gameEngine';
 import { applyVariants } from '../game/variants/registry';
-import type { VariantConfig, StateMachine } from '../game/variants/types';
+import type { VariantConfig } from '../game/variants/types';
 import { createMultiplayerGame, updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import { composeRules, baseLayer, getLayersByNames } from '../game/layers';
-import type { GameRules } from '../game/layers/types';
+import type { ExecutionContext } from '../game/types/execution';
+import {
+  executeKernelAction,
+  processAutoExecuteActions,
+  buildKernelView,
+  buildActionsMap,
+  updatePlayerControlPure,
+  cloneMultiplayerState
+} from './kernel';
 
 export interface KernelUpdate {
   view: GameView;
@@ -39,8 +45,6 @@ export interface KernelUpdate {
   perspective?: string;
 }
 
-const UNFILTERED_KEY = '__unfiltered__';
-
 /**
  * GameKernel - Pure game logic engine
  *
@@ -48,7 +52,6 @@ const UNFILTERED_KEY = '__unfiltered__';
  * - Pure state management (no mutations, only replacements)
  * - Action authorization and execution
  * - View generation with capability-based filtering
- * - Subscription management for state updates
  * - Variant and layer composition
  *
  * NOT responsible for:
@@ -56,26 +59,26 @@ const UNFILTERED_KEY = '__unfiltered__';
  * - AI client lifecycle
  * - Protocol message routing
  * - Client connections
+ * - Subscription management (GameServer handles that)
  */
 export class GameKernel {
+  // Mutable state (updated on actions)
   private mpState: MultiplayerGameState;
-  private gameId: string;
-  private variant: GameVariant | undefined;
-  private variantConfigs: VariantConfig[];
-  private created: number;
   private lastUpdate: number;
-  private listeners: Map<string, { perspective?: string; listener: (update: KernelUpdate) => void }> = new Map();
+
+  // Mutable cache (for efficient player lookups)
   private players: Map<string, PlayerSession>; // playerId -> PlayerSession
-  private getValidActionsComposed: StateMachine;
-  private layers: import('../game/layers/types').GameLayer[];
-  private rules: GameRules;
+
+  // Immutable config (set once in constructor, never mutated)
+  private readonly metadata: {
+    gameId: string;
+    variant: GameVariant | undefined;
+    variantConfigs: VariantConfig[];
+    created: number;
+  };
+  private readonly ctx: ExecutionContext;
 
   constructor(gameId: string, config: GameConfig, players: PlayerSession[]) {
-    this.gameId = gameId;
-    this.variant = config.variant;
-    this.created = Date.now();
-    this.lastUpdate = this.created;
-
     // Validate players
     if (players.length !== 4) {
       throw new Error(`Expected 4 players, got ${players.length}`);
@@ -92,35 +95,47 @@ export class GameKernel {
       capabilities: player.capabilities ?? this.buildBaseCapabilities(player.playerIndex, player.controlType)
     }));
 
-    // Store players by playerId
-    this.players = new Map(normalizedPlayers.map(p => [p.playerId, p]));
-
     // Compose variants into single getValidActions function
-    const baseGetValidActions = getValidActions;
-
-    this.variantConfigs = [
+    const variantConfigs = [
       ...(config.variant
         ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
         : []),
       ...(config.variants ?? [])
     ];
 
-    // Compose layers into rules FIRST (needed for variant composition)
+    // Initialize timestamp
+    const createdAt = Date.now();
+    this.lastUpdate = createdAt;
+
+    // Initialize immutable metadata (all at once before freezing)
+    this.metadata = {
+      gameId,
+      variant: config.variant,
+      variantConfigs,
+      created: createdAt
+    };
+
+    // Compose layers into rules
     const enabledLayerNames = config.enabledLayers ?? [];
     const enabledLayers = enabledLayerNames.length > 0
       ? getLayersByNames(enabledLayerNames)
       : [];
 
-    // Store layers for passing to getValidActions
-    this.layers = [baseLayer, ...enabledLayers];
-    this.rules = composeRules(this.layers);
+    const layers = [baseLayer, ...enabledLayers];
+    const rules = composeRules(layers);
 
     // Compose variants with layers/rules threaded through
-    // Create a wrapper that calls getValidActions with our layers/rules
-    const baseWithLayers: StateMachine = (state: GameState) =>
-      baseGetValidActions(state, this.layers, this.rules);
+    const baseWithLayers = (state: GameState) =>
+      getValidActions(state, layers, rules);
 
-    this.getValidActionsComposed = applyVariants(baseWithLayers, this.variantConfigs);
+    const getValidActionsComposed = applyVariants(baseWithLayers, variantConfigs);
+
+    // Create execution context (immutable after this point)
+    this.ctx = Object.freeze({
+      layers: Object.freeze(layers),
+      rules,
+      getValidActions: getValidActionsComposed
+    });
 
     // Create initial game state
     const initialState = createInitialState({
@@ -128,43 +143,49 @@ export class GameKernel {
       ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {}),
       ...(config.theme !== undefined ? { theme: config.theme } : {}),
       ...(config.colorOverrides !== undefined ? { colorOverrides: config.colorOverrides } : {}),
-      variants: this.variantConfigs
+      variants: variantConfigs
     });
 
-    // Store pure GameState (NO filtering - filtering happens in createView())
+    // Store pure GameState (NO filtering - filtering happens in buildKernelView())
     const now = Date.now();
     this.mpState = createMultiplayerGame({
       gameId,
       coreState: initialState,
       players: normalizedPlayers,
-      enabledVariants: this.variantConfigs,
+      enabledVariants: variantConfigs,
       enabledLayers: config.enabledLayers ?? [],
       createdAt: now,
       lastActionAt: now
     });
     this.players = new Map(this.mpState.players.map((p: PlayerSession) => [p.playerId, p]));
 
-    // Process any immediate scripted actions emitted at startup
-    this.processAutoExecuteActions();
+    // Process any immediate scripted actions emitted at startup using pure function
+    const result = processAutoExecuteActions(
+      this.mpState,
+      this.ctx
+    );
+    if (result.success) {
+      this.mpState = result.value;
+    }
   }
 
   private buildUpdate(forPlayerId?: string): KernelUpdate {
-    const stateSnapshot = this.cloneMultiplayerState(this.mpState);
-    const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
-    const transitions = getNextStates(stateSnapshot.coreState, this.layers, this.rules);
-    const actionsByPlayer = this.buildActionsMap(
-      stateSnapshot.players,
-      allValidActions,
-      transitions,
-      stateSnapshot.coreState
+    const stateSnapshot = cloneMultiplayerState(this.mpState);
+    const view = buildKernelView(
+      stateSnapshot,
+      forPlayerId,
+      this.ctx,
+      {
+        gameId: this.metadata.gameId,
+        ...(this.metadata.variant ? { variant: this.metadata.variant } : {}),
+        variantConfigs: this.metadata.variantConfigs,
+        created: this.metadata.created,
+        lastUpdate: this.lastUpdate
+      }
     );
 
-    const view = this.createView(forPlayerId, {
-      state: stateSnapshot,
-      allActions: allValidActions,
-      transitions,
-      actionsByPlayer
-    });
+    // Get actions map (transitions are computed internally)
+    const actionsByPlayer = buildActionsMap(stateSnapshot, this.ctx);
 
     const update: KernelUpdate = {
       view,
@@ -179,98 +200,6 @@ export class GameKernel {
     return update;
   }
 
-  private buildActionsMap(
-    sessions: readonly PlayerSession[],
-    allValidActions: GameAction[],
-    transitions: ReturnType<typeof getNextStates>,
-    coreState: GameState
-  ): Record<string, ValidAction[]> {
-    const map: Record<string, ValidAction[]> = {};
-    for (const session of sessions) {
-      map[session.playerId] = this.buildValidActionsForSession(
-        session,
-        allValidActions,
-        transitions,
-        coreState
-      );
-    }
-
-    map[UNFILTERED_KEY] = this.buildValidActionsForSession(
-      undefined,
-      allValidActions,
-      transitions,
-      coreState
-    );
-
-    return map;
-  }
-
-  private buildValidActionsForSession(
-    session: PlayerSession | undefined,
-    allValidActions: GameAction[],
-    transitions: ReturnType<typeof getNextStates>,
-    coreState: GameState
-  ): ValidAction[] {
-    const availableActions = session
-      ? filterActionsForSession(session, allValidActions)
-      : allValidActions;
-
-    return availableActions.map((action: GameAction) => {
-      const transition = this.findMatchingTransition(action, transitions);
-      const actionClone: GameAction = { ...action };
-      const group = this.getActionGroup(action);
-      const shortcut = this.getActionShortcut(action);
-      const recommended = this.isRecommendedAction(action, coreState);
-
-      if ('meta' in action && action.meta) {
-        (actionClone as { meta?: unknown }).meta = JSON.parse(JSON.stringify(action.meta));
-      }
-
-      const validAction: ValidAction = {
-        action: actionClone,
-        label: transition?.label || action.type,
-        recommended
-      };
-
-      if (group !== undefined) {
-        validAction.group = group;
-      }
-
-      if (shortcut !== undefined) {
-        validAction.shortcut = shortcut;
-      }
-
-      return validAction;
-    });
-  }
-
-  private findMatchingTransition(
-    action: GameAction,
-    transitions: ReturnType<typeof getNextStates>
-  ) {
-    return transitions.find((t) => {
-      if (t.action.type !== action.type) return false;
-
-      if ('player' in t.action && 'player' in action) {
-        if (t.action.player !== action.player) return false;
-      }
-
-      switch (action.type) {
-        case 'bid':
-          return 'bid' in t.action &&
-            t.action.bid === action.bid &&
-            t.action.value === action.value;
-        case 'select-trump':
-          return 'trump' in t.action &&
-            JSON.stringify(t.action.trump) === JSON.stringify(action.trump);
-        case 'play':
-          return 'dominoId' in t.action && 'dominoId' in action &&
-            t.action.dominoId === action.dominoId;
-        default:
-          return true;
-      }
-    });
-  }
 
   /**
    * Get current game view for clients
@@ -284,21 +213,14 @@ export class GameKernel {
    * Get full multiplayer state snapshot.
    */
   getState(): MultiplayerGameState {
-    return this.cloneMultiplayerState(this.mpState);
+    return cloneMultiplayerState(this.mpState);
   }
 
   /**
    * Get valid actions for the given player session.
    */
   getActionsForPlayer(playerId: string): ValidAction[] {
-    const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
-    const transitions = getNextStates(this.mpState.coreState, this.layers, this.rules);
-    const actionsMap = this.buildActionsMap(
-      this.mpState.players,
-      allValidActions,
-      transitions,
-      this.mpState.coreState
-    );
+    const actionsMap = buildActionsMap(this.mpState, this.ctx);
     return actionsMap[playerId] ?? [];
   }
 
@@ -306,43 +228,29 @@ export class GameKernel {
    * Get valid actions for all player sessions.
    */
   getActionsMap(): Record<string, ValidAction[]> {
-    const allValidActions = this.getValidActionsComposed(this.mpState.coreState);
-    const transitions = getNextStates(this.mpState.coreState, this.layers, this.rules);
-    return this.buildActionsMap(
-      this.mpState.players,
-      allValidActions,
-      transitions,
-      this.mpState.coreState
-    );
+    return buildActionsMap(this.mpState, this.ctx);
   }
 
   /**
    * Execute an action with authorization
    */
   executeAction(playerId: string, action: GameAction, timestamp: number): { success: boolean; error?: string } {
-    const request = {
+    // Use pure function for action execution with auto-execute
+    const result = executeKernelAction(
+      this.mpState,
       playerId,
       action,
-      timestamp
-    };
-
-    const result = authorizeAndExecute(this.mpState, request, this.getValidActionsComposed, this.rules);
+      timestamp,
+      this.ctx
+    );
 
     if (!result.success) {
       return { success: false, error: result.error };
     }
 
-    // Update state
+    // Update mutable state
     this.mpState = result.value;
     this.lastUpdate = Date.now();
-
-    const autoExecuted = this.processAutoExecuteActions();
-
-    // Notify all listeners once after processing scripted actions
-    if (autoExecuted) {
-      this.lastUpdate = Date.now();
-    }
-    this.notifyListeners();
 
     return { success: true };
   }
@@ -350,43 +258,27 @@ export class GameKernel {
   /**
    * Change player control type
    */
-  setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
-    const targetSession = this.mpState.players.find((session: PlayerSession) => session.playerIndex === playerIndex);
-    if (!targetSession) {
-      throw new Error(`Player ${playerIndex} not found`);
+  setPlayerControl(playerId: string, type: 'human' | 'ai'): void {
+    const session = this.players.get(playerId);
+    if (!session) {
+      throw new Error(`Player ${playerId} not found`);
     }
 
-    const capabilities = this.buildBaseCapabilities(playerIndex, type);
-    const updatedStateResult = updatePlayerSession(this.mpState, targetSession.playerId, {
-      controlType: type,
+    const capabilities = this.buildBaseCapabilities(session.playerIndex, type);
+
+    // Use pure function for state transition
+    const result = updatePlayerControlPure(
+      this.mpState,
+      session.playerIndex,
+      type,
       capabilities
-    });
+    );
 
-    if (!updatedStateResult.success) {
-      throw new Error(updatedStateResult.error);
+    if (!result.success) {
+      throw new Error(result.error);
     }
 
-    const updatedPlayers = updatedStateResult.value.players;
-
-    // Update players map
-    for (const session of updatedPlayers) {
-      this.players.set(session.playerId, session);
-    }
-
-    // Update core state playerTypes to match
-    const updatedCoreState = {
-      ...this.mpState.coreState,
-      playerTypes: updatedPlayers.map((s: PlayerSession) => s.controlType) as ('human' | 'ai')[]
-    };
-
-    this.mpState = {
-      ...updatedStateResult.value,
-      coreState: updatedCoreState,
-      lastActionAt: Date.now()
-    };
-
-    this.lastUpdate = this.mpState.lastActionAt;
-    this.notifyListeners();
+    this.applyStateUpdate(result);
   }
 
   /**
@@ -410,14 +302,13 @@ export class GameKernel {
       return err(result.error);
     }
 
-    this.mpState = {
-      ...result.value,
-      lastActionAt: Date.now()
-    };
-
-    this.players.set(merged.playerId, merged);
-    this.lastUpdate = this.mpState.lastActionAt;
-    this.notifyListeners();
+    this.applyStateUpdate({
+      success: true,
+      value: {
+        ...result.value,
+        lastActionAt: Date.now()
+      }
+    });
 
     return ok(merged);
   }
@@ -441,14 +332,13 @@ export class GameKernel {
       return err(result.error);
     }
 
-    this.mpState = {
-      ...result.value,
-      lastActionAt: Date.now()
-    };
-
-    this.players.set(playerId, updated);
-    this.lastUpdate = this.mpState.lastActionAt;
-    this.notifyListeners();
+    this.applyStateUpdate({
+      success: true,
+      value: {
+        ...result.value,
+        lastActionAt: Date.now()
+      }
+    });
 
     return ok(updated);
   }
@@ -468,189 +358,18 @@ export class GameKernel {
   }
 
   /**
-   * Subscribe to game updates
-   * @param playerId - Player ID to filter views for (or undefined for unfiltered)
+   * Private: Apply a state update result to mutable kernel state.
+   * Syncs players map and updates timestamps.
    */
-  subscribe(playerId: string | undefined, listener: (update: KernelUpdate) => void): () => void {
-    const listenerKey = playerId ?? `unfiltered-${Date.now()}-${Math.random()}`;
+  private applyStateUpdate(result: { success: true; value: MultiplayerGameState }): void {
+    this.mpState = result.value;
 
-    const record: { perspective?: string; listener: (update: KernelUpdate) => void } = {
-      listener
-    };
-
-    if (playerId !== undefined) {
-      record.perspective = playerId;
+    // Sync players map
+    for (const session of this.mpState.players) {
+      this.players.set(session.playerId, session);
     }
 
-    this.listeners.set(listenerKey, record);
-
-    // Send current state immediately
-    listener(this.buildUpdate(playerId));
-
-    // Return unsubscribe function
-    return () => {
-      this.listeners.delete(listenerKey);
-    };
-  }
-
-  /**
-   * Destroy the game kernel
-   */
-  destroy(): void {
-    this.listeners.clear();
-  }
-
-  /**
-   * Private: Create view for clients
-   * @param forPlayerId - Optional player ID to filter actions for
-   */
-  private createView(
-    forPlayerId?: string,
-    context?: {
-      state: MultiplayerGameState;
-      allActions: GameAction[];
-      transitions: ReturnType<typeof getNextStates>;
-      actionsByPlayer: Record<string, ValidAction[]>;
-    }
-  ): GameView {
-    const stateContext = context?.state ?? this.cloneMultiplayerState(this.mpState);
-    const { coreState, players } = stateContext;
-    const allValidActions = context?.allActions ?? this.getValidActionsComposed(coreState);
-    const transitions = context?.transitions ?? getNextStates(coreState, this.layers, this.rules);
-    const actionsByPlayer =
-      context?.actionsByPlayer ??
-      this.buildActionsMap(players, allValidActions, transitions, coreState);
-
-    const session = forPlayerId ? players.find((p: PlayerSession) => p.playerId === forPlayerId) : undefined;
-
-    const visibleState: import('../game/types').FilteredGameState = session
-      ? getVisibleStateForSession(coreState, session)
-      : this.convertToFilteredState(coreState);
-
-    let validActions: ValidAction[];
-
-    if (session) {
-      validActions = actionsByPlayer[session.playerId] ?? [];
-    } else if (forPlayerId) {
-      // Requested perspective but no session found
-      validActions = [];
-    } else {
-      validActions = actionsByPlayer[UNFILTERED_KEY] ??
-        this.buildValidActionsForSession(undefined, allValidActions, transitions, coreState);
-    }
-
-    const playerInfoList: PlayerInfo[] = Array.from(players).map((playerSession: PlayerSession) => ({
-      playerId: playerSession.playerIndex,
-      controlType: playerSession.controlType,
-      sessionId: playerSession.playerId,
-      connected: playerSession.isConnected ?? true,
-      name: playerSession.name || `Player ${playerSession.playerIndex + 1}`,
-      capabilities: playerSession.capabilities.map((cap: Capability) => ({ ...cap }))
-    }));
-
-    return {
-      state: visibleState,
-      validActions,
-      players: playerInfoList,
-      metadata: {
-        gameId: this.gameId,
-        ...(this.variant ? { variant: this.variant } : {}),
-        ...(this.variantConfigs.length ? { variants: this.variantConfigs } : {}),
-        created: this.created,
-        lastUpdate: this.lastUpdate
-      }
-    };
-  }
-
-  /**
-   * Convert pure GameState to FilteredGameState format (adds handCount to players)
-   */
-  private convertToFilteredState(state: GameState): import('../game/types').FilteredGameState {
-    const filteredPlayers = state.players.map((player: GameState['players'][number]) => ({
-      id: player.id,
-      name: player.name,
-      teamId: player.teamId,
-      marks: player.marks,
-      hand: player.hand,
-      handCount: player.hand.length,
-      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
-    }));
-
-    return {
-      ...state,
-      players: filteredPlayers
-    };
-  }
-
-  private cloneActionsMap(actions: Record<string, ValidAction[]>): Record<string, ValidAction[]> {
-    const clone: Record<string, ValidAction[]> = {};
-    for (const [key, list] of Object.entries(actions)) {
-      clone[key] = list.map(valid => {
-        const actionClone: GameAction = { ...valid.action };
-        if ('meta' in actionClone && actionClone.meta) {
-          actionClone.meta = JSON.parse(JSON.stringify(actionClone.meta));
-        }
-        return {
-          ...valid,
-          action: actionClone
-        };
-      });
-    }
-    return clone;
-  }
-
-  private cloneMultiplayerState(state: MultiplayerGameState): MultiplayerGameState {
-    return {
-      gameId: state.gameId,
-      coreState: cloneGameState(state.coreState),
-      players: state.players.map((session: PlayerSession) => ({
-        ...session,
-        capabilities: session.capabilities.map((cap: Capability) => ({ ...cap }))
-      })),
-      createdAt: state.createdAt,
-      lastActionAt: state.lastActionAt,
-      enabledVariants: state.enabledVariants.map((variant: VariantConfig) => ({ ...variant })),
-      enabledLayers: state.enabledLayers ?? []
-    };
-  }
-
-  /**
-   * Private: Get UI group for action
-   */
-  private getActionGroup(action: GameAction): string | undefined {
-    switch (action.type) {
-      case 'bid':
-        return 'Bidding';
-      case 'play':
-        return 'Play Domino';
-      case 'select-trump':
-        return 'Trump Selection';
-      case 'pass':
-        return 'Pass';
-      default:
-        return undefined;
-    }
-  }
-
-  /**
-   * Private: Get keyboard shortcut for action
-   */
-  private getActionShortcut(_action: GameAction): string | undefined {
-    // Future: Add keyboard shortcuts
-    return undefined;
-  }
-
-  /**
-   * Private: Check if action is recommended
-   */
-  private isRecommendedAction(action: GameAction, _state: GameState): boolean {
-    // For consensus actions, recommend immediate agreement
-    if (action.type === 'agree-score-hand') {
-      return true;
-    }
-
-    // Future: Add AI hints for recommended moves
-    return false;
+    this.lastUpdate = this.mpState.lastActionAt ?? Date.now();
   }
 
   /**
@@ -662,103 +381,5 @@ export class GameKernel {
     return controlType === 'human'
       ? humanCapabilities(idx)
       : aiCapabilities(idx);
-  }
-
-  /**
-   * Private: Process scripted auto-execute actions until exhausted.
-   */
-  private processAutoExecuteActions(): boolean {
-    const MAX_AUTO_EXEC = 50;
-    let iterations = 0;
-    let executed = false;
-
-    while (iterations < MAX_AUTO_EXEC) {
-      const actions = this.getValidActionsComposed(this.mpState.coreState);
-      const autoAction = actions.find((a: GameAction) => a.autoExecute === true);
-
-      if (!autoAction) {
-        break;
-      }
-
-      const session = resolveSessionForAction(Array.from(this.mpState.players), autoAction);
-
-      if (!session) {
-        console.error('Auto-execute failed: no capable session', {
-          gameId: this.gameId,
-          action: autoAction
-        });
-        break;
-      }
-
-      const result = authorizeAndExecute(
-        this.mpState,
-        { playerId: session.playerId, action: autoAction, timestamp: Date.now() },
-        this.getValidActionsComposed,
-        this.rules
-      );
-
-      if (!result.success) {
-        console.error('Auto-execute failed', {
-          gameId: this.gameId,
-          action: autoAction,
-          error: result.error
-        });
-        break;
-      }
-
-      this.mpState = result.value;
-      this.lastUpdate = Date.now();
-      iterations += 1;
-      executed = true;
-    }
-
-    if (iterations === MAX_AUTO_EXEC) {
-      console.error('Auto-execute limit reached', {
-        gameId: this.gameId
-      });
-    }
-
-    return executed;
-  }
-
-  /**
-   * Private: Notify all listeners
-   */
-  private notifyListeners(): void {
-    if (this.listeners.size === 0) {
-      return;
-    }
-
-    const stateSnapshot = this.cloneMultiplayerState(this.mpState);
-    const allValidActions = this.getValidActionsComposed(stateSnapshot.coreState);
-    const transitions = getNextStates(stateSnapshot.coreState, this.layers, this.rules);
-    const actionsMap = this.buildActionsMap(
-      stateSnapshot.players,
-      allValidActions,
-      transitions,
-      stateSnapshot.coreState
-    );
-
-    for (const [listenerKey, record] of this.listeners) {
-      const perspective = record.perspective ?? (listenerKey.startsWith('unfiltered-') ? undefined : listenerKey);
-      const view = this.createView(perspective, {
-        state: stateSnapshot,
-        allActions: allValidActions,
-        transitions,
-        actionsByPlayer: actionsMap
-      });
-
-      const payload: KernelUpdate = {
-        view,
-        state: this.cloneMultiplayerState(stateSnapshot),
-        actions: this.cloneActionsMap(actionsMap)
-      };
-
-      if (perspective !== undefined) {
-        payload.perspective = perspective;
-      }
-
-      record.listener(payload);
-    }
   }
 }

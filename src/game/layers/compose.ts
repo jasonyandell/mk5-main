@@ -358,7 +358,7 @@ export function composeRules(layers: GameLayer[]): GameRules {
  * @returns Transformed action list after all layers applied
  */
 export function composeActions(
-  layers: GameLayer[],
+  layers: readonly GameLayer[],
   state: GameState,
   baseActions: GameAction[]
 ): GameAction[] {

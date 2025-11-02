@@ -1,4 +1,5 @@
 import type { GameState, GameAction, StateTransition, Bid, TrumpSelection, Domino } from '../types';
+import type { GameLayer, GameRules } from '../layers/types';
 import { cloneGameState } from './state';
 import { executeAction } from './actions';
 import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
@@ -80,7 +81,7 @@ export class GameEngine {
 /**
  * Gets all valid actions for the current state
  */
-export function getValidActions(state: GameState, layers?: import('../layers/types').GameLayer[], rules?: import('../layers/types').GameRules): GameAction[] {
+export function getValidActions(state: GameState, layers?: readonly GameLayer[], rules?: GameRules): GameAction[] {
   let baseActions: GameAction[];
 
   switch (state.phase) {
@@ -111,7 +112,7 @@ export function getValidActions(state: GameState, layers?: import('../layers/typ
 /**
  * Gets valid bidding actions
  */
-function getBiddingActions(state: GameState, rules?: import('../layers/types').GameRules): GameAction[] {
+function getBiddingActions(state: GameState, rules?: GameRules): GameAction[] {
   const actions: GameAction[] = [];
 
   // Check if bidding is complete
@@ -213,7 +214,7 @@ function getTrumpSelectionActions(state: GameState): GameAction[] {
 /**
  * Gets valid playing actions
  */
-function getPlayingActions(state: GameState, rules?: import('../layers/types').GameRules): GameAction[] {
+function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
   const actions: GameAction[] = [];
 
   if (state.trump.type === 'not-selected') return actions;
@@ -364,8 +365,8 @@ export function actionToLabel(action: GameAction): string {
  */
 export function getNextStates(
   state: GameState,
-  layers?: import('../layers/types').GameLayer[],
-  rules?: import('../layers/types').GameRules
+  layers?: readonly GameLayer[],
+  rules?: GameRules
 ): StateTransition[] {
   const validActions = getValidActions(state, layers, rules);
   return validActions.map(action => ({
