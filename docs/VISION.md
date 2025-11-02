@@ -1,8 +1,11 @@
 # Texas 42 Vision (mk5-tailwind)
 
-Purpose: a living north star that states why we’re building this, what outcomes we’re aiming for, the non‑negotiable guardrails, and the next focused bets. It complements, not repeats, the reference docs.
+Purpose: a living north star that states why we're building this, what outcomes we're aiming for, the non‑negotiable guardrails, and the next focused bets. It complements, not repeats, the reference docs.
 
-Related: see CONCEPTS.md (reference), ARCHITECTURE_SYNTHESIS.md (synthesis), OPUS_CONCEPTS.md (mental models).
+**Related Documentation**:
+- **Orientation**: [ORIENTATION.md](ORIENTATION.md) - Developer onboarding and navigation guide
+- **Principles**: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) - Design philosophy and mental models
+- **Reference**: [CONCEPTS.md](CONCEPTS.md) - Complete implementation reference
 
 ---
 
@@ -52,10 +55,6 @@ These mirror the Architectural Invariants and define regressions if violated.
 - Goal: fast load of long histories and durable share links across versions.
 - Success: snapshot every N actions with hash verification; replay time < 1s for 95th percentile games; URL version upgrader.
 
-6) WebRTC pilot (exploratory)
-- Goal: optional P2P for low‑latency local/lan play with server mediation fallback.
-- Success: ≥ 90% successful connections in test harness; LAN round‑trip < 100ms; graceful fallback to server relay.
-
 ---
 
 ## Non‑Goals (For Now)
@@ -65,25 +64,6 @@ These mirror the Architectural Invariants and define regressions if violated.
 - Storing filtered state at rest.
 - Inheritance‑heavy, monolithic classes or global mutable state.
 - UI‑embedded rules or transport‑specific logic in core.
-
----
-
-## Now / Next / Later
-
-Now (0–2 months)
-- Composition explainer (CLI/devtool) and Layer×Variant compatibility tests.
-- Snapshotting + URL versioning; migration path for old links.
-- Worker transport prototype and AI lifecycle integration.
-
-Next (2–4 months)
-- Edge (Durable Objects) adapter with soak tests and latency SLOs.
-- Spectator + commentary capabilities and delivery pipeline.
-- Intermediate AI strategy with evaluation harness.
-
-Later (4–6 months)
-- WebRTC pilot with TURN/STUN fallback path.
-- Expert AI exploration (tree search/heuristics) under deterministic constraints.
-- Mobile/web accessibility refinements and spectator UX polish.
 
 ---
 
@@ -115,10 +95,20 @@ Later (4–6 months)
 
 ---
 
+## 5 Questions to Untangle Any Issue
+
+1. Whose turn is it (rule: who/when)?
+2. What are they allowed to do (state machine + variants)?
+3. Is the requested action in that set (authorization)?
+4. What does executing it change (executor via rules)?
+5. What will each client see (visibility filter + projection)?
+
+---
+
 ## Pointers
 
-- Concepts reference: docs/CONCEPTS.md
-- Synthesis and core components: docs/ARCHITECTURE_SYNTHESIS.md
-- Mental models: docs/OPUS_CONCEPTS.md
+- Onboarding guide: [ORIENTATION.md](ORIENTATION.md)
+- Design philosophy: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md)
+- Implementation reference: [CONCEPTS.md](CONCEPTS.md)
 - Multiplayer protocol: docs/protocol-flows.md, src/shared/multiplayer/protocol.ts
 

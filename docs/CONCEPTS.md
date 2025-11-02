@@ -1,8 +1,15 @@
-# Texas 42 Architecture: Concepts Reference
+# Texas 42 Architecture: Implementation Reference
 
-**Purpose**: Complete reference of all major architectural concepts in the Texas 42 codebase. High-level conceptual overview for onboarding and architecture understanding (not implementation details).
+**Purpose**: Complete implementation reference for all architectural concepts in the Texas 42 codebase. Includes file locations, method signatures, properties, and implementation details.
 
-**How to use**: Search by concept name or section. Navigate using the table of contents below.
+**Target Audience**: Developers needing to understand or modify specific components.
+
+**Related Documentation**:
+- **Vision**: [VISION.md](VISION.md) - Strategic direction and north star outcomes
+- **Orientation**: [ORIENTATION.md](ORIENTATION.md) - Developer onboarding and navigation guide
+- **Principles**: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) - Design philosophy and mental models
+
+**How to use**: Search by concept name, section, or file location. Use the table of contents and Quick Reference section for navigation.
 
 ---
 
@@ -1766,8 +1773,8 @@ colorOverrides: Record<string, string>  // CSS variables
 - **Game Designer**: See Variants, Layers, Domain Objects
 - **Backend Engineer**: See Server Architecture, Authorization, Event Sourcing, AI Architecture
 - **Frontend Engineer**: See View Projection, Client Architecture, Protocol
-- **AI Developer**: See AI Architecture, Hand Analysis System, GameSimulator
-- **Architect**: See Architectural Patterns, Invariants, Concept Relationships
+- **AI Developer**: See AI Architecture (Section 6), Hand Analysis System (6.1), GameSimulator (6.2)
+- **Architect**: See [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) for patterns and philosophy
 
 **By Task**:
 - **Add new special contract**: Layers, Layer Implementations, GameRules

@@ -3,8 +3,9 @@
 **New to the codebase?** This document provides the mental models needed to navigate the architecture.
 
 ## Related Documentation
-- **Concepts**: [CONCEPTS.md](CONCEPTS.md) - Complete reference of all architectural concepts
-- **Synthesis**: [ARCHITECTURE_SYNTHESIS.md](ARCHITECTURE_SYNTHESIS.md) - Distilled overview of core components
+- **Vision**: [VISION.md](VISION.md) - Strategic direction and north star outcomes
+- **Principles**: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) - Design philosophy and mental models
+- **Reference**: [CONCEPTS.md](CONCEPTS.md) - Complete implementation reference
 - **Deep Dives**:
   - [remixed-855ccfd5.md](remixed-855ccfd5.md) - Multiplayer architecture specification
   - [pure-layers-threaded-rules.md](pure-layers-threaded-rules.md) - Layer system implementation
@@ -84,11 +85,25 @@ Everything else exists to:
 
 ## Mental Models
 
-Think of the system as:
-- **A state machine** - Games flow through well-defined positions via actions
-- **A composition system** - Behaviors stack like camera filters
-- **A pure function** - `newState = f(oldState, action)`
-- **A trust hierarchy** - Server validates, clients display
+Understanding the architecture requires thinking about it in multiple ways:
+
+### The Game as a State Machine
+Every game position has defined transitions to next positions. Actions are edges, states are nodes. AI explores this graph to make decisions. Games flow through well-defined positions via actions.
+
+### Layers as Lenses
+Each layer provides a different lens through which to view game rules. Stack lenses to create new game modes. Nello adds a "3-player trick" lens, Plunge adds a "partner leads" lens.
+
+### Variants as Decorators
+Variants wrap and transform the base game, adding features without modifying core logic. Tournament filters, Speed annotates, OneHand scripts—each wraps the state machine.
+
+### Capabilities as Keys
+Each capability unlocks specific functionality. Collect keys to gain more power. `observe-all-hands` unlocks full visibility, `act-as-player` unlocks actions for a seat.
+
+### The Kernel as a Pure Function
+Given state and action, always produces same new state. No hidden state or side effects. `newState = f(oldState, action)` always holds.
+
+### A Trust Hierarchy
+Server validates, clients display. Clear security boundary: server is authoritative, clients are delegating.
 
 ---
 
@@ -487,7 +502,29 @@ npm run build      # Production build
 
 ---
 
+## Design Philosophy
+
+These principles guide all architectural decisions:
+
+### Simplicity Through Composition
+Complex behavior emerges from composing simple, pure functions. No monolithic classes or deep inheritance hierarchies.
+
+### Correct by Construction
+Use the type system to prevent errors at compile time. Make illegal states unrepresentable. If it compiles, it's more likely to be correct.
+
+### Explicit Over Implicit
+All behavior is explicitly defined through composition. No hidden magic or implicit conventions. What you see is what happens.
+
+### Immutability as Default
+State is never mutated, only transformed. Enables reasoning, debugging, and time-travel. New states are created through transformation.
+
+### Trust Through Verification
+Server validates everything, clients trust completely. Clear security boundary enables simple client code and guaranteed consistency.
+
+---
+
 **Next Steps**:
-- For detailed concepts → [CONCEPTS.md](CONCEPTS.md)
+- For design philosophy and patterns → [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md)
+- For implementation reference → [CONCEPTS.md](CONCEPTS.md)
 - For implementation guide → [GAME_ONBOARDING.md](GAME_ONBOARDING.md)
 - For multiplayer details → [remixed-855ccfd5.md](remixed-855ccfd5.md)
