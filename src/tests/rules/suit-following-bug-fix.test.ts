@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState } from '../helpers/gameTestHelper';
-import { composeRules } from '../../game/layers/compose';
-import { baseLayer } from '../../game/layers';
+import { composeRules } from '../../game/rulesets/compose';
+import { baseRuleSet } from '../../game/rulesets';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 import { ACES, FIVES, SIXES } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Suit Following Bug Fix', () => {
   it('should allow any domino when only trump dominoes contain the led suit', () => {

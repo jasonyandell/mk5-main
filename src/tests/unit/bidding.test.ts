@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseLayer, nelloLayer, plungeLayer, splashLayer } from '../../game/layers';
+import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet } from '../../game/rulesets';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper, createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
@@ -7,7 +7,7 @@ import { getNextPlayer, getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
 
 // General bidding tests - includes special contracts (casual rules)
-const rules = composeRules([baseLayer, nelloLayer, plungeLayer, splashLayer]);
+const rules = composeRules([baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet]);
 
 describe('Bidding Rules', () => {
   describe('All-Pass Redeal Scenarios', () => {
@@ -140,7 +140,7 @@ describe('Bidding Rules', () => {
       const perfectHand = createHandWithDoubles(7);
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
-      // Plunge layer allows plunge bids with sufficient doubles
+      // Plunge ruleSet allows plunge bids with sufficient doubles
       expect(rules.isValidBid(state, plungeBid, perfectHand)).toBe(true);
     });
 
@@ -289,7 +289,7 @@ describe('Bidding Rules', () => {
     
     it('should allow special contracts in casual rules', () => {
       const state = createInitialState();
-      // Casual rules (with special contract layers) allow these bids
+      // Casual rules (with special contract ruleSets) allow these bids
 
       const testHand = GameTestHelper.createTestHand([
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]

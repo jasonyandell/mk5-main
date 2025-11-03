@@ -27,7 +27,7 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
 
 /**
  * Helper function to determine game outcome
- * TODO: Rewrite for new variant system (getSectionOverlay removed)
+ * TODO: Rewrite for new action transformer system (getSectionOverlay removed)
  */
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {

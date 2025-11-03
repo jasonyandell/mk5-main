@@ -4,12 +4,12 @@ import {
   canFollowSuit,
   type Domino
 } from '../../../game';
-import { composeRules } from '../../../game/layers/compose';
-import { baseLayer } from '../../../game/layers';
+import { composeRules } from '../../../game/rulesets/compose';
+import { baseRuleSet } from '../../../game/rulesets';
 import { analyzeSuits } from '../../../game/core/suit-analysis';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Feature: Playing Tricks', () => {
   describe('Scenario: Following Suit', () => {

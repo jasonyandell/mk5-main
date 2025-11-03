@@ -1,5 +1,5 @@
 import type { GameState, Player } from '../types';
-import type { VariantConfig } from '../types/config';
+import type { ActionTransformerConfig } from '../types/config';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
@@ -15,7 +15,7 @@ export function createSetupState(options?: {
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
   colorOverrides?: Record<string, string>,
-  variants?: VariantConfig[]
+  variants?: ActionTransformerConfig[]
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
@@ -79,7 +79,7 @@ export function createInitialState(options?: {
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
   colorOverrides?: Record<string, string>,
-  variants?: VariantConfig[]
+  variants?: ActionTransformerConfig[]
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first

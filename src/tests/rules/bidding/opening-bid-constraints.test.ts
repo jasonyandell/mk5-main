@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
 import { EMPTY_BID } from '../../../game/types';
 import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
-import { composeRules, baseLayer, plungeLayer } from '../../../game/layers';
+import { composeRules, baseRuleSet, plungeRuleSet } from '../../../game/rulesets';
 
 // Opening bid constraints include plunge as valid exception (casual rules)
-const rules = composeRules([baseLayer, plungeLayer]);
+const rules = composeRules([baseRuleSet, plungeRuleSet]);
 
 describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
   describe('Scenario: Opening Bid Constraints', () => {
@@ -55,7 +55,7 @@ describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
       expect(2 * GAME_CONSTANTS.TOTAL_POINTS).toBe(84);
 
       // And the exception is a plunge bid which may open at 4 marks
-      // (Base engine now generates plunge bids; tournament variant filters them)
+      // (Base engine now generates plunge bids; tournament actionTransformer filters them)
 
       // Test invalid plunge first (with current hand - not enough doubles)
       const invalidPlunge: Bid = { type: 'plunge' as const, value: 3, player: 0 };

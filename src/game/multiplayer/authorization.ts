@@ -4,13 +4,13 @@ import { ok, err } from './types';
 import { executeAction } from '../core/actions';
 import { getValidActions } from '../core/gameEngine';
 import { filterActionsForSession } from './capabilityUtils';
-import type { StateMachine } from '../variants/types';
-import { applyVariants } from '../variants/registry';
-import type { GameRules } from '../layers/types';
-import { composeRules, baseLayer } from '../layers';
+import type { StateMachine } from '../action-transformers/types';
+import { applyActionTransformers } from '../action-transformers/registry';
+import type { GameRules } from '../rulesets/types';
+import { composeRules, baseRuleSet } from '../rulesets';
 
-// Default rules (base layer only, no special contracts)
-const defaultRules = composeRules([baseLayer]);
+// Default rules (base rule set only, no special contracts)
+const defaultRules = composeRules([baseRuleSet]);
 
 function actionsMatch(expected: GameAction, actual: GameAction): boolean {
   if (expected.type !== actual.type) {
@@ -87,7 +87,7 @@ export function getValidActionsForPlayer(
   }
 
   // Compose variants with base state machine
-  const composedMachine = applyVariants(getValidActionsFn, enabledVariants);
+  const composedMachine = applyActionTransformers(getValidActionsFn, enabledVariants);
 
   // Get all valid actions from composed machine
   const allValidActions = composedMachine(coreState);

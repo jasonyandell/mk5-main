@@ -1,10 +1,10 @@
 import type { GameState, GameAction, StateTransition, Bid, TrumpSelection, Domino } from '../types';
-import type { GameLayer, GameRules } from '../layers/types';
+import type { GameRuleSet, GameRules } from '../rulesets/types';
 import { cloneGameState } from './state';
 import { executeAction } from './actions';
 import { BID_TYPES, TRUMP_SELECTIONS, GAME_CONSTANTS } from '../constants';
-import { composeActions, composeRules } from '../layers/compose';
-import { baseLayer } from '../layers';
+import { composeActions, composeRules } from '../rulesets/compose';
+import { baseRuleSet } from '../rulesets';
 
 /**
  * Game Engine with action-based state management and history tracking
@@ -81,7 +81,7 @@ export class GameEngine {
 /**
  * Gets all valid actions for the current state
  */
-export function getValidActions(state: GameState, layers?: readonly GameLayer[], rules?: GameRules): GameAction[] {
+export function getValidActions(state: GameState, ruleSets?: readonly GameRuleSet[], rules?: GameRules): GameAction[] {
   let baseActions: GameAction[];
 
   switch (state.phase) {
@@ -101,9 +101,9 @@ export function getValidActions(state: GameState, layers?: readonly GameLayer[],
       baseActions = [];
   }
 
-  // Apply layer transformations if provided
-  if (layers && layers.length > 0) {
-    return composeActions(layers, state, baseActions);
+  // Apply rule set transformations if provided
+  if (ruleSets && ruleSets.length > 0) {
+    return composeActions(ruleSets, state, baseActions);
   }
 
   return baseActions;
@@ -138,8 +138,8 @@ function getBiddingActions(state: GameState, rules?: GameRules): GameAction[] {
   }
   const currentPlayerHand = currentPlayerData.hand;
 
-  // Helper to validate bids using composed rules or base layer as fallback
-  const defaultRules = rules || composeRules([baseLayer]);
+  // Helper to validate bids using composed rules or base rule set as fallback
+  const defaultRules = rules || composeRules([baseRuleSet]);
   const validateBid = (bid: Bid, hand?: Domino[]) =>
     defaultRules.isValidBid(state, bid, hand);
 
@@ -162,7 +162,7 @@ function getBiddingActions(state: GameState, rules?: GameRules): GameAction[] {
     }
   }
 
-  // Special contracts - always generate in base engine (variants will filter)
+  // Special contracts - always generate in base engine (action transformers will filter)
   // Nello bids
   for (let marks = 1; marks <= 4; marks++) {
     const bid: Bid = { type: BID_TYPES.NELLO, value: marks, player: state.currentPlayer };
@@ -240,7 +240,7 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
   }
   
   // Get valid plays for current player using threaded rules
-  const threadedRules = rules || composeRules([baseLayer]);
+  const threadedRules = rules || composeRules([baseRuleSet]);
   const validPlays = threadedRules.getValidPlays(state, state.currentPlayer);
   validPlays.forEach((domino: Domino) => {
     actions.push({
@@ -360,15 +360,15 @@ export function actionToLabel(action: GameAction): string {
  * Now internally uses the action system for consistency
  *
  * @param state Current game state
- * @param layers Optional array of layers to compose for action generation
+ * @param ruleSets Optional array of rule sets to compose for action generation
  * @param rules Optional composed rules for action execution
  */
 export function getNextStates(
   state: GameState,
-  layers?: readonly GameLayer[],
+  ruleSets?: readonly GameRuleSet[],
   rules?: GameRules
 ): StateTransition[] {
-  const validActions = getValidActions(state, layers, rules);
+  const validActions = getValidActions(state, ruleSets, rules);
   return validActions.map(action => ({
     id: actionToId(action),
     label: actionToLabel(action),

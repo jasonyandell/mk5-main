@@ -111,7 +111,7 @@ describe('Complete Game Flow Integration', () => {
       let state = createInitialState();
       // REMOVED: expect(state.tournamentMode).toBe(true);
 
-      // Note: Base engine now generates special contracts; use tournament variant to filter them
+      // Note: Base engine now generates special contracts; use tournament action transformer to filter them
       const initialTransitions = getNextStates(state);
 
       // Base engine allows special contracts (test updated for new architecture)

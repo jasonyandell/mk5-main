@@ -8,13 +8,13 @@
  * - Pure state management via kernel.ts pure functions
  * - Thin stateful wrapper for state management only
  * - Authorization via existing authorizeAndExecute
- * - Variant support via composition
+ * - Action transformer support via composition
  * - Deployable anywhere (local, Worker, Cloudflare)
  * - No orchestration or subscription management (GameServer handles that)
  */
 
 import type { GameState, GameAction } from '../game/types';
-import type { GameConfig, GameVariant } from '../game/types/config';
+import type { GameConfig, GameActionTransformer } from '../game/types/config';
 import type {
   GameView,
   ValidAction
@@ -24,10 +24,10 @@ import { ok, err } from '../game/multiplayer/types';
 import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
 import { createInitialState } from '../game/core/state';
 import { getValidActions } from '../game/core/gameEngine';
-import { applyVariants } from '../game/variants/registry';
-import type { VariantConfig } from '../game/variants/types';
+import { applyActionTransformers } from '../game/action-transformers/registry';
+import type { ActionTransformerConfig } from '../game/action-transformers/types';
 import { createMultiplayerGame, updatePlayerSession } from '../game/multiplayer/stateLifecycle';
-import { composeRules, baseLayer, getLayersByNames } from '../game/layers';
+import { composeRules, baseRuleSet, getRuleSetsByNames } from '../game/rulesets';
 import type { ExecutionContext } from '../game/types/execution';
 import {
   executeKernelAction,
@@ -52,7 +52,7 @@ export interface KernelUpdate {
  * - Pure state management (no mutations, only replacements)
  * - Action authorization and execution
  * - View generation with capability-based filtering
- * - Variant and layer composition
+ * - Action transformer and rule set composition
  *
  * NOT responsible for:
  * - Transport/networking
@@ -72,8 +72,8 @@ export class GameKernel {
   // Immutable config (set once in constructor, never mutated)
   private readonly metadata: {
     gameId: string;
-    variant: GameVariant | undefined;
-    variantConfigs: VariantConfig[];
+    variant: GameActionTransformer | undefined;
+    actionTransformerConfigs: ActionTransformerConfig[];
     created: number;
   };
   private readonly ctx: ExecutionContext;
@@ -95,8 +95,8 @@ export class GameKernel {
       capabilities: player.capabilities ?? this.buildBaseCapabilities(player.playerIndex, player.controlType)
     }));
 
-    // Compose variants into single getValidActions function
-    const variantConfigs = [
+    // Compose action transformers into single getValidActions function
+    const actionTransformerConfigs = [
       ...(config.variant
         ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
         : []),
@@ -111,28 +111,28 @@ export class GameKernel {
     this.metadata = {
       gameId,
       variant: config.variant,
-      variantConfigs,
+      actionTransformerConfigs,
       created: createdAt
     };
 
-    // Compose layers into rules
-    const enabledLayerNames = config.enabledLayers ?? [];
-    const enabledLayers = enabledLayerNames.length > 0
-      ? getLayersByNames(enabledLayerNames)
+    // Compose rule sets into rules
+    const enabledRuleSetNames = config.enabledRuleSets ?? [];
+    const enabledRuleSets = enabledRuleSetNames.length > 0
+      ? getRuleSetsByNames(enabledRuleSetNames)
       : [];
 
-    const layers = [baseLayer, ...enabledLayers];
-    const rules = composeRules(layers);
+    const ruleSets = [baseRuleSet, ...enabledRuleSets];
+    const rules = composeRules(ruleSets);
 
-    // Compose variants with layers/rules threaded through
-    const baseWithLayers = (state: GameState) =>
-      getValidActions(state, layers, rules);
+    // Compose action transformers with rule sets/rules threaded through
+    const baseWithRuleSets = (state: GameState) =>
+      getValidActions(state, ruleSets, rules);
 
-    const getValidActionsComposed = applyVariants(baseWithLayers, variantConfigs);
+    const getValidActionsComposed = applyActionTransformers(baseWithRuleSets, actionTransformerConfigs);
 
     // Create execution context (immutable after this point)
     this.ctx = Object.freeze({
-      layers: Object.freeze(layers),
+      ruleSets: Object.freeze(ruleSets),
       rules,
       getValidActions: getValidActionsComposed
     });
@@ -143,7 +143,7 @@ export class GameKernel {
       ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {}),
       ...(config.theme !== undefined ? { theme: config.theme } : {}),
       ...(config.colorOverrides !== undefined ? { colorOverrides: config.colorOverrides } : {}),
-      variants: variantConfigs
+      variants: actionTransformerConfigs
     });
 
     // Store pure GameState (NO filtering - filtering happens in buildKernelView())
@@ -152,8 +152,8 @@ export class GameKernel {
       gameId,
       coreState: initialState,
       players: normalizedPlayers,
-      enabledVariants: variantConfigs,
-      enabledLayers: config.enabledLayers ?? [],
+      enabledVariants: actionTransformerConfigs,
+      enabledRuleSets: config.enabledRuleSets ?? [],
       createdAt: now,
       lastActionAt: now
     });
@@ -178,7 +178,7 @@ export class GameKernel {
       {
         gameId: this.metadata.gameId,
         ...(this.metadata.variant ? { variant: this.metadata.variant } : {}),
-        variantConfigs: this.metadata.variantConfigs,
+        actionTransformerConfigs: this.metadata.actionTransformerConfigs,
         created: this.metadata.created,
         lastUpdate: this.lastUpdate
       }

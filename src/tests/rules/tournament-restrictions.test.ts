@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../game/types/config';
 import { GameKernel } from '../../kernel/GameKernel';
 
-// Tournament rules (baseLayer only) do not allow special contracts
+// Tournament rules (baseRuleSet only) do not allow special contracts
 // These tests verify that at the GameKernel level (action generation)
 
-describe('Tournament Variant Authority', () => {
-  it('prevents executing bids that variants remove', () => {
+describe('Tournament Action Transformer Authority', () => {
+  it('prevents executing bids that action transformers remove', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       variants: [{ type: 'tournament' }]
@@ -27,7 +27,7 @@ describe('Tournament Variant Authority', () => {
 
     const currentPlayer = kernel.getView('player-0').state.currentPlayer;
 
-    // Attempt to force a nello bid which tournament variant removes
+    // Attempt to force a nello bid which tournament action transformer removes
     const result = kernel.executeAction(`player-${currentPlayer}`, {
       type: 'bid',
       player: currentPlayer,

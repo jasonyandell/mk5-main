@@ -1,8 +1,10 @@
-# Texas 42 - Pure Functional Layer Composition with Composition Points
+# Texas 42 - Pure Functional RuleSet Composition with Composition Points
+
+**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "Layer" is now "RuleSet", "Variant" is now "ActionTransformer". Content preserved for reference.
 
 **Created**: 2025-10-25
 **Branch**: mk8
-**Status**: Architecture validated, ready for implementation
+**Status**: Architecture validated, ready for implementation (terminology updated 2025)
 **Supersedes**: remix-layers.md (adds composition points pattern)
 
 ---

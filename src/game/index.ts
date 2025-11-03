@@ -70,8 +70,8 @@ export { getPlayerView } from './core/playerView';
 
 // Rule validation
 // NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:
-// import { composeRules, baseLayer } from './layers';
-// const rules = composeRules([baseLayer]);
+// import { composeRules, baseRuleSet } from './rulesets';
+// const rules = composeRules([baseRuleSet]);
 // rules.isValidPlay(state, domino, playerId)
 // rules.getValidPlays(state, playerId)
 // rules.isValidBid(state, bid, playerHand)

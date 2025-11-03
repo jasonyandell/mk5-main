@@ -19,7 +19,7 @@
    - GameAction, Executor, ExecutionContext, StateTransition, GameEngine, Engine
 
 2. [Composition Systems](#2-composition-systems)
-   - GameRules, GameLayer, Layers, Variants, StateMachine
+   - GameRules, GameRuleSet, RuleSets, ActionTransformers, StateMachine
 
 3. [Multiplayer Architecture](#3-multiplayer-architecture)
    - PlayerSession, Capability, Authorization, Visibility, Consensus
@@ -40,7 +40,7 @@
    - ViewProjection, Components
 
 9. [Configuration & Initialization](#10-configuration--initialization)
-   - GameConfig, Variants, Themes
+   - GameConfig, ActionTransformers, Themes
 
 10. [Event Sourcing & Replay](#11-event-sourcing--replay)
     - Action History, URL Compression, Determinism
@@ -104,23 +104,23 @@
 ---
 
 ### ExecutionContext
-**Definition**: Immutable container bundling composed layers, rules, and valid action generator that always travel together through the system.
+**Definition**: Immutable container bundling composed rulesets, rules, and valid action generator that always travel together through the system.
 
 **Location**: `src/game/types/execution.ts` (referenced in GameKernel)
 
 **Key Properties**:
-- Enabled layers - Which special contracts are active
-- Composed rules - GameRules methods with layer overrides applied
-- Valid action generator - Action generation with variants applied
+- Enabled rulesets - Which special contracts are active
+- Composed rules - GameRules methods with ruleset overrides applied
+- Valid action generator - Action generation with action transformers applied
 
 **Purpose**:
 - Single composition point: All composition happens in GameKernel constructor
-- Ensures consistency: Layers and variants composed together, never separately
+- Ensures consistency: RuleSets and action transformers composed together, never separately
 - Enables polymorphism: Executors use context without inspecting state
 
 **Created Once**: GameKernel constructor creates it and threads through entire system
 
-**Related**: GameKernel, Layers, Variants, GameRules
+**Related**: GameKernel, RuleSets, ActionTransformers, GameRules
 
 ---
 
@@ -175,8 +175,8 @@
 
 **Key Functions**:
 - `executeAction(state, action, rules)` - Pure state transition
-- `getValidActions(state, layers, rules)` - What actions are possible
-- `getNextStates(state, layers, rules)` - All possible transitions
+- `getValidActions(state, ruleSets, rules)` - What actions are possible
+- `getNextStates(state, ruleSets, rules)` - All possible transitions
 - `actionToId(action)` - Serialize action
 - `actionToLabel(action)` - Human-readable label
 
@@ -184,14 +184,14 @@
 - Pure: No side effects, deterministic
 - Parameterized: Rules injected, not hardcoded
 - Zero coupling: No awareness of multiplayer, networking, UI
-- Composable: Works uniformly with any layers/variants
+- Composable: Works uniformly with any rulesets/action transformers
 
 **Relationship to Kernel**:
 - Engine = pure game logic only
 - Kernel = engine + multiplayer (authorization, filtering, sessions)
 - Kernel **composes** engine and wraps with multiplayer concerns
 
-**Related**: GameKernel, Executor, Layers, Variants
+**Related**: GameKernel, Executor, RuleSets, ActionTransformers
 
 ---
 
@@ -200,7 +200,7 @@
 ### GameRules (Interface)
 **Definition**: Interface of 13 pure methods that determine HOW the game executes.
 
-**Location**: `src/game/layers/types.ts`
+**Location**: `src/game/rulesets/types.ts`
 
 **The 13 Methods** (organized by category):
 
@@ -229,16 +229,16 @@
 
 **Key Insight**: Executors call these methods, never inspect state. This enables polymorphism - same executor code works for all variants.
 
-**Composed By**: Layers override specific methods, compose via `composeRules()` reduce pattern
+**Composed By**: RuleSets override specific methods, compose via `composeRules()` reduce pattern
 
-**Related**: GameLayer, Executor, Base Layer, Special Contracts
+**Related**: GameRuleSet, Executor, Base RuleSet, Special Contracts
 
 ---
 
-### GameLayer
-**Definition**: Composable layer that overrides specific rules and/or transforms actions.
+### GameRuleSet
+**Definition**: Composable ruleset that overrides specific rules and/or transforms actions.
 
-**Location**: `src/game/layers/types.ts`
+**Location**: `src/game/rulesets/types.ts`
 
 **Two Composition Surfaces**:
 
@@ -248,129 +248,129 @@
 
 2. **Action Transformation**: Filter, annotate, or replace action generation
    - Example: Nello disables certain special bid actions
-   - Receives previous layer's result for chaining
+   - Receives previous ruleset's result for chaining
 
-**Composition Pattern**: Layers compose via reduce pattern where later layers override earlier ones without modifying core executors.
+**Composition Pattern**: RuleSets compose via reduce pattern where later rulesets override earlier ones without modifying core executors.
 
-**Related**: GameRules, Variant, Layer Composition, Base Layer
+**Related**: GameRules, ActionTransformer, RuleSet Composition, Base RuleSet
 
 ---
 
-### Layer Implementations
+### RuleSet Implementations
 
-#### Base Layer
+#### Base RuleSet
 **Definition**: Standard Texas 42 rules.
 
-**Location**: `src/game/layers/base.ts`
+**Location**: `src/game/rulesets/base.ts`
 
 **Provides**: All 13 GameRules methods with standard 4-player Texas 42 logic
 
-**Related**: GameRules, GameLayer
+**Related**: GameRules, GameRuleSet
 
-#### Nello Layer
+#### Nello RuleSet
 **Definition**: Partner sits out, 3-player tricks, lose all tricks to win.
 
-**Location**: `src/game/layers/nello.ts`
+**Location**: `src/game/rulesets/nello.ts`
 
 **Overrides**:
 - `isTrickComplete`: Return true at 3 plays (partner out)
 - `checkHandOutcome`: Check if bidder lost all tricks (wins hand)
 - `calculateScore`: Nello-specific scoring
 
-**Related**: GameLayer, HandOutcome, Special Contracts
+**Related**: GameRuleSet, HandOutcome, Special Contracts
 
-#### Plunge Layer
+#### Plunge RuleSet
 **Definition**: Partner selects trump and leads, bidder must win all tricks.
 
-**Location**: `src/game/layers/plunge.ts`
+**Location**: `src/game/rulesets/plunge.ts`
 
 **Overrides**: Similar to Nello but reverse outcome logic
 
-#### Splash Layer
+#### Splash RuleSet
 **Definition**: Like plunge but requires 3+ doubles in hand.
 
-**Location**: `src/game/layers/splash.ts`
+**Location**: `src/game/rulesets/splash.ts`
 
 **Overrides**: Builds on plunge with additional validation
 
-#### Sevens Layer
+#### Sevens RuleSet
 **Definition**: Distance from 7 wins, no follow-suit rule.
 
-**Location**: `src/game/layers/sevens.ts`
+**Location**: `src/game/rulesets/sevens.ts`
 
 **Overrides**: Completely different scoring and led-suit logic
 
 ---
 
-### Layer Composition
-**Definition**: Pure reduce pattern that composes multiple layers into single GameRules interface.
+### RuleSet Composition
+**Definition**: Pure reduce pattern that composes multiple rulesets into single GameRules interface.
 
-**Location**: `src/game/layers/compose.ts`
+**Location**: `src/game/rulesets/compose.ts`
 
 **Algorithm**:
 ```typescript
-export function composeRules(layers: GameLayer[]): GameRules {
-  return layers.reduce((prev, layer) => ({
+export function composeRules(ruleSets: GameRuleSet[]): GameRules {
+  return ruleSets.reduce((prev, ruleSet) => ({
     // For each rule method
     getTrumpSelector: (state, bid) =>
-      layer.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
+      ruleSet.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
     // ... repeat for all 13 methods
   }), baseRules);
 }
 ```
 
-**Key Pattern**: Each layer gets `prev` parameter - override or delegate
+**Key Pattern**: Each ruleset gets `prev` parameter - override or delegate
 
-**Related**: GameRules, GameLayer
+**Related**: GameRules, GameRuleSet
 
 ---
 
-### Variant
+### ActionTransformer
 **Definition**: Function that transforms the action state machine to change what actions are available.
 
-**Location**: `src/game/variants/types.ts`
+**Location**: `src/game/action-transformers/types.ts`
 
-**Variant Operations**:
+**ActionTransformer Operations**:
 - **Filter**: Remove actions (tournament removes special contracts)
 - **Annotate**: Add metadata (hints adds hint field, speed adds autoExecute flag)
 - **Script**: Inject actions (oneHand scripts bidding sequence)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
-**Composition**: Variants wrap via function composition - each variant wraps the previous one, building a transformation pipeline.
+**Composition**: ActionTransformers wrap via function composition - each action transformer wraps the previous one, building a transformation pipeline.
 
-**Key Insight**: Variants transform action generation independently from layers (which transform execution rules).
+**Key Insight**: ActionTransformers transform action generation independently from rulesets (which transform execution rules).
 
-**Related**: StateMachine, VariantConfig, Variant Implementations
+**Related**: StateMachine, ActionTransformerConfig, ActionTransformer Implementations
 
 ---
 
-### Variant Implementations
+### ActionTransformer Implementations
 
-#### Tournament Variant
+#### Tournament ActionTransformer
 **Definition**: Disable special contracts (nello, splash, plunge, sevens).
 
-**Location**: `src/game/variants/tournament.ts`
+**Location**: `src/game/action-transformers/tournament.ts`
 
 **Operation**: Filter - removes special bids from action list
 
-#### OneHand Variant
+#### OneHand ActionTransformer
 **Definition**: Single hand game with scripted actions.
 
-**Location**: `src/game/variants/oneHand.ts`
+**Location**: `src/game/action-transformers/oneHand.ts`
 
 **Operations**: Script bidding, replace score-hand with end-game
 
-#### Hints Variant
+#### Hints ActionTransformer
 **Definition**: Add hint metadata to actions.
 
-**Location**: `src/game/variants/hints.ts`
+**Location**: `src/game/action-transformers/hints.ts`
 
 **Operation**: Annotate - adds `hint` field to each action
 
-#### Speed Variant
+#### Speed ActionTransformer
 **Definition**: Auto-play when only one option available.
 
-**Location**: `src/game/variants/speed.ts`
+**Location**: `src/game/action-transformers/speed.ts`
 
 **Operation**: Annotate - adds `autoExecute: true` flag
 
@@ -383,15 +383,15 @@ export function composeRules(layers: GameLayer[]): GameRules {
 
 **Location**: Referenced throughout, created by `getValidActions()`
 
-**Composition**: Variants compose StateMachines:
+**Composition**: ActionTransformers compose StateMachines:
 ```typescript
-const base = (state) => getValidActions(state, layers, rules);
+const base = (state) => getValidActions(state, ruleSets, rules);
 const withTournament = tournament(base);
 const withOneHand = oneHand(withTournament);
 // Now withOneHand is the composed state machine
 ```
 
-**Related**: Variant, getValidActions, Variant Composition
+**Related**: ActionTransformer, getValidActions, ActionTransformer Composition
 
 ---
 
@@ -546,18 +546,18 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 - `state: GameState` - Core game state
 - `sessions: Map<string, PlayerSession>` - Active player sessions
 - `lastActionAt: number` - Timestamp of last action
-- `variantConfig: VariantConfig[]` - Active variants
+- `actionTransformerConfig: ActionTransformerConfig[]` - Active action transformers
 
 **Used By**: GameKernel (stores MultiplayerGameState, not GameState)
 
-**Related**: GameState, PlayerSession, VariantConfig
+**Related**: GameState, PlayerSession, ActionTransformerConfig
 
 ---
 
 ## 4. Server Architecture
 
 ### GameKernel
-**Definition**: Pure game authority that stores state, composes layers/variants, authorizes actions, and filters views.
+**Definition**: Pure game authority that stores state, composes rulesets/action transformers, authorizes actions, and filters views.
 
 **Location**: `src/kernel/GameKernel.ts`
 
@@ -1232,20 +1232,20 @@ GameServer validates and executes
 ```typescript
 playerTypes: ('human' | 'ai')[]  // Seat control
 shuffleSeed: number              // Deterministic shuffle
-enabledLayers: string[]          // Active special contracts
-enabledVariants: VariantConfig[] // Active variants
+enabledRuleSets: string[]        // Active special contracts
+enabledActionTransformers: ActionTransformerConfig[] // Active action transformers
 theme: string                    // DaisyUI theme
 colorOverrides: Record<string, string>  // CSS variables
 ```
 
 **Used By**: GameKernel constructor, Game initialization
 
-**Related**: VariantConfig, Theme System
+**Related**: ActionTransformerConfig, Theme System
 
 ---
 
-### VariantConfig
-**Definition**: Configuration for enabled variant.
+### ActionTransformerConfig
+**Definition**: Configuration for enabled action transformer.
 
 **Location**: `src/game/types/config.ts`
 
@@ -1253,11 +1253,11 @@ colorOverrides: Record<string, string>  // CSS variables
 ```typescript
 {
   type: 'tournament' | 'oneHand' | 'hints' | 'speed';
-  config?: Record<string, any>  // Variant-specific options
+  config?: Record<string, any>  // ActionTransformer-specific options
 }
 ```
 
-**Related**: GameConfig, Variant
+**Related**: GameConfig, ActionTransformer
 
 ---
 
@@ -1527,13 +1527,13 @@ colorOverrides: Record<string, string>  // CSS variables
 **Definition**: Achieve behavior via function composition, not conditional flags.
 
 **Applied To**:
-- Layers override methods (not flags)
-- Variants wrap state machines (not switches)
+- RuleSets override methods (not flags)
+- ActionTransformers wrap state machines (not switches)
 - GameKernel composes in constructor
 
 **Benefit**: Eliminates conditional complexity, enables unlimited combinations
 
-**Related**: Parametric Polymorphism, Layer Composition
+**Related**: Parametric Polymorphism, RuleSet Composition
 
 ---
 
@@ -1617,13 +1617,13 @@ colorOverrides: Record<string, string>  // CSS variables
    - Never identity checks (playerId comparison)
 
 4. **Single Composition Point**
-   - GameKernel constructor ONLY place layers/variants compose
+   - GameKernel constructor ONLY place rulesets/action transformers compose
    - ExecutionContext created once, used everywhere
 
 5. **Zero Coupling**
    - Core engine has zero multiplayer awareness
    - Core engine has zero networking awareness
-   - Layers/variants don't reference multiplayer
+   - RuleSets/action transformers don't reference multiplayer
 
 6. **Parametric Polymorphism**
    - Executors call `rules.method()`, never inspect state
@@ -1651,11 +1651,11 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **GameKernel executes**:
 1. Find PlayerSession by player ID
-2. Get valid actions via composed state machine (with layers and variants)
+2. Get valid actions via composed state machine (with rulesets and action transformers)
 3. Filter actions by session capabilities (observe-hands, act-as-player, etc.)
 4. Validate requested action against filtered set
 5. Execute action via executor (which delegates to rules methods)
-6. Process any auto-execute actions (speed variant, oneHand variant, etc.)
+6. Process any auto-execute actions (speed action transformer, oneHand action transformer, etc.)
 
 **GameKernel notifies**: For each subscriber with their perspective:
 1. Filter state by capabilities (which hands are visible)
@@ -1672,19 +1672,19 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **GameKernel initialization** (single composition point):
 
-1. **Get enabled layers**: Read from GameConfig which special contracts (nello, splash, plunge, sevens) are active
+1. **Get enabled rulesets**: Read from GameConfig which special contracts (nello, splash, plunge, sevens) are active
 
-2. **Compose layers → GameRules**: Apply reduce pattern where each layer overrides specific rule methods. Non-overridden rules pass through unchanged.
+2. **Compose rulesets → GameRules**: Apply reduce pattern where each ruleset overrides specific rule methods. Non-overridden rules pass through unchanged.
 
 3. **Create base state machine**: Build action generator using composed rules
 
-4. **Apply variants to actions**: Function composition wraps the base state machine. Tournament filters, OneHand scripts, Hints annotates.
+4. **Apply action transformers to actions**: Function composition wraps the base state machine. Tournament filters, OneHand scripts, Hints annotates.
 
-5. **Bundle ExecutionContext**: Group layers, rules, and action generator into immutable container
+5. **Bundle ExecutionContext**: Group rulesets, rules, and action generator into immutable container
 
-6. **Use everywhere**: Executors receive context and call rule methods - they never inspect state or know about specific variants
+6. **Use everywhere**: Executors receive context and call rule methods - they never inspect state or know about specific action transformers
 
-**Result**: Same executor code works for all variant combinations with zero conditional logic.
+**Result**: Same executor code works for all action transformer combinations with zero conditional logic.
 
 ### State Transformation Pipeline
 
@@ -1725,15 +1725,15 @@ colorOverrides: Record<string, string>  // CSS variables
 - state.ts: State utilities
 - rules.ts: Rule validation
 
-### src/game/layers/
-- types.ts: GameRules (13 methods), GameLayer, HandOutcome
-- compose.ts: Layer composition via reduce
-- base.ts: Base Layer (standard Texas 42)
+### src/game/rulesets/
+- types.ts: GameRules (13 methods), GameRuleSet, HandOutcome
+- compose.ts: RuleSet composition via reduce
+- base.ts: Base RuleSet (standard Texas 42)
 - nello.ts, splash.ts, plunge.ts, sevens.ts: Special contracts
 
-### src/game/variants/
-- types.ts: Variant, StateMachine
-- registry.ts: applyVariants composition
+### src/game/action-transformers/
+- types.ts: ActionTransformer, StateMachine
+- registry.ts: applyActionTransformers composition
 - tournament.ts, oneHand.ts, hints.ts, speed.ts: Implementations
 
 ### src/game/multiplayer/
@@ -1770,15 +1770,15 @@ colorOverrides: Record<string, string>  // CSS variables
 ## How to Navigate This Document
 
 **By Role**:
-- **Game Designer**: See Variants, Layers, Domain Objects
+- **Game Designer**: See ActionTransformers, RuleSets, Domain Objects
 - **Backend Engineer**: See Server Architecture, Authorization, Event Sourcing, AI Architecture
 - **Frontend Engineer**: See View Projection, Client Architecture, Protocol
 - **AI Developer**: See AI Architecture (Section 6), Hand Analysis System (6.1), GameSimulator (6.2)
 - **Architect**: See [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) for patterns and philosophy
 
 **By Task**:
-- **Add new special contract**: Layers, Layer Implementations, GameRules
-- **Add new game variant**: Variants, StateMachine, Variant Implementations
+- **Add new special contract**: RuleSets, RuleSet Implementations, GameRules
+- **Add new game action transformer**: ActionTransformers, StateMachine, ActionTransformer Implementations
 - **Fix authorization bug**: Authorization, Capability, PlayerSession
 - **Debug UI issue**: ViewProjection, FilteredGameState, Protocol
 - **Understand event sourcing**: Action History, Event Sourcing Formula, URL Compression

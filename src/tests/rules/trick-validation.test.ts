@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules } from '../../game/layers/compose';
-import { baseLayer } from '../../game/layers';
+import { composeRules } from '../../game/rulesets/compose';
+import { baseRuleSet } from '../../game/rulesets';
 import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
@@ -8,7 +8,7 @@ import { getDominoSuit } from '../../game/core/dominoes';
 import type { TrumpSelection, Play, Domino, GameState, LedSuitOrNone } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 // Helper function to create dominoes for testing
 function createDomino(high: number, low: number): Domino {

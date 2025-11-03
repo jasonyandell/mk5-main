@@ -13,11 +13,11 @@ export function replayActions(
   config: GameConfig,
   actions: GameAction[]
 ): GameState {
-  // Variants do not change execution: we simply reapply the recorded actions.
-  // We capture the active variant configuration so that any caller asking for
-  // valid actions after replay can compose the same variant pipeline.
+  // Action transformers do not change execution: we simply reapply the recorded actions.
+  // We capture the active action transformer configuration so that any caller asking for
+  // valid actions after replay can compose the same action transformer pipeline.
 
-  const variantConfigs = [
+  const actionTransformerConfigs = [
     ...(config.variant
       ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
       : []),
@@ -30,7 +30,7 @@ export function replayActions(
     ...(config.shuffleSeed !== undefined && { shuffleSeed: config.shuffleSeed }),
     ...(config.theme !== undefined && { theme: config.theme }),
     ...(config.colorOverrides !== undefined && { colorOverrides: config.colorOverrides }),
-    ...(variantConfigs.length ? { variants: variantConfigs } : {})
+    ...(actionTransformerConfigs.length ? { variants: actionTransformerConfigs } : {})
   });
 
   // Add initialConfig to state
@@ -38,7 +38,7 @@ export function replayActions(
     ...state,
     initialConfig: {
       ...config,
-      ...(variantConfigs.length ? { variants: variantConfigs } : {})
+      ...(actionTransformerConfigs.length ? { variants: actionTransformerConfigs } : {})
     }
   };
 

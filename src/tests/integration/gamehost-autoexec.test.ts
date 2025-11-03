@@ -16,7 +16,7 @@ function createPlayers(config: GameConfig) {
 }
 
 describe('GameKernel auto-execute', () => {
-  it('runs introductory scripts for one-hand variant automatically', () => {
+  it('runs introductory scripts for one-hand action transformer automatically', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       variants: [{ type: 'one-hand' }],

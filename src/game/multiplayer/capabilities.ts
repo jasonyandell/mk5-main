@@ -129,8 +129,8 @@ export class CapabilityBuilder {
     return this;
   }
 
-  configureVariant(): this {
-    this.capabilities.push({ type: 'configure-variant' });
+  configureActionTransformer(): this {
+    this.capabilities.push({ type: 'configure-action-transformer' });
     return this;
   }
 

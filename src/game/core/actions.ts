@@ -1,6 +1,6 @@
 import type { GameState, GameAction, TrumpSelection, Bid, Play, Trick, LedSuit } from '../types';
-import type { GameRules } from '../layers/types';
-import { composeRules, baseLayer } from '../layers';
+import type { GameRules } from '../rulesets/types';
+import { composeRules, baseRuleSet } from '../rulesets';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
@@ -8,8 +8,8 @@ import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
 
-// Default rules (base layer only, no special contracts)
-const defaultRules = composeRules([baseLayer]);
+// Default rules (base rule set only, no special contracts)
+const defaultRules = composeRules([baseRuleSet]);
 
 /**
  * Pure function that executes an action on a game state.
@@ -18,7 +18,7 @@ const defaultRules = composeRules([baseLayer]);
  *
  * @param state - Current game state
  * @param action - Action to execute
- * @param rules - Game rules (defaults to base layer if not provided)
+ * @param rules - Game rules (defaults to base rule set if not provided)
  */
 export function executeAction(state: GameState, action: GameAction, rules: GameRules = defaultRules): GameState {
   // Always record the action in history (even if invalid)

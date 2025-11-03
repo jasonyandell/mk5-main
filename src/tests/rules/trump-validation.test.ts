@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseLayer } from '../../game/layers';
+import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { getTrumpValue } from '../../game/core/rules';
 import type { TrumpSelection } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Trump Validation', () => {
   describe('isValidTrump', () => {

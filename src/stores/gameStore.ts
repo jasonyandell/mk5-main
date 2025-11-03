@@ -15,7 +15,7 @@ import type { ValidAction } from '../shared/multiplayer/protocol';
 /**
  * Pure client/server gameStore.
  * Everything flows through protocol-based GameClient.
- * Client is dumb - server handles ALL game logic via variants.
+ * Client is dumb - server handles ALL game logic via action transformers.
  */
 
 // Detect test mode
@@ -308,9 +308,9 @@ export const viewProjection = derived<
   }
 );
 
-// Store for tracking current game variant
-export const gameVariant = derived(clientState, () => {
-  // Extract variant from game view metadata if available
+// Store for tracking current game action transformer
+export const gameActionTransformer = derived(clientState, () => {
+  // Extract action transformer from game view metadata if available
   if (!networkClient) return undefined;
   const view = networkClient.getCachedView();
   return view?.metadata?.variant;
@@ -318,12 +318,12 @@ export const gameVariant = derived(clientState, () => {
 
 // Store for one-hand mode state (derived from game state)
 export const oneHandState = derived(
-  [gameState, gameVariant],
-  ([$gameState, $gameVariant]) => {
-    const isOneHand = $gameVariant?.type === 'one-hand';
+  [gameState, gameActionTransformer],
+  ([$gameState, $gameActionTransformer]) => {
+    const isOneHand = $gameActionTransformer?.type === 'one-hand';
     const isComplete = isOneHand && $gameState.phase === 'game_end';
-    const seed = $gameVariant?.config?.originalSeed;
-    const attempts = $gameVariant?.config?.attempts || 1;
+    const seed = $gameActionTransformer?.config?.originalSeed;
+    const attempts = $gameActionTransformer?.config?.attempts || 1;
 
     return {
       active: isOneHand,
@@ -468,9 +468,9 @@ export const gameActions = {
 };
 
 /**
- * Game variant actions - for special game modes
+ * Game action transformer actions - for special game modes
  */
-export const gameVariants = {
+export const gameActionTransformers = {
   /**
    * Start a one-hand challenge game
    */
@@ -550,16 +550,20 @@ export const gameVariants = {
     }
 
     // Start new game with same seed, incremented attempts
-    await gameVariants.startOneHand(state.seed);
+    await gameActionTransformers.startOneHand(state.seed);
   },
 
   /**
-   * Exit variant mode and return to standard game
+   * Exit action transformer mode and return to standard game
    */
-  exitVariant: async () => {
+  exitActionTransformer: async () => {
     await gameActions.resetGame();
   }
 };
+
+// Backward compatibility aliases
+export const gameVariants = gameActionTransformers;
+export const gameVariant = gameActionTransformer;
 
 // Store to track if we're finding a seed (derived from adapter state)
 export const findingSeed = writable(false);

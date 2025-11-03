@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { composeRules, baseLayer } from '../../game/layers';
+import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Tournament Scenarios', () => {
   function createTournamentState(): GameState {
@@ -30,7 +30,7 @@ describe('Tournament Scenarios', () => {
     });
 
     it('should reject special contracts in tournament rules', () => {
-      // Tournament rules (baseLayer only) do not support special contracts
+      // Tournament rules (baseRuleSet only) do not support special contracts
       const state = createTournamentState();
       state.phase = 'bidding';
       state.bids = [];

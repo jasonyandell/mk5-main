@@ -111,7 +111,7 @@ interface MultiplayerGameState {
   players: readonly PlayerSession[]        // 0-4 players
   createdAt: number                        // Timestamp
   lastActionAt: number                     // Last activity timestamp
-  enabledVariants: Variant[]               // Active rule modifications
+  enabledActionTransformers: ActionTransformer[]  // Active rule modifications
 }
 ```
 
@@ -197,7 +197,7 @@ getValidActionsForPlayer: (
 1. Find player session by playerId
 2. If player not found or not connected, return empty array
 3. Get all valid actions from core engine
-4. Apply variants (if any)
+4. Apply action transformers (if any)
 5. Filter by authorization (canPlayerExecuteAction)
 6. Return filtered list
 
@@ -374,7 +374,7 @@ getVisibleActions(actions, playerWithoutHints)
 ### 4.5 Integration Pattern
 
 ```
-1. Variants modify state machine → actions with metadata
+1. ActionTransformers modify state machine → actions with metadata
 2. Authorization filters actions → only actions player can execute
 3. Visibility filters metadata → only metadata player can see
 4. Client receives personalized view
@@ -382,7 +382,7 @@ getVisibleActions(actions, playerWithoutHints)
 
 ---
 
-## 5. Variant System
+## 5. ActionTransformer System
 
 ### 5.1 Purpose
 
@@ -394,43 +394,43 @@ Enable compositional game rule modifications that can be mixed, matched, and sto
 // A state machine produces actions from state
 type StateMachine = (state: GameState) → GameAction[]
 
-// A variant transforms a state machine
-type Variant = (baseMachine: StateMachine) → StateMachine
+// An action transformer transforms a state machine
+type ActionTransformer = (baseMachine: StateMachine) → StateMachine
 
-// Parameterized variants
-type VariantFactory<P> = (params: P) → Variant
+// Parameterized action transformers
+type ActionTransformerFactory<P> = (params: P) → ActionTransformer
 ```
 
-### 5.3 How Variants Work
+### 5.3 How ActionTransformers Work
 
-Variants are function transformers. They take a state machine (function that produces actions) and return a modified state machine.
+ActionTransformers are function transformers. They take a state machine (function that produces actions) and return a modified state machine.
 
 **Composition Pattern**:
 ```typescript
 const baseRules = getValidActions
-const modifiedRules = variant1(variant2(variant3(baseRules)))
+const modifiedRules = actionTransformer1(actionTransformer2(actionTransformer3(baseRules)))
 
 // Or using pipe
 const finalRules = pipe(
   baseRules,
-  variant1,
-  variant2,
-  variant3
+  actionTransformer1,
+  actionTransformer2,
+  actionTransformer3
 )
 
 const actions = finalRules(state)
 ```
 
-### 5.4 Variant Operations
+### 5.4 ActionTransformer Operations
 
-Variants can perform four operations on actions:
+ActionTransformers can perform four operations on actions:
 
 1. **Filter**: Remove actions (tournament mode removes special contracts)
 2. **Transform**: Modify action properties (speed mode adds autoExecute flag)
 3. **Annotate**: Add metadata (showHints adds hint field)
 4. **Replace**: Swap action types (single hand mode replaces score-hand with end-game)
 
-### 5.5 Standard Variants
+### 5.5 Standard ActionTransformers
 
 #### 5.5.1 Tournament Mode
 
@@ -438,11 +438,11 @@ Variants can perform four operations on actions:
 
 **Implementation Pattern**:
 ```typescript
-const tournamentMode: Variant = (baseMachine) => (state) => {
+const tournamentMode: ActionTransformer = (baseMachine) => (state) => {
   const actions = baseMachine(state)
-  
-  return actions.filter(action => 
-    action.type !== 'bid' || 
+
+  return actions.filter(action =>
+    action.type !== 'bid' ||
     ['points', 'marks'].includes(action.bid)
   )
 }
@@ -456,15 +456,15 @@ const tournamentMode: Variant = (baseMachine) => (state) => {
 
 **Implementation Pattern**:
 ```typescript
-const forcedBidMinimum = (minBid: number): Variant => {
+const forcedBidMinimum = (minBid: number): ActionTransformer => {
   return (baseMachine) => (state) => {
     const actions = baseMachine(state)
-    
+
     if (state.phase !== 'bidding') return actions
-    
+
     const hasBids = state.bids.some(b => b.type !== 'pass')
     if (hasBids) return actions
-    
+
     return actions.filter(action => {
       if (action.type === 'pass') return false
       if (action.type === 'bid' && action.bid === 'points') {
@@ -484,21 +484,21 @@ const forcedBidMinimum = (minBid: number): Variant => {
 
 **Implementation Pattern**:
 ```typescript
-const nelloMustPlayAlone: Variant = (baseMachine) => (state) => {
+const nelloMustPlayAlone: ActionTransformer = (baseMachine) => (state) => {
   const actions = baseMachine(state)
-  
+
   if (state.phase !== 'playing') return actions
-  
+
   // Check if partner bid nello
   const currentPlayerIndex = state.currentPlayer
   const partnerIndex = (currentPlayerIndex + 2) % 4
   const winningBid = state.winningBid
-  
+
   if (winningBid?.player === partnerIndex && winningBid?.type === 'nello') {
     // Partner is playing nello - current player passes their turn
     return [{ type: 'auto-pass' }]
   }
-  
+
   return actions
 }
 ```
@@ -511,13 +511,13 @@ const nelloMustPlayAlone: Variant = (baseMachine) => (state) => {
 
 **Implementation Pattern**:
 ```typescript
-const speedMode: Variant = (baseMachine) => (state) => {
+const speedMode: ActionTransformer = (baseMachine) => (state) => {
   const actions = baseMachine(state)
-  
+
   if (state.phase !== 'playing') return actions
-  
+
   const playActions = actions.filter(a => a.type === 'play')
-  
+
   if (playActions.length === 1) {
     return [{
       ...playActions[0],
@@ -525,7 +525,7 @@ const speedMode: Variant = (baseMachine) => (state) => {
       delay: 300
     }]
   }
-  
+
   return actions
 }
 ```
@@ -538,11 +538,11 @@ const speedMode: Variant = (baseMachine) => (state) => {
 
 **Implementation Pattern**:
 ```typescript
-const singleHandMode = (seed: string): Variant => {
+const singleHandMode = (seed: string): ActionTransformer => {
   return (baseMachine) => (state) => {
     const actions = baseMachine(state)
-    
-    if (state.phase === 'scoring' && 
+
+    if (state.phase === 'scoring' &&
         state.consensus.scoreHand.size === 4) {
       return actions.map(action => {
         if (action.type === 'score-hand') {
@@ -557,7 +557,7 @@ const singleHandMode = (seed: string): Variant => {
         return action
       })
     }
-    
+
     return actions
   }
 }
@@ -571,9 +571,9 @@ const singleHandMode = (seed: string): Variant => {
 
 **Implementation Pattern**:
 ```typescript
-const showHints: Variant = (baseMachine) => (state) => {
+const showHints: ActionTransformer = (baseMachine) => (state) => {
   const actions = baseMachine(state)
-  
+
   return actions.map(action => ({
     ...action,
     hint: generateHint(state, action)
@@ -594,12 +594,12 @@ const tutorialPlayer = {
 }
 
 // When getting actions for tutorial player:
-// 1. showHints variant adds hints
+// 1. showHints action transformer adds hints
 // 2. getVisibleActions checks see-hints capability
 // 3. Hints are included in result
 
 // When getting actions for AI:
-// 1. showHints variant adds hints
+// 1. showHints action transformer adds hints
 // 2. getVisibleActions checks capabilities (no see-hints)
 // 3. Hints are stripped from result
 ```
@@ -614,25 +614,25 @@ const dailyChallenge = (params: {
   date: string,
   difficulty: 'easy' | 'medium' | 'hard',
   starThresholds: number[]
-}): Variant => {
+}): ActionTransformer => {
   const seed = `daily-${params.date}-${params.difficulty}`
-  
+
   return (baseMachine) => (state) => {
     let actions = baseMachine(state)
-    
+
     // Difficulty modifiers during bidding
     if (params.difficulty === 'hard' && state.phase === 'bidding') {
-      actions = actions.filter(a => 
+      actions = actions.filter(a =>
         a.type !== 'bid' || a.bid !== 'nello'
       )
     }
-    
+
     // End game with star rating
-    if (state.phase === 'scoring' && 
+    if (state.phase === 'scoring' &&
         state.consensus.scoreHand.size === 4) {
       const score = state.score[0]
       const stars = calculateStars(score, params.starThresholds)
-      
+
       actions = actions.map(action => {
         if (action.type === 'score-hand') {
           return {
@@ -645,13 +645,13 @@ const dailyChallenge = (params: {
         return action
       })
     }
-    
+
     return actions
   }
 }
 ```
 
-**Usage**: 
+**Usage**:
 ```typescript
 dailyChallenge({
   date: '2025-01-15',
@@ -660,14 +660,14 @@ dailyChallenge({
 })
 ```
 
-### 5.6 Variant Composition
+### 5.6 ActionTransformer Composition
 
-Variants compose naturally through function composition:
+ActionTransformers compose naturally through function composition:
 
 ```typescript
 // Tournament rules
 const tournamentGame = {
-  enabledVariants: [
+  enabledActionTransformers: [
     tournamentMode,
     forcedBidMinimum(30)
   ]
@@ -675,7 +675,7 @@ const tournamentGame = {
 
 // Tutorial mode
 const tutorialGame = {
-  enabledVariants: [
+  enabledActionTransformers: [
     singleHandMode('tutorial-1'),
     speedMode,
     showHints,
@@ -685,7 +685,7 @@ const tutorialGame = {
 
 // Daily challenge
 const dailyGame = {
-  enabledVariants: [
+  enabledActionTransformers: [
     dailyChallenge({
       date: '2025-01-15',
       difficulty: 'hard',
@@ -696,28 +696,28 @@ const dailyGame = {
 }
 ```
 
-### 5.7 Variant Application
+### 5.7 ActionTransformer Application
 
-Variants are stored in game state and applied when generating actions:
+ActionTransformers are stored in game state and applied when generating actions:
 
 ```typescript
-function getValidActionsWithVariants(
+function getValidActionsWithActionTransformers(
   state: MultiplayerGameState
 ): GameAction[] {
   // Start with base state machine
   let machine: StateMachine = getValidActions
-  
-  // Apply each variant in order
-  for (const variant of state.enabledVariants) {
-    machine = variant(machine)
+
+  // Apply each action transformer in order
+  for (const actionTransformer of state.enabledActionTransformers) {
+    machine = actionTransformer(machine)
   }
-  
+
   // Execute final composed machine
   return machine(state.coreState)
 }
 ```
 
-**Order matters**: Variants apply left-to-right. If two variants conflict, the rightmost wins.
+**Order matters**: ActionTransformers apply left-to-right. If two action transformers conflict, the rightmost wins.
 
 ---
 
@@ -1095,7 +1095,7 @@ const client = createGameClient('offline', {
   workerUrl: '/worker.js'
 })
 
-// Initialize with tutorial variant
+// Initialize with tutorial action transformers
 const game = createMultiplayerGame(
   'tutorial',
   initialState,
@@ -1111,7 +1111,7 @@ const game = createMultiplayerGame(
     }
   ]
 )
-game.enabledVariants = [
+game.enabledActionTransformers = [
   singleHandMode('tutorial-1'),
   speedMode,
   showHints,
@@ -1218,7 +1218,7 @@ const todayChallenge = createMultiplayerGame(
   ]
 )
 
-todayChallenge.enabledVariants = [
+todayChallenge.enabledActionTransformers = [
   dailyChallenge({
     date: '2025-01-15',
     difficulty: 'hard',
@@ -1231,7 +1231,7 @@ todayChallenge.enabledVariants = [
 // ... add AI clients ...
 
 // Play game
-// When scoring completes, dailyChallenge variant replaces score-hand with:
+// When scoring completes, dailyChallenge action transformer replaces score-hand with:
 // {
 //   type: 'end-game',
 //   seed: 'daily-2025-01-15-hard',
@@ -1277,7 +1277,7 @@ AI Clients: Check if their turn, act if so
 ```
 Base State (full information)
   ↓
-Apply variants → Actions with metadata (hints, etc)
+Apply action transformers → Actions with metadata (hints, etc)
   ↓
 Authorization filter → Actions player can execute
   ↓
@@ -1286,16 +1286,16 @@ Visibility filter → Remove metadata player cannot see
 Client receives personalized view
 ```
 
-### 9.3 Variant Application Flow
+### 9.3 ActionTransformer Application Flow
 
 ```
 Core state machine: getValidActions(state)
   ↓
-Variant 1: tournament mode (removes special bids)
+ActionTransformer 1: tournament mode (removes special bids)
   ↓
-Variant 2: forced bid minimum (removes low bids)
+ActionTransformer 2: forced bid minimum (removes low bids)
   ↓
-Variant 3: show hints (adds hint metadata)
+ActionTransformer 3: show hints (adds hint metadata)
   ↓
 Final action list with all transformations applied
 ```
@@ -1322,11 +1322,11 @@ Final action list with all transformations applied
 
 **Implication**: Same code runs online and offline. Can switch transports without changing game logic.
 
-### 10.4 Variant Composability
+### 10.4 ActionTransformer Composability
 
-**Invariant**: Variants are independent transformers that compose via function composition.
+**Invariant**: ActionTransformers are independent transformers that compose via function composition.
 
-**Implication**: Can mix any variants without conflicts. Adding variants doesn't require modifying base game.
+**Implication**: Can mix any action transformers without conflicts. Adding action transformers doesn't require modifying base game.
 
 ### 10.5 Capability-Based Access
 
@@ -1338,12 +1338,12 @@ Final action list with all transformations applied
 
 ## 11. Extension Points
 
-### 11.1 New Variants
+### 11.1 New ActionTransformers
 
-Add new rule modifications by creating variant functions:
+Add new rule modifications by creating action transformer functions:
 
 ```typescript
-const myVariant: Variant = (baseMachine) => (state) => {
+const myActionTransformer: ActionTransformer = (baseMachine) => (state) => {
   const actions = baseMachine(state)
   // Transform actions
   return modifiedActions
@@ -1352,7 +1352,7 @@ const myVariant: Variant = (baseMachine) => (state) => {
 
 Add to game state:
 ```typescript
-game.enabledVariants.push(myVariant)
+game.enabledActionTransformers.push(myActionTransformer)
 ```
 
 ### 11.2 New Capabilities
@@ -1430,7 +1430,7 @@ const finalState = actions.reduce(
 
 **State Machine**: Function that takes current state and returns possible next states (transitions).
 
-**Variant**: Function that transforms a state machine, used to modify game rules.
+**ActionTransformer**: Function that transforms a state machine, used to modify game rules.
 
 **Capability**: Token that grants permission to perform actions or see information.
 
@@ -1457,9 +1457,9 @@ This architecture achieves:
 - **Pure functional design**: All logic is pure functions that compose naturally
 - **Transport agnostic**: Same code works online (Cloudflare) and offline (Web Workers)
 - **AI as external actor**: AI clients connect like humans, server has no AI logic
-- **Compositional variants**: Game rules compose via function transformers
+- **Compositional action transformers**: Game rules compose via function transformers
 - **Capability-based access**: Fine-grained control over actions and visibility
-- **Extensibility**: Easy to add variants, capabilities, transports, AI strategies
+- **Extensibility**: Easy to add action transformers, capabilities, transports, AI strategies
 - **Testability**: Every layer tests in isolation with no mocking
 - **Flexibility**: Supports tutorials, daily challenges, tournaments, spectators, coaches
 

@@ -18,8 +18,8 @@ import { cloneGameState } from '../game/core/state';
 import { getNextStates } from '../game/core/gameEngine';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
-import type { VariantConfig } from '../game/variants/types';
-import type { GameVariant } from '../game/types/config';
+import type { ActionTransformerConfig } from '../game/action-transformers/types';
+import type { GameActionTransformer } from '../game/types/config';
 
 /**
  * Execute a game action with pure state transition.
@@ -106,8 +106,8 @@ export function buildKernelView(
   ctx: ExecutionContext,
   metadata: {
     gameId: string;
-    variant?: GameVariant;
-    variantConfigs: VariantConfig[];
+    variant?: GameActionTransformer;
+    actionTransformerConfigs: ActionTransformerConfig[];
     created: number;
     lastUpdate: number;
   }
@@ -148,7 +148,7 @@ export function buildKernelView(
     metadata: {
       gameId: metadata.gameId,
       ...(metadata.variant ? { variant: metadata.variant } : {}),
-      ...(metadata.variantConfigs.length ? { variants: metadata.variantConfigs } : {}),
+      ...(metadata.actionTransformerConfigs.length ? { variants: metadata.actionTransformerConfigs } : {}),
       created: metadata.created,
       lastUpdate: metadata.lastUpdate
     }
@@ -167,7 +167,7 @@ export function buildActionsMap(
   const allValidActions = ctx.getValidActions(coreState);
 
   // Compute transitions from state (they're derived, not passed)
-  const transitions = getNextStates(coreState, ctx.layers, ctx.rules);
+  const transitions = getNextStates(coreState, ctx.ruleSets, ctx.rules);
 
   const map: Record<string, ValidAction[]> = {};
 
@@ -361,8 +361,8 @@ export function cloneMultiplayerState(state: MultiplayerGameState): MultiplayerG
     })),
     createdAt: state.createdAt,
     lastActionAt: state.lastActionAt,
-    enabledVariants: state.enabledVariants.map((variant: VariantConfig) => ({ ...variant })),
-    enabledLayers: state.enabledLayers ?? []
+    enabledVariants: state.enabledVariants.map((actionTransformer: ActionTransformerConfig) => ({ ...actionTransformer })),
+    enabledRuleSets: state.enabledRuleSets ?? []
   };
 }
 

@@ -7,7 +7,7 @@ export interface CreateMultiplayerGameOptions {
   coreState: GameState;
   players: PlayerSession[];
   enabledVariants?: MultiplayerGameState['enabledVariants'];
-  enabledLayers?: MultiplayerGameState['enabledLayers'];
+  enabledRuleSets?: MultiplayerGameState['enabledRuleSets'];
   createdAt?: number;
   lastActionAt?: number;
 }
@@ -17,7 +17,7 @@ export function createMultiplayerGame({
   coreState,
   players,
   enabledVariants = [],
-  enabledLayers = [],
+  enabledRuleSets = [],
   createdAt = Date.now(),
   lastActionAt = createdAt
 }: CreateMultiplayerGameOptions): MultiplayerGameState {
@@ -28,7 +28,7 @@ export function createMultiplayerGame({
     createdAt,
     lastActionAt,
     enabledVariants: [...enabledVariants],
-    enabledLayers: [...enabledLayers]
+    enabledRuleSets: [...enabledRuleSets]
   };
 }
 

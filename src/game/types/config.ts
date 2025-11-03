@@ -4,18 +4,18 @@
  */
 
 /**
- * Serializable variant configuration
+ * Serializable action transformer configuration
  */
-export interface VariantConfig {
+export interface ActionTransformerConfig {
   type: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config?: Record<string, any>;
 }
 
 /**
- * Legacy single-variant descriptor (kept for compatibility with older configs)
+ * Legacy single action transformer descriptor (kept for compatibility with older configs)
  */
-export interface GameVariant {
+export interface GameActionTransformer {
   type: 'standard' | 'one-hand' | 'tournament';
 
   config?: {
@@ -27,7 +27,7 @@ export interface GameVariant {
     // Tournament mode options
     bestOf?: number;
 
-    // Future variants can extend this bag of parameters
+    // Future action transformers can extend this bag of parameters
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   };
@@ -40,14 +40,14 @@ export interface GameConfig {
   /** Player control types */
   playerTypes: ('human' | 'ai')[];
 
-  /** Single variant (deprecated) */
-  variant?: GameVariant;
+  /** Single action transformer (deprecated) */
+  variant?: GameActionTransformer;
 
-  /** Composable variants */
-  variants?: VariantConfig[];
+  /** Composable action transformers */
+  variants?: ActionTransformerConfig[];
 
-  /** Enabled rule layers (e.g., ['nello', 'plunge']) */
-  enabledLayers?: string[];
+  /** Enabled rule sets (e.g., ['nello', 'plunge']) */
+  enabledRuleSets?: string[];
 
   /** Random seed for deterministic games */
   shuffleSeed?: number;

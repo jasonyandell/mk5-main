@@ -4,12 +4,12 @@ import {
   getNextStates,
   dealDominoesWithSeed
 } from '../../game';
-import { composeRules, baseLayer } from '../../game/layers';
+import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
 import { BLANKS, ACES } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 /**
  * Comprehensive test helper for Texas 42 game testing
@@ -429,7 +429,7 @@ export class GameTestHelper {
   static validateTournamentRules(state: GameState): string[] {
     const errors: string[] = [];
 
-    // Check for special contracts (tournament mode now enforced via variants)
+    // Check for special contracts (tournament mode now enforced via actionTransformers)
     const specialBids = state.bids.filter(bid =>
       bid.type === BID_TYPES.NELLO ||
       bid.type === BID_TYPES.SPLASH ||

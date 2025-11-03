@@ -202,7 +202,7 @@ export interface StateTransition {
 }
 
 // Simplified Game Action types - pure data, no nesting
-// Note: autoExecute and meta are optional variant extensions (not core game logic)
+// Note: autoExecute and meta are optional action transformer extensions (not core game logic)
 export type GameAction =
   | { type: 'bid'; player: number; bid: BidType; value?: number; autoExecute?: boolean; meta?: Record<string, unknown> }
   | { type: 'pass'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }

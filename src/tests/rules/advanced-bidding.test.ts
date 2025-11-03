@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
-import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
+import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/rulesets';
 import { BID_TYPES } from '../../game/constants';
 import { getNextDealer } from '../../game/core/players';
 import type { Bid } from '../../game/types';
 
 // Advanced bidding tests include plunge bids (casual rules)
-const rules = composeRules([baseLayer, plungeLayer]);
+const rules = composeRules([baseRuleSet, plungeRuleSet]);
 
 describe('Advanced Bidding Rules', () => {
   describe('Sequential Bidding Requirements', () => {

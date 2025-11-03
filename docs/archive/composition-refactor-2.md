@@ -1,8 +1,10 @@
-# Variant Composition Refactor v2
+# ActionTransformer Composition Refactor v2
 
-**Status:** Draft for alignment  
-**Audience:** Gameplay, platform, and UX collaborators  
-**Intent:** Reaffirm the original functional vision while simplifying the migration path
+**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "Layer" is now "RuleSet", "Variant" is now "ActionTransformer". Content preserved for reference.
+
+**Status:** Draft for alignment
+**Audience:** Gameplay, platform, and UX collaborators
+**Intent:** Reaffirm the original functional vision while simplifying the migration path (terminology updated 2025)
 
 ---
 

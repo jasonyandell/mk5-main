@@ -1,8 +1,10 @@
-# Texas 42: Pure Functional Layer Composition via Threaded Rules
+# Texas 42: Pure Functional RuleSet Composition via Threaded Rules
+
+**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "Layer" is now "RuleSet", "Variant" is now "ActionTransformer". Content preserved for reference.
 
 **Created**: 2025-10-25
 **Branch**: mk8
-**Status**: Implementation plan validated and ready
+**Status**: Implementation plan validated and ready (terminology updated 2025)
 **Philosophy**: Pure functions, parametric polymorphism, correct by construction
 
 ---

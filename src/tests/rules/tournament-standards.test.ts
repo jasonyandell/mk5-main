@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, GameTestHelper } from '../helpers/gameTestHelper';
-import { composeRules, baseLayer } from '../../game/layers';
+import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
@@ -297,5 +297,5 @@ describe('Tournament Standards (N42PA Rules)', () => {
   });
 });
 
-// Note: Tournament rules (baseLayer) do not support special contracts (Nello, Splash, Plunge)
-// Those require their respective layers to be added to the composition
+// Note: Tournament rules (baseRuleSet) do not support special contracts (Nello, Splash, Plunge)
+// Those require their respective ruleSets to be added to the composition

@@ -1,12 +1,12 @@
 import { describe, test, expect } from 'vitest';
-import { composeRules } from '../../game/layers/compose';
-import { baseLayer } from '../../game/layers';
+import { composeRules } from '../../game/rulesets/compose';
+import { baseRuleSet } from '../../game/rulesets';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { createTestState } from '../helpers/gameTestHelper';
 import type { Domino, GameState, TrumpSelection, LedSuitOrNone } from '../../game/types';
 import { FIVES, SIXES, DOUBLES_AS_TRUMP, NO_LEAD_SUIT } from '../../game/types';
 
-const rules = composeRules([baseLayer]);
+const rules = composeRules([baseRuleSet]);
 
 describe('Doubles Trump Renege Validation', () => {
   const doublesAreTrump: TrumpSelection = { type: 'doubles' };

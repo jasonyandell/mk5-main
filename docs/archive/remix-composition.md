@@ -1,8 +1,10 @@
-# Texas 42 - Pure Functional Variant Composition Handoff
+# Texas 42 - Pure Functional ActionTransformer Composition Handoff
+
+**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "Layer" is now "RuleSet", "Variant" is now "ActionTransformer". Content preserved for reference.
 
 **Created**: 2025-10-20
 **Branch**: mk8
-**Status**: Architecture designed, ready for implementation
+**Status**: Architecture designed, ready for implementation (terminology updated 2025)
 
 ---
 

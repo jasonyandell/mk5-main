@@ -1,5 +1,5 @@
 import type { GameAction, GameState } from '../types';
-import type { VariantConfig } from '../types/config';
+import type { ActionTransformerConfig } from '../types/config';
 
 /**
  * Capability tokens control what a session can see or do.
@@ -14,7 +14,7 @@ export type Capability =
   | { type: 'see-hints' }
   | { type: 'see-ai-intent' }
   | { type: 'replace-ai' }
-  | { type: 'configure-variant' }
+  | { type: 'configure-action-transformer' }
   | { type: 'undo-actions' };
 
 /**
@@ -69,8 +69,8 @@ export interface MultiplayerGameState {
   players: readonly PlayerSession[];        // Immutable player sessions
   createdAt: number;                        // Timestamp when game created
   lastActionAt: number;                     // Last activity timestamp
-  enabledVariants: VariantConfig[];         // Active rule modifications
-  enabledLayers?: string[];                 // Active rule layers (e.g., ['nello', 'plunge'])
+  enabledVariants: ActionTransformerConfig[];         // Active action transformers
+  enabledRuleSets?: string[];               // Active rule sets (e.g., ['nello', 'plunge'])
 }
 
 /**

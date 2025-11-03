@@ -81,10 +81,10 @@ All game logic is implemented as pure functions with no side effects. Given the 
 A unique architectural innovation solving the challenge of special contracts that need to modify both execution rules AND available actions.
 
 ```
-LAYERS (execution rules) × VARIANTS (action transformation) = Game Configuration
+RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game Configuration
 ```
 
-#### Level 1: Layers → Execution Rules
+#### Level 1: RuleSets → Execution Rules
 **Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
 **Mechanism**: Override specific methods in the 13-method `GameRules` interface
@@ -94,11 +94,11 @@ LAYERS (execution rules) × VARIANTS (action transformation) = Game Configuratio
 - VALIDATION: isValidPlay, getValidPlays, isValidBid
 - SCORING: getBidComparisonValue, isValidTrump, calculateScore
 
-**Composition**: Layers override only what differs from base, compose via reduce pattern
+**Composition**: RuleSets override only what differs from base, compose via reduce pattern
 
 **Example**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
 
-#### Level 2: Variants → Action Transformation
+#### Level 2: ActionTransformers → Action Transformation
 **Purpose**: Transform WHAT actions are possible (filter, annotate, script, replace)
 
 **Operations**:
@@ -107,9 +107,9 @@ LAYERS (execution rules) × VARIANTS (action transformation) = Game Configuratio
 - **Script**: Inject actions (oneHand scripts bidding)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
-**Composition**: Variants wrap the state machine via function composition
+**Composition**: ActionTransformers wrap the state machine via function composition
 
-**Key Insight**: Layers and variants compose independently without modifying core engine. Executors have ZERO conditional logic.
+**Key Insight**: RuleSets and ActionTransformers compose independently without modifying core engine. Executors have ZERO conditional logic.
 
 ---
 
@@ -188,11 +188,11 @@ Understanding the architecture requires thinking about it in multiple ways:
 ### The Game as a State Machine
 Every game position has defined transitions to next positions. Actions are edges, states are nodes. AI explores this graph to make decisions. Games flow deterministically through well-defined positions.
 
-### Layers as Lenses
-Each layer provides a different lens through which to view game rules. Stack lenses to create new game modes. Nello adds a "3-player trick" lens, Plunge adds a "partner leads" lens, Sevens adds a "distance-from-7" lens.
+### RuleSets as Lenses
+Each ruleset provides a different lens through which to view game rules. Stack lenses to create new game modes. Nello adds a "3-player trick" lens, Plunge adds a "partner leads" lens, Sevens adds a "distance-from-7" lens.
 
-### Variants as Decorators
-Variants wrap and transform the base game, adding features without modifying core logic. Tournament filters, Speed annotates with auto-execute, OneHand scripts bidding, Hints adds recommendations—each wraps the state machine in a decorator pattern.
+### ActionTransformers as Decorators
+ActionTransformers wrap and transform the base game, adding features without modifying core logic. Tournament filters, Speed annotates with auto-execute, OneHand scripts bidding, Hints adds recommendations—each wraps the state machine in a decorator pattern.
 
 ### Capabilities as Keys
 Each capability unlocks specific functionality. Collect keys to gain more power:
@@ -219,7 +219,7 @@ These principles guide all architectural decisions:
 ### Simplicity Through Composition
 Complex behavior emerges from composing simple, pure functions. No monolithic classes or deep inheritance hierarchies. Each component is understandable in isolation.
 
-**Application**: Layer composition, variant wrapping, rule delegation.
+**Application**: RuleSet composition, ActionTransformer wrapping, rule delegation.
 
 ### Correct by Construction
 Use the type system to prevent errors at compile time. Make illegal states unrepresentable.
@@ -276,12 +276,12 @@ All permissions via capability tokens. Never use identity checks (`playerId === 
 **Why**: Transparent, composable security model. Capabilities are data, not magic.
 
 ### 4. Single Composition Point
-Layers and variants compose only in GameKernel constructor. ExecutionContext created once, used everywhere.
+RuleSets and ActionTransformers compose only in GameKernel constructor. ExecutionContext created once, used everywhere.
 
 **Why**: Ensures consistent behavior, prevents composition drift, enables parametric polymorphism.
 
 ### 5. Zero Coupling
-Core engine has no awareness of multiplayer, networking, or transport. Layers and variants don't reference multiplayer concepts.
+Core engine has no awareness of multiplayer, networking, or transport. RuleSets and ActionTransformers don't reference multiplayer concepts.
 
 **Why**: Clean architectural boundaries, enables reuse, simplifies testing.
 
@@ -310,7 +310,7 @@ Used throughout for data transformation:
 2. **Map**: Transform items to new form
 3. **Reduce**: Combine into single result
 
-**Application**: Layer composition, action filtering, score calculation.
+**Application**: RuleSet composition, action filtering, score calculation.
 
 ### Delegation Over Inspection
 Functions accept behavior as parameters rather than inspecting data to determine behavior.
@@ -320,7 +320,7 @@ Functions accept behavior as parameters rather than inspecting data to determine
 ### Composition Over Configuration
 Build behavior by composing functions, not by setting flags or options.
 
-**Example**: Layers override methods (not `enableNello: true` flag with conditionals).
+**Example**: RuleSets override methods (not `enableNello: true` flag with conditionals).
 
 ### Fail-Fast Validation
 Validate early and explicitly. Make errors impossible through types where feasible.
@@ -345,8 +345,8 @@ Transport → Client → UI Update
 
 ### Composition Flow
 ```
-Layers define rules → Rules compose via reduce →
-Base state machine uses rules → Variants wrap state machine →
+RuleSets define rules → Rules compose via reduce →
+Base state machine uses rules → ActionTransformers wrap state machine →
 ExecutionContext bundles all → Executors use context
 ```
 
@@ -376,9 +376,9 @@ Filtering → FilteredGameState → ViewProjection → UI State
 
 ### Extensibility
 - **Composition**: New features via composition, not modification
-- **Orthogonality**: Layers and variants combine independently
+- **Orthogonality**: RuleSets and ActionTransformers combine independently
 - **Zero coupling**: Core engine unchanged as system grows
-- **Parametric polymorphism**: Same code works for all variants
+- **Parametric polymorphism**: Same code works for all rulesets
 
 ### Testability
 - **Pure functions**: Simple unit testing
@@ -424,7 +424,7 @@ Filtering → FilteredGameState → ViewProjection → UI State
 **Trade-off**: More parameter passing (mitigated by ExecutionContext bundling).
 
 ### Single Composition Point
-**Decision**: Layers and variants compose only in GameKernel constructor.
+**Decision**: RuleSets and ActionTransformers compose only in GameKernel constructor.
 
 **Rationale**: Ensures consistency, prevents drift, enables parametric polymorphism.
 
@@ -449,17 +449,17 @@ Filtering → FilteredGameState → ViewProjection → UI State
 ## Glossary of Terms
 
 **Action**: Atomic unit of game progression (bid, play, trump selection)
+**ActionTransformer**: Action set transformer (tournament, oneHand, hints)
 **Capability**: Permission token for access control (observe-hand, act-as-player)
-**Composition**: Building complex behavior from simple parts (layers, variants)
+**Composition**: Building complex behavior from simple parts (rulesets, action-transformers)
 **Executor**: Pure function that applies action to state
 **Filtering**: Hiding information based on permissions (hand visibility)
 **Kernel**: Pure game logic authority (composition, authorization, filtering)
-**Layer**: Rule modifier for execution semantics (nello, plunge, splash)
 **Parametric**: Behavior determined by injected parameters, not inspection
 **Projection**: Transformation from state to UI-ready data
+**RuleSet**: Rule modifier for execution semantics (nello, plunge, splash)
 **Session**: Player identity and permissions (playerId + capabilities)
 **Transport**: Message routing abstraction (in-process, Worker, edge)
-**Variant**: Action set transformer (tournament, oneHand, hints)
 
 ---
 
