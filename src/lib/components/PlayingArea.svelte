@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, playerSessions } from '../../stores/gameStore';
+  import { gameActions, viewProjection, playerSessions, currentSession } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -34,7 +34,8 @@
       if (handDomino?.isPlayable) {
         // Construct the play action with dominoId
         const dominoId = `${domino.high}-${domino.low}`;
-        gameActions.requestAction(perspectiveIndex, {
+        const session = $currentSession;
+        gameActions.requestAction(session?.playerId || `player-${perspectiveIndex}`, {
           type: 'play',
           player: perspectiveIndex,
           dominoId: dominoId

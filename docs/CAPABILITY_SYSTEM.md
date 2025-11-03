@@ -162,7 +162,7 @@ record.listener({
 });
 ```
 
-`NetworkGameClient` caches the resulting `Record<string, ValidAction[]>`, so UI layers can call `getActions(playerId)` or read the Svelte stores without re-running capability logic on the client.
+`NetworkGameClient` caches the resulting `Record<string, ValidAction[]>`, so UI components can call `getActions(playerId)` or read the Svelte stores without re-running capability logic on the client.
 
 ## Usage Examples
 
@@ -215,10 +215,10 @@ host.subscribe(sessionId, ({ view, state, actions }) => {
 getValidActionsForPlayer(mpState, playerId) {
   const session = mpState.players.find(p => p.playerId === playerId);
 
-  // Composed state machine includes BOTH layers AND variants:
-  // 1. Layers define game mechanics (base, nello, splash, plunge, sevens)
-  // 2. Variants filter/annotate actions (tournament, oneHand)
-  // 3. Result: Actions that are mechanically valid + variant-appropriate
+  // Composed state machine includes BOTH RuleSets AND action transformers:
+  // 1. RuleSets define game mechanics (base, nello, splash, plunge, sevens)
+  // 2. Action transformers filter/annotate actions (tournament, oneHand)
+  // 3. Result: Actions that are mechanically valid + transformer-appropriate
   const allActions = composedStateMachine(mpState.coreState);
 
   // Capability filtering is the final step (authorization)
@@ -257,20 +257,20 @@ test('spectator sees all hands but cannot act', () => {
 ```typescript
 // GameHost creates view for a session
 createView(playerId) {
-  // 1. Compose layers (game mechanics)
-  const rules = composeRules([baseLayer, nelloLayer, ...]);
+  // 1. Compose RuleSets (game mechanics)
+  const rules = composeRules([baseRuleSet, nelloRuleSet, ...]);
 
   // 2. Generate actions with composed rules
-  const layeredActions = getValidActions(state, layers, rules);
-  // → Includes NELLO bids if nello layer enabled
+  const composedActions = getValidActions(state, ruleSets, rules);
+  // → Includes NELLO bids if nello RuleSet enabled
 
-  // 3. Apply variants (availability filters)
-  const variantActions = applyVariants(layeredActions, variantConfigs);
-  // → May remove NELLO if tournament variant active
+  // 3. Apply action transformers (availability filters)
+  const transformedActions = applyActionTransformers(composedActions, actionTransformerConfigs);
+  // → May remove NELLO if tournament action transformer active
 
   // 4. Filter by capabilities (authorization)
   const session = getSession(playerId);
-  const authorizedActions = filterActionsForSession(session, variantActions);
+  const authorizedActions = filterActionsForSession(session, transformedActions);
   // → Only actions this session can execute
 
   return { state: filteredState, validActions: authorizedActions };
@@ -305,4 +305,4 @@ const allowed = filterActionsForSession(session, actions);
 - Implementation: `src/game/multiplayer/capabilities.ts`
 - Filtering: `src/game/multiplayer/capabilityUtils.ts`
 - Authorization: `src/game/multiplayer/authorization.ts`
-- Layer Types: `src/game/layers/types.ts`
+- RuleSet Types: `src/game/rulesets/types.ts`

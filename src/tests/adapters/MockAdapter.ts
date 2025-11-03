@@ -302,7 +302,7 @@ export class MockAdapter implements IGameAdapter {
       players,
       createdAt: view.metadata.created,
       lastActionAt: view.metadata.lastUpdate,
-      enabledVariants: view.metadata.variants || []
+      enabledActionTransformers: view.metadata.variants || []
     };
   }
 

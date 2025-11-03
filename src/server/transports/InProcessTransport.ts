@@ -17,7 +17,7 @@ import type { ClientMessage, ServerMessage, IGameAdapter } from '../../shared/mu
 import type { Transport, Connection } from './Transport';
 
 export class InProcessTransport implements Transport {
-  private gameServer?: import('../GameServer').GameServer;
+  private gameServer?: import('../GameServer').GameServer | undefined;
   private clients: Map<string, (message: ServerMessage) => void> = new Map();
   private connectedClients: Set<string> = new Set();
 
@@ -140,7 +140,7 @@ export class InProcessTransport implements Transport {
   async stop(): Promise<void> {
     this.clients.clear();
     this.connectedClients.clear();
-    delete (this as any).gameServer;
+    this.gameServer = undefined;
   }
 }
 

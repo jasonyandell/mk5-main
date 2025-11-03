@@ -451,7 +451,7 @@ Flags → getEnabledRuleSets() → compose in GameKernel constructor.
 | Adding conditional logic in executors | Use parametric polymorphism - delegate to `rules.method()` |
 | Modifying state directly | Create new state objects via spread operator |
 | Checking player identity for permissions | Use capability tokens instead |
-| Adding game logic to GameServer | Put it in GameKernel or layers |
+| Adding game logic to GameServer | Put it in GameKernel or RuleSets |
 | Filtering state at storage | Store unfiltered, filter on-demand per request |
 | Client-side validation | Trust server's validActions list completely |
 | Deep coupling between rulesets | Keep rulesets focused on single responsibility |

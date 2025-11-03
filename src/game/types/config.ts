@@ -13,35 +13,11 @@ export interface ActionTransformerConfig {
 }
 
 /**
- * Legacy single action transformer descriptor (kept for compatibility with older configs)
- */
-export interface GameActionTransformer {
-  type: 'standard' | 'one-hand' | 'tournament';
-
-  config?: {
-    // One-hand mode options
-    targetHand?: number;
-    maxAttempts?: number;
-    originalSeed?: number;
-
-    // Tournament mode options
-    bestOf?: number;
-
-    // Future action transformers can extend this bag of parameters
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any;
-  };
-}
-
-/**
  * Game configuration for creating new games
  */
 export interface GameConfig {
   /** Player control types */
   playerTypes: ('human' | 'ai')[];
-
-  /** Single action transformer (deprecated) */
-  variant?: GameActionTransformer;
 
   /** Composable action transformers */
   variants?: ActionTransformerConfig[];

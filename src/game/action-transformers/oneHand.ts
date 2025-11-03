@@ -13,7 +13,7 @@ import type { ActionTransformerFactory } from './types';
  * - Replaces score-hand action with auto-executed version that ends game
  * - All changes via action list transformation - no state mutation
  */
-export const oneHandVariant: ActionTransformerFactory = () => (base) => (state) => {
+export const oneHandActionTransformer: ActionTransformerFactory = () => (base) => (state) => {
   const baseActions = base(state);
 
   // At start of bidding (no bids yet), inject scripted sequence

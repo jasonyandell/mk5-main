@@ -61,7 +61,7 @@ export { executeAction } from './core/actions';
 // Event sourcing / replay
 export {
   replayActions,
-  createInitialStateWithVariants,
+  createInitialStateWithActionTransformers,
   applyActionWithHistory
 } from './core/replay';
 

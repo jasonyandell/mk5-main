@@ -160,7 +160,7 @@ Each tier has distinct responsibilities:
 
 ### GameKernel - Pure Game Authority
 - Stores unfiltered state
-- Composes layers/variants (single composition point)
+- Composes RuleSets/action transformers (single composition point)
 - Authorizes actions via capability-based filtering
 - Filters views per-request based on observer permissions
 - Zero knowledge of transport, networking, or AI spawning

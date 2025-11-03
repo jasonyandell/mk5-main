@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewProjection, gameActions, gameVariants, oneHandState, availablePerspectives, currentSessionId, setPerspective } from '../../stores/gameStore';
+  import { viewProjection, gameActions, gameActionTransformers, oneHandState, availablePerspectives, currentSessionId, setPerspective } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   import Icon from '../icons/Icon.svelte';
@@ -121,7 +121,7 @@
             <button
               class="one-hand-btn flex items-center justify-between"
               onclick={() => {
-                gameVariants.startOneHand();
+                gameActionTransformers.startOneHand();
                 closeMenu();
               }}
               disabled={$oneHandState.active}

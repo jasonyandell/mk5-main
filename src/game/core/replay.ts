@@ -17,12 +17,7 @@ export function replayActions(
   // We capture the active action transformer configuration so that any caller asking for
   // valid actions after replay can compose the same action transformer pipeline.
 
-  const actionTransformerConfigs = [
-    ...(config.variant
-      ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
-      : []),
-    ...(config.variants ?? [])
-  ];
+  const actionTransformerConfigs = config.variants ?? [];
 
   // Create initial state with proper optional handling
   let state = createInitialState({
@@ -43,7 +38,7 @@ export function replayActions(
   };
 
   // Replay all actions using base executor
-  // (Variants only affect valid actions, not execution)
+  // (Action transformers only affect valid actions, not execution)
   for (const action of actions) {
     state = baseExecuteAction(state, action);
   }
@@ -52,10 +47,10 @@ export function replayActions(
 }
 
 /**
- * Create initial state with variants applied.
+ * Create initial state with action transformers applied.
  * Convenience wrapper for replayActions with empty history.
  */
-export function createInitialStateWithVariants(config: GameConfig): GameState {
+export function createInitialStateWithActionTransformers(config: GameConfig): GameState {
   return replayActions(config, []);
 }
 

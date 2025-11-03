@@ -18,7 +18,7 @@ import type { GameAction, GameState } from '../types';
  * - Capability filtering handles visibility
  * - No changes to game logic, just action annotation
  */
-export const hintsVariant: ActionTransformerFactory = () => (base) => (state) => {
+export const hintsActionTransformer: ActionTransformerFactory = () => (base) => (state) => {
   const baseActions = base(state);
 
   // Annotate actions based on game phase

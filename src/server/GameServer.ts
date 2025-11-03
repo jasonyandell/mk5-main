@@ -137,10 +137,12 @@ export class GameServer {
           this.handleUnsubscribe(clientId, message);
           break;
 
-        default:
-          const unknownType = (message as any).type;
+        default: {
+          const unknownType = (message as { type: string }).type;
           console.error(`GameServer: Unknown message type: ${unknownType}`);
           this.sendError(clientId, `Unknown message type: ${unknownType}`, 'CREATE_GAME');
+          break;
+        }
       }
     } catch (error) {
       console.error('GameServer: Error processing message:', error);
@@ -380,11 +382,9 @@ export class GameServer {
         gameId: this.gameId,
         view,
         state,
-        actions
+        actions,
+        ...(playerId ? { perspective: playerId } : {})
       };
-      if (playerId) {
-        (msg as any).perspective = playerId;
-      }
       this.sendMessage(clientId, msg);
     };
 
@@ -399,11 +399,9 @@ export class GameServer {
       gameId: this.gameId,
       view,
       state,
-      actions
+      actions,
+      ...(playerId ? { perspective: playerId } : {})
     };
-    if (playerId) {
-      (initialMsg as any).perspective = playerId;
-    }
     this.sendMessage(clientId, initialMsg);
   }
 
@@ -441,12 +439,9 @@ export class GameServer {
           gameId: this.gameId,
           view,
           state,
-          actions
+          actions,
+          ...(sub.perspective ? { perspective: sub.perspective } : {})
         };
-
-        if (sub.perspective) {
-          (msg as any).perspective = sub.perspective;
-        }
 
         subscriber(msg);
       }

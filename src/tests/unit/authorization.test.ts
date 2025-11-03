@@ -62,7 +62,7 @@ describe('Authorization', () => {
       players: sessions,
       createdAt: Date.now(),
       lastActionAt: Date.now(),
-      enabledVariants: []
+      enabledActionTransformers: []
     };
   }
 

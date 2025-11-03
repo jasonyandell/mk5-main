@@ -14,7 +14,7 @@
  */
 
 import type { GameState, GameAction } from '../game/types';
-import type { GameConfig, GameActionTransformer } from '../game/types/config';
+import type { GameConfig } from '../game/types/config';
 import type {
   GameView,
   ValidAction
@@ -72,7 +72,6 @@ export class GameKernel {
   // Immutable config (set once in constructor, never mutated)
   private readonly metadata: {
     gameId: string;
-    variant: GameActionTransformer | undefined;
     actionTransformerConfigs: ActionTransformerConfig[];
     created: number;
   };
@@ -96,12 +95,7 @@ export class GameKernel {
     }));
 
     // Compose action transformers into single getValidActions function
-    const actionTransformerConfigs = [
-      ...(config.variant
-        ? [{ type: config.variant.type, ...(config.variant.config ? { config: config.variant.config } : {}) }]
-        : []),
-      ...(config.variants ?? [])
-    ];
+    const actionTransformerConfigs = config.variants ?? [];
 
     // Initialize timestamp
     const createdAt = Date.now();
@@ -110,7 +104,6 @@ export class GameKernel {
     // Initialize immutable metadata (all at once before freezing)
     this.metadata = {
       gameId,
-      variant: config.variant,
       actionTransformerConfigs,
       created: createdAt
     };
@@ -152,7 +145,7 @@ export class GameKernel {
       gameId,
       coreState: initialState,
       players: normalizedPlayers,
-      enabledVariants: actionTransformerConfigs,
+      enabledActionTransformers: actionTransformerConfigs,
       enabledRuleSets: config.enabledRuleSets ?? [],
       createdAt: now,
       lastActionAt: now
@@ -177,7 +170,6 @@ export class GameKernel {
       this.ctx,
       {
         gameId: this.metadata.gameId,
-        ...(this.metadata.variant ? { variant: this.metadata.variant } : {}),
         actionTransformerConfigs: this.metadata.actionTransformerConfigs,
         created: this.metadata.created,
         lastUpdate: this.lastUpdate

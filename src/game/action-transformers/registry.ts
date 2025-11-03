@@ -1,16 +1,16 @@
 // Pure lookup - no registration, no side effects
 import type { ActionTransformerFactory, ActionTransformer, ActionTransformerConfig, StateMachine } from './types';
-import { tournamentVariant } from './tournament';
-import { oneHandVariant } from './oneHand';
-import { speedVariant } from './speed';
-import { hintsVariant } from './hints';
+import { tournamentActionTransformer } from './tournament';
+import { oneHandActionTransformer } from './oneHand';
+import { speedActionTransformer } from './speed';
+import { hintsActionTransformer } from './hints';
 
 // Registry will be populated as action transformers are implemented
 const ACTION_TRANSFORMER_REGISTRY: Record<string, ActionTransformerFactory> = {
-  'tournament': tournamentVariant,
-  'one-hand': oneHandVariant,
-  'speed': speedVariant,
-  'hints': hintsVariant
+  'tournament': tournamentActionTransformer,
+  'one-hand': oneHandActionTransformer,
+  'speed': speedActionTransformer,
+  'hints': hintsActionTransformer
 };
 
 /**

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameVariants, oneHandState } from '../../stores/gameStore';
+  import { gameActionTransformers, oneHandState } from '../../stores/gameStore';
   import Icon from '../icons/Icon.svelte';
   import { shareContent, canNativeShare } from '../utils/share';
 
@@ -10,15 +10,15 @@
   let shareSuccess = $state(false);
 
   function retry() {
-    gameVariants.retryOneHand();
+    gameActionTransformers.retryOneHand();
   }
 
   function newHand() {
-    gameVariants.startOneHand();
+    gameActionTransformers.startOneHand();
   }
 
   function exitOneHand() {
-    gameVariants.exitVariant();
+    gameActionTransformers.exitActionTransformer();
   }
 
   async function shareChallenge() {

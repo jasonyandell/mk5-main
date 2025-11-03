@@ -69,7 +69,7 @@ export interface MultiplayerGameState {
   players: readonly PlayerSession[];        // Immutable player sessions
   createdAt: number;                        // Timestamp when game created
   lastActionAt: number;                     // Last activity timestamp
-  enabledVariants: ActionTransformerConfig[];         // Active action transformers
+  enabledActionTransformers: ActionTransformerConfig[];         // Active action transformers
   enabledRuleSets?: string[];               // Active rule sets (e.g., ['nello', 'plunge'])
 }
 

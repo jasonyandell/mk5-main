@@ -78,7 +78,7 @@ export function getValidActionsForPlayer(
   playerId: string,
   getValidActionsFn: StateMachine = getValidActions
 ): GameAction[] {
-  const { coreState, players, enabledVariants } = mpState;
+  const { coreState, players, enabledActionTransformers } = mpState;
 
   // Find player session
   const session = players.find(p => p.playerId === playerId);
@@ -86,8 +86,8 @@ export function getValidActionsForPlayer(
     return [];
   }
 
-  // Compose variants with base state machine
-  const composedMachine = applyActionTransformers(getValidActionsFn, enabledVariants);
+  // Compose action transformers with base state machine
+  const composedMachine = applyActionTransformers(getValidActionsFn, enabledActionTransformers);
 
   // Get all valid actions from composed machine
   const allValidActions = composedMachine(coreState);

@@ -16,7 +16,7 @@ import type { ActionTransformerFactory } from './types';
  * - GameHost will auto-execute these immediately
  * - No changes to game logic, just action annotation
  */
-export const speedVariant: ActionTransformerFactory = () => (base) => (state) => {
+export const speedActionTransformer: ActionTransformerFactory = () => (base) => (state) => {
   const baseActions = base(state);
 
   // Don't auto-execute if game is over

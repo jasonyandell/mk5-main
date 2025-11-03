@@ -230,7 +230,7 @@ function executeTrumpSelection(state: GameState, player: number, selection: Trum
 //    return state; // Invalid phase, no-op
   }
 
-  // Validate player is winning bidder (or trump selector in variants)
+  // Validate player is winning bidder (or trump selector with action transformers)
   if (player !== state.currentPlayer) {
     throw new Error('Only trump selector can select trump');
 //    return state; // Not trump selector, no-op

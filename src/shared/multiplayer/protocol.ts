@@ -12,14 +12,14 @@
  */
 
 import type { GameAction, FilteredGameState } from '../../game/types';
-import type { GameConfig, ActionTransformerConfig, GameActionTransformer } from '../../game/types/config';
+import type { GameConfig, ActionTransformerConfig } from '../../game/types/config';
 import type {
   Capability,
   MultiplayerGameState,
   PlayerSession
 } from '../../game/multiplayer/types';
 
-export type { GameConfig, ActionTransformerConfig, GameActionTransformer };
+export type { GameConfig, ActionTransformerConfig };
 
 // ============================================================================
 // Client -> Server Messages
@@ -202,7 +202,6 @@ export interface GameView {
   /** Game metadata */
   metadata: {
     gameId: string;
-    variant?: GameActionTransformer;
     variants?: ActionTransformerConfig[];
     created: number; // timestamp
     lastUpdate: number; // timestamp

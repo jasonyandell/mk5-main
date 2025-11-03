@@ -36,7 +36,7 @@ export const RULESET_REGISTRY: Record<string, GameRuleSet> = {
 export function getRuleSetByName(name: string): GameRuleSet {
   const ruleSet = RULESET_REGISTRY[name];
   if (!ruleSet) {
-    throw new Error(`Unknown rule set: ${name}`);
+    throw new Error(`Unknown ruleSet: ${name}`);
   }
   return ruleSet;
 }

@@ -3,7 +3,7 @@ import type { GameAction, StateTransition, FilteredGameState, GameState } from '
 import { getNextStates } from '../game';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
 import type { GameClient } from '../game/multiplayer/GameClient';
-import type { MultiplayerGameState } from '../game/multiplayer/types';
+import type { MultiplayerGameState, Capability } from '../game/multiplayer/types';
 import { hasCapabilityType } from '../game/multiplayer/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
@@ -68,7 +68,7 @@ function createPendingState(): MultiplayerGameState {
     players: sessions,
     createdAt: Date.now(),
     lastActionAt: Date.now(),
-    enabledVariants: []
+    enabledActionTransformers: []
   };
 }
 
@@ -110,7 +110,7 @@ async function initializeGameClient(): Promise<void> {
       controlType: type,
       isConnected: true,
       name: `Player ${index + 1}`,
-      capabilities: capabilities.map((cap: any) => ({ ...cap }))
+      capabilities: capabilities.map((cap: Capability) => ({ ...cap }))
     };
   });
 
@@ -313,7 +313,7 @@ export const gameActionTransformer = derived(clientState, () => {
   // Extract action transformer from game view metadata if available
   if (!networkClient) return undefined;
   const view = networkClient.getCachedView();
-  return view?.metadata?.variant;
+  return view?.metadata?.variants?.[0];
 });
 
 // Store for one-hand mode state (derived from game state)
@@ -421,7 +421,7 @@ export const gameActions = {
         controlType: type,
         isConnected: true,
         name: `Player ${index + 1}`,
-        capabilities: capabilities.map((cap: any) => ({ ...cap }))
+        capabilities: capabilities.map((cap: Capability) => ({ ...cap }))
       };
     });
 
@@ -481,7 +481,7 @@ export const gameActionTransformers = {
     const newConfig: GameConfig = {
       playerTypes,
       ...(seed ? { shuffleSeed: seed } : {}),  // Only add if seed is defined
-      variant: {
+      variants: [{
         type: 'one-hand',
         config: seed ? {
           targetHand: 1,
@@ -491,7 +491,7 @@ export const gameActionTransformers = {
           targetHand: 1,
           maxAttempts: 999
         }
-      }
+      }]
     };
 
     // Create game ID
@@ -510,7 +510,7 @@ export const gameActionTransformers = {
         controlType: type,
         isConnected: true,
         name: `Player ${index + 1}`,
-        capabilities: capabilities.map((cap: any) => ({ ...cap }))
+        capabilities: capabilities.map((cap: Capability) => ({ ...cap }))
       };
     });
 
@@ -561,9 +561,6 @@ export const gameActionTransformers = {
   }
 };
 
-// Backward compatibility aliases
-export const gameVariants = gameActionTransformers;
-export const gameVariant = gameActionTransformer;
 
 // Store to track if we're finding a seed (derived from adapter state)
 export const findingSeed = writable(false);

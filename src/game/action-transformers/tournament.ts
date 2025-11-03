@@ -4,7 +4,7 @@ import type { ActionTransformerFactory } from './types';
  * Tournament mode: Disable special contracts (nello, splash, plunge).
  * Only standard point and mark bids allowed.
  */
-export const tournamentVariant: ActionTransformerFactory = () => (base) => (state) => {
+export const tournamentActionTransformer: ActionTransformerFactory = () => (base) => (state) => {
   const actions = base(state);
 
   // Filter out special bid types during bidding phase

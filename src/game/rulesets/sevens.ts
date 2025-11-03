@@ -128,7 +128,7 @@ export const sevensRuleSet: GameRuleSet = {
     // ============================================
 
     isValidPlay: (state, domino, playerId, prev) => {
-      // If not sevens, use previous layer's logic
+      // If not sevens, use previous RuleSet's logic
       if (state.trump?.type !== 'sevens') return prev;
 
       // Basic validation
@@ -146,7 +146,7 @@ export const sevensRuleSet: GameRuleSet = {
     },
 
     getValidPlays: (state, playerId, prev) => {
-      // If not sevens, use previous layer's logic
+      // If not sevens, use previous RuleSet's logic
       if (state.trump?.type !== 'sevens') return prev;
 
       const player = state.players[playerId];

@@ -11,7 +11,7 @@ import type {
   PlayerInfo
 } from '../shared/multiplayer/protocol';
 import { authorizeAndExecute } from '../game/multiplayer/authorization';
-import type { MultiplayerGameState, PlayerSession, Capability } from '../game/multiplayer/types';
+import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
 import { ok, err } from '../game/multiplayer/types';
 import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../game/multiplayer/capabilityUtils';
 import { cloneGameState } from '../game/core/state';
@@ -19,7 +19,6 @@ import { getNextStates } from '../game/core/gameEngine';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
 import type { ActionTransformerConfig } from '../game/action-transformers/types';
-import type { GameActionTransformer } from '../game/types/config';
 
 /**
  * Execute a game action with pure state transition.
@@ -106,7 +105,6 @@ export function buildKernelView(
   ctx: ExecutionContext,
   metadata: {
     gameId: string;
-    variant?: GameActionTransformer;
     actionTransformerConfigs: ActionTransformerConfig[];
     created: number;
     lastUpdate: number;
@@ -147,7 +145,6 @@ export function buildKernelView(
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,
-      ...(metadata.variant ? { variant: metadata.variant } : {}),
       ...(metadata.actionTransformerConfigs.length ? { variants: metadata.actionTransformerConfigs } : {}),
       created: metadata.created,
       lastUpdate: metadata.lastUpdate
@@ -318,10 +315,10 @@ export function updatePlayerControlPure(
   playerIndex: number,
   type: 'human' | 'ai',
   capabilities: Capability[]
-) {
+): Result<MultiplayerGameState> {
   const targetSession = state.players.find((session: PlayerSession) => session.playerIndex === playerIndex);
   if (!targetSession) {
-    return err(`Player ${playerIndex} not found`) as any;
+    return err(`Player ${playerIndex} not found`);
   }
 
   const updatedStateResult = updatePlayerSession(state, targetSession.playerId, {
@@ -330,7 +327,7 @@ export function updatePlayerControlPure(
   });
 
   if (!updatedStateResult.success) {
-    return updatedStateResult as any;
+    return updatedStateResult;
   }
 
   const updatedPlayers = updatedStateResult.value.players;
@@ -361,7 +358,7 @@ export function cloneMultiplayerState(state: MultiplayerGameState): MultiplayerG
     })),
     createdAt: state.createdAt,
     lastActionAt: state.lastActionAt,
-    enabledVariants: state.enabledVariants.map((actionTransformer: ActionTransformerConfig) => ({ ...actionTransformer })),
+    enabledActionTransformers: state.enabledActionTransformers.map((actionTransformer: ActionTransformerConfig) => ({ ...actionTransformer })),
     enabledRuleSets: state.enabledRuleSets ?? []
   };
 }

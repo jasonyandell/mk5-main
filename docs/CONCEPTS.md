@@ -1511,13 +1511,13 @@ colorOverrides: Record<string, string>  // CSS variables
 ---
 
 ### Parametric Polymorphism
-**Definition**: Behavior determined by injected parameters (rules, layers), not state inspection.
+**Definition**: Behavior determined by injected parameters (rules, RuleSets), not state inspection.
 
 **Applied To**: Executors never inspect state, always call `rules.method()`
 
-**Benefit**: Same executor code works for all variants without conditional logic or state inspection.
+**Benefit**: Same executor code works for all game modes without conditional logic or state inspection.
 
-**Key Pattern**: Executors call rules methods rather than inspecting state for variant-specific logic. Layer composition determines behavior at initialization time, executors never know.
+**Key Pattern**: Executors call rules methods rather than inspecting state for mode-specific logic. RuleSet composition determines behavior at initialization time, executors never know.
 
 **Related**: Composition Over Configuration, GameRules
 
