@@ -65,10 +65,7 @@ function createPendingState(): MultiplayerGameState {
   return {
     gameId: 'initializing',
     coreState: placeholderState,
-    players: sessions,
-    createdAt: Date.now(),
-    lastActionAt: Date.now(),
-    enabledActionTransformers: []
+    players: sessions
   };
 }
 
@@ -84,9 +81,9 @@ export const clientState = writable<MultiplayerGameState>(createPendingState());
 const actionsByPlayer = writable<Record<string, ValidAction[]>>({});
 let unsubscribeFromClient: (() => void) | undefined;
 
-// Initialize function that creates GameServer + Transport + Client
+// Initialize function that creates Room + Transport + Client
 async function initializeGameClient(): Promise<void> {
-  const { GameServer } = await import('../server/GameServer');
+  const { Room } = await import('../server/Room');
   const { InProcessTransport } = await import('../server/transports/InProcessTransport');
 
   const config: GameConfig = {
@@ -114,7 +111,7 @@ async function initializeGameClient(): Promise<void> {
     };
   });
 
-  // Create dummy adapter (GameServer still requires one, but it's only used for AI)
+  // Create dummy adapter (Room still requires one, but it's only used for AI)
   const dummyAdapter = {
     send: async () => {},
     subscribe: () => () => {},
@@ -123,15 +120,15 @@ async function initializeGameClient(): Promise<void> {
     getMetadata: () => ({ type: 'in-process' as const })
   };
 
-  // 1. Create GameServer
-  const gameServer = new GameServer(gameId, config, dummyAdapter, sessions);
+  // 1. Create Room
+  const room = new Room(gameId, config, dummyAdapter, sessions);
 
   // 2. Create Transport
   const transport = new InProcessTransport();
 
   // 3. Wire them together
-  gameServer.setTransport(transport);
-  transport.setGameServer(gameServer);
+  room.setTransport(transport);
+  transport.setRoom(room);
 
   // 4. Create adapter from transport that implements IGameAdapter
   const adapter = transport.createAdapter('player-0');
@@ -358,8 +355,7 @@ export const gameActions = {
 
     const result = await getGameClient().executeAction({
       playerId: session.playerId,
-      action: transition.action,
-      timestamp: Date.now()
+      action: transition.action
     });
 
     if (!result.success) {
@@ -384,8 +380,7 @@ export const gameActions = {
 
     const result = await getGameClient().executeAction({
       playerId: session.playerId,
-      action: preparedAction,
-      timestamp: Date.now()
+      action: preparedAction
     });
     if (!result.success) {
       console.error('Action failed:', result.error);
@@ -397,7 +392,7 @@ export const gameActions = {
    * Reset the game (create new client with fresh state)
    */
   resetGame: async () => {
-    const { GameServer } = await import('../server/GameServer');
+    const { Room } = await import('../server/Room');
     const { InProcessTransport } = await import('../server/transports/InProcessTransport');
 
     const newConfig: GameConfig = {
@@ -434,15 +429,15 @@ export const gameActions = {
       getMetadata: () => ({ type: 'in-process' as const })
     };
 
-    // 1. Create GameServer
-    const gameServer = new GameServer(gameId, newConfig, dummyAdapter, sessions);
+    // 1. Create Room
+    const room = new Room(gameId, newConfig, dummyAdapter, sessions);
 
     // 2. Create Transport
     const transport = new InProcessTransport();
 
     // 3. Wire them together
-    gameServer.setTransport(transport);
-    transport.setGameServer(gameServer);
+    room.setTransport(transport);
+    transport.setRoom(room);
 
     // 4. Create adapter from transport that implements IGameAdapter
     const adapter = transport.createAdapter('player-0');
@@ -475,7 +470,7 @@ export const gameActionTransformers = {
    * Start a one-hand challenge game
    */
   startOneHand: async (seed?: number) => {
-    const { GameServer } = await import('../server/GameServer');
+    const { Room } = await import('../server/Room');
     const { InProcessTransport } = await import('../server/transports/InProcessTransport');
 
     const newConfig: GameConfig = {
@@ -523,15 +518,15 @@ export const gameActionTransformers = {
       getMetadata: () => ({ type: 'in-process' as const })
     };
 
-    // 1. Create GameServer
-    const gameServer = new GameServer(gameId, newConfig, dummyAdapter, sessions);
+    // 1. Create Room
+    const room = new Room(gameId, newConfig, dummyAdapter, sessions);
 
     // 2. Create Transport
     const transport = new InProcessTransport();
 
     // 3. Wire them together
-    gameServer.setTransport(transport);
-    transport.setGameServer(gameServer);
+    room.setTransport(transport);
+    transport.setRoom(room);
 
     // 4. Create adapter from transport that implements IGameAdapter
     const adapter = transport.createAdapter('player-0');

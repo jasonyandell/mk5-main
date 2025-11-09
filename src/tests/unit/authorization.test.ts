@@ -59,10 +59,7 @@ describe('Authorization', () => {
     return {
       gameId: 'test-game',
       coreState: state,
-      players: sessions,
-      createdAt: Date.now(),
-      lastActionAt: Date.now(),
-      enabledActionTransformers: []
+      players: sessions
     };
   }
 
@@ -158,7 +155,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(true);
@@ -176,7 +172,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
         action: { type: 'pass', player: currentPlayer }, // Try to act as different player
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(false);
@@ -191,7 +186,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: 'invalid-player-99', // Invalid player ID
         action: { type: 'complete-trick' },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(false);
@@ -207,7 +201,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(true);
@@ -221,7 +214,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'play', player: currentPlayer, dominoId: '0-0' },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(false);
@@ -237,7 +229,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(true);
@@ -258,7 +249,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: 'player-0', // Any player
         action: { type: 'complete-trick' },
-        timestamp: Date.now()
       });
 
       // This will fail because trick isn't actually complete, but authorization should pass
@@ -278,7 +268,6 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: 'player-99',
         action: { type: 'complete-trick' },
-        timestamp: Date.now()
       });
 
       expect(result.success).toBe(false);

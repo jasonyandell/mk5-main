@@ -43,7 +43,6 @@ export interface ExecuteActionMessage {
   gameId: string;
   playerId: string;  // Player identity (e.g., "player-0", "ai-1")
   action: GameAction;
-  timestamp: number;
 }
 
 /**
@@ -203,8 +202,6 @@ export interface GameView {
   metadata: {
     gameId: string;
     variants?: ActionTransformerConfig[];
-    created: number; // timestamp
-    lastUpdate: number; // timestamp
   };
 
   // TODO: Add replay-url capability

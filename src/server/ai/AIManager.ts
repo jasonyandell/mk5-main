@@ -1,10 +1,10 @@
 /**
- * AIManager - Manages AI client lifecycle for GameServer.
+ * AIManager - Manages AI client lifecycle for Room.
  *
  * Current design:
  * - AIClient uses the real adapter (like any other client)
  * - AIClient speaks the protocol (SUBSCRIBE, EXECUTE_ACTION, etc)
- * - GameServer passes real adapter to AIManager
+ * - Room passes real adapter to AIManager
  * - AIManager holds the AIClients and manages their lifecycle
  *
  * Future design:

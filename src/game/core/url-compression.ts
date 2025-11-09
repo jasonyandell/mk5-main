@@ -13,9 +13,9 @@
  * FUTURE: replay-url capability
  * This module's encodeGameUrl() and decodeGameUrl() will be integrated
  * into the protocol layer to enable URL-based game replay:
- * - GameKernel.getView() generates GameView for clients with 'replay-url' capability
+ * - Room.getView() generates GameView for clients with 'replay-url' capability
  * - Clients can use replayUrl to replay full game without storing full state
- * - See src/kernel/GameKernel.ts and src/shared/multiplayer/protocol.ts
+ * - See src/server/Room.ts and src/shared/multiplayer/protocol.ts
  */
 
 // Primary tier: 65 most common events (1 char each)

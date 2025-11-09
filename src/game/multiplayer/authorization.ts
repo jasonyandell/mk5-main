@@ -4,8 +4,6 @@ import { ok, err } from './types';
 import { executeAction } from '../core/actions';
 import { getValidActions } from '../core/gameEngine';
 import { filterActionsForSession } from './capabilityUtils';
-import type { StateMachine } from '../action-transformers/types';
-import { applyActionTransformers } from '../action-transformers/registry';
 import type { GameRules } from '../rulesets/types';
 import { composeRules, baseRuleSet } from '../rulesets';
 
@@ -65,38 +63,6 @@ export function canPlayerExecuteAction(
 }
 
 /**
- * Get all valid actions for a specific player.
- * Pure function per vision document §3.2.3
- *
- * @param mpState - Multiplayer game state
- * @param playerId - String player ID (e.g., "player-0", "ai-1")
- * @param getValidActionsFn - Optional custom state machine (for testing)
- * @returns Array of actions the player can execute
- */
-export function getValidActionsForPlayer(
-  mpState: MultiplayerGameState,
-  playerId: string,
-  getValidActionsFn: StateMachine = getValidActions
-): GameAction[] {
-  const { coreState, players, enabledActionTransformers } = mpState;
-
-  // Find player session
-  const session = players.find(p => p.playerId === playerId);
-  if (!session || !session.isConnected) {
-    return [];
-  }
-
-  // Compose action transformers with base state machine
-  const composedMachine = applyActionTransformers(getValidActionsFn, enabledActionTransformers);
-
-  // Get all valid actions from composed machine
-  const allValidActions = composedMachine(coreState);
-
-  // Filter by player's capabilities
-  return filterActionsForSession(session, allValidActions);
-}
-
-/**
  * Core composition: authorization + execution.
  * This is the fundamental operation for multiplayer - ensures only authorized
  * actions can mutate state.
@@ -145,7 +111,6 @@ export function authorizeAndExecute(
   // NO filtering here - filtering happens in createView()
   return ok({
     ...mpState,
-    coreState: newCoreState,
-    lastActionAt: Math.max(mpState.lastActionAt, request.timestamp)
+    coreState: newCoreState
   });
 }

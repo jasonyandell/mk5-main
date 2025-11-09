@@ -167,8 +167,7 @@ export class NetworkGameClient implements GameClient {
             type: 'EXECUTE_ACTION',
             gameId,
             playerId: request.playerId,
-            action: request.action,
-            timestamp: request.timestamp ?? Date.now()
+            action: request.action
           });
         } catch (error) {
           this.removeActionWaiter(resolve);

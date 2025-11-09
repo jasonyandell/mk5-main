@@ -56,15 +56,16 @@ Everything else exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  GameServer (Orchestrator)      │  Routes messages, manages lifecycle
-│  - Creates and owns GameKernel  │  Spawns/destroys AI clients
-│  - Broadcasts state updates     │  Handles player sessions
+│  Room (Orchestrator)            │  ★ COMPOSITION POINT ★
+│  - Owns state and context       │  Routes messages, manages lifecycle
+│  - Manages sessions and AI      │  Spawns/destroys AI clients
+│  - Delegates to pure helpers    │  Broadcasts state updates
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  GameKernel (Authority)         │  ★ COMPOSITION POINT ★
-│  - Composes rulesets → rules    │  Pure state storage
-│  - Composes transformers→actions│  Per-request filtering
+│  Pure Helpers                   │  Stateless game logic
+│  - executeKernelAction          │  - buildKernelView
+│  - buildActionsMap              │  - processAutoExecute
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -155,7 +156,7 @@ const composed = applyActionTransformers(baseStateMachine, [tournament, oneHand]
 // tournament filters, then oneHand scripts
 ```
 
-### The Composition Point (GameKernel Constructor)
+### The Composition Point (Room Constructor)
 
 **ONE place** where everything composes:
 
@@ -179,7 +180,7 @@ this.ctx = Object.freeze({
 
 // 5. Use context everywhere
 // buildKernelView(state, forPlayerId, this.ctx, metadata)
-// executeKernelAction(mpState, playerId, action, timestamp, this.ctx)
+// executeKernelAction(mpState, playerId, action, this.ctx)
 ```
 
 **Result**: RuleSets change execution semantics, ActionTransformers change action availability. Executors have ZERO conditional logic - they call `ctx.rules.method()` and trust the result. ExecutionContext groups the always-traveling-together parameters (rulesets, rules, getValidActions) into a single immutable object.
@@ -212,8 +213,8 @@ this.ctx = Object.freeze({
 - `src/game/multiplayer/capabilities.ts` - Standard capability builders
 
 **Server** (orchestration + authority):
-- `src/server/GameServer.ts` - Orchestrator, routes messages, manages lifecycle
-- `src/kernel/GameKernel.ts` - Authority, composition point, pure game logic
+- `src/server/Room.ts` - Room orchestrator (combines server + kernel)
+- `src/kernel/kernel.ts` - Pure helper functions (executeKernelAction, buildKernelView)
 - `src/server/transports/Transport.ts` - Transport abstraction interface
 - `src/server/transports/InProcessTransport.ts` - In-browser transport
 
@@ -235,8 +236,7 @@ this.ctx = Object.freeze({
 | **ActionTransformer** | Action transformer | Wrap state machine functions |
 | **Capability** | Permission token | Replace identity with permissions |
 | **ExecutionContext** | Composed configuration | Bundles rulesets + rules + actions |
-| **GameKernel** | Game authority | Single composition point |
-| **GameServer** | Orchestrator | Manages lifecycle, not logic |
+| **Room** | Game orchestrator | Owns state, sessions, AI, transport; delegates to pure helpers |
 
 ---
 
@@ -324,30 +324,28 @@ type Capability =
 ```
 User clicks button
   ↓
-gameStore.executeAction({ playerId, action, timestamp })
+gameStore.executeAction({ playerId, action })
   ↓
 NetworkGameClient.executeAction() → connection.send(EXECUTE_ACTION)
   ↓
-Transport.send() → GameServer.handleMessage()
+Transport.send() → Room.handleMessage()
   ↓
-GameServer routes to GameKernel.executeAction()
+Room routes to executeKernelAction()
   ↓
-GameKernel.executeAction():
-  - authorizeAndExecute(mpState, request, composedStateMachine, rules)
+executeKernelAction():
+  - authorizeAndExecute(mpState, request, ctx.getValidActions, ctx.rules)
   - Find session by playerId
   - Get all valid actions via composed state machine
   - Filter by session capabilities
-  - Execute: executeAction(coreState, action, rules)
-  - Update lastActionAt
+  - Execute: executeAction(coreState, action, ctx.rules)
   - Process auto-execute actions
   ↓
-GameKernel.notifyListeners():
+Room.notifyListeners():
   - For each subscriber (with perspective)
-  - getVisibleStateForSession(coreState, session) → filter state
-  - filterActionsForSession(session, allActions) → filter actions
-  - Build KernelUpdate { view, state, actions }
+  - buildKernelView(mpState, playerId, ctx, metadata) → filter state + actions
+  - Build update { view, state, actions }
   ↓
-GameServer receives update and broadcasts via Transport
+Room broadcasts update via Transport
   ↓
 Transport.send() → connection.onMessage(STATE_UPDATE)
   ↓
@@ -366,7 +364,7 @@ Derived stores recompute
 UI components reactively update
 ```
 
-**Key**: GameKernel filters once per subscriber perspective, Transport routes messages, client trusts filtered data.
+**Key**: Room filters once per subscriber perspective via pure helpers, Transport routes messages, client trusts filtered data.
 
 ---
 
@@ -425,20 +423,20 @@ const config: GameConfig = {
 };
 ```
 
-Flags → getEnabledRuleSets() → compose in GameKernel constructor.
+Flags → getEnabledRuleSets() → compose in Room constructor.
 
 ---
 
 ## Architectural Invariants
 
-1. **Pure State Storage**: GameKernel stores unfiltered GameState, filters on-demand per request
+1. **Pure State Storage**: Room stores unfiltered GameState, filters on-demand per request
 2. **Server Authority**: Client trusts server's validActions list, never refilters
 3. **Capability-Based Access**: Permissions via capability tokens, not identity checks
-4. **Single Composition Point**: GameKernel constructor is ONLY place rulesets/action-transformers compose
+4. **Single Composition Point**: Room constructor is ONLY place rulesets/action-transformers compose
 5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/action-transformers/special contracts
 6. **Parametric Polymorphism**: Executors call `rules.method()`, never `if (nello)`
 7. **Event Sourcing**: State derivable from `replayActions(config, history)`
-8. **Clean Separation**: GameServer orchestrates, GameKernel executes, Transport routes
+8. **Clean Separation**: Room orchestrates, pure helpers execute, Transport routes
 
 **Violation of any invariant = architectural regression.**
 
@@ -451,7 +449,7 @@ Flags → getEnabledRuleSets() → compose in GameKernel constructor.
 | Adding conditional logic in executors | Use parametric polymorphism - delegate to `rules.method()` |
 | Modifying state directly | Create new state objects via spread operator |
 | Checking player identity for permissions | Use capability tokens instead |
-| Adding game logic to GameServer | Put it in GameKernel or RuleSets |
+| Adding game logic to Room | Put it in pure helpers or RuleSets |
 | Filtering state at storage | Store unfiltered, filter on-demand per request |
 | Client-side validation | Trust server's validActions list completely |
 | Deep coupling between rulesets | Keep rulesets focused on single responsibility |
@@ -482,11 +480,11 @@ npm run build      # Production build
 
 | Issue | Where to Look |
 |-------|---------------|
-| Action not available | GameKernel constructor (composition), `authorizeAndExecute` (filtering) |
-| Wrong game behavior | Layer implementation, `GameRules` methods |
+| Action not available | Room constructor (composition), `authorizeAndExecute` (filtering) |
+| Wrong game behavior | RuleSet implementation, `GameRules` methods |
 | State not updating | `executeAction`, check if action is authorized |
 | UI not reactive | Svelte stores, `ViewProjection` computation |
-| Message not routing | `GameServer.handleMessage()`, Transport layer |
+| Message not routing | `Room.handleMessage()`, Transport layer |
 
 ### Understanding the Code
 

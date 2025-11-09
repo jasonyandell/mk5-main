@@ -25,7 +25,7 @@
    - PlayerSession, Capability, Authorization, Visibility, Consensus
 
 4. [Server Architecture](#4-server-architecture)
-   - GameKernel, GameServer, Transport, AIManager, KernelUpdate
+   - Room, Transport, AIManager, KernelUpdate
 
 5. [Client Architecture](#5-client-architecture)
    - NetworkGameClient, AIClient, AIStrategy, PlayerController
@@ -106,7 +106,7 @@
 ### ExecutionContext
 **Definition**: Immutable container bundling composed rulesets, rules, and valid action generator that always travel together through the system.
 
-**Location**: `src/game/types/execution.ts` (referenced in GameKernel)
+**Location**: `src/game/types/execution.ts` (referenced in Room)
 
 **Key Properties**:
 - Enabled rulesets - Which special contracts are active
@@ -114,13 +114,13 @@
 - Valid action generator - Action generation with action transformers applied
 
 **Purpose**:
-- Single composition point: All composition happens in GameKernel constructor
+- Single composition point: All composition happens in Room constructor
 - Ensures consistency: RuleSets and action transformers composed together, never separately
 - Enables polymorphism: Executors use context without inspecting state
 
-**Created Once**: GameKernel constructor creates it and threads through entire system
+**Created Once**: Room constructor creates it and threads through entire system
 
-**Related**: GameKernel, RuleSets, ActionTransformers, GameRules
+**Related**: Room, RuleSets, ActionTransformers, GameRules
 
 ---
 
@@ -155,11 +155,11 @@
 - Legacy pattern - only used in tests
 
 **Important**:
-- **Not used in production** - GameKernel uses pure functions directly
+- **Not used in production** - Room uses pure functions directly
 - Breaks immutability principle
 - Intended for testing and development convenience
 
-**Related**: GameAction, executeAction (pure function), GameKernel
+**Related**: GameAction, executeAction (pure function), Room
 
 ---
 
@@ -186,12 +186,12 @@
 - Zero coupling: No awareness of multiplayer, networking, UI
 - Composable: Works uniformly with any rulesets/action transformers
 
-**Relationship to Kernel**:
+**Relationship to Room**:
 - Engine = pure game logic only
-- Kernel = engine + multiplayer (authorization, filtering, sessions)
-- Kernel **composes** engine and wraps with multiplayer concerns
+- Room = orchestrator that delegates to pure helpers for all logic
+- Room **owns** state and composition, delegates execution to pure helpers
 
-**Related**: GameKernel, Executor, RuleSets, ActionTransformers
+**Related**: Room, Executor, RuleSets, ActionTransformers
 
 ---
 
@@ -455,7 +455,7 @@ const withOneHand = oneHand(withTournament);
 - `action: GameAction` - What to execute
 - `timestamp: number` - When requested
 
-**Used By**: Protocol layer, GameKernel execution
+**Used By**: Protocol layer, Room execution
 
 **Related**: GameAction, PlayerSession
 
@@ -548,7 +548,7 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 - `lastActionAt: number` - Timestamp of last action
 - `actionTransformerConfig: ActionTransformerConfig[]` - Active action transformers
 
-**Used By**: GameKernel (stores MultiplayerGameState, not GameState)
+**Used By**: Room (stores MultiplayerGameState, not GameState)
 
 **Related**: GameState, PlayerSession, ActionTransformerConfig
 
@@ -556,69 +556,39 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 
 ## 4. Server Architecture
 
-### GameKernel
-**Definition**: Pure game authority that stores state, composes rulesets/action transformers, authorizes actions, and filters views.
+### Room
+**Definition**: Game orchestrator that owns state, composes rulesets/action transformers, manages sessions, and delegates to pure helpers.
 
-**Location**: `src/kernel/GameKernel.ts`
+**Location**: `src/server/Room.ts`
 
 **Key Responsibilities**:
 1. **State Storage**: Owns MultiplayerGameState unfiltered
 2. **Composition**: Creates ExecutionContext in constructor (single composition point)
-3. **Authorization**: Executes `authorizeAndExecute()` for each action
-4. **Filtering**: Per-request filtering via `getView()`
-5. **Lifecycle**: Manages subscriptions
+3. **Session Management**: Manages player sessions and capabilities
+4. **AI Management**: Creates and owns AIManager
+5. **Protocol Routing**: Routes protocol messages to handlers
+6. **Delegation**: Calls pure helpers for all game logic
 
 **Key Methods**:
 ```typescript
 constructor(gameId, config, players)
-executeAction(playerId, action, timestamp): Result
+executeAction(playerId, action): Result
 getView(playerId): GameView  // Filtered state + valid actions
 subscribe(perspective, listener): unsubscribe
 notifyListeners()
-```
-
-**Zero Knowledge Of**:
-- Transport/networking
-- AI spawning
-- WebSockets
-- Multiplayer lifecycle
-
-**Pure Game Logic**: No side effects beyond state mutation
-
-**Related**: GameEngine, GameServer, ExecutionContext, Authorization
-
----
-
-### GameServer
-**Definition**: Orchestrator that creates/owns GameKernel and AIManager, routes protocol messages.
-
-**Location**: `src/server/GameServer.ts`
-
-**Key Responsibilities**:
-1. **Creates GameKernel**: Game logic authority
-2. **Creates AIManager**: AI lifecycle
-3. **Routes Messages**: Protocol to GameKernel execution
-4. **Broadcasts Updates**: GameKernel updates via Transport
-5. **Manages Subscriptions**: GameKernel listeners
-
-**Key Methods**:
-```typescript
 handleMessage(clientId, message): void
 setTransport(transport): void
-notifyPlayer(playerId, update): void
-broadcast(update): void
 ```
 
-**Architecture**:
-```
-GameServer
-├── owns GameKernel (pure game logic)
-├── owns AIManager (AI lifecycle)
-├── owns Transport (message routing)
-└── owns subscriptions (listener management)
-```
+**Delegates To** (pure helpers):
+- `executeKernelAction(mpState, playerId, action, ctx)`
+- `buildKernelView(mpState, playerId, ctx, metadata)`
+- `buildActionsMap(mpState, ctx)`
+- `processAutoExecute(mpState, ctx)`
 
-**Related**: GameKernel, Transport, AIManager
+**Zero Knowledge Of**: Transport implementation details (abstracted)
+
+**Related**: ExecutionContext, Authorization, Pure Helpers, AIManager
 
 ---
 
@@ -652,9 +622,9 @@ interface Transport {
 - `WorkerTransport`: Web Worker (planned)
 - `CloudflareTransport`: Durable Objects (planned)
 
-**Key Insight**: GameServer doesn't know transport type - abstracts away
+**Key Insight**: Room doesn't know transport type - abstracts away
 
-**Related**: GameServer, InProcessTransport
+**Related**: Room, InProcessTransport
 
 ---
 
@@ -690,14 +660,14 @@ interface Transport {
 
 **No Game Logic**: Just lifecycle management
 
-**Related**: GameServer, AIClient
+**Related**: Room, AIClient
 
 ---
 
 ### KernelUpdate
 **Definition**: Filtered state update bundle sent to subscriber.
 
-**Location**: `src/kernel/GameKernel.ts`
+**Location**: `src/server/Room.ts`
 
 **Key Properties**:
 - `view: GameView` - Client-facing state (hand filtered)
@@ -705,7 +675,7 @@ interface Transport {
 - `actions: ValidAction[]` - Playable actions
 - `perspective: string` - Player receiving update
 
-**Purpose**: GameKernel creates one per subscriber, customized to their capabilities
+**Purpose**: Room creates one per subscriber (via buildKernelView), customized to their capabilities
 
 **Related**: GameView, PlayerSession, Capability
 
@@ -726,7 +696,7 @@ interface Transport {
 
 **Trust Model**: Client trusts server's validActions list, never refilters
 
-**Related**: Transport, GameServer, GameView
+**Related**: Transport, Room, GameView
 
 ---
 
@@ -743,7 +713,7 @@ interface Transport {
 
 **Pure Logic**: Strategy function, not game logic
 
-**Related**: AIStrategy, AIManager, GameServer
+**Related**: AIStrategy, AIManager, Room
 
 ---
 
@@ -852,7 +822,7 @@ interface Transport {
 
 **Key Characteristics**:
 - Protocol-speaking: Uses ClientMessage and ServerMessage like any client
-- No special privileges: Actions validated by GameKernel same as humans
+- No special privileges: Actions validated by Room same as humans
 - Dynamic lifecycle: Can be spawned and destroyed at runtime
 - Adapter-based: Communicates via IGameAdapter abstraction
 
@@ -865,7 +835,7 @@ interface Transport {
 
 **Key Insight**: AI is not a privileged system - it's a regular client that happens to make decisions algorithmically.
 
-**Related**: AIManager, selectAIAction, IGameAdapter, GameServer
+**Related**: AIManager, selectAIAction, IGameAdapter, Room
 
 ---
 
@@ -882,9 +852,9 @@ interface Transport {
 
 **Key Insight**: Zero game logic - purely lifecycle management. All decisions happen in AIStrategy.
 
-**Used By**: GameServer (creates and manages AIManager)
+**Used By**: Room (creates and manages AIManager)
 
-**Related**: AIClient, GameServer, IGameAdapter
+**Related**: AIClient, Room, IGameAdapter
 
 ---
 
@@ -1010,9 +980,9 @@ interface Transport {
 ### Data Flow: AI Decision to Action
 
 ```
-GameServer executes action
+Room executes action
    ↓
-GameKernel broadcasts STATE_UPDATE
+Room broadcasts STATE_UPDATE
    ↓
 AIClient receives update
    ↓ (if it's AI's turn)
@@ -1025,7 +995,7 @@ selectAndExecuteAction()
       ← Return chosen transition
    → Send EXECUTE_ACTION
    ↓
-GameServer validates and executes
+Room validates and executes
 ```
 
 ### Composition Points
@@ -1238,7 +1208,7 @@ theme: string                    // DaisyUI theme
 colorOverrides: Record<string, string>  // CSS variables
 ```
 
-**Used By**: GameKernel constructor, Game initialization
+**Used By**: Room constructor, Game initialization
 
 **Related**: ActionTransformerConfig, Theme System
 
@@ -1529,7 +1499,7 @@ colorOverrides: Record<string, string>  // CSS variables
 **Applied To**:
 - RuleSets override methods (not flags)
 - ActionTransformers wrap state machines (not switches)
-- GameKernel composes in constructor
+- Room composes in constructor
 
 **Benefit**: Eliminates conditional complexity, enables unlimited combinations
 
@@ -1605,7 +1575,7 @@ colorOverrides: Record<string, string>  // CSS variables
 **VIOLATION OF ANY = REGRESSION**
 
 1. **Pure State Storage**
-   - GameKernel stores unfiltered GameState
+   - Room stores unfiltered GameState
    - Filtering happens per-request, not at rest
 
 2. **Server Authority**
@@ -1617,7 +1587,7 @@ colorOverrides: Record<string, string>  // CSS variables
    - Never identity checks (playerId comparison)
 
 4. **Single Composition Point**
-   - GameKernel constructor ONLY place rulesets/action transformers compose
+   - Room constructor ONLY place rulesets/action transformers compose
    - ExecutionContext created once, used everywhere
 
 5. **Zero Coupling**
@@ -1634,7 +1604,7 @@ colorOverrides: Record<string, string>  // CSS variables
    - Actions are immutable source of truth
 
 8. **Clean Separation**
-   - GameServer orchestrates, GameKernel executes, Transport routes
+   - Room orchestrates, pure helpers execute, Transport routes
    - Each component has single responsibility
 
 ---
@@ -1647,9 +1617,9 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **Transport routes**: Network/IPC layer delivers message to server
 
-**GameServer processes**: Orchestrator receives message and routes to GameKernel
+**Room processes**: Orchestrator receives message and delegates to pure helpers
 
-**GameKernel executes**:
+**Room executes** (via executeKernelAction):
 1. Find PlayerSession by player ID
 2. Get valid actions via composed state machine (with rulesets and action transformers)
 3. Filter actions by session capabilities (observe-hands, act-as-player, etc.)
@@ -1657,12 +1627,12 @@ colorOverrides: Record<string, string>  // CSS variables
 5. Execute action via executor (which delegates to rules methods)
 6. Process any auto-execute actions (speed action transformer, oneHand action transformer, etc.)
 
-**GameKernel notifies**: For each subscriber with their perspective:
+**Room notifies** (via buildKernelView): For each subscriber with their perspective:
 1. Filter state by capabilities (which hands are visible)
 2. Filter actions by capabilities (hints visible? ai-intent visible?)
-3. Build KernelUpdate with custom view
+3. Build update with custom view
 
-**GameServer broadcasts**: Send updates to all connected clients via Transport
+**Room broadcasts**: Send updates to all connected clients via Transport
 
 **NetworkGameClient receives**: Cache filtered state and action list locally
 
@@ -1670,7 +1640,7 @@ colorOverrides: Record<string, string>  // CSS variables
 
 ### Composition Pipeline
 
-**GameKernel initialization** (single composition point):
+**Room initialization** (single composition point):
 
 1. **Get enabled rulesets**: Read from GameConfig which special contracts (nello, splash, plunge, sevens) are active
 
@@ -1682,15 +1652,15 @@ colorOverrides: Record<string, string>  // CSS variables
 
 5. **Bundle ExecutionContext**: Group rulesets, rules, and action generator into immutable container
 
-6. **Use everywhere**: Executors receive context and call rule methods - they never inspect state or know about specific action transformers
+6. **Use everywhere**: Pure helpers receive context and call rule methods - they never inspect state or know about specific action transformers
 
-**Result**: Same executor code works for all action transformer combinations with zero conditional logic.
+**Result**: Same pure helper code works for all action transformer combinations with zero conditional logic.
 
 ### State Transformation Pipeline
 
 **GameState** (core) → Unfiltered, server-only, source of truth
 
-**↓ Validation** → GameKernel validates action against capabilities and rules
+**↓ Validation** → Room validates action against capabilities and rules (via executeKernelAction)
 
 **GameState** (updated) → State changes, now needs distribution
 
@@ -1710,7 +1680,7 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **DOM elements** → User sees current game state
 
-**Key Pattern**: GameKernel filters once per subscriber perspective. Transport delivers. Client trusts server's filtered data without revalidating.
+**Key Pattern**: Room filters once per subscriber perspective (via buildKernelView). Transport delivers. Client trusts server's filtered data without revalidating.
 
 ---
 
@@ -1755,10 +1725,10 @@ colorOverrides: Record<string, string>  // CSS variables
 - gameSimulator.ts: Game simulation utilities
 
 ### src/kernel/
-- GameKernel.ts: Authority, composition, filtering, lifecycle
+- kernel.ts: Pure helper functions (executeKernelAction, buildKernelView, etc.)
 
 ### src/server/
-- GameServer.ts: Orchestrator
+- Room.ts: Room orchestrator (combines server + kernel responsibilities)
 - transports/: Transport abstractions
 - ai/: AIManager
 
@@ -1779,10 +1749,10 @@ colorOverrides: Record<string, string>  // CSS variables
 **By Task**:
 - **Add new special contract**: RuleSets, RuleSet Implementations, GameRules
 - **Add new game action transformer**: ActionTransformers, StateMachine, ActionTransformer Implementations
-- **Fix authorization bug**: Authorization, Capability, PlayerSession
-- **Debug UI issue**: ViewProjection, FilteredGameState, Protocol
+- **Fix authorization bug**: Authorization, Capability, PlayerSession, executeKernelAction
+- **Debug UI issue**: ViewProjection, FilteredGameState, Protocol, buildKernelView
 - **Understand event sourcing**: Action History, Event Sourcing Formula, URL Compression
-- **Debug action execution**: Executor, ExecutionContext, GameRules
+- **Debug action execution**: Executor, ExecutionContext, GameRules, Room
 - **Improve AI strategy**: AI Architecture, Hand Analysis System, BeginnerAIStrategy
 - **Add new AI difficulty level**: AIDifficulty, AIStrategy, GameSimulator
 

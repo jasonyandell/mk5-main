@@ -17,23 +17,19 @@ export function replayActions(
   // We capture the active action transformer configuration so that any caller asking for
   // valid actions after replay can compose the same action transformer pipeline.
 
-  const actionTransformerConfigs = config.variants ?? [];
-
   // Create initial state with proper optional handling
   let state = createInitialState({
     playerTypes: config.playerTypes,
     ...(config.shuffleSeed !== undefined && { shuffleSeed: config.shuffleSeed }),
     ...(config.theme !== undefined && { theme: config.theme }),
-    ...(config.colorOverrides !== undefined && { colorOverrides: config.colorOverrides }),
-    ...(actionTransformerConfigs.length ? { variants: actionTransformerConfigs } : {})
+    ...(config.colorOverrides !== undefined && { colorOverrides: config.colorOverrides })
   });
 
   // Add initialConfig to state
   state = {
     ...state,
     initialConfig: {
-      ...config,
-      ...(actionTransformerConfigs.length ? { variants: actionTransformerConfigs } : {})
+      ...config
     }
   };
 

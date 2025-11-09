@@ -68,9 +68,7 @@ if (typeof window !== 'undefined' && !isPerfectsPage) {
         validActions: [],
         players: [],
         metadata: {
-          gameId: 'unknown',
-          created: Date.now(),
-          lastUpdate: Date.now()
+          gameId: 'unknown'
         }
       };
     }

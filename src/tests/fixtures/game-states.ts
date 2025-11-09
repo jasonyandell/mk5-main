@@ -2,7 +2,7 @@
  * Pre-configured game states for testing.
  *
  * These fixtures provide realistic GameView objects for common test scenarios.
- * Use these instead of creating GameKernel instances in tests.
+ * Use these instead of creating Room instances in tests.
  */
 
 import type { GameView, PlayerInfo, ValidAction } from '../../shared/multiplayer/protocol';
@@ -179,9 +179,7 @@ function createGameView(state: GameState, validActions: ValidAction[] = []): Gam
     validActions,
     players: createDefaultPlayerInfo(),
     metadata: {
-      gameId: 'test-game-123',
-      created: Date.now(),
-      lastUpdate: Date.now(),
+      gameId: 'test-game-123'
     },
   };
 }
@@ -221,9 +219,7 @@ export function createCustomGameView(
     validActions,
     players,
     metadata: {
-      gameId: 'test-game-123',
-      created: Date.now(),
-      lastUpdate: Date.now(),
+      gameId: 'test-game-123'
     },
   };
 }
@@ -295,9 +291,7 @@ export function createObserverGameView(
     validActions,
     players: createDefaultPlayerInfo(),
     metadata: {
-      gameId: 'test-game-123',
-      created: Date.now(),
-      lastUpdate: Date.now(),
+      gameId: 'test-game-123'
     },
   };
 }

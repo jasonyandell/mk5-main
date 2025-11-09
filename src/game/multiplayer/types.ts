@@ -1,5 +1,4 @@
 import type { GameAction, GameState } from '../types';
-import type { ActionTransformerConfig } from '../types/config';
 
 /**
  * Capability tokens control what a session can see or do.
@@ -62,15 +61,14 @@ export interface PlayerSession {
  * Multiplayer game state stores pure GameState and filters on-demand.
  * This is the canonical type from the vision document (remixed-855ccfd5.md lines 108-115).
  * Authority stores pure state; filtering happens per-client in createView().
+ *
+ * Pure data only: gameId + coreState + players
+ * Execution configuration (rulesets, transformers) lives in ExecutionContext.
  */
 export interface MultiplayerGameState {
   gameId: string;                           // Unique game identifier
   coreState: GameState;                     // Pure GameState (NOT filtered)
   players: readonly PlayerSession[];        // Immutable player sessions
-  createdAt: number;                        // Timestamp when game created
-  lastActionAt: number;                     // Last activity timestamp
-  enabledActionTransformers: ActionTransformerConfig[];         // Active action transformers
-  enabledRuleSets?: string[];               // Active rule sets (e.g., ['nello', 'plunge'])
 }
 
 /**
@@ -79,7 +77,6 @@ export interface MultiplayerGameState {
 export interface ActionRequest {
   playerId: string;  // Player identity (e.g., "player-0", "ai-1")
   action: GameAction;
-  timestamp: number;
 }
 
 /**

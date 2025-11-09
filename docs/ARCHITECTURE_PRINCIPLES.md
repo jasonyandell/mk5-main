@@ -135,14 +135,14 @@ This allows the same executor code to work for all game variants without conditi
 Each architectural layer has a single, well-defined responsibility:
 
 ```
-KERNEL → SERVER → TRANSPORT
-(logic)  (orchestration)  (routing)
+ROOM → TRANSPORT
+(orchestration + logic)  (routing)
 ```
 
 **Boundaries**:
 - **Engine**: Pure game logic, zero coupling
-- **Kernel**: Game logic + multiplayer (authorization, filtering)
-- **Server**: Orchestration + lifecycle management
+- **Pure Helpers**: Stateless multiplayer logic (authorization, filtering, view building)
+- **Room**: Orchestration + lifecycle + state management
 - **Transport**: Message routing (in-process, worker, edge)
 - **UI**: Rendering + interaction
 
@@ -150,34 +150,36 @@ KERNEL → SERVER → TRANSPORT
 
 ---
 
-## Three-Tier Authority Structure
+## Two-Tier Authority Structure
 
 ```
-KERNEL (authority) → SERVER (orchestrator) → TRANSPORT (routing)
+ROOM (orchestrator + authority) → TRANSPORT (routing)
 ```
 
 Each tier has distinct responsibilities:
 
-### GameKernel - Pure Game Authority
+### Room - Game Orchestrator
 - Stores unfiltered state
 - Composes RuleSets/action transformers (single composition point)
-- Authorizes actions via capability-based filtering
-- Filters views per-request based on observer permissions
-- Zero knowledge of transport, networking, or AI spawning
-
-### GameServer - Orchestrator
-- Creates and owns GameKernel
-- Creates and owns AIManager
+- Creates and owns ExecutionContext
+- Manages sessions, AI, and subscriptions
 - Routes protocol messages to handlers
-- Manages client subscriptions
+- Delegates to pure helpers for all game logic
 - Broadcasts state updates via Transport
+
+### Pure Helpers - Stateless Logic
+- `executeKernelAction` - Authorize and execute actions
+- `buildKernelView` - Filter state and actions for perspective
+- `buildActionsMap` - Create actions map for all players
+- `processAutoExecute` - Handle auto-execute actions
+- Zero state, zero side effects
 
 ### Transport - Message Router
 - Abstracts message delivery mechanism
 - Enables multiple implementations (in-process, Worker, edge)
-- GameServer is transport-agnostic
+- Room is transport-agnostic
 
-**Key Insight**: Clean separation enables deployment flexibility—same kernel runs in browser, Worker, or edge.
+**Key Insight**: Clean separation enables deployment flexibility—same Room runs in browser, Worker, or edge.
 
 ---
 
@@ -245,7 +247,7 @@ State is never mutated, only transformed. Enables reasoning, debugging, and time
 Each piece of information has one authoritative location. Everything else derives from it.
 
 **Examples**:
-- GameKernel stores unfiltered state (clients get filtered copies)
+- Room stores unfiltered state (clients get filtered copies)
 - Action history is source of truth (state is computed)
 - ExecutionContext created once (used everywhere)
 
@@ -261,7 +263,7 @@ Server validates everything, clients trust completely. Clear security boundary e
 **CRITICAL**: These principles must never be violated. Violations constitute architectural regressions.
 
 ### 1. Pure State Storage
-GameKernel stores unfiltered GameState. Filtering happens per-request, never at rest. Single source of truth principle.
+Room stores unfiltered GameState. Filtering happens per-request, never at rest. Single source of truth principle.
 
 **Why**: Enables per-observer filtering, ensures consistency, prevents state divergence.
 
@@ -276,7 +278,7 @@ All permissions via capability tokens. Never use identity checks (`playerId === 
 **Why**: Transparent, composable security model. Capabilities are data, not magic.
 
 ### 4. Single Composition Point
-RuleSets and ActionTransformers compose only in GameKernel constructor. ExecutionContext created once, used everywhere.
+RuleSets and ActionTransformers compose only in Room constructor. ExecutionContext created once, used everywhere.
 
 **Why**: Ensures consistent behavior, prevents composition drift, enables parametric polymorphism.
 
@@ -296,7 +298,7 @@ State must be derivable from action replay: `state = replayActions(config, histo
 **Why**: Perfect reproducibility, enables sharing, debugging, and testing.
 
 ### 8. Clean Separation
-Each component has single responsibility. GameServer orchestrates, GameKernel executes, Transport routes. No responsibility bleeding.
+Each component has single responsibility. Room orchestrates, pure helpers execute, Transport routes. No responsibility bleeding.
 
 **Why**: Changes don't cascade, enables independent evolution, clear ownership.
 
@@ -330,7 +332,7 @@ Validate early and explicitly. Make errors impossible through types where feasib
 ### Single Source of Truth
 One authoritative location for each piece of state. Everything else derives from it.
 
-**Application**: GameKernel state, action history, ExecutionContext.
+**Application**: Room state, action history, ExecutionContext.
 
 ---
 
@@ -338,8 +340,8 @@ One authoritative location for each piece of state. Everything else derives from
 
 ### Data Flow
 ```
-User input → Client → Transport → Server → GameKernel →
-Authorization → Execution → State Update → Filtering →
+User input → Client → Transport → Room →
+Authorization (pure helper) → Execution (pure helper) → State Update → Filtering (pure helper) →
 Transport → Client → UI Update
 ```
 
@@ -352,8 +354,7 @@ ExecutionContext bundles all → Executors use context
 
 ### Authority Hierarchy
 ```
-GameKernel (source of truth) →
-GameServer (orchestration) →
+Room (source of truth + orchestration) →
 Transport (routing) →
 Clients (presentation)
 ```
@@ -424,7 +425,7 @@ Filtering → FilteredGameState → ViewProjection → UI State
 **Trade-off**: More parameter passing (mitigated by ExecutionContext bundling).
 
 ### Single Composition Point
-**Decision**: RuleSets and ActionTransformers compose only in GameKernel constructor.
+**Decision**: RuleSets and ActionTransformers compose only in Room constructor.
 
 **Rationale**: Ensures consistency, prevents drift, enables parametric polymorphism.
 

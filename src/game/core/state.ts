@@ -1,5 +1,4 @@
 import type { GameState, Player } from '../types';
-import type { ActionTransformerConfig } from '../types/config';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
@@ -14,8 +13,7 @@ export function createSetupState(options?: {
   dealer?: number,
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
-  colorOverrides?: Record<string, string>,
-  variants?: ActionTransformerConfig[]
+  colorOverrides?: Record<string, string>
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
@@ -31,8 +29,7 @@ export function createSetupState(options?: {
       playerTypes,
       shuffleSeed,
       theme,
-      colorOverrides,
-      ...(options?.variants ? { variants: options.variants } : {})
+      colorOverrides
     },
 
     phase: 'setup',
@@ -78,8 +75,7 @@ export function createInitialState(options?: {
   dealer?: number,
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
-  colorOverrides?: Record<string, string>,
-  variants?: ActionTransformerConfig[]
+  colorOverrides?: Record<string, string>
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
@@ -97,8 +93,7 @@ export function createInitialState(options?: {
       playerTypes,
       shuffleSeed,
       theme,
-      colorOverrides,
-      ...(options?.variants ? { variants: options.variants } : {})
+      colorOverrides
     },
 
     // Theme configuration (first-class citizen)
@@ -150,7 +145,6 @@ export function cloneGameState(state: GameState): GameState {
     initialConfig: {
       ...state.initialConfig,
       playerTypes: [...state.initialConfig.playerTypes],
-      ...(state.initialConfig.variants ? { variants: [...state.initialConfig.variants] } : {}),
       ...(state.initialConfig.colorOverrides ? { colorOverrides: { ...state.initialConfig.colorOverrides } } : {})
     },
     players: state.players.map(player => {

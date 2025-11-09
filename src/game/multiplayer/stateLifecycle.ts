@@ -6,29 +6,17 @@ export interface CreateMultiplayerGameOptions {
   gameId: string;
   coreState: GameState;
   players: PlayerSession[];
-  enabledActionTransformers?: MultiplayerGameState['enabledActionTransformers'];
-  enabledRuleSets?: MultiplayerGameState['enabledRuleSets'];
-  createdAt?: number;
-  lastActionAt?: number;
 }
 
 export function createMultiplayerGame({
   gameId,
   coreState,
-  players,
-  enabledActionTransformers = [],
-  enabledRuleSets = [],
-  createdAt = Date.now(),
-  lastActionAt = createdAt
+  players
 }: CreateMultiplayerGameOptions): MultiplayerGameState {
   return {
     gameId,
     coreState,
-    players: players.map(player => ({ ...player })),
-    createdAt,
-    lastActionAt,
-    enabledActionTransformers: [...enabledActionTransformers],
-    enabledRuleSets: [...enabledRuleSets]
+    players: players.map(player => ({ ...player }))
   };
 }
 

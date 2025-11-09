@@ -150,3 +150,22 @@ export class CapabilityBuilder {
 export function buildCapabilities(): CapabilityBuilder {
   return new CapabilityBuilder();
 }
+
+/**
+ * Build base capability set per control type.
+ *
+ * Pure helper that returns standard capabilities for human or AI players.
+ * This is the canonical way to initialize capabilities when creating or updating player sessions.
+ *
+ * Vision spec §4.3: Uses humanCapabilities() or aiCapabilities()
+ *
+ * @param playerIndex - The player index (0-3)
+ * @param controlType - Either 'human' or 'ai'
+ * @returns Array of capabilities appropriate for the control type
+ */
+export function buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai'): Capability[] {
+  const idx = playerIndex as 0 | 1 | 2 | 3;
+  return controlType === 'human'
+    ? humanCapabilities(idx)
+    : aiCapabilities(idx);
+}

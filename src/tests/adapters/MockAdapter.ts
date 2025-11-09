@@ -299,10 +299,7 @@ export class MockAdapter implements IGameAdapter {
     return {
       gameId: view.metadata.gameId || this.gameId,
       coreState: view.state as unknown as MultiplayerGameState['coreState'],
-      players,
-      createdAt: view.metadata.created,
-      lastActionAt: view.metadata.lastUpdate,
-      enabledActionTransformers: view.metadata.variants || []
+      players
     };
   }
 

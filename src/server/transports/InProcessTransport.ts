@@ -7,8 +7,8 @@
  * Message flow:
  * Client → Transport.connect() → receives Connection
  * Client sends: connection.send(ClientMessage)
- *   → Transport routes to GameServer.handleMessage(clientId, message)
- * GameServer broadcasts: transport.send(clientId, ServerMessage)
+ *   → Transport routes to Room.handleMessage(clientId, message)
+ * Room broadcasts: transport.send(clientId, ServerMessage)
  *   → Transport calls registered onMessage handler for that client
  * Client receives via: onMessage handler
  */
@@ -17,16 +17,16 @@ import type { ClientMessage, ServerMessage, IGameAdapter } from '../../shared/mu
 import type { Transport, Connection } from './Transport';
 
 export class InProcessTransport implements Transport {
-  private gameServer?: import('../GameServer').GameServer | undefined;
+  private room?: import('../Room').Room | undefined;
   private clients: Map<string, (message: ServerMessage) => void> = new Map();
   private connectedClients: Set<string> = new Set();
 
   /**
-   * Set the GameServer reference so we can route messages to it.
+   * Set the Room reference so we can route messages to it.
    * Called during initialization to establish the server connection.
    */
-  setGameServer(server: import('../GameServer').GameServer): void {
-    this.gameServer = server;
+  setRoom(server: import('../Room').Room): void {
+    this.room = server;
   }
 
   /**
@@ -50,14 +50,14 @@ export class InProcessTransport implements Transport {
     return {
       /**
        * Client sends a message through this method.
-       * Transport routes it to GameServer.
+       * Transport routes it to Room.
        */
       send: (message: ClientMessage) => {
-        if (!this.gameServer) {
-          console.error('InProcessTransport.send: GameServer not set');
+        if (!this.room) {
+          console.error('InProcessTransport.send: Room not set');
           return;
         }
-        this.gameServer.handleMessage(clientId, message);
+        this.room.handleMessage(clientId, message);
       },
 
       /**
@@ -75,15 +75,15 @@ export class InProcessTransport implements Transport {
       disconnect: () => {
         this.clients.delete(clientId);
         this.connectedClients.delete(clientId);
-        if (this.gameServer) {
-          this.gameServer.handleClientDisconnect(clientId);
+        if (this.room) {
+          this.room.handleClientDisconnect(clientId);
         }
       }
     };
   }
 
   /**
-   * GameServer calls this to send a message to a specific client.
+   * Room calls this to send a message to a specific client.
    * We look up the client's registered handler and call it.
    */
   send(clientId: string, message: ServerMessage): void {
@@ -95,7 +95,7 @@ export class InProcessTransport implements Transport {
 
   /**
    * Broadcast a message to all connected clients.
-   * Called by GameServer when it needs to notify everyone.
+   * Called by Room when it needs to notify everyone.
    */
   broadcast(message: ServerMessage): void {
     for (const handler of this.clients.values()) {
@@ -140,7 +140,7 @@ export class InProcessTransport implements Transport {
   async stop(): Promise<void> {
     this.clients.clear();
     this.connectedClients.clear();
-    this.gameServer = undefined;
+    this.room = undefined;
   }
 }
 

@@ -28,10 +28,9 @@ export function executeKernelAction(
   state: MultiplayerGameState,
   playerId: string,
   action: GameAction,
-  timestamp: number,
   ctx: ExecutionContext
 ) {
-  const request = { playerId, action, timestamp };
+  const request = { playerId, action };
   const result = authorizeAndExecute(state, request, ctx.getValidActions, ctx.rules);
 
   if (!result.success) {
@@ -72,7 +71,7 @@ export function processAutoExecuteActions(
 
     const result = authorizeAndExecute(
       state,
-      { playerId: session.playerId, action: autoAction, timestamp: Date.now() },
+      { playerId: session.playerId, action: autoAction },
       ctx.getValidActions,
       ctx.rules
     );
@@ -106,8 +105,6 @@ export function buildKernelView(
   metadata: {
     gameId: string;
     actionTransformerConfigs: ActionTransformerConfig[];
-    created: number;
-    lastUpdate: number;
   }
 ): GameView {
   const coreState = state.coreState;
@@ -145,9 +142,7 @@ export function buildKernelView(
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,
-      ...(metadata.actionTransformerConfigs.length ? { variants: metadata.actionTransformerConfigs } : {}),
-      created: metadata.created,
-      lastUpdate: metadata.lastUpdate
+      ...(metadata.actionTransformerConfigs.length ? { variants: metadata.actionTransformerConfigs } : {})
     }
   };
 }
@@ -340,8 +335,7 @@ export function updatePlayerControlPure(
 
   return ok({
     ...updatedStateResult.value,
-    coreState: updatedCoreState,
-    lastActionAt: Date.now()
+    coreState: updatedCoreState
   });
 }
 
@@ -355,11 +349,7 @@ export function cloneMultiplayerState(state: MultiplayerGameState): MultiplayerG
     players: state.players.map((session: PlayerSession) => ({
       ...session,
       capabilities: session.capabilities.map((cap: Capability) => ({ ...cap }))
-    })),
-    createdAt: state.createdAt,
-    lastActionAt: state.lastActionAt,
-    enabledActionTransformers: state.enabledActionTransformers.map((actionTransformer: ActionTransformerConfig) => ({ ...actionTransformer })),
-    enabledRuleSets: state.enabledRuleSets ?? []
+    }))
   };
 }
 

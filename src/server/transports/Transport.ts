@@ -8,7 +8,7 @@
  *
  * Transport is responsible for:
  * - Client connections and disconnections
- * - Message routing between clients and GameServer
+ * - Message routing between clients and Room
  * - Broadcasting server messages to clients
  *
  * Transport is NOT responsible for:
@@ -44,13 +44,13 @@ export interface Connection {
 }
 
 /**
- * Transport interface that GameServer uses.
+ * Transport interface that Room uses.
  * Abstracts away how messages are sent to clients.
  */
 export interface Transport {
   /**
    * Send a message to a specific client.
-   * Called by GameServer to broadcast state updates.
+   * Called by Room to broadcast state updates.
    */
   send(clientId: string, message: ServerMessage): void;
 
@@ -69,7 +69,7 @@ export interface Transport {
 
 /**
  * Server-side interface for transport implementations.
- * Allows GameServer to interact with transport for routing and connections.
+ * Allows Room to interact with transport for routing and connections.
  */
 export interface TransportServer {
   /**
