@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState, gameActions } from '../../stores/gameStore';
+  import { gameState, game } from '../../stores/gameStore';
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
   import { shareContent, canNativeShare } from '../utils/share';
@@ -141,7 +141,7 @@
             class="btn btn-warning btn-block"
             onclick={() => {
               // Reset the game state
-              gameActions.resetGame();
+              game.resetGame();
             }}
           >
             <span class="flex items-center justify-center gap-2">

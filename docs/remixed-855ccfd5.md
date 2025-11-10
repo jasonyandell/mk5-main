@@ -725,7 +725,7 @@ function getValidActionsWithActionTransformers(
 
 ### 6.1 Purpose
 
-Provide I/O adapters that execute the pure multiplayer functions over different transports (HTTP, WebSocket, postMessage).
+Provide I/O connections that execute the pure multiplayer functions over different transports (HTTP, WebSocket, postMessage).
 
 ### 6.2 Unified Client Interface
 

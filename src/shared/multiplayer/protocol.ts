@@ -247,45 +247,6 @@ export interface PlayerInfo {
 }
 
 // ============================================================================
-// Transport Interface
-// ============================================================================
-
-/**
- * Transport adapter interface.
- * Implementations handle the actual message passing (WebSocket, Worker, etc.)
- */
-export interface IGameAdapter {
-  /**
-   * Send a message to the server
-   */
-  send(message: ClientMessage): Promise<void>;
-
-  /**
-   * Subscribe to server messages
-   */
-  subscribe(handler: (message: ServerMessage) => void): () => void;
-
-  /**
-   * Clean up resources
-   */
-  destroy(): void;
-
-  /**
-   * Check if connected
-   */
-  isConnected(): boolean;
-
-  /**
-   * Optional: Get connection metadata
-   */
-  getMetadata?(): {
-    type: 'in-process' | 'worker' | 'websocket';
-    latency?: number;
-    gameId?: string;
-  };
-}
-
-// ============================================================================
 // Helper Types
 // ============================================================================
 

@@ -1,24 +1,19 @@
 /**
  * AIManager - Manages AI client lifecycle for Room.
  *
- * Current design:
- * - AIClient uses the real adapter (like any other client)
+ * Design:
+ * - AIClient uses in-process connections (created from Transport)
  * - AIClient speaks the protocol (SUBSCRIBE, EXECUTE_ACTION, etc)
- * - Room passes real adapter to AIManager
+ * - Room creates connections on-demand and passes to spawnAI()
  * - AIManager holds the AIClients and manages their lifecycle
  *
- * Future design:
- * - Callback-based: AIClient takes (seat, playerId, onAction) callbacks
- * - No adapter dependency
- * - Simpler to test and deploy
- *
  * Responsibilities:
- * - Spawn AI clients when needed
+ * - Spawn AI clients with provided connections
  * - Destroy AI clients when control changes
  * - Manage AI lifecycle
  */
 
-import type { IGameAdapter } from '../adapters/IGameAdapter';
+import type { Connection } from '../transports/Transport';
 import { AIClient } from '../../game/multiplayer/AIClient';
 import type { AIDifficulty } from '../../game/multiplayer/AIClient';
 
@@ -29,11 +24,9 @@ interface AIEntry {
 
 export class AIManager {
   private aiClients: Map<number, AIEntry> = new Map();
-  private adapter: IGameAdapter;
   private difficulty: AIDifficulty = 'beginner';
 
-  constructor(adapter: IGameAdapter, difficulty: AIDifficulty = 'beginner') {
-    this.adapter = adapter;
+  constructor(difficulty: AIDifficulty = 'beginner') {
     this.difficulty = difficulty;
   }
 
@@ -43,8 +36,9 @@ export class AIManager {
    * @param seat - Player seat index (0-3)
    * @param gameId - Game ID
    * @param playerId - Player ID (should be `ai-${seat}`)
+   * @param connection - Connection for this AI client
    */
-  spawnAI(seat: number, gameId: string, playerId: string): void {
+  spawnAI(seat: number, gameId: string, playerId: string, connection: Connection): void {
     // Don't spawn if already exists
     if (this.aiClients.has(seat)) {
       console.warn(`AIManager: Seat ${seat} already has AI`);
@@ -54,7 +48,7 @@ export class AIManager {
     const client = new AIClient(
       gameId,
       seat,
-      this.adapter,  // Use real adapter like any other client
+      connection,  // Pass connection to AIClient
       playerId,
       this.difficulty
     );

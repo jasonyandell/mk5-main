@@ -13,7 +13,7 @@
  * Client receives via: onMessage handler
  */
 
-import type { ClientMessage, ServerMessage, IGameAdapter } from '../../shared/multiplayer/protocol';
+import type { ClientMessage, ServerMessage } from '../../shared/multiplayer/protocol';
 import type { Transport, Connection } from './Transport';
 
 export class InProcessTransport implements Transport {
@@ -27,15 +27,6 @@ export class InProcessTransport implements Transport {
    */
   setRoom(server: import('../Room').Room): void {
     this.room = server;
-  }
-
-  /**
-   * Create an IGameAdapter that wraps a Connection.
-   * This allows legacy code that expects IGameAdapter to work with the new Transport.
-   */
-  createAdapter(clientId: string): IGameAdapter {
-    const connection = this.connect(clientId);
-    return new ConnectionAdapter(connection);
   }
 
   /**
@@ -141,53 +132,5 @@ export class InProcessTransport implements Transport {
     this.clients.clear();
     this.connectedClients.clear();
     this.room = undefined;
-  }
-}
-
-/**
- * Adapter that wraps a Connection to provide IGameAdapter interface.
- * This allows NetworkGameClient to work with Transport connections.
- */
-class ConnectionAdapter implements IGameAdapter {
-  private connection: Connection;
-  private messageHandlers = new Set<(message: ServerMessage) => void>();
-  private isConnected_ = true;
-
-  constructor(connection: Connection) {
-    this.connection = connection;
-    // Register our handler to forward messages to all subscribers
-    this.connection.onMessage((message) => {
-      for (const handler of this.messageHandlers) {
-        handler(message);
-      }
-    });
-  }
-
-  async send(message: ClientMessage): Promise<void> {
-    this.connection.send(message);
-  }
-
-  subscribe(handler: (message: ServerMessage) => void): () => void {
-    this.messageHandlers.add(handler);
-    return () => {
-      this.messageHandlers.delete(handler);
-    };
-  }
-
-  destroy(): void {
-    this.connection.disconnect();
-    this.messageHandlers.clear();
-    this.isConnected_ = false;
-  }
-
-  isConnected(): boolean {
-    return this.isConnected_;
-  }
-
-  getMetadata?() {
-    return {
-      type: 'in-process' as const,
-      latency: 0
-    };
   }
 }

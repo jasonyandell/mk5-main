@@ -5,15 +5,6 @@ import { Room } from '../../server/Room';
 // Tournament rules (baseRuleSet only) do not allow special contracts
 // These tests verify that at the Room level (action generation)
 
-// Dummy adapter for tests
-const dummyAdapter = {
-  send: async () => {},
-  subscribe: () => () => {},
-  destroy: () => {},
-  isConnected: () => true,
-  getMetadata: () => ({ type: 'in-process' as const })
-};
-
 describe('Tournament Action Transformer Authority', () => {
   it('prevents executing bids that action transformers remove', () => {
     const config: GameConfig = {
@@ -34,7 +25,7 @@ describe('Tournament Action Transformer Authority', () => {
       ]
     }));
 
-    const room = new Room('tournament-test', config, dummyAdapter, players);
+    const room = new Room('tournament-test', config, players);
 
     const currentPlayer = room.getView('player-0').state.currentPlayer;
 

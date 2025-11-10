@@ -34,7 +34,7 @@
    - Strategies, Hand Analysis, Testing, Integration
 
 7. [Protocol & Communication](#8-protocol--communication)
-   - Messages, Adapters, Views
+   - Messages, Connections, Views
 
 8. [View Projection (UI Layer)](#9-view-projection-ui-layer)
    - ViewProjection, Components
@@ -634,7 +634,7 @@ interface Transport {
 **Location**: `src/server/transports/InProcessTransport.ts`
 
 **How It Works**:
-1. Client calls `adapter.send(message)`
+1. Client calls `connection.send(message)`
 2. Transport receives message
 3. Routes to server-side handler
 4. Server sends response back
@@ -643,7 +643,7 @@ interface Transport {
 
 **Used By**: Current development and testing
 
-**Related**: Transport, IGameAdapter
+**Related**: Transport, Connection
 
 ---
 
@@ -824,18 +824,18 @@ interface Transport {
 - Protocol-speaking: Uses ClientMessage and ServerMessage like any client
 - No special privileges: Actions validated by Room same as humans
 - Dynamic lifecycle: Can be spawned and destroyed at runtime
-- Adapter-based: Communicates via IGameAdapter abstraction
+- Connection-based: Communicates via Connection abstraction
 
 **Lifecycle**:
 - `start()`: Subscribe to game updates
 - Waits for turn notification
 - Thinks for configurable delay (based on difficulty)
-- Executes action via adapter
+- Executes action via connection
 - `destroy()`: Clean up timers and unsubscribe
 
 **Key Insight**: AI is not a privileged system - it's a regular client that happens to make decisions algorithmically.
 
-**Related**: AIManager, selectAIAction, IGameAdapter, Room
+**Related**: AIManager, selectAIAction, Connection, Room
 
 ---
 
@@ -854,7 +854,7 @@ interface Transport {
 
 **Used By**: Room (creates and manages AIManager)
 
-**Related**: AIClient, Room, IGameAdapter
+**Related**: AIClient, Room, Connection
 
 ---
 
@@ -1078,18 +1078,17 @@ Room validates and executes
 
 ---
 
-### IGameAdapter
-**Definition**: Interface for game interaction (currently used by AI).
+### Connection
+**Definition**: Interface for client-server communication.
 
-**Location**: `src/shared/multiplayer/protocol.ts`
+**Location**: `src/server/transports/Transport.ts`
 
 **Methods**:
-- `send(message: ClientMessage): Promise<void>`
-- `subscribe(handler: (message: ServerMessage) => void): () => void`
-- `destroy(): void`
-- `isConnected(): boolean`
+- `send(message: ServerMessage): void`
+- `onMessage(handler: (message: ClientMessage) => void): void`
+- `disconnect(): void`
 
-**Used By**: AIClient for communication
+**Used By**: Transport implementations, clients for communication
 
 **Related**: Transport, ClientMessage, ServerMessage
 

@@ -17,15 +17,6 @@ function createPlayers(config: GameConfig) {
   }));
 }
 
-// Dummy adapter for tests
-const dummyAdapter = {
-  send: async () => {},
-  subscribe: () => () => {},
-  destroy: () => {},
-  isConnected: () => true,
-  getMetadata: () => ({ type: 'in-process' as const })
-};
-
 describe('Room auto-execute', () => {
   it('runs introductory scripts for one-hand action transformer automatically', () => {
     const config: GameConfig = {
@@ -34,7 +25,7 @@ describe('Room auto-execute', () => {
       shuffleSeed: 777777
     };
 
-    const room = new Room('one-hand-autoplay', config, dummyAdapter, createPlayers(config));
+    const room = new Room('one-hand-autoplay', config, createPlayers(config));
     const view = room.getView('player-0');
 
     expect(view.state.phase).toBe('playing');

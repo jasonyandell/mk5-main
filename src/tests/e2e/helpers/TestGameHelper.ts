@@ -7,7 +7,7 @@
  * - Coupling to game implementation details
  *
  * Instead, it:
- * - Uses adapters (Mock or Spy) to control game state
+ * - Uses connections (Mock or Spy) to control game state
  * - Tests only UI behavior and DOM interactions
  * - Provides high-level assertions
  *
@@ -22,22 +22,22 @@
 
 import type { Page } from '@playwright/test';
 import type { GameView } from '../../../shared/multiplayer/protocol';
-import type { IGameAdapter } from '../../../shared/multiplayer/protocol';
-import { MockAdapter } from '../../adapters/MockAdapter';
-import { SpyAdapter } from '../../adapters/SpyAdapter';
+import type { Connection } from '../../../server/transports/Transport';
+import { MockConnection } from '../../adapters/MockAdapter';
+import { SpyConnection } from '../../adapters/SpyAdapter';
 
 export class TestGameHelper {
   private constructor(
     private page: Page,
-    private adapter: IGameAdapter
+    private connection: Connection
   ) {}
 
   /**
-   * Create helper with mock adapter (for fast UI-only tests).
+   * Create helper with mock connection (for fast UI-only tests).
    *
    * @param page - Playwright page
    * @param states - Pre-configured state sequence
-   * @param options - Mock adapter options
+   * @param options - Mock connection options
    */
   static async createWithMockState(
     page: Page,
@@ -48,30 +48,30 @@ export class TestGameHelper {
     }
   ): Promise<TestGameHelper> {
     const stateArray = Array.isArray(states) ? states : [states];
-    const adapter = new MockAdapter(stateArray, options);
-    const helper = new TestGameHelper(page, adapter);
+    const connection = new MockConnection(stateArray, options);
+    const helper = new TestGameHelper(page, connection);
     await helper.initialize();
     return helper;
   }
 
   /**
-   * Create helper with spy adapter (for protocol verification tests).
+   * Create helper with spy connection (for protocol verification tests).
    *
    * @param page - Playwright page
-   * @param wrappedAdapter - Adapter to wrap (usually a real adapter)
+   * @param wrappedConnection - Connection to wrap (usually a real connection)
    */
   static async createWithSpy(
     page: Page,
-    wrappedAdapter?: IGameAdapter
+    wrappedConnection?: Connection
   ): Promise<TestGameHelper> {
-    // This method is used internally by tests - provide a wrapped real adapter if not provided
-    if (!wrappedAdapter) {
+    // This method is used internally by tests - provide a wrapped real connection if not provided
+    if (!wrappedConnection) {
       throw new Error(
-        'createWithSpy() requires a wrappedAdapter. Use createWithRealGame() instead for a simple real game test.'
+        'createWithSpy() requires a wrappedConnection. Use createWithRealGame() instead for a simple real game test.'
       );
     }
-    const adapter = new SpyAdapter(wrappedAdapter);
-    const helper = new TestGameHelper(page, adapter);
+    const connection = new SpyConnection(wrappedConnection);
+    const helper = new TestGameHelper(page, connection);
     await helper.initialize();
     return helper;
   }
@@ -80,39 +80,33 @@ export class TestGameHelper {
    * Create helper with real game (for integration tests).
    *
    * @param page - Playwright page
-   * @param realAdapter - A real adapter implementation that runs actual game logic
+   * @param realConnection - A real connection implementation that runs actual game logic
    */
-  static async createWithRealGame(page: Page, realAdapter: IGameAdapter): Promise<TestGameHelper> {
-    const helper = new TestGameHelper(page, realAdapter);
+  static async createWithRealGame(page: Page, realConnection: Connection): Promise<TestGameHelper> {
+    const helper = new TestGameHelper(page, realConnection);
     await helper.initialize();
     return helper;
   }
 
   /**
-   * Initialize the helper by exposing adapter to page context.
+   * Initialize the helper by exposing connection to page context.
    */
   private async initialize(): Promise<void> {
-    // Expose adapter to page context for client to use
-    await this.page.exposeFunction('__testAdapter_send', async (message: unknown) => {
-      await this.adapter.send(message as import('../../../shared/multiplayer/protocol').ClientMessage);
+    // Expose connection to page context for client to use
+    await this.page.exposeFunction('__testConnection_send', (message: unknown) => {
+      this.connection.send(message as import('../../../shared/multiplayer/protocol').ClientMessage);
     });
 
-    await this.page.exposeFunction('__testAdapter_subscribe', (handlerId: string) => {
-      const unsubscribe = this.adapter.subscribe((message) => {
-        this.page.evaluate(
+    await this.page.exposeFunction('__testConnection_onMessage', (handlerId: string) => {
+      this.connection.onMessage((message) => {
+        void this.page.evaluate(
           ({ handlerId, message }) => {
-            const handlers = (window as { __testAdapter_handlers?: Record<string, (msg: unknown) => void> }).__testAdapter_handlers;
+            const handlers = (window as { __testConnection_handlers?: Record<string, (msg: unknown) => void> }).__testConnection_handlers;
             handlers?.[handlerId]?.(message);
           },
           { handlerId, message }
         );
       });
-
-      // Store unsubscribe function
-      type AdapterWithUnsubscribers = typeof this.adapter & { __unsubscribers?: Record<string, () => void> };
-      const adapterWithUnsubscribers = this.adapter as AdapterWithUnsubscribers;
-      adapterWithUnsubscribers.__unsubscribers = adapterWithUnsubscribers.__unsubscribers || {};
-      adapterWithUnsubscribers.__unsubscribers[handlerId] = unsubscribe;
     });
 
     // Navigate to app with test flag
@@ -279,17 +273,17 @@ export class TestGameHelper {
   }
 
   // ============================================================================
-  // Adapter Control (for MockAdapter)
+  // Connection Control (for MockConnection)
   // ============================================================================
 
   /**
    * Manually advance to next state (when autoAdvance is false).
    */
   advanceState(): void {
-    if (this.adapter instanceof MockAdapter) {
-      this.adapter.advanceState();
+    if (this.connection instanceof MockConnection) {
+      this.connection.advanceState();
     } else {
-      throw new Error('advanceState() only works with MockAdapter');
+      throw new Error('advanceState() only works with MockConnection');
     }
   }
 
@@ -297,10 +291,10 @@ export class TestGameHelper {
    * Jump to specific state index.
    */
   setState(index: number): void {
-    if (this.adapter instanceof MockAdapter) {
-      this.adapter.setState(index);
+    if (this.connection instanceof MockConnection) {
+      this.connection.setState(index);
     } else {
-      throw new Error('setState() only works with MockAdapter');
+      throw new Error('setState() only works with MockConnection');
     }
   }
 
@@ -308,35 +302,35 @@ export class TestGameHelper {
    * Simulate server error.
    */
   simulateError(code: string, message: string): void {
-    if (this.adapter instanceof MockAdapter) {
-      this.adapter.simulateError(code, message);
+    if (this.connection instanceof MockConnection) {
+      this.connection.simulateError(code, message);
     } else {
-      throw new Error('simulateError() only works with MockAdapter');
+      throw new Error('simulateError() only works with MockConnection');
     }
   }
 
   // ============================================================================
-  // Protocol Verification (for SpyAdapter)
+  // Protocol Verification (for SpyConnection)
   // ============================================================================
 
   /**
    * Get all messages sent to server.
    */
   getSentMessages(): import('../../../shared/multiplayer/protocol').ClientMessage[] {
-    if (this.adapter instanceof SpyAdapter || this.adapter instanceof MockAdapter) {
-      return this.adapter.getSentMessages();
+    if (this.connection instanceof SpyConnection || this.connection instanceof MockConnection) {
+      return this.connection.getSentMessages();
     }
-    throw new Error('getSentMessages() only works with SpyAdapter or MockAdapter');
+    throw new Error('getSentMessages() only works with SpyConnection or MockConnection');
   }
 
   /**
    * Get all messages received from server.
    */
   getReceivedMessages(): import('../../../shared/multiplayer/protocol').ServerMessage[] {
-    if (this.adapter instanceof SpyAdapter || this.adapter instanceof MockAdapter) {
-      return this.adapter.getReceivedMessages();
+    if (this.connection instanceof SpyConnection || this.connection instanceof MockConnection) {
+      return this.connection.getReceivedMessages();
     }
-    throw new Error('getReceivedMessages() only works with SpyAdapter or MockAdapter');
+    throw new Error('getReceivedMessages() only works with SpyConnection or MockConnection');
   }
 
   /**
@@ -354,8 +348,8 @@ export class TestGameHelper {
    * Clear message history.
    */
   clearMessageHistory(): void {
-    if (this.adapter instanceof SpyAdapter || this.adapter instanceof MockAdapter) {
-      this.adapter.clearMessageHistory();
+    if (this.connection instanceof SpyConnection || this.connection instanceof MockConnection) {
+      this.connection.clearMessageHistory();
     }
   }
 
@@ -378,10 +372,10 @@ export class TestGameHelper {
   }
 
   /**
-   * Get adapter for advanced operations.
+   * Get connection for advanced operations.
    */
-  getAdapter(): IGameAdapter {
-    return this.adapter;
+  getConnection(): Connection {
+    return this.connection;
   }
 
   /**
@@ -409,6 +403,6 @@ export class TestGameHelper {
    * Clean up resources.
    */
   async cleanup(): Promise<void> {
-    this.adapter.destroy();
+    this.connection.disconnect();
   }
 }

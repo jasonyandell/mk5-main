@@ -16,7 +16,7 @@
 1. [Fundamental Pattern](#fundamental-pattern)
 2. [Core Architecture Principles](#core-architecture-principles)
 3. [Two-Level Composition System](#two-level-composition-system)
-4. [Three-Tier Authority Structure](#three-tier-authority-structure)
+4. [Two-Tier Authority Structure](#two-tier-authority-structure)
 5. [Mental Models](#mental-models)
 6. [Design Philosophy](#design-philosophy)
 7. [Architectural Invariants](#architectural-invariants)

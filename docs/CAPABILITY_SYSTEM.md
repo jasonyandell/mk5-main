@@ -1,10 +1,10 @@
 # Capability System Reference
 
-**Last Updated**: 2025-10-26
+**Last Updated**: 2025-01-09
 
 The capability system controls what players can see (visibility) and do (authorization) through composable capability tokens.
 
-> **Authority vs. client snapshots**: GameHost always operates on the full, unfiltered `GameState`. Before shipping a snapshot to a client it applies capability filtering (hands removed, metadata stripped) but keeps the `MultiplayerGameState` shape. Client code should treat any host-sent `coreState` as already redacted and never attempt to reconstitute hidden information.
+> **Authority vs. client snapshots**: Room always operates on the full, unfiltered `GameState`. Before shipping a snapshot to a client it applies capability filtering (hands removed, metadata stripped) but keeps the `MultiplayerGameState` shape. Client code should treat any host-sent `coreState` as already redacted and never attempt to reconstitute hidden information.
 
 ## Overview
 
@@ -149,10 +149,10 @@ filterActionForSession(tutorialSession, action)
 
 ### Server-Generated Action Maps
 
-`GameHost` applies `filterActionsForSession()` for every connected session and ships those filtered lists to clients:
+`Room` applies `filterActionsForSession()` for every connected session and ships those filtered lists to clients:
 
 ```typescript
-// GameHost.notifyListeners()
+// Room.notifyListeners()
 const actionsByPlayer = this.buildActionsMap(...);
 record.listener({
   view,
@@ -189,10 +189,10 @@ const replayCaps = buildCapabilities()
   .build();
 ```
 
-### Integration with GameHost
+### Integration with Room
 
 ```typescript
-// GameHost uses standard builders
+// Room uses standard builders
 private buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai') {
   const idx = playerIndex as 0 | 1 | 2 | 3;
   return controlType === 'human'
@@ -255,7 +255,7 @@ test('spectator sees all hands but cannot act', () => {
 **Capabilities filter layer-generated actions:**
 
 ```typescript
-// GameHost creates view for a session
+// Room creates view for a session
 createView(playerId) {
   // 1. Compose RuleSets (game mechanics)
   const rules = composeRules([baseRuleSet, nelloRuleSet, ...]);

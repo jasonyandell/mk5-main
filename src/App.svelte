@@ -7,7 +7,7 @@
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
   import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
   import OneHandCompleteModal from './lib/components/OneHandCompleteModal.svelte';
-  import { gameState, viewProjection, gameActionTransformers } from './stores/gameStore';
+  import { gameState, viewProjection, modes } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showSettingsPanel = $state(false);
@@ -36,12 +36,12 @@
 
     if (oneHandParam === 'auto') {
       // Start with competitive seed (server finds one)
-      gameActionTransformers.startOneHand();
+      modes.oneHand.start();
     } else if (oneHandParam) {
       // Start with specific seed
       const seed = parseInt(oneHandParam, 10);
       if (!isNaN(seed)) {
-        gameActionTransformers.startOneHand(seed);
+        modes.oneHand.start(seed);
       }
     }
     // Note: loadFromURL is deprecated - server handles all state

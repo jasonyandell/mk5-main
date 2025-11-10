@@ -16,7 +16,7 @@ import type {
   GameView,
   ValidAction
 } from '../../shared/multiplayer/protocol';
-import type { IGameAdapter } from '../../server/adapters/IGameAdapter';
+import type { Connection } from '../../server/transports/Transport';
 import { selectAIAction } from '../ai/actionSelector';
 import { getNextStates } from '../core/gameEngine';
 
@@ -32,9 +32,8 @@ export class AIClient {
   private gameId: string;
   private playerIndex: number;
   private playerId: string;
-  private adapter: IGameAdapter;
+  private connection: Connection;
   private difficulty: AIDifficulty;
-  private unsubscribe: (() => void) | undefined;
   private thinkingTimer: ReturnType<typeof setTimeout> | undefined;
   private destroyed = false;
 
@@ -48,14 +47,14 @@ export class AIClient {
   constructor(
     gameId: string,
     playerIndex: number,
-    adapter: IGameAdapter,
+    connection: Connection,
     playerId: string,
     difficulty: AIDifficulty = 'beginner'
   ) {
     this.gameId = gameId;
     this.playerIndex = playerIndex;
     this.playerId = playerId;
-    this.adapter = adapter;
+    this.connection = connection;
     this.difficulty = difficulty;
   }
 
@@ -66,12 +65,12 @@ export class AIClient {
     if (this.destroyed) return;
 
     // Subscribe to game updates
-    this.unsubscribe = this.adapter.subscribe((message) => {
+    this.connection.onMessage((message) => {
       this.handleServerMessage(message);
     });
 
     // Send subscribe message
-    this.adapter.send({
+    this.connection.send({
       type: 'SUBSCRIBE',
       gameId: this.gameId,
       clientId: this.playerId
@@ -92,20 +91,15 @@ export class AIClient {
       this.thinkingTimer = undefined;
     }
 
-    // Unsubscribe from messages
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
+    // Send unsubscribe message before disconnecting
+    this.connection.send({
+      type: 'UNSUBSCRIBE',
+      gameId: this.gameId,
+      clientId: this.playerId
+    });
 
-    // Send unsubscribe message
-    if (this.adapter.isConnected()) {
-      this.adapter.send({
-        type: 'UNSUBSCRIBE',
-        gameId: this.gameId,
-        clientId: this.playerId
-      });
-    }
+    // Disconnect
+    this.connection.disconnect();
   }
 
   /**
@@ -294,13 +288,11 @@ export class AIClient {
     if (this.destroyed) return;
 
     // Send EXECUTE_ACTION message
-    this.adapter.send({
+    this.connection.send({
       type: 'EXECUTE_ACTION',
       gameId: this.gameId,
       playerId: this.playerId,
       action: validAction.action
-    }).catch(error => {
-      console.error(`AI ${this.playerId} action failed:`, error);
     });
   }
 

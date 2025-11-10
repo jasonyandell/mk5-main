@@ -55,6 +55,12 @@ export interface Transport {
   send(clientId: string, message: ServerMessage): void;
 
   /**
+   * Create a client connection and return a Connection object.
+   * Used for creating connections for AI clients.
+   */
+  connect(clientId: string): Connection;
+
+  /**
    * Lifecycle: Start the transport (initialize, open ports, etc).
    * Called once when transport is ready to accept connections.
    */

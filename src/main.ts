@@ -3,7 +3,7 @@ import { mount } from 'svelte';
 import { get } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { gameActions, gameState, gameClient } from './stores/gameStore';
+import { game, gameState, gameClient } from './stores/gameStore';
 import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
 import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameView } from './shared/multiplayer/protocol';
@@ -47,7 +47,7 @@ declare global {
     getGameView: () => GameView;
 
     // Development/debug tools
-    gameActions: typeof gameActions; // Execute actions from console
+    game: typeof game; // Execute actions from console
 
     // Seed finder (user-facing feature)
     SEED_FINDER_CONFIG: typeof SEED_FINDER_CONFIG;
@@ -76,7 +76,7 @@ if (typeof window !== 'undefined' && !isPerfectsPage) {
   };
 
   // Development tools (execute actions from browser console)
-  window.gameActions = gameActions;
+  window.game = game;
 
   // Seed finder (user-facing feature)
   window.SEED_FINDER_CONFIG = SEED_FINDER_CONFIG;

@@ -19,15 +19,6 @@ function createPlayers(config: GameConfig): PlayerSession[] {
   }));
 }
 
-// Dummy adapter for tests
-const dummyAdapter = {
-  send: async () => {},
-  subscribe: () => () => {},
-  destroy: () => {},
-  isConnected: () => true,
-  getMetadata: () => ({ type: 'in-process' as const })
-};
-
 describe('Room Layers Integration', () => {
   describe('Layer Composition', () => {
     it('should thread rules through executeAction', () => {
@@ -37,7 +28,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 789012
       };
 
-      const room = new Room('nello-execute', config, dummyAdapter, createPlayers(config));
+      const room = new Room('nello-execute', config, createPlayers(config));
 
       // Bid marks
       let view = room.getView('player-0');
@@ -74,7 +65,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 901234
       };
 
-      const room = new Room('plunge-rules', config, dummyAdapter, createPlayers(config));
+      const room = new Room('plunge-rules', config, createPlayers(config));
 
       // Give player 0 enough doubles for plunge
       const state = room.getState();
@@ -100,7 +91,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 567890
       };
 
-      const room = new Room('all-ruleSets', config, dummyAdapter, createPlayers(config));
+      const room = new Room('all-ruleSets', config, createPlayers(config));
       const state = room.getState();
 
       // Verify game is running with all rulesets
@@ -114,7 +105,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 111111
       };
 
-      const room = new Room('base-only', config, dummyAdapter, createPlayers(config));
+      const room = new Room('base-only', config, createPlayers(config));
 
       // Verify no special bids available
       const view = room.getView('player-0');
@@ -134,7 +125,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 222222
       };
 
-      const room = new Room('selective-ruleSets', config, dummyAdapter, createPlayers(config));
+      const room = new Room('selective-ruleSets', config, createPlayers(config));
       const state = room.getState();
 
       // Verify game is running with selective rulesets
@@ -150,7 +141,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 333333
       };
 
-      const room = new Room('nello-threading', config, dummyAdapter, createPlayers(config));
+      const room = new Room('nello-threading', config, createPlayers(config));
 
       // Bid marks
       let view = room.getView('player-0');
@@ -189,7 +180,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 444444
       };
 
-      const room = new Room('plunge-threading', config, dummyAdapter, createPlayers(config));
+      const room = new Room('plunge-threading', config, createPlayers(config));
 
       // Manually set up plunge scenario
       const state = room.getState();
@@ -227,7 +218,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 555555
       };
 
-      const room = new Room('sevens-threading', config, dummyAdapter, createPlayers(config));
+      const room = new Room('sevens-threading', config, createPlayers(config));
 
       // Bid marks
       let view = room.getView('player-0');
@@ -261,7 +252,7 @@ describe('Room Layers Integration', () => {
       };
 
       expect(() => {
-        new Room('empty-ruleSets', config, dummyAdapter, createPlayers(config));
+        new Room('empty-ruleSets', config, createPlayers(config));
       }).not.toThrow();
     });
 
@@ -273,10 +264,10 @@ describe('Room Layers Integration', () => {
       };
 
       expect(() => {
-        new Room('undefined-ruleSets', config, dummyAdapter, createPlayers(config));
+        new Room('undefined-ruleSets', config, createPlayers(config));
       }).not.toThrow();
 
-      const room = new Room('undefined-ruleSets-2', config, dummyAdapter, createPlayers(config));
+      const room = new Room('undefined-ruleSets-2', config, createPlayers(config));
       const state = room.getState();
 
       // Should work with base rules
@@ -290,7 +281,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 888888
       };
 
-      const room = new Room('ruleSet-order', config, dummyAdapter, createPlayers(config));
+      const room = new Room('ruleSet-order', config, createPlayers(config));
       const state = room.getState();
 
       // Verify game is running with ordered rulesets
@@ -306,7 +297,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 999999
       };
 
-      const room = new Room('action-validation', config, dummyAdapter, createPlayers(config));
+      const room = new Room('action-validation', config, createPlayers(config));
 
       // Try to select nello without marks bid (should fail)
       const invalidAction = {
@@ -326,7 +317,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 101010
       };
 
-      const room = new Room('valid-actions', config, dummyAdapter, createPlayers(config));
+      const room = new Room('valid-actions', config, createPlayers(config));
 
       // Pass should be valid
       const passAction = {
@@ -347,7 +338,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 121212
       };
 
-      const room = new Room('view-actions', config, dummyAdapter, createPlayers(config));
+      const room = new Room('view-actions', config, createPlayers(config));
 
       // Bid marks
       let view = room.getView('player-0');
@@ -383,7 +374,7 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 131313
       };
 
-      const room = new Room('capability-filter', config, dummyAdapter, createPlayers(config));
+      const room = new Room('capability-filter', config, createPlayers(config));
 
       // Player 0's view should only show their actions
       const view0 = room.getView('player-0');

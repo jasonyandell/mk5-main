@@ -1,23 +1,23 @@
 import type {
-  IGameAdapter,
   ClientMessage,
   ServerMessage,
 } from '../../shared/multiplayer/protocol';
+import type { Connection } from '../../server/transports/Transport';
 
 /**
- * Spy adapter that wraps another adapter and records all messages.
+ * Spy connection that wraps another connection and records all messages.
  *
- * This adapter is useful for protocol verification tests where you want to:
+ * This connection is useful for protocol verification tests where you want to:
  * - Verify the client sends correct messages
  * - Verify the UI responds correctly to server messages
- * - Test the actual game logic (via wrapped adapter implementation)
+ * - Test the actual game logic (via wrapped connection implementation)
  * - Assert on message sequences
  *
  * @example
  * ```typescript
  * const transport = new InProcessTransport();
- * const adapter = transport.createAdapter('player-0');
- * const spy = new SpyAdapter(adapter);
+ * const connection = transport.connect('player-0');
+ * const spy = new SpyConnection(connection);
  * const client = new NetworkGameClient(spy);
  *
  * await client.executeAction({ playerId: 'player-0', action: { type: 'bid', ... }, timestamp: Date.now() });
@@ -30,47 +30,29 @@ import type {
  * });
  * ```
  */
-export class SpyAdapter implements IGameAdapter {
-  private wrappedAdapter: IGameAdapter;
+export class SpyConnection implements Connection {
+  private wrappedConnection: Connection;
   private sentMessages: ClientMessage[] = [];
   private receivedMessages: ServerMessage[] = [];
   private messageHandlers = new Set<(message: ServerMessage) => void>();
-  private unsubscribeFromWrapped?: () => void;
 
-  constructor(adapter: IGameAdapter) {
-    this.wrappedAdapter = adapter;
+  constructor(connection: Connection) {
+    this.wrappedConnection = connection;
     this.setupSpying();
   }
 
-  async send(message: ClientMessage): Promise<void> {
+  send(message: ClientMessage): void {
     this.sentMessages.push(message);
-    await this.wrappedAdapter.send(message);
+    this.wrappedConnection.send(message);
   }
 
-  subscribe(handler: (message: ServerMessage) => void): () => void {
+  onMessage(handler: (message: ServerMessage) => void): void {
     this.messageHandlers.add(handler);
-    return () => this.messageHandlers.delete(handler);
   }
 
-  destroy(): void {
-    if (this.unsubscribeFromWrapped) {
-      this.unsubscribeFromWrapped();
-    }
-    this.wrappedAdapter.destroy();
+  disconnect(): void {
+    this.wrappedConnection.disconnect();
     this.messageHandlers.clear();
-  }
-
-  isConnected(): boolean {
-    return this.wrappedAdapter.isConnected();
-  }
-
-  getMetadata() {
-    const metadata = this.wrappedAdapter.getMetadata?.();
-    return {
-      ...metadata,
-      type: 'in-process' as const,
-      isSpy: true,
-    };
   }
 
   // === Test Utilities ===
@@ -184,24 +166,24 @@ export class SpyAdapter implements IGameAdapter {
   }
 
   /**
-   * Get the wrapped adapter (useful for type-specific operations).
+   * Get the wrapped connection (useful for type-specific operations).
    */
-  getWrappedAdapter(): IGameAdapter {
-    return this.wrappedAdapter;
+  getWrappedConnection(): Connection {
+    return this.wrappedConnection;
   }
 
   // === Private Methods ===
 
   private setupSpying(): void {
-    // Subscribe to wrapped adapter to intercept messages
-    this.unsubscribeFromWrapped = this.wrappedAdapter.subscribe(message => {
+    // Subscribe to wrapped connection to intercept messages
+    this.wrappedConnection.onMessage(message => {
       this.receivedMessages.push(message);
       // Forward to our handlers
       for (const handler of this.messageHandlers) {
         try {
           handler(message);
         } catch (error) {
-          console.error('SpyAdapter: Error in message handler:', error);
+          console.error('SpyConnection: Error in message handler:', error);
         }
       }
     });

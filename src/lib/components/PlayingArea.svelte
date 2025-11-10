@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, playerSessions, currentSession } from '../../stores/gameStore';
+  import { game, viewProjection } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -23,7 +23,7 @@
     const dominoId2 = `play-${domino.low}-${domino.high}`;
 
     if (playAction && (playAction.id === dominoId1 || playAction.id === dominoId2)) {
-      gameActions.executeAction(playAction);
+      game.executeAction(playAction.action);
     } else {
       // Look through all available actions (from hand metadata)
       const handDomino = $viewProjection.hand.find(
@@ -32,14 +32,13 @@
       );
 
       if (handDomino?.isPlayable) {
-        // Construct the play action with dominoId
-        const dominoId = `${domino.high}-${domino.low}`;
-        const session = $currentSession;
-        gameActions.requestAction(session?.playerId || `player-${perspectiveIndex}`, {
-          type: 'play',
+        // Construct the play action - pass action directly
+        const action = {
+          type: 'play' as const,
           player: perspectiveIndex,
-          dominoId: dominoId
-        });
+          dominoId: `${domino.high}-${domino.low}`
+        };
+        game.executeAction(action);
       }
     }
   }
@@ -88,7 +87,7 @@
     actionPending = true;
 
     // Execute the action
-    gameActions.executeAction(proceedAction).finally(() => {
+    game.executeAction(proceedAction.action).finally(() => {
       // Clear debounce flag
       actionPending = false;
     });
@@ -309,7 +308,7 @@
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
                 <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
-                  <Icon name={$playerSessions[position]?.controlType === 'ai' ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
+                  <Icon name="user" size="sm" className="inline-block" />
                 </span>
                 <span class="text-sm font-bold text-base-100/60">P{position}</span>
               </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewProjection, gameActions, gameActionTransformers, oneHandState, availablePerspectives, currentSessionId, setPerspective } from '../../stores/gameStore';
+  import { viewProjection, game, modes, availablePerspectives, currentPerspective, oneHandState } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   import Icon from '../icons/Icon.svelte';
@@ -38,15 +38,15 @@
 
   // Dropdown menu state
   let menuOpen = $state(false);
-  let selectedPerspective = $state($currentSessionId);
+  let selectedPerspective = $state($currentPerspective);
   $effect(() => {
-    selectedPerspective = $currentSessionId;
+    selectedPerspective = $currentPerspective;
   });
 
   async function handlePerspectiveChange(event: Event) {
     const target = event.currentTarget as HTMLSelectElement;
     const sessionId = target.value;
-    await setPerspective(sessionId);
+    await game.setPerspective(sessionId);
   }
   
   function closeMenu() {
@@ -107,7 +107,7 @@
             <button
               class="new-game-btn flex items-center justify-between"
               onclick={() => {
-                gameActions.resetGame();
+                game.resetGame();
                 closeMenu();
               }}
             >
@@ -121,7 +121,7 @@
             <button
               class="one-hand-btn flex items-center justify-between"
               onclick={() => {
-                gameActionTransformers.startOneHand();
+                modes.oneHand.start();
                 closeMenu();
               }}
               disabled={$oneHandState.active}

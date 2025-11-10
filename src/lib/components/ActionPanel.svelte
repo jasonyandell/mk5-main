@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection } from '../../stores/gameStore';
+  import { game, viewProjection } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import Icon from '../icons/Icon.svelte';
@@ -21,12 +21,12 @@
     previousPhase = $viewProjection.phase;
   });
 
-  async function executeAction(action: StateTransition) {
+  async function executeAction(transition: StateTransition) {
     try {
-      await gameActions.executeAction(action);
+      await game.executeAction(transition.action);
     } catch (error) {
       // Trigger shake animation on error
-      shakeActionId = action.id;
+      shakeActionId = transition.id;
     }
   }
 

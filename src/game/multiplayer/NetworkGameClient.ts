@@ -8,7 +8,7 @@
  * - Implements GameClient interface for compatibility
  * - Translates GameClient methods to protocol messages
  * - Caches GameView and state for fast local reads
- * - Works with any IGameAdapter (in-process, Worker, WebSocket)
+ * - Works with any Connection (in-process, Worker, WebSocket)
  */
 
 import type { GameClient } from './GameClient';
@@ -20,20 +20,19 @@ import type {
   ServerMessage,
   ValidAction
 } from '../../shared/multiplayer/protocol';
-import type { IGameAdapter } from '../../server/adapters/IGameAdapter';
+import type { Connection } from '../../server/transports/Transport';
 
 /**
  * NetworkGameClient - Protocol-speaking GameClient
  */
 export class NetworkGameClient implements GameClient {
-  private adapter: IGameAdapter;
+  private connection: Connection;
   private gameId?: string;
   private cachedState?: MultiplayerGameState;
   private cachedView?: GameView;
   private viewsByPerspective = new Map<string, GameView>();
   private cachedActions = new Map<string, ValidAction[]>();
   private listeners = new Set<(state: MultiplayerGameState) => void>();
-  private unsubscribe: (() => void) | undefined;
   private initPromise?: Promise<void>;
   private playerId: string = 'player-0'; // Default to player-0
   private sessionId: string;
@@ -44,12 +43,12 @@ export class NetworkGameClient implements GameClient {
   private actionWaiters: Array<(result: Result<MultiplayerGameState>) => void> = [];
   private joinResolvers = new Map<string, (result: Result<PlayerSession>) => void>();
 
-  constructor(adapter: IGameAdapter, config?: GameConfig) {
-    this.adapter = adapter;
+  constructor(connection: Connection, config?: GameConfig) {
+    this.connection = connection;
     this.sessionId = `client-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Subscribe to server messages
-    this.unsubscribe = adapter.subscribe((message) => {
+    this.connection.onMessage((message) => {
       this.handleServerMessage(message);
     });
 
@@ -77,7 +76,7 @@ export class NetworkGameClient implements GameClient {
       this.joinResolvers.set(session.playerId, resolve);
       void (async () => {
         try {
-          await this.adapter.send({
+          await this.connection.send({
             type: 'JOIN_GAME',
             gameId,
             session,
@@ -105,7 +104,7 @@ export class NetworkGameClient implements GameClient {
       return;
     }
 
-    await this.adapter.send({
+    await this.connection.send({
       type: 'LEAVE_GAME',
       gameId,
       playerId,
@@ -163,7 +162,7 @@ export class NetworkGameClient implements GameClient {
       this.actionWaiters.push(resolve);
       void (async () => {
         try {
-          await this.adapter.send({
+          await this.connection.send({
             type: 'EXECUTE_ACTION',
             gameId,
             playerId: request.playerId,
@@ -209,7 +208,7 @@ export class NetworkGameClient implements GameClient {
     }
 
     // Send SET_PLAYER_CONTROL message
-    await this.adapter.send({
+    await this.connection.send({
       type: 'SET_PLAYER_CONTROL',
       gameId: this.gameId,
       playerId,
@@ -221,17 +220,11 @@ export class NetworkGameClient implements GameClient {
    * Destroy client and clean up
    */
   destroy(): void {
-    // Unsubscribe from adapter
-    if (this.unsubscribe) {
-      this.unsubscribe();
-      this.unsubscribe = undefined;
-    }
-
     // Clear listeners
     this.listeners.clear();
 
-    // Destroy adapter
-    this.adapter.destroy();
+    // Disconnect
+    this.connection.disconnect();
   }
 
   /**
@@ -255,7 +248,7 @@ export class NetworkGameClient implements GameClient {
       });
 
       // Send CREATE_GAME message
-      await this.adapter.send({
+      await this.connection.send({
         type: 'CREATE_GAME',
         config,
         clientId: this.sessionId
@@ -502,7 +495,7 @@ export class NetworkGameClient implements GameClient {
         message.playerId = playerId;
       }
 
-      await this.adapter.send(message);
+      await this.connection.send(message);
     } catch (error) {
       console.error('Failed to update subscription:', error);
     }

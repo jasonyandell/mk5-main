@@ -31,8 +31,7 @@ import type {
   GameView,
   ValidAction,
   ClientMessage,
-  ServerMessage,
-  IGameAdapter
+  ServerMessage
 } from '../shared/multiplayer/protocol';
 
 import { createMultiplayerGame, updatePlayerSession } from '../game/multiplayer/stateLifecycle';
@@ -79,18 +78,18 @@ export class Room {
   private transport: Transport | null = null;
   private aiManager: AIManager | null = null;
   private subscriptions: Map<string, ClientSubscription> = new Map();
-  private subscribers: Map<string, (update: any) => void> = new Map();
+  private subscribers: Map<string, (update: unknown) => void> = new Map();
   private isDestroyed = false;
+  private pendingAISeats: Array<{ seat: number; playerId: string }> = [];
 
   /**
    * Create a new Room instance.
    *
    * @param gameId - Unique game identifier
    * @param config - Game configuration (variants, rulesets, etc.)
-   * @param adapter - Game adapter for AI clients
    * @param initialPlayers - Initial player sessions (must be 4 players)
    */
-  constructor(gameId: string, config: GameConfig, adapter: IGameAdapter, initialPlayers: PlayerSession[]) {
+  constructor(gameId: string, config: GameConfig, initialPlayers: PlayerSession[]) {
     // Validate players
     if (initialPlayers.length !== 4) {
       throw new Error(`Expected 4 players, got ${initialPlayers.length}`);
@@ -144,14 +143,13 @@ export class Room {
     }
 
     // === 6. INITIALIZE AI MANAGER ===
-    this.aiManager = new AIManager(adapter, 'beginner');
+    this.aiManager = new AIManager('beginner');
 
-    // Spawn AI clients based on player sessions
-    for (const session of normalizedPlayers) {
-      if (session.controlType === 'ai') {
-        this.aiManager.spawnAI(session.playerIndex, gameId, session.playerId);
-      }
-    }
+    // Note: AI clients will be spawned after transport is set
+    // Store which seats need AI for later spawning
+    this.pendingAISeats = normalizedPlayers
+      .filter(s => s.controlType === 'ai')
+      .map(s => ({ seat: s.playerIndex, playerId: s.playerId }));
   }
 
   // === KERNEL API (delegated to pure helpers) ===
@@ -270,7 +268,12 @@ export class Room {
     // Manage AI lifecycle
     if (this.aiManager) {
       if (type === 'ai') {
-        this.aiManager.spawnAI(session.playerIndex, this.metadata.gameId, playerId);
+        // Create in-process connection for this AI
+        if (!this.transport) {
+          throw new Error('Cannot spawn AI: transport not set');
+        }
+        const aiConnection = this.transport.connect(`ai-${playerId}`);
+        this.aiManager.spawnAI(session.playerIndex, this.metadata.gameId, playerId, aiConnection);
       } else {
         this.aiManager.destroyAI(session.playerIndex);
       }
@@ -398,6 +401,17 @@ export class Room {
    */
   setTransport(transport: Transport): void {
     this.transport = transport;
+
+    // Spawn any pending AI clients now that we have transport
+    if (this.aiManager && this.pendingAISeats.length > 0) {
+      for (const { seat, playerId } of this.pendingAISeats) {
+        // Create in-process connection for this AI
+        const aiConnection = transport.connect(`ai-${playerId}`);
+        this.aiManager.spawnAI(seat, this.metadata.gameId, playerId, aiConnection);
+      }
+      // Clear pending list
+      this.pendingAISeats = [];
+    }
   }
 
   /**
@@ -702,7 +716,7 @@ export class Room {
     this.subscriptions.set(clientId, sub);
 
     // Create subscriber that receives state updates
-    const subscriber = (_update: any) => {
+    const subscriber = (_update: unknown) => {
       const view = this.getView(playerId);
       const state = this.getState();
       const actions = this.getActionsMap();
