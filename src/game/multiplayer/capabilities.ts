@@ -16,34 +16,32 @@ import type { Capability } from './types';
 export function humanCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
   return [
     { type: 'act-as-player', playerIndex },
-    { type: 'observe-own-hand' }
+    { type: 'observe-hands', playerIndices: [playerIndex] }
   ];
 }
 
 /**
  * Standard capabilities for an AI player.
- * Can act as player, observe their own hand, and can be replaced by human.
+ * Can act as player and observe their own hand.
  *
  * Vision spec §4.3: aiCapabilities(playerIndex)
  */
 export function aiCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
   return [
     { type: 'act-as-player', playerIndex },
-    { type: 'observe-own-hand' },
-    { type: 'replace-ai' }
+    { type: 'observe-hands', playerIndices: [playerIndex] }
   ];
 }
 
 /**
  * Standard capabilities for a spectator.
- * Can observe all hands and full state but cannot execute actions.
+ * Can observe all hands but cannot execute actions.
  *
  * Vision spec §4.3: spectatorCapabilities
  */
 export function spectatorCapabilities(): Capability[] {
   return [
-    { type: 'observe-all-hands' },
-    { type: 'observe-full-state' }
+    { type: 'observe-hands', playerIndices: 'all' }
   ];
 }
 
@@ -52,26 +50,27 @@ export function spectatorCapabilities(): Capability[] {
  * Can see the student's hand and hints, but cannot execute actions.
  *
  * Vision spec §4.3: coachCapabilities(studentIndex)
+ *
+ * @deprecated Future feature - not yet implemented
  */
 export function coachCapabilities(studentIndex: 0 | 1 | 2 | 3): Capability[] {
   return [
-    { type: 'observe-hand', playerIndex: studentIndex },
-    { type: 'see-hints' }
+    { type: 'observe-hands', playerIndices: [studentIndex] }
   ];
 }
 
 /**
  * Standard capabilities for a tutorial student.
- * Can act as player, see hints, and undo actions for learning.
+ * Can act as player and see hints for learning.
  *
  * Vision spec §4.3: tutorialCapabilities(playerIndex)
+ *
+ * @deprecated Future feature - not yet implemented
  */
 export function tutorialCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
   return [
     { type: 'act-as-player', playerIndex },
-    { type: 'observe-own-hand' },
-    { type: 'see-hints' },
-    { type: 'undo-actions' }
+    { type: 'observe-hands', playerIndices: [playerIndex] }
   ];
 }
 
@@ -82,8 +81,7 @@ export function tutorialCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
  * @example
  * const caps = buildCapabilities()
  *   .actAsPlayer(0)
- *   .observeOwnHand()
- *   .seeHints()
+ *   .observeHands([0, 1])
  *   .build();
  */
 export class CapabilityBuilder {
@@ -94,48 +92,8 @@ export class CapabilityBuilder {
     return this;
   }
 
-  observeOwnHand(): this {
-    this.capabilities.push({ type: 'observe-own-hand' });
-    return this;
-  }
-
-  observeHand(playerIndex: 0 | 1 | 2 | 3): this {
-    this.capabilities.push({ type: 'observe-hand', playerIndex });
-    return this;
-  }
-
-  observeAllHands(): this {
-    this.capabilities.push({ type: 'observe-all-hands' });
-    return this;
-  }
-
-  observeFullState(): this {
-    this.capabilities.push({ type: 'observe-full-state' });
-    return this;
-  }
-
-  seeHints(): this {
-    this.capabilities.push({ type: 'see-hints' });
-    return this;
-  }
-
-  seeAIIntent(): this {
-    this.capabilities.push({ type: 'see-ai-intent' });
-    return this;
-  }
-
-  replaceAI(): this {
-    this.capabilities.push({ type: 'replace-ai' });
-    return this;
-  }
-
-  configureActionTransformer(): this {
-    this.capabilities.push({ type: 'configure-action-transformer' });
-    return this;
-  }
-
-  undoActions(): this {
-    this.capabilities.push({ type: 'undo-actions' });
+  observeHands(playerIndices: number[] | 'all'): this {
+    this.capabilities.push({ type: 'observe-hands', playerIndices });
     return this;
   }
 

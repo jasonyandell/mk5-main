@@ -46,7 +46,7 @@ export const speedActionTransformer: ActionTransformerFactory = () => (base) => 
   // Process player-specific actions
   for (const actions of actionsByPlayer.values()) {
     if (actions.length === 1) {
-      // Only one legal action for this player - auto-execute it
+      // Only one legal action for this player - auto-execute it with system authority
       const action = actions[0]!;
       result.push({
         ...action,
@@ -54,7 +54,8 @@ export const speedActionTransformer: ActionTransformerFactory = () => (base) => 
         meta: {
           ...('meta' in action ? action.meta : {}),
           speedMode: true,
-          reason: 'only-legal-action'
+          reason: 'only-legal-action',
+          authority: 'system' as const
         }
       });
     } else {
@@ -65,7 +66,7 @@ export const speedActionTransformer: ActionTransformerFactory = () => (base) => 
 
   // Neutral actions (consensus) - auto-execute if they're the only action
   if (neutralActions.length > 0 && actionsByPlayer.size === 0) {
-    // Only neutral actions exist - auto-execute them
+    // Only neutral actions exist - auto-execute them with system authority
     for (const action of neutralActions) {
       result.push({
         ...action,
@@ -73,7 +74,8 @@ export const speedActionTransformer: ActionTransformerFactory = () => (base) => 
         meta: {
           ...('meta' in action ? action.meta : {}),
           speedMode: true,
-          reason: 'consensus-action'
+          reason: 'consensus-action',
+          authority: 'system' as const
         }
       });
     }

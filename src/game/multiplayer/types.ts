@@ -3,18 +3,18 @@ import type { GameAction, GameState } from '../types';
 /**
  * Capability tokens control what a session can see or do.
  * They are composable and purely descriptive.
+ *
+ * REMOVED CAPABILITIES (future features, not yet implemented):
+ * - observe-own-hand, observe-hand, observe-all-hands, observe-full-state
+ *   Replaced by: observe-hands with playerIndices array or 'all'
+ * - see-hints, see-ai-intent, replace-ai
+ *   Future features for tutorials, coaching, debugging
+ * - configure-action-transformer, undo-actions
+ *   Future features for advanced game configuration
  */
 export type Capability =
   | { type: 'act-as-player'; playerIndex: number }
-  | { type: 'observe-own-hand' }
-  | { type: 'observe-hand'; playerIndex: number }
-  | { type: 'observe-all-hands' }
-  | { type: 'observe-full-state' }
-  | { type: 'see-hints' }
-  | { type: 'see-ai-intent' }
-  | { type: 'replace-ai' }
-  | { type: 'configure-action-transformer' }
-  | { type: 'undo-actions' };
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
 
 /**
  * Utility: create a capability matcher for comparisons.
@@ -26,8 +26,16 @@ function capabilityMatches(candidate: Capability, target: Capability): boolean {
 
   switch (candidate.type) {
     case 'act-as-player':
-    case 'observe-hand':
       return candidate.playerIndex === (target as typeof candidate).playerIndex;
+    case 'observe-hands':
+      // For observe-hands, exact match on playerIndices
+      const targetCap = target as typeof candidate;
+      if (candidate.playerIndices === 'all' || targetCap.playerIndices === 'all') {
+        return candidate.playerIndices === targetCap.playerIndices;
+      }
+      // Arrays must have same indices
+      return JSON.stringify([...candidate.playerIndices].sort()) ===
+             JSON.stringify([...targetCap.playerIndices].sort());
     default:
       return true;
   }

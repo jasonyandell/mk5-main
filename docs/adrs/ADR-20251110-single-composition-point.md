@@ -30,7 +30,7 @@ This violated architectural invariant #4: **"Single Composition Point: Room cons
 When composition happens in multiple places, different parts of the system can have inconsistent configurations:
 ```typescript
 // Room composes with tournament rules
-const roomCtx = createExecutionContext({ actionTransformer: { type: 'tournament' } });
+const roomCtx = createExecutionContext({ actionTransformers: [{ type: 'tournament' }] });
 
 // But AIClient creates its own context with different rules
 const aiCtx = createExecutionContext({ playerTypes: ['ai', 'ai', 'ai', 'ai'] });

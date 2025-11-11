@@ -11,6 +11,7 @@ type ActionMeta = Record<string, unknown> & {
   requiredCapabilities?: Capability[];
   hint?: string;
   aiIntent?: string;
+  authority?: 'player' | 'system';
 };
 
 function normalizeMeta(meta: unknown): ActionMeta | undefined {
@@ -21,45 +22,35 @@ function normalizeMeta(meta: unknown): ActionMeta | undefined {
 }
 
 function canSeeHand(session: PlayerSession, playerIndex: number): boolean {
-  if (hasCapabilityType(session, 'observe-full-state')) {
+  // Check if session has observe-hands capability for all hands
+  const observeAllCap = session.capabilities.find(
+    cap => cap.type === 'observe-hands' && cap.playerIndices === 'all'
+  );
+  if (observeAllCap) {
     return true;
   }
 
-  if (hasCapabilityType(session, 'observe-all-hands')) {
-    return true;
-  }
-
-  if (hasCapability(session, { type: 'observe-hand', playerIndex })) {
-    return true;
-  }
-
-  if (
-    playerIndex === session.playerIndex &&
-    hasCapabilityType(session, 'observe-own-hand')
-  ) {
+  // Check if session has observe-hands capability for this specific player
+  const observeSpecificCap = session.capabilities.find(
+    cap => cap.type === 'observe-hands' &&
+    Array.isArray(cap.playerIndices) &&
+    cap.playerIndices.includes(playerIndex)
+  );
+  if (observeSpecificCap) {
     return true;
   }
 
   return false;
 }
 
-function pruneMetadata(session: PlayerSession, meta: ActionMeta): Record<string, unknown> {
+function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
   const output: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(meta)) {
     if (value === undefined) continue;
 
-    if (key === HINT_KEY) {
-      if (hasCapabilityType(session, 'see-hints')) {
-        output[key] = value;
-      }
-      continue;
-    }
-
-    if (key === AI_INTENT_KEY) {
-      if (hasCapabilityType(session, 'see-ai-intent')) {
-        output[key] = value;
-      }
+    // Future features (see-hints, see-ai-intent) removed - always filter these keys
+    if (key === HINT_KEY || key === AI_INTENT_KEY) {
       continue;
     }
 
@@ -111,7 +102,7 @@ export function filterActionForSession(
     return action;
   }
 
-  const filteredMeta = pruneMetadata(session, meta);
+  const filteredMeta = pruneMetadata(meta);
 
   if (Object.keys(filteredMeta).length === 0) {
     // Remove meta property
@@ -154,7 +145,7 @@ export function getVisibleStateForSession(
 
   // Convert to FilteredGameState format with handCount
   const filteredPlayers = clone.players.map((player, index) => {
-    const canSee = hasCapabilityType(session, 'observe-full-state') || canSeeHand(session, index);
+    const canSee = canSeeHand(session, index);
 
     if (canSee) {
       return {
@@ -187,11 +178,27 @@ export function getVisibleStateForSession(
 
 /**
  * Attempt to find a session that can execute the provided action.
+ * For system authority actions, capabilities are not checked.
  */
 export function resolveSessionForAction(
   sessions: PlayerSession[],
   action: GameAction
 ): PlayerSession | undefined {
+  // Check if action has system authority
+  const meta = (action as { meta?: unknown }).meta;
+  const hasSystemAuthority = meta && typeof meta === 'object' &&
+    'authority' in meta && meta.authority === 'system';
+
+  if (hasSystemAuthority) {
+    // System authority: match by player index only, no capability checks
+    if ('player' in action && typeof action.player === 'number') {
+      return sessions.find(session => session.playerIndex === action.player);
+    }
+    // Neutral action with system authority: use first session
+    return sessions[0];
+  }
+
+  // Player authority: require capabilities
   if ('player' in action && typeof action.player === 'number') {
     return sessions.find(session =>
       session.playerIndex === action.player &&
@@ -202,7 +209,6 @@ export function resolveSessionForAction(
   // Neutral actions: pick the first capable session
   return sessions.find(session =>
     hasCapabilityType(session, 'act-as-player') ||
-    hasCapabilityType(session, 'observe-full-state') ||
     session.capabilities.length > 0
   ) ?? sessions[0];
 }

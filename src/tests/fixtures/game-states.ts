@@ -116,7 +116,7 @@ function createHand(dominoIds: string[]): Domino[] {
 function createDefaultPlayerInfo(): PlayerInfo[] {
   const baseCapabilities = (index: number): Capability[] => ([
     { type: 'act-as-player', playerIndex: index as 0 | 1 | 2 | 3 },
-    { type: 'observe-own-hand' }
+    { type: 'observe-hands', playerIndices: [index] }
   ]);
 
   return [
@@ -132,21 +132,21 @@ function createDefaultPlayerInfo(): PlayerInfo[] {
       controlType: 'ai',
       connected: true,
       name: 'Player 1',
-      capabilities: [...baseCapabilities(1), { type: 'replace-ai' }]
+      capabilities: baseCapabilities(1)
     },
     {
       playerId: 2,
       controlType: 'ai',
       connected: true,
       name: 'Player 2',
-      capabilities: [...baseCapabilities(2), { type: 'replace-ai' }]
+      capabilities: baseCapabilities(2)
     },
     {
       playerId: 3,
       controlType: 'ai',
       connected: true,
       name: 'Player 3',
-      capabilities: [...baseCapabilities(3), { type: 'replace-ai' }]
+      capabilities: baseCapabilities(3)
     },
   ];
 }

@@ -86,7 +86,7 @@ export class Room {
    * Create a new Room instance.
    *
    * @param gameId - Unique game identifier
-   * @param config - Game configuration (variants, rulesets, etc.)
+   * @param config - Game configuration (action transformers, rulesets, etc.)
    * @param initialPlayers - Initial player sessions (must be 4 players)
    */
   constructor(gameId: string, config: GameConfig, initialPlayers: PlayerSession[]) {
@@ -193,7 +193,7 @@ export class Room {
     // Delegate to buildKernelView(mpState, forPlayerId, ctx, metadata)
     return buildKernelView(this.mpState, forPlayerId, this.ctx, {
       gameId: this.metadata.gameId,
-      actionTransformerConfigs: this.metadata.config.variants ?? []
+      actionTransformerConfigs: this.metadata.config.actionTransformers ?? []
     });
   }
 

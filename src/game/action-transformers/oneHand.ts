@@ -7,6 +7,7 @@ import type { ActionTransformerFactory } from './types';
  * - Inject scripted bidding/trump actions at start of bidding (with autoExecute: true)
  * - GameHost will auto-execute these immediately
  * - After scoring, end game instead of dealing new hand
+ * - Script actions execute with system authority, bypassing session checks
  *
  * Implementation:
  * - Emits scripted sequence when bids array is empty
@@ -24,21 +25,21 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
           type: 'pass' as const,
           player: 0,
           autoExecute: true,
-          meta: { scriptId: 'one-hand-setup', step: 1 }
+          meta: { scriptId: 'one-hand-setup', step: 1, authority: 'system' as const }
         }];
       case 1:
         return [{
           type: 'pass' as const,
           player: 1,
           autoExecute: true,
-          meta: { scriptId: 'one-hand-setup', step: 2 }
+          meta: { scriptId: 'one-hand-setup', step: 2, authority: 'system' as const }
         }];
       case 2:
         return [{
           type: 'pass' as const,
           player: 2,
           autoExecute: true,
-          meta: { scriptId: 'one-hand-setup', step: 3 }
+          meta: { scriptId: 'one-hand-setup', step: 3, authority: 'system' as const }
         }];
       case 3:
         return [{
@@ -47,7 +48,7 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
           bid: 'points' as const,
           value: 30,
           autoExecute: true,
-          meta: { scriptId: 'one-hand-setup', step: 4 }
+          meta: { scriptId: 'one-hand-setup', step: 4, authority: 'system' as const }
         }];
       default:
         break;
@@ -62,7 +63,7 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
         player: 3,
         trump: { type: 'suit' as const, suit: 4 }, // Fours as trump
         autoExecute: true,
-        meta: { scriptId: 'one-hand-setup', step: 5 }
+        meta: { scriptId: 'one-hand-setup', step: 5, authority: 'system' as const }
       }
     ];
   }
@@ -75,7 +76,7 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
       {
         type: 'score-hand' as const,
         autoExecute: true,
-        meta: { scriptId: 'one-hand-end' }
+        meta: { scriptId: 'one-hand-end', authority: 'system' as const }
       }
     ];
   }

@@ -42,7 +42,7 @@ export interface ExecutionContext {
  */
 export function createExecutionContext(config: GameConfig): ExecutionContext {
   // Get action transformer configs
-  const actionTransformerConfigs = config.variants ?? [];
+  const actionTransformerConfigs = config.actionTransformers ?? [];
 
   // Get enabled rulesets
   const enabledRuleSetNames = config.enabledRuleSets ?? [];

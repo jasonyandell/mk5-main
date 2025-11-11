@@ -18,7 +18,7 @@ describe('Authorization', () => {
         controlType: 'human',
         capabilities: [
           { type: 'act-as-player' as const, playerIndex: 0 },
-          { type: 'observe-own-hand' as const }
+          { type: 'observe-hands' as const, playerIndices: [0] }
         ]
       },
       {
@@ -27,8 +27,7 @@ describe('Authorization', () => {
         controlType: 'ai',
         capabilities: [
           { type: 'act-as-player' as const, playerIndex: 1 },
-          { type: 'observe-own-hand' as const },
-          { type: 'replace-ai' as const }
+          { type: 'observe-hands' as const, playerIndices: [1] }
         ]
       },
       {
@@ -37,8 +36,7 @@ describe('Authorization', () => {
         controlType: 'ai',
         capabilities: [
           { type: 'act-as-player' as const, playerIndex: 2 },
-          { type: 'observe-own-hand' as const },
-          { type: 'replace-ai' as const }
+          { type: 'observe-hands' as const, playerIndices: [2] }
         ]
       },
       {
@@ -47,8 +45,7 @@ describe('Authorization', () => {
         controlType: 'ai',
         capabilities: [
           { type: 'act-as-player' as const, playerIndex: 3 },
-          { type: 'observe-own-hand' as const },
-          { type: 'replace-ai' as const }
+          { type: 'observe-hands' as const, playerIndices: [3] }
         ]
       }
     ];
@@ -332,6 +329,109 @@ describe('Authorization', () => {
       expect(result.success).toBe(false);
       if (!result.success) {
         expect(result.error).toContain('No player found');
+      }
+    });
+  });
+
+  describe('System authority', () => {
+    it('executes action with system authority without capability checks', () => {
+      const ctx = createTestContext();
+      const mpState = createTestMPState();
+      const currentPlayer = mpState.coreState.currentPlayer;
+      const wrongPlayer = getNextPlayer(currentPlayer);
+
+      // Create an action that wrong player would normally not be able to execute
+      // But with system authority, it should bypass capability checks
+      const actionWithSystemAuthority: GameAction = {
+        type: 'pass',
+        player: currentPlayer,
+        meta: { authority: 'system' }
+      };
+
+      const result = authorizeAndExecute(mpState, {
+        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
+        action: actionWithSystemAuthority,
+      }, ctx);
+
+      // Should succeed despite wrong player because of system authority
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.value.coreState.bids.length).toBe(1);
+        expect(result.value.coreState.bids[0]?.type).toBe('pass');
+      }
+    });
+
+    it('system authority action still requires structural validity', () => {
+      const ctx = createTestContext();
+      const mpState = createTestMPState();
+      const currentPlayer = mpState.coreState.currentPlayer;
+
+      // Try to play a domino during bidding phase (structurally invalid)
+      const invalidActionWithSystemAuthority: GameAction = {
+        type: 'play',
+        player: currentPlayer,
+        dominoId: '0-0',
+        meta: { authority: 'system' }
+      };
+
+      const result = authorizeAndExecute(mpState, {
+        playerId: `player-${currentPlayer}`,
+        action: invalidActionWithSystemAuthority,
+      }, ctx);
+
+      // Should fail because action is not valid in current game state
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('not valid in current game state');
+      }
+    });
+
+    it('action without system authority still requires capabilities', () => {
+      const ctx = createTestContext();
+      const mpState = createTestMPState();
+      const currentPlayer = mpState.coreState.currentPlayer;
+      const wrongPlayer = getNextPlayer(currentPlayer);
+
+      // Regular action without system authority
+      const regularAction: GameAction = {
+        type: 'pass',
+        player: currentPlayer
+      };
+
+      const result = authorizeAndExecute(mpState, {
+        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
+        action: regularAction,
+      }, ctx);
+
+      // Should fail due to lack of capability
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('lacks capability');
+      }
+    });
+
+    it('action with player authority requires capabilities', () => {
+      const ctx = createTestContext();
+      const mpState = createTestMPState();
+      const currentPlayer = mpState.coreState.currentPlayer;
+      const wrongPlayer = getNextPlayer(currentPlayer);
+
+      // Action with explicit player authority
+      const actionWithPlayerAuthority: GameAction = {
+        type: 'pass',
+        player: currentPlayer,
+        meta: { authority: 'player' }
+      };
+
+      const result = authorizeAndExecute(mpState, {
+        playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
+        action: actionWithPlayerAuthority,
+      }, ctx);
+
+      // Should fail due to lack of capability
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error).toContain('lacks capability');
       }
     });
   });

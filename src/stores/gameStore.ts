@@ -293,7 +293,7 @@ class GameStoreImpl {
   async startOneHand(seed?: number): Promise<void> {
     const config: GameConfig = {
       playerTypes,
-      variants: [{ type: 'one-hand', config: { seed } }],
+      actionTransformers: [{ type: 'one-hand', config: { seed } }],
       shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
     };
 

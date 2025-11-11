@@ -102,10 +102,10 @@ export function buildKernelView(
   state: MultiplayerGameState,
   forPlayerId: string | undefined,
   ctx: ExecutionContext,
-  metadata: {
-    gameId: string;
-    actionTransformerConfigs: ActionTransformerConfig[];
-  }
+    metadata: {
+      gameId: string;
+      actionTransformerConfigs: ActionTransformerConfig[];
+    }
 ): GameView {
   const coreState = state.coreState;
   const actionsByPlayer = buildActionsMap(state, ctx);
@@ -152,7 +152,7 @@ export function buildKernelView(
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,
-      ...(metadata.actionTransformerConfigs.length ? { variants: metadata.actionTransformerConfigs } : {})
+      ...(metadata.actionTransformerConfigs.length ? { actionTransformers: metadata.actionTransformerConfigs } : {})
     }
   };
 }

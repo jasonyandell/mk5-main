@@ -19,8 +19,8 @@ export interface GameConfig {
   /** Player control types */
   playerTypes: ('human' | 'ai')[];
 
-  /** Composable action transformers */
-  variants?: ActionTransformerConfig[];
+  /** Composable action transformers (left-to-right pipeline) */
+  actionTransformers?: ActionTransformerConfig[];
 
   /** Enabled rule sets (e.g., ['nello', 'plunge']) */
   enabledRuleSets?: string[];

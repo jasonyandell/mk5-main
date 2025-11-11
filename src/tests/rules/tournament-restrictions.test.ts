@@ -20,8 +20,7 @@ describe('Tournament RuleSet Authority', () => {
       name: `Player ${i + 1}`,
       capabilities: [
         { type: 'act-as-player' as const, playerIndex: i as 0 | 1 | 2 | 3 },
-        { type: 'observe-own-hand' as const },
-        ...(type === 'ai' ? [{ type: 'replace-ai' as const }] : [])
+        { type: 'observe-hands' as const, playerIndices: [i] }
       ]
     }));
 

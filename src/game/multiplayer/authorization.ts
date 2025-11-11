@@ -62,6 +62,10 @@ export function canPlayerExecuteAction(
  * This is the fundamental operation for multiplayer - ensures only authorized
  * actions can mutate state.
  *
+ * Two execution paths:
+ * 1. System authority: Scripted actions bypass capability checks (e.g., one-hand transformer)
+ * 2. Player authority: Standard capability-based authorization (default)
+ *
  * @param mpState - Current multiplayer game state
  * @param request - Action request from a player
  * @param ctx - Execution context with composed rules and actions
@@ -81,7 +85,28 @@ export function authorizeAndExecute(
     return err(`No player found with ID: ${playerId}`);
   }
 
-  // Check authorization using capability system
+  // System authority: Skip capability checks for scripted actions
+  const meta = (action as { meta?: unknown }).meta;
+  const hasSystemAuthority = meta && typeof meta === 'object' &&
+    'authority' in meta && meta.authority === 'system';
+
+  if (hasSystemAuthority) {
+    // Validate action is structurally valid, then execute directly
+    const validActions = ctx.getValidActions(coreState);
+    const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
+    if (!isStructurallyValid) {
+      return err(`Action is not valid in current game state: ${action.type}`);
+    }
+
+    // Execute with system authority - no capability checks
+    const newCoreState = executeAction(coreState, action, ctx.rules);
+    return ok({
+      ...mpState,
+      coreState: newCoreState
+    });
+  }
+
+  // Player authority: Standard capability-based authorization
   const validActions = ctx.getValidActions(coreState);
   const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
   if (!isStructurallyValid) {

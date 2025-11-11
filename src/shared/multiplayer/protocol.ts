@@ -199,7 +199,7 @@ export interface GameView {
   /** Game metadata */
   metadata: {
     gameId: string;
-    variants?: ActionTransformerConfig[];
+    actionTransformers?: ActionTransformerConfig[];
   };
 
   // TODO: Add replay-url capability

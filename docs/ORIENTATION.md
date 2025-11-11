@@ -366,15 +366,35 @@ Token that grants permission to act or observe:
 ```typescript
 type Capability =
   | { type: 'act-as-player'; playerIndex: number }
-  | { type: 'observe-own-hand' }
-  | { type: 'observe-all-hands' }
-  | { type: 'see-hints' }
-  // ... 5 more
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
 ```
 
 **Purpose**: Replace boolean flags with composable permissions. Determines:
 1. What actions player can execute (authorization)
 2. What information player can see (visibility)
+
+**Standard sets**:
+- **Player**: `[{ type: 'act-as-player', playerIndex: N }, { type: 'observe-hands', playerIndices: [N] }]`
+- **Spectator**: `[{ type: 'observe-hands', playerIndices: 'all' }]`
+
+### Action Authority
+
+Actions can execute with two different authority models:
+
+```typescript
+type ActionAuthority = 'player' | 'system';
+```
+
+**Player authority** (default): Action must be authorized by a player session's capabilities
+- User-initiated actions (clicks, button presses)
+- Requires session to have `act-as-player` capability
+- Standard authorization flow
+
+**System authority**: Action executes as part of deterministic game script, bypassing capability checks
+- Scripted setup actions (one-hand transformer)
+- Auto-executed game flow (forced moves in speed mode)
+- Still validated for structural correctness (must be valid in current state)
+- Set via `action.meta.authority = 'system'`
 
 ---
 
@@ -393,9 +413,10 @@ Room routes to executeKernelAction()
   ↓
 executeKernelAction():
   - authorizeAndExecute(mpState, request, ctx.getValidActions, ctx.rules)
+  - Check action authority: system actions bypass capability checks
   - Find session by playerId
   - Get all valid actions via composed state machine
-  - Filter by session capabilities
+  - Filter by session capabilities (if player authority)
   - Execute: executeAction(coreState, action, ctx.rules)
   - Process auto-execute actions
   ↓
@@ -466,7 +487,7 @@ export const myTransformer: TransformerFactory = (config) => (base) => (state) =
 
 2. Register in `src/game/action-transformers/registry.ts`
 
-3. Use in config: `{ actionTransformer: { type: 'my-transformer' } }`
+3. Use in config: `{ actionTransformers: [{ type: 'my-transformer' }] }`
 
 ### Enable a Feature
 
@@ -477,7 +498,7 @@ const config: GameConfig = {
   enableSplash: true,     // Adds splash ruleset
   enablePlunge: true,     // Adds plunge ruleset
   enableSevens: true,     // Adds sevens ruleset
-  actionTransformer: { type: 'tournament' }  // Applies tournament transformer
+  actionTransformers: [{ type: 'tournament' }]  // Applies tournament transformer
 };
 ```
 
