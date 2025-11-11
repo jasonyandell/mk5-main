@@ -1,16 +1,12 @@
 import { writable, derived, get, type Readable } from 'svelte/store';
-import type { GameAction, FilteredGameState, GameState } from '../game/types';
-import { getNextStates } from '../game';
-import { createExecutionContext } from '../game/types/execution';
+import type { GameAction, FilteredGameState } from '../game/types';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
-import type { MultiplayerGameState, Capability } from '../game/multiplayer/types';
-import { hasCapabilityType } from '../game/multiplayer/types';
+import type { Capability } from '../game/multiplayer/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
-import { getVisibleStateForSession } from '../game/multiplayer/capabilityUtils';
 import { createSetupState } from '../game/core/state';
 import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
-import type { ValidAction } from '../shared/multiplayer/protocol';
+import type { GameView, PlayerInfo } from '../shared/multiplayer/protocol';
 
 /**
  * GameStore - Clean facade over Room/Transport/NetworkGameClient complexity.
@@ -38,44 +34,36 @@ const DEFAULT_SESSION_ID = 'player-0';
 // PRIVATE IMPLEMENTATION
 // ============================================================================
 
-function actionKey(action: GameAction): string {
-  return JSON.stringify(action);
-}
+function createPendingView(): GameView {
+  const placeholderState = createSetupState({ playerTypes });
 
-function convertToFilteredState(state: GameState): FilteredGameState {
-  return {
-    ...state,
-    players: state.players.map(player => ({
+  const players: PlayerInfo[] = playerTypes.map((type, index) => ({
+    playerId: index,
+    controlType: type,
+    sessionId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+    connected: true,
+    name: `Player ${index + 1}`,
+    capabilities: []
+  }));
+
+  const filteredState: FilteredGameState = {
+    ...placeholderState,
+    players: placeholderState.players.map(player => ({
       ...player,
       hand: [...player.hand],
       handCount: player.hand.length,
       ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
     }))
   };
-}
-
-function createPendingState(): MultiplayerGameState {
-  const placeholderState = createSetupState({ playerTypes });
-  const sessions = playerTypes.map((type, index) => {
-    const idx = index as 0 | 1 | 2 | 3;
-    const capabilities = type === 'human'
-      ? humanCapabilities(idx)
-      : aiCapabilities(idx);
-
-    return {
-      playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
-      playerIndex: idx,
-      controlType: type,
-      isConnected: true,
-      name: `Player ${index + 1}`,
-      capabilities: capabilities.map(cap => ({ ...cap }))
-    };
-  });
 
   return {
-    gameId: 'initializing',
-    coreState: placeholderState,
-    players: sessions
+    state: filteredState,
+    validActions: [],
+    transitions: [],
+    players,
+    metadata: {
+      gameId: 'initializing'
+    }
   };
 }
 
@@ -88,8 +76,7 @@ class GameStoreImpl {
   private unsubscribe?: (() => void) | undefined;
 
   // Internal stores
-  private clientState = writable<MultiplayerGameState>(createPendingState());
-  private actionsByPlayer = writable<Record<string, ValidAction[]>>({});
+  private clientView = writable<GameView>(createPendingView());
   private currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
   private findingSeedStore = writable<boolean>(false);
 
@@ -100,36 +87,14 @@ class GameStoreImpl {
   public readonly availablePerspectives: Readable<Array<{ id: string; label: string }>>;
 
   constructor() {
-    // Derived: current session
-    const playerSessions = derived(this.clientState, $state => $state.players);
-
-    const currentSession = derived(
-      [playerSessions, this.currentSessionIdStore],
-      ([$sessions, $sessionId]) => $sessions.find(s => s.playerId === $sessionId)
-    );
-
-    // Derived: gameState (filtered by current perspective)
-    this.gameState = derived(
-      [this.clientState, currentSession],
-      ([$clientState, $session]) => {
-        if ($session) {
-          return getVisibleStateForSession($clientState.coreState, $session);
-        }
-        return convertToFilteredState($clientState.coreState);
-      }
-    );
-
-    // Derived: allowed actions for current perspective
-    const allowedActionsStore = derived(
-      [this.actionsByPlayer, this.currentSessionIdStore],
-      ([$actions, $sessionId]) => $actions[$sessionId] ?? $actions['__unfiltered__'] ?? []
-    );
+    // Derived: game state from view
+    this.gameState = derived(this.clientView, $view => $view.state);
 
     // Derived: available perspectives
-    this.availablePerspectives = derived(playerSessions, ($sessions) =>
-      $sessions.map((session) => ({
-        id: session.playerId,
-        label: session.name ? `${session.name}` : `P${session.playerIndex}`
+    this.availablePerspectives = derived(this.clientView, ($view) =>
+      $view.players.map((player) => ({
+        id: player.sessionId ?? `player-${player.playerId}`,
+        label: player.name ? `${player.name}` : `P${player.playerId}`
       }))
     );
 
@@ -137,46 +102,44 @@ class GameStoreImpl {
     this.currentPerspective = derived(this.currentSessionIdStore, (value) => value);
 
     // Derived: viewProjection (UI-ready projection)
+    // Uses transitions from GameView (server-computed)
     this.viewProjection = derived(
-      [this.gameState, playerSessions, this.currentSessionIdStore, allowedActionsStore],
-      ([$gameState, $sessions, $sessionId, $allowedActions]) => {
-        const session = $sessions.find(s => s.playerId === $sessionId) ?? $sessions[0];
-        const canAct = !!(session && hasCapabilityType(session, 'act-as-player'));
+      [this.clientView, this.currentSessionIdStore],
+      ([$view, $sessionId]) => {
+        const playerInfo = $view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === $sessionId);
+        const canAct = !!(playerInfo && playerInfo.capabilities?.some(cap => cap.type === 'act-as-player'));
 
-        const allowedKeys = new Set($allowedActions.map(valid => actionKey(valid.action)));
-
-        // Create execution context with current player types
-        const ctx = createExecutionContext({ playerTypes });
-
-        const allTransitions = getNextStates($gameState, ctx);
-        const usedTransitions = testMode
-          ? allTransitions
-          : allowedKeys.size === 0
-            ? allTransitions
-            : allTransitions.filter(transition => allowedKeys.has(actionKey(transition.action)));
+        // Convert ViewTransitions to StateTransitions for createViewProjection
+        const stateTransitions = $view.transitions.map(t => ({
+          id: t.id,
+          label: t.label,
+          action: t.action,
+          newState: $view.state as any  // Placeholder - not used by createViewProjection
+        }));
 
         const viewProjectionOptions = {
           isTestMode: testMode,
           canAct,
           isAIControlled: (player: number) => {
-            const playerSession = $sessions.find(s => s.playerIndex === player);
-            return playerSession?.controlType === 'ai';
+            const playerInfo = $view.players.find(p => p.playerId === player);
+            return playerInfo?.controlType === 'ai';
           },
-          ...(session ? { viewingPlayerIndex: session.playerIndex } : {})
+          ...(playerInfo ? { viewingPlayerIndex: playerInfo.playerId } : {})
         };
 
-        return createViewProjection($gameState, usedTransitions, viewProjectionOptions);
+        return createViewProjection($view.state, stateTransitions, viewProjectionOptions);
       }
     );
 
     // Auto-correct perspective if current becomes invalid
-    playerSessions.subscribe(($sessions) => {
-      if ($sessions.length === 0) return;
+    this.clientView.subscribe(($view) => {
+      if ($view.players.length === 0) return;
 
       const current = get(this.currentSessionIdStore);
-      const firstSession = $sessions[0];
-      if (!$sessions.some(session => session.playerId === current) && firstSession) {
-        void this.setPerspective(firstSession.playerId);
+      const firstPlayer = $view.players[0];
+      const firstSessionId = firstPlayer?.sessionId ?? `player-${firstPlayer?.playerId}`;
+      if (!$view.players.some(p => (p.sessionId ?? `player-${p.playerId}`) === current) && firstPlayer) {
+        void this.setPerspective(firstSessionId);
       }
     });
 
@@ -249,16 +212,14 @@ class GameStoreImpl {
     // Store new client
     this.client = newClient;
 
-    // Get initial state
+    // Get initial view
     try {
-      const state = await newClient.getState();
-      this.clientState.set(state);
-      this.actionsByPlayer.set(newClient.getCachedActionsMap());
+      const view = await newClient.getView();
+      this.clientView.set(view);
 
       // Subscribe to updates
-      this.unsubscribe = newClient.subscribe(state => {
-        this.clientState.set(state);
-        this.actionsByPlayer.set(newClient.getCachedActionsMap());
+      this.unsubscribe = newClient.subscribe(view => {
+        this.clientView.set(view);
       });
 
       // Set perspective
@@ -275,21 +236,21 @@ class GameStoreImpl {
   async executeAction(action: GameAction): Promise<void> {
     if (!this.client) throw new Error('Game not initialized');
 
-    const session = get(this.currentPerspective);
-    const sessions = get(this.clientState).players;
-    const currentSession = sessions.find(s => s.playerId === session);
+    const sessionId = get(this.currentPerspective);
+    const view = get(this.clientView);
+    const currentPlayer = view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === sessionId);
 
-    if (!currentSession || !hasCapabilityType(currentSession, 'act-as-player')) {
+    if (!currentPlayer || !currentPlayer.capabilities?.some(cap => cap.type === 'act-as-player')) {
       throw new Error('Current perspective cannot execute actions');
     }
 
     const preparedAction = { ...action } as GameAction;
     if ('player' in preparedAction) {
-      preparedAction.player = currentSession.playerIndex;
+      preparedAction.player = currentPlayer.playerId;
     }
 
     const result = await this.client.executeAction({
-      playerId: currentSession.playerId,
+      playerId: sessionId,
       action: preparedAction
     });
 
@@ -322,7 +283,6 @@ class GameStoreImpl {
     }
 
     await this.client.setPlayerId(playerId);
-    this.actionsByPlayer.set(this.client.getCachedActionsMap());
   }
 
   async setPlayerControl(playerIndex: number, type: 'human' | 'ai'): Promise<void> {
@@ -342,11 +302,11 @@ class GameStoreImpl {
   }
 
   async retryOneHand(): Promise<void> {
-    const currentState = get(this.clientState).coreState;
-    if (!currentState.shuffleSeed) {
+    const view = get(this.clientView);
+    if (!view.state.shuffleSeed) {
       throw new Error('No seed available to retry');
     }
-    await this.startOneHand(currentState.shuffleSeed);
+    await this.startOneHand(view.state.shuffleSeed);
   }
 
   async exitOneHand(): Promise<void> {

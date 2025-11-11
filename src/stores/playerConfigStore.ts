@@ -79,14 +79,9 @@ export async function applyConfiguration(config: PlayerConfig[]): Promise<void> 
  */
 export async function togglePlayerControl(playerId: number): Promise<void> {
   if (!gameClient) return;
-  const currentState = await gameClient.getState();
-  const currentSession = Array.from(currentState.players).find(s => {
-    if (typeof s === 'object' && s !== null && 'playerIndex' in s) {
-      return (s as unknown as { playerIndex: number }).playerIndex === playerId;
-    }
-    return false;
-  });
-  const isHuman = (currentSession as unknown as { controlType?: string })?.controlType === 'human';
+  const currentView = await gameClient.getView();
+  const currentPlayer = currentView.players.find(p => p.playerId === playerId);
+  const isHuman = currentPlayer?.controlType === 'human';
 
   const newType = isHuman ? 'ai' : 'human';
   await gameClient.setPlayerControl(playerId, newType);

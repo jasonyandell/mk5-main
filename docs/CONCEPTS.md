@@ -684,19 +684,26 @@ interface Transport {
 ## 5. Client Architecture
 
 ### NetworkGameClient
-**Definition**: Client-side interface that caches filtered state and trusts server.
+**Definition**: Client-side interface that caches GameView and trusts server completely.
 
 **Location**: `src/game/multiplayer/NetworkGameClient.ts`
 
 **Key Responsibilities**:
-1. Send actions to server
-2. Cache filtered state from server
-3. Cache valid actions list
-4. Notify UI of updates
+1. Send actions to server via protocol
+2. Cache GameView received from server
+3. Notify subscribers of updates
+4. Provide access to cached view
 
-**Trust Model**: Client trusts server's validActions list, never refilters
+**Trust Model**: Client trusts server completely - no local validation, no state synthesis, no transition recomputation
 
-**Related**: Transport, Room, GameView
+**Key Methods**:
+- `executeAction(playerId, action)` - Send action to server
+- `getCachedView(playerId)` - Get cached GameView for player
+- `subscribe(callback)` - Listen for updates
+
+**Security**: Only receives filtered GameView, never sees unfiltered state or other players' data
+
+**Related**: Transport, Room, GameView, Protocol Messages
 
 ---
 
@@ -1038,43 +1045,65 @@ Room validates and executes
 **Definition**: Message sent from server to client.
 
 **Types**:
-- `GAME_CREATED` - Game initialized
-- `STATE_UPDATE` - State changed
+- `GAME_CREATED` - Game initialized with GameView
+- `STATE_UPDATE` - State changed with updated GameView
 - `ACTION_CONFIRMED` - Action accepted
 - `ERROR` - Something failed
 
-**Related**: ClientMessage, Transport
+**Message Structure**:
+```typescript
+interface GameCreatedMessage {
+  type: 'GAME_CREATED';
+  gameId: string;
+  view: GameView;  // Only filtered data, no unfiltered state
+}
+
+interface StateUpdateMessage {
+  type: 'STATE_UPDATE';
+  gameId: string;
+  view: GameView;  // Only filtered data, no unfiltered state
+}
+```
+
+**Security**: All messages contain only filtered GameView - no unfiltered state crosses the network boundary
+
+**Related**: ClientMessage, Transport, GameView
 
 ---
 
 ### GameView
-**Definition**: Client-facing filtered view of game state.
+**Definition**: Client-facing filtered view of game state with transitions.
 
-**Location**: Referenced in protocol
+**Location**: `src/game/types.ts`
 
 **Contains**:
-- `state: FilteredGameState` - Hand-filtered
-- `validActions: ValidAction[]` - Playable actions
-- `metadata: { phase, turn, tricks, scoring }`
+- `state: FilteredGameState` - Hand-filtered state
+- `transitions: ViewTransition[]` - Available actions with metadata
+- `metadata: { phase, turn, tricks, scoring }` - UI display data
 
-**Trust**: Client trusts this is correct
+**Key Insight**: Single source of truth for clients - includes both state and all possible transitions
 
-**Related**: FilteredGameState, ValidAction
+**Trust**: Client trusts this is correct and complete - never recomputes
+
+**Related**: FilteredGameState, ViewTransition, Protocol Messages
 
 ---
 
-### ValidAction
-**Definition**: Action with client-visible metadata.
+### ViewTransition
+**Definition**: Available state transition with metadata, client-safe version of StateTransition.
 
-**Location**: Referenced in protocol
+**Location**: `src/game/types.ts`
 
 **Contains**:
-- `action: GameAction` - The action
-- `label: string` - Human-readable
-- `hint?: string` - Optional AI recommendation
-- `autoExecute?: boolean` - Auto-play flag
+- `id: string` - Unique identifier for the transition
+- `label: string` - Human-readable description
+- `action: GameAction` - The action to execute
+- `group?: string` - Optional grouping (e.g., "bidding", "trump")
+- `recommended?: boolean` - Whether AI recommends this action
 
-**Related**: GameAction, Capability
+**Key Difference from StateTransition**: Does not include `newState` field (security boundary)
+
+**Related**: GameAction, GameView, StateTransition
 
 ---
 

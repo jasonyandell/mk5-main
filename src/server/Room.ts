@@ -529,15 +529,11 @@ export class Room {
       const sub = this.subscriptions.get(clientId);
       if (sub) {
         const view = this.getView(sub.perspective);
-        const state = this.getState();
-        const actions = this.getActionsMap();
 
         const msg: ServerMessage = {
           type: 'STATE_UPDATE',
           gameId: this.metadata.gameId,
           view,
-          state,
-          actions,
           ...(sub.perspective ? { perspective: sub.perspective } : {})
         };
 
@@ -554,14 +550,10 @@ export class Room {
    */
   private handleCreateGame(clientId: string, _message: ClientMessage): void {
     const view = this.getView();
-    const state = this.getState();
-    const actions = this.getActionsMap();
     this.sendMessage(clientId, {
       type: 'GAME_CREATED',
       gameId: this.metadata.gameId,
-      view,
-      state,
-      actions
+      view
     });
   }
 
@@ -718,14 +710,10 @@ export class Room {
     // Create subscriber that receives state updates
     const subscriber = (_update: unknown) => {
       const view = this.getView(playerId);
-      const state = this.getState();
-      const actions = this.getActionsMap();
       const msg: ServerMessage = {
         type: 'STATE_UPDATE',
         gameId: this.metadata.gameId,
         view,
-        state,
-        actions,
         ...(playerId ? { perspective: playerId } : {})
       };
       this.sendMessage(clientId, msg);
@@ -735,14 +723,10 @@ export class Room {
 
     // Send initial state
     const view = this.getView(playerId);
-    const state = this.getState();
-    const actions = this.getActionsMap();
     const initialMsg: ServerMessage = {
       type: 'STATE_UPDATE',
       gameId: this.metadata.gameId,
       view,
-      state,
-      actions,
       ...(playerId ? { perspective: playerId } : {})
     };
     this.sendMessage(clientId, initialMsg);

@@ -733,27 +733,33 @@ All clients (online and offline) implement the same interface:
 
 ```typescript
 interface GameClient {
-  getState(): Promise<MultiplayerGameState>
-  
+  getView(playerId: string): Promise<GameView>
+
   executeAction(
     request: ActionRequest
-  ): Promise<Result<MultiplayerGameState>>
-  
+  ): Promise<Result<void>>
+
   joinGame(
     playerId: string,
     name: string,
     capabilities: Capability[]
   ): Promise<Result<PlayerSession>>
-  
+
   leaveGame(playerId: string): Promise<void>
-  
-  getActions(playerId: string): Promise<GameAction[]>
-  
+
   subscribe(
-    callback: (state: MultiplayerGameState) => void
+    callback: (view: GameView) => void
   ): () => void
 }
 ```
+
+**Key Changes from Original Spec**:
+- `getView()` returns filtered `GameView` instead of unfiltered `MultiplayerGameState`
+- `executeAction()` returns `Result<void>` - client receives updates via subscription, not return value
+- `subscribe()` receives `GameView` (filtered state + transitions) instead of unfiltered state
+- Removed `getActions()` - actions are included in `GameView.transitions`
+
+**Security**: Clients never receive unfiltered state - all data crosses the network boundary as filtered `GameView`
 
 ### 6.3 Online Mode (Cloudflare Workers)
 
@@ -766,12 +772,13 @@ One Durable Object instance per game. Handles:
 
 **Endpoints**:
 - `POST /initialize` - Create new game
-- `GET /state` - Get current state (filtered by viewing player)
+- `GET /view?playerId=X` - Get filtered GameView for player
 - `POST /action` - Execute action
 - `POST /join` - Add player
 - `POST /leave` - Remove player
-- `GET /actions?playerId=X` - Get valid actions for player
 - `GET /ws` - WebSocket upgrade for real-time updates
+
+**Protocol Security**: All endpoints return filtered `GameView` - no unfiltered state is ever transmitted
 
 **Pattern**:
 ```typescript
@@ -779,19 +786,27 @@ class GameDurableObject {
   async handleExecuteAction(request) {
     // Load state from storage
     const state = await this.storage.get('state')
-    
+
     // Use pure function
     const result = authorizeAndExecute(state, request)
-    
+
     if (result.success) {
       // Persist
       await this.storage.put('state', result.value)
-      
-      // Broadcast to all connected WebSockets
-      await this.broadcast(result.value)
+
+      // Broadcast filtered views to all connected WebSockets
+      await this.broadcastViews(result.value)
     }
-    
+
     return jsonResponse(result)
+  }
+
+  async broadcastViews(mpState) {
+    // Build filtered view for each connected client
+    for (const [clientId, playerId] of this.connections) {
+      const view = buildKernelView(mpState, playerId, this.ctx, metadata)
+      this.send(clientId, { type: 'STATE_UPDATE', gameId: mpState.gameId, view })
+    }
   }
 }
 ```
@@ -803,19 +818,26 @@ Browser client that communicates with Durable Object:
 ```typescript
 class OnlineGameClient implements GameClient {
   async executeAction(request: ActionRequest) {
-    const response = await fetch(
+    await fetch(
       `${this.baseUrl}/action?gameId=${this.gameId}`,
       { method: 'POST', body: JSON.stringify(request) }
     )
+    // Updates come via subscription, not return value
+  }
+
+  async getView(playerId: string) {
+    const response = await fetch(
+      `${this.baseUrl}/view?gameId=${this.gameId}&playerId=${playerId}`
+    )
     return await response.json()
   }
-  
+
   subscribe(callback) {
     const ws = new WebSocket(`${this.baseUrl}/ws?gameId=${this.gameId}`)
     ws.onmessage = (e) => {
       const data = JSON.parse(e.data)
-      if (data.type === 'state-update') {
-        callback(data.state)
+      if (data.type === 'STATE_UPDATE') {
+        callback(data.view)  // Receives filtered GameView
       }
     }
     return () => ws.close()
@@ -832,20 +854,26 @@ Web Worker that holds state in memory:
 ```typescript
 // worker.ts
 let currentState: MultiplayerGameState | null = null
+let ctx: ExecutionContext | null = null
 
 self.onmessage = (event) => {
   const { type, payload } = event.data
-  
+
   switch (type) {
     case 'execute-action':
-      const result = authorizeAndExecute(currentState, payload)
+      const result = authorizeAndExecute(currentState, payload, ctx.getValidActions, ctx.rules)
       if (result.success) {
         currentState = result.value
-        self.postMessage({ type: 'state-update', state: currentState })
+
+        // Broadcast filtered views to all subscribers
+        for (const playerId of subscribers.keys()) {
+          const view = buildKernelView(currentState, playerId, ctx, metadata)
+          self.postMessage({ type: 'state-update', playerId, view })
+        }
       }
       self.postMessage({ type: 'action-result', result })
       break
-    
+
     // ... other message types
   }
 }
@@ -859,20 +887,27 @@ Browser client that communicates via postMessage:
 class OfflineGameClient implements GameClient {
   private worker: Worker
   private subscribers = new Set<Function>()
-  
+  private cachedViews = new Map<string, GameView>()
+
   constructor(workerUrl: string) {
     this.worker = new Worker(workerUrl)
     this.worker.onmessage = (e) => {
       if (e.data.type === 'state-update') {
-        this.subscribers.forEach(cb => cb(e.data.state))
+        const { playerId, view } = e.data
+        this.cachedViews.set(playerId, view)
+        this.subscribers.forEach(cb => cb(view))
       }
     }
   }
-  
+
   async executeAction(request: ActionRequest) {
-    return this.sendRequest({ type: 'execute-action', payload: request })
+    this.worker.postMessage({ type: 'execute-action', payload: request })
   }
-  
+
+  async getView(playerId: string) {
+    return this.cachedViews.get(playerId)
+  }
+
   subscribe(callback) {
     this.subscribers.add(callback)
     return () => this.subscribers.delete(callback)
@@ -912,22 +947,22 @@ const offlineClient = createGameClient('offline', {
 
 // User clicks "Allow others to join"
 async function goOnline() {
-  // Get current state
-  const state = await offlineClient.getState()
-  
+  // Get current view
+  const view = await offlineClient.getView(playerId)
+
   // POST to server
   const response = await fetch('/create-game', {
     method: 'POST',
-    body: JSON.stringify(state)
+    body: JSON.stringify({ view, playerId })
   })
   const { gameId } = await response.json()
-  
+
   // Switch to online client
   const onlineClient = createGameClient('online', {
     baseUrl: WORKER_URL,
     gameId: gameId
   })
-  
+
   // Original player continues seamlessly
   return { onlineClient, gameId, shareUrl: `${DOMAIN}/join/${gameId}` }
 }
@@ -1148,11 +1183,11 @@ for (let i = 1; i <= 3; i++) {
 
 ```typescript
 // Game running with AI at index 2
-const state = await client.getState()
-const aiPlayer = state.players[2]  // Has replace-ai capability
+const view = await client.getView(playerId)
+const aiPlayerId = 'ai-2'  // AI player at seat 2
 
 // Stop AI client
-await aiClientPool.remove(aiPlayer.playerId)
+await aiClientPool.remove(aiPlayerId)
 
 // Human joins in same slot
 await humanClient.joinGame(
@@ -1175,22 +1210,22 @@ const offlineClient = createGameClient('offline', {
 
 // User wants to invite friends
 async function allowOthersToJoin() {
-  const state = await offlineClient.getState()
-  
+  const view = await offlineClient.getView(playerId)
+
   // Upload to server
   const response = await fetch('https://game.example.com/create', {
     method: 'POST',
-    body: JSON.stringify({ state, originalPlayerId: 'me' })
+    body: JSON.stringify({ view, originalPlayerId: playerId })
   })
-  
+
   const { gameId } = await response.json()
-  
+
   // Switch to online client
   const onlineClient = createGameClient('online', {
     baseUrl: 'https://game.example.com',
     gameId: gameId
   })
-  
+
   return {
     client: onlineClient,
     shareUrl: `https://game.example.com/join/${gameId}`

@@ -8,7 +8,8 @@ import type { GameState, GameAction } from '../game/types';
 import type {
   GameView,
   ValidAction,
-  PlayerInfo
+  PlayerInfo,
+  ViewTransition
 } from '../shared/multiplayer/protocol';
 import { authorizeAndExecute } from '../game/multiplayer/authorization';
 import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
@@ -18,6 +19,7 @@ import { cloneGameState, getNextStates } from '../game/core/state';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
 import type { ActionTransformerConfig } from '../game/action-transformers/types';
+import { actionToId } from '../game/core/actions';
 
 /**
  * Execute a game action with pure state transition.
@@ -125,6 +127,15 @@ export function buildKernelView(
     validActions = actionsByPlayer['__unfiltered__'] ?? [];
   }
 
+  // Convert validActions to ViewTransitions for client UI rendering
+  const transitions: ViewTransition[] = validActions.map((valid) => ({
+    id: actionToId(valid.action),
+    label: valid.label,
+    action: valid.action,
+    ...(valid.group ? { group: valid.group } : {}),
+    ...(valid.recommended ? { recommended: valid.recommended } : {})
+  }));
+
   const playerInfoList: PlayerInfo[] = Array.from(state.players).map((playerSession: PlayerSession) => ({
     playerId: playerSession.playerIndex,
     controlType: playerSession.controlType,
@@ -137,6 +148,7 @@ export function buildKernelView(
   return {
     state: visibleState,
     validActions,
+    transitions,
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,

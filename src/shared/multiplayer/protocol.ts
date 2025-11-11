@@ -15,7 +15,6 @@ import type { GameAction, FilteredGameState } from '../../game/types';
 import type { GameConfig, ActionTransformerConfig } from '../../game/types/config';
 import type {
   Capability,
-  MultiplayerGameState,
   PlayerSession
 } from '../../game/multiplayer/types';
 
@@ -118,8 +117,6 @@ export interface GameCreatedMessage {
   type: 'GAME_CREATED';
   gameId: string;
   view: GameView;
-  state: MultiplayerGameState;
-  actions: Record<string, ValidAction[]>;
 }
 
 /**
@@ -129,8 +126,6 @@ export interface StateUpdateMessage {
   type: 'STATE_UPDATE';
   gameId: string;
   view: GameView;
-  state: MultiplayerGameState;
-  actions: Record<string, ValidAction[]>;
   perspective?: string;
   lastAction?: GameAction; // What action caused this update
 }
@@ -195,6 +190,9 @@ export interface GameView {
   /** Pre-calculated valid actions for current player */
   validActions: ValidAction[];
 
+  /** Pre-calculated transitions for UI rendering (replaces client-side getNextStates) */
+  transitions: ViewTransition[];
+
   /** Player information */
   players: PlayerInfo[];
 
@@ -228,6 +226,28 @@ export interface ValidAction {
 
   /** Keyboard shortcut hint */
   shortcut?: string;
+
+  /** Is this a recommended action? */
+  recommended?: boolean;
+}
+
+/**
+ * View transition - action with UI metadata, no leaked state.
+ * Unlike StateTransition (which includes full newState), this contains
+ * only client-safe information for rendering UI.
+ */
+export interface ViewTransition {
+  /** Unique ID for this transition (for keying) */
+  id: string;
+
+  /** Human-readable label */
+  label: string;
+
+  /** The actual game action */
+  action: GameAction;
+
+  /** Optional grouping for UI organization */
+  group?: string;
 
   /** Is this a recommended action? */
   recommended?: boolean;

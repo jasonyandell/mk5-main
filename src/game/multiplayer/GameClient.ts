@@ -1,10 +1,9 @@
 import type {
   ActionRequest,
-  MultiplayerGameState,
   PlayerSession,
   Result
 } from './types';
-import type { ValidAction } from '../../shared/multiplayer/protocol';
+import type { GameView } from '../../shared/multiplayer/protocol';
 
 /**
  * GameClient - The single source of truth for game state.
@@ -17,21 +16,24 @@ import type { ValidAction } from '../../shared/multiplayer/protocol';
  * - Pure authorization + execution at the core
  * - Transport-agnostic (works in-process, cross-worker, or over network)
  * - Observable state changes via subscription
+ * - Server authority: clients receive only filtered GameView
  */
 export interface GameClient {
   /**
-   * Get the current multiplayer game state.
+   * Get the current game view for a specific perspective.
    * Returns a promise to support async transports.
+   *
+   * @param perspective - Player ID to get view for (defaults to current player)
    */
-  getState(): Promise<MultiplayerGameState>;
+  getView(perspective?: string): Promise<GameView>;
 
   /**
    * Execute an action on behalf of a player session.
    * Authorization/validation occurs inside the multiplayer layer.
    *
-   * @returns Promise<Result<MultiplayerGameState>> - new state or error
+   * @returns Promise<Result<GameView>> - new view or error
    */
-  executeAction(request: ActionRequest): Promise<Result<MultiplayerGameState>>;
+  executeAction(request: ActionRequest): Promise<Result<GameView>>;
 
   /**
    * Join or reconnect a player session.
@@ -46,17 +48,12 @@ export interface GameClient {
   leaveGame(playerId: string): Promise<void>;
 
   /**
-   * Get valid actions available to a session (already filtered for capabilities).
-   */
-  getActions(playerId: string): Promise<ValidAction[]>;
-
-  /**
-   * Subscribe to state changes.
-   * Listener will be invoked whenever core multiplayer state updates.
+   * Subscribe to game view changes.
+   * Listener will be invoked whenever the game view updates.
    *
    * @returns Unsubscribe function
    */
-  subscribe(listener: (state: MultiplayerGameState) => void): () => void;
+  subscribe(listener: (view: GameView) => void): () => void;
 
   /**
    * Change player control type (human <-> AI).

@@ -7,12 +7,13 @@
  * Design principles:
  * - Implements GameClient interface for compatibility
  * - Translates GameClient methods to protocol messages
- * - Caches GameView and state for fast local reads
+ * - Caches GameView for fast local reads
  * - Works with any Connection (in-process, Worker, WebSocket)
+ * - Trusts server completely - no local validation or recomputation
  */
 
 import type { GameClient } from './GameClient';
-import type { ActionRequest, MultiplayerGameState, PlayerSession, Result } from './types';
+import type { ActionRequest, PlayerSession, Result } from './types';
 import { ok, err } from './types';
 import type {
   GameView,
@@ -28,19 +29,17 @@ import type { Connection } from '../../server/transports/Transport';
 export class NetworkGameClient implements GameClient {
   private connection: Connection;
   private gameId?: string;
-  private cachedState?: MultiplayerGameState;
   private cachedView?: GameView;
   private viewsByPerspective = new Map<string, GameView>();
-  private cachedActions = new Map<string, ValidAction[]>();
-  private listeners = new Set<(state: MultiplayerGameState) => void>();
+  private listeners = new Set<(view: GameView) => void>();
   private initPromise?: Promise<void>;
   private playerId: string = 'player-0'; // Default to player-0
   private sessionId: string;
   private pendingSubscriptionPlayerId?: string;
-  private createGameResolver?: (value: { gameId: string; view: GameView; state: MultiplayerGameState }) => void;
+  private createGameResolver?: (value: { gameId: string; view: GameView }) => void;
   private createGameRejecter?: (error: Error) => void;
-  private stateWaiters: Array<(state: MultiplayerGameState) => void> = [];
-  private actionWaiters: Array<(result: Result<MultiplayerGameState>) => void> = [];
+  private viewWaiters: Array<(view: GameView) => void> = [];
+  private actionWaiters: Array<(result: Result<GameView>) => void> = [];
   private joinResolvers = new Map<string, (result: Result<PlayerSession>) => void>();
 
   constructor(connection: Connection, config?: GameConfig) {
@@ -113,41 +112,27 @@ export class NetworkGameClient implements GameClient {
   }
 
   /**
-   * Get valid actions for a session.
+   * Get current GameView for a specific perspective.
    */
-  async getActions(playerId: string): Promise<ValidAction[]> {
+  async getView(perspective: string = this.playerId): Promise<GameView> {
     if (this.initPromise) {
       await this.initPromise;
     }
 
-    if (!this.cachedState) {
-      await this.getState();
+    const view = this.viewsByPerspective.get(perspective) ?? this.cachedView;
+    if (view) {
+      return view;
     }
 
-    return this.getCachedActions(playerId);
-  }
-
-  /**
-   * Get current multiplayer state.
-   */
-  async getState(): Promise<MultiplayerGameState> {
-    if (this.initPromise) {
-      await this.initPromise;
-    }
-
-    if (this.cachedState) {
-      return this.cachedState;
-    }
-
-    return new Promise<MultiplayerGameState>((resolve) => {
-      this.stateWaiters.push(resolve);
+    return new Promise<GameView>((resolve) => {
+      this.viewWaiters.push(resolve);
     });
   }
 
   /**
    * Execute an action for a player session.
    */
-  async executeAction(request: ActionRequest): Promise<Result<MultiplayerGameState>> {
+  async executeAction(request: ActionRequest): Promise<Result<GameView>> {
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -158,7 +143,7 @@ export class NetworkGameClient implements GameClient {
       return err('Game not initialized');
     }
 
-    return new Promise<Result<MultiplayerGameState>>((resolve) => {
+    return new Promise<Result<GameView>>((resolve) => {
       this.actionWaiters.push(resolve);
       void (async () => {
         try {
@@ -177,12 +162,12 @@ export class NetworkGameClient implements GameClient {
   }
 
   /**
-   * Subscribe to state changes
+   * Subscribe to game view changes
    */
-  subscribe(listener: (state: MultiplayerGameState) => void): () => void {
-    // Send current state immediately if we have it
-    if (this.cachedState) {
-      listener(this.cachedState);
+  subscribe(listener: (view: GameView) => void): () => void {
+    // Send current view immediately if we have it
+    if (this.cachedView) {
+      listener(this.cachedView);
     }
 
     // Add to listeners
@@ -233,7 +218,7 @@ export class NetworkGameClient implements GameClient {
   private async createGame(config: GameConfig): Promise<void> {
     try {
       // Create promise that will be resolved in handleServerMessage
-      const gameCreatedPromise = new Promise<{ gameId: string; view: GameView; state: MultiplayerGameState }>((resolve, reject) => {
+      const gameCreatedPromise = new Promise<{ gameId: string; view: GameView }>((resolve, reject) => {
         this.createGameResolver = resolve;
         this.createGameRejecter = reject;
 
@@ -262,6 +247,7 @@ export class NetworkGameClient implements GameClient {
     }
   }
 
+
   /**
    * Handle server messages
    */
@@ -269,7 +255,6 @@ export class NetworkGameClient implements GameClient {
     switch (message.type) {
       case 'GAME_CREATED': {
         this.gameId = message.gameId;
-        this.cacheState(message.state, message.actions);
         this.cacheViewForPerspective(this.playerId, message.view);
         this.cachedView = this.cloneView(message.view);
 
@@ -277,15 +262,14 @@ export class NetworkGameClient implements GameClient {
         if (this.createGameResolver) {
           this.createGameResolver({
             gameId: message.gameId,
-            view: message.view,
-            state: message.state
+            view: message.view
           });
           delete this.createGameResolver;
           delete this.createGameRejecter;
         }
 
-        this.resolveStateWaiters();
-        this.resolveActionWaiters(ok(this.cachedState ?? message.state));
+        this.resolveViewWaiters();
+        this.resolveActionWaiters(ok(message.view));
         this.resolveJoinResolvers();
 
         this.notifyListeners();
@@ -301,7 +285,6 @@ export class NetworkGameClient implements GameClient {
           return;
         }
 
-        this.cacheState(message.state, message.actions);
         const perspective = message.perspective ?? this.playerId;
         this.cacheViewForPerspective(perspective, message.view);
         if (perspective === this.playerId) {
@@ -309,8 +292,8 @@ export class NetworkGameClient implements GameClient {
         }
 
         this.notifyListeners();
-        this.resolveStateWaiters();
-        this.resolveActionWaiters(ok(this.cachedState ?? message.state));
+        this.resolveViewWaiters();
+        this.resolveActionWaiters(ok(message.view));
         this.resolveJoinResolvers();
         break;
       }
@@ -350,30 +333,14 @@ export class NetworkGameClient implements GameClient {
   }
 
   /**
-   * Notify all listeners of state change
+   * Notify all listeners of view change
    */
   private notifyListeners(): void {
-    if (!this.cachedState) return;
+    if (!this.cachedView) return;
 
     for (const listener of this.listeners) {
-      listener(this.cachedState);
+      listener(this.cachedView);
     }
-  }
-
-  private cacheState(
-    state: MultiplayerGameState,
-    actions: Record<string, ValidAction[]>
-  ): void {
-    this.cachedState = state;
-    this.cachedActions = new Map(
-      Object.entries(actions ?? {}).map(([playerId, actionList]) => [
-        playerId,
-        actionList.map(valid => ({
-          ...valid,
-          action: { ...valid.action }
-        }))
-      ])
-    );
   }
 
   private cacheViewForPerspective(perspective: string, view: GameView): void {
@@ -394,6 +361,16 @@ export class NetworkGameClient implements GameClient {
           action: actionClone
         };
       }),
+      transitions: view.transitions.map(transition => {
+        const actionClone = { ...transition.action };
+        if ('meta' in actionClone && actionClone.meta) {
+          actionClone.meta = JSON.parse(JSON.stringify(actionClone.meta));
+        }
+        return {
+          ...transition,
+          action: actionClone
+        };
+      }),
       players: view.players.map(player => {
         const { capabilities, ...rest } = player;
         return {
@@ -405,16 +382,16 @@ export class NetworkGameClient implements GameClient {
     };
   }
 
-  private resolveStateWaiters(): void {
-    if (!this.cachedState) return;
-    const waiters = [...this.stateWaiters];
-    this.stateWaiters = [];
+  private resolveViewWaiters(): void {
+    if (!this.cachedView) return;
+    const waiters = [...this.viewWaiters];
+    this.viewWaiters = [];
     for (const waiter of waiters) {
-      waiter(this.cachedState);
+      waiter(this.cachedView);
     }
   }
 
-  private resolveActionWaiters(result: Result<MultiplayerGameState>): void {
+  private resolveActionWaiters(result: Result<GameView>): void {
     if (this.actionWaiters.length === 0) return;
     const waiters = [...this.actionWaiters];
     this.actionWaiters = [];
@@ -424,14 +401,19 @@ export class NetworkGameClient implements GameClient {
   }
 
   private resolveJoinResolvers(): void {
-    if (!this.cachedState) return;
+    if (!this.cachedView) return;
     for (const [playerId, resolver] of [...this.joinResolvers.entries()]) {
-      const session = this.cachedState.players.find(p => p.playerId === playerId);
-      if (session) {
-        resolver(ok({
-          ...session,
-          capabilities: session.capabilities.map(cap => ({ ...cap }))
-        }));
+      const playerInfo = this.cachedView.players.find(p => p.sessionId === playerId);
+      if (playerInfo) {
+        const session: PlayerSession = {
+          playerId: playerInfo.sessionId ?? `player-${playerInfo.playerId}`,
+          playerIndex: playerInfo.playerId as 0 | 1 | 2 | 3,
+          controlType: playerInfo.controlType,
+          isConnected: playerInfo.connected,
+          name: playerInfo.name ?? `Player ${playerInfo.playerId + 1}`,
+          capabilities: playerInfo.capabilities?.map(cap => ({ ...cap })) ?? []
+        };
+        resolver(ok(session));
         this.joinResolvers.delete(playerId);
       }
     }
@@ -445,7 +427,7 @@ export class NetworkGameClient implements GameClient {
     this.joinResolvers.clear();
   }
 
-  private removeActionWaiter(waiter: (result: Result<MultiplayerGameState>) => void): void {
+  private removeActionWaiter(waiter: (result: Result<GameView>) => void): void {
     const index = this.actionWaiters.indexOf(waiter);
     if (index >= 0) {
       this.actionWaiters.splice(index, 1);
@@ -510,11 +492,17 @@ export class NetworkGameClient implements GameClient {
 
   /**
    * Convenience: get cached actions for a perspective (cloned).
+   * NOTE: Only returns actions for the current cached view's perspective.
    */
   getCachedActions(playerId: string = this.playerId): ValidAction[] {
-    const actions = this.cachedActions.get(playerId);
-    if (!actions) return [];
-    return actions.map(action => ({
+    const view = this.viewsByPerspective.get(playerId) ?? this.cachedView;
+    if (!view) return [];
+
+    // Only return actions if this matches the view's perspective
+    const viewPlayer = view.players.find(p => p.sessionId === playerId);
+    if (!viewPlayer) return [];
+
+    return view.validActions.map(action => ({
       ...action,
       action: { ...action.action }
     }));
@@ -522,15 +510,27 @@ export class NetworkGameClient implements GameClient {
 
   /**
    * Convenience: get cached actions map (cloned).
+   * Returns actions per player based on cached views.
    */
   getCachedActionsMap(): Record<string, ValidAction[]> {
     const result: Record<string, ValidAction[]> = {};
-    for (const [playerId, actions] of this.cachedActions.entries()) {
-      result[playerId] = actions.map(action => ({
+
+    // Build map from all cached views
+    for (const [perspective, view] of this.viewsByPerspective.entries()) {
+      result[perspective] = view.validActions.map(action => ({
         ...action,
         action: { ...action.action }
       }));
     }
+
+    // Add current view if not already included
+    if (this.cachedView && !result[this.playerId]) {
+      result[this.playerId] = this.cachedView.validActions.map(action => ({
+        ...action,
+        action: { ...action.action }
+      }));
+    }
+
     return result;
   }
 }

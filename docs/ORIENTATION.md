@@ -342,29 +342,28 @@ executeKernelAction():
   ↓
 Room.notifyListeners():
   - For each subscriber (with perspective)
-  - buildKernelView(mpState, playerId, ctx, metadata) → filter state + actions
-  - Build update { view, state, actions }
+  - buildKernelView(mpState, playerId, ctx, metadata) → filter state + build view
+  - Build GameView { state, transitions, metadata }
   ↓
-Room broadcasts update via Transport
+Room broadcasts GameView via Transport
   ↓
 Transport.send() → connection.onMessage(STATE_UPDATE)
   ↓
 NetworkGameClient.handleServerMessage()
-  - Cache filtered state + actions map
+  - Cache GameView (filtered state + transitions)
   - Call notifyListeners()
   ↓
 gameStore subscription fires
-  - clientState.set(state)
-  - actionsByPlayer.set(actionsMap)
+  - Updates stores from view.state and view.transitions
   ↓
 Derived stores recompute
-  - gameState (FilteredGameState)
+  - gameState (from view)
   - viewProjection (UI metadata)
   ↓
 UI components reactively update
 ```
 
-**Key**: Room filters once per subscriber perspective via pure helpers, Transport routes messages, client trusts filtered data.
+**Key**: Room filters once per subscriber perspective via pure helpers, broadcasts only GameView (no unfiltered state), client trusts server completely.
 
 ---
 

@@ -1,10 +1,8 @@
 import type {
   ClientMessage,
   ServerMessage,
-  GameView,
-  ValidAction,
+  GameView
 } from '../../shared/multiplayer/protocol';
-import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer/types';
 import type { Connection } from '../../server/transports/Transport';
 
 /**
@@ -153,8 +151,6 @@ export class MockConnection implements Connection {
         type: 'STATE_UPDATE',
         gameId: this.gameId,
         view,
-        state: this.viewToMultiplayerState(view),
-        actions: this.buildActionsFromView(view),
         ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     }
@@ -173,8 +169,6 @@ export class MockConnection implements Connection {
       type: 'STATE_UPDATE',
       gameId: this.gameId,
       view,
-      state: this.viewToMultiplayerState(view),
-      actions: this.buildActionsFromView(view),
       ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
     });
   }
@@ -226,9 +220,7 @@ export class MockConnection implements Connection {
     this.broadcast({
       type: 'GAME_CREATED',
       gameId: this.gameId,
-      view,
-      state: this.viewToMultiplayerState(view),
-      actions: this.buildActionsFromView(view)
+      view
     });
   }
 
@@ -240,8 +232,6 @@ export class MockConnection implements Connection {
         type: 'STATE_UPDATE',
         gameId: this.gameId,
         view,
-        state: this.viewToMultiplayerState(view),
-        actions: this.buildActionsFromView(view),
         ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     } else {
@@ -251,8 +241,6 @@ export class MockConnection implements Connection {
         type: 'STATE_UPDATE',
         gameId: this.gameId,
         view,
-        state: this.viewToMultiplayerState(view),
-        actions: this.buildActionsFromView(view),
         ...(view.players[0]?.sessionId !== undefined ? { perspective: view.players[0]!.sessionId! } : {})
       });
     }
@@ -269,46 +257,6 @@ export class MockConnection implements Connection {
       controlType: message.controlType,
       capabilities: []
     });
-  }
-
-  private viewToMultiplayerState(view: GameView): MultiplayerGameState {
-    const players: PlayerSession[] = view.players.map(player => {
-      const session: PlayerSession = {
-        playerId: player.sessionId ?? `player-${player.playerId}`,
-        playerIndex: player.playerId as 0 | 1 | 2 | 3,
-        controlType: player.controlType,
-        isConnected: player.connected,
-        capabilities: player.capabilities?.map(cap => ({ ...cap })) ?? []
-      };
-
-      if (player.name !== undefined) {
-        session.name = player.name;
-      }
-
-      return session;
-    });
-
-    return {
-      gameId: view.metadata.gameId || this.gameId,
-      coreState: view.state as unknown as MultiplayerGameState['coreState'],
-      players
-    };
-  }
-
-  private buildActionsFromView(view: GameView): Record<string, ValidAction[]> {
-    const actions: Record<string, ValidAction[]> = {};
-    const perspectiveActions = view.validActions.map(valid => ({
-      ...valid,
-      action: { ...valid.action }
-    }));
-
-    for (const player of view.players) {
-      const sessionId = player.sessionId ?? `player-${player.playerId}`;
-      actions[sessionId] = perspectiveActions;
-    }
-
-    actions['__unfiltered__'] = perspectiveActions;
-    return actions;
   }
 
   private broadcast(message: ServerMessage): void {

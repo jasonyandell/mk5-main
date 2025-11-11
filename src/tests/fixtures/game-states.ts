@@ -174,9 +174,19 @@ function createGameView(state: GameState, validActions: ValidAction[] = []): Gam
     })),
   };
 
+  // Convert validActions to ViewTransitions
+  const transitions = validActions.map(valid => ({
+    id: JSON.stringify(valid.action),  // Simple ID for tests
+    label: valid.label,
+    action: valid.action,
+    ...(valid.group ? { group: valid.group } : {}),
+    ...(valid.recommended ? { recommended: valid.recommended } : {})
+  }));
+
   return {
     state: filteredState,
     validActions,
+    transitions,
     players: createDefaultPlayerInfo(),
     metadata: {
       gameId: 'test-game-123'
@@ -214,9 +224,19 @@ export function createCustomGameView(
     })),
   };
 
+  // Convert validActions to ViewTransitions
+  const transitions = validActions.map(valid => ({
+    id: JSON.stringify(valid.action),  // Simple ID for tests
+    label: valid.label,
+    action: valid.action,
+    ...(valid.group ? { group: valid.group } : {}),
+    ...(valid.recommended ? { recommended: valid.recommended } : {})
+  }));
+
   return {
     state: filteredState,
     validActions,
+    transitions,
     players,
     metadata: {
       gameId: 'test-game-123'
@@ -286,9 +306,19 @@ export function createObserverGameView(
 ): GameView {
   const filteredState = createFilteredState(state, observerPlayerIndex);
 
+  // Convert validActions to ViewTransitions
+  const transitions = validActions.map(valid => ({
+    id: JSON.stringify(valid.action),  // Simple ID for tests
+    label: valid.label,
+    action: valid.action,
+    ...(valid.group ? { group: valid.group } : {}),
+    ...(valid.recommended ? { recommended: valid.recommended } : {})
+  }));
+
   return {
     state: filteredState,
     validActions,
+    transitions,
     players: createDefaultPlayerInfo(),
     metadata: {
       gameId: 'test-game-123'

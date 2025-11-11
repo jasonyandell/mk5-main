@@ -66,6 +66,7 @@ if (typeof window !== 'undefined' && !isPerfectsPage) {
       return {
         state,
         validActions: [],
+        transitions: [],
         players: [],
         metadata: {
           gameId: 'unknown'
