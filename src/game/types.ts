@@ -220,34 +220,6 @@ export interface GameHistory {
   stateSnapshots: GameState[];
 }
 
-
-// Type-safe public player without hand visibility
-export interface PublicPlayer {
-  id: number;
-  name: string;
-  teamId: 0 | 1;
-  marks: number;
-  handCount: number;  // No hand field exists in type!
-}
-
-// Player-specific view with privacy
-export interface PlayerView {
-  playerId: number;
-  phase: GamePhase;
-  self: { id: number; hand: Domino[] };  // Only self has hands
-  players: PublicPlayer[];  // Others have no hand field
-  validTransitions: StateTransition[];  // Only transitions this player can take
-  consensus: {
-    completeTrick: Set<number>;
-    scoreHand: Set<number>;
-  };
-  currentTrick: Play[];
-  tricks: Trick[];
-  teamScores: [number, number];
-  teamMarks: [number, number];
-  trump: TrumpSelection;
-}
-
 export interface GameConstants {
   TOTAL_DOMINOES: 28;
   HAND_SIZE: 7;

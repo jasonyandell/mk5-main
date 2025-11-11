@@ -18,8 +18,6 @@ import type {
 } from '../../shared/multiplayer/protocol';
 import type { Connection } from '../../server/transports/Transport';
 import { selectAIAction } from '../ai/actionSelector';
-import { getNextStates } from '../core/state';
-import { createExecutionContext } from '../types/execution';
 
 /**
  * AI difficulty levels
@@ -205,79 +203,13 @@ export class AIClient {
 
     const { state } = view;
 
-    // Create execution context with default player types
-    const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
+    // Let AI strategy select best action directly from valid actions
+    const choice = selectAIAction(state, this.playerIndex, validActions);
 
-    // Convert ValidActions to StateTransitions for AI selector
-    // (This is a compatibility layer - future AI could work directly with ValidActions)
-    const allTransitions = getNextStates(state, ctx);
-    const myTransitions = allTransitions.filter(t => {
-      const action = t.action;
-      // Find matching valid action
-      return validActions.some(va => {
-        if (va.action.type !== action.type) return false;
-
-        // Match player if present
-        if ('player' in va.action && 'player' in action) {
-          if (va.action.player !== action.player) return false;
-        }
-
-        // Match other fields based on type
-        switch (action.type) {
-          case 'bid':
-            return 'bid' in va.action &&
-                   va.action.bid === action.bid &&
-                   va.action.value === action.value;
-          case 'select-trump':
-            return 'trump' in va.action &&
-                   JSON.stringify(va.action.trump) === JSON.stringify(action.trump);
-          case 'play':
-            return 'dominoId' in va.action && 'dominoId' in action &&
-                   va.action.dominoId === action.dominoId;
-          default:
-            return true;
-        }
-      });
-    });
-
-    // Let AI strategy select best action
-    const choice = selectAIAction(state, this.playerIndex, myTransitions);
-
-    if (!choice) {
-      // Fallback: pick first valid action
-      const firstAction = validActions[0];
-      if (firstAction) {
-        this.executeAction(firstAction);
-      }
-      return;
-    }
-
-    // Find matching ValidAction for the choice
-    const validAction = validActions.find(va => {
-      const action = choice.action;
-      if (va.action.type !== action.type) return false;
-
-      // Match fields based on type
-      switch (action.type) {
-        case 'bid':
-          return 'bid' in va.action &&
-                 va.action.bid === action.bid &&
-                 va.action.value === action.value;
-        case 'select-trump':
-          return 'trump' in va.action &&
-                 JSON.stringify(va.action.trump) === JSON.stringify(action.trump);
-        case 'play':
-          return 'dominoId' in va.action && 'dominoId' in action &&
-                 va.action.dominoId === action.dominoId;
-        default:
-          return true;
-      }
-    });
-
-    if (validAction) {
-      this.executeAction(validAction);
+    if (choice) {
+      this.executeAction(choice);
     } else {
-      // Fallback: pick first action
+      // Fallback: pick first valid action
       const firstAction = validActions[0];
       if (firstAction) {
         this.executeAction(firstAction);

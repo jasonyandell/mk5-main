@@ -12,9 +12,7 @@ export type {
   GameAction,
   GameHistory,
   GamePhase,
-  GameConstants,
-  PlayerView,
-  PublicPlayer
+  GameConstants
 } from './types';
 
 
@@ -72,9 +70,6 @@ export {
   createInitialStateWithActionTransformers,
   applyActionWithHistory
 } from './core/replay';
-
-// Player view system
-export { getPlayerView } from './core/playerView';
 
 // Rule validation
 // NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:

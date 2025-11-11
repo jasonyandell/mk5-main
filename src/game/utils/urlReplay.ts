@@ -1,7 +1,8 @@
-import { createInitialState, getNextStates } from '../index';
 import { decodeGameUrl } from '../core/url-compression';
-import { createExecutionContext } from '../types/execution';
+import { HeadlessRoom } from '../../server/HeadlessRoom';
 import type { GameState } from '../types';
+import { getNextStates } from '../core/state';
+import { createExecutionContext } from '../types/execution';
 
 export interface ReplayOptions {
   stopAt?: number;
@@ -37,14 +38,19 @@ export function replayActions(
   actions: string[],
   options: ReplayOptions = {}
 ): ReplayResult {
-  let currentState = createInitialState({ shuffleSeed: seed });
+  // Create HeadlessRoom for replay
+  const room = new HeadlessRoom(
+    { playerTypes: ['human', 'human', 'human', 'human'] },
+    seed
+  );
+
+  // Create execution context for transition matching
+  const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
+
   const errors: string[] = [];
   let actionCount = 0;
   let currentHand = 1;
   let handStartAction = 0;
-
-  // Create execution context once for all state lookups
-  const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
 
   // If focusHand is set, skip to that hand
   if (options.focusHand) {
@@ -58,10 +64,25 @@ export function replayActions(
           handStartAction = i + 1;
           // Fast-forward to this point
           for (let j = 0; j <= i; j++) {
-            const transitions = getNextStates(currentState, ctx);
             const actionJ = actions[j];
-            const transition = actionJ ? transitions.find(t => t.id === actionJ) : undefined;
-            if (transition) currentState = transition.newState;
+            if (!actionJ) continue;
+
+            // Get current state and transitions
+            const currentState = room.getState();
+            const transitions = getNextStates(currentState, ctx);
+            const matchingTransition = transitions.find(t => t.id === actionJ);
+
+            if (matchingTransition) {
+              // Determine which player should execute
+              const executingPlayer = 'player' in matchingTransition.action
+                ? matchingTransition.action.player
+                : 0;
+              try {
+                room.executeAction(executingPlayer, matchingTransition.action);
+              } catch {
+                // Skip errors during fast-forward
+              }
+            }
           }
           break;
         }
@@ -76,6 +97,8 @@ export function replayActions(
       break;
     }
 
+    const currentState = room.getState();
+
     // Stop if we're past the focused hand
     const currentActionForCheck = actions[i];
     if (options.focusHand && currentActionForCheck && currentActionForCheck === 'score-hand' && i > handStartAction) {
@@ -84,15 +107,17 @@ export function replayActions(
 
     const actionId = actions[i];
     if (!actionId) continue;
-    const availableTransitions = getNextStates(currentState, ctx);
-    const matchingTransition = availableTransitions.find(t => t.id === actionId);
+
+    // Get available transitions (they have IDs)
+    const transitions = getNextStates(currentState, ctx);
+    const matchingTransition = transitions.find(t => t.id === actionId);
 
     if (!matchingTransition) {
-      const availableIds = availableTransitions.map(t => t.id).join(', ');
+      const availableIds = transitions.map(t => t.id).join(', ');
       const error = `Action ${i}: Invalid action "${actionId}". ` +
                    `Phase: ${currentState.phase}, Available: [${availableIds}]`;
       errors.push(error);
-      
+
       if (options.verbose || (options.actionRangeStart !== undefined && i >= options.actionRangeStart && i <= (options.actionRangeEnd || i))) {
         console.error(error);
       }
@@ -101,8 +126,25 @@ export function replayActions(
 
     const prevPhase = currentState.phase;
     const prevScores = [...currentState.teamScores];
-    currentState = matchingTransition.newState;
-    actionCount++;
+
+    // Execute the action
+    try {
+      const executingPlayer = 'player' in matchingTransition.action
+        ? matchingTransition.action.player
+        : 0;
+      room.executeAction(executingPlayer, matchingTransition.action);
+      actionCount++;
+    } catch (e) {
+      const error = `Action ${i}: Execution failed for "${actionId}": ${e instanceof Error ? e.message : 'Unknown error'}`;
+      errors.push(error);
+
+      if (options.verbose || (options.actionRangeStart !== undefined && i >= options.actionRangeStart && i <= (options.actionRangeEnd || i))) {
+        console.error(error);
+      }
+      break;
+    }
+
+    const newState = room.getState();
 
     // Determine if we should show this action
     const inRange = !options.actionRangeStart || (i >= options.actionRangeStart && i <= (options.actionRangeEnd || i));
@@ -110,29 +152,29 @@ export function replayActions(
 
     if (options.compact && shouldShow) {
       // Compact one-line format
-      const scoreChange = (prevScores[0] !== currentState.teamScores[0] || prevScores[1] !== currentState.teamScores[1])
-        ? ` [${prevScores}] → [${currentState.teamScores}]`
+      const scoreChange = (prevScores[0] !== newState.teamScores[0] || prevScores[1] !== newState.teamScores[1])
+        ? ` [${prevScores}] → [${newState.teamScores}]`
         : '';
-      const phaseChange = prevPhase !== currentState.phase ? ` ${currentState.phase.toUpperCase()}` : '';
+      const phaseChange = prevPhase !== newState.phase ? ` ${newState.phase.toUpperCase()}` : '';
       console.log(`${i}: ${actionId}${scoreChange}${phaseChange}`);
     } else if (shouldShow && !options.showTricks) {
-      console.log(`Action ${i}: ${actionId} (Phase: ${prevPhase} → ${currentState.phase}`);
+      console.log(`Action ${i}: ${actionId} (Phase: ${prevPhase} → ${newState.phase}`);
     }
 
     // Show tricks if requested
     if (options.showTricks && actionId === 'complete-trick') {
-      const trickNum = currentState.tricks.length;
-      const trick = currentState.tricks[trickNum - 1];
+      const trickNum = newState.tricks.length;
+      const trick = newState.tricks[trickNum - 1];
       if (trick) {
-        const winner = trick.winner !== undefined ? currentState.players[trick.winner] : undefined;
-      if (!winner) continue;
+        const winner = trick.winner !== undefined ? newState.players[trick.winner] : undefined;
+        if (!winner) continue;
         console.log(`Trick ${trickNum}: Won by P${trick.winner} (team ${winner.teamId}) → ${trick.points + 1} points`);
       }
     }
   }
 
   return {
-    state: currentState,
+    state: room.getState(),
     actionCount,
     errors: errors.length > 0 ? errors : []
   };

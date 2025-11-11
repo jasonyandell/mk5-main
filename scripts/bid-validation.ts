@@ -7,8 +7,8 @@
  * Tracks success rates for different bid levels and hand strengths.
  */
 
-import { createInitialState, getNextStates, executeAction } from '../src/game';
-import { createExecutionContext } from '../src/game/types/execution';
+import { createInitialState } from '../src/game';
+import { HeadlessRoom } from '../src/server/HeadlessRoom';
 import { BeginnerAIStrategy } from '../src/game/ai/strategies';
 import { calculateHandStrengthWithTrump } from '../src/game/ai/hand-strength';
 import type { GameState, TrumpSelection } from '../src/game/types';
@@ -39,10 +39,14 @@ const aiStrategy = new BeginnerAIStrategy();
  * Run a single hand and track the bid outcome
  */
 async function playHand(initialState: GameState) {
-  let gameState = initialState;
-
-  // Create execution context once for all state lookups
-  const ctx = createExecutionContext({ playerTypes: ['ai', 'ai', 'ai', 'ai'] });
+  // Create HeadlessRoom for the game
+  const room = new HeadlessRoom(
+    {
+      playerTypes: ['ai', 'ai', 'ai', 'ai'],
+      shuffleSeed: initialState.shuffleSeed
+    },
+    initialState.shuffleSeed
+  );
 
   // Track the winning bid info
   interface BidInfo {
@@ -62,20 +66,22 @@ async function playHand(initialState: GameState) {
   let handComplete = false;
   let handsPlayed = 0;
 
-  while (!handComplete && gameState.phase !== 'game_end') {
-    const transitions = getNextStates(gameState, ctx);
-    
-    if (transitions.length === 0) {
+  while (!handComplete && room.getState().phase !== 'game_end') {
+    const gameState = room.getState();
+    const actionsMap = room.getAllActions();
+    const allActions = Object.values(actionsMap).flat();
+
+    if (allActions.length === 0) {
       // No valid moves, shouldn't happen but let's handle it
       break;
     }
-    
+
     // During bidding, capture bid info
     if (gameState.phase === 'bidding') {
       const currentPlayer = gameState.players[gameState.currentPlayer!];
       // Use null like the AI does to force proper trump analysis
       const handStrength = calculateHandStrengthWithTrump(currentPlayer!.hand, undefined);
-      
+
       // Track laydowns with logging
       if (handStrength === 999) {
         if (!foundLaydownThisHand) { // Only count once per hand
@@ -84,16 +90,16 @@ async function playHand(initialState: GameState) {
           console.log(`🎯 LAYDOWN #${laydownsFound} at hand ${totalHands + 1}: Player ${gameState.currentPlayer} with ${currentPlayer!.hand.map(d => `${d.high}-${d.low}`).join(', ')}`);
         }
       }
-      
-      
+
+
       // Choose action
-      const chosenTransition = aiStrategy.chooseAction(gameState, transitions);
-      
+      const chosenTransition = aiStrategy.chooseAction(gameState, allActions);
+
       // Remove debug logging for cleaner output
-      
+
       if (chosenTransition && chosenTransition.action.type === 'bid') {
         const bidAction = chosenTransition.action;
-        
+
         // Store laydown bid info separately
         if (handStrength === 999) {
           if (bidAction.bid === 'points' && bidAction.value) {
@@ -118,13 +124,32 @@ async function playHand(initialState: GameState) {
           }
         }
       }
-      
+
       // Execute the transition
       if (chosenTransition) {
-        gameState = executeAction(gameState, chosenTransition.action);
+        const executingPlayer = 'player' in chosenTransition.action
+          ? chosenTransition.action.player
+          : gameState.currentPlayer;
+        try {
+          room.executeAction(executingPlayer, chosenTransition.action);
+        } catch (e) {
+          console.error('Failed to execute action:', e);
+          break;
+        }
       } else {
         // AI couldn't choose, pick first valid
-        gameState = executeAction(gameState, transitions[0]!.action);
+        const firstAction = allActions[0];
+        if (firstAction) {
+          const executingPlayer = 'player' in firstAction.action
+            ? firstAction.action.player
+            : gameState.currentPlayer;
+          try {
+            room.executeAction(executingPlayer, firstAction.action);
+          } catch (e) {
+            console.error('Failed to execute action:', e);
+            break;
+          }
+        }
       }
     } else if (gameState.phase === 'trump_selection' && !winningBidInfo) {
       // Bidding just ended - capture the actual winner (only once!)
@@ -154,46 +179,86 @@ async function playHand(initialState: GameState) {
           
         }
       }
-      
+
+
       // Continue with trump selection
-      const chosenTransition = aiStrategy.chooseAction(gameState, transitions);
+      const chosenTransition = aiStrategy.chooseAction(gameState, allActions);
       if (chosenTransition) {
-        gameState = executeAction(gameState, chosenTransition.action);
+        const executingPlayer = 'player' in chosenTransition.action
+          ? chosenTransition.action.player
+          : gameState.currentPlayer;
+        try {
+          room.executeAction(executingPlayer, chosenTransition.action);
+        } catch (e) {
+          console.error('Failed to execute action:', e);
+          break;
+        }
       } else {
-        gameState = executeAction(gameState, transitions[0]!.action);
+        const firstAction = allActions[0];
+        if (firstAction) {
+          const executingPlayer = 'player' in firstAction.action
+            ? firstAction.action.player
+            : gameState.currentPlayer;
+          try {
+            room.executeAction(executingPlayer, firstAction.action);
+          } catch (e) {
+            console.error('Failed to execute action:', e);
+            break;
+          }
+        }
       }
     } else {
       // Not bidding - just play normally
-      const chosenTransition = aiStrategy.chooseAction(gameState, transitions);
-      
+      const chosenTransition = aiStrategy.chooseAction(gameState, allActions);
+
       if (chosenTransition) {
-        gameState = executeAction(gameState, chosenTransition.action);
+        const executingPlayer = 'player' in chosenTransition.action
+          ? chosenTransition.action.player
+          : gameState.currentPlayer;
+        try {
+          room.executeAction(executingPlayer, chosenTransition.action);
+
+          // Check if we've completed scoring (one hand is done)
+          const newState = room.getState();
+          if (gameState.phase === 'scoring' && chosenTransition.action.type === 'agree-score-hand') {
+            // If all players agreed to score, the next phase will be bidding for a new hand
+            if (newState.phase === 'bidding' && handsPlayed === 0) {
+              // We just finished scoring our first hand
+              handsPlayed++;
+              handComplete = true;
+            }
+          }
+        } catch (e) {
+          console.error('Failed to execute action:', e);
+          break;
+        }
       } else {
         // AI couldn't choose, pick first valid
-        gameState = executeAction(gameState, transitions[0]!.action);
-      }
-      
-      // Check if we've completed scoring (one hand is done)
-      if (gameState.phase === 'scoring' && chosenTransition?.action.type === 'agree-score-hand') {
-        // If all players agreed to score, the next phase will be bidding for a new hand
-        const nextState = executeAction(gameState, chosenTransition.action);
-        if (nextState.phase === 'bidding' && handsPlayed === 0) {
-          // We just finished scoring our first hand
-          handsPlayed++;
-          handComplete = true;
-          gameState = nextState;
+        const firstAction = allActions[0];
+        if (firstAction) {
+          const executingPlayer = 'player' in firstAction.action
+            ? firstAction.action.player
+            : gameState.currentPlayer;
+          try {
+            room.executeAction(executingPlayer, firstAction.action);
+          } catch (e) {
+            console.error('Failed to execute action:', e);
+            break;
+          }
         }
       }
     }
-    
+
   }
-  
+
+  const finalState = room.getState();
+
   // After the hand is complete (reached scoring phase), track the outcome ONCE
-  if ((gameState.phase === 'scoring' || gameState.phase === 'game_end') && winningBidInfo && !handComplete) {
+  if ((finalState.phase === 'scoring' || finalState.phase === 'game_end') && winningBidInfo && !handComplete) {
     handComplete = true; // Mark as complete to avoid double-counting
     // Use the game's own score tracking
     const biddingTeam = winningBidInfo.teamId;
-    const teamScore = gameState.teamScores[biddingTeam] || 0;
+    const teamScore = finalState.teamScores[biddingTeam] || 0;
     
     // Record the outcome
     const madeBid = (teamScore || 0) >= winningBidInfo.bidValue;
@@ -202,7 +267,8 @@ async function playHand(initialState: GameState) {
     // Track laydown results silently
     
     
-    
+
+
     bidOutcomes.push({
       bidValue: winningBidInfo.bidValue,
       bidType: winningBidInfo.bidType || 'points',
@@ -211,7 +277,7 @@ async function playHand(initialState: GameState) {
       actualScore: teamScore || 0,
       madeBid: madeBid,
       margin: margin,
-      trump: gameState.trump
+      trump: finalState.trump
     });
     
     totalHands++;

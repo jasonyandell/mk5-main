@@ -187,6 +187,65 @@ this.ctx = Object.freeze({
 
 ---
 
+## HeadlessRoom API (for Tools and Simulations)
+
+For tools, scripts, and simulations that need deterministic game execution without the full transport layer, use **HeadlessRoom**:
+
+```typescript
+import { HeadlessRoom } from '@/server/HeadlessRoom';
+
+// Create room with config and seed
+const room = new HeadlessRoom(config, seed);
+
+// Execute actions directly
+room.executeAction(playerId, action);
+
+// Get current state
+const state = room.getState();
+
+// Get filtered view for a player
+const view = room.getView(playerId);
+```
+
+### When to Use HeadlessRoom
+
+**Use HeadlessRoom for:**
+- **Simulation tools** (gameSimulator) - Run AI vs AI games
+- **Replay utilities** (urlReplay) - Deterministic replay from URLs
+- **Scripts and CLI tools** - Command-line game execution
+- **Performance testing** - Batch processing without transport overhead
+- **Debugging tools** - Direct state inspection and manipulation
+
+**Do NOT use HeadlessRoom for:**
+- **Production game instances** - Use Room (includes transport, sessions, AI management)
+- **Unit tests of composition** - Use `createTestContext()` from test helpers
+- **Multiplayer games** - Use Room with proper transport layer
+
+### HeadlessRoom vs Room
+
+| Feature | Room | HeadlessRoom |
+|---------|------|--------------|
+| **Purpose** | Production multiplayer | Tools & simulations |
+| **Transport** | ✅ Full protocol support | ❌ None (direct API) |
+| **Sessions** | ✅ Multi-session mgmt | ❌ Single execution context |
+| **AI Management** | ✅ Spawn/destroy AI | ❌ Manual AI execution |
+| **Filtering** | ✅ Per-perspective views | ✅ View API available |
+| **Composition** | ✅ Full ExecutionContext | ✅ Full ExecutionContext |
+| **Use case** | Real games | Scripts & testing |
+
+### Design Philosophy
+
+Both Room and HeadlessRoom compose ExecutionContext the same way - they are the **ONLY** places where composition happens. This ensures:
+
+1. **Configuration consistency** - Same rules everywhere
+2. **Clear ownership** - Composition logic in one place
+3. **Enforced invariants** - ESLint prevents direct composition elsewhere
+4. **Testability** - Clear boundaries for what's being tested
+
+---
+
+---
+
 ## File Map
 
 **Core Engine** (pure utilities):
@@ -431,7 +490,10 @@ Flags → getEnabledRuleSets() → compose in Room constructor.
 1. **Pure State Storage**: Room stores unfiltered GameState, filters on-demand per request
 2. **Server Authority**: Client trusts server's validActions list, never refilters
 3. **Capability-Based Access**: Permissions via capability tokens, not identity checks
-4. **Single Composition Point**: Room constructor is ONLY place rulesets/action-transformers compose
+4. **Single Composition Point**: Room/HeadlessRoom are ONLY places where ExecutionContext is composed
+   - ✅ Enforced via ESLint rules (`no-restricted-imports`)
+   - ✅ Verified by architecture tests (`composition.test.ts`)
+   - ✅ Documented in ADR-20251110-single-composition-point.md
 5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/action-transformers/special contracts
 6. **Parametric Polymorphism**: Executors call `rules.method()`, never `if (nello)`
 7. **Event Sourcing**: State derivable from `replayActions(config, history)`

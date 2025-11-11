@@ -1,4 +1,5 @@
 import type { GameState, StateTransition } from '../types';
+import type { ValidAction } from '../../shared/multiplayer/protocol';
 
 /**
  * Interface for player controllers - both human and AI.
@@ -6,13 +7,13 @@ import type { GameState, StateTransition } from '../types';
  */
 export interface PlayerController {
   readonly playerId: number;
-  
+
   /**
    * Called whenever game state changes.
    * Controller decides if it needs to take action.
    */
   onStateChange(state: GameState, availableTransitions: StateTransition[]): void;
-  
+
   /**
    * Cleanup when controller is removed
    */
@@ -33,10 +34,10 @@ export interface PlayerConfig {
  */
 export interface AIStrategy {
   /**
-   * Choose an action from available transitions
+   * Choose an action from available valid actions
    */
-  chooseAction(state: GameState, transitions: StateTransition[]): StateTransition;
-  
+  chooseAction(state: GameState, validActions: ValidAction[]): ValidAction;
+
   /**
    * Get thinking time in milliseconds
    */

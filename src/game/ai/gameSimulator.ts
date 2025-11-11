@@ -3,11 +3,11 @@
  * Runs games to completion using AI players.
  */
 
-import type { GameState, GameAction } from '../types';
-import { createInitialState, getNextStates } from '../core/state';
-import { executeAction } from '../core/actions';
+import type { GameState } from '../types';
+import { createInitialState } from '../core/state';
 import { selectAIAction } from './actionSelector';
-import { createExecutionContext } from '../types/execution';
+import { HeadlessRoom } from '../../server/HeadlessRoom';
+import type { ValidAction } from '../../shared/multiplayer/protocol';
 
 /**
  * Options for game simulation
@@ -55,23 +55,28 @@ export async function simulateGame(
     verbose = false
   } = options;
 
-  let state = { ...initialState };
-  let handsPlayed = 0;
-  let actionsExecuted = 0;
-  let lastPhase = state.phase;
-
   // Override player types if all AI
-  if (allAI) {
-    state.playerTypes = ['ai', 'ai', 'ai', 'ai'];
-  }
+  const playerTypes: ('human' | 'ai')[] = allAI ? ['ai', 'ai', 'ai', 'ai'] : initialState.playerTypes;
 
-  // Create ExecutionContext once for the entire simulation
-  const ctx = createExecutionContext({
-    playerTypes: state.playerTypes
-  });
+  // Create HeadlessRoom with the game configuration
+  const room = new HeadlessRoom(
+    {
+      playerTypes,
+      shuffleSeed: initialState.shuffleSeed,
+      theme: initialState.theme,
+      colorOverrides: initialState.colorOverrides
+    },
+    initialState.shuffleSeed
+  );
+
+  let actionsExecuted = 0;
+  let handsPlayed = 0;
+  let lastPhase = room.getState().phase;
 
   // Run game until completion or limits reached
-  while (state.phase !== 'game_end' && actionsExecuted < maxActions) {
+  while (room.getState().phase !== 'game_end' && actionsExecuted < maxActions) {
+    const state = room.getState();
+
     // Track hand transitions
     if (state.phase === 'bidding' && lastPhase === 'scoring') {
       handsPlayed++;
@@ -82,10 +87,11 @@ export async function simulateGame(
     }
     lastPhase = state.phase;
 
-    // Get valid actions using composed ExecutionContext
-    const validActions = ctx.getValidActions(state);
+    // Get all valid actions
+    const actionsMap = room.getAllActions();
+    const allActions: ValidAction[] = Object.values(actionsMap).flat();
 
-    if (validActions.length === 0) {
+    if (allActions.length === 0) {
       if (verbose) console.log('No valid actions available');
       break;
     }
@@ -93,42 +99,31 @@ export async function simulateGame(
     // Determine current player
     const currentPlayer = state.currentPlayer;
 
-    // Check for consensus actions (available to all)
-    const consensusAction = validActions.find(action =>
-      action.type === 'agree-score-hand' ||
-      action.type === 'complete-trick' ||
-      action.type === 'score-hand'
+    // Check for consensus actions (autoExecute will handle these)
+    const consensusAction = allActions.find(va =>
+      va.action.type === 'complete-trick' ||
+      va.action.type === 'score-hand' ||
+      va.action.autoExecute === true
     );
 
-    let selectedAction: GameAction | undefined;
+    let selectedAction: ValidAction | undefined;
 
     if (consensusAction) {
-      // Immediate consensus for AI players
+      // Use consensus action (will be auto-executed)
       selectedAction = consensusAction;
     } else {
       // Get player-specific actions
-      const playerActions = validActions.filter(action => {
-        if (!('player' in action)) return true;
-        return action.player === currentPlayer;
-      });
+      const playerActions = room.getValidActions(currentPlayer);
 
       if (playerActions.length === 0) {
         if (verbose) console.log(`No actions for player ${currentPlayer}`);
         break;
       }
 
-      // For AI players, select action
-      if (state.playerTypes[currentPlayer] === 'ai') {
-        // Get transitions for AI selector using ExecutionContext
-        const transitions = getNextStates(state, ctx);
-        const playerTransitions = transitions.filter(t => {
-          const action = t.action;
-          if (!('player' in action)) return true;
-          return action.player === currentPlayer;
-        });
-
-        const selected = selectAIAction(state, currentPlayer, playerTransitions);
-        selectedAction = selected?.action;
+      // For AI players, select action using AI selector
+      if (playerTypes[currentPlayer] === 'ai') {
+        const selected = selectAIAction(state, currentPlayer, playerActions);
+        selectedAction = selected ?? undefined;
       } else {
         // For human players in simulation, pick first action
         selectedAction = playerActions[0];
@@ -140,15 +135,19 @@ export async function simulateGame(
       break;
     }
 
-    // Execute action using composed rules from ExecutionContext
-    const newState = executeAction(state, selectedAction, ctx.rules);
-    if (!newState) {
-      if (verbose) console.log('Action execution failed');
+    // Execute action through HeadlessRoom
+    try {
+      // Determine which player should execute this action
+      const executingPlayer = 'player' in selectedAction.action
+        ? selectedAction.action.player
+        : currentPlayer;
+
+      room.executeAction(executingPlayer, selectedAction.action);
+      actionsExecuted++;
+    } catch (error) {
+      if (verbose) console.log('Action execution failed:', error);
       break;
     }
-
-    state = newState;
-    actionsExecuted++;
 
     // Yield to event loop periodically
     if (actionsExecuted % 100 === 0) {
@@ -156,20 +155,22 @@ export async function simulateGame(
     }
   }
 
+  const finalState = room.getState();
+
   // Count hands if we started mid-hand
-  if (handsPlayed === 0 && state.phase !== 'bidding') {
+  if (handsPlayed === 0 && finalState.phase !== 'bidding') {
     handsPlayed = 1;
   }
 
   // Determine winner
-  const winner = state.teamScores[0] > state.teamScores[1] ? 0 : 1;
+  const winner = finalState.teamScores[0] > finalState.teamScores[1] ? 0 : 1;
 
   return {
     winner,
-    finalScores: [state.teamScores[0], state.teamScores[1]],
+    finalScores: [finalState.teamScores[0], finalState.teamScores[1]],
     handsPlayed,
     actionsExecuted,
-    finalState: state
+    finalState
   };
 }
 

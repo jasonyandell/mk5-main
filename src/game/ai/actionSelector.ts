@@ -1,4 +1,5 @@
-import type { GameState, StateTransition } from '../types';
+import type { GameState } from '../types';
+import type { ValidAction } from '../../shared/multiplayer/protocol';
 import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
 import type { AIStrategy } from './types';
 
@@ -24,29 +25,29 @@ function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy 
 export function selectAIAction(
   state: GameState,
   playerId: number,
-  availableTransitions: StateTransition[]
-): StateTransition | null {
+  validActions: ValidAction[]
+): ValidAction | null {
   // Filter to only this player's actions
-  const myTransitions = availableTransitions.filter(t => {
+  const myActions = validActions.filter(va => {
     // Actions without a player field are available to everyone
-    if (!('player' in t.action)) {
+    if (!('player' in va.action)) {
       return true;
     }
     // Actions with a player field are only for that player
-    return t.action.player === playerId;
+    return va.action.player === playerId;
   });
 
-  if (myTransitions.length === 0) return null;
+  if (myActions.length === 0) return null;
 
   // AI players should immediately agree to consensus actions
-  const consensusAction = myTransitions.find(t =>
-    t.action.type === 'agree-complete-trick' ||
-    t.action.type === 'agree-score-hand'
+  const consensusAction = myActions.find(va =>
+    va.action.type === 'agree-complete-trick' ||
+    va.action.type === 'agree-score-hand'
   );
   if (consensusAction) {
     return consensusAction;
   }
 
   const strategy = getStrategyForPlayer(playerId, state);
-  return strategy.chooseAction(state, myTransitions);
+  return strategy.chooseAction(state, myActions);
 }

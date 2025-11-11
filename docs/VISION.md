@@ -24,7 +24,8 @@ Purpose: a living north star that states why we're building this, what outcomes 
 - Event‑sourced, pure core: state is derived from history; transformations are pure and immutable.
 - Server authority and trust boundary: clients never revalidate or refilter server decisions.
 - Capability‑based access: permissions are tokens, not identity checks.
-- Single composition point: rules (RuleSets) and ActionTransformers compose once in the kernel.
+- Single composition point: Room/HeadlessRoom are the ONLY places where ExecutionContext is composed.
+  - Enforced via tooling: ESLint rules prevent violations; architecture tests verify compliance.
 - Parametric polymorphism: executors call rules; they never inspect state to branch on modes.
 - Zero coupling: engine is unaware of multiplayer, transport, persistence, or UI.
 - Filter on demand: unfiltered state at rest; per‑request visibility filtering.
@@ -82,7 +83,8 @@ These mirror the Architectural Invariants and define regressions if violated.
 - Determinism: property tests pass across environments; seed+history reproduces state byte‑for‑byte.
 - Latency: action execute→broadcast P95 within SLOs per transport; client render idle to interactive < 50ms per update.
 - Stability: memory/CPU stable under 4 players + 25 spectators for 30 minutes.
-- Quality: invariant test suite 100% green on main; zero regressions on “must‑not‑break” scenarios.
+- Quality: invariant test suite 100% green on main; zero regressions on "must‑not‑break" scenarios.
+- Architectural Integrity: ESLint catches composition violations at build time; architecture tests pass; single composition point enforced.
 - Adoption: number of shared URL replays opened; tutorial/spectator session minutes per week.
 
 ---
