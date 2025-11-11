@@ -116,7 +116,7 @@ class GameStoreImpl {
           id: t.id,
           label: t.label,
           action: t.action,
-          newState: $view.state as any  // Placeholder - not used by createViewProjection
+          newState: $view.state  // Placeholder - not used by createViewProjection
         }));
 
         const viewProjectionOptions = {

@@ -4,10 +4,16 @@
  * This is a "dumb" client that speaks protocol only.
  * NO game engine imports allowed - only protocol types!
  *
+ * TRUST BOUNDARY:
+ * - Client trusts server completely - never revalidates actions or game state
+ * - Server is authoritative for all game state transitions and valid action validation
+ * - Client responsibility: cache filtered state for fast access, render UI projections, send action requests
+ * - Client does NOT: validate actions, recompute state, check rules, or second-guess server
+ *
  * Design principles:
  * - Implements GameClient interface for compatibility
  * - Translates GameClient methods to protocol messages
- * - Caches GameView for fast local reads
+ * - Caches GameView for fast local reads (read-only copies)
  * - Works with any Connection (in-process, Worker, WebSocket)
  * - Trusts server completely - no local validation or recomputation
  */
@@ -131,6 +137,10 @@ export class NetworkGameClient implements GameClient {
 
   /**
    * Execute an action for a player session.
+   *
+   * TRUST MODEL: Client sends request to server without validation.
+   * Server is authoritative - it will reject invalid actions or reply with valid game state.
+   * Client waits for STATE_UPDATE or ERROR response; never performs local recomputation.
    */
   async executeAction(request: ActionRequest): Promise<Result<GameView>> {
     if (this.initPromise) {
@@ -147,6 +157,8 @@ export class NetworkGameClient implements GameClient {
       this.actionWaiters.push(resolve);
       void (async () => {
         try {
+          // Send action request to server - server validates and executes
+          // Client trusts server completely for validation and state transitions
           await this.connection.send({
             type: 'EXECUTE_ACTION',
             gameId,
@@ -154,6 +166,7 @@ export class NetworkGameClient implements GameClient {
             action: request.action
           });
         } catch (error) {
+          // Network error only - not action validation error
           this.removeActionWaiter(resolve);
           resolve(err(error instanceof Error ? error.message : String(error)));
         }
@@ -250,10 +263,15 @@ export class NetworkGameClient implements GameClient {
 
   /**
    * Handle server messages
+   *
+   * TRUST BOUNDARY: All messages from server are accepted as authoritative.
+   * Client only caches views and notifies listeners - no validation or transformation.
    */
   private handleServerMessage(message: ServerMessage): void {
     switch (message.type) {
       case 'GAME_CREATED': {
+        // Server has created game - store gameId and initial state
+        // Client trusts server's initial state without revalidation
         this.gameId = message.gameId;
         this.cacheViewForPerspective(this.playerId, message.view);
         this.cachedView = this.cloneView(message.view);
@@ -285,6 +303,8 @@ export class NetworkGameClient implements GameClient {
           return;
         }
 
+        // Server has computed new state - cache it as-is without revalidation
+        // Server is authoritative; client does not recompute or verify transitions
         const perspective = message.perspective ?? this.playerId;
         this.cacheViewForPerspective(perspective, message.view);
         if (perspective === this.playerId) {
@@ -299,6 +319,7 @@ export class NetworkGameClient implements GameClient {
       }
 
       case 'ERROR': {
+        // Server rejected action - accept error message without further interpretation
         console.error('Server error:', message.error);
         if (message.requestType === 'EXECUTE_ACTION') {
           this.resolveActionWaiters(err(message.error));
@@ -311,7 +332,7 @@ export class NetworkGameClient implements GameClient {
 
       case 'PLAYER_STATUS':
         if (message.gameId === this.gameId && this.cachedView) {
-          // Update player info in cached view
+          // Update player info in cached view with server-provided status
           const player = this.cachedView.players.find(p => p.playerId === message.playerId);
           if (player) {
             if (message.controlType !== undefined) {

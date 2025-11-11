@@ -3,6 +3,7 @@ import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
 import { NO_LEAD_SUIT, NO_BIDDER } from '../../game/types';
+import type { StateTransition } from '../../game/types';
 
 describe('Refactor Validation', () => {
   it('should have no nullable fields in initial state', () => {
@@ -27,7 +28,7 @@ describe('Refactor Validation', () => {
     expect(transitions.length).toBeGreaterThan(0);
 
     // Each transition should have the expected properties
-    transitions.forEach((transition: any) => {
+    transitions.forEach((transition: StateTransition) => {
       expect(transition).toHaveProperty('id');
       expect(transition).toHaveProperty('label');
       expect(transition).toHaveProperty('newState');

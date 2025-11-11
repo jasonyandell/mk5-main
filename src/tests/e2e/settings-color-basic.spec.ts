@@ -1,5 +1,4 @@
 /* global getComputedStyle */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { test, expect } from '@playwright/test';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 

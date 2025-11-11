@@ -1,14 +1,18 @@
 /**
- * Test to verify that gameEngine uses threaded rules for validation.
+ * Test to verify that ExecutionContext uses composed rules for validation.
  */
 
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../../game/core/state';
 import { BID_TYPES } from '../../../game/constants';
 import { createHandWithDoubles } from '../../helpers/gameTestHelper';
+import { createTestContext, createTestContextWithRuleSets } from '../../helpers/executionContext';
 
-describe('Threaded Rules in GameEngine', () => {
-  it('should use composed rules for bid validation in getBiddingActions', () => {
+describe('Composed Rules in ExecutionContext', () => {
+  it('should use composed rules for bid validation', () => {
+    // Create a context with base rules only
+    const ctx = createTestContext();
+
     // Create a state in bidding phase with a previous bid (so special contracts are possible)
     const state = createInitialState();
     state.phase = 'bidding';
@@ -18,12 +22,20 @@ describe('Threaded Rules in GameEngine', () => {
     state.players[0]!.hand = createHandWithDoubles(4);
     state.players[1]!.hand = createHandWithDoubles(4);
 
-    // With base rules only: POINTS bids should be generated (skipping this test as API changed)
-    // This test would require regenerating the entire ruleset validation architecture
-    expect(true).toBe(true); // Placeholder - this test needs API update
+    // Verify that composed rules are available and can validate bids
+    const rules = ctx.rules;
+    expect(rules).toBeDefined();
+    expect(rules.isValidBid).toBeDefined();
+
+    // Test bid validation using the composed rules
+    const bid = { type: BID_TYPES.POINTS, value: 35, player: 1 };
+    const isValid = rules.isValidBid(state, bid, state.players[1]!.hand);
+    expect(typeof isValid).toBe('boolean');
   });
 
-  it('should use composed rules for play validation in getPlayingActions', () => {
+  it('should use composed rules for play validation', () => {
+    const ctx = createTestContext();
+
     const state = createInitialState();
     state.phase = 'playing';
     state.trump = { type: 'suit', suit: 0 }; // blanks trump
@@ -37,7 +49,29 @@ describe('Threaded Rules in GameEngine', () => {
     state.currentPlayer = 1;
     state.currentTrick = []; // First play of trick - all dominoes valid
 
-    // Placeholder - this test needs API update to use new getNextStates API
-    expect(true).toBe(true);
+    // Verify that composed rules are available and can validate plays
+    const rules = ctx.rules;
+    expect(rules).toBeDefined();
+    expect(rules.getValidPlays).toBeDefined();
+
+    // Test play validation using the composed rules
+    const validPlays = rules.getValidPlays(state, 1);
+    expect(Array.isArray(validPlays)).toBe(true);
+    expect(validPlays.length).toBeGreaterThan(0);
+  });
+
+  it('should support multiple ruleset compositions', () => {
+    // Test with specific rulesets
+    const ctx = createTestContextWithRuleSets(['base', 'nello']);
+
+    const rules = ctx.rules;
+    expect(rules).toBeDefined();
+
+    // Verify core rule methods exist
+    expect(rules.getTrumpSelector).toBeDefined();
+    expect(rules.getFirstLeader).toBeDefined();
+    expect(rules.getNextPlayer).toBeDefined();
+    expect(rules.isTrickComplete).toBeDefined();
+    expect(rules.checkHandOutcome).toBeDefined();
   });
 });

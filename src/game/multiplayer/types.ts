@@ -27,7 +27,7 @@ function capabilityMatches(candidate: Capability, target: Capability): boolean {
   switch (candidate.type) {
     case 'act-as-player':
       return candidate.playerIndex === (target as typeof candidate).playerIndex;
-    case 'observe-hands':
+    case 'observe-hands': {
       // For observe-hands, exact match on playerIndices
       const targetCap = target as typeof candidate;
       if (candidate.playerIndices === 'all' || targetCap.playerIndices === 'all') {
@@ -36,6 +36,7 @@ function capabilityMatches(candidate: Capability, target: Capability): boolean {
       // Arrays must have same indices
       return JSON.stringify([...candidate.playerIndices].sort()) ===
              JSON.stringify([...targetCap.playerIndices].sort());
+    }
     default:
       return true;
   }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { viewProjection, game, modes, availablePerspectives, currentPerspective, oneHandState } from '../../stores/gameStore';
+  import { viewProjection, game, modes, availablePerspectives, currentPerspective } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   import Icon from '../icons/Icon.svelte';

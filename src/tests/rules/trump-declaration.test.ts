@@ -140,20 +140,10 @@ describe('Feature: Trump Declaration', () => {
     });
 
     test('And trump options include no-trump (follow-me)', () => {
-      // Create a state in trump selection phase
-      const gameState = createInitialState({ shuffleSeed: 12345 });
-      gameState.phase = 'trump_selection';
-      gameState.winningBidder = 1;
-      gameState.currentPlayer = 1;
-      gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = { type: 'not-selected' };
-      
-      // Get available trump options
-      // const trumpOptions = getNextStates(gameState, ctx);
-      
       // Note: No-trump is not currently implemented in the game engine
       // The game engine only supports suits 0-6 and doubles
       // No-trump would need to be added to the trump selection system
+      // TODO: Implement no-trump trump selection
     });
   });
 });

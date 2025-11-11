@@ -78,7 +78,6 @@ export class Room {
   private transport: Transport | null = null;
   private aiManager: AIManager | null = null;
   private subscriptions: Map<string, ClientSubscription> = new Map();
-  private subscribers: Map<string, (update: unknown) => void> = new Map();
   private isDestroyed = false;
   private pendingAISeats: Array<{ seat: number; playerId: string }> = [];
 
@@ -488,12 +487,11 @@ export class Room {
     }
 
     this.subscriptions.delete(clientId);
-    this.subscribers.delete(clientId);
   }
 
   /**
    * Destroy the room and all resources.
-   * Cleans up AI manager, subscribers, transport.
+   * Cleans up AI manager, subscriptions, transport.
    */
   destroy(): void {
     if (this.aiManager) {
@@ -502,7 +500,6 @@ export class Room {
     }
 
     this.subscriptions.clear();
-    this.subscribers.clear();
     this.transport = null;
     this.isDestroyed = true;
   }
@@ -522,23 +519,30 @@ export class Room {
 
   /**
    * Notify all subscribers with updated views.
-   * Builds filtered views for each subscriber based on their perspective.
+   *
+   * CRITICAL: This is the SOLE place where filtered views are built and sent to clients.
+   * Each subscriber receives exactly one filtered view per state change.
+   *
+   * Builds filtered views for each subscriber based on their perspective and sends
+   * messages directly via transport. This ensures:
+   * - No redundant filtering work
+   * - No race conditions between filter computations
+   * - Single source of truth for state updates
    */
   private notifyListeners(): void {
-    for (const [clientId, subscriber] of this.subscribers) {
-      const sub = this.subscriptions.get(clientId);
-      if (sub) {
-        const view = this.getView(sub.perspective);
+    for (const [clientId, sub] of this.subscriptions) {
+      // Build filtered view once per subscriber
+      const view = this.getView(sub.perspective);
 
-        const msg: ServerMessage = {
-          type: 'STATE_UPDATE',
-          gameId: this.metadata.gameId,
-          view,
-          ...(sub.perspective ? { perspective: sub.perspective } : {})
-        };
+      const msg: ServerMessage = {
+        type: 'STATE_UPDATE',
+        gameId: this.metadata.gameId,
+        view,
+        ...(sub.perspective ? { perspective: sub.perspective } : {})
+      };
 
-        subscriber(msg);
-      }
+      // Send message directly - no callback indirection
+      this.sendMessage(clientId, msg);
     }
   }
 
@@ -691,13 +695,16 @@ export class Room {
   /**
    * Handle SUBSCRIBE message.
    * Registers a client to receive state updates.
+   *
+   * Only stores subscription metadata. Future updates are sent by notifyListeners(),
+   * which is the sole place where filtered views are computed and sent.
    */
   private handleSubscribe(clientId: string, message: ClientMessage): void {
     if (message.type !== 'SUBSCRIBE') return;
 
     const { playerId } = message;
 
-    // Store subscription
+    // Store subscription metadata
     const sub: ClientSubscription = {
       clientId
     };
@@ -707,21 +714,7 @@ export class Room {
     }
     this.subscriptions.set(clientId, sub);
 
-    // Create subscriber that receives state updates
-    const subscriber = (_update: unknown) => {
-      const view = this.getView(playerId);
-      const msg: ServerMessage = {
-        type: 'STATE_UPDATE',
-        gameId: this.metadata.gameId,
-        view,
-        ...(playerId ? { perspective: playerId } : {})
-      };
-      this.sendMessage(clientId, msg);
-    };
-
-    this.subscribers.set(clientId, subscriber);
-
-    // Send initial state
+    // Send initial state (filter once and send)
     const view = this.getView(playerId);
     const initialMsg: ServerMessage = {
       type: 'STATE_UPDATE',
@@ -730,6 +723,8 @@ export class Room {
       ...(playerId ? { perspective: playerId } : {})
     };
     this.sendMessage(clientId, initialMsg);
+
+    // Note: Subsequent updates are sent by notifyListeners() when state changes
   }
 
   /**
@@ -745,7 +740,6 @@ export class Room {
     const sub = this.subscriptions.get(clientId);
     if (sub && sub.playerId === playerId) {
       this.subscriptions.delete(clientId);
-      this.subscribers.delete(clientId);
     }
   }
 
