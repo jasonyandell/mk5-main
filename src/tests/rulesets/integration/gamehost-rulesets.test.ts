@@ -107,11 +107,11 @@ describe('Room Layers Integration', () => {
 
       const room = new Room('base-only', config, createPlayers(config));
 
-      // Verify no special bids available
+      // Verify no special bids available (nello is not a bid, it's a trump selection)
       const view = room.getView('player-0');
       const specialBids = view.validActions.filter(a =>
         a.action.type === 'bid' &&
-        (a.action.bid === 'nello' || a.action.bid === 'plunge' || a.action.bid === 'splash')
+        (a.action.bid === 'plunge' || a.action.bid === 'splash')
       );
 
       expect(specialBids.length).toBe(0);

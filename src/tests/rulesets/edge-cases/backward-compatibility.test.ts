@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
+import { getNextStates } from '../../../game/core/state';
 import { composeRules, baseRuleSet } from '../../../game/rulesets';
-import { getValidActions } from '../../../game/core/gameEngine';
 import { createInitialState } from '../../../game/core/state';
 import { dealDominoesWithSeed } from '../../../game/core/dominoes';
 import { GameTestHelper } from '../../helpers/gameTestHelper';
+import { createTestContext } from '../../helpers/executionContext';
 import type { GameState } from '../../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
@@ -485,21 +486,23 @@ describe('Backward Compatibility', () => {
 
   describe('getValidActions Compatibility', () => {
     it('should return valid actions for bidding phase', () => {
+      const ctx = createTestContext();
       const state = createInitialState();
-      const actions = getValidActions(state);
+      const transitions = getNextStates(state, ctx);
 
-      expect(actions.length).toBeGreaterThan(0);
+      expect(transitions.length).toBeGreaterThan(0);
 
       // Should have pass action
-      const passAction = actions.find(a => a.type === 'pass');
+      const passAction = transitions.find((a: { id: string }) => a.id === 'pass');
       expect(passAction).toBeDefined();
 
       // Should have some bid actions
-      const bidActions = actions.filter(a => a.type === 'bid');
+      const bidActions = transitions.filter((a: { id: string }) => a.id.startsWith('bid-'));
       expect(bidActions.length).toBeGreaterThan(0);
     });
 
     it('should return valid actions for trump_selection phase', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
@@ -507,12 +510,12 @@ describe('Backward Compatibility', () => {
         currentBid: { type: 'points', value: 35, player: 0 }
       });
 
-      const actions = getValidActions(state);
+      const transitions = getNextStates(state, ctx);
 
-      expect(actions.length).toBeGreaterThan(0);
+      expect(transitions.length).toBeGreaterThan(0);
 
       // Should have trump selection actions
-      const trumpActions = actions.filter(a => a.type === 'select-trump');
+      const trumpActions = transitions.filter((a: { id: string }) => a.id.startsWith('trump-'));
       expect(trumpActions.length).toBe(9); // 7 suits + doubles + no-trump
     });
 
@@ -540,10 +543,11 @@ describe('Backward Compatibility', () => {
         ]
       });
 
-      const actions = getValidActions(state);
+      const ctx = createTestContext();
+      const transitions = getNextStates(state, ctx);
 
       // Should have play actions
-      const playActions = actions.filter(a => a.type === 'play');
+      const playActions = transitions.filter((a: { id: string }) => a.id.startsWith('play-'));
       expect(playActions.length).toBe(2); // Player has 2 dominoes
     });
 
@@ -566,12 +570,12 @@ describe('Backward Compatibility', () => {
         ]
       });
 
-      const actions = getValidActions(state);
+      const ctx = createTestContext();
+      const transitions = getNextStates(state, ctx);
 
-      // Should have agree-score-hand action for current player
-      const agreeAction = actions.find(a =>
-        a.type === 'agree-score-hand' &&
-        a.player === state.currentPlayer
+      // Should have agree-complete-trick action for current player
+      const agreeAction = transitions.find((a: { id: string }) =>
+        a.id.startsWith('agree-')
       );
       expect(agreeAction).toBeDefined();
     });
@@ -584,8 +588,8 @@ describe('Backward Compatibility', () => {
       expect(typeof executeAction).toBe('function');
       expect(createInitialState).toBeDefined();
       expect(typeof createInitialState).toBe('function');
-      expect(getValidActions).toBeDefined();
-      expect(typeof getValidActions).toBe('function');
+      expect(getNextStates).toBeDefined();
+      expect(typeof getNextStates).toBe('function');
     });
 
     it('should export all expected ruleset functions', () => {

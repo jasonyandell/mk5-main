@@ -8,6 +8,7 @@
  */
 
 import { createInitialState, getNextStates, executeAction } from '../src/game';
+import { createExecutionContext } from '../src/game/types/execution';
 import { BeginnerAIStrategy } from '../src/game/ai/strategies';
 import { calculateHandStrengthWithTrump } from '../src/game/ai/hand-strength';
 import type { GameState, TrumpSelection } from '../src/game/types';
@@ -39,7 +40,10 @@ const aiStrategy = new BeginnerAIStrategy();
  */
 async function playHand(initialState: GameState) {
   let gameState = initialState;
-  
+
+  // Create execution context once for all state lookups
+  const ctx = createExecutionContext({ playerTypes: ['ai', 'ai', 'ai', 'ai'] });
+
   // Track the winning bid info
   interface BidInfo {
     playerId: number;
@@ -49,17 +53,17 @@ async function playHand(initialState: GameState) {
     marksValue: number | undefined;
     handStrength: number;
   }
-  
+
   let winningBidInfo: BidInfo | null = null;
   let laydownBidInfo: BidInfo | null = null; // Track laydown separately - MUST be cleared each hand!
   let foundLaydownThisHand = false; // Track if we found a laydown in this specific hand
-  
+
   // Play through ONE hand (stop after scoring, not game_end)
   let handComplete = false;
   let handsPlayed = 0;
-  
+
   while (!handComplete && gameState.phase !== 'game_end') {
-    const transitions = getNextStates(gameState);
+    const transitions = getNextStates(gameState, ctx);
     
     if (transitions.length === 0) {
       // No valid moves, shouldn't happen but let's handle it

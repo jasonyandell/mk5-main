@@ -15,8 +15,8 @@ import type { GameRuleSet, GameRules } from '../rulesets/types';
 import type { StateMachine } from '../action-transformers/types';
 import type { GameConfig } from './config';
 import type { GameState } from '../types';
-import { composeRules, baseRuleSet, getRuleSetsByNames } from '../rulesets';
-import { getValidActions } from '../core/gameEngine';
+import { composeRules, baseRuleSet, getRuleSetsByNames, composeActionGenerators } from '../rulesets';
+import { generateStructuralActions } from '../rulesets/base';
 import { applyActionTransformers } from '../action-transformers/registry';
 
 export interface ExecutionContext {
@@ -31,9 +31,11 @@ export interface ExecutionContext {
  * This is the single composition point for execution configuration:
  * 1. Get enabled rulesets from config
  * 2. Compose rules via composeRules()
- * 3. Thread rulesets through base state machine
- * 4. Apply action transformers
- * 5. Freeze and return immutable context
+ * 3. Compose action generators via function composition (f(g(h(x))))
+ *    - base: generateStructuralActions (pass, redeal, consensus, trump, plays)
+ *    - RuleSets: add domain actions (bids) via composeActionGenerators
+ *    - ActionTransformers: annotate/script (autoExecute, hints) via applyActionTransformers
+ * 4. Freeze and return immutable context
  *
  * @param config - Game configuration
  * @returns Frozen ExecutionContext ready for use
@@ -53,17 +55,20 @@ export function createExecutionContext(config: GameConfig): ExecutionContext {
   // Compose rules via composeRules()
   const rules = composeRules(ruleSets);
 
-  // Thread rulesets through base state machine
-  const baseWithRuleSets = (state: GameState) =>
-    getValidActions(state, ruleSets, rules);
+  // Compose action generators via function composition (not eager evaluation!)
+  // 1. Base: structural actions only
+  const base: StateMachine = (state: GameState) => generateStructuralActions(state, rules);
 
-  // Apply action transformers
-  const getValidActionsComposed = applyActionTransformers(baseWithRuleSets, actionTransformerConfigs);
+  // 2. RuleSets: add domain actions (bids)
+  const withRuleSets = composeActionGenerators(ruleSets, base);
+
+  // 3. ActionTransformers: annotate/script actions
+  const getValidActions = applyActionTransformers(withRuleSets, actionTransformerConfigs);
 
   // Freeze and return immutable context
   return Object.freeze({
     ruleSets: Object.freeze(ruleSets),
     rules,
-    getValidActions: getValidActionsComposed
+    getValidActions
   });
 }

@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid } from '../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../game';
+import { createTestContext } from '../helpers/executionContext';
 
 describe('Sequential Bidding', () => {
+  const ctx = createTestContext();
   // Helper to create a state with specific bids already made
   function createStateWithBids(bids: Bid[]): GameState {
     const state = createInitialState({ shuffleSeed: 12345 });
@@ -14,7 +16,7 @@ describe('Sequential Bidding', () => {
     // Apply each bid using the game engine
     for (const bid of bids) {
       // Find the matching transition
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const transition = transitions.find(t => {
         if (bid.type === 'pass') return t.id === 'pass';
         if (bid.type === 'points') return t.id === `bid-${bid.value}`;
@@ -32,7 +34,7 @@ describe('Sequential Bidding', () => {
 
   // Helper to check if a specific bid is valid using the game engine
   function checkBidValidity(state: GameState, bidType: 'points' | 'marks', bidValue: number): boolean {
-    const transitions = getNextStates(state);
+    const transitions = getNextStates(state, ctx);
     const bidId = bidType === 'points' 
       ? `bid-${bidValue}`
       : `bid-${bidValue}-marks`; // Always use plural "marks"

@@ -295,28 +295,26 @@ describe('Bidding Rules', () => {
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
       ]);
 
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
-      expect(rules.isValidBid(state, nelloBid, testHand)).toBe(true);
+      // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
       expect(rules.isValidBid(state, plungeBid, testHand)).toBe(true);
     });
-    
+
     it('should allow special contracts in casual mode', () => {
       const state = createInitialState();
       // REMOVED: state.tournamentMode = false;
-      
+
       const testHand = GameTestHelper.createTestHand([
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
       ]);
-      
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
+
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      expect(rules.isValidBid(state, nelloBid, testHand)).toBe(true);
+
+      // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
       expect(rules.isValidBid(state, plungeBid, testHand)).toBe(true);
     });
@@ -333,12 +331,11 @@ describe('Bidding Rules', () => {
       expect(rules.getBidComparisonValue(bid)).toBe(84);
     });
     
-    it('should return 42x multiplier for special contracts', () => {
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
+    it('should return 42x multiplier for special bid contracts', () => {
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
-      
-      expect(rules.getBidComparisonValue(nelloBid)).toBe(42);
+
+      // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.getBidComparisonValue(splashBid)).toBe(84);
       expect(rules.getBidComparisonValue(plungeBid)).toBe(168);
     });

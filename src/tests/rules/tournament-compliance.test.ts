@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTestState, createTestHand } from '../helpers/gameTestHelper';
 import { composeRules, baseRuleSet } from '../../game/rulesets';
-import { getNextStates } from '../../game/core/gameEngine';
+import { getNextStates } from '../../game/core/state';
+import { createTestContext } from '../helpers/executionContext';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, BidType } from '../../game/types';
@@ -9,6 +10,7 @@ import type { Bid, BidType } from '../../game/types';
 const rules = composeRules([baseRuleSet]);
 
 describe('Tournament Rule Compliance', () => {
+  const ctx = createTestContext();
   describe('Straight 42 Rules (No Special Contracts)', () => {
     it('rejects special contract bids in tournament rules', () => {
       const state = createTestState({
@@ -20,12 +22,11 @@ describe('Tournament Rule Compliance', () => {
         { high: 1, low: 1 }, { high: 2, low: 2 }, { high: 3, low: 3 }, { high: 4, low: 4 }
       ]);
 
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 1, player: 0 };
+      // Nello is not a bid type - it's a trump selection (filtered separately)
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
-      // Tournament rules (baseRuleSet only) reject special contracts
-      expect(rules.isValidBid(state, nelloBid, playerHand)).toBe(false);
+      // Tournament rules (baseRuleSet only) reject special contract bids
       expect(rules.isValidBid(state, splashBid, playerHand)).toBe(false);
       expect(rules.isValidBid(state, plungeBid, playerHand)).toBe(false);
     });
@@ -219,7 +220,7 @@ describe('Tournament Rule Compliance', () => {
         ]
       });
 
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const redealTransition = transitions.find(t => t.id === 'redeal');
       
       expect(redealTransition).toBeDefined();

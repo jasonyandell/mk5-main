@@ -14,8 +14,7 @@ import { authorizeAndExecute } from '../game/multiplayer/authorization';
 import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
 import { ok, err } from '../game/multiplayer/types';
 import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../game/multiplayer/capabilityUtils';
-import { cloneGameState } from '../game/core/state';
-import { getNextStates } from '../game/core/gameEngine';
+import { cloneGameState, getNextStates } from '../game/core/state';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
 import type { ActionTransformerConfig } from '../game/action-transformers/types';
@@ -31,7 +30,7 @@ export function executeKernelAction(
   ctx: ExecutionContext
 ) {
   const request = { playerId, action };
-  const result = authorizeAndExecute(state, request, ctx.getValidActions, ctx.rules);
+  const result = authorizeAndExecute(state, request, ctx);
 
   if (!result.success) {
     return result;
@@ -72,8 +71,7 @@ export function processAutoExecuteActions(
     const result = authorizeAndExecute(
       state,
       { playerId: session.playerId, action: autoAction },
-      ctx.getValidActions,
-      ctx.rules
+      ctx
     );
 
     if (!result.success) {
@@ -159,7 +157,7 @@ export function buildActionsMap(
   const allValidActions = ctx.getValidActions(coreState);
 
   // Compute transitions from state (they're derived, not passed)
-  const transitions = getNextStates(coreState, ctx.ruleSets, ctx.rules);
+  const transitions = getNextStates(coreState, ctx);
 
   const map: Record<string, ValidAction[]> = {};
 

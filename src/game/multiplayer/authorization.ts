@@ -1,14 +1,9 @@
 import type { GameState, GameAction } from '../types';
 import type { MultiplayerGameState, ActionRequest, Result, PlayerSession } from './types';
+import type { ExecutionContext } from '../types/execution';
 import { ok, err } from './types';
 import { executeAction } from '../core/actions';
-import { getValidActions } from '../core/gameEngine';
 import { filterActionsForSession } from './capabilityUtils';
-import type { GameRules } from '../rulesets/types';
-import { composeRules, baseRuleSet } from '../rulesets';
-
-// Default rules (base rule set only, no special contracts)
-const defaultRules = composeRules([baseRuleSet]);
 
 function actionsMatch(expected: GameAction, actual: GameAction): boolean {
   if (expected.type !== actual.type) {
@@ -55,9 +50,9 @@ export function canPlayerExecuteAction(
   session: PlayerSession,
   action: GameAction,
   state: GameState,
-  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions
+  ctx: ExecutionContext
 ): boolean {
-  const validActions = getValidActionsFn(state);
+  const validActions = ctx.getValidActions(state);
   const visibleActions = filterActionsForSession(session, validActions);
   return visibleActions.some(candidate => actionsMatch(candidate, action));
 }
@@ -69,15 +64,13 @@ export function canPlayerExecuteAction(
  *
  * @param mpState - Current multiplayer game state
  * @param request - Action request from a player
- * @param getValidActionsFn - State machine for generating valid actions (with variants applied)
- * @param rules - Game rules for execution (defaults to base layer if not provided)
+ * @param ctx - Execution context with composed rules and actions
  * @returns Result containing new MultiplayerGameState or error message
  */
 export function authorizeAndExecute(
   mpState: MultiplayerGameState,
   request: ActionRequest,
-  getValidActionsFn: (state: GameState) => GameAction[] = getValidActions,
-  rules: GameRules = defaultRules
+  ctx: ExecutionContext
 ): Result<MultiplayerGameState> {
   const { playerId, action } = request;
   const { coreState, players } = mpState;
@@ -89,7 +82,7 @@ export function authorizeAndExecute(
   }
 
   // Check authorization using capability system
-  const validActions = getValidActionsFn(coreState);
+  const validActions = ctx.getValidActions(coreState);
   const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
   if (!isStructurallyValid) {
     return err(`Action is not valid in current game state: ${action.type}`);
@@ -104,8 +97,8 @@ export function authorizeAndExecute(
     );
   }
 
-  // Execute the action (pure state transition) with threaded rules
-  const newCoreState = executeAction(coreState, action, rules);
+  // Execute the action (pure state transition) with composed rules
+  const newCoreState = executeAction(coreState, action, ctx.rules);
 
   // Return new multiplayer state with updated pure state
   // NO filtering here - filtering happens in createView()

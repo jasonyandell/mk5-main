@@ -372,3 +372,25 @@ export function composeActions(
 
   return result;
 }
+
+/**
+ * Compose action generators via function composition (not eager evaluation).
+ *
+ * Returns a StateMachine function that will call the base generator,
+ * then thread results through RuleSet action transformers.
+ *
+ * This is proper f(g(h(x))) composition - functions are composed without executing.
+ *
+ * @param ruleSets Array of rule sets to compose
+ * @param base Base state machine function
+ * @returns Composed StateMachine function
+ */
+export function composeActionGenerators(
+  ruleSets: readonly GameRuleSet[],
+  base: (state: GameState) => GameAction[]
+): (state: GameState) => GameAction[] {
+  return (state: GameState) => {
+    const baseActions = base(state);
+    return composeActions(ruleSets, state, baseActions);
+  };
+}

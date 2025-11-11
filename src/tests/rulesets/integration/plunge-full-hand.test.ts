@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
-import { getNextStates } from '../../../game/core/gameEngine';
+import { getNextStates } from '../../../game/core/state';
+import { createTestContextWithRuleSets } from '../../helpers/executionContext';
 import { composeRules, baseRuleSet, plungeRuleSet } from '../../../game/rulesets';
 import { createTestState, createTestHand, processSequentialConsensus, createHandWithDoubles } from '../../helpers/gameTestHelper';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
 describe('Plunge Full Hand Integration', () => {
+  const ctx = createTestContextWithRuleSets(['plunge']);
   const ruleSets = [baseRuleSet, plungeRuleSet];
   const rules = composeRules(ruleSets);
 
@@ -20,7 +22,7 @@ describe('Plunge Full Hand Integration', () => {
     let state = initialState;
 
     // Player 0 should have 4+ doubles and bid plunge
-    const bidTransitions = getNextStates(state, ruleSets, rules);
+    const bidTransitions = getNextStates(state, ctx);
     const plungeBid = bidTransitions.find(t =>
       t.action.type === 'bid' && t.action.bid === 'plunge'
     );
@@ -29,7 +31,7 @@ describe('Plunge Full Hand Integration', () => {
 
     // Others pass
     for (let i = 0; i < 3; i++) {
-      const passTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'pass');
+      const passTransition = getNextStates(state, ctx).find(t => t.id === 'pass');
       expect(passTransition).toBeDefined();
       state = executeAction(state, passTransition!.action, rules);
     }
@@ -41,7 +43,7 @@ describe('Plunge Full Hand Integration', () => {
     expect(state.currentPlayer).toBe(2); // Partner selects trump
 
     // Select a suit trump
-    const trumpTransition = getNextStates(state, ruleSets, rules).find(t =>
+    const trumpTransition = getNextStates(state, ctx).find(t =>
       t.action.type === 'select-trump' &&
       t.action.trump?.type === 'suit'
     );
@@ -58,7 +60,7 @@ describe('Plunge Full Hand Integration', () => {
     while (state.phase === 'playing' && trickCount < maxTricks) {
       // Play 4 dominoes
       for (let i = 0; i < 4; i++) {
-        const playTransitions = getNextStates(state, ruleSets, rules).filter(t => t.action.type === 'play');
+        const playTransitions = getNextStates(state, ctx).filter(t => t.action.type === 'play');
         expect(playTransitions.length).toBeGreaterThan(0);
 
         // Select domino based on test scenario
@@ -87,7 +89,7 @@ describe('Plunge Full Hand Integration', () => {
       state = await processSequentialConsensus(state, 'completeTrick');
 
       // Complete trick
-      const completeTrickTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'complete-trick');
+      const completeTrickTransition = getNextStates(state, ctx).find(t => t.id === 'complete-trick');
       if (completeTrickTransition) {
         state = executeAction(state, completeTrickTransition.action, rules);
         trickCount++;
@@ -105,7 +107,7 @@ describe('Plunge Full Hand Integration', () => {
     state = await processSequentialConsensus(state, 'scoreHand');
 
     // Score hand
-    const scoreTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'score-hand');
+    const scoreTransition = getNextStates(state, ctx).find(t => t.id === 'score-hand');
     expect(scoreTransition).toBeDefined();
 
     // Save state before scoring to verify tricks (scoring will reset tricks for next hand)
@@ -281,14 +283,14 @@ describe('Plunge Full Hand Integration', () => {
       let testState = state;
 
       // Bid plunge
-      const plungeBid = getNextStates(testState, ruleSets, rules).find(t =>
+      const plungeBid = getNextStates(testState, ctx).find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );
       testState = executeAction(testState, plungeBid!.action, rules);
 
       // Others pass
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
@@ -313,19 +315,19 @@ describe('Plunge Full Hand Integration', () => {
       let testState = state;
 
       // Bid plunge
-      const plungeBid = getNextStates(testState, ruleSets, rules).find(t =>
+      const plungeBid = getNextStates(testState, ctx).find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );
       testState = executeAction(testState, plungeBid!.action, rules);
 
       // Others pass
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
       // Partner selects trump
-      const trumpTransition = getNextStates(testState, ruleSets, rules).find(t =>
+      const trumpTransition = getNextStates(testState, ctx).find(t =>
         t.action.type === 'select-trump'
       );
       testState = executeAction(testState, trumpTransition!.action, rules);
@@ -338,6 +340,7 @@ describe('Plunge Full Hand Integration', () => {
 
   describe('Bidding Requirements', () => {
     it('should require 4+ doubles to bid plunge', () => {
+      const ctx = createTestContextWithRuleSets(['plunge']);
       // With 4 doubles
       const stateWith4 = createTestState({
         phase: 'bidding',
@@ -351,7 +354,7 @@ describe('Plunge Full Hand Integration', () => {
         ]
       });
 
-      const transitionsWith4 = getNextStates(stateWith4, ruleSets, rules);
+      const transitionsWith4 = getNextStates(stateWith4, ctx);
       const plungeOptionWith4 = transitionsWith4.find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );
@@ -370,7 +373,7 @@ describe('Plunge Full Hand Integration', () => {
         ]
       });
 
-      const transitionsWith3 = getNextStates(stateWith3, ruleSets, rules);
+      const transitionsWith3 = getNextStates(stateWith3, ctx);
       const plungeOptionWith3 = transitionsWith3.find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );
@@ -378,6 +381,8 @@ describe('Plunge Full Hand Integration', () => {
     });
 
     it('should have automatic bid value of 4+ marks', () => {
+
+      const ctx = createTestContextWithRuleSets(['plunge']);
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 0,
@@ -390,7 +395,7 @@ describe('Plunge Full Hand Integration', () => {
         ]
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const plungeOption = transitions.find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );
@@ -402,6 +407,8 @@ describe('Plunge Full Hand Integration', () => {
     });
 
     it('should jump over existing marks bids', () => {
+
+      const ctx = createTestContextWithRuleSets(['plunge']);
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 1,
@@ -415,7 +422,7 @@ describe('Plunge Full Hand Integration', () => {
         ]
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const plungeOption = transitions.find(t =>
         t.action.type === 'bid' && t.action.bid === 'plunge'
       );

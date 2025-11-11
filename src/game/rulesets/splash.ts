@@ -26,35 +26,30 @@ export const splashRuleSet: GameRuleSet = {
   name: 'splash',
 
   getValidActions: (state, prev) => {
+    // Add splash bid during bidding phase when player has 3+ doubles
     if (state.phase !== 'bidding') return prev;
 
     const player = state.players[state.currentPlayer];
-    if (!player) return prev; // Guard against undefined
+    if (!player) return prev;
+
     const doubles = countDoubles(player.hand);
-
-    // Filter out all base splash bids - we'll replace with our calculated one
-    const filtered = prev.filter(action =>
-      !(action.type === 'bid' && action.bid === 'splash')
-    );
-
     if (doubles >= 3) {
-      // Splash value = highest marks bid + 1, minimum 2, maximum 3
       const highestMarksBid = getHighestMarksBid(state.bids);
       const splashValue = Math.min(3, Math.max(2, highestMarksBid + 1));
 
-      return [...filtered, {
+      return [...prev, {
         type: 'bid' as const,
         player: state.currentPlayer,
         bid: 'splash' as const,
-        value: splashValue  // Automatic, not user choice
+        value: splashValue
       }];
     }
 
-    // If player doesn't have enough doubles, remove all splash options
-    return filtered;
+    return prev;
   },
 
   rules: {
+
     isValidBid: (state, bid, playerHand, prev) => {
       if (bid.type !== BID_TYPES.SPLASH) return prev;
 

@@ -1,5 +1,6 @@
 import { createInitialState, getNextStates } from '../index';
 import { decodeGameUrl } from '../core/url-compression';
+import { createExecutionContext } from '../types/execution';
 import type { GameState } from '../types';
 
 export interface ReplayOptions {
@@ -32,8 +33,8 @@ export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayR
  * Replay a sequence of actions from a seed
  */
 export function replayActions(
-  seed: number, 
-  actions: string[], 
+  seed: number,
+  actions: string[],
   options: ReplayOptions = {}
 ): ReplayResult {
   let currentState = createInitialState({ shuffleSeed: seed });
@@ -42,19 +43,22 @@ export function replayActions(
   let currentHand = 1;
   let handStartAction = 0;
 
+  // Create execution context once for all state lookups
+  const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
+
   // If focusHand is set, skip to that hand
   if (options.focusHand) {
     for (let i = 0; i < actions.length; i++) {
       const actionId = actions[i];
       if (!actionId) continue;
-      
+
       if (actionId === 'score-hand') {
         currentHand++;
         if (currentHand === options.focusHand) {
           handStartAction = i + 1;
           // Fast-forward to this point
           for (let j = 0; j <= i; j++) {
-            const transitions = getNextStates(currentState);
+            const transitions = getNextStates(currentState, ctx);
             const actionJ = actions[j];
             const transition = actionJ ? transitions.find(t => t.id === actionJ) : undefined;
             if (transition) currentState = transition.newState;
@@ -66,12 +70,12 @@ export function replayActions(
   }
 
   const startIdx = options.focusHand ? handStartAction : 0;
-  
+
   for (let i = startIdx; i < actions.length; i++) {
     if (options.stopAt !== undefined && i >= options.stopAt) {
       break;
     }
-    
+
     // Stop if we're past the focused hand
     const currentActionForCheck = actions[i];
     if (options.focusHand && currentActionForCheck && currentActionForCheck === 'score-hand' && i > handStartAction) {
@@ -80,7 +84,7 @@ export function replayActions(
 
     const actionId = actions[i];
     if (!actionId) continue;
-    const availableTransitions = getNextStates(currentState);
+    const availableTransitions = getNextStates(currentState, ctx);
     const matchingTransition = availableTransitions.find(t => t.id === actionId);
 
     if (!matchingTransition) {

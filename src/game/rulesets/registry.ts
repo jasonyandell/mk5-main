@@ -11,6 +11,7 @@ import { nelloRuleSet } from './nello';
 import { plungeRuleSet } from './plunge';
 import { splashRuleSet } from './splash';
 import { sevensRuleSet } from './sevens';
+import { tournamentRuleSet } from './tournament';
 
 /**
  * Registry of all available rule sets.
@@ -23,7 +24,8 @@ export const RULESET_REGISTRY: Record<string, GameRuleSet> = {
   'nello': nelloRuleSet,
   'plunge': plungeRuleSet,
   'splash': splashRuleSet,
-  'sevens': sevensRuleSet
+  'sevens': sevensRuleSet,
+  'tournament': tournamentRuleSet
 };
 
 /**

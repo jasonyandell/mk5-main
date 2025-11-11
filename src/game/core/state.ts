@@ -1,9 +1,12 @@
-import type { GameState, Player } from '../types';
+import type { GameState, Player, StateTransition, GameAction } from '../types';
+import type { ExecutionContext } from '../types/execution';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
 import { analyzeSuits } from './suit-analysis';
+import { executeAction } from './actions';
+import { actionToId, actionToLabel } from './actions';
 
 /**
  * Creates the initial game state in setup phase
@@ -255,7 +258,7 @@ export function getWinningTeam(state: GameState): number | null {
  */
 export function advanceToNextPhase(state: GameState): GameState {
   const newState = cloneGameState(state);
-  
+
   switch (state.phase) {
     case 'setup':
       newState.phase = 'bidding';
@@ -275,6 +278,29 @@ export function advanceToNextPhase(state: GameState): GameState {
     default:
       break;
   }
-  
+
   return newState;
+}
+
+/**
+ * Converts actions to state transitions (maps actions to ids/labels/newState).
+ *
+ * Uses the composed getValidActions from ExecutionContext - doesn't create its own composition.
+ *
+ * @param state Current game state
+ * @param ctx Execution context with composed rules and getValidActions
+ * @returns Array of state transitions with labels and new states
+ */
+export function getNextStates(
+  state: GameState,
+  ctx: ExecutionContext
+): StateTransition[] {
+  const validActions = ctx.getValidActions(state);
+
+  return validActions.map((action: GameAction) => ({
+    id: actionToId(action),
+    label: actionToLabel(action),
+    action: action,  // Include the action for audit trail
+    newState: executeAction(state, action, ctx.rules)
+  }));
 }

@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
-import { getNextStates } from '../../../game/core/gameEngine';
+import { getNextStates } from '../../../game/core/state';
+import { createTestContextWithRuleSets } from '../../helpers/executionContext';
 import { composeRules, baseRuleSet, nelloRuleSet } from '../../../game/rulesets';
 import { createTestState, createTestHand, processSequentialConsensus } from '../../helpers/gameTestHelper';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
 describe('Nello Full Hand Integration', () => {
+  const ctx = createTestContextWithRuleSets(['nello']);
   const ruleSets = [baseRuleSet, nelloRuleSet];
   const rules = composeRules(ruleSets);
 
@@ -20,14 +22,14 @@ describe('Nello Full Hand Integration', () => {
     let state = initialState;
 
     // Players should bid/pass in order
-    const bidTransitions = getNextStates(state, ruleSets, rules);
+    const bidTransitions = getNextStates(state, ctx);
     const marksBid = bidTransitions.find(t => t.id === 'bid-1-marks');
     expect(marksBid).toBeDefined();
     state = executeAction(state, marksBid!.action, rules);
 
     // Others pass
     for (let i = 0; i < 3; i++) {
-      const passTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'pass');
+      const passTransition = getNextStates(state, ctx).find(t => t.id === 'pass');
       expect(passTransition).toBeDefined();
       state = executeAction(state, passTransition!.action, rules);
     }
@@ -36,7 +38,7 @@ describe('Nello Full Hand Integration', () => {
     expect(state.winningBidder).toBe(0);
 
     // Select nello trump
-    const nelloTransition = getNextStates(state, ruleSets, rules).find(t =>
+    const nelloTransition = getNextStates(state, ctx).find(t =>
       t.action.type === 'select-trump' &&
       t.action.trump?.type === 'nello'
     );
@@ -54,7 +56,7 @@ describe('Nello Full Hand Integration', () => {
     while (state.phase === 'playing' && trickCount < maxTricks) {
       // Play 3 dominoes (partner sits out)
       for (let i = 0; i < 3; i++) {
-        const playTransitions = getNextStates(state, ruleSets, rules).filter(t => t.action.type === 'play');
+        const playTransitions = getNextStates(state, ctx).filter(t => t.action.type === 'play');
         expect(playTransitions.length).toBeGreaterThan(0);
 
         // Select domino to play based on test scenario
@@ -87,7 +89,7 @@ describe('Nello Full Hand Integration', () => {
       }
 
       // Complete trick
-      const completeTrickTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'complete-trick');
+      const completeTrickTransition = getNextStates(state, ctx).find(t => t.id === 'complete-trick');
       if (completeTrickTransition) {
         state = executeAction(state, completeTrickTransition.action, rules);
         trickCount++;
@@ -105,7 +107,7 @@ describe('Nello Full Hand Integration', () => {
     state = await processSequentialConsensus(state, 'scoreHand');
 
     // Score hand
-    const scoreTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'score-hand');
+    const scoreTransition = getNextStates(state, ctx).find(t => t.id === 'score-hand');
     expect(scoreTransition).toBeDefined();
     // Save state before scoring to verify tricks
     const preScoreState = state;
@@ -193,21 +195,21 @@ describe('Nello Full Hand Integration', () => {
       let testState = state;
 
       // Bid and select nello
-      const marksBid = getNextStates(testState, ruleSets, rules).find(t => t.id === 'bid-1-marks');
+      const marksBid = getNextStates(testState, ctx).find(t => t.id === 'bid-1-marks');
       testState = executeAction(testState, marksBid!.action, rules);
 
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
-      const nelloTransition = getNextStates(testState, ruleSets, rules).find(t =>
+      const nelloTransition = getNextStates(testState, ctx).find(t =>
         t.action.type === 'select-trump' && t.action.trump?.type === 'nello'
       );
       testState = executeAction(testState, nelloTransition!.action, rules);
 
       // Bidder leads with double (0-0)
-      const doublePlay = getNextStates(testState, ruleSets, rules).find(t =>
+      const doublePlay = getNextStates(testState, ctx).find(t =>
         t.action.type === 'play' && t.action.dominoId === '0-0'
       );
       expect(doublePlay).toBeDefined();
@@ -290,15 +292,15 @@ describe('Nello Full Hand Integration', () => {
       let testState = state;
 
       // Setup nello
-      const marksBid = getNextStates(testState, ruleSets, rules).find(t => t.id === 'bid-1-marks');
+      const marksBid = getNextStates(testState, ctx).find(t => t.id === 'bid-1-marks');
       testState = executeAction(testState, marksBid!.action, rules);
 
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
-      const nelloTransition = getNextStates(testState, ruleSets, rules).find(t =>
+      const nelloTransition = getNextStates(testState, ctx).find(t =>
         t.action.type === 'select-trump' && t.action.trump?.type === 'nello'
       );
       testState = executeAction(testState, nelloTransition!.action, rules);
@@ -309,7 +311,7 @@ describe('Nello Full Hand Integration', () => {
       // Play first trick
       for (let i = 0; i < 3; i++) {
         playerOrder.push(testState.currentPlayer);
-        const playTransitions = getNextStates(testState, ruleSets, rules).filter(t => t.action.type === 'play');
+        const playTransitions = getNextStates(testState, ctx).filter(t => t.action.type === 'play');
         testState = executeAction(testState, playTransitions[0]!.action, rules);
       }
 
@@ -320,6 +322,7 @@ describe('Nello Full Hand Integration', () => {
 
   describe('Bidding Requirements', () => {
     it('should only allow nello after marks bid', () => {
+      const ctx = createTestContextWithRuleSets(['nello']);
       const state = createTestState({
         phase: 'trump_selection',
         currentPlayer: 0,
@@ -328,7 +331,7 @@ describe('Nello Full Hand Integration', () => {
         shuffleSeed: 222222
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const nelloOption = transitions.find(t =>
         t.action.type === 'select-trump' && t.action.trump?.type === 'nello'
       );
@@ -337,6 +340,8 @@ describe('Nello Full Hand Integration', () => {
     });
 
     it('should not allow nello after points bid', () => {
+
+      const ctx = createTestContextWithRuleSets(['nello']);
       const state = createTestState({
         phase: 'trump_selection',
         currentPlayer: 0,
@@ -345,7 +350,7 @@ describe('Nello Full Hand Integration', () => {
         shuffleSeed: 333333
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const nelloOption = transitions.find(t =>
         t.action.type === 'select-trump' && t.action.trump?.type === 'nello'
       );

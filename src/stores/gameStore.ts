@@ -1,6 +1,7 @@
 import { writable, derived, get, type Readable } from 'svelte/store';
 import type { GameAction, FilteredGameState, GameState } from '../game/types';
 import { getNextStates } from '../game';
+import { createExecutionContext } from '../game/types/execution';
 import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
 import type { MultiplayerGameState, Capability } from '../game/multiplayer/types';
 import { hasCapabilityType } from '../game/multiplayer/types';
@@ -144,7 +145,10 @@ class GameStoreImpl {
 
         const allowedKeys = new Set($allowedActions.map(valid => actionKey(valid.action)));
 
-        const allTransitions = getNextStates($gameState);
+        // Create execution context with current player types
+        const ctx = createExecutionContext({ playerTypes });
+
+        const allTransitions = getNextStates($gameState, ctx);
         const usedTransitions = testMode
           ? allTransitions
           : allowedKeys.size === 0

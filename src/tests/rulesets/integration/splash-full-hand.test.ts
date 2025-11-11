@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
-import { getNextStates } from '../../../game/core/gameEngine';
+import { getNextStates } from '../../../game/core/state';
+import { createTestContextWithRuleSets } from '../../helpers/executionContext';
 import { composeRules, baseRuleSet, splashRuleSet } from '../../../game/rulesets';
 import { createTestState, createTestHand, processSequentialConsensus, createHandWithDoubles } from '../../helpers/gameTestHelper';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
 describe('Splash Full Hand Integration', () => {
+  const ctx = createTestContextWithRuleSets(['splash']);
   const ruleSets = [baseRuleSet, splashRuleSet];
   const rules = composeRules(ruleSets);
 
@@ -20,7 +22,7 @@ describe('Splash Full Hand Integration', () => {
     let state = initialState;
 
     // Player 0 should have 3+ doubles and bid splash
-    const bidTransitions = getNextStates(state, ruleSets, rules);
+    const bidTransitions = getNextStates(state, ctx);
     const splashBid = bidTransitions.find(t =>
       t.action.type === 'bid' && t.action.bid === 'splash'
     );
@@ -29,7 +31,7 @@ describe('Splash Full Hand Integration', () => {
 
     // Others pass
     for (let i = 0; i < 3; i++) {
-      const passTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'pass');
+      const passTransition = getNextStates(state, ctx).find(t => t.id === 'pass');
       expect(passTransition).toBeDefined();
       state = executeAction(state, passTransition!.action, rules);
     }
@@ -41,7 +43,7 @@ describe('Splash Full Hand Integration', () => {
     expect(state.currentPlayer).toBe(2); // Partner selects trump
 
     // Select a suit trump
-    const trumpTransition = getNextStates(state, ruleSets, rules).find(t =>
+    const trumpTransition = getNextStates(state, ctx).find(t =>
       t.action.type === 'select-trump' &&
       t.action.trump?.type === 'suit'
     );
@@ -58,7 +60,7 @@ describe('Splash Full Hand Integration', () => {
     while (state.phase === 'playing' && trickCount < maxTricks) {
       // Play 4 dominoes
       for (let i = 0; i < 4; i++) {
-        const playTransitions = getNextStates(state, ruleSets, rules).filter(t => t.action.type === 'play');
+        const playTransitions = getNextStates(state, ctx).filter(t => t.action.type === 'play');
         expect(playTransitions.length).toBeGreaterThan(0);
 
         // Select domino based on test scenario
@@ -87,7 +89,7 @@ describe('Splash Full Hand Integration', () => {
       state = await processSequentialConsensus(state, 'completeTrick');
 
       // Complete trick
-      const completeTrickTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'complete-trick');
+      const completeTrickTransition = getNextStates(state, ctx).find(t => t.id === 'complete-trick');
       if (completeTrickTransition) {
         state = executeAction(state, completeTrickTransition.action, rules);
         trickCount++;
@@ -105,7 +107,7 @@ describe('Splash Full Hand Integration', () => {
     state = await processSequentialConsensus(state, 'scoreHand');
 
     // Score hand
-    const scoreTransition = getNextStates(state, ruleSets, rules).find(t => t.id === 'score-hand');
+    const scoreTransition = getNextStates(state, ctx).find(t => t.id === 'score-hand');
     expect(scoreTransition).toBeDefined();
 
     // Execute scoring
@@ -282,14 +284,14 @@ describe('Splash Full Hand Integration', () => {
       let testState = state;
 
       // Bid splash
-      const splashBid = getNextStates(testState, ruleSets, rules).find(t =>
+      const splashBid = getNextStates(testState, ctx).find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
       testState = executeAction(testState, splashBid!.action, rules);
 
       // Others pass
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
@@ -314,19 +316,19 @@ describe('Splash Full Hand Integration', () => {
       let testState = state;
 
       // Bid splash
-      const splashBid = getNextStates(testState, ruleSets, rules).find(t =>
+      const splashBid = getNextStates(testState, ctx).find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
       testState = executeAction(testState, splashBid!.action, rules);
 
       // Others pass
       for (let i = 0; i < 3; i++) {
-        const passTransition = getNextStates(testState, ruleSets, rules).find(t => t.id === 'pass');
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
         testState = executeAction(testState, passTransition!.action, rules);
       }
 
       // Partner selects trump
-      const trumpTransition = getNextStates(testState, ruleSets, rules).find(t =>
+      const trumpTransition = getNextStates(testState, ctx).find(t =>
         t.action.type === 'select-trump'
       );
       testState = executeAction(testState, trumpTransition!.action, rules);
@@ -339,6 +341,7 @@ describe('Splash Full Hand Integration', () => {
 
   describe('Bidding Requirements', () => {
     it('should require 3+ doubles to bid splash', () => {
+      const ctx = createTestContextWithRuleSets(['splash']);
       // With 3 doubles
       const stateWith3 = createTestState({
         phase: 'bidding',
@@ -352,7 +355,7 @@ describe('Splash Full Hand Integration', () => {
         ]
       });
 
-      const transitionsWith3 = getNextStates(stateWith3, ruleSets, rules);
+      const transitionsWith3 = getNextStates(stateWith3, ctx);
       const splashOptionWith3 = transitionsWith3.find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
@@ -371,7 +374,7 @@ describe('Splash Full Hand Integration', () => {
         ]
       });
 
-      const transitionsWith2 = getNextStates(stateWith2, ruleSets, rules);
+      const transitionsWith2 = getNextStates(stateWith2, ctx);
       const splashOptionWith2 = transitionsWith2.find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
@@ -379,6 +382,8 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should have automatic bid value of 2-3 marks', () => {
+
+      const ctx = createTestContextWithRuleSets(['splash']);
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 0,
@@ -391,7 +396,7 @@ describe('Splash Full Hand Integration', () => {
         ]
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
@@ -404,6 +409,8 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should jump over existing marks bids up to maximum of 3', () => {
+
+      const ctx = createTestContextWithRuleSets(['splash']);
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 1,
@@ -417,7 +424,7 @@ describe('Splash Full Hand Integration', () => {
         ]
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );
@@ -430,6 +437,8 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should cap at 3 marks even with high existing bids', () => {
+
+      const ctx = createTestContextWithRuleSets(['splash']);
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 1,
@@ -443,7 +452,7 @@ describe('Splash Full Hand Integration', () => {
         ]
       });
 
-      const transitions = getNextStates(state, ruleSets, rules);
+      const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>
         t.action.type === 'bid' && t.action.bid === 'splash'
       );

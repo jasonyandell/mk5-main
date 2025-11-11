@@ -18,7 +18,8 @@ import type {
 } from '../../shared/multiplayer/protocol';
 import type { Connection } from '../../server/transports/Transport';
 import { selectAIAction } from '../ai/actionSelector';
-import { getNextStates } from '../core/gameEngine';
+import { getNextStates } from '../core/state';
+import { createExecutionContext } from '../types/execution';
 
 /**
  * AI difficulty levels
@@ -204,9 +205,12 @@ export class AIClient {
 
     const { state } = view;
 
+    // Create execution context with default player types
+    const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
+
     // Convert ValidActions to StateTransitions for AI selector
     // (This is a compatibility layer - future AI could work directly with ValidActions)
-    const allTransitions = getNextStates(state);
+    const allTransitions = getNextStates(state, ctx);
     const myTransitions = allTransitions.filter(t => {
       const action = t.action;
       // Find matching valid action

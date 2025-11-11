@@ -44,16 +44,24 @@ export {
   getPlayerLeftOfDealer
 } from './core/players';
 
-// Game actions and transitions are now exported from gameEngine
+// Game actions and transitions
+// Note: GameEngine class has been removed - use ExecutionContext pattern instead
 
-// Action-based game engine
-export { 
-  GameEngine, 
-  getValidActions, 
-  actionToId, 
-  actionToLabel,
-  getNextStates 
-} from './core/gameEngine';
+// Pure action generation functions
+export {
+  generateStructuralActions  // Low-level: generates structural actions only (use ctx.getValidActions instead)
+} from './rulesets/base';
+
+// Action utilities
+export {
+  actionToId,
+  actionToLabel
+} from './core/actions';
+
+// State transitions
+export {
+  getNextStates  // Requires ExecutionContext parameter
+} from './core/state';
 
 // Pure action execution
 export { executeAction } from './core/actions';

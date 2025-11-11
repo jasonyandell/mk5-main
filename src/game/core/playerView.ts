@@ -1,13 +1,17 @@
 import type { GameState, PlayerView, PublicPlayer } from '../types';
-import { getNextStates } from './gameEngine';
+import { getNextStates } from './state';
+import { createExecutionContext } from '../types/execution';
 
 /**
  * Creates a player-specific view of the game state with privacy guarantees.
  * Other players' hands are never included in the type structure.
  */
 export function getPlayerView(state: GameState, playerId: number): PlayerView {
+  // Create execution context with default player types
+  const ctx = createExecutionContext({ playerTypes: ['human', 'human', 'human', 'human'] });
+
   // Get all possible transitions
-  const allTransitions = getNextStates(state);
+  const allTransitions = getNextStates(state, ctx);
   
   // Filter transitions to only those this player can take
   const validTransitions = allTransitions.filter(transition => {

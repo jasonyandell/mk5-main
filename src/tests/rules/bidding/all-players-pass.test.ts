@@ -1,8 +1,10 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState } from '../../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../../game';
+import { createTestContext } from '../../helpers/executionContext';
 
 describe('Feature: Special Bids', () => {
+  const ctx = createTestContext();
   describe('Scenario: All Players Pass', () => {
     test('Given all players have had a chance to bid', () => {
       const gameState = createInitialState({ shuffleSeed: 12345 });
@@ -13,7 +15,7 @@ describe('Feature: Special Bids', () => {
 
       // Simulate all players passing using game engine
       for (let i = 0; i < 4; i++) {
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const passTransition = transitions.find(t => t.id === 'pass');
         expect(passTransition).toBeDefined();
         
@@ -37,7 +39,7 @@ describe('Feature: Special Bids', () => {
 
       // Simulate all players passing
       for (let i = 0; i < 4; i++) {
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const passTransition = transitions.find(t => t.id === 'pass');
         if (passTransition) {
           Object.assign(gameState, passTransition.newState);

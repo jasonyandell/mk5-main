@@ -49,7 +49,7 @@ export const sevensRuleSet: GameRuleSet = {
     },
 
     // Winner of trick leads next (not just team leader)
-    getNextPlayer: (state, currentPlayer, prev) => {
+    getNextPlayer: (state, _currentPlayer, prev) => {
       if (state.trump?.type !== 'sevens') return prev;
 
       // If trick just completed, winner leads next trick
@@ -60,8 +60,8 @@ export const sevensRuleSet: GameRuleSet = {
         }
       }
 
-      // During trick, normal rotation
-      return (currentPlayer + 1) % 4;
+      // During trick, use base rotation (no hardcoded player count)
+      return prev;
     },
 
     calculateScore: (state, prev) => {

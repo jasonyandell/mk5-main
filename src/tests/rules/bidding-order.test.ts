@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../game';
+import { createTestContext } from '../helpers/executionContext';
 
 describe('Feature: Standard Bidding', () => {
   describe('Scenario: Bidding Order', () => {
@@ -30,6 +31,7 @@ describe('Feature: Standard Bidding', () => {
     });
 
     it('And bidding proceeds clockwise', () => {
+      const ctx = createTestContext();
       // Test bidding order progression using actual game engine
       const gameState = createInitialState({ shuffleSeed: 12345 });
       gameState.phase = 'bidding';
@@ -45,7 +47,7 @@ describe('Feature: Standard Bidding', () => {
         actualOrder.push(gameState.currentPlayer);
         
         // Get available actions and choose pass
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const passTransition = transitions.find(t => t.id === 'pass');
         expect(passTransition).toBeDefined();
         
@@ -60,6 +62,7 @@ describe('Feature: Standard Bidding', () => {
     });
 
     it('And each player gets exactly one opportunity to bid or pass', () => {
+      const ctx = createTestContext();
       // Test that each player bids exactly once using the game engine
       const gameState = createInitialState({ shuffleSeed: 12345 });
       gameState.phase = 'bidding';
@@ -77,7 +80,7 @@ describe('Feature: Standard Bidding', () => {
         const currentPlayer = gameState.currentPlayer;
         playerBidCount.set(currentPlayer, (playerBidCount.get(currentPlayer) || 0) + 1);
         
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const chosenTransition = transitions.find(t => t.id === actions[i]);
         
         expect(chosenTransition).toBeDefined();

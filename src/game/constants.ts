@@ -16,7 +16,6 @@ export const BID_TYPES = {
   PASS: 'pass' as const,
   POINTS: 'points' as const,
   MARKS: 'marks' as const,
-  NELLO: 'nello' as const,
   SPLASH: 'splash' as const,
   PLUNGE: 'plunge' as const,
 };

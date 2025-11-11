@@ -36,7 +36,7 @@ describe('Tournament Scenarios', () => {
       state.bids = [];
       state.currentPlayer = 0;
 
-      const nelloBid: Bid = { type: BID_TYPES.NELLO, value: 2, player: 0 };
+      // Nello is not a bid type - it's a trump selection
       const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 3, player: 0 };
       const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
 
@@ -52,7 +52,7 @@ describe('Tournament Scenarios', () => {
       ];
 
       // Tournament rules reject special contracts
-      expect(rules.isValidBid(state, nelloBid, undefined)).toBe(false);
+      // (Nello is not a bid - it's filtered as a trump selection in tournament mode)
       expect(rules.isValidBid(state, splashBid, adequateHand)).toBe(false);
       expect(rules.isValidBid(state, plungeBid, adequateHand)).toBe(false);
     });

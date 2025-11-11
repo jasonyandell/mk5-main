@@ -66,9 +66,7 @@ function generateHint(action: GameAction, state: GameState): string | null {
  * Generate hint for bidding action.
  */
 function generateBidHint(action: GameAction & { type: 'bid' }, _state: GameState): string {
-  if (action.bid === 'nello') {
-    return 'Nello: Bid to take no tricks. Requires a weak hand with low dominoes.';
-  }
+  // Nello is not a bid type - it's a trump selection
 
   if (action.bid === 'splash') {
     return 'Splash: Partner takes all 7 tricks. Very risky - requires dominant hand.';

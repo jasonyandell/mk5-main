@@ -4,10 +4,10 @@
  */
 
 import type { GameState, GameAction } from '../types';
-import { createInitialState } from '../core/state';
-import { getValidActions, getNextStates } from '../core/gameEngine';
+import { createInitialState, getNextStates } from '../core/state';
 import { executeAction } from '../core/actions';
 import { selectAIAction } from './actionSelector';
+import { createExecutionContext } from '../types/execution';
 
 /**
  * Options for game simulation
@@ -65,6 +65,11 @@ export async function simulateGame(
     state.playerTypes = ['ai', 'ai', 'ai', 'ai'];
   }
 
+  // Create ExecutionContext once for the entire simulation
+  const ctx = createExecutionContext({
+    playerTypes: state.playerTypes
+  });
+
   // Run game until completion or limits reached
   while (state.phase !== 'game_end' && actionsExecuted < maxActions) {
     // Track hand transitions
@@ -77,8 +82,8 @@ export async function simulateGame(
     }
     lastPhase = state.phase;
 
-    // Get valid actions
-    const validActions = getValidActions(state);
+    // Get valid actions using composed ExecutionContext
+    const validActions = ctx.getValidActions(state);
 
     if (validActions.length === 0) {
       if (verbose) console.log('No valid actions available');
@@ -114,8 +119,8 @@ export async function simulateGame(
 
       // For AI players, select action
       if (state.playerTypes[currentPlayer] === 'ai') {
-        // Get transitions for AI selector
-        const transitions = getNextStates(state);
+        // Get transitions for AI selector using ExecutionContext
+        const transitions = getNextStates(state, ctx);
         const playerTransitions = transitions.filter(t => {
           const action = t.action;
           if (!('player' in action)) return true;
@@ -135,8 +140,8 @@ export async function simulateGame(
       break;
     }
 
-    // Execute action
-    const newState = executeAction(state, selectedAction);
+    // Execute action using composed rules from ExecutionContext
+    const newState = executeAction(state, selectedAction, ctx.rules);
     if (!newState) {
       if (verbose) console.log('Action execution failed');
       break;

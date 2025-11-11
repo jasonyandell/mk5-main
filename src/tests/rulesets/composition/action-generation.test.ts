@@ -35,17 +35,20 @@ describe('getValidActions Composition', () => {
   }
 
   describe('Base ruleset provides standard bids', () => {
-    it('should provide pass action in bidding phase', () => {
+    it('should add standard bids to structural actions in bidding phase', () => {
       const state = createTestState({
         phase: 'bidding',
-        currentPlayer: 0
+        currentPlayer: 0,
+        bids: []
       });
 
+      // Base ruleset adds standard bids (points 30-41, marks 1-2) to whatever prev it receives
       const actions = getActionsFromLayers(state, [baseRuleSet]);
 
-      // Note: Base ruleset doesn't have getValidActions - that's handled by game engine
-      // Base ruleset only provides rule overrides
-      expect(actions).toEqual([]);
+      // Base ruleset should add all standard opening bids (30-41 points, 1-2 marks)
+      expect(actions.length).toBeGreaterThan(0);
+      expect(actions).toContainEqual({ type: 'bid', player: 0, bid: 'points', value: 30 });
+      expect(actions).toContainEqual({ type: 'bid', player: 0, bid: 'marks', value: 1 });
     });
   });
 
@@ -280,17 +283,20 @@ describe('getValidActions Composition', () => {
       expect(actions).toEqual(prevActions);
     });
 
-    it('should not add nello option outside trump_selection phase', () => {
+    it('should add nello trump option during trump selection', () => {
       const state = createTestState({
-        phase: 'bidding',
+        phase: 'trump_selection',
         currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 }
+        winningBidder: 0,
+        currentBid: { type: 'marks', value: 2, player: 0 },
+        bids: [{ type: 'marks', value: 2, player: 0 }]
       });
 
-      const prevActions: GameAction[] = [];
       const actions = getActionsFromLayers(state, [nelloRuleSet]);
 
-      expect(actions).toEqual(prevActions);
+      // Nello ruleset adds nello trump option during trump_selection after marks bid
+      expect(actions.length).toBe(1);
+      expect(actions[0]).toEqual({ type: 'select-trump', player: 0, trump: { type: 'nello' } });
     });
   });
 

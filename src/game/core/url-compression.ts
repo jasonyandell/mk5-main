@@ -103,9 +103,9 @@ const CHAR_TO_EVENT: Record<string, string> = Object.fromEntries(
 const ESCAPED_EVENT_TO_CHAR: Record<string, string> = {
   'bid-plunge': 'A',
   'bid-splash': 'B',
-  'bid-nello': 'C',
+  // 'bid-nello': 'C', // BROKEN: Nello is not a bid type, it's a trump selection (marks bid + nello trump). Fix planned for URL system refactor.
   'bid-84-honors': 'D',
-  'bid-sevens': 'E',
+  'bid-sevens': 'E', // BROKEN: Sevens is not a bid type, it's a trump selection (marks bid + sevens trump). Fix planned for URL system refactor.
   'timeout-p0': 'F',
   'timeout-p1': 'G',
   'timeout-p2': 'H',

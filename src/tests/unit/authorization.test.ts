@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { canPlayerExecuteAction, authorizeAndExecute } from '../../game/multiplayer/authorization';
 import type { GameState, GameAction } from '../../game/types';
 import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer/types';
-import { createInitialState } from '../../game';
+import { createInitialState, executeAction } from '../../game';
 import { getNextPlayer } from '../../game/core/players';
+import { createTestContext } from '../helpers/executionContext';
+import { GameTestHelper } from '../helpers/gameTestHelper';
+import { composeRules, baseRuleSet } from '../../game/rulesets';
 
 describe('Authorization', () => {
   // Helper to create test sessions
@@ -65,47 +68,73 @@ describe('Authorization', () => {
 
   describe('canPlayerExecuteAction', () => {
     it('allows any player to execute neutral actions (no player field)', () => {
-      const state = createInitialState();
+      const ctx = createTestContext();
+      // Create playing phase with complete trick AND all players agreed
+      const state = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'suit', suit: 0 },
+        currentTrick: [
+          { player: 0, domino: { id: '0-0', high: 0, low: 0, points: 0 } },
+          { player: 1, domino: { id: '0-1', high: 0, low: 1, points: 0 } },
+          { player: 2, domino: { id: '0-2', high: 0, low: 2, points: 0 } },
+          { player: 3, domino: { id: '0-3', high: 0, low: 3, points: 0 } }
+        ],
+        consensus: {
+          completeTrick: new Set([0, 1, 2, 3]), // All players have agreed
+          scoreHand: new Set()
+        }
+      });
       const sessions = createTestSessions();
       const neutralAction: GameAction = { type: 'complete-trick' };
 
-      // All players should be able to execute neutral actions
-      const provideValidActions = () => [neutralAction];
-
-      expect(canPlayerExecuteAction(sessions[0]!, neutralAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[1]!, neutralAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[2]!, neutralAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[3]!, neutralAction, state, provideValidActions)).toBe(true);
+      // All players should be able to execute neutral actions (no player field)
+      expect(canPlayerExecuteAction(sessions[0]!, neutralAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[1]!, neutralAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[2]!, neutralAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[3]!, neutralAction, state, ctx)).toBe(true);
     });
 
     it('allows only session with act-as-player capability to execute player-specific actions', () => {
+      const ctx = createTestContext();
       const state = createInitialState();
       const sessions = createTestSessions();
       const player0Action: GameAction = { type: 'pass', player: 0 };
 
-      const provideValidActions = () => [player0Action];
-
-      expect(canPlayerExecuteAction(sessions[0]!, player0Action, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[1]!, player0Action, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[2]!, player0Action, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[3]!, player0Action, state, provideValidActions)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[0]!, player0Action, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[1]!, player0Action, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[2]!, player0Action, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[3]!, player0Action, state, ctx)).toBe(false);
     });
 
     it('correctly handles bid actions with capabilities', () => {
-      const state = createInitialState();
+      const ctx = createTestContext();
+      const rules = composeRules([baseRuleSet]);
+      // Advance state so player 2 is current player
+      let state = createInitialState();
+      state = executeAction(state, { type: 'pass', player: 0 }, rules);
+      state = executeAction(state, { type: 'pass', player: 1 }, rules);
+      // Now player 2 is current player in bidding phase
+
       const sessions = createTestSessions();
       const bidAction: GameAction = { type: 'bid', player: 2, bid: 'points', value: 30 };
 
-      const provideValidActions = () => [bidAction];
-
-      expect(canPlayerExecuteAction(sessions[2]!, bidAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[0]!, bidAction, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[1]!, bidAction, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[3]!, bidAction, state, provideValidActions)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[2]!, bidAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[0]!, bidAction, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[1]!, bidAction, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[3]!, bidAction, state, ctx)).toBe(false);
     });
 
     it('correctly handles trump selection actions with capabilities', () => {
-      const state = createInitialState();
+      const ctx = createTestContext();
+      const rules = composeRules([baseRuleSet]);
+      // Complete bidding with player 1 as winner, advance to trump_selection
+      let state = createInitialState();
+      state = executeAction(state, { type: 'pass', player: 0 }, rules);
+      state = executeAction(state, { type: 'bid', player: 1, bid: 'points', value: 30 }, rules);
+      state = executeAction(state, { type: 'pass', player: 2 }, rules);
+      state = executeAction(state, { type: 'pass', player: 3 }, rules);
+      // Now in trump_selection phase with player 1 selecting
+
       const sessions = createTestSessions();
       const trumpAction: GameAction = {
         type: 'select-trump',
@@ -113,41 +142,64 @@ describe('Authorization', () => {
         trump: { type: 'suit', suit: 0 }
       };
 
-      const provideValidActions = () => [trumpAction];
-
-      expect(canPlayerExecuteAction(sessions[1]!, trumpAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[0]!, trumpAction, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[2]!, trumpAction, state, provideValidActions)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[1]!, trumpAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[0]!, trumpAction, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[2]!, trumpAction, state, ctx)).toBe(false);
     });
 
     it('correctly handles play actions with capabilities', () => {
-      const state = createInitialState();
+      const ctx = createTestContext();
+      // Create playing phase with player 3 as current player and domino in hand
+      const baseState = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'suit', suit: 0 },
+        currentPlayer: 3
+      });
+      // Modify player 3's hand directly
+      baseState.players[3]!.hand = [
+        { id: '0-0', high: 0, low: 0, points: 0 },
+        { id: '1-1', high: 1, low: 1, points: 0 }
+      ];
+      const state = baseState;
       const sessions = createTestSessions();
       const playAction: GameAction = { type: 'play', player: 3, dominoId: '0-0' };
 
-      const provideValidActions = () => [playAction];
-
-      expect(canPlayerExecuteAction(sessions[3]!, playAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[0]!, playAction, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[1]!, playAction, state, provideValidActions)).toBe(false);
-      expect(canPlayerExecuteAction(sessions[2]!, playAction, state, provideValidActions)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[3]!, playAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[0]!, playAction, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[1]!, playAction, state, ctx)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[2]!, playAction, state, ctx)).toBe(false);
     });
 
     it('correctly handles consensus actions with capabilities', () => {
-      const state = createInitialState();
+      const ctx = createTestContext();
+      // Create playing phase with complete trick so consensus action is valid
+      const state = GameTestHelper.createTestState({
+        phase: 'playing',
+        trump: { type: 'suit', suit: 0 },
+        currentPlayer: 1,
+        currentTrick: [
+          { player: 0, domino: { id: '0-0', high: 0, low: 0, points: 0 } },
+          { player: 1, domino: { id: '0-1', high: 0, low: 1, points: 0 } },
+          { player: 2, domino: { id: '0-2', high: 0, low: 2, points: 0 } },
+          { player: 3, domino: { id: '0-3', high: 0, low: 3, points: 0 } }
+        ],
+        consensus: {
+          completeTrick: new Set(),
+          scoreHand: new Set()
+        }
+      });
       const sessions = createTestSessions();
       const consensusAction: GameAction = { type: 'agree-complete-trick', player: 1 };
 
       // Consensus actions have player field - only player with capability can execute
-      const provideValidActions = () => [consensusAction];
-
-      expect(canPlayerExecuteAction(sessions[1]!, consensusAction, state, provideValidActions)).toBe(true);
-      expect(canPlayerExecuteAction(sessions[0]!, consensusAction, state, provideValidActions)).toBe(false);
+      expect(canPlayerExecuteAction(sessions[1]!, consensusAction, state, ctx)).toBe(true);
+      expect(canPlayerExecuteAction(sessions[0]!, consensusAction, state, ctx)).toBe(false);
     });
   });
 
   describe('authorizeAndExecute', () => {
     it('successfully executes authorized action', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
 
@@ -155,7 +207,7 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-      });
+      }, ctx);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -165,6 +217,7 @@ describe('Authorization', () => {
     });
 
     it('rejects action from wrong player', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
       const wrongPlayer = getNextPlayer(currentPlayer);
@@ -172,7 +225,7 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: wrongPlayer === 0 ? 'player-0' : `ai-${wrongPlayer}`,
         action: { type: 'pass', player: currentPlayer }, // Try to act as different player
-      });
+      }, ctx);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -181,12 +234,13 @@ describe('Authorization', () => {
     });
 
     it('rejects invalid player ID', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
 
       const result = authorizeAndExecute(mpState, {
         playerId: 'invalid-player-99', // Invalid player ID
         action: { type: 'complete-trick' },
-      });
+      }, ctx);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -195,18 +249,20 @@ describe('Authorization', () => {
     });
 
     it('allows action without sessionId (for local games)', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
 
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-      });
+      }, ctx);
 
       expect(result.success).toBe(true);
     });
 
     it('rejects action that is not valid in current state', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
 
@@ -214,7 +270,7 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'play', player: currentPlayer, dominoId: '0-0' },
-      });
+      }, ctx);
 
       expect(result.success).toBe(false);
       if (!result.success) {
@@ -223,13 +279,14 @@ describe('Authorization', () => {
     });
 
     it('preserves sessions across state transitions', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
       const currentPlayer = mpState.coreState.currentPlayer;
 
       const result = authorizeAndExecute(mpState, {
         playerId: `player-${currentPlayer}`,
         action: { type: 'pass', player: currentPlayer },
-      });
+      }, ctx);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -239,6 +296,7 @@ describe('Authorization', () => {
     });
 
     it('correctly handles neutral actions from any player', () => {
+      const ctx = createTestContext();
       // Create state where trick is complete and waiting for consensus
       // We need to manually construct a state in playing phase with complete trick
       // For now, just test that neutral actions are allowed
@@ -249,7 +307,7 @@ describe('Authorization', () => {
       const result = authorizeAndExecute(mpState, {
         playerId: 'player-0', // Any player
         action: { type: 'complete-trick' },
-      });
+      }, ctx);
 
       // This will fail because trick isn't actually complete, but authorization should pass
       // The error should be about state validity, not authorization
@@ -263,12 +321,13 @@ describe('Authorization', () => {
 
   describe('Edge cases', () => {
     it('handles invalid player IDs', () => {
+      const ctx = createTestContext();
       const mpState = createTestMPState();
 
       const result = authorizeAndExecute(mpState, {
         playerId: 'player-99',
         action: { type: 'complete-trick' },
-      });
+      }, ctx);
 
       expect(result.success).toBe(false);
       if (!result.success) {

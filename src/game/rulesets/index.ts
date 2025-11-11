@@ -17,7 +17,8 @@ export { nelloRuleSet } from './nello';
 export { plungeRuleSet } from './plunge';
 export { splashRuleSet } from './splash';
 export { sevensRuleSet } from './sevens';
+export { tournamentRuleSet } from './tournament';
 
 // Composition
-export { composeRules, composeActions } from './compose';
+export { composeRules, composeActions, composeActionGenerators } from './compose';
 export { RULESET_REGISTRY, getRuleSetByName, getRuleSetsByNames } from './registry';

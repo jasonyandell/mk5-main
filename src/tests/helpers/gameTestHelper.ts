@@ -4,6 +4,7 @@ import {
   getNextStates,
   dealDominoesWithSeed
 } from '../../game';
+import { createTestContext } from './executionContext';
 import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { BID_TYPES } from '../../game/constants';
@@ -128,10 +129,10 @@ export class GameTestHelper {
     if (overrides.players) {
       players = overrides.players.map((playerOverride, index) => {
         if (playerOverride === undefined) {
-          return baseState.players[index];
+          return baseState.players[index]!;
         }
         return {
-          ...baseState.players[index],
+          ...baseState.players[index]!,
           ...playerOverride
         };
       }) as Player[];
@@ -347,11 +348,12 @@ export class GameTestHelper {
     initialState: GameState,
     bids: (Bid | 'auto')[]
   ): GameState {
+    const ctx = createTestContext();
     let state = { ...initialState };
-    
+
     for (const bid of bids) {
-      const nextStates = getNextStates(state);
-      
+      const nextStates = getNextStates(state, ctx);
+
       if (bid === 'auto') {
         // Automatically select first valid action
         if (nextStates.length > 0) {
@@ -363,7 +365,7 @@ export class GameTestHelper {
           const actionBid = this.extractBidFromAction(action.id);
           return actionBid && this.bidsEqual(actionBid, bid);
         });
-        
+
         if (matchingAction) {
           state = matchingAction.newState;
         } else {
@@ -371,7 +373,7 @@ export class GameTestHelper {
         }
       }
     }
-    
+
     return state;
   }
   
@@ -431,13 +433,17 @@ export class GameTestHelper {
 
     // Check for special contracts (tournament mode now enforced via actionTransformers)
     const specialBids = state.bids.filter(bid =>
-      bid.type === BID_TYPES.NELLO ||
       bid.type === BID_TYPES.SPLASH ||
       bid.type === BID_TYPES.PLUNGE
     );
 
     if (specialBids.length > 0) {
       errors.push('Special contracts not allowed in tournament mode');
+    }
+
+    // Check for special trump selections (nello, sevens)
+    if (state.trump?.type === 'nello' || state.trump?.type === 'sevens') {
+      errors.push('Special trump selections not allowed in tournament mode');
     }
 
     // Check game target is 7 marks
@@ -456,36 +462,37 @@ export class GameTestHelper {
    * @returns The state after processing consensus
    */
   static async processSequentialConsensus(
-    initialState: GameState, 
+    initialState: GameState,
     consensusType: 'completeTrick' | 'scoreHand',
     humanPlayers: Set<number> = new Set()
   ): Promise<GameState> {
     const { executeAction } = await import('../../game/core/actions');
+    const ctx = createTestContext();
     let state = initialState;
-    const actionType = consensusType === 'completeTrick' 
-      ? 'agree-complete-trick' 
+    const actionType = consensusType === 'completeTrick'
+      ? 'agree-complete-trick'
       : 'agree-score-hand';
-    
+
     // Process agrees sequentially until all players have agreed
     while (state.consensus[consensusType].size < 4) {
       // Skip if current player is human
       if (humanPlayers.has(state.currentPlayer)) {
         break;
       }
-      
-      const transitions = getNextStates(state);
-      const agreeAction = transitions.find(t => 
+
+      const transitions = getNextStates(state, ctx);
+      const agreeAction = transitions.find(t =>
         t.action.type === actionType &&
         t.action.player === state.currentPlayer
       );
-      
+
       if (!agreeAction) {
         break; // No more agrees available
       }
-      
+
       state = executeAction(state, agreeAction.action);
     }
-    
+
     return state;
   }
 
@@ -500,11 +507,12 @@ export class GameTestHelper {
     humanPlayers: Set<number> = new Set()
   ): Promise<GameState> {
     const { executeAction } = await import('../../game/core/actions');
+    const ctx = createTestContext();
     let state = initialState;
-    
+
     // Play cards until trick is complete
     while (state.currentTrick.length < 4 && state.phase === 'playing') {
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const playAction = transitions.find(t => t.action.type === 'play');
       if (playAction) {
         state = executeAction(state, playAction.action);
@@ -512,19 +520,19 @@ export class GameTestHelper {
         break;
       }
     }
-    
+
     // Process consensus
     state = await this.processSequentialConsensus(state, 'completeTrick', humanPlayers);
-    
+
     // Complete the trick if all agreed
     if (state.consensus.completeTrick.size === 4) {
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const completeTrick = transitions.find(t => t.action.type === 'complete-trick');
       if (completeTrick) {
         state = executeAction(state, completeTrick.action);
       }
     }
-    
+
     return state;
   }
 
@@ -539,20 +547,21 @@ export class GameTestHelper {
     humanPlayers: Set<number> = new Set()
   ): Promise<GameState> {
     const { executeAction } = await import('../../game/core/actions');
+    const ctx = createTestContext();
     let state = initialState;
-    
+
     // Process consensus
     state = await this.processSequentialConsensus(state, 'scoreHand', humanPlayers);
-    
+
     // Score the hand if all agreed
     if (state.consensus.scoreHand.size === 4) {
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const scoreHand = transitions.find(t => t.action.type === 'score-hand');
       if (scoreHand) {
         state = executeAction(state, scoreHand.action);
       }
     }
-    
+
     return state;
   }
   

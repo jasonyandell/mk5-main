@@ -180,57 +180,9 @@ describe('Hand Outcome Detection', () => {
     });
   });
 
-  describe('Nello', () => {
-    it('should detect when bidding team wins a trick on nello', () => {
-      const state = createTestState({
-        currentBid: { type: 'nello', value: 1, player: 0 },
-        teamScores: [1, 41],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 0, 10)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Bidding team won a trick on nello');
-      expect(outcome.decidedAtTrick).toBe(2);
-    });
-
-    it('should not end nello when bidding team has lost all tricks so far', () => {
-      const state = createTestState({
-        currentBid: { type: 'nello', value: 1, player: 0 },
-        teamScores: [0, 25],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 10),
-          createTrick([
-            {player: 1, domino: createDomino(6, 4)},
-            {player: 2, domino: createDomino(6, 3)},
-            {player: 3, domino: createDomino(6, 2)},
-            {player: 0, domino: createDomino(6, 1)}
-          ], 1, 10),
-          createTrick([
-            {player: 1, domino: createDomino(3, 2)},
-            {player: 2, domino: createDomino(3, 1)},
-            {player: 3, domino: createDomino(3, 0)},
-            {player: 0, domino: createDomino(2, 1)}
-          ], 1, 5)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(false);
-    });
-  });
+  // NOTE: Nello tests removed - nello is now a trump selection (not bid type)
+  // and early termination logic is handled by nello ruleset's checkHandOutcome.
+  // See src/tests/rulesets/unit/nello-ruleset.test.ts for nello-specific tests.
 
   describe('Splash/Plunge', () => {
     it('should detect when defending team wins a trick on splash', () => {

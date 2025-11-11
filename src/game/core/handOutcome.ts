@@ -118,6 +118,8 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     
     case 'marks': {
       // Marks bid - bidding team must win all 42 points
+      // NOTE: Nello early termination is now handled by nello ruleset's checkHandOutcome
+      // (nello is a trump selection, not a bid type)
       if (defendingTeamScore > 0) {
         return {
           isDetermined: true,
@@ -125,7 +127,7 @@ export function checkHandOutcome(state: GameState): HandOutcome {
           decidedAtTrick: currentTrick
         };
       }
-      
+
       // If bidding team lost any points, they can't win
       if (biddingTeamScore + remainingPoints < 42) {
         return {
@@ -134,30 +136,7 @@ export function checkHandOutcome(state: GameState): HandOutcome {
           decidedAtTrick: currentTrick
         };
       }
-      
-      break;
-    }
-    
-    case 'nello': {
-      // Nello - bidding team must lose all tricks
-      // Check if bidding team has won any tricks
-      const biddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === biddingTeam;
-      }).length;
-      
-      if (biddingTeamTricks > 0) {
-        return {
-          isDetermined: true,
-          reason: 'Bidding team won a trick on nello',
-          decidedAtTrick: currentTrick
-        };
-      }
-      
+
       break;
     }
     

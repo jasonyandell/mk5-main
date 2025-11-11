@@ -2,7 +2,8 @@
  * Nello RuleSet - Special contract where bidder must lose all tricks.
  *
  * From docs/rules.md §8.A:
- * - Must bid at least 1 mark
+ * - Must bid at least 1 mark (standard marks bid, NOT a separate bid type)
+ * - Nello is selected as trump during trump_selection phase
  * - Partner sits out with dominoes face-down (3-player tricks)
  * - No trump suit declared
  * - Doubles form own suit (standard variant)
@@ -21,42 +22,21 @@ export const nelloRuleSet: GameRuleSet = {
 
   getValidActions: (state, prev) => {
     // Add nello as trump option when marks bid won
-    if (state.phase === 'trump_selection' &&
-        state.currentBid?.type === 'marks') {
-      return [...prev, {
-        type: 'select-trump',
-        player: state.winningBidder,
-        trump: { type: 'nello' }
-      }];
+    if (state.phase === 'trump_selection' && state.currentBid?.type === 'marks') {
+      return [
+        ...prev,
+        {
+          type: 'select-trump',
+          player: state.winningBidder,
+          trump: { type: 'nello' }
+        }
+      ];
     }
 
     return prev;
   },
 
   rules: {
-    // Allow NELLO bids
-    isValidBid: (state, bid, _playerHand, prev) => {
-      if (bid.type === BID_TYPES.NELLO) {
-        // Basic validation
-        if (bid.value === undefined || bid.value < 1) return false;
-
-        // Opening bid constraints
-        const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
-        if (previousBids.length === 0) {
-          return bid.value >= 1; // Nello allowed as opening bid
-        }
-
-        return bid.value >= 1; // Nello allowed as subsequent bid
-      }
-      return prev;
-    },
-
-    getBidComparisonValue: (bid, prev) => {
-      if (bid.type === BID_TYPES.NELLO) {
-        return bid.value! * 42;
-      }
-      return prev;
-    },
 
     isValidTrump: (trump, prev) => {
       if (trump.type === 'nello') return true;
@@ -64,7 +44,10 @@ export const nelloRuleSet: GameRuleSet = {
     },
 
     calculateScore: (state, prev) => {
-      if (state.currentBid.type !== BID_TYPES.NELLO) return prev;
+      // Nello can be bid as MARKS with nello trump
+      if (state.currentBid.type !== BID_TYPES.MARKS || state.trump.type !== 'nello') {
+        return prev;
+      }
 
       // Nello scoring: bidding team must take no tricks
       const bidder = state.players[state.winningBidder];

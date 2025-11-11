@@ -1,13 +1,12 @@
 // Pure lookup - no registration, no side effects
 import type { ActionTransformerFactory, ActionTransformer, ActionTransformerConfig, StateMachine } from './types';
-import { tournamentActionTransformer } from './tournament';
 import { oneHandActionTransformer } from './oneHand';
 import { speedActionTransformer } from './speed';
 import { hintsActionTransformer } from './hints';
 
-// Registry will be populated as action transformers are implemented
+// ActionTransformers for cross-cutting concerns (UX, hints, game modes)
+// Note: Tournament mode moved to RuleSet (it's game rules, not UX)
 const ACTION_TRANSFORMER_REGISTRY: Record<string, ActionTransformerFactory> = {
-  'tournament': tournamentActionTransformer,
   'one-hand': oneHandActionTransformer,
   'speed': speedActionTransformer,
   'hints': hintsActionTransformer

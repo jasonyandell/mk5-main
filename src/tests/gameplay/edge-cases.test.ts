@@ -1,29 +1,31 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/gameEngine';
+import { getNextStates } from '../../game/core/state';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerAfter } from '../../game/core/players';
+import { createTestContext } from '../helpers/executionContext';
 import type { Bid } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Edge Cases and Unusual Scenarios', () => {
   describe('Dealer Rotation Edge Cases', () => {
     it('should handle multiple consecutive all-pass redeals', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
       const originalDealer = state.dealer;
-      
+
       // First all-pass round
       for (let round = 0; round < 3; round++) {
         for (let i = 0; i < 4; i++) {
-          const transitions = getNextStates(state);
+          const transitions = getNextStates(state, ctx);
           const pass = transitions.find(t => t.id === 'pass');
           expect(pass).toBeDefined();
           state = pass!.newState;
         }
-        
+
         // Should trigger redeal
-        const redealTransitions = getNextStates(state);
+        const redealTransitions = getNextStates(state, ctx);
         const redeal = redealTransitions.find(t => t.id === 'redeal');
         if (redeal) {
           state = redeal.newState;
@@ -33,19 +35,20 @@ describe('Edge Cases and Unusual Scenarios', () => {
     });
 
     it('should handle dealer rotation wrapping around correctly', () => {
+      const ctx = createTestContext();
       // Start with dealer as player 3
       let state = createInitialState();
       state.dealer = 3;
-      
+
       // All players pass
       for (let i = 0; i < 4; i++) {
-        const transitions = getNextStates(state);
+        const transitions = getNextStates(state, ctx);
         const pass = transitions.find(t => t.id === 'pass');
         state = pass!.newState;
       }
-      
+
       // Should redeal with dealer = 0 (wraps around)
-      const redealTransitions = getNextStates(state);
+      const redealTransitions = getNextStates(state, ctx);
       const redeal = redealTransitions.find(t => t.id === 'redeal');
       if (redeal) {
         state = redeal.newState;
@@ -78,14 +81,15 @@ describe('Edge Cases and Unusual Scenarios', () => {
     });
 
     it('should handle player trying to bid after passing', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
-      
+
       // Player 0 passes
       const passBid: Bid = { type: BID_TYPES.PASS, player: 0 };
       state.bids.push(passBid);
-      
+
       // Player 0 should not be able to bid again
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       const player0Bids = transitions.filter(t => t.label?.includes('P0'));
       expect(player0Bids.length).toBe(0);
     });
@@ -229,30 +233,32 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
   describe('Trump Selection Edge Cases', () => {
     it('should handle trump selection with limited options', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
-        currentBid: { type: BID_TYPES.NELLO, value: 2, player: 0 }
+        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
       });
-      
-      // Nello bid should limit trump options
-      const transitions = getNextStates(state);
+
+      // Marks bid with nello ruleset should include nello as trump option
+      const transitions = getNextStates(state, ctx);
       const trumpOptions = transitions.filter(t => t.id.startsWith('trump-'));
-      
+
       // Verify trump selection is available
       expect(trumpOptions.length).toBeGreaterThan(0);
     });
 
     it('should handle no-trump selection', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
         currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 }
       });
-      
-      const transitions = getNextStates(state);
+
+      const transitions = getNextStates(state, ctx);
       const noTrump = transitions.find(t => t.id === 'trump-no-trump');
-      
+
       if (noTrump) {
         const newState = noTrump.newState;
         expect(newState.trump.type).toBe('no-trump'); // no-trump selected

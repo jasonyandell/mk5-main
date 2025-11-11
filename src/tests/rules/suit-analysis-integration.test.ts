@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/gameEngine';
+import { getNextStates } from '../../game/core/state';
+import { createTestContext } from '../helpers/executionContext';
 import type { GameState, Player } from '../../game/types';
 import { BLANKS, TRES, FIVES, SIXES } from '../../game/types';
 
 describe('Suit Analysis Integration', () => {
+  const ctx = createTestContext();
   describe('Initial state creation', () => {
     it('should include suit analysis for all players when creating initial state', () => {
       const state = createInitialState({ shuffleSeed: 12345 });
@@ -70,7 +72,7 @@ describe('Suit Analysis Integration', () => {
       };
       
       // Get trump selection transitions
-      const trumpTransitions = getNextStates(stateWithBid);
+      const trumpTransitions = getNextStates(stateWithBid, ctx);
       expect(trumpTransitions.length).toBeGreaterThan(0);
       
       // Check that trump is declared and suit analysis is updated
@@ -98,6 +100,8 @@ describe('Suit Analysis Integration', () => {
     });
 
     it('should handle doubles trump correctly', () => {
+
+      const ctx = createTestContext();
       const state = createInitialState({ shuffleSeed: 12345 });
       
       const stateWithBid: GameState = {
@@ -114,7 +118,7 @@ describe('Suit Analysis Integration', () => {
         currentPlayer: 1
       };
       
-      const trumpTransitions = getNextStates(stateWithBid);
+      const trumpTransitions = getNextStates(stateWithBid, ctx);
       const doublesTransition = trumpTransitions.find(t => t.id === 'trump-doubles');
       expect(doublesTransition).toBeDefined();
       
@@ -137,6 +141,7 @@ describe('Suit Analysis Integration', () => {
 
   describe('Play transitions update suit analysis', () => {
     it('should update suit analysis when player plays a domino', () => {
+      const ctx = createTestContext();
       // Create a state in playing phase with trump declared
       const initialState = createInitialState({ shuffleSeed: 12345 });
       const playingState: GameState = {
@@ -172,7 +177,7 @@ describe('Suit Analysis Integration', () => {
       const initialHandSize = currentPlayer.hand.length;
       
       // Get play transitions
-      const playTransitions = getNextStates(playingState);
+      const playTransitions = getNextStates(playingState, ctx);
       expect(playTransitions.length).toBeGreaterThan(0);
       
       // Take the first play transition
@@ -195,6 +200,7 @@ describe('Suit Analysis Integration', () => {
 
   describe('Redeal updates suit analysis', () => {
     it('should update suit analysis when all players pass and cards are redealt', () => {
+      const ctx = createTestContext();
       const state = createInitialState({ shuffleSeed: 12345 });
       
       // Simulate all players passing
@@ -208,7 +214,7 @@ describe('Suit Analysis Integration', () => {
         ]
       };
       
-      const transitions = getNextStates(allPassState);
+      const transitions = getNextStates(allPassState, ctx);
       const redealTransition = transitions.find(t => t.id === 'redeal');
       expect(redealTransition).toBeDefined();
       

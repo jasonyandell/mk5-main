@@ -2,7 +2,7 @@
  * Tests for ruleset registry and lookup.
  *
  * Verifies that the ruleset registry works correctly:
- * - All 5 ruleSets registered correctly (base, nello, plunge, splash, sevens)
+ * - All 6 ruleSets registered correctly (base, nello, plunge, splash, sevens, tournament)
  * - getRuleSetByName returns correct ruleSet
  * - getRuleSetByName throws on unknown ruleSet
  * - getRuleSetsByNames returns array of ruleSets in correct order
@@ -18,11 +18,12 @@ import {
   nelloRuleSet,
   plungeRuleSet,
   splashRuleSet,
-  sevensRuleSet
+  sevensRuleSet,
+  tournamentRuleSet
 } from '../../../game/rulesets';
 
 describe('Layer Registry and Lookup', () => {
-  describe('All 5 ruleSets registered correctly', () => {
+  describe('All 6 ruleSets registered correctly', () => {
     it('should have base ruleset in registry', () => {
       expect(RULESET_REGISTRY['base']).toBeDefined();
       expect(RULESET_REGISTRY['base']).toBe(baseRuleSet);
@@ -53,10 +54,16 @@ describe('Layer Registry and Lookup', () => {
       expect(RULESET_REGISTRY['sevens']?.name).toBe('sevens');
     });
 
-    it('should have exactly 5 ruleSets', () => {
+    it('should have tournament ruleset in registry', () => {
+      expect(RULESET_REGISTRY['tournament']).toBeDefined();
+      expect(RULESET_REGISTRY['tournament']).toBe(tournamentRuleSet);
+      expect(RULESET_REGISTRY['tournament']?.name).toBe('tournament');
+    });
+
+    it('should have exactly 6 ruleSets', () => {
       const keys = Object.keys(RULESET_REGISTRY);
-      expect(keys).toHaveLength(5);
-      expect(keys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash']);
+      expect(keys).toHaveLength(6);
+      expect(keys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash', 'tournament']);
     });
 
     it('should have consistent ruleset names', () => {
@@ -66,6 +73,7 @@ describe('Layer Registry and Lookup', () => {
       expect(RULESET_REGISTRY['plunge']?.name).toBe('plunge');
       expect(RULESET_REGISTRY['splash']?.name).toBe('splash');
       expect(RULESET_REGISTRY['sevens']?.name).toBe('sevens');
+      expect(RULESET_REGISTRY['tournament']?.name).toBe('tournament');
     });
   });
 
@@ -185,13 +193,14 @@ describe('Layer Registry and Lookup', () => {
     });
 
     it('should handle all ruleSets', () => {
-      const ruleSets = getRuleSetsByNames(['base', 'nello', 'plunge', 'splash', 'sevens']);
-      expect(ruleSets).toHaveLength(5);
+      const ruleSets = getRuleSetsByNames(['base', 'nello', 'plunge', 'splash', 'sevens', 'tournament']);
+      expect(ruleSets).toHaveLength(6);
       expect(ruleSets[0]).toBe(baseRuleSet);
       expect(ruleSets[1]).toBe(nelloRuleSet);
       expect(ruleSets[2]).toBe(plungeRuleSet);
       expect(ruleSets[3]).toBe(splashRuleSet);
       expect(ruleSets[4]).toBe(sevensRuleSet);
+      expect(ruleSets[5]).toBe(tournamentRuleSet);
     });
 
     it('should return empty array for empty input', () => {
@@ -221,8 +230,8 @@ describe('Layer Registry and Lookup', () => {
 
       // Note: JavaScript objects are mutable by default, but we test
       // that the registry maintains its expected structure
-      expect(originalKeys.length).toBe(5);
-      expect(originalKeys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash']);
+      expect(originalKeys.length).toBe(6);
+      expect(originalKeys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash', 'tournament']);
     });
 
     it('should preserve ruleset references', () => {

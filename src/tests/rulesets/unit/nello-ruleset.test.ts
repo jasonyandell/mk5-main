@@ -54,15 +54,18 @@ describe('Nello RuleSet Rules', () => {
       expect(actions).toEqual([]);
     });
 
-    it('should not add nello option during bidding phase', () => {
+    it('should not add actions during bidding phase', () => {
       const state = GameTestHelper.createTestState({
         phase: 'bidding',
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
+        currentPlayer: 0,
+        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
+        bids: []
       });
 
       const baseActions: never[] = [];
       const actions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
 
+      // Nello is not a bid type - it's a trump selection
       expect(actions).toEqual([]);
     });
 

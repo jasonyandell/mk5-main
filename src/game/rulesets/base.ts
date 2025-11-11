@@ -13,14 +13,152 @@
  * Base rule set knows nothing about special contracts (nello, plunge, splash, sevens).
  */
 
-import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit } from '../types';
-import type { GameRuleSet } from './types';
+import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
+import type { GameRuleSet, GameRules } from './types';
 import { getDominoValue, getTrumpSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
-import { GAME_CONSTANTS, BID_TYPES } from '../constants';
+import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
 import { isValidMarkBid } from '../core/rules';
 import { calculateRoundScore } from '../core/scoring';
+import { composeRules } from './compose';
+
+/**
+ * Generates structural actions only (pass, redeal, consensus, trump selection, plays).
+ * Does NOT generate bids - those are added by RuleSets via getValidActions.
+ *
+ * @param state Current game state
+ * @param rules Composed rules for validation (optional, used for getValidPlays)
+ * @returns Structural actions only
+ */
+export function generateStructuralActions(
+  state: GameState,
+  rules?: GameRules
+): GameAction[] {
+  switch (state.phase) {
+    case 'bidding':
+      return getBiddingActions(state);
+    case 'trump_selection':
+      return getTrumpSelectionActions(state);
+    case 'playing':
+      return getPlayingActions(state, rules);
+    case 'scoring':
+      return getScoringActions(state);
+    default:
+      return [];
+  }
+}
+
+/**
+ * Gets valid bidding actions (structural actions only - bids added by RuleSets)
+ */
+function getBiddingActions(state: GameState): GameAction[] {
+  const actions: GameAction[] = [];
+
+  // Check if bidding is complete
+  if (state.bids.length === 4) {
+    const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+    if (nonPassBids.length === 0) {
+      // All passed - need redeal
+      actions.push({ type: 'redeal' });
+      return actions;
+    }
+    // Otherwise, bidding is complete - no more actions
+    return actions;
+  }
+
+  // Check if current player has already bid
+  if (state.bids.some(b => b.player === state.currentPlayer)) {
+    return actions;
+  }
+
+  // Pass action (only structural action - bids added by RuleSets via getValidActions)
+  actions.push({ type: 'pass', player: state.currentPlayer });
+
+  return actions;
+}
+
+/**
+ * Gets valid trump selection actions
+ */
+function getTrumpSelectionActions(state: GameState): GameAction[] {
+  const actions: GameAction[] = [];
+
+  if (state.winningBidder === -1) return actions;
+
+  // Generate trump selection actions
+  // Use currentPlayer (which may be partner for plunge/splash) not winningBidder
+  Object.values(TRUMP_SELECTIONS).forEach(trumpSelection => {
+    actions.push({
+      type: 'select-trump',
+      player: state.currentPlayer,
+      trump: trumpSelection as TrumpSelection
+    });
+  });
+
+  return actions;
+}
+
+/**
+ * Gets valid playing actions
+ */
+function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
+  const actions: GameAction[] = [];
+
+  if (state.trump.type === 'not-selected') return actions;
+
+  // Check if trick is complete (use rules if provided, otherwise default to 4)
+  const isTrickComplete = rules ? rules.isTrickComplete(state) : state.currentTrick.length === 4;
+
+  // If trick is complete, add consensus actions
+  if (isTrickComplete) {
+    // All players who haven't agreed yet can agree (not just current player)
+    // This is important for nello where the partner sits out but still needs to agree
+    for (let playerId = 0; playerId < state.players.length; playerId++) {
+      if (!state.consensus.completeTrick.has(playerId)) {
+        actions.push({ type: 'agree-complete-trick', player: playerId });
+      }
+    }
+
+    // If all have agreed, the trick can be completed
+    if (state.consensus.completeTrick.size === state.players.length) {
+      actions.push({ type: 'complete-trick' });
+    }
+    return actions;
+  }
+
+  // Get valid plays for current player using threaded rules
+  const threadedRules = rules || composeRules([baseRuleSet]);
+  const validPlays = threadedRules.getValidPlays(state, state.currentPlayer);
+  validPlays.forEach((domino: Domino) => {
+    actions.push({
+      type: 'play',
+      player: state.currentPlayer,
+      dominoId: domino.id.toString()
+    });
+  });
+
+  return actions;
+}
+
+/**
+ * Gets valid scoring actions
+ */
+function getScoringActions(state: GameState): GameAction[] {
+  const actions: GameAction[] = [];
+
+  // Only the current player can agree to score the hand
+  if (!state.consensus.scoreHand.has(state.currentPlayer)) {
+    actions.push({ type: 'agree-score-hand', player: state.currentPlayer });
+  }
+
+  // If all have agreed, the hand can be scored
+  if (state.consensus.scoreHand.size === state.players.length) {
+    actions.push({ type: 'score-hand' });
+  }
+
+  return actions;
+}
 
 /**
  * Helper function to get bid comparison value for internal use
@@ -77,26 +215,87 @@ export const baseRuleSet: GameRuleSet = {
   name: 'base',
 
   /**
-   * Filter out special contract bids and trump selections.
-   * Base rule set only supports standard bidding (points, marks) and standard trumps (suits, doubles, no-trump).
-   * Special contracts (nello, plunge, splash, sevens) are added by their respective rule sets.
+   * Add standard bids (points and marks) during bidding phase.
+   * Filter out special trump selections during trump selection phase.
    */
-  getValidActions: (_state, prev) => {
-    return prev.filter(action => {
-      // Filter out special contract bids
-      if (action.type === 'bid' &&
-          (action.bid === 'nello' || action.bid === 'plunge' || action.bid === 'splash')) {
+  getValidActions: (state, prev) => {
+    let actions = [...prev];
+
+    // Add standard bids during bidding phase
+    if (state.phase === 'bidding') {
+      const currentPlayer = state.currentPlayer;
+      const player = state.players[currentPlayer];
+      if (!player) return actions;
+
+      // Helper to validate bids
+      const validateBid = (bid: Bid): boolean => {
+        if (!state.bids) return false;
+        const playerBids = state.bids.filter(b => b.player === bid.player);
+        if (playerBids.length > 0) return false;
+        if (state.currentPlayer !== bid.player) return false;
+
+        const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+
+        // Opening bid constraints
+        if (previousBids.length === 0) {
+          if (bid.type === BID_TYPES.POINTS) {
+            return bid.value !== undefined &&
+                   bid.value >= GAME_CONSTANTS.MIN_BID &&
+                   bid.value <= GAME_CONSTANTS.MAX_BID;
+          }
+          if (bid.type === BID_TYPES.MARKS) {
+            return bid.value !== undefined && bid.value >= 1 && bid.value <= 2;
+          }
+          return false;
+        }
+
+        // Subsequent bids must be higher
+        const lastBid = previousBids[previousBids.length - 1];
+        if (!lastBid) return false;
+
+        const lastBidValue = getBidValue(lastBid);
+        const currentBidValue = getBidValue(bid);
+
+        if (currentBidValue <= lastBidValue) return false;
+
+        if (bid.type === BID_TYPES.POINTS) {
+          return bid.value !== undefined &&
+                 bid.value <= GAME_CONSTANTS.MAX_BID &&
+                 (lastBid.type !== BID_TYPES.POINTS || bid.value > lastBid.value!);
+        }
+        if (bid.type === BID_TYPES.MARKS) {
+          return isValidMarkBid(bid, lastBid, previousBids);
+        }
         return false;
+      };
+
+      // Points bids (30-42)
+      for (let points = GAME_CONSTANTS.MIN_BID; points <= GAME_CONSTANTS.MAX_BID; points++) {
+        const bid: Bid = { type: BID_TYPES.POINTS, value: points, player: currentPlayer };
+        if (validateBid(bid)) {
+          actions.push({ type: 'bid', player: currentPlayer, bid: BID_TYPES.POINTS, value: points });
+        }
       }
 
-      // Filter out special trump selections
+      // Marks bids (1-4)
+      for (let marks = 1; marks <= 4; marks++) {
+        const bid: Bid = { type: BID_TYPES.MARKS, value: marks, player: currentPlayer };
+        if (validateBid(bid)) {
+          actions.push({ type: 'bid', player: currentPlayer, bid: BID_TYPES.MARKS, value: marks });
+        }
+      }
+    }
+
+    // Filter out special trump selections during trump selection phase
+    actions = actions.filter(action => {
       if (action.type === 'select-trump' &&
           (action.trump?.type === 'nello' || action.trump?.type === 'sevens')) {
         return false;
       }
-
       return true;
     });
+
+    return actions;
   },
 
   rules: {

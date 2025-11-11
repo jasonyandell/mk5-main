@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../game/types/config';
 import { Room } from '../../server/Room';
 
-// Tournament rules (baseRuleSet only) do not allow special contracts
+// Tournament ruleset filters out special contracts (nello, splash, plunge)
 // These tests verify that at the Room level (action generation)
 
-describe('Tournament Action Transformer Authority', () => {
-  it('prevents executing bids that action transformers remove', () => {
+describe('Tournament RuleSet Authority', () => {
+  it('prevents executing bids that tournament ruleset filters', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      variants: [{ type: 'tournament' }]
+      enabledRuleSets: ['tournament']
     };
 
     const players = config.playerTypes.map((type, i) => ({
@@ -29,18 +29,20 @@ describe('Tournament Action Transformer Authority', () => {
 
     const currentPlayer = room.getView('player-0').state.currentPlayer;
 
-    // Attempt to force a nello bid which tournament action transformer removes
+    // Nello is not a bid type - it's a trump selection
+    // Tournament mode filters nello trump selections, not nello bids
+    // Attempt to force a splash bid which tournament ruleset filters
     const result = room.executeAction(`player-${currentPlayer}`, {
       type: 'bid',
       player: currentPlayer,
-      bid: 'nello',
-      value: 1
+      bid: 'splash',
+      value: 2
     });
 
     expect(result.success).toBe(false);
 
     const validActions = room.getView(`player-${currentPlayer}`).validActions;
-    const hasNello = validActions.some(a => a.action.type === 'bid' && a.action.bid === 'nello');
-    expect(hasNello).toBe(false);
+    const hasSplash = validActions.some(a => a.action.type === 'bid' && a.action.bid === 'splash');
+    expect(hasSplash).toBe(false);
   });
 });

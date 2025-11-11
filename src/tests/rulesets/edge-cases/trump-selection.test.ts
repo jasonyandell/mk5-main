@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { composeRules, baseRuleSet, nelloRuleSet, sevensRuleSet } from '../../../game/rulesets';
-import { getValidActions } from '../../../game/core/gameEngine';
+import { getNextStates } from '../../../game/core/state';
+import { createTestContext } from '../../helpers/executionContext';
 import { GameTestHelper } from '../../helpers/gameTestHelper';
 import type { GameAction } from '../../../game/types';
 import { ACES } from '../../../game/types';
@@ -197,6 +198,7 @@ describe('Trump Selection Constraints', () => {
 
   describe('Standard Trump Options', () => {
     it('should include all suit options for points bid', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
@@ -204,12 +206,12 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'points', value: 35, player: 0 }
       });
 
-      const actions = getValidActions(state);
+      const actions = getNextStates(state, ctx);
 
       // Should have options for suits 0-6, doubles, and no-trump
       const suitActions = actions.filter(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'suit'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'suit'
       );
 
       expect(suitActions.length).toBe(7); // Suits 0-6
@@ -217,15 +219,16 @@ describe('Trump Selection Constraints', () => {
       // Check each suit is present
       for (let suit = 0; suit <= 6; suit++) {
         const suitAction = suitActions.find(a =>
-          a.type === 'select-trump' &&
-          a.trump.type === 'suit' &&
-          a.trump.suit === suit
+          a.action.type === 'select-trump' &&
+          a.action.trump.type === 'suit' &&
+          a.action.trump.suit === suit
         );
         expect(suitAction).toBeDefined();
       }
     });
 
     it('should include doubles option for points bid', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 1,
@@ -233,17 +236,18 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'points', value: 30, player: 1 }
       });
 
-      const actions = getValidActions(state);
+      const actions = getNextStates(state, ctx);
 
       const doublesAction = actions.find(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'doubles'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'doubles'
       );
 
       expect(doublesAction).toBeDefined();
     });
 
     it('should include no-trump option for points bid', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 2,
@@ -251,17 +255,18 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'points', value: 41, player: 2 }
       });
 
-      const actions = getValidActions(state);
+      const actions = getNextStates(state, ctx);
 
       const noTrumpAction = actions.find(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'no-trump'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'no-trump'
       );
 
       expect(noTrumpAction).toBeDefined();
     });
 
     it('should include all suit options for marks bid', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 3,
@@ -269,17 +274,18 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'marks', value: 2, player: 3 }
       });
 
-      const actions = getValidActions(state);
+      const actions = getNextStates(state, ctx);
 
       const suitActions = actions.filter(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'suit'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'suit'
       );
 
       expect(suitActions.length).toBe(7); // All 7 suits available
     });
 
     it('should include doubles and no-trump for marks bid', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
@@ -287,15 +293,15 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'marks', value: 3, player: 0 }
       });
 
-      const actions = getValidActions(state);
+      const actions = getNextStates(state, ctx);
 
       const doublesAction = actions.find(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'doubles'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'doubles'
       );
       const noTrumpAction = actions.find(a =>
-        a.type === 'select-trump' &&
-        a.trump.type === 'no-trump'
+        a.action.type === 'select-trump' &&
+        a.action.trump.type === 'no-trump'
       );
 
       expect(doublesAction).toBeDefined();
@@ -305,6 +311,7 @@ describe('Trump Selection Constraints', () => {
 
   describe('Complete Trump Option Sets', () => {
     it('should have exactly 9 trump options for points bid (7 suits + doubles + no-trump)', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
@@ -312,14 +319,15 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'points', value: 35, player: 0 }
       });
 
-      const actions = getValidActions(state);
-      const trumpActions = actions.filter(a => a.type === 'select-trump');
+      const actions = getNextStates(state, ctx);
+      const trumpActions = actions.filter(a => a.action.type === 'select-trump');
 
       // 7 suits + doubles + no-trump = 9 options
       expect(trumpActions.length).toBe(9);
     });
 
     it('should have 11 trump options for marks bid without ruleSets (7 suits + doubles + no-trump + nello + sevens)', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 1,
@@ -328,7 +336,7 @@ describe('Trump Selection Constraints', () => {
       });
 
       // Get base actions
-      const baseActions = getValidActions(state);
+      const baseActions = getNextStates(state, ctx).map(t => t.action);
 
       // Add nello and sevens via ruleSets
       const withNello = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
@@ -340,13 +348,14 @@ describe('Trump Selection Constraints', () => {
       expect(trumpActions.length).toBe(11);
 
       // Verify nello and sevens are present
-      const hasNello = trumpActions.some(a => a.trump.type === 'nello');
-      const hasSevens = trumpActions.some(a => a.trump.type === 'sevens');
+      const hasNello = trumpActions.some(a => a.type === 'select-trump' && a.trump.type === 'nello');
+      const hasSevens = trumpActions.some(a => a.type === 'select-trump' && a.trump.type === 'sevens');
       expect(hasNello).toBe(true);
       expect(hasSevens).toBe(true);
     });
 
     it('should have exactly 9 options for marks bid if ruleSets not applied', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 2,
@@ -355,8 +364,8 @@ describe('Trump Selection Constraints', () => {
       });
 
       // Without ruleset composition, just base actions
-      const baseActions = getValidActions(state);
-      const trumpActions = baseActions.filter(a => a.type === 'select-trump');
+      const baseActions = getNextStates(state, ctx);
+      const trumpActions = baseActions.filter(a => a.action.type === 'select-trump');
 
       // Base game: 7 suits + doubles + no-trump = 9 options
       expect(trumpActions.length).toBe(9);
@@ -457,6 +466,7 @@ describe('Trump Selection Constraints', () => {
     });
 
     it('should not filter standard trump options based on bid type', () => {
+      const ctx = createTestContext();
       const marksBid = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 1,
@@ -472,8 +482,8 @@ describe('Trump Selection Constraints', () => {
       });
 
       // Both should have same standard trump options
-      const marksActions = getValidActions(marksBid).filter(a => a.type === 'select-trump');
-      const pointsActions = getValidActions(pointsBid).filter(a => a.type === 'select-trump');
+      const marksActions = getNextStates(marksBid, ctx).filter(a => a.action.type === 'select-trump').map(t => t.action);
+      const pointsActions = getNextStates(pointsBid, ctx).filter(a => a.action.type === 'select-trump').map(t => t.action);
 
       // Base engine generates same actions (9 each: 7 suits + doubles + no-trump)
       expect(marksActions.length).toBe(9);
@@ -482,16 +492,17 @@ describe('Trump Selection Constraints', () => {
       // Both should have all standard options
       const standardTypes = ['suit', 'doubles', 'no-trump'];
       marksActions.forEach(action => {
-        expect(standardTypes.includes(action.trump.type)).toBe(true);
+        expect(action.type === 'select-trump' && standardTypes.includes(action.trump.type)).toBe(true);
       });
       pointsActions.forEach(action => {
-        expect(standardTypes.includes(action.trump.type)).toBe(true);
+        expect(action.type === 'select-trump' && standardTypes.includes(action.trump.type)).toBe(true);
       });
     });
   });
 
   describe('Layer Composition Effects', () => {
     it('should properly compose nello and sevens ruleSets together', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 0,
@@ -502,7 +513,7 @@ describe('Trump Selection Constraints', () => {
       composeRules([baseRuleSet, nelloRuleSet, sevensRuleSet]);
 
       // Get base actions
-      const baseActions = getValidActions(state);
+      const baseActions = getNextStates(state, ctx).map(t => t.action);
 
       // Apply both ruleSets
       const withNello = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
@@ -521,6 +532,7 @@ describe('Trump Selection Constraints', () => {
     });
 
     it('should not add duplicate actions when ruleSets composed', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 2,
@@ -528,7 +540,7 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'marks', value: 3, player: 2 }
       });
 
-      const baseActions = getValidActions(state);
+      const baseActions = getNextStates(state, ctx).map(t => t.action);
       const withNello1 = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
       const withNello2 = nelloRuleSet.getValidActions?.(state, withNello1) ?? withNello1;
 
@@ -544,6 +556,7 @@ describe('Trump Selection Constraints', () => {
     });
 
     it('should preserve standard options when special ruleSets applied', () => {
+      const ctx = createTestContext();
       const state = GameTestHelper.createTestState({
         phase: 'trump_selection',
         winningBidder: 1,
@@ -551,7 +564,7 @@ describe('Trump Selection Constraints', () => {
         currentBid: { type: 'marks', value: 1, player: 1 }
       });
 
-      const baseActions = getValidActions(state);
+      const baseActions = getNextStates(state, ctx).map(t => t.action);
       const withLayers = sevensRuleSet.getValidActions?.(
         state,
         nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions

@@ -548,3 +548,86 @@ function executeRedeal(state: GameState): GameState {
     currentBid: EMPTY_BID
   };
 }
+
+/**
+ * Converts an action to a transition ID for compatibility
+ */
+export function actionToId(action: GameAction): string {
+  switch (action.type) {
+    case 'bid':
+      if (action.bid === BID_TYPES.POINTS) {
+        return `bid-${action.value}`;
+      } else if (action.bid === BID_TYPES.MARKS) {
+        return `bid-${action.value}-marks`;
+      }
+      return `${action.bid}-${action.value}`;
+    case 'pass':
+      return 'pass';
+    case 'select-trump':
+      if (action.trump.type === 'suit') {
+        const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
+        return `trump-${suitNames[action.trump.suit!]}`;
+      } else if (action.trump.type === 'doubles') {
+        return 'trump-doubles';
+      } else if (action.trump.type === 'no-trump') {
+        return 'trump-no-trump';
+      }
+      return 'trump-none';
+    case 'play':
+      return `play-${action.dominoId}`;
+    case 'complete-trick':
+      return 'complete-trick';
+    case 'score-hand':
+      return 'score-hand';
+    case 'agree-complete-trick':
+      return `agree-complete-trick-${action.player}`;
+    case 'agree-score-hand':
+      return `agree-score-hand-${action.player}`;
+    case 'redeal':
+      return 'redeal';
+    default:
+      return 'unknown';
+  }
+}
+
+/**
+ * Converts an action to a human-readable label
+ */
+export function actionToLabel(action: GameAction): string {
+  switch (action.type) {
+    case 'bid':
+      if (action.bid === BID_TYPES.POINTS) {
+        return `${action.value}`;
+      } else if (action.bid === BID_TYPES.MARKS) {
+        return `${action.value} mark${action.value! > 1 ? 's' : ''}`;
+      }
+      return `${action.bid} ${action.value}`;
+    case 'pass':
+      return 'Pass';
+    case 'select-trump':
+      if (action.trump.type === 'suit') {
+        const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
+        return `Declare ${suitNames[action.trump.suit!]} trump`;
+      } else if (action.trump.type === 'doubles') {
+        return 'Declare Doubles trump';
+      } else if (action.trump.type === 'no-trump') {
+        return 'Declare No-trump';
+      }
+      return 'Select trump';
+    case 'play':
+      // Would need domino lookup for proper label
+      return `Play domino ${action.dominoId}`;
+    case 'complete-trick':
+      return 'Complete trick';
+    case 'score-hand':
+      return 'Next hand';
+    case 'agree-complete-trick':
+      return action.player === 0 ? 'Complete trick' : `Player ${action.player} agrees to complete trick`;
+    case 'agree-score-hand':
+      return action.player === 0 ? 'Next hand' : `Player ${action.player} agrees to next hand`;
+    case 'redeal':
+      return 'All passed - Redeal';
+    default:
+      return 'Unknown action';
+  }
+}
