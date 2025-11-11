@@ -211,41 +211,54 @@ describe('Architecture: Single Composition Point', () => {
     ).toBe(true);
   });
 
-  it('no direct composition in deprecated files', () => {
-    // Files that should have been refactored away from direct composition
-    const deprecatedFiles = [
-      'src/game/multiplayer/AIClient.ts',
-      'src/game/core/playerView.ts',
-      'src/game/ai/gameSimulator.ts',
-      'src/game/utils/urlReplay.ts'
+  it('no direct composition in utils or ai modules', () => {
+    // Files that MUST NOT import createExecutionContext or getNextStates
+    // These should use Room/HeadlessRoom for composition
+    const restrictedDirs = [
+      'src/game/utils/',
+      'src/game/ai/'
     ];
 
-    const stillUsingComposition: string[] = [];
+    const violations: string[] = [];
 
-    deprecatedFiles.forEach(file => {
-      const fullPath = path.join(__dirname, '../../../', file);
+    restrictedDirs.forEach(dir => {
+      const bannedImports = ['createExecutionContext', 'getNextStates'];
 
-      // Check if file exists
-      if (!fs.existsSync(fullPath)) {
-        // File doesn't exist - that's fine, it might have been deleted
-        return;
-      }
+      bannedImports.forEach(importName => {
+        let result: string;
+        try {
+          result = execSync(
+            `grep -r "import.*${importName}" ${dir} --include="*.ts" || true`,
+            { encoding: 'utf-8', cwd: path.join(__dirname, '../../..') }
+          );
+        } catch {
+          result = '';
+        }
 
-      const content = fs.readFileSync(fullPath, 'utf-8');
+        if (result.trim()) {
+          // Check if it's actually an import (not just a comment or string)
+          const lines = result.split('\n').filter(line => {
+            return line.includes('import') && line.includes(importName);
+          });
 
-      // Check if it imports createExecutionContext
-      if (content.includes("import") && content.includes("createExecutionContext")) {
-        stillUsingComposition.push(file);
-      }
+          lines.forEach(line => {
+            const colonIndex = line.indexOf(':');
+            if (colonIndex !== -1) {
+              violations.push(line.substring(0, colonIndex));
+            }
+          });
+        }
+      });
     });
 
-    if (stillUsingComposition.length > 0) {
-      console.warn('Files that should migrate away from direct composition:');
-      stillUsingComposition.forEach(f => console.warn(`  ${f} - should use Room or HeadlessRoom`));
+    if (violations.length > 0) {
+      console.error('Found composition violations in utils/ai modules:');
+      violations.forEach(v => console.error(`  ${v}`));
     }
 
-    // This is a warning for now - mark as pending migration
-    // Once Agent 3 completes HeadlessRoom, these should be migrated
-    expect(stillUsingComposition.length).toBeGreaterThanOrEqual(0);
+    expect(violations,
+      'Utils and AI modules must use Room/HeadlessRoom, not direct composition. ' +
+      'These files should have been migrated as part of the URL replay refactor.'
+    ).toHaveLength(0);
   });
 });

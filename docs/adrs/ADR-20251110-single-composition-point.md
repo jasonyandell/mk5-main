@@ -251,8 +251,8 @@ const state = room.getState();
 - ✅ Architecture tests verify compliance
 - ✅ Zero TypeScript compilation errors
 - ✅ All existing tests pass
-- 🔄 gameSimulator migrated to HeadlessRoom (pending Agent 3)
-- 🔄 urlReplay migrated to HeadlessRoom (pending Agent 3)
+- ✅ gameSimulator migrated to HeadlessRoom (verified compliant 2025-01-11)
+- ✅ urlReplay migrated to HeadlessRoom (completed 2025-01-11, see ADR-20251111)
 
 ## Implementation Notes
 

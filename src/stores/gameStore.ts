@@ -93,6 +93,8 @@ class GameStoreImpl {
     // Derived: available perspectives
     this.availablePerspectives = derived(this.clientView, ($view) =>
       $view.players.map((player) => ({
+        // PlayerInfo.sessionId is protocol-defined as optional to support different
+        // session identification schemes. Fall back to player index for perspectives.
         id: player.sessionId ?? `player-${player.playerId}`,
         label: player.name ? `${player.name}` : `P${player.playerId}`
       }))
@@ -320,7 +322,6 @@ class GameStoreImpl {
       const attempts = 1; // Could track this if needed
 
       return {
-        active: false, // TODO: Track when in one-hand mode
         complete: isComplete,
         seed: $gameState.shuffleSeed,
         attempts,
@@ -376,6 +377,11 @@ export const modes = {
 // Utility (2 exports)
 export const findingSeed = store.findingSeed;
 
-// Legacy exports for compatibility with main.ts
-export const gameActions = game;
-export const gameClient = store['client'];
+/**
+ * Internal client accessor for window API development/testing tools only.
+ * DO NOT use in application code - use the `game` commands instead.
+ * @internal
+ */
+export function getInternalClient() {
+  return store['client'];
+}

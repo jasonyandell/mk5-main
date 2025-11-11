@@ -3,8 +3,8 @@ import { mount } from 'svelte';
 import { get } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { game, gameState, gameClient } from './stores/gameStore';
-import { SEED_FINDER_CONFIG } from './game/core/seedFinder';
+import { game, gameState, getInternalClient } from './stores/gameStore';
+import { SEED_FINDER_CONFIG } from './game/ai/gameSimulator';
 import { seedFinderStore } from './stores/seedFinderStore';
 import type { GameView } from './shared/multiplayer/protocol';
 import { NetworkGameClient } from './game/multiplayer/NetworkGameClient';
@@ -21,14 +21,6 @@ const AppComponent = isPerfectsPage ? PerfectsApp : App;
 const app = mount(AppComponent, {
   target: document.getElementById('app')!,
 });
-
-if (!isPerfectsPage) {
-  window.addEventListener('popstate', () => {
-    // History loading is deprecated in the new GameClient architecture
-    // URL-based game state loading would need to be reimplemented if needed
-    console.warn('History state loading not yet implemented in new architecture');
-  });
-}
 
 // =============================================================================
 // Window API for Development & Testing
@@ -58,7 +50,7 @@ declare global {
 if (typeof window !== 'undefined' && !isPerfectsPage) {
   // Read-only state inspection (minimal exposure for testing/debugging)
   window.getGameView = () => {
-    const client = gameClient as NetworkGameClient;
+    const client = getInternalClient() as NetworkGameClient;
     const cachedView = client.getCachedView();
     if (!cachedView) {
       // Return a minimal GameView structure

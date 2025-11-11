@@ -177,16 +177,34 @@ export function encodeGameUrl(
   dealer?: number,
   theme?: string,
   colorOverrides?: Record<string, string>,
-  sectionName?: string
+  sectionName?: string,
+  actionTransformers?: { type: string; config?: Record<string, unknown> }[],
+  enabledRuleSets?: string[]
 ): string {
   const params = new URLSearchParams();
-  
-  // Theme parameters FIRST (so they survive truncation)
+
+  // Seed as base36 for compression (FIRST - static)
+  params.set('s', seed.toString(36));
+
+  // Only include player types if not default
+  if (playerTypes) {
+    const playerStr = playerTypes.map(t => t[0]).join('');
+    if (playerStr !== 'haaa') {
+      params.set('p', playerStr);
+    }
+  }
+
+  // Only include dealer if not default (3)
+  if (dealer !== undefined && dealer !== 3) {
+    params.set('d', dealer.toString());
+  }
+
+  // Theme parameters
   // Only include theme if not default ('business')
   if (theme && theme !== 'business') {
     params.set('t', theme);
   }
-  
+
   // Only include color overrides if present
   if (colorOverrides && Object.keys(colorOverrides).length > 0) {
     // Convert color overrides to compact format
@@ -195,11 +213,11 @@ export function encodeGameUrl(
       // Convert "--p" to "p", "--pc" to "pc", etc.
       const key = varName.replace('--', '');
       const v = colorValue.trim();
-      
+
       // Detect format using robust regex
       const isOKLCH = /^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/.test(v);
       const isHSL = /^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/.test(v);
-      
+
       let encoded: string;
       if (isOKLCH) {
         // Parse OKLCH values
@@ -231,31 +249,37 @@ export function encodeGameUrl(
     });
     params.set('v', colorPairs.join(';'));
   }
-  
-  // Seed as base36 for compression
-  params.set('s', seed.toString(36));
-  
-  // Only include player types if not default
-  if (playerTypes) {
-    const playerStr = playerTypes.map(t => t[0]).join('');
-    if (playerStr !== 'haaa') {
-      params.set('p', playerStr);
-    }
-  }
-  
-  // Only include dealer if not default (3)
-  if (dealer !== undefined && dealer !== 3) {
-    params.set('d', dealer.toString());
-  }
 
-  // Compressed actions - always last since it's the longest
-  params.set('a', compressEvents(actions));
-  
   // Section identifier (human-readable) e.g., one_hand, one_trick
   if (sectionName && sectionName.trim()) {
     params.set('h', sectionName);
   }
-  
+
+  // Action transformers (short codes, comma-separated)
+  if (actionTransformers && actionTransformers.length > 0) {
+    const codes = actionTransformers
+      .map(at => TRANSFORMER_CODES[at.type])
+      .filter(code => code !== undefined)
+      .join(',');
+    if (codes) {
+      params.set('at', codes);
+    }
+  }
+
+  // Enabled rule sets (short codes, comma-separated)
+  if (enabledRuleSets && enabledRuleSets.length > 0) {
+    const codes = enabledRuleSets
+      .map(rs => RULESET_CODES[rs])
+      .filter(code => code !== undefined)
+      .join(',');
+    if (codes) {
+      params.set('rs', codes);
+    }
+  }
+
+  // Compressed actions - ALWAYS LAST since it changes most frequently
+  params.set('a', compressEvents(actions));
+
   return '?' + params.toString();
 }
 
@@ -270,17 +294,16 @@ export function decodeGameUrl(urlString: string): {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
+  actionTransformers?: { type: string }[];
+  enabledRuleSets?: string[];
 } {
   // Handle both full URLs and just query strings
-  const queryString = urlString.includes('?') 
-    ? urlString.split('?')[1] 
+  const queryString = urlString.includes('?')
+    ? urlString.split('?')[1]
     : urlString;
-    
+
   const params = new URLSearchParams(queryString);
-  
-  // Check version for backward compatibility
-  const version = params.get('v');
-  
+
   // Empty URL is ok - no game to load
   if (!params.toString()) {
     return {
@@ -293,22 +316,22 @@ export function decodeGameUrl(urlString: string): {
       scenario: ''
     };
   }
-  
+
   // Parse theme (default 'business')
   const theme = params.get('t') || 'business';
-  
+
   // Parse section/scenario identifier (optional)
   const scenario = params.get('h') || '';
-  
-  // Parse color overrides (new compact format)
+
+  // Parse color overrides (compact format)
   const colorOverrides: Record<string, string> = {};
   const colorStr = params.get('v');
   if (colorStr) {
     const entries = colorStr.split(';');
     entries.forEach(entry => {
-      // New compact format: o{var}{L},{C},{H} or h{var}{H},{S},{L}
+      // Compact format: o{var}{L},{C},{H} or h{var}{H},{S},{L}
       // Examples: "op73.54,21,181" or "hpc240,60,50"
-      
+
       // Check if it starts with 'o' (OKLCH) or 'h' (HSL)
       if (entry.startsWith('o')) {
         // OKLCH format
@@ -316,10 +339,10 @@ export function decodeGameUrl(urlString: string): {
         // Find where the variable name ends and values begin
         const firstNumberIndex = content.search(/\d/);
         if (firstNumberIndex === -1) return;
-        
+
         const varName = '--' + content.substring(0, firstNumberIndex);
         const values = content.substring(firstNumberIndex).split(',');
-        
+
         if (values.length === 3 && values[0] && values[1] && values[2]) {
           const l = parseFloat(values[0]); // L is already with decimals
           const c = parseFloat(values[1]) / 100; // C was multiplied by 100
@@ -332,10 +355,10 @@ export function decodeGameUrl(urlString: string): {
         // Find where the variable name ends and values begin
         const firstNumberIndex = content.search(/\d/);
         if (firstNumberIndex === -1) return;
-        
+
         const varName = '--' + content.substring(0, firstNumberIndex);
         const values = content.substring(firstNumberIndex).split(',');
-        
+
         if (values.length === 3 && values[0] && values[1] && values[2]) {
           const h = parseFloat(values[0]); // H is integer
           const s = parseFloat(values[1]); // S is integer percentage
@@ -348,7 +371,7 @@ export function decodeGameUrl(urlString: string): {
       }
     });
   }
-  
+
   // Parse seed
   const seedStr = params.get('s');
   if (!seedStr) {
@@ -364,36 +387,29 @@ export function decodeGameUrl(urlString: string): {
       scenario
     };
   }
-  
-  // Handle both old decimal format (v2) and new base36 format
-  let seed: number;
-  if (version === '2') {
-    // Old format: decimal
-    seed = parseInt(seedStr, 10);
-  } else {
-    // New format: base36
-    seed = parseInt(seedStr, 36);
-  }
-  
+
+  // Parse seed (base36 format)
+  const seed = parseInt(seedStr, 36);
+
   if (isNaN(seed)) {
     throw new Error('Invalid URL: seed must be a valid number');
   }
-  
+
   // Parse actions
   const actionsStr = params.get('a') || '';
   const actions = actionsStr ? decompressEvents(actionsStr) : [];
-  
+
   // Parse player types
   const playerStr = params.get('p') || 'haaa';
-  const playerTypes = playerStr.split('').map(c => 
+  const playerTypes = playerStr.split('').map(c =>
     c === 'h' ? 'human' : 'ai'
   ) as ('human' | 'ai')[];
-  
+
   // Validate player count
   if (playerTypes.length !== 4) {
     throw new Error('Invalid URL: must have exactly 4 players');
   }
-  
+
   // Parse dealer (default 3)
   const dealerStr = params.get('d');
   const dealer = dealerStr ? parseInt(dealerStr, 10) : 3;
@@ -401,8 +417,71 @@ export function decodeGameUrl(urlString: string): {
     throw new Error('Invalid URL: dealer must be 0-3');
   }
 
-  return { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
+  // Parse action transformers (short codes)
+  const transformersStr = params.get('at');
+  const actionTransformers = transformersStr
+    ? transformersStr.split(',')
+        .map(code => TRANSFORMER_CODE_TO_TYPE[code])
+        .filter((type): type is string => type !== undefined)
+        .map(type => ({ type }))
+    : undefined;
+
+  // Parse enabled rule sets (short codes)
+  const rulesetsStr = params.get('rs');
+  const enabledRuleSets = rulesetsStr
+    ? rulesetsStr.split(',')
+        .map(code => RULESET_CODE_TO_NAME[code])
+        .filter((name): name is string => name !== undefined)
+    : undefined;
+
+  const result: {
+    seed: number;
+    actions: string[];
+    playerTypes: ('human' | 'ai')[];
+    dealer: number;
+    theme: string;
+    colorOverrides: Record<string, string>;
+    scenario: string;
+    actionTransformers?: { type: string }[];
+    enabledRuleSets?: string[];
+  } = { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
+
+  if (actionTransformers && actionTransformers.length > 0) {
+    result.actionTransformers = actionTransformers;
+  }
+
+  if (enabledRuleSets && enabledRuleSets.length > 0) {
+    result.enabledRuleSets = enabledRuleSets;
+  }
+
+  return result;
 }
+
+// Action Transformer short codes (for URL encoding)
+const TRANSFORMER_CODES: Record<string, string> = {
+  'one-hand': 'o',
+  'speed': 's',
+  'hints': 'h'
+};
+
+// Reverse mapping for decoding
+const TRANSFORMER_CODE_TO_TYPE: Record<string, string> = Object.fromEntries(
+  Object.entries(TRANSFORMER_CODES).map(([k, v]) => [v, k])
+);
+
+// RuleSet short codes (for URL encoding)
+const RULESET_CODES: Record<string, string> = {
+  'nello': 'n',
+  'plunge': 'p',
+  'splash': 's',
+  'sevens': 'v',
+  'tournament': 't'
+};
+
+// Reverse mapping for decoding
+const RULESET_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(RULESET_CODES).map(([k, v]) => [v, k])
+);
 
 // Export types for use in other modules
 export interface URLData {
@@ -413,4 +492,6 @@ export interface URLData {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
+  actionTransformers?: { type: string }[];
+  enabledRuleSets?: string[];
 }

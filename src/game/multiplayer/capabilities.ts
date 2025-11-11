@@ -45,34 +45,6 @@ export function spectatorCapabilities(): Capability[] {
   ];
 }
 
-/**
- * Standard capabilities for a coach watching a specific student.
- * Can see the student's hand and hints, but cannot execute actions.
- *
- * Vision spec §4.3: coachCapabilities(studentIndex)
- *
- * @deprecated Future feature - not yet implemented
- */
-export function coachCapabilities(studentIndex: 0 | 1 | 2 | 3): Capability[] {
-  return [
-    { type: 'observe-hands', playerIndices: [studentIndex] }
-  ];
-}
-
-/**
- * Standard capabilities for a tutorial student.
- * Can act as player and see hints for learning.
- *
- * Vision spec §4.3: tutorialCapabilities(playerIndex)
- *
- * @deprecated Future feature - not yet implemented
- */
-export function tutorialCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
-  return [
-    { type: 'act-as-player', playerIndex },
-    { type: 'observe-hands', playerIndices: [playerIndex] }
-  ];
-}
 
 /**
  * Builder for custom capability sets.

@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { gameClient } from './gameStore';
+import { game, getInternalClient } from './gameStore';
 
 /**
  * Player configuration type for setup UI
@@ -65,11 +65,11 @@ export const presetConfigs = {
  */
 export async function applyConfiguration(config: PlayerConfig[]): Promise<void> {
   playerConfigs.set(config);
-  // Update player control types in the game client
+  // Update player control types in the game
   for (let i = 0; i < config.length; i++) {
     const playerConfig = config[i];
-    if (playerConfig && gameClient) {
-      await gameClient.setPlayerControl(i, playerConfig.type);
+    if (playerConfig) {
+      await game.setPlayerControl(i, playerConfig.type);
     }
   }
 }
@@ -78,13 +78,14 @@ export async function applyConfiguration(config: PlayerConfig[]): Promise<void> 
  * Switch a specific player between human and AI
  */
 export async function togglePlayerControl(playerId: number): Promise<void> {
-  if (!gameClient) return;
-  const currentView = await gameClient.getView();
+  const client = getInternalClient();
+  if (!client) return;
+  const currentView = await client.getView();
   const currentPlayer = currentView.players.find(p => p.playerId === playerId);
   const isHuman = currentPlayer?.controlType === 'human';
 
   const newType = isHuman ? 'ai' : 'human';
-  await gameClient.setPlayerControl(playerId, newType);
+  await game.setPlayerControl(playerId, newType);
 
   // Update the store
   playerConfigs.update(configs => {

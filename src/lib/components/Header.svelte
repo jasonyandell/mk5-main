@@ -124,15 +124,11 @@
                 modes.oneHand.start();
                 closeMenu();
               }}
-              disabled={$oneHandState.active}
             >
               <span class="flex items-center gap-2">
                 <Icon name="handRaised" size="sm" />
                 Play One Hand
               </span>
-              {#if $oneHandState.active}
-                <span class="badge badge-primary badge-xs">ACTIVE</span>
-              {/if}
             </button>
           </li>
           <li>

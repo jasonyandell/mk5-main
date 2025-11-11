@@ -1,13 +1,10 @@
 import type { GameView } from '../shared/multiplayer/protocol';
+import type { game } from '../stores/gameStore';
 
 declare global {
   interface Window {
     getGameView: () => GameView;
-    gameActions: {
-      executeAction: (action: import('../game/types').GameAction) => void;
-      loadFromURL: () => void;
-      startNewGame: (seed?: number) => void;
-    };
+    game: typeof game;
     controllerManager?: {
       skipAIDelays: () => void;
     };

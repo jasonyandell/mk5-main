@@ -338,15 +338,13 @@ function executePlay(state: GameState, player: number, dominoId: string, rules: 
 function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
   // Validate trick is complete (use rules)
   if (!rules.isTrickComplete(state)) {
-    // throw new Error('Trick not complete');
-    //return state; // Trick not complete, no-op
+    throw new Error('Trick not complete');
   }
 
   // Check consensus (all 4 players must agree)
   // Even in nello where only 3 play, all 4 players must agree to advance
   if (state.consensus.completeTrick.size !== 4) {
     throw new Error('Not all players agreed to complete trick');
-//    return state; // Not all agreed, no-op
   }
 
   // Calculate trick outcome (use rules)
@@ -358,7 +356,6 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
   if (!winnerPlayer) {
 
     throw new Error(`Invalid winner player index: ${winner}`);
-//    return state; // Invalid winner, no-op
   }
 
   // Update team scores

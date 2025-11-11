@@ -2,7 +2,7 @@
   import { seedFinderStore } from '../../stores/seedFinderStore';
   import { onMount, onDestroy } from 'svelte';
   import { writable } from 'svelte/store';
-  import { TARGET_WIN_RATE_MIN, TARGET_WIN_RATE_MAX } from '../../game/core/seedFinder';
+  import { TARGET_WIN_RATE_MIN, TARGET_WIN_RATE_MAX } from '../../game/ai/gameSimulator';
 
   // RAF-optimized store values
   const rafState = writable({

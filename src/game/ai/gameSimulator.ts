@@ -9,6 +9,34 @@ import { selectAIAction } from './actionSelector';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
 import type { ValidAction } from '../../shared/multiplayer/protocol';
 
+// Default target win rate constants for UI
+export const TARGET_WIN_RATE_MIN = 0.4;  // 40% win rate minimum
+export const TARGET_WIN_RATE_MAX = 0.6;  // 60% win rate maximum
+
+// Seed finder configuration (mutable for tests)
+export const SEED_FINDER_CONFIG = {
+  TARGET_WIN_RATE: 0.5,  // 50% win rate target
+  TOLERANCE: 0.1,        // ±10% tolerance
+  MAX_ATTEMPTS: 100,     // Maximum seeds to test
+  SIMULATIONS_PER_SEED: 5, // Number of games per seed
+  // Legacy fields for test compatibility
+  MAX_SEEDS_TO_TRY: 100,
+  GAMES_PER_SEED: 10,
+  SEARCH_TIMEOUT_MS: 5000,
+  PROGRESS_REPORT_INTERVAL: 1
+};
+
+// Progress tracking for seed finding
+export interface SeedProgress {
+  currentSeed: number;
+  seedsTried: number;
+  gamesPlayed: number;
+  totalGames: number;
+  currentWinRate: number;
+  bestSeed?: number;
+  bestWinRate?: number;
+}
+
 /**
  * Options for game simulation
  */

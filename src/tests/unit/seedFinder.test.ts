@@ -1,74 +1,133 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateSeed, findBalancedSeed, SEED_FINDER_CONFIG } from '../../game/core/seedFinder';
+import { testSeedWinRate, findCompetitiveSeed, SEED_FINDER_CONFIG } from '../../game/ai/gameSimulator';
 
 // Override for fast tests
 SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY = 100;
 SEED_FINDER_CONFIG.GAMES_PER_SEED = 10;
 SEED_FINDER_CONFIG.SEARCH_TIMEOUT_MS = 4000;
 
-describe('Seed Finder', () => {
-  describe('evaluateSeed', () => {
-    it('should evaluate a seed and return win rate', async () => {
-      const result = await evaluateSeed(12345, SEED_FINDER_CONFIG.GAMES_PER_SEED);
-      
+describe('Game Simulator - Seed Testing', () => {
+  describe('testSeedWinRate', () => {
+    it('should test a seed and return win rate', async () => {
+      const result = await testSeedWinRate(12345, SEED_FINDER_CONFIG.GAMES_PER_SEED);
+
       expect(result).toBeDefined();
-      expect(result.seed).toBe(12345);
-      expect(result.gamesPlayed).toBe(SEED_FINDER_CONFIG.GAMES_PER_SEED);
       expect(result.winRate).toBeGreaterThanOrEqual(0);
       expect(result.winRate).toBeLessThanOrEqual(1);
+      expect(result.avgScore).toBeGreaterThanOrEqual(0);
     });
 
-    it('should call progress callback during evaluation', async () => {
-      let progressCalls = 0;
-      let lastProgress = 0;
+    it('should return consistent results for the same seed', async () => {
+      const seed = 54321;
+      const simulations = 5;
 
-      await evaluateSeed(12345, SEED_FINDER_CONFIG.GAMES_PER_SEED, (games, wins) => {
-        progressCalls++;
-        expect(games).toBeGreaterThan(lastProgress);
-        expect(wins).toBeGreaterThanOrEqual(0);
-        expect(wins).toBeLessThanOrEqual(games);
-        lastProgress = games;
-      });
+      const result1 = await testSeedWinRate(seed, simulations);
+      const result2 = await testSeedWinRate(seed, simulations);
 
-      // Calculate expected calls based on actual configuration
-      const expectedCalls = Math.floor(SEED_FINDER_CONFIG.GAMES_PER_SEED / SEED_FINDER_CONFIG.PROGRESS_REPORT_INTERVAL);
-      expect(progressCalls).toBe(expectedCalls);
-      expect(lastProgress).toBe(SEED_FINDER_CONFIG.GAMES_PER_SEED);
+      // Results should be identical for same seed
+      expect(result1.winRate).toBe(result2.winRate);
+      expect(result1.avgScore).toBe(result2.avgScore);
+    });
+
+    it('should respect simulations count', async () => {
+      const seed = 11111;
+      const simulations = 3;
+
+      const result = await testSeedWinRate(seed, simulations);
+
+      expect(result).toBeDefined();
+      expect(result.winRate).toBeGreaterThanOrEqual(0);
+      expect(result.winRate).toBeLessThanOrEqual(1);
     });
   });
 
-  describe('findBalancedSeed', () => {
+  describe('findCompetitiveSeed', () => {
     it('should find a seed within acceptable win rate range', async () => {
+      let progressCalls = 0;
 
-      // Use smaller limits for testing
-      // For tests, the function now uses constants from seedFinder.ts
-      const result = await findBalancedSeed(
-        (progress) => {
-          expect(progress.seedsTried).toBeGreaterThan(0);
-          expect(progress.gamesPlayed).toBeLessThanOrEqual(progress.totalGames);
+      const seed = await findCompetitiveSeed({
+        targetWinRate: SEED_FINDER_CONFIG.TARGET_WIN_RATE,
+        tolerance: SEED_FINDER_CONFIG.TOLERANCE,
+        maxAttempts: SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY,
+        simulationsPerSeed: SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED,
+        onProgress: (attempt) => {
+          progressCalls++;
+          expect(attempt).toBeGreaterThan(0);
+          expect(attempt).toBeLessThanOrEqual(SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY);
         }
-      );
+      });
 
-      expect(result).toBeDefined();
-      expect(result.seed).toBeGreaterThan(0);
-      expect(result.winRate).toBeGreaterThanOrEqual(0);
-      expect(result.winRate).toBeLessThanOrEqual(1);
-
-      // The seed should be either balanced or the fallback
-      // We can't guarantee finding a balanced seed in tests with limited tries
-      if (result.seed === 424242) {
-        // Fallback seed
-        expect(result.seed).toBe(424242);
-      } else {
-        // Should be a valid seed number
-        expect(result.seed).toBeLessThan(1000000);
-      }
+      expect(seed).toBeGreaterThan(0);
+      expect(seed).toBeLessThan(1000000);
+      expect(progressCalls).toBeGreaterThan(0);
     });
 
-    it.skip('should return fallback seed on timeout', async () => {
-      // This test can't be reliably executed anymore since we can't control 
-      // the timeout or max seeds parameters - they're now constants
-      // The function will likely find a balanced seed before timing out
+    it('should call progress callback during search', async () => {
+      let lastAttempt = 0;
+      const progressAttempts: number[] = [];
+
+      await findCompetitiveSeed({
+        targetWinRate: 0.5,
+        tolerance: 0.1,
+        maxAttempts: 10,
+        simulationsPerSeed: 3,
+        onProgress: (attempt) => {
+          progressAttempts.push(attempt);
+          expect(attempt).toBeGreaterThan(lastAttempt);
+          lastAttempt = attempt;
+        }
+      });
+
+      expect(progressAttempts.length).toBeGreaterThan(0);
+      expect(progressAttempts.length).toBeLessThanOrEqual(10);
+    });
+
+    it('should return a valid seed even if no perfect match found', async () => {
+      // Use very tight constraints to force fallback
+      const seed = await findCompetitiveSeed({
+        targetWinRate: 0.5,
+        tolerance: 0.01,  // Very tight tolerance
+        maxAttempts: 3,    // Very few attempts
+        simulationsPerSeed: 2
+      });
+
+      expect(seed).toBeGreaterThan(0);
+      expect(seed).toBeLessThan(1000000);
+    });
+
+    it('should respect maxAttempts limit', async () => {
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      await findCompetitiveSeed({
+        targetWinRate: 0.5,
+        tolerance: 0.1,
+        maxAttempts,
+        simulationsPerSeed: 2,
+        onProgress: () => {
+          attempts++;
+        }
+      });
+
+      expect(attempts).toBeLessThanOrEqual(maxAttempts);
+    });
+  });
+
+  describe('SEED_FINDER_CONFIG', () => {
+    it('should have valid configuration values', () => {
+      expect(SEED_FINDER_CONFIG.TARGET_WIN_RATE).toBeGreaterThan(0);
+      expect(SEED_FINDER_CONFIG.TARGET_WIN_RATE).toBeLessThan(1);
+      expect(SEED_FINDER_CONFIG.TOLERANCE).toBeGreaterThan(0);
+      expect(SEED_FINDER_CONFIG.TOLERANCE).toBeLessThan(1);
+      expect(SEED_FINDER_CONFIG.MAX_ATTEMPTS).toBeGreaterThan(0);
+      expect(SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED).toBeGreaterThan(0);
+    });
+
+    it('should have legacy fields for backward compatibility', () => {
+      expect(SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY).toBeDefined();
+      expect(SEED_FINDER_CONFIG.GAMES_PER_SEED).toBeDefined();
+      expect(SEED_FINDER_CONFIG.SEARCH_TIMEOUT_MS).toBeDefined();
+      expect(SEED_FINDER_CONFIG.PROGRESS_REPORT_INTERVAL).toBeDefined();
     });
   });
 });

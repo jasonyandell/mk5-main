@@ -65,12 +65,6 @@ export {
 export { executeAction } from './core/actions';
 
 // Event sourcing / replay
-export {
-  replayActions,
-  createInitialStateWithActionTransformers,
-  applyActionWithHistory
-} from './core/replay';
-
 // Rule validation
 // NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:
 // import { composeRules, baseRuleSet } from './rulesets';
