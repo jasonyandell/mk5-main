@@ -111,6 +111,11 @@ export class MockConnection implements Connection {
     this.handlers.add(handler);
   }
 
+  reply(message: ServerMessage): void {
+    // For mock connection, reply is the same as broadcast
+    this.broadcast(message);
+  }
+
   disconnect(): void {
     this.connected = false;
     this.handlers.clear();

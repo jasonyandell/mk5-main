@@ -1,13 +1,10 @@
 import './styles/app.css';
 import { mount } from 'svelte';
-import { get } from 'svelte/store';
 import App from './App.svelte';
 import PerfectsApp from './PerfectsApp.svelte';
-import { game, gameState, getInternalClient } from './stores/gameStore';
 import { SEED_FINDER_CONFIG } from './game/ai/gameSimulator';
 import { seedFinderStore } from './stores/seedFinderStore';
-import type { GameView } from './shared/multiplayer/protocol';
-import { NetworkGameClient } from './game/multiplayer/NetworkGameClient';
+import { getGameView } from './stores/gameStore';
 
 // Route to appropriate app based on URL path
 const pathname = window.location.pathname;
@@ -23,57 +20,29 @@ const app = mount(AppComponent, {
 });
 
 // =============================================================================
-// Window API for Development & Testing
+// Window API for User-Facing Features + Testing
 // =============================================================================
-// Minimal exposure for:
-// 1. Browser console debugging (game developers)
-// 2. E2E test verification (read-only state inspection)
-//
-// IMPORTANT: Tests should prefer DOM inspection over window access.
-// Only use window API when DOM doesn't reflect the state you need to verify.
+// Seed finder is exposed for user access (documented feature)
+// getGameView is exposed for E2E test support
 // =============================================================================
 
 declare global {
   interface Window {
-    // State inspection (read-only, for debugging/testing)
-    getGameView: () => GameView;
-
-    // Development/debug tools
-    game: typeof game; // Execute actions from console
-
     // Seed finder (user-facing feature)
     SEED_FINDER_CONFIG: typeof SEED_FINDER_CONFIG;
     seedFinderStore: typeof seedFinderStore;
+    // Test support
+    getGameView?: typeof getGameView;
   }
 }
 
 if (typeof window !== 'undefined' && !isPerfectsPage) {
-  // Read-only state inspection (minimal exposure for testing/debugging)
-  window.getGameView = () => {
-    const client = getInternalClient() as NetworkGameClient;
-    const cachedView = client.getCachedView();
-    if (!cachedView) {
-      // Return a minimal GameView structure
-      const state = get(gameState);
-      return {
-        state,
-        validActions: [],
-        transitions: [],
-        players: [],
-        metadata: {
-          gameId: 'unknown'
-        }
-      };
-    }
-    return cachedView;
-  };
-
-  // Development tools (execute actions from browser console)
-  window.game = game;
-
   // Seed finder (user-facing feature)
   window.SEED_FINDER_CONFIG = SEED_FINDER_CONFIG;
   window.seedFinderStore = seedFinderStore;
+
+  // Test support - expose minimal API for E2E tests
+  window.getGameView = getGameView;
 }
 
 export default app;

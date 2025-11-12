@@ -52,12 +52,13 @@ Everything else exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  Transport Layer                │  Message routing (in-process/Worker/WS)
+│  Transport Layer                │  Connection objects (self-contained)
+│  Connection.reply() pattern     │  Each connection routes to itself
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
 │  Room (Orchestrator)            │  ★ COMPOSITION POINT ★
-│  - Owns state and context       │  Routes messages, manages lifecycle
+│  - Owns state and context       │  Routes via connection.reply()
 │  - Manages sessions and AI      │  Spawns/destroys AI clients
 │  - Delegates to pure helpers    │  Broadcasts state updates
 └─────────────────────────────────┘
@@ -137,6 +138,26 @@ const rules = composeRules([baseRuleSet, nelloRuleSet, splashRuleSet]);
 ```
 
 **Example**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
+
+### When to Add New Rules Methods
+
+The GameRules interface currently has 13 methods, but **this number is not fixed**. Add new rules methods when you need:
+
+**New terminal states**: Mode needs hand to end for new reasons
+- Example: `checkHandOutcome` was added to support nello/plunge early termination
+- Pattern: Add method to GameRules → Base returns default → RuleSets override
+
+**New execution semantics**: Mode changes who/when/how core mechanics work
+- Example: `isTrickComplete` enables nello's 3-player tricks
+- Pattern: Executor delegates to rule → RuleSet provides mode-specific logic
+
+**Mode-specific validation**: Mode changes what's legal
+- Example: `isValidBid` allows RuleSets to validate special bid types
+- Pattern: Executor calls rule for all validation → No state inspection
+
+**Don't add rules methods for**: Action availability (use ActionTransformers instead)
+
+**The key insight**: When executors need mode-specific behavior, add a new rule method. Never add conditionals to executors.
 
 ### Level 2: ActionTransformers → Action Transformation
 
@@ -274,8 +295,8 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 **Server** (orchestration + authority):
 - `src/server/Room.ts` - Room orchestrator (combines server + kernel)
 - `src/kernel/kernel.ts` - Pure helper functions (executeKernelAction, buildKernelView)
-- `src/server/transports/Transport.ts` - Transport abstraction interface
-- `src/server/transports/InProcessTransport.ts` - In-browser transport
+- `src/server/transports/Transport.ts` - Transport abstraction, Connection interface with reply()
+- `src/server/transports/InProcessTransport.ts` - In-browser transport implementation
 
 **Client** (trust boundary):
 - `src/game/multiplayer/NetworkGameClient.ts` - Client interface, caches filtered state
@@ -424,10 +445,9 @@ Room.notifyListeners():
   - For each subscriber (with perspective)
   - buildKernelView(mpState, playerId, ctx, metadata) → filter state + build view
   - Build GameView { state, transitions, metadata }
+  - connection.reply(STATE_UPDATE) → direct delivery to client
   ↓
-Room broadcasts GameView via Transport
-  ↓
-Transport.send() → connection.onMessage(STATE_UPDATE)
+Connection delivers message to client handler
   ↓
 NetworkGameClient.handleServerMessage()
   - Cache GameView (filtered state + transitions)
@@ -503,6 +523,93 @@ const config: GameConfig = {
 ```
 
 Flags → getEnabledRuleSets() → compose in Room constructor.
+
+### Add Mode-Specific Execution Behavior
+
+When a new mode needs different execution semantics (not just different actions), follow this pattern:
+
+#### Step 1: Identify the extension point
+Ask: "Does the executor need to know about this behavior?"
+- YES → Add GameRules method
+- NO → Use ActionTransformer
+
+#### Step 2: Add method to GameRules interface
+```typescript
+// src/game/rulesets/types.ts
+export interface GameRules {
+  // ... existing methods ...
+
+  /**
+   * Your new rule with clear doc comment.
+   * Explain what base returns and when RuleSets override.
+   */
+  myNewRule(state: GameState, ...params): ReturnType;
+}
+```
+
+#### Step 3: Implement in base RuleSet
+```typescript
+// src/game/rulesets/base.ts
+export const baseRules: GameRules = {
+  // ... existing rules ...
+
+  myNewRule: (state, ...params) => {
+    // Default behavior for standard Texas 42
+    return defaultValue;
+  }
+};
+```
+
+#### Step 4: Override in special RuleSets
+```typescript
+// src/game/rulesets/myMode.ts
+export const myModeRuleSet: GameRuleSet = {
+  name: 'my-mode',
+  rules: {
+    myNewRule: (state, ...params, prev) => {
+      if (state.trump.type === 'my-mode') {
+        return modeSpecificValue;
+      }
+      return prev; // Delegate to previous ruleset
+    }
+  }
+};
+```
+
+#### Step 5: Update compose.ts
+Add the new rule to the composition reduce pattern:
+```typescript
+// src/game/rulesets/compose.ts
+export function composeRules(ruleSets: GameRuleSet[]): GameRules {
+  // ... existing code ...
+
+  myNewRule: (state, ...params) => {
+    let result = baseRules.myNewRule(state, ...params);
+    for (const ruleSet of ruleSets) {
+      if (ruleSet.rules?.myNewRule) {
+        result = ruleSet.rules.myNewRule(state, ...params, result);
+      }
+    }
+    return result;
+  }
+}
+```
+
+#### Step 6: Use in executors
+Executors delegate to the rule, never inspect state:
+```typescript
+// src/game/core/actions.ts
+function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
+  // DON'T: if (state.mode === 'special') { ... }
+  // DO: Delegate to rule
+  const value = rules.myNewRule(state, action.param);
+  // Use value to determine behavior
+}
+```
+
+**Real Example**: One-hand mode needs a new terminal state. Add `getPhaseAfterHandComplete` to GameRules. Base returns `'scoring'` (continue to next hand), oneHandRuleSet returns `'one-hand-complete'` (special terminal state).
+
+**Key Principle**: Executors must remain mode-agnostic. If you're tempted to add `if (mode)` to an executor, add a rule method instead.
 
 ---
 

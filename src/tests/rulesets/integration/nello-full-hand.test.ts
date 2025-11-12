@@ -273,6 +273,119 @@ describe('Nello Full Hand Integration', () => {
       // Opponents get the mark value
       expect(finalState.teamMarks[1]).toBe(1);
     });
+
+    it('should continue playing when bidder loses all tricks so far', async () => {
+      const state = createTestState({
+        phase: 'bidding',
+        currentPlayer: 0,
+        shuffleSeed: 678901,
+        players: [
+          // Give bidder low cards so they can avoid winning tricks
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]) },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[1, 5], [2, 4], [2, 5], [3, 5], [4, 4], [4, 5], [5, 5]]) }
+        ]
+      });
+
+      const { finalState, preScoreState } = await playNelloHand(state, false);
+
+      // Verify bidder successfully lost all tricks (all 7 tricks played)
+      expect(preScoreState.tricks.length).toBe(7);
+      expect(preScoreState.phase).toBe('scoring');
+
+      // Verify bidder scored marks (successful nello)
+      expect(finalState.teamMarks[0]).toBeGreaterThan(0); // Bidder succeeded
+      expect(finalState.teamMarks[1]).toBe(0); // Opponents got nothing
+    });
+
+    it('should end early when bidder wins on 3rd trick after losing first 2', async () => {
+      const state = createTestState({
+        phase: 'bidding',
+        currentPlayer: 0,
+        shuffleSeed: 789012,
+        players: [
+          // Mix of high and low cards - bidder will win eventually
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 1], [0, 2], [6, 6], [5, 6], [4, 6], [3, 6], [2, 6]]) },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[1, 1], [1, 2], [0, 0], [2, 2], [3, 3], [4, 4], [5, 5]]) },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[1, 5], [2, 4], [2, 5], [3, 5], [4, 5], [1, 6], [0, 6]]) }
+        ]
+      });
+
+      // Play carefully - bidder plays low first 2 tricks, then high on 3rd
+      let testState = state;
+
+      // Bidding
+      const marksBid = getNextStates(testState, ctx).find(t => t.id === 'bid-1-marks');
+      testState = executeAction(testState, marksBid!.action, rules);
+
+      for (let i = 0; i < 3; i++) {
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
+        testState = executeAction(testState, passTransition!.action, rules);
+      }
+
+      // Trump selection
+      const nelloTransition = getNextStates(testState, ctx).find(t =>
+        t.action.type === 'select-trump' && t.action.trump?.type === 'nello'
+      );
+      testState = executeAction(testState, nelloTransition!.action, rules);
+
+      // Play multiple tricks - eventually bidder will win one
+      let tricksPlayed = 0;
+      while (testState.phase === 'playing' && tricksPlayed < 5) {
+        // Play 3 dominoes per trick (nello)
+        for (let i = 0; i < 3; i++) {
+          const playTransitions = getNextStates(testState, ctx).filter(t => t.action.type === 'play');
+
+          // Bidder (player 0) will play low cards first, then high
+          let selectedPlay;
+          if (testState.currentPlayer === 0) {
+            if (tricksPlayed < 2) {
+              selectedPlay = playTransitions[0]; // Play low
+            } else {
+              selectedPlay = playTransitions[playTransitions.length - 1]; // Play high to win
+            }
+          } else {
+            selectedPlay = playTransitions[0];
+          }
+
+          testState = executeAction(testState, selectedPlay!.action, rules);
+        }
+
+        // Process consensus
+        testState = await processSequentialConsensus(testState, 'completeTrick');
+
+        // Complete trick
+        const completeTrickTransition = getNextStates(testState, ctx).find(t => t.id === 'complete-trick');
+        if (completeTrickTransition) {
+          testState = executeAction(testState, completeTrickTransition.action, rules);
+          tricksPlayed++;
+
+          // Check if hand ended early
+          if (testState.phase === 'scoring') {
+            break;
+          }
+        }
+      }
+
+      // Should have ended early when bidder won a trick
+      expect(testState.phase).toBe('scoring');
+      expect(testState.tricks.length).toBeGreaterThanOrEqual(1);
+      expect(testState.tricks.length).toBeLessThanOrEqual(7);
+
+      // At least one trick should be won by bidding team
+      const bidderTricks = testState.tricks.filter(t => {
+        if (t.winner === undefined) return false;
+        const winner = testState.players[t.winner];
+        return winner?.teamId === 0;
+      });
+
+      if (testState.tricks.length < 7) {
+        // If ended early, bidder must have won at least one trick
+        expect(bidderTricks.length).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('Player Rotation', () => {

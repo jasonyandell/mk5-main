@@ -87,16 +87,22 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 #### Level 1: RuleSets → Execution Rules
 **Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
-**Mechanism**: Override specific methods in the 13-method `GameRules` interface
+**Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 13 methods)
 - WHO: getTrumpSelector, getFirstLeader, getNextPlayer
 - WHEN: isTrickComplete, checkHandOutcome
 - HOW: getLedSuit, calculateTrickWinner
 - VALIDATION: isValidPlay, getValidPlays, isValidBid
 - SCORING: getBidComparisonValue, isValidTrump, calculateScore
 
-**Composition**: RuleSets override only what differs from base, compose via reduce pattern
+**Extensibility**: The 13 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
 
-**Example**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
+**When to add methods**: When an executor needs mode-specific behavior and you're tempted to write `if (state.mode)`, add a GameRules method instead. Base provides default, RuleSets override.
+
+**Example of current methods**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
+
+**Example of extensibility**: `checkHandOutcome` was added to support nello/plunge early termination. Base returns `null` (play all tricks), special RuleSets return `HandOutcome` when conditions met.
+
+**Composition**: RuleSets override only what differs from base, compose via reduce pattern
 
 #### Level 2: ActionTransformers → Action Transformation
 **Purpose**: Transform WHAT actions are possible (filter, annotate, script, replace)
@@ -333,6 +339,36 @@ Validate early and explicitly. Make errors impossible through types where feasib
 One authoritative location for each piece of state. Everything else derives from it.
 
 **Application**: Room state, action history, ExecutionContext.
+
+### Extension Decision Tree
+
+When adding new behavior, use this decision tree to determine the right approach:
+
+**Question 1: Does this change what actions are possible?**
+- YES → Use ActionTransformer (filter, annotate, script, replace)
+- NO → Continue to Question 2
+
+**Question 2: Does this change execution semantics?**
+- YES → Continue to Question 3
+- NO → Use pure utility function
+
+**Question 3: Do executors need to know about this?**
+- YES → Add GameRules method
+- NO → Use RuleSet-only helper
+
+**Question 4: Is this mode-specific or universal?**
+- Mode-specific → RuleSet overrides method
+- Universal → Update base implementation
+
+**Examples**:
+- "AI hints for actions" → ActionTransformer (annotate)
+- "3-player tricks in nello" → GameRules.isTrickComplete (execution semantic)
+- "Hand strength calculation" → Pure utility (no execution impact)
+- "Nello ends when bidder wins trick" → GameRules.checkHandOutcome (terminal state)
+- "Remove special bids in tournament" → ActionTransformer (filter)
+- "One-hand needs different terminal state" → GameRules.getPhaseAfterHandComplete (execution semantic)
+
+**Key Principle**: If an executor would need to know about it, it's a GameRules method. If only action generation needs it, it's an ActionTransformer or utility.
 
 ---
 

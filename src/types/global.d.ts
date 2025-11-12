@@ -1,14 +1,4 @@
-import type { GameView } from '../shared/multiplayer/protocol';
-import type { game } from '../stores/gameStore';
-
-declare global {
-  interface Window {
-    getGameView: () => GameView;
-    game: typeof game;
-    controllerManager?: {
-      skipAIDelays: () => void;
-    };
-  }
-}
+// This file is now empty - all window API declarations have been moved to main.ts
+// Kept for potential future global type declarations
 
 export {};

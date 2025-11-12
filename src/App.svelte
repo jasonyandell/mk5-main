@@ -131,11 +131,12 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div 
+<div
   class="app-container flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
   style="height: 100dvh;"
-  role="application" 
+  role="application"
   data-phase={$gameState.phase}
+  data-processing={$viewProjection.ui.isAIThinking}
 >
   <Header 
     on:openSettings={() => {

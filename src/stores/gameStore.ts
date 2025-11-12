@@ -7,6 +7,8 @@ import { createViewProjection, type ViewProjection } from '../game/view-projecti
 import { createSetupState } from '../game/core/state';
 import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
 import type { GameView, PlayerInfo } from '../shared/multiplayer/protocol';
+import { decodeGameUrl } from '../game/core/url-compression';
+import type { Room } from '../server/Room';
 
 /**
  * GameStore - Clean facade over Room/Transport/NetworkGameClient complexity.
@@ -145,18 +147,71 @@ class GameStoreImpl {
       }
     });
 
-    // Initialize immediately
-    void this.wireUpGame({
-      playerTypes,
-      shuffleSeed: Math.floor(Math.random() * 1000000)
-    });
+    // Initialize from URL or with default config
+    void this.initializeFromURL();
+  }
+
+  /**
+   * Initialize game from URL parameters or create new game
+   */
+  private async initializeFromURL(): Promise<void> {
+    try {
+      // Check if we have URL parameters to load from
+      if (typeof window === 'undefined') {
+        // SSR - initialize with default config
+        await this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasSeed = urlParams.has('s');
+
+      if (hasSeed) {
+        // URL has game state - decode and initialize
+        const urlData = decodeGameUrl(window.location.search);
+
+        // Build config from URL data
+        const config: GameConfig = {
+          playerTypes: urlData.playerTypes,
+          shuffleSeed: urlData.seed || Math.floor(Math.random() * 1000000),
+          ...(urlData.dealer !== undefined && urlData.dealer !== 3 ? { dealer: urlData.dealer } : {}),
+          ...(urlData.theme ? { theme: urlData.theme } : {}),
+          ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0
+            ? { colorOverrides: urlData.colorOverrides }
+            : {}),
+          ...(urlData.actionTransformers ? { actionTransformers: urlData.actionTransformers } : {}),
+          ...(urlData.enabledRuleSets ? { enabledRuleSets: urlData.enabledRuleSets } : {})
+        };
+
+        // Initialize game with URL config and replay actions if present
+        await this.wireUpGame(config, urlData.actions.length > 0 ? urlData.actions : undefined);
+      } else {
+        // No URL state - initialize with default config
+        await this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to initialize from URL:', error);
+      // Fallback to default initialization
+      await this.wireUpGame({
+        playerTypes,
+        shuffleSeed: Math.floor(Math.random() * 1000000)
+      });
+    }
   }
 
   /**
    * Core method: Wire up Room + Transport + NetworkGameClient.
    * This is the ONLY place where Room/Transport/Client are created.
+   * @param config - Game configuration
+   * @param actionIds - Optional action IDs to replay after Room creation
    */
-  private async wireUpGame(config: GameConfig): Promise<void> {
+  private async wireUpGame(config: GameConfig, actionIds?: string[]): Promise<void> {
     // Dynamic imports
     const { Room } = await import('../server/Room');
     const { InProcessTransport } = await import('../server/transports/InProcessTransport');
@@ -184,11 +239,15 @@ class GameStoreImpl {
     // 1. Create Room
     const room = new Room(gameId, config, sessions);
 
-    // 2. Create Transport
+    // 1a. If we have actions to replay, do it now before setting up transport
+    if (actionIds && actionIds.length > 0) {
+      await this.replayActionsInRoom(room, actionIds, config);
+    }
+
+    // 2. Create Transport for human clients
     const transport = new InProcessTransport();
 
-    // 3. Wire them together
-    room.setTransport(transport);
+    // 3. Wire transport to room
     transport.setRoom(room);
 
     // 4. Create connection from transport
@@ -229,6 +288,70 @@ class GameStoreImpl {
     } catch (error) {
       console.error('Failed to initialize game client:', error);
     }
+  }
+
+  /**
+   * Replay actions directly in the Room (before client connection).
+   * Uses the same approach as HeadlessRoom replay for deterministic state restoration.
+   */
+  private async replayActionsInRoom(room: Room, actionIds: string[], config: GameConfig): Promise<void> {
+    // Import action resolution utilities
+    const { resolveActionIds } = await import('../game/core/action-resolution');
+
+    try {
+      const seed = config.shuffleSeed;
+      if (!seed) {
+        console.error('[gameStore] Cannot replay actions: no shuffle seed in config');
+        return;
+      }
+
+      // Resolve action IDs to GameActions
+      const actions = resolveActionIds(actionIds, config, seed);
+
+      // Execute each action directly in the Room
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        if (!action) {
+          console.error('[gameStore] Action is undefined at index', i);
+          break;
+        }
+
+        // Determine which player should execute this action
+        const playerIndex = this.getPlayerIndexForAction(action);
+        const playerId = `${config.playerTypes?.[playerIndex] === 'human' ? 'player' : 'ai'}-${playerIndex}`;
+
+        // Execute the action in the Room
+        const result = room.executeAction(playerId, action);
+
+        if (!result.success) {
+          console.error('[gameStore] Action replay failed:', result.error);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('[gameStore] Failed to replay actions:', error);
+    }
+  }
+
+  /**
+   * Get the player index that should execute a given action.
+   */
+  private getPlayerIndexForAction(action: GameAction): number {
+    // Actions with explicit player field
+    if ('player' in action && typeof action.player === 'number') {
+      return action.player;
+    }
+
+    // Consensus actions can be executed by any player
+    // For URL replay, we use player 0
+    if (action.type === 'complete-trick' ||
+        action.type === 'score-hand' ||
+        action.type === 'redeal') {
+      return 0;
+    }
+
+    // Default to player 0
+    return 0;
   }
 
   // ========================================================================
@@ -384,4 +507,22 @@ export const findingSeed = store.findingSeed;
  */
 export function getInternalClient() {
   return store['client'];
+}
+
+/**
+ * Get current game view for E2E testing.
+ * Returns the ViewProjection with additional state information.
+ * @internal
+ */
+export function getGameView() {
+  const view = get(store['clientView']);
+  const projection = get(store.viewProjection);
+
+  return {
+    ...projection,
+    state: view.state,
+    isProcessing: projection.ui.isAIThinking,
+    validActions: view.validActions,
+    players: view.players
+  };
 }

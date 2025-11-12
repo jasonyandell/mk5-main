@@ -22,6 +22,7 @@ import { DOUBLES_AS_TRUMP } from '../types';
 import { isValidMarkBid } from '../core/rules';
 import { calculateRoundScore } from '../core/scoring';
 import { composeRules } from './compose';
+import { checkHandOutcome as checkStandardHandOutcome } from '../core/handOutcome';
 
 /**
  * Generates structural actions only (pass, redeal, consensus, trump selection, plays).
@@ -60,7 +61,11 @@ function getBiddingActions(state: GameState): GameAction[] {
     const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
     if (nonPassBids.length === 0) {
       // All passed - need redeal
-      actions.push({ type: 'redeal' });
+      actions.push({
+        type: 'redeal',
+        autoExecute: true,
+        meta: { authority: 'system' }
+      });
       return actions;
     }
     // Otherwise, bidding is complete - no more actions
@@ -122,7 +127,11 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
 
     // If all have agreed, the trick can be completed
     if (state.consensus.completeTrick.size === state.players.length) {
-      actions.push({ type: 'complete-trick' });
+      actions.push({
+        type: 'complete-trick',
+        autoExecute: true,
+        meta: { authority: 'system' }
+      });
     }
     return actions;
   }
@@ -154,7 +163,11 @@ function getScoringActions(state: GameState): GameAction[] {
 
   // If all have agreed, the hand can be scored
   if (state.consensus.scoreHand.size === state.players.length) {
-    actions.push({ type: 'score-hand' });
+    actions.push({
+      type: 'score-hand',
+      autoExecute: true,
+      meta: { authority: 'system' }
+    });
   }
 
   return actions;
@@ -338,19 +351,23 @@ export const baseRuleSet: GameRuleSet = {
     /**
      * WHEN should the hand end early (before all 7 tricks)?
      *
-     * Base: Never - standard 42 plays all 7 tricks
-     * Returns null unless all tricks are complete
+     * Base: Check if outcome is mathematically determined
+     * - Bidding team reached their bid
+     * - Bidding team cannot possibly reach their bid
+     * - Defending team has set the bid
+     * - All 7 tricks complete
      */
     checkHandOutcome(state: GameState) {
-      // Only end after all 7 tricks in standard play
-      if (state.tricks.length < GAME_CONSTANTS.TRICKS_PER_HAND) {
-        return null;
+      // First check if all tricks complete
+      if (state.tricks.length >= GAME_CONSTANTS.TRICKS_PER_HAND) {
+        return {
+          isDetermined: true,
+          reason: 'All tricks played'
+        };
       }
 
-      return {
-        isDetermined: true,
-        reason: 'All tricks played'
-      };
+      // Then check for early termination based on score
+      return checkStandardHandOutcome(state);
     },
 
     /**

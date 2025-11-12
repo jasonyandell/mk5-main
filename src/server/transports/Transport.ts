@@ -37,6 +37,13 @@ export interface Connection {
   onMessage: (handler: (message: ServerMessage) => void) => void;
 
   /**
+   * Send a message from server to this specific client.
+   * Each connection knows how to reply to itself, eliminating the need
+   * for Room to route through a global transport.
+   */
+  reply: (message: ServerMessage) => void;
+
+  /**
    * Disconnect this client from the transport.
    * Notifies transport that client is gone.
    */

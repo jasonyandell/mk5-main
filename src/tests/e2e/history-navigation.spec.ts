@@ -5,15 +5,18 @@ test.describe('History Navigation URL Preservation', () => {
   test('should preserve URL when clicking history items in debug panel', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     const locators = helper.getLocators();
-    
-    // Start with a deterministic game seed - allow URL updates for this test
-    await helper.goto(12345, { disableUrlUpdates: false });
-    
-    // Perform a few actions to create history
-    await helper.bid(30, false);
-    await helper.pass();
-    await helper.pass();
-    
+
+    // Load game state with some actions already performed
+    // Use AI for players 1-3 so we can control just player 0
+    await helper.loadStateWithActions(
+      12345,
+      ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'],
+      ['human', 'ai', 'ai', 'ai']
+    );
+
+    // Wait for game to be ready in playing phase
+    await helper.waitForGameReady();
+
     // Get URL after actions - should contain state
     const urlWithActions = page.url();
     expect(urlWithActions).toContain('?s='); // Should have seed parameter

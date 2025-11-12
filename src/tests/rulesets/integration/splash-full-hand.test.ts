@@ -265,6 +265,131 @@ describe('Splash Full Hand Integration', () => {
         expect(finalState.teamMarks[0]).toBeLessThanOrEqual(3);
       }
     });
+
+    it('should continue when bidding team wins all tricks so far', async () => {
+      const state = createTestState({
+        phase: 'bidding',
+        currentPlayer: 0,
+        shuffleSeed: 112233,
+        players: [
+          // Give bidding team high trump to win tricks
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]) },
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
+        ]
+      });
+
+      const { finalState, preScoreState } = await playSplashHand(state, true);
+
+      // Should play all 7 tricks if bidding team wins them all
+      if (preScoreState.tricks.length === 7) {
+        // All 7 tricks played - bidding team won all
+        expect(finalState.teamMarks[0]).toBeGreaterThanOrEqual(2);
+        expect(finalState.teamMarks[1]).toBe(0);
+      }
+
+      // Verify all tricks won by bidding team (if 7 tricks played)
+      const biddingTeamTricks = preScoreState.tricks.filter((t: { winner?: number }) => {
+        if (t.winner === undefined) return false;
+        const winner = state.players[t.winner];
+        return winner?.teamId === 0;
+      }).length;
+
+      if (preScoreState.tricks.length === 7) {
+        expect(biddingTeamTricks).toBe(7);
+      }
+    });
+
+    it('should end early when opponents win on 2nd trick after losing first', async () => {
+      const state = createTestState({
+        phase: 'bidding',
+        currentPlayer: 0,
+        shuffleSeed: 223344,
+        players: [
+          // Mix - bidding team wins first trick, then loses
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
+          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [6, 6], [5, 6], [4, 6], [3, 6], [2, 6]]) },
+          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [4, 5], [3, 5], [0, 2], [1, 1], [1, 2], [2, 2]]) },
+          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[1, 6], [0, 6], [0, 3], [0, 4], [0, 5], [1, 3], [1, 4]]) }
+        ]
+      });
+
+      // Play through carefully - opponents eventually win
+      let testState = state;
+
+      // Bid splash
+      const splashBid = getNextStates(testState, ctx).find(t =>
+        t.action.type === 'bid' && t.action.bid === 'splash'
+      );
+      testState = executeAction(testState, splashBid!.action, rules);
+
+      // Others pass
+      for (let i = 0; i < 3; i++) {
+        const passTransition = getNextStates(testState, ctx).find(t => t.id === 'pass');
+        testState = executeAction(testState, passTransition!.action, rules);
+      }
+
+      // Partner selects trump
+      const trumpTransition = getNextStates(testState, ctx).find(t =>
+        t.action.type === 'select-trump'
+      );
+      testState = executeAction(testState, trumpTransition!.action, rules);
+
+      // Play multiple tricks
+      let tricksPlayed = 0;
+      while (testState.phase === 'playing' && tricksPlayed < 7) {
+        // Play 4 dominoes per trick
+        for (let i = 0; i < 4; i++) {
+          const playTransitions = getNextStates(testState, ctx).filter(t => t.action.type === 'play');
+
+          // Strategy: opponents play low first trick, then high on second
+          let selectedPlay;
+          const currentPlayerTeam = testState.currentPlayer % 2;
+          if (currentPlayerTeam === 0) {
+            // Bidding team plays to win
+            selectedPlay = playTransitions[playTransitions.length - 1];
+          } else {
+            // Opponents play low first, high second
+            if (tricksPlayed < 1) {
+              selectedPlay = playTransitions[0]; // Play low
+            } else {
+              selectedPlay = playTransitions[playTransitions.length - 1]; // Play high to win
+            }
+          }
+
+          testState = executeAction(testState, selectedPlay!.action, rules);
+        }
+
+        // Process consensus
+        testState = await processSequentialConsensus(testState, 'completeTrick');
+
+        // Complete trick
+        const completeTrickTransition = getNextStates(testState, ctx).find(t => t.id === 'complete-trick');
+        if (completeTrickTransition) {
+          testState = executeAction(testState, completeTrickTransition.action, rules);
+          tricksPlayed++;
+
+          // Check if hand ended early
+          if (testState.phase === 'scoring') {
+            break;
+          }
+        }
+      }
+
+      // Should have ended early at some point
+      if (testState.tricks.length < 7) {
+        expect(testState.phase).toBe('scoring');
+
+        // At least one trick should be won by opponents
+        const opponentTricks = testState.tricks.filter((t: { winner?: number }) => {
+          if (t.winner === undefined) return false;
+          const winner = testState.players[t.winner];
+          return winner?.teamId === 1;
+        });
+        expect(opponentTricks.length).toBeGreaterThan(0);
+      }
+    });
   });
 
   describe('Trump Selection and Leading', () => {

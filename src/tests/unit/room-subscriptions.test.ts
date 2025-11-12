@@ -16,13 +16,19 @@ class MockTransport implements Transport {
     this.sentMessages.set(clientId, messages);
   }
 
-  connect(_clientId: string): Connection {
+  connect(clientId: string): Connection {
     return {
       send: () => {
         // No-op for test
       },
       onMessage: () => {
         // No-op for test
+      },
+      reply: (message: ServerMessage) => {
+        // Capture messages sent via reply()
+        const messages = this.sentMessages.get(clientId) ?? [];
+        messages.push(message);
+        this.sentMessages.set(clientId, messages);
       },
       disconnect: () => {
         // No-op for test
@@ -94,6 +100,15 @@ describe('Room Subscriptions', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let buildKernelViewSpy: any;
   const gameId = 'test-game';
+  const connections: Map<string, Connection> = new Map();
+
+  // Helper to get or create connection for a client (cached to prevent duplicates)
+  const getConnection = (clientId: string): Connection => {
+    if (!connections.has(clientId)) {
+      connections.set(clientId, transport.connect(clientId));
+    }
+    return connections.get(clientId)!;
+  };
 
   beforeEach(() => {
     const config: GameConfig = {
@@ -104,7 +119,7 @@ describe('Room Subscriptions', () => {
 
     room = new Room(gameId, config, players);
     transport = new MockTransport();
-    room.setTransport(transport);
+    connections.clear(); // Clear connection cache between tests
 
     // Spy on buildKernelView to verify filtering calls
     buildKernelViewSpy = vi.spyOn(kernelModule, 'buildKernelView');
@@ -117,7 +132,7 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
 
     // Should send initial STATE_UPDATE
     const messages = transport.sentMessages.get('client-1') ?? [];
@@ -135,13 +150,13 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
     room.handleMessage('client-2', {
       type: 'SUBSCRIBE',
       gameId,
       clientId: 'client-2',
       playerId: 'human-1'
-    });
+    }, getConnection('client-2'));
 
     // Clear initial messages and spy calls
     transport.clearMessages();
@@ -153,10 +168,11 @@ describe('Room Subscriptions', () => {
       const action = availableActions[0]!.action;
       room.executeAction('human-0', action);
 
-      // Verify buildKernelView was called exactly twice (once per subscriber)
-      expect(buildKernelViewSpy).toHaveBeenCalledTimes(2);
+      // Verify buildKernelView was called for all subscribers (2 humans + 2 AIs = 4)
+      // Note: AI clients are automatically subscribed via internal transport
+      expect(buildKernelViewSpy).toHaveBeenCalledTimes(4);
 
-      // Verify each subscriber received exactly one message
+      // Verify each human subscriber received exactly one message
       const client1Messages = transport.sentMessages.get('client-1') ?? [];
       const client2Messages = transport.sentMessages.get('client-2') ?? [];
       expect(client1Messages.length).toBe(1);
@@ -179,13 +195,13 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
     room.handleMessage('client-2', {
       type: 'SUBSCRIBE',
       gameId,
       clientId: 'client-2',
       playerId: 'human-1'
-    });
+    }, getConnection('client-2'));
 
     transport.clearMessages();
 
@@ -231,7 +247,7 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
 
     transport.clearMessages();
 
@@ -250,7 +266,7 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
 
     // Trigger another state update - should NOT receive message
     const actions2 = room.getActionsForPlayer('human-0');
@@ -266,7 +282,7 @@ describe('Room Subscriptions', () => {
       type: 'SUBSCRIBE',
       gameId,
       clientId: 'spectator-1'
-    });
+    }, getConnection('spectator-1'));
 
     // Should send initial STATE_UPDATE with unfiltered view
     const messages = transport.sentMessages.get('spectator-1') ?? [];
@@ -284,7 +300,7 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
 
     transport.clearMessages();
 
@@ -306,18 +322,18 @@ describe('Room Subscriptions', () => {
       gameId,
       clientId: 'client-1',
       playerId: 'human-0'
-    });
+    }, getConnection('client-1'));
     room.handleMessage('client-2', {
       type: 'SUBSCRIBE',
       gameId,
       clientId: 'client-2',
       playerId: 'human-1'
-    });
+    }, getConnection('client-2'));
     room.handleMessage('spectator', {
       type: 'SUBSCRIBE',
       gameId,
       clientId: 'spectator'
-    });
+    }, getConnection('spectator'));
 
     transport.clearMessages();
     buildKernelViewSpy.mockClear();
@@ -327,13 +343,14 @@ describe('Room Subscriptions', () => {
     if (actions.length > 0) {
       room.executeAction('human-0', actions[0]!.action);
 
-      // All three should receive updates
+      // All three human subscribers should receive updates
       expect(transport.sentMessages.get('client-1')?.length).toBe(1);
       expect(transport.sentMessages.get('client-2')?.length).toBe(1);
       expect(transport.sentMessages.get('spectator')?.length).toBe(1);
 
-      // buildKernelView should be called exactly 3 times (once per subscriber)
-      expect(buildKernelViewSpy).toHaveBeenCalledTimes(3);
+      // buildKernelView should be called for all subscribers (3 humans + 2 AIs = 5)
+      // Note: AI clients are automatically subscribed via internal transport
+      expect(buildKernelViewSpy).toHaveBeenCalledTimes(5);
     }
   });
 });

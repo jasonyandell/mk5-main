@@ -13,7 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { PlaywrightGameHelper } from './helpers/game-helper';
 
-test.describe.skip('Basic Gameplay (Refactored)', () => {
+test.describe('Basic Gameplay (Refactored)', () => {
   test('should load game interface', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
     const locators = helper.getLocators();
@@ -75,7 +75,9 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
     const helper = new PlaywrightGameHelper(page);
 
     // Load state with player 0 bidding 30 and others passing
-    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass']);
+    // Players 1-3 are AI so they execute their pass actions automatically
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass'],
+      ['human', 'ai', 'ai', 'ai']);
 
     // Should now be in trump selection phase (check DOM)
     const phase = await helper.getCurrentPhase();
@@ -90,7 +92,9 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
     const helper = new PlaywrightGameHelper(page);
 
     // Load state with bidding done and trump selected
-    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
+    // Players 1-3 are AI so they execute their pass actions automatically
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'],
+      ['human', 'ai', 'ai', 'ai']);
 
     // Verify we're in playing phase (from DOM)
     const phase = await helper.getCurrentPhase();
@@ -129,16 +133,18 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
     await expect(helper.getLocators().playingArea()).toBeVisible();
 
     // Check trick is initially empty by looking at DOM
-    const trickArea = page.locator('[data-testid="trick-area"], [data-testid="playing-area"]');
-    const initialDominoesInTrick = await trickArea.locator('[data-domino-id]').count();
+    // Dominoes in the trick have data-testid="domino-{high}-{low}" attribute
+    const trickArea = page.locator('[data-testid="trick-area"]');
+    const initialDominoesInTrick = await trickArea.locator('button[data-testid^="domino-"]').count();
     expect(initialDominoesInTrick).toBe(0);
 
     // Play a domino
     await helper.playAnyDomino();
 
     // Trick should now have one domino (check DOM)
-    await page.waitForTimeout(100); // Brief wait for state update
-    const updatedDominoesInTrick = await trickArea.locator('[data-domino-id]').count();
+    // Wait for the domino to appear in the trick area using proper selector
+    await trickArea.locator('button[data-testid^="domino-"]').first().waitFor({ state: 'visible', timeout: 2000 });
+    const updatedDominoesInTrick = await trickArea.locator('button[data-testid^="domino-"]').count();
     expect(updatedDominoesInTrick).toBe(1);
   });
 
@@ -147,7 +153,9 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
     const locators = helper.getLocators();
 
     // Start with a game in progress
-    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
+    // Players 1-3 are AI so they execute their pass actions automatically
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'],
+      ['human', 'ai', 'ai', 'ai']);
 
     // Verify we're in playing
     expect(await helper.getCurrentPhase()).toContain('playing');
@@ -191,15 +199,19 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
   test('should display trump indicator during playing phase', async ({ page }) => {
     const helper = new PlaywrightGameHelper(page);
 
-    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks']);
+    // Players 1-3 are AI so they execute their pass actions automatically
+    await helper.loadStateWithActions(12345, ['bid-30', 'pass', 'pass', 'pass', 'trump-blanks'],
+      ['human', 'ai', 'ai', 'ai']);
 
-    // Trump indicator should be visible
-    const trumpDisplay = page.locator('[data-testid="trump-display"], .trump-indicator');
+    // During playing phase, trump is shown in the game info bar with class text-secondary
+    // It's displayed as "{trump-name} trump" (e.g., "blanks trump")
+    const trumpDisplay = page.locator('.game-info-bar .text-secondary');
     await expect(trumpDisplay).toBeVisible();
 
-    // Should show "Blanks" as trump
+    // Should show "blanks trump"
     const trumpText = await trumpDisplay.textContent();
     expect(trumpText?.toLowerCase()).toContain('blank');
+    expect(trumpText?.toLowerCase()).toContain('trump');
   });
 
   test('should handle passes correctly', async ({ page }) => {
@@ -212,6 +224,57 @@ test.describe.skip('Basic Gameplay (Refactored)', () => {
 
     // After AI plays, we should still be in bidding
     await page.waitForTimeout(100);
+    const phase = await helper.getCurrentPhase();
+    expect(phase).toContain('bidding');
+  });
+
+  test('should allow valid opening bids', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+
+    await helper.goto(12345);
+
+    const actions = await helper.getAvailableActions();
+
+    // Should include point bids 30-41
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 30)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 35)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 41)).toBe(true);
+
+    // Should include mark bids 1-2 in tournament mode
+    expect(actions.some(action => action.type === 'bid_marks' && action.value === 1)).toBe(true);
+    expect(actions.some(action => action.type === 'bid_marks' && action.value === 2)).toBe(true);
+  });
+
+  test('should not allow invalid opening bids', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+
+    await helper.goto(12345);
+
+    const actions = await helper.getAvailableActions();
+
+    // Should not include point bids below 30 or above 41
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 29)).toBe(false);
+    expect(actions.some(action => action.type === 'bid_points' && action.value === 42)).toBe(false);
+
+    // Should not include 3+ marks in opening bid
+    expect(actions.some(action => action.type === 'bid_marks' && typeof action.value === 'number' && action.value >= 3)).toBe(false);
+  });
+
+  test('should progress through bidding round and allow redeal', async ({ page }) => {
+    const helper = new PlaywrightGameHelper(page);
+
+    // Load state after all 4 players have passed
+    await helper.loadStateWithActions(12345, ['pass', 'pass', 'pass', 'pass'],
+      ['human', 'human', 'human', 'human']);
+
+    // Should have redeal action available after all passes
+    const actions = await helper.getAvailableActions();
+    expect(actions.some(action => action.type === 'redeal')).toBe(true);
+
+    // Execute redeal
+    await helper.selectAction({ type: 'redeal' });
+
+    // Should be back in bidding phase after redeal
     const phase = await helper.getCurrentPhase();
     expect(phase).toContain('bidding');
   });

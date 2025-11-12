@@ -727,7 +727,59 @@ function getValidActionsWithActionTransformers(
 
 Provide I/O connections that execute the pure multiplayer functions over different transports (HTTP, WebSocket, postMessage).
 
-### 6.2 Unified Client Interface
+### 6.2 Connection Architecture
+
+#### Connection Interface
+
+Each client connection is represented by a self-contained Connection object:
+
+```typescript
+interface Connection {
+  // Client → Server: Send message from client to server
+  send: (message: ClientMessage) => void;
+
+  // Register handler for Server → Client messages
+  onMessage: (handler: (message: ServerMessage) => void) => void;
+
+  // Server → Client: Reply to this specific client
+  // Each connection knows how to deliver messages to itself
+  reply: (message: ServerMessage) => void;
+
+  // Disconnect this client
+  disconnect: () => void;
+}
+```
+
+**Key Pattern**: Connection.reply() enables self-contained message routing. Each connection knows how to deliver messages to its client, eliminating the need for Room to route through a global transport.
+
+**Benefits**:
+- **Self-containment**: Each connection encapsulates bidirectional communication
+- **No temporal coupling**: Room doesn't need transport setup before handling messages
+- **Direct routing**: Room uses `connection.reply()` instead of `transport.send(clientId, message)`
+- **Simpler initialization**: AI clients can send messages immediately in constructor
+
+See [ADR-20251111-connection-reply-pattern.md](adrs/ADR-20251111-connection-reply-pattern.md) for detailed rationale.
+
+#### Room Message Routing
+
+Room stores connections and uses them directly for message delivery:
+
+```typescript
+class Room {
+  private connections: Map<string, Connection> = new Map();
+
+  private sendMessage(clientId: string, message: ServerMessage) {
+    const connection = this.connections.get(clientId);
+    if (!connection) {
+      console.error(`sendMessage: No connection found for client ${clientId}`);
+      return;
+    }
+    connection.reply(message);  // Direct delivery, no routing indirection
+  }
+}
+```
+
+### 6.3 Unified Client Interface
 
 All clients (online and offline) implement the same interface:
 
@@ -761,9 +813,9 @@ interface GameClient {
 
 **Security**: Clients never receive unfiltered state - all data crosses the network boundary as filtered `GameView`
 
-### 6.3 Online Mode (Cloudflare Workers)
+### 6.4 Online Mode (Cloudflare Workers)
 
-#### 6.3.1 Durable Object
+#### 6.4.1 Durable Object
 
 One Durable Object instance per game. Handles:
 - State persistence (Durable Object storage)
@@ -811,7 +863,7 @@ class GameDurableObject {
 }
 ```
 
-#### 6.3.2 HTTP Client
+#### 6.4.2 HTTP Client
 
 Browser client that communicates with Durable Object:
 
@@ -845,9 +897,9 @@ class OnlineGameClient implements GameClient {
 }
 ```
 
-### 6.4 Offline Mode (Web Workers)
+### 6.5 Offline Mode (Web Workers)
 
-#### 6.4.1 Game Server Worker
+#### 6.5.1 Game Server Worker
 
 Web Worker that holds state in memory:
 
@@ -879,7 +931,7 @@ self.onmessage = (event) => {
 }
 ```
 
-#### 6.4.2 Worker Client
+#### 6.5.2 Worker Client
 
 Browser client that communicates via postMessage:
 
@@ -915,7 +967,7 @@ class OfflineGameClient implements GameClient {
 }
 ```
 
-### 6.5 Client Factory
+### 6.6 Client Factory
 
 ```typescript
 function createGameClient(
@@ -934,7 +986,7 @@ function createGameClient(
 }
 ```
 
-### 6.6 Progressive Mode
+### 6.7 Progressive Mode
 
 Offline games can transition to online:
 

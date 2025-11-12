@@ -33,15 +33,7 @@ export class AIClient {
   private playerId: string;
   private connection: Connection;
   private difficulty: AIDifficulty;
-  private thinkingTimer: ReturnType<typeof setTimeout> | undefined;
   private destroyed = false;
-
-  // AI timing configuration
-  private readonly timing = {
-    beginner: { min: 800, max: 2000 },
-    intermediate: { min: 500, max: 1500 },
-    expert: { min: 200, max: 800 }
-  };
 
   constructor(
     gameId: string,
@@ -72,7 +64,8 @@ export class AIClient {
     this.connection.send({
       type: 'SUBSCRIBE',
       gameId: this.gameId,
-      clientId: this.playerId
+      clientId: this.playerId,
+      playerId: this.playerId
     });
   }
 
@@ -83,12 +76,6 @@ export class AIClient {
     if (this.destroyed) return;
 
     this.destroyed = true;
-
-    // Clear any pending timers
-    if (this.thinkingTimer) {
-      clearTimeout(this.thinkingTimer);
-      this.thinkingTimer = undefined;
-    }
 
     // Send unsubscribe message before disconnecting
     this.connection.send({
@@ -178,21 +165,9 @@ export class AIClient {
   private thinkAndAct(view: GameView, validActions: ValidAction[]): void {
     if (this.destroyed) return;
 
-    // Clear any existing timer
-    if (this.thinkingTimer) {
-      clearTimeout(this.thinkingTimer);
-    }
-
-    // Calculate thinking time
-    const timings = this.timing[this.difficulty];
-    const thinkTime = timings.min + Math.random() * (timings.max - timings.min);
-
-    // Set timer to execute action
-    this.thinkingTimer = setTimeout(() => {
-      if (this.destroyed) return;
-
-      this.selectAndExecuteAction(view, validActions);
-    }, thinkTime);
+    // Execute immediately - no artificial delay
+    // AI thinking is pure and fast (~1ms)
+    this.selectAndExecuteAction(view, validActions);
   }
 
   /**

@@ -31,24 +31,32 @@ export class InProcessTransport implements Transport {
 
   /**
    * Client connects to this transport.
-   * Returns a Connection object with send/onMessage/disconnect methods.
+   * Returns a Connection object with send/onMessage/reply/disconnect methods.
    *
    * This is how clients get their bidirectional communication channel.
    */
   connect(clientId: string): Connection {
     this.connectedClients.add(clientId);
 
-    return {
+    const connection: Connection = {
       /**
        * Client sends a message through this method.
        * Transport routes it to Room.
+       *
+       * CRITICAL: Uses queueMicrotask to break synchronous call chain.
+       * Without this, consensus actions cause stack overflow:
+       * - Consensus actions (complete-trick, score-hand, redeal) have no player field
+       * - All AI clients see them as available and execute simultaneously
+       * - Synchronous delivery creates exponential broadcast loop
+       * - Async delivery ensures messages are processed sequentially
        */
       send: (message: ClientMessage) => {
-        if (!this.room) {
-          console.error('InProcessTransport.send: Room not set');
-          return;
-        }
-        this.room.handleMessage(clientId, message);
+        queueMicrotask(() => {
+          if (!this.room) {
+            throw new Error('InProcessTransport: Room not set');
+          }
+          this.room.handleMessage(clientId, message, connection);
+        });
       },
 
       /**
@@ -57,6 +65,22 @@ export class InProcessTransport implements Transport {
        */
       onMessage: (handler: (message: ServerMessage) => void) => {
         this.clients.set(clientId, handler);
+      },
+
+      /**
+       * Server replies to this specific client.
+       * Connection knows how to deliver messages to itself.
+       *
+       * CRITICAL: Uses queueMicrotask to break synchronous call chain.
+       * Matches the async behavior of real transports (Cloudflare Workers, WebSocket).
+       */
+      reply: (message: ServerMessage) => {
+        queueMicrotask(() => {
+          const handler = this.clients.get(clientId);
+          if (handler) {
+            handler(message);
+          }
+        });
       },
 
       /**
@@ -71,6 +95,8 @@ export class InProcessTransport implements Transport {
         }
       }
     };
+
+    return connection;
   }
 
   /**

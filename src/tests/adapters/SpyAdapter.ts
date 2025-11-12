@@ -50,6 +50,11 @@ export class SpyConnection implements Connection {
     this.messageHandlers.add(handler);
   }
 
+  reply(message: ServerMessage): void {
+    // Delegate to wrapped connection's reply
+    this.wrappedConnection.reply(message);
+  }
+
   disconnect(): void {
     this.wrappedConnection.disconnect();
     this.messageHandlers.clear();

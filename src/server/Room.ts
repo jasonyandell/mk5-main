@@ -26,7 +26,7 @@ import type {
 import { ok, err } from '../game/multiplayer/types';
 import type { ExecutionContext } from '../game/types/execution';
 import { createExecutionContext } from '../game/types/execution';
-import type { Transport } from './transports/Transport';
+import type { Connection } from './transports/Transport';
 import type {
   GameView,
   ValidAction,
@@ -46,6 +46,7 @@ import {
 import { buildBaseCapabilities } from '../game/multiplayer/capabilities';
 import { createInitialState } from '../game/core/state';
 import { AIManager } from './ai/AIManager';
+import { InProcessTransport } from './transports/InProcessTransport';
 
 interface ClientSubscription {
   clientId: string;
@@ -75,11 +76,10 @@ export class Room {
   };
 
   // === ORCHESTRATION (from GameServer) ===
-  private transport: Transport | null = null;
+  private connections: Map<string, Connection> = new Map();
   private aiManager: AIManager | null = null;
   private subscriptions: Map<string, ClientSubscription> = new Map();
   private isDestroyed = false;
-  private pendingAISeats: Array<{ seat: number; playerId: string }> = [];
 
   /**
    * Create a new Room instance.
@@ -141,14 +141,25 @@ export class Room {
       this.mpState = autoResult.value;
     }
 
-    // === 6. INITIALIZE AI MANAGER ===
+    // === 6. INITIALIZE AI MANAGER AND SPAWN AI CLIENTS ===
     this.aiManager = new AIManager('beginner');
 
-    // Note: AI clients will be spawned after transport is set
-    // Store which seats need AI for later spawning
-    this.pendingAISeats = normalizedPlayers
-      .filter(s => s.controlType === 'ai')
-      .map(s => ({ seat: s.playerIndex, playerId: s.playerId }));
+    // Create internal transport for AI clients
+    const aiTransport = new InProcessTransport();
+    aiTransport.setRoom(this);
+
+    // Spawn AI clients immediately with internal transport
+    const aiPlayers = normalizedPlayers.filter(s => s.controlType === 'ai');
+    for (const player of aiPlayers) {
+      const aiConnection = aiTransport.connect(`ai-${player.playerId}`);
+      this.connections.set(`ai-${player.playerId}`, aiConnection);
+      this.aiManager.spawnAI(
+        player.playerIndex,
+        gameId,
+        player.playerId,
+        aiConnection
+      );
+    }
   }
 
   // === KERNEL API (delegated to pure helpers) ===
@@ -267,14 +278,16 @@ export class Room {
     // Manage AI lifecycle
     if (this.aiManager) {
       if (type === 'ai') {
-        // Create in-process connection for this AI
-        if (!this.transport) {
-          throw new Error('Cannot spawn AI: transport not set');
-        }
-        const aiConnection = this.transport.connect(`ai-${playerId}`);
+        // Create in-process transport and connection for this AI
+        const aiTransport = new InProcessTransport();
+        aiTransport.setRoom(this);
+        const aiConnection = aiTransport.connect(`ai-${playerId}`);
+        this.connections.set(`ai-${playerId}`, aiConnection);
         this.aiManager.spawnAI(session.playerIndex, this.metadata.gameId, playerId, aiConnection);
       } else {
         this.aiManager.destroyAI(session.playerIndex);
+        // Remove AI connection when switching to human
+        this.connections.delete(`ai-${playerId}`);
       }
     }
 
@@ -393,38 +406,27 @@ export class Room {
   }
 
   /**
-   * Set the transport for this room.
-   * Called after construction to establish message routing.
-   *
-   * @param transport - Transport instance for message routing
-   */
-  setTransport(transport: Transport): void {
-    this.transport = transport;
-
-    // Spawn any pending AI clients now that we have transport
-    if (this.aiManager && this.pendingAISeats.length > 0) {
-      for (const { seat, playerId } of this.pendingAISeats) {
-        // Create in-process connection for this AI
-        const aiConnection = transport.connect(`ai-${playerId}`);
-        this.aiManager.spawnAI(seat, this.metadata.gameId, playerId, aiConnection);
-      }
-      // Clear pending list
-      this.pendingAISeats = [];
-    }
-  }
-
-  /**
    * Handle a protocol message from a client.
    * Routes to appropriate handler based on message type.
    *
    * @param clientId - Client ID sending the message
    * @param message - Protocol message to handle
+   * @param connection - Connection object for this client
    */
-  handleMessage(clientId: string, message: ClientMessage): void {
+  handleMessage(clientId: string, message: ClientMessage, connection: Connection): void {
     if (this.isDestroyed) {
       console.error('Room: room has been destroyed');
       this.sendError(clientId, 'Room has been destroyed', 'CREATE_GAME');
       return;
+    }
+
+    // Store connection on first message (with strict validation)
+    const existingConnection = this.connections.get(clientId);
+    if (existingConnection && existingConnection !== connection) {
+      throw new Error(`Connection conflict for client ${clientId}: different connection already registered`);
+    }
+    if (!existingConnection) {
+      this.connections.set(clientId, connection);
     }
 
     try {
@@ -491,7 +493,7 @@ export class Room {
 
   /**
    * Destroy the room and all resources.
-   * Cleans up AI manager, subscriptions, transport.
+   * Cleans up AI manager, subscriptions, connections.
    */
   destroy(): void {
     if (this.aiManager) {
@@ -500,7 +502,7 @@ export class Room {
     }
 
     this.subscriptions.clear();
-    this.transport = null;
+    this.connections.clear();
     this.isDestroyed = true;
   }
 
@@ -744,17 +746,18 @@ export class Room {
   }
 
   /**
-   * Send a message to a client via transport.
+   * Send a message to a client via connection.
    *
    * @param clientId - Client ID to send to
    * @param message - Server message to send
    */
   private sendMessage(clientId: string, message: ServerMessage): void {
-    if (!this.transport) {
-      console.error('sendMessage called before transport was set');
+    const connection = this.connections.get(clientId);
+    if (!connection) {
+      console.error(`sendMessage: No connection found for client ${clientId}`);
       return;
     }
-    this.transport.send(clientId, message);
+    connection.reply(message);
   }
 
   /**

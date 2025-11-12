@@ -1,6 +1,18 @@
 /**
  * Game simulator for testing seeds and AI strategies.
  * Runs games to completion using AI players.
+ *
+ * CRITICAL DEPENDENCIES:
+ * - Uses beginner AI strategy (deterministic and fast)
+ * - selectAIAction() is hardcoded to beginner strategy in actionSelector.ts:17
+ * - Beginner AI provides deterministic, reproducible game outcomes
+ * - Same seed + same actions = identical game state (event sourcing guarantee)
+ *
+ * FAIL-FAST DESIGN:
+ * - Throws immediately on any error (no graceful degradation)
+ * - No verbose logging (crashes expose bugs via stack traces)
+ * - Deterministic system means crashes are reproducible
+ * - If simulation fails, it's a bug that must be fixed
  */
 
 import type { GameState } from '../types';
@@ -39,6 +51,8 @@ export interface SeedProgress {
 
 /**
  * Options for game simulation
+ *
+ * NOTE: aiDifficulty is ignored - beginner AI is hardcoded in actionSelector.ts
  */
 export interface SimulateGameOptions {
   /** Maximum number of hands to simulate (safety limit) */
@@ -47,10 +61,8 @@ export interface SimulateGameOptions {
   maxActions?: number;
   /** All players are AI */
   allAI?: boolean;
-  /** AI difficulty level */
+  /** AI difficulty level (CURRENTLY IGNORED - beginner is hardcoded) */
   aiDifficulty?: 'beginner' | 'intermediate' | 'expert';
-  /** Log game progress */
-  verbose?: boolean;
 }
 
 /**
@@ -70,17 +82,24 @@ export interface SimulationResult {
 }
 
 /**
- * Simulate a complete game with AI players
+ * Simulate a complete game with AI players.
+ *
+ * FAIL-FAST: Throws immediately on any error condition:
+ * - No valid actions available
+ * - AI fails to select action
+ * - Action execution fails
+ * - Game doesn't reach completion
+ *
+ * All errors indicate bugs that must be fixed (deterministic system).
  */
 export async function simulateGame(
   initialState: GameState,
   options: SimulateGameOptions = {}
 ): Promise<SimulationResult> {
   const {
-    maxHands = 10,
-    maxActions = 1000,
-    allAI = true,
-    verbose = false
+    maxHands = 100,
+    maxActions = 5000,
+    allAI = true
   } = options;
 
   // Override player types if all AI
@@ -109,8 +128,12 @@ export async function simulateGame(
     if (state.phase === 'bidding' && lastPhase === 'scoring') {
       handsPlayed++;
       if (handsPlayed >= maxHands) {
-        if (verbose) console.log(`Reached max hands limit: ${maxHands}`);
-        break;
+        throw new Error(
+          `[simulateGame] Reached max hands limit: ${maxHands}\n` +
+          `Actions executed: ${actionsExecuted}\n` +
+          `Phase: ${state.phase}\n` +
+          `This indicates the game is not progressing to completion within expected bounds.`
+        );
       }
     }
     lastPhase = state.phase;
@@ -120,8 +143,14 @@ export async function simulateGame(
     const allActions: ValidAction[] = Object.values(actionsMap).flat();
 
     if (allActions.length === 0) {
-      if (verbose) console.log('No valid actions available');
-      break;
+      throw new Error(
+        `[simulateGame] No valid actions available\n` +
+        `Phase: ${state.phase}\n` +
+        `Actions executed: ${actionsExecuted}\n` +
+        `Hands played: ${handsPlayed}\n` +
+        `Current player: ${state.currentPlayer}\n` +
+        `This indicates a game state with no legal moves (stuck state).`
+      );
     }
 
     // Determine current player
@@ -135,20 +164,27 @@ export async function simulateGame(
     );
 
     let selectedAction: ValidAction | undefined;
+    let playerActions: ValidAction[] = [];
 
     if (consensusAction) {
       // Use consensus action (will be auto-executed)
       selectedAction = consensusAction;
     } else {
       // Get player-specific actions
-      const playerActions = room.getValidActions(currentPlayer);
+      playerActions = room.getValidActions(currentPlayer);
 
       if (playerActions.length === 0) {
-        if (verbose) console.log(`No actions for player ${currentPlayer}`);
-        break;
+        throw new Error(
+          `[simulateGame] No actions available for current player\n` +
+          `Current player: ${currentPlayer}\n` +
+          `Phase: ${state.phase}\n` +
+          `Actions executed: ${actionsExecuted}\n` +
+          `Total actions available: ${allActions.length}\n` +
+          `This indicates action filtering is removing all player actions.`
+        );
       }
 
-      // For AI players, select action using AI selector
+      // For AI players, select action using AI selector (ALWAYS beginner strategy)
       if (playerTypes[currentPlayer] === 'ai') {
         const selected = selectAIAction(state, currentPlayer, playerActions);
         selectedAction = selected ?? undefined;
@@ -159,22 +195,37 @@ export async function simulateGame(
     }
 
     if (!selectedAction) {
-      if (verbose) console.log('No action selected');
-      break;
+      throw new Error(
+        `[simulateGame] AI failed to select action\n` +
+        `Current player: ${currentPlayer}\n` +
+        `Phase: ${state.phase}\n` +
+        `Available actions: ${playerActions.length}\n` +
+        `Actions executed: ${actionsExecuted}\n` +
+        `This indicates a bug in selectAIAction (should never return null with valid actions).`
+      );
     }
 
-    // Execute action through HeadlessRoom
-    try {
-      // Determine which player should execute this action
-      const executingPlayer = 'player' in selectedAction.action
-        ? selectedAction.action.player
-        : currentPlayer;
+    // Execute action through HeadlessRoom (fail-fast on errors)
+    // Determine which player should execute this action
+    const executingPlayer = 'player' in selectedAction.action
+      ? selectedAction.action.player
+      : currentPlayer;
 
+    try {
       room.executeAction(executingPlayer, selectedAction.action);
       actionsExecuted++;
     } catch (error) {
-      if (verbose) console.log('Action execution failed:', error);
-      break;
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      throw new Error(
+        `[simulateGame] Action execution failed\n` +
+        `Action type: ${selectedAction.action.type}\n` +
+        `Executing player: ${executingPlayer}\n` +
+        `Current player: ${currentPlayer}\n` +
+        `Phase: ${state.phase}\n` +
+        `Actions executed: ${actionsExecuted}\n` +
+        `Original error: ${errorMsg}\n` +
+        `This indicates the action was invalid or violated game rules.`
+      );
     }
 
     // Yield to event loop periodically
@@ -185,17 +236,43 @@ export async function simulateGame(
 
   const finalState = room.getState();
 
+  // FAIL-FAST: Game must complete or hit explicit limit
+  if (finalState.phase !== 'game_end') {
+    if (actionsExecuted >= maxActions) {
+      throw new Error(
+        `[simulateGame] Hit maxActions limit without completing game\n` +
+        `Max actions: ${maxActions}\n` +
+        `Actions executed: ${actionsExecuted}\n` +
+        `Final phase: ${finalState.phase}\n` +
+        `Hands played: ${handsPlayed}\n` +
+        `Team marks: [${finalState.teamMarks[0]}, ${finalState.teamMarks[1]}]\n` +
+        `Game target: ${finalState.gameTarget}\n` +
+        `This indicates the game is taking too many actions or stuck in a loop.\n` +
+        `Either increase maxActions or fix the game logic causing excessive actions.`
+      );
+    } else {
+      throw new Error(
+        `[simulateGame] Game ended without reaching game_end phase\n` +
+        `Final phase: ${finalState.phase}\n` +
+        `Actions executed: ${actionsExecuted}\n` +
+        `This should never happen - indicates a logic bug in the game loop.`
+      );
+    }
+  }
+
   // Count hands if we started mid-hand
-  if (handsPlayed === 0 && finalState.phase !== 'bidding') {
+  // If game ended and we never counted a hand transition, count 1 hand
+  if (handsPlayed === 0) {
     handsPlayed = 1;
   }
 
-  // Determine winner
-  const winner = finalState.teamScores[0] > finalState.teamScores[1] ? 0 : 1;
+  // Determine winner based on MARKS (not scores)
+  // teamMarks is the actual game score, teamScores is just the current hand
+  const winner = finalState.teamMarks[0] > finalState.teamMarks[1] ? 0 : 1;
 
   return {
     winner,
-    finalScores: [finalState.teamScores[0], finalState.teamScores[1]],
+    finalScores: finalState.teamMarks, // Return marks (game score), not hand scores
     handsPlayed,
     actionsExecuted,
     finalState
@@ -221,8 +298,8 @@ export async function testSeedWinRate(
 
     const result = await simulateGame(initialState, {
       ...options,
-      allAI: true,
-      maxHands: 1 // For one-hand testing
+      allAI: true
+      // No maxHands override - use default or options value to allow redeals
     });
 
     if (result.winner === 0) {
@@ -272,11 +349,8 @@ export async function findCompetitiveSeed(options: {
       onProgress(attempt);
     }
 
-    // Test this seed
-    const { winRate } = await testSeedWinRate(seed, simulationsPerSeed, {
-      maxHands: 1,
-      verbose: false
-    });
+    // Test this seed (no maxHands override - allow redeals)
+    const { winRate } = await testSeedWinRate(seed, simulationsPerSeed);
 
     // Check if within target range
     if (winRate >= minWinRate && winRate <= maxWinRate) {

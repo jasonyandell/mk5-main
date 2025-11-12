@@ -233,6 +233,73 @@
 
 **Related**: GameRuleSet, Executor, Base RuleSet, Special Contracts
 
+### Extending GameRules
+
+**The 13 methods are not fixed** - this is the current count, not a hard limit.
+
+**When to add new methods**:
+
+1. **New terminal conditions**: Mode ends hand for new reasons
+   - Added `checkHandOutcome` for nello/plunge early termination
+   - Pattern: Base returns null, RuleSets check conditions
+
+2. **New execution semantics**: Mode changes core mechanics
+   - Added `isTrickComplete` to support 3-player tricks
+   - Pattern: Base returns standard logic, RuleSets override
+
+3. **Mode-specific validation**: Mode changes legality rules
+   - Added `isValidBid` so RuleSets validate special bids
+   - Pattern: Executor delegates validation to rule
+
+**Process**:
+1. Add method to GameRules interface with clear signature
+2. Implement in baseRules with standard behavior
+3. Update composeRules to thread the method through
+4. Special RuleSets override for their modes
+5. Executors delegate to rule, never inspect state
+
+**Anti-pattern**: Adding conditionals in executors (`if (state.mode === 'nello')`)
+
+**Correct pattern**: Adding rule method that RuleSets override
+
+**Real Example - Adding a new terminal state**:
+
+Problem: One-hand mode needs to transition to a different phase when hand completes (not standard `'scoring'` phase).
+
+Solution:
+```typescript
+// 1. Add to GameRules
+interface GameRules {
+  // Returns phase to transition to when hand completes
+  getPhaseAfterHandComplete(state: GameState): GamePhase;
+}
+
+// 2. Base returns standard behavior
+baseRules.getPhaseAfterHandComplete = (state) => 'scoring' as const;
+
+// 3. OneHandRuleSet provides mode-specific behavior
+oneHandRuleSet.rules.getPhaseAfterHandComplete = (state, prev) => {
+  // Check if we're in one-hand mode context
+  if (/* one-hand is active */) {
+    return 'one-hand-complete' as const;
+  }
+  return prev; // Delegate to previous ruleset
+};
+
+// 4. Executor delegates (in actions.ts)
+function executeCompleteTrick(state, rules) {
+  const outcome = rules.checkHandOutcome(state);
+  if (outcome && outcome.isDetermined) {
+    // Delegate to rule - no conditional logic
+    const nextPhase = rules.getPhaseAfterHandComplete(state);
+    return { ...state, phase: nextPhase };
+  }
+  // Continue trick play
+}
+```
+
+No executor conditional logic, pure delegation to rules. The executor doesn't know about one-hand mode - it just asks the rule "what phase should I transition to?"
+
 ---
 
 ### GameRuleSet
@@ -340,7 +407,11 @@ export function composeRules(ruleSets: GameRuleSet[]): GameRules {
 
 **Key Insight**: ActionTransformers transform action generation independently from rulesets (which transform execution rules).
 
-**Related**: StateMachine, ActionTransformerConfig, ActionTransformer Implementations
+**Key Distinction from GameRules**: ActionTransformers change WHAT actions are available, GameRules methods change HOW execution works. If an executor needs the behavior, it's a GameRules method. If only action generation needs it, it's an ActionTransformer.
+
+See [Extension Decision Tree in ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md#extension-decision-tree) for guidance on which to use.
+
+**Related**: StateMachine, ActionTransformerConfig, ActionTransformer Implementations, GameRules
 
 ---
 
@@ -599,21 +670,25 @@ setTransport(transport): void
 
 **Interfaces**:
 
-**Connection**:
+**Connection** (self-contained bidirectional channel):
 ```typescript
 interface Connection {
-  send(message: ServerMessage): void;
-  onMessage(handler: (message: ClientMessage) => void): void;
+  send(message: ClientMessage): void;              // Client → Server
+  onMessage(handler: (message: ServerMessage) => void): void;  // Register handler
+  reply(message: ServerMessage): void;             // Server → Client (direct)
   disconnect(): void;
 }
 ```
+
+**Key Pattern**: Connection.reply() enables self-contained message routing. Each connection knows how to deliver messages to its client, eliminating the need for Room to route through a global transport. See [ADR-20251111-connection-reply-pattern.md](adrs/ADR-20251111-connection-reply-pattern.md).
 
 **Transport**:
 ```typescript
 interface Transport {
   send(clientId: string, message: ServerMessage): void;
-  start(): void;
-  stop(): void;
+  connect(clientId: string): Connection;
+  start(): Promise<void>;
+  stop(): Promise<void>;
 }
 ```
 
@@ -622,9 +697,9 @@ interface Transport {
 - `WorkerTransport`: Web Worker (planned)
 - `CloudflareTransport`: Durable Objects (planned)
 
-**Key Insight**: Room doesn't know transport type - abstracts away
+**Key Insight**: Room stores connections and uses `connection.reply()` directly, not `transport.send()`
 
-**Related**: Room, InProcessTransport
+**Related**: Room, InProcessTransport, Connection.reply() pattern
 
 ---
 
