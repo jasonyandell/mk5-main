@@ -56,6 +56,12 @@ export function executeAction(state: GameState, action: GameAction, rules: GameR
     case 'redeal':
       return executeRedeal(newState);
 
+    case 'retry-one-hand':
+      return executeRetryOneHand(newState);
+
+    case 'new-one-hand':
+      return executeNewOneHand(newState);
+
     default:
       // Unknown action type - return state with action recorded
       return newState;
@@ -374,7 +380,7 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
   } else {
     // Check if hand outcome is determined (use rules)
     const outcome = rules.checkHandOutcome(tempState);
-    if (outcome && outcome.isDetermined) {
+    if (outcome.isDetermined) {
       newPhase = 'scoring';
     }
   }
@@ -432,34 +438,45 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
     };
   }
 
+  // Use rule to determine next phase (allows oneHand to override)
+  const nextPhase = rules.getPhaseAfterHandComplete(state);
+
   // Start new hand
   const newDealer = getNextDealer(state.dealer);
   const newCurrentPlayer = getPlayerLeftOfDealer(newDealer);
   const newShuffleSeed = state.shuffleSeed + 1000000;
 
-  // Deal new hands
-  const hands = dealDominoesWithSeed(newShuffleSeed);
-  const newPlayers = state.players.map((player, i) => {
-    const hand = hands[i];
-    if (!hand) {
-      // If deal fails, return unchanged state
-      return player;
-    }
-    return {
-      ...player,
-      hand,
-      suitAnalysis: analyzeSuits(hand) // No trump yet
-    };
-  });
+  // Only deal new hands if transitioning to bidding
+  const shouldDealNewHand = nextPhase === 'bidding';
+  const newPlayers = shouldDealNewHand
+    ? (() => {
+        const hands = dealDominoesWithSeed(newShuffleSeed);
+        return state.players.map((player, i) => {
+          const hand = hands[i];
+          if (!hand) {
+            // If deal fails, return unchanged state
+            return player;
+          }
+          return {
+            ...player,
+            hand,
+            suitAnalysis: analyzeSuits(hand) // No trump yet
+          };
+        });
+      })()
+    : state.players.map(p => ({
+        ...p,
+        hand: []  // Clear hands for terminal states
+      }));
 
-  // Validate all hands were dealt
-  if (newPlayers.some(p => p.hand.length === 0 && state.phase !== 'game_end')) {
+  // Validate all hands were dealt (if we're dealing)
+  if (shouldDealNewHand && newPlayers.some(p => p.hand.length === 0)) {
     throw new Error('Deal failed');
   }
 
   return {
     ...state,
-    phase: 'bidding',
+    phase: nextPhase,
     dealer: newDealer,
     currentPlayer: newCurrentPlayer,
     shuffleSeed: newShuffleSeed,
@@ -522,6 +539,86 @@ function executeRedeal(state: GameState): GameState {
     players: newPlayers,
     bids: [],
     currentBid: EMPTY_BID
+  };
+}
+
+/**
+ * Executes retry-one-hand (restart with same seed)
+ */
+function executeRetryOneHand(state: GameState): GameState {
+  // Validate phase
+  if (state.phase !== 'one-hand-complete') {
+    throw new Error('Can only retry in one-hand-complete phase');
+  }
+
+  // Use same shuffle seed
+  const sameSeed = state.shuffleSeed;
+
+  // Reset to bidding phase with same seed
+  return resetToNewHand(state, sameSeed);
+}
+
+/**
+ * Executes new-one-hand (restart with different seed)
+ */
+function executeNewOneHand(state: GameState): GameState {
+  // Validate phase
+  if (state.phase !== 'one-hand-complete') {
+    throw new Error('Can only start new hand in one-hand-complete phase');
+  }
+
+  // Generate new shuffle seed
+  const newSeed = state.shuffleSeed + 1000000;
+
+  // Reset to bidding phase with new seed
+  return resetToNewHand(state, newSeed);
+}
+
+/**
+ * Helper: Reset game state for new one-hand game
+ * Used by retry-one-hand and new-one-hand actions
+ */
+function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
+  // Deal new hands
+  const hands = dealDominoesWithSeed(shuffleSeed);
+  const newPlayers = state.players.map((player, i) => {
+    const hand = hands[i];
+    if (!hand) {
+      throw new Error('Deal failed');
+    }
+    return {
+      ...player,
+      hand,
+      suitAnalysis: analyzeSuits(hand) // No trump yet
+    };
+  });
+
+  // Validate all hands were dealt
+  if (newPlayers.some(p => p.hand.length === 0)) {
+    throw new Error('Deal failed');
+  }
+
+  // Reset to bidding phase
+  // Keep: dealer, teamMarks (preserved across retries)
+  // Reset: phase, bids, trump, tricks, scores, consensus
+  return {
+    ...state,
+    phase: 'bidding',
+    shuffleSeed,
+    players: newPlayers,
+    bids: [],
+    currentBid: EMPTY_BID,
+    winningBidder: NO_BIDDER,
+    trump: { type: 'not-selected' },
+    tricks: [],
+    currentTrick: [],
+    currentSuit: NO_LEAD_SUIT,
+    teamScores: [0, 0],
+    currentPlayer: getPlayerLeftOfDealer(state.dealer),
+    consensus: {
+      completeTrick: new Set(),
+      scoreHand: new Set()
+    }
   };
 }
 

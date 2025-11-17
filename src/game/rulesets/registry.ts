@@ -12,6 +12,7 @@ import { plungeRuleSet } from './plunge';
 import { splashRuleSet } from './splash';
 import { sevensRuleSet } from './sevens';
 import { tournamentRuleSet } from './tournament';
+import { oneHandRuleSet } from './oneHand';
 
 /**
  * Registry of all available rule sets.
@@ -25,7 +26,8 @@ export const RULESET_REGISTRY: Record<string, GameRuleSet> = {
   'plunge': plungeRuleSet,
   'splash': splashRuleSet,
   'sevens': sevensRuleSet,
-  'tournament': tournamentRuleSet
+  'tournament': tournamentRuleSet,
+  'oneHand': oneHandRuleSet
 };
 
 /**

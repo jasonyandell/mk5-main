@@ -109,7 +109,7 @@ describe('Advanced Bidding Rules', () => {
       plungeEligibleState.players[1]!.hand = handWithFourDoubles;
 
       // With 4+ doubles, should be able to Plunge (bid 4+ marks from opening)
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 1 };
       expect(rules.isValidBid(plungeEligibleState, plungeBid, handWithFourDoubles)).toBe(true);
 
       // Create hand with fewer than 4 doubles
@@ -124,7 +124,7 @@ describe('Advanced Bidding Rules', () => {
       notPlungeEligibleState.players[1]!.hand = handWithThreeDoubles;
 
       // Without 4+ doubles, should NOT be able to Plunge
-      const invalidPlungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 1 };
+      const invalidPlungeBid: Bid = { type: 'plunge', value: 4, player: 1 };
       expect(rules.isValidBid(notPlungeEligibleState, invalidPlungeBid, handWithThreeDoubles)).toBe(false);
     });
 

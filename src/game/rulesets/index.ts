@@ -18,6 +18,7 @@ export { plungeRuleSet } from './plunge';
 export { splashRuleSet } from './splash';
 export { sevensRuleSet } from './sevens';
 export { tournamentRuleSet } from './tournament';
+export { oneHandRuleSet } from './oneHand';
 
 // Composition
 export { composeRules, composeActions, composeActionGenerators } from './compose';

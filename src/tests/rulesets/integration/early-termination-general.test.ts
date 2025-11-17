@@ -90,8 +90,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
 
       // Verify early termination
       const outcome = nelloRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
 
       // Verify players still have dominoes
       expect(state.players[0]!.hand.length).toBe(6);
@@ -135,8 +135,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = plungeRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(2);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(2);
 
       // Each player still has 1 domino unplayed
       state.players.forEach(player => {
@@ -173,13 +173,13 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = nelloRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
 
       // Phase should still be 'playing' - scoring logic will transition
       expect(state.phase).toBe('playing');
 
       // But checkHandOutcome indicates it's ready to score
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
 
     it('should indicate hand is complete when splash fails on trick 2', () => {
@@ -206,8 +206,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = splashRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(2);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(2);
       expect(state.phase).toBe('playing'); // Still in playing phase
     });
   });
@@ -235,8 +235,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = nelloRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Bidding team won trick'); // Team 0 failed
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Bidding team won trick'); // Team 0 failed
     });
 
     it('should identify bidding team lost when plunge fails', () => {
@@ -263,8 +263,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = plungeRules.checkHandOutcome(state);
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Defending team won trick'); // Opponents won
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick'); // Opponents won
     });
 
     it('should identify bidding team lost when sevens fails', () => {
@@ -290,10 +290,9 @@ describe('Early Termination - General Cross-Contract Tests', () => {
       });
 
       const outcome = sevensRules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(1); // Lost on trick 1
-      expect(outcome?.reason).toContain('Defending team won trick');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1); // Lost on trick 1
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick');
     });
   });
 });

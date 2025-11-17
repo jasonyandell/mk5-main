@@ -9,7 +9,7 @@
  */
 
 import type { GameRules, GameRuleSet } from './types';
-import type { GameState, GameAction, Bid, TrumpSelection, Domino, RegularSuit } from '../types';
+import type { GameState, GameAction, Bid, TrumpSelection, Domino, RegularSuit, GamePhase } from '../types';
 import { DOUBLES_AS_TRUMP } from '../types';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { getLedSuit as getLedSuitCore, getTrumpSuit } from '../core/dominoes';
@@ -261,7 +261,7 @@ export function composeRules(ruleSets: GameRuleSet[]): GameRules {
     },
 
     checkHandOutcome: (state) => {
-      let result: ReturnType<GameRules['checkHandOutcome']> = null; // Base identity: no early termination
+      let result: ReturnType<GameRules['checkHandOutcome']> = { isDetermined: false }; // Base identity: not yet determined
 
       for (const ruleSet of ruleSets) {
         if (ruleSet.rules?.checkHandOutcome) {
@@ -342,6 +342,13 @@ export function composeRules(ruleSets: GameRuleSet[]): GameRules {
         (prev, ruleSet) =>
           ruleSet.rules?.calculateScore?.(state, prev) ?? prev,
         calculateScoreBase(state)
+      ),
+
+    getPhaseAfterHandComplete: (state) =>
+      ruleSets.reduce(
+        (prev, ruleSet) =>
+          ruleSet.rules?.getPhaseAfterHandComplete?.(state, prev) ?? prev,
+        'bidding' as GamePhase
       )
   };
 }

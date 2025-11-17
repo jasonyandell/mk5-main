@@ -433,8 +433,8 @@ export class GameTestHelper {
 
     // Check for special contracts (tournament mode now enforced via actionTransformers)
     const specialBids = state.bids.filter(bid =>
-      bid.type === BID_TYPES.SPLASH ||
-      bid.type === BID_TYPES.PLUNGE
+      bid.type === 'splash' ||
+      bid.type === 'plunge'
     );
 
     if (specialBids.length > 0) {

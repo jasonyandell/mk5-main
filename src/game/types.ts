@@ -103,7 +103,31 @@ export interface Player {
   suitAnalysis?: SuitAnalysis;
 }
 
-export type BidType = 'pass' | 'points' | 'marks' | 'splash' | 'plunge';
+/**
+ * Base bid types - always available (invariants)
+ */
+export type BaseBidType = 'pass' | 'points' | 'marks';
+
+/**
+ * Special bid types - compositional, enabled by rulesets (variants)
+ * - splash: Requires splashRuleSet
+ * - plunge: Requires plungeRuleSet
+ */
+export type SpecialBidType = 'splash' | 'plunge';
+
+/**
+ * All possible bid types in Texas 42.
+ *
+ * Base types (constants - always available):
+ * - pass: Decline to bid
+ * - points: Bid number of points (30-42)
+ * - marks: Bid number of marks (1-7)
+ *
+ * Special types (compositional - enabled by rulesets):
+ * - splash: Auto-bid requiring 3+ doubles (2-3 marks)
+ * - plunge: Auto-bid requiring 4+ doubles (4+ marks)
+ */
+export type BidType = BaseBidType | SpecialBidType;
 
 // Clean Trump type - no legacy support
 export interface TrumpSelection {
@@ -145,7 +169,7 @@ export interface Trick {
   ledSuit?: LedSuit;
 }
 
-export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end';
+export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end' | 'one-hand-complete';
 
 export interface GameState {
   // Event sourcing: source of truth (config + actions = state)
@@ -213,6 +237,8 @@ export type GameAction =
   | { type: 'complete-trick'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Executed when all agree
   | { type: 'score-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }      // Executed when all agree
   | { type: 'redeal'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'retry-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Retry one-hand mode with same seed
+  | { type: 'new-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }    // Start new one-hand mode with new seed
 
 // History tracking for undo/redo
 export interface GameHistory {

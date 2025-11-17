@@ -13,7 +13,8 @@
     [GAME_PHASES.TRUMP_SELECTION]: 'badge-secondary',
     [GAME_PHASES.PLAYING]: 'badge-success',
     [GAME_PHASES.SCORING]: 'badge-warning',
-    [GAME_PHASES.GAME_END]: 'badge-error'
+    [GAME_PHASES.GAME_END]: 'badge-error',
+    [GAME_PHASES.ONE_HAND_COMPLETE]: 'badge-success'
   };
 
   // Phase display names - shorter for mobile
@@ -23,7 +24,8 @@
     [GAME_PHASES.TRUMP_SELECTION]: 'Trump',
     [GAME_PHASES.PLAYING]: 'Playing',
     [GAME_PHASES.SCORING]: 'Scoring',
-    [GAME_PHASES.GAME_END]: 'Game End'
+    [GAME_PHASES.GAME_END]: 'Game End',
+    [GAME_PHASES.ONE_HAND_COMPLETE]: 'Complete'
   };
 
   // Track phase changes for animation

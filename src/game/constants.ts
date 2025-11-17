@@ -12,12 +12,19 @@ export const GAME_CONSTANTS: GameConstants = {
   DEFAULT_GAME_TARGET: 7,
 };
 
+/**
+ * Base bid type constants - ONLY invariants (always available).
+ *
+ * Special bid types (splash, plunge) are compositional and enabled by rulesets.
+ * They use string literals in ruleset code, not constants, because:
+ * - Constants imply "always available everywhere"
+ * - Compositional types only exist when their ruleset is composed in
+ * - Rulesets have intrinsic knowledge of their own types
+ */
 export const BID_TYPES = {
   PASS: 'pass' as const,
   POINTS: 'points' as const,
   MARKS: 'marks' as const,
-  SPLASH: 'splash' as const,
-  PLUNGE: 'plunge' as const,
 };
 
 export const GAME_PHASES = {
@@ -27,6 +34,7 @@ export const GAME_PHASES = {
   PLAYING: 'playing' as const,
   SCORING: 'scoring' as const,
   GAME_END: 'game_end' as const,
+  ONE_HAND_COMPLETE: 'one-hand-complete' as const,
 } as const;
 
 

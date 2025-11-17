@@ -37,8 +37,8 @@ describe('Tournament Scenarios', () => {
       state.currentPlayer = 0;
 
       // Nello is not a bid type - it's a trump selection
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 3, player: 0 };
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 3, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Create a hand with enough doubles for splash (3+) and plunge (4+)
       const adequateHand = [

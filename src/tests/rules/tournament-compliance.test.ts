@@ -23,8 +23,8 @@ describe('Tournament Rule Compliance', () => {
       ]);
 
       // Nello is not a bid type - it's a trump selection (filtered separately)
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Tournament rules (baseRuleSet only) reject special contract bids
       expect(rules.isValidBid(state, splashBid, playerHand)).toBe(false);

@@ -114,13 +114,11 @@ export const sevensRuleSet: GameRuleSet = {
     // Early termination on lost trick
     checkHandOutcome: (state, prev) => {
       if (state.trump?.type !== 'sevens') return prev;
-      if (prev?.isDetermined) return prev;
 
-      // Use shared helper: bidding team must win all tricks
+      // For sevens: ALWAYS use trick-based logic (ignore prev)
+      // Sevens is effectively a different game - sole authority on hand outcome
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
-      const outcome = checkMustWinAllTricks(state, biddingTeam, true);
-
-      return outcome || prev;
+      return checkMustWinAllTricks(state, biddingTeam, true);
     },
 
     // ============================================

@@ -79,13 +79,13 @@ describe('Rule Composition Mechanics', () => {
       const rules = composeRules([baseRuleSet]);
 
       const state6Tricks = createTestState({ tricks: new Array(6) });
-      expect(rules.checkHandOutcome(state6Tricks)).toBeNull();
+      const outcome6 = rules.checkHandOutcome(state6Tricks);
+      expect(outcome6.isDetermined).toBe(false);
 
       const state7Tricks = createTestState({ tricks: new Array(7) });
       const outcome = rules.checkHandOutcome(state7Tricks);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toBe('All tricks played');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toBe('All tricks played');
     });
 
     it('should produce correct getLedSuit result for non-trump', () => {

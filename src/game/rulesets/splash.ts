@@ -20,7 +20,6 @@ import {
   countDoubles,
   getHighestMarksBid
 } from './helpers';
-import { BID_TYPES } from '../constants';
 
 export const splashRuleSet: GameRuleSet = {
   name: 'splash',
@@ -51,14 +50,14 @@ export const splashRuleSet: GameRuleSet = {
   rules: {
 
     isValidBid: (state, bid, playerHand, prev) => {
-      if (bid.type !== BID_TYPES.SPLASH) return prev;
+      if (bid.type !== 'splash') return prev;
 
       // Splash validation
       if (bid.value === undefined || bid.value < 2 || bid.value > 3) return false;
       if (!playerHand || countDoubles(playerHand) < 3) return false;
 
       // Opening bid constraints
-      const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+      const previousBids = state.bids.filter(b => b.type !== 'pass');
       if (previousBids.length === 0) {
         return true; // Splash allowed as opening bid
       }
@@ -67,12 +66,12 @@ export const splashRuleSet: GameRuleSet = {
     },
 
     getBidComparisonValue: (bid, prev) => {
-      if (bid.type !== BID_TYPES.SPLASH) return prev;
+      if (bid.type !== 'splash') return prev;
       return bid.value! * 42;
     },
 
     calculateScore: (state, prev) => {
-      if (state.currentBid?.type !== BID_TYPES.SPLASH) return prev;
+      if (state.currentBid?.type !== 'splash') return prev;
 
       // Splash: bidding team must take all tricks
       const bidder = state.players[state.winningBidder];
@@ -108,13 +107,13 @@ export const splashRuleSet: GameRuleSet = {
     // Hand ends if opponents win any trick
     checkHandOutcome: (state, prev) => {
       if (state.currentBid?.type !== 'splash') return prev;
-      if (prev?.isDetermined) return prev;
+      if (prev.isDetermined) return prev;
 
       // Use shared helper: bidding team must win all tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
       const outcome = checkMustWinAllTricks(state, biddingTeam, true);
 
-      return outcome || prev;
+      return outcome.isDetermined ? outcome : prev;
     }
   }
 };

@@ -225,7 +225,7 @@ describe('Backward Compatibility', () => {
 
       // Standard game should not terminate early
       const outcome = baseRules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Continue playing all 7 tricks
+      expect(outcome.isDetermined).toBe(false); // Continue playing all 7 tricks
     });
 
     it('should play all 7 tricks in standard game', () => {
@@ -252,9 +252,8 @@ describe('Backward Compatibility', () => {
       // Base ruleset returns determined when all 7 tricks played
       const baseRules = composeRules([baseRuleSet]);
       const outcome = baseRules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toBe('All tricks played');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toBe('All tricks played');
     });
   });
 

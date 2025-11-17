@@ -182,7 +182,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull();
+      expect(outcome.isDetermined).toBe(false);
     });
 
     it('should return determined when opponents win any trick', () => {
@@ -221,10 +221,9 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Defending team won trick');
-      expect(outcome?.decidedAtTrick).toBe(2);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick');
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(2);
     });
 
     it('should end on first trick if opponents win', () => {
@@ -253,8 +252,8 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
 
     it('should not trigger early termination for non-sevens trump', () => {
@@ -283,7 +282,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Should play all tricks for regular marks bid
+      expect(outcome.isDetermined).toBe(false); // Should play all tricks for regular marks bid
     });
   });
 
@@ -463,8 +462,7 @@ describe('Sevens RuleSet Rules', () => {
       const outcome = rules.checkHandOutcome(finalState);
 
       // Should be determined by base ruleset after all 7 tricks
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
     });
 
     it('should fail immediately when opponents get closer to 7', () => {
@@ -493,9 +491,9 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.decidedAtTrick).toBe(1);
-      expect(outcome?.reason).toContain('Defending team won trick 1');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick 1');
     });
   });
 
@@ -627,7 +625,7 @@ describe('Sevens RuleSet Rules', () => {
 
       // Check that bidding team is NOT set (partner won)
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Not determined, continue playing
+      expect(outcome.isDetermined).toBe(false); // Not determined, continue playing
 
       // Partner (player 2) should lead next trick
       expect(rules.getNextPlayer(state, 0)).toBe(2);

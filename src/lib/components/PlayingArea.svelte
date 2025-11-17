@@ -121,7 +121,7 @@
     />
   </div>
   
-  {#if showTrickHistory && ($viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring')}
+  {#if showTrickHistory && ($viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring' || $viewProjection.phase === 'one-hand-complete')}
     <div class="bg-base-100 rounded-xl mx-4 p-3 shadow-md border border-base-300" transition:slide={{ duration: 200 }}>
       <!-- Player headers -->
       <div class="flex items-center gap-3 px-3 pb-3 mb-3 border-b-2 border-base-300">

@@ -1,11 +1,13 @@
 import type { GameState } from '../types';
 import { createDominoes, getDominoPoints } from './dominoes';
 
-export interface HandOutcome {
-  isDetermined: boolean;
-  reason?: string;
-  decidedAtTrick?: number;
-}
+/**
+ * Result of checking if hand outcome is determined early.
+ * Uses discriminated union to make invalid states unrepresentable.
+ */
+export type HandOutcome =
+  | { isDetermined: false }
+  | { isDetermined: true; reason: string; decidedAtTrick?: number };
 
 /**
  * Calculates the maximum possible points that can still be earned from unplayed dominoes
@@ -71,8 +73,7 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     throw new Error(`Invalid bid player index: ${bid.player}`);
   }
   const biddingTeam = bidPlayer.teamId;
-  const defendingTeam = biddingTeam === 0 ? 1 : 0;
-  
+
   const [team0Score, team1Score] = state.teamScores;
   const biddingTeamScore = biddingTeam === 0 ? team0Score : team1Score;
   const defendingTeamScore = biddingTeam === 0 ? team1Score : team0Score;
@@ -140,29 +141,6 @@ export function checkHandOutcome(state: GameState): HandOutcome {
       break;
     }
     
-    case 'splash':
-    case 'plunge': {
-      // Splash/Plunge - bidding team must win all tricks
-      // Check if defending team has won any tricks
-      const defendingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === defendingTeam;
-      }).length;
-      
-      if (defendingTeamTricks > 0) {
-        return {
-          isDetermined: true,
-          reason: `Defending team won a trick on ${bid.type}`,
-          decidedAtTrick: currentTrick
-        };
-      }
-      
-      break;
-    }
   }
   
   return { isDetermined: false };

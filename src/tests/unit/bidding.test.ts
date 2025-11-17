@@ -87,7 +87,7 @@ describe('Bidding Rules', () => {
 
       // Test with insufficient doubles (3)
       const insufficientHand = createHandWithDoubles(3);
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
       
       expect(rules.isValidBid(state, plungeBid, insufficientHand)).toBe(false);
     });
@@ -99,7 +99,7 @@ describe('Bidding Rules', () => {
       });
 
       const sufficientHand = createHandWithDoubles(4);
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
       
       expect(rules.isValidBid(state, plungeBid, sufficientHand)).toBe(true);
     });
@@ -111,7 +111,7 @@ describe('Bidding Rules', () => {
       });
 
       const abundantHand = createHandWithDoubles(6);
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
       
       expect(rules.isValidBid(state, plungeBid, abundantHand)).toBe(true);
     });
@@ -126,7 +126,7 @@ describe('Bidding Rules', () => {
       
       // Test various Plunge bid levels
       for (let marks = 4; marks <= 6; marks++) {
-        const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: marks, player: 0 };
+        const plungeBid: Bid = { type: 'plunge', value: marks, player: 0 };
         expect(rules.isValidBid(state, plungeBid, maxDoublesHand)).toBe(true);
       }
     });
@@ -138,7 +138,7 @@ describe('Bidding Rules', () => {
       });
 
       const perfectHand = createHandWithDoubles(7);
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Plunge ruleSet allows plunge bids with sufficient doubles
       expect(rules.isValidBid(state, plungeBid, perfectHand)).toBe(true);
@@ -152,7 +152,7 @@ describe('Bidding Rules', () => {
 
       // Test insufficient doubles (2)
       const insufficientHand = createHandWithDoubles(2);
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
       expect(rules.isValidBid(state, splashBid, insufficientHand)).toBe(false);
 
       // Test sufficient doubles (3)
@@ -169,8 +169,8 @@ describe('Bidding Rules', () => {
       const adequateHand = createHandWithDoubles(4);
       
       // Plunge must be 4+ marks
-      const invalidPlunge: Bid = { type: BID_TYPES.PLUNGE, value: 3, player: 0 };
-      const validPlunge: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const invalidPlunge: Bid = { type: 'plunge', value: 3, player: 0 };
+      const validPlunge: Bid = { type: 'plunge', value: 4, player: 0 };
       
       expect(rules.isValidBid(state, invalidPlunge, adequateHand)).toBe(false);
       expect(rules.isValidBid(state, validPlunge, adequateHand)).toBe(true);
@@ -295,8 +295,8 @@ describe('Bidding Rules', () => {
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
       ]);
 
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
@@ -311,8 +311,8 @@ describe('Bidding Rules', () => {
         [0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]
       ]);
 
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.isValidBid(state, splashBid, testHand)).toBe(true);
@@ -332,8 +332,8 @@ describe('Bidding Rules', () => {
     });
     
     it('should return 42x multiplier for special bid contracts', () => {
-      const splashBid: Bid = { type: BID_TYPES.SPLASH, value: 2, player: 0 };
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Nello is not a bid type - it's a trump selection after a marks bid
       expect(rules.getBidComparisonValue(splashBid)).toBe(84);

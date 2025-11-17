@@ -335,7 +335,7 @@ interface GameRules {
 
   // WHEN: Timing and completion
   isTrickComplete(state): boolean
-  checkHandOutcome(state): HandOutcome | null
+  checkHandOutcome(state): HandOutcome
 
   // HOW: Game mechanics
   getLedSuit(state, domino): LedSuit
@@ -354,6 +354,13 @@ interface GameRules {
 ```
 
 **Key**: Each rule gets `prev` parameter - delegate to previous ruleset or override. Compose via reduce.
+
+**Pattern**: Discriminated union makes invalid states unrepresentable
+- `checkHandOutcome` returns `HandOutcome` with two cases:
+  - `{ determined: false }` - outcome not yet determined
+  - `{ determined: true, reason: string, decidedAtTrick?: number }` - outcome determined
+- TypeScript enforces: can't access reason unless determined === true
+- Aligns with Result<T> pattern used throughout codebase
 
 ### GameRuleSet
 
@@ -607,7 +614,13 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
 }
 ```
 
-**Real Example**: One-hand mode needs a new terminal state. Add `getPhaseAfterHandComplete` to GameRules. Base returns `'scoring'` (continue to next hand), oneHandRuleSet returns `'one-hand-complete'` (special terminal state).
+**Real Example - Implemented**: One-hand mode needs a new terminal state.
+
+- **Added**: `getPhaseAfterHandComplete` rule method to GameRules interface
+- **Base implementation** (`src/game/rulesets/base.ts`): Returns `'bidding'` (continue to next hand)
+- **OneHand override** (`src/game/rulesets/oneHand.ts`): Returns `'one-hand-complete'` (terminal state)
+- **Executor** (`executeScoreHand` in `src/game/core/actions.ts`): Delegates to rule instead of hardcoding phase
+- **See**: ADR-20251112-onehand-terminal-phase.md for full implementation details
 
 **Key Principle**: Executors must remain mode-agnostic. If you're tempted to add `if (mode)` to an executor, add a rule method instead.
 

@@ -157,16 +157,16 @@ describe('Base RuleSet Rules', () => {
   });
 
   describe('checkHandOutcome', () => {
-    it('should return null when no tricks played', () => {
+    it('should return undetermined when no tricks played', () => {
       const state = GameTestHelper.createTestState({
         tricks: []
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull();
+      expect(outcome.isDetermined).toBe(false);
     });
 
-    it('should return null when 1-6 tricks played', () => {
+    it('should return undetermined when 1-6 tricks played', () => {
       for (let trickCount = 1; trickCount <= 6; trickCount++) {
         const tricks: Trick[] = Array.from({ length: trickCount }, (_, i) => ({
           plays: [
@@ -182,7 +182,7 @@ describe('Base RuleSet Rules', () => {
         const state = GameTestHelper.createTestState({ tricks });
         const outcome = rules.checkHandOutcome(state);
 
-        expect(outcome).toBeNull();
+        expect(outcome.isDetermined).toBe(false);
       }
     });
 
@@ -201,9 +201,8 @@ describe('Base RuleSet Rules', () => {
       const state = GameTestHelper.createTestState({ tricks });
       const outcome = rules.checkHandOutcome(state);
 
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toBe('All tricks played');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toBe('All tricks played');
     });
   });
 

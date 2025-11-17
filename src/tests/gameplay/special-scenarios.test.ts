@@ -64,7 +64,7 @@ describe('Special Gameplay Scenarios', () => {
       state.players[0]!.hand = handWith4Doubles;
 
       // Plunge bid requires 4+ doubles
-      const plungeBid: Bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Should be valid with 4 doubles (plungeRuleSet enabled)
       expect(rules.isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);

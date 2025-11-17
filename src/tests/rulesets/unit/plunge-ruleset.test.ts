@@ -12,7 +12,7 @@ import { describe, it, expect } from 'vitest';
 import { baseRuleSet } from '../../../game/rulesets/base';
 import { plungeRuleSet } from '../../../game/rulesets/plunge';
 import { composeRules } from '../../../game/rulesets/compose';
-import type { Trick } from '../../../game/types';
+import type { Trick, Bid } from '../../../game/types';
 import { GameTestHelper, createHandWithDoubles } from '../../helpers/gameTestHelper';
 import { BID_TYPES } from '../../../game/constants';
 import { BLANKS, ACES } from '../../../game/types';
@@ -177,9 +177,9 @@ describe('Plunge RuleSet Rules', () => {
   describe('getTrumpSelector', () => {
     it('should return partner for plunge bid', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 }
+        currentBid: { type: 'plunge', value: 4, player: 0 }
       });
-      const bid = { type: BID_TYPES.PLUNGE, value: 4, player: 0 };
+      const bid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       const selector = rules.getTrumpSelector(state, bid);
 
@@ -187,21 +187,21 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should return partner for plunge bid from player 1', () => {
-      const bid = { type: BID_TYPES.PLUNGE, value: 5, player: 1 };
+      const bid: Bid = { type: 'plunge', value: 5, player: 1 };
       const state = GameTestHelper.createTestState();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(3); // Partner of player 1 is player 3
     });
 
     it('should return partner for plunge bid from player 2', () => {
-      const bid = { type: BID_TYPES.PLUNGE, value: 4, player: 2 };
+      const bid: Bid = { type: 'plunge', value: 4, player: 2 };
       const state = GameTestHelper.createTestState();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(0); // Partner of player 2 is player 0
     });
 
     it('should return partner for plunge bid from player 3', () => {
-      const bid = { type: BID_TYPES.PLUNGE, value: 6, player: 3 };
+      const bid: Bid = { type: 'plunge', value: 6, player: 3 };
       const state = GameTestHelper.createTestState();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(1); // Partner of player 3 is player 1
@@ -218,7 +218,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('getFirstLeader', () => {
     it('should pass through to base (partner leads since they selected trump)', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0
       });
 
@@ -232,7 +232,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('getNextPlayer', () => {
     it('should use standard rotation (no skipping)', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 }
+        currentBid: { type: 'plunge', value: 4, player: 0 }
       });
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
@@ -245,7 +245,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('isTrickComplete', () => {
     it('should use base rule (4 plays)', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
@@ -259,7 +259,7 @@ describe('Plunge RuleSet Rules', () => {
 
     it('should return false for 3 plays', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
@@ -274,7 +274,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('checkHandOutcome', () => {
     it('should return null when bidding team wins all tricks so far', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -307,12 +307,12 @@ describe('Plunge RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull();
+      expect(outcome.isDetermined).toBe(false);
     });
 
     it('should return determined when opponents win any trick', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -345,15 +345,14 @@ describe('Plunge RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Defending team won trick');
-      expect(outcome?.decidedAtTrick).toBe(2);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick');
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(2);
     });
 
     it('should end on first trick if opponents win', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 1 },
+        currentBid: { type: 'plunge', value: 4, player: 1 },
         winningBidder: 1,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -376,8 +375,8 @@ describe('Plunge RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
 
     it('should not trigger early termination for non-plunge bids', () => {
@@ -405,12 +404,12 @@ describe('Plunge RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Should play all tricks for marks bid
+      expect(outcome.isDetermined).toBe(false); // Should play all tricks for marks bid
     });
 
     it('should respect already determined outcome from previous ruleSet', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -432,15 +431,14 @@ describe('Plunge RuleSet Rules', () => {
 
       const outcome = rules.checkHandOutcome(state);
       // Base ruleset says "all tricks played"
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
     });
   });
 
   describe('getLedSuit', () => {
     it('should use base rules (no override)', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         trump: { type: 'suit', suit: BLANKS }
       });
 
@@ -452,7 +450,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('calculateTrickWinner', () => {
     it('should use base rules (standard trick-taking)', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         trump: { type: 'suit', suit: ACES },
         currentSuit: BLANKS
       });
@@ -471,7 +469,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('integration: complete plunge hand', () => {
     it('should succeed when bidding team wins all 7 tricks', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 4, player: 0 },
+        currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -498,13 +496,12 @@ describe('Plunge RuleSet Rules', () => {
       const outcome = rules.checkHandOutcome(finalState);
 
       // Should be determined by base ruleset after all 7 tricks
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
     });
 
     it('should fail immediately on first lost trick', () => {
       const state = GameTestHelper.createTestState({
-        currentBid: { type: BID_TYPES.PLUNGE, value: 5, player: 3 },
+        currentBid: { type: 'plunge', value: 5, player: 3 },
         winningBidder: 3,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -527,9 +524,9 @@ describe('Plunge RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.decidedAtTrick).toBe(1);
-      expect(outcome?.reason).toContain('Defending team won trick 1');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick 1');
     });
   });
 });

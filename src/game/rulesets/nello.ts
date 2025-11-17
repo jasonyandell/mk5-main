@@ -96,13 +96,13 @@ export const nelloRuleSet: GameRuleSet = {
     // Hand ends if bidder wins any trick
     checkHandOutcome: (state, prev) => {
       if (state.trump?.type !== 'nello') return prev;
-      if (prev?.isDetermined) return prev; // Already ended
+      if (prev.isDetermined) return prev; // Already ended
 
       // Use shared helper: bidding team must not win any tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
       const outcome = checkMustWinAllTricks(state, biddingTeam, false);
 
-      return outcome || prev;
+      return outcome.isDetermined ? outcome : prev;
     },
 
     // Doubles form own suit (suit 7)

@@ -73,6 +73,8 @@
         <span class="text-sm">P{currentPlayer} selecting trump...</span>
       {:else if phase === 'scoring'}
         <span class="text-sm">Scoring hand...</span>
+      {:else if phase === 'one-hand-complete'}
+        <span class="text-sm text-success">Hand complete!</span>
       {:else}
         <span class="text-sm text-base-content/60">Ready to play</span>
       {/if}

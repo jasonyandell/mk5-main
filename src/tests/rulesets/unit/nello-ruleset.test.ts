@@ -260,7 +260,7 @@ describe('Nello RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull();
+      expect(outcome.isDetermined).toBe(false);
     });
 
     it('should return determined when bidder wins a trick', () => {
@@ -296,10 +296,9 @@ describe('Nello RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Bidding team won trick');
-      expect(outcome?.decidedAtTrick).toBe(2);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Bidding team won trick');
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(2);
     });
 
     it('should return determined when partner wins a trick', () => {
@@ -326,9 +325,8 @@ describe('Nello RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
 
     it('should not trigger early termination when not nello', () => {
@@ -356,7 +354,7 @@ describe('Nello RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Should play all tricks
+      expect(outcome.isDetermined).toBe(false); // Should play all tricks
     });
   });
 
@@ -460,9 +458,8 @@ describe('Nello RuleSet Rules', () => {
       const finalState = { ...state, tricks };
       const outcome = rules.checkHandOutcome(finalState);
 
-      // Should be null until all 7 tricks, then determined by base ruleSet
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      // Should be determined by base ruleSet after all 7 tricks
+      expect(outcome.isDetermined).toBe(true);
     });
 
     it('should end early when bidder wins first trick', () => {
@@ -489,9 +486,8 @@ describe('Nello RuleSet Rules', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.decidedAtTrick).toBe(1);
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
   });
 });

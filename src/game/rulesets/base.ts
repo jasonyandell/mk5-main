@@ -45,6 +45,16 @@ export function generateStructuralActions(
       return getPlayingActions(state, rules);
     case 'scoring':
       return getScoringActions(state);
+    case 'game_end':
+      // Terminal state - game over, no actions
+      return [];
+    case 'one-hand-complete':
+      // Terminal state - offer retry/new-hand options
+      return [
+        { type: 'retry-one-hand' },
+        { type: 'new-one-hand' }
+      ];
+    case 'setup':
     default:
       return [];
   }
@@ -567,6 +577,15 @@ export const baseRuleSet: GameRuleSet = {
      */
     calculateScore: (state: GameState, _prev: [number, number]): [number, number] => {
       return calculateRoundScore(state);
+    },
+
+    /**
+     * LIFECYCLE: What phase after hand is scored?
+     *
+     * Base: Continue to next hand (return 'bidding')
+     */
+    getPhaseAfterHandComplete: (_state: GameState, _prev: import('../types').GamePhase): import('../types').GamePhase => {
+      return 'bidding';
     }
   }
 };

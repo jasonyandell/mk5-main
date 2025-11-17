@@ -16,7 +16,6 @@ import {
   getHighestMarksBid,
   countDoubles
 } from './helpers';
-import { BID_TYPES } from '../constants';
 
 export const plungeRuleSet: GameRuleSet = {
   name: 'plunge',
@@ -47,14 +46,14 @@ export const plungeRuleSet: GameRuleSet = {
   rules: {
 
     isValidBid: (state, bid, playerHand, prev) => {
-      if (bid.type !== BID_TYPES.PLUNGE) return prev;
+      if (bid.type !== 'plunge') return prev;
 
       // Plunge validation
       if (bid.value === undefined || bid.value < 4) return false;
       if (!playerHand || countDoubles(playerHand) < 4) return false;
 
       // Opening bid constraints
-      const previousBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
+      const previousBids = state.bids.filter(b => b.type !== 'pass');
       if (previousBids.length === 0) {
         return true; // Plunge allowed as opening bid
       }
@@ -63,14 +62,14 @@ export const plungeRuleSet: GameRuleSet = {
     },
 
     getBidComparisonValue: (bid, prev) => {
-      if (bid.type === BID_TYPES.PLUNGE) {
+      if (bid.type === 'plunge') {
         return bid.value! * 42;
       }
       return prev;
     },
 
     calculateScore: (state, prev) => {
-      if (state.currentBid?.type !== BID_TYPES.PLUNGE) return prev;
+      if (state.currentBid?.type !== 'plunge') return prev;
 
       // Plunge: bidding team must take all tricks
       const bidder = state.players[state.winningBidder];
@@ -106,13 +105,13 @@ export const plungeRuleSet: GameRuleSet = {
     // Hand ends if opponents win any trick
     checkHandOutcome: (state, prev) => {
       if (state.currentBid?.type !== 'plunge') return prev;
-      if (prev?.isDetermined) return prev;
+      if (prev.isDetermined) return prev;
 
       // Use shared helper: bidding team must win all tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
       const outcome = checkMustWinAllTricks(state, biddingTeam, true);
 
-      return outcome || prev;
+      return outcome.isDetermined ? outcome : prev;
     }
   }
 };

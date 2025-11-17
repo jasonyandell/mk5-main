@@ -1,17 +1,24 @@
 import type { ActionTransformerFactory } from './types';
 
 /**
- * One-hand mode: Skip bidding with scripted actions, end after one hand.
+ * One-hand mode ActionTransformer: Automate bidding/trump and score-hand consensus.
  *
- * Mechanics:
- * - Inject scripted bidding/trump actions at start of bidding (with autoExecute: true)
- * - GameHost will auto-execute these immediately
- * - After scoring, end game instead of dealing new hand
+ * Responsibilities (ActionTransformer layer):
+ * - Inject scripted bidding/trump actions at start (with autoExecute: true)
+ * - Auto-execute score-hand action to skip manual consensus
  * - Script actions execute with system authority, bypassing session checks
+ *
+ * Phase transition is handled by oneHandRuleSet (RuleSet layer):
+ * - See src/game/rulesets/oneHand.ts for terminal phase logic
+ * - RuleSet returns 'one-hand-complete' phase instead of 'bidding'
+ *
+ * Separation of concerns:
+ * - ActionTransformer = automation (what actions to inject/modify)
+ * - RuleSet = execution logic (how game transitions between phases)
  *
  * Implementation:
  * - Emits scripted sequence when bids array is empty
- * - Replaces score-hand action with auto-executed version that ends game
+ * - Replaces score-hand action with auto-executed version for smooth UX
  * - All changes via action list transformation - no state mutation
  */
 export const oneHandActionTransformer: ActionTransformerFactory = () => (base) => (state) => {
@@ -19,32 +26,35 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
 
   // At start of bidding (no bids yet), inject scripted sequence
   if (state.phase === 'bidding') {
+    // Use currentPlayer to ensure we inject actions in correct turn order
+    const currentPlayer = state.currentPlayer;
+
     switch (state.bids.length) {
       case 0:
         return [{
           type: 'pass' as const,
-          player: 0,
+          player: currentPlayer,
           autoExecute: true,
           meta: { scriptId: 'one-hand-setup', step: 1, authority: 'system' as const }
         }];
       case 1:
         return [{
           type: 'pass' as const,
-          player: 1,
+          player: currentPlayer,
           autoExecute: true,
           meta: { scriptId: 'one-hand-setup', step: 2, authority: 'system' as const }
         }];
       case 2:
         return [{
           type: 'pass' as const,
-          player: 2,
+          player: currentPlayer,
           autoExecute: true,
           meta: { scriptId: 'one-hand-setup', step: 3, authority: 'system' as const }
         }];
       case 3:
         return [{
           type: 'bid' as const,
-          player: 3,
+          player: currentPlayer,
           bid: 'points' as const,
           value: 30,
           autoExecute: true,
@@ -57,10 +67,11 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
 
   // During trump selection, inject scripted trump choice
   if (state.phase === 'trump_selection') {
+    // Winner of bid (stored in winningBidder) selects trump
     return [
       {
         type: 'select-trump' as const,
-        player: 3,
+        player: state.winningBidder,
         trump: { type: 'suit' as const, suit: 4 }, // Fours as trump
         autoExecute: true,
         meta: { scriptId: 'one-hand-setup', step: 5, authority: 'system' as const }
@@ -68,15 +79,16 @@ export const oneHandActionTransformer: ActionTransformerFactory = () => (base) =
     ];
   }
 
-  // After scoring phase, prevent new hand - end game instead
+  // After scoring phase, auto-execute score-hand for smooth UX
+  // Phase transition to 'one-hand-complete' is handled by oneHandRuleSet
   if (state.phase === 'scoring' && state.consensus.scoreHand.size === 4) {
-    // Filter out the regular score-hand action and replace with auto-executed version
+    // Replace score-hand with auto-executed version to skip manual button click
     return [
       ...baseActions.filter(a => a.type !== 'score-hand'),
       {
         type: 'score-hand' as const,
         autoExecute: true,
-        meta: { scriptId: 'one-hand-end', authority: 'system' as const }
+        meta: { scriptId: 'one-hand-scoring', authority: 'system' as const }
       }
     ];
   }

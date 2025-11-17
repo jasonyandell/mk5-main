@@ -100,7 +100,13 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 
 **Example of current methods**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
 
-**Example of extensibility**: `checkHandOutcome` was added to support nello/plunge early termination. Base returns `null` (play all tricks), special RuleSets return `HandOutcome` when conditions met.
+**Example of extensibility**: `checkHandOutcome` was added to support nello/plunge early termination. Base returns `{ determined: false }` (play all tricks), special RuleSets return `{ determined: true, reason, decidedAtTrick? }` when conditions met.
+
+**Pattern**: HandOutcome uses discriminated union to make invalid states unrepresentable:
+- `{ determined: false }` - outcome not yet determined
+- `{ determined: true, reason: string, decidedAtTrick?: number }` - outcome determined
+- TypeScript enforces: can't access reason unless determined === true
+- Aligns with Result<T> pattern used throughout codebase
 
 **Composition**: RuleSets override only what differs from base, compose via reduce pattern
 

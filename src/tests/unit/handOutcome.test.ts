@@ -63,8 +63,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Bidding team made their 30 bid');
-      expect(outcome.decidedAtTrick).toBe(4);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Bidding team made their 30 bid');
+        expect(outcome.decidedAtTrick).toBe(4);
+      }
     });
 
     it('should detect when bidding team cannot possibly make their bid', () => {
@@ -107,8 +109,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toContain('Bidding team cannot reach 40');
-      expect(outcome.decidedAtTrick).toBe(6);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toContain('Bidding team cannot reach 40');
+        expect(outcome.decidedAtTrick).toBe(6);
+      }
     });
 
     it('should detect when defending team sets the bid', () => {
@@ -127,8 +131,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team set the 35 bid');
-      expect(outcome.decidedAtTrick).toBe(2);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team set the 35 bid');
+        expect(outcome.decidedAtTrick).toBe(2);
+      }
     });
   });
 
@@ -149,8 +155,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team scored points on marks bid');
-      expect(outcome.decidedAtTrick).toBe(2);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team scored points on marks bid');
+        expect(outcome.decidedAtTrick).toBe(2);
+      }
     });
 
     it('should detect when defending team scores any points on marks bid', () => {
@@ -175,8 +183,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team scored points on marks bid');
-      expect(outcome.decidedAtTrick).toBe(3);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team scored points on marks bid');
+        expect(outcome.decidedAtTrick).toBe(3);
+      }
     });
   });
 
@@ -184,53 +194,10 @@ describe('Hand Outcome Detection', () => {
   // and early termination logic is handled by nello ruleset's checkHandOutcome.
   // See src/tests/rulesets/unit/nello-ruleset.test.ts for nello-specific tests.
 
-  describe('Splash/Plunge', () => {
-    it('should detect when defending team wins a trick on splash', () => {
-      const state = createTestState({
-        currentBid: { type: 'splash', value: 3, player: 0 },
-        teamScores: [41, 1],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 0)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team won a trick on splash');
-      expect(outcome.decidedAtTrick).toBe(2);
-    });
-
-    it('should detect when defending team wins a trick on plunge', () => {
-      const state = createTestState({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
-        teamScores: [40, 2],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 0),
-          createTrick([
-            {player: 1, domino: createDomino(0, 0)},
-            {player: 2, domino: createDomino(1, 0)},
-            {player: 3, domino: createDomino(2, 0)},
-            {player: 0, domino: createDomino(3, 0)}
-          ], 3, 0)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team won a trick on plunge');
-      expect(outcome.decidedAtTrick).toBe(3);
-    });
-  });
+  // NOTE: Splash/Plunge handling has been moved to their respective rulesets
+  // (splashRuleSet, plungeRuleSet). The core handOutcome function no longer handles
+  // these special bid types directly - they are handled through the ruleset composition system.
+  // See ADR-20251112-onehand-terminal-phase.md for details on this architectural change.
 
   describe('Edge Cases', () => {
     it('should not detect outcome during bidding phase', () => {
@@ -251,7 +218,9 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Hand complete');
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Hand complete');
+      }
     });
 
     it('should handle empty current trick correctly', () => {

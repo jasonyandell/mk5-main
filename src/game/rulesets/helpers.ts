@@ -52,13 +52,13 @@ export function getPlayerTeam(state: GameState, playerIndex: number): number {
  * @param state Current game state
  * @param biddingTeam Team ID (0 or 1) of the bidding team
  * @param mustWin true for "must win all tricks", false for "must win none"
- * @returns HandOutcome if determined, null otherwise
+ * @returns HandOutcome
  */
 export function checkMustWinAllTricks(
   state: GameState,
   biddingTeam: number,
   mustWin: boolean
-): HandOutcome | null {
+): HandOutcome {
   // Check each completed trick
   for (let i = 0; i < state.tricks.length; i++) {
     const trick = state.tricks[i];
@@ -86,7 +86,7 @@ export function checkMustWinAllTricks(
     }
   }
 
-  return null; // Not determined yet
+  return { isDetermined: false }; // Not determined yet
 }
 
 /**

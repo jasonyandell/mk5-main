@@ -2,7 +2,7 @@
  * Tests for ruleset registry and lookup.
  *
  * Verifies that the ruleset registry works correctly:
- * - All 6 ruleSets registered correctly (base, nello, plunge, splash, sevens, tournament)
+ * - All 7 ruleSets registered correctly (base, nello, oneHand, plunge, splash, sevens, tournament)
  * - getRuleSetByName returns correct ruleSet
  * - getRuleSetByName throws on unknown ruleSet
  * - getRuleSetsByNames returns array of ruleSets in correct order
@@ -23,7 +23,7 @@ import {
 } from '../../../game/rulesets';
 
 describe('Layer Registry and Lookup', () => {
-  describe('All 6 ruleSets registered correctly', () => {
+  describe('All 7 ruleSets registered correctly', () => {
     it('should have base ruleset in registry', () => {
       expect(RULESET_REGISTRY['base']).toBeDefined();
       expect(RULESET_REGISTRY['base']).toBe(baseRuleSet);
@@ -60,10 +60,10 @@ describe('Layer Registry and Lookup', () => {
       expect(RULESET_REGISTRY['tournament']?.name).toBe('tournament');
     });
 
-    it('should have exactly 6 ruleSets', () => {
+    it('should have exactly 7 ruleSets', () => {
       const keys = Object.keys(RULESET_REGISTRY);
-      expect(keys).toHaveLength(6);
-      expect(keys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash', 'tournament']);
+      expect(keys).toHaveLength(7);
+      expect(keys.sort()).toEqual(['base', 'nello', 'oneHand', 'plunge', 'sevens', 'splash', 'tournament']);
     });
 
     it('should have consistent ruleset names', () => {
@@ -230,8 +230,8 @@ describe('Layer Registry and Lookup', () => {
 
       // Note: JavaScript objects are mutable by default, but we test
       // that the registry maintains its expected structure
-      expect(originalKeys.length).toBe(6);
-      expect(originalKeys.sort()).toEqual(['base', 'nello', 'plunge', 'sevens', 'splash', 'tournament']);
+      expect(originalKeys.length).toBe(7);
+      expect(originalKeys.sort()).toEqual(['base', 'nello', 'oneHand', 'plunge', 'sevens', 'splash', 'tournament']);
     });
 
     it('should preserve ruleset references', () => {

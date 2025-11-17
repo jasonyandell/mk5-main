@@ -1,5 +1,10 @@
 # Texas 42
 
+**Note**: This project uses [bd (beads)]. Use `bd` commands instead of markdown TODOs. Use the bd tool for all task tracking. Before starting work, run `bd ready` to see what's available. File issues for discovered bugs/work as you go.
+
+# North Star
+The authors are building a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If the authors were mechanics, this project would be their "project car".  They work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  They enjoy elegance, simlicity and correctness.  They are MORE THAN HAPPY to spend extra time making every little thing perfect.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
+
 ## Quick Start
 
 **New to the codebase?** Read [docs/ORIENTATION.md](docs/ORIENTATION.md) first for architecture overview.

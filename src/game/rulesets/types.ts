@@ -5,17 +5,16 @@
  * Executors become rule-set-agnostic by delegating decisions to injected rules.
  */
 
-import type { GameState, TrumpSelection, Bid, Play, Domino, LedSuit } from '../types';
+import type { GameState, TrumpSelection, Bid, Play, Domino, LedSuit, GamePhase } from '../types';
 
 /**
  * Result of checking if hand outcome is determined early.
- * Used by special contracts that end before all 7 tricks (nello, plunge, splash, sevens).
+ * Uses discriminated union to make invalid states unrepresentable.
+ * Aligns with Result<T> pattern in multiplayer/types.ts.
  */
-export interface HandOutcome {
-  isDetermined: boolean;
-  reason?: string;
-  decidedAtTrick?: number;
-}
+export type HandOutcome =
+  | { isDetermined: false }
+  | { isDetermined: true; reason: string; decidedAtTrick?: number };
 
 /**
  * GameRules interface - 13 composable rules that define game execution semantics.
@@ -79,13 +78,13 @@ export interface GameRules {
   /**
    * Should the hand end early (before all 7 tricks)?
    *
-   * Base: null (play all tricks)
+   * Base: { isDetermined: false } (play all tricks)
    * Nello: Bidder wins any trick = hand over
    * Plunge/Splash/Sevens: Opponents win any trick = hand over
    *
-   * Returns null to continue, or HandOutcome if determined.
+   * Returns { isDetermined: false } to continue, or { isDetermined: true, reason } if outcome determined.
    */
-  checkHandOutcome(state: GameState): HandOutcome | null;
+  checkHandOutcome(state: GameState): HandOutcome;
 
   // ============================================
   // HOW RULES: Determine game mechanics
@@ -167,6 +166,20 @@ export interface GameRules {
    * Returns [team0Marks, team1Marks]
    */
   calculateScore(state: GameState): [number, number];
+
+  // ============================================
+  // LIFECYCLE RULES: Determine game flow transitions
+  // ============================================
+
+  /**
+   * What phase should we transition to after hand is scored?
+   *
+   * Base: 'bidding' (continue to next hand)
+   * OneHand: 'one-hand-complete' (terminal state, don't deal new hand)
+   *
+   * Used by executeScoreHand to determine next phase when game is not complete.
+   */
+  getPhaseAfterHandComplete(state: GameState): GamePhase;
 }
 
 /**
@@ -213,7 +226,7 @@ export interface GameRuleSet {
     getFirstLeader?: (state: GameState, trumpSelector: number, trump: TrumpSelection, prev: number) => number;
     getNextPlayer?: (state: GameState, currentPlayer: number, prev: number) => number;
     isTrickComplete?: (state: GameState, prev: boolean) => boolean;
-    checkHandOutcome?: (state: GameState, prev: HandOutcome | null) => HandOutcome | null;
+    checkHandOutcome?: (state: GameState, prev: HandOutcome) => HandOutcome;
     getLedSuit?: (state: GameState, domino: Domino, prev: LedSuit) => LedSuit;
     calculateTrickWinner?: (state: GameState, trick: Play[], prev: number) => number;
     isValidPlay?: (state: GameState, domino: Domino, playerId: number, prev: boolean) => boolean;
@@ -222,5 +235,6 @@ export interface GameRuleSet {
     getBidComparisonValue?: (bid: Bid, prev: number) => number;
     isValidTrump?: (trump: TrumpSelection, prev: boolean) => boolean;
     calculateScore?: (state: GameState, prev: [number, number]) => [number, number];
+    getPhaseAfterHandComplete?: (state: GameState, prev: GamePhase) => GamePhase;
   };
 }

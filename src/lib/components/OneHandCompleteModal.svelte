@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { modes, oneHandState } from '../../stores/gameStore';
+  import { game, oneHandState } from '../../stores/gameStore';
   import Icon from '../icons/Icon.svelte';
   import { shareContent, canNativeShare } from '../utils/share';
 
@@ -10,15 +10,18 @@
   let shareSuccess = $state(false);
 
   function retry() {
-    modes.oneHand.retry();
+    // Send retry-one-hand action to server
+    game.executeAction({ type: 'retry-one-hand' });
   }
 
   function newHand() {
-    modes.oneHand.start();
+    // Send new-one-hand action to server
+    game.executeAction({ type: 'new-one-hand' });
   }
 
-  function exitOneHand() {
-    modes.oneHand.exit();
+  async function exitOneHand() {
+    // Exit one-hand mode (return to menu/setup)
+    await game.resetGame();
   }
 
   async function shareChallenge() {

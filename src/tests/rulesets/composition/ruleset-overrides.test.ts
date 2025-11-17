@@ -133,9 +133,8 @@ describe('RuleSet Override Behavior', () => {
         });
 
         const outcome = rules.checkHandOutcome(state);
-        expect(outcome).not.toBeNull();
-        expect(outcome?.isDetermined).toBe(true);
-        expect(outcome?.decidedAtTrick).toBe(1);
+        expect(outcome.isDetermined).toBe(true);
+        expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
       });
 
       it('should continue if defending team wins tricks', () => {
@@ -156,7 +155,7 @@ describe('RuleSet Override Behavior', () => {
         });
 
         const outcome = rules.checkHandOutcome(state);
-        expect(outcome).toBeNull(); // Not determined yet
+        expect(outcome.isDetermined).toBe(false); // Not determined yet
       });
 
       it('should not apply early termination when not nello', () => {
@@ -175,7 +174,7 @@ describe('RuleSet Override Behavior', () => {
         });
 
         const outcome = rules.checkHandOutcome(state);
-        expect(outcome).toBeNull(); // Base: continue until all tricks
+        expect(outcome.isDetermined).toBe(false); // Base: continue until all tricks
       });
     });
   });
@@ -229,9 +228,8 @@ describe('RuleSet Override Behavior', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
-      expect(outcome?.reason).toContain('Defending team won');
+      expect(outcome.isDetermined).toBe(true);
+      expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won');
     });
 
     it('should end splash early if opponents win any trick', () => {
@@ -250,8 +248,7 @@ describe('RuleSet Override Behavior', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
     });
 
     it('should end sevens early if opponents win any trick', () => {
@@ -270,8 +267,7 @@ describe('RuleSet Override Behavior', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).not.toBeNull();
-      expect(outcome?.isDetermined).toBe(true);
+      expect(outcome.isDetermined).toBe(true);
     });
 
     it('should continue if bidding team wins tricks', () => {
@@ -297,7 +293,7 @@ describe('RuleSet Override Behavior', () => {
       });
 
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull(); // Not determined yet
+      expect(outcome.isDetermined).toBe(false); // Not determined yet
     });
   });
 
@@ -421,7 +417,7 @@ describe('RuleSet Override Behavior', () => {
 
       // Should use base behavior (no early termination)
       const outcome = rules.checkHandOutcome(state);
-      expect(outcome).toBeNull();
+      expect(outcome.isDetermined).toBe(false);
     });
   });
 });

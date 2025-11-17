@@ -416,9 +416,14 @@ class GameStoreImpl {
   }
 
   async startOneHand(seed?: number): Promise<void> {
+    // One-hand mode requires both ActionTransformer and RuleSet:
+    // - ActionTransformer: Automates bidding/trump and auto-executes score-hand
+    // - RuleSet: Transitions to 'one-hand-complete' phase instead of 'bidding'
+    // These must always be configured together for one-hand mode to work correctly
     const config: GameConfig = {
       playerTypes,
       actionTransformers: [{ type: 'one-hand', config: { seed } }],
+      enabledRuleSets: ['oneHand'],  // Required for terminal phase transition
       shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
     };
 
@@ -441,7 +446,8 @@ class GameStoreImpl {
   // One-hand state (derived)
   get oneHandState() {
     return derived(this.gameState, ($gameState) => {
-      const isComplete = $gameState.phase === 'scoring';
+      // Check for one-hand-complete phase (terminal state set by oneHandRuleSet)
+      const isComplete = $gameState.phase === 'one-hand-complete';
       const attempts = 1; // Could track this if needed
 
       return {

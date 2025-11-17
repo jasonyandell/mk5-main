@@ -211,7 +211,7 @@
 
 **WHEN (2 methods)** - Timing and completion:
 - `isTrickComplete(state): boolean` - Is current trick done (3 or 4 plays)
-- `checkHandOutcome(state): HandOutcome | null` - Early termination (nello/plunge win conditions)
+- `checkHandOutcome(state): HandOutcome` - Early termination - returns `{ determined: false }` to continue or `{ determined: true, reason }` when determined
 
 **HOW (2 methods)** - Game mechanics:
 - `getLedSuit(state, domino): LedSuit` - What suit is led (for follow-suit validation)
@@ -241,7 +241,7 @@
 
 1. **New terminal conditions**: Mode ends hand for new reasons
    - Added `checkHandOutcome` for nello/plunge early termination
-   - Pattern: Base returns null, RuleSets check conditions
+   - Pattern: Base returns `{ determined: false }`, RuleSets return `{ determined: true, reason }` when conditions met
 
 2. **New execution semantics**: Mode changes core mechanics
    - Added `isTrickComplete` to support 3-player tricks
@@ -367,6 +367,22 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 
 **Overrides**: Completely different scoring and led-suit logic
 
+#### OneHand RuleSet
+**Definition**: Single-hand game mode that ends after first hand instead of continuing.
+
+**Location**: `src/game/rulesets/oneHand.ts`
+
+**Overrides**:
+- `getPhaseAfterHandComplete`: Returns `'one-hand-complete'` instead of `'bidding'`
+
+**Purpose**: Provides terminal phase for one-hand game mode. Prevents dealing new hand after scoring completes.
+
+**Works with**: oneHandActionTransformer (automates bidding/trump selection)
+
+**Implementation Note**: Demonstrates GameRules pattern for custom phase transitions. See ADR-20251112-onehand-terminal-phase.md for full architectural details.
+
+**Related**: GameRuleSet, ActionTransformer, Terminal States, Game Modes
+
 ---
 
 ### RuleSet Composition
@@ -425,11 +441,18 @@ See [Extension Decision Tree in ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIP
 **Operation**: Filter - removes special bids from action list
 
 #### OneHand ActionTransformer
-**Definition**: Single hand game with scripted actions.
+**Definition**: Single hand game with scripted actions and auto-execution.
 
 **Location**: `src/game/action-transformers/oneHand.ts`
 
-**Operations**: Script bidding, replace score-hand with end-game
+**Operations**:
+- **Script**: Inject automated bidding sequence (3 passes, 1 bid for 30)
+- **Script**: Inject automated trump selection (suit 4)
+- **Annotate**: Auto-execute score-hand action for smooth UX
+
+**Works with**: oneHandRuleSet (handles phase transition to terminal state)
+
+**Separation of Concerns**: ActionTransformer handles automation (WHAT actions), RuleSet handles phase logic (HOW game flows)
 
 #### Hints ActionTransformer
 **Definition**: Add hint metadata to actions.
