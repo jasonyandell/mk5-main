@@ -1,4 +1,4 @@
-import type { GameState, Player, StateTransition, GameAction } from '../types';
+import type { GameState, Player, StateTransition, GameAction, Domino } from '../types';
 import type { ExecutionContext } from '../types/execution';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
@@ -7,6 +7,55 @@ import { getPlayerLeftOfDealer } from './players';
 import { analyzeSuits } from './suit-analysis';
 import { executeAction } from './actions';
 import { actionToId, actionToLabel } from './actions';
+import { InvalidDealOverrideError } from '../types/config';
+
+/**
+ * Validates initialHands override with clear error messages.
+ *
+ * @throws {InvalidDealOverrideError} If hands invalid
+ */
+function validateInitialHands(hands: Domino[][]): void {
+  // Check player count
+  if (hands.length !== 4) {
+    throw new InvalidDealOverrideError(
+      `Must have exactly 4 players, got ${hands.length}`,
+      { playerCount: hands.length }
+    );
+  }
+
+  // Check each player has 7 dominoes
+  hands.forEach((hand, i) => {
+    if (hand.length !== 7) {
+      throw new InvalidDealOverrideError(
+        `Player ${i} must have 7 dominoes, got ${hand.length}`,
+        { player: i, count: hand.length }
+      );
+    }
+  });
+
+  // Check for 28 unique dominoes
+  const allDominoes = hands.flat();
+  const ids = allDominoes.map(d => d.id);
+  const uniqueIds = new Set(ids);
+
+  if (uniqueIds.size !== 28) {
+    const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
+    throw new InvalidDealOverrideError(
+      `Must have 28 unique dominoes, got ${uniqueIds.size}`,
+      { uniqueCount: uniqueIds.size, duplicates: Array.from(new Set(duplicates)) }
+    );
+  }
+
+  // Verify all dominoes are valid (0-6 pips)
+  allDominoes.forEach((d, i) => {
+    if (d.high < 0 || d.high > 6 || d.low < 0 || d.low > 6) {
+      throw new InvalidDealOverrideError(
+        `Domino ${i} has invalid pips: [${d.high}, ${d.low}]`,
+        { index: i, domino: d }
+      );
+    }
+  });
+}
 
 /**
  * Creates the initial game state in setup phase
@@ -71,21 +120,42 @@ export function createSetupState(options?: {
 }
 
 /**
- * Creates the initial game state with fresh hands dealt ready for bidding
+ * Creates the initial game state with fresh hands dealt ready for bidding.
+ *
+ * Hand distribution priority:
+ * 1. options.dealOverrides.initialHands (deterministic, exact hands)
+ * 2. options.shuffleSeed (deterministic, shuffled)
+ * 3. Date.now() seed (random, unrepeatable)
+ *
+ * Note: When both shuffleSeed and initialHands are specified:
+ * - initialHands controls hand distribution
+ * - shuffleSeed is still stored for other randomness (AI, tie-breaking, etc.)
+ *
+ * @throws {InvalidDealOverrideError} If dealOverrides.initialHands invalid
  */
 export function createInitialState(options?: {
   shuffleSeed?: number,
   dealer?: number,
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
-  colorOverrides?: Record<string, string>
+  colorOverrides?: Record<string, string>,
+  dealOverrides?: { initialHands?: Domino[][] }
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
 
   // Generate initial seed for deterministic shuffling
   const shuffleSeed = options?.shuffleSeed ?? Date.now();
-  const hands = dealDominoesWithSeed(shuffleSeed);
+
+  // Hand distribution: dealOverrides.initialHands > seed > random
+  let hands: [Domino[], Domino[], Domino[], Domino[]];
+  if (options?.dealOverrides?.initialHands) {
+    validateInitialHands(options.dealOverrides.initialHands);
+    hands = options.dealOverrides.initialHands as [Domino[], Domino[], Domino[], Domino[]];
+  } else {
+    hands = dealDominoesWithSeed(shuffleSeed);
+  }
+
   const playerTypes = options?.playerTypes ?? ['human', 'ai', 'ai', 'ai'];
   const theme = options?.theme ?? 'business';
   const colorOverrides = options?.colorOverrides ?? {};
@@ -96,7 +166,8 @@ export function createInitialState(options?: {
       playerTypes,
       shuffleSeed,
       theme,
-      colorOverrides
+      colorOverrides,
+      ...(options?.dealOverrides && { dealOverrides: options.dealOverrides })
     },
 
     // Theme configuration (first-class citizen)

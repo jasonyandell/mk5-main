@@ -122,7 +122,8 @@ export class Room {
       playerTypes: config.playerTypes,
       ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {}),
       ...(config.theme !== undefined ? { theme: config.theme } : {}),
-      ...(config.colorOverrides !== undefined ? { colorOverrides: config.colorOverrides } : {})
+      ...(config.colorOverrides !== undefined ? { colorOverrides: config.colorOverrides } : {}),
+      ...(config.dealOverrides !== undefined ? { dealOverrides: config.dealOverrides } : {})
     });
 
     // Call createMultiplayerGame()

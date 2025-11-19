@@ -10,11 +10,11 @@
  * - Must play domino closest to 7 total pips (replaces follow-suit)
  * - Must win all tricks (early termination)
  * - Bidder leads first trick
- * - Winner leads next trick
+ * - Winner leads next trick (standard Texas 42, handled by core)
  */
 
 import type { GameRuleSet } from './types';
-import { checkMustWinAllTricks, getPlayerTeam } from './helpers';
+import { checkTrickBasedHandOutcome, getPlayerTeam } from './helpers';
 import { BID_TYPES } from '../constants';
 
 export const sevensRuleSet: GameRuleSet = {
@@ -46,22 +46,6 @@ export const sevensRuleSet: GameRuleSet = {
       if (trump.type !== 'sevens') return prev;
       // Sevens: bidder leads first trick (standard behavior)
       return trumpSelector;
-    },
-
-    // Winner of trick leads next (not just team leader)
-    getNextPlayer: (state, _currentPlayer, prev) => {
-      if (state.trump?.type !== 'sevens') return prev;
-
-      // If trick just completed, winner leads next trick
-      if (state.currentTrick.length === 0 && state.tricks.length > 0) {
-        const lastTrick = state.tricks[state.tricks.length - 1];
-        if (lastTrick && lastTrick.winner !== undefined) {
-          return lastTrick.winner; // Winner leads
-        }
-      }
-
-      // During trick, use base rotation (no hardcoded player count)
-      return prev;
     },
 
     calculateScore: (state, prev) => {
@@ -114,11 +98,8 @@ export const sevensRuleSet: GameRuleSet = {
     // Early termination on lost trick
     checkHandOutcome: (state, prev) => {
       if (state.trump?.type !== 'sevens') return prev;
-
-      // For sevens: ALWAYS use trick-based logic (ignore prev)
-      // Sevens is effectively a different game - sole authority on hand outcome
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
-      return checkMustWinAllTricks(state, biddingTeam, true);
+      return checkTrickBasedHandOutcome(state, biddingTeam, true);
     },
 
     // ============================================

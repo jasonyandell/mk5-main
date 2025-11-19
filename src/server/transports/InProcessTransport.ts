@@ -43,12 +43,10 @@ export class InProcessTransport implements Transport {
        * Client sends a message through this method.
        * Transport routes it to Room.
        *
-       * CRITICAL: Uses queueMicrotask to break synchronous call chain.
-       * Without this, consensus actions cause stack overflow:
-       * - Consensus actions (complete-trick, score-hand, redeal) have no player field
-       * - All AI clients see them as available and execute simultaneously
-       * - Synchronous delivery creates exponential broadcast loop
-       * - Async delivery ensures messages are processed sequentially
+       * CRITICAL: Uses queueMicrotask to match async behavior of real transports.
+       * Real transports (WebSocket, Cloudflare Workers) are inherently async.
+       * This ensures InProcessTransport behaves identically to production transports,
+       * preventing bugs that only surface in production.
        */
       send: (message: ClientMessage) => {
         queueMicrotask(() => {
@@ -102,22 +100,32 @@ export class InProcessTransport implements Transport {
   /**
    * Room calls this to send a message to a specific client.
    * We look up the client's registered handler and call it.
+   *
+   * CRITICAL: Uses queueMicrotask to match async behavior of real transports.
+   * Ensures consistent timing behavior across all transport implementations.
    */
   send(clientId: string, message: ServerMessage): void {
-    const handler = this.clients.get(clientId);
-    if (handler) {
-      handler(message);
-    }
+    queueMicrotask(() => {
+      const handler = this.clients.get(clientId);
+      if (handler) {
+        handler(message);
+      }
+    });
   }
 
   /**
    * Broadcast a message to all connected clients.
    * Called by Room when it needs to notify everyone.
+   *
+   * CRITICAL: Uses queueMicrotask to match async behavior of real transports.
+   * Ensures consistent timing behavior across all transport implementations.
    */
   broadcast(message: ServerMessage): void {
-    for (const handler of this.clients.values()) {
-      handler(message);
-    }
+    queueMicrotask(() => {
+      for (const handler of this.clients.values()) {
+        handler(message);
+      }
+    });
   }
 
   /**

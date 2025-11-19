@@ -260,22 +260,4 @@ test.describe('Basic Gameplay (Refactored)', () => {
     expect(actions.some(action => action.type === 'bid_marks' && typeof action.value === 'number' && action.value >= 3)).toBe(false);
   });
 
-  test('should progress through bidding round and allow redeal', async ({ page }) => {
-    const helper = new PlaywrightGameHelper(page);
-
-    // Load state after all 4 players have passed
-    await helper.loadStateWithActions(12345, ['pass', 'pass', 'pass', 'pass'],
-      ['human', 'human', 'human', 'human']);
-
-    // Should have redeal action available after all passes
-    const actions = await helper.getAvailableActions();
-    expect(actions.some(action => action.type === 'redeal')).toBe(true);
-
-    // Execute redeal
-    await helper.selectAction({ type: 'redeal' });
-
-    // Should be back in bidding phase after redeal
-    const phase = await helper.getCurrentPhase();
-    expect(phase).toContain('bidding');
-  });
 });

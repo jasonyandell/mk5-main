@@ -551,7 +551,7 @@ export class GameTestHelper {
     let state = initialState;
 
     // Process consensus
-    state = await this.processSequentialConsensus(state, 'scoreHand', humanPlayers);
+    state = await GameTestHelper.processSequentialConsensus(state, 'scoreHand', humanPlayers);
 
     // Score the hand if all agreed
     if (state.consensus.scoreHand.size === 4) {

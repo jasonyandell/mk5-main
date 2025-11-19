@@ -13,7 +13,7 @@
 
 import type { GameRuleSet } from './types';
 import type { LedSuit } from '../types';
-import { getPartner, getPlayerTeam, checkMustWinAllTricks } from './helpers';
+import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome } from './helpers';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { BID_TYPES } from '../constants';
 
@@ -96,13 +96,8 @@ export const nelloRuleSet: GameRuleSet = {
     // Hand ends if bidder wins any trick
     checkHandOutcome: (state, prev) => {
       if (state.trump?.type !== 'nello') return prev;
-      if (prev.isDetermined) return prev; // Already ended
-
-      // Use shared helper: bidding team must not win any tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
-      const outcome = checkMustWinAllTricks(state, biddingTeam, false);
-
-      return outcome.isDetermined ? outcome : prev;
+      return checkTrickBasedHandOutcome(state, biddingTeam, false);
     },
 
     // Doubles form own suit (suit 7)

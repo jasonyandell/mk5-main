@@ -418,15 +418,14 @@ describe('Nello RuleSet Rules', () => {
       });
       const trick: Play[] = [
         { player: 0, domino: { id: '2-2', high: 2, low: 2 } }, // Double leads suit 7
-        { player: 1, domino: { id: '5-5', high: 5, low: 5 } }, // Double, but doesn't "follow suit 7" (no 7 in domino)
+        { player: 1, domino: { id: '5-5', high: 5, low: 5 } }, // Double follows suit 7, higher value
         { player: 3, domino: { id: '6-0', high: 6, low: 0 } }  // Non-double, doesn't follow
       ];
 
       const winner = rules.calculateTrickWinner(state, trick);
-      // In nello: doubles lead suit 7, but no standard domino "follows" suit 7
-      // (would need to contain the number 7, which doesn't exist in standard sets)
-      // So the first player wins by default
-      expect(winner).toBe(0);
+      // In nello: doubles lead suit 7, other doubles follow suit 7
+      // Player 1 (5-5) follows suit and has higher value than player 0 (2-2)
+      expect(winner).toBe(1);
     });
   });
 

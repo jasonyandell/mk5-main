@@ -602,6 +602,8 @@ describe('Sevens RuleSet Rules', () => {
         trump: { type: 'sevens' },
         winningBidder: 0,
         currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
+        currentPlayer: 2, // Partner leads next trick (engine sets this to winner)
+        currentTrick: [], // Starting new trick
         tricks: [
           {
             plays: [
@@ -627,8 +629,9 @@ describe('Sevens RuleSet Rules', () => {
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(false); // Not determined, continue playing
 
-      // Partner (player 2) should lead next trick
-      expect(rules.getNextPlayer(state, 0)).toBe(2);
+      // Verify partner (trick winner) leads next trick
+      // (Engine sets currentPlayer to winner in executeCompleteTrick)
+      expect(state.currentPlayer).toBe(2);
     });
   });
 });

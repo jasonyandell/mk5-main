@@ -12,7 +12,7 @@ import type { GameRuleSet } from './types';
 import {
   getPartner,
   getPlayerTeam,
-  checkMustWinAllTricks,
+  checkTrickBasedHandOutcome,
   getHighestMarksBid,
   countDoubles
 } from './helpers';
@@ -105,13 +105,8 @@ export const plungeRuleSet: GameRuleSet = {
     // Hand ends if opponents win any trick
     checkHandOutcome: (state, prev) => {
       if (state.currentBid?.type !== 'plunge') return prev;
-      if (prev.isDetermined) return prev;
-
-      // Use shared helper: bidding team must win all tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
-      const outcome = checkMustWinAllTricks(state, biddingTeam, true);
-
-      return outcome.isDetermined ? outcome : prev;
+      return checkTrickBasedHandOutcome(state, biddingTeam, true);
     }
   }
 };

@@ -15,7 +15,7 @@
 
 import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
 import type { GameRuleSet, GameRules } from './types';
-import { getDominoValue, getTrumpSuit } from '../core/dominoes';
+import { getDominoValue, getTrumpSuit, doesDominoFollowSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
@@ -199,13 +199,6 @@ function getBidValue(bid: Bid): number {
 }
 
 /**
- * Checks if a domino follows the led suit (contains the led suit number)
- */
-function dominoFollowsSuit(domino: { high: number; low: number }, ledSuit: LedSuit): boolean {
-  return domino.high === ledSuit || domino.low === ledSuit;
-}
-
-/**
  * Checks if a domino is trump based on numeric trump value
  */
 function isDominoTrump(domino: { high: number; low: number }, numericTrump: number | null): boolean {
@@ -366,8 +359,15 @@ export const baseRuleSet: GameRuleSet = {
      * - Bidding team cannot possibly reach their bid
      * - Defending team has set the bid
      * - All 7 tricks complete
+     *
+     * Threading: Respects prev determination from special contract rulesets
      */
-    checkHandOutcome(state: GameState) {
+    checkHandOutcome(state: GameState, prev?: import('./types').HandOutcome) {
+      // Respect previous ruleset's determination (special contracts override)
+      if (prev?.isDetermined) {
+        return prev;
+      }
+
       // First check if all tricks complete
       if (state.tricks.length >= GAME_CONSTANTS.TRICKS_PER_HAND) {
         return {
@@ -376,7 +376,9 @@ export const baseRuleSet: GameRuleSet = {
         };
       }
 
-      // Then check for early termination based on score
+      // Then check for standard early termination based on score
+      // This only applies to standard trumps (suit, doubles, no-trump)
+      // Special contracts (nello, sevens, splash, plunge) handle their own termination
       return checkStandardHandOutcome(state);
     },
 
@@ -456,7 +458,7 @@ export const baseRuleSet: GameRuleSet = {
         }
         // Both non-trump - must follow suit and higher value wins
         else if (!playIsTrump && !winningIsTrump &&
-                 ledSuit >= 0 && dominoFollowsSuit(play.domino, ledSuit as LedSuit) &&
+                 ledSuit >= 0 && doesDominoFollowSuit(play.domino, ledSuit, state.trump) &&
                  playValue > winningValue) {
           winningPlay = play;
           winningValue = playValue;

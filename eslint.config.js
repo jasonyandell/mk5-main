@@ -16,6 +16,7 @@ export default [js.configs.recommended, {
       window: 'readonly',
       setTimeout: 'readonly',
       clearTimeout: 'readonly',
+      queueMicrotask: 'readonly',
       CSSStyleRule: 'readonly',
       URLSearchParams: 'readonly',
       URL: 'readonly',

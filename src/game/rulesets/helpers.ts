@@ -90,6 +90,53 @@ export function checkMustWinAllTricks(
 }
 
 /**
+ * Check hand outcome for trick-based special contracts.
+ *
+ * Used by: sevens, nello, plunge, splash
+ *
+ * Trick-based contracts have different termination logic than point-based contracts:
+ * - Trick-based: Outcome determined by which team wins tricks (not points)
+ * - Point-based: Outcome determined by points scored (standard marks bids)
+ *
+ * This is why trick-based contracts can't use checkStandardHandOutcome() from
+ * handOutcome.ts - that function uses point-based logic (teamScores, remainingPoints)
+ * which doesn't apply to contracts where points are irrelevant.
+ *
+ * Pattern:
+ * 1. Check for early termination via checkMustWinAllTricks()
+ * 2. Check if all 7 tricks are complete
+ * 3. Return not determined if neither condition is met
+ *
+ * @param state Current game state
+ * @param biddingTeam Team ID (0 or 1) of the bidding team
+ * @param mustWin true for "must win all tricks", false for "must win none"
+ * @returns HandOutcome
+ */
+export function checkTrickBasedHandOutcome(
+  state: GameState,
+  biddingTeam: number,
+  mustWin: boolean
+): HandOutcome {
+  // Check for early termination based on trick winners
+  const earlyTermination = checkMustWinAllTricks(state, biddingTeam, mustWin);
+
+  if (earlyTermination.isDetermined) {
+    return earlyTermination;
+  }
+
+  // Check if all 7 tricks complete
+  if (state.tricks.length >= 7) {
+    return {
+      isDetermined: true,
+      reason: 'All tricks played'
+    };
+  }
+
+  // Not determined yet - continue playing
+  return { isDetermined: false };
+}
+
+/**
  * Get highest marks bid value from bids so far.
  *
  * Used by: plunge, splash to determine automatic bid value.

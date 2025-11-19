@@ -16,7 +16,7 @@ import type { GameRuleSet } from './types';
 import {
   getPartner,
   getPlayerTeam,
-  checkMustWinAllTricks,
+  checkTrickBasedHandOutcome,
   countDoubles,
   getHighestMarksBid
 } from './helpers';
@@ -107,13 +107,8 @@ export const splashRuleSet: GameRuleSet = {
     // Hand ends if opponents win any trick
     checkHandOutcome: (state, prev) => {
       if (state.currentBid?.type !== 'splash') return prev;
-      if (prev.isDetermined) return prev;
-
-      // Use shared helper: bidding team must win all tricks
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
-      const outcome = checkMustWinAllTricks(state, biddingTeam, true);
-
-      return outcome.isDetermined ? outcome : prev;
+      return checkTrickBasedHandOutcome(state, biddingTeam, true);
     }
   }
 };

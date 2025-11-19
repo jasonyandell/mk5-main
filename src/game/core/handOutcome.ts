@@ -41,9 +41,10 @@ function calculateRemainingPoints(state: GameState): number {
   
   // Add remaining tricks (1 point each)
   const tricksPlayed = state.tricks.length;
-  const remainingTricks = 7 - tricksPlayed;
+  const tricksInProgress = state.currentTrick.length > 0 ? 1 : 0;
+  const remainingTricks = 7 - tricksPlayed - tricksInProgress;
   remainingPoints += remainingTricks;
-  
+
   return remainingPoints;
 }
 
@@ -118,9 +119,9 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     }
     
     case 'marks': {
-      // Marks bid - bidding team must win all 42 points
-      // NOTE: Nello early termination is now handled by nello ruleset's checkHandOutcome
-      // (nello is a trump selection, not a bid type)
+      // Standard marks bid logic (suit/doubles/no-trump trump)
+      // Special contracts override via their rulesets
+
       if (defendingTeamScore > 0) {
         return {
           isDetermined: true,
