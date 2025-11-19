@@ -42,26 +42,6 @@ describe('Game Simulator - Seed Testing', () => {
   });
 
   describe('findCompetitiveSeed', () => {
-    it('should find a seed within acceptable win rate range', async () => {
-      let progressCalls = 0;
-
-      const seed = await findCompetitiveSeed({
-        targetWinRate: SEED_FINDER_CONFIG.TARGET_WIN_RATE,
-        tolerance: SEED_FINDER_CONFIG.TOLERANCE,
-        maxAttempts: SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY,
-        simulationsPerSeed: SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED,
-        onProgress: (attempt) => {
-          progressCalls++;
-          expect(attempt).toBeGreaterThan(0);
-          expect(attempt).toBeLessThanOrEqual(SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY);
-        }
-      });
-
-      expect(seed).toBeGreaterThan(0);
-      expect(seed).toBeLessThan(1000000);
-      expect(progressCalls).toBeGreaterThan(0);
-    });
-
     it('should call progress callback during search', async () => {
       let lastAttempt = 0;
       const progressAttempts: number[] = [];

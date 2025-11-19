@@ -5,7 +5,7 @@
 **IMPORTANT**: This project uses git worktrees. Always use `bd --no-daemon` to avoid committing/pushing to the wrong branch:
 - ✅ `bd --no-daemon ready`
 - ✅ `bd --no-daemon show <issue-id>`
-- ✅ `bd --no-daemon create ...`
+- ✅ `bd --no-daemon create --title "Title" --description "Details" --priority 1 --type task`
 - ❌ `bd ready` (daemon can commit to wrong branch in worktree setup)
 
 # North Star
