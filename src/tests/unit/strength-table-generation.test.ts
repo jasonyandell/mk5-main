@@ -162,12 +162,13 @@ describe('Strength Table Generation Verification', () => {
       }
     }
     
+    expect(totalChecks).toEqual(455);
+
     if (mismatches.length > 0) {
       console.error('Mismatches found:', mismatches);
     }
     
     expect(mismatches).toHaveLength(0);
-    console.log(`✅ Verified ${totalChecks} entries successfully`);
   });
 
   it('should handle edge cases correctly', () => {

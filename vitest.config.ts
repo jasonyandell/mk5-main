@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     testTimeout: 60_000,
-    reporters: ['default', 'verbose'],
+    reporters: ['dot'],
     include: ['src/tests/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'json', 'html'],
