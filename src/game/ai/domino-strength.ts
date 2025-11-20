@@ -6,9 +6,9 @@
  */
 
 import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone, RegularSuit } from '../types';
-import { DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../types';
+import { PLAYED_AS_TRUMP } from '../types';
 import { getTrickWinner } from '../core/rules';
-import { getTrumpSuit, isTrump, trumpToNumber } from '../core/dominoes';
+import { getTrumpSuit, isTrump, trumpToNumber, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
 import { getDominoStrength } from './strength-table.generated';
 import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
 
@@ -29,9 +29,9 @@ export interface DominoStrength {
  */
 export function getPlayableSuits(domino: Domino, trump: TrumpSelection): LedSuit[] {
   const trumpSuit = getTrumpSuit(trump);
-  
+
   // When doubles are trump
-  if (trumpSuit === DOUBLES_AS_TRUMP) {
+  if (isDoublesTrump(trumpSuit)) {
     if (domino.high === domino.low) {
       return [7];  // Doubles can only be played as doubles suit
     }
@@ -41,11 +41,11 @@ export function getPlayableSuits(domino: Domino, trump: TrumpSelection): LedSuit
     suits.add(domino.low as RegularSuit);
     return Array.from(suits);
   }
-  
+
   // When regular suit is trump
-  if (trumpSuit >= 0 && trumpSuit <= 6) {
+  if (isRegularSuitTrump(trumpSuit)) {
     // Trump dominoes can only be played as trump
-    if (domino.high === trumpSuit || domino.low === trumpSuit) {
+    if (dominoHasSuit(domino, trumpSuit)) {
       return [trumpSuit as RegularSuit];
     }
     // Non-trump doubles can only be played as their pip
@@ -158,9 +158,9 @@ function canFollowSuit(domino: Domino, suit: LedSuit, trump: TrumpSelection): bo
   if (isTrump(domino, trump)) {
     return true;
   }
-  
+
   // Non-trump dominoes can follow if they contain the suit
-  return domino.high === suit || domino.low === suit;
+  return dominoHasSuit(domino, suit);
 }
 
 /**
@@ -291,10 +291,10 @@ export function orientDomino(
   
   // Rule 2: Non-trump dominoes show context suit first (if specified)
   if (context.suit !== null && context.suit >= 0) {
-    if (domino.high === context.suit && domino.low !== context.suit) {
-      return `${domino.high}-${domino.low}`;
-    } else if (domino.low === context.suit && domino.high !== context.suit) {
-      return `${domino.low}-${domino.high}`;
+    const nonSuitPip = getNonSuitPip(domino, context.suit);
+    if (nonSuitPip !== null) {
+      // Domino has context suit on one pip - show suit first
+      return `${context.suit}-${nonSuitPip}`;
     }
   }
   

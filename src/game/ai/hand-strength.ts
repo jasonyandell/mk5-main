@@ -8,7 +8,7 @@
 import type { Domino, TrumpSelection, SuitAnalysis } from '../types';
 import { analyzeHand, createMinimalAnalysisState } from './utilities';
 import { getStrongestSuits } from '../core/suit-analysis';
-import { countDoubles } from '../core/dominoes';
+import { countDoubles, dominoHasSuit } from '../core/dominoes';
 import {
   calculateControlFactor,
   calculateTrumpFactor,
@@ -53,7 +53,7 @@ export function determineBestTrump(hand: Domino[], suitAnalysis?: SuitAnalysis):
     for (const domino of hand) {
       // Count each suit (0-6) - note doubles count for their suit once
       for (let suit = 0; suit <= 6; suit++) {
-        if (domino.high === suit || domino.low === suit) {
+        if (dominoHasSuit(domino, suit)) {
           suitCounts[suit] = (suitCounts[suit] || 0) + 1;
         }
       }

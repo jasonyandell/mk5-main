@@ -15,7 +15,7 @@
 
 import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
 import type { GameRuleSet, GameRules } from './types';
-import { getDominoValue, getTrumpSuit, doesDominoFollowSuit } from '../core/dominoes';
+import { getDominoValue, getTrumpSuit, doesDominoFollowSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
@@ -394,14 +394,14 @@ export const baseRuleSet: GameRuleSet = {
       const trumpSuit = getTrumpSuit(state.trump);
 
       // When doubles are trump, doubles lead suit 7
-      if (trumpSuit === DOUBLES_AS_TRUMP) {
+      if (isDoublesTrump(trumpSuit)) {
         return domino.high === domino.low ? DOUBLES_AS_TRUMP : domino.high as LedSuit;
       }
 
       // When a regular suit is trump (0-6)
-      if (trumpSuit >= 0 && trumpSuit <= 6) {
+      if (isRegularSuitTrump(trumpSuit)) {
         // Trump dominoes lead trump suit
-        if (domino.high === trumpSuit || domino.low === trumpSuit) {
+        if (dominoHasSuit(domino, trumpSuit)) {
           return trumpSuit as LedSuit;
         }
       }

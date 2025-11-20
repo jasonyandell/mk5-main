@@ -2,6 +2,7 @@
   import Domino from './Domino.svelte';
   import { parseDomino } from '../utils/dominoHelpers';
   import type { Domino as DominoType } from '../../game/types';
+  import { dominoHasSuit } from '../../game/core/dominoes';
 
   interface Props {
     hand: {
@@ -30,7 +31,7 @@
     };
     const suit = suitMap[trumpStr];
     if (suit !== undefined) {
-      return domino.high === suit || domino.low === suit;
+      return dominoHasSuit(domino, suit);
     }
     return false;
   }

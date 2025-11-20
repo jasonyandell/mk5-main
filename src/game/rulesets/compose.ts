@@ -10,9 +10,8 @@
 
 import type { GameRules, GameRuleSet } from './types';
 import type { GameState, GameAction, Bid, TrumpSelection, Domino, RegularSuit, GamePhase } from '../types';
-import { DOUBLES_AS_TRUMP } from '../types';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
-import { getLedSuit as getLedSuitCore, getTrumpSuit } from '../core/dominoes';
+import { getLedSuit as getLedSuitCore, getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoLacksSuit } from '../core/dominoes';
 import { calculateRoundScore as calculateScoreBase } from '../core/scoring';
 import { BID_TYPES } from '../constants';
 
@@ -104,11 +103,11 @@ function isValidPlayBase(
   // Filter out trump dominoes - they can't follow non-trump suits
   const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
     // If trump is a regular suit, dominoes containing that suit are trump
-    if (trumpSuit >= 0 && trumpSuit <= 6) {
-      return d.high !== trumpSuit && d.low !== trumpSuit;
+    if (isRegularSuitTrump(trumpSuit)) {
+      return dominoLacksSuit(d, trumpSuit);
     }
     // If doubles are trump, doubles can't follow regular suits
-    if (trumpSuit === DOUBLES_AS_TRUMP) {
+    if (isDoublesTrump(trumpSuit)) {
       return d.high !== d.low;
     }
     return true;
@@ -177,11 +176,11 @@ function getValidPlaysBase(
   // Filter out trump dominoes - they can't follow non-trump suits
   const nonTrumpSuitDominoes = suitDominoes.filter(d => {
     // If trump is a regular suit, dominoes containing that suit are trump
-    if (trumpSuit >= 0 && trumpSuit <= 6) {
-      return d.high !== trumpSuit && d.low !== trumpSuit;
+    if (isRegularSuitTrump(trumpSuit)) {
+      return dominoLacksSuit(d, trumpSuit);
     }
     // If doubles are trump, doubles can't follow regular suits
-    if (trumpSuit === DOUBLES_AS_TRUMP) {
+    if (isDoublesTrump(trumpSuit)) {
       return d.high !== d.low;
     }
     return true;

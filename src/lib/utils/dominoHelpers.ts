@@ -1,6 +1,7 @@
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
 import { PLAYED_AS_TRUMP, BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
+import { dominoHasSuit } from '../../game/core/dominoes';
 
 export function parseDomino(dominoStr: string): Domino {
   const parts = dominoStr.split('-').map(Number);
@@ -93,7 +94,7 @@ function getPlayContexts(domino: Domino, trump: TrumpSelection): LedSuitOrNone[]
 function isTrump(domino: Domino, trump: TrumpSelection): boolean {
   if (trump.type === 'no-trump') return false;
   if (trump.type === 'doubles') return domino.high === domino.low;
-  return domino.high === trump.suit || domino.low === trump.suit;
+  return dominoHasSuit(domino, trump.suit!);
 }
 
 export function computeExternalBeaters(leftoverDominoes: string[], bestTrumpStr: string): string[] {

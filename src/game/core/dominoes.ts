@@ -82,6 +82,95 @@ export function trumpToNumber(trump: TrumpSelection): number | null {
   return suit === TRUMP_NOT_SELECTED ? null : suit;
 }
 
+// ============================================================================
+// Trump Validation Utilities
+// ============================================================================
+
+/**
+ * Checks if a trump suit value represents a regular suit (0-6)
+ *
+ * Type predicate allows TypeScript to narrow the type to RegularSuit
+ *
+ * @example
+ * if (isRegularSuitTrump(trumpSuit)) {
+ *   // TypeScript knows trumpSuit is RegularSuit (0-6)
+ *   const ledSuit = trumpSuit as LedSuit;
+ * }
+ */
+export function isRegularSuitTrump(trumpSuit: TrumpSuitOrNone): trumpSuit is RegularSuit {
+  return trumpSuit >= 0 && trumpSuit <= 6;
+}
+
+/**
+ * Checks if trump is the special "doubles as trump" value (7)
+ */
+export function isDoublesTrump(trumpSuit: TrumpSuitOrNone): boolean {
+  return trumpSuit === DOUBLES_AS_TRUMP;
+}
+
+/**
+ * Checks if trump is the special "no trump" value (8)
+ */
+export function isNoTrump(trumpSuit: TrumpSuitOrNone): boolean {
+  return trumpSuit === NO_TRUMP;
+}
+
+/**
+ * Checks if trump has been selected (not TRUMP_NOT_SELECTED/-1)
+ */
+export function isTrumpSelected(trumpSuit: TrumpSuitOrNone): boolean {
+  return trumpSuit !== TRUMP_NOT_SELECTED;
+}
+
+// ============================================================================
+// Domino Suit Utilities
+// ============================================================================
+
+/**
+ * Checks if a domino contains a specific suit (pip value)
+ *
+ * This is a simple pip check - does NOT account for trump or special rules.
+ * For game logic that respects trump/doubles, use doesDominoFollowSuit instead.
+ *
+ * @example
+ * dominoHasSuit({ high: 6, low: 4 }, 6) // true
+ * dominoHasSuit({ high: 6, low: 4 }, 5) // false
+ */
+export function dominoHasSuit(domino: Domino, suit: number): boolean {
+  return domino.high === suit || domino.low === suit;
+}
+
+/**
+ * Checks if a domino does NOT contain a specific suit
+ *
+ * Useful for filtering out trump dominoes from suit collections.
+ * Inverse of dominoHasSuit.
+ *
+ * @example
+ * const nonTrumpDominoes = suitDominoes.filter(d => dominoLacksSuit(d, trumpSuit));
+ */
+export function dominoLacksSuit(domino: Domino, suit: number): boolean {
+  return domino.high !== suit && domino.low !== suit;
+}
+
+/**
+ * Gets the non-suit pip value when domino has suit on only one pip
+ *
+ * Returns null if domino doesn't have the suit or has it on both pips.
+ * Useful for strength calculations where the "other" pip matters.
+ *
+ * @example
+ * getNonSuitPip({ high: 6, low: 4 }, 6) // 4 (high is 6, so return low)
+ * getNonSuitPip({ high: 6, low: 4 }, 4) // 6 (low is 4, so return high)
+ * getNonSuitPip({ high: 6, low: 6 }, 6) // null (both pips are 6)
+ * getNonSuitPip({ high: 6, low: 4 }, 5) // null (doesn't have suit 5)
+ */
+export function getNonSuitPip(domino: Domino, suit: number): number | null {
+  if (domino.high === suit && domino.low !== suit) return domino.low;
+  if (domino.low === suit && domino.high !== suit) return domino.high;
+  return null;
+}
+
 /**
  * Gets what suit a domino leads when played
  */
@@ -89,7 +178,7 @@ export function getLedSuit(domino: Domino, trump: TrumpSelection): LedSuit {
   const trumpSuit = getTrumpSuit(trump);
 
   // When doubles are trump, doubles lead suit 7
-  if (trumpSuit === DOUBLES_AS_TRUMP) {
+  if (isDoublesTrump(trumpSuit)) {
     if (domino.high === domino.low) {
       return 7;  // Doubles lead the doubles suit
     }
@@ -98,9 +187,9 @@ export function getLedSuit(domino: Domino, trump: TrumpSelection): LedSuit {
   }
 
   // When a regular suit is trump (0-6)
-  if (trumpSuit >= 0 && trumpSuit <= 6) {
+  if (isRegularSuitTrump(trumpSuit)) {
     // Trump dominoes lead trump
-    if (domino.high === trumpSuit || domino.low === trumpSuit) {
+    if (dominoHasSuit(domino, trumpSuit)) {
       return trumpSuit as RegularSuit;
     }
     // Non-trump dominoes lead their natural suit
@@ -144,7 +233,7 @@ export function getDominoSuit(domino: Domino, trump: TrumpSelection): LedSuit {
  */
 export function doesDominoFollowSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
   const trumpSuit = getTrumpSuit(trump);
-  const doublesAreSuits = trumpSuit === DOUBLES_AS_TRUMP || trump.type === 'nello';
+  const doublesAreSuits = isDoublesTrump(trumpSuit) || trump.type === 'nello';
 
   // Case 1: Doubles led (Suit 7)
   if (ledSuit === 7) {
@@ -160,7 +249,7 @@ export function doesDominoFollowSuit(domino: Domino, ledSuit: number, trump: Tru
   }
 
   // Otherwise, check if domino contains the suit
-  return domino.high === ledSuit || domino.low === ledSuit;
+  return dominoHasSuit(domino, ledSuit);
 }
 
 /**
@@ -175,18 +264,18 @@ export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: Trum
  * Gets the value of a domino for trick-taking purposes
  */
 export function getDominoValue(domino: Domino, trump: TrumpSelection): number {
-  const numericTrump = trumpToNumber(trump);
+  const trumpSuit = getTrumpSuit(trump);
 
-  // Special case: doubles trump (when numericTrump === 7)
-  if (numericTrump === 7 && domino.high === domino.low) {
+  // Special case: doubles trump (when trumpSuit === 7)
+  if (isDoublesTrump(trumpSuit) && domino.high === domino.low) {
     // All doubles are trump, ranked from 6-6 down to 0-0
     return 200 + domino.high;
   }
 
   // Check if this domino is trump
-  if (numericTrump !== null && numericTrump >= 0 && numericTrump <= 6) {
-    // Regular suit trump (when numericTrump 0-6)
-    if (domino.high === numericTrump || domino.low === numericTrump) {
+  if (isRegularSuitTrump(trumpSuit)) {
+    // Regular suit trump (when trumpSuit 0-6)
+    if (dominoHasSuit(domino, trumpSuit)) {
       // Dominoes containing the trump suit are trump
       // Doubles of the trump suit rank highest
       if (domino.high === domino.low) {
@@ -220,12 +309,12 @@ export function isDouble(domino: Domino): boolean {
 export function isTrump(domino: Domino, trump: TrumpSelection): boolean {
   const trumpSuit = getTrumpSuit(trump);
 
-  if (trumpSuit === DOUBLES_AS_TRUMP) {
+  if (isDoublesTrump(trumpSuit)) {
     return domino.high === domino.low;  // All doubles are trump
   }
 
-  if (trumpSuit >= 0 && trumpSuit <= 6) {
-    return domino.high === trumpSuit || domino.low === trumpSuit;
+  if (isRegularSuitTrump(trumpSuit)) {
+    return dominoHasSuit(domino, trumpSuit);
   }
 
   return false;  // No trump or no-trump game

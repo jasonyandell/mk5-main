@@ -5,6 +5,7 @@
   import { parseDomino, computeExternalBeaters } from './lib/utils/dominoHelpers';
   import partitionsData from '../data/3hand-partitions.json';
   import type { Domino as DominoType } from './game/types';
+  import { dominoHasSuit } from './game/core/dominoes';
 
   interface Partition {
     hands: Array<{
@@ -41,7 +42,7 @@
     };
     const suit = suitMap[trumpStr];
     if (suit !== undefined) {
-      return domino.high === suit || domino.low === suit;
+      return dominoHasSuit(domino, suit);
     }
     return false;
   }

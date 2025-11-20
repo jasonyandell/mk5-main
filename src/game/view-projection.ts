@@ -2,6 +2,7 @@ import type { FilteredGameState, StateTransition, Domino, Play, Trick, TrumpSele
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from './types';
 import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
+import { dominoHasSuit } from './core/dominoes';
 
 // LED suit display names (index corresponds to LedSuit type)
 const LED_SUIT_NAMES: Record<LedSuit, string> = {
@@ -360,14 +361,14 @@ function getDominoTooltip(
   if (isPlayable) {
     if (leadSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
       return `${dominoStr} - Double, follows ${ledSuitName}`;
-    } else if (leadSuit !== DOUBLES_AS_TRUMP && (domino.high === leadSuit || domino.low === leadSuit)) {
+    } else if (leadSuit !== DOUBLES_AS_TRUMP && dominoHasSuit(domino, leadSuit)) {
       return `${dominoStr} - Has ${ledSuitName}, follows suit`;
     } else {
       if (gameState.trump.type === 'doubles' && domino.high === domino.low) {
         return `${dominoStr} - Trump (double)`;
       } else if (gameState.trump.type === 'suit' &&
                 gameState.trump.suit !== undefined &&
-                (domino.high === gameState.trump.suit || domino.low === gameState.trump.suit)) {
+                dominoHasSuit(domino, gameState.trump.suit)) {
         return `${dominoStr} - Trump`;
       } else {
         return `${dominoStr} - Can't follow ${ledSuitName}`;
