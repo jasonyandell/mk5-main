@@ -5,11 +5,19 @@
  * Used by both AI strategies and testing scripts.
  */
 
-import type { Domino, GameState, TrumpSelection, SuitAnalysis } from '../types';
-import { NO_BIDDER, NO_LEAD_SUIT } from '../types';
-import { analyzeHand } from './utilities';
+import type { Domino, TrumpSelection, SuitAnalysis } from '../types';
+import { analyzeHand, createMinimalAnalysisState } from './utilities';
 import { getStrongestSuits } from '../core/suit-analysis';
 import { countDoubles } from '../core/dominoes';
+import {
+  calculateControlFactor,
+  calculateTrumpFactor,
+  calculateCountSafety,
+  calculateDefensiveFactor,
+  calculateSynergyMultiplier,
+  hasTopTrumpDomino,
+  getOffSuitDoubles
+} from './hand-strength-components';
 
 /**
  * Special score for laydown hands (guaranteed win)
@@ -81,129 +89,56 @@ export function determineBestTrump(hand: Domino[], suitAnalysis?: SuitAnalysis):
  * @returns Strength score (0-150 for normal hands, 999 for laydowns)
  */
 export function calculateHandStrengthWithTrump(
-  hand: Domino[], 
+  hand: Domino[],
   suitAnalysis?: SuitAnalysis,
   customTrump?: TrumpSelection
 ): number {
   // Determine trump
   const trump = customTrump || determineBestTrump(hand, suitAnalysis);
-  
+
   // Create minimal state for analysis
-  const analyzingPlayerId = 0;
-  const minimalState: GameState = {
-    initialConfig: {
-      playerTypes: ['human', 'ai', 'ai', 'ai'],
-      shuffleSeed: 0,
-      theme: 'coffee',
-      colorOverrides: {}
-    },
-    phase: 'playing',
-    players: [
-      { id: 0, name: 'Analyzer', hand, teamId: 0, marks: 0 },
-      { id: 1, name: 'Opponent1', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'Partner', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'Opponent2', hand: [], teamId: 1, marks: 0 }
-    ],
-    currentPlayer: analyzingPlayerId,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: NO_BIDDER },
-    winningBidder: NO_BIDDER,
-    trump,
-    tricks: [],
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 250,
-    shuffleSeed: 0,
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    consensus: { completeTrick: new Set(), scoreHand: new Set() },
-    actionHistory: [],
-    theme: 'coffee',
-    colorOverrides: {}
-  };
-  
-  const analysis = analyzeHand(minimalState, analyzingPlayerId);
-  
+  const minimalState = createMinimalAnalysisState(hand, trump, 0);
+  const analysis = analyzeHand(minimalState, 0);
+
   // NON-LINEAR HAND STRENGTH CALCULATION
-  
+
   // 1. CONTROL FACTOR
   const unbeatables = analysis.dominoes.filter(d => d.beatenBy && d.beatenBy.length === 0);
-  
+
   // LAYDOWN DETECTION - if all 7 dominoes are unbeatable, it's a guaranteed win
   if (unbeatables.length === 7) {
     return LAYDOWN_SCORE;
   }
-  
-  const controlFactor = unbeatables.length === 0 ? 0 :
-                        unbeatables.length === 1 ? 5 :
-                        unbeatables.length === 2 ? 12 :
-                        unbeatables.length === 3 ? 20 :
-                        unbeatables.length === 4 ? 30 :
-                        unbeatables.length === 5 ? 42 :
-                        55; // 6 unbeatables (near-laydown)
-  
+
+  const controlFactor = calculateControlFactor(unbeatables.length);
+
   // 2. TRUMP QUALITY
   const trumpDominoes = analysis.dominoes.filter(d => d.isTrump);
   const trumpCount = trumpDominoes.length;
-  
-  const hasTopTrump = trump.type === 'doubles' 
-    ? hand.some(d => d.high === 6 && d.low === 6)
-    : trump.type === 'suit' && hand.some(d => 
-        (d.high === trump.suit && d.low === trump.suit));
-  
-  let trumpFactor = 0;
-  if (trumpCount > 0) {
-    trumpFactor = trumpCount * 2;
-    if (trumpCount >= 3) trumpFactor += 3;
-    if (trumpCount >= 4) trumpFactor += 5;
-    if (trumpCount >= 5) trumpFactor += 8;
-    
-    if (hasTopTrump) {
-      trumpFactor *= 1.3;
-      if (trumpCount >= 3) trumpFactor += 5;
-    }
-  }
-  
+  const hasTopTrump = hasTopTrumpDomino(hand, trump);
+  const trumpFactor = calculateTrumpFactor(trumpCount, hasTopTrump);
+
   // 3. COUNT SAFETY
-  let countSafety = 0;
   const countingDominoes = analysis.dominoes.filter(d => d.points > 0);
-  for (const counter of countingDominoes) {
-    if (counter.isTrump) {
-      countSafety += counter.points * 0.8;
-    } else if (counter.beatenBy !== undefined && counter.beatenBy.length <= 2) {
-      countSafety += counter.points * 0.5;
-    } else {
-      countSafety += counter.points * 0.2;
-    }
-  }
-  
+  const countSafety = calculateCountSafety(countingDominoes);
+
   // 4. DEFENSIVE STRENGTH
-  const offSuitDoubles = hand.filter(d => 
-    d.high === d.low && 
-    (trump.type !== 'doubles' && 
-     (trump.type !== 'suit' || (d.high !== trump.suit)))
-  );
-  const defensiveFactor = offSuitDoubles.length * 4 + 
-                         offSuitDoubles.filter(d => d.high >= 5).length * 3;
-  
+  const offSuitDoubles = getOffSuitDoubles(hand, trump);
+  const defensiveFactor = calculateDefensiveFactor(offSuitDoubles);
+
   // 5. SYNERGY MULTIPLIERS
-  let synergyMultiplier = 1.0;
-  if (controlFactor > 10 && trumpFactor > 10) {
-    synergyMultiplier *= 1.15;
-  }
-  if (unbeatables.length >= 2) {
-    synergyMultiplier *= 1.1;
-  }
-  if (hasTopTrump && trumpCount >= 4) {
-    synergyMultiplier *= 1.15;
-  }
-  
+  const synergyMultiplier = calculateSynergyMultiplier({
+    controlFactor,
+    trumpFactor,
+    unbeatableCount: unbeatables.length,
+    hasTopTrump,
+    trumpCount
+  });
+
   // Calculate final strength
   const baseStrength = controlFactor + trumpFactor + countSafety + defensiveFactor;
   const finalStrength = baseStrength * synergyMultiplier;
-  
+
   return Math.floor(finalStrength);
 }
 
@@ -211,7 +146,7 @@ export function calculateHandStrengthWithTrump(
  * Get detailed strength breakdown for debugging/analysis
  */
 export function getHandStrengthBreakdown(
-  hand: Domino[], 
+  hand: Domino[],
   suitAnalysis?: SuitAnalysis,
   customTrump?: TrumpSelection
 ): {
@@ -226,45 +161,12 @@ export function getHandStrengthBreakdown(
   isLaydown: boolean;
 } {
   const trump = customTrump || determineBestTrump(hand, suitAnalysis);
-  
+
   // Create minimal state for analysis
-  const minimalState: GameState = {
-    initialConfig: {
-      playerTypes: ['human', 'ai', 'ai', 'ai'],
-      shuffleSeed: 0,
-      theme: 'coffee',
-      colorOverrides: {}
-    },
-    phase: 'playing',
-    players: [
-      { id: 0, name: 'Analyzer', hand, teamId: 0, marks: 0 },
-      { id: 1, name: 'Opponent1', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'Partner', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'Opponent2', hand: [], teamId: 1, marks: 0 }
-    ],
-    currentPlayer: 0,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: NO_BIDDER },
-    winningBidder: NO_BIDDER,
-    trump,
-    tricks: [],
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 250,
-    shuffleSeed: 0,
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    consensus: { completeTrick: new Set(), scoreHand: new Set() },
-    actionHistory: [],
-    theme: 'coffee',
-    colorOverrides: {}
-  };
-  
+  const minimalState = createMinimalAnalysisState(hand, trump, 0);
   const analysis = analyzeHand(minimalState, 0);
   const unbeatables = analysis.dominoes.filter(d => d.beatenBy && d.beatenBy.length === 0);
-  
+
   if (unbeatables.length === 7) {
     return {
       totalStrength: LAYDOWN_SCORE,
@@ -278,68 +180,31 @@ export function getHandStrengthBreakdown(
       isLaydown: true
     };
   }
-  
-  // Calculate all components (same logic as main function)
-  const controlFactor = unbeatables.length === 0 ? 0 :
-                        unbeatables.length === 1 ? 5 :
-                        unbeatables.length === 2 ? 12 :
-                        unbeatables.length === 3 ? 20 :
-                        unbeatables.length === 4 ? 30 :
-                        unbeatables.length === 5 ? 42 :
-                        55;
-  
+
+  // Calculate all components using extracted utilities
+  const controlFactor = calculateControlFactor(unbeatables.length);
+
   const trumpDominoes = analysis.dominoes.filter(d => d.isTrump);
   const trumpCount = trumpDominoes.length;
-  const hasTopTrump = trump.type === 'doubles' 
-    ? hand.some(d => d.high === 6 && d.low === 6)
-    : trump.type === 'suit' && hand.some(d => 
-        (d.high === trump.suit && d.low === trump.suit));
-  
-  let trumpFactor = 0;
-  if (trumpCount > 0) {
-    trumpFactor = trumpCount * 2;
-    if (trumpCount >= 3) trumpFactor += 3;
-    if (trumpCount >= 4) trumpFactor += 5;
-    if (trumpCount >= 5) trumpFactor += 8;
-    if (hasTopTrump) {
-      trumpFactor *= 1.3;
-      if (trumpCount >= 3) trumpFactor += 5;
-    }
-  }
-  
-  let countSafety = 0;
+  const hasTopTrump = hasTopTrumpDomino(hand, trump);
+  const trumpFactor = calculateTrumpFactor(trumpCount, hasTopTrump);
+
   const countingDominoes = analysis.dominoes.filter(d => d.points > 0);
-  for (const counter of countingDominoes) {
-    if (counter.isTrump) {
-      countSafety += counter.points * 0.8;
-    } else if (counter.beatenBy !== undefined && counter.beatenBy.length <= 2) {
-      countSafety += counter.points * 0.5;
-    } else {
-      countSafety += counter.points * 0.2;
-    }
-  }
-  
-  const offSuitDoubles = hand.filter(d => 
-    d.high === d.low && 
-    (trump.type !== 'doubles' && 
-     (trump.type !== 'suit' || (d.high !== trump.suit)))
-  );
-  const defensiveFactor = offSuitDoubles.length * 4 + 
-                         offSuitDoubles.filter(d => d.high >= 5).length * 3;
-  
-  let synergyMultiplier = 1.0;
-  if (controlFactor > 10 && trumpFactor > 10) {
-    synergyMultiplier *= 1.15;
-  }
-  if (unbeatables.length >= 2) {
-    synergyMultiplier *= 1.1;
-  }
-  if (hasTopTrump && trumpCount >= 4) {
-    synergyMultiplier *= 1.15;
-  }
-  
+  const countSafety = calculateCountSafety(countingDominoes);
+
+  const offSuitDoubles = getOffSuitDoubles(hand, trump);
+  const defensiveFactor = calculateDefensiveFactor(offSuitDoubles);
+
+  const synergyMultiplier = calculateSynergyMultiplier({
+    controlFactor,
+    trumpFactor,
+    unbeatableCount: unbeatables.length,
+    hasTopTrump,
+    trumpCount
+  });
+
   const baseStrength = controlFactor + trumpFactor + countSafety + defensiveFactor;
-  
+
   return {
     totalStrength: Math.floor(baseStrength * synergyMultiplier),
     trump,

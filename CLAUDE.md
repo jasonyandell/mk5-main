@@ -3,9 +3,10 @@
 **Note**: This project uses [bd (beads)]. Use `bd` commands instead of markdown TODOs. Use the bd tool for all task tracking. Before starting work, run `bd ready` to see what's available. File issues for discovered bugs/work as you go.
 
 **IMPORTANT**: This project uses git worktrees. Always use `bd --no-daemon` to avoid committing/pushing to the wrong branch:
-- ✅ `bd --no-daemon ready`
-- ✅ `bd --no-daemon show <issue-id>`
-- ✅ `bd --no-daemon create --title "Title" --description "Details" --priority 1 --type task`
+- ✅ `bd --no-daemon ready` - Show ready issues with no blockers
+- ✅ `bd --no-daemon show <issue-id>` - Show issue details
+- ✅ `bd --no-daemon close <issue-id>` - Close completed issue
+- ✅ `bd --no-daemon create --title "Title" --description "Details" --priority 1 --type task` - Create new issue
 - ❌ `bd ready` (daemon can commit to wrong branch in worktree setup)
 
 # North Star

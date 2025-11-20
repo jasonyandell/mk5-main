@@ -1,5 +1,6 @@
 import type { GameState } from '../types';
 import { createDominoes, getDominoPoints } from './dominoes';
+import { getAllPlayedDominoes } from './domino-tracking';
 
 /**
  * Result of checking if hand outcome is determined early.
@@ -13,20 +14,8 @@ export type HandOutcome =
  * Calculates the maximum possible points that can still be earned from unplayed dominoes
  */
 function calculateRemainingPoints(state: GameState): number {
-  // Get all played dominoes
-  const playedDominoes = new Set<string>();
-  
-  // Add dominoes from completed tricks
-  state.tricks.forEach(trick => {
-    trick.plays.forEach(play => {
-      playedDominoes.add(play.domino.id.toString());
-    });
-  });
-  
-  // Add dominoes from current trick
-  state.currentTrick.forEach(play => {
-    playedDominoes.add(play.domino.id.toString());
-  });
+  // Get all played dominoes (completed tricks + current trick)
+  const playedDominoes = getAllPlayedDominoes(state);
   
   // Calculate remaining points from counting dominoes
   let remainingPoints = 0;

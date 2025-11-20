@@ -10,6 +10,7 @@ import { DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../types';
 import { getTrickWinner } from '../core/rules';
 import { getTrumpSuit, isTrump, trumpToNumber } from '../core/dominoes';
 import { getDominoStrength } from './strength-table.generated';
+import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
 
 /**
  * Analysis of a domino's strength when played as a specific suit
@@ -74,14 +75,9 @@ export function getPlayableSuits(domino: Domino, trump: TrumpSelection): LedSuit
 function getUnplayedDominoes(state: GameState, playerId: number): Domino[] {
   // Get dominoes in our hand
   const ourHand = new Set(state.players[playerId]?.hand.map(d => d.id) ?? []);
-  
-  // Get played dominoes
-  const played = new Set<string>();
-  for (const trick of state.tricks) {
-    for (const play of trick.plays) {
-      played.add(play.domino.id.toString());
-    }
-  }
+
+  // Get played dominoes from completed tricks
+  const played = getPlayedDominoesFromTricks(state.tricks);
   
   // Generate all possible dominoes and filter
   const unplayed: Domino[] = [];
@@ -102,19 +98,18 @@ function getUnplayedDominoes(state: GameState, playerId: number): Domino[] {
  */
 function getExcludedDominoes(state: GameState, playerId: number): Set<string> {
   const excluded = new Set<string>();
-  
+
   // Add dominoes in our hand
   for (const domino of state.players[playerId]?.hand ?? []) {
     excluded.add(domino.id.toString());
   }
-  
-  // Add played dominoes
-  for (const trick of state.tricks) {
-    for (const play of trick.plays) {
-      excluded.add(play.domino.id.toString());
-    }
+
+  // Add played dominoes from completed tricks
+  const played = getPlayedDominoesFromTricks(state.tricks);
+  for (const dominoId of played) {
+    excluded.add(dominoId);
   }
-  
+
   return excluded;
 }
 

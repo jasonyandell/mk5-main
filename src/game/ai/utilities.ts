@@ -6,7 +6,7 @@
  */
 
 import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
-import { NO_LEAD_SUIT } from '../types';
+import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { getDominoValue, trumpToNumber, getDominoPoints, getDominoSuit } from '../core/dominoes';
 import { getTrickWinner } from '../core/rules';
 import { composeRules } from '../rulesets/compose';
@@ -307,3 +307,54 @@ function getDominoesBeaten(
 
 // Note: orderByEffectivePosition is no longer needed
 // The default sort in analyzeHand now sorts by effective position
+
+/**
+ * Create minimal GameState for hand analysis
+ *
+ * Creates a minimal but valid GameState suitable for analyzeHand().
+ * Used during bidding when we need to analyze hand strength with different trump selections.
+ *
+ * @param hand Dominoes to analyze
+ * @param trump Trump selection to evaluate
+ * @param analyzingPlayerId Player ID for the analyzer (default: 0)
+ * @returns Minimal GameState with analyzer having the hand, other players empty
+ */
+export function createMinimalAnalysisState(
+  hand: Domino[],
+  trump: TrumpSelection,
+  analyzingPlayerId: number = 0
+): GameState {
+  return {
+    initialConfig: {
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      shuffleSeed: 0,
+      theme: 'coffee',
+      colorOverrides: {}
+    },
+    phase: 'playing',
+    players: [
+      { id: 0, name: 'Analyzer', hand: analyzingPlayerId === 0 ? hand : [], teamId: 0, marks: 0 },
+      { id: 1, name: 'Opponent1', hand: analyzingPlayerId === 1 ? hand : [], teamId: 1, marks: 0 },
+      { id: 2, name: 'Partner', hand: analyzingPlayerId === 2 ? hand : [], teamId: 0, marks: 0 },
+      { id: 3, name: 'Opponent2', hand: analyzingPlayerId === 3 ? hand : [], teamId: 1, marks: 0 }
+    ],
+    currentPlayer: analyzingPlayerId,
+    dealer: 0,
+    bids: [],
+    currentBid: { type: 'pass', player: NO_BIDDER },
+    winningBidder: NO_BIDDER,
+    trump,
+    tricks: [],
+    currentTrick: [],
+    currentSuit: NO_LEAD_SUIT,
+    teamScores: [0, 0],
+    teamMarks: [0, 0],
+    gameTarget: 250,
+    shuffleSeed: 0,
+    playerTypes: ['human', 'ai', 'ai', 'ai'],
+    consensus: { completeTrick: new Set(), scoreHand: new Set() },
+    actionHistory: [],
+    theme: 'coffee',
+    colorOverrides: {}
+  };
+}

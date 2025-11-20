@@ -7,6 +7,7 @@ import { dealDominoesWithSeed } from './dominoes';
 import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
+import { analyzeBiddingCompletion } from './bidding';
 
 // Default rules (base rule set only, no special contracts)
 const defaultRules = composeRules([baseRuleSet]);
@@ -129,23 +130,12 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
   let newCurrentBid = bid;
 
   // Check if bidding is complete
-  if (newBids.length === 4) {
-    const nonPassBids = newBids.filter(b => b.type !== BID_TYPES.PASS);
-
-    if (nonPassBids.length > 0) {
-      // Find winning bidder
-      const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = rules.getBidComparisonValue(highest);
-        const currentValue = rules.getBidComparisonValue(current);
-        return currentValue > highestValue ? current : highest;
-      });
-
-      newPhase = 'trump_selection';
-      newWinningBidder = winningBid.player;
-      // Use rules to determine who selects trump
-      newCurrentPlayer = rules.getTrumpSelector(state, winningBid);
-      newCurrentBid = winningBid;
-    }
+  const biddingResult = analyzeBiddingCompletion(newBids, state, rules);
+  if (biddingResult) {
+    newPhase = biddingResult.phase;
+    newWinningBidder = biddingResult.winningBidder;
+    newCurrentPlayer = biddingResult.currentPlayer;
+    newCurrentBid = biddingResult.currentBid;
   }
 
   return {
@@ -188,25 +178,14 @@ function executePass(state: GameState, player: number, rules: GameRules): GameSt
   let newCurrentBid = state.currentBid;
 
   // Check if bidding is complete
-  if (newBids.length === 4) {
-    const nonPassBids = newBids.filter(b => b.type !== BID_TYPES.PASS);
-
-    if (nonPassBids.length > 0) {
-      // Find winning bidder
-      const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = rules.getBidComparisonValue(highest);
-        const currentValue = rules.getBidComparisonValue(current);
-        return currentValue > highestValue ? current : highest;
-      });
-
-      newPhase = 'trump_selection';
-      newWinningBidder = winningBid.player;
-      // Use rules to determine who selects trump
-      newCurrentPlayer = rules.getTrumpSelector(state, winningBid);
-      newCurrentBid = winningBid;
-    }
-    // All pass case handled by redeal action
+  const biddingResult = analyzeBiddingCompletion(newBids, state, rules);
+  if (biddingResult) {
+    newPhase = biddingResult.phase;
+    newWinningBidder = biddingResult.winningBidder;
+    newCurrentPlayer = biddingResult.currentPlayer;
+    newCurrentBid = biddingResult.currentBid;
   }
+  // All pass case handled by redeal action
 
   return {
     ...state,

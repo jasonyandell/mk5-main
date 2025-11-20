@@ -1,6 +1,7 @@
 import type { Domino, TrumpSelection } from '../types';
 import { DOUBLES_AS_TRUMP, TRUMP_NOT_SELECTED } from '../types';
 import { getTrumpSuit } from './dominoes';
+import { getPlayedDominoesFromTricks } from './domino-tracking';
 
 /**
  * Suit count for a player's hand - counts dominoes by suit number
@@ -239,18 +240,8 @@ export interface LeadAnalysis {
   ranked: Domino[];     // All dominoes ranked by strength
 }
 
-/**
- * Gets all dominoes that have been played in completed tricks
- */
-function getPlayedDominoes(tricks: Array<{ plays: Array<{ domino: Domino }> }>): Set<string> {
-  const played = new Set<string>();
-  tricks.forEach(trick => {
-    trick.plays.forEach(play => {
-      played.add(play.domino.id.toString());
-    });
-  });
-  return played;
-}
+// Removed: duplicated logic now in domino-tracking.ts
+// Use getPlayedDominoesFromTricks() from './domino-tracking' instead
 
 /**
  * Checks if a domino is the highest unplayed in its suit
@@ -312,7 +303,7 @@ export function analyzeLeads(
   trumpCount?: number  // Optional: pre-calculated trump count in hand
 ): LeadAnalysis {
   const goodLeads: Domino[] = [];
-  const played = getPlayedDominoes(state.tricks);
+  const played = getPlayedDominoesFromTricks(state.tricks);
   
   const trumpSuit = getTrumpSuit(state.trump);
   

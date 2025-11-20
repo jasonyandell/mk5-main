@@ -9,8 +9,7 @@
  */
 
 import type { Domino, TrumpSelection, GameState } from '../types';
-import { NO_LEAD_SUIT } from '../types';
-import { analyzeHand } from './utilities';
+import { analyzeHand, createMinimalAnalysisState } from './utilities';
 
 /**
  * Domino with its beaten-by rank
@@ -34,24 +33,10 @@ interface LexicographicEvaluation {
  */
 function evaluateHandWithTrump(
   hand: Domino[],
-  trump: TrumpSelection,
-  state: GameState
+  trump: TrumpSelection
 ): LexicographicEvaluation {
   // Create a minimal state for analysis with this trump
-  const minimalState: GameState = {
-    ...state,
-    phase: 'playing',
-    players: [
-      { ...state.players[0], hand, id: state.players[0]?.id ?? 0, name: state.players[0]?.name ?? 'Player 0', teamId: state.players[0]?.teamId ?? 0, marks: state.players[0]?.marks ?? 0 },
-      { ...state.players[1], hand: [], id: state.players[1]?.id ?? 1, name: state.players[1]?.name ?? 'Player 1', teamId: state.players[1]?.teamId ?? 1, marks: state.players[1]?.marks ?? 0 },
-      { ...state.players[2], hand: [], id: state.players[2]?.id ?? 2, name: state.players[2]?.name ?? 'Player 2', teamId: state.players[2]?.teamId ?? 0, marks: state.players[2]?.marks ?? 0 },
-      { ...state.players[3], hand: [], id: state.players[3]?.id ?? 3, name: state.players[3]?.name ?? 'Player 3', teamId: state.players[3]?.teamId ?? 1, marks: state.players[3]?.marks ?? 0 }
-    ],
-    currentPlayer: 0,
-    trump,
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-  };
+  const minimalState = createMinimalAnalysisState(hand, trump, 0);
 
   // Analyze the hand with this trump (force analysis even if not in playing phase)
   const analysis = analyzeHand(minimalState, 0, true);
@@ -116,11 +101,11 @@ function compareLexicographic(a: number[], b: number[]): number {
 export function calculateLexicographicStrength(
   hand: Domino[],
   trump: TrumpSelection | undefined,
-  state: GameState
+  _state: GameState
 ): number {
   // If trump is already determined, evaluate with that trump
   if (trump) {
-    const evaluation = evaluateHandWithTrump(hand, trump, state);
+    const evaluation = evaluateHandWithTrump(hand, trump);
     // Convert lexicographic array to a single score
     // Weight earlier positions more heavily (they matter more)
     let score = 0;
@@ -146,9 +131,9 @@ export function calculateLexicographicStrength(
   ];
 
   let bestEvaluation: LexicographicEvaluation | null = null;
-  
+
   for (const possibleTrump of possibleTrumps) {
-    const evaluation = evaluateHandWithTrump(hand, possibleTrump, state);
+    const evaluation = evaluateHandWithTrump(hand, possibleTrump);
     
     if (!bestEvaluation || compareLexicographic(evaluation.score, bestEvaluation.score) < 0) {
       bestEvaluation = evaluation;
@@ -175,7 +160,7 @@ export function calculateLexicographicStrength(
  */
 export function getLexicographicAnalysis(
   hand: Domino[],
-  state: GameState
+  _state: GameState
 ): { trump: TrumpSelection; rankedHand: RankedDomino[]; score: number[] }[] {
   const possibleTrumps: TrumpSelection[] = [
     { type: 'doubles' },
@@ -188,8 +173,8 @@ export function getLexicographicAnalysis(
     { type: 'suit', suit: 6 },
   ];
 
-  const evaluations = possibleTrumps.map(trump => 
-    evaluateHandWithTrump(hand, trump, state)
+  const evaluations = possibleTrumps.map(trump =>
+    evaluateHandWithTrump(hand, trump)
   );
 
   // Sort by lexicographic score (best first)
