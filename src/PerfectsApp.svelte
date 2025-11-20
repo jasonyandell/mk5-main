@@ -3,9 +3,8 @@
   import PerfectHandDisplay from './lib/components/PerfectHandDisplay.svelte';
   import Domino from './lib/components/Domino.svelte';
   import { parseDomino, computeExternalBeaters } from './lib/utils/dominoHelpers';
+  import { sortDominoesForDisplay } from './lib/utils/domino-sort';
   import partitionsData from '../data/3hand-partitions.json';
-  import type { Domino as DominoType } from './game/types';
-  import { dominoHasSuit } from './game/core/dominoes';
 
   interface Partition {
     hands: Array<{
@@ -26,44 +25,6 @@
   let scrollContainer = $state<HTMLDivElement>();
   let loadedPages = $state(5); // Start with 5 pages for better initial performance
 
-  function isTrump(domino: DominoType, trumpStr: string): boolean {
-    if (trumpStr === 'no-trump') return false;
-    if (trumpStr === 'doubles') return domino.high === domino.low;
-
-    // For suit trumps, check if either pip matches the trump suit
-    const suitMap: Record<string, number> = {
-      'blanks': 0,
-      'aces': 1,
-      'deuces': 2,
-      'tres': 3,
-      'fours': 4,
-      'fives': 5,
-      'sixes': 6
-    };
-    const suit = suitMap[trumpStr];
-    if (suit !== undefined) {
-      return dominoHasSuit(domino, suit);
-    }
-    return false;
-  }
-
-  function sortDominoes(dominoStrs: string[], trumpStr: string): string[] {
-    return dominoStrs.slice().sort((a, b) => {
-      const dominoA = parseDomino(a);
-      const dominoB = parseDomino(b);
-
-      const aIsTrump = isTrump(dominoA, trumpStr);
-      const bIsTrump = isTrump(dominoB, trumpStr);
-
-      if (aIsTrump && !bIsTrump) return -1;
-      if (!aIsTrump && bIsTrump) return 1;
-
-      // Within trumps or non-trumps, sort by high pip then low pip
-      if (dominoA.high !== dominoB.high) return dominoB.high - dominoA.high;
-      return dominoB.low - dominoA.low;
-    });
-  }
-
   // Pre-compute expensive operations for all partitions
   interface ProcessedPartition extends Partition {
     processed?: {
@@ -78,10 +39,13 @@
       const processed: ProcessedPartition = { ...partition };
       if (partition.leftover) {
         const externalBeaters = computeExternalBeaters(partition.leftover.dominoes, partition.leftover.bestTrump);
+        const leftoverDominoes = partition.leftover.dominoes.map(d => parseDomino(d));
+        const beaterDominoes = externalBeaters.map(d => parseDomino(d));
+
         processed.processed = {
           externalBeaters,
-          sortedLeftovers: sortDominoes(partition.leftover.dominoes, partition.leftover.bestTrump),
-          sortedBeaters: sortDominoes(externalBeaters, partition.leftover.bestTrump)
+          sortedLeftovers: sortDominoesForDisplay(leftoverDominoes, partition.leftover.bestTrump).map(d => String(d.id)),
+          sortedBeaters: sortDominoesForDisplay(beaterDominoes, partition.leftover.bestTrump).map(d => String(d.id))
         };
       }
       return processed;

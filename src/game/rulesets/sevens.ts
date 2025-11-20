@@ -14,7 +14,7 @@
  */
 
 import type { GameRuleSet } from './types';
-import { checkTrickBasedHandOutcome, getPlayerTeam } from './helpers';
+import { checkTrickBasedHandOutcome, getPlayerTeam, getDistanceFromSeven, findClosestToSeven } from './helpers';
 import { BID_TYPES } from '../constants';
 
 export const sevensRuleSet: GameRuleSet = {
@@ -81,15 +81,13 @@ export const sevensRuleSet: GameRuleSet = {
       if (state.trump?.type !== 'sevens') return prev;
 
       // Distance from 7 total pips
-      const distances = trick.map(play =>
-        Math.abs(7 - (play.domino.high + play.domino.low))
-      );
+      const distances = trick.map(play => getDistanceFromSeven(play.domino));
 
       const minDistance = Math.min(...distances);
 
       // First domino with minimum distance wins (tie = first)
       const winnerIndex = trick.findIndex(play =>
-        Math.abs(7 - (play.domino.high + play.domino.low)) === minDistance
+        getDistanceFromSeven(play.domino) === minDistance
       );
 
       return trick[winnerIndex]?.player ?? prev;
@@ -117,9 +115,9 @@ export const sevensRuleSet: GameRuleSet = {
       if (!player || !player.hand.some((d) => d.id === domino.id)) return false;
 
       // Sevens: must play domino closest to 7 total pips
-      const distances = player.hand.map(d => Math.abs(7 - (d.high + d.low)));
+      const distances = player.hand.map(d => getDistanceFromSeven(d));
       const minDistance = Math.min(...distances);
-      const dominoDistance = Math.abs(7 - (domino.high + domino.low));
+      const dominoDistance = getDistanceFromSeven(domino);
 
       return dominoDistance === minDistance;
     },
@@ -132,13 +130,7 @@ export const sevensRuleSet: GameRuleSet = {
       if (!player || player.hand.length === 0) return [];
 
       // Sevens: must play domino(es) closest to 7 total pips
-      const distances = player.hand.map(d => Math.abs(7 - (d.high + d.low)));
-      const minDistance = Math.min(...distances);
-
-      // Return all dominoes at minimum distance (player chooses if multiple)
-      return player.hand.filter(d =>
-        Math.abs(7 - (d.high + d.low)) === minDistance
-      );
+      return findClosestToSeven(player.hand);
     }
   }
 };

@@ -155,3 +155,21 @@ export function getHighestMarksBid(bids: Bid[]): number {
 export function countDoubles(hand: { high: number; low: number }[]): number {
   return hand.filter(d => d.high === d.low).length;
 }
+
+/**
+ * Get distance of a domino from 7 total pips.
+ * Used by sevens trump to determine trick winners and valid plays.
+ */
+export function getDistanceFromSeven(domino: { high: number; low: number }): number {
+  return Math.abs(7 - (domino.high + domino.low));
+}
+
+/**
+ * Find dominoes with minimum distance from 7 total pips.
+ * Used by sevens trump to determine valid plays.
+ */
+export function findClosestToSeven<T extends { high: number; low: number }>(dominoes: T[]): T[] {
+  const distances = dominoes.map(d => getDistanceFromSeven(d));
+  const minDistance = Math.min(...distances);
+  return dominoes.filter(d => getDistanceFromSeven(d) === minDistance);
+}
