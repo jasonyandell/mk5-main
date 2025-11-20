@@ -120,6 +120,26 @@ export class GameTestHelper {
   
   /**
    * Creates a test state with custom parameters
+   *
+   * @deprecated Use StateBuilder instead for cleaner, more maintainable test code.
+   *
+   * Migration example:
+   * ```typescript
+   * // Before
+   * const state = GameTestHelper.createTestState({
+   *   phase: 'playing',
+   *   trump: { type: 'suit', suit: ACES },
+   *   currentPlayer: 2
+   * });
+   *
+   * // After
+   * const state = StateBuilder
+   *   .inPlayingPhase({ type: 'suit', suit: ACES })
+   *   .withCurrentPlayer(2)
+   *   .build();
+   * ```
+   *
+   * See: src/tests/helpers/stateBuilder.ts for full API documentation
    */
   static createTestState(overrides: Partial<GameState> & { players?: (Player | Partial<Player> | undefined)[] } = {}): GameState {
     const baseState = createInitialState();
@@ -568,6 +588,11 @@ export class GameTestHelper {
 }
 
 // Export convenience functions for easier importing
+
+/**
+ * @deprecated Use StateBuilder instead for cleaner, more maintainable test code.
+ * @see StateBuilder in src/tests/helpers/stateBuilder.ts
+ */
 export const createTestState = GameTestHelper.createTestState;
 export const createTestHand = GameTestHelper.createTestHand;
 export const createHandWithDoubles = GameTestHelper.createHandWithDoubles;

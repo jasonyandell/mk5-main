@@ -1,49 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
-import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../../game/types';
+import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { analyzeDominoAsSuit, getPlayableSuits } from '../../game/ai/domino-strength';
 import { isTrump } from '../../game/core/dominoes';
-import type { GameState } from '../../game/types';
-
-function createMinimalState(): GameState {
-  return {
-    initialConfig: {
-      playerTypes: ['ai', 'ai', 'ai', 'ai'],
-      shuffleSeed: 0,
-      theme: 'coffee',
-      colorOverrides: {}
-    },
-    phase: 'playing',
-    players: [
-      { id: 0, name: 'P0', hand: [], teamId: 0, marks: 0 },
-      { id: 1, name: 'P1', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'P2', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'P3', hand: [], teamId: 1, marks: 0 },
-    ],
-    currentPlayer: 0,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: NO_BIDDER },
-    winningBidder: NO_BIDDER,
-    trump: { type: 'not-selected' },
-    tricks: [],
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 7,
-    shuffleSeed: 0,
-    playerTypes: ['ai', 'ai', 'ai', 'ai'],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()
-    },
-    actionHistory: [],
-    theme: 'coffee',
-    colorOverrides: {}
-  };
-}
+import { StateBuilder } from '../helpers';
 
 function generateAllDominoes(): Domino[] {
   const dominoes: Domino[] = [];
@@ -89,7 +50,7 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
 describe('Strength Table Generation Verification', () => {
   const dominoes = generateAllDominoes();
   const trumpConfigs = getTrumpConfigurations();
-  const state = createMinimalState();
+  const state = StateBuilder.inPlayingPhase().withHands([[], [], [], []]).build();
 
   it('should match runtime calculations for all domino/trump/suit combinations', () => {
     let totalChecks = 0;
@@ -212,7 +173,7 @@ describe('Strength Table Regeneration', () => {
       { high: 6, low: 6, id: '6-6' },
       SIXES,
       { type: 'no-trump' },
-      createMinimalState(),
+      StateBuilder.inPlayingPhase().withHands([[], [], [], []]).build(),
       0
     );
     

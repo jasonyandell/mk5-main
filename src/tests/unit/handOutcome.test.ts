@@ -1,19 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { checkHandOutcome } from '../../game/core/handOutcome';
-import { createInitialState } from '../../game/core/state';
+import { StateBuilder } from '../helpers';
 import type { GameState, Domino, Trick, LedSuit } from '../../game/types';
 import { BLANKS, SIXES, NO_BIDDER } from '../../game/types';
 
+// Helper to create a playing phase state with common defaults
 function createTestState(overrides?: Partial<GameState>): GameState {
-  const state = createInitialState({ shuffleSeed: 1234 });
-  return {
-    ...state,
-    phase: 'playing',
-    currentBid: { type: 'points', value: 35, player: 0 },
-    winningBidder: 0,
-    trump: { type: 'suit', suit: SIXES },
-    ...overrides
-  };
+  return StateBuilder
+    .inPlayingPhase({ type: 'suit', suit: SIXES })
+    .withWinningBid(0, { type: 'points', value: 35, player: 0 })
+    .withSeed(1234)
+    .with(overrides || {})
+    .build();
 }
 
 function createDomino(high: number, low: number): Domino {

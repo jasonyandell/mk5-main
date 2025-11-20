@@ -15,20 +15,19 @@ import { baseRuleSet } from '../../../game/rulesets/base';
 import { sevensRuleSet } from '../../../game/rulesets/sevens';
 import { composeRules } from '../../../game/rulesets/compose';
 import type { Play, Trick } from '../../../game/types';
-import { GameTestHelper } from '../../helpers/gameTestHelper';
 import { BID_TYPES } from '../../../game/constants';
 import { BLANKS } from '../../../game/types';
+import { StateBuilder } from '../../helpers';
 
 describe('Sevens RuleSet Rules', () => {
   const rules = composeRules([baseRuleSet, sevensRuleSet]);
 
   describe('getValidActions', () => {
     it('should add sevens trump option after marks bid', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
-      });
+      const state = StateBuilder
+        .inTrumpSelection(0)
+        .withWinningBid(0, { type: BID_TYPES.MARKS, value: 2, player: 0 })
+        .build();
 
       const baseActions: never[] = [];
       const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
@@ -42,11 +41,9 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should not add sevens option for points bid', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentBid: { type: BID_TYPES.POINTS, value: 30, player: 0 }
-      });
+      const state = StateBuilder
+        .inTrumpSelection(0, 30)
+        .build();
 
       const baseActions: never[] = [];
       const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
@@ -55,10 +52,10 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should not add sevens option during bidding phase', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'bidding',
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
-      });
+      const state = StateBuilder
+        .inBiddingPhase()
+        .withBids([{ type: BID_TYPES.MARKS, value: 2, player: 0 }])
+        .build();
 
       const baseActions: never[] = [];
       const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
@@ -67,11 +64,10 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should preserve previous actions', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 1,
-        currentBid: { type: BID_TYPES.MARKS, value: 3, player: 1 }
-      });
+      const state = StateBuilder
+        .inTrumpSelection(1)
+        .withWinningBid(1, { type: BID_TYPES.MARKS, value: 3, player: 1 })
+        .build();
 
       const baseActions = [
         { type: 'select-trump' as const, player: 1, trump: { type: 'suit' as const, suit: BLANKS } }
@@ -88,10 +84,10 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('getTrumpSelector', () => {
     it('should pass through to base (bidder selects trump)', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        winningBidder: 2
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .with({ winningBidder: 2 })
+        .build();
       const bid = { type: BID_TYPES.MARKS, value: 2, player: 2 };
 
       const selector = rules.getTrumpSelector(state, bid);
@@ -102,10 +98,10 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('getFirstLeader', () => {
     it('should pass through to base (bidder leads)', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        winningBidder: 1
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .with({ winningBidder: 1 })
+        .build();
 
       const leader = rules.getFirstLeader(state, 1, { type: 'sevens' });
 
@@ -115,9 +111,9 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('getNextPlayer', () => {
     it('should use standard rotation (no skipping)', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' }
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .build();
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
       expect(rules.getNextPlayer(state, 1)).toBe(2);
@@ -128,28 +124,28 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('isTrickComplete', () => {
     it('should use base rule (4 plays)', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentTrick: [
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } },
           { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(true);
     });
 
     it('should return false for 3 plays', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentTrick: [
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
@@ -157,68 +153,52 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('checkHandOutcome', () => {
     it('should return null when bidding team wins all tricks so far', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        winningBidder: 0,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: [
-          {
-            plays: [
-              { player: 0, domino: { id: '4-3', high: 4, low: 3 } },
-              { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
-              { player: 2, domino: { id: '2-1', high: 2, low: 1 } },
-              { player: 3, domino: { id: '5-0', high: 5, low: 0 } }
-            ],
-            winner: 0, // Team 0 wins (4+3=7, perfect)
-            points: 5
-          }
-        ]
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(0, { type: BID_TYPES.MARKS, value: 2, player: 0 })
+        .withHands([[], [], [], []])
+        .addTrick(
+          [
+            { player: 0, domino: { id: '4-3', high: 4, low: 3 } },
+            { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
+            { player: 2, domino: { id: '2-1', high: 2, low: 1 } },
+            { player: 3, domino: { id: '5-0', high: 5, low: 0 } }
+          ],
+          0, // Team 0 wins (4+3=7, perfect)
+          5
+        )
+        .build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(false);
     });
 
     it('should return determined when opponents win any trick', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentBid: { type: BID_TYPES.MARKS, value: 3, player: 0 },
-        winningBidder: 0,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: [
-          {
-            plays: [
-              { player: 0, domino: { id: '4-3', high: 4, low: 3 } },
-              { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
-              { player: 2, domino: { id: '2-1', high: 2, low: 1 } },
-              { player: 3, domino: { id: '5-0', high: 5, low: 0 } }
-            ],
-            winner: 0, // Team 0 wins
-            points: 5
-          },
-          {
-            plays: [
-              { player: 0, domino: { id: '5-2', high: 5, low: 2 } },
-              { player: 1, domino: { id: '3-4', high: 3, low: 4 } }, // 3+4=7, perfect
-              { player: 2, domino: { id: '6-1', high: 6, low: 1 } },
-              { player: 3, domino: { id: '2-2', high: 2, low: 2 } }
-            ],
-            winner: 1, // Team 1 wins - sevens fails!
-            points: 0
-          }
-        ]
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(0, { type: BID_TYPES.MARKS, value: 3, player: 0 })
+        .withHands([[], [], [], []])
+        .addTrick(
+          [
+            { player: 0, domino: { id: '4-3', high: 4, low: 3 } },
+            { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
+            { player: 2, domino: { id: '2-1', high: 2, low: 1 } },
+            { player: 3, domino: { id: '5-0', high: 5, low: 0 } }
+          ],
+          0, // Team 0 wins
+          5
+        )
+        .addTrick(
+          [
+            { player: 0, domino: { id: '5-2', high: 5, low: 2 } },
+            { player: 1, domino: { id: '3-4', high: 3, low: 4 } }, // 3+4=7, perfect
+            { player: 2, domino: { id: '6-1', high: 6, low: 1 } },
+            { player: 3, domino: { id: '2-2', high: 2, low: 2 } }
+          ],
+          1, // Team 1 wins - sevens fails!
+          0
+        )
+        .build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -227,29 +207,21 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should end on first trick if opponents win', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 1 },
-        winningBidder: 1,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: [
-          {
-            plays: [
-              { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
-              { player: 2, domino: { id: '4-3', high: 4, low: 3 } }, // 4+3=7, perfect - wins!
-              { player: 3, domino: { id: '5-1', high: 5, low: 1 } },
-              { player: 0, domino: { id: '2-0', high: 2, low: 0 } }
-            ],
-            winner: 2, // Team 0 wins first trick - sevens fails immediately
-            points: 0
-          }
-        ]
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(1, { type: BID_TYPES.MARKS, value: 2, player: 1 })
+        .withHands([[], [], [], []])
+        .addTrick(
+          [
+            { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
+            { player: 2, domino: { id: '4-3', high: 4, low: 3 } }, // 4+3=7, perfect - wins!
+            { player: 3, domino: { id: '5-1', high: 5, low: 1 } },
+            { player: 0, domino: { id: '2-0', high: 2, low: 0 } }
+          ],
+          2, // Team 0 wins first trick - sevens fails immediately
+          0
+        )
+        .build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -257,40 +229,35 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should not trigger early termination for non-sevens trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'suit', suit: BLANKS },
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        winningBidder: 0,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: [
-          {
-            plays: [
-              { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
-              { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
-              { player: 2, domino: { id: '3-0', high: 3, low: 0 } },
-              { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
-            ],
-            winner: 1, // Opponents win
-            points: 0
-          }
-        ]
-      });
+      const state = StateBuilder
+        .withTricksPlayed(1, { type: 'suit', suit: BLANKS })
+        .withWinningBid(0, { type: BID_TYPES.POINTS, value: 30, player: 0 })
+        .build();
 
-      const outcome = rules.checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(false); // Should play all tricks for regular marks bid
+      // Manually update tricks to show opponent won
+      const trickWithOpponentWin = [{
+        plays: [
+          { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
+          { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
+          { player: 2, domino: { id: '3-0', high: 3, low: 0 } },
+          { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
+        ],
+        winner: 1, // Opponents win (player 1 is team 1)
+        points: 0,
+        ledSuit: BLANKS
+      }];
+      const updatedState = { ...state, tricks: trickWithOpponentWin };
+
+      const outcome = rules.checkHandOutcome(updatedState);
+      expect(outcome.isDetermined).toBe(false); // Should play all tricks for regular points bid
     });
   });
 
   describe('getLedSuit', () => {
     it('should use base rules (no override)', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' }
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .build();
 
       const domino = { id: '6-2', high: 6, low: 2 };
       expect(rules.getLedSuit(state, domino)).toBe(6);
@@ -300,9 +267,7 @@ describe('Sevens RuleSet Rules', () => {
   describe('calculateTrickWinner', () => {
     describe('distance from 7', () => {
       it('should award exact 7 (distance 0)', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'sevens' }
-        });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // 6+0=6, distance 1
           { player: 1, domino: { id: '4-3', high: 4, low: 3 } }, // 4+3=7, distance 0 - WINS!
@@ -315,9 +280,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should award closer distance when no exact 7', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'sevens' }
-        });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // 6, distance 1
           { player: 1, domino: { id: '2-2', high: 2, low: 2 } }, // 4, distance 3
@@ -331,9 +294,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should handle ties by awarding first player', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'sevens' }
-        });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '5-1', high: 5, low: 1 } }, // 6, distance 1
           { player: 1, domino: { id: '5-2', high: 5, low: 2 } }, // 7, distance 0
@@ -347,9 +308,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should handle low totals correctly', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'sevens' }
-        });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '0-0', high: 0, low: 0 } }, // 0, distance 7
           { player: 1, domino: { id: '1-0', high: 1, low: 0 } }, // 1, distance 6
@@ -362,9 +321,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should handle high totals correctly', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'sevens' }
-        });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-6', high: 6, low: 6 } }, // 12, distance 5
           { player: 1, domino: { id: '6-5', high: 6, low: 5 } }, // 11, distance 4
@@ -379,7 +336,7 @@ describe('Sevens RuleSet Rules', () => {
 
     describe('all possible totals', () => {
       it('should handle total of 0 (distance 7)', () => {
-        const state = GameTestHelper.createTestState({ trump: { type: 'sevens' } });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '0-0', high: 0, low: 0 } },
           { player: 1, domino: { id: '6-6', high: 6, low: 6 } }
@@ -388,7 +345,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should handle total of 7 multiple ways', () => {
-        const state = GameTestHelper.createTestState({ trump: { type: 'sevens' } });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
 
         // Different dominoes that total 7
         const combinations = [
@@ -403,7 +360,7 @@ describe('Sevens RuleSet Rules', () => {
       });
 
       it('should handle total of 12 (distance 5)', () => {
-        const state = GameTestHelper.createTestState({ trump: { type: 'sevens' } });
+        const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-6', high: 6, low: 6 } }, // 12, distance 5
           { player: 1, domino: { id: '1-0', high: 1, low: 0 } }  // 1, distance 6
@@ -414,10 +371,10 @@ describe('Sevens RuleSet Rules', () => {
 
     describe('integration with base ruleSet', () => {
       it('should not use sevens logic when not sevens trump', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: BLANKS },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder
+          .inPlayingPhase({ type: 'suit', suit: BLANKS })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // Highest
           { player: 1, domino: { id: '4-3', high: 4, low: 3 } }, // Would win in sevens (7 total)
@@ -433,18 +390,11 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('integration: complete sevens hand', () => {
     it('should succeed when bidding team wins all 7 tricks', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        winningBidder: 0,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: []
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(0, { type: BID_TYPES.MARKS, value: 2, player: 0 })
+        .withHands([[], [], [], []])
+        .build();
 
       // Simulate 7 tricks where team 0 always plays closest to 7
       const tricks: Trick[] = Array.from({ length: 7 }, (_, i) => ({
@@ -466,29 +416,21 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should fail immediately when opponents get closer to 7', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' },
-        currentBid: { type: BID_TYPES.MARKS, value: 3, player: 2 },
-        winningBidder: 2,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
-        ],
-        tricks: [
-          {
-            plays: [
-              { player: 2, domino: { id: '6-0', high: 6, low: 0 } }, // 6, distance 1
-              { player: 3, domino: { id: '4-3', high: 4, low: 3 } }, // 7, distance 0 - WINS!
-              { player: 0, domino: { id: '5-1', high: 5, low: 1 } }, // 6, distance 1
-              { player: 1, domino: { id: '6-6', high: 6, low: 6 } }  // 12, distance 5
-            ],
-            winner: 3, // Team 1 wins
-            points: 0
-          }
-        ]
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(2, { type: BID_TYPES.MARKS, value: 3, player: 2 })
+        .withHands([[], [], [], []])
+        .addTrick(
+          [
+            { player: 2, domino: { id: '6-0', high: 6, low: 0 } }, // 6, distance 1
+            { player: 3, domino: { id: '4-3', high: 4, low: 3 } }, // 7, distance 0 - WINS!
+            { player: 0, domino: { id: '5-1', high: 5, low: 1 } }, // 6, distance 1
+            { player: 1, domino: { id: '6-6', high: 6, low: 6 } }  // 12, distance 5
+          ],
+          3, // Team 1 wins
+          0
+        )
+        .build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -499,9 +441,7 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('edge cases', () => {
     it('should handle single play trick', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' }
-      });
+      const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
       const trick: Play[] = [
         { player: 2, domino: { id: '6-0', high: 6, low: 0 } }
       ];
@@ -511,9 +451,7 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('should handle all players equidistant from 7', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'sevens' }
-      });
+      const state = StateBuilder.inPlayingPhase({ type: 'sevens' }).build();
       const trick: Play[] = [
         { player: 0, domino: { id: '5-1', high: 5, low: 1 } }, // 6, distance 1
         { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // 6, distance 1
@@ -529,28 +467,19 @@ describe('Sevens RuleSet Rules', () => {
 
   describe('getValidPlays', () => {
     it('enforces must play closest to 7 rule', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'sevens' },
-        currentPlayer: 0,
-        players: [
-          {
-            id: 0,
-            name: 'P0',
-            teamId: 0,
-            marks: 0,
-            hand: [
-              { id: '6-1', high: 6, low: 1 }, // 7 total - distance 0 ✓
-              { id: '5-2', high: 5, low: 2 }, // 7 total - distance 0 ✓
-              { id: '4-0', high: 4, low: 0 }, // 4 total - distance 3 ✗
-              { id: '3-0', high: 3, low: 0 }, // 3 total - distance 4 ✗
-            ]
-          },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] },
-        ]
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withCurrentPlayer(0)
+        .withPlayerHand(0, [
+          { id: '6-1', high: 6, low: 1 }, // 7 total - distance 0 ✓
+          { id: '5-2', high: 5, low: 2 }, // 7 total - distance 0 ✓
+          { id: '4-0', high: 4, low: 0 }, // 4 total - distance 3 ✗
+          { id: '3-0', high: 3, low: 0 }, // 3 total - distance 4 ✗
+        ])
+        .withPlayerHand(1, [])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, [])
+        .build();
 
       const validPlays = rules.getValidPlays(state, 0);
 
@@ -566,25 +495,22 @@ describe('Sevens RuleSet Rules', () => {
     });
 
     it('winner of trick leads next trick', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'sevens' },
-        currentPlayer: 0,
-        currentTrick: [],
-        tricks: [
-          {
-            plays: [
-              { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
-              { player: 1, domino: { id: '4-3', high: 4, low: 3 } }, // distance 0 ✓ WINNER
-              { player: 2, domino: { id: '6-2', high: 6, low: 2 } }, // distance 1
-              { player: 3, domino: { id: '3-1', high: 3, low: 1 } }, // distance 3
-            ],
-            winner: 1, // Player 1 won with 4-3 (7 total)
-            points: 0,
-            ledSuit: 5
-          }
-        ]
-      });
+      const trick = {
+        plays: [
+          { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
+          { player: 1, domino: { id: '4-3', high: 4, low: 3 } }, // distance 0 ✓ WINNER
+          { player: 2, domino: { id: '6-2', high: 6, low: 2 } }, // distance 1
+          { player: 3, domino: { id: '3-1', high: 3, low: 1 } }, // distance 3
+        ],
+        winner: 1, // Player 1 won with 4-3 (7 total)
+        points: 0,
+        ledSuit: 5 as const
+      };
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withCurrentPlayer(0)
+        .withTricks([trick])
+        .build();
 
       // Winner (player 1) should lead next trick
       const nextPlayer = rules.getNextPlayer(state, state.currentPlayer);
@@ -597,33 +523,24 @@ describe('Sevens RuleSet Rules', () => {
       // My partner (player 2) plays 6-1 (distance 0 = 7 total) ✓ WINS
       // Bidding team = 0 (players 0 and 2)
 
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'sevens' },
-        winningBidder: 0,
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        currentPlayer: 2, // Partner leads next trick (engine sets this to winner)
-        currentTrick: [], // Starting new trick
-        tricks: [
-          {
-            plays: [
-              { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
-              { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // distance 1
-              { player: 2, domino: { id: '6-1', high: 6, low: 1 } }, // distance 0 ✓ WINS
-              { player: 3, domino: { id: '4-0', high: 4, low: 0 } }, // distance 3
-            ],
-            winner: 2, // Partner won
-            points: 0,
-            ledSuit: 5
-          }
+      const trick = {
+        plays: [
+          { player: 0, domino: { id: '5-0', high: 5, low: 0 } }, // distance 2
+          { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // distance 1
+          { player: 2, domino: { id: '6-1', high: 6, low: 1 } }, // distance 0 ✓ WINS
+          { player: 3, domino: { id: '4-0', high: 4, low: 0 } }, // distance 3
         ],
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] }, // Partner
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] },
-        ]
-      });
+        winner: 2, // Partner won
+        points: 0,
+        ledSuit: 5 as const
+      };
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(0, { type: BID_TYPES.MARKS, value: 2, player: 0 })
+        .withCurrentPlayer(2) // Partner leads next trick (engine sets this to winner)
+        .withTricks([trick])
+        .withHands([[], [], [], []])
+        .build();
 
       // Check that bidding team is NOT set (partner won)
       const outcome = rules.checkHandOutcome(state);

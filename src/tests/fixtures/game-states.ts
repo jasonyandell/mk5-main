@@ -6,9 +6,9 @@
  */
 
 import type { GameView, PlayerInfo, ValidAction } from '../../shared/multiplayer/protocol';
-import type { GameConfig } from '../../game/types/config';
 import type { GameState, FilteredGameState, Domino, Player, TrumpSelection, SuitAnalysis } from '../../game/types';
 import type { Capability } from '../../game/multiplayer/types';
+import { StateBuilder, HandBuilder } from '../helpers';
 
 // ============================================================================
 // Helper Functions
@@ -16,39 +16,32 @@ import type { Capability } from '../../game/multiplayer/types';
 
 /**
  * Create a base GameState with sensible defaults.
+ * Now uses StateBuilder internally for consistency.
  */
 function createBaseState(overrides: Partial<GameState> = {}): GameState {
-  const config: GameConfig = {
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    shuffleSeed: 12345,
+  // Use StateBuilder to create a consistent base state
+  const baseState = StateBuilder
+    .inBiddingPhase(0)
+    .withSeed(12345)
+    .withConfig({
+      playerTypes: ['human', 'ai', 'ai', 'ai'],
+      shuffleSeed: 12345,
+    })
+    .build();
+
+  // Apply custom player hands if not overridden
+  const stateWithHands = overrides.players ? baseState : {
+    ...baseState,
+    players: createDefaultPlayers()
   };
 
+  // Apply any overrides
   return {
-    initialConfig: config,
-    theme: 'business',
-    colorOverrides: {},
-    phase: 'setup',
-    players: createDefaultPlayers(),
-    currentPlayer: 0,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: -1 },
-    winningBidder: -1,
-    trump: { type: 'not-selected' },
-    tricks: [],
-    currentTrick: [],
-    currentSuit: -1,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 7,
-    shuffleSeed: 12345,
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set(),
-    },
-    actionHistory: [],
+    ...stateWithHands,
     ...overrides,
+    // Ensure nested objects are merged properly
+    players: overrides.players || stateWithHands.players,
+    consensus: overrides.consensus || stateWithHands.consensus,
   };
 }
 
@@ -98,16 +91,10 @@ function createDefaultPlayers(): Player[] {
 
 /**
  * Create dominoes from string representations.
+ * Now uses HandBuilder for consistency.
  */
 function createHand(dominoIds: string[]): Domino[] {
-  return dominoIds.map(id => {
-    const [high, low] = id.split('-').map(Number);
-    return {
-      id,
-      high: high!,
-      low: low!,
-    };
-  });
+  return HandBuilder.fromStrings(dominoIds);
 }
 
 /**
