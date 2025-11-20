@@ -3,7 +3,8 @@ import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
 import { createTestContextWithRuleSets } from '../../helpers/executionContext';
 import { composeRules, baseRuleSet, splashRuleSet } from '../../../game/rulesets';
-import { createTestState, createTestHand, processSequentialConsensus, createHandWithDoubles } from '../../helpers/gameTestHelper';
+import { StateBuilder, HandBuilder } from '../../helpers';
+import { processSequentialConsensus } from '../../helpers/consensusHelpers';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
@@ -121,18 +122,14 @@ describe('Splash Full Hand Integration', () => {
 
   describe('Successful Splash', () => {
     it('should complete when bidding team wins all 7 tricks', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 123456,
-        players: [
-          // Player 0 has 3 doubles to qualify for splash
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [5, 6], [4, 5], [4, 6], [3, 5], [3, 6], [6, 6]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(123456)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '5-6', '4-5', '4-6', '3-5', '3-6', '6-6']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       const { finalState, preScoreState } = await playSplashHand(state, true);
 
@@ -158,17 +155,14 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should award 2-3 marks for successful splash', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 789012,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(4) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [5, 6], [4, 5], [4, 6], [3, 5], [3, 6], [6, 6]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(789012)
+        .withPlayerHand(0, HandBuilder.withDoubles(4))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '5-6', '4-5', '4-6', '3-5', '3-6', '6-6']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       const { finalState, preScoreState } = await playSplashHand(state, true);
 
@@ -194,17 +188,14 @@ describe('Splash Full Hand Integration', () => {
 
   describe('Failed Splash', () => {
     it('should end early when opponents win a trick', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 345678,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[5, 5], [4, 5], [3, 5], [2, 5], [1, 5], [0, 5], [4, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(345678)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['5-5', '4-5', '3-5', '2-5', '1-5', '0-5', '4-4']))
+        .build();
 
       const { finalState, preScoreState } = await playSplashHand(state, false);
 
@@ -233,17 +224,14 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should award marks to opponents on failure', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 901234,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[5, 5], [4, 5], [3, 5], [2, 5], [1, 5], [0, 5], [4, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(901234)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['5-5', '4-5', '3-5', '2-5', '1-5', '0-5', '4-4']))
+        .build();
 
       const { finalState, preScoreState } = await playSplashHand(state, false);
 
@@ -267,18 +255,14 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should continue when bidding team wins all tricks so far', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 112233,
-        players: [
-          // Give bidding team high trump to win tricks
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(112233)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       const { finalState, preScoreState } = await playSplashHand(state, true);
 
@@ -302,18 +286,14 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should end early when opponents win on 2nd trick after losing first', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 223344,
-        players: [
-          // Mix - bidding team wins first trick, then loses
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [6, 6], [5, 6], [4, 6], [3, 6], [2, 6]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [4, 5], [3, 5], [0, 2], [1, 1], [1, 2], [2, 2]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[1, 6], [0, 6], [0, 3], [0, 4], [0, 5], [1, 3], [1, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(223344)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '6-6', '5-6', '4-6', '3-6', '2-6']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '4-5', '3-5', '0-2', '1-1', '1-2', '2-2']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['1-6', '0-6', '0-3', '0-4', '0-5', '1-3', '1-4']))
+        .build();
 
       // Play through carefully - opponents eventually win
       let testState = state;
@@ -394,17 +374,14 @@ describe('Splash Full Hand Integration', () => {
 
   describe('Trump Selection and Leading', () => {
     it('should have partner select trump', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 567890,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [5, 6], [4, 5], [4, 6], [3, 5], [3, 6], [6, 6]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(567890)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '5-6', '4-5', '4-6', '3-5', '3-6', '6-6']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       let testState = state;
 
@@ -426,17 +403,14 @@ describe('Splash Full Hand Integration', () => {
     });
 
     it('should have partner lead first trick', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 111111,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [5, 6], [4, 5], [4, 6], [3, 5], [3, 6], [6, 6]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(111111)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '5-6', '4-5', '4-6', '3-5', '3-6', '6-6']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       let testState = state;
 
@@ -468,17 +442,14 @@ describe('Splash Full Hand Integration', () => {
     it('should require 3+ doubles to bid splash', () => {
       const ctx = createTestContextWithRuleSets(['splash']);
       // With 3 doubles
-      const stateWith3 = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 222222,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]]) }
-        ]
-      });
+      const stateWith3 = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(222222)
+        .withPlayerHand(0, HandBuilder.withDoubles(3))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6']))
+        .build();
 
       const transitionsWith3 = getNextStates(stateWith3, ctx);
       const splashOptionWith3 = transitionsWith3.find(t =>
@@ -487,17 +458,14 @@ describe('Splash Full Hand Integration', () => {
       expect(splashOptionWith3).toBeDefined();
 
       // With only 2 doubles
-      const stateWith2 = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 333333,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(2) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]]) }
-        ]
-      });
+      const stateWith2 = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(333333)
+        .withPlayerHand(0, HandBuilder.withDoubles(2))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6']))
+        .build();
 
       const transitionsWith2 = getNextStates(stateWith2, ctx);
       const splashOptionWith2 = transitionsWith2.find(t =>
@@ -509,17 +477,14 @@ describe('Splash Full Hand Integration', () => {
     it('should have automatic bid value of 2-3 marks', () => {
 
       const ctx = createTestContextWithRuleSets(['splash']);
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 444444,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createHandWithDoubles(4) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(444444)
+        .withPlayerHand(0, HandBuilder.withDoubles(4))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6']))
+        .build();
 
       const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>
@@ -536,18 +501,15 @@ describe('Splash Full Hand Integration', () => {
     it('should jump over existing marks bids up to maximum of 3', () => {
 
       const ctx = createTestContextWithRuleSets(['splash']);
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 1,
-        shuffleSeed: 555555,
-        bids: [{ type: BID_TYPES.MARKS, value: 2, player: 0 }],
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createHandWithDoubles(4) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(1)
+        .withSeed(555555)
+        .withBids([{ type: BID_TYPES.MARKS, value: 2, player: 0 }])
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(1, HandBuilder.withDoubles(4))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6']))
+        .build();
 
       const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>
@@ -564,18 +526,15 @@ describe('Splash Full Hand Integration', () => {
     it('should cap at 3 marks even with high existing bids', () => {
 
       const ctx = createTestContextWithRuleSets(['splash']);
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 1,
-        shuffleSeed: 666666,
-        bids: [{ type: BID_TYPES.MARKS, value: 5, player: 0 }],
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createHandWithDoubles(3) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(1)
+        .withSeed(666666)
+        .withBids([{ type: BID_TYPES.MARKS, value: 5, player: 0 }])
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(1, HandBuilder.withDoubles(3))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6']))
+        .build();
 
       const transitions = getNextStates(state, ctx);
       const splashOption = transitions.find(t =>

@@ -13,7 +13,7 @@ import { baseRuleSet } from '../../../game/rulesets/base';
 import { plungeRuleSet } from '../../../game/rulesets/plunge';
 import { composeRules } from '../../../game/rulesets/compose';
 import type { Trick, Bid } from '../../../game/types';
-import { GameTestHelper, createHandWithDoubles } from '../../helpers/gameTestHelper';
+import { StateBuilder, HandBuilder } from '../../helpers';
 import { BID_TYPES } from '../../../game/constants';
 import { BLANKS, ACES } from '../../../game/types';
 
@@ -22,8 +22,8 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('getValidActions', () => {
     it('should add plunge bid when player has 4+ doubles', () => {
-      const hand = createHandWithDoubles(4);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(4);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 1,
         bids: [],
@@ -31,7 +31,7 @@ describe('Plunge RuleSet Rules', () => {
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
           { id: 1, name: 'P1', teamId: 1, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const baseActions = [
         { type: 'pass' as const, player: 1 }
@@ -48,14 +48,14 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should not add plunge bid when player has 3 doubles', () => {
-      const hand = createHandWithDoubles(3);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(3);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const baseActions: never[] = [];
       const actions = plungeRuleSet.getValidActions?.(state, baseActions) ?? [];
@@ -64,8 +64,8 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should calculate plunge value as highest marks bid + 1', () => {
-      const hand = createHandWithDoubles(5);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(5);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 2,
         bids: [
@@ -77,7 +77,7 @@ describe('Plunge RuleSet Rules', () => {
           { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'P2', teamId: 0, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -85,8 +85,8 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should use minimum value of 4 when no marks bids exist', () => {
-      const hand = createHandWithDoubles(4);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(4);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 0,
         bids: [
@@ -95,7 +95,7 @@ describe('Plunge RuleSet Rules', () => {
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -103,8 +103,8 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should handle plunge bid value jumping over existing marks bid', () => {
-      const hand = createHandWithDoubles(6);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(6);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 3,
         bids: [
@@ -116,7 +116,7 @@ describe('Plunge RuleSet Rules', () => {
           { id: 2, name: 'P2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'P3', teamId: 1, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -124,14 +124,14 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should not add plunge bid when not in bidding phase', () => {
-      const hand = createHandWithDoubles(5);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(5);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'trump_selection',
         currentPlayer: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -139,8 +139,8 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should handle exactly 4 doubles', () => {
-      const hand = createHandWithDoubles(4);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(4);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 2,
         players: [
@@ -148,7 +148,7 @@ describe('Plunge RuleSet Rules', () => {
           { id: 1, name: 'P1', teamId: 1, marks: 0, hand: [] },
           { id: 2, name: 'P2', teamId: 0, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -157,15 +157,15 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should handle all 7 doubles', () => {
-      const hand = createHandWithDoubles(7);
-      const state = GameTestHelper.createTestState({
+      const hand = HandBuilder.withDoubles(7);
+      const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 1,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
           { id: 1, name: 'P1', teamId: 1, marks: 0, hand }
         ]
-      });
+      }).build();
 
       const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
 
@@ -176,9 +176,9 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('getTrumpSelector', () => {
     it('should return partner for plunge bid', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 }
-      });
+      }).build();
       const bid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       const selector = rules.getTrumpSelector(state, bid);
@@ -188,28 +188,28 @@ describe('Plunge RuleSet Rules', () => {
 
     it('should return partner for plunge bid from player 1', () => {
       const bid: Bid = { type: 'plunge', value: 5, player: 1 };
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(3); // Partner of player 1 is player 3
     });
 
     it('should return partner for plunge bid from player 2', () => {
       const bid: Bid = { type: 'plunge', value: 4, player: 2 };
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(0); // Partner of player 2 is player 0
     });
 
     it('should return partner for plunge bid from player 3', () => {
       const bid: Bid = { type: 'plunge', value: 6, player: 3 };
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(1); // Partner of player 3 is player 1
     });
 
     it('should pass through to base for non-plunge bids', () => {
       const bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(1); // Bidder selects trump
     });
@@ -217,10 +217,10 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('getFirstLeader', () => {
     it('should pass through to base (partner leads since they selected trump)', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0
-      });
+      }).build();
 
       // Partner (player 2) is trump selector
       const leader = rules.getFirstLeader(state, 2, { type: 'suit', suit: ACES });
@@ -231,9 +231,9 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('getNextPlayer', () => {
     it('should use standard rotation (no skipping)', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 }
-      });
+      }).build();
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
       expect(rules.getNextPlayer(state, 1)).toBe(2);
@@ -244,7 +244,7 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('isTrickComplete', () => {
     it('should use base rule (4 plays)', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
@@ -252,20 +252,20 @@ describe('Plunge RuleSet Rules', () => {
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } },
           { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
         ]
-      });
+      }).build();
 
       expect(rules.isTrickComplete(state)).toBe(true);
     });
 
     it('should return false for 3 plays', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } }
         ]
-      });
+      }).build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
@@ -273,7 +273,7 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('checkHandOutcome', () => {
     it('should return null when bidding team wins all tricks so far', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
@@ -304,14 +304,14 @@ describe('Plunge RuleSet Rules', () => {
             points: 0
           }
         ]
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(false);
     });
 
     it('should return determined when opponents win any trick', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
@@ -342,7 +342,7 @@ describe('Plunge RuleSet Rules', () => {
             points: 5
           }
         ]
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -351,7 +351,7 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should end on first trick if opponents win', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 1 },
         winningBidder: 1,
         players: [
@@ -372,7 +372,7 @@ describe('Plunge RuleSet Rules', () => {
             points: 0
           }
         ]
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -380,7 +380,7 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should not trigger early termination for non-plunge bids', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
         winningBidder: 0,
         players: [
@@ -401,14 +401,14 @@ describe('Plunge RuleSet Rules', () => {
             points: 0
           }
         ]
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(false); // Should play all tricks for marks bid
     });
 
     it('should respect already determined outcome from previous ruleSet', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
@@ -427,7 +427,7 @@ describe('Plunge RuleSet Rules', () => {
           winner: 0,
           points: 0
         }))
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       // Base ruleset says "all tricks played"
@@ -437,10 +437,10 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('getLedSuit', () => {
     it('should use base rules (no override)', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         trump: { type: 'suit', suit: BLANKS }
-      });
+      }).build();
 
       const domino = { id: '6-2', high: 6, low: 2 };
       expect(rules.getLedSuit(state, domino)).toBe(6);
@@ -449,11 +449,11 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('calculateTrickWinner', () => {
     it('should use base rules (standard trick-taking)', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         trump: { type: 'suit', suit: ACES },
         currentSuit: BLANKS
-      });
+      }).build();
       const trick = [
         { player: 0, domino: { id: '3-0', high: 3, low: 0 } },
         { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
@@ -468,7 +468,7 @@ describe('Plunge RuleSet Rules', () => {
 
   describe('integration: complete plunge hand', () => {
     it('should succeed when bidding team wins all 7 tricks', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 4, player: 0 },
         winningBidder: 0,
         players: [
@@ -478,7 +478,7 @@ describe('Plunge RuleSet Rules', () => {
           { id: 3, name: 'P3', teamId: 1, marks: 0, hand: [] }
         ],
         tricks: []
-      });
+      }).build();
 
       // Simulate 7 tricks, alternating winners between bidder and partner
       const tricks: Trick[] = Array.from({ length: 7 }, (_, i) => ({
@@ -500,7 +500,7 @@ describe('Plunge RuleSet Rules', () => {
     });
 
     it('should fail immediately on first lost trick', () => {
-      const state = GameTestHelper.createTestState({
+      const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: 'plunge', value: 5, player: 3 },
         winningBidder: 3,
         players: [
@@ -521,7 +521,7 @@ describe('Plunge RuleSet Rules', () => {
             points: 0
           }
         ]
-      });
+      }).build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);

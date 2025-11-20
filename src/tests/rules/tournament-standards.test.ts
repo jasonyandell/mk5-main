@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { StateBuilder, GameTestHelper } from '../helpers';
+import { StateBuilder } from '../helpers';
 import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
@@ -95,14 +95,12 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
 
     it('enforces 7 marks to win game', () => {
-      const helper = new GameTestHelper();
-
       // Game should not be complete with 6 marks
-      let state = helper.createGameWithMarks(6, 0);
+      let state = StateBuilder.inBiddingPhase().with({ teamMarks: [6, 0] }).build();
       expect(state.phase).not.toBe('game_end');
 
       // Game should be complete with 7 marks
-      state = helper.createGameWithMarks(7, 0);
+      state = StateBuilder.gameEnded(0).build();
       expect(state.phase).toBe('game_end');
       expect(state.teamMarks[0]).toBeGreaterThanOrEqual(state.gameTarget); // team 0 wins
 

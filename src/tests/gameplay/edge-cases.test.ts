@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/state';
-import { GameTestHelper } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerAfter } from '../../game/core/players';
 import { createTestContext } from '../helpers/executionContext';
@@ -111,87 +111,68 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
   describe('Hand Distribution Edge Cases', () => {
     it('should handle player with all doubles', () => {
-      const state = GameTestHelper.createTestState({
-        players: [{
-          id: 0,
-          name: 'Player 0',
-          teamId: 0,
-          marks: 0,
-          hand: [
-            { id: 0, low: BLANKS, high: BLANKS },   // [0|0]
-            { id: 1, low: ACES, high: ACES },   // [1|1]
-            { id: 6, low: DEUCES, high: DEUCES },   // [2|2]
-            { id: 7, low: TRES, high: TRES },   // [3|3]
-            { id: 14, low: FOURS, high: FOURS },  // [4|4]
-            { id: 15, low: FIVES, high: FIVES },  // [5|5]
-            { id: 27, low: SIXES, high: SIXES }   // [6|6]
-          ]
-        }]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .withPlayerHand(0, [
+          { id: '0-0', low: BLANKS, high: BLANKS },   // [0|0]
+          { id: '1-1', low: ACES, high: ACES },   // [1|1]
+          { id: '2-2', low: DEUCES, high: DEUCES },   // [2|2]
+          { id: '3-3', low: TRES, high: TRES },   // [3|3]
+          { id: '4-4', low: FOURS, high: FOURS },  // [4|4]
+          { id: '5-5', low: FIVES, high: FIVES },  // [5|5]
+          { id: '6-6', low: SIXES, high: SIXES }   // [6|6]
+        ])
+        .build();
+
       // Player should be able to make Plunge bid
       expect(state.players[0]!.hand.length).toBe(7);
       expect(state.players[0]!.hand.every(d => d.low === d.high)).toBe(true);
     });
 
     it('should handle player with no trump dominoes', () => {
-      const state = GameTestHelper.createPlayingScenario(
-        { type: 'suit', suit: SIXES }, // trump: sixes
-        0, // currentPlayer
-        []
-      );
-      
-      // Override with specific hand for test
-      const testState = {
-        ...state,
-        players: [{
-          id: 0,
-          hand: [
-            { id: 1, low: BLANKS, high: ACES },   // [1|0]
-            { id: 5, low: DEUCES, high: TRES },   // [2|3]
-            { id: 8, low: ACES, high: FOURS },   // [4|1]
-            { id: 10, low: BLANKS, high: FIVES },  // [5|0]
-            { id: 15, low: FIVES, high: FIVES },  // [5|5]
-            { id: 6, low: TRES, high: TRES },   // [3|3]
-            { id: 0, low: BLANKS, high: BLANKS }    // [0|0]
-          ]
-        }]
-      };
-      
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: SIXES })
+        .withCurrentPlayer(0)
+        .withPlayerHand(0, [
+          { id: '1-0', low: BLANKS, high: ACES },   // [1|0]
+          { id: '3-2', low: DEUCES, high: TRES },   // [2|3]
+          { id: '4-1', low: ACES, high: FOURS },   // [4|1]
+          { id: '5-0', low: BLANKS, high: FIVES },  // [5|0]
+          { id: '5-5', low: FIVES, high: FIVES },  // [5|5]
+          { id: '3-3', low: TRES, high: TRES },   // [3|3]
+          { id: '0-0', low: BLANKS, high: BLANKS }    // [0|0]
+        ])
+        .build();
+
       // Verify no sixes in hand
-      const hasSixes = testState.players[0]!.hand.some(d => (d.low as number) === SIXES || (d.high as number) === SIXES);
+      const hasSixes = state.players[0]!.hand.some(d => (d.low as number) === SIXES || (d.high as number) === SIXES);
       expect(hasSixes).toBe(false);
     });
 
     it('should handle player with all counting dominoes', () => {
-      const state = GameTestHelper.createTestState({
-        players: [{
-          id: 0,
-          name: 'Player 0',
-          teamId: 0,
-          marks: 0,
-          hand: [
-            { id: 15, low: FIVES, high: FIVES },  // [5|5] - 10 points
-            { id: 20, low: FOURS, high: SIXES },  // [6|4] - 10 points
-            { id: 10, low: BLANKS, high: FIVES },  // [5|0] - 5 points
-            { id: 8, low: ACES, high: FOURS },   // [4|1] - 5 points
-            { id: 5, low: DEUCES, high: TRES },   // [3|2] - 5 points
-            { id: 1, low: BLANKS, high: ACES },   // [1|0] - 0 points
-            { id: 6, low: TRES, high: TRES }    // [3|3] - 0 points
-          ]
-        }]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .withPlayerHand(0, [
+          { id: '5-5', low: FIVES, high: FIVES, points: 10 },  // [5|5] - 10 points
+          { id: '6-4', low: FOURS, high: SIXES, points: 10 },  // [6|4] - 10 points
+          { id: '5-0', low: BLANKS, high: FIVES, points: 5 },  // [5|0] - 5 points
+          { id: '4-1', low: ACES, high: FOURS, points: 5 },   // [4|1] - 5 points
+          { id: '3-2', low: DEUCES, high: TRES, points: 5 },   // [3|2] - 5 points
+          { id: '1-0', low: BLANKS, high: ACES },   // [1|0] - 0 points
+          { id: '3-3', low: TRES, high: TRES }    // [3|3] - 0 points
+        ])
+        .build();
+
       // Player has all 5 counting dominoes (35 points)
       const countingDominoes = [
-        { id: 15, low: FIVES, high: FIVES },  // 10 points
-        { id: 20, low: FOURS, high: SIXES },  // 10 points
-        { id: 10, low: BLANKS, high: FIVES },  // 5 points
-        { id: 8, low: ACES, high: FOURS },   // 5 points
-        { id: 5, low: DEUCES, high: TRES }    // 5 points
+        { id: '5-5', low: FIVES, high: FIVES },  // 10 points
+        { id: '6-4', low: FOURS, high: SIXES },  // 10 points
+        { id: '5-0', low: BLANKS, high: FIVES },  // 5 points
+        { id: '4-1', low: ACES, high: FOURS },   // 5 points
+        { id: '3-2', low: DEUCES, high: TRES }    // 5 points
       ];
-      
-      const playerCountingDominoes = state.players[0]!.hand.filter(d => 
+
+      const playerCountingDominoes = state.players[0]!.hand.filter(d =>
         countingDominoes.some(cd => cd.id === d.id)
       );
       expect(playerCountingDominoes.length).toBe(5);
@@ -200,12 +181,13 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
   describe('Scoring Edge Cases', () => {
     it('should handle set bid that results in exactly bid amount', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'scoring',
-        currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 },
-        teamScores: [35, 7] // Exactly made the bid
-      });
-      
+      const state = StateBuilder
+        .inScoringPhase([35, 7])
+        .with({
+          currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 }
+        })
+        .build();
+
       // Team should get 1 mark for making exactly 35
       expect(state.teamScores[0]).toBe(35);
       expect(state.currentBid?.value).toBe(35);
@@ -234,11 +216,12 @@ describe('Edge Cases and Unusual Scenarios', () => {
   describe('Trump Selection Edge Cases', () => {
     it('should handle trump selection with limited options', () => {
       const ctx = createTestContext();
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
-      });
+      const state = StateBuilder
+        .inTrumpSelection(0, 30)
+        .with({
+          currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 }
+        })
+        .build();
 
       // Marks bid with nello ruleset should include nello as trump option
       const transitions = getNextStates(state, ctx);
@@ -250,11 +233,9 @@ describe('Edge Cases and Unusual Scenarios', () => {
 
     it('should handle no-trump selection', () => {
       const ctx = createTestContext();
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 }
-      });
+      const state = StateBuilder
+        .inTrumpSelection(0, 35)
+        .build();
 
       const transitions = getNextStates(state, ctx);
       const noTrump = transitions.find(t => t.id === 'trump-no-trump');

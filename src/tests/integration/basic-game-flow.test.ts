@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { createInitialState, createSetupState } from '../../game/core/state';
+import { createSetupState } from '../../game/core/state';
 import { composeRules, baseRuleSet } from '../../game/rulesets';
 import { shuffleDominoesWithSeed } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
-import { GameTestHelper, createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
 import type { Bid, Domino } from '../../game/types';
 import { ACES, DEUCES, TRES } from '../../game/types';
@@ -29,11 +29,8 @@ describe('Basic Game Flow', () => {
     });
 
     it('deals dominoes correctly', () => {
-      const state = createInitialState();
-      const helper = new GameTestHelper();
-
-      // Deal dominoes to all players
-      const dealtState = helper.dealDominoes(state);
+      // StateBuilder.inBiddingPhase() already deals dominoes
+      const dealtState = StateBuilder.inBiddingPhase().build();
 
       expect(dealtState.players).toHaveLength(4);
       expect(dealtState.players[0]!.hand).toHaveLength(7);
@@ -74,42 +71,19 @@ describe('Basic Game Flow', () => {
 
   describe('Phase Transitions', () => {
     it('transitions from setup to bidding', () => {
-      const state = createTestState({
-        phase: 'setup',
-        dealer: 0
-      });
-      
-      const helper = new GameTestHelper();
-      const dealtState = helper.dealDominoes(state);
-      const biddingState = { 
-        ...dealtState, 
-        phase: 'bidding' as const,
-        currentPlayer: getPlayerLeftOfDealer(state.dealer) 
-      };
+      const biddingState = StateBuilder
+        .inBiddingPhase(0)
+        .build();
       
       expect(biddingState.phase).toBe('bidding');
       expect(biddingState.currentPlayer).toBe(getPlayerLeftOfDealer(biddingState.dealer));
     });
 
     it('transitions from bidding to trump selection', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: [
-          { type: BID_TYPES.POINTS, value: 30, player: 1 },
-          { type: BID_TYPES.PASS, player: 2 },
-          { type: BID_TYPES.PASS, player: 3 },
-          { type: BID_TYPES.PASS, player: 0 }
-        ]
-      });
-
-      const trumpState = { 
-        ...state, 
-        phase: 'trump_selection' as const,
-        winningBidder: 1,
-        currentPlayer: 1
-      };
+      const trumpState = StateBuilder
+        .inTrumpSelection(1, 30)
+        .withDealer(0)
+        .build();
       
       expect(trumpState.phase).toBe('trump_selection');
       expect(trumpState.winningBidder).toBe(1);
@@ -117,17 +91,10 @@ describe('Basic Game Flow', () => {
     });
 
     it('transitions from trump selection to playing', () => {
-      const state = createTestState({
-        phase: 'trump_selection',
-        winningBidder: 1,
-        trump: { type: 'suit', suit: DEUCES } // twos trump
-      });
-
-      const playingState = {
-        ...state,
-        phase: 'playing' as const,
-        currentPlayer: 1 // bid winner leads
-      };
+      const playingState = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: DEUCES })
+        .with({ winningBidder: 1, currentPlayer: 1 })
+        .build();
       
       expect(playingState.phase).toBe('playing');
       expect(playingState.trump.type).toBe('suit');
@@ -136,13 +103,10 @@ describe('Basic Game Flow', () => {
     });
 
     it('transitions from playing to scoring', () => {
-      const helper = new GameTestHelper();
-      const state = helper.createCompleteGameState();
-      
-      const scoringState = {
-        ...state,
-        phase: 'scoring' as const
-      };
+      const scoringState = StateBuilder
+        .withTricksPlayed(7)
+        .with({ phase: 'scoring' })
+        .build();
       
       expect(scoringState.phase).toBe('scoring');
       expect(scoringState.tricks).toHaveLength(7);
@@ -151,12 +115,11 @@ describe('Basic Game Flow', () => {
 
   describe('Bidding Flow', () => {
     it('processes complete bidding round', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 2,
-        currentPlayer: 3,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(2)
+        .withCurrentPlayer(3)
+        .withBids([])
+        .build();
 
       const bids: Bid[] = [
         { type: BID_TYPES.PASS, player: 3 },
@@ -182,12 +145,11 @@ describe('Basic Game Flow', () => {
     });
 
     it('handles all-pass scenario with redeal', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 1,
-        currentPlayer: 2,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(1)
+        .withCurrentPlayer(2)
+        .withBids([])
+        .build();
 
       const allPassBids: Bid[] = [
         { type: BID_TYPES.PASS, player: 2 },
@@ -213,13 +175,10 @@ describe('Basic Game Flow', () => {
 
   describe('Gameplay Flow', () => {
     it('bid winner leads first trick', () => {
-      const state = createTestState({
-        phase: 'playing',
-        winningBidder: 2,
-        currentPlayer: 2,
-        trump: { type: 'suit', suit: ACES },
-        currentTrick: []
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES })
+        .with({ winningBidder: 2, currentPlayer: 2 })
+        .build();
 
       expect(state.currentPlayer).toBe(2); // Current player should match bidWinner from setup
       expect(state.currentTrick).toHaveLength(0);
@@ -233,11 +192,9 @@ describe('Basic Game Flow', () => {
         { id: 'test4', high: 2, low: 5, points: 0 }
       ];
 
-      const state = createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES }, // ones trump
-        currentTrick: []
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES })
+        .build();
 
       // Set player hands
       state.players[0]!.hand = [testDominoes[0]!];
@@ -273,8 +230,9 @@ describe('Basic Game Flow', () => {
     });
 
     it('completes all 7 tricks', () => {
-      const helper = new GameTestHelper();
-      const state = helper.createGameInProgress();
+      const state = StateBuilder
+        .inPlayingPhase()
+        .build();
       
       // Play through all 7 tricks
       for (let trickNum = 0; trickNum < 7; trickNum++) {
@@ -312,8 +270,9 @@ describe('Basic Game Flow', () => {
 
   describe('Game Completion', () => {
     it('determines game winner correctly', () => {
-      const helper = new GameTestHelper();
-      const completedState = helper.createCompletedGame(0); // team 0 wins
+      const completedState = StateBuilder
+        .gameEnded(0) // team 0 wins
+        .build();
 
       expect(completedState.phase).toBe('game_end');
       // Winner determined by scoring logic
@@ -346,12 +305,11 @@ describe('Basic Game Flow', () => {
 
   describe('Error Handling', () => {
     it('handles invalid bids gracefully', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Invalid bid - below minimum
       const invalidBid: Bid = { type: BID_TYPES.POINTS, value: 25, player: 1 };
@@ -363,14 +321,13 @@ describe('Basic Game Flow', () => {
     });
 
     it('handles invalid plays gracefully', () => {
-      const state = createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        currentTrick: [{
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES })
+        .withCurrentTrick([{
           player: 0,
           domino: { id: 'lead', high: 3, low: 2, points: 0 } // threes suit led
-        }]
-      });
+        }])
+        .build();
 
       const playerHand: Domino[] = [
         { id: 'valid', high: 3, low: 4, points: 0 }, // valid follow (contains 3)
@@ -397,11 +354,11 @@ describe('Basic Game Flow', () => {
     });
 
     it('prevents out-of-turn actions', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase()
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Valid bid by current player
       const validBid: Bid = { type: BID_TYPES.POINTS, value: 30, player: 1 };

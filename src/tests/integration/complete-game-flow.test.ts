@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
-import { GameTestHelper, processSequentialConsensus } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
+import { processSequentialConsensus } from '../helpers/consensusHelpers';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';
 import { simulateGame } from '../../game/ai/gameSimulator';
@@ -218,12 +219,13 @@ describe('Complete Game Flow Integration', () => {
     });
 
     it('should handle set penalties correctly', () => {
-      let state = GameTestHelper.createTestState({
-        phase: 'scoring',
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        teamScores: [20, 22], // Team 0 failed 2-mark bid (needed 84 points)
-        winningBidder: 0
-      });
+      let state = StateBuilder
+        .inScoringPhase([20, 22]) // Team 0 failed 2-mark bid (needed 84 points)
+        .with({
+          currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
+          winningBidder: 0
+        })
+        .build();
       
       // Team 0 should lose marks, Team 1 should gain
       expect(state.teamScores[0]).toBeLessThan(84);

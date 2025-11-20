@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { createTestContext } from '../helpers/executionContext';
 import { getNextStates } from '../../game/core/state';
-import { createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import { ACES, DEUCES, TRES, FOURS, FIVES } from '../../game/types';
 
 describe('Trick Winner Leads Next Trick', () => {
@@ -9,17 +9,15 @@ describe('Trick Winner Leads Next Trick', () => {
 
   test('trick winner becomes current player for next trick', () => {
     // Create a state with a completed 4-domino trick
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: FIVES }, // 5s are trump
-      currentTrick: [
+    const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: FIVES })
+      .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '6-3', high: 6, low: 3 } }, // follow suit
         { player: 2, domino: { id: '5-2', high: 5, low: 2 } }, // play trump - should win
         { player: 3, domino: { id: '6-1', high: 6, low: 1 } }  // follow suit
-      ],
-      currentPlayer: 0 // doesn't matter, trick is complete
-    });
+      ])
+      .withCurrentPlayer(0) // doesn't matter, trick is complete
+      .build();
 
     // Get transitions - should include agreement actions first
     let transitions = getNextStates(state, ctx);
@@ -53,17 +51,15 @@ describe('Trick Winner Leads Next Trick', () => {
   });
 
   test('highest domino of led suit wins when no trump played', () => {
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: ACES }, // 1s are trump, but none played
-      currentTrick: [
+    const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+      .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s - 10 points
         { player: 1, domino: { id: '6-5', high: 6, low: 5 } }, // higher 6 - should win
         { player: 2, domino: { id: '3-2', high: 3, low: 2, points: 5 } }, // off suit
         { player: 3, domino: { id: '6-2', high: 6, low: 2 } }  // lower 6
-      ],
-      currentPlayer: 0
-    });
+      ])
+      .withCurrentPlayer(0)
+      .build();
 
     // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state, ctx);
@@ -87,17 +83,15 @@ describe('Trick Winner Leads Next Trick', () => {
   });
 
   test('first trump played wins over non-trump', () => {
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: DEUCES }, // 2s are trump
-      currentTrick: [
+    const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: DEUCES })
+      .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '2-0', high: 2, low: 0 } }, // play trump - should win
         { player: 2, domino: { id: '6-5', high: 6, low: 5 } }, // higher 6, but not trump
         { player: 3, domino: { id: '3-1', high: 3, low: 1 } }  // off suit
-      ],
-      currentPlayer: 0
-    });
+      ])
+      .withCurrentPlayer(0)
+      .build();
 
     // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state, ctx);
@@ -121,17 +115,15 @@ describe('Trick Winner Leads Next Trick', () => {
   });
 
   test('higher trump beats lower trump', () => {
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: TRES }, // 3s are trump
-      currentTrick: [
+    const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES })
+      .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '3-0', high: 3, low: 0 } }, // low trump
         { player: 2, domino: { id: '3-5', high: 3, low: 5 } }, // higher trump - should win
         { player: 3, domino: { id: '3-1', high: 3, low: 1 } }  // medium trump
-      ],
-      currentPlayer: 0
-    });
+      ])
+      .withCurrentPlayer(0)
+      .build();
 
     // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state, ctx);
@@ -155,17 +147,15 @@ describe('Trick Winner Leads Next Trick', () => {
   });
 
   test('doubles trump works correctly', () => {
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'doubles' }, // doubles are trump
-      currentTrick: [
+    const state = StateBuilder.inPlayingPhase({ type: 'doubles' })
+      .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '3-3', high: 3, low: 3 } }, // double (trump) - should win
         { player: 2, domino: { id: '6-5', high: 6, low: 5 } }, // higher 6, but not trump
         { player: 3, domino: { id: '2-1', high: 2, low: 1 } }  // off suit
-      ],
-      currentPlayer: 0
-    });
+      ])
+      .withCurrentPlayer(0)
+      .build();
 
     // First, all players must agree to complete the trick sequentially
     let transitions = getNextStates(state, ctx);
@@ -190,12 +180,10 @@ describe('Trick Winner Leads Next Trick', () => {
 
   test('multiple tricks - winner leads each time', () => {
     // Start with empty state
-    let state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: FOURS }, // 4s are trump
-      currentPlayer: 2, // Player 2 starts
-      tricks: []
-    });
+    let state = StateBuilder.inPlayingPhase({ type: 'suit', suit: FOURS })
+      .withCurrentPlayer(2) // Player 2 starts
+      .withTricks([])
+      .build();
 
     // Play first trick where player 3 wins
     state.currentTrick = [

@@ -3,17 +3,20 @@ import { calculateRoundScore } from '../../game/core/scoring';
 import { isGameComplete } from '../../game/core/state';
 import type { Bid } from '../../game/types';
 import { BID_TYPES } from '../../game/constants';
-import { createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 
 describe('Scoring Validation', () => {
   describe('calculateRoundScore', () => {
     it('should calculate basic point totals correctly', () => {
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.POINTS, value: 30, player: 0 },
-        winningBidder: 0,
-        teamScores: [25, 17],
-        teamMarks: [0, 0]
-      });
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.POINTS, value: 30, player: 0 },
+          winningBidder: 0,
+          teamScores: [25, 17],
+          teamMarks: [0, 0]
+        })
+        .build();
       
       const result = calculateRoundScore(state);
       
@@ -23,54 +26,66 @@ describe('Scoring Validation', () => {
     });
 
     it('should handle successful bids', () => {
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.POINTS, value: 30, player: 0 },
-        winningBidder: 0,
-        teamScores: [32, 10], // Bidding team made their bid
-        teamMarks: [0, 0]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.POINTS, value: 30, player: 0 },
+          winningBidder: 0,
+          teamScores: [32, 10], // Bidding team made their bid
+          teamMarks: [0, 0]
+        })
+        .build();
+
       const result = calculateRoundScore(state);
-      
+
       expect(result).toBeDefined();
       expect(state.teamScores[0]).toBeGreaterThanOrEqual(30); // Made the bid
     });
 
     it('should handle failed bids', () => {
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 },
-        winningBidder: 0,
-        teamScores: [20, 22], // Bidding team failed to make bid
-        teamMarks: [0, 0]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.POINTS, value: 35, player: 0 },
+          winningBidder: 0,
+          teamScores: [20, 22], // Bidding team failed to make bid
+          teamMarks: [0, 0]
+        })
+        .build();
+
       const result = calculateRoundScore(state);
-      
+
       expect(result).toBeDefined();
       expect(state.teamScores[0]).toBeLessThan(35); // Failed the bid
     });
 
     it('should handle mark bids correctly', () => {
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.MARKS, value: 1, player: 0 },
-        winningBidder: 0,
-        teamScores: [42, 0], // Perfect score for 1 mark bid
-        teamMarks: [0, 0]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.MARKS, value: 1, player: 0 },
+          winningBidder: 0,
+          teamScores: [42, 0], // Perfect score for 1 mark bid
+          teamMarks: [0, 0]
+        })
+        .build();
+
       const result = calculateRoundScore(state);
-      
+
       expect(result).toBeDefined();
       expect(state.teamScores[0]).toBe(42); // All points to bidding team
     });
 
     it('should validate point conservation', () => {
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.POINTS, value: 35, player: 1 },
-        winningBidder: 1,
-        teamScores: [18, 24],
-        teamMarks: [0, 0]
-      });
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.POINTS, value: 35, player: 1 },
+          winningBidder: 1,
+          teamScores: [18, 24],
+          teamMarks: [0, 0]
+        })
+        .build();
       
       // Total points should always equal 42 (35 counting + 7 tricks)
       expect(state.teamScores[0] + state.teamScores[1]).toBe(42);
@@ -82,11 +97,11 @@ describe('Scoring Validation', () => {
 
   describe('Game Completion', () => {
     it('should detect game completion at 7 marks', () => {
-      const state1 = createTestState({ teamMarks: [7, 0] });
-      const state2 = createTestState({ teamMarks: [0, 7] });
-      const state3 = createTestState({ teamMarks: [6, 6] });
-      const state4 = createTestState({ teamMarks: [6, 0] });
-      
+      const state1 = StateBuilder.inBiddingPhase().with({ teamMarks: [7, 0] }).build();
+      const state2 = StateBuilder.inBiddingPhase().with({ teamMarks: [0, 7] }).build();
+      const state3 = StateBuilder.inBiddingPhase().with({ teamMarks: [6, 6] }).build();
+      const state4 = StateBuilder.inBiddingPhase().with({ teamMarks: [6, 0] }).build();
+
       expect(isGameComplete(state1)).toBe(true);
       expect(isGameComplete(state2)).toBe(true);
       expect(isGameComplete(state3)).toBe(false);
@@ -94,10 +109,10 @@ describe('Scoring Validation', () => {
     });
 
     it('should handle edge cases correctly', () => {
-      const state1 = createTestState({ teamMarks: [7, 7] }); // Both teams reach 7
-      const state2 = createTestState({ teamMarks: [8, 5] }); // Exceed 7
-      const state3 = createTestState({ teamMarks: [0, 0] }); // New game
-      
+      const state1 = StateBuilder.inBiddingPhase().with({ teamMarks: [7, 7] }).build(); // Both teams reach 7
+      const state2 = StateBuilder.inBiddingPhase().with({ teamMarks: [8, 5] }).build(); // Exceed 7
+      const state3 = StateBuilder.inBiddingPhase().with({ teamMarks: [0, 0] }).build(); // New game
+
       expect(isGameComplete(state1)).toBe(true);
       expect(isGameComplete(state2)).toBe(true);
       expect(isGameComplete(state3)).toBe(false);
@@ -114,15 +129,18 @@ describe('Scoring Validation', () => {
       ];
 
       tests.forEach(test => {
-        const state = createTestState({
-          currentBid: { type: BID_TYPES.POINTS, value: test.bid, player: 0 },
-          winningBidder: 0,
-          teamScores: [test.score, 42 - test.score],
-          teamMarks: [0, 0]
-        });
-        
+        const state = StateBuilder
+          .inBiddingPhase()
+          .with({
+            currentBid: { type: BID_TYPES.POINTS, value: test.bid, player: 0 },
+            winningBidder: 0,
+            teamScores: [test.score, 42 - test.score],
+            teamMarks: [0, 0]
+          })
+          .build();
+
         expect(state.teamScores[0] + state.teamScores[1]).toBe(42);
-        
+
         const result = calculateRoundScore(state);
         expect(result).toBeDefined();
       });
@@ -130,13 +148,16 @@ describe('Scoring Validation', () => {
 
     it('should handle set penalties correctly', () => {
       // When a team fails their bid, opponents get marks
-      const state = createTestState({
-        currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
-        winningBidder: 0,
-        teamScores: [20, 22], // Failed 2-mark bid (needed 42+ points)
-        teamMarks: [0, 0]
-      });
-      
+      const state = StateBuilder
+        .inBiddingPhase()
+        .with({
+          currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
+          winningBidder: 0,
+          teamScores: [20, 22], // Failed 2-mark bid (needed 42+ points)
+          teamMarks: [0, 0]
+        })
+        .build();
+
       const result = calculateRoundScore(state);
       expect(result).toBeDefined();
       expect(state.teamScores[0]).toBeLessThan(42); // Failed the bid
@@ -218,7 +239,7 @@ describe('Scoring Validation', () => {
       ];
 
       gameProgression.forEach((round, index) => {
-        const state = createTestState({ teamMarks: [round.team0, round.team1] });
+        const state = StateBuilder.inBiddingPhase().with({ teamMarks: [round.team0, round.team1] }).build();
         if (index === gameProgression.length - 1) {
           expect(isGameComplete(state)).toBe(true);
         } else {

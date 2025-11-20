@@ -1,8 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import { composeRules } from '../../game/rulesets/compose';
 import { baseRuleSet } from '../../game/rulesets';
-import { analyzeSuits } from '../../game/core/suit-analysis';
-import { createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import type { Domino, GameState, TrumpSelection, LedSuitOrNone } from '../../game/types';
 import { FIVES, SIXES, DOUBLES_AS_TRUMP, NO_LEAD_SUIT } from '../../game/types';
 
@@ -14,19 +13,12 @@ describe('Doubles Trump Renege Validation', () => {
   const sixesAreTrump: TrumpSelection = { type: 'suit', suit: SIXES };
 
   function createTestStateWithHand(hand: Domino[], currentTrick: { player: number; domino: Domino }[], trump: TrumpSelection, currentSuit: LedSuitOrNone = NO_LEAD_SUIT): GameState {
-    const state = createTestState({
-      phase: 'playing',
-      trump,
-      currentTrick,
-      currentSuit,
-      currentPlayer: 1,
-      players: [
-        { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-        { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: hand, suitAnalysis: analyzeSuits(hand, trump) },
-        { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
-        { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
-      ]
-    });
+    const state = StateBuilder.inPlayingPhase(trump)
+      .withCurrentTrick(currentTrick)
+      .withCurrentPlayer(1)
+      .withPlayerHand(1, hand)
+      .with({ currentSuit })
+      .build();
     return state;
   }
 

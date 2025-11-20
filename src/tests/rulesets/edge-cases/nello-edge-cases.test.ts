@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
 import { composeRules, baseRuleSet, nelloRuleSet } from '../../../game/rulesets';
-import { GameTestHelper } from '../../helpers/gameTestHelper';
+import { StateBuilder } from '../../helpers';
 import type { Domino } from '../../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
@@ -17,14 +17,11 @@ describe('Nello Edge Cases', () => {
   describe('Partner Sits Out - 3 Player Rotation', () => {
     it('should have only 3 active players when partner sits out', () => {
       // Bidder is player 0, partner is player 2
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        currentTrick: []
-      });
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .build();
 
       // Player 0 leads
       expect(state.currentPlayer).toBe(0);
@@ -43,13 +40,11 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should never have partner as currentPlayer during nello hand', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 1, // Bidder is player 1, partner is player 3
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 1 }
-      });
+      const state = StateBuilder.nelloContract(1)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .build();
 
       // Simulate multiple rounds of play
       let current = state.currentPlayer;
@@ -69,14 +64,11 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should complete trick with only 3 plays when partner sits out', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        currentTrick: []
-      });
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .build();
 
       // Trick should not be complete with 2 plays
       const state2Plays = { ...state, currentTrick: [
@@ -106,11 +98,9 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should handle first trick leader being bidder in 3-player rotation', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 2,
-        currentBid: { type: 'marks', value: 1, player: 2 }
-      });
+      const state = StateBuilder.nelloContract(2)
+        .withWinningBid(2, { type: 'marks', value: 1, player: 2 })
+        .build();
 
       // Trump selector should be bidder in nello
       const trumpSelector = nelloRules.getTrumpSelector(state, state.currentBid);
@@ -124,13 +114,11 @@ describe('Nello Edge Cases', () => {
 
   describe('Doubles Form Own Suit (Suit 7)', () => {
     it('should treat doubles as suit 7 when led in nello', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 }
-      });
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .build();
 
       // Test all doubles are suit 7
       const doubles = [
@@ -150,13 +138,11 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should treat non-doubles as higher pip suit in nello', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 }
-      });
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .build();
 
       // Non-doubles should use higher pip
       const nonDoubles = [
@@ -174,32 +160,19 @@ describe('Nello Edge Cases', () => {
 
     it('should require following doubles suit when doubles led in nello', () => {
       // When doubles are led (suit 7), players must follow with doubles if they have them
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 1,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        currentTrick: [
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(1)
+        .withCurrentTrick([
           { player: 0, domino: { id: '5-5', high: FIVES, low: FIVES } } // Double led
-        ],
-        currentSuit: 7, // Doubles suit
-        players: [
-          { id: 0, hand: [], teamId: 0, marks: 0, name: 'P0' },
-          {
-            id: 1,
-            hand: [
-              { id: '2-2', high: DEUCES, low: DEUCES }, // Has double
-              { id: '6-4', high: SIXES, low: FOURS }    // Has non-double
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P1'
-          },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' }, // Partner
-          { id: 3, hand: [], teamId: 1, marks: 0, name: 'P3' }
-        ]
-      });
+        ])
+        .with({ currentSuit: 7 }) // Doubles suit
+        .withPlayerHand(0, [])
+        .withPlayerHand(1, ['2-2', '6-4'])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, [])
+        .build();
 
       // Player 1 has doubles, so the double should be suit 7
       const double = state.players[1]!.hand[0]!;
@@ -213,32 +186,19 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should allow any play when player has no doubles and doubles were led', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 3,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        currentTrick: [
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(3)
+        .withCurrentTrick([
           { player: 0, domino: { id: '5-5', high: FIVES, low: FIVES } } // Double led
-        ],
-        currentSuit: 7, // Doubles suit
-        players: [
-          { id: 0, hand: [], teamId: 0, marks: 0, name: 'P0' },
-          { id: 1, hand: [], teamId: 1, marks: 0, name: 'P1' },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' }, // Partner
-          {
-            id: 3,
-            hand: [
-              { id: '6-4', high: SIXES, low: FOURS },   // Non-double
-              { id: '3-1', high: TRES, low: ACES }      // Non-double
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P3'
-          }
-        ]
-      });
+        ])
+        .with({ currentSuit: 7 }) // Doubles suit
+        .withPlayerHand(0, [])
+        .withPlayerHand(1, [])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, ['6-4', '3-1'])
+        .build();
 
       // Player 3 has no doubles, so can play any domino
       // Both should be valid (follow-suit logic in rules will handle this)
@@ -254,13 +214,11 @@ describe('Nello Edge Cases', () => {
 
   describe('Last Trick Completion with 3 Players', () => {
     it('should complete 7th trick correctly with only 3 players', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        tricks: [
+      const state = StateBuilder.nelloContract(0)
+        .withTrump({ type: 'nello' })
+        .with({ phase: 'playing' })
+        .withCurrentPlayer(0)
+        .withTricks([
           // 6 completed tricks (bidder lost all)
           { plays: [
             { player: 0, domino: { id: 't1-0', high: ACES, low: BLANKS } },
@@ -292,14 +250,12 @@ describe('Nello Edge Cases', () => {
             { player: 3, domino: { id: 't6-3', high: DEUCES, low: BLANKS } },
             { player: 0, domino: { id: 't6-0', high: TRES, low: BLANKS } }
           ], winner: 3, points: 0, ledSuit: ACES }
-        ],
-        players: [
-          { id: 0, hand: [{ id: 'last-0', high: FOURS, low: BLANKS }], teamId: 0, marks: 0, name: 'P0' },
-          { id: 1, hand: [{ id: 'last-1', high: FIVES, low: BLANKS }], teamId: 1, marks: 0, name: 'P1' },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' }, // Partner
-          { id: 3, hand: [{ id: 'last-3', high: SIXES, low: BLANKS }], teamId: 1, marks: 0, name: 'P3' }
-        ]
-      });
+        ])
+        .withPlayerHand(0, [{ id: 'last-0', high: FOURS, low: BLANKS }])
+        .withPlayerHand(1, [{ id: 'last-1', high: FIVES, low: BLANKS }])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, [{ id: 'last-3', high: SIXES, low: BLANKS }])
+        .build();
 
       // Check that we have 6 tricks
       expect(state.tricks.length).toBe(6);
@@ -344,12 +300,7 @@ describe('Nello Edge Cases', () => {
 
   describe('Nello Trump Option Availability', () => {
     it('should allow nello trump selection when marks bid is winning', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 }
-      });
+      const state = StateBuilder.nelloContract(0).build();
 
       // Nello should be available as trump option
       const validActions = nelloRuleSet.getValidActions?.(state, []);
@@ -364,12 +315,7 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should NOT allow nello trump selection when points bid is winning', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 35, player: 0 }
-      });
+      const state = StateBuilder.inTrumpSelection(0, 35).build();
 
       // Nello should NOT be available
       const validActions = nelloRuleSet.getValidActions?.(state, []);
@@ -382,10 +328,7 @@ describe('Nello Edge Cases', () => {
     });
 
     it('should only add nello during trump_selection phase', () => {
-      const biddingState = GameTestHelper.createTestState({
-        phase: 'bidding',
-        currentPlayer: 0
-      });
+      const biddingState = StateBuilder.inBiddingPhase().build();
 
       const validActions = nelloRuleSet.getValidActions?.(biddingState, []);
       const nelloAction = validActions?.find(a =>
@@ -398,60 +341,12 @@ describe('Nello Edge Cases', () => {
 
   describe('Nello Integration with executeAction', () => {
     it('should properly handle full nello hand with 3-player tricks', () => {
-      let state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        players: [
-          {
-            id: 0,
-            hand: [
-              { id: '1-0', high: ACES, low: BLANKS },
-              { id: '2-0', high: DEUCES, low: BLANKS },
-              { id: '3-0', high: TRES, low: BLANKS },
-              { id: '4-0', high: FOURS, low: BLANKS },
-              { id: '5-0', high: FIVES, low: BLANKS },
-              { id: '6-0', high: SIXES, low: BLANKS },
-              { id: '0-0', high: BLANKS, low: BLANKS }
-            ],
-            teamId: 0,
-            marks: 0,
-            name: 'P0'
-          },
-          {
-            id: 1,
-            hand: [
-              { id: '1-1', high: ACES, low: ACES },
-              { id: '2-1', high: DEUCES, low: ACES },
-              { id: '3-1', high: TRES, low: ACES },
-              { id: '4-1', high: FOURS, low: ACES },
-              { id: '5-1', high: FIVES, low: ACES },
-              { id: '6-1', high: SIXES, low: ACES },
-              { id: '2-2', high: DEUCES, low: DEUCES }
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P1'
-          },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' }, // Partner
-          {
-            id: 3,
-            hand: [
-              { id: '3-2', high: TRES, low: DEUCES },
-              { id: '4-2', high: FOURS, low: DEUCES },
-              { id: '5-2', high: FIVES, low: DEUCES },
-              { id: '6-2', high: SIXES, low: DEUCES },
-              { id: '3-3', high: TRES, low: TRES },
-              { id: '4-3', high: FOURS, low: TRES },
-              { id: '5-3', high: FIVES, low: TRES }
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P3'
-          }
-        ]
-      });
+      let state = StateBuilder.nelloContract(0)
+        .withPlayerHand(0, ['1-0', '2-0', '3-0', '4-0', '5-0', '6-0', '0-0'])
+        .withPlayerHand(1, ['1-1', '2-1', '3-1', '4-1', '5-1', '6-1', '2-2'])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, ['3-2', '4-2', '5-2', '6-2', '3-3', '4-3', '5-3'])
+        .build();
 
       // Select nello trump
       state = executeAction(state, {

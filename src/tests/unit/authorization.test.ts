@@ -5,7 +5,7 @@ import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer
 import { createInitialState, executeAction } from '../../game';
 import { getNextPlayer } from '../../game/core/players';
 import { createTestContext } from '../helpers/executionContext';
-import { GameTestHelper } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers/stateBuilder';
 import { composeRules, baseRuleSet } from '../../game/rulesets';
 
 describe('Authorization', () => {
@@ -67,20 +67,20 @@ describe('Authorization', () => {
     it('allows any player to execute neutral actions (no player field)', () => {
       const ctx = createTestContext();
       // Create playing phase with complete trick AND all players agreed
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: 0 },
-        currentTrick: [
-          { player: 0, domino: { id: '0-0', high: 0, low: 0, points: 0 } },
-          { player: 1, domino: { id: '0-1', high: 0, low: 1, points: 0 } },
-          { player: 2, domino: { id: '0-2', high: 0, low: 2, points: 0 } },
-          { player: 3, domino: { id: '0-3', high: 0, low: 3, points: 0 } }
-        ],
-        consensus: {
-          completeTrick: new Set([0, 1, 2, 3]), // All players have agreed
-          scoreHand: new Set()
-        }
-      });
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
+        .withCurrentTrick([
+          { player: 0, domino: '0-0' },
+          { player: 1, domino: '0-1' },
+          { player: 2, domino: '0-2' },
+          { player: 3, domino: '0-3' }
+        ])
+        .with({
+          consensus: {
+            completeTrick: new Set([0, 1, 2, 3]), // All players have agreed
+            scoreHand: new Set()
+          }
+        })
+        .build();
       const sessions = createTestSessions();
       const neutralAction: GameAction = { type: 'complete-trick' };
 
@@ -147,17 +147,10 @@ describe('Authorization', () => {
     it('correctly handles play actions with capabilities', () => {
       const ctx = createTestContext();
       // Create playing phase with player 3 as current player and domino in hand
-      const baseState = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: 0 },
-        currentPlayer: 3
-      });
-      // Modify player 3's hand directly
-      baseState.players[3]!.hand = [
-        { id: '0-0', high: 0, low: 0, points: 0 },
-        { id: '1-1', high: 1, low: 1, points: 0 }
-      ];
-      const state = baseState;
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
+        .withCurrentPlayer(3)
+        .withPlayerHand(3, ['0-0', '1-1'])
+        .build();
       const sessions = createTestSessions();
       const playAction: GameAction = { type: 'play', player: 3, dominoId: '0-0' };
 
@@ -170,21 +163,21 @@ describe('Authorization', () => {
     it('correctly handles consensus actions with capabilities', () => {
       const ctx = createTestContext();
       // Create playing phase with complete trick so consensus action is valid
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: 0 },
-        currentPlayer: 1,
-        currentTrick: [
-          { player: 0, domino: { id: '0-0', high: 0, low: 0, points: 0 } },
-          { player: 1, domino: { id: '0-1', high: 0, low: 1, points: 0 } },
-          { player: 2, domino: { id: '0-2', high: 0, low: 2, points: 0 } },
-          { player: 3, domino: { id: '0-3', high: 0, low: 3, points: 0 } }
-        ],
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        }
-      });
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
+        .withCurrentPlayer(1)
+        .withCurrentTrick([
+          { player: 0, domino: '0-0' },
+          { player: 1, domino: '0-1' },
+          { player: 2, domino: '0-2' },
+          { player: 3, domino: '0-3' }
+        ])
+        .with({
+          consensus: {
+            completeTrick: new Set(),
+            scoreHand: new Set()
+          }
+        })
+        .build();
       const sessions = createTestSessions();
       const consensusAction: GameAction = { type: 'agree-complete-trick', player: 1 };
 

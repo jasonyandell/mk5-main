@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { createTestHand } from '../../helpers/gameTestHelper';
+import { HandBuilder } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -153,24 +153,24 @@ describe('Nello Full Hand Integration', () => {
   // === TEST FIXTURES ===
 
   const standardHands = [
-    createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]),
-    createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]),
-    createTestHand([[0, 6], [1, 5], [1, 6], [2, 4], [2, 5], [2, 6], [4, 4]]),
-    createTestHand([[3, 5], [3, 6], [4, 5], [4, 6], [5, 5], [5, 6], [6, 6]])
+    HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
+    HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
+    HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
+    HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
   ];
 
   const bidderHighCards = [
-    createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]),
-    createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]),
-    createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]),
-    createTestHand([[1, 5], [2, 4], [2, 5], [3, 5], [4, 4], [4, 5], [5, 5]])
+    HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']),
+    HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
+    HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
+    HandBuilder.fromStrings(['1-5', '2-4', '2-5', '3-5', '4-4', '4-5', '5-5'])
   ];
 
   const bidderLowCards = [
-    createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]),
-    createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6]]),
-    createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]),
-    createTestHand([[1, 5], [2, 4], [2, 5], [3, 5], [4, 4], [4, 5], [5, 5]])
+    HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
+    HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']),
+    HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
+    HandBuilder.fromStrings(['1-5', '2-4', '2-5', '3-5', '4-4', '4-5', '5-5'])
   ];
 
   // === SUCCESSFUL NELLO TESTS ===

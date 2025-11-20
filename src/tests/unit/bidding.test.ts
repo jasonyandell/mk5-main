@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet } from '../../game/rulesets';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
-import { GameTestHelper, createTestState, createHandWithDoubles } from '../helpers/gameTestHelper';
+import { GameTestHelper } from '../helpers/gameTestHelper';
+import { StateBuilder, HandBuilder } from '../helpers/stateBuilder';
 import { getNextPlayer, getPlayerAfter } from '../../game/core/players';
 import type { Bid } from '../../game/types';
 
@@ -12,12 +13,9 @@ const rules = composeRules([baseRuleSet, nelloRuleSet, plungeRuleSet, splashRule
 describe('Bidding Rules', () => {
   describe('All-Pass Redeal Scenarios', () => {
     it('should handle all players passing with dealer rotation', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 1,
-        currentPlayer: 2,
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase(1)
+        .withCurrentPlayer(2)
+        .build();
 
       // Simulate all players passing
       const passBids: Bid[] = [
@@ -42,16 +40,14 @@ describe('Bidding Rules', () => {
     it('should advance dealer correctly after all-pass redeal', () => {
       // Test dealer advancement from each position
       for (let startDealer = 0; startDealer < 4; startDealer++) {
-        const state = createTestState({
-          phase: 'bidding',
-          dealer: startDealer,
-          bids: [
+        const state = StateBuilder.inBiddingPhase(startDealer)
+          .withBids([
             { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 1) },
             { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 2) },
             { type: BID_TYPES.PASS, player: getPlayerAfter(startDealer, 3) },
             { type: BID_TYPES.PASS, player: startDealer }
-          ]
-        });
+          ])
+          .build();
 
         // Verify dealer advancement would occur
         expect(state.dealer).toBe(startDealer);
@@ -60,17 +56,15 @@ describe('Bidding Rules', () => {
     });
 
     it('should reset game state properly after all-pass redeal', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        bids: [
+      const state = StateBuilder.inBiddingPhase(0)
+        .withBids([
           { type: BID_TYPES.PASS, player: 1 },
           { type: BID_TYPES.PASS, player: 2 },
           { type: BID_TYPES.PASS, player: 3 },
           { type: BID_TYPES.PASS, player: 0 }
-        ],
-        currentBid: { type: BID_TYPES.POINTS, value: 35, player: 1 } // Should be reset
-      });
+        ])
+        .with({ currentBid: { type: BID_TYPES.POINTS, value: 35, player: 1 } }) // Should be reset
+        .build();
 
       // Verify all-pass condition
       expect(state.bids.every(b => b.type === BID_TYPES.PASS)).toBe(true);
@@ -80,50 +74,38 @@ describe('Bidding Rules', () => {
 
   describe('Plunge Bid Validation (4+ Doubles Requirement)', () => {
     it('should require 4+ doubles for Plunge bid in casual mode', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
       // Test with insufficient doubles (3)
-      const insufficientHand = createHandWithDoubles(3);
+      const insufficientHand = HandBuilder.withDoubles(3);
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
-      
+
       expect(rules.isValidBid(state, plungeBid, insufficientHand)).toBe(false);
     });
 
     it('should allow Plunge bid with exactly 4 doubles', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
-      const sufficientHand = createHandWithDoubles(4);
+      const sufficientHand = HandBuilder.withDoubles(4);
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
-      
+
       expect(rules.isValidBid(state, plungeBid, sufficientHand)).toBe(true);
     });
 
     it('should allow Plunge bid with more than 4 doubles', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
-      const abundantHand = createHandWithDoubles(6);
+      const abundantHand = HandBuilder.withDoubles(6);
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
-      
+
       expect(rules.isValidBid(state, plungeBid, abundantHand)).toBe(true);
     });
 
     it('should validate higher Plunge bids with sufficient doubles', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
-      const maxDoublesHand = createHandWithDoubles(7);
-      
+      const maxDoublesHand = HandBuilder.withDoubles(7);
+
       // Test various Plunge bid levels
       for (let marks = 4; marks <= 6; marks++) {
         const plungeBid: Bid = { type: 'plunge', value: marks, player: 0 };
@@ -132,12 +114,9 @@ describe('Bidding Rules', () => {
     });
 
     it('should allow Plunge bids with proper doubles', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
-      const perfectHand = createHandWithDoubles(7);
+      const perfectHand = HandBuilder.withDoubles(7);
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
       // Plunge ruleSet allows plunge bids with sufficient doubles
@@ -145,33 +124,27 @@ describe('Bidding Rules', () => {
     });
 
     it('should validate Splash bid requires 3+ doubles', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
       // Test insufficient doubles (2)
-      const insufficientHand = createHandWithDoubles(2);
+      const insufficientHand = HandBuilder.withDoubles(2);
       const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
       expect(rules.isValidBid(state, splashBid, insufficientHand)).toBe(false);
 
       // Test sufficient doubles (3)
-      const sufficientHand = createHandWithDoubles(3);
+      const sufficientHand = HandBuilder.withDoubles(3);
       expect(rules.isValidBid(state, splashBid, sufficientHand)).toBe(true);
     });
 
     it('should require minimum 4 marks for Plunge bids', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        bids: []
-      });
+      const state = StateBuilder.inBiddingPhase().build();
 
-      const adequateHand = createHandWithDoubles(4);
-      
+      const adequateHand = HandBuilder.withDoubles(4);
+
       // Plunge must be 4+ marks
       const invalidPlunge: Bid = { type: 'plunge', value: 3, player: 0 };
       const validPlunge: Bid = { type: 'plunge', value: 4, player: 0 };
-      
+
       expect(rules.isValidBid(state, invalidPlunge, adequateHand)).toBe(false);
       expect(rules.isValidBid(state, validPlunge, adequateHand)).toBe(true);
     });
@@ -348,7 +321,7 @@ describe('Bidding Rules', () => {
   
   describe('Bidding scenarios', () => {
     it('should handle complete bidding round with all passes', () => {
-      const state = GameTestHelper.createBiddingScenario(0);
+      const state = StateBuilder.inBiddingPhase(0).withCurrentPlayer(0).build();
       const passBids = [
         { type: BID_TYPES.PASS, player: 0 },
         { type: BID_TYPES.PASS, player: 1 },
@@ -366,7 +339,7 @@ describe('Bidding Rules', () => {
     });
     
     it('should handle competitive bidding scenario', () => {
-      const state = GameTestHelper.createBiddingScenario(0);
+      const state = StateBuilder.inBiddingPhase(0).withCurrentPlayer(0).build();
       
       const biddingSequence = [
         { type: BID_TYPES.POINTS, value: 30, player: 0 },

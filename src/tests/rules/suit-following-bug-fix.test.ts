@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/rulesets/compose';
 import { baseRuleSet } from '../../game/rulesets';
 import { analyzeSuits } from '../../game/core/suit-analysis';
@@ -21,29 +21,30 @@ describe('Suit Following Bug Fix', () => {
       { id: '4-2', high: 4, low: 2 }  // Not trump, cannot follow 5s
     ];
 
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: ACES }, // Ones are trump
-      currentTrick: [{
-        player: 0,
-        domino: { id: '5-4', high: 5, low: 4 } // 5-4 leads (fives suit)
-      }],
-      currentSuit: FIVES, // Fives were led
-      currentPlayer: 2,
-      players: [
-        { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-        { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
-        { 
-          id: 2, 
-          name: 'Player 2', 
-          teamId: 0, 
-          marks: 0, 
-          hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
-        },
-        { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
-      ]
-    });
+    const state = StateBuilder
+      .inPlayingPhase({ type: 'suit', suit: ACES }) // Ones are trump
+      .with({
+        currentTrick: [{
+          player: 0,
+          domino: { id: '5-4', high: 5, low: 4 } // 5-4 leads (fives suit)
+        }],
+        currentSuit: FIVES, // Fives were led
+        currentPlayer: 2,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          { id: 1, name: 'Player 1', teamId: 1, marks: 0, hand: [] },
+          {
+            id: 2,
+            name: 'Player 2',
+            teamId: 0,
+            marks: 0,
+            hand: playerHand,
+            suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
+          },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+        ]
+      })
+      .build();
 
     // Since 5-1 is trump, it cannot follow 5s
     // Player has NO dominoes that can follow 5s (non-trump 5s)
@@ -67,29 +68,30 @@ describe('Suit Following Bug Fix', () => {
       { id: '3-4', high: 4, low: 3 }  // Has neither
     ];
 
-    const state = createTestState({
-      phase: 'playing',
-      trump: { type: 'suit', suit: ACES }, // Ones are trump
-      currentTrick: [{
-        player: 0,
-        domino: { id: '5-6', high: 6, low: 5 } // 5-6 leads (sixes suit)
-      }],
-      currentSuit: SIXES, // Sixes were led
-      currentPlayer: 1,
-      players: [
-        { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
-        { 
-          id: 1, 
-          name: 'Player 1', 
-          teamId: 1, 
-          marks: 0, 
-          hand: playerHand,
-          suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
-        },
-        { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
-        { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
-      ]
-    });
+    const state = StateBuilder
+      .inPlayingPhase({ type: 'suit', suit: ACES }) // Ones are trump
+      .with({
+        currentTrick: [{
+          player: 0,
+          domino: { id: '5-6', high: 6, low: 5 } // 5-6 leads (sixes suit)
+        }],
+        currentSuit: SIXES, // Sixes were led
+        currentPlayer: 1,
+        players: [
+          { id: 0, name: 'Player 0', teamId: 0, marks: 0, hand: [] },
+          {
+            id: 1,
+            name: 'Player 1',
+            teamId: 1,
+            marks: 0,
+            hand: playerHand,
+            suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
+          },
+          { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
+          { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
+        ]
+      })
+      .build();
 
     // Cannot follow 6s, so all plays should be valid
     const domino0 = playerHand[0];

@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../../game/core/state';
 import { BID_TYPES } from '../../../game/constants';
-import { createHandWithDoubles } from '../../helpers/gameTestHelper';
+import { HandBuilder } from '../../helpers';
 import { createTestContext, createTestContextWithRuleSets } from '../../helpers/executionContext';
 
 describe('Composed Rules in ExecutionContext', () => {
@@ -19,8 +19,8 @@ describe('Composed Rules in ExecutionContext', () => {
     state.currentPlayer = 1; // Second player to bid
     // Add a previous bid so special contracts become possible
     state.bids = [{ type: BID_TYPES.POINTS, value: 35, player: 0 }];
-    state.players[0]!.hand = createHandWithDoubles(4);
-    state.players[1]!.hand = createHandWithDoubles(4);
+    state.players[0]!.hand = HandBuilder.withDoubles(4);
+    state.players[1]!.hand = HandBuilder.withDoubles(4);
 
     // Verify that composed rules are available and can validate bids
     const rules = ctx.rules;

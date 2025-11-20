@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../../game/types/config';
 import { Room } from '../../../server/Room';
-import { createHandWithDoubles } from '../../helpers/gameTestHelper';
+import { HandBuilder } from '../../helpers';
 import type { PlayerSession } from '../../../game/multiplayer/types';
 
 function createPlayers(config: GameConfig): PlayerSession[] {
@@ -70,7 +70,7 @@ describe('Room Layers Integration', () => {
 
       // Give player 0 enough doubles for plunge
       const state = room.getState();
-      state.coreState.players[0]!.hand = createHandWithDoubles(4);
+      state.coreState.players[0]!.hand = HandBuilder.withDoubles(4);
 
       // Check plunge bid is available
       const view = room.getView('player-0');

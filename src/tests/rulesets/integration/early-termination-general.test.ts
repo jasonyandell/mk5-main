@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet, sevensRuleSet } from '../../../game/rulesets';
-import { GameTestHelper } from '../../helpers/gameTestHelper';
+import { StateBuilder } from '../../helpers';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
 /**
@@ -20,13 +20,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
 
   describe('Remaining Dominoes Stay in Hands', () => {
     it('should keep unplayed dominoes in player hands after nello early termination', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'nello' })
+        .withWinningBid(0, { type: 'marks', value: 2, player: 0 })
+        .withCurrentPlayer(0)
+        .withTricks([
           {
             plays: [
               { player: 0, domino: { id: 't1-0', high: SIXES, low: BLANKS } },
@@ -37,56 +34,36 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 0,
             ledSuit: SIXES
           }
-        ],
-        players: [
-          {
-            id: 0,
-            hand: [
-              // Bidder still has 6 dominoes
-              { id: 'h0-1', high: ACES, low: BLANKS },
-              { id: 'h0-2', high: DEUCES, low: BLANKS },
-              { id: 'h0-3', high: TRES, low: BLANKS },
-              { id: 'h0-4', high: FOURS, low: BLANKS },
-              { id: 'h0-5', high: FIVES, low: BLANKS },
-              { id: 'h0-6', high: BLANKS, low: BLANKS }
-            ],
-            teamId: 0,
-            marks: 0,
-            name: 'P0'
-          },
-          {
-            id: 1,
-            hand: [
-              // Player 1 has 6 dominoes
-              { id: 'h1-1', high: DEUCES, low: ACES },
-              { id: 'h1-2', high: TRES, low: ACES },
-              { id: 'h1-3', high: FOURS, low: ACES },
-              { id: 'h1-4', high: FIVES, low: ACES },
-              { id: 'h1-5', high: SIXES, low: ACES },
-              { id: 'h1-6', high: ACES, low: ACES }
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P1'
-          },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' }, // Partner (sits out in nello)
-          {
-            id: 3,
-            hand: [
-              // Player 3 has 6 dominoes
-              { id: 'h3-1', high: TRES, low: DEUCES },
-              { id: 'h3-2', high: FOURS, low: DEUCES },
-              { id: 'h3-3', high: FIVES, low: DEUCES },
-              { id: 'h3-4', high: SIXES, low: DEUCES },
-              { id: 'h3-5', high: DEUCES, low: DEUCES },
-              { id: 'h3-6', high: TRES, low: TRES }
-            ],
-            teamId: 1,
-            marks: 0,
-            name: 'P3'
-          }
-        ]
-      });
+        ])
+        .withPlayerHand(0, [
+          // Bidder still has 6 dominoes
+          { id: 'h0-1', high: ACES, low: BLANKS },
+          { id: 'h0-2', high: DEUCES, low: BLANKS },
+          { id: 'h0-3', high: TRES, low: BLANKS },
+          { id: 'h0-4', high: FOURS, low: BLANKS },
+          { id: 'h0-5', high: FIVES, low: BLANKS },
+          { id: 'h0-6', high: BLANKS, low: BLANKS }
+        ])
+        .withPlayerHand(1, [
+          // Player 1 has 6 dominoes
+          { id: 'h1-1', high: DEUCES, low: ACES },
+          { id: 'h1-2', high: TRES, low: ACES },
+          { id: 'h1-3', high: FOURS, low: ACES },
+          { id: 'h1-4', high: FIVES, low: ACES },
+          { id: 'h1-5', high: SIXES, low: ACES },
+          { id: 'h1-6', high: ACES, low: ACES }
+        ])
+        .withPlayerHand(2, []) // Partner (sits out in nello)
+        .withPlayerHand(3, [
+          // Player 3 has 6 dominoes
+          { id: 'h3-1', high: TRES, low: DEUCES },
+          { id: 'h3-2', high: FOURS, low: DEUCES },
+          { id: 'h3-3', high: FIVES, low: DEUCES },
+          { id: 'h3-4', high: SIXES, low: DEUCES },
+          { id: 'h3-5', high: DEUCES, low: DEUCES },
+          { id: 'h3-6', high: TRES, low: TRES }
+        ])
+        .build();
 
       // Verify early termination
       const outcome = nelloRules.checkHandOutcome(state);
@@ -106,13 +83,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
     });
 
     it('should not play remaining tricks after plunge fails', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 0,
-        currentPlayer: 2,
-        currentBid: { type: 'plunge', value: 4, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(0, { type: 'plunge', value: 4, player: 0 })
+        .withCurrentPlayer(2)
+        .withTricks([
           { plays: [], winner: 0, points: 0, ledSuit: ACES },
           {
             plays: [
@@ -125,14 +99,12 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 0,
             ledSuit: DEUCES
           }
-        ],
-        players: [
-          { id: 0, hand: [{ id: 'r0', high: FOURS, low: BLANKS }], teamId: 0, marks: 0, name: 'P0' },
-          { id: 1, hand: [{ id: 'r1', high: FIVES, low: BLANKS }], teamId: 1, marks: 0, name: 'P1' },
-          { id: 2, hand: [{ id: 'r2', high: SIXES, low: FIVES }], teamId: 0, marks: 0, name: 'P2' },
-          { id: 3, hand: [{ id: 'r3', high: ACES, low: ACES }], teamId: 1, marks: 0, name: 'P3' }
-        ]
-      });
+        ])
+        .withPlayerHand(0, [{ id: 'r0', high: FOURS, low: BLANKS }])
+        .withPlayerHand(1, [{ id: 'r1', high: FIVES, low: BLANKS }])
+        .withPlayerHand(2, [{ id: 'r2', high: SIXES, low: FIVES }])
+        .withPlayerHand(3, [{ id: 'r3', high: ACES, low: ACES }])
+        .build();
 
       const outcome = plungeRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -152,13 +124,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
 
   describe('Phase Transitions on Early Termination', () => {
     it('should indicate hand is complete when nello fails early', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'nello' })
+        .withWinningBid(0, { type: 'marks', value: 2, player: 0 })
+        .withCurrentPlayer(0)
+        .withTricks([
           {
             plays: [
               { player: 0, domino: { id: 't1-0', high: SIXES, low: BLANKS } },
@@ -169,8 +138,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 0,
             ledSuit: SIXES
           }
-        ]
-      });
+        ])
+        .build();
 
       const outcome = nelloRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -183,13 +152,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
     });
 
     it('should indicate hand is complete when splash fails on trick 2', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'doubles' },
-        winningBidder: 1,
-        currentPlayer: 3,
-        currentBid: { type: 'splash', value: 2, player: 1 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'doubles' })
+        .withWinningBid(1, { type: 'splash', value: 2, player: 1 })
+        .withCurrentPlayer(3)
+        .withTricks([
           { plays: [], winner: 1, points: 10, ledSuit: ACES },
           {
             plays: [
@@ -202,8 +168,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 10,
             ledSuit: DEUCES
           }
-        ]
-      });
+        ])
+        .build();
 
       const outcome = splashRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -214,13 +180,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
 
   describe('Correct Winner/Loser Determination', () => {
     it('should identify bidding team lost when nello fails', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'nello' },
-        winningBidder: 0, // Team 0
-        currentPlayer: 0,
-        currentBid: { type: 'marks', value: 2, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'nello' })
+        .withWinningBid(0, { type: 'marks', value: 2, player: 0 }) // Team 0
+        .withCurrentPlayer(0)
+        .withTricks([
           {
             plays: [
               { player: 0, domino: { id: 't1-0', high: SIXES, low: BLANKS } },
@@ -231,8 +194,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 0,
             ledSuit: SIXES
           }
-        ]
-      });
+        ])
+        .build();
 
       const outcome = nelloRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -240,13 +203,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
     });
 
     it('should identify bidding team lost when plunge fails', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 2, // Team 0
-        currentPlayer: 0,
-        currentBid: { type: 'plunge', value: 4, player: 2 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(2, { type: 'plunge', value: 4, player: 2 }) // Team 0
+        .withCurrentPlayer(0)
+        .withTricks([
           { plays: [], winner: 2, points: 5, ledSuit: ACES },
           {
             plays: [
@@ -259,8 +219,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 0,
             ledSuit: DEUCES
           }
-        ]
-      });
+        ])
+        .build();
 
       const outcome = plungeRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
@@ -268,13 +228,10 @@ describe('Early Termination - General Cross-Contract Tests', () => {
     });
 
     it('should identify bidding team lost when sevens fails', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'sevens' },
-        winningBidder: 1, // Team 1 (players 1 and 3)
-        currentPlayer: 1,
-        currentBid: { type: 'marks', value: 3, player: 1 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'sevens' })
+        .withWinningBid(1, { type: 'marks', value: 3, player: 1 }) // Team 1 (players 1 and 3)
+        .withCurrentPlayer(1)
+        .withTricks([
           {
             plays: [
               { player: 1, domino: { id: 't1-1', high: ACES, low: BLANKS } }, // 1 pip (distance 6)
@@ -286,8 +243,8 @@ describe('Early Termination - General Cross-Contract Tests', () => {
             points: 5,
             ledSuit: ACES
           }
-        ]
-      });
+        ])
+        .build();
 
       const outcome = sevensRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);

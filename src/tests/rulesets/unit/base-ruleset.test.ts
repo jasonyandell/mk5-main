@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest';
 import { baseRuleSet } from '../../../game/rulesets/base';
 import { composeRules } from '../../../game/rulesets/compose';
 import type { Play, Trick } from '../../../game/types';
-import { GameTestHelper } from '../../helpers/gameTestHelper';
+import { StateBuilder } from '../../helpers';
 import { BLANKS, ACES, DEUCES, TRES, SIXES, DOUBLES_AS_TRUMP } from '../../../game/types';
 import { BID_TYPES } from '../../../game/constants';
 
@@ -25,7 +25,7 @@ describe('Base RuleSet Rules', () => {
 
   describe('getTrumpSelector', () => {
     it('should return the bidding player as trump selector', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
       const bid = { type: BID_TYPES.POINTS, value: 30, player: 2 };
 
       const selector = rules.getTrumpSelector(state, bid);
@@ -34,7 +34,7 @@ describe('Base RuleSet Rules', () => {
     });
 
     it('should work for different players', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, { type: BID_TYPES.POINTS, value: 30, player: 0 })).toBe(0);
       expect(rules.getTrumpSelector(state, { type: BID_TYPES.POINTS, value: 30, player: 1 })).toBe(1);
@@ -42,7 +42,7 @@ describe('Base RuleSet Rules', () => {
     });
 
     it('should work for marks bid', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
       const bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
 
       expect(rules.getTrumpSelector(state, bid)).toBe(1);
@@ -51,7 +51,7 @@ describe('Base RuleSet Rules', () => {
 
   describe('getFirstLeader', () => {
     it('should return trump selector as first leader', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
       const trump = { type: 'suit' as const, suit: ACES };
 
       const leader = rules.getFirstLeader(state, 2, trump);
@@ -60,7 +60,7 @@ describe('Base RuleSet Rules', () => {
     });
 
     it('should work for all player positions', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
       const trump = { type: 'suit' as const, suit: TRES };
 
       expect(rules.getFirstLeader(state, 0, trump)).toBe(0);
@@ -70,7 +70,7 @@ describe('Base RuleSet Rules', () => {
     });
 
     it('should work with doubles trump', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
       const trump = { type: 'doubles' as const };
 
       expect(rules.getFirstLeader(state, 3, trump)).toBe(3);
@@ -79,7 +79,7 @@ describe('Base RuleSet Rules', () => {
 
   describe('getNextPlayer', () => {
     it('should rotate clockwise (0 -> 1 -> 2 -> 3 -> 0)', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
       expect(rules.getNextPlayer(state, 1)).toBe(2);
@@ -88,7 +88,7 @@ describe('Base RuleSet Rules', () => {
     });
 
     it('should wrap around correctly', () => {
-      const state = GameTestHelper.createTestState();
+      const state = StateBuilder.inBiddingPhase().build();
 
       // Starting from player 3, should wrap to 0
       const next = rules.getNextPlayer(state, 3);
@@ -102,55 +102,55 @@ describe('Base RuleSet Rules', () => {
 
   describe('isTrickComplete', () => {
     it('should return false for empty trick', () => {
-      const state = GameTestHelper.createTestState({
-        currentTrick: []
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .with({ currentTrick: [] })
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
 
     it('should return false for 1 play', () => {
-      const state = GameTestHelper.createTestState({
-        currentTrick: [
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
 
     it('should return false for 2 plays', () => {
-      const state = GameTestHelper.createTestState({
-        currentTrick: [
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
 
     it('should return false for 3 plays', () => {
-      const state = GameTestHelper.createTestState({
-        currentTrick: [
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(false);
     });
 
     it('should return true for 4 plays', () => {
-      const state = GameTestHelper.createTestState({
-        currentTrick: [
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentTrick([
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 2, domino: { id: '3-0', high: 3, low: 0 } },
           { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
-        ]
-      });
+        ])
+        .build();
 
       expect(rules.isTrickComplete(state)).toBe(true);
     });
@@ -158,9 +158,9 @@ describe('Base RuleSet Rules', () => {
 
   describe('checkHandOutcome', () => {
     it('should return undetermined when no tricks played', () => {
-      const state = GameTestHelper.createTestState({
-        tricks: []
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTricks([])
+        .build();
 
       const outcome = rules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(false);
@@ -179,7 +179,7 @@ describe('Base RuleSet Rules', () => {
           points: 0
         }));
 
-        const state = GameTestHelper.createTestState({ tricks });
+        const state = StateBuilder.inBiddingPhase().withTricks(tricks).build();
         const outcome = rules.checkHandOutcome(state);
 
         expect(outcome.isDetermined).toBe(false);
@@ -198,7 +198,7 @@ describe('Base RuleSet Rules', () => {
         points: 0
       }));
 
-      const state = GameTestHelper.createTestState({ tricks });
+      const state = StateBuilder.inBiddingPhase().withTricks(tricks).build();
       const outcome = rules.checkHandOutcome(state);
 
       expect(outcome.isDetermined).toBe(true);
@@ -208,63 +208,63 @@ describe('Base RuleSet Rules', () => {
 
   describe('getLedSuit', () => {
     it('should return higher pip for non-doubles with no trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'not-selected' }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'not-selected' })
+        .build();
       const domino = { id: '6-2', high: 6, low: 2 };
 
       expect(rules.getLedSuit(state, domino)).toBe(6);
     });
 
     it('should return higher pip for non-doubles with regular trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'suit', suit: ACES }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'suit', suit: ACES })
+        .build();
       const domino = { id: '6-2', high: 6, low: 2 };
 
       expect(rules.getLedSuit(state, domino)).toBe(6);
     });
 
     it('should return trump suit for trump dominoes', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'suit', suit: TRES }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'suit', suit: TRES })
+        .build();
       const domino = { id: '6-3', high: 6, low: 3 };
 
       expect(rules.getLedSuit(state, domino)).toBe(TRES);
     });
 
     it('should return trump suit when low value is trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'suit', suit: DEUCES }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'suit', suit: DEUCES })
+        .build();
       const domino = { id: '5-2', high: 5, low: 2 };
 
       expect(rules.getLedSuit(state, domino)).toBe(DEUCES);
     });
 
     it('should return 7 for doubles when doubles are trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'doubles' }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'doubles' })
+        .build();
       const double = { id: '4-4', high: 4, low: 4 };
 
       expect(rules.getLedSuit(state, double)).toBe(DOUBLES_AS_TRUMP);
     });
 
     it('should return higher pip for non-doubles when doubles are trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'doubles' }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'doubles' })
+        .build();
       const domino = { id: '6-2', high: 6, low: 2 };
 
       expect(rules.getLedSuit(state, domino)).toBe(6);
     });
 
     it('should handle all doubles correctly with doubles trump', () => {
-      const state = GameTestHelper.createTestState({
-        trump: { type: 'doubles' }
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withTrump({ type: 'doubles' })
+        .build();
 
       for (let i = 0; i <= 6; i++) {
         const double = { id: `${i}-${i}`, high: i, low: i };
@@ -276,10 +276,10 @@ describe('Base RuleSet Rules', () => {
   describe('calculateTrickWinner', () => {
     describe('basic trump hierarchy', () => {
       it('should select first play when all play same value non-trump', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } },
           { player: 1, domino: { id: '5-0', high: 5, low: 0 } },
@@ -292,10 +292,10 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should award trump over non-trump', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: TRES },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: TRES })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // Non-trump
           { player: 1, domino: { id: '3-2', high: 3, low: 2 } }, // Trump (contains 3)
@@ -308,10 +308,10 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should select higher trump when multiple trumps played', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: SIXES },
-          currentSuit: SIXES
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: SIXES })
+          .with({ currentSuit: SIXES })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // Trump
           { player: 1, domino: { id: '6-2', high: 6, low: 2 } }, // Trump
@@ -326,10 +326,10 @@ describe('Base RuleSet Rules', () => {
 
     describe('following suit', () => {
       it('should award higher value when following suit', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '3-0', high: 3, low: 0 } }, // Led suit BLANKS
           { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // Follows suit, higher
@@ -342,10 +342,10 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should ignore non-followers even with higher values', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES },
-          currentSuit: DEUCES
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .with({ currentSuit: DEUCES })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '3-2', high: 3, low: 2 } }, // Led suit DEUCES
           { player: 1, domino: { id: '6-0', high: 6, low: 0 } }, // Doesn't follow
@@ -360,10 +360,10 @@ describe('Base RuleSet Rules', () => {
 
     describe('doubles trump', () => {
       it('should award double over non-doubles when doubles are trump', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'doubles' },
-          currentSuit: DOUBLES_AS_TRUMP
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'doubles' })
+          .with({ currentSuit: DOUBLES_AS_TRUMP })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-5', high: 6, low: 5 } }, // Non-double
           { player: 1, domino: { id: '2-2', high: 2, low: 2 } }, // Double (trump)
@@ -376,10 +376,10 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should select higher double when multiple doubles played', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'doubles' },
-          currentSuit: DOUBLES_AS_TRUMP
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'doubles' })
+          .with({ currentSuit: DOUBLES_AS_TRUMP })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '2-2', high: 2, low: 2 } }, // Double
           { player: 1, domino: { id: '5-5', high: 5, low: 5 } }, // Higher double
@@ -394,9 +394,9 @@ describe('Base RuleSet Rules', () => {
 
     describe('edge cases', () => {
       it('should handle single play trick', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES }
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .build();
         const trick: Play[] = [
           { player: 2, domino: { id: '6-0', high: 6, low: 0 } }
         ];
@@ -406,18 +406,18 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should throw error for empty trick', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES }
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .build();
 
         expect(() => rules.calculateTrickWinner(state, [])).toThrow('Trick cannot be empty');
       });
 
       it('should handle first player winning', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '6-0', high: 6, low: 0 } }, // Highest
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
@@ -429,10 +429,10 @@ describe('Base RuleSet Rules', () => {
       });
 
       it('should handle last player winning', () => {
-        const state = GameTestHelper.createTestState({
-          trump: { type: 'suit', suit: ACES },
-          currentSuit: BLANKS
-        });
+        const state = StateBuilder.inBiddingPhase()
+          .withTrump({ type: 'suit', suit: ACES })
+          .with({ currentSuit: BLANKS })
+          .build();
         const trick: Play[] = [
           { player: 0, domino: { id: '2-0', high: 2, low: 0 } },
           { player: 1, domino: { id: '3-0', high: 3, low: 0 } },

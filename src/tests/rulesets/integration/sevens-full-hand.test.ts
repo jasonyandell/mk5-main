@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { createTestHand } from '../../helpers/gameTestHelper';
+import { HandBuilder } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -150,18 +150,18 @@ describe('Sevens Full Hand Integration', () => {
 
   // Bidding team (Team 0: P0, P2) has dominoes closest to 7 → wins all tricks
   const biddingTeamWinsHands = [
-    createTestHand([[3, 4], [2, 5], [1, 6], [3, 3], [2, 4], [4, 4], [1, 5]]), // P0: dist 0,0,0,1,1,1,1
-    createTestHand([[0, 3], [5, 6], [1, 1], [0, 2], [6, 6], [0, 1], [0, 0]]), // P1: dist 4,4,5,5,5,6,7 (far)
-    createTestHand([[3, 5], [0, 6], [2, 6], [2, 3], [1, 4], [0, 5], [4, 5]]), // P2: dist 1,1,1,2,2,2,2
-    createTestHand([[3, 6], [2, 2], [1, 3], [0, 4], [5, 5], [4, 6], [1, 2]])  // P3: dist 2,3,3,3,3,3,4 (far)
+    HandBuilder.fromStrings(['3-4', '2-5', '1-6', '3-3', '2-4', '4-4', '1-5']), // P0: dist 0,0,0,1,1,1,1
+    HandBuilder.fromStrings(['0-3', '5-6', '1-1', '0-2', '6-6', '0-1', '0-0']), // P1: dist 4,4,5,5,5,6,7 (far)
+    HandBuilder.fromStrings(['3-5', '0-6', '2-6', '2-3', '1-4', '0-5', '4-5']), // P2: dist 1,1,1,2,2,2,2
+    HandBuilder.fromStrings(['3-6', '2-2', '1-3', '0-4', '5-5', '4-6', '1-2'])  // P3: dist 2,3,3,3,3,3,4 (far)
   ];
 
   // Defending team (Team 1: P1, P3) has dominoes closest to 7 → bidder loses early
   const defendingTeamWinsHands = [
-    createTestHand([[0, 3], [5, 6], [1, 1], [0, 2], [6, 6], [0, 1], [0, 0]]), // P0: dist 4,4,5,5,5,6,7 (far)
-    createTestHand([[3, 4], [2, 5], [1, 6], [3, 3], [2, 4], [4, 4], [1, 5]]), // P1: dist 0,0,0,1,1,1,1 (close)
-    createTestHand([[3, 6], [2, 2], [1, 3], [0, 4], [5, 5], [4, 6], [1, 2]]), // P2: dist 2,3,3,3,3,3,4 (far)
-    createTestHand([[3, 5], [0, 6], [2, 6], [2, 3], [1, 4], [0, 5], [4, 5]])  // P3: dist 1,1,1,2,2,2,2 (close)
+    HandBuilder.fromStrings(['0-3', '5-6', '1-1', '0-2', '6-6', '0-1', '0-0']), // P0: dist 4,4,5,5,5,6,7 (far)
+    HandBuilder.fromStrings(['3-4', '2-5', '1-6', '3-3', '2-4', '4-4', '1-5']), // P1: dist 0,0,0,1,1,1,1 (close)
+    HandBuilder.fromStrings(['3-6', '2-2', '1-3', '0-4', '5-5', '4-6', '1-2']), // P2: dist 2,3,3,3,3,3,4 (far)
+    HandBuilder.fromStrings(['3-5', '0-6', '2-6', '2-3', '1-4', '0-5', '4-5'])  // P3: dist 1,1,1,2,2,2,2 (close)
   ];
 
   // === SUCCESSFUL SEVENS TESTS ===
@@ -194,10 +194,10 @@ describe('Sevens Full Hand Integration', () => {
     it('should continue when partner wins trick and partner leads next', () => {
       // Partner (P2) has dominoes closest to 7 to win tricks
       const partnerWinsHands = [
-        createTestHand([[0, 3], [5, 6], [1, 1], [0, 2], [6, 6], [0, 1], [0, 0]]), // P0 (bidder): far from 7
-        createTestHand([[3, 6], [2, 2], [1, 3], [0, 4], [5, 5], [4, 6], [1, 2]]), // P1: medium dist
-        createTestHand([[3, 4], [2, 5], [1, 6], [3, 3], [2, 4], [4, 4], [1, 5]]), // P2 (partner): closest to 7!
-        createTestHand([[3, 5], [0, 6], [2, 6], [2, 3], [1, 4], [0, 5], [4, 5]])  // P3: medium dist
+        HandBuilder.fromStrings(['0-3', '5-6', '1-1', '0-2', '6-6', '0-1', '0-0']), // P0 (bidder): far from 7
+        HandBuilder.fromStrings(['3-6', '2-2', '1-3', '0-4', '5-5', '4-6', '1-2']), // P1: medium dist
+        HandBuilder.fromStrings(['3-4', '2-5', '1-6', '3-3', '2-4', '4-4', '1-5']), // P2 (partner): closest to 7!
+        HandBuilder.fromStrings(['3-5', '0-6', '2-6', '2-3', '1-4', '0-5', '4-5'])  // P3: medium dist
       ];
 
       const room = createSevensRoom(778899, partnerWinsHands);

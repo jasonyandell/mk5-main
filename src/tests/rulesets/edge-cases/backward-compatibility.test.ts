@@ -4,7 +4,7 @@ import { getNextStates } from '../../../game/core/state';
 import { composeRules, baseRuleSet } from '../../../game/rulesets';
 import { createInitialState } from '../../../game/core/state';
 import { dealDominoesWithSeed } from '../../../game/core/dominoes';
-import { GameTestHelper } from '../../helpers/gameTestHelper';
+import { StateBuilder } from '../../helpers';
 import { createTestContext } from '../../helpers/executionContext';
 import type { GameState } from '../../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
@@ -78,12 +78,7 @@ describe('Backward Compatibility', () => {
     });
 
     it('should handle trump selection without rules parameter', () => {
-      let state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 35, player: 0 }
-      });
+      let state = StateBuilder.inTrumpSelection(0, 35).build();
 
       state = executeAction(state, {
         type: 'select-trump',
@@ -97,43 +92,14 @@ describe('Backward Compatibility', () => {
     });
 
     it('should handle playing without rules parameter', () => {
-      let state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 30, player: 0 },
-        players: [
-          {
-            id: 0,
-            hand: [{ id: '1-0', high: ACES, low: BLANKS }],
-            teamId: 0,
-            marks: 0,
-            name: 'P0'
-          },
-          {
-            id: 1,
-            hand: [{ id: '2-0', high: DEUCES, low: BLANKS }],
-            teamId: 1,
-            marks: 0,
-            name: 'P1'
-          },
-          {
-            id: 2,
-            hand: [{ id: '3-0', high: TRES, low: BLANKS }],
-            teamId: 0,
-            marks: 0,
-            name: 'P2'
-          },
-          {
-            id: 3,
-            hand: [{ id: '4-0', high: FOURS, low: BLANKS }],
-            teamId: 1,
-            marks: 0,
-            name: 'P3'
-          }
-        ]
-      });
+      let state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(0, { type: 'points', value: 30, player: 0 })
+        .withCurrentPlayer(0)
+        .withPlayerHand(0, ['1-0'])
+        .withPlayerHand(1, ['2-0'])
+        .withPlayerHand(2, ['3-0'])
+        .withPlayerHand(3, ['4-0'])
+        .build();
 
       state = executeAction(state, {
         type: 'play',
@@ -182,14 +148,10 @@ describe('Backward Compatibility', () => {
 
     it('should complete standard trick with 4 plays', () => {
       const baseRules = composeRules([baseRuleSet]);
-      let state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 30, player: 0 },
-        currentTrick: []
-      });
+      let state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(0, { type: 'points', value: 30, player: 0 })
+        .withCurrentPlayer(0)
+        .build();
 
       // Add some plays
       state.currentTrick = [
@@ -210,18 +172,15 @@ describe('Backward Compatibility', () => {
 
     it('should not have early termination in standard game', () => {
       const baseRules = composeRules([baseRuleSet]);
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: DEUCES },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 35, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: DEUCES })
+        .withWinningBid(0, { type: 'points', value: 35, player: 0 })
+        .withCurrentPlayer(0)
+        .withTricks([
           { plays: [], winner: 1, points: 10, ledSuit: ACES }, // Opponent won
           { plays: [], winner: 3, points: 5, ledSuit: DEUCES }, // Opponent won
           { plays: [], winner: 1, points: 0, ledSuit: TRES }   // Opponent won
-        ]
-      });
+        ])
+        .build();
 
       // Standard game should not terminate early
       const outcome = baseRules.checkHandOutcome(state);
@@ -229,13 +188,10 @@ describe('Backward Compatibility', () => {
     });
 
     it('should play all 7 tricks in standard game', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'doubles' },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 30, player: 0 },
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'doubles' })
+        .withWinningBid(0, { type: 'points', value: 30, player: 0 })
+        .withCurrentPlayer(0)
+        .withTricks([
           { plays: [], winner: 0, points: 0, ledSuit: BLANKS },
           { plays: [], winner: 1, points: 5, ledSuit: ACES },
           { plays: [], winner: 2, points: 10, ledSuit: DEUCES },
@@ -243,8 +199,8 @@ describe('Backward Compatibility', () => {
           { plays: [], winner: 0, points: 10, ledSuit: FOURS },
           { plays: [], winner: 1, points: 0, ledSuit: FIVES },
           { plays: [], winner: 2, points: 5, ledSuit: SIXES }
-        ]
-      });
+        ])
+        .build();
 
       // All 7 tricks played
       expect(state.tricks.length).toBe(7);
@@ -352,12 +308,7 @@ describe('Backward Compatibility', () => {
   describe('Existing Trump Types Still Work', () => {
     it('should accept suit trump (all 7 suits)', () => {
       for (let suit = 0; suit <= 6; suit++) {
-        const state = GameTestHelper.createTestState({
-          phase: 'trump_selection',
-          winningBidder: 0,
-          currentPlayer: 0,
-          currentBid: { type: 'points', value: 35, player: 0 }
-        });
+        const state = StateBuilder.inTrumpSelection(0, 35).build();
 
         const result = executeAction(state, {
           type: 'select-trump',
@@ -372,12 +323,7 @@ describe('Backward Compatibility', () => {
     });
 
     it('should accept doubles trump', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 1,
-        currentPlayer: 1,
-        currentBid: { type: 'points', value: 30, player: 1 }
-      });
+      const state = StateBuilder.inTrumpSelection(1, 30).build();
 
       const result = executeAction(state, {
         type: 'select-trump',
@@ -390,12 +336,7 @@ describe('Backward Compatibility', () => {
     });
 
     it('should accept no-trump', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 2,
-        currentPlayer: 2,
-        currentBid: { type: 'points', value: 41, player: 2 }
-      });
+      const state = StateBuilder.inTrumpSelection(2, 41).build();
 
       const result = executeAction(state, {
         type: 'select-trump',
@@ -448,8 +389,8 @@ describe('Backward Compatibility', () => {
     });
 
     it('should maintain Trick structure', () => {
-      const state = GameTestHelper.createTestState({
-        tricks: [
+      const state = StateBuilder.inBiddingPhase()
+        .withTricks([
           {
             plays: [
               { player: 0, domino: { id: '1', high: ACES, low: BLANKS } },
@@ -461,8 +402,8 @@ describe('Backward Compatibility', () => {
             points: 0,
             ledSuit: ACES
           }
-        ]
-      });
+        ])
+        .build();
 
       const trick = state.tricks[0];
       if (!trick) throw new Error('Expected at least one trick');
@@ -502,12 +443,7 @@ describe('Backward Compatibility', () => {
 
     it('should return valid actions for trump_selection phase', () => {
       const ctx = createTestContext();
-      const state = GameTestHelper.createTestState({
-        phase: 'trump_selection',
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 35, player: 0 }
-      });
+      const state = StateBuilder.inTrumpSelection(0, 35).build();
 
       const transitions = getNextStates(state, ctx);
 
@@ -519,28 +455,14 @@ describe('Backward Compatibility', () => {
     });
 
     it('should return valid actions for playing phase', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 30, player: 0 },
-        players: [
-          {
-            id: 0,
-            hand: [
-              { id: '1', high: ACES, low: BLANKS },
-              { id: '2', high: DEUCES, low: BLANKS }
-            ],
-            teamId: 0,
-            marks: 0,
-            name: 'P0'
-          },
-          { id: 1, hand: [], teamId: 1, marks: 0, name: 'P1' },
-          { id: 2, hand: [], teamId: 0, marks: 0, name: 'P2' },
-          { id: 3, hand: [], teamId: 1, marks: 0, name: 'P3' }
-        ]
-      });
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(0, { type: 'points', value: 30, player: 0 })
+        .withCurrentPlayer(0)
+        .withPlayerHand(0, ['1-0', '2-0'])
+        .withPlayerHand(1, [])
+        .withPlayerHand(2, [])
+        .withPlayerHand(3, [])
+        .build();
 
       const ctx = createTestContext();
       const transitions = getNextStates(state, ctx);
@@ -551,14 +473,11 @@ describe('Backward Compatibility', () => {
     });
 
     it('should return valid actions for scoring phase', () => {
-      const state = GameTestHelper.createTestState({
-        phase: 'scoring',
-        trump: { type: 'suit', suit: ACES },
-        winningBidder: 0,
-        currentPlayer: 0,
-        currentBid: { type: 'points', value: 30, player: 0 },
-        teamScores: [30, 12],
-        tricks: [
+      const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(0, { type: 'points', value: 30, player: 0 })
+        .withCurrentPlayer(0)
+        .withTeamScores(30, 12)
+        .withTricks([
           { plays: [], winner: 0, points: 10, ledSuit: ACES },
           { plays: [], winner: 2, points: 10, ledSuit: DEUCES },
           { plays: [], winner: 0, points: 5, ledSuit: TRES },
@@ -566,8 +485,9 @@ describe('Backward Compatibility', () => {
           { plays: [], winner: 3, points: 0, ledSuit: FIVES },
           { plays: [], winner: 2, points: 5, ledSuit: SIXES },
           { plays: [], winner: 1, points: 7, ledSuit: BLANKS }
-        ]
-      });
+        ])
+        .with({ phase: 'scoring' })
+        .build();
 
       const ctx = createTestContext();
       const transitions = getNextStates(state, ctx);

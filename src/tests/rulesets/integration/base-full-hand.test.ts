@@ -3,7 +3,8 @@ import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
 import { createTestContextWithRuleSets } from '../../helpers/executionContext';
 import { composeRules, baseRuleSet } from '../../../game/rulesets';
-import { createTestState, createTestHand, processSequentialConsensus, processHandScoring } from '../../helpers/gameTestHelper';
+import { StateBuilder, HandBuilder } from '../../helpers';
+import { processSequentialConsensus, processHandScoring } from '../../helpers/consensusHelpers';
 import type { GameState } from '../../../game/types';
 
 describe('Base (Standard) Full Hand Integration', () => {
@@ -120,17 +121,14 @@ describe('Base (Standard) Full Hand Integration', () => {
 
   describe('Successful Standard Bids', () => {
     it('should complete a successful 30-point bid (with early termination)', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 123456,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [6, 4], [6, 3], [5, 5], [5, 0]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[1, 5], [2, 4], [2, 5], [3, 5], [4, 4], [4, 5], [1, 6]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(123456)
+        .withPlayerHand(0, HandBuilder.fromStrings(['6-6', '5-6', '4-6', '6-4', '6-3', '5-5', '5-0']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['1-5', '2-4', '2-5', '3-5', '4-4', '4-5', '1-6']))
+        .build();
 
       const { finalState, preScoreState } = await playStandardHand(state, 30, 'complete-7-tricks');
 
@@ -155,17 +153,14 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should complete a marks bid (with early termination)', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 234567,
-        players: [
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 5], [4, 4], [3, 3], [2, 2], [1, 1], [0, 0]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6], [6, 4]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[6, 3], [5, 0], [4, 5], [3, 5], [2, 5], [1, 5], [0, 5]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[4, 3], [3, 4], [2, 4], [1, 4], [0, 4], [3, 2], [2, 3]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(234567)
+        .withPlayerHand(0, HandBuilder.fromStrings(['6-6', '5-5', '4-4', '3-3', '2-2', '1-1', '0-0']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['5-6', '4-6', '3-6', '2-6', '1-6', '0-6', '6-4']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['6-3', '5-0', '4-5', '3-5', '2-5', '1-5', '0-5']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['4-3', '3-4', '2-4', '1-4', '0-4', '3-2', '2-3']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 32, 'complete-7-tricks');
 
@@ -177,18 +172,14 @@ describe('Base (Standard) Full Hand Integration', () => {
 
   describe('Early Termination - Points Bids', () => {
     it('should end early when bidding team reaches their bid', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 345678,
-        players: [
-          // Give bidding team (0, 2) high trump and count dominoes to actually reach 30
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 6], [6, 4], [6, 3], [5, 5], [5, 0], [4, 4]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[4, 6], [2, 6], [1, 6], [0, 6], [4, 5], [3, 5], [2, 5]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(345678)
+        .withPlayerHand(0, HandBuilder.fromStrings(['6-6', '5-6', '6-4', '6-3', '5-5', '5-0', '4-4']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['4-6', '2-6', '1-6', '0-6', '4-5', '3-5', '2-5']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 30, 'bidder-wins');
 
@@ -213,18 +204,14 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should end early when defending team sets the bid', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 456789,
-        players: [
-          // Give defending team (1, 3) high dominoes to accumulate 13+ points
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [5, 6], [6, 4], [6, 3], [5, 5], [4, 4], [3, 5]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[4, 6], [2, 6], [1, 6], [0, 6], [5, 0], [4, 5], [2, 5]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(456789)
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '5-6', '6-4', '6-3', '5-5', '4-4', '3-5']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['4-6', '2-6', '1-6', '0-6', '5-0', '4-5', '2-5']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 30, 'defenders-win');
 
@@ -245,18 +232,14 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should end early when bidders cannot possibly reach their bid', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 567890,
-        players: [
-          // Bidding team gets very low cards, defenders get count dominoes
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [1, 1], [2, 2], [3, 3], [0, 1], [0, 2], [1, 2]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [6, 4], [5, 5], [6, 3], [5, 0], [4, 6], [5, 6]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[2, 6], [1, 6], [0, 6], [4, 5], [3, 5], [2, 5], [1, 5]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(567890)
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '1-1', '2-2', '3-3', '0-1', '0-2', '1-2']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '6-4', '5-5', '6-3', '5-0', '4-6', '5-6']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['2-6', '1-6', '0-6', '4-5', '3-5', '2-5', '1-5']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 30, 'defenders-win');
 
@@ -276,18 +259,14 @@ describe('Base (Standard) Full Hand Integration', () => {
 
   describe('Early Termination - Marks Bids', () => {
     it('should end early when defending team scores any points in a marks bid', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 678901,
-        players: [
-          // Give defending team some count dominoes to win tricks
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [0, 1], [0, 2], [1, 1], [1, 2], [2, 2], [3, 3]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [5, 6], [6, 4], [6, 3], [5, 5], [4, 4], [3, 5]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3], [3, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[4, 6], [2, 6], [1, 6], [0, 6], [5, 0], [4, 5], [2, 5]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(678901)
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '5-6', '6-4', '6-3', '5-5', '4-4', '3-5']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['4-6', '2-6', '1-6', '0-6', '5-0', '4-5', '2-5']))
+        .build();
 
       // Bid 2 marks (32 points)
       let currentState = state;
@@ -363,18 +342,14 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should end early when bidding team cannot reach 42 points in marks bid', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 789012,
-        players: [
-          // Defenders have most count dominoes
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[0, 0], [1, 1], [2, 2], [3, 3], [4, 4], [0, 1], [0, 2]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 6], [6, 4], [6, 3], [5, 5], [5, 0], [5, 6], [4, 6]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[1, 2], [0, 3], [0, 4], [0, 5], [1, 3], [1, 4], [2, 3]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[2, 6], [1, 6], [0, 6], [4, 5], [3, 5], [2, 5], [1, 5]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(789012)
+        .withPlayerHand(0, HandBuilder.fromStrings(['0-0', '1-1', '2-2', '3-3', '4-4', '0-1', '0-2']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-6', '6-4', '6-3', '5-5', '5-0', '5-6', '4-6']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['1-2', '0-3', '0-4', '0-5', '1-3', '1-4', '2-3']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['2-6', '1-6', '0-6', '4-5', '3-5', '2-5', '1-5']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 32, 'defenders-win');
 
@@ -392,11 +367,10 @@ describe('Base (Standard) Full Hand Integration', () => {
 
   describe('Standard Game Mechanics', () => {
     it('should allow bidder to select trump', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 890123,
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(890123)
+        .build();
 
       let currentState = state;
 
@@ -425,11 +399,10 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should have bidder lead first trick', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 1, // Player 1 will be bidder
-        shuffleSeed: 901234,
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(1) // Player 1 will be bidder
+        .withSeed(901234)
+        .build();
 
       let currentState = state;
 
@@ -456,18 +429,14 @@ describe('Base (Standard) Full Hand Integration', () => {
     });
 
     it('should complete a standard hand (early termination is normal)', async () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 0,
-        shuffleSeed: 112233,
-        players: [
-          // Balanced distribution - score close to bid but not reaching until last tricks
-          { id: 0, name: 'P0', teamId: 0, marks: 0, hand: createTestHand([[6, 6], [5, 6], [4, 6], [3, 6], [0, 1], [0, 2], [1, 2]]) },
-          { id: 1, name: 'P1', teamId: 1, marks: 0, hand: createTestHand([[6, 4], [6, 3], [0, 0], [1, 1], [2, 2], [3, 3], [4, 4]]) },
-          { id: 2, name: 'P2', teamId: 0, marks: 0, hand: createTestHand([[5, 5], [5, 0], [0, 3], [0, 4], [0, 5], [1, 3], [1, 4]]) },
-          { id: 3, name: 'P3', teamId: 1, marks: 0, hand: createTestHand([[2, 6], [1, 6], [0, 6], [4, 5], [3, 5], [2, 5], [1, 5]]) }
-        ]
-      });
+      const state = StateBuilder.inBiddingPhase()
+        .withCurrentPlayer(0)
+        .withSeed(112233)
+        .withPlayerHand(0, HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '0-1', '0-2', '1-2']))
+        .withPlayerHand(1, HandBuilder.fromStrings(['6-4', '6-3', '0-0', '1-1', '2-2', '3-3', '4-4']))
+        .withPlayerHand(2, HandBuilder.fromStrings(['5-5', '5-0', '0-3', '0-4', '0-5', '1-3', '1-4']))
+        .withPlayerHand(3, HandBuilder.fromStrings(['2-6', '1-6', '0-6', '4-5', '3-5', '2-5', '1-5']))
+        .build();
 
       const { preScoreState } = await playStandardHand(state, 30, 'complete-7-tricks');
 
