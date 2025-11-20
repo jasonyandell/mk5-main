@@ -128,11 +128,13 @@ export function getTrumpDisplay(
       if (trump.suit === undefined) {
         return lowercase ? 'unknown' : 'Unknown';
       }
-      const suitName = getSuitName(trump.suit as LedSuit, { lowercase, numeric });
-      if (includeArticle && !lowercase) {
-        return `the ${suitName}`;
+      {
+        const suitName = getSuitName(trump.suit as LedSuit, { lowercase, numeric });
+        if (includeArticle && !lowercase) {
+          return `the ${suitName}`;
+        }
+        return suitName;
       }
-      return suitName;
     }
 
     case 'nello':
@@ -269,8 +271,10 @@ export function getTrumpActionLabel(
   switch (trump.type) {
     case 'suit': {
       if (trump.suit === undefined) return `${prefix}Unknown trump`;
-      const suitName = getSuitName(trump.suit as LedSuit, { numeric });
-      return `${prefix}${suitName} trump`;
+      {
+        const suitName = getSuitName(trump.suit as LedSuit, { numeric });
+        return `${prefix}${suitName} trump`;
+      }
     }
 
     case 'doubles':
