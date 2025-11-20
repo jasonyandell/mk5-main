@@ -5,6 +5,7 @@ import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { analyzeDominoAsSuit, getPlayableSuits } from '../../game/ai/domino-strength';
 import { isTrump } from '../../game/core/dominoes';
 import { StateBuilder } from '../helpers';
+import { SUIT_IDENTIFIERS } from '../../game/game-terms';
 
 function generateAllDominoes(): Domino[] {
   const dominoes: Domino[] = [];
@@ -36,10 +37,9 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
   });
   
   // Each suit as trump (0-6)
-  const suitNames = ['blanks', 'aces', 'deuces', 'tres', 'fours', 'fives', 'sixes'];
   for (let suit = 0; suit <= 6; suit++) {
     configs.push({
-      key: `trump-${suitNames[suit]}`,
+      key: `trump-${SUIT_IDENTIFIERS[suit as RegularSuit]}`,
       trump: { type: 'suit', suit: suit as RegularSuit }
     });
   }

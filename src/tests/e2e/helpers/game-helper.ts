@@ -348,9 +348,9 @@ export class PlaywrightGameHelper {
    * Set trump suit
    */
   async setTrump(suit: string): Promise<void> {
-    // Normalize suit name
+    // Normalize suit name (updated to use 'aces/deuces/tres' naming)
     const suitMap: Record<string, string> = {
-      '0s': 'blanks', '1s': 'ones', '2s': 'twos', '3s': 'threes',
+      '0s': 'blanks', '1s': 'aces', '2s': 'deuces', '3s': 'tres',
       '4s': 'fours', '5s': 'fives', '6s': 'sixes', 'doubles': 'doubles'
     };
     const normalizedSuit = (suitMap[suit] || suit).toLowerCase();

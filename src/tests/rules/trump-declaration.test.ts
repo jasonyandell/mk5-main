@@ -61,12 +61,12 @@ describe('Feature: Trump Declaration', () => {
       const trumpOptions = getNextStates(gameState, ctx);
       expect(trumpOptions.length).toBeGreaterThan(0);
       
-      // After declaring trump (e.g., threes), can proceed to playing
-      const declareThrees = trumpOptions.find(t => t.id === 'trump-threes');
-      expect(declareThrees).toBeDefined();
+      // After declaring trump (e.g., tres), can proceed to playing
+      const declareTres = trumpOptions.find(t => t.id === 'trump-tres');
+      expect(declareTres).toBeDefined();
       
-      if (declareThrees) {
-        const afterTrumpState = declareThrees.newState;
+      if (declareTres) {
+        const afterTrumpState = declareTres.newState;
         expect(afterTrumpState.trump).toEqual({ type: 'suit', suit: TRES });
         expect(afterTrumpState.phase).toBe('playing');
       }
@@ -85,12 +85,12 @@ describe('Feature: Trump Declaration', () => {
       const trumpOptions = getNextStates(gameState, ctx);
       const trumpIds = trumpOptions.map(t => t.id);
       
-      // Test all valid suit options
+      // Test all valid suit options (updated to use 'aces/deuces/tres' naming)
       const expectedSuits = [
         'trump-blanks',   // 0
-        'trump-ones',     // 1
-        'trump-twos',     // 2
-        'trump-threes',   // 3
+        'trump-aces',     // 1
+        'trump-deuces',   // 2
+        'trump-tres',     // 3
         'trump-fours',    // 4
         'trump-fives',    // 5
         'trump-sixes'     // 6
@@ -107,7 +107,7 @@ describe('Feature: Trump Declaration', () => {
       ];
       
       validSuitTrumps.forEach((trumpValue, index) => {
-        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][index];
+        const suitName = ['blanks', 'aces', 'deuces', 'tres', 'fours', 'fives', 'sixes'][index];
         const transition = trumpOptions.find(t => t.id === `trump-${suitName}`);
         
         expect(transition).toBeDefined();

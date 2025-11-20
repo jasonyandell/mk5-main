@@ -8,7 +8,7 @@ import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
 import { analyzeBiddingCompletion } from './bidding';
-import { getBidLabel, getTrumpActionLabel } from '../game-terms';
+import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
 
 // Default rules (base rule set only, no special contracts)
 const defaultRules = composeRules([baseRuleSet]);
@@ -618,8 +618,7 @@ export function actionToId(action: GameAction): string {
       return 'pass';
     case 'select-trump':
       if (action.trump.type === 'suit') {
-        const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
-        return `trump-${suitNames[action.trump.suit!]}`;
+        return `trump-${SUIT_IDENTIFIERS[action.trump.suit!]}`;
       } else if (action.trump.type === 'doubles') {
         return 'trump-doubles';
       } else if (action.trump.type === 'no-trump') {

@@ -1,7 +1,8 @@
-import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
-import { PLAYED_AS_TRUMP, BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
+import type { Domino, TrumpSelection, LedSuitOrNone } from '../../game/types';
+import { PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { dominoHasSuit } from '../../game/core/dominoes';
+import { parseTrumpString, TRUMP_NAME_TO_NUMBER } from '../../game/game-terms';
 
 export function parseDomino(dominoStr: string): Domino {
   const parts = dominoStr.split('-').map(Number);
@@ -27,42 +28,11 @@ export function parseDomino(dominoStr: string): Domino {
 }
 
 export function parseTrumpFromString(trumpStr: string): number {
-  const trumpMap: Record<string, number> = {
-    'blanks': 0,
-    'aces': 1,
-    'deuces': 2,
-    'tres': 3,
-    'fours': 4,
-    'fives': 5,
-    'sixes': 6,
-    'doubles': 7,
-    'no-trump': 8
-  };
-
-  return trumpMap[trumpStr] ?? 8;
+  return TRUMP_NAME_TO_NUMBER[trumpStr.toLowerCase()] ?? 8;
 }
 
 function createTrumpSelection(trumpStr: string): TrumpSelection {
-  if (trumpStr === 'no-trump') {
-    return { type: 'no-trump' };
-  } else if (trumpStr === 'doubles') {
-    return { type: 'doubles' };
-  } else {
-    const suitMap: Record<string, RegularSuit> = {
-      'blanks': BLANKS,
-      'aces': ACES,
-      'deuces': DEUCES,
-      'tres': TRES,
-      'fours': FOURS,
-      'fives': FIVES,
-      'sixes': SIXES
-    };
-    const suit = suitMap[trumpStr];
-    if (suit !== undefined) {
-      return { type: 'suit', suit };
-    }
-  }
-  return { type: 'no-trump' };
+  return parseTrumpString(trumpStr);
 }
 
 function getPlayContexts(domino: Domino, trump: TrumpSelection): LedSuitOrNone[] {

@@ -11,8 +11,8 @@
  * - Export both capitalized (for display) and lowercase (for identifiers)
  */
 
-import type { TrumpSelection, LedSuit, RegularSuit } from './types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from './types';
+import type { TrumpSelection, LedSuit, RegularSuit, LedSuitOrNone } from './types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from './types';
 
 // ============================================================================
 // Suit Display Names
@@ -322,4 +322,120 @@ export function getSuitWithTrumpContext(
   }
 
   return suitName;
+}
+
+// ============================================================================
+// Parsing Utilities (String → Number)
+// ============================================================================
+
+/**
+ * Led suit name mappings (for strength table, hints, etc.)
+ * Maps LedSuitOrNone (-1 to 7) to identifier strings
+ */
+export const LED_SUIT_NAMES: Record<LedSuitOrNone, string> = {
+  [PLAYED_AS_TRUMP]: 'played-as-trump',
+  [BLANKS]: 'led-blanks',
+  [ACES]: 'led-aces',
+  [DEUCES]: 'led-deuces',
+  [TRES]: 'led-tres',
+  [FOURS]: 'led-fours',
+  [FIVES]: 'led-fives',
+  [SIXES]: 'led-sixes',
+  [DOUBLES_AS_TRUMP]: 'led-doubles'
+} as const;
+
+/**
+ * Suit name to number mapping for parsing
+ * Accepts lowercase suit names, returns RegularSuit number
+ */
+export const SUIT_NAME_TO_NUMBER: Record<string, RegularSuit> = {
+  'blanks': BLANKS,
+  'aces': ACES,
+  'deuces': DEUCES,
+  'tres': TRES,
+  'fours': FOURS,
+  'fives': FIVES,
+  'sixes': SIXES
+} as const;
+
+/**
+ * Trump name to number mapping for parsing
+ * Accepts lowercase trump names, returns number (0-8)
+ * Note: 0-6 are suits, 7 is doubles, 8 is no-trump
+ */
+export const TRUMP_NAME_TO_NUMBER: Record<string, number> = {
+  'blanks': 0,
+  'aces': 1,
+  'deuces': 2,
+  'tres': 3,
+  'fours': 4,
+  'fives': 5,
+  'sixes': 6,
+  'doubles': 7,
+  'no-trump': 8
+} as const;
+
+/**
+ * Parse a suit name string to RegularSuit number
+ *
+ * @param name - Suit name (case-insensitive)
+ * @returns RegularSuit number (0-6) or undefined if invalid
+ *
+ * @example
+ * parseSuitName('blanks') // 0
+ * parseSuitName('ACES') // 1
+ * parseSuitName('invalid') // undefined
+ */
+export function parseSuitName(name: string): RegularSuit | undefined {
+  return SUIT_NAME_TO_NUMBER[name.toLowerCase()];
+}
+
+/**
+ * Parse a trump string to TrumpSelection object
+ *
+ * @param trumpStr - Trump identifier string
+ * @returns TrumpSelection object
+ *
+ * @example
+ * parseTrumpString('blanks') // { type: 'suit', suit: 0 }
+ * parseTrumpString('doubles') // { type: 'doubles' }
+ * parseTrumpString('no-trump') // { type: 'no-trump' }
+ * parseTrumpString('nello') // { type: 'nello' }
+ * parseTrumpString('invalid') // { type: 'no-trump' } (fallback)
+ */
+export function parseTrumpString(trumpStr: string): TrumpSelection {
+  const normalized = trumpStr.toLowerCase();
+
+  if (normalized === 'no-trump') {
+    return { type: 'no-trump' };
+  } else if (normalized === 'doubles') {
+    return { type: 'doubles' };
+  } else if (normalized === 'nello') {
+    return { type: 'nello' };
+  } else if (normalized === 'sevens') {
+    return { type: 'sevens' };
+  } else {
+    const suit = parseSuitName(normalized);
+    if (suit !== undefined) {
+      return { type: 'suit', suit };
+    }
+  }
+
+  // Fallback for invalid input
+  return { type: 'no-trump' };
+}
+
+/**
+ * Get led suit name for display in hints, strength table, etc.
+ *
+ * @param suit - Led suit or none (-1 to 7)
+ * @returns Identifier like "led-blanks", "played-as-trump"
+ *
+ * @example
+ * getLedSuitName(0) // "led-blanks"
+ * getLedSuitName(-1) // "played-as-trump"
+ * getLedSuitName(7) // "led-doubles"
+ */
+export function getLedSuitName(suit: LedSuitOrNone): string {
+  return LED_SUIT_NAMES[suit] ?? `led-suit-${suit}`;
 }

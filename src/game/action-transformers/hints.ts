@@ -1,5 +1,6 @@
 import type { ActionTransformerFactory } from './types';
 import type { GameAction, GameState } from '../types';
+import { getSuitName } from '../game-terms';
 
 /**
  * Show hints action transformer: Annotate actions with educational hints.
@@ -108,9 +109,8 @@ function generateTrumpHint(action: GameAction & { type: 'select-trump' }, _state
   }
 
   if (trump.type === 'suit' && trump.suit !== undefined) {
-    const suitNames = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'];
-    const suitName = suitNames[trump.suit] || 'unknown';
-    const capitalizedName = suitName[0]?.toUpperCase() + suitName.slice(1);
+    const suitName = getSuitName(trump.suit, { lowercase: true });
+    const capitalizedName = getSuitName(trump.suit);
     return `${capitalizedName} as Trump: All dominoes with ${suitName} become trump.`;
   }
 

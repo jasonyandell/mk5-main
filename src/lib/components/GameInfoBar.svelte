@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { GamePhase, TrumpSelection } from '../../game/types';
-  
+  import { getTrumpDisplay as getTrumpDisplayFromTerms } from '../../game/game-terms';
+
   interface Props {
     phase: GamePhase;
     currentPlayer: number;
@@ -13,24 +14,18 @@
     ledSuit?: number;
     ledSuitDisplay?: string | null;
   }
-  
-  let { 
-    phase, 
-    currentPlayer, 
-    trump, 
+
+  let {
+    phase,
+    currentPlayer,
+    trump,
     bidWinner = -1,
     currentBid,
     ledSuitDisplay = null
   }: Props = $props();
-  
+
   function getTrumpDisplay(): string {
-    if (trump.type === 'suit' && trump.suit !== undefined) {
-      const suits = ["blanks", "aces(1)", "deuces(2)", "tres(3)", "4's", "5's", "6's"];
-      return suits[trump.suit] || '';
-    } else if (trump.type === 'doubles') {
-      return 'doubles';
-    }
-    return '';
+    return getTrumpDisplayFromTerms(trump, { lowercase: true });
   }
 </script>
 
