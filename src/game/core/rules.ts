@@ -1,7 +1,7 @@
 import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, LedSuit, LedSuitOrNone, RegularSuit } from '../types';
 import { BID_TYPES } from '../constants';
-import { getTrumpSuit } from './dominoes';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
+import { getSuitName } from '../game-terms';
 
 /**
  * Validates mark bids with tournament progression rules
@@ -96,25 +96,19 @@ export function getCurrentSuit(state: GameState): string {
 
   const leadSuit = state.currentSuit;
 
-  const suitNames: Record<number, string> = {
-    0: 'Blanks',
-    1: 'Ones',
-    2: 'Twos',
-    3: 'Threes',
-    4: 'Fours',
-    5: 'Fives',
-    6: 'Sixes',
-    7: 'Doubles (Trump)',
-    8: 'No Trump'
-  };
-
-  const trumpSuit = getTrumpSuit(state.trump);
-
-  // Special case: if lead suit equals trump suit, indicate it's trump
-  if (leadSuit === trumpSuit && trumpSuit !== 7) {
-    return `${suitNames[leadSuit]} (Trump)`;
+  // Handle special cases
+  if (leadSuit === 7) {
+    return 'Doubles (Trump)';
   }
 
-  return suitNames[leadSuit] || `Unknown (${leadSuit})`;
+  // Use centralized display logic with trump context
+  if (leadSuit >= 0 && leadSuit <= 6) {
+    // Check if this suit is trump
+    const isTrump = state.trump.type === 'suit' && state.trump.suit === leadSuit;
+    const suitName = getSuitName(leadSuit as LedSuit, { numeric: true });
+    return isTrump ? `${suitName} (Trump)` : suitName;
+  }
+
+  return `Unknown (${leadSuit})`;
 }
 

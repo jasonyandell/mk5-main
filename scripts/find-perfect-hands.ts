@@ -14,6 +14,7 @@ import type { Domino, TrumpSelection, LedSuitOrNone } from '../src/game/types.js
 import { getDominoStrength } from '../src/game/ai/strength-table.generated.js';
 import { isTrump } from '../src/game/core/dominoes.js';
 import { PLAYED_AS_TRUMP } from '../src/game/types.js';
+import { getTrumpIdentifier } from '../src/game/game-terms.js';
 
 // Helper to create a domino
 function createDomino(high: number, low: number): Domino {
@@ -207,14 +208,7 @@ function isPlatinumPerfectHand(
 
 // Get trump name for display
 function getTrumpName(trump: TrumpSelection): string {
-  switch (trump.type) {
-    case 'no-trump': return 'no-trump';
-    case 'doubles': return 'doubles';
-    case 'suit':
-      const suitNames = ['blanks', 'aces', 'deuces', 'tres', 'fours', 'fives', 'sixes'];
-      return suitNames[trump.suit!] || `suit-${trump.suit}`;
-    default: return 'unknown';
-  }
+  return getTrumpIdentifier(trump);
 }
 
 // Format a domino with trump pip first (if it contains trump)

@@ -8,6 +8,7 @@ import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeSuits } from './suit-analysis';
 import { analyzeBiddingCompletion } from './bidding';
+import { getBidLabel, getTrumpActionLabel } from '../game-terms';
 
 // Default rules (base rule set only, no special contracts)
 const defaultRules = composeRules([baseRuleSet]);
@@ -648,24 +649,11 @@ export function actionToId(action: GameAction): string {
 export function actionToLabel(action: GameAction): string {
   switch (action.type) {
     case 'bid':
-      if (action.bid === BID_TYPES.POINTS) {
-        return `${action.value}`;
-      } else if (action.bid === BID_TYPES.MARKS) {
-        return `${action.value} mark${action.value! > 1 ? 's' : ''}`;
-      }
-      return `${action.bid} ${action.value}`;
+      return getBidLabel({ type: action.bid, value: action.value });
     case 'pass':
       return 'Pass';
     case 'select-trump':
-      if (action.trump.type === 'suit') {
-        const suitNames = ['Blanks', 'Ones', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes'];
-        return `Declare ${suitNames[action.trump.suit!]} trump`;
-      } else if (action.trump.type === 'doubles') {
-        return 'Declare Doubles trump';
-      } else if (action.trump.type === 'no-trump') {
-        return 'Declare No-trump';
-      }
-      return 'Select trump';
+      return getTrumpActionLabel(action.trump, { includeVerb: true, numeric: true });
     case 'play':
       // Would need domino lookup for proper label
       return `Play domino ${action.dominoId}`;

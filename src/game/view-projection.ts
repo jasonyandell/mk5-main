@@ -1,20 +1,9 @@
 import type { FilteredGameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from './types';
+import { DOUBLES_AS_TRUMP } from './types';
 import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
 import { dominoHasSuit } from './core/dominoes';
-
-// LED suit display names (index corresponds to LedSuit type)
-const LED_SUIT_NAMES: Record<LedSuit, string> = {
-  [BLANKS]: 'Blanks',
-  [ACES]: 'Aces(1)',
-  [DEUCES]: 'Deuces(2)',
-  [TRES]: 'Tres(3)',
-  [FOURS]: 'Fours',
-  [FIVES]: 'Fives',
-  [SIXES]: 'Sixes',
-  [DOUBLES_AS_TRUMP]: 'Doubles'  // Only when doubles are trump
-};
+import { getSuitName, getTrumpDisplay } from './game-terms';
 
 // Represents a player's bid status for UI display
 export interface BidStatus {
@@ -236,7 +225,7 @@ export function createViewProjection(
   
   // Led suit display
   const ledSuitDisplay = gameState.currentSuit >= 0 && gameState.currentSuit <= 7
-    ? LED_SUIT_NAMES[gameState.currentSuit as LedSuit]
+    ? getSuitName(gameState.currentSuit as LedSuit)
     : null;
   
   // Hand results (only during scoring)
@@ -356,7 +345,7 @@ function getDominoTooltip(
     return isPlayable ? `${dominoStr} - Click to play` : dominoStr;
   }
   
-  const ledSuitName = LED_SUIT_NAMES[leadSuit as LedSuit]?.toLowerCase() ?? 'unknown';
+  const ledSuitName = getSuitName(leadSuit as LedSuit, { lowercase: true });
   
   if (isPlayable) {
     if (leadSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
@@ -384,7 +373,7 @@ function getDominoTooltip(
       );
       
       if (playerHasLedSuit) {
-        return `${dominoStr} - Must follow ${LED_SUIT_NAMES[leadSuit as LedSuit]?.toLowerCase() ?? 'unknown'}`;
+        return `${dominoStr} - Must follow ${getSuitName(leadSuit as LedSuit, { lowercase: true })}`;
       } else {
         return `${dominoStr} - Invalid play`;
       }
@@ -392,16 +381,7 @@ function getDominoTooltip(
   }
 }
 
-// Helper to get trump display string
-function getTrumpDisplay(trump: TrumpSelection): string {
-  if (trump.type === 'not-selected') return 'Not Selected';
-  if (trump.type === 'no-trump') return 'No Trump';
-  if (trump.type === 'doubles') return 'Doubles';
-  if (trump.type === 'suit' && trump.suit !== undefined) {
-    return LED_SUIT_NAMES[trump.suit] ?? 'Unknown';
-  }
-  return 'Unknown';
-}
+// Note: getTrumpDisplay is now imported from game-terms.ts
 
 // Helper to calculate current hand points for each team from tricks
 function calculateTeamPoints(tricks: Trick[]): [number, number] {

@@ -11,6 +11,7 @@ import { dirname, join } from 'path';
 import { getDominoStrength } from '../src/game/ai/strength-table.generated.js';
 import type { Domino, TrumpSelection, LedSuitOrNone } from '../src/game/types.js';
 import { PLAYED_AS_TRUMP } from '../src/game/types.js';
+import { getTrumpIdentifier } from '../src/game/game-terms.js';
 
 // Get current directory (ES modules compatible)
 const __filename = fileURLToPath(import.meta.url);
@@ -114,17 +115,22 @@ function isTrump(domino: Domino, trump: TrumpSelection): boolean {
 
 // Get all trump selections
 function getAllTrumpSelections(): Array<{ trump: TrumpSelection; name: string }> {
-  return [
-    { trump: { type: 'suit', suit: 0 }, name: 'blanks' },
-    { trump: { type: 'suit', suit: 1 }, name: 'aces' },
-    { trump: { type: 'suit', suit: 2 }, name: 'deuces' },
-    { trump: { type: 'suit', suit: 3 }, name: 'tres' },
-    { trump: { type: 'suit', suit: 4 }, name: 'fours' },
-    { trump: { type: 'suit', suit: 5 }, name: 'fives' },
-    { trump: { type: 'suit', suit: 6 }, name: 'sixes' },
-    { trump: { type: 'doubles' }, name: 'doubles' },
-    { trump: { type: 'no-trump' }, name: 'no-trump' }
+  const trumps: TrumpSelection[] = [
+    { type: 'suit', suit: 0 },
+    { type: 'suit', suit: 1 },
+    { type: 'suit', suit: 2 },
+    { type: 'suit', suit: 3 },
+    { type: 'suit', suit: 4 },
+    { type: 'suit', suit: 5 },
+    { type: 'suit', suit: 6 },
+    { type: 'doubles' },
+    { type: 'no-trump' }
   ];
+
+  return trumps.map(trump => ({
+    trump,
+    name: getTrumpIdentifier(trump)
+  }));
 }
 
 // Analyze a leftover hand's strength
