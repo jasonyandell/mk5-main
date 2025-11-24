@@ -37,7 +37,7 @@ import type { GameAction } from '../types';
  * ```typescript
  * const config: GameConfig = {
  *   playerTypes: ['human', 'ai', 'ai', 'ai'],
- *   enabledRuleSets: ['nello', 'plunge'],
+ *   enabledLayers: ['nello', 'plunge'],
  *   actionTransformers: [{ type: 'tournament' }]
  * };
  * const actions = resolveActionIds(['C', 'A', 'A', 'A'], config, 12345);

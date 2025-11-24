@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
-import { composeRules, baseRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../game/layers';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
 import { BID_TYPES } from '../../game/constants';

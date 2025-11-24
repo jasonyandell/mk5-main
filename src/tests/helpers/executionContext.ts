@@ -32,7 +32,7 @@ import type { GameConfig } from '../../game/types/config';
  * @example
  * ```ts
  * // GOOD: Testing RuleSet composition
- * const ctx = createTestContext({ enabledRuleSets: ['base', 'nello'] });
+ * const ctx = createTestContext({ enabledLayers: ['base', 'nello'] });
  * const rules = ctx.rules;
  * expect(rules.getTrumpSelector(state, bid)).toBe(expectedPlayer);
  * ```
@@ -54,7 +54,7 @@ export function createTestContext(config?: Partial<GameConfig>): ExecutionContex
 }
 
 /**
- * Create ExecutionContext with specific rulesets enabled.
+ * Create ExecutionContext with specific layers enabled.
  *
  * @internal
  * @testOnly - Only use in unit tests that need to test composition behavior directly.
@@ -62,7 +62,7 @@ export function createTestContext(config?: Partial<GameConfig>): ExecutionContex
  *
  * @example
  * ```ts
- * // GOOD: Testing specific ruleset combinations
+ * // GOOD: Testing specific layer combinations
  * const ctx = createTestContextWithRuleSets(['base', 'nello', 'plunge']);
  * const rules = ctx.rules;
  * // Test composition behavior...
@@ -71,7 +71,7 @@ export function createTestContext(config?: Partial<GameConfig>): ExecutionContex
 export function createTestContextWithRuleSets(ruleSetNames: string[]): ExecutionContext {
   return createExecutionContext({
     playerTypes: ['human', 'human', 'human', 'human'],
-    enabledRuleSets: ruleSetNames
+    enabledLayers: ruleSetNames
   });
 }
 

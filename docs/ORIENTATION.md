@@ -276,11 +276,11 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/types.ts` - Core types (GameState, GameAction, etc)
 
 **RuleSet System** (execution semantics):
-- `src/game/rulesets/types.ts` - GameRules interface (13 methods), GameRuleSet
-- `src/game/rulesets/compose.ts` - composeRules() - reduce pattern
-- `src/game/rulesets/base.ts` - Standard Texas 42
-- `src/game/rulesets/{nello,splash,plunge,sevens}.ts` - Special contracts
-- `src/game/rulesets/utilities.ts` - getEnabledRuleSets() - config → rulesets
+- `src/game/layers/types.ts` - GameRules interface (13 methods), GameRuleSet
+- `src/game/layers/compose.ts` - composeRules() - reduce pattern
+- `src/game/layers/base.ts` - Standard Texas 42
+- `src/game/layers/{nello,splash,plunge,sevens}.ts` - Special contracts
+- `src/game/layers/utilities.ts` - getEnabledRuleSets() - config → rulesets
 
 **ActionTransformer System** (action transformation):
 - `src/game/action-transformers/registry.ts` - applyActionTransformers() - composition
@@ -478,7 +478,7 @@ UI components reactively update
 
 ### Add a New RuleSet (Special Contract)
 
-1. Create `src/game/rulesets/myContract.ts`:
+1. Create `src/game/layers/myContract.ts`:
 ```typescript
 export const myContractRuleSet: GameRuleSet = {
   name: 'my-contract',
@@ -492,7 +492,7 @@ export const myContractRuleSet: GameRuleSet = {
 };
 ```
 
-2. Add to `src/game/rulesets/utilities.ts:getEnabledRuleSets()`:
+2. Add to `src/game/layers/utilities.ts:getEnabledRuleSets()`:
 ```typescript
 if (config.enableMyContract) rulesets.push(myContractRuleSet);
 ```
@@ -542,7 +542,7 @@ Ask: "Does the executor need to know about this behavior?"
 
 #### Step 2: Add method to GameRules interface
 ```typescript
-// src/game/rulesets/types.ts
+// src/game/layers/types.ts
 export interface GameRules {
   // ... existing methods ...
 
@@ -556,7 +556,7 @@ export interface GameRules {
 
 #### Step 3: Implement in base RuleSet
 ```typescript
-// src/game/rulesets/base.ts
+// src/game/layers/base.ts
 export const baseRules: GameRules = {
   // ... existing rules ...
 
@@ -569,7 +569,7 @@ export const baseRules: GameRules = {
 
 #### Step 4: Override in special RuleSets
 ```typescript
-// src/game/rulesets/myMode.ts
+// src/game/layers/myMode.ts
 export const myModeRuleSet: GameRuleSet = {
   name: 'my-mode',
   rules: {
@@ -586,7 +586,7 @@ export const myModeRuleSet: GameRuleSet = {
 #### Step 5: Update compose.ts
 Add the new rule to the composition reduce pattern:
 ```typescript
-// src/game/rulesets/compose.ts
+// src/game/layers/compose.ts
 export function composeRules(ruleSets: GameRuleSet[]): GameRules {
   // ... existing code ...
 
@@ -617,8 +617,8 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
 **Real Example - Implemented**: One-hand mode needs a new terminal state.
 
 - **Added**: `getPhaseAfterHandComplete` rule method to GameRules interface
-- **Base implementation** (`src/game/rulesets/base.ts`): Returns `'bidding'` (continue to next hand)
-- **OneHand override** (`src/game/rulesets/oneHand.ts`): Returns `'one-hand-complete'` (terminal state)
+- **Base implementation** (`src/game/layers/base.ts`): Returns `'bidding'` (continue to next hand)
+- **OneHand override** (`src/game/layers/oneHand.ts`): Returns `'one-hand-complete'` (terminal state)
 - **Executor** (`executeScoreHand` in `src/game/core/actions.ts`): Delegates to rule instead of hardcoding phase
 - **See**: ADR-20251112-onehand-terminal-phase.md for full implementation details
 

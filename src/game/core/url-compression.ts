@@ -182,7 +182,7 @@ export function encodeGameUrl(
   colorOverrides?: Record<string, string>,
   sectionName?: string,
   actionTransformers?: { type: string; config?: Record<string, unknown> }[],
-  enabledRuleSets?: string[]
+  enabledLayers?: string[]
 ): string {
   const params = new URLSearchParams();
 
@@ -269,9 +269,9 @@ export function encodeGameUrl(
     }
   }
 
-  // Enabled rule sets (short codes, comma-separated)
-  if (enabledRuleSets && enabledRuleSets.length > 0) {
-    const codes = enabledRuleSets
+  // Enabled layers (short codes, comma-separated)
+  if (enabledLayers && enabledLayers.length > 0) {
+    const codes = enabledLayers
       .map(rs => RULESET_CODES[rs])
       .filter(code => code !== undefined)
       .join(',');
@@ -298,7 +298,7 @@ export function decodeGameUrl(urlString: string): {
   colorOverrides: Record<string, string>;
   scenario: string;
   actionTransformers?: { type: string }[];
-  enabledRuleSets?: string[];
+  enabledLayers?: string[];
 } {
   // Handle both full URLs and just query strings
   const queryString = urlString.includes('?')
@@ -429,9 +429,9 @@ export function decodeGameUrl(urlString: string): {
         .map(type => ({ type }))
     : undefined;
 
-  // Parse enabled rule sets (short codes)
+  // Parse enabled layers (short codes)
   const rulesetsStr = params.get('rs');
-  const enabledRuleSets = rulesetsStr
+  const enabledLayers = rulesetsStr
     ? rulesetsStr.split(',')
         .map(code => RULESET_CODE_TO_NAME[code])
         .filter((name): name is string => name !== undefined)
@@ -446,15 +446,15 @@ export function decodeGameUrl(urlString: string): {
     colorOverrides: Record<string, string>;
     scenario: string;
     actionTransformers?: { type: string }[];
-    enabledRuleSets?: string[];
+    enabledLayers?: string[];
   } = { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
 
   if (actionTransformers && actionTransformers.length > 0) {
     result.actionTransformers = actionTransformers;
   }
 
-  if (enabledRuleSets && enabledRuleSets.length > 0) {
-    result.enabledRuleSets = enabledRuleSets;
+  if (enabledLayers && enabledLayers.length > 0) {
+    result.enabledLayers = enabledLayers;
   }
 
   return result;
@@ -496,5 +496,5 @@ export interface URLData {
   colorOverrides: Record<string, string>;
   scenario: string;
   actionTransformers?: { type: string }[];
-  enabledRuleSets?: string[];
+  enabledLayers?: string[];
 }

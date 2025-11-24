@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createSetupState } from '../../game/core/state';
-import { composeRules, baseRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../game/layers';
 import { shuffleDominoesWithSeed } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';

@@ -46,14 +46,14 @@ We use the **GameRules Pattern** to handle mode-specific phase transitions:
 
 This rule method determines which phase to transition to after hand scoring completes.
 
-**Base Implementation** (`src/game/rulesets/base.ts`):
+**Base Implementation** (`src/game/layers/base.ts`):
 ```typescript
 getPhaseAfterHandComplete: (_state: GameState) => {
   return 'bidding';  // Continue to next hand (standard behavior)
 }
 ```
 
-**OneHand Override** (`src/game/rulesets/oneHand.ts`):
+**OneHand Override** (`src/game/layers/oneHand.ts`):
 ```typescript
 getPhaseAfterHandComplete: (_state: GameState) => {
   return 'one-hand-complete';  // Terminal state (don't deal new hand)

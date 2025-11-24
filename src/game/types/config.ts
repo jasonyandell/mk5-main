@@ -67,8 +67,8 @@ export interface GameConfig {
   /** Composable action transformers (left-to-right pipeline) */
   actionTransformers?: ActionTransformerConfig[];
 
-  /** Enabled rule sets (e.g., ['nello', 'plunge']) */
-  enabledRuleSets?: string[];
+  /** Enabled layers (e.g., ['nello', 'plunge']) */
+  enabledLayers?: string[];
 
   /** Random seed for deterministic games */
   shuffleSeed?: number;

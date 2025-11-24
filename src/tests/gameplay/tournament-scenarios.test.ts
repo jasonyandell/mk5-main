@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { composeRules, baseRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, GameState } from '../../game/types';

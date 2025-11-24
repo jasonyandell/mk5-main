@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
-import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import type { Domino, Bid } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';

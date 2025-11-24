@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
-import { composeRules } from '../../game/rulesets/compose';
-import { baseRuleSet } from '../../game/rulesets';
+import { composeRules } from '../../game/layers/compose';
+import { baseRuleSet } from '../../game/layers';
 import { canFollowSuit } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { Domino, TrumpSelection } from '../../game/types';

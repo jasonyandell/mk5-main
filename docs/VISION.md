@@ -12,7 +12,7 @@ Purpose: a living north star that states why we're building this, what outcomes 
 ## North Star Outcomes
 
 - Fair, deterministic multiplayer: same seed + actions → identical state across environments.
-- Composable game modes: add special contracts (RuleSets) and UX/policy features (ActionTransformers) without touching executors.
+- Composable game modes: add Layers for game rules, UX, and policies without touching executors.
 - Shareable, teachable games: instant replay from URLs for debugging, coaching, and learning.
 - Low‑friction clients: clients trust server truth, render projections, and stay lightweight.
 - AI as peers: AI plays via the same protocol as humans with no privileged access.
@@ -49,8 +49,8 @@ These mirror the Architectural Invariants and define regressions if violated.
 - Success: intermediate beats beginner ≥ 60%; expert beats intermediate ≥ 60% in simulation; no privileged reads.
 
 4) Composition explainability + compatibility
-- Goal: make composed rules and ActionTransformer pipelines inspectable; prevent drift.
-- Success: "explain composition" tool for a config; matrix tests for RuleSet×ActionTransformer with goldens; invariant checks green.
+- Goal: make composed Layer pipelines inspectable; prevent drift.
+- Success: "explain composition" tool for a config; matrix tests for Layer combinations with goldens; invariant checks green.
 
 5) Replay at scale (snapshotting + URL versioning)
 - Goal: fast load of long histories and durable share links across versions.
@@ -70,7 +70,7 @@ These mirror the Architectural Invariants and define regressions if violated.
 
 ## Risks & Trade‑offs (with Mitigations)
 
-- Composition drift (RuleSets vs ActionTransformers): add explainer tooling; goldens for representative combos; keep invariants tests mandatory.
+- Composition drift: add explainer tooling; goldens for representative Layer combos; keep invariants tests mandatory.
 - Override precedence opacity: surface effective rule sources and order in the explainer output.
 - Per‑request filtering cost: profile; memoize projections opportunistically; budget latency SLOs.
 - Concurrency/consensus semantics: write transport‑agnostic tests for contention and ordering; document guarantees.

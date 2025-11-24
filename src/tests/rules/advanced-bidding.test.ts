@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
-import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { getNextDealer } from '../../game/core/players';
 import type { Bid } from '../../game/types';

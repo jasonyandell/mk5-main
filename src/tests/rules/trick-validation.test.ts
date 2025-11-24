@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules } from '../../game/rulesets/compose';
-import { baseRuleSet } from '../../game/rulesets';
+import { composeRules } from '../../game/layers/compose';
+import { baseRuleSet } from '../../game/layers';
 import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { TrumpSelection, Play, Domino } from '../../game/types';

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
 import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
-import { composeRules, baseRuleSet } from '../../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../../game/layers';
 
 const rules = composeRules([baseRuleSet]);
 

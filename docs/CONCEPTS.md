@@ -184,7 +184,7 @@
 - Pure: No side effects, deterministic
 - Parameterized: Rules injected, not hardcoded
 - Zero coupling: No awareness of multiplayer, networking, UI
-- Composable: Works uniformly with any rulesets/action transformers
+- Composable: Works uniformly with any layers/action transformers
 
 **Relationship to Room**:
 - Engine = pure game logic only
@@ -200,7 +200,7 @@
 ### GameRules (Interface)
 **Definition**: Interface of 13 pure methods that determine HOW the game executes.
 
-**Location**: `src/game/rulesets/types.ts`
+**Location**: `src/game/layers/types.ts`
 
 **The 13 Methods** (organized by category):
 
@@ -305,7 +305,7 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 ### GameRuleSet
 **Definition**: Composable ruleset that overrides specific rules and/or transforms actions.
 
-**Location**: `src/game/rulesets/types.ts`
+**Location**: `src/game/layers/types.ts`
 
 **Two Composition Surfaces**:
 
@@ -328,7 +328,7 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 #### Base RuleSet
 **Definition**: Standard Texas 42 rules.
 
-**Location**: `src/game/rulesets/base.ts`
+**Location**: `src/game/layers/base.ts`
 
 **Provides**: All 13 GameRules methods with standard 4-player Texas 42 logic
 
@@ -337,7 +337,7 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 #### Nello RuleSet
 **Definition**: Partner sits out, 3-player tricks, lose all tricks to win.
 
-**Location**: `src/game/rulesets/nello.ts`
+**Location**: `src/game/layers/nello.ts`
 
 **Overrides**:
 - `isTrickComplete`: Return true at 3 plays (partner out)
@@ -349,28 +349,28 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 #### Plunge RuleSet
 **Definition**: Partner selects trump and leads, bidder must win all tricks.
 
-**Location**: `src/game/rulesets/plunge.ts`
+**Location**: `src/game/layers/plunge.ts`
 
 **Overrides**: Similar to Nello but reverse outcome logic
 
 #### Splash RuleSet
 **Definition**: Like plunge but requires 3+ doubles in hand.
 
-**Location**: `src/game/rulesets/splash.ts`
+**Location**: `src/game/layers/splash.ts`
 
 **Overrides**: Builds on plunge with additional validation
 
 #### Sevens RuleSet
 **Definition**: Distance from 7 wins, no follow-suit rule.
 
-**Location**: `src/game/rulesets/sevens.ts`
+**Location**: `src/game/layers/sevens.ts`
 
 **Overrides**: Completely different scoring and led-suit logic
 
 #### OneHand RuleSet
 **Definition**: Single-hand game mode that ends after first hand instead of continuing.
 
-**Location**: `src/game/rulesets/oneHand.ts`
+**Location**: `src/game/layers/oneHand.ts`
 
 **Overrides**:
 - `getPhaseAfterHandComplete`: Returns `'one-hand-complete'` instead of `'bidding'`
@@ -388,7 +388,7 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 ### RuleSet Composition
 **Definition**: Pure reduce pattern that composes multiple rulesets into single GameRules interface.
 
-**Location**: `src/game/rulesets/compose.ts`
+**Location**: `src/game/layers/compose.ts`
 
 **Algorithm**:
 ```typescript
@@ -651,7 +651,7 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 ## 4. Server Architecture
 
 ### Room
-**Definition**: Game orchestrator that owns state, composes rulesets/action transformers, manages sessions, and delegates to pure helpers.
+**Definition**: Game orchestrator that owns state, composes layers/action transformers, manages sessions, and delegates to pure helpers.
 
 **Location**: `src/server/Room.ts`
 
@@ -1328,7 +1328,7 @@ interface StateUpdateMessage {
 ```typescript
 playerTypes: ('human' | 'ai')[]  // Seat control
 shuffleSeed: number              // Deterministic shuffle
-enabledRuleSets: string[]        // Active special contracts
+enabledLayers: string[]          // Active special contracts
 enabledActionTransformers: ActionTransformerConfig[] // Active action transformers
 theme: string                    // DaisyUI theme
 colorOverrides: Record<string, string>  // CSS variables
@@ -1713,7 +1713,7 @@ colorOverrides: Record<string, string>  // CSS variables
    - Never identity checks (playerId comparison)
 
 4. **Single Composition Point**
-   - Room constructor ONLY place rulesets/action transformers compose
+   - Room constructor ONLY place layers/action transformers compose
    - ExecutionContext created once, used everywhere
 
 5. **Zero Coupling**
@@ -1821,7 +1821,7 @@ colorOverrides: Record<string, string>  // CSS variables
 - state.ts: State utilities
 - rules.ts: Rule validation
 
-### src/game/rulesets/
+### src/game/layers/
 - types.ts: GameRules (13 methods), GameRuleSet, HandOutcome
 - compose.ts: RuleSet composition via reduce
 - base.ts: Base RuleSet (standard Texas 42)

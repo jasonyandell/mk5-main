@@ -183,7 +183,7 @@ class GameStoreImpl {
             ? { colorOverrides: urlData.colorOverrides }
             : {}),
           ...(urlData.actionTransformers ? { actionTransformers: urlData.actionTransformers } : {}),
-          ...(urlData.enabledRuleSets ? { enabledRuleSets: urlData.enabledRuleSets } : {})
+          ...(urlData.enabledLayers ? { enabledLayers: urlData.enabledLayers } : {})
         };
 
         // Initialize game with URL config and replay actions if present
@@ -423,7 +423,7 @@ class GameStoreImpl {
     const config: GameConfig = {
       playerTypes,
       actionTransformers: [{ type: 'one-hand', config: { seed } }],
-      enabledRuleSets: ['oneHand'],  // Required for terminal phase transition
+      enabledLayers: ['oneHand'],  // Required for terminal phase transition
       shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
     };
 

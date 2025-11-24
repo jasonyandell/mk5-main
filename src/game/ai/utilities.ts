@@ -9,8 +9,8 @@ import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } fr
 import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { getDominoValue, trumpToNumber, getDominoPoints, getDominoSuit } from '../core/dominoes';
 import { getTrickWinner } from '../core/rules';
-import { composeRules } from '../rulesets/compose';
-import { baseRuleSet } from '../rulesets';
+import { composeRules } from '../layers/compose';
+import { baseRuleSet } from '../layers';
 
 /**
  * Context for AI analysis - just the essentials

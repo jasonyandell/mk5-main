@@ -18,7 +18,7 @@ import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAc
 import { cloneGameState, getNextStates } from '../game/core/state';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
-import type { ActionTransformerConfig } from '../game/action-transformers/types';
+import type { ActionTransformerConfig } from '../game/types/config';
 import { actionToId } from '../game/core/actions';
 
 /**

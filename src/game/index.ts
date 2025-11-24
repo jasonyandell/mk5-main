@@ -48,7 +48,7 @@ export {
 // Pure action generation functions
 export {
   generateStructuralActions  // Low-level: generates structural actions only (use ctx.getValidActions instead)
-} from './rulesets/base';
+} from './layers/base';
 
 // Action utilities
 export {
@@ -67,7 +67,7 @@ export { executeAction } from './core/actions';
 // Event sourcing / replay
 // Rule validation
 // NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:
-// import { composeRules, baseRuleSet } from './rulesets';
+// import { composeRules, baseRuleSet } from './layers';
 // const rules = composeRules([baseRuleSet]);
 // rules.isValidPlay(state, domino, playerId)
 // rules.getValidPlays(state, playerId)

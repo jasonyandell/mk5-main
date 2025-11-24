@@ -6,7 +6,7 @@ import { createInitialState, executeAction } from '../../game';
 import { getNextPlayer } from '../../game/core/players';
 import { createTestContext } from '../helpers/executionContext';
 import { StateBuilder } from '../helpers/stateBuilder';
-import { composeRules, baseRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../game/layers';
 
 describe('Authorization', () => {
   // Helper to create test sessions

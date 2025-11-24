@@ -22,7 +22,7 @@ As the codebase evolved, ExecutionContext composition spread across multiple fil
 - `src/game/ai/gameSimulator.ts` - Created own execution context
 - `src/game/utils/urlReplay.ts` - Created own execution context
 
-This violated architectural invariant #4: **"Single Composition Point: Room constructor is ONLY place rulesets/action-transformers compose"**
+This violated architectural invariant #4: **"Single Composition Point: Room constructor is ONLY place layers/action-transformers compose"**
 
 ### Why This Matters
 

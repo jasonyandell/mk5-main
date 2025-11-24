@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { composeRules } from '../../game/rulesets/compose';
-import { baseRuleSet } from '../../game/rulesets';
+import { composeRules } from '../../game/layers/compose';
+import { baseRuleSet } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection } from '../../game/types';

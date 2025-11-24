@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { GameTestHelper } from '../helpers/gameTestHelper';

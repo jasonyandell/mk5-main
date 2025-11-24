@@ -60,7 +60,7 @@ export interface ReplayResult {
  * ```typescript
  * const result = replayFromUrl('?s=abc&at=t&rs=n&a=CAAS');
  * console.log(result.state.teamScores); // [2, 0]
- * console.log(result.config.enabledRuleSets); // ['nello']
+ * console.log(result.config.enabledLayers); // ['nello']
  * ```
  */
 export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayResult {
@@ -87,8 +87,8 @@ export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayR
     config.actionTransformers = decoded.actionTransformers;
   }
 
-  if (decoded.enabledRuleSets) {
-    config.enabledRuleSets = decoded.enabledRuleSets;
+  if (decoded.enabledLayers) {
+    config.enabledLayers = decoded.enabledLayers;
   }
 
   return replayActions(decoded.seed, decoded.actions, config, options);

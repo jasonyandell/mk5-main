@@ -6,8 +6,19 @@
 - ✅ `bd --no-daemon ready` - Show ready issues with no blockers
 - ✅ `bd --no-daemon show <issue-id>` - Show issue details
 - ✅ `bd --no-daemon close <issue-id> --reason "Summary of work completed"` - Close issue with completion summary
-- ✅ `bd --no-daemon create --title "Title" --description "Details" --priority 1 --type task` - Create new issue
+- ✅ `bd --no-daemon create "Title" --description "Details" --priority 1 --type task` - Create new issue
+- ✅ `bd --no-daemon create --file <markdown-file>` - Create multiple issues from markdown file
+- ✅ `bd --no-daemon dep add <issue-id> <depends-on-id>` - Add dependency (blocks type)
 - ❌ `bd ready` (daemon can commit to wrong branch in worktree setup)
+
+**Epic Management** (use bd's native parent-child relationships):
+- ✅ `bd --no-daemon create "Epic Title" --type epic` - Create epic
+- ✅ `bd --no-daemon create "Child Task" --parent <epic-id>` - Create child task under epic
+- ✅ `bd --no-daemon dep add <child-id> <epic-id> --type parent-child` - Link existing task to epic
+- ✅ `bd --no-daemon dep tree <epic-id> --reverse` - Show all children of epic (with dependency tree)
+- ✅ `bd --no-daemon epic status` - Show progress for all epics (N/M children closed)
+- ✅ `bd --no-daemon epic close-eligible` - Auto-close epics where all children are complete
+- ✅ `bd --no-daemon ready` - Find next ready task (respects both blocks and parent-child dependencies)
 
 # North Star
 The authors are building a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If the authors were mechanics, this project would be their "project car".  They work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  They enjoy elegance, simlicity and correctness.  They are MORE THAN HAPPY to spend extra time making every little thing perfect.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.

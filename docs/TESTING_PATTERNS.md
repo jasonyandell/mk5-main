@@ -35,7 +35,7 @@ import { createTestContext } from '../helpers/executionContext';
 describe('RuleSet Composition', () => {
   it('should compose nello and plunge rulesets correctly', () => {
     const ctx = createTestContext({
-      enabledRuleSets: ['base', 'nello', 'plunge']
+      enabledLayers: ['base', 'nello', 'plunge']
     });
     const rules = ctx.rules;
 
@@ -46,8 +46,8 @@ describe('RuleSet Composition', () => {
 ```
 
 **Good uses**:
-- `/src/tests/rulesets/composition/compose-rules.test.ts` - Tests RuleSet composition
-- `/src/tests/rulesets/composition/ruleset-overrides.test.ts` - Tests override behavior
+- `/src/tests/layers/composition/compose-rules.test.ts` - Tests RuleSet composition
+- `/src/tests/layers/composition/ruleset-overrides.test.ts` - Tests override behavior
 - `/src/tests/unit/authorization.test.ts` - Tests capability authorization logic
 
 ### Integration Tests: Testing Game Flow
@@ -264,7 +264,7 @@ If we want to strengthen integration testing patterns:
 
 ### ✅ Good: Unit Test with createTestContext
 ```typescript
-// src/tests/rulesets/composition/compose-rules.test.ts
+// src/tests/layers/composition/compose-rules.test.ts
 const rules = composeRules([baseRuleSet]);
 const state = createTestState();
 const bid: Bid = { type: 'marks', value: 2, player: 1 };

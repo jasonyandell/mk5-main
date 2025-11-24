@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet } from '../../game/rulesets';
+import { composeRules, baseRuleSet } from '../../game/layers';
 import { getTrumpValue } from '../../game/core/rules';
 import type { TrumpSelection } from '../../game/types';
 

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
-import { composeRules } from '../../game/rulesets/compose';
-import { baseRuleSet } from '../../game/rulesets';
+import { composeRules } from '../../game/layers/compose';
+import { baseRuleSet } from '../../game/layers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';

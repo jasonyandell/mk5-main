@@ -9,7 +9,7 @@ describe('Tournament RuleSet Authority', () => {
   it('prevents executing bids that tournament ruleset filters', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      enabledRuleSets: ['tournament']
+      enabledLayers: ['tournament']
     };
 
     const players = config.playerTypes.map((type, i) => ({

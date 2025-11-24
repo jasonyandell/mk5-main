@@ -4,8 +4,8 @@ import {
   canFollowSuit,
   type Domino
 } from '../../../game';
-import { composeRules } from '../../../game/rulesets/compose';
-import { baseRuleSet } from '../../../game/rulesets';
+import { composeRules } from '../../../game/layers/compose';
+import { baseRuleSet } from '../../../game/layers';
 import { analyzeSuits } from '../../../game/core/suit-analysis';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 

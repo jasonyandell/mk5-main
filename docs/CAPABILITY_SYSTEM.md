@@ -305,4 +305,4 @@ const allowed = filterActionsForSession(session, actions);
 - Implementation: `src/game/multiplayer/capabilities.ts`
 - Filtering: `src/game/multiplayer/capabilityUtils.ts`
 - Authorization: `src/game/multiplayer/authorization.ts`
-- RuleSet Types: `src/game/rulesets/types.ts`
+- RuleSet Types: `src/game/layers/types.ts`

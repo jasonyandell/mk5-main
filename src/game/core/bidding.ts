@@ -1,5 +1,5 @@
 import type { GameState, Bid } from '../types';
-import type { GameRules } from '../rulesets/types';
+import type { GameRules } from '../layers/types';
 import { BID_TYPES } from '../constants';
 
 /**

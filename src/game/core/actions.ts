@@ -1,6 +1,6 @@
 import type { GameState, GameAction, TrumpSelection, Bid, Play, Trick, LedSuit } from '../types';
-import type { GameRules } from '../rulesets/types';
-import { composeRules, baseRuleSet } from '../rulesets';
+import type { GameRules } from '../layers/types';
+import { composeRules, baseRuleSet } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';

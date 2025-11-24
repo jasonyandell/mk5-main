@@ -8,7 +8,7 @@
 
 The original URL replay system had critical limitations:
 
-1. **Incomplete Config Capture**: URLs only stored `seed`, `actions`, `playerTypes`, `dealer`, and theme. They did NOT capture `actionTransformers` or `enabledRuleSets`, making it impossible to replay games with special contracts (nello, plunge, splash) or action transformers (tournament mode, oneHand, speed).
+1. **Incomplete Config Capture**: URLs only stored `seed`, `actions`, `playerTypes`, `dealer`, and theme. They did NOT capture `actionTransformers` or `enabledLayers`, making it impossible to replay games with special contracts (nello, plunge, splash) or action transformers (tournament mode, oneHand, speed).
 
 2. **Architecture Violation**: `urlReplay.ts` imported `createExecutionContext` and `getNextStates` directly, bypassing the single composition point invariant. It created its own execution context with hardcoded config instead of using Room/HeadlessRoom.
 
@@ -152,7 +152,7 @@ Used TypeScript's `exactOptionalPropertyTypes: true` correctly:
 ?s=abc&rs=n&a=PQRS
 ```
 - seed=abc (base36)
-- enabledRuleSets=['nello']
+- enabledLayers=['nello']
 - actions=['P','Q','R','S'] (bid-1-marks, bid-2-marks, bid-3-marks, trump-blanks)
 
 ### Tournament mode with multiple rulesets
