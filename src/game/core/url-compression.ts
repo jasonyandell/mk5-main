@@ -276,7 +276,7 @@ export function encodeGameUrl(
       .filter(code => code !== undefined)
       .join(',');
     if (codes) {
-      params.set('rs', codes);
+      params.set('l', codes);
     }
   }
 
@@ -430,9 +430,9 @@ export function decodeGameUrl(urlString: string): {
     : undefined;
 
   // Parse enabled layers (short codes)
-  const rulesetsStr = params.get('rs');
-  const enabledLayers = rulesetsStr
-    ? rulesetsStr.split(',')
+  const layersStr = params.get('l');
+  const enabledLayers = layersStr
+    ? layersStr.split(',')
         .map(code => RULESET_CODE_TO_NAME[code])
         .filter((name): name is string => name !== undefined)
     : undefined;

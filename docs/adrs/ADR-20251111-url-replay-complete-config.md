@@ -149,15 +149,15 @@ Used TypeScript's `exactOptionalPropertyTypes: true` correctly:
 
 ### Basic replay with nello
 ```
-?s=abc&rs=n&a=PQRS
+?s=abc&l=n&a=PQRS
 ```
 - seed=abc (base36)
 - enabledLayers=['nello']
 - actions=['P','Q','R','S'] (bid-1-marks, bid-2-marks, bid-3-marks, trump-blanks)
 
-### Tournament mode with multiple rulesets
+### Tournament mode with multiple layers
 ```
-?s=xc9&at=t&rs=n,p,s&a=CAAAMNO
+?s=xc9&at=t&l=n,p,s&a=CAAAMNO
 ```
 - seed=12345
 - tournament mode (filters special bids)
