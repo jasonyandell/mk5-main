@@ -182,7 +182,7 @@ class GameStoreImpl {
           ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0
             ? { colorOverrides: urlData.colorOverrides }
             : {}),
-          ...(urlData.enabledLayers ? { enabledLayers: urlData.enabledLayers } : {})
+          ...(urlData.layers ? { layers: urlData.layers } : {})
         };
 
         // Initialize game with URL config and replay actions if present
@@ -418,7 +418,7 @@ class GameStoreImpl {
     // oneHand layer handles bidding automation, terminal phase, and action generation
     const config: GameConfig = {
       playerTypes,
-      enabledLayers: ['oneHand'],
+      layers: ['oneHand'],
       shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
     };
 

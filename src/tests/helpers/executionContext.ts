@@ -8,7 +8,6 @@
  *
  * **UNIT TESTS ONLY** - Use these helpers when testing composition behavior:
  * - Testing Layer composition (e.g., base + nello + plunge)
- * - Testing ActionTransformer composition
  * - Testing individual rule methods in isolation
  *
  * **DO NOT USE** for integration tests:
@@ -32,7 +31,7 @@ import type { GameConfig } from '../../game/types/config';
  * @example
  * ```ts
  * // GOOD: Testing Layer composition
- * const ctx = createTestContext({ enabledLayers: ['base', 'nello'] });
+ * const ctx = createTestContext({ layers: ['base', 'nello'] });
  * const rules = ctx.rules;
  * expect(rules.getTrumpSelector(state, bid)).toBe(expectedPlayer);
  * ```
@@ -71,7 +70,7 @@ export function createTestContext(config?: Partial<GameConfig>): ExecutionContex
 export function createTestContextWithLayers(layerNames: string[]): ExecutionContext {
   return createExecutionContext({
     playerTypes: ['human', 'human', 'human', 'human'],
-    enabledLayers: layerNames
+    layers: layerNames
   });
 }
 

@@ -103,7 +103,7 @@ export function buildKernelView(
   ctx: ExecutionContext,
   metadata: {
     gameId: string;
-    enabledLayers?: string[];
+    layers?: string[];
   }
 ): GameView {
   const coreState = state.coreState;
@@ -151,7 +151,7 @@ export function buildKernelView(
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,
-      ...(metadata.enabledLayers?.length ? { enabledLayers: metadata.enabledLayers } : {})
+      ...(metadata.layers?.length ? { layers: metadata.layers } : {})
     }
   };
 }

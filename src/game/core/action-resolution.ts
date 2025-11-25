@@ -28,7 +28,7 @@ import type { GameAction } from '../types';
  * 5. Continues to next ID
  *
  * @param actionIds - Array of action IDs (e.g., ["C", "A", "A", "A"])
- * @param config - Game configuration (with layers, transformers, etc.)
+ * @param config - Game configuration (with layers)
  * @param seed - Shuffle seed for deterministic replay
  * @returns Array of resolved GameActions
  * @throws Error if any ID cannot be matched to a valid action
@@ -37,8 +37,7 @@ import type { GameAction } from '../types';
  * ```typescript
  * const config: GameConfig = {
  *   playerTypes: ['human', 'ai', 'ai', 'ai'],
- *   enabledLayers: ['nello', 'plunge'],
- *   actionTransformers: [{ type: 'tournament' }]
+ *   layers: ['nello', 'plunge', 'tournament']
  * };
  * const actions = resolveActionIds(['C', 'A', 'A', 'A'], config, 12345);
  * // Returns [{ type: 'bid', ... }, { type: 'pass' }, ...]

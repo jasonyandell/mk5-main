@@ -23,7 +23,7 @@ describe('Room Layers Integration', () => {
     it('should thread rules through executeAction', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello'],
+        layers: ['nello'],
         shuffleSeed: 789012
       };
 
@@ -62,7 +62,7 @@ describe('Room Layers Integration', () => {
     it('should execute actions with correct layer rules', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['plunge'],
+        layers: ['plunge'],
         shuffleSeed: 901234
       };
 
@@ -88,7 +88,7 @@ describe('Room Layers Integration', () => {
     it('should support multiple layers enabled simultaneously', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello', 'plunge', 'splash', 'sevens'],
+        layers: ['nello', 'plunge', 'splash', 'sevens'],
         shuffleSeed: 567890
       };
 
@@ -102,7 +102,7 @@ describe('Room Layers Integration', () => {
     it('should support base layer only (no special contracts)', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: [], // Only base layer
+        layers: [], // Only base layer
         shuffleSeed: 111111
       };
 
@@ -122,7 +122,7 @@ describe('Room Layers Integration', () => {
       // Only nello and sevens, not plunge or splash
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello', 'sevens'],
+        layers: ['nello', 'sevens'],
         shuffleSeed: 222222
       };
 
@@ -138,7 +138,7 @@ describe('Room Layers Integration', () => {
     it('should apply nello rules when nello layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello'],
+        layers: ['nello'],
         shuffleSeed: 333333
       };
 
@@ -179,7 +179,7 @@ describe('Room Layers Integration', () => {
     it('should apply plunge rules when plunge layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['plunge'],
+        layers: ['plunge'],
         shuffleSeed: 444444
       };
 
@@ -217,7 +217,7 @@ describe('Room Layers Integration', () => {
     it('should apply sevens rules when sevens layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['sevens'],
+        layers: ['sevens'],
         shuffleSeed: 555555
       };
 
@@ -249,10 +249,10 @@ describe('Room Layers Integration', () => {
   });
 
   describe('Layer Configuration Validation', () => {
-    it('should handle empty enabledLayers array', () => {
+    it('should handle empty layers array', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: [],
+        layers: [],
         shuffleSeed: 666666
       };
 
@@ -261,10 +261,10 @@ describe('Room Layers Integration', () => {
       }).not.toThrow();
     });
 
-    it('should handle undefined enabledLayers', () => {
+    it('should handle undefined layers', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        // enabledLayers not specified
+        // layers not specified
         shuffleSeed: 777777
       };
 
@@ -282,7 +282,7 @@ describe('Room Layers Integration', () => {
     it('should preserve layer order from config', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['sevens', 'nello', 'plunge', 'splash'],
+        layers: ['sevens', 'nello', 'plunge', 'splash'],
         shuffleSeed: 888888
       };
 
@@ -298,7 +298,7 @@ describe('Room Layers Integration', () => {
     it('should validate actions through composed rules', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello'],
+        layers: ['nello'],
         shuffleSeed: 999999
       };
 
@@ -318,7 +318,7 @@ describe('Room Layers Integration', () => {
     it('should allow valid actions through composed rules', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['splash'],
+        layers: ['splash'],
         shuffleSeed: 101010
       };
 
@@ -339,7 +339,7 @@ describe('Room Layers Integration', () => {
     it('should include layer-specific actions in validActions', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['nello', 'sevens'],
+        layers: ['nello', 'sevens'],
         shuffleSeed: 121212
       };
 
@@ -377,7 +377,7 @@ describe('Room Layers Integration', () => {
     it('should filter actions by player capabilities', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: ['plunge'],
+        layers: ['plunge'],
         shuffleSeed: 131313
       };
 

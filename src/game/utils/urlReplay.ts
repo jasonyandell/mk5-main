@@ -2,7 +2,7 @@
  * URL Replay System - Deterministic game replay from encoded URLs.
  *
  * Replays games from URLs containing:
- * - Game configuration (layers, transformers, player types)
+ * - Game configuration (layers, player types)
  * - Shuffle seed
  * - Action history (compressed IDs)
  *
@@ -60,7 +60,7 @@ export interface ReplayResult {
  * ```typescript
  * const result = replayFromUrl('?s=abc&l=n,t&a=CAAS');
  * console.log(result.state.teamScores); // [2, 0]
- * console.log(result.config.enabledLayers); // ['nello', 'tournament']
+ * console.log(result.config.layers); // ['nello', 'tournament']
  * ```
  */
 export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayResult {
@@ -83,8 +83,8 @@ export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayR
     config.colorOverrides = decoded.colorOverrides;
   }
 
-  if (decoded.enabledLayers) {
-    config.enabledLayers = decoded.enabledLayers;
+  if (decoded.layers) {
+    config.layers = decoded.layers;
   }
 
   return replayActions(decoded.seed, decoded.actions, config, options);

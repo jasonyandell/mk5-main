@@ -37,9 +37,9 @@ export interface ExecutionContext {
  */
 export function createExecutionContext(config: GameConfig): ExecutionContext {
   // Get enabled layers
-  const enabledLayerNames = config.enabledLayers ?? [];
-  const enabledLayers = enabledLayerNames.length > 0
-    ? getLayersByNames(enabledLayerNames)
+  const layerNames = config.layers ?? [];
+  const enabledLayers = layerNames.length > 0
+    ? getLayersByNames(layerNames)
     : [];
 
   // Compose all layers: base + enabled layers

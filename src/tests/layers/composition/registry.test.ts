@@ -296,8 +296,8 @@ describe('Layer Registry and Lookup', () => {
 
     it('should support dynamic layer selection', () => {
       // Simulating configuration-based layer selection
-      const enabledLayers = ['base', 'plunge', 'splash'];
-      const layers = getLayersByNames(enabledLayers);
+      const layerNames = ['base', 'plunge', 'splash'];
+      const layers = getLayersByNames(layerNames);
 
       expect(layers).toHaveLength(3);
       expect(layers.map(l => l.name)).toEqual(['base', 'plunge', 'splash']);

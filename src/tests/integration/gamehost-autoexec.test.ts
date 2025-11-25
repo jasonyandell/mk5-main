@@ -20,7 +20,7 @@ describe('Room auto-execute', () => {
   it('runs introductory scripts for oneHand layer automatically', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      enabledLayers: ['oneHand'],
+      layers: ['oneHand'],
       shuffleSeed: 777777
     };
 
@@ -39,7 +39,7 @@ describe('Room auto-execute', () => {
   it('oneHand actions have system authority in their meta', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      enabledLayers: ['oneHand'],
+      layers: ['oneHand'],
       shuffleSeed: 777777
     };
 
@@ -65,7 +65,7 @@ describe('Room auto-execute', () => {
   it('oneHand actions execute successfully regardless of session capabilities', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      enabledLayers: ['oneHand'],
+      layers: ['oneHand'],
       shuffleSeed: 777777
     };
 

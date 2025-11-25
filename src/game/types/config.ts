@@ -56,7 +56,7 @@ export interface GameConfig {
   playerTypes: ('human' | 'ai')[];
 
   /** Enabled layers (e.g., ['nello', 'plunge', 'oneHand']) */
-  enabledLayers?: string[];
+  layers?: string[];
 
   /** Random seed for deterministic games */
   shuffleSeed?: number;

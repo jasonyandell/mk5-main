@@ -21,7 +21,7 @@ describe('Nello Full Hand Integration', () => {
   function createNelloRoom(seed: number, hands: Domino[][]): HeadlessRoom {
     const config: GameConfig = {
       playerTypes: ['human', 'human', 'human', 'human'],
-      enabledLayers: ['base', 'nello'],
+      layers: ['base', 'nello'],
       shuffleSeed: seed,
       dealOverrides: { initialHands: hands }
     };

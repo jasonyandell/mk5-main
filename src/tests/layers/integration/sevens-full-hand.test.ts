@@ -26,7 +26,7 @@ describe('Sevens Full Hand Integration', () => {
   function createSevensRoom(seed: number, hands: Domino[][]): HeadlessRoom {
     const config: GameConfig = {
       playerTypes: ['human', 'human', 'human', 'human'],
-      enabledLayers: ['base', 'sevens'],
+      layers: ['base', 'sevens'],
       shuffleSeed: seed,
       dealOverrides: { initialHands: hands }
     };

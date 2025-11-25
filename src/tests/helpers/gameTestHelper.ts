@@ -133,7 +133,7 @@ export class GameTestHelper {
   static validateTournamentRules(state: GameState): string[] {
     const errors: string[] = [];
 
-    // Check for special contracts (tournament mode now enforced via actionTransformers)
+    // Check for special contracts (tournament mode now enforced via layers)
     const specialBids = state.bids.filter(bid =>
       bid.type === 'splash' ||
       bid.type === 'plunge'

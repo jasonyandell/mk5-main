@@ -181,7 +181,7 @@ export function encodeGameUrl(
   theme?: string,
   colorOverrides?: Record<string, string>,
   sectionName?: string,
-  enabledLayers?: string[]
+  layers?: string[]
 ): string {
   const params = new URLSearchParams();
 
@@ -258,8 +258,8 @@ export function encodeGameUrl(
   }
 
   // Enabled layers (short codes, comma-separated)
-  if (enabledLayers && enabledLayers.length > 0) {
-    const codes = enabledLayers
+  if (layers && layers.length > 0) {
+    const codes = layers
       .map(rs => LAYER_CODES[rs])
       .filter(code => code !== undefined)
       .join(',');
@@ -285,7 +285,7 @@ export function decodeGameUrl(urlString: string): {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
-  enabledLayers?: string[];
+  layers?: string[];
 } {
   // Handle both full URLs and just query strings
   const queryString = urlString.includes('?')
@@ -409,7 +409,7 @@ export function decodeGameUrl(urlString: string): {
 
   // Parse enabled layers (short codes)
   const layersStr = params.get('l');
-  const enabledLayers = layersStr
+  const layers = layersStr
     ? layersStr.split(',')
         .map(code => LAYER_CODE_TO_NAME[code])
         .filter((name): name is string => name !== undefined)
@@ -423,11 +423,11 @@ export function decodeGameUrl(urlString: string): {
     theme: string;
     colorOverrides: Record<string, string>;
     scenario: string;
-    enabledLayers?: string[];
+    layers?: string[];
   } = { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
 
-  if (enabledLayers && enabledLayers.length > 0) {
-    result.enabledLayers = enabledLayers;
+  if (layers && layers.length > 0) {
+    result.layers = layers;
   }
 
   return result;
@@ -462,5 +462,5 @@ export interface URLData {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
-  enabledLayers?: string[];
+  layers?: string[];
 }

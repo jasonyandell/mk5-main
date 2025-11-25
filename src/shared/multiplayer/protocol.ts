@@ -199,7 +199,7 @@ export interface GameView {
   /** Game metadata */
   metadata: {
     gameId: string;
-    enabledLayers?: string[];
+    layers?: string[];
   };
 
   // TODO: Add replay-url capability

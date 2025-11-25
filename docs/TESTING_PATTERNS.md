@@ -34,7 +34,7 @@ import { createTestContext } from '../helpers/executionContext';
 describe('Layer Composition', () => {
   it('should compose nello and plunge layers correctly', () => {
     const ctx = createTestContext({
-      enabledLayers: ['base', 'nello', 'plunge']
+      layers: ['base', 'nello', 'plunge']
     });
     const rules = ctx.rules;
 

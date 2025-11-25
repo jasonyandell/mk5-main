@@ -1321,15 +1321,14 @@ interface StateUpdateMessage {
 ```typescript
 playerTypes: ('human' | 'ai')[]  // Seat control
 shuffleSeed: number              // Deterministic shuffle
-enabledLayers: string[]          // Active special contracts
-enabledActionTransformers: ActionTransformerConfig[] // Active action transformers
+layers: string[]                 // Active layers (e.g., ['nello', 'plunge', 'oneHand'])
 theme: string                    // DaisyUI theme
 colorOverrides: Record<string, string>  // CSS variables
 ```
 
 **Used By**: Room constructor, Game initialization
 
-**Related**: ActionTransformerConfig, Theme System
+**Related**: Layer System, Theme System
 
 ---
 

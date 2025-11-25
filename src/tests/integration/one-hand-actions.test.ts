@@ -50,7 +50,7 @@ describe('One-Hand Actions', () => {
       gameTarget: 7,
       initialConfig: {
         playerTypes: ['ai', 'ai', 'ai', 'ai'],
-        enabledLayers: ['oneHand']
+        layers: ['oneHand']
       },
       theme: 'business',
       colorOverrides: {}
