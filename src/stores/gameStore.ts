@@ -182,7 +182,6 @@ class GameStoreImpl {
           ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0
             ? { colorOverrides: urlData.colorOverrides }
             : {}),
-          ...(urlData.actionTransformers ? { actionTransformers: urlData.actionTransformers } : {}),
           ...(urlData.enabledLayers ? { enabledLayers: urlData.enabledLayers } : {})
         };
 
@@ -416,14 +415,10 @@ class GameStoreImpl {
   }
 
   async startOneHand(seed?: number): Promise<void> {
-    // One-hand mode requires both ActionTransformer and RuleSet:
-    // - ActionTransformer: Automates bidding/trump and auto-executes score-hand
-    // - RuleSet: Transitions to 'one-hand-complete' phase instead of 'bidding'
-    // These must always be configured together for one-hand mode to work correctly
+    // oneHand layer handles bidding automation, terminal phase, and action generation
     const config: GameConfig = {
       playerTypes,
-      actionTransformers: [{ type: 'one-hand', config: { seed } }],
-      enabledLayers: ['oneHand'],  // Required for terminal phase transition
+      enabledLayers: ['oneHand'],
       shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
     };
 
@@ -446,7 +441,7 @@ class GameStoreImpl {
   // One-hand state (derived)
   get oneHandState() {
     return derived(this.gameState, ($gameState) => {
-      // Check for one-hand-complete phase (terminal state set by oneHandRuleSet)
+      // Check for one-hand-complete phase (terminal state set by oneHandLayer)
       const isComplete = $gameState.phase === 'one-hand-complete';
       const attempts = 1; // Could track this if needed
 

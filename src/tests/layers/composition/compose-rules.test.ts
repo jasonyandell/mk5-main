@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, sevensRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, nelloLayer, plungeLayer, sevensLayer } from '../../../game/layers';
 import type { GameState, Bid, TrumpSelection, Domino, Play } from '../../../game/types';
 import { createInitialState } from '../../../game/core/state';
 
@@ -27,7 +27,7 @@ describe('Rule Composition Mechanics', () => {
 
   describe('Base layer alone', () => {
     it('should produce correct getTrumpSelector result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const state = createTestState();
       const bid: Bid = { type: 'marks', value: 2, player: 1 };
 
@@ -35,7 +35,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct getFirstLeader result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const state = createTestState();
       const trump: TrumpSelection = { type: 'suit', suit: 1 };
 
@@ -43,7 +43,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct getNextPlayer result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const state = createTestState();
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
@@ -53,7 +53,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct isTrickComplete result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
 
       const state3Plays = createTestState({
         currentTrick: [
@@ -76,7 +76,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct checkHandOutcome result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
 
       const state6Tricks = createTestState({ tricks: new Array(6) });
       const outcome6 = rules.checkHandOutcome(state6Tricks);
@@ -89,7 +89,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct getLedSuit result for non-trump', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const state = createTestState({ trump: { type: 'suit', suit: 1 } });
       const domino: Domino = { id: '5-6', high: 5, low: 6, points: 0 };
 
@@ -97,7 +97,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should produce correct calculateTrickWinner result', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const state = createTestState({
         trump: { type: 'suit', suit: 1 },
         currentSuit: 2
@@ -112,9 +112,9 @@ describe('Rule Composition Mechanics', () => {
     });
   });
 
-  describe('Base + single special ruleSet', () => {
+  describe('Base + single special layer', () => {
     it('should compose base + nello correctly for getNextPlayer', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer]);
       const state = createTestState({
         trump: { type: 'nello' },
         winningBidder: 0
@@ -127,7 +127,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should compose base + nello correctly for isTrickComplete', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer]);
       const state = createTestState({
         trump: { type: 'nello' },
         currentTrick: [
@@ -141,7 +141,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should compose base + plunge correctly for getTrumpSelector', () => {
-      const rules = composeRules([baseRuleSet, plungeRuleSet]);
+      const rules = composeRules([baseLayer, plungeLayer]);
       const state = createTestState();
       const bid: Bid = { type: 'plunge', value: 4, player: 1 };
 
@@ -150,7 +150,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should compose base + sevens correctly for calculateTrickWinner', () => {
-      const rules = composeRules([baseRuleSet, sevensRuleSet]);
+      const rules = composeRules([baseLayer, sevensLayer]);
       const state = createTestState({ trump: { type: 'sevens' } });
       const trick: Play[] = [
         { player: 0, domino: { id: '3-3', high: 3, low: 3, points: 0 } }, // 6 total (distance 1)
@@ -162,9 +162,9 @@ describe('Rule Composition Mechanics', () => {
     });
   });
 
-  describe('Base + multiple ruleSets', () => {
+  describe('Base + multiple layers', () => {
     it('should compose base + nello + sevens correctly', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet, sevensRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer, sevensLayer]);
 
       // Nello behavior when trump is nello
       const nelloState = createTestState({
@@ -189,29 +189,29 @@ describe('Rule Composition Mechanics', () => {
   });
 
   describe('Layer order matters', () => {
-    it('should apply ruleSets left-to-right', () => {
-      // Both ruleSets can affect the same rule
-      const rules1 = composeRules([baseRuleSet, nelloRuleSet]);
-      const rules2 = composeRules([baseRuleSet, sevensRuleSet]);
+    it('should apply layers left-to-right', () => {
+      // Both layers can affect the same rule
+      const rules1 = composeRules([baseLayer, nelloLayer]);
+      const rules2 = composeRules([baseLayer, sevensLayer]);
 
       const nelloState = createTestState({
         trump: { type: 'nello' },
         winningBidder: 0
       });
 
-      // nelloRuleSet is included, so getLedSuit should use nello rules
+      // nelloLayer is included, so getLedSuit should use nello rules
       const domino: Domino = { id: '2-2', high: 2, low: 2, points: 0 };
       expect(rules1.getLedSuit(nelloState, domino)).toBe(7); // Doubles = suit 7
 
-      // sevensRuleSet doesn't override getLedSuit for nello
+      // sevensLayer doesn't override getLedSuit for nello
       const baseState = createTestState({
         trump: { type: 'suit', suit: 1 }
       });
       expect(rules2.getLedSuit(baseState, domino)).toBe(2); // Base behavior
     });
 
-    it('should allow later ruleSets to override earlier ones', () => {
-      // Create a custom ruleset that always returns a fixed value
+    it('should allow later layers to override earlier ones', () => {
+      // Create a custom layer that always returns a fixed value
       const mockLayer = {
         name: 'mock',
         rules: {
@@ -219,17 +219,17 @@ describe('Rule Composition Mechanics', () => {
         }
       };
 
-      const rules = composeRules([baseRuleSet, nelloRuleSet, mockLayer]);
+      const rules = composeRules([baseLayer, nelloLayer, mockLayer]);
       const state = createTestState();
 
-      // Mock ruleset is last, so it wins
+      // Mock layer is last, so it wins
       expect(rules.getNextPlayer(state, 0)).toBe(99);
     });
   });
 
   describe('All 7 rule methods compose correctly', () => {
     it('should compose all methods without error', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet, plungeRuleSet, sevensRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer, plungeLayer, sevensLayer]);
 
       expect(rules.getTrumpSelector).toBeDefined();
       expect(rules.getFirstLeader).toBeDefined();
@@ -240,9 +240,9 @@ describe('Rule Composition Mechanics', () => {
       expect(rules.calculateTrickWinner).toBeDefined();
     });
 
-    it('should handle empty ruleSets gracefully', () => {
+    it('should handle empty layers gracefully', () => {
       const emptyLayer = { name: 'empty', rules: {} };
-      const rules = composeRules([baseRuleSet, emptyLayer]);
+      const rules = composeRules([baseLayer, emptyLayer]);
 
       const state = createTestState();
       const bid: Bid = { type: 'marks', value: 2, player: 1 };
@@ -255,7 +255,7 @@ describe('Rule Composition Mechanics', () => {
 
   describe('Composition produces valid GameRules interface', () => {
     it('should return GameRules with all required methods', () => {
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
 
       // Type check - should have all methods
       expect(typeof rules.getTrumpSelector).toBe('function');
@@ -267,7 +267,7 @@ describe('Rule Composition Mechanics', () => {
       expect(typeof rules.calculateTrickWinner).toBe('function');
     });
 
-    it('should work with no ruleSets (edge case)', () => {
+    it('should work with no layers (edge case)', () => {
       const rules = composeRules([]);
 
       const state = createTestState();
@@ -279,7 +279,7 @@ describe('Rule Composition Mechanics', () => {
     });
 
     it('should preserve function signatures across composition', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer]);
 
       const state = createTestState();
       const bid: Bid = { type: 'marks', value: 2, player: 1 };

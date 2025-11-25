@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createSetupState } from '../../game/core/state';
-import { composeRules, baseRuleSet } from '../../game/layers';
+import { composeRules, baseLayer } from '../../game/layers';
 import { shuffleDominoesWithSeed } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
@@ -9,7 +9,7 @@ import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } f
 import type { Bid, Domino } from '../../game/types';
 import { ACES, DEUCES, TRES } from '../../game/types';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Basic Game Flow', () => {
   describe('Game Initialization', () => {

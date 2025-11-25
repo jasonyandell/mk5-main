@@ -1,28 +1,32 @@
 /**
- * Unit tests for plunge ruleset game rules.
+ * Unit tests for splash layer game rules.
  *
- * Plunge rules (from docs/rules.md §8.A):
- * - Requires 4+ doubles in hand
- * - Bid value: Automatic based on highest marks bid + 1, minimum 4
+ * Splash rules (from docs/rules.md §8.A):
+ * - Requires 3+ doubles in hand
+ * - Bid value: Automatic based on highest marks bid + 1, range 2-3 marks
  * - Partner selects trump and leads
  * - Must win all 7 tricks (early termination if opponents win any trick)
+ *
+ * Nearly identical to plunge but different thresholds:
+ * - Doubles requirement: 3+ (vs plunge 4+)
+ * - Bid value range: 2-3 marks (vs plunge 4+ marks)
  */
 
 import { describe, it, expect } from 'vitest';
-import { baseRuleSet } from '../../../game/layers/base';
-import { plungeRuleSet } from '../../../game/layers/plunge';
+import { baseLayer } from '../../../game/layers/base';
+import { splashLayer } from '../../../game/layers/splash';
 import { composeRules } from '../../../game/layers/compose';
-import type { Trick, Bid } from '../../../game/types';
+import type { Bid, Trick } from '../../../game/types';
 import { StateBuilder, HandBuilder } from '../../helpers';
 import { BID_TYPES } from '../../../game/constants';
-import { BLANKS, ACES } from '../../../game/types';
+import { BLANKS, TRES } from '../../../game/types';
 
-describe('Plunge RuleSet Rules', () => {
-  const rules = composeRules([baseRuleSet, plungeRuleSet]);
+describe('Splash Layer Rules', () => {
+  const rules = composeRules([baseLayer, splashLayer]);
 
   describe('getValidActions', () => {
-    it('should add plunge bid when player has 4+ doubles', () => {
-      const hand = HandBuilder.withDoubles(4);
+    it('should add splash bid when player has 3+ doubles', () => {
+      const hand = HandBuilder.withDoubles(3);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 1,
@@ -36,19 +40,19 @@ describe('Plunge RuleSet Rules', () => {
       const baseActions = [
         { type: 'pass' as const, player: 1 }
       ];
-      const actions = plungeRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = splashLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toHaveLength(2);
       expect(actions[1]).toEqual({
         type: 'bid',
         player: 1,
-        bid: 'plunge',
-        value: 4 // Minimum plunge value
+        bid: 'splash',
+        value: 2 // Minimum splash value
       });
     });
 
-    it('should not add plunge bid when player has 3 doubles', () => {
-      const hand = HandBuilder.withDoubles(3);
+    it('should not add splash bid when player has 2 doubles', () => {
+      const hand = HandBuilder.withDoubles(2);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 0,
@@ -58,19 +62,18 @@ describe('Plunge RuleSet Rules', () => {
       }).build();
 
       const baseActions: never[] = [];
-      const actions = plungeRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = splashLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toEqual([]);
     });
 
-    it('should calculate plunge value as highest marks bid + 1', () => {
-      const hand = HandBuilder.withDoubles(5);
+    it('should calculate splash value as highest marks bid + 1, capped at 3', () => {
+      const hand = HandBuilder.withDoubles(4);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 2,
         bids: [
-          { type: BID_TYPES.MARKS, value: 2, player: 0 },
-          { type: BID_TYPES.MARKS, value: 3, player: 1 }
+          { type: BID_TYPES.MARKS, value: 2, player: 0 }
         ],
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -79,13 +82,32 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
-      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(4); // 3 + 1 = 4
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(3); // 2 + 1 = 3
     });
 
-    it('should use minimum value of 4 when no marks bids exist', () => {
-      const hand = HandBuilder.withDoubles(4);
+    it('should cap splash value at 3 marks', () => {
+      const hand = HandBuilder.withDoubles(5);
+      const state = StateBuilder.inBiddingPhase().with({
+        phase: 'bidding',
+        currentPlayer: 0,
+        bids: [
+          { type: BID_TYPES.MARKS, value: 3, player: 1 }
+        ],
+        players: [
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand }
+        ]
+      }).build();
+
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
+
+      // Would be 3 + 1 = 4, but capped at 3
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(3);
+    });
+
+    it('should use minimum value of 2 when no marks bids exist', () => {
+      const hand = HandBuilder.withDoubles(3);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 0,
@@ -97,18 +119,18 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
-      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(4);
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(2);
     });
 
-    it('should handle plunge bid value jumping over existing marks bid', () => {
-      const hand = HandBuilder.withDoubles(6);
+    it('should work with 1 mark bid to produce 2 mark splash', () => {
+      const hand = HandBuilder.withDoubles(4);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 3,
         bids: [
-          { type: BID_TYPES.MARKS, value: 5, player: 1 }
+          { type: BID_TYPES.MARKS, value: 1, player: 0 }
         ],
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -118,12 +140,12 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
-      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(6); // 5 + 1 = 6
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(2); // 1 + 1 = 2
     });
 
-    it('should not add plunge bid when not in bidding phase', () => {
+    it('should not add splash bid when not in bidding phase', () => {
       const hand = HandBuilder.withDoubles(5);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'trump_selection',
@@ -133,13 +155,13 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
       expect(actions).toEqual([]);
     });
 
-    it('should handle exactly 4 doubles', () => {
-      const hand = HandBuilder.withDoubles(4);
+    it('should handle exactly 3 doubles', () => {
+      const hand = HandBuilder.withDoubles(3);
       const state = StateBuilder.inBiddingPhase().with({
         phase: 'bidding',
         currentPlayer: 2,
@@ -150,10 +172,10 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
       expect(actions).toHaveLength(1);
-      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('plunge');
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('splash');
     });
 
     it('should handle all 7 doubles', () => {
@@ -167,47 +189,66 @@ describe('Plunge RuleSet Rules', () => {
         ]
       }).build();
 
-      const actions = plungeRuleSet.getValidActions?.(state, []) ?? [];
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
 
       expect(actions).toHaveLength(1);
-      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('plunge');
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('splash');
+    });
+
+    it('should handle 4 doubles (both splash and plunge eligible)', () => {
+      const hand = HandBuilder.withDoubles(4);
+      const state = StateBuilder.inBiddingPhase().with({
+        phase: 'bidding',
+        currentPlayer: 0,
+        bids: [],
+        players: [
+          { id: 0, name: 'P0', teamId: 0, marks: 0, hand }
+        ]
+      }).build();
+
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
+
+      // Splash layer only knows about splash
+      expect(actions).toHaveLength(1);
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('splash');
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(2);
     });
   });
 
   describe('getTrumpSelector', () => {
-    it('should return partner for plunge bid', () => {
+    it('should return partner for splash bid', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 }
+        currentBid: { type: 'splash', value: 2, player: 0 }
       }).build();
-      const bid: Bid = { type: 'plunge', value: 4, player: 0 };
+      const bid: Bid = { type: 'splash', value: 2, player: 0 };
 
       const selector = rules.getTrumpSelector(state, bid);
 
       expect(selector).toBe(2); // Partner of player 0 is player 2
     });
 
-    it('should return partner for plunge bid from player 1', () => {
-      const bid: Bid = { type: 'plunge', value: 5, player: 1 };
+    it('should return partner for splash bid from player 1', () => {
+      const bid: Bid = { type: 'splash', value: 3, player: 1 };
       const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(3); // Partner of player 1 is player 3
     });
 
-    it('should return partner for plunge bid from player 2', () => {
-      const bid: Bid = { type: 'plunge', value: 4, player: 2 };
+    it('should return partner for splash bid from player 2', () => {
+      const bid: Bid = { type: 'splash', value: 2, player: 2 };
       const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(0); // Partner of player 2 is player 0
     });
 
-    it('should return partner for plunge bid from player 3', () => {
-      const bid: Bid = { type: 'plunge', value: 6, player: 3 };
+    it('should return partner for splash bid from player 3', () => {
+      const bid: Bid = { type: 'splash', value: 3, player: 3 };
       const state = StateBuilder.inBiddingPhase().build();
 
       expect(rules.getTrumpSelector(state, bid)).toBe(1); // Partner of player 3 is player 1
     });
 
-    it('should pass through to base for non-plunge bids', () => {
+    it('should pass through to base for non-splash bids', () => {
       const bid = { type: BID_TYPES.MARKS, value: 2, player: 1 };
       const state = StateBuilder.inBiddingPhase().build();
 
@@ -218,12 +259,12 @@ describe('Plunge RuleSet Rules', () => {
   describe('getFirstLeader', () => {
     it('should pass through to base (partner leads since they selected trump)', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 2, player: 0 },
         winningBidder: 0
       }).build();
 
       // Partner (player 2) is trump selector
-      const leader = rules.getFirstLeader(state, 2, { type: 'suit', suit: ACES });
+      const leader = rules.getFirstLeader(state, 2, { type: 'suit', suit: TRES });
 
       expect(leader).toBe(2); // Partner leads
     });
@@ -232,7 +273,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('getNextPlayer', () => {
     it('should use standard rotation (no skipping)', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 }
+        currentBid: { type: 'splash', value: 3, player: 0 }
       }).build();
 
       expect(rules.getNextPlayer(state, 0)).toBe(1);
@@ -245,7 +286,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('isTrickComplete', () => {
     it('should use base rule (4 plays)', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 2, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
@@ -259,7 +300,7 @@ describe('Plunge RuleSet Rules', () => {
 
     it('should return false for 3 plays', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 3, player: 0 },
         currentTrick: [
           { player: 0, domino: { id: '1-0', high: 1, low: 0 } },
           { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
@@ -274,7 +315,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('checkHandOutcome', () => {
     it('should return null when bidding team wins all tricks so far', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 2, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -312,7 +353,7 @@ describe('Plunge RuleSet Rules', () => {
 
     it('should return determined when opponents win any trick', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 3, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -338,7 +379,7 @@ describe('Plunge RuleSet Rules', () => {
               { player: 2, domino: { id: '1-1', high: 1, low: 1 } },
               { player: 3, domino: { id: '2-1', high: 2, low: 1 } }
             ],
-            winner: 1, // Team 1 wins - plunge fails!
+            winner: 1, // Team 1 wins - splash fails!
             points: 5
           }
         ]
@@ -352,7 +393,7 @@ describe('Plunge RuleSet Rules', () => {
 
     it('should end on first trick if opponents win', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 1 },
+        currentBid: { type: 'splash', value: 2, player: 1 },
         winningBidder: 1,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -363,12 +404,12 @@ describe('Plunge RuleSet Rules', () => {
         tricks: [
           {
             plays: [
-              { player: 2, domino: { id: '6-0', high: 6, low: 0 } },
               { player: 3, domino: { id: '1-0', high: 1, low: 0 } },
-              { player: 0, domino: { id: '2-0', high: 2, low: 0 } },
-              { player: 1, domino: { id: '3-0', high: 3, low: 0 } }
+              { player: 0, domino: { id: '6-0', high: 6, low: 0 } },
+              { player: 1, domino: { id: '2-0', high: 2, low: 0 } },
+              { player: 2, domino: { id: '3-0', high: 3, low: 0 } }
             ],
-            winner: 2, // Team 0 wins first trick - plunge fails immediately
+            winner: 0, // Team 0 wins first trick - splash fails immediately
             points: 0
           }
         ]
@@ -379,7 +420,7 @@ describe('Plunge RuleSet Rules', () => {
       expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
     });
 
-    it('should not trigger early termination for non-plunge bids', () => {
+    it('should not trigger early termination for non-splash bids', () => {
       const state = StateBuilder.inBiddingPhase().with({
         currentBid: { type: BID_TYPES.MARKS, value: 2, player: 0 },
         winningBidder: 0,
@@ -407,9 +448,9 @@ describe('Plunge RuleSet Rules', () => {
       expect(outcome.isDetermined).toBe(false); // Should play all tricks for marks bid
     });
 
-    it('should respect already determined outcome from previous ruleSet', () => {
+    it('should respect already determined outcome from previous layer', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 3, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -430,7 +471,7 @@ describe('Plunge RuleSet Rules', () => {
       }).build();
 
       const outcome = rules.checkHandOutcome(state);
-      // Base ruleset says "all tricks played"
+      // Base layer says "all tricks played"
       expect(outcome.isDetermined).toBe(true);
     });
   });
@@ -438,7 +479,7 @@ describe('Plunge RuleSet Rules', () => {
   describe('getLedSuit', () => {
     it('should use base rules (no override)', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 2, player: 0 },
         trump: { type: 'suit', suit: BLANKS }
       }).build();
 
@@ -450,12 +491,12 @@ describe('Plunge RuleSet Rules', () => {
   describe('calculateTrickWinner', () => {
     it('should use base rules (standard trick-taking)', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
-        trump: { type: 'suit', suit: ACES },
+        currentBid: { type: 'splash', value: 3, player: 0 },
+        trump: { type: 'suit', suit: TRES },
         currentSuit: BLANKS
       }).build();
       const trick = [
-        { player: 0, domino: { id: '3-0', high: 3, low: 0 } },
+        { player: 0, domino: { id: '5-0', high: 5, low: 0 } },
         { player: 1, domino: { id: '6-0', high: 6, low: 0 } },
         { player: 2, domino: { id: '2-0', high: 2, low: 0 } },
         { player: 3, domino: { id: '4-0', high: 4, low: 0 } }
@@ -466,10 +507,10 @@ describe('Plunge RuleSet Rules', () => {
     });
   });
 
-  describe('integration: complete plunge hand', () => {
+  describe('integration: complete splash hand', () => {
     it('should succeed when bidding team wins all 7 tricks', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
+        currentBid: { type: 'splash', value: 2, player: 0 },
         winningBidder: 0,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -495,13 +536,13 @@ describe('Plunge RuleSet Rules', () => {
       const finalState = { ...state, tricks };
       const outcome = rules.checkHandOutcome(finalState);
 
-      // Should be determined by base ruleset after all 7 tricks
+      // Should be determined by base layer after all 7 tricks
       expect(outcome.isDetermined).toBe(true);
     });
 
     it('should fail immediately on first lost trick', () => {
       const state = StateBuilder.inBiddingPhase().with({
-        currentBid: { type: 'plunge', value: 5, player: 3 },
+        currentBid: { type: 'splash', value: 3, player: 3 },
         winningBidder: 3,
         players: [
           { id: 0, name: 'P0', teamId: 0, marks: 0, hand: [] },
@@ -527,6 +568,34 @@ describe('Plunge RuleSet Rules', () => {
       expect(outcome.isDetermined).toBe(true);
       expect((outcome as { isDetermined: true; decidedAtTrick: number }).decidedAtTrick).toBe(1);
       expect((outcome as { isDetermined: true; reason: string }).reason).toContain('Defending team won trick 1');
+    });
+  });
+
+  describe('comparison with plunge layer', () => {
+    it('should have lower doubles requirement than plunge (3 vs 4)', () => {
+      const hand3 = HandBuilder.withDoubles(3);
+      const state = StateBuilder.inBiddingPhase().with({
+        phase: 'bidding',
+        currentPlayer: 0,
+        players: [{ id: 0, name: 'P0', teamId: 0, marks: 0, hand: hand3 }]
+      }).build();
+
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
+      expect(actions).toHaveLength(1); // Splash available
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].bid : undefined).toBe('splash');
+    });
+
+    it('should have lower value range than plunge (2-3 vs 4+)', () => {
+      const hand = HandBuilder.withDoubles(5);
+      const state = StateBuilder.inBiddingPhase().with({
+        phase: 'bidding',
+        currentPlayer: 0,
+        bids: [],
+        players: [{ id: 0, name: 'P0', teamId: 0, marks: 0, hand }]
+      }).build();
+
+      const actions = splashLayer.getValidActions?.(state, []) ?? [];
+      expect(actions[0] && actions[0].type === 'bid' ? actions[0].value : undefined).toBe(2); // Minimum splash
     });
   });
 });

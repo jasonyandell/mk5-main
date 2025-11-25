@@ -189,12 +189,12 @@ describe('Hand Outcome Detection', () => {
   });
 
   // NOTE: Nello tests removed - nello is now a trump selection (not bid type)
-  // and early termination logic is handled by nello ruleset's checkHandOutcome.
-  // See src/tests/rulesets/unit/nello-ruleset.test.ts for nello-specific tests.
+  // and early termination logic is handled by nello layer's checkHandOutcome.
+  // See src/tests/layers/unit/nello-layer.test.ts for nello-specific tests.
 
-  // NOTE: Splash/Plunge handling has been moved to their respective rulesets
-  // (splashRuleSet, plungeRuleSet). The core handOutcome function no longer handles
-  // these special bid types directly - they are handled through the ruleset composition system.
+  // NOTE: Splash/Plunge handling has been moved to their respective layers
+  // (splashLayer, plungeLayer). The core handOutcome function no longer handles
+  // these special bid types directly - they are handled through the layer composition system.
   // See ADR-20251112-onehand-terminal-phase.md for details on this architectural change.
 
   describe('Edge Cases', () => {

@@ -353,17 +353,14 @@ export function composeRules(layers: Layer[]): GameRules {
 }
 
 /**
- * Compose layers' getValidActions methods to transform action generation.
+ * Apply layers' getValidActions methods to transform an action list.
  *
- * Layers are applied left-to-right via reduce. Each layer receives
- * the actions from previous layers and can filter, annotate, or add actions.
+ * Layers are applied left-to-right. Each layer receives the actions from
+ * previous layers and can filter, annotate, or add actions.
  *
- * @param layers Array of layers to compose (base should be first)
- * @param state Current game state
- * @param baseActions Base actions from core game engine
- * @returns Transformed action list after all layers applied
+ * Internal helper for composeGetValidActions.
  */
-export function composeActions(
+function applyLayerActions(
   layers: readonly Layer[],
   state: GameState,
   baseActions: GameAction[]
@@ -380,23 +377,21 @@ export function composeActions(
 }
 
 /**
- * Compose action generators via function composition (not eager evaluation).
+ * Compose a getValidActions function via function composition.
  *
- * Returns a StateMachine function that will call the base generator,
- * then thread results through Layer action transformers.
- *
- * This is proper f(g(h(x))) composition - functions are composed without executing.
+ * Returns a function that calls the base generator, then threads results
+ * through each layer's getValidActions method.
  *
  * @param layers Array of layers to compose
- * @param base Base state machine function
- * @returns Composed StateMachine function
+ * @param base Base function that generates structural actions
+ * @returns Composed getValidActions function
  */
-export function composeActionGenerators(
+export function composeGetValidActions(
   layers: readonly Layer[],
   base: (state: GameState) => GameAction[]
 ): (state: GameState) => GameAction[] {
   return (state: GameState) => {
     const baseActions = base(state);
-    return composeActions(layers, state, baseActions);
+    return applyLayerActions(layers, state, baseActions);
   };
 }

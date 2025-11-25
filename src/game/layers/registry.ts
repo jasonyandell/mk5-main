@@ -6,36 +6,32 @@
  */
 
 import type { Layer } from './types';
-import { baseRuleSet } from './base';
-import { nelloRuleSet } from './nello';
-import { plungeRuleSet } from './plunge';
-import { splashRuleSet } from './splash';
-import { sevensRuleSet } from './sevens';
-import { tournamentRuleSet } from './tournament';
-import { oneHandRuleSet } from './oneHand';
-import { speedRuleSet } from './speed';
-import { hintsRuleSet } from './hints';
+import { baseLayer } from './base';
+import { nelloLayer } from './nello';
+import { plungeLayer } from './plunge';
+import { splashLayer } from './splash';
+import { sevensLayer } from './sevens';
+import { tournamentLayer } from './tournament';
+import { oneHandLayer } from './oneHand';
+import { speedLayer } from './speed';
+import { hintsLayer } from './hints';
 
 /**
  * Registry of all available layers.
  *
  * Note: Base layer should always be included first in composition.
  * Other layers can be enabled/disabled via configuration.
- *
- * Action transformer layers (one-hand, speed, hints) use hyphenated names
- * for backward compatibility with the old action-transformers system.
  */
 export const LAYER_REGISTRY: Record<string, Layer> = {
-  'base': baseRuleSet,
-  'nello': nelloRuleSet,
-  'plunge': plungeRuleSet,
-  'splash': splashRuleSet,
-  'sevens': sevensRuleSet,
-  'tournament': tournamentRuleSet,
-  'oneHand': oneHandRuleSet,
-  'one-hand': oneHandRuleSet,  // Alias for backward compatibility
-  'speed': speedRuleSet,
-  'hints': hintsRuleSet
+  'base': baseLayer,
+  'nello': nelloLayer,
+  'plunge': plungeLayer,
+  'splash': splashLayer,
+  'sevens': sevensLayer,
+  'tournament': tournamentLayer,
+  'oneHand': oneHandLayer,
+  'speed': speedLayer,
+  'hints': hintsLayer
 };
 
 /**

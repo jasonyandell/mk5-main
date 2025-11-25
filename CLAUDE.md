@@ -29,15 +29,15 @@ The authors are building a crystal palace in the sky with this project.  We want
 
 **Detailed references:**
 - [docs/remixed-855ccfd5.md](docs/remixed-855ccfd5.md) - Full multiplayer architecture specification
-- [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - RuleSet system deep-dive (historical)
+- [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - Layer system deep-dive (historical)
 - [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
 
 ## Overview
 Web implementation of Texas 42 dominoes game with pure functional architecture:
 - Event sourcing: `state = replayActions(config, history)`
-- Two-level composition: RuleSets (execution) + ActionTransformers (actions)
+- Unified Layer system with two surfaces (execution rules + action generation)
 - Capability-based multiplayer with filtered views
-- Zero coupling between core engine and action transformers/multiplayer
+- Zero coupling between core engine and layers/multiplayer
 
 ## Philosophy
 - Immutable state transitions

@@ -1,6 +1,6 @@
 # Texas 42: Pure Functional RuleSet Composition via Threaded Rules
 
-**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "Layer" is now "RuleSet", "Variant" is now "ActionTransformer". Content preserved for reference.
+**⚠️ HISTORICAL DOCUMENT**: This document uses legacy terminology. "RuleSet" and "ActionTransformer" are now unified as "Layer". Content preserved for reference.
 
 **Created**: 2025-10-25
 **Branch**: mk8

@@ -1,5 +1,5 @@
 /**
- * Unit tests for base ruleset game rules.
+ * Unit tests for base layer game rules.
  *
  * Tests all 7 GameRules methods:
  * - getTrumpSelector: Bidder selects trump
@@ -12,16 +12,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { baseRuleSet } from '../../../game/layers/base';
+import { baseLayer } from '../../../game/layers/base';
 import { composeRules } from '../../../game/layers/compose';
 import type { Play, Trick } from '../../../game/types';
 import { StateBuilder } from '../../helpers';
 import { BLANKS, ACES, DEUCES, TRES, SIXES, DOUBLES_AS_TRUMP } from '../../../game/types';
 import { BID_TYPES } from '../../../game/constants';
 
-describe('Base RuleSet Rules', () => {
+describe('Base Layer Rules', () => {
   // Create composed rules for testing
-  const rules = composeRules([baseRuleSet]);
+  const rules = composeRules([baseLayer]);
 
   describe('getTrumpSelector', () => {
     it('should return the bidding player as trump selector', () => {

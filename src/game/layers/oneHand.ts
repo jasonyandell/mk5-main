@@ -9,7 +9,7 @@
 import type { Layer } from './types';
 import type { GameState, GamePhase, GameAction } from '../types';
 
-export const oneHandRuleSet: Layer = {
+export const oneHandLayer: Layer = {
   name: 'oneHand',
 
   /**

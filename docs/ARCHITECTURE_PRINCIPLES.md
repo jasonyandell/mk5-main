@@ -77,15 +77,17 @@ All game logic is implemented as pure functions with no side effects. Given the 
 
 ---
 
-### Two-Level Composition System
+### Unified Layer System
 A unique architectural innovation solving the challenge of special contracts that need to modify both execution rules AND available actions.
 
 ```
-RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game Configuration
+LAYERS (execution rules + action generation) = Game Configuration
 ```
 
-#### Level 1: RuleSets → Execution Rules
-**Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
+#### Two Orthogonal Surfaces
+
+**Surface 1: Execution Rules**
+Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
 **Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 13 methods)
 - WHO: getTrumpSelector, getFirstLeader, getNextPlayer
@@ -96,11 +98,11 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 
 **Extensibility**: The 13 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
 
-**When to add methods**: When an executor needs mode-specific behavior and you're tempted to write `if (state.mode)`, add a GameRules method instead. Base provides default, RuleSets override.
+**When to add methods**: When an executor needs mode-specific behavior and you're tempted to write `if (state.mode)`, add a GameRules method instead. Base provides default, Layers override.
 
-**Example of current methods**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
+**Example**: Nello partner sits out → override `isTrickComplete` to return true at 3 plays instead of 4.
 
-**Example of extensibility**: `checkHandOutcome` was added to support nello/plunge early termination. Base returns `{ determined: false }` (play all tricks), special RuleSets return `{ determined: true, reason, decidedAtTrick? }` when conditions met.
+**Example extensibility**: `checkHandOutcome` was added to support nello/plunge early termination. Base returns `{ determined: false }` (play all tricks), special Layers return `{ determined: true, reason, decidedAtTrick? }` when conditions met.
 
 **Pattern**: HandOutcome uses discriminated union to make invalid states unrepresentable:
 - `{ determined: false }` - outcome not yet determined
@@ -108,10 +110,10 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 - TypeScript enforces: can't access reason unless determined === true
 - Aligns with Result<T> pattern used throughout codebase
 
-**Composition**: RuleSets override only what differs from base, compose via reduce pattern
+**Composition**: Layers override only what differs from base, compose via reduce pattern
 
-#### Level 2: ActionTransformers → Action Transformation
-**Purpose**: Transform WHAT actions are possible (filter, annotate, script, replace)
+**Surface 2: Action Generation**
+Transform WHAT actions are possible (filter, annotate, script, replace)
 
 **Operations**:
 - **Filter**: Remove actions (tournament removes special bids)
@@ -119,9 +121,9 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 - **Script**: Inject actions (oneHand scripts bidding)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
-**Composition**: ActionTransformers wrap the state machine via function composition
+**Composition**: Layers compose action generation via reduce pattern
 
-**Key Insight**: RuleSets and ActionTransformers compose independently without modifying core engine. Executors have ZERO conditional logic.
+**Key Insight**: Layers provide both surfaces in a unified structure without modifying core engine. Executors have ZERO conditional logic.
 
 ---
 
@@ -172,7 +174,7 @@ Each tier has distinct responsibilities:
 
 ### Room - Game Orchestrator
 - Stores unfiltered state
-- Composes RuleSets/action transformers (single composition point)
+- Composes Layers (single composition point)
 - Creates and owns ExecutionContext
 - Manages sessions, AI, and subscriptions
 - Routes protocol messages to handlers
@@ -202,11 +204,8 @@ Understanding the architecture requires thinking about it in multiple ways:
 ### The Game as a State Machine
 Every game position has defined transitions to next positions. Actions are edges, states are nodes. AI explores this graph to make decisions. Games flow deterministically through well-defined positions.
 
-### RuleSets as Lenses
-Each ruleset provides a different lens through which to view game rules. Stack lenses to create new game modes. Nello adds a "3-player trick" lens, Plunge adds a "partner leads" lens, Sevens adds a "distance-from-7" lens.
-
-### ActionTransformers as Decorators
-ActionTransformers wrap and transform the base game, adding features without modifying core logic. Tournament filters, Speed annotates with auto-execute, OneHand scripts bidding, Hints adds recommendations—each wraps the state machine in a decorator pattern.
+### Layers as Lenses and Decorators
+Each layer provides both a lens (execution rules) and decorator (action generation). Stack layers to create new game modes. Nello adds a "3-player trick" lens, OneHand decorates with scripted bidding, Tournament filters special bids, Speed adds auto-execute annotations.
 
 ### Capabilities as Keys
 Each capability unlocks specific functionality. Collect keys to gain more power:
@@ -233,7 +232,7 @@ These principles guide all architectural decisions:
 ### Simplicity Through Composition
 Complex behavior emerges from composing simple, pure functions. No monolithic classes or deep inheritance hierarchies. Each component is understandable in isolation.
 
-**Application**: RuleSet composition, ActionTransformer wrapping, rule delegation.
+**Application**: Layer composition, rule delegation.
 
 ### Correct by Construction
 Use the type system to prevent errors at compile time. Make illegal states unrepresentable.
@@ -290,12 +289,12 @@ All permissions via capability tokens. Never use identity checks (`playerId === 
 **Why**: Transparent, composable security model. Capabilities are data, not magic.
 
 ### 4. Single Composition Point
-RuleSets and ActionTransformers compose only in Room constructor. ExecutionContext created once, used everywhere.
+Layers compose only in Room constructor. ExecutionContext created once, used everywhere.
 
 **Why**: Ensures consistent behavior, prevents composition drift, enables parametric polymorphism.
 
 ### 5. Zero Coupling
-Core engine has no awareness of multiplayer, networking, or transport. RuleSets and ActionTransformers don't reference multiplayer concepts.
+Core engine has no awareness of multiplayer, networking, or transport. Layers don't reference multiplayer concepts.
 
 **Why**: Clean architectural boundaries, enables reuse, simplifies testing.
 
@@ -492,15 +491,14 @@ Filtering → FilteredGameState → ViewProjection → UI State
 ## Glossary of Terms
 
 **Action**: Atomic unit of game progression (bid, play, trump selection)
-**ActionTransformer**: Action set transformer (tournament, oneHand, hints)
 **Capability**: Permission token for access control (observe-hand, act-as-player)
-**Composition**: Building complex behavior from simple parts (rulesets, action-transformers)
+**Composition**: Building complex behavior from simple parts (layers)
 **Executor**: Pure function that applies action to state
 **Filtering**: Hiding information based on permissions (hand visibility)
 **Kernel**: Pure game logic authority (composition, authorization, filtering)
+**Layer**: Unified composition unit with execution rules + action generation
 **Parametric**: Behavior determined by injected parameters, not inspection
 **Projection**: Transformation from state to UI-ready data
-**RuleSet**: Rule modifier for execution semantics (nello, plunge, splash)
 **Session**: Player identity and permissions (playerId + capabilities)
 **Transport**: Message routing abstraction (in-process, Worker, edge)
 
@@ -510,7 +508,7 @@ Filtering → FilteredGameState → ViewProjection → UI State
 
 1. **Event sourcing** enables perfect replay and debugging
 2. **Pure functions** ensure predictability and testability
-3. **Two-level composition** provides unlimited extensibility without core changes
+3. **Unified layer system** provides unlimited extensibility without core changes
 4. **Capability-based security** offers flexible, transparent permissions
 5. **Clean separation** keeps changes isolated to single components
 6. **Server authority** ensures consistency and prevents cheating

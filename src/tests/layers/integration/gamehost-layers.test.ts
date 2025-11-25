@@ -59,7 +59,7 @@ describe('Room Layers Integration', () => {
       expect(nelloOption).toBeDefined();
     });
 
-    it('should execute actions with correct ruleset rules', () => {
+    it('should execute actions with correct layer rules', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['plunge'],
@@ -85,24 +85,24 @@ describe('Room Layers Integration', () => {
   });
 
   describe('Layer Combinations', () => {
-    it('should support multiple ruleSets enabled simultaneously', () => {
+    it('should support multiple layers enabled simultaneously', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['nello', 'plunge', 'splash', 'sevens'],
         shuffleSeed: 567890
       };
 
-      const room = new Room('all-ruleSets', config, createPlayers(config));
+      const room = new Room('all-layers', config, createPlayers(config));
       const state = room.getState();
 
-      // Verify game is running with all rulesets
+      // Verify game is running with all layers
       expect(state.coreState.phase).toBe('bidding');
     });
 
-    it('should support base ruleset only (no special contracts)', () => {
+    it('should support base layer only (no special contracts)', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
-        enabledLayers: [], // Only base ruleSet
+        enabledLayers: [], // Only base layer
         shuffleSeed: 111111
       };
 
@@ -118,7 +118,7 @@ describe('Room Layers Integration', () => {
       expect(specialBids.length).toBe(0);
     });
 
-    it('should support selective ruleset enabling', () => {
+    it('should support selective layer enabling', () => {
       // Only nello and sevens, not plunge or splash
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
@@ -126,16 +126,16 @@ describe('Room Layers Integration', () => {
         shuffleSeed: 222222
       };
 
-      const room = new Room('selective-ruleSets', config, createPlayers(config));
+      const room = new Room('selective-layers', config, createPlayers(config));
       const state = room.getState();
 
-      // Verify game is running with selective rulesets
+      // Verify game is running with selective layers
       expect(state.coreState.phase).toBe('bidding');
     });
   });
 
   describe('Rule Threading in Actions', () => {
-    it('should apply nello rules when nello ruleset enabled', () => {
+    it('should apply nello rules when nello layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['nello'],
@@ -176,7 +176,7 @@ describe('Room Layers Integration', () => {
       expect(view.state.currentPlayer).not.toBe(2);
     });
 
-    it('should apply plunge rules when plunge ruleset enabled', () => {
+    it('should apply plunge rules when plunge layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['plunge'],
@@ -214,7 +214,7 @@ describe('Room Layers Integration', () => {
       }
     });
 
-    it('should apply sevens rules when sevens ruleset enabled', () => {
+    it('should apply sevens rules when sevens layer enabled', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['sevens'],
@@ -257,7 +257,7 @@ describe('Room Layers Integration', () => {
       };
 
       expect(() => {
-        new Room('empty-ruleSets', config, createPlayers(config));
+        new Room('empty-layers', config, createPlayers(config));
       }).not.toThrow();
     });
 
@@ -269,27 +269,27 @@ describe('Room Layers Integration', () => {
       };
 
       expect(() => {
-        new Room('undefined-ruleSets', config, createPlayers(config));
+        new Room('undefined-layers', config, createPlayers(config));
       }).not.toThrow();
 
-      const room = new Room('undefined-ruleSets-2', config, createPlayers(config));
+      const room = new Room('undefined-layers-2', config, createPlayers(config));
       const state = room.getState();
 
       // Should work with base rules
       expect(state.coreState.phase).toBe('bidding');
     });
 
-    it('should preserve ruleset order from config', () => {
+    it('should preserve layer order from config', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['sevens', 'nello', 'plunge', 'splash'],
         shuffleSeed: 888888
       };
 
-      const room = new Room('ruleSet-order', config, createPlayers(config));
+      const room = new Room('layer-order', config, createPlayers(config));
       const state = room.getState();
 
-      // Verify game is running with ordered rulesets
+      // Verify game is running with ordered layers
       expect(state.coreState.phase).toBe('bidding');
     });
   });
@@ -336,7 +336,7 @@ describe('Room Layers Integration', () => {
   });
 
   describe('View Generation with Layers', () => {
-    it('should include ruleSet-specific actions in validActions', () => {
+    it('should include layer-specific actions in validActions', () => {
       const config: GameConfig = {
         playerTypes: ['human', 'human', 'human', 'human'],
         enabledLayers: ['nello', 'sevens'],

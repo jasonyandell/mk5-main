@@ -15,11 +15,11 @@ export const GAME_CONSTANTS: GameConstants = {
 /**
  * Base bid type constants - ONLY invariants (always available).
  *
- * Special bid types (splash, plunge) are compositional and enabled by rulesets.
- * They use string literals in ruleset code, not constants, because:
+ * Special bid types (splash, plunge) are compositional and enabled by layers.
+ * They use string literals in layer code, not constants, because:
  * - Constants imply "always available everywhere"
- * - Compositional types only exist when their ruleset is composed in
- * - Rulesets have intrinsic knowledge of their own types
+ * - Compositional types only exist when their layer is composed in
+ * - Layers have intrinsic knowledge of their own types
  */
 export const BID_TYPES = {
   PASS: 'pass' as const,

@@ -8,7 +8,7 @@
 - **Reference**: [CONCEPTS.md](CONCEPTS.md) - Complete implementation reference
 - **Deep Dives**:
   - [remixed-855ccfd5.md](remixed-855ccfd5.md) - Multiplayer architecture specification
-  - [archive/pure-layers-threaded-rules.md](archive/pure-layers-threaded-rules.md) - RuleSet system implementation (historical)
+  - [archive/pure-layers-threaded-rules.md](archive/pure-layers-threaded-rules.md) - Layer system implementation (historical)
   - [GAME_ONBOARDING.md](GAME_ONBOARDING.md) - Detailed implementation guide
 
 ---
@@ -31,7 +31,7 @@ Everything else exists to:
 1. **Event Sourcing**: `state = replayActions(initialConfig, actionHistory)` - state is derived, actions are truth
 2. **Pure Functions**: All state transitions are pure, reproducible, testable
 3. **Composition Over Configuration**: `f(g(h(base)))` instead of flags and conditionals
-4. **Zero Coupling**: Core engine has no multiplayer/action-transformer awareness
+4. **Zero Coupling**: Core engine has no multiplayer/layer awareness
 5. **Parametric Polymorphism**: Executors delegate to injected rules, never inspect state
 
 ---
@@ -70,12 +70,8 @@ Everything else exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  ActionTransformer System       │  Transform actions (what's possible)
-└─────────────────────────────────┘
-              ↕
-┌─────────────────────────────────┐
-│  RuleSet System                 │  Provide rules (how execution works)
-│  13 GameRules methods           │  Special contracts live here
+│  Layer System                   │  Unified composition system
+│  Execution rules + actions      │  Special contracts + transformers
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -92,11 +88,8 @@ Understanding the architecture requires thinking about it in multiple ways:
 ### The Game as a State Machine
 Every game position has defined transitions to next positions. Actions are edges, states are nodes. AI explores this graph to make decisions. Games flow through well-defined positions via actions.
 
-### RuleSets as Lenses
-Each ruleset provides a different lens through which to view game rules. Stack lenses to create new game modes. Nello adds a "3-player trick" lens, Plunge adds a "partner leads" lens.
-
-### ActionTransformers as Decorators
-ActionTransformers wrap and transform the base game, adding features without modifying core logic. Tournament filters, Speed annotates, OneHand scripts—each wraps the state machine.
+### Layers as Lenses and Decorators
+Each layer provides both a lens (execution rules) and decorator (action transformation). Stack layers to create new game modes. Nello adds a "3-player trick" lens, OneHand scripts bidding as a decorator.
 
 ### Capabilities as Keys
 Each capability unlocks specific functionality. Collect keys to gain more power. `observe-all-hands` unlocks full visibility, `act-as-player` unlocks actions for a seat.
@@ -109,17 +102,17 @@ Server validates, clients display. Clear security boundary: server is authoritat
 
 ---
 
-## Two-Level Composition (The Key Insight)
+## Unified Layer System
 
 **Problem**: Special contracts (nello, splash, plunge, sevens) need to change BOTH what's possible AND how execution works.
 
-**Solution**: Two orthogonal composition surfaces:
+**Solution**: Unified Layer composition with two orthogonal surfaces:
 
 ```
-RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game Configuration
+LAYERS (execution rules + action generation) = Game Configuration
 ```
 
-### Level 1: RuleSets → Execution Rules
+### Execution Rules Surface
 
 **Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
@@ -130,10 +123,10 @@ RULESETS (execution rules) × ACTION_TRANSFORMERS (action transformation) = Game
 - **VALIDATION** (3): isValidPlay, getValidPlays, isValidBid
 - **SCORING** (3): getBidComparisonValue, isValidTrump, calculateScore
 
-**Composition**: RuleSets override only what differs from base. Compose via reduce:
+**Composition**: Layers override only what differs from base. Compose via reduce:
 ```typescript
-const rules = composeRules([baseRuleSet, nelloRuleSet, splashRuleSet]);
-// nelloRuleSet.isTrickComplete overrides base (3 plays not 4)
+const rules = composeRules([baseLayer, nelloLayer, splashLayer]);
+// nelloLayer.isTrickComplete overrides base (3 plays not 4)
 // Other rules pass through unchanged
 ```
 
@@ -145,25 +138,23 @@ The GameRules interface currently has 13 methods, but **this number is not fixed
 
 **New terminal states**: Mode needs hand to end for new reasons
 - Example: `checkHandOutcome` was added to support nello/plunge early termination
-- Pattern: Add method to GameRules → Base returns default → RuleSets override
+- Pattern: Add method to GameRules → Base returns default → Layers override
 
 **New execution semantics**: Mode changes who/when/how core mechanics work
 - Example: `isTrickComplete` enables nello's 3-player tricks
-- Pattern: Executor delegates to rule → RuleSet provides mode-specific logic
+- Pattern: Executor delegates to rule → Layer provides mode-specific logic
 
 **Mode-specific validation**: Mode changes what's legal
-- Example: `isValidBid` allows RuleSets to validate special bid types
+- Example: `isValidBid` allows Layers to validate special bid types
 - Pattern: Executor calls rule for all validation → No state inspection
-
-**Don't add rules methods for**: Action availability (use ActionTransformers instead)
 
 **The key insight**: When executors need mode-specific behavior, add a new rule method. Never add conditionals to executors.
 
-### Level 2: ActionTransformers → Action Transformation
+### Action Generation Surface
 
 **Purpose**: Transform WHAT actions are possible (filter, annotate, script, replace)
 
-**Interface**: `ActionTransformer = (StateMachine) → StateMachine` where `StateMachine = (state) => GameAction[]`
+**Interface**: Layers implement `getValidActions?: (state, prev) => GameAction[]`
 
 **Operations**:
 - **Filter**: Remove actions (tournament removes special bids)
@@ -171,40 +162,33 @@ The GameRules interface currently has 13 methods, but **this number is not fixed
 - **Script**: Inject actions (oneHand scripts bidding)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
-**Composition**: ActionTransformers wrap the state machine via reduce:
-```typescript
-const composed = applyActionTransformers(baseStateMachine, [tournament, oneHand]);
-// tournament filters, then oneHand scripts
-```
+**Composition**: Layers compose action generation via reduce pattern
 
 ### The Composition Point (Room Constructor)
 
 **ONE place** where everything composes:
 
 ```typescript
-// 1. RuleSets provide rules
-const rulesets = [baseRuleSet, ...getEnabledRuleSets(config)];
-const rules = composeRules(rulesets);
+// 1. Layers provide rules and action generation
+const layers = [baseLayer, ...getEnabledLayers(config)];
+const rules = composeRules(layers);
 
-// 2. Thread rulesets through base state machine
-const baseWithRuleSets = (state) => getValidActions(state, rulesets, rules);
+// 2. Compose action generation from layers
+const getValidActionsComposed = composeLayerActions(layers);
 
-// 3. ActionTransformers transform the actions
-const getValidActionsComposed = applyActionTransformers(baseWithRuleSets, transformerConfigs);
-
-// 4. Create ExecutionContext (groups the triple together)
+// 3. Create ExecutionContext (groups everything together)
 this.ctx = Object.freeze({
-  rulesets: Object.freeze(rulesets),
+  layers: Object.freeze(layers),
   rules,
   getValidActions: getValidActionsComposed
 });
 
-// 5. Use context everywhere
+// 4. Use context everywhere
 // buildKernelView(state, forPlayerId, this.ctx, metadata)
 // executeKernelAction(mpState, playerId, action, this.ctx)
 ```
 
-**Result**: RuleSets change execution semantics, ActionTransformers change action availability. Executors have ZERO conditional logic - they call `ctx.rules.method()` and trust the result. ExecutionContext groups the always-traveling-together parameters (rulesets, rules, getValidActions) into a single immutable object.
+**Result**: Layers change both execution semantics and action availability. Executors have ZERO conditional logic - they call `ctx.rules.method()` and trust the result. ExecutionContext groups the always-traveling-together parameters (layers, rules, getValidActions) into a single immutable object.
 
 ---
 
@@ -275,16 +259,12 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/core/rules.ts` - Pure game rules (suit following, trump)
 - `src/game/types.ts` - Core types (GameState, GameAction, etc)
 
-**RuleSet System** (execution semantics):
-- `src/game/layers/types.ts` - GameRules interface (13 methods), GameRuleSet
+**Layer System** (unified execution + actions):
+- `src/game/layers/types.ts` - GameRules interface (13 methods), Layer
 - `src/game/layers/compose.ts` - composeRules() - reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
-- `src/game/layers/{nello,splash,plunge,sevens}.ts` - Special contracts
-- `src/game/layers/utilities.ts` - getEnabledRuleSets() - config → rulesets
-
-**ActionTransformer System** (action transformation):
-- `src/game/action-transformers/registry.ts` - applyActionTransformers() - composition
-- `src/game/action-transformers/{tournament,oneHand}.ts` - ActionTransformer implementations
+- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand}.ts` - Layer implementations
+- `src/game/layers/utilities.ts` - getEnabledLayers() - config → layers
 
 **Multiplayer** (authorization, visibility):
 - `src/game/multiplayer/types.ts` - MultiplayerGameState, PlayerSession, Capability
@@ -312,10 +292,9 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 | **GameState** | Immutable game position | Never mutated, only transformed |
 | **GameAction** | State transition unit | Source of truth via event sourcing |
 | **GameRules** | 13 execution methods | Injected, never inspected |
-| **GameRuleSet** | Rule overrides | Compose via reduce pattern |
-| **ActionTransformer** | Action transformer | Wrap state machine functions |
+| **Layer** | Unified execution + actions | Compose via reduce pattern |
 | **Capability** | Permission token | Replace identity with permissions |
-| **ExecutionContext** | Composed configuration | Bundles rulesets + rules + actions |
+| **ExecutionContext** | Composed configuration | Bundles layers + rules + actions |
 | **Room** | Game orchestrator | Owns state, sessions, AI, transport; delegates to pure helpers |
 
 ---
@@ -362,12 +341,12 @@ interface GameRules {
 - TypeScript enforces: can't access reason unless determined === true
 - Aligns with Result<T> pattern used throughout codebase
 
-### GameRuleSet
+### Layer
 
-RuleSet that overrides specific rules and/or transforms actions:
+Unified composition unit that overrides specific rules and/or transforms actions:
 
 ```typescript
-interface GameRuleSet {
+interface Layer {
   name: string;
   rules?: Partial<GameRules>;  // Override execution behavior
   getValidActions?: (state, prev) => GameAction[];  // Transform actions
@@ -375,17 +354,6 @@ interface GameRuleSet {
 ```
 
 **Pattern**: Check state, return override or pass through `prev`.
-
-### ActionTransformer
-
-Function that transforms the state machine:
-
-```typescript
-type StateMachine = (state: GameState) => GameAction[];
-type ActionTransformer = (base: StateMachine) => StateMachine;
-```
-
-**Pattern**: Call base, then filter/annotate/replace actions.
 
 ### Capability
 
@@ -476,60 +444,48 @@ UI components reactively update
 
 ## How to Extend
 
-### Add a New RuleSet (Special Contract)
+### Add a New Layer
 
-1. Create `src/game/layers/myContract.ts`:
+1. Create `src/game/layers/myLayer.ts`:
 ```typescript
-export const myContractRuleSet: GameRuleSet = {
-  name: 'my-contract',
+export const myLayer: Layer = {
+  name: 'my-layer',
   rules: {
-    // Override only what differs from base
+    // Override execution behavior
     isTrickComplete: (state, prev) =>
       state.trump.type === 'my-contract' ? customLogic : prev,
-    calculateScore: (state, prev) =>
-      state.currentBid.type === 'MY_CONTRACT' ? customScore : prev
+  },
+  getValidActions: (state, prev) => {
+    // Transform actions
+    const actions = prev(state);
+    return actions.filter(/* custom logic */);
   }
 };
 ```
 
-2. Add to `src/game/layers/utilities.ts:getEnabledRuleSets()`:
+2. Add to `src/game/layers/utilities.ts:getEnabledLayers()`:
 ```typescript
-if (config.enableMyContract) rulesets.push(myContractRuleSet);
+if (config.enableMyLayer) layers.push(myLayer);
 ```
 
 3. Add config flag to `GameConfig` type
 
 **That's it**. No changes to core executors.
 
-### Add a New ActionTransformer
-
-1. Create `src/game/action-transformers/myTransformer.ts`:
-```typescript
-export const myTransformer: TransformerFactory = (config) => (base) => (state) => {
-  const actions = base(state);
-  // Filter, annotate, script, or replace
-  return modifiedActions;
-};
-```
-
-2. Register in `src/game/action-transformers/registry.ts`
-
-3. Use in config: `{ actionTransformers: [{ type: 'my-transformer' }] }`
-
 ### Enable a Feature
 
 Most features are config flags:
 ```typescript
 const config: GameConfig = {
-  enableNello: true,      // Adds nello ruleset
-  enableSplash: true,     // Adds splash ruleset
-  enablePlunge: true,     // Adds plunge ruleset
-  enableSevens: true,     // Adds sevens ruleset
-  actionTransformers: [{ type: 'tournament' }]  // Applies tournament transformer
+  enableNello: true,      // Adds nello layer
+  enableSplash: true,     // Adds splash layer
+  enablePlunge: true,     // Adds plunge layer
+  enableSevens: true,     // Adds sevens layer
+  enableTournament: true, // Adds tournament layer
 };
 ```
 
-Flags → getEnabledRuleSets() → compose in Room constructor.
+Flags → getEnabledLayers() → compose in Room constructor.
 
 ### Add Mode-Specific Execution Behavior
 
@@ -538,7 +494,7 @@ When a new mode needs different execution semantics (not just different actions)
 #### Step 1: Identify the extension point
 Ask: "Does the executor need to know about this behavior?"
 - YES → Add GameRules method
-- NO → Use ActionTransformer
+- NO → Use Layer's getValidActions
 
 #### Step 2: Add method to GameRules interface
 ```typescript
@@ -554,7 +510,7 @@ export interface GameRules {
 }
 ```
 
-#### Step 3: Implement in base RuleSet
+#### Step 3: Implement in base Layer
 ```typescript
 // src/game/layers/base.ts
 export const baseRules: GameRules = {
@@ -567,17 +523,17 @@ export const baseRules: GameRules = {
 };
 ```
 
-#### Step 4: Override in special RuleSets
+#### Step 4: Override in mode Layers
 ```typescript
 // src/game/layers/myMode.ts
-export const myModeRuleSet: GameRuleSet = {
+export const myModeLayer: Layer = {
   name: 'my-mode',
   rules: {
     myNewRule: (state, ...params, prev) => {
       if (state.trump.type === 'my-mode') {
         return modeSpecificValue;
       }
-      return prev; // Delegate to previous ruleset
+      return prev; // Delegate to previous layer
     }
   }
 };
@@ -587,14 +543,14 @@ export const myModeRuleSet: GameRuleSet = {
 Add the new rule to the composition reduce pattern:
 ```typescript
 // src/game/layers/compose.ts
-export function composeRules(ruleSets: GameRuleSet[]): GameRules {
+export function composeRules(layers: Layer[]): GameRules {
   // ... existing code ...
 
   myNewRule: (state, ...params) => {
     let result = baseRules.myNewRule(state, ...params);
-    for (const ruleSet of ruleSets) {
-      if (ruleSet.rules?.myNewRule) {
-        result = ruleSet.rules.myNewRule(state, ...params, result);
+    for (const layer of layers) {
+      if (layer.rules?.myNewRule) {
+        result = layer.rules.myNewRule(state, ...params, result);
       }
     }
     return result;
@@ -635,7 +591,7 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
    - ✅ Enforced via ESLint rules (`no-restricted-imports`)
    - ✅ Verified by architecture tests (`composition.test.ts`)
    - ✅ Documented in ADR-20251110-single-composition-point.md
-5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/action-transformers/special contracts
+5. **Zero Coupling**: Core engine has zero knowledge of multiplayer/layers/special contracts
 6. **Parametric Polymorphism**: Executors call `rules.method()`, never `if (nello)`
 7. **Event Sourcing**: State derivable from `replayActions(config, history)`
 8. **Clean Separation**: Room orchestrates, pure helpers execute, Transport routes
@@ -651,10 +607,10 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
 | Adding conditional logic in executors | Use parametric polymorphism - delegate to `rules.method()` |
 | Modifying state directly | Create new state objects via spread operator |
 | Checking player identity for permissions | Use capability tokens instead |
-| Adding game logic to Room | Put it in pure helpers or RuleSets |
+| Adding game logic to Room | Put it in pure helpers or Layers |
 | Filtering state at storage | Store unfiltered, filter on-demand per request |
 | Client-side validation | Trust server's validActions list completely |
-| Deep coupling between rulesets | Keep rulesets focused on single responsibility |
+| Deep coupling between layers | Keep layers focused on single responsibility |
 
 ---
 
@@ -683,7 +639,7 @@ npm run build      # Production build
 | Issue | Where to Look |
 |-------|---------------|
 | Action not available | Room constructor (composition), `authorizeAndExecute` (filtering) |
-| Wrong game behavior | RuleSet implementation, `GameRules` methods |
+| Wrong game behavior | Layer implementation, `GameRules` methods |
 | State not updating | `executeAction`, check if action is authorized |
 | UI not reactive | Svelte stores, `ViewProjection` computation |
 | Message not routing | `Room.handleMessage()`, Transport layer |
@@ -692,8 +648,7 @@ npm run build      # Production build
 
 1. **Start with types** - The architecture is type-driven. Follow these key types:
    - `GameRules` → Understand execution semantics
-   - `GameRuleSet` → See how rules compose
-   - `ActionTransformer` → Learn action transformation
+   - `Layer` → See how rules and actions compose
    - `Capability` → Grasp permission model
 
 2. **Trace a request** - Follow an action from click to UI update using the Request Flow diagram above

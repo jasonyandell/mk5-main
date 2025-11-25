@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
-import { baseRuleSet } from '../../game/layers';
+import { baseLayer } from '../../game/layers';
 import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { TrumpSelection, Play, Domino } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
 import { StateBuilder, DominoBuilder } from '../helpers';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 // Helper function to create dominoes for testing
 function createDomino(high: number, low: number): Domino {

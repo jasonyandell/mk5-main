@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
-import { createTestContextWithRuleSets } from '../../helpers/executionContext';
-import { composeRules, baseRuleSet, plungeRuleSet } from '../../../game/layers';
+import { createTestContextWithLayers } from '../../helpers/executionContext';
+import { composeRules, baseLayer, plungeLayer } from '../../../game/layers';
 import { StateBuilder, HandBuilder } from '../../helpers';
 import { processSequentialConsensus } from '../../helpers/consensusHelpers';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
 describe('Plunge Full Hand Integration', () => {
-  const ctx = createTestContextWithRuleSets(['plunge']);
-  const ruleSets = [baseRuleSet, plungeRuleSet];
-  const rules = composeRules(ruleSets);
+  const ctx = createTestContextWithLayers(['plunge']);
+  const layers = [baseLayer, plungeLayer];
+  const rules = composeRules(layers);
 
   /**
    * Helper to play a complete plunge hand
@@ -432,7 +432,7 @@ describe('Plunge Full Hand Integration', () => {
 
   describe('Bidding Requirements', () => {
     it('should require 4+ doubles to bid plunge', () => {
-      const ctx = createTestContextWithRuleSets(['plunge']);
+      const ctx = createTestContextWithLayers(['plunge']);
       // With 4 doubles
       const stateWith4 = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(0)
@@ -468,7 +468,7 @@ describe('Plunge Full Hand Integration', () => {
 
     it('should have automatic bid value of 4+ marks', () => {
 
-      const ctx = createTestContextWithRuleSets(['plunge']);
+      const ctx = createTestContextWithLayers(['plunge']);
       const state = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(0)
         .withSeed(444444)
@@ -491,7 +491,7 @@ describe('Plunge Full Hand Integration', () => {
 
     it('should jump over existing marks bids', () => {
 
-      const ctx = createTestContextWithRuleSets(['plunge']);
+      const ctx = createTestContextWithLayers(['plunge']);
       const state = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(1)
         .withSeed(555555)

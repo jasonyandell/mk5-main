@@ -147,7 +147,7 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
   }
 
   // Get valid plays for current player using threaded rules
-  const threadedRules = rules || composeRules([baseRuleSet]);
+  const threadedRules = rules || composeRules([baseLayer]);
   const validPlays = threadedRules.getValidPlays(state, state.currentPlayer);
   validPlays.forEach((domino: Domino) => {
     actions.push({
@@ -227,7 +227,7 @@ function trumpToNumeric(trump: TrumpSelection): number | null {
   }
 }
 
-export const baseRuleSet: Layer = {
+export const baseLayer: Layer = {
   name: 'base',
 
   /**
@@ -360,10 +360,10 @@ export const baseRuleSet: Layer = {
      * - Defending team has set the bid
      * - All 7 tricks complete
      *
-     * Threading: Respects prev determination from special contract rulesets
+     * Threading: Respects prev determination from special contract layers
      */
     checkHandOutcome(state: GameState, prev?: import('./types').HandOutcome) {
-      // Respect previous ruleset's determination (special contracts override)
+      // Respect previous layer's determination (special contracts override)
       if (prev?.isDetermined) {
         return prev;
       }

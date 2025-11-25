@@ -19,7 +19,7 @@
    - GameAction, Executor, ExecutionContext, StateTransition, GameEngine, Engine
 
 2. [Composition Systems](#2-composition-systems)
-   - GameRules, GameRuleSet, RuleSets, ActionTransformers, StateMachine
+   - GameRules, Layer, Layers, StateMachine
 
 3. [Multiplayer Architecture](#3-multiplayer-architecture)
    - PlayerSession, Capability, Authorization, Visibility, Consensus
@@ -40,7 +40,7 @@
    - ViewProjection, Components
 
 9. [Configuration & Initialization](#10-configuration--initialization)
-   - GameConfig, ActionTransformers, Themes
+   - GameConfig, Layers, Themes
 
 10. [Event Sourcing & Replay](#11-event-sourcing--replay)
     - Action History, URL Compression, Determinism
@@ -109,18 +109,18 @@
 **Location**: `src/game/types/execution.ts` (referenced in Room)
 
 **Key Properties**:
-- Enabled rulesets - Which special contracts are active
-- Composed rules - GameRules methods with ruleset overrides applied
-- Valid action generator - Action generation with action transformers applied
+- Enabled layers - Which special contracts and features are active
+- Composed rules - GameRules methods with layer overrides applied
+- Valid action generator - Action generation with layer transformations applied
 
 **Purpose**:
 - Single composition point: All composition happens in Room constructor
-- Ensures consistency: RuleSets and action transformers composed together, never separately
+- Ensures consistency: Layers composed together in single place
 - Enables polymorphism: Executors use context without inspecting state
 
 **Created Once**: Room constructor creates it and threads through entire system
 
-**Related**: Room, RuleSets, ActionTransformers, GameRules
+**Related**: Room, Layers, GameRules
 
 ---
 
@@ -175,8 +175,8 @@
 
 **Key Functions**:
 - `executeAction(state, action, rules)` - Pure state transition
-- `getValidActions(state, ruleSets, rules)` - What actions are possible
-- `getNextStates(state, ruleSets, rules)` - All possible transitions
+- `getValidActions(state, layers, rules)` - What actions are possible
+- `getNextStates(state, layers, rules)` - All possible transitions
 - `actionToId(action)` - Serialize action
 - `actionToLabel(action)` - Human-readable label
 
@@ -184,14 +184,14 @@
 - Pure: No side effects, deterministic
 - Parameterized: Rules injected, not hardcoded
 - Zero coupling: No awareness of multiplayer, networking, UI
-- Composable: Works uniformly with any layers/action transformers
+- Composable: Works uniformly with any layers
 
 **Relationship to Room**:
 - Engine = pure game logic only
 - Room = orchestrator that delegates to pure helpers for all logic
 - Room **owns** state and composition, delegates execution to pure helpers
 
-**Related**: Room, Executor, RuleSets, ActionTransformers
+**Related**: Room, Executor, Layers
 
 ---
 
@@ -229,9 +229,9 @@
 
 **Key Insight**: Executors call these methods, never inspect state. This enables polymorphism - same executor code works for all variants.
 
-**Composed By**: RuleSets override specific methods, compose via `composeRules()` reduce pattern
+**Composed By**: Layers override specific methods, compose via `composeRules()` reduce pattern
 
-**Related**: GameRuleSet, Executor, Base RuleSet, Special Contracts
+**Related**: Layer, Executor, Base Layer, Special Contracts
 
 ### Extending GameRules
 
@@ -241,26 +241,26 @@
 
 1. **New terminal conditions**: Mode ends hand for new reasons
    - Added `checkHandOutcome` for nello/plunge early termination
-   - Pattern: Base returns `{ determined: false }`, RuleSets return `{ determined: true, reason }` when conditions met
+   - Pattern: Base returns `{ determined: false }`, Layers return `{ determined: true, reason }` when conditions met
 
 2. **New execution semantics**: Mode changes core mechanics
    - Added `isTrickComplete` to support 3-player tricks
-   - Pattern: Base returns standard logic, RuleSets override
+   - Pattern: Base returns standard logic, Layers override
 
 3. **Mode-specific validation**: Mode changes legality rules
-   - Added `isValidBid` so RuleSets validate special bids
+   - Added `isValidBid` so Layers validate special bids
    - Pattern: Executor delegates validation to rule
 
 **Process**:
 1. Add method to GameRules interface with clear signature
 2. Implement in baseRules with standard behavior
 3. Update composeRules to thread the method through
-4. Special RuleSets override for their modes
+4. Special Layers override for their modes
 5. Executors delegate to rule, never inspect state
 
 **Anti-pattern**: Adding conditionals in executors (`if (state.mode === 'nello')`)
 
-**Correct pattern**: Adding rule method that RuleSets override
+**Correct pattern**: Adding rule method that Layers override
 
 **Real Example - Adding a new terminal state**:
 
@@ -277,13 +277,13 @@ interface GameRules {
 // 2. Base returns standard behavior
 baseRules.getPhaseAfterHandComplete = (state) => 'scoring' as const;
 
-// 3. OneHandRuleSet provides mode-specific behavior
-oneHandRuleSet.rules.getPhaseAfterHandComplete = (state, prev) => {
+// 3. OneHand Layer provides mode-specific behavior
+oneHandLayer.rules.getPhaseAfterHandComplete = (state, prev) => {
   // Check if we're in one-hand mode context
   if (/* one-hand is active */) {
     return 'one-hand-complete' as const;
   }
-  return prev; // Delegate to previous ruleset
+  return prev; // Delegate to previous layer
 };
 
 // 4. Executor delegates (in actions.ts)
@@ -302,8 +302,8 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 
 ---
 
-### GameRuleSet
-**Definition**: Composable ruleset that overrides specific rules and/or transforms actions.
+### Layer
+**Definition**: Composable unit that overrides specific rules and/or transforms actions.
 
 **Location**: `src/game/layers/types.ts`
 
@@ -313,28 +313,28 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
    - Example: Nello overrides `isTrickComplete` to return true at 3 plays (partner out)
    - Only override what differs from base, rest pass through
 
-2. **Action Transformation**: Filter, annotate, or replace action generation
-   - Example: Nello disables certain special bid actions
-   - Receives previous ruleset's result for chaining
+2. **Action Generation**: Filter, annotate, or replace action generation
+   - Example: Tournament filters special bid actions
+   - Receives previous layer's result for chaining
 
-**Composition Pattern**: RuleSets compose via reduce pattern where later rulesets override earlier ones without modifying core executors.
+**Composition Pattern**: Layers compose via reduce pattern where later layers override earlier ones without modifying core executors.
 
-**Related**: GameRules, ActionTransformer, RuleSet Composition, Base RuleSet
+**Related**: GameRules, Layer Composition, Base Layer
 
 ---
 
-### RuleSet Implementations
+### Layer Implementations
 
-#### Base RuleSet
+#### Base Layer
 **Definition**: Standard Texas 42 rules.
 
 **Location**: `src/game/layers/base.ts`
 
 **Provides**: All 13 GameRules methods with standard 4-player Texas 42 logic
 
-**Related**: GameRules, GameRuleSet
+**Related**: GameRules, Layer
 
-#### Nello RuleSet
+#### Nello Layer
 **Definition**: Partner sits out, 3-player tricks, lose all tricks to win.
 
 **Location**: `src/game/layers/nello.ts`
@@ -344,30 +344,30 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 - `checkHandOutcome`: Check if bidder lost all tricks (wins hand)
 - `calculateScore`: Nello-specific scoring
 
-**Related**: GameRuleSet, HandOutcome, Special Contracts
+**Related**: Layer, HandOutcome, Special Contracts
 
-#### Plunge RuleSet
+#### Plunge Layer
 **Definition**: Partner selects trump and leads, bidder must win all tricks.
 
 **Location**: `src/game/layers/plunge.ts`
 
 **Overrides**: Similar to Nello but reverse outcome logic
 
-#### Splash RuleSet
+#### Splash Layer
 **Definition**: Like plunge but requires 3+ doubles in hand.
 
 **Location**: `src/game/layers/splash.ts`
 
 **Overrides**: Builds on plunge with additional validation
 
-#### Sevens RuleSet
+#### Sevens Layer
 **Definition**: Distance from 7 wins, no follow-suit rule.
 
 **Location**: `src/game/layers/sevens.ts`
 
 **Overrides**: Completely different scoring and led-suit logic
 
-#### OneHand RuleSet
+#### OneHand Layer
 **Definition**: Single-hand game mode that ends after first hand instead of continuing.
 
 **Location**: `src/game/layers/oneHand.ts`
@@ -377,94 +377,89 @@ No executor conditional logic, pure delegation to rules. The executor doesn't kn
 
 **Purpose**: Provides terminal phase for one-hand game mode. Prevents dealing new hand after scoring completes.
 
-**Works with**: oneHandActionTransformer (automates bidding/trump selection)
-
 **Implementation Note**: Demonstrates GameRules pattern for custom phase transitions. See ADR-20251112-onehand-terminal-phase.md for full architectural details.
 
-**Related**: GameRuleSet, ActionTransformer, Terminal States, Game Modes
+**Related**: Layer, Terminal States, Game Modes
 
 ---
 
-### RuleSet Composition
-**Definition**: Pure reduce pattern that composes multiple rulesets into single GameRules interface.
+### Layer Composition
+**Definition**: Pure reduce pattern that composes multiple layers into single GameRules interface.
 
 **Location**: `src/game/layers/compose.ts`
 
 **Algorithm**:
 ```typescript
-export function composeRules(ruleSets: GameRuleSet[]): GameRules {
-  return ruleSets.reduce((prev, ruleSet) => ({
+export function composeRules(layers: Layer[]): GameRules {
+  return layers.reduce((prev, layer) => ({
     // For each rule method
     getTrumpSelector: (state, bid) =>
-      ruleSet.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
+      layer.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
     // ... repeat for all 13 methods
   }), baseRules);
 }
 ```
 
-**Key Pattern**: Each ruleset gets `prev` parameter - override or delegate
+**Key Pattern**: Each layer gets `prev` parameter - override or delegate
 
-**Related**: GameRules, GameRuleSet
+**Related**: GameRules, Layer
 
 ---
 
-### ActionTransformer
-**Definition**: Function that transforms the action state machine to change what actions are available.
+### Action Generation in Layers
+**Definition**: Layers can transform action generation through their `getValidActions` method.
 
-**Location**: `src/game/action-transformers/types.ts`
+**Location**: `src/game/layers/types.ts` (Layer interface)
 
-**ActionTransformer Operations**:
-- **Filter**: Remove actions (tournament removes special contracts)
+**Operations**:
+- **Filter**: Remove actions (tournament layer removes special contracts)
 - **Annotate**: Add metadata (hints adds hint field, speed adds autoExecute flag)
 - **Script**: Inject actions (oneHand scripts bidding sequence)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
-**Composition**: ActionTransformers wrap via function composition - each action transformer wraps the previous one, building a transformation pipeline.
+**Composition**: Layers compose action generation via reduce pattern - each layer can transform the previous layer's actions.
 
-**Key Insight**: ActionTransformers transform action generation independently from rulesets (which transform execution rules).
+**Key Insight**: Layers provide both execution rules AND action generation in a unified structure.
 
-**Key Distinction from GameRules**: ActionTransformers change WHAT actions are available, GameRules methods change HOW execution works. If an executor needs the behavior, it's a GameRules method. If only action generation needs it, it's an ActionTransformer.
+**Key Distinction from GameRules**: Action generation changes WHAT actions are available, GameRules methods change HOW execution works. If an executor needs the behavior, it's a GameRules method. If only action generation needs it, use Layer's `getValidActions`.
 
-See [Extension Decision Tree in ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md#extension-decision-tree) for guidance on which to use.
-
-**Related**: StateMachine, ActionTransformerConfig, ActionTransformer Implementations, GameRules
+**Related**: StateMachine, Layer, GameRules
 
 ---
 
-### ActionTransformer Implementations
+### Layers with Action Generation
 
-#### Tournament ActionTransformer
+#### Tournament Layer
 **Definition**: Disable special contracts (nello, splash, plunge, sevens).
 
-**Location**: `src/game/action-transformers/tournament.ts`
+**Location**: `src/game/layers/tournament.ts`
 
 **Operation**: Filter - removes special bids from action list
 
-#### OneHand ActionTransformer
+#### OneHand Layer
 **Definition**: Single hand game with scripted actions and auto-execution.
 
-**Location**: `src/game/action-transformers/oneHand.ts`
+**Location**: `src/game/layers/oneHand.ts`
 
 **Operations**:
 - **Script**: Inject automated bidding sequence (3 passes, 1 bid for 30)
 - **Script**: Inject automated trump selection (suit 4)
 - **Annotate**: Auto-execute score-hand action for smooth UX
+- **Rules**: Override `getPhaseAfterHandComplete` for terminal state
 
-**Works with**: oneHandRuleSet (handles phase transition to terminal state)
+**Unified Design**: Single layer provides both execution rules and action generation
 
-**Separation of Concerns**: ActionTransformer handles automation (WHAT actions), RuleSet handles phase logic (HOW game flows)
-
-#### Hints ActionTransformer
+#### Hints Layer
 **Definition**: Add hint metadata to actions.
 
-**Location**: `src/game/action-transformers/hints.ts`
+**Location**: `src/game/layers/hints.ts`
 
 **Operation**: Annotate - adds `hint` field to each action
 
-#### Speed ActionTransformer
+#### Speed Layer
 **Definition**: Auto-play when only one option available.
 
-**Location**: `src/game/action-transformers/speed.ts`
+**Location**: `src/game/layers/speed.ts`
 
 **Operation**: Annotate - adds `autoExecute: true` flag
 
@@ -477,15 +472,13 @@ See [Extension Decision Tree in ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIP
 
 **Location**: Referenced throughout, created by `getValidActions()`
 
-**Composition**: ActionTransformers compose StateMachines:
+**Composition**: Layers compose action generation via reduce pattern:
 ```typescript
-const base = (state) => getValidActions(state, ruleSets, rules);
-const withTournament = tournament(base);
-const withOneHand = oneHand(withTournament);
-// Now withOneHand is the composed state machine
+const base = (state) => getValidActions(state, layers, rules);
+// Layers internally compose both rules and action generation
 ```
 
-**Related**: ActionTransformer, getValidActions, ActionTransformer Composition
+**Related**: Layer, getValidActions, Layer Composition
 
 ---
 
@@ -1624,12 +1617,12 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **Applied To**:
 - RuleSets override methods (not flags)
-- ActionTransformers wrap state machines (not switches)
+- Layers compose via reduce pattern (not switches)
 - Room composes in constructor
 
 **Benefit**: Eliminates conditional complexity, enables unlimited combinations
 
-**Related**: Parametric Polymorphism, RuleSet Composition
+**Related**: Parametric Polymorphism, Layer Composition
 
 ---
 
@@ -1719,7 +1712,7 @@ colorOverrides: Record<string, string>  // CSS variables
 5. **Zero Coupling**
    - Core engine has zero multiplayer awareness
    - Core engine has zero networking awareness
-   - RuleSets/action transformers don't reference multiplayer
+   - Layers don't reference multiplayer
 
 6. **Parametric Polymorphism**
    - Executors call `rules.method()`, never inspect state
@@ -1822,15 +1815,13 @@ colorOverrides: Record<string, string>  // CSS variables
 - rules.ts: Rule validation
 
 ### src/game/layers/
-- types.ts: GameRules (13 methods), GameRuleSet, HandOutcome
-- compose.ts: RuleSet composition via reduce
-- base.ts: Base RuleSet (standard Texas 42)
+- types.ts: GameRules (13 methods), Layer, HandOutcome
+- compose.ts: Layer composition via reduce
+- base.ts: Base Layer (standard Texas 42)
 - nello.ts, splash.ts, plunge.ts, sevens.ts: Special contracts
 
-### src/game/action-transformers/
-- types.ts: ActionTransformer, StateMachine
-- registry.ts: applyActionTransformers composition
-- tournament.ts, oneHand.ts, hints.ts, speed.ts: Implementations
+### src/game/layers/ (continued)
+- tournament.ts, oneHand.ts, hints.ts, speed.ts: Layers with action generation
 
 ### src/game/multiplayer/
 - types.ts: PlayerSession, Capability, MultiplayerGameState
@@ -1866,15 +1857,15 @@ colorOverrides: Record<string, string>  // CSS variables
 ## How to Navigate This Document
 
 **By Role**:
-- **Game Designer**: See ActionTransformers, RuleSets, Domain Objects
+- **Game Designer**: See Layers, Domain Objects
 - **Backend Engineer**: See Server Architecture, Authorization, Event Sourcing, AI Architecture
 - **Frontend Engineer**: See View Projection, Client Architecture, Protocol
 - **AI Developer**: See AI Architecture (Section 6), Hand Analysis System (6.1), GameSimulator (6.2)
 - **Architect**: See [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) for patterns and philosophy
 
 **By Task**:
-- **Add new special contract**: RuleSets, RuleSet Implementations, GameRules
-- **Add new game action transformer**: ActionTransformers, StateMachine, ActionTransformer Implementations
+- **Add new special contract**: Layers, Layer Implementations, GameRules
+- **Add new action generation**: Layers, Layer Implementations with Action Generation
 - **Fix authorization bug**: Authorization, Capability, PlayerSession, executeKernelAction
 - **Debug UI issue**: ViewProjection, FilteredGameState, Protocol, buildKernelView
 - **Understand event sourcing**: Action History, Event Sourcing Formula, URL Compression

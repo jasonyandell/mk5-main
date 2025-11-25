@@ -72,7 +72,7 @@ export interface PlayerSession {
  * Authority stores pure state; filtering happens per-client in createView().
  *
  * Pure data only: gameId + coreState + players
- * Execution configuration (rulesets, transformers) lives in ExecutionContext.
+ * Execution configuration (layers, transformers) lives in ExecutionContext.
  */
 export interface MultiplayerGameState {
   gameId: string;                           // Unique game identifier

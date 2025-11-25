@@ -10,7 +10,7 @@ import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { getDominoValue, trumpToNumber, getDominoPoints, getDominoSuit } from '../core/dominoes';
 import { getTrickWinner } from '../core/rules';
 import { composeRules } from '../layers/compose';
-import { baseRuleSet } from '../layers';
+import { baseLayer } from '../layers';
 
 /**
  * Context for AI analysis - just the essentials
@@ -65,7 +65,7 @@ export function analyzeHand(state: GameState, playerId: number, forceAnalysis: b
   const trumpRemaining = Math.max(0, 7 - trumpPlayed - trumpInHand);
   
   // Determine which dominoes are playable using threaded rules
-  const rules = composeRules([baseRuleSet]);
+  const rules = composeRules([baseLayer]);
   const playableDominoes = rules.getValidPlays(state, playerId);
   const playableIds = new Set(playableDominoes.map(d => d.id.toString()));
   

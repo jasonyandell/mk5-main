@@ -223,7 +223,7 @@ describe('Edge Cases and Unusual Scenarios', () => {
         })
         .build();
 
-      // Marks bid with nello ruleset should include nello as trump option
+      // Marks bid with nello layer should include nello as trump option
       const transitions = getNextStates(state, ctx);
       const trumpOptions = transitions.filter(t => t.id.startsWith('trump-'));
 

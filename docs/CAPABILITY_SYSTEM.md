@@ -215,10 +215,9 @@ host.subscribe(sessionId, ({ view, state, actions }) => {
 getValidActionsForPlayer(mpState, playerId) {
   const session = mpState.players.find(p => p.playerId === playerId);
 
-  // Composed state machine includes BOTH RuleSets AND action transformers:
-  // 1. RuleSets define game mechanics (base, nello, splash, plunge, sevens)
-  // 2. Action transformers filter/annotate actions (tournament, oneHand)
-  // 3. Result: Actions that are mechanically valid + transformer-appropriate
+  // Composed state machine includes Layers:
+  // 1. Layers define game mechanics AND action generation
+  // 2. Result: Actions that are mechanically valid and properly transformed
   const allActions = composedStateMachine(mpState.coreState);
 
   // Capability filtering is the final step (authorization)
@@ -257,20 +256,17 @@ test('spectator sees all hands but cannot act', () => {
 ```typescript
 // Room creates view for a session
 createView(playerId) {
-  // 1. Compose RuleSets (game mechanics)
-  const rules = composeRules([baseRuleSet, nelloRuleSet, ...]);
+  // 1. Compose Layers (game mechanics + action generation)
+  const rules = composeRules([baseLayer, nelloLayer, ...]);
 
-  // 2. Generate actions with composed rules
-  const composedActions = getValidActions(state, ruleSets, rules);
-  // → Includes NELLO bids if nello RuleSet enabled
+  // 2. Generate actions with composed layers
+  const composedActions = getValidActions(state, layers, rules);
+  // → Includes NELLO bids if nello layer enabled
+  // → May remove NELLO if tournament layer active
 
-  // 3. Apply action transformers (availability filters)
-  const transformedActions = applyActionTransformers(composedActions, actionTransformerConfigs);
-  // → May remove NELLO if tournament action transformer active
-
-  // 4. Filter by capabilities (authorization)
+  // 3. Filter by capabilities (authorization)
   const session = getSession(playerId);
-  const authorizedActions = filterActionsForSession(session, transformedActions);
+  const authorizedActions = filterActionsForSession(session, composedActions);
   // → Only actions this session can execute
 
   return { state: filteredState, validActions: authorizedActions };
@@ -305,4 +301,4 @@ const allowed = filterActionsForSession(session, actions);
 - Implementation: `src/game/multiplayer/capabilities.ts`
 - Filtering: `src/game/multiplayer/capabilityUtils.ts`
 - Authorization: `src/game/multiplayer/authorization.ts`
-- RuleSet Types: `src/game/layers/types.ts`
+- Layer Types: `src/game/layers/types.ts`

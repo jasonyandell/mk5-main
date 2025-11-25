@@ -18,7 +18,6 @@ import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAc
 import { cloneGameState, getNextStates } from '../game/core/state';
 import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
-import type { ActionTransformerConfig } from '../game/types/config';
 import { actionToId } from '../game/core/actions';
 
 /**
@@ -102,10 +101,10 @@ export function buildKernelView(
   state: MultiplayerGameState,
   forPlayerId: string | undefined,
   ctx: ExecutionContext,
-    metadata: {
-      gameId: string;
-      actionTransformerConfigs: ActionTransformerConfig[];
-    }
+  metadata: {
+    gameId: string;
+    enabledLayers?: string[];
+  }
 ): GameView {
   const coreState = state.coreState;
   const actionsByPlayer = buildActionsMap(state, ctx);
@@ -152,7 +151,7 @@ export function buildKernelView(
     players: playerInfoList,
     metadata: {
       gameId: metadata.gameId,
-      ...(metadata.actionTransformerConfigs.length ? { actionTransformers: metadata.actionTransformerConfigs } : {})
+      ...(metadata.enabledLayers?.length ? { enabledLayers: metadata.enabledLayers } : {})
     }
   };
 }

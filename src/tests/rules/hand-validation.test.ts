@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
-import { baseRuleSet } from '../../game/layers';
+import { baseLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection, LedSuitOrNone } from '../../game/types';
 import { ACES, TRES, FIVES, SIXES, DOUBLES_AS_TRUMP, NO_LEAD_SUIT } from '../../game/types';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Hand Validation Rules', () => {
   function createTestState(options: {

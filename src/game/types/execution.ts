@@ -14,7 +14,7 @@
 import type { Layer, GameRules } from '../layers/types';
 import type { GameConfig } from './config';
 import type { GameState, GameAction } from '../types';
-import { composeRules, baseRuleSet, getLayersByNames, composeActionGenerators } from '../layers';
+import { composeRules, baseLayer, getLayersByNames, composeGetValidActions } from '../layers';
 import { generateStructuralActions } from '../layers/base';
 
 export interface ExecutionContext {
@@ -28,41 +28,29 @@ export interface ExecutionContext {
  *
  * This is the single composition point for execution configuration:
  * 1. Get enabled layers from config
- * 2. Get action transformer layers (treated as Layers now)
- * 3. Compose rules via composeRules()
- * 4. Compose action generators via function composition (f(g(h(x))))
- *    - base: generateStructuralActions (pass, redeal, consensus, trump, plays)
- *    - Layers: add domain actions (bids) + annotate/script (autoExecute, hints)
- * 5. Freeze and return immutable context
+ * 2. Compose rules via composeRules()
+ * 3. Compose getValidActions via function composition
+ * 4. Freeze and return immutable context
  *
  * @param config - Game configuration
  * @returns Frozen ExecutionContext ready for use
  */
 export function createExecutionContext(config: GameConfig): ExecutionContext {
-  // Get action transformer configs (now treated as Layer names)
-  const actionTransformerConfigs = config.actionTransformers ?? [];
-  const transformerLayers = actionTransformerConfigs.length > 0
-    ? getLayersByNames(actionTransformerConfigs.map(t => t.type))
-    : [];
-
   // Get enabled layers
   const enabledLayerNames = config.enabledLayers ?? [];
   const enabledLayers = enabledLayerNames.length > 0
     ? getLayersByNames(enabledLayerNames)
     : [];
 
-  // Compose all layers: base + enabled layers + transformer layers
-  const layers = [baseRuleSet, ...enabledLayers, ...transformerLayers];
+  // Compose all layers: base + enabled layers
+  const layers = [baseLayer, ...enabledLayers];
 
-  // Compose rules via composeRules()
+  // Compose rules
   const rules = composeRules(layers);
 
-  // Compose action generators via function composition (not eager evaluation!)
-  // Base: structural actions only
+  // Compose getValidActions: base structural actions + layer transformations
   const base = (state: GameState) => generateStructuralActions(state, rules);
-
-  // Layers: add domain actions (bids) + annotate/script (autoExecute, hints)
-  const getValidActions = composeActionGenerators(layers, base);
+  const getValidActions = composeGetValidActions(layers, base);
 
   // Freeze and return immutable context
   return Object.freeze({

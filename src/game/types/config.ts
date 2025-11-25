@@ -6,15 +6,6 @@
 import type { Domino } from '../types';
 
 /**
- * Serializable action transformer configuration
- */
-export interface ActionTransformerConfig {
-  type: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  config?: Record<string, any>;
-}
-
-/**
  * Override default dealing behavior.
  *
  * Use cases:
@@ -64,10 +55,7 @@ export interface GameConfig {
   /** Player control types */
   playerTypes: ('human' | 'ai')[];
 
-  /** Composable action transformers (left-to-right pipeline) */
-  actionTransformers?: ActionTransformerConfig[];
-
-  /** Enabled layers (e.g., ['nello', 'plunge']) */
+  /** Enabled layers (e.g., ['nello', 'plunge', 'oneHand']) */
   enabledLayers?: string[];
 
   /** Random seed for deterministic games */

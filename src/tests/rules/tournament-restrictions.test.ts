@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import type { GameConfig } from '../../game/types/config';
 import { Room } from '../../server/Room';
 
-// Tournament ruleset filters out special contracts (nello, splash, plunge)
+// Tournament layer filters out special contracts (nello, splash, plunge)
 // These tests verify that at the Room level (action generation)
 
-describe('Tournament RuleSet Authority', () => {
-  it('prevents executing bids that tournament ruleset filters', () => {
+describe('Tournament Layer Authority', () => {
+  it('prevents executing bids that tournament layer filters', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       enabledLayers: ['tournament']
@@ -30,7 +30,7 @@ describe('Tournament RuleSet Authority', () => {
 
     // Nello is not a bid type - it's a trump selection
     // Tournament mode filters nello trump selections, not nello bids
-    // Attempt to force a splash bid which tournament ruleset filters
+    // Attempt to force a splash bid which tournament layer filters
     const result = room.executeAction(`player-${currentPlayer}`, {
       type: 'bid',
       player: currentPlayer,

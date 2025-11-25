@@ -32,9 +32,9 @@ describe('Feature: Nel-O Contract', () => {
       // In Nel-O, the bidder plays alone against both opponents
       // Partner of player 0 is player 2 (teams: 0&2 vs 1&3)
       const partner = 2;
-      
+
       // Create a Nel-O game state
-      // In this variant, the bidder plays alone
+      // In Nel-O, the bidder plays alone
       
       // In Nel-O, partner should not participate
       const activePlayers = [0, 1, 3]; // Bidder and both opponents

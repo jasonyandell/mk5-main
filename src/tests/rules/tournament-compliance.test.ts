@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
-import { composeRules, baseRuleSet } from '../../game/layers';
+import { composeRules, baseLayer } from '../../game/layers';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
 import { BID_TYPES } from '../../game/constants';
 import { getPlayerLeftOfDealer } from '../../game/core/players';
 import type { Bid, BidType } from '../../game/types';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Tournament Rule Compliance', () => {
   const ctx = createTestContext();
@@ -26,7 +26,7 @@ describe('Tournament Rule Compliance', () => {
       const splashBid: Bid = { type: 'splash', value: 2, player: 0 };
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
-      // Tournament rules (baseRuleSet only) reject special contract bids
+      // Tournament rules (baseLayer only) reject special contract bids
       expect(rules.isValidBid(state, splashBid, playerHand)).toBe(false);
       expect(rules.isValidBid(state, plungeBid, playerHand)).toBe(false);
     });

@@ -5,11 +5,11 @@ import {
   type Domino
 } from '../../../game';
 import { composeRules } from '../../../game/layers/compose';
-import { baseRuleSet } from '../../../game/layers';
+import { baseLayer } from '../../../game/layers';
 import { analyzeSuits } from '../../../game/core/suit-analysis';
 import { DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Feature: Playing Tricks', () => {
   describe('Scenario: Following Suit', () => {

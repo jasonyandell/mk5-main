@@ -17,10 +17,10 @@ function createPlayers(config: GameConfig) {
 }
 
 describe('Room auto-execute', () => {
-  it('runs introductory scripts for one-hand action transformer automatically', () => {
+  it('runs introductory scripts for oneHand layer automatically', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      actionTransformers: [{ type: 'one-hand' }],
+      enabledLayers: ['oneHand'],
       shuffleSeed: 777777
     };
 
@@ -36,10 +36,10 @@ describe('Room auto-execute', () => {
     expect(hasBidOption).toBe(false);
   });
 
-  it('one-hand actions have system authority in their meta', () => {
+  it('oneHand actions have system authority in their meta', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      actionTransformers: [{ type: 'one-hand' }],
+      enabledLayers: ['oneHand'],
       shuffleSeed: 777777
     };
 
@@ -62,10 +62,10 @@ describe('Room auto-execute', () => {
     }
   });
 
-  it('one-hand actions execute successfully regardless of session capabilities', () => {
+  it('oneHand actions execute successfully regardless of session capabilities', () => {
     const config: GameConfig = {
       playerTypes: ['human', 'ai', 'ai', 'ai'],
-      actionTransformers: [{ type: 'one-hand' }],
+      enabledLayers: ['oneHand'],
       shuffleSeed: 777777
     };
 

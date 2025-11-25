@@ -13,7 +13,7 @@
 import type { Layer } from './types';
 import type { GameState, GameAction } from '../types';
 
-export const speedRuleSet: Layer = {
+export const speedLayer: Layer = {
   name: 'speed',
 
   /**

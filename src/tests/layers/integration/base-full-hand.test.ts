@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
-import { createTestContextWithRuleSets } from '../../helpers/executionContext';
-import { composeRules, baseRuleSet } from '../../../game/layers';
+import { createTestContextWithLayers } from '../../helpers/executionContext';
+import { composeRules, baseLayer } from '../../../game/layers';
 import { StateBuilder, HandBuilder } from '../../helpers';
 import { processSequentialConsensus, processHandScoring } from '../../helpers/consensusHelpers';
 import type { GameState } from '../../../game/types';
 
 describe('Base (Standard) Full Hand Integration', () => {
-  const ctx = createTestContextWithRuleSets([]);
-  const rules = composeRules([baseRuleSet]);
+  const ctx = createTestContextWithLayers([]);
+  const rules = composeRules([baseLayer]);
 
   /**
    * Helper to play a complete standard hand

@@ -67,8 +67,8 @@ export { executeAction } from './core/actions';
 // Event sourcing / replay
 // Rule validation
 // NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:
-// import { composeRules, baseRuleSet } from './layers';
-// const rules = composeRules([baseRuleSet]);
+// import { composeRules, baseLayer } from './layers';
+// const rules = composeRules([baseLayer]);
 // rules.isValidPlay(state, domino, playerId)
 // rules.getValidPlays(state, playerId)
 // rules.isValidBid(state, bid, playerHand)

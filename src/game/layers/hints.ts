@@ -14,7 +14,7 @@ import type { Layer } from './types';
 import type { GameState, GameAction } from '../types';
 import { getSuitName } from '../game-terms';
 
-export const hintsRuleSet: Layer = {
+export const hintsLayer: Layer = {
   name: 'hints',
 
   /**

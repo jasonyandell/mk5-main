@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
-import { composeRules, baseRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer } from '../../../game/layers';
 import { createInitialState } from '../../../game/core/state';
 import { dealDominoesWithSeed } from '../../../game/core/dominoes';
 import { StateBuilder } from '../../helpers';
@@ -23,7 +23,7 @@ function dealHands(state: GameState): GameState {
 }
 
 /**
- * Backward Compatibility - Regression tests ensuring ruleset system doesn't break existing functionality:
+ * Backward Compatibility - Regression tests ensuring layer system doesn't break existing functionality:
  * - executeAction works without rules parameter (uses defaultRules)
  * - Standard 42 gameplay unaffected
  * - All existing bid types work (points, marks, pass)
@@ -147,7 +147,7 @@ describe('Backward Compatibility', () => {
     });
 
     it('should complete standard trick with 4 plays', () => {
-      const baseRules = composeRules([baseRuleSet]);
+      const baseRules = composeRules([baseLayer]);
       let state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
         .withWinningBid(0, { type: 'points', value: 30, player: 0 })
         .withCurrentPlayer(0)
@@ -171,7 +171,7 @@ describe('Backward Compatibility', () => {
     });
 
     it('should not have early termination in standard game', () => {
-      const baseRules = composeRules([baseRuleSet]);
+      const baseRules = composeRules([baseLayer]);
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: DEUCES })
         .withWinningBid(0, { type: 'points', value: 35, player: 0 })
         .withCurrentPlayer(0)
@@ -205,8 +205,8 @@ describe('Backward Compatibility', () => {
       // All 7 tricks played
       expect(state.tricks.length).toBe(7);
 
-      // Base ruleset returns determined when all 7 tricks played
-      const baseRules = composeRules([baseRuleSet]);
+      // Base layer returns determined when all 7 tricks played
+      const baseRules = composeRules([baseLayer]);
       const outcome = baseRules.checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
       expect((outcome as { isDetermined: true; reason: string }).reason).toBe('All tricks played');
@@ -511,12 +511,12 @@ describe('Backward Compatibility', () => {
       expect(typeof getNextStates).toBe('function');
     });
 
-    it('should export all expected ruleset functions', () => {
+    it('should export all expected layer functions', () => {
       // Using static imports at top of file, just verify they exist
       expect(composeRules).toBeDefined();
       expect(typeof composeRules).toBe('function');
-      expect(baseRuleSet).toBeDefined();
-      expect(typeof baseRuleSet).toBe('object');
+      expect(baseLayer).toBeDefined();
+      expect(typeof baseLayer).toBe('object');
     });
 
     it('should maintain executeAction signature', () => {
@@ -533,7 +533,7 @@ describe('Backward Compatibility', () => {
       expect(state.bids.length).toBe(1);
 
       // Should work with 3 parameters (action + rules) - player 1 passes
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       state = executeAction(state, {
         type: 'pass',
         player: 1

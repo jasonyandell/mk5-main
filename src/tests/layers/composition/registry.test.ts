@@ -14,61 +14,60 @@ import {
   LAYER_REGISTRY,
   getLayerByName,
   getLayersByNames,
-  baseRuleSet,
-  nelloRuleSet,
-  plungeRuleSet,
-  splashRuleSet,
-  sevensRuleSet,
-  tournamentRuleSet
+  baseLayer,
+  nelloLayer,
+  plungeLayer,
+  splashLayer,
+  sevensLayer,
+  tournamentLayer
 } from '../../../game/layers';
 
 describe('Layer Registry and Lookup', () => {
   describe('Core game layers registered correctly', () => {
     it('should have base layer in registry', () => {
       expect(LAYER_REGISTRY['base']).toBeDefined();
-      expect(LAYER_REGISTRY['base']).toBe(baseRuleSet);
+      expect(LAYER_REGISTRY['base']).toBe(baseLayer);
       expect(LAYER_REGISTRY['base']?.name).toBe('base');
     });
 
     it('should have nello layer in registry', () => {
       expect(LAYER_REGISTRY['nello']).toBeDefined();
-      expect(LAYER_REGISTRY['nello']).toBe(nelloRuleSet);
+      expect(LAYER_REGISTRY['nello']).toBe(nelloLayer);
       expect(LAYER_REGISTRY['nello']?.name).toBe('nello');
     });
 
     it('should have plunge layer in registry', () => {
       expect(LAYER_REGISTRY['plunge']).toBeDefined();
-      expect(LAYER_REGISTRY['plunge']).toBe(plungeRuleSet);
+      expect(LAYER_REGISTRY['plunge']).toBe(plungeLayer);
       expect(LAYER_REGISTRY['plunge']?.name).toBe('plunge');
     });
 
     it('should have splash layer in registry', () => {
       expect(LAYER_REGISTRY['splash']).toBeDefined();
-      expect(LAYER_REGISTRY['splash']).toBe(splashRuleSet);
+      expect(LAYER_REGISTRY['splash']).toBe(splashLayer);
       expect(LAYER_REGISTRY['splash']?.name).toBe('splash');
     });
 
     it('should have sevens layer in registry', () => {
       expect(LAYER_REGISTRY['sevens']).toBeDefined();
-      expect(LAYER_REGISTRY['sevens']).toBe(sevensRuleSet);
+      expect(LAYER_REGISTRY['sevens']).toBe(sevensLayer);
       expect(LAYER_REGISTRY['sevens']?.name).toBe('sevens');
     });
 
     it('should have tournament layer in registry', () => {
       expect(LAYER_REGISTRY['tournament']).toBeDefined();
-      expect(LAYER_REGISTRY['tournament']).toBe(tournamentRuleSet);
+      expect(LAYER_REGISTRY['tournament']).toBe(tournamentLayer);
       expect(LAYER_REGISTRY['tournament']?.name).toBe('tournament');
     });
 
     it('should have all layers registered', () => {
       const keys = Object.keys(LAYER_REGISTRY);
-      // 7 game rule layers + 3 action transformer layers + 1 alias (one-hand)
-      expect(keys).toHaveLength(10);
+      // 6 game variant layers + 3 behavior layers = 9 total
+      expect(keys).toHaveLength(9);
       expect(keys.sort()).toEqual([
         'base',
         'hints',
         'nello',
-        'one-hand',  // alias
         'oneHand',
         'plunge',
         'sevens',
@@ -92,35 +91,35 @@ describe('Layer Registry and Lookup', () => {
   describe('getLayerByName returns correct layer', () => {
     it('should return base layer', () => {
       const layer = getLayerByName('base');
-      expect(layer).toBe(baseRuleSet);
+      expect(layer).toBe(baseLayer);
       expect(layer.name).toBe('base');
     });
 
     it('should return nello layer', () => {
       const layer = getLayerByName('nello');
-      expect(layer).toBe(nelloRuleSet);
+      expect(layer).toBe(nelloLayer);
       expect(layer.name).toBe('nello');
     });
 
-    it('should return plunge ruleSet', () => {
+    it('should return plunge layer', () => {
       const layer = getLayerByName('plunge');
-      expect(layer).toBe(plungeRuleSet);
+      expect(layer).toBe(plungeLayer);
       expect(layer.name).toBe('plunge');
     });
 
-    it('should return splash ruleSet', () => {
+    it('should return splash layer', () => {
       const layer = getLayerByName('splash');
-      expect(layer).toBe(splashRuleSet);
+      expect(layer).toBe(splashLayer);
       expect(layer.name).toBe('splash');
     });
 
-    it('should return sevens ruleSet', () => {
+    it('should return sevens layer', () => {
       const layer = getLayerByName('sevens');
-      expect(layer).toBe(sevensRuleSet);
+      expect(layer).toBe(sevensLayer);
       expect(layer.name).toBe('sevens');
     });
 
-    it('should return ruleset with correct structure', () => {
+    it('should return layer with correct structure', () => {
       const layer = getLayerByName('base');
 
       // Should have name
@@ -132,10 +131,10 @@ describe('Layer Registry and Lookup', () => {
       expect(typeof layer.rules).toBe('object');
     });
 
-    it('should return ruleSets with rule methods', () => {
+    it('should return layers with rule methods', () => {
       const layer = getLayerByName('base');
 
-      // Base ruleset should have all 7 rule methods
+      // Base layer should have all 7 rule methods
       expect(layer.rules?.getTrumpSelector).toBeDefined();
       expect(layer.rules?.getFirstLeader).toBeDefined();
       expect(layer.rules?.getNextPlayer).toBeDefined();
@@ -184,35 +183,35 @@ describe('Layer Registry and Lookup', () => {
     it('should return single layer as array', () => {
       const layers = getLayersByNames(['base']);
       expect(layers).toHaveLength(1);
-      expect(layers[0]).toBe(baseRuleSet);
+      expect(layers[0]).toBe(baseLayer);
     });
 
     it('should return multiple layers in order', () => {
       const layers = getLayersByNames(['base', 'nello', 'plunge']);
       expect(layers).toHaveLength(3);
-      expect(layers[0]).toBe(baseRuleSet);
-      expect(layers[1]).toBe(nelloRuleSet);
-      expect(layers[2]).toBe(plungeRuleSet);
+      expect(layers[0]).toBe(baseLayer);
+      expect(layers[1]).toBe(nelloLayer);
+      expect(layers[2]).toBe(plungeLayer);
     });
 
     it('should preserve order even when out of alphabetical order', () => {
       const layers = getLayersByNames(['sevens', 'base', 'splash', 'nello']);
       expect(layers).toHaveLength(4);
-      expect(layers[0]).toBe(sevensRuleSet);
-      expect(layers[1]).toBe(baseRuleSet);
-      expect(layers[2]).toBe(splashRuleSet);
-      expect(layers[3]).toBe(nelloRuleSet);
+      expect(layers[0]).toBe(sevensLayer);
+      expect(layers[1]).toBe(baseLayer);
+      expect(layers[2]).toBe(splashLayer);
+      expect(layers[3]).toBe(nelloLayer);
     });
 
     it('should handle all layers', () => {
       const layers = getLayersByNames(['base', 'nello', 'plunge', 'splash', 'sevens', 'tournament']);
       expect(layers).toHaveLength(6);
-      expect(layers[0]).toBe(baseRuleSet);
-      expect(layers[1]).toBe(nelloRuleSet);
-      expect(layers[2]).toBe(plungeRuleSet);
-      expect(layers[3]).toBe(splashRuleSet);
-      expect(layers[4]).toBe(sevensRuleSet);
-      expect(layers[5]).toBe(tournamentRuleSet);
+      expect(layers[0]).toBe(baseLayer);
+      expect(layers[1]).toBe(nelloLayer);
+      expect(layers[2]).toBe(plungeLayer);
+      expect(layers[3]).toBe(splashLayer);
+      expect(layers[4]).toBe(sevensLayer);
+      expect(layers[5]).toBe(tournamentLayer);
     });
 
     it('should return empty array for empty input', () => {
@@ -230,9 +229,9 @@ describe('Layer Registry and Lookup', () => {
       // Note: This might not be a desired behavior, but documenting current behavior
       const layers = getLayersByNames(['base', 'base', 'nello']);
       expect(layers).toHaveLength(3);
-      expect(layers[0]).toBe(baseRuleSet);
-      expect(layers[1]).toBe(baseRuleSet);
-      expect(layers[2]).toBe(nelloRuleSet);
+      expect(layers[0]).toBe(baseLayer);
+      expect(layers[1]).toBe(baseLayer);
+      expect(layers[2]).toBe(nelloLayer);
     });
   });
 
@@ -242,13 +241,12 @@ describe('Layer Registry and Lookup', () => {
 
       // Note: JavaScript objects are mutable by default, but we test
       // that the registry maintains its expected structure
-      // 7 game rule layers + 3 action transformer layers + 1 alias (one-hand)
-      expect(originalKeys.length).toBe(10);
+      // 6 game variant layers + 3 behavior layers = 9 total
+      expect(originalKeys.length).toBe(9);
       expect(originalKeys.sort()).toEqual([
         'base',
         'hints',
         'nello',
-        'one-hand',
         'oneHand',
         'plunge',
         'sevens',
@@ -258,17 +256,17 @@ describe('Layer Registry and Lookup', () => {
       ]);
     });
 
-    it('should preserve ruleset references', () => {
-      // Verify that base ruleset is always present
+    it('should preserve layer references', () => {
+      // Verify that base layer is always present
       expect(LAYER_REGISTRY['base']).toBeDefined();
-      expect(LAYER_REGISTRY['base']).toBe(baseRuleSet);
+      expect(LAYER_REGISTRY['base']).toBe(baseLayer);
     });
 
-    it('should maintain ruleset names consistently', () => {
+    it('should maintain layer names consistently', () => {
       const layer = getLayerByName('base');
       const originalName = layer.name;
 
-      // Get ruleset again and verify name is consistent
+      // Get layer again and verify name is consistent
       const layerAgain = getLayerByName('base');
       expect(layerAgain.name).toBe(originalName);
       expect(layerAgain.name).toBe('base');
@@ -279,7 +277,7 @@ describe('Layer Registry and Lookup', () => {
       const layer2 = getLayerByName('base');
 
       expect(layer1).toBe(layer2);
-      expect(layer1).toBe(baseRuleSet);
+      expect(layer1).toBe(baseLayer);
     });
   });
 
@@ -287,7 +285,7 @@ describe('Layer Registry and Lookup', () => {
     it('should work with composeRules', () => {
       const layers = getLayersByNames(['base', 'nello']);
 
-      // Should be able to compose these ruleSets
+      // Should be able to compose these layers
       expect(() => {
         // Import composeRules and test (basic smoke test)
         expect(layers).toHaveLength(2);
@@ -305,7 +303,7 @@ describe('Layer Registry and Lookup', () => {
       expect(layers.map(l => l.name)).toEqual(['base', 'plunge', 'splash']);
     });
 
-    it('should support conditional ruleset inclusion', () => {
+    it('should support conditional layer inclusion', () => {
       // Simulating feature flags
       const config = {
         enableNello: true,

@@ -2,16 +2,16 @@
  * Tests for getValidActions composition.
  *
  * Verifies that action generation composes correctly:
- * - Base ruleset provides standard bids (points, marks, pass)
- * - Plunge ruleset adds plunge bid only with 4+ doubles
- * - Splash ruleset adds splash bid only with 3+ doubles
- * - Nello ruleset adds nello trump option
- * - Sevens ruleset adds sevens trump option
- * - Multiple ruleSets combine actions correctly (union, not override)
+ * - Base layer provides standard bids (points, marks, pass)
+ * - Plunge layer adds plunge bid only with 4+ doubles
+ * - Splash layer adds splash bid only with 3+ doubles
+ * - Nello layer adds nello trump option
+ * - Sevens layer adds sevens trump option
+ * - Multiple layers combine actions correctly (union, not override)
  */
 
 import { describe, it, expect } from 'vitest';
-import { baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet, sevensRuleSet } from '../../../game/layers';
+import { baseLayer, nelloLayer, plungeLayer, splashLayer, sevensLayer } from '../../../game/layers';
 import type { GameState, GameAction, Domino } from '../../../game/types';
 import { createInitialState } from '../../../game/core/state';
 
@@ -24,17 +24,17 @@ describe('getValidActions Composition', () => {
     };
   }
 
-  function getActionsFromLayers(state: GameState, ruleSets: Array<{ getValidActions?: (state: GameState, prev: GameAction[]) => GameAction[] }>): GameAction[] {
+  function getActionsFromLayers(state: GameState, layers: Array<{ getValidActions?: (state: GameState, prev: GameAction[]) => GameAction[] }>): GameAction[] {
     let actions: GameAction[] = [];
-    for (const ruleset of ruleSets) {
-      if (ruleset.getValidActions) {
-        actions = ruleset.getValidActions(state, actions);
+    for (const layer of layers) {
+      if (layer.getValidActions) {
+        actions = layer.getValidActions(state, actions);
       }
     }
     return actions;
   }
 
-  describe('Base ruleset provides standard bids', () => {
+  describe('Base layer provides standard bids', () => {
     it('should add standard bids to structural actions in bidding phase', () => {
       const state = createTestState({
         phase: 'bidding',
@@ -42,17 +42,17 @@ describe('getValidActions Composition', () => {
         bids: []
       });
 
-      // Base ruleset adds standard bids (points 30-41, marks 1-2) to whatever prev it receives
-      const actions = getActionsFromLayers(state, [baseRuleSet]);
+      // Base layer adds standard bids (points 30-41, marks 1-2) to whatever prev it receives
+      const actions = getActionsFromLayers(state, [baseLayer]);
 
-      // Base ruleset should add all standard opening bids (30-41 points, 1-2 marks)
+      // Base layer should add all standard opening bids (30-41 points, 1-2 marks)
       expect(actions.length).toBeGreaterThan(0);
       expect(actions).toContainEqual({ type: 'bid', player: 0, bid: 'points', value: 30 });
       expect(actions).toContainEqual({ type: 'bid', player: 0, bid: 'marks', value: 1 });
     });
   });
 
-  describe('Plunge ruleset adds plunge bid', () => {
+  describe('Plunge layer adds plunge bid', () => {
     it('should add plunge bid when player has 4+ doubles', () => {
       const fourDoubles: Domino[] = [
         { id: '0-0', high: 0, low: 0, points: 0 },
@@ -71,7 +71,7 @@ describe('getValidActions Composition', () => {
       });
       state.players[0]!.hand = fourDoubles;
 
-      const actions = getActionsFromLayers(state, [plungeRuleSet]);
+      const actions = getActionsFromLayers(state, [plungeLayer]);
 
       expect(actions).toContainEqual({
         type: 'bid',
@@ -102,7 +102,7 @@ describe('getValidActions Composition', () => {
         { type: 'bid', player: 0, bid: 'marks', value: 2 },
         { type: 'pass', player: 0 }
       ];
-      const actions = plungeRuleSet.getValidActions!(state, prevActions);
+      const actions = plungeLayer.getValidActions!(state, prevActions);
 
       // Should preserve previous actions
       expect(actions).toEqual(prevActions);
@@ -128,7 +128,7 @@ describe('getValidActions Composition', () => {
       });
       state.players[1]!.hand = fourDoubles;
 
-      const actions = plungeRuleSet.getValidActions!(state, []);
+      const actions = plungeLayer.getValidActions!(state, []);
 
       const plungeBid = actions.find(a => a.type === 'bid' && a.bid === 'plunge');
       expect(plungeBid).toBeDefined();
@@ -153,13 +153,13 @@ describe('getValidActions Composition', () => {
       state.players[0]!.hand = fourDoubles;
 
       const prevActions: GameAction[] = [];
-      const actions = getActionsFromLayers(state, [plungeRuleSet]);
+      const actions = getActionsFromLayers(state, [plungeLayer]);
 
       expect(actions).toEqual(prevActions);
     });
   });
 
-  describe('Splash ruleset adds splash bid', () => {
+  describe('Splash layer adds splash bid', () => {
     it('should add splash bid when player has 3+ doubles', () => {
       const threeDoubles: Domino[] = [
         { id: '0-0', high: 0, low: 0, points: 0 },
@@ -178,7 +178,7 @@ describe('getValidActions Composition', () => {
       });
       state.players[0]!.hand = threeDoubles;
 
-      const actions = getActionsFromLayers(state, [splashRuleSet]);
+      const actions = getActionsFromLayers(state, [splashLayer]);
 
       expect(actions).toContainEqual({
         type: 'bid',
@@ -209,7 +209,7 @@ describe('getValidActions Composition', () => {
         { type: 'pass', player: 0 }
       ];
 
-      const actions = splashRuleSet.getValidActions!(state, prevActions);
+      const actions = splashLayer.getValidActions!(state, prevActions);
 
       expect(actions).toEqual(prevActions);
     });
@@ -234,7 +234,7 @@ describe('getValidActions Composition', () => {
       });
       state.players[1]!.hand = threeDoubles;
 
-      const actions = getActionsFromLayers(state, [splashRuleSet]);
+      const actions = getActionsFromLayers(state, [splashLayer]);
 
       const splashBid = actions.find(a => a.type === 'bid' && a.bid === 'splash');
       expect(splashBid).toBeDefined();
@@ -242,7 +242,7 @@ describe('getValidActions Composition', () => {
     });
   });
 
-  describe('Nello ruleset adds nello trump option', () => {
+  describe('Nello layer adds nello trump option', () => {
     it('should add nello option in trump_selection after marks bid', () => {
       const state = createTestState({
         phase: 'trump_selection',
@@ -256,7 +256,7 @@ describe('getValidActions Composition', () => {
         { type: 'select-trump', player: 0, trump: { type: 'suit', suit: 1 } }
       ];
 
-      const actions = nelloRuleSet.getValidActions!(state, prevActions);
+      const actions = nelloLayer.getValidActions!(state, prevActions);
 
       expect(actions).toContainEqual({
         type: 'select-trump',
@@ -278,7 +278,7 @@ describe('getValidActions Composition', () => {
         { type: 'select-trump', player: 0, trump: { type: 'suit', suit: 0 } }
       ];
 
-      const actions = nelloRuleSet.getValidActions!(state, prevActions);
+      const actions = nelloLayer.getValidActions!(state, prevActions);
 
       expect(actions).toEqual(prevActions);
     });
@@ -292,15 +292,15 @@ describe('getValidActions Composition', () => {
         bids: [{ type: 'marks', value: 2, player: 0 }]
       });
 
-      const actions = getActionsFromLayers(state, [nelloRuleSet]);
+      const actions = getActionsFromLayers(state, [nelloLayer]);
 
-      // Nello ruleset adds nello trump option during trump_selection after marks bid
+      // Nello layer adds nello trump option during trump_selection after marks bid
       expect(actions.length).toBe(1);
       expect(actions[0]).toEqual({ type: 'select-trump', player: 0, trump: { type: 'nello' } });
     });
   });
 
-  describe('Sevens ruleset adds sevens trump option', () => {
+  describe('Sevens layer adds sevens trump option', () => {
     it('should add sevens option in trump_selection after marks bid', () => {
       const state = createTestState({
         phase: 'trump_selection',
@@ -309,7 +309,7 @@ describe('getValidActions Composition', () => {
         currentBid: { type: 'marks', value: 2, player: 0 }
       });
 
-      const actions = getActionsFromLayers(state, [sevensRuleSet]);
+      const actions = getActionsFromLayers(state, [sevensLayer]);
 
       expect(actions).toContainEqual({
         type: 'select-trump',
@@ -327,13 +327,13 @@ describe('getValidActions Composition', () => {
       });
 
       const prevActions: GameAction[] = [];
-      const actions = getActionsFromLayers(state, [sevensRuleSet]);
+      const actions = getActionsFromLayers(state, [sevensLayer]);
 
       expect(actions).toEqual(prevActions);
     });
   });
 
-  describe('Multiple ruleSets combine actions correctly', () => {
+  describe('Multiple layers combine actions correctly', () => {
     it('should combine plunge and splash options', () => {
       const fourDoubles: Domino[] = [
         { id: '0-0', high: 0, low: 0, points: 0 },
@@ -352,7 +352,7 @@ describe('getValidActions Composition', () => {
       });
       state.players[0]!.hand = fourDoubles;
 
-      const actions = getActionsFromLayers(state, [plungeRuleSet, splashRuleSet]);
+      const actions = getActionsFromLayers(state, [plungeLayer, splashLayer]);
 
       // Should have both plunge and splash
       expect(actions.filter(a => a.type === 'bid' && a.bid === 'plunge')).toHaveLength(1);
@@ -371,9 +371,9 @@ describe('getValidActions Composition', () => {
         { type: 'select-trump', player: 0, trump: { type: 'suit', suit: 0 } }
       ];
 
-      // Apply ruleSets sequentially
-      let actions = nelloRuleSet.getValidActions!(state, prevActions);
-      actions = sevensRuleSet.getValidActions!(state, actions);
+      // Apply layers sequentially
+      let actions = nelloLayer.getValidActions!(state, prevActions);
+      actions = sevensLayer.getValidActions!(state, actions);
 
       // Should have both nello and sevens options
       expect(actions.filter(a => a.type === 'select-trump' && a.trump.type === 'nello')).toHaveLength(1);
@@ -406,10 +406,10 @@ describe('getValidActions Composition', () => {
         { type: 'pass', player: 0 }
       ];
 
-      // Apply ruleSets
+      // Apply layers
       let actions = baseActions;
-      actions = plungeRuleSet.getValidActions!(state, actions);
-      actions = splashRuleSet.getValidActions!(state, actions);
+      actions = plungeLayer.getValidActions!(state, actions);
+      actions = splashLayer.getValidActions!(state, actions);
 
       // Should have original actions plus new ones
       expect(actions.filter(a => a.type === 'bid' && a.bid === 'marks')).toHaveLength(1);
@@ -431,10 +431,10 @@ describe('getValidActions Composition', () => {
         { type: 'select-trump', player: 0, trump: { type: 'suit', suit: 1 } }
       ];
 
-      // Apply both ruleSets
+      // Apply both layers
       let actions = baseActions;
-      actions = nelloRuleSet.getValidActions!(state, actions);
-      actions = sevensRuleSet.getValidActions!(state, actions);
+      actions = nelloLayer.getValidActions!(state, actions);
+      actions = sevensLayer.getValidActions!(state, actions);
 
       // Should have 4 total: 2 base + nello + sevens
       expect(actions).toHaveLength(4);
@@ -448,7 +448,7 @@ describe('getValidActions Composition', () => {
   });
 
   describe('Edge cases', () => {
-    it('should handle ruleSets with no getValidActions', () => {
+    it('should handle layers with no getValidActions', () => {
       const state = createTestState({
         phase: 'bidding',
         currentPlayer: 0
@@ -468,7 +468,7 @@ describe('getValidActions Composition', () => {
         currentBid: { type: 'marks', value: 2, player: 0 }
       });
 
-      const actions = getActionsFromLayers(state, [nelloRuleSet]);
+      const actions = getActionsFromLayers(state, [nelloLayer]);
 
       expect(actions).toHaveLength(1);
       expect(actions[0]).toEqual({

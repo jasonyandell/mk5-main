@@ -10,7 +10,7 @@
 
 import { createDoublesBidLayer } from './doubles-bid-factory';
 
-export const splashRuleSet = createDoublesBidLayer({
+export const splashLayer = createDoublesBidLayer({
   name: 'splash',
   minDoubles: 3,
   minValue: 2,

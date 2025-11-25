@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
 import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
-import { composeRules, baseRuleSet, plungeRuleSet } from '../../game/layers';
+import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import type { Domino, Bid } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 // Special scenarios include plunge bids (casual rules)
-const rules = composeRules([baseRuleSet, plungeRuleSet]);
+const rules = composeRules([baseLayer, plungeLayer]);
 
 describe('Special Gameplay Scenarios', () => {
   describe('High Stakes Bidding', () => {
@@ -60,7 +60,7 @@ describe('Special Gameplay Scenarios', () => {
       // Plunge bid requires 4+ doubles
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 0 };
 
-      // Should be valid with 4 doubles (plungeRuleSet enabled)
+      // Should be valid with 4 doubles (plungeLayer enabled)
       expect(rules.isValidBid(state, plungeBid, handWith4Doubles)).toBe(true);
     });
   });

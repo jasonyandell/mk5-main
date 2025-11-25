@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
-import { composeRules, baseRuleSet, nelloRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, nelloLayer } from '../../../game/layers';
 import { StateBuilder } from '../../helpers';
 import type { Domino } from '../../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
@@ -12,7 +12,7 @@ import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/t
  * - Trump option availability based on bid type
  */
 describe('Nello Edge Cases', () => {
-  const nelloRules = composeRules([baseRuleSet, nelloRuleSet]);
+  const nelloRules = composeRules([baseLayer, nelloLayer]);
 
   describe('Partner Sits Out - 3 Player Rotation', () => {
     it('should have only 3 active players when partner sits out', () => {
@@ -303,7 +303,7 @@ describe('Nello Edge Cases', () => {
       const state = StateBuilder.nelloContract(0).build();
 
       // Nello should be available as trump option
-      const validActions = nelloRuleSet.getValidActions?.(state, []);
+      const validActions = nelloLayer.getValidActions?.(state, []);
       expect(validActions).toBeDefined();
 
       const nelloAction = validActions?.find(a =>
@@ -318,7 +318,7 @@ describe('Nello Edge Cases', () => {
       const state = StateBuilder.inTrumpSelection(0, 35).build();
 
       // Nello should NOT be available
-      const validActions = nelloRuleSet.getValidActions?.(state, []);
+      const validActions = nelloLayer.getValidActions?.(state, []);
 
       const nelloAction = validActions?.find(a =>
         a.type === 'select-trump' &&
@@ -330,7 +330,7 @@ describe('Nello Edge Cases', () => {
     it('should only add nello during trump_selection phase', () => {
       const biddingState = StateBuilder.inBiddingPhase().build();
 
-      const validActions = nelloRuleSet.getValidActions?.(biddingState, []);
+      const validActions = nelloLayer.getValidActions?.(biddingState, []);
       const nelloAction = validActions?.find(a =>
         a.type === 'select-trump' &&
         a.trump.type === 'nello'

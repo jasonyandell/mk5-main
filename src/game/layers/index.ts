@@ -12,14 +12,16 @@ export * from './types';
 export * from './helpers';
 
 // Layers
-export { baseRuleSet } from './base';
-export { nelloRuleSet } from './nello';
-export { plungeRuleSet } from './plunge';
-export { splashRuleSet } from './splash';
-export { sevensRuleSet } from './sevens';
-export { tournamentRuleSet } from './tournament';
-export { oneHandRuleSet } from './oneHand';
+export { baseLayer } from './base';
+export { nelloLayer } from './nello';
+export { plungeLayer } from './plunge';
+export { splashLayer } from './splash';
+export { sevensLayer } from './sevens';
+export { tournamentLayer } from './tournament';
+export { oneHandLayer } from './oneHand';
+export { speedLayer } from './speed';
+export { hintsLayer } from './hints';
 
 // Composition
-export { composeRules, composeActions, composeActionGenerators } from './compose';
+export { composeRules, composeGetValidActions } from './compose';
 export { LAYER_REGISTRY, getLayerByName, getLayersByNames } from './registry';

@@ -109,9 +109,9 @@ export interface Player {
 export type BaseBidType = 'pass' | 'points' | 'marks';
 
 /**
- * Special bid types - compositional, enabled by rulesets (variants)
- * - splash: Requires splashRuleSet
- * - plunge: Requires plungeRuleSet
+ * Special bid types - compositional, enabled by layers
+ * - splash: Requires splashLayer
+ * - plunge: Requires plungeLayer
  */
 export type SpecialBidType = 'splash' | 'plunge';
 
@@ -123,7 +123,7 @@ export type SpecialBidType = 'splash' | 'plunge';
  * - points: Bid number of points (30-42)
  * - marks: Bid number of marks (1-7)
  *
- * Special types (compositional - enabled by rulesets):
+ * Special types (compositional - enabled by layers):
  * - splash: Auto-bid requiring 3+ doubles (2-3 marks)
  * - plunge: Auto-bid requiring 4+ doubles (4+ marks)
  */

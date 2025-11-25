@@ -1,17 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { executeAction } from '../../../game/core/actions';
 import { getNextStates } from '../../../game/core/state';
-import { createTestContextWithRuleSets } from '../../helpers/executionContext';
-import { composeRules, baseRuleSet, splashRuleSet } from '../../../game/layers';
+import { createTestContextWithLayers } from '../../helpers/executionContext';
+import { composeRules, baseLayer, splashLayer } from '../../../game/layers';
 import { StateBuilder, HandBuilder } from '../../helpers';
 import { processSequentialConsensus } from '../../helpers/consensusHelpers';
 import { BID_TYPES } from '../../../game/constants';
 import type { GameState } from '../../../game/types';
 
 describe('Splash Full Hand Integration', () => {
-  const ctx = createTestContextWithRuleSets(['splash']);
-  const ruleSets = [baseRuleSet, splashRuleSet];
-  const rules = composeRules(ruleSets);
+  const ctx = createTestContextWithLayers(['splash']);
+  const layers = [baseLayer, splashLayer];
+  const rules = composeRules(layers);
 
   /**
    * Helper to play a complete splash hand
@@ -440,7 +440,7 @@ describe('Splash Full Hand Integration', () => {
 
   describe('Bidding Requirements', () => {
     it('should require 3+ doubles to bid splash', () => {
-      const ctx = createTestContextWithRuleSets(['splash']);
+      const ctx = createTestContextWithLayers(['splash']);
       // With 3 doubles
       const stateWith3 = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(0)
@@ -476,7 +476,7 @@ describe('Splash Full Hand Integration', () => {
 
     it('should have automatic bid value of 2-3 marks', () => {
 
-      const ctx = createTestContextWithRuleSets(['splash']);
+      const ctx = createTestContextWithLayers(['splash']);
       const state = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(0)
         .withSeed(444444)
@@ -500,7 +500,7 @@ describe('Splash Full Hand Integration', () => {
 
     it('should jump over existing marks bids up to maximum of 3', () => {
 
-      const ctx = createTestContextWithRuleSets(['splash']);
+      const ctx = createTestContextWithLayers(['splash']);
       const state = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(1)
         .withSeed(555555)
@@ -525,7 +525,7 @@ describe('Splash Full Hand Integration', () => {
 
     it('should cap at 3 marks even with high existing bids', () => {
 
-      const ctx = createTestContextWithRuleSets(['splash']);
+      const ctx = createTestContextWithLayers(['splash']);
       const state = StateBuilder.inBiddingPhase()
         .withCurrentPlayer(1)
         .withSeed(666666)

@@ -23,8 +23,7 @@ This document describes the testing patterns used in the Texas 42 codebase. Our 
 **Use**: `createTestContext()` from `src/tests/helpers/executionContext.ts`
 
 **When**:
-- Testing RuleSet composition (e.g., base + nello + plunge)
-- Testing ActionTransformer composition
+- Testing Layer composition (e.g., base + nello + plunge + tournament)
 - Testing individual rule methods in isolation
 - Testing pure functions that take ExecutionContext as input
 
@@ -32,8 +31,8 @@ This document describes the testing patterns used in the Texas 42 codebase. Our 
 ```typescript
 import { createTestContext } from '../helpers/executionContext';
 
-describe('RuleSet Composition', () => {
-  it('should compose nello and plunge rulesets correctly', () => {
+describe('Layer Composition', () => {
+  it('should compose nello and plunge layers correctly', () => {
     const ctx = createTestContext({
       enabledLayers: ['base', 'nello', 'plunge']
     });
@@ -46,8 +45,8 @@ describe('RuleSet Composition', () => {
 ```
 
 **Good uses**:
-- `/src/tests/layers/composition/compose-rules.test.ts` - Tests RuleSet composition
-- `/src/tests/layers/composition/ruleset-overrides.test.ts` - Tests override behavior
+- `/src/tests/layers/composition/compose-rules.test.ts` - Tests Layer composition
+- `/src/tests/layers/composition/layer-overrides.test.ts` - Tests override behavior
 - `/src/tests/unit/authorization.test.ts` - Tests capability authorization logic
 
 ### Integration Tests: Testing Game Flow
@@ -115,7 +114,7 @@ test('player can place bid', async ({ page }) => {
 All functions in this file are marked `@testOnly` and should **only** be used in unit tests:
 
 - `createTestContext(config?)` - Standard 42, no special rules
-- `createTestContextWithRuleSets(ruleSetNames)` - Custom ruleset composition
+- `createTestContextWithLayers(layerNames)` - Custom layer composition
 - `createAITestContext(config?)` - AI players
 
 **Do NOT use these for**:
@@ -139,12 +138,12 @@ These are useful for both unit and integration tests.
 
 Production code follows this path:
 ```
-Room → ExecutionContext → (RuleSets + ActionTransformers)
+Room → ExecutionContext → (Layers)
 ```
 
 Tests should mirror this:
 ```
-HeadlessRoom → Room → ExecutionContext → (RuleSets + ActionTransformers)
+HeadlessRoom → Room → ExecutionContext → (Layers)
 ```
 
 ### What HeadlessRoom Does
@@ -218,8 +217,7 @@ describe('Integration Test', () => {
 After analysis, all test files in the codebase follow the correct patterns:
 
 1. **Unit tests** correctly use `createTestContext()` for composition testing
-   - RuleSet composition tests
-   - ActionTransformer composition tests
+   - Layer composition tests
    - Authorization tests
    - Pure function tests
 
@@ -255,7 +253,7 @@ If we want to strengthen integration testing patterns:
 
 | Test Type | Tool | File Location | Use Case |
 |-----------|------|---------------|----------|
-| **Unit Tests** | `createTestContext()` | `src/tests/helpers/executionContext.ts` | RuleSet/Transformer composition |
+| **Unit Tests** | `createTestContext()` | `src/tests/helpers/executionContext.ts` | Layer composition |
 | **Integration Tests** | `HeadlessRoom` | `src/server/HeadlessRoom.ts` | Full game flows |
 | **UI Tests** | Playwright + Room | Test files + `src/server/Room.ts` | User interactions |
 | **State Helpers** | `GameTestHelper` | `src/tests/helpers/gameTestHelper.ts` | Custom state creation |
@@ -265,7 +263,7 @@ If we want to strengthen integration testing patterns:
 ### ✅ Good: Unit Test with createTestContext
 ```typescript
 // src/tests/layers/composition/compose-rules.test.ts
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 const state = createTestState();
 const bid: Bid = { type: 'marks', value: 2, player: 1 };
 expect(rules.getTrumpSelector(state, bid)).toBe(1);

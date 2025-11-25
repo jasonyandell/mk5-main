@@ -181,7 +181,6 @@ export function encodeGameUrl(
   theme?: string,
   colorOverrides?: Record<string, string>,
   sectionName?: string,
-  actionTransformers?: { type: string; config?: Record<string, unknown> }[],
   enabledLayers?: string[]
 ): string {
   const params = new URLSearchParams();
@@ -258,21 +257,10 @@ export function encodeGameUrl(
     params.set('h', sectionName);
   }
 
-  // Action transformers (short codes, comma-separated)
-  if (actionTransformers && actionTransformers.length > 0) {
-    const codes = actionTransformers
-      .map(at => TRANSFORMER_CODES[at.type])
-      .filter(code => code !== undefined)
-      .join(',');
-    if (codes) {
-      params.set('at', codes);
-    }
-  }
-
   // Enabled layers (short codes, comma-separated)
   if (enabledLayers && enabledLayers.length > 0) {
     const codes = enabledLayers
-      .map(rs => RULESET_CODES[rs])
+      .map(rs => LAYER_CODES[rs])
       .filter(code => code !== undefined)
       .join(',');
     if (codes) {
@@ -297,7 +285,6 @@ export function decodeGameUrl(urlString: string): {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
-  actionTransformers?: { type: string }[];
   enabledLayers?: string[];
 } {
   // Handle both full URLs and just query strings
@@ -420,20 +407,11 @@ export function decodeGameUrl(urlString: string): {
     throw new Error('Invalid URL: dealer must be 0-3');
   }
 
-  // Parse action transformers (short codes)
-  const transformersStr = params.get('at');
-  const actionTransformers = transformersStr
-    ? transformersStr.split(',')
-        .map(code => TRANSFORMER_CODE_TO_TYPE[code])
-        .filter((type): type is string => type !== undefined)
-        .map(type => ({ type }))
-    : undefined;
-
   // Parse enabled layers (short codes)
   const layersStr = params.get('l');
   const enabledLayers = layersStr
     ? layersStr.split(',')
-        .map(code => RULESET_CODE_TO_NAME[code])
+        .map(code => LAYER_CODE_TO_NAME[code])
         .filter((name): name is string => name !== undefined)
     : undefined;
 
@@ -445,13 +423,8 @@ export function decodeGameUrl(urlString: string): {
     theme: string;
     colorOverrides: Record<string, string>;
     scenario: string;
-    actionTransformers?: { type: string }[];
     enabledLayers?: string[];
   } = { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
-
-  if (actionTransformers && actionTransformers.length > 0) {
-    result.actionTransformers = actionTransformers;
-  }
 
   if (enabledLayers && enabledLayers.length > 0) {
     result.enabledLayers = enabledLayers;
@@ -460,30 +433,24 @@ export function decodeGameUrl(urlString: string): {
   return result;
 }
 
-// Action Transformer short codes (for URL encoding)
-const TRANSFORMER_CODES: Record<string, string> = {
-  'one-hand': 'o',
+// Layer short codes (for URL encoding)
+// All layers use the same unified encoding via the `l=` URL parameter
+const LAYER_CODES: Record<string, string> = {
+  // Game variant layers
+  'nello': 'n',
+  'plunge': 'p',
+  'splash': 'S',  // Changed from 's' to avoid collision with speed
+  'sevens': 'v',
+  'tournament': 't',
+  // Behavior layers
+  'oneHand': 'o',
   'speed': 's',
   'hints': 'h'
 };
 
 // Reverse mapping for decoding
-const TRANSFORMER_CODE_TO_TYPE: Record<string, string> = Object.fromEntries(
-  Object.entries(TRANSFORMER_CODES).map(([k, v]) => [v, k])
-);
-
-// RuleSet short codes (for URL encoding)
-const RULESET_CODES: Record<string, string> = {
-  'nello': 'n',
-  'plunge': 'p',
-  'splash': 's',
-  'sevens': 'v',
-  'tournament': 't'
-};
-
-// Reverse mapping for decoding
-const RULESET_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
-  Object.entries(RULESET_CODES).map(([k, v]) => [v, k])
+const LAYER_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(LAYER_CODES).map(([k, v]) => [v, k])
 );
 
 // Export types for use in other modules
@@ -495,6 +462,5 @@ export interface URLData {
   theme: string;
   colorOverrides: Record<string, string>;
   scenario: string;
-  actionTransformers?: { type: string }[];
   enabledLayers?: string[];
 }

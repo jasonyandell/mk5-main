@@ -4,7 +4,7 @@
  * Combines responsibilities of GameServer and GameKernel:
  * - Owns all impurities: sessions, AI, transport, subscriptions
  * - Delegates all pure logic to kernel.ts helpers
- * - Composes ExecutionContext (rulesets + action transformers)
+ * - Composes ExecutionContext (layers + action transformers)
  * - Manages state transitions via pure functions
  *
  * Design:
@@ -58,7 +58,7 @@ interface ClientSubscription {
  * Room - Main orchestrator for a game instance.
  *
  * Responsibilities:
- * 1. Compose ExecutionContext (rulesets + action transformers)
+ * 1. Compose ExecutionContext (layers + action transformers)
  * 2. Manage multiplayer state via pure helpers
  * 3. Coordinate AI lifecycle (AIManager)
  * 4. Route protocol messages (Transport)
@@ -85,7 +85,7 @@ export class Room {
    * Create a new Room instance.
    *
    * @param gameId - Unique game identifier
-   * @param config - Game configuration (action transformers, rulesets, etc.)
+   * @param config - Game configuration (action transformers, layers, etc.)
    * @param initialPlayers - Initial player sessions (must be 4 players)
    */
   constructor(gameId: string, config: GameConfig, initialPlayers: PlayerSession[]) {
@@ -202,9 +202,10 @@ export class Room {
    */
   getView(forPlayerId?: string): GameView {
     // Delegate to buildKernelView(mpState, forPlayerId, ctx, metadata)
+    const layers = this.metadata.config.enabledLayers;
     return buildKernelView(this.mpState, forPlayerId, this.ctx, {
       gameId: this.metadata.gameId,
-      actionTransformerConfigs: this.metadata.config.actionTransformers ?? []
+      ...(layers?.length ? { enabledLayers: layers } : {})
     });
   }
 

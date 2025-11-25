@@ -109,7 +109,7 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     
     case 'marks': {
       // Standard marks bid logic (suit/doubles/no-trump trump)
-      // Special contracts override via their rulesets
+      // Special contracts override via their layers
 
       if (defendingTeamScore > 0) {
         return {

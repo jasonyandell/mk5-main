@@ -1,13 +1,13 @@
 import { describe, test, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
-import { baseRuleSet } from '../../game/layers';
+import { baseLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection } from '../../game/types';
 import { DOUBLES_AS_TRUMP } from '../../game/types';
 
 // Use threaded rules system
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Doubles Trump Follow Suit Rules', () => {
   const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump

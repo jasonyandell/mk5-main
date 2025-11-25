@@ -17,7 +17,7 @@ import type { Layer } from './types';
 import { checkTrickBasedHandOutcome, getPlayerTeam, getDistanceFromSeven, findClosestToSeven } from './helpers';
 import { BID_TYPES } from '../constants';
 
-export const sevensRuleSet: Layer = {
+export const sevensLayer: Layer = {
   name: 'sevens',
 
   getValidActions: (state, prev) => {
@@ -105,7 +105,7 @@ export const sevensRuleSet: Layer = {
     // ============================================
 
     isValidPlay: (state, domino, playerId, prev) => {
-      // If not sevens, use previous RuleSet's logic
+      // If not sevens, use previous Layer's logic
       if (state.trump?.type !== 'sevens') return prev;
 
       // Basic validation
@@ -123,7 +123,7 @@ export const sevensRuleSet: Layer = {
     },
 
     getValidPlays: (state, playerId, prev) => {
-      // If not sevens, use previous RuleSet's logic
+      // If not sevens, use previous Layer's logic
       if (state.trump?.type !== 'sevens') return prev;
 
       const player = state.players[playerId];

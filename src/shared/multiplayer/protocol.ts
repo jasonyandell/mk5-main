@@ -12,13 +12,13 @@
  */
 
 import type { GameAction, FilteredGameState } from '../../game/types';
-import type { GameConfig, ActionTransformerConfig } from '../../game/types/config';
+import type { GameConfig } from '../../game/types/config';
 import type {
   Capability,
   PlayerSession
 } from '../../game/multiplayer/types';
 
-export type { GameConfig, ActionTransformerConfig };
+export type { GameConfig };
 
 // ============================================================================
 // Client -> Server Messages
@@ -199,7 +199,7 @@ export interface GameView {
   /** Game metadata */
   metadata: {
     gameId: string;
-    actionTransformers?: ActionTransformerConfig[];
+    enabledLayers?: string[];
   };
 
   // TODO: Add replay-url capability

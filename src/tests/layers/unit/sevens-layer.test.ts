@@ -1,5 +1,5 @@
 /**
- * Unit tests for sevens ruleset game rules.
+ * Unit tests for sevens layer game rules.
  *
  * Sevens rules:
  * - Only available when marks bid won (trump selection option, not bid type)
@@ -11,16 +11,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { baseRuleSet } from '../../../game/layers/base';
-import { sevensRuleSet } from '../../../game/layers/sevens';
+import { baseLayer } from '../../../game/layers/base';
+import { sevensLayer } from '../../../game/layers/sevens';
 import { composeRules } from '../../../game/layers/compose';
 import type { Play, Trick } from '../../../game/types';
 import { BID_TYPES } from '../../../game/constants';
 import { BLANKS } from '../../../game/types';
 import { StateBuilder } from '../../helpers';
 
-describe('Sevens RuleSet Rules', () => {
-  const rules = composeRules([baseRuleSet, sevensRuleSet]);
+describe('Sevens Layer Rules', () => {
+  const rules = composeRules([baseLayer, sevensLayer]);
 
   describe('getValidActions', () => {
     it('should add sevens trump option after marks bid', () => {
@@ -30,7 +30,7 @@ describe('Sevens RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toHaveLength(1);
       expect(actions[0]).toEqual({
@@ -46,7 +46,7 @@ describe('Sevens RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toEqual([]);
     });
@@ -58,7 +58,7 @@ describe('Sevens RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toEqual([]);
     });
@@ -72,7 +72,7 @@ describe('Sevens RuleSet Rules', () => {
       const baseActions = [
         { type: 'select-trump' as const, player: 1, trump: { type: 'suit' as const, suit: BLANKS } }
       ];
-      const actions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toHaveLength(2);
       expect(actions[0]).toEqual(baseActions[0]);
@@ -369,7 +369,7 @@ describe('Sevens RuleSet Rules', () => {
       });
     });
 
-    describe('integration with base ruleSet', () => {
+    describe('integration with base layer', () => {
       it('should not use sevens logic when not sevens trump', () => {
         const state = StateBuilder
           .inPlayingPhase({ type: 'suit', suit: BLANKS })
@@ -411,7 +411,7 @@ describe('Sevens RuleSet Rules', () => {
       const finalState = { ...state, tricks };
       const outcome = rules.checkHandOutcome(finalState);
 
-      // Should be determined by base ruleset after all 7 tricks
+      // Should be determined by base layer after all 7 tricks
       expect(outcome.isDetermined).toBe(true);
     });
 

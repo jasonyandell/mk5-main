@@ -13,7 +13,7 @@
 
 import type { Layer } from './types';
 
-export const tournamentRuleSet: Layer = {
+export const tournamentLayer: Layer = {
   name: 'tournament',
 
   getValidActions: (state, prev) => {

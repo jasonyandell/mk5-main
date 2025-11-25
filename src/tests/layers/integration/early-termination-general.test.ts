@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet, sevensRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, nelloLayer, plungeLayer, splashLayer, sevensLayer } from '../../../game/layers';
 import { StateBuilder } from '../../helpers';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/types';
 
@@ -13,10 +13,10 @@ import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../../game/t
  * - Winner/loser determination is accurate
  */
 describe('Early Termination - General Cross-Contract Tests', () => {
-  const nelloRules = composeRules([baseRuleSet, nelloRuleSet]);
-  const plungeRules = composeRules([baseRuleSet, plungeRuleSet]);
-  const splashRules = composeRules([baseRuleSet, splashRuleSet]);
-  const sevensRules = composeRules([baseRuleSet, sevensRuleSet]);
+  const nelloRules = composeRules([baseLayer, nelloLayer]);
+  const plungeRules = composeRules([baseLayer, plungeLayer]);
+  const splashRules = composeRules([baseLayer, splashLayer]);
+  const sevensRules = composeRules([baseLayer, sevensLayer]);
 
   describe('Remaining Dominoes Stay in Hands', () => {
     it('should keep unplayed dominoes in player hands after nello early termination', () => {

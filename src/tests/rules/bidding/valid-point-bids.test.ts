@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
 import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
-import { composeRules, baseRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer } from '../../../game/layers';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Feature: Standard Bidding - Valid Point Bids', () => {
   describe('Scenario: Valid Point Bids', () => {

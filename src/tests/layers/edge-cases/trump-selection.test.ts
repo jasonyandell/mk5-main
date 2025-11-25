@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet, nelloRuleSet, sevensRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, nelloLayer, sevensLayer } from '../../../game/layers';
 import { getNextStates } from '../../../game/core/state';
 import { createTestContext } from '../../helpers/executionContext';
 import { StateBuilder } from '../../helpers';
@@ -19,9 +19,9 @@ describe('Trump Selection Constraints', () => {
     it('should include nello option when marks bid wins', () => {
       const state = StateBuilder.nelloContract(0).build();
 
-      // Use ruleset to get nello action
+      // Use layer to get nello action
       const baseActions: GameAction[] = [];
-      const nelloActions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const nelloActions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       const nelloOption = nelloActions.find(a =>
         a.type === 'select-trump' &&
@@ -36,7 +36,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.inTrumpSelection(1, 35).build();
 
       const baseActions: GameAction[] = [];
-      const nelloActions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const nelloActions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       const nelloOption = nelloActions.find(a =>
         a.type === 'select-trump' &&
@@ -50,7 +50,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.inBiddingPhase().build();
 
       const baseActions: GameAction[] = [];
-      const nelloActions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const nelloActions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       const nelloOption = nelloActions.find(a =>
         a.type === 'select-trump' &&
@@ -67,7 +67,7 @@ describe('Trump Selection Constraints', () => {
         .build();
 
       const baseActions: GameAction[] = [];
-      const nelloActions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const nelloActions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       const nelloOption = nelloActions.find(a =>
         a.type === 'select-trump' &&
@@ -84,7 +84,7 @@ describe('Trump Selection Constraints', () => {
           .build();
 
         const baseActions: GameAction[] = [];
-        const nelloActions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+        const nelloActions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
         const nelloOption = nelloActions.find(a =>
           a.type === 'select-trump' &&
@@ -101,7 +101,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.sevensContract(3).build();
 
       const baseActions: GameAction[] = [];
-      const sevensActions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const sevensActions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       const sevensOption = sevensActions.find(a =>
         a.type === 'select-trump' &&
@@ -116,7 +116,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.inTrumpSelection(2, 30).build();
 
       const baseActions: GameAction[] = [];
-      const sevensActions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const sevensActions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       const sevensOption = sevensActions.find(a =>
         a.type === 'select-trump' &&
@@ -130,7 +130,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.inBiddingPhase().withCurrentPlayer(1).build();
 
       const baseActions: GameAction[] = [];
-      const sevensActions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const sevensActions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
       const sevensOption = sevensActions.find(a =>
         a.type === 'select-trump' &&
@@ -147,7 +147,7 @@ describe('Trump Selection Constraints', () => {
           .build();
 
         const baseActions: GameAction[] = [];
-        const sevensActions = sevensRuleSet.getValidActions?.(state, baseActions) ?? [];
+        const sevensActions = sevensLayer.getValidActions?.(state, baseActions) ?? [];
 
         const sevensOption = sevensActions.find(a =>
           a.type === 'select-trump' &&
@@ -261,16 +261,16 @@ describe('Trump Selection Constraints', () => {
       expect(trumpActions.length).toBe(9);
     });
 
-    it('should have 11 trump options for marks bid without ruleSets (7 suits + doubles + no-trump + nello + sevens)', () => {
+    it('should have 11 trump options for marks bid without layers (7 suits + doubles + no-trump + nello + sevens)', () => {
       const ctx = createTestContext();
       const state = StateBuilder.nelloContract(1).build();
 
       // Get base actions
       const baseActions = getNextStates(state, ctx).map(t => t.action);
 
-      // Add nello and sevens via ruleSets
-      const withNello = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
-      const withBoth = sevensRuleSet.getValidActions?.(state, withNello) ?? withNello;
+      // Add nello and sevens via layers
+      const withNello = nelloLayer.getValidActions?.(state, baseActions) ?? baseActions;
+      const withBoth = sevensLayer.getValidActions?.(state, withNello) ?? withNello;
 
       const trumpActions = withBoth.filter(a => a.type === 'select-trump');
 
@@ -284,11 +284,11 @@ describe('Trump Selection Constraints', () => {
       expect(hasSevens).toBe(true);
     });
 
-    it('should have exactly 9 options for marks bid if ruleSets not applied', () => {
+    it('should have exactly 9 options for marks bid if layers not applied', () => {
       const ctx = createTestContext();
       const state = StateBuilder.sevensContract(2).build();
 
-      // Without ruleset composition, just base actions
+      // Without layer composition, just base actions
       const baseActions = getNextStates(state, ctx);
       const trumpActions = baseActions.filter(a => a.action.type === 'select-trump');
 
@@ -331,7 +331,7 @@ describe('Trump Selection Constraints', () => {
       const state = StateBuilder.inTrumpSelection(2, 30).build();
 
       // Trump selector = bidder for standard bids
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       const trumpSelector = rules.getTrumpSelector(state, state.currentBid);
       expect(trumpSelector).toBe(2);
 
@@ -348,17 +348,17 @@ describe('Trump Selection Constraints', () => {
       const pointsBid = StateBuilder.inTrumpSelection(0, 35).build();
 
       // Marks bid should allow nello/sevens
-      const marksNello = nelloRuleSet.getValidActions?.(marksBid, []);
+      const marksNello = nelloLayer.getValidActions?.(marksBid, []);
       expect(marksNello?.some(a => a.type === 'select-trump' && a.trump.type === 'nello')).toBe(true);
 
-      const marksSevens = sevensRuleSet.getValidActions?.(marksBid, []);
+      const marksSevens = sevensLayer.getValidActions?.(marksBid, []);
       expect(marksSevens?.some(a => a.type === 'select-trump' && a.trump.type === 'sevens')).toBe(true);
 
       // Points bid should NOT allow nello/sevens
-      const pointsNello = nelloRuleSet.getValidActions?.(pointsBid, []);
+      const pointsNello = nelloLayer.getValidActions?.(pointsBid, []);
       expect(pointsNello?.some(a => a.type === 'select-trump' && a.trump.type === 'nello')).toBe(false);
 
-      const pointsSevens = sevensRuleSet.getValidActions?.(pointsBid, []);
+      const pointsSevens = sevensLayer.getValidActions?.(pointsBid, []);
       expect(pointsSevens?.some(a => a.type === 'select-trump' && a.trump.type === 'sevens')).toBe(false);
     });
 
@@ -388,18 +388,18 @@ describe('Trump Selection Constraints', () => {
   });
 
   describe('Layer Composition Effects', () => {
-    it('should properly compose nello and sevens ruleSets together', () => {
+    it('should properly compose nello and sevens layers together', () => {
       const ctx = createTestContext();
       const state = StateBuilder.nelloContract(0).build();
 
-      composeRules([baseRuleSet, nelloRuleSet, sevensRuleSet]);
+      composeRules([baseLayer, nelloLayer, sevensLayer]);
 
       // Get base actions
       const baseActions = getNextStates(state, ctx).map(t => t.action);
 
-      // Apply both ruleSets
-      const withNello = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
-      const withBoth = sevensRuleSet.getValidActions?.(state, withNello) ?? withNello;
+      // Apply both layers
+      const withNello = nelloLayer.getValidActions?.(state, baseActions) ?? baseActions;
+      const withBoth = sevensLayer.getValidActions?.(state, withNello) ?? withNello;
 
       // Should have both special trump types
       const hasNello = withBoth.some(a =>
@@ -413,35 +413,35 @@ describe('Trump Selection Constraints', () => {
       expect(hasSevens).toBe(true);
     });
 
-    it('should not add duplicate actions when ruleSets composed', () => {
+    it('should not add duplicate actions when layers composed', () => {
       const ctx = createTestContext();
       const state = StateBuilder.nelloContract(2)
         .withWinningBid(2, { type: 'marks', value: 3, player: 2 })
         .build();
 
       const baseActions = getNextStates(state, ctx).map(t => t.action);
-      const withNello1 = nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions;
-      const withNello2 = nelloRuleSet.getValidActions?.(state, withNello1) ?? withNello1;
+      const withNello1 = nelloLayer.getValidActions?.(state, baseActions) ?? baseActions;
+      const withNello2 = nelloLayer.getValidActions?.(state, withNello1) ?? withNello1;
 
-      // Applying nello ruleset twice WILL add duplicate (ruleSets don't check for existing)
+      // Applying nello layer twice WILL add duplicate (layers don't check for existing)
       // This is expected behavior - composition is meant to be done once via composeRules
       const nelloCount = withNello2.filter(a =>
         a.type === 'select-trump' && a.trump.type === 'nello'
       ).length;
 
       // With naive composition, we get 2 (once from each application)
-      // This is fine - the system composes ruleSets once at startup
+      // This is fine - the system composes layers once at startup
       expect(nelloCount).toBeGreaterThanOrEqual(1); // At least one nello option
     });
 
-    it('should preserve standard options when special ruleSets applied', () => {
+    it('should preserve standard options when special layers applied', () => {
       const ctx = createTestContext();
       const state = StateBuilder.sevensContract(1).build();
 
       const baseActions = getNextStates(state, ctx).map(t => t.action);
-      const withLayers = sevensRuleSet.getValidActions?.(
+      const withLayers = sevensLayer.getValidActions?.(
         state,
-        nelloRuleSet.getValidActions?.(state, baseActions) ?? baseActions
+        nelloLayer.getValidActions?.(state, baseActions) ?? baseActions
       ) ?? baseActions;
 
       // Should still have all standard options

@@ -1,5 +1,5 @@
 /**
- * Unit tests for nello ruleset game rules.
+ * Unit tests for nello layer game rules.
  *
  * Nello rules (from docs/rules.md §8.A):
  * - Bidder must lose all tricks
@@ -11,16 +11,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { baseRuleSet } from '../../../game/layers/base';
-import { nelloRuleSet } from '../../../game/layers/nello';
+import { baseLayer } from '../../../game/layers/base';
+import { nelloLayer } from '../../../game/layers/nello';
 import { composeRules } from '../../../game/layers/compose';
 import type { Play } from '../../../game/types';
 import { StateBuilder } from '../../helpers';
 import { BID_TYPES } from '../../../game/constants';
 import { BLANKS, DEUCES, DOUBLES_AS_TRUMP } from '../../../game/types';
 
-describe('Nello RuleSet Rules', () => {
-  const rules = composeRules([baseRuleSet, nelloRuleSet]);
+describe('Nello Layer Rules', () => {
+  const rules = composeRules([baseLayer, nelloLayer]);
 
   describe('getValidActions', () => {
     it('should add nello trump option after marks bid', () => {
@@ -30,7 +30,7 @@ describe('Nello RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toHaveLength(1);
       expect(actions[0]).toEqual({
@@ -46,7 +46,7 @@ describe('Nello RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toEqual([]);
     });
@@ -59,7 +59,7 @@ describe('Nello RuleSet Rules', () => {
         .build();
 
       const baseActions: never[] = [];
-      const actions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       // Nello is not a bid type - it's a trump selection
       expect(actions).toEqual([]);
@@ -74,7 +74,7 @@ describe('Nello RuleSet Rules', () => {
       const baseActions = [
         { type: 'select-trump' as const, player: 1, trump: { type: 'suit' as const, suit: BLANKS } }
       ];
-      const actions = nelloRuleSet.getValidActions?.(state, baseActions) ?? [];
+      const actions = nelloLayer.getValidActions?.(state, baseActions) ?? [];
 
       expect(actions).toHaveLength(2);
       expect(actions[0]).toEqual(baseActions[0]);
@@ -393,7 +393,7 @@ describe('Nello RuleSet Rules', () => {
       const finalState = builder.build();
       const outcome = rules.checkHandOutcome(finalState);
 
-      // Should be determined by base ruleSet after all 7 tricks
+      // Should be determined by base layer after all 7 tricks
       expect(outcome.isDetermined).toBe(true);
     });
 

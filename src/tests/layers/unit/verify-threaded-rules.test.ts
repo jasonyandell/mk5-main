@@ -6,7 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../../game/core/state';
 import { BID_TYPES } from '../../../game/constants';
 import { HandBuilder } from '../../helpers';
-import { createTestContext, createTestContextWithRuleSets } from '../../helpers/executionContext';
+import { createTestContext, createTestContextWithLayers } from '../../helpers/executionContext';
 
 describe('Composed Rules in ExecutionContext', () => {
   it('should use composed rules for bid validation', () => {
@@ -60,9 +60,9 @@ describe('Composed Rules in ExecutionContext', () => {
     expect(validPlays.length).toBeGreaterThan(0);
   });
 
-  it('should support multiple ruleset compositions', () => {
-    // Test with specific rulesets
-    const ctx = createTestContextWithRuleSets(['base', 'nello']);
+  it('should support multiple layer compositions', () => {
+    // Test with specific layers
+    const ctx = createTestContextWithLayers(['base', 'nello']);
 
     const rules = ctx.rules;
     expect(rules).toBeDefined();

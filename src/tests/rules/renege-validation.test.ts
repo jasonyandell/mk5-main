@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/layers/compose';
-import { baseRuleSet } from '../../game/layers';
+import { baseLayer } from '../../game/layers';
 import { canFollowSuit } from '../../game/core/rules';
 import { getDominoSuit } from '../../game/core/dominoes';
 import type { Domino, TrumpSelection } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
 
-const rules = composeRules([baseRuleSet]);
+const rules = composeRules([baseLayer]);
 
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {

@@ -1,25 +1,25 @@
 /**
  * Tests for OneHand Layer
  *
- * Verifies that oneHandRuleSet properly:
+ * Verifies that oneHandLayer properly:
  * - Overrides phase transition logic to create terminal state
  * - Provides action automation for bidding/trump selection
  */
 
 import { describe, it, expect } from 'vitest';
-import { oneHandRuleSet } from '../../../game/layers/oneHand';
-import { baseRuleSet } from '../../../game/layers/base';
+import { oneHandLayer } from '../../../game/layers/oneHand';
+import { baseLayer } from '../../../game/layers/base';
 import { composeRules } from '../../../game/layers/compose';
 import type { GameState } from '../../../game/types';
 
-describe('OneHand RuleSet', () => {
+describe('OneHand Layer', () => {
   describe('getPhaseAfterHandComplete', () => {
     it('should return one-hand-complete phase', () => {
       // Create minimal state (actual state doesn't matter for this rule)
       const state = {} as GameState;
 
-      // Get the rule from oneHandRuleSet
-      const rule = oneHandRuleSet.rules?.getPhaseAfterHandComplete;
+      // Get the rule from oneHandLayer
+      const rule = oneHandLayer.rules?.getPhaseAfterHandComplete;
       expect(rule).toBeDefined();
 
       // Call rule (prev parameter not used in oneHand implementation)
@@ -30,12 +30,12 @@ describe('OneHand RuleSet', () => {
 
     it('should override base behavior when composed', () => {
       // Compose base + oneHand
-      const composed = composeRules([baseRuleSet, oneHandRuleSet]);
+      const composed = composeRules([baseLayer, oneHandLayer]);
 
       const state = {} as GameState;
 
       // Base alone would return 'bidding'
-      const basePhase = baseRuleSet.rules!.getPhaseAfterHandComplete!(state, 'bidding');
+      const basePhase = baseLayer.rules!.getPhaseAfterHandComplete!(state, 'bidding');
       expect(basePhase).toBe('bidding');
 
       // Composed with oneHand should return 'one-hand-complete'
@@ -43,10 +43,10 @@ describe('OneHand RuleSet', () => {
       expect(composedPhase).toBe('one-hand-complete');
     });
 
-    it('should work in composition with other rulesets', () => {
+    it('should work in composition with other layers', () => {
       // Verify oneHand can compose with base (no conflicts)
-      const ruleSets = [baseRuleSet, oneHandRuleSet];
-      const composed = composeRules(ruleSets);
+      const layers = [baseLayer, oneHandLayer];
+      const composed = composeRules(layers);
 
       const state = {} as GameState;
 
@@ -60,19 +60,19 @@ describe('OneHand RuleSet', () => {
     });
   });
 
-  describe('ruleset structure', () => {
+  describe('layer structure', () => {
     it('should have correct name', () => {
-      expect(oneHandRuleSet.name).toBe('oneHand');
+      expect(oneHandLayer.name).toBe('oneHand');
     });
 
     it('should override getPhaseAfterHandComplete rule', () => {
-      expect(oneHandRuleSet.rules).toBeDefined();
-      expect(Object.keys(oneHandRuleSet.rules!)).toEqual(['getPhaseAfterHandComplete']);
+      expect(oneHandLayer.rules).toBeDefined();
+      expect(Object.keys(oneHandLayer.rules!)).toEqual(['getPhaseAfterHandComplete']);
     });
 
     it('should provide getValidActions for automation', () => {
-      expect(oneHandRuleSet.getValidActions).toBeDefined();
-      expect(typeof oneHandRuleSet.getValidActions).toBe('function');
+      expect(oneHandLayer.getValidActions).toBeDefined();
+      expect(typeof oneHandLayer.getValidActions).toBe('function');
     });
   });
 });

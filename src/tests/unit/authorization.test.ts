@@ -6,7 +6,7 @@ import { createInitialState, executeAction } from '../../game';
 import { getNextPlayer } from '../../game/core/players';
 import { createTestContext } from '../helpers/executionContext';
 import { StateBuilder } from '../helpers/stateBuilder';
-import { composeRules, baseRuleSet } from '../../game/layers';
+import { composeRules, baseLayer } from '../../game/layers';
 
 describe('Authorization', () => {
   // Helper to create test sessions
@@ -105,7 +105,7 @@ describe('Authorization', () => {
 
     it('correctly handles bid actions with capabilities', () => {
       const ctx = createTestContext();
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       // Advance state so player 2 is current player
       let state = createInitialState();
       state = executeAction(state, { type: 'pass', player: 0 }, rules);
@@ -123,7 +123,7 @@ describe('Authorization', () => {
 
     it('correctly handles trump selection actions with capabilities', () => {
       const ctx = createTestContext();
-      const rules = composeRules([baseRuleSet]);
+      const rules = composeRules([baseLayer]);
       // Complete bidding with player 1 as winner, advance to trump_selection
       let state = createInitialState();
       state = executeAction(state, { type: 'pass', player: 0 }, rules);

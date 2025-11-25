@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
 import { EMPTY_BID } from '../../../game/types';
 import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
-import { composeRules, baseRuleSet, plungeRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, plungeLayer } from '../../../game/layers';
 
 // Opening bid constraints include plunge as valid exception (casual rules)
-const rules = composeRules([baseRuleSet, plungeRuleSet]);
+const rules = composeRules([baseLayer, plungeLayer]);
 
 describe('Feature: Standard Bidding - Opening Bid Constraints', () => {
   describe('Scenario: Opening Bid Constraints', () => {

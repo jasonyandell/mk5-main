@@ -10,7 +10,7 @@
 
 import { createDoublesBidLayer } from './doubles-bid-factory';
 
-export const plungeRuleSet = createDoublesBidLayer({
+export const plungeLayer = createDoublesBidLayer({
   name: 'plunge',
   minDoubles: 4,
   minValue: 4

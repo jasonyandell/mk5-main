@@ -85,7 +85,7 @@ describe('Sevens Full Hand Integration', () => {
 
         expect(playActions.length).toBeGreaterThan(0);
 
-        // Sevens is deterministic - ruleset already enforces "closest to 7"
+        // Sevens is deterministic - layer already enforces "closest to 7"
         // No strategy needed, just play the first valid action
         room.executeAction(playerIndex, playActions[0]!.action);
       }

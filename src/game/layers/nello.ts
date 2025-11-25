@@ -6,7 +6,7 @@
  * - Nello is selected as trump during trump_selection phase
  * - Partner sits out with dominoes face-down (3-player tricks)
  * - No trump suit declared
- * - Doubles form own suit (standard variant)
+ * - Doubles form own suit (standard)
  * - Objective: Bidder must lose every trick
  * - Bidder leads normally
  */
@@ -17,7 +17,7 @@ import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome } from './helpers
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { BID_TYPES } from '../constants';
 
-export const nelloRuleSet: Layer = {
+export const nelloLayer: Layer = {
   name: 'nello',
 
   getValidActions: (state, prev) => {

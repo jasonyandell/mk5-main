@@ -1,6 +1,6 @@
 import type { GameState, GameAction, TrumpSelection, Bid, Play, Trick, LedSuit } from '../types';
 import type { GameRules } from '../layers/types';
-import { composeRules, baseRuleSet } from '../layers';
+import { composeRules, baseLayer } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
@@ -10,8 +10,8 @@ import { analyzeSuits } from './suit-analysis';
 import { analyzeBiddingCompletion } from './bidding';
 import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
 
-// Default rules (base rule set only, no special contracts)
-const defaultRules = composeRules([baseRuleSet]);
+// Default rules (base layer only, no special contracts)
+const defaultRules = composeRules([baseLayer]);
 
 /**
  * Pure function that executes an action on a game state.

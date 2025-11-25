@@ -1,7 +1,7 @@
 /**
- * Tests for ruleset override behavior.
+ * Tests for layer override behavior.
  *
- * Verifies that ruleSets correctly override base rules when appropriate:
+ * Verifies that layers correctly override base rules when appropriate:
  * - Nello overrides for 3-player gameplay
  * - Plunge/Splash override trump selector (partner)
  * - Sevens overrides trick winner calculation
@@ -9,11 +9,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { composeRules, baseRuleSet, nelloRuleSet, plungeRuleSet, splashRuleSet, sevensRuleSet } from '../../../game/layers';
+import { composeRules, baseLayer, nelloLayer, plungeLayer, splashLayer, sevensLayer } from '../../../game/layers';
 import type { GameState, Bid, Play, Domino } from '../../../game/types';
 import { createInitialState } from '../../../game/core/state';
 
-describe('RuleSet Override Behavior', () => {
+describe('Layer Override Behavior', () => {
   function createTestState(overrides: Partial<GameState> = {}): GameState {
     const base = createInitialState();
     return {
@@ -22,8 +22,8 @@ describe('RuleSet Override Behavior', () => {
     };
   }
 
-  describe('Nello ruleset overrides', () => {
-    const rules = composeRules([baseRuleSet, nelloRuleSet]);
+  describe('Nello layer overrides', () => {
+    const rules = composeRules([baseLayer, nelloLayer]);
 
     describe('getNextPlayer (3-player vs 4-player)', () => {
       it('should skip partner in nello', () => {
@@ -180,7 +180,7 @@ describe('RuleSet Override Behavior', () => {
   });
 
   describe('Plunge/Splash override getTrumpSelector (partner vs bidder)', () => {
-    const rules = composeRules([baseRuleSet, plungeRuleSet, splashRuleSet]);
+    const rules = composeRules([baseLayer, plungeLayer, splashLayer]);
 
     it('should have partner select trump for plunge', () => {
       const state = createTestState();
@@ -209,7 +209,7 @@ describe('RuleSet Override Behavior', () => {
   });
 
   describe('Plunge/Splash/Sevens override checkHandOutcome (early termination)', () => {
-    const rules = composeRules([baseRuleSet, plungeRuleSet, splashRuleSet, sevensRuleSet]);
+    const rules = composeRules([baseLayer, plungeLayer, splashLayer, sevensLayer]);
 
     it('should end plunge early if opponents win any trick', () => {
       const state = createTestState({
@@ -298,7 +298,7 @@ describe('RuleSet Override Behavior', () => {
   });
 
   describe('Sevens overrides calculateTrickWinner (closest to 7)', () => {
-    const rules = composeRules([baseRuleSet, sevensRuleSet]);
+    const rules = composeRules([baseLayer, sevensLayer]);
 
     it('should pick domino closest to 7 total pips', () => {
       const state = createTestState({ trump: { type: 'sevens' } });
@@ -340,7 +340,7 @@ describe('RuleSet Override Behavior', () => {
 
   describe('Overrides only apply when trump type matches', () => {
     it('should not apply nello overrides when trump is not nello', () => {
-      const rules = composeRules([baseRuleSet, nelloRuleSet]);
+      const rules = composeRules([baseLayer, nelloLayer]);
 
       const state = createTestState({
         trump: { type: 'suit', suit: 1 },
@@ -360,7 +360,7 @@ describe('RuleSet Override Behavior', () => {
     });
 
     it('should not apply sevens overrides when trump is not sevens', () => {
-      const rules = composeRules([baseRuleSet, sevensRuleSet]);
+      const rules = composeRules([baseLayer, sevensLayer]);
 
       const state = createTestState({
         trump: { type: 'doubles' },
@@ -379,7 +379,7 @@ describe('RuleSet Override Behavior', () => {
 
   describe('Overrides only apply when bid type matches', () => {
     it('should not apply plunge overrides when bid is not plunge', () => {
-      const rules = composeRules([baseRuleSet, plungeRuleSet]);
+      const rules = composeRules([baseLayer, plungeLayer]);
 
       const state = createTestState();
       const marksBid: Bid = { type: 'marks', value: 2, player: 1 };
@@ -389,7 +389,7 @@ describe('RuleSet Override Behavior', () => {
     });
 
     it('should not apply splash overrides when bid is not splash', () => {
-      const rules = composeRules([baseRuleSet, splashRuleSet]);
+      const rules = composeRules([baseLayer, splashLayer]);
 
       const state = createTestState();
       const pointsBid: Bid = { type: 'points', value: 30, player: 2 };
@@ -399,7 +399,7 @@ describe('RuleSet Override Behavior', () => {
     });
 
     it('should not end early for regular bids', () => {
-      const rules = composeRules([baseRuleSet, plungeRuleSet, splashRuleSet]);
+      const rules = composeRules([baseLayer, plungeLayer, splashLayer]);
 
       const state = createTestState({
         winningBidder: 0,
