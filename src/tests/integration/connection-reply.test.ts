@@ -1,106 +1,85 @@
 /**
- * Test for Connection.reply() pattern.
+ * Test for Room send callback pattern.
  *
- * This test verifies that AI clients can receive SUBSCRIBE responses without
- * requiring Room.transport to be set. The bug: when AI clients send SUBSCRIBE
- * in their constructor, Room tries to reply via this.transport which is null.
- *
- * Solution: Each Connection should know how to reply to itself via reply() method.
+ * The new architecture passes a send callback to Room's constructor.
+ * This ensures Room can send messages immediately without initialization order issues.
  */
 
 import { describe, it, expect, vi } from 'vitest';
 import { Room } from '../../server/Room';
-import { aiCapabilities } from '../../game/multiplayer/capabilities';
 import type { GameConfig } from '../../game/types/config';
-import type { PlayerSession } from '../../game/multiplayer/types';
+import type { ServerMessage } from '../../multiplayer/protocol';
 
-describe('Connection.reply() pattern', () => {
-  it('should allow AI clients to receive SUBSCRIBE response without Room.transport', () => {
-    // Setup: Create game with AI players only
+describe('Room send callback pattern', () => {
+  it('should send messages via callback without errors', () => {
     const config: GameConfig = {
       playerTypes: ['ai', 'ai', 'ai', 'ai'],
       shuffleSeed: 12345
     };
 
-    const gameId = 'test-connection-reply';
+    const sentMessages: Map<string, ServerMessage[]> = new Map();
 
-    // Create player sessions
-    const sessions: PlayerSession[] = config.playerTypes!.map((type, index) => {
-      const idx = index as 0 | 1 | 2 | 3;
-      const capabilities = aiCapabilities(idx);
-
-      return {
-        playerId: `ai-${index}`,
-        playerIndex: idx,
-        controlType: type,
-        isConnected: true,
-        name: `Player ${index + 1}`,
-        capabilities
-      };
-    });
-
-    // Spy on console.error to catch "sendMessage called before transport was set"
+    // Spy on console.error to catch any errors
     const consoleErrorSpy = vi.spyOn(console, 'error');
 
-    // Create Room but NEVER call setTransport
-    // AI clients will send SUBSCRIBE in their constructor
-    new Room(gameId, config, sessions);
+    // Create Room with send callback - no Transport needed
+    const room = new Room(config, (clientId, message) => {
+      const messages = sentMessages.get(clientId) ?? [];
+      messages.push(message);
+      sentMessages.set(clientId, messages);
+    });
 
-    // Check for the specific error we're trying to fix
+    // Connect clients and verify messages are sent
+    room.handleConnect('client-1');
+
+    // Check for errors
     const errorCalls = consoleErrorSpy.mock.calls;
-    const sendMessageErrors = errorCalls.filter(call =>
-      call.some(arg => String(arg).includes('sendMessage called before transport was set'))
-    );
-
-    // Restore console.error
     consoleErrorSpy.mockRestore();
 
-    // TEST: AI clients should receive SUBSCRIBE response without error
-    // This will FAIL initially, proving we replicate the bug
-    // After implementing connection.reply(), this should PASS
-    expect(sendMessageErrors.length).toBe(0);
+    // No errors should occur
+    expect(errorCalls.length).toBe(0);
+
+    // Client should have received initial state
+    const messages = sentMessages.get('client-1') ?? [];
+    expect(messages.length).toBe(1);
+    expect(messages[0]?.type).toBe('STATE_UPDATE');
   });
 
-  it('should handle multiple AI clients subscribing simultaneously', () => {
-    // Setup: Create game with AI players only
+  it('should handle multiple clients connecting simultaneously', () => {
     const config: GameConfig = {
-      playerTypes: ['ai', 'ai', 'ai', 'ai'],
+      playerTypes: ['human', 'human', 'human', 'human'],
       shuffleSeed: 99999
     };
 
-    const gameId = 'test-multi-subscribe';
-
-    // Create player sessions
-    const sessions: PlayerSession[] = config.playerTypes!.map((type, index) => {
-      const idx = index as 0 | 1 | 2 | 3;
-      const capabilities = aiCapabilities(idx);
-
-      return {
-        playerId: `ai-${index}`,
-        playerIndex: idx,
-        controlType: type,
-        isConnected: true,
-        name: `AI Player ${index + 1}`,
-        capabilities
-      };
-    });
+    const sentMessages: Map<string, ServerMessage[]> = new Map();
 
     // Spy on console.error
     const consoleErrorSpy = vi.spyOn(console, 'error');
 
-    // Create Room - all 4 AIs will subscribe in constructor
-    new Room(gameId, config, sessions);
+    // Create Room with send callback
+    const room = new Room(config, (clientId, message) => {
+      const messages = sentMessages.get(clientId) ?? [];
+      messages.push(message);
+      sentMessages.set(clientId, messages);
+    });
+
+    // Connect all 4 players
+    for (let i = 0; i < 4; i++) {
+      room.handleConnect(`client-${i}`);
+    }
 
     // Check for errors
     const errorCalls = consoleErrorSpy.mock.calls;
-    const sendMessageErrors = errorCalls.filter(call =>
-      call.some(arg => String(arg).includes('sendMessage called before transport was set'))
-    );
-
-    // Restore console.error
     consoleErrorSpy.mockRestore();
 
-    // TEST: All AI clients should receive responses without error
-    expect(sendMessageErrors.length).toBe(0);
+    // No errors should occur
+    expect(errorCalls.length).toBe(0);
+
+    // All clients should have received initial state
+    for (let i = 0; i < 4; i++) {
+      const messages = sentMessages.get(`client-${i}`) ?? [];
+      expect(messages.length).toBe(1);
+      expect(messages[0]?.type).toBe('STATE_UPDATE');
+    }
   });
 });

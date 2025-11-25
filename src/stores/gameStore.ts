@@ -1,22 +1,21 @@
 import { writable, derived, get, type Readable } from 'svelte/store';
 import type { GameAction, FilteredGameState } from '../game/types';
-import { NetworkGameClient } from '../game/multiplayer/NetworkGameClient';
-import type { Capability } from '../game/multiplayer/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 import { createSetupState } from '../game/core/state';
-import { humanCapabilities, aiCapabilities } from '../game/multiplayer/capabilities';
 import type { GameView, PlayerInfo } from '../shared/multiplayer/protocol';
 import { decodeGameUrl } from '../game/core/url-compression';
+import { createLocalGame, type LocalGame } from '../multiplayer/local';
+import { GameClient } from '../multiplayer/GameClient';
 import type { Room } from '../server/Room';
+import { resolveActionIds } from '../game/core/action-resolution';
 
 /**
- * GameStore - Clean facade over Room/Transport/NetworkGameClient complexity.
+ * GameStore - Clean facade over the simplified Room/Socket/GameClient architecture.
  *
  * Philosophy:
- * - Hide all Room/Transport/Connection wiring
- * - Export minimal surface area (7 items total)
- * - Single method for Room creation (no duplication)
+ * - Uses createLocalGame() for all game wiring
+ * - Fire-and-forget actions, updates via subscription
  * - Client is dumb - server handles ALL game logic
  */
 
@@ -73,8 +72,8 @@ function createPendingView(): GameView {
  * Private GameStore implementation - encapsulates all complexity.
  */
 class GameStoreImpl {
-  // Internal state
-  private client?: NetworkGameClient;
+  // Internal state - new simplified architecture
+  private localGame?: LocalGame;
   private unsubscribe?: (() => void) | undefined;
 
   // Internal stores
@@ -125,8 +124,8 @@ class GameStoreImpl {
           isTestMode: testMode,
           canAct,
           isAIControlled: (player: number) => {
-            const playerInfo = $view.players.find(p => p.playerId === player);
-            return playerInfo?.controlType === 'ai';
+            const pInfo = $view.players.find(p => p.playerId === player);
+            return pInfo?.controlType === 'ai';
           },
           ...(playerInfo ? { viewingPlayerIndex: playerInfo.playerId } : {})
         };
@@ -159,7 +158,7 @@ class GameStoreImpl {
       // Check if we have URL parameters to load from
       if (typeof window === 'undefined') {
         // SSR - initialize with default config
-        await this.wireUpGame({
+        this.wireUpGame({
           playerTypes,
           shuffleSeed: Math.floor(Math.random() * 1000000)
         });
@@ -186,10 +185,10 @@ class GameStoreImpl {
         };
 
         // Initialize game with URL config and replay actions if present
-        await this.wireUpGame(config, urlData.actions.length > 0 ? urlData.actions : undefined);
+        this.wireUpGame(config, urlData.actions.length > 0 ? urlData.actions : undefined);
       } else {
         // No URL state - initialize with default config
-        await this.wireUpGame({
+        this.wireUpGame({
           playerTypes,
           shuffleSeed: Math.floor(Math.random() * 1000000)
         });
@@ -197,7 +196,7 @@ class GameStoreImpl {
     } catch (error) {
       console.error('Failed to initialize from URL:', error);
       // Fallback to default initialization
-      await this.wireUpGame({
+      this.wireUpGame({
         playerTypes,
         shuffleSeed: Math.floor(Math.random() * 1000000)
       });
@@ -205,87 +204,68 @@ class GameStoreImpl {
   }
 
   /**
-   * Core method: Wire up Room + Transport + NetworkGameClient.
-   * This is the ONLY place where Room/Transport/Client are created.
+   * Core method: Create game using new simplified architecture.
+   * Uses createLocalGame() which handles Room + Socket wiring.
    * @param config - Game configuration
    * @param actionIds - Optional action IDs to replay after Room creation
    */
-  private async wireUpGame(config: GameConfig, actionIds?: string[]): Promise<void> {
-    // Dynamic imports
-    const { Room } = await import('../server/Room');
-    const { InProcessTransport } = await import('../server/transports/InProcessTransport');
-
-    // Create game ID
-    const gameId = `game-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-
-    // Create player sessions from config
-    const sessions = (config.playerTypes ?? playerTypes).map((type, index) => {
-      const idx = index as 0 | 1 | 2 | 3;
-      const capabilities = type === 'human'
-        ? humanCapabilities(idx)
-        : aiCapabilities(idx);
-
-      return {
-        playerId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
-        playerIndex: idx,
-        controlType: type,
-        isConnected: true,
-        name: `Player ${index + 1}`,
-        capabilities: capabilities.map((cap: Capability) => ({ ...cap }))
-      };
-    });
-
-    // 1. Create Room
-    const room = new Room(gameId, config, sessions);
-
-    // 1a. If we have actions to replay, do it now before setting up transport
-    if (actionIds && actionIds.length > 0) {
-      await this.replayActionsInRoom(room, actionIds, config);
+  private wireUpGame(config: GameConfig, actionIds?: string[]): void {
+    // Clean up old game
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+    if (this.localGame) {
+      this.localGame.client.disconnect();
     }
 
-    // 2. Create Transport for human clients
-    const transport = new InProcessTransport();
+    // Determine AI configuration based on test mode
+    // In test mode, all players are human (no AI)
+    const configPlayerTypes = config.playerTypes ?? playerTypes;
+    const aiPlayerIndexes = configPlayerTypes
+      .map((type, index) => type === 'ai' ? index : -1)
+      .filter(index => index >= 0);
 
-    // 3. Wire transport to room
-    transport.setRoom(room);
+    // Create new game using simplified architecture
+    // If replaying actions, skip AI behavior until after replay completes
+    const hasActionsToReplay = actionIds !== undefined && actionIds.length > 0;
+    this.localGame = createLocalGame(config, {
+      aiPlayerIndexes,
+      skipAIBehavior: hasActionsToReplay
+    });
 
-    // 4. Create connection from transport
-    const connection = transport.connect('player-0');
+    // Replay actions if provided (before subscribing to avoid intermediate updates)
+    if (hasActionsToReplay) {
+      this.replayActionsInRoom(this.localGame.room, actionIds, config);
+      // Now attach AI behavior so they see the post-replay state
+      this.localGame.attachAI();
+    }
 
-    // 5. Create NetworkGameClient
-    const newClient = new NetworkGameClient(connection, config);
+    // Subscribe to view updates
+    this.installClient(this.localGame.client);
 
-    // 6. Install new client
-    await this.installClient(newClient);
+    // Send JOIN to associate with player-0
+    this.localGame.client.send({ type: 'JOIN', playerIndex: 0, name: 'Player 1' });
   }
 
   /**
-   * Install a new NetworkGameClient and set up subscriptions.
+   * Install a GameClient and set up subscriptions.
    */
-  private async installClient(newClient: NetworkGameClient): Promise<void> {
+  private installClient(client: GameClient): void {
     // Unsubscribe from old client
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = undefined;
     }
 
-    // Store new client
-    this.client = newClient;
-
-    // Get initial view
-    try {
-      const view = await newClient.getView();
+    // Subscribe to updates
+    this.unsubscribe = client.subscribe((view: GameView) => {
       this.clientView.set(view);
+    });
 
-      // Subscribe to updates
-      this.unsubscribe = newClient.subscribe(view => {
-        this.clientView.set(view);
-      });
-
-      // Set perspective
-      await this.setPerspective(DEFAULT_SESSION_ID);
-    } catch (error) {
-      console.error('Failed to initialize game client:', error);
+    // Set initial view if available
+    if (client.view) {
+      this.clientView.set(client.view);
     }
   }
 
@@ -293,10 +273,7 @@ class GameStoreImpl {
    * Replay actions directly in the Room (before client connection).
    * Uses the same approach as HeadlessRoom replay for deterministic state restoration.
    */
-  private async replayActionsInRoom(room: Room, actionIds: string[], config: GameConfig): Promise<void> {
-    // Import action resolution utilities
-    const { resolveActionIds } = await import('../game/core/action-resolution');
-
+  private replayActionsInRoom(room: Room, actionIds: string[], config: GameConfig): void {
     try {
       const seed = config.shuffleSeed;
       if (!seed) {
@@ -304,7 +281,7 @@ class GameStoreImpl {
         return;
       }
 
-      // Resolve action IDs to GameActions
+      // Resolve action IDs to GameActions (uses HeadlessRoom internally)
       const actions = resolveActionIds(actionIds, config, seed);
 
       // Execute each action directly in the Room
@@ -317,7 +294,7 @@ class GameStoreImpl {
 
         // Determine which player should execute this action
         const playerIndex = this.getPlayerIndexForAction(action);
-        const playerId = `${config.playerTypes?.[playerIndex] === 'human' ? 'player' : 'ai'}-${playerIndex}`;
+        const playerId = `player-${playerIndex}`;
 
         // Execute the action in the Room
         const result = room.executeAction(playerId, action);
@@ -357,11 +334,14 @@ class GameStoreImpl {
   // PUBLIC API
   // ========================================================================
 
-  async executeAction(action: GameAction): Promise<void> {
-    if (!this.client) throw new Error('Game not initialized');
+  /**
+   * Execute a game action. Fire-and-forget - result comes via subscription.
+   */
+  executeAction(action: GameAction): void {
+    if (!this.localGame) throw new Error('Game not initialized');
 
-    const sessionId = get(this.currentPerspective);
     const view = get(this.clientView);
+    const sessionId = get(this.currentPerspective);
     const currentPlayer = view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === sessionId);
 
     if (!currentPlayer || !currentPlayer.capabilities?.some(cap => cap.type === 'act-as-player')) {
@@ -373,48 +353,62 @@ class GameStoreImpl {
       preparedAction.player = currentPlayer.playerId;
     }
 
-    const result = await this.client.executeAction({
-      playerId: sessionId,
-      action: preparedAction
-    });
-
-    if (!result.success) {
-      console.error('Action failed:', result.error);
-      throw new Error(result.error);
-    }
+    // Fire-and-forget - result comes via subscription
+    this.localGame.client.send({ type: 'EXECUTE_ACTION', action: preparedAction });
   }
 
-  async createGame(config?: GameConfig): Promise<void> {
+  /**
+   * Create a new game with optional config.
+   */
+  createGame(config?: GameConfig): void {
     const finalConfig = config ?? {
       playerTypes,
       shuffleSeed: Math.floor(Math.random() * 1000000)
     };
-    await this.wireUpGame(finalConfig);
+    this.wireUpGame(finalConfig);
   }
 
-  async resetGame(): Promise<void> {
-    await this.createGame();
+  /**
+   * Reset the game with default config.
+   */
+  resetGame(): void {
+    this.createGame();
   }
 
-  async setPerspective(playerId: string): Promise<void> {
+  /**
+   * Change the current viewing perspective.
+   * Sends JOIN message to Room to switch player association.
+   */
+  setPerspective(playerId: string): void {
     const current = get(this.currentSessionIdStore);
     if (current !== playerId) {
       this.currentSessionIdStore.set(playerId);
     }
 
-    if (!this.client) {
+    if (!this.localGame) {
       throw new Error('Game client not yet initialized');
     }
 
-    await this.client.setPlayerId(playerId);
+    // Extract player index from playerId (e.g., "player-2" -> 2)
+    const match = playerId.match(/player-(\d+)/);
+    if (match && match[1]) {
+      const playerIndex = parseInt(match[1], 10);
+      this.localGame.client.send({ type: 'JOIN', playerIndex, name: `Player ${playerIndex + 1}` });
+    }
   }
 
-  async setPlayerControl(playerIndex: number, type: 'human' | 'ai'): Promise<void> {
-    if (!this.client) throw new Error('Game not initialized');
-    await this.client.setPlayerControl(playerIndex, type);
+  /**
+   * Change a player's control type (human/AI).
+   */
+  setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
+    if (!this.localGame) throw new Error('Game not initialized');
+    this.localGame.client.send({ type: 'SET_CONTROL', playerIndex, controlType: type });
   }
 
-  async startOneHand(seed?: number): Promise<void> {
+  /**
+   * Start one-hand mode with optional seed.
+   */
+  startOneHand(seed?: number): void {
     // oneHand layer handles bidding automation, terminal phase, and action generation
     const config: GameConfig = {
       playerTypes,
@@ -423,19 +417,25 @@ class GameStoreImpl {
     };
 
     this.findingSeedStore.set(false);
-    await this.wireUpGame(config);
+    this.wireUpGame(config);
   }
 
-  async retryOneHand(): Promise<void> {
+  /**
+   * Retry one-hand mode with the same seed.
+   */
+  retryOneHand(): void {
     const view = get(this.clientView);
     if (!view.state.shuffleSeed) {
       throw new Error('No seed available to retry');
     }
-    await this.startOneHand(view.state.shuffleSeed);
+    this.startOneHand(view.state.shuffleSeed);
   }
 
-  async exitOneHand(): Promise<void> {
-    await this.resetGame();
+  /**
+   * Exit one-hand mode and return to normal game.
+   */
+  exitOneHand(): void {
+    this.resetGame();
   }
 
   // One-hand state (derived)
@@ -460,6 +460,11 @@ class GameStoreImpl {
 
   get findingSeed() {
     return this.findingSeedStore;
+  }
+
+  // Internal accessor for testing
+  get client(): GameClient | undefined {
+    return this.localGame?.client;
   }
 }
 
@@ -507,7 +512,7 @@ export const findingSeed = store.findingSeed;
  * @internal
  */
 export function getInternalClient() {
-  return store['client'];
+  return store.client;
 }
 
 /**

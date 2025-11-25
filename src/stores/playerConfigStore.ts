@@ -77,15 +77,19 @@ export async function applyConfiguration(config: PlayerConfig[]): Promise<void> 
 /**
  * Switch a specific player between human and AI
  */
-export async function togglePlayerControl(playerId: number): Promise<void> {
+export function togglePlayerControl(playerId: number): void {
   const client = getInternalClient();
   if (!client) return;
-  const currentView = await client.getView();
+
+  // Use the public view property from GameClient (not a promise)
+  const currentView = client.view;
+  if (!currentView) return;
+
   const currentPlayer = currentView.players.find(p => p.playerId === playerId);
   const isHuman = currentPlayer?.controlType === 'human';
 
   const newType = isHuman ? 'ai' : 'human';
-  await game.setPlayerControl(playerId, newType);
+  game.setPlayerControl(playerId, newType);
 
   // Update the store
   playerConfigs.update(configs => {

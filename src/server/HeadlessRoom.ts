@@ -17,7 +17,6 @@
 import { Room } from './Room';
 import type { GameConfig } from '../game/types/config';
 import type { GameAction, GameState } from '../game/types';
-import type { PlayerSession } from '../game/multiplayer/types';
 import type { ValidAction } from '../shared/multiplayer/protocol';
 
 /**
@@ -48,26 +47,14 @@ export class HeadlessRoom {
       ...(seed !== undefined ? { shuffleSeed: seed } : {})
     };
 
-    // Create 4 player sessions (all AI for tools)
-    const playerTypes = config.playerTypes ?? ['ai', 'ai', 'ai', 'ai'];
-    const initialPlayers: PlayerSession[] = playerTypes.map((type, index) => ({
-      playerId: `player-${index}`,
-      playerIndex: index,
-      controlType: type,
-      isConnected: true
-      // capabilities: undefined - Room will populate with buildBaseCapabilities
-    } as PlayerSession));
-
-    // Create Room with unique game ID
-    const gameId = `headless-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    this.room = new Room(gameId, fullConfig, initialPlayers);
+    // Create Room with no-op send (headless doesn't need to send messages)
+    this.room = new Room(fullConfig, () => {});
 
     // Build player index -> ID map for convenience
+    const playerTypes = config.playerTypes ?? ['ai', 'ai', 'ai', 'ai'];
     this.playerIdMap = new Map(
-      initialPlayers.map(p => [p.playerIndex, p.playerId])
+      playerTypes.map((_, index) => [index, `player-${index}`])
     );
-
-    // Note: No transport needed - we bypass the protocol layer entirely
   }
 
   /**

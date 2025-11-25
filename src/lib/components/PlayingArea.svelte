@@ -86,11 +86,13 @@
     // Set debounce flag
     actionPending = true;
 
-    // Execute the action
-    game.executeAction(proceedAction.action).finally(() => {
-      // Clear debounce flag
+    // Execute the action (fire-and-forget in new architecture)
+    game.executeAction(proceedAction.action);
+
+    // Clear debounce flag after a short delay
+    setTimeout(() => {
       actionPending = false;
-    });
+    }, 100);
   }
 
   // Handle table click

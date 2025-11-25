@@ -5,6 +5,11 @@ import { Room } from '../../server/Room';
 // Tournament layer filters out special contracts (nello, splash, plunge)
 // These tests verify that at the Room level (action generation)
 
+/** Create a Room with no-op send callback for testing */
+function createRoom(config: GameConfig): Room {
+  return new Room(config, () => {});
+}
+
 describe('Tournament Layer Authority', () => {
   it('prevents executing bids that tournament layer filters', () => {
     const config: GameConfig = {
@@ -12,19 +17,7 @@ describe('Tournament Layer Authority', () => {
       layers: ['tournament']
     };
 
-    const players = config.playerTypes.map((type, i) => ({
-      playerId: type === 'human' ? `player-${i}` : `ai-${i}`,
-      playerIndex: i as 0 | 1 | 2 | 3,
-      controlType: type,
-      isConnected: true,
-      name: `Player ${i + 1}`,
-      capabilities: [
-        { type: 'act-as-player' as const, playerIndex: i as 0 | 1 | 2 | 3 },
-        { type: 'observe-hands' as const, playerIndices: [i] }
-      ]
-    }));
-
-    const room = new Room('tournament-test', config, players);
+    const room = createRoom(config);
 
     const currentPlayer = room.getView('player-0').state.currentPlayer;
 
