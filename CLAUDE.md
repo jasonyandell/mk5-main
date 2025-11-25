@@ -13,12 +13,30 @@
 
 **Epic Management** (use bd's native parent-child relationships):
 - ✅ `bd --no-daemon create "Epic Title" --type epic` - Create epic
-- ✅ `bd --no-daemon create "Child Task" --parent <epic-id>` - Create child task under epic
 - ✅ `bd --no-daemon dep add <child-id> <epic-id> --type parent-child` - Link existing task to epic
 - ✅ `bd --no-daemon dep tree <epic-id> --reverse` - Show all children of epic (with dependency tree)
 - ✅ `bd --no-daemon epic status` - Show progress for all epics (N/M children closed)
 - ✅ `bd --no-daemon epic close-eligible` - Auto-close epics where all children are complete
 - ✅ `bd --no-daemon ready` - Find next ready task (respects both blocks and parent-child dependencies)
+- ❌ `bd --no-daemon create "Child Task" --parent <epic-id>` - BROKEN, use dep add instead
+
+**Reliable Epic + Issues Pattern** (tested and working):
+```bash
+# 1. Create epic
+bd --no-daemon create "Epic Title" --type epic --description "Description"
+# Returns: mk5-tailwind-xyz
+
+# 2. Create child issues (without --parent flag, it's broken)
+bd --no-daemon create "Task 1" --priority 1 --description "Details"
+# Returns: mk5-tailwind-abc
+
+# 3. Link child to epic AND add blocking dependencies
+bd --no-daemon dep add abc xyz --type parent-child  # Link to epic
+bd --no-daemon dep add abc previous-task --type blocks  # Add blocker
+
+# 4. Verify structure
+bd --no-daemon dep tree xyz --reverse
+```
 
 # North Star
 The authors are building a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If the authors were mechanics, this project would be their "project car".  They work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  They enjoy elegance, simlicity and correctness.  They are MORE THAN HAPPY to spend extra time making every little thing perfect.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
@@ -28,7 +46,7 @@ The authors are building a crystal palace in the sky with this project.  We want
 **New to the codebase?** Read [docs/ORIENTATION.md](docs/ORIENTATION.md) first for architecture overview.
 
 **Detailed references:**
-- [docs/remixed-855ccfd5.md](docs/remixed-855ccfd5.md) - Full multiplayer architecture specification
+- [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) - Multiplayer architecture (simple Socket/GameClient/Room pattern)
 - [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - Layer system deep-dive (historical)
 - [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
 
