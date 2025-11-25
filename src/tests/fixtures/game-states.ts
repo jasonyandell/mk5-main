@@ -5,9 +5,8 @@
  * Use these instead of creating Room instances in tests.
  */
 
-import type { GameView, PlayerInfo, ValidAction } from '../../shared/multiplayer/protocol';
+import type { GameView, PlayerInfo, ValidAction, Capability } from '../../multiplayer/types';
 import type { GameState, FilteredGameState, Domino, Player, TrumpSelection, SuitAnalysis } from '../../game/types';
-import type { Capability } from '../../game/multiplayer/types';
 import { StateBuilder, HandBuilder } from '../helpers';
 
 // ============================================================================

@@ -3,7 +3,7 @@ import type { GameAction, FilteredGameState } from '../game/types';
 import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 import { createSetupState } from '../game/core/state';
-import type { GameView, PlayerInfo } from '../shared/multiplayer/protocol';
+import type { GameView, PlayerInfo } from '../multiplayer/types';
 import { decodeGameUrl } from '../game/core/url-compression';
 import { createLocalGame, type LocalGame } from '../multiplayer/local';
 import { GameClient } from '../multiplayer/GameClient';

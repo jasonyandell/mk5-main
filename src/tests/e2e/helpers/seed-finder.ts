@@ -9,7 +9,7 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
       type WindowWithGame = typeof window & {
-        getGameView?: () => import('../../../shared/multiplayer/protocol').GameView;
+        getGameView?: () => import('../../../multiplayer/types').GameView;
         playFirstAction?: () => void;
       };
       const w = window as WindowWithGame;
@@ -32,7 +32,7 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
     type WindowWithGame = typeof window & {
-      getGameView?: () => import('../../../shared/multiplayer/protocol').GameView;
+      getGameView?: () => import('../../../multiplayer/types').GameView;
     };
     const w = window as WindowWithGame;
     const view = w.getGameView?.();

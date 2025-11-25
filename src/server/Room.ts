@@ -18,15 +18,16 @@ import type { GameConfig } from '../game/types/config';
 import type {
   MultiplayerGameState,
   PlayerSession,
-  Result
-} from '../game/multiplayer/types';
-import { ok, err } from '../game/multiplayer/types';
+  Result,
+  GameView,
+  ValidAction
+} from '../multiplayer/types';
+import { ok, err } from '../multiplayer/types';
 import type { ExecutionContext } from '../game/types/execution';
 import { createExecutionContext } from '../game/types/execution';
-import type { GameView, ValidAction } from '../shared/multiplayer/protocol';
 import type { ClientMessage, ServerMessage } from '../multiplayer/protocol';
 
-import { createMultiplayerGame, updatePlayerSession } from '../game/multiplayer/stateLifecycle';
+import { createMultiplayerGame, updatePlayerSession } from '../multiplayer/stateLifecycle';
 import {
   executeKernelAction,
   buildKernelView,
@@ -35,7 +36,7 @@ import {
   cloneMultiplayerState,
   updatePlayerControlPure
 } from '../kernel/kernel';
-import { buildBaseCapabilities } from '../game/multiplayer/capabilities';
+import { buildBaseCapabilities } from '../multiplayer/capabilities';
 import { createInitialState } from '../game/core/state';
 
 /**

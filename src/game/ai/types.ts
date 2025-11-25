@@ -1,5 +1,5 @@
 import type { GameState, StateTransition } from '../types';
-import type { ValidAction } from '../../shared/multiplayer/protocol';
+import type { ValidAction } from '../../multiplayer/types';
 
 /**
  * Interface for player controllers - both human and AI.

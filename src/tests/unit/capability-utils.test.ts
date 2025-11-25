@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { filterActionsForSession, getVisibleStateForSession } from '../../game/multiplayer/capabilityUtils';
+import { filterActionsForSession, getVisibleStateForSession } from '../../multiplayer/capabilities';
 import type { GameAction } from '../../game/types';
-import type { PlayerSession } from '../../game/multiplayer/types';
+import type { PlayerSession } from '../../multiplayer/types';
 
 function createPlayerSession(playerIndex: 0 | 1 | 2 | 3, extras: Partial<PlayerSession> = {}): PlayerSession {
   return {

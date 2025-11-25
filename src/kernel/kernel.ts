@@ -9,14 +9,17 @@ import type {
   GameView,
   ValidAction,
   PlayerInfo,
-  ViewTransition
-} from '../shared/multiplayer/protocol';
-import { authorizeAndExecute } from '../game/multiplayer/authorization';
-import type { MultiplayerGameState, PlayerSession, Capability, Result } from '../game/multiplayer/types';
-import { ok, err } from '../game/multiplayer/types';
-import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../game/multiplayer/capabilityUtils';
+  ViewTransition,
+  MultiplayerGameState,
+  PlayerSession,
+  Capability,
+  Result
+} from '../multiplayer/types';
+import { ok, err } from '../multiplayer/types';
+import { authorizeAndExecute } from '../multiplayer/authorization';
+import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAction } from '../multiplayer/capabilities';
+import { updatePlayerSession } from '../multiplayer/stateLifecycle';
 import { cloneGameState, getNextStates } from '../game/core/state';
-import { updatePlayerSession } from '../game/multiplayer/stateLifecycle';
 import type { ExecutionContext } from '../game/types/execution';
 import { actionToId } from '../game/core/actions';
 

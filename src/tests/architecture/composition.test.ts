@@ -85,8 +85,7 @@ describe('Architecture: Single Composition Point', () => {
   it('client code does not import engine helpers', () => {
     // Directories that should NOT import engine execution helpers
     const clientDirs = [
-      'src/stores/',
-      'src/game/multiplayer/'
+      'src/stores/'
     ];
 
     // Imports that are banned in client code
@@ -96,11 +95,9 @@ describe('Architecture: Single Composition Point', () => {
       'createExecutionContext'
     ];
 
-    // Exceptions: Files that are kernel-level helpers even though they're in multiplayer/
-    const allowedFiles = [
-      'src/game/multiplayer/authorization.ts', // Kernel-level helper used by kernel.ts
-      'src/game/multiplayer/capabilityUtils.ts' // Kernel-level helper used by kernel.ts
-    ];
+    // No exceptions needed - multiplayer authorization now lives in src/multiplayer/
+    // which is not a client directory
+    const allowedFiles: string[] = [];
 
     const violations: string[] = [];
 

@@ -1,4 +1,8 @@
-import type { GameState } from '../types';
+/**
+ * State Lifecycle - Multiplayer game state creation and updates
+ */
+
+import type { GameState } from '../game/types';
 import type { MultiplayerGameState, PlayerSession, Result } from './types';
 import { ok, err } from './types';
 

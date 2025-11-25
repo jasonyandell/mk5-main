@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { canPlayerExecuteAction, authorizeAndExecute } from '../../game/multiplayer/authorization';
+import { canPlayerExecuteAction, authorizeAndExecute } from '../../multiplayer/authorization';
 import type { GameState, GameAction } from '../../game/types';
-import type { MultiplayerGameState, PlayerSession } from '../../game/multiplayer/types';
+import type { MultiplayerGameState, PlayerSession } from '../../multiplayer/types';
 import { createInitialState, executeAction } from '../../game';
 import { getNextPlayer } from '../../game/core/players';
 import { createTestContext } from '../helpers/executionContext';

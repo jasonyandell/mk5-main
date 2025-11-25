@@ -1,5 +1,5 @@
 import type { GameState } from '../types';
-import type { ValidAction } from '../../shared/multiplayer/protocol';
+import type { ValidAction } from '../../multiplayer/types';
 import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
 import type { AIStrategy } from './types';
 

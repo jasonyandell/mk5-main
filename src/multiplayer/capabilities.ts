@@ -1,7 +1,101 @@
-import { cloneGameState } from '../core/state';
-import type { GameAction, GameState, FilteredGameState } from '../types';
+/**
+ * Capability System - Merged from game/multiplayer/capabilities.ts and capabilityUtils.ts
+ *
+ * This file contains:
+ * - Capability builders (humanCapabilities, aiCapabilities, spectatorCapabilities)
+ * - Capability filtering (filterActionsForSession, getVisibleStateForSession)
+ * - Session resolution (resolveSessionForAction)
+ */
+
+import { cloneGameState } from '../game/core/state';
+import type { GameAction, GameState, FilteredGameState } from '../game/types';
 import type { PlayerSession, Capability } from './types';
 import { hasCapability, hasCapabilityType } from './types';
+
+// ============================================================================
+// Capability Builders
+// ============================================================================
+
+/**
+ * Standard capabilities for a human player.
+ * Can act as player and observe their own hand.
+ */
+export function humanCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
+  return [
+    { type: 'act-as-player', playerIndex },
+    { type: 'observe-hands', playerIndices: [playerIndex] }
+  ];
+}
+
+/**
+ * Standard capabilities for an AI player.
+ * Can act as player and observe their own hand.
+ */
+export function aiCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
+  return [
+    { type: 'act-as-player', playerIndex },
+    { type: 'observe-hands', playerIndices: [playerIndex] }
+  ];
+}
+
+/**
+ * Standard capabilities for a spectator.
+ * Can observe all hands but cannot execute actions.
+ */
+export function spectatorCapabilities(): Capability[] {
+  return [
+    { type: 'observe-hands', playerIndices: 'all' }
+  ];
+}
+
+/**
+ * Build base capability set per control type.
+ */
+export function buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai'): Capability[] {
+  const idx = playerIndex as 0 | 1 | 2 | 3;
+  return controlType === 'human'
+    ? humanCapabilities(idx)
+    : aiCapabilities(idx);
+}
+
+/**
+ * Builder for custom capability sets.
+ * Provides fluent API for composing capabilities.
+ *
+ * @example
+ * const caps = buildCapabilities()
+ *   .actAsPlayer(0)
+ *   .observeHands([0, 1])
+ *   .build();
+ */
+export class CapabilityBuilder {
+  private capabilities: Capability[] = [];
+
+  actAsPlayer(playerIndex: 0 | 1 | 2 | 3): this {
+    this.capabilities.push({ type: 'act-as-player', playerIndex });
+    return this;
+  }
+
+  observeHands(playerIndices: number[] | 'all'): this {
+    this.capabilities.push({ type: 'observe-hands', playerIndices });
+    return this;
+  }
+
+  build(): Capability[] {
+    return [...this.capabilities];
+  }
+}
+
+/**
+ * Create a new capability builder.
+ */
+export function buildCapabilities(): CapabilityBuilder {
+  return new CapabilityBuilder();
+}
+
+// ============================================================================
+// Action Filtering
+// ============================================================================
 
 const HINT_KEY = 'hint';
 const AI_INTENT_KEY = 'aiIntent';
@@ -22,7 +116,6 @@ function normalizeMeta(meta: unknown): ActionMeta | undefined {
 }
 
 function canSeeHand(session: PlayerSession, playerIndex: number): boolean {
-  // Check if session has observe-hands capability for all hands
   const observeAllCap = session.capabilities.find(
     cap => cap.type === 'observe-hands' && cap.playerIndices === 'all'
   );
@@ -30,7 +123,6 @@ function canSeeHand(session: PlayerSession, playerIndex: number): boolean {
     return true;
   }
 
-  // Check if session has observe-hands capability for this specific player
   const observeSpecificCap = session.capabilities.find(
     cap => cap.type === 'observe-hands' &&
     Array.isArray(cap.playerIndices) &&
@@ -49,13 +141,11 @@ function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
   for (const [key, value] of Object.entries(meta)) {
     if (value === undefined) continue;
 
-    // Future features (see-hints, see-ai-intent) removed - always filter these keys
     if (key === HINT_KEY || key === AI_INTENT_KEY) {
       continue;
     }
 
     if (key === REQUIRED_CAPABILITIES_KEY) {
-      // Do not forward capability requirements to clients
       continue;
     }
 
@@ -105,9 +195,8 @@ export function filterActionForSession(
   const filteredMeta = pruneMetadata(meta);
 
   if (Object.keys(filteredMeta).length === 0) {
-    // Remove meta property
     const { meta, ...actionWithoutMeta } = action;
-    void meta; // Acknowledge we're intentionally ignoring this
+    void meta;
     return { ...actionWithoutMeta } as GameAction;
   }
 
@@ -133,6 +222,10 @@ export function filterActionsForSession(
   return filtered;
 }
 
+// ============================================================================
+// State Filtering
+// ============================================================================
+
 /**
  * Returns a redacted view of state for the provided session.
  * The original state is never mutated.
@@ -143,7 +236,6 @@ export function getVisibleStateForSession(
 ): FilteredGameState {
   const clone = cloneGameState(state);
 
-  // Convert to FilteredGameState format with handCount
   const filteredPlayers = clone.players.map((player, index) => {
     const canSee = canSeeHand(session, index);
 
@@ -159,7 +251,6 @@ export function getVisibleStateForSession(
       };
     }
 
-    // Hide hand but keep handCount
     return {
       id: player.id,
       name: player.name,
@@ -176,6 +267,10 @@ export function getVisibleStateForSession(
   };
 }
 
+// ============================================================================
+// Session Resolution
+// ============================================================================
+
 /**
  * Attempt to find a session that can execute the provided action.
  * For system authority actions, capabilities are not checked.
@@ -184,21 +279,17 @@ export function resolveSessionForAction(
   sessions: PlayerSession[],
   action: GameAction
 ): PlayerSession | undefined {
-  // Check if action has system authority
   const meta = (action as { meta?: unknown }).meta;
   const hasSystemAuthority = meta && typeof meta === 'object' &&
     'authority' in meta && meta.authority === 'system';
 
   if (hasSystemAuthority) {
-    // System authority: match by player index only, no capability checks
     if ('player' in action && typeof action.player === 'number') {
       return sessions.find(session => session.playerIndex === action.player);
     }
-    // Neutral action with system authority: use first session
     return sessions[0];
   }
 
-  // Player authority: require capabilities
   if ('player' in action && typeof action.player === 'number') {
     return sessions.find(session =>
       session.playerIndex === action.player &&
@@ -206,7 +297,6 @@ export function resolveSessionForAction(
     );
   }
 
-  // Neutral actions: pick the first capable session
   return sessions.find(session =>
     hasCapabilityType(session, 'act-as-player') ||
     session.capabilities.length > 0

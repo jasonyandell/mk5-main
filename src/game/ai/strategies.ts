@@ -1,6 +1,6 @@
 import type { AIStrategy } from './types';
 import type { GameState, Player } from '../types';
-import type { ValidAction } from '../../shared/multiplayer/protocol';
+import type { ValidAction } from '../../multiplayer/types';
 import { BID_TYPES } from '../constants';
 import { calculateTrickWinner } from '../core/scoring';
 import { analyzeHand } from '../ai/utilities';

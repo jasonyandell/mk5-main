@@ -19,7 +19,7 @@ import type { GameState } from '../types';
 import { createInitialState } from '../core/state';
 import { selectAIAction } from './actionSelector';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
-import type { ValidAction } from '../../shared/multiplayer/protocol';
+import type { ValidAction } from '../../multiplayer/types';
 
 // Default target win rate constants for UI
 export const TARGET_WIN_RATE_MIN = 0.4;  // 40% win rate minimum

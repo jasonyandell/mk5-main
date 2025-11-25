@@ -1,6 +1,6 @@
 import type { Socket } from './Socket';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { GameView } from '../shared/multiplayer/protocol';
+import type { GameView } from './types';
 
 export class GameClient {
   view: GameView | null = null;

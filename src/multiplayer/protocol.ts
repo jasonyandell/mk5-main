@@ -1,5 +1,5 @@
 import type { GameAction } from '../game/types';
-import type { GameView } from '../shared/multiplayer/protocol';
+import type { GameView } from './types';
 
 // Client → Server
 export type ClientMessage =

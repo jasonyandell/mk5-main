@@ -17,7 +17,7 @@
 import { Room } from './Room';
 import type { GameConfig } from '../game/types/config';
 import type { GameAction, GameState } from '../game/types';
-import type { ValidAction } from '../shared/multiplayer/protocol';
+import type { ValidAction } from '../multiplayer/types';
 
 /**
  * HeadlessRoom - Minimal Room API for tools and scripts.

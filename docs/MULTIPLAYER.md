@@ -349,14 +349,20 @@ State updates are the universal response. Errors are errors.
 ```
 src/
 ├── multiplayer/
-│   ├── Socket.ts          # Socket interface (5 lines)
-│   ├── GameClient.ts      # Client class (~40 lines)
-│   ├── protocol.ts        # Message types (~20 lines)
-│   └── local.ts           # Local wiring (~50 lines)
+│   ├── index.ts           # Public API exports
+│   ├── types.ts           # All shared types (GameView, Capability, PlayerSession, etc.)
+│   ├── protocol.ts        # Wire protocol (ClientMessage, ServerMessage)
+│   ├── Socket.ts          # Transport interface (~10 lines)
+│   ├── GameClient.ts      # Client class (~44 lines)
+│   ├── capabilities.ts    # Capability builders + filtering
+│   ├── authorization.ts   # Action authorization
+│   ├── stateLifecycle.ts  # Multiplayer state CRUD
+│   └── local.ts           # Local wiring + AI behavior (~120 lines)
 ├── server/
-│   └── Room.ts            # Simplified Room (~150 lines)
+│   ├── Room.ts            # Game authority (~400 lines)
+│   └── HeadlessRoom.ts    # Minimal API for tools
 └── stores/
-    └── gameStore.ts       # Uses createLocalGame() (~100 lines)
+    └── gameStore.ts       # Svelte facade over GameClient
 
 # Future
 worker/
