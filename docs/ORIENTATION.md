@@ -7,9 +7,8 @@
 - **Principles**: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md) - Design philosophy and mental models
 - **Reference**: [CONCEPTS.md](CONCEPTS.md) - Complete implementation reference
 - **Deep Dives**:
-  - [remixed-855ccfd5.md](remixed-855ccfd5.md) - Multiplayer architecture specification
+  - [MULTIPLAYER.md](MULTIPLAYER.md) - Multiplayer architecture (simple Socket/GameClient/Room pattern)
   - [archive/pure-layers-threaded-rules.md](archive/pure-layers-threaded-rules.md) - Layer system implementation (historical)
-  - [GAME_ONBOARDING.md](GAME_ONBOARDING.md) - Detailed implementation guide
 
 ---
 
@@ -44,27 +43,24 @@ Everything else exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  Svelte Stores                  │  Reactive state + derived views
+│  Svelte Stores (gameStore)      │  Reactive state + derived views
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  NetworkGameClient              │  Caches filtered state + actions
+│  GameClient                     │  Fire-and-forget + subscriptions
+│  - send(message)                │  No promises, updates via callback
+│  - subscribe(callback)          │
 └─────────────────────────────────┘
-              ↕
-┌─────────────────────────────────┐
-│  Transport Layer                │  Connection objects (self-contained)
-│  Connection.reply() pattern     │  Each connection routes to itself
-└─────────────────────────────────┘
-              ↕
+              ↕ Socket interface
 ┌─────────────────────────────────┐
 │  Room (Orchestrator)            │  ★ COMPOSITION POINT ★
-│  - Owns state and context       │  Routes via connection.reply()
-│  - Manages sessions and AI      │  Spawns/destroys AI clients
-│  - Delegates to pure helpers    │  Broadcasts state updates
+│  - Owns state and context       │  Takes send callback in constructor
+│  - Manages sessions             │  Broadcasts via callback
+│  - Delegates to pure helpers    │  Transport-agnostic
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  Pure Helpers                   │  Stateless game logic
+│  Pure Helpers (kernel.ts)       │  Stateless game logic
 │  - executeKernelAction          │  - buildKernelView
 │  - buildActionsMap              │  - processAutoExecute
 └─────────────────────────────────┘
@@ -264,23 +260,24 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/layers/compose.ts` - composeRules() - reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
 - `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand}.ts` - Layer implementations
-- `src/game/layers/utilities.ts` - getEnabledLayers() - config → layers
+- `src/game/layers/registry.ts` - LAYER_REGISTRY - name → layer mapping
 
 **Multiplayer** (authorization, visibility):
-- `src/game/multiplayer/types.ts` - MultiplayerGameState, PlayerSession, Capability
-- `src/game/multiplayer/authorization.ts` - authorizeAndExecute(), filterActionsForSession()
-- `src/game/multiplayer/capabilityUtils.ts` - getVisibleStateForSession()
-- `src/game/multiplayer/capabilities.ts` - Standard capability builders
+- `src/multiplayer/types.ts` - MultiplayerGameState, PlayerSession, Capability, GameView
+- `src/multiplayer/authorization.ts` - authorizeAndExecute(), filterActionsForSession()
+- `src/multiplayer/capabilities.ts` - Capability builders + getVisibleStateForSession()
+- `src/multiplayer/protocol.ts` - ClientMessage, ServerMessage types
+- `src/multiplayer/local.ts` - createLocalGame(), attachAIBehavior()
 
 **Server** (orchestration + authority):
-- `src/server/Room.ts` - Room orchestrator (combines server + kernel)
+- `src/server/Room.ts` - Room orchestrator (takes send callback, delegates to kernel)
+- `src/server/HeadlessRoom.ts` - Minimal API for tools/scripts
 - `src/kernel/kernel.ts` - Pure helper functions (executeKernelAction, buildKernelView)
-- `src/server/transports/Transport.ts` - Transport abstraction, Connection interface with reply()
-- `src/server/transports/InProcessTransport.ts` - In-browser transport implementation
 
 **Client** (trust boundary):
-- `src/game/multiplayer/NetworkGameClient.ts` - Client interface, caches filtered state
-- `src/stores/gameStore.ts` - Svelte stores, reactive state management
+- `src/multiplayer/Socket.ts` - Transport interface (send, onMessage, close)
+- `src/multiplayer/GameClient.ts` - Client class (~43 lines, fire-and-forget)
+- `src/stores/gameStore.ts` - Svelte facade over GameClient
 - `src/App.svelte` - UI entry point
 
 ---
@@ -369,9 +366,10 @@ type Capability =
 1. What actions player can execute (authorization)
 2. What information player can see (visibility)
 
-**Standard sets**:
-- **Player**: `[{ type: 'act-as-player', playerIndex: N }, { type: 'observe-hands', playerIndices: [N] }]`
-- **Spectator**: `[{ type: 'observe-hands', playerIndices: 'all' }]`
+**Standard builders** (in `src/multiplayer/capabilities.ts`):
+- `humanCapabilities(playerIndex)` → act + observe own hand
+- `aiCapabilities(playerIndex)` → act + observe own hand
+- `spectatorCapabilities()` → observe all hands
 
 ### Action Authority
 
@@ -399,11 +397,11 @@ type ActionAuthority = 'player' | 'system';
 ```
 User clicks button
   ↓
-gameStore.executeAction({ playerId, action })
+gameStore.executeAction(action)
   ↓
-NetworkGameClient.executeAction() → connection.send(EXECUTE_ACTION)
+GameClient.send({ type: 'EXECUTE_ACTION', action })  // Fire-and-forget
   ↓
-Transport.send() → Room.handleMessage()
+Socket.send() → Room.handleMessage()
   ↓
 Room routes to executeKernelAction()
   ↓
@@ -416,20 +414,18 @@ executeKernelAction():
   - Execute: executeAction(coreState, action, ctx.rules)
   - Process auto-execute actions
   ↓
-Room.notifyListeners():
-  - For each subscriber (with perspective)
-  - buildKernelView(mpState, playerId, ctx, metadata) → filter state + build view
-  - Build GameView { state, transitions, metadata }
-  - connection.reply(STATE_UPDATE) → direct delivery to client
+Room.broadcastState():
+  - For each connected client
+  - buildKernelView(mpState, clientId, ctx, metadata) → filter state + build view
+  - Build GameView { state, validActions, metadata }
+  - send(clientId, { type: 'STATE_UPDATE', view })
   ↓
-Connection delivers message to client handler
-  ↓
-NetworkGameClient.handleServerMessage()
-  - Cache GameView (filtered state + transitions)
-  - Call notifyListeners()
+GameClient.handleMessage()
+  - Update cached view
+  - Notify all subscribers
   ↓
 gameStore subscription fires
-  - Updates stores from view.state and view.transitions
+  - Updates stores from view.state and view.validActions
   ↓
 Derived stores recompute
   - gameState (from view)
@@ -438,7 +434,7 @@ Derived stores recompute
 UI components reactively update
 ```
 
-**Key**: Room filters once per subscriber perspective via pure helpers, broadcasts only GameView (no unfiltered state), client trusts server completely.
+**Key**: Room filters once per client perspective via pure helpers, broadcasts only GameView (no unfiltered state), client trusts server completely.
 
 ---
 
@@ -616,11 +612,11 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
 
 ## What's Not Here Yet
 
-- **Offline Mode**: Web Worker transport (spec ready, not implemented)
-- **Online Mode**: Cloudflare Workers/Durable Objects (spec ready, not implemented)
-- **Progressive Enhancement**: Offline → online transition (spec ready, not implemented)
+- **Online Mode**: Cloudflare Workers/Durable Objects (design ready, not implemented)
+- **Spectator Mode**: Watch games with commentary (design ready, not implemented)
+- **Advanced AI**: Intermediate/expert strategies beyond beginner (design ready, not implemented)
 
-Current transport: `InProcessTransport` (in-browser, single-process)
+Current mode: Local in-process (browser main thread, createLocalGame wiring)
 
 ---
 
@@ -681,4 +677,4 @@ Server validates everything, clients trust completely. Clear security boundary e
 **Next Steps**:
 - For design philosophy and patterns → [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md)
 - For implementation reference → [CONCEPTS.md](CONCEPTS.md)
-- For multiplayer details → [remixed-855ccfd5.md](remixed-855ccfd5.md)
+- For multiplayer details → [MULTIPLAYER.md](MULTIPLAYER.md)

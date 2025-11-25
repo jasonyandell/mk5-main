@@ -210,9 +210,7 @@ Each layer provides both a lens (execution rules) and decorator (action generati
 ### Capabilities as Keys
 Each capability unlocks specific functionality. Collect keys to gain more power:
 - `act-as-player` → Execute actions for a seat
-- `observe-all-hands` → Full visibility
-- `see-hints` → AI recommendations
-- `see-ai-intent` → Strategy metadata
+- `observe-hands` → See specific hands or all hands (array or 'all')
 
 ### The Kernel as a Pure Function
 Given state and action, always produces same new state. No hidden state or side effects:

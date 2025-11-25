@@ -487,7 +487,7 @@ const base = (state) => getValidActions(state, layers, rules);
 ### PlayerSession
 **Definition**: Separates player identity from game seat, grouping identity, seat, control type, and capabilities.
 
-**Location**: `src/game/multiplayer/types.ts`
+**Location**: `src/multiplayer/types.ts`
 
 **Key Properties**:
 - `playerId: string` - Unique identifier (e.g., "player-0", "ai-1")
@@ -507,22 +507,23 @@ const base = (state) => getValidActions(state, layers, rules);
 ### Capability
 **Definition**: Composable permission token granting action or observation rights.
 
-**Location**: `src/game/multiplayer/types.ts`
+**Location**: `src/multiplayer/types.ts`
 
-**Types**:
+**Types** (only 2):
 
-**Action Capabilities**:
-- `{ type: 'act-as-player'; playerIndex: number }` - Execute actions for seat
-- `{ type: 'replace-ai'; }` - Switch AI to human (UI button)
-- `{ type: 'configure-variant'; }` - Change game settings
+```typescript
+type Capability =
+  | { type: 'act-as-player'; playerIndex: number }
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
+```
 
-**Visibility Capabilities**:
-- `{ type: 'observe-own-hand' }` - See own domino hand
-- `{ type: 'observe-hand'; playerIndex: number }` - See specific player's hand
-- `{ type: 'observe-all-hands' }` - See all hands
-- `{ type: 'observe-full-state' }` - See unrestricted state
-- `{ type: 'see-hints' }` - See AI recommendations
-- `{ type: 'see-ai-intent' }` - See AI strategy metadata
+- `act-as-player` - Execute actions for a specific seat
+- `observe-hands` - See specific hands (array) or all hands ('all')
+
+**Standard Builders** (in `src/multiplayer/capabilities.ts`):
+- `humanCapabilities(playerIndex)` → act + observe own hand
+- `aiCapabilities(playerIndex)` → act + observe own hand
+- `spectatorCapabilities()` → observe all hands
 
 **Replaces**: Boolean flags (isObserver, canSeeBids, etc.)
 
@@ -535,7 +536,7 @@ const base = (state) => getValidActions(state, layers, rules);
 ### ActionRequest
 **Definition**: Request to execute an action, with identity and metadata.
 
-**Location**: `src/game/multiplayer/types.ts`
+**Location**: `src/multiplayer/types.ts`
 
 **Key Properties**:
 - `playerId: string` - Who is requesting
@@ -551,7 +552,7 @@ const base = (state) => getValidActions(state, layers, rules);
 ### Authorization
 **Definition**: System determining what actions a session can execute.
 
-**Location**: `src/game/multiplayer/authorization.ts`
+**Location**: `src/multiplayer/authorization.ts`
 
 **Key Function**: `authorizeAndExecute()`
 ```typescript
@@ -577,7 +578,7 @@ authorizeAndExecute(
 ### Visibility Filtering
 **Definition**: System filtering state and actions based on session capabilities.
 
-**Location**: `src/game/multiplayer/capabilityUtils.ts`
+**Location**: `src/multiplayer/capabilities.ts`
 
 **Key Function**: `getVisibleStateForSession()`
 ```typescript
@@ -626,7 +627,7 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 ### MultiplayerGameState
 **Definition**: Wraps GameState with multiplayer metadata.
 
-**Location**: `src/game/multiplayer/types.ts`
+**Location**: `src/multiplayer/types.ts`
 
 **Key Properties**:
 - `gameId: string` - Unique game identifier
@@ -679,139 +680,94 @@ setTransport(transport): void
 
 ---
 
-### Transport
-**Definition**: Message routing abstraction enabling different transport implementations.
+### Socket Interface
+**Definition**: Minimal transport abstraction - the only transport interface needed.
 
-**Location**: `src/server/transports/Transport.ts`
+**Location**: `src/multiplayer/Socket.ts`
 
-**Interfaces**:
-
-**Connection** (self-contained bidirectional channel):
 ```typescript
-interface Connection {
-  send(message: ClientMessage): void;              // Client → Server
-  onMessage(handler: (message: ServerMessage) => void): void;  // Register handler
-  reply(message: ServerMessage): void;             // Server → Client (direct)
-  disconnect(): void;
+interface Socket {
+  send(data: string): void;
+  onMessage(handler: (data: string) => void): void;
+  close(): void;
 }
 ```
 
-**Key Pattern**: Connection.reply() enables self-contained message routing. Each connection knows how to deliver messages to its client, eliminating the need for Room to route through a global transport. See [ADR-20251111-connection-reply-pattern.md](adrs/ADR-20251111-connection-reply-pattern.md).
+**Key Insight**: This matches WebSocket API, postMessage API, and any bidirectional channel. Room takes a send callback in its constructor - it doesn't create or manage transport.
 
-**Transport**:
-```typescript
-interface Transport {
-  send(clientId: string, message: ServerMessage): void;
-  connect(clientId: string): Connection;
-  start(): Promise<void>;
-  stop(): Promise<void>;
-}
-```
-
-**Implementations**:
-- `InProcessTransport`: In-browser, single process
-- `WorkerTransport`: Web Worker (planned)
-- `CloudflareTransport`: Durable Objects (planned)
-
-**Key Insight**: Room stores connections and uses `connection.reply()` directly, not `transport.send()`
-
-**Related**: Room, InProcessTransport, Connection.reply() pattern
+**Related**: Room, GameClient, local.ts
 
 ---
 
-### InProcessTransport
-**Definition**: Transport implementation for in-browser, single-process game.
+### Local Wiring
+**Definition**: In-process wiring for local multiplayer games.
 
-**Location**: `src/server/transports/InProcessTransport.ts`
+**Location**: `src/multiplayer/local.ts`
 
-**How It Works**:
-1. Client calls `connection.send(message)`
-2. Transport receives message
-3. Routes to server-side handler
-4. Server sends response back
+**Key Functions**:
+- `createLocalGame(config)` - Create Room + GameClients for local play
+- `attachAIBehavior(client, playerIndex)` - Add AI subscription behavior
 
-**No Network**: All in-process, synchronous
+**Pattern**: Creates message routing via `Map<clientId, handler>`, uses `queueMicrotask` to match async behavior.
 
-**Used By**: Current development and testing
-
-**Related**: Transport, Connection
-
----
-
-### AIManager
-**Definition**: Centralized manager for AI client lifecycle.
-
-**Location**: `src/server/ai/AIManager.ts`
-
-**Key Responsibilities**:
-1. Spawn AI clients when game starts
-2. Connect AI clients to transport
-3. Destroy AI clients when game ends
-4. Map seats to AI instances
-
-**No Game Logic**: Just lifecycle management
-
-**Related**: Room, AIClient
-
----
-
-### KernelUpdate
-**Definition**: Filtered state update bundle sent to subscriber.
-
-**Location**: `src/server/Room.ts`
-
-**Key Properties**:
-- `view: GameView` - Client-facing state (hand filtered)
-- `state: FilteredGameState` - Full filtered state
-- `actions: ValidAction[]` - Playable actions
-- `perspective: string` - Player receiving update
-
-**Purpose**: Room creates one per subscriber (via buildKernelView), customized to their capabilities
-
-**Related**: GameView, PlayerSession, Capability
+**Related**: Socket, GameClient, Room
 
 ---
 
 ## 5. Client Architecture
 
-### NetworkGameClient
-**Definition**: Client-side interface that caches GameView and trusts server completely.
+### GameClient
+**Definition**: Client-side class that wraps Socket with fire-and-forget pattern and subscriptions.
 
-**Location**: `src/game/multiplayer/NetworkGameClient.ts`
+**Location**: `src/multiplayer/GameClient.ts` (~43 lines)
 
-**Key Responsibilities**:
-1. Send actions to server via protocol
-2. Cache GameView received from server
-3. Notify subscribers of updates
-4. Provide access to cached view
-
-**Trust Model**: Client trusts server completely - no local validation, no state synthesis, no transition recomputation
+**Key Characteristics**:
+- Fire-and-forget: `send(message)` doesn't return a promise
+- Subscription-based: Updates arrive via `subscribe(callback)`
+- Minimal: No caching, no validation, no state synthesis
+- Trusts server completely
 
 **Key Methods**:
-- `executeAction(playerId, action)` - Send action to server
-- `getCachedView(playerId)` - Get cached GameView for player
-- `subscribe(callback)` - Listen for updates
+```typescript
+class GameClient {
+  view: GameView | null = null;
 
-**Security**: Only receives filtered GameView, never sees unfiltered state or other players' data
+  send(message: ClientMessage): void { ... }      // Fire-and-forget
+  subscribe(callback: (view: GameView) => void): () => void { ... }
+  disconnect(): void { ... }
+}
+```
 
-**Related**: Transport, Room, GameView, Protocol Messages
+**Security**: Only receives filtered GameView, never sees unfiltered state
+
+**Related**: Socket, Room, GameView, Protocol Messages
 
 ---
 
-### AIClient
-**Definition**: Independent AI actor that connects and plays via protocol.
+### AI Behavior
+**Definition**: AI is just a GameClient with subscription-based behavior attached.
 
-**Location**: `src/game/multiplayer/AIClient.ts`
+**Location**: `src/multiplayer/local.ts` (attachAIBehavior function, ~20 lines)
 
-**How It Works**:
-1. Receives GameView from server
-2. Uses AIStrategy to decide action
-3. Sends action via protocol
-4. Server validates and executes
+**Pattern**:
+```typescript
+function attachAIBehavior(client: GameClient, playerIndex: number): void {
+  client.subscribe((view) => {
+    const myActions = view.validActions.filter(a =>
+      'player' in a.action && a.action.player === playerIndex
+    );
+    if (myActions.length === 0) return;
+    const chosen = myActions[Math.floor(Math.random() * myActions.length)];
+    setTimeout(() => {
+      client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
+    }, 100);
+  });
+}
+```
 
-**Pure Logic**: Strategy function, not game logic
+**Key Insight**: AI is not a special actor - it's just a subscription callback on a regular GameClient.
 
-**Related**: AIStrategy, AIManager, Room
+**Related**: GameClient, Room
 
 ---
 
@@ -1118,47 +1074,31 @@ Room validates and executes
 
 ## 8. Protocol & Communication
 
-### ClientMessage
-**Definition**: Message sent from client to server.
+### Protocol Messages
+**Definition**: Minimal message types for client-server communication.
 
-**Types**:
-- `CREATE_GAME` - Start new game
-- `EXECUTE_ACTION` - Execute action
-- `JOIN_GAME` - Join existing game
-- `SUBSCRIBE` - Subscribe to updates
-- `UNSUBSCRIBE` - Stop receiving updates
+**Location**: `src/multiplayer/protocol.ts`
 
-**Related**: ServerMessage, Transport
-
----
-
-### ServerMessage
-**Definition**: Message sent from server to client.
-
-**Types**:
-- `GAME_CREATED` - Game initialized with GameView
-- `STATE_UPDATE` - State changed with updated GameView
-- `ACTION_CONFIRMED` - Action accepted
-- `ERROR` - Something failed
-
-**Message Structure**:
+**Client → Server**:
 ```typescript
-interface GameCreatedMessage {
-  type: 'GAME_CREATED';
-  gameId: string;
-  view: GameView;  // Only filtered data, no unfiltered state
-}
-
-interface StateUpdateMessage {
-  type: 'STATE_UPDATE';
-  gameId: string;
-  view: GameView;  // Only filtered data, no unfiltered state
-}
+type ClientMessage =
+  | { type: 'EXECUTE_ACTION'; action: GameAction }
+  | { type: 'JOIN'; playerIndex: number; name: string }
+  | { type: 'SET_CONTROL'; playerIndex: number; controlType: 'human' | 'ai' };
 ```
 
-**Security**: All messages contain only filtered GameView - no unfiltered state crosses the network boundary
+**Server → Client**:
+```typescript
+type ServerMessage =
+  | { type: 'STATE_UPDATE'; view: GameView }
+  | { type: 'ERROR'; error: string };
+```
 
-**Related**: ClientMessage, Transport, GameView
+**Key Insight**: No GAME_CREATED, SUBSCRIBE, UNSUBSCRIBE, or complex ceremony. State updates are the universal response. Fire-and-forget actions, results via subscription.
+
+**Security**: All messages contain only filtered GameView - no unfiltered state crosses the boundary.
+
+**Related**: GameClient, Room, GameView
 
 ---
 
@@ -1818,16 +1758,17 @@ colorOverrides: Record<string, string>  // CSS variables
 - compose.ts: Layer composition via reduce
 - base.ts: Base Layer (standard Texas 42)
 - nello.ts, splash.ts, plunge.ts, sevens.ts: Special contracts
-
-### src/game/layers/ (continued)
 - tournament.ts, oneHand.ts, hints.ts, speed.ts: Layers with action generation
+- registry.ts: LAYER_REGISTRY - name → layer mapping
 
-### src/game/multiplayer/
-- types.ts: PlayerSession, Capability, MultiplayerGameState
+### src/multiplayer/
+- types.ts: PlayerSession, Capability, MultiplayerGameState, GameView
+- protocol.ts: ClientMessage, ServerMessage types
 - authorization.ts: authorizeAndExecute
-- capabilityUtils.ts: Filtering functions
-- NetworkGameClient.ts: Client interface
-- AIClient.ts: AI player
+- capabilities.ts: Capability builders + filtering functions
+- Socket.ts: Transport interface (send, onMessage, close)
+- GameClient.ts: Client class (~43 lines, fire-and-forget)
+- local.ts: createLocalGame(), attachAIBehavior()
 
 ### src/game/ai/
 - types.ts: AIStrategy, PlayerController, AIDifficulty
@@ -1844,9 +1785,11 @@ colorOverrides: Record<string, string>  // CSS variables
 - kernel.ts: Pure helper functions (executeKernelAction, buildKernelView, etc.)
 
 ### src/server/
-- Room.ts: Room orchestrator (combines server + kernel responsibilities)
-- transports/: Transport abstractions
-- ai/: AIManager
+- Room.ts: Room orchestrator (takes send callback, delegates to kernel)
+- HeadlessRoom.ts: Minimal API for tools/scripts
+
+### src/stores/
+- gameStore.ts: Svelte facade over GameClient
 
 ### src/game/view-projection.ts
 - ViewProjection, BidStatus, HandDomino, TrickDisplay, HandResults
@@ -1880,5 +1823,5 @@ colorOverrides: Record<string, string>  // CSS variables
 
 ---
 
-**Last Updated**: October 2025
-**Architecture Version**: mk5-tailwind (post-refactoring)
+**Last Updated**: November 2025
+**Architecture Version**: mk8 (simplified multiplayer)

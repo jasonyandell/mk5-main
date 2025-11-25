@@ -112,5 +112,5 @@ These mirror the Architectural Invariants and define regressions if violated.
 - Onboarding guide: [ORIENTATION.md](ORIENTATION.md)
 - Design philosophy: [ARCHITECTURE_PRINCIPLES.md](ARCHITECTURE_PRINCIPLES.md)
 - Implementation reference: [CONCEPTS.md](CONCEPTS.md)
-- Multiplayer protocol: docs/protocol-flows.md, src/shared/multiplayer/protocol.ts
+- Multiplayer architecture: [MULTIPLAYER.md](MULTIPLAYER.md)
 

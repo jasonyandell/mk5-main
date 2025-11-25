@@ -1,238 +1,211 @@
 # Capability System Reference
 
-**Last Updated**: 2025-01-09
+The capability system controls what players can **do** (actions) and what they can **see** (information). It uses composable capability tokens instead of boolean flags.
 
-The capability system controls what players can see (visibility) and do (authorization) through composable capability tokens.
+---
 
-> **Authority vs. client snapshots**: Room always operates on the full, unfiltered `GameState`. Before shipping a snapshot to a client it applies capability filtering (hands removed, metadata stripped) but keeps the `MultiplayerGameState` shape. Client code should treat any host-sent `coreState` as already redacted and never attempt to reconstitute hidden information.
+## Capability Types
 
-## Overview
-
-Instead of boolean flags (`isAI`, `isSpectator`), we use capability tokens that compose naturally.
-
-## Standard Capability Builders
-
-Located in `src/game/multiplayer/capabilities.ts`
-
-### Human Player
-```typescript
-humanCapabilities(playerIndex: 0 | 1 | 2 | 3)
-```
-Returns:
-- `act-as-player` - Can execute actions for this player
-- `observe-own-hand` - Can see their own hand
-
-### AI Player
-```typescript
-aiCapabilities(playerIndex: 0 | 1 | 2 | 3)
-```
-Returns:
-- `act-as-player` - Can execute actions for this player
-- `observe-own-hand` - Can see their own hand
-- `replace-ai` - Can be hot-swapped with human
-
-### Spectator
-```typescript
-spectatorCapabilities()
-```
-Returns:
-- `observe-all-hands` - Can see all player hands
-- `observe-full-state` - Can see complete game state
-
-### Coach
-```typescript
-coachCapabilities(studentIndex: 0 | 1 | 2 | 3)
-```
-Returns:
-- `observe-hand` (studentIndex) - Can see student's hand
-- `see-hints` - Can see hint metadata
-
-### Tutorial Student
-```typescript
-tutorialCapabilities(playerIndex: 0 | 1 | 2 | 3)
-```
-Returns:
-- `act-as-player` - Can execute actions
-- `observe-own-hand` - Can see their hand
-- `see-hints` - Can see hints for learning
-- `undo-actions` - Can undo mistakes
-
-## Fluent Builder API
-
-```typescript
-import { buildCapabilities } from 'src/game/multiplayer/capabilities';
-
-const customCaps = buildCapabilities()
-  .actAsPlayer(0)
-  .observeOwnHand()
-  .seeHints()
-  .seeAIIntent()
-  .build();
-```
-
-## All Capability Types
+Two capability types exist:
 
 ```typescript
 type Capability =
-  // Action capabilities
   | { type: 'act-as-player'; playerIndex: number }
-  | { type: 'replace-ai' }
-  | { type: 'configure-variant' }
-
-  // Visibility capabilities
-  | { type: 'observe-own-hand' }
-  | { type: 'observe-hand'; playerIndex: number }
-  | { type: 'observe-all-hands' }
-  | { type: 'observe-full-state' }
-  | { type: 'see-hints' }
-  | { type: 'see-ai-intent' }
-
-  // Special capabilities
-  | { type: 'undo-actions' };
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
 ```
 
-## How It Works
+### act-as-player
 
-### Visibility Filtering
-
-`getVisibleStateForSession(state, session)` filters game state based on capabilities:
+Grants permission to execute actions for a specific seat.
 
 ```typescript
-// Human player sees only their hand
-const humanView = getVisibleStateForSession(state, humanSession);
-// players[1,2,3].hand = [] (hidden)
-
-// Spectator sees all hands
-const spectatorView = getVisibleStateForSession(state, spectatorSession);
-// All players[].hand visible
-
-// Coach sees student's hand (index 0)
-const coachView = getVisibleStateForSession(state, coachSession);
-// players[0].hand visible, others hidden
+{ type: 'act-as-player', playerIndex: 0 }  // Can play as seat 0
 ```
+
+### observe-hands
+
+Controls which hands are visible. Can specify:
+- **Array**: See specific players' hands
+- **'all'**: See all players' hands (spectator mode)
+
+```typescript
+{ type: 'observe-hands', playerIndices: [0] }      // See own hand only
+{ type: 'observe-hands', playerIndices: [0, 2] }   // See player 0 and 2
+{ type: 'observe-hands', playerIndices: 'all' }    // See all hands
+```
+
+---
+
+## Standard Capability Builders
+
+Located in `src/multiplayer/capabilities.ts`:
+
+### humanCapabilities(playerIndex)
+
+For human players - can act and see their own hand.
+
+```typescript
+humanCapabilities(0)
+// → [
+//   { type: 'act-as-player', playerIndex: 0 },
+//   { type: 'observe-hands', playerIndices: [0] }
+// ]
+```
+
+### aiCapabilities(playerIndex)
+
+For AI players - identical to human capabilities.
+
+```typescript
+aiCapabilities(1)
+// → [
+//   { type: 'act-as-player', playerIndex: 1 },
+//   { type: 'observe-hands', playerIndices: [1] }
+// ]
+```
+
+### spectatorCapabilities()
+
+For spectators - can see all hands but cannot act.
+
+```typescript
+spectatorCapabilities()
+// → [
+//   { type: 'observe-hands', playerIndices: 'all' }
+// ]
+```
+
+---
+
+## How Capabilities Are Used
 
 ### Action Authorization
 
-`filterActionsForSession(session, actions)` filters actions by capabilities:
+When a player requests an action:
 
 ```typescript
-const allActions = getValidActions(state);
-const allowed = filterActionsForSession(playerSession, allActions);
+// In authorization.ts
+function canExecuteAction(session: PlayerSession, action: GameAction): boolean {
+  // Check if action has player field
+  if (!('player' in action)) return true;  // System actions
 
-// Returns only actions player can execute based on:
-// 1. act-as-player capability
-// 2. Action metadata requiredCapabilities field
+  // Check act-as-player capability
+  return session.capabilities.some(
+    cap => cap.type === 'act-as-player' && cap.playerIndex === action.player
+  );
+}
+```
+
+### State Visibility
+
+When building a view for a client:
+
+```typescript
+// In capabilities.ts
+function getVisibleStateForSession(state: GameState, session: PlayerSession): GameState {
+  const observeCap = session.capabilities.find(c => c.type === 'observe-hands');
+
+  const visibleIndices = observeCap?.playerIndices === 'all'
+    ? [0, 1, 2, 3]
+    : observeCap?.playerIndices ?? [];
+
+  return {
+    ...state,
+    players: state.players.map((player, idx) => ({
+      ...player,
+      hand: visibleIndices.includes(idx) ? player.hand : []
+    }))
+  };
+}
 ```
 
 ### Metadata Filtering
 
-Actions can have metadata (hints, AI intent) that only authorized viewers see:
+Actions with metadata (hints, AI intent) are filtered based on capabilities:
 
 ```typescript
-const action = {
-  type: 'bid',
-  value: 30,
-  meta: {
-    hint: 'Safe bid with this hand',
-    requiredCapabilities: [{ type: 'see-hints' }]
-  }
-};
-
-// Player without see-hints capability
-filterActionForSession(playerSession, action)
-// → { type: 'bid', value: 30 } (meta stripped)
-
-// Tutorial student with see-hints
-filterActionForSession(tutorialSession, action)
-// → { type: 'bid', value: 30, meta: { hint: '...' } } (hint visible)
-```
-
-### Server-Generated Action Maps
-
-`Room` applies `filterActionsForSession()` for every connected session and ships those filtered lists to clients:
-
-```typescript
-// Room.notifyListeners()
-const actionsByPlayer = this.buildActionsMap(...);
-record.listener({
-  view,
-  state,
-  actions: actionsByPlayer,
-  perspective
-});
-```
-
-`NetworkGameClient` caches the resulting `Record<string, ValidAction[]>`, so UI components can call `getActions(playerId)` or read the Svelte stores without re-running capability logic on the client.
-
-## Usage Examples
-
-### Creating Custom Player Types
-
-```typescript
-// Tournament organizer
-const organizerCaps = buildCapabilities()
-  .observeFullState()
-  .configureVariant()
-  .build();
-
-// Debug viewer
-const debugCaps = buildCapabilities()
-  .observeFullState()
-  .observeAllHands()
-  .seeHints()
-  .seeAIIntent()
-  .build();
-
-// Replay spectator (no actions)
-const replayCaps = buildCapabilities()
-  .observeAllHands()
-  .build();
-```
-
-### Integration with Room
-
-```typescript
-// Room uses standard builders
-private buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai') {
-  const idx = playerIndex as 0 | 1 | 2 | 3;
-  return controlType === 'human'
-    ? humanCapabilities(idx)
-    : aiCapabilities(idx);
+// In capabilities.ts
+function filterActionForSession(session: PlayerSession, action: ValidAction): ValidAction {
+  // Strip metadata that requires specific capabilities
+  const { hint, aiIntent, requiredCapabilities, ...rest } = action;
+  return rest;
 }
-
-// Subscriptions deliver HostViewUpdate payloads
-host.subscribe(sessionId, ({ view, state, actions }) => {
-  // view: FilteredGameState for this session
-  // state: authoritative MultiplayerGameState snapshot
-  // actions: Record<string, ValidAction[]> filtered by capability
-});
 ```
 
-### Integration with Authorization
+---
+
+## Integration with Room
+
+Room builds views for each connected client:
 
 ```typescript
-// Pure function checks capabilities
-getValidActionsForPlayer(mpState, playerId) {
-  const session = mpState.players.find(p => p.playerId === playerId);
+// In Room.ts
+private sendStateToClient(clientId: string): void {
+  const session = this.getSession(clientId);
 
-  // Composed state machine includes Layers:
-  // 1. Layers define game mechanics AND action generation
-  // 2. Result: Actions that are mechanically valid and properly transformed
-  const allActions = composedStateMachine(mpState.coreState);
+  // Filter state by capabilities
+  const filteredState = getVisibleStateForSession(this.state, session);
 
-  // Capability filtering is the final step (authorization)
-  return filterActionsForSession(session, allActions);
+  // Filter actions by capabilities
+  const authorizedActions = filterActionsForSession(session, this.validActions);
+
+  // Build view
+  const view = { state: filteredState, validActions: authorizedActions };
+
+  this.send(clientId, { type: 'STATE_UPDATE', view });
 }
-
-// NetworkGameClient consumers read server-filtered results
-const allowed = await gameClient.getActions('player-0');
 ```
 
-## Testing Capabilities
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/multiplayer/types.ts` | Capability type definition (lines 22-24) |
+| `src/multiplayer/capabilities.ts` | Builders + filtering functions |
+| `src/multiplayer/authorization.ts` | Action authorization logic |
+
+---
+
+## Design Principles
+
+### Simplicity Over Flexibility
+
+Only 2 capability types exist. This covers:
+- Players seeing their own hand
+- Spectators seeing all hands
+- Action authorization per seat
+
+### No Identity Checks
+
+Never check `playerId === someId`. Always check capabilities:
+
+```typescript
+// ❌ Wrong
+if (session.playerId === 'admin') { /* special access */ }
+
+// ✅ Correct
+if (hasCapability(session, { type: 'observe-hands', playerIndices: 'all' })) {
+  /* has spectator access */
+}
+```
+
+### Composable Tokens
+
+Capabilities are data that can be:
+- Stored in player sessions
+- Serialized and transmitted
+- Combined (multiple per player)
+- Inspected for debugging
+
+---
+
+## Testing
 
 ```typescript
 test('spectator sees all hands but cannot act', () => {
-  const session = {
+  const session: PlayerSession = {
     playerId: 'spectator-1',
     playerIndex: 0,
     controlType: 'human',
@@ -243,62 +216,16 @@ test('spectator sees all hands but cannot act', () => {
   const view = getVisibleStateForSession(state, session);
   expect(view.players.every(p => p.hand.length > 0)).toBe(true);
 
-  // Cannot execute actions
-  const actions = filterActionsForSession(session, allActions);
-  expect(actions.length).toBe(0);
+  // Cannot execute actions (no act-as-player capability)
+  const canAct = session.capabilities.some(c => c.type === 'act-as-player');
+  expect(canAct).toBe(false);
 });
-```
-
-## Interaction with Layer System
-
-**Capabilities filter layer-generated actions:**
-
-```typescript
-// Room creates view for a session
-createView(playerId) {
-  // 1. Compose Layers (game mechanics + action generation)
-  const rules = composeRules([baseLayer, nelloLayer, ...]);
-
-  // 2. Generate actions with composed layers
-  const composedActions = getValidActions(state, layers, rules);
-  // → Includes NELLO bids if nello layer enabled
-  // → May remove NELLO if tournament layer active
-
-  // 3. Filter by capabilities (authorization)
-  const session = getSession(playerId);
-  const authorizedActions = filterActionsForSession(session, composedActions);
-  // → Only actions this session can execute
-
-  return { state: filteredState, validActions: authorizedActions };
-}
-```
-
-**Separation of Concerns:**
-- **Layers**: Define HOW special contracts work (mechanics)
-- **Variants**: Define WHEN special contracts are allowed (availability)
-- **Capabilities**: Define WHO can execute actions (authorization)
-
-**Example:**
-```typescript
-// Nello layer adds nello mechanics
-const nelloAction = { type: 'bid', bid: 'nello', value: 2, player: 0 };
-
-// Tournament variant removes it (filtering)
-const tournamentActions = actions.filter(a => a.bid !== 'nello');
-
-// Capabilities check authorization (act-as-player for player 0)
-const session = { capabilities: [{ type: 'act-as-player', playerIndex: 0 }] };
-const allowed = filterActionsForSession(session, actions);
-// → Only player 0's actions
 ```
 
 ---
 
 ## References
 
-- Vision Document: `docs/remixed-855ccfd5.md` §4
-- Layer System: `docs/GAME_ONBOARDING.md` "Layer System Architecture"
-- Implementation: `src/game/multiplayer/capabilities.ts`
-- Filtering: `src/game/multiplayer/capabilityUtils.ts`
-- Authorization: `src/game/multiplayer/authorization.ts`
-- Layer Types: `src/game/layers/types.ts`
+- Multiplayer Architecture: [MULTIPLAYER.md](MULTIPLAYER.md)
+- Implementation: `src/multiplayer/capabilities.ts`
+- Types: `src/multiplayer/types.ts`
