@@ -40,7 +40,7 @@ test.describe('Perfects Page', () => {
     await page.goto('/');
 
     // Should be back on main game page
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/.*s=.*a=/);
     // Check for main game header with scoring display
     await expect(page.locator('[data-testid="app-header"]')).toBeVisible();
   });
