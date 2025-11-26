@@ -3,6 +3,7 @@
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
   import { shareContent, canNativeShare } from '../utils/share';
+  import { stateToUrl } from '../../game/core/url-compression';
 
   interface Props {
     onclose: () => void;
@@ -24,16 +25,15 @@
     navigator.clipboard.writeText(text);
   }
 
-  // Generate shareable URL (simplified for new architecture)
+  // Generate shareable URL from current game state
   async function shareUrl() {
-    // In the new architecture, we don't have action history
-    // Just share the current URL with game seed
-    const url = window.location.href;
+    // Generate URL from state (includes full action history for replay)
+    const url = window.location.origin + window.location.pathname + stateToUrl($gameState);
 
     await shareContent({
       title: 'Texas 42 Game',
       text: 'Check out this Texas 42 game!',
-      url: url
+      url
     });
   }
 

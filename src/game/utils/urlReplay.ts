@@ -3,7 +3,7 @@
  *
  * Replays games from URLs containing:
  * - Game configuration (layers, player types)
- * - Shuffle seed
+ * - Shuffle seed OR initialHands (mutually exclusive)
  * - Action history (compressed IDs)
  *
  * Uses HeadlessRoom for execution (single composition point) and
@@ -69,9 +69,12 @@ export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayR
   const decoded = decodeGameUrl(queryString || '');
 
   // Build GameConfig from decoded URL data
+  // initialHands and seed are mutually exclusive
   const config: GameConfig = {
     playerTypes: decoded.playerTypes,
-    shuffleSeed: decoded.seed
+    ...(decoded.initialHands
+      ? { dealOverrides: { initialHands: decoded.initialHands } }
+      : { shuffleSeed: decoded.seed })
   };
 
   // Only set optional properties if they have values
@@ -87,7 +90,9 @@ export function replayFromUrl(url: string, options: ReplayOptions = {}): ReplayR
     config.layers = decoded.layers;
   }
 
-  return replayActions(decoded.seed, decoded.actions, config, options);
+  // For seed-based games, pass seed. For initialHands games, seed is 0 (unused).
+  const seed = decoded.initialHands ? 0 : decoded.seed;
+  return replayActions(seed, decoded.actions, config, options);
 }
 
 /**

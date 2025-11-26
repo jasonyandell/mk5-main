@@ -4,7 +4,7 @@ import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
 import { createSetupState } from '../game/core/state';
 import type { GameView, PlayerInfo } from '../multiplayer/types';
-import { decodeGameUrl } from '../game/core/url-compression';
+import { decodeGameUrl, stateToUrl } from '../game/core/url-compression';
 import { createLocalGame, type LocalGame } from '../multiplayer/local';
 import { GameClient } from '../multiplayer/GameClient';
 import type { Room } from '../server/Room';
@@ -146,6 +146,24 @@ class GameStoreImpl {
       }
     });
 
+    // Reactive URL sync: keep browser URL in sync with game state
+    // Uses replaceState to avoid polluting browser history
+    this.clientView.subscribe(($view) => {
+      if (typeof window === 'undefined') return;
+      if ($view.metadata.gameId === 'initializing') return;
+
+      // Generate URL from current state
+      const url = stateToUrl($view.state);
+      const fullUrl = window.location.pathname + url;
+
+      // Update browser URL without adding history entry
+      window.history.replaceState(
+        { timestamp: Date.now() },
+        '',
+        fullUrl
+      );
+    });
+
     // Initialize from URL or with default config
     void this.initializeFromURL();
   }
@@ -167,15 +185,19 @@ class GameStoreImpl {
 
       const urlParams = new URLSearchParams(window.location.search);
       const hasSeed = urlParams.has('s');
+      const hasInitialHands = urlParams.has('i');
 
-      if (hasSeed) {
+      if (hasSeed || hasInitialHands) {
         // URL has game state - decode and initialize
         const urlData = decodeGameUrl(window.location.search);
 
         // Build config from URL data
+        // initialHands and seed are mutually exclusive
         const config: GameConfig = {
           playerTypes: urlData.playerTypes,
-          shuffleSeed: urlData.seed || Math.floor(Math.random() * 1000000),
+          ...(urlData.initialHands
+            ? { dealOverrides: { initialHands: urlData.initialHands } }
+            : { shuffleSeed: urlData.seed || Math.floor(Math.random() * 1000000) }),
           ...(urlData.dealer !== undefined && urlData.dealer !== 3 ? { dealer: urlData.dealer } : {}),
           ...(urlData.theme ? { theme: urlData.theme } : {}),
           ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0

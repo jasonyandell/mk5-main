@@ -79,7 +79,8 @@ export class Room {
       ...(config.shuffleSeed !== undefined ? { shuffleSeed: config.shuffleSeed } : {}),
       ...(config.theme !== undefined ? { theme: config.theme } : {}),
       ...(config.colorOverrides !== undefined ? { colorOverrides: config.colorOverrides } : {}),
-      ...(config.dealOverrides !== undefined ? { dealOverrides: config.dealOverrides } : {})
+      ...(config.dealOverrides !== undefined ? { dealOverrides: config.dealOverrides } : {}),
+      ...(config.layers !== undefined ? { layers: config.layers } : {})
     });
 
     // === 3. CREATE DEFAULT PLAYER SESSIONS ===

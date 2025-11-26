@@ -110,5 +110,6 @@ export {
   decompressEvents,
   encodeGameUrl,
   decodeGameUrl,
+  stateToUrl,
   type URLData
 } from './core/url-compression';

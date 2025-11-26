@@ -139,7 +139,8 @@ export function createInitialState(options?: {
   playerTypes?: ('human' | 'ai')[],
   theme?: string,
   colorOverrides?: Record<string, string>,
-  dealOverrides?: { initialHands?: Domino[][] }
+  dealOverrides?: { initialHands?: Domino[][] },
+  layers?: string[]
 }): GameState {
   const dealer = options?.dealer ?? 3; // Start with dealer as player 3 for deterministic tests
   const currentPlayer = getPlayerLeftOfDealer(dealer); // Player to left of dealer bids first
@@ -167,7 +168,8 @@ export function createInitialState(options?: {
       shuffleSeed,
       theme,
       colorOverrides,
-      ...(options?.dealOverrides && { dealOverrides: options.dealOverrides })
+      ...(options?.dealOverrides && { dealOverrides: options.dealOverrides }),
+      ...(options?.layers && options.layers.length > 0 && { layers: options.layers })
     },
 
     // Theme configuration (first-class citizen)
@@ -219,7 +221,8 @@ export function cloneGameState(state: GameState): GameState {
     initialConfig: {
       ...state.initialConfig,
       playerTypes: [...state.initialConfig.playerTypes],
-      ...(state.initialConfig.colorOverrides ? { colorOverrides: { ...state.initialConfig.colorOverrides } } : {})
+      ...(state.initialConfig.colorOverrides ? { colorOverrides: { ...state.initialConfig.colorOverrides } } : {}),
+      ...(state.initialConfig.layers ? { layers: [...state.initialConfig.layers] } : {})
     },
     players: state.players.map(player => {
       const clonedPlayer: Player = {

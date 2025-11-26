@@ -1,22 +1,20 @@
 /**
  * URL Compression System
- * Uses base66 encoding: 1 character = 1 event
- * Reduces URLs by ~96% (8KB -> 350 chars)
- * Seeds use base36 encoding for additional compression
  *
- * IMPORTANT: Completeness comes first - the URL must capture the complete game state
- * to enable proper replay and sharing. After ensuring completeness, we optimize for
- * minimal URL length.
+ * Pure isomorphism: URL ↔ Game State
+ * - stateToUrl(state) generates shareable URL from any game state
+ * - decodeGameUrl(url) + replay reconstructs identical state
+ *
+ * Encoding:
+ * - Actions: base66 (1 char = 1 event)
+ * - Seeds: base36
+ * - Initial hands: bit-packed base64url (28 dominoes × 5 bits = 24 chars)
+ *
+ * URL params: s (seed) XOR i (initialHands), p, d, l, t, v, a
  */
 
-/**
- * FUTURE: replay-url capability
- * This module's encodeGameUrl() and decodeGameUrl() will be integrated
- * into the protocol layer to enable URL-based game replay:
- * - Room.getView() generates GameView for clients with 'replay-url' capability
- * - Clients can use replayUrl to replay full game without storing full state
- * - See src/server/Room.ts and src/shared/multiplayer/protocol.ts
- */
+import type { Domino, FilteredGameState, GameState } from '../types';
+import { actionToId } from './actions';
 
 // Primary tier: 65 most common events (1 char each)
 const EVENT_TO_CHAR: Record<string, string> = {
@@ -121,6 +119,104 @@ const ESCAPED_CHAR_TO_EVENT: Record<string, string> = Object.fromEntries(
   Object.entries(ESCAPED_EVENT_TO_CHAR).map(([k, v]) => [v, k])
 );
 
+// ============================================================================
+// Initial Hands Encoding (bit-packed base64url)
+// ============================================================================
+
+/**
+ * Convert domino to canonical index (0-27) using triangular numbers.
+ * Matches createDominoes() order: 0-0, 1-0, 1-1, 2-0, 2-1, 2-2, ...
+ */
+function dominoToIndex(d: Domino): number {
+  return d.high * (d.high + 1) / 2 + d.low;
+}
+
+/**
+ * Convert canonical index (0-27) back to Domino.
+ * Inverse of dominoToIndex using triangular number formula.
+ */
+function indexToDomino(idx: number): Domino {
+  // high = floor((sqrt(8*idx + 1) - 1) / 2)
+  const high = Math.floor((Math.sqrt(8 * idx + 1) - 1) / 2);
+  const low = idx - high * (high + 1) / 2;
+  return { high, low, id: `${high}-${low}` };
+}
+
+/**
+ * Encode 4 hands (28 dominoes) to compact base64url string (~24 chars).
+ * Each domino index (0-27) uses 5 bits. 28 × 5 = 140 bits → 18 bytes.
+ */
+function encodeInitialHands(hands: Domino[][]): string {
+  const indices = hands.flat().map(dominoToIndex);
+  if (indices.length !== 28) {
+    throw new Error(`Expected 28 dominoes, got ${indices.length}`);
+  }
+
+  // Pack 28 5-bit values into 18 bytes
+  const bytes = new Uint8Array(18);
+  let bitPos = 0;
+  for (const idx of indices) {
+    const byteIdx = Math.floor(bitPos / 8);
+    const bitOffset = bitPos % 8;
+    bytes[byteIdx]! |= (idx << bitOffset) & 0xFF;
+    if (bitOffset > 3 && byteIdx + 1 < bytes.length) {
+      bytes[byteIdx + 1]! |= idx >> (8 - bitOffset);
+    }
+    bitPos += 5;
+  }
+
+  // Base64url encode (no padding)
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+/**
+ * Decode base64url string back to 4 hands (28 dominoes).
+ * Inverse of encodeInitialHands.
+ */
+function decodeInitialHands(encoded: string): Domino[][] {
+  // Base64url decode
+  const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(b64);
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+  if (bytes.length !== 18) {
+    throw new Error(`Invalid initialHands encoding: expected 18 bytes, got ${bytes.length}`);
+  }
+
+  // Unpack 28 5-bit values
+  const indices: number[] = [];
+  let bitPos = 0;
+  for (let i = 0; i < 28; i++) {
+    const byteIdx = Math.floor(bitPos / 8);
+    const bitOffset = bitPos % 8;
+    let value = (bytes[byteIdx]! >> bitOffset) & 0x1F;
+    if (bitOffset > 3 && byteIdx + 1 < bytes.length) {
+      value |= ((bytes[byteIdx + 1]! << (8 - bitOffset)) & 0x1F);
+    }
+    if (value < 0 || value > 27) {
+      throw new Error(`Invalid domino index ${value} at position ${i}`);
+    }
+    indices.push(value);
+    bitPos += 5;
+  }
+
+  // Validate uniqueness
+  const uniqueIndices = new Set(indices);
+  if (uniqueIndices.size !== 28) {
+    throw new Error(`Duplicate dominoes in URL: expected 28 unique, got ${uniqueIndices.size}`);
+  }
+
+  // Convert to Domino[][] (4 players × 7 dominoes)
+  const dominoes = indices.map(indexToDomino);
+  return [
+    dominoes.slice(0, 7),
+    dominoes.slice(7, 14),
+    dominoes.slice(14, 21),
+    dominoes.slice(21, 28)
+  ];
+}
+
 /**
  * Compress an array of event IDs to a compact string
  */
@@ -171,22 +267,31 @@ export function decompressEvents(compressed: string): string[] {
 }
 
 /**
- * Encode a complete game state to a URL
+ * Encode a complete game state to a URL.
+ *
+ * seed and initialHands are mutually exclusive:
+ * - If initialHands provided, uses `i=` param (omits `s=`)
+ * - Otherwise uses `s=` param for seed-based games
  */
 export function encodeGameUrl(
-  seed: number,
+  seed: number | undefined,
   actions: string[],
   playerTypes?: ('human' | 'ai')[],
   dealer?: number,
   theme?: string,
   colorOverrides?: Record<string, string>,
   sectionName?: string,
-  layers?: string[]
+  layers?: string[],
+  initialHands?: Domino[][]
 ): string {
   const params = new URLSearchParams();
 
-  // Seed as base36 for compression (FIRST - static)
-  params.set('s', seed.toString(36));
+  // Seed XOR initialHands (mutually exclusive)
+  if (initialHands) {
+    params.set('i', encodeInitialHands(initialHands));
+  } else if (seed !== undefined) {
+    params.set('s', seed.toString(36));
+  }
 
   // Only include player types if not default
   if (playerTypes) {
@@ -275,18 +380,13 @@ export function encodeGameUrl(
 }
 
 /**
- * Decode a URL to extract game state
+ * Decode a URL to extract game state.
+ *
+ * seed and initialHands are mutually exclusive:
+ * - URLs with `i=` have initialHands, seed will be 0
+ * - URLs with `s=` have seed, initialHands will be undefined
  */
-export function decodeGameUrl(urlString: string): {
-  seed: number;
-  actions: string[];
-  playerTypes: ('human' | 'ai')[];
-  dealer: number;
-  theme: string;
-  colorOverrides: Record<string, string>;
-  scenario: string;
-  layers?: string[];
-} {
+export function decodeGameUrl(urlString: string): URLData {
   // Handle both full URLs and just query strings
   const queryString = urlString.includes('?')
     ? urlString.split('?')[1]
@@ -362,27 +462,21 @@ export function decodeGameUrl(urlString: string): {
     });
   }
 
-  // Parse seed
+  // Parse initialHands XOR seed (mutually exclusive)
+  const initialHandsStr = params.get('i');
   const seedStr = params.get('s');
-  if (!seedStr) {
-    // Defer decision to caller: use 0 when seed is not present
-    // Callers can detect and supply a seed and update URL.
-    return {
-      seed: 0,
-      actions: [],
-      playerTypes: ['human', 'ai', 'ai', 'ai'],
-      dealer: 3,
-      theme,
-      colorOverrides,
-      scenario
-    };
-  }
 
-  // Parse seed (base36 format)
-  const seed = parseInt(seedStr, 36);
+  let seed = 0;
+  let initialHands: Domino[][] | undefined;
 
-  if (isNaN(seed)) {
-    throw new Error('Invalid URL: seed must be a valid number');
+  if (initialHandsStr) {
+    // initialHands takes priority
+    initialHands = decodeInitialHands(initialHandsStr);
+  } else if (seedStr) {
+    seed = parseInt(seedStr, 36);
+    if (isNaN(seed)) {
+      throw new Error('Invalid URL: seed must be a valid number');
+    }
   }
 
   // Parse actions
@@ -415,19 +509,22 @@ export function decodeGameUrl(urlString: string): {
         .filter((name): name is string => name !== undefined)
     : undefined;
 
-  const result: {
-    seed: number;
-    actions: string[];
-    playerTypes: ('human' | 'ai')[];
-    dealer: number;
-    theme: string;
-    colorOverrides: Record<string, string>;
-    scenario: string;
-    layers?: string[];
-  } = { seed, actions, playerTypes, dealer, theme, colorOverrides, scenario };
+  const result: URLData = {
+    seed,
+    actions,
+    playerTypes,
+    dealer,
+    theme,
+    colorOverrides,
+    scenario
+  };
 
   if (layers && layers.length > 0) {
     result.layers = layers;
+  }
+
+  if (initialHands) {
+    result.initialHands = initialHands;
   }
 
   return result;
@@ -463,4 +560,47 @@ export interface URLData {
   colorOverrides: Record<string, string>;
   scenario: string;
   layers?: string[];
+  initialHands?: Domino[][];  // Mutually exclusive with seed
+}
+
+// ============================================================================
+// State → URL (the missing piece!)
+// ============================================================================
+
+/**
+ * Generate a shareable URL from game state.
+ *
+ * This is the key function for the URL ↔ State isomorphism.
+ * Any game state (GameState or FilteredGameState) can be serialized to a URL
+ * that, when replayed, produces identical state.
+ */
+export function stateToUrl(state: GameState | FilteredGameState): string {
+  const config = state.initialConfig;
+  const actionIds = state.actionHistory.map(actionToId);
+
+  // Mutual exclusion: initialHands OR seed
+  if (config.dealOverrides?.initialHands) {
+    return encodeGameUrl(
+      undefined,  // no seed when using initialHands
+      actionIds,
+      config.playerTypes,
+      state.dealer,
+      config.theme,
+      config.colorOverrides,
+      undefined,  // sectionName
+      config.layers,
+      config.dealOverrides.initialHands
+    );
+  }
+
+  return encodeGameUrl(
+    state.shuffleSeed,
+    actionIds,
+    config.playerTypes,
+    state.dealer,
+    config.theme,
+    config.colorOverrides,
+    undefined,  // sectionName
+    config.layers
+  );
 }
