@@ -112,12 +112,13 @@ LAYERS (execution rules + action generation) = Game Configuration
 
 **Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
-**Interface**: `GameRules` - 13 pure methods grouped into:
+**Interface**: `GameRules` - 14 pure methods grouped into:
 - **WHO** (3): getTrumpSelector, getFirstLeader, getNextPlayer
 - **WHEN** (2): isTrickComplete, checkHandOutcome
 - **HOW** (2): getLedSuit, calculateTrickWinner
 - **VALIDATION** (3): isValidPlay, getValidPlays, isValidBid
 - **SCORING** (3): getBidComparisonValue, isValidTrump, calculateScore
+- **LIFECYCLE** (1): getPhaseAfterHandComplete
 
 **Composition**: Layers override only what differs from base. Compose via reduce:
 ```typescript
@@ -130,7 +131,7 @@ const rules = composeRules([baseLayer, nelloLayer, splashLayer]);
 
 ### When to Add New Rules Methods
 
-The GameRules interface currently has 13 methods, but **this number is not fixed**. Add new rules methods when you need:
+The GameRules interface currently has 14 methods, but **this number is not fixed**. Add new rules methods when you need:
 
 **New terminal states**: Mode needs hand to end for new reasons
 - Example: `checkHandOutcome` was added to support nello/plunge early termination
@@ -185,6 +186,29 @@ this.ctx = Object.freeze({
 ```
 
 **Result**: Layers change both execution semantics and action availability. Executors have ZERO conditional logic - they call `ctx.rules.method()` and trust the result. ExecutionContext groups the always-traveling-together parameters (layers, rules, getValidActions) into a single immutable object.
+
+### Design Note: Layer State Inspection Pattern
+
+Layers check `state.trump.type` to determine if their rules apply:
+
+```typescript
+// nello.ts
+isTrickComplete: (state, prev) =>
+  state.trump?.type === 'nello'
+    ? state.currentTrick.length === 3
+    : prev
+```
+
+**This is intentional, not an architectural violation.** Texas 42's game rules require:
+1. Layers must be composable at config time (nello layer is always composed when enabled)
+2. But layers are *activated* by player choice during trump selection
+
+The state check is necessary because nello is selected as a trump option, not pre-determined by config. This pattern is:
+- **Explicit** - Says exactly what it means
+- **Local** - All nello logic lives in nello.ts
+- **Necessary** - Matches how Texas 42 special contracts work
+
+Executors remain mode-agnostic (calling `rules.method()`); layers handle mode-specific logic by checking trump type. Alternatives that try to hide this complexity (config-time composition, helper lambdas, trump-keyed dispatch) were evaluated and rejected as they move complexity without eliminating it.
 
 ---
 
@@ -256,10 +280,10 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/types.ts` - Core types (GameState, GameAction, etc)
 
 **Layer System** (unified execution + actions):
-- `src/game/layers/types.ts` - GameRules interface (13 methods), Layer
+- `src/game/layers/types.ts` - GameRules interface (14 methods), Layer
 - `src/game/layers/compose.ts` - composeRules() - reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
-- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand}.ts` - Layer implementations
+- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed}.ts` - Layer implementations
 - `src/game/layers/registry.ts` - LAYER_REGISTRY - name → layer mapping
 
 **Multiplayer** (authorization, visibility):

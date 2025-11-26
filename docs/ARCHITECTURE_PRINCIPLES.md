@@ -89,14 +89,15 @@ LAYERS (execution rules + action generation) = Game Configuration
 **Surface 1: Execution Rules**
 Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
-**Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 13 methods)
+**Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 14 methods)
 - WHO: getTrumpSelector, getFirstLeader, getNextPlayer
 - WHEN: isTrickComplete, checkHandOutcome
 - HOW: getLedSuit, calculateTrickWinner
 - VALIDATION: isValidPlay, getValidPlays, isValidBid
 - SCORING: getBidComparisonValue, isValidTrump, calculateScore
+- LIFECYCLE: getPhaseAfterHandComplete
 
-**Extensibility**: The 13 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
+**Extensibility**: The 14 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
 
 **When to add methods**: When an executor needs mode-specific behavior and you're tempted to write `if (state.mode)`, add a GameRules method instead. Base provides default, Layers override.
 

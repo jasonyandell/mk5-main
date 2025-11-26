@@ -198,11 +198,11 @@
 ## 2. Composition Systems
 
 ### GameRules (Interface)
-**Definition**: Interface of 13 pure methods that determine HOW the game executes.
+**Definition**: Interface of 14 pure methods that determine HOW the game executes.
 
 **Location**: `src/game/layers/types.ts`
 
-**The 13 Methods** (organized by category):
+**The 14 Methods** (organized by category):
 
 **WHO (3 methods)** - Player determination:
 - `getTrumpSelector(state, winningBid): number` - Which player selects trump
@@ -227,6 +227,9 @@
 - `isValidTrump(trump): boolean` - Can this be trump
 - `calculateScore(state): [number, number]` - Team scores
 
+**LIFECYCLE (1 method)** - Phase transitions:
+- `getPhaseAfterHandComplete(state): GamePhase` - What phase to transition to after hand completes (enables one-hand mode's terminal state)
+
 **Key Insight**: Executors call these methods, never inspect state. This enables polymorphism - same executor code works for all variants.
 
 **Composed By**: Layers override specific methods, compose via `composeRules()` reduce pattern
@@ -235,7 +238,7 @@
 
 ### Extending GameRules
 
-**The 13 methods are not fixed** - this is the current count, not a hard limit.
+**The 14 methods are not fixed** - this is the current count, not a hard limit.
 
 **When to add new methods**:
 
@@ -395,7 +398,7 @@ export function composeRules(layers: Layer[]): GameRules {
     // For each rule method
     getTrumpSelector: (state, bid) =>
       layer.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
-    // ... repeat for all 13 methods
+    // ... repeat for all 14 methods
   }), baseRules);
 }
 ```
@@ -1754,7 +1757,7 @@ colorOverrides: Record<string, string>  // CSS variables
 - rules.ts: Rule validation
 
 ### src/game/layers/
-- types.ts: GameRules (13 methods), Layer, HandOutcome
+- types.ts: GameRules (14 methods), Layer, HandOutcome
 - compose.ts: Layer composition via reduce
 - base.ts: Base Layer (standard Texas 42)
 - nello.ts, splash.ts, plunge.ts, sevens.ts: Special contracts

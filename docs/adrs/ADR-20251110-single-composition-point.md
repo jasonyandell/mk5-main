@@ -9,7 +9,7 @@
 The Texas 42 architecture uses a two-level composition system where RuleSets (execution semantics) and ActionTransformers (action transformation) combine to create game configurations. This composition creates an ExecutionContext that contains:
 
 1. **rulesets**: Array of enabled GameRuleSets
-2. **rules**: Composed GameRules interface (13 methods)
+2. **rules**: Composed GameRules interface (14 methods)
 3. **getValidActions**: Composed state machine with applied ActionTransformers
 
 ### The Problem
