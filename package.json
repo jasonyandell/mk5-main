@@ -9,6 +9,7 @@
     "prebuild": "npm run generate:strength-table",
     "predev": "npm run generate:strength-table",
     "generate:strength-table": "npx tsx scripts/generate-strength-table.ts",
+    "generate:perfects": "npx tsx scripts/find-perfect-hands.ts --json > data/perfect-hands.json && npx tsx scripts/find-3hand-leftover.ts --json > data/3hand-partitions.json",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "typecheck": "tsc --noEmit",

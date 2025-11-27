@@ -82,3 +82,7 @@ pnpm-lock.yaml
 
 # Vitest
 coverage.*/
+
+# Generated data files (regenerate with: npm run generate:perfects)
+data/perfect-hands.json
+data/3hand-partitions.json

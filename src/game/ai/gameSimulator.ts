@@ -2,10 +2,9 @@
  * Game simulator for testing seeds and AI strategies.
  * Runs games to completion using AI players.
  *
- * CRITICAL DEPENDENCIES:
- * - Uses beginner AI strategy (deterministic and fast)
- * - selectAIAction() is hardcoded to beginner strategy in actionSelector.ts:17
- * - Beginner AI provides deterministic, reproducible game outcomes
+ * AI STRATEGY:
+ * - Uses configurable AI strategy via setDefaultAIStrategy() (defaults to 'beginner')
+ * - Beginner strategy is deterministic; intermediate uses Monte Carlo (non-deterministic)
  * - Same seed + same actions = identical game state (event sourcing guarantee)
  *
  * FAIL-FAST DESIGN:
@@ -51,8 +50,6 @@ export interface SeedProgress {
 
 /**
  * Options for game simulation
- *
- * NOTE: aiDifficulty is ignored - beginner AI is hardcoded in actionSelector.ts
  */
 export interface SimulateGameOptions {
   /** Maximum number of hands to simulate (safety limit) */
@@ -61,7 +58,7 @@ export interface SimulateGameOptions {
   maxActions?: number;
   /** All players are AI */
   allAI?: boolean;
-  /** AI difficulty level (CURRENTLY IGNORED - beginner is hardcoded) */
+  /** AI difficulty level (unused - set strategy globally via setDefaultAIStrategy instead) */
   aiDifficulty?: 'beginner' | 'intermediate' | 'expert';
 }
 
@@ -184,7 +181,7 @@ export async function simulateGame(
         );
       }
 
-      // For AI players, select action using AI selector (ALWAYS beginner strategy)
+      // For AI players, select action using configured strategy (defaults to 'beginner')
       if (playerTypes[currentPlayer] === 'ai') {
         const selected = selectAIAction(state, currentPlayer, playerActions);
         selectedAction = selected ?? undefined;
