@@ -286,23 +286,15 @@ AI players are just GameClients with AI behavior attached. No special treatment.
 ```typescript
 function attachAIBehavior(client: GameClient, playerIndex: number): void {
   client.subscribe((view) => {
-    // Is it my turn?
-    const myActions = view.validActions.filter(a =>
-      a.action.player === playerIndex
-    );
+    const chosen = selectAIAction(view.state, playerIndex, view.validActions);
+    if (!chosen) return;
 
-    if (myActions.length === 0) return;
-
-    // Compute move (can be async, use Web Worker for heavy computation)
-    const chosen = aiStrategy.chooseAction(view.state, myActions);
-
-    // Send it (with optional delay for natural feel)
-    setTimeout(() => {
-      client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
-    }, 500);
+    client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
   });
 }
 ```
+
+The `selectAIAction` function uses the configured AI strategy (beginner/intermediate/random). AI responds instantly - timing/pacing is a UI concern, not game logic.
 
 For computationally expensive AI:
 - **Offline**: Run AI in a Web Worker, post result back

@@ -40,15 +40,6 @@ export class RandomAIStrategy implements AIStrategy {
     }
     return chosen;
   }
-
-  getThinkingTime(actionType: string): number {
-    // Instant response for consensus actions
-    if (actionType === 'agree-complete-trick' || actionType === 'agree-score-hand') {
-      return 0;
-    }
-
-    return 0;
-  }
 }
 
 // NOTE: All AI decision-making utilities have been moved to src/game/ai/utilities.ts
@@ -420,14 +411,5 @@ export class BeginnerAIStrategy implements AIStrategy {
       }
       return max;
     }, 0);
-  }
-  
-  getThinkingTime(actionType: string): number {
-    // Instant response for consensus actions
-    if (actionType === 'agree-complete-trick' || actionType === 'agree-score-hand') {
-      return 0;
-    }
-    
-    return 800 + Math.random() * 2000;
   }
 }

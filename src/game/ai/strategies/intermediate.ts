@@ -123,28 +123,6 @@ export class IntermediateAIStrategy implements AIStrategy {
     }
     return this.ctx;
   }
-
-  /**
-   * Get thinking time in milliseconds.
-   *
-   * Monte Carlo is slower than beginner, so we add a bit less artificial delay
-   * since the simulation itself takes time.
-   */
-  getThinkingTime(actionType: string): number {
-    // Instant response for consensus actions
-    if (actionType === 'agree-complete-trick' || actionType === 'agree-score-hand') {
-      return 0;
-    }
-
-    // For play actions, Monte Carlo adds real computation time
-    // Add smaller delay than beginner
-    if (actionType === 'play') {
-      return 200 + Math.random() * 500;
-    }
-
-    // Other actions use beginner-like timing
-    return 500 + Math.random() * 1000;
-  }
 }
 
 /**

@@ -3,6 +3,7 @@ import type { Socket } from './Socket';
 import { GameClient } from './GameClient';
 import type { ServerMessage } from './protocol';
 import { Room } from '../server/Room';
+import { selectAIAction } from '../game/ai/actionSelector';
 
 export { attachAIBehavior };
 
@@ -12,21 +13,10 @@ export { attachAIBehavior };
  */
 function attachAIBehavior(client: GameClient, playerIndex: number): void {
   client.subscribe((view) => {
-    // Find actions for this player
-    const myActions = view.validActions.filter(a =>
-      'player' in a.action && a.action.player === playerIndex
-    );
-
-    if (myActions.length === 0) return;
-
-    // Select action (simple random for now, strategy selection comes later)
-    const chosen = myActions[Math.floor(Math.random() * myActions.length)];
+    const chosen = selectAIAction(view.state, playerIndex, view.validActions);
     if (!chosen) return;
 
-    // Send with small delay for natural feel
-    setTimeout(() => {
-      client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
-    }, 100);
+    client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
   });
 }
 

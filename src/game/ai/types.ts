@@ -37,9 +37,4 @@ export interface AIStrategy {
    * Choose an action from available valid actions
    */
   chooseAction(state: GameState, validActions: ValidAction[]): ValidAction;
-
-  /**
-   * Get thinking time in milliseconds
-   */
-  getThinkingTime(actionType: string): number;
 }
