@@ -9,7 +9,6 @@ import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone, R
 import { PLAYED_AS_TRUMP } from '../types';
 import { getTrickWinner } from '../core/rules';
 import { getTrumpSuit, isTrump, trumpToNumber, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
-import { getDominoStrength } from './strength-table.generated';
 import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
 
 /**
@@ -91,63 +90,6 @@ function getUnplayedDominoes(state: GameState, playerId: number): Domino[] {
   }
   
   return unplayed;
-}
-
-/**
- * Get dominoes excluded from play (in our hand or already played)
- */
-function getExcludedDominoes(state: GameState, playerId: number): Set<string> {
-  const excluded = new Set<string>();
-
-  // Add dominoes in our hand
-  for (const domino of state.players[playerId]?.hand ?? []) {
-    excluded.add(domino.id.toString());
-  }
-
-  // Add played dominoes from completed tricks
-  const played = getPlayedDominoesFromTricks(state.tricks);
-  for (const dominoId of played) {
-    excluded.add(dominoId);
-  }
-
-  return excluded;
-}
-
-/**
- * Fast lookup using precomputed table
- */
-export function analyzeDominoAsSuitFast(
-  domino: Domino,
-  playedAsSuit: LedSuitOrNone,
-  trump: TrumpSelection,
-  state: GameState,
-  playerId: number
-): DominoStrength {
-  // Get precomputed entry
-  const entry = getDominoStrength(domino, trump, playedAsSuit);
-  if (!entry) {
-    // Fallback to runtime computation if key not found
-    console.warn(`No precomputed entry for domino ${domino.id}, falling back to runtime`);
-    return analyzeDominoAsSuit(domino, playedAsSuit, trump, state, playerId);
-  }
-  
-  // Filter out excluded dominoes
-  const excluded = getExcludedDominoes(state, playerId);
-  
-  // Convert IDs back to Domino objects, filtering out excluded ones
-  const idToDomino = (id: string): Domino => {
-    const parts = id.split('-').map(Number);
-    return { high: parts[0]!, low: parts[1]!, id };
-  };
-  
-  return {
-    domino,
-    playedAsSuit: playedAsSuit,
-    isTrump: isTrump(domino, trump),
-    beatenBy: entry.beatenBy.filter(id => !excluded.has(id)).map(idToDomino),
-    beats: entry.beats.filter(id => !excluded.has(id)).map(idToDomino),
-    cannotFollow: entry.cannotFollow.filter(id => !excluded.has(id)).map(idToDomino)
-  };
 }
 
 /**

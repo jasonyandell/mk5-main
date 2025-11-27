@@ -5,7 +5,6 @@ import { BID_TYPES } from '../constants';
 import { calculateTrickWinner } from '../core/scoring';
 import { analyzeHand } from '../ai/utilities';
 import {
-//  calculateHandStrengthWithTrump,
   determineBestTrump,
   LAYDOWN_SCORE,
   BID_THRESHOLDS

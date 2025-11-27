@@ -10,8 +10,17 @@
 import { createInitialState } from '../src/game';
 import { HeadlessRoom } from '../src/server/HeadlessRoom';
 import { BeginnerAIStrategy } from '../src/game/ai/strategies';
-import { calculateHandStrengthWithTrump } from '../src/game/ai/hand-strength';
-import type { GameState, TrumpSelection } from '../src/game/types';
+import { calculateLexicographicStrength } from '../src/game/ai/lexicographic-strength';
+import { createMinimalAnalysisState } from '../src/game/ai/utilities';
+import { determineBestTrump } from '../src/game/ai/hand-strength';
+import type { GameState, TrumpSelection, Domino } from '../src/game/types';
+
+// Helper to calculate hand strength using the new lexicographic system
+function calculateHandStrength(hand: Domino[]): number {
+  const trump = determineBestTrump(hand);
+  const minimalState = createMinimalAnalysisState(hand, trump, 0);
+  return calculateLexicographicStrength(hand, trump, minimalState);
+}
 
 // Track bid outcomes
 interface BidOutcome {
@@ -80,7 +89,7 @@ async function playHand(initialState: GameState) {
     if (gameState.phase === 'bidding') {
       const currentPlayer = gameState.players[gameState.currentPlayer!];
       // Use null like the AI does to force proper trump analysis
-      const handStrength = calculateHandStrengthWithTrump(currentPlayer!.hand, undefined);
+      const handStrength = calculateHandStrength(currentPlayer!.hand);
 
       // Track laydowns with logging
       if (handStrength === 999) {
@@ -161,11 +170,8 @@ async function playHand(initialState: GameState) {
         if (laydownBidInfo && laydownBidInfo.playerId === gameState.winningBidder) {
           winningBidInfo = laydownBidInfo;
         } else {
-          // Calculate the winning player's hand strength using null for proper trump analysis
-          const winnerStrength = calculateHandStrengthWithTrump(
-            winningPlayer!.hand, 
-            undefined
-          );
+          // Calculate the winning player's hand strength using the new lexicographic system
+          const winnerStrength = calculateHandStrength(winningPlayer!.hand);
           
           
           winningBidInfo = {

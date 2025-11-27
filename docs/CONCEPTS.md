@@ -1778,10 +1778,9 @@ colorOverrides: Record<string, string>  // CSS variables
 - strategies.ts: RandomAIStrategy, BeginnerAIStrategy
 - actionSelector.ts: selectAIAction
 - utilities.ts: analyzeHand
-- hand-strength.ts: calculateHandStrengthWithTrump, determineBestTrump, BID_THRESHOLDS, LAYDOWN_SCORE
+- hand-strength.ts: determineBestTrump, BID_THRESHOLDS, LAYDOWN_SCORE
 - lexicographic-strength.ts: calculateLexicographicStrength
 - domino-strength.ts: analyzeDomino, DominoStrength
-- multi-trump-analysis.ts: MultiTrumpAnalysis
 - gameSimulator.ts: Game simulation utilities
 
 ### src/kernel/

@@ -155,30 +155,3 @@ export function calculateLexicographicStrength(
   return score;
 }
 
-/**
- * Get detailed lexicographic analysis for debugging
- */
-export function getLexicographicAnalysis(
-  hand: Domino[],
-  _state: GameState
-): { trump: TrumpSelection; rankedHand: RankedDomino[]; score: number[] }[] {
-  const possibleTrumps: TrumpSelection[] = [
-    { type: 'doubles' },
-    { type: 'suit', suit: 0 },
-    { type: 'suit', suit: 1 },
-    { type: 'suit', suit: 2 },
-    { type: 'suit', suit: 3 },
-    { type: 'suit', suit: 4 },
-    { type: 'suit', suit: 5 },
-    { type: 'suit', suit: 6 },
-  ];
-
-  const evaluations = possibleTrumps.map(trump =>
-    evaluateHandWithTrump(hand, trump)
-  );
-
-  // Sort by lexicographic score (best first)
-  evaluations.sort((a, b) => compareLexicographic(a.score, b.score));
-  
-  return evaluations;
-}
