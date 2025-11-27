@@ -137,6 +137,8 @@ node scripts/replay-from-url.js "<url>" --generate-test
 
 **Key Rule**: Tests use same composition paths as production (HeadlessRoom → Room → ExecutionContext).
 
+**Note**: Vitest uses `environment: 'node'` (not jsdom) - unit tests are pure logic with no DOM dependencies.
+
 ## Supporting Files
 
 For deep dives, see companion files in this skill directory:

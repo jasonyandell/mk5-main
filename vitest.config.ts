@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [svelte()],
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
     testTimeout: 60_000,
     reporters: ['dot'],
     include: ['src/tests/**/*.test.ts'],

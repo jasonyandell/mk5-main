@@ -49,9 +49,10 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 
 ## Testing Strategy
 
-### Unit Tests
+### Unit Tests (Vitest)
 - For pure game logic and pasted URLs
 - Test core functions in isolation
+- Uses `environment: 'node'` (not jsdom) - tests are pure logic, no DOM needed
 
 ### E2E Tests (Playwright)
 
