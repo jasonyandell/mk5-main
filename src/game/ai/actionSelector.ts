@@ -1,21 +1,52 @@
 import type { GameState } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
+import { IntermediateAIStrategy } from './strategies/intermediate';
 import type { AIStrategy } from './types';
 
+/** Available AI strategy types */
+export type AIStrategyType = 'beginner' | 'intermediate' | 'random';
+
 // Strategy instances - reused for pure functions
-const strategies = {
+// Note: IntermediateAIStrategy creates ExecutionContext lazily from state
+const strategies: Record<AIStrategyType, AIStrategy> = {
   beginner: new BeginnerAIStrategy(),
+  intermediate: new IntermediateAIStrategy(),
   random: new RandomAIStrategy()
 };
+
+// Current default strategy (can be changed for testing/configuration)
+let defaultStrategy: AIStrategyType = 'beginner';
+
+/**
+ * Set the default AI strategy for all AI players.
+ * Useful for testing or global configuration.
+ */
+export function setDefaultAIStrategy(strategy: AIStrategyType): void {
+  defaultStrategy = strategy;
+}
+
+/**
+ * Get the current default AI strategy.
+ */
+export function getDefaultAIStrategy(): AIStrategyType {
+  return defaultStrategy;
+}
+
+/**
+ * Get a strategy instance by type.
+ */
+export function getStrategy(type: AIStrategyType): AIStrategy {
+  return strategies[type];
+}
 
 /**
  * Get the AI strategy for a player (can be extended to support per-player strategies)
  */
 function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy {
-  // For now, all AI players use beginner strategy
-  // Could extend to check state.playerStrategies or similar
-  return strategies.beginner;
+  // Use the default strategy
+  // Could extend to check state-based per-player strategies
+  return strategies[defaultStrategy];
 }
 
 /**

@@ -26,7 +26,7 @@ export interface PlayerController {
 export interface PlayerConfig {
   type: 'human' | 'ai';
   name?: string;
-  aiStrategy?: 'beginner' | 'random';
+  aiStrategy?: 'beginner' | 'intermediate' | 'random';
 }
 
 /**
