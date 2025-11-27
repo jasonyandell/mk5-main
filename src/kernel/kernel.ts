@@ -99,10 +99,11 @@ export function processAutoExecuteActions(
 
 /**
  * Build a game view with capability-based filtering (pure).
+ * Throws if forPlayerId doesn't correspond to a valid session.
  */
 export function buildKernelView(
   state: MultiplayerGameState,
-  forPlayerId: string | undefined,
+  forPlayerId: string,
   ctx: ExecutionContext,
   metadata: {
     gameId: string;
@@ -112,22 +113,13 @@ export function buildKernelView(
   const coreState = state.coreState;
   const actionsByPlayer = buildActionsMap(state, ctx);
 
-  const session = forPlayerId ? state.players.find((p: PlayerSession) => p.playerId === forPlayerId) : undefined;
-
-  const visibleState = session
-    ? getVisibleStateForSession(coreState, session)
-    : convertToFilteredState(coreState);
-
-  let validActions: ValidAction[];
-
-  if (session) {
-    validActions = actionsByPlayer[session.playerId] ?? [];
-  } else if (forPlayerId) {
-    // Requested perspective but no session found
-    validActions = [];
-  } else {
-    validActions = actionsByPlayer['__unfiltered__'] ?? [];
+  const session = state.players.find((p: PlayerSession) => p.playerId === forPlayerId);
+  if (!session) {
+    throw new Error(`buildKernelView: No session found for playerId "${forPlayerId}"`);
   }
+
+  const visibleState = getVisibleStateForSession(coreState, session);
+  const validActions = actionsByPlayer[session.playerId] ?? [];
 
   // Convert validActions to ViewTransitions for client UI rendering
   const transitions: ViewTransition[] = validActions.map((valid) => ({
@@ -261,26 +253,6 @@ function findMatchingTransition(
         return true;
     }
   });
-}
-
-/**
- * Convert pure GameState to FilteredGameState format (pure).
- */
-export function convertToFilteredState(state: GameState) {
-  const filteredPlayers = state.players.map((player: GameState['players'][number]) => ({
-    id: player.id,
-    name: player.name,
-    teamId: player.teamId,
-    marks: player.marks,
-    hand: player.hand,
-    handCount: player.hand.length,
-    ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
-  }));
-
-  return {
-    ...state,
-    players: filteredPlayers
-  };
 }
 
 /**

@@ -114,16 +114,12 @@ export class Room {
 
   /**
    * Handle new client connection.
-   * Adds client to connected set and sends initial state.
+   * Adds client to connected set. No state sent until JOIN.
    */
   handleConnect(clientId: string): void {
     if (this.isDestroyed) return;
-
     this.connectedClients.add(clientId);
-
-    // Send initial state (unfiltered for now - will filter by player when joined)
-    const view = this.getView();
-    this.send(clientId, { type: 'STATE_UPDATE', view });
+    // No state sent - client must JOIN first to get capability-filtered view
   }
 
   /**
@@ -181,8 +177,9 @@ export class Room {
 
   /**
    * Get current game view for a specific player (capability-filtered).
+   * Throws if playerId doesn't correspond to a valid session.
    */
-  getView(forPlayerId?: string): GameView {
+  getView(forPlayerId: string): GameView {
     const layers = this.config.layers;
     return buildKernelView(this.mpState, forPlayerId, this.ctx, {
       gameId: this.gameId,
@@ -349,11 +346,13 @@ export class Room {
   }
 
   /**
-   * Notify all connected clients with updated views.
+   * Notify all joined clients with updated views.
+   * Clients that connected but haven't joined yet are skipped.
    */
   private notifyListeners(): void {
     for (const clientId of this.connectedClients) {
       const playerId = this.clientToPlayer.get(clientId);
+      if (!playerId) continue; // Skip unjoined clients
       const view = this.getView(playerId);
       this.send(clientId, { type: 'STATE_UPDATE', view });
     }
@@ -387,7 +386,7 @@ export class Room {
     // Associate client with player
     this.clientToPlayer.set(clientId, playerId);
 
-    // Update player session
+    // Update player session - joinPlayer calls notifyListeners which sends STATE_UPDATE
     const existing = this.players.get(playerId);
     if (existing) {
       const result = this.joinPlayer({
@@ -399,10 +398,7 @@ export class Room {
         return;
       }
     }
-
-    // Send filtered view for this player
-    const view = this.getView(playerId);
-    this.send(clientId, { type: 'STATE_UPDATE', view });
+    // notifyListeners() in joinPlayer already sent filtered view to this client
   }
 
   private handleSetControl(clientId: string, message: { type: 'SET_CONTROL'; playerIndex: number; controlType: 'human' | 'ai' }): void {

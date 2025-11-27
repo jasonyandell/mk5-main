@@ -1,6 +1,6 @@
 # Texas 42
 
-**Task Tracking**: This project uses beads (bd) via MCP. Use the beads MCP tools for all task tracking - check ready issues before starting work, file issues for discovered bugs/work as you go.
+**Task Tracking**: This project uses beads (bd) via MCP. Use the beads MCP tools for all task tracking - check ready issues before starting work, file issues for discovered bugs/work as you go. Run `npm run test:all` before closing a beads issue.
 
 # North Star
 The authors are building a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If the authors were mechanics, this project would be their "project car".  They work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  They enjoy elegance, simlicity and correctness.  They are MORE THAN HAPPY to spend extra time making every little thing perfect.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.

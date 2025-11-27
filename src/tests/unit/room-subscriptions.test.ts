@@ -32,14 +32,13 @@ describe('Room Subscriptions', () => {
     buildKernelViewSpy = vi.spyOn(kernelModule, 'buildKernelView');
   });
 
-  it('sends initial state when client connects', () => {
+  it('does not send state when client connects (must JOIN first)', () => {
     // Connect client
     room.handleConnect('client-1');
 
-    // Should send initial STATE_UPDATE
+    // Should NOT send any messages - client must JOIN to receive filtered state
     const messages = sentMessages.get('client-1') ?? [];
-    expect(messages.length).toBe(1);
-    expect(messages[0]?.type).toBe('STATE_UPDATE');
+    expect(messages.length).toBe(0);
   });
 
   it('sends filtered state when client joins as player', () => {
@@ -53,8 +52,8 @@ describe('Room Subscriptions', () => {
 
     // Should send filtered STATE_UPDATE for player-0
     const messages = sentMessages.get('client-1') ?? [];
-    // Messages: Initial connect + JOIN session update + JOIN filtered view
-    expect(messages.length).toBeGreaterThanOrEqual(2);
+    // Messages: JOIN sends filtered view (no message on connect anymore)
+    expect(messages.length).toBe(1);
 
     const lastMessage = messages[messages.length - 1];
     expect(lastMessage?.type).toBe('STATE_UPDATE');
@@ -161,17 +160,16 @@ describe('Room Subscriptions', () => {
     }
   });
 
-  it('handles unjoined client connections (observer view)', () => {
-    // Connect without joining (observer mode)
+  it('unjoined clients receive no state (security: no unfiltered views)', () => {
+    // Connect without joining
     room.handleConnect('observer-1');
 
-    // Should send initial STATE_UPDATE with unfiltered view
+    // Should NOT send any state - prevents leaking unfiltered game state
     const messages = sentMessages.get('observer-1') ?? [];
-    expect(messages.length).toBe(1);
-    expect(messages[0]?.type).toBe('STATE_UPDATE');
+    expect(messages.length).toBe(0);
   });
 
-  it('multiple connected clients all receive updates on each state change', () => {
+  it('only joined clients receive updates on state change', () => {
     // Connect three clients
     room.handleConnect('client-1');
     room.handleMessage('client-1', { type: 'JOIN', playerIndex: 0, name: 'P1' });
@@ -180,7 +178,7 @@ describe('Room Subscriptions', () => {
     room.handleMessage('client-2', { type: 'JOIN', playerIndex: 1, name: 'P2' });
 
     room.handleConnect('observer');
-    // Observer doesn't join a player
+    // Observer doesn't join a player - should NOT receive updates
 
     sentMessages.clear();
     buildKernelViewSpy.mockClear();
@@ -190,10 +188,11 @@ describe('Room Subscriptions', () => {
     if (actions.length > 0) {
       room.executeAction('player-0', actions[0]!.action);
 
-      // All three clients should receive updates
+      // Only joined clients should receive updates
       expect(sentMessages.get('client-1')?.length).toBe(1);
       expect(sentMessages.get('client-2')?.length).toBe(1);
-      expect(sentMessages.get('observer')?.length).toBe(1);
+      // Observer (unjoined) should NOT receive updates
+      expect(sentMessages.get('observer')?.length ?? 0).toBe(0);
     }
   });
 });
