@@ -15,7 +15,7 @@
 
 import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
 import type { Layer, GameRules } from './types';
-import { getDominoValue, getTrumpSuit, doesDominoFollowSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
+import { getDominoValue, getTrumpSuit, dominoContainsSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
@@ -458,7 +458,7 @@ export const baseLayer: Layer = {
         }
         // Both non-trump - must follow suit and higher value wins
         else if (!playIsTrump && !winningIsTrump &&
-                 ledSuit >= 0 && doesDominoFollowSuit(play.domino, ledSuit, state.trump) &&
+                 ledSuit >= 0 && dominoContainsSuit(play.domino, ledSuit, state.trump) &&
                  playValue > winningValue) {
           winningPlay = play;
           winningValue = playValue;

@@ -130,7 +130,7 @@ export function isTrumpSelected(trumpSuit: TrumpSuitOrNone): boolean {
  * Checks if a domino contains a specific suit (pip value)
  *
  * This is a simple pip check - does NOT account for trump or special rules.
- * For game logic that respects trump/doubles, use doesDominoFollowSuit instead.
+ * For game logic that respects trump/doubles, use dominoContainsSuit instead.
  *
  * @example
  * dominoHasSuit({ high: 6, low: 4 }, 6) // true
@@ -215,23 +215,26 @@ export function getDominoSuit(domino: Domino, trump: TrumpSelection): LedSuit {
 }
 
 /**
- * Checks if a domino follows the led suit, handling special cases for Doubles as Trump/Nello.
- * 
- * This is the centralized logic for "following suit".
- * 
+ * Checks if a domino contains a specific suit/pip, accounting for doubles rules.
+ *
+ * NOTE: This does NOT check game legality (trump exclusion). A domino containing
+ * a suit may not be legally playable to follow that suit if it's trump.
+ * For game-legal follow-suit checking, see getValidPlaysBase in compose.ts or
+ * canFollowSuitForConstraints in constraint-tracker.ts.
+ *
  * Rules:
- * 1. If ledSuit is 7 (Doubles), must play a double.
+ * 1. If ledSuit is 7 (Doubles), only doubles match.
  * 2. If Doubles are their own suit (Nello or Doubles Trump):
  *    - Doubles belong ONLY to suit 7.
- *    - They do NOT follow their natural suit (e.g. 5-5 does not follow 5).
+ *    - They do NOT match their natural suit (e.g. 5-5 does not match 5).
  * 3. If Standard play:
- *    - Doubles belong to their natural suit (e.g. 5-5 follows 5).
- * 
- * @param domino The domino being played
- * @param ledSuit The suit that was led (0-6 or 7 for doubles)
+ *    - Doubles belong to their natural suit (e.g. 5-5 matches 5).
+ *
+ * @param domino The domino to check
+ * @param ledSuit The suit to check for (0-6 or 7 for doubles)
  * @param trump The current trump selection (determines if doubles are their own suit)
  */
-export function doesDominoFollowSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
+export function dominoContainsSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
   const trumpSuit = getTrumpSuit(trump);
   const doublesAreSuits = isDoublesTrump(trumpSuit) || trump.type === 'nello';
 
@@ -253,11 +256,10 @@ export function doesDominoFollowSuit(domino: Domino, ledSuit: number, trump: Tru
 }
 
 /**
- * Checks if a domino can follow a specific suit (contains that number)
- * @deprecated Use doesDominoFollowSuit instead for game logic, or check pips directly for UI
+ * @deprecated Use dominoContainsSuit instead
  */
 export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
-  return doesDominoFollowSuit(domino, ledSuit, trump);
+  return dominoContainsSuit(domino, ledSuit, trump);
 }
 
 /**

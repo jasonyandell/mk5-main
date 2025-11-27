@@ -22,7 +22,7 @@ import {
 /**
  * Check if a domino CAN follow a suit according to game rules.
  *
- * This is different from doesDominoFollowSuit in a crucial way:
+ * This is different from dominoContainsSuit in a crucial way:
  * - Trump dominoes CANNOT follow non-trump suits (they're always trump)
  * - This matches getValidPlaysBase in compose.ts
  *

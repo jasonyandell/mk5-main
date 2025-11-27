@@ -267,29 +267,15 @@ function rolloutToHandEnd(
 
 /**
  * Check if the current hand is complete.
+ *
+ * We only check for 'scoring' phase because:
+ * 1. All game modes reach 'scoring' before transitioning elsewhere
+ * 2. The rollout loop checks this BEFORE executing actions, so we stop
+ *    at 'scoring' before any consensus/post-scoring transitions happen
+ * 3. This avoids leaking layer-specific phase knowledge (like 'one-hand-complete')
  */
 function isHandComplete(state: GameState): boolean {
-  // Scoring phase means hand is done playing
-  if (state.phase === 'scoring') {
-    return true;
-  }
-
-  // Game end means everything is done
-  if (state.phase === 'game_end') {
-    return true;
-  }
-
-  // One-hand complete is terminal
-  if (state.phase === 'one-hand-complete') {
-    return true;
-  }
-
-  // Bidding phase after tricks means new hand started
-  if (state.phase === 'bidding' && state.tricks.length > 0) {
-    return true;
-  }
-
-  return false;
+  return state.phase === 'scoring';
 }
 
 /**

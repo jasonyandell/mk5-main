@@ -61,8 +61,8 @@ This is the trickiest part of the entire system. Here's why it exists:
 
 **The Naive Approach (Wrong)**
 ```typescript
-// doesDominoFollowSuit just checks if domino contains the suit
-doesDominoFollowSuit({ high: 4, low: 0 }, 0, trump)  // Returns TRUE
+// dominoContainsSuit just checks if domino contains the suit
+dominoContainsSuit({ high: 4, low: 0 }, 0, trump)  // Returns TRUE
 ```
 
 **The Problem**: With 4s as trump, the 4-0 domino is TRUMP. In Texas 42, trump dominoes **cannot be used to follow non-trump suits**. The 4-0 can only be played as trump, never as a 0.
@@ -260,14 +260,14 @@ During development, the AI would randomly fail with:
 Failed to sample valid hand distribution after 1000 attempts
 ```
 
-**Root Cause**: The constraint tracker was using `doesDominoFollowSuit()` to check if a player followed suit. But this function doesn't account for trump exclusion.
+**Root Cause**: The constraint tracker was using `dominoContainsSuit()` to check if a player followed suit. But this function doesn't account for trump exclusion.
 
 **Example Failure**:
 - Trump: 4s
 - Trick: P0 leads 0s, P1 plays 4-3 (trump, doesn't follow 0s)
 - Old inference: P1 is void in 0s
 - P1's actual hand: includes 4-0
-- Problem: 4-0 "follows" 0 according to `doesDominoFollowSuit`, but P1 is "void" in 0s
+- Problem: 4-0 "contains" 0 according to `dominoContainsSuit`, but P1 is "void" in 0s
 - Result: 4-0 can't be assigned to anyone → sampling fails
 
 **The Fix**: Create `canFollowSuitForConstraints()` that mirrors the actual game rules - trump dominoes don't follow non-trump suits.
