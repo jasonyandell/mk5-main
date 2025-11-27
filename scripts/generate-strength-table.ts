@@ -90,10 +90,6 @@ function createMinimalState(): GameState {
     gameTarget: 7,
     shuffleSeed: 0,
     playerTypes: ['ai', 'ai', 'ai', 'ai'],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()
-    },
     actionHistory: [],
     theme: 'business',
     colorOverrides: {}

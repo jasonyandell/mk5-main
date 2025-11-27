@@ -106,11 +106,6 @@ export function createSetupState(options?: {
     shuffleSeed,
     // Player control types - default: player 0 human, rest AI
     playerTypes,
-    // Consensus tracking for neutral actions
-    consensus: {
-      completeTrick: new Set<number>(),
-      scoreHand: new Set<number>()
-    },
     // Action history for replay and debugging
     actionHistory: [],
     // Theme as first-class citizen
@@ -199,11 +194,6 @@ export function createInitialState(options?: {
     shuffleSeed,
     // Player control types - default: player 0 human, rest AI
     playerTypes,
-    // Consensus tracking for neutral actions
-    consensus: {
-      completeTrick: new Set<number>(),
-      scoreHand: new Set<number>()
-    },
     // Action history for replay and debugging
     actionHistory: []
   };
@@ -258,11 +248,6 @@ export function cloneGameState(state: GameState): GameState {
     currentSuit: state.currentSuit,
     teamScores: [...state.teamScores] as [number, number],
     teamMarks: [...state.teamMarks] as [number, number],
-    // Clone consensus Sets
-    consensus: {
-      completeTrick: new Set(state.consensus.completeTrick),
-      scoreHand: new Set(state.consensus.scoreHand)
-    },
     // Clone action history
     actionHistory: [...state.actionHistory]
   };

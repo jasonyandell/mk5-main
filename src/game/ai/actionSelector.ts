@@ -70,15 +70,6 @@ export function selectAIAction(
 
   if (myActions.length === 0) return null;
 
-  // AI players should immediately agree to consensus actions
-  const consensusAction = myActions.find(va =>
-    va.action.type === 'agree-complete-trick' ||
-    va.action.type === 'agree-score-hand'
-  );
-  if (consensusAction) {
-    return consensusAction;
-  }
-
   const strategy = getStrategyForPlayer(playerId, state);
   return strategy.chooseAction(state, myActions);
 }

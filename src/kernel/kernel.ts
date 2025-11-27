@@ -278,7 +278,7 @@ export function getActionGroup(action: GameAction): string | undefined {
  */
 export function isRecommendedAction(action: GameAction, _state: GameState): boolean {
   // For consensus actions, recommend immediate agreement
-  if (action.type === 'agree-score-hand') {
+  if (action.type === 'agree-score') {
     return true;
   }
 

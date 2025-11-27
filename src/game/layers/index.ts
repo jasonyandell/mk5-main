@@ -21,6 +21,7 @@ export { tournamentLayer } from './tournament';
 export { oneHandLayer } from './oneHand';
 export { speedLayer } from './speed';
 export { hintsLayer } from './hints';
+export { consensusLayer } from './consensus';
 
 // Composition
 export { composeRules, composeGetValidActions } from './compose';

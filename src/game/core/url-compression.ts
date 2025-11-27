@@ -82,17 +82,10 @@ const EVENT_TO_CHAR: Record<string, string> = {
   'play-6-5': '1',
   'play-6-6': '2',
   
-  // Consensus (3-., 10 events)
+  // Consensus (3-4, 2 events)
   'complete-trick': '3',
   'score-hand': '4',
-  'agree-complete-trick-0': '5',
-  'agree-complete-trick-1': '6',
-  'agree-complete-trick-2': '7',
-  'agree-complete-trick-3': '8',
-  'agree-score-hand-0': '9',
-  'agree-score-hand-1': '-',
-  'agree-score-hand-2': '_',
-  'agree-score-hand-3': '.',
+  // Codes 5-9, -, _, . now available for future use (reclaimed from removed agree actions)
 };
 
 // Reverse mapping for decompression

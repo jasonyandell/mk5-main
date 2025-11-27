@@ -48,20 +48,32 @@ export async function processSequentialConsensus(
   const ctx = createTestContext();
   let state = initialState;
   const actionType = consensusType === 'completeTrick'
-    ? 'agree-complete-trick'
-    : 'agree-score-hand';
+    ? 'agree-trick'
+    : 'agree-score';
 
   // Process agrees sequentially until all players have agreed
-  while (state.consensus[consensusType].size < 4) {
-    // Skip if current player is human
-    if (humanPlayers.has(state.currentPlayer)) {
+  // Count agreements from action history
+  let agreedPlayers = new Set<number>();
+  for (let i = state.actionHistory.length - 1; i >= 0; i--) {
+    const action = state.actionHistory[i];
+    if (!action) continue;
+    // Stop at the last progress action
+    if ((consensusType === 'completeTrick' && action.type === 'complete-trick') ||
+        (consensusType === 'scoreHand' && action.type === 'score-hand')) {
       break;
     }
+    if (action.type === actionType && 'player' in action) {
+      agreedPlayers.add(action.player);
+    }
+  }
 
+  while (agreedPlayers.size < 4) {
     const transitions = getNextStates(state, ctx);
     const agreeAction = transitions.find(t =>
       t.action.type === actionType &&
-      t.action.player === state.currentPlayer
+      'player' in t.action &&
+      !agreedPlayers.has(t.action.player) &&
+      !humanPlayers.has(t.action.player)
     );
 
     if (!agreeAction) {
@@ -69,6 +81,9 @@ export async function processSequentialConsensus(
     }
 
     state = executeAction(state, agreeAction.action);
+    if ('player' in agreeAction.action) {
+      agreedPlayers.add(agreeAction.action.player);
+    }
   }
 
   return state;
@@ -116,13 +131,11 @@ export async function processCompleteTrick(
   // Process consensus
   state = await processSequentialConsensus(state, 'completeTrick', humanPlayers);
 
-  // Complete the trick if all agreed
-  if (state.consensus.completeTrick.size === 4) {
-    const transitions = getNextStates(state, ctx);
-    const completeAction = transitions.find(t => t.action.type === 'complete-trick');
-    if (completeAction) {
-      state = executeAction(state, completeAction.action);
-    }
+  // Complete the trick if all agreed (check if complete-trick action is available)
+  const transitions = getNextStates(state, ctx);
+  const completeAction = transitions.find(t => t.action.type === 'complete-trick');
+  if (completeAction) {
+    state = executeAction(state, completeAction.action);
   }
 
   return state;
@@ -157,13 +170,11 @@ export async function processHandScoring(
   // Process scoring consensus
   state = await processSequentialConsensus(state, 'scoreHand', humanPlayers);
 
-  // Execute score-hand if all agreed
-  if (state.consensus.scoreHand.size === 4) {
-    const transitions = getNextStates(state, ctx);
-    const scoreAction = transitions.find(t => t.action.type === 'score-hand');
-    if (scoreAction) {
-      state = executeAction(state, scoreAction.action);
-    }
+  // Execute score-hand if all agreed (check if score-hand action is available)
+  const transitions = getNextStates(state, ctx);
+  const scoreAction = transitions.find(t => t.action.type === 'score-hand');
+  if (scoreAction) {
+    state = executeAction(state, scoreAction.action);
   }
 
   return state;

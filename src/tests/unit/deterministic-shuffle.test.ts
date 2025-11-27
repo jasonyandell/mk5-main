@@ -7,7 +7,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   
   it('should maintain deterministic shuffling after undo/redo', () => {
   
-    const ctx = createTestContext();
+    const ctx = createTestContext({ layers: ["consensus"] });
     // Create initial state
     const initialState = createInitialState();
     const initialSeed = initialState.shuffleSeed;
@@ -67,7 +67,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
 
   it('should produce same shuffle result with same seed', () => {
 
-    const ctx = createTestContext();
+    const ctx = createTestContext({ layers: ["consensus"] });
     // Create two states with same seed
     const state1 = createInitialState();
     const seed = 12345;
@@ -105,7 +105,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
 
   it('should handle multiple redeals deterministically', () => {
 
-    const ctx = createTestContext();
+    const ctx = createTestContext({ layers: ["consensus"] });
     const initialState = createInitialState();
     const states: GameState[] = [initialState];
     
@@ -163,7 +163,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
 
   it('should maintain determinism through complete hand with scoring', () => {
 
-    const ctx = createTestContext();
+    const ctx = createTestContext({ layers: ["consensus"] });
     const initialState = createInitialState();
     
     // Play a complete hand: bid, set trump, play all tricks
@@ -207,14 +207,14 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Should be in scoring phase
     expect(currentState.phase).toBe('scoring');
     
-    // Score the hand - all players must agree sequentially
+    // Score the hand - all 4 players must agree
     for (let i = 0; i < 4; i++) {
       transitions = getNextStates(currentState, ctx);
-      const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-score-hand' &&
-        t.action.player === currentState.currentPlayer
+      const agreeAction = transitions.find(t =>
+        t.action.type === 'agree-score' &&
+        t.action.player === i
       );
-      if (!agreeAction) throw new Error(`Agree score action for current player ${currentState.currentPlayer} not found`);
+      if (!agreeAction) throw new Error(`Agree score action for player ${i} not found`);
       actions.push(agreeAction);
       currentState = agreeAction.newState;
     }
@@ -250,7 +250,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
 
   it('should handle undo across redeals correctly', () => {
 
-    const ctx = createTestContext();
+    const ctx = createTestContext({ layers: ["consensus"] });
     const initialState = createInitialState();
     const stateHistory: GameState[] = [initialState];
     

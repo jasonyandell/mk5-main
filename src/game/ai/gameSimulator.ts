@@ -153,8 +153,8 @@ export async function simulateGame(
     // Determine current player
     const currentPlayer = state.currentPlayer;
 
-    // Check for consensus actions (autoExecute will handle these)
-    const consensusAction = allActions.find(va =>
+    // Check for auto-execute actions (speed layer handles these)
+    const autoExecuteAction = allActions.find(va =>
       va.action.type === 'complete-trick' ||
       va.action.type === 'score-hand' ||
       va.action.autoExecute === true
@@ -163,9 +163,9 @@ export async function simulateGame(
     let selectedAction: ValidAction | undefined;
     let playerActions: ValidAction[] = [];
 
-    if (consensusAction) {
-      // Use consensus action (will be auto-executed)
-      selectedAction = consensusAction;
+    if (autoExecuteAction) {
+      // Use auto-execute action
+      selectedAction = autoExecuteAction;
     } else {
       // Get player-specific actions
       playerActions = room.getValidActions(currentPlayer);

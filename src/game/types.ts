@@ -197,11 +197,6 @@ export interface GameState {
   shuffleSeed: number; // Seed for deterministic shuffling
   // Player control types - who is human vs AI (supports drop-in/drop-out)
   playerTypes: ('human' | 'ai')[];
-  // Consensus tracking for neutral actions
-  consensus: {
-    completeTrick: Set<number>;  // Players who agreed to complete trick
-    scoreHand: Set<number>;       // Players who agreed to score hand
-  };
   // Action history for replay and debugging
   actionHistory: GameAction[];
 }
@@ -232,10 +227,10 @@ export type GameAction =
   | { type: 'pass'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
   | { type: 'select-trump'; player: number; trump: TrumpSelection; autoExecute?: boolean; meta?: Record<string, unknown> }
   | { type: 'play'; player: number; dominoId: string; autoExecute?: boolean; meta?: Record<string, unknown> }
-  | { type: 'agree-complete-trick'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }  // Consensus action
-  | { type: 'agree-score-hand'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }     // Consensus action
-  | { type: 'complete-trick'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Executed when all agree
-  | { type: 'score-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }      // Executed when all agree
+  | { type: 'complete-trick'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'score-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'agree-trick'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'agree-score'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
   | { type: 'redeal'; autoExecute?: boolean; meta?: Record<string, unknown> }
   | { type: 'retry-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Retry one-hand mode with same seed
   | { type: 'new-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }    // Start new one-hand mode with new seed

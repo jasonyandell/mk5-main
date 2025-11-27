@@ -25,7 +25,7 @@ import { composeRules } from './compose';
 import { checkHandOutcome as checkStandardHandOutcome } from '../core/handOutcome';
 
 /**
- * Generates structural actions only (pass, redeal, consensus, trump selection, plays).
+ * Generates structural actions only (pass, redeal, trump selection, plays).
  * Does NOT generate bids - those are added by Layers via getValidActions.
  *
  * @param state Current game state
@@ -125,24 +125,13 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
   // Check if trick is complete (use rules if provided, otherwise default to 4)
   const isTrickComplete = rules ? rules.isTrickComplete(state) : state.currentTrick.length === 4;
 
-  // If trick is complete, add consensus actions
+  // If trick is complete, add complete-trick action directly
   if (isTrickComplete) {
-    // All players who haven't agreed yet can agree (not just current player)
-    // This is important for nello where the partner sits out but still needs to agree
-    for (let playerId = 0; playerId < state.players.length; playerId++) {
-      if (!state.consensus.completeTrick.has(playerId)) {
-        actions.push({ type: 'agree-complete-trick', player: playerId });
-      }
-    }
-
-    // If all have agreed, the trick can be completed
-    if (state.consensus.completeTrick.size === state.players.length) {
-      actions.push({
-        type: 'complete-trick',
-        autoExecute: true,
-        meta: { authority: 'system' }
-      });
-    }
+    actions.push({
+      type: 'complete-trick',
+      autoExecute: true,
+      meta: { authority: 'system' }
+    });
     return actions;
   }
 
@@ -163,22 +152,14 @@ function getPlayingActions(state: GameState, rules?: GameRules): GameAction[] {
 /**
  * Gets valid scoring actions
  */
-function getScoringActions(state: GameState): GameAction[] {
+function getScoringActions(_state: GameState): GameAction[] {
   const actions: GameAction[] = [];
 
-  // Only the current player can agree to score the hand
-  if (!state.consensus.scoreHand.has(state.currentPlayer)) {
-    actions.push({ type: 'agree-score-hand', player: state.currentPlayer });
-  }
-
-  // If all have agreed, the hand can be scored
-  if (state.consensus.scoreHand.size === state.players.length) {
-    actions.push({
-      type: 'score-hand',
-      autoExecute: true,
-      meta: { authority: 'system' }
-    });
-  }
+  actions.push({
+    type: 'score-hand',
+    autoExecute: true,
+    meta: { authority: 'system' }
+  });
 
   return actions;
 }

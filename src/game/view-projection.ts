@@ -190,7 +190,7 @@ export function createViewProjection(
   ) || null;
 
   const consensusAction = availableActions.find(a =>
-    a.id === `agree-complete-trick-${perspectiveIndex}` || a.id === `agree-score-hand-${perspectiveIndex}`
+    a.id === `agree-trick-p${perspectiveIndex}` || a.id === `agree-score-p${perspectiveIndex}`
   ) || null;
   
   // Build bidding statuses

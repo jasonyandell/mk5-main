@@ -352,7 +352,6 @@ export function createMinimalAnalysisState(
     gameTarget: 250,
     shuffleSeed: 0,
     playerTypes: ['human', 'ai', 'ai', 'ai'],
-    consensus: { completeTrick: new Set(), scoreHand: new Set() },
     actionHistory: [],
     theme: 'coffee',
     colorOverrides: {}

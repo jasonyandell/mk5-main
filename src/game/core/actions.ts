@@ -43,17 +43,16 @@ export function executeAction(state: GameState, action: GameAction, rules: GameR
     case 'play':
       return executePlay(newState, action.player, action.dominoId, rules);
 
-    case 'agree-complete-trick':
-      return executeAgreement(newState, action.player, 'completeTrick');
-
-    case 'agree-score-hand':
-      return executeAgreement(newState, action.player, 'scoreHand');
-
     case 'complete-trick':
       return executeCompleteTrick(newState, rules);
 
     case 'score-hand':
       return executeScoreHand(newState, rules);
+
+    case 'agree-trick':
+    case 'agree-score':
+      // No-op: action recorded in history, consensus layer derives state
+      return newState;
 
     case 'redeal':
       return executeRedeal(newState);
@@ -68,34 +67,6 @@ export function executeAction(state: GameState, action: GameAction, rules: GameR
       // Unknown action type - return state with action recorded
       return newState;
   }
-}
-
-/**
- * Records a player's agreement for consensus actions
- */
-function executeAgreement(state: GameState, player: number, type: 'completeTrick' | 'scoreHand'): GameState {
-  // Validate player
-  if (player < 0 || player >= 4) {
-    throw new Error(`Invalid player ID: ${player}`);
-  }
-
-  // Check if already agreed
-  if (state.consensus[type].has(player)) {
-    throw new Error(`Player ${player} already agreed to ${type}`);
-  }
-
-  // Record agreement and advance to next player
-  const nextPlayer = getNextPlayer(player);
-
-  return {
-    ...state,
-    consensus: {
-      ...state.consensus,
-      [type]: new Set([...state.consensus[type], player])
-    },
-    // Advance to next player for their turn to agree
-    currentPlayer: nextPlayer
-  };
 }
 
 /**
@@ -311,12 +282,6 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
     throw new Error('Trick not complete');
   }
 
-  // Check consensus (all 4 players must agree)
-  // Even in nello where only 3 play, all 4 players must agree to advance
-  if (state.consensus.completeTrick.size !== 4) {
-    throw new Error('Not all players agreed to complete trick');
-  }
-
   // Calculate trick outcome (use rules)
   const winner = rules.calculateTrickWinner(state, state.currentTrick);
   const points = calculateTrickPoints(state.currentTrick);
@@ -365,7 +330,6 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
     }
   }
 
-  // Clear consensus for next trick
   return {
     ...state,
     tricks: newTricks,
@@ -373,11 +337,7 @@ function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
     currentSuit: NO_LEAD_SUIT,
     teamScores: newTeamScores,
     currentPlayer: winner,
-    phase: newPhase,
-    consensus: {
-      ...state.consensus,
-      completeTrick: new Set()  // Clear consensus
-    }
+    phase: newPhase
   };
 }
 
@@ -388,11 +348,6 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
   // Validate phase
   if (state.phase !== 'scoring') {
     throw new Error('Invalid phase for scoring');
-  }
-
-  // Check consensus (all 4 players must agree)
-  if (state.consensus.scoreHand.size !== 4) {
-    throw new Error('Not all players agreed to score hand');
   }
 
   // Calculate round score
@@ -410,11 +365,7 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
       ...state,
       phase: 'game_end',
       teamMarks: newMarks,
-      players: newPlayers,
-      consensus: {
-        completeTrick: new Set(),
-        scoreHand: new Set()  // Clear consensus
-      }
+      players: newPlayers
     };
   }
 
@@ -469,11 +420,7 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
     currentTrick: [],
     currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
-    teamMarks: newMarks,
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()  // Clear consensus
-    }
+    teamMarks: newMarks
   };
 }
 
@@ -594,11 +541,7 @@ function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
     currentTrick: [],
     currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
-    currentPlayer: getPlayerLeftOfDealer(state.dealer),
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()
-    }
+    currentPlayer: getPlayerLeftOfDealer(state.dealer)
   };
 }
 
@@ -631,10 +574,10 @@ export function actionToId(action: GameAction): string {
       return 'complete-trick';
     case 'score-hand':
       return 'score-hand';
-    case 'agree-complete-trick':
-      return `agree-complete-trick-${action.player}`;
-    case 'agree-score-hand':
-      return `agree-score-hand-${action.player}`;
+    case 'agree-trick':
+      return `agree-trick-p${action.player}`;
+    case 'agree-score':
+      return `agree-score-p${action.player}`;
     case 'redeal':
       return 'redeal';
     default:
@@ -660,10 +603,10 @@ export function actionToLabel(action: GameAction): string {
       return 'Complete trick';
     case 'score-hand':
       return 'Next hand';
-    case 'agree-complete-trick':
-      return action.player === 0 ? 'Complete trick' : `Player ${action.player} agrees to complete trick`;
-    case 'agree-score-hand':
-      return action.player === 0 ? 'Next hand' : `Player ${action.player} agrees to next hand`;
+    case 'agree-trick':
+      return `Player ${action.player} agrees`;
+    case 'agree-score':
+      return `Player ${action.player} agrees`;
     case 'redeal':
       return 'All passed - Redeal';
     default:

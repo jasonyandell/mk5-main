@@ -132,7 +132,7 @@ describe('Backward Compatibility', () => {
       expect(state).toHaveProperty('actionHistory');
       expect(state).toHaveProperty('bids');
       expect(state).toHaveProperty('teamScores');
-      expect(state).toHaveProperty('consensus');
+      // Consensus is now derived from actionHistory via consensus layer (not in state)
 
       // Nested structures
       expect(state.players[0]).toHaveProperty('id');

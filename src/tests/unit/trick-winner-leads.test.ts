@@ -5,7 +5,7 @@ import { StateBuilder } from '../helpers';
 import { ACES, DEUCES, TRES, FOURS, FIVES } from '../../game/types';
 
 describe('Trick Winner Leads Next Trick', () => {
-  const ctx = createTestContext();
+  const ctx = createTestContext({ layers: ['consensus'] });
 
   test('trick winner becomes current player for next trick', () => {
     // Create a state with a completed 4-domino trick
@@ -21,19 +21,19 @@ describe('Trick Winner Leads Next Trick', () => {
 
     // Get transitions - should include agreement actions first
     let transitions = getNextStates(state, ctx);
-    
-    // First, all players must agree to complete the trick sequentially
+
+    // All 4 players must agree to complete the trick
     let currentState = state;
     for (let i = 0; i < 4; i++) {
-      const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+      const agreeAction = transitions.find(t =>
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
       transitions = getNextStates(currentState, ctx);
     }
-    
+
     // Now the complete-trick action should be available
     const completeTrickTransition = transitions.find(t => t.id === 'complete-trick');
     expect(completeTrickTransition).toBeDefined();
@@ -66,8 +66,8 @@ describe('Trick Winner Leads Next Trick', () => {
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
@@ -98,8 +98,8 @@ describe('Trick Winner Leads Next Trick', () => {
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
@@ -130,8 +130,8 @@ describe('Trick Winner Leads Next Trick', () => {
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
@@ -162,8 +162,8 @@ describe('Trick Winner Leads Next Trick', () => {
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
@@ -198,8 +198,8 @@ describe('Trick Winner Leads Next Trick', () => {
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;
@@ -226,8 +226,8 @@ describe('Trick Winner Leads Next Trick', () => {
     currentState = newState;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-complete-trick' &&
-        t.action.player === currentState.currentPlayer
+        t.action.type === 'agree-trick' &&
+        t.action.player === i
       );
       expect(agreeAction).toBeDefined();
       currentState = agreeAction!.newState;

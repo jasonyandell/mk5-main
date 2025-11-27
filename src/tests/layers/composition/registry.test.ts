@@ -25,9 +25,10 @@ describe('Layer Registry', () => {
   describe('LAYER_REGISTRY', () => {
     it('should contain all expected layers', () => {
       const keys = Object.keys(LAYER_REGISTRY);
-      expect(keys).toHaveLength(9);
+      expect(keys).toHaveLength(10);
       expect(keys.sort()).toEqual([
         'base',
+        'consensus',
         'hints',
         'nello',
         'oneHand',

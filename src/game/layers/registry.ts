@@ -15,6 +15,7 @@ import { tournamentLayer } from './tournament';
 import { oneHandLayer } from './oneHand';
 import { speedLayer } from './speed';
 import { hintsLayer } from './hints';
+import { consensusLayer } from './consensus';
 
 /**
  * Registry of all available layers.
@@ -31,7 +32,8 @@ export const LAYER_REGISTRY: Record<string, Layer> = {
   'tournament': tournamentLayer,
   'oneHand': oneHandLayer,
   'speed': speedLayer,
-  'hints': hintsLayer
+  'hints': hintsLayer,
+  'consensus': consensusLayer
 };
 
 /**

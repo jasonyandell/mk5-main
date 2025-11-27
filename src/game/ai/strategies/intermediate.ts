@@ -52,15 +52,6 @@ export class IntermediateAIStrategy implements AIStrategy {
       throw new Error('IntermediateAIStrategy: No valid actions available');
     }
 
-    // Prioritize consensus actions (same as beginner)
-    const consensusAction = validActions.find(va =>
-      va.action.type === 'agree-complete-trick' ||
-      va.action.type === 'agree-score-hand'
-    );
-    if (consensusAction) {
-      return consensusAction;
-    }
-
     // Non-play phases: delegate to beginner
     if (state.phase !== 'playing') {
       return this.beginner.chooseAction(state, validActions);

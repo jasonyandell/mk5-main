@@ -66,7 +66,7 @@ describe('Authorization', () => {
   describe('canPlayerExecuteAction', () => {
     it('allows any player to execute neutral actions (no player field)', () => {
       const ctx = createTestContext();
-      // Create playing phase with complete trick AND all players agreed
+      // Create playing phase with complete trick
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
         .withCurrentTrick([
           { player: 0, domino: '0-0' },
@@ -74,12 +74,6 @@ describe('Authorization', () => {
           { player: 2, domino: '0-2' },
           { player: 3, domino: '0-3' }
         ])
-        .with({
-          consensus: {
-            completeTrick: new Set([0, 1, 2, 3]), // All players have agreed
-            scoreHand: new Set()
-          }
-        })
         .build();
       const sessions = createTestSessions();
       const neutralAction: GameAction = { type: 'complete-trick' };
@@ -161,7 +155,7 @@ describe('Authorization', () => {
     });
 
     it('correctly handles consensus actions with capabilities', () => {
-      const ctx = createTestContext();
+      const ctx = createTestContext({ layers: ['consensus'] });
       // Create playing phase with complete trick so consensus action is valid
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
         .withCurrentPlayer(1)
@@ -171,15 +165,9 @@ describe('Authorization', () => {
           { player: 2, domino: '0-2' },
           { player: 3, domino: '0-3' }
         ])
-        .with({
-          consensus: {
-            completeTrick: new Set(),
-            scoreHand: new Set()
-          }
-        })
         .build();
       const sessions = createTestSessions();
-      const consensusAction: GameAction = { type: 'agree-complete-trick', player: 1 };
+      const consensusAction: GameAction = { type: 'agree-trick', player: 1 };
 
       // Consensus actions have player field - only player with capability can execute
       expect(canPlayerExecuteAction(sessions[1]!, consensusAction, state, ctx)).toBe(true);

@@ -42,10 +42,6 @@ describe('One-Hand Actions', () => {
       currentSuit: NO_LEAD_SUIT,
       teamScores: [5, 3],
       teamMarks: [1, 0],
-      consensus: {
-        completeTrick: new Set(),
-        scoreHand: new Set()
-      },
       actionHistory: [],
       gameTarget: 7,
       initialConfig: {
@@ -112,17 +108,8 @@ describe('One-Hand Actions', () => {
       );
     });
 
-    it('should clear consensus', () => {
-      const initialState = createOneHandCompleteState(12345);
-      initialState.consensus.scoreHand.add(0);
-      initialState.consensus.scoreHand.add(1);
-
-      const action: GameAction = { type: 'retry-one-hand' };
-      const newState = executeAction(initialState, action, ctx.rules);
-
-      expect(newState.consensus.scoreHand.size).toBe(0);
-      expect(newState.consensus.completeTrick.size).toBe(0);
-    });
+    // NOTE: Consensus is now derived from actionHistory (via consensus layer)
+    // No need to test clearing as there's no consensus state to clear
 
     it('should work when dealer is not player 3', () => {
       const initialState = createOneHandCompleteState(12345);

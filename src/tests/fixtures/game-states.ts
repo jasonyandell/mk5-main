@@ -40,7 +40,6 @@ function createBaseState(overrides: Partial<GameState> = {}): GameState {
     ...overrides,
     // Ensure nested objects are merged properly
     players: overrides.players || stateWithHands.players,
-    consensus: overrides.consensus || stateWithHands.consensus,
   };
 }
 
@@ -526,15 +525,11 @@ export function createTrickCompletionPhaseView(): GameView {
       { player: 0, domino: { id: '3-2', high: 3, low: 2 } },
     ],
     currentSuit: 3,
-    consensus: {
-      completeTrick: new Set([0]), // Player 0 already agreed
-      scoreHand: new Set(),
-    },
   });
 
   const validActions: ValidAction[] = [
     {
-      action: { type: 'agree-complete-trick' as const, player: 0 },
+      action: { type: 'agree-trick' as const, player: 0 },
       label: 'Complete Trick',
       recommended: true,
     },
@@ -568,15 +563,11 @@ export function createScoringPhaseView(): GameView {
     ],
     currentTrick: [],
     teamScores: [30, 12],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set([0]), // Player 0 already agreed
-    },
   });
 
   const validActions: ValidAction[] = [
     {
-      action: { type: 'agree-score-hand' as const, player: 0 },
+      action: { type: 'agree-score' as const, player: 0 },
       label: 'Score Hand',
       recommended: true,
     },

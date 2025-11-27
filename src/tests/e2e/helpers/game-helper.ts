@@ -83,7 +83,7 @@ export class PlaywrightGameHelper {
       timeTravelButton: '[data-testid="time-travel-button"], .time-travel-button'
     },
     playingArea: '[data-testid="playing-area"]',
-    tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
+    tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
     tapText: '.tap-text',
     turnPlayer: '.turn-player'
   };
@@ -768,8 +768,8 @@ export class PlaywrightGameHelper {
     const mappings: Record<string, string> = {
       '.trick-horizontal': '.trick-table',
       '.trick-position': '.trick-spot',
-      '.proceed-action-button': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
-      '[data-testid="complete-trick"]': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
+      '.proceed-action-button': '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
+      '[data-testid="complete-trick"]': '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
       '.history-row': '.history-item',
       '.trump-display': PlaywrightGameHelper.SELECTORS.trump
     };

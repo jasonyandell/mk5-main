@@ -18,7 +18,7 @@ describe('Nello Three-Player Integration', () => {
   function createNelloRoom(seed: number, hands: Domino[][]): HeadlessRoom {
     const config: GameConfig = {
       playerTypes: ['human', 'human', 'human', 'human'],
-      layers: ['base', 'nello'],
+      layers: ['base', 'nello', 'consensus'],
       shuffleSeed: seed,
       dealOverrides: { initialHands: hands }
     };
@@ -58,7 +58,7 @@ describe('Nello Three-Player Integration', () => {
       while (room.getState().phase === 'playing' && room.getState().tricks.length < tricksPlayed + 1) {
         let anyConsensus = false;
         for (let i = 0; i < 4; i++) {
-          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-complete-trick');
+          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-trick');
           if (agreeAction) {
             room.executeAction(i, agreeAction.action);
             anyConsensus = true;
@@ -76,7 +76,7 @@ describe('Nello Three-Player Integration', () => {
     if (room.getState().phase === 'scoring') {
       for (let rounds = 0; rounds < 10 && room.getState().phase === 'scoring'; rounds++) {
         for (let i = 0; i < 4; i++) {
-          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score-hand');
+          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score');
           if (agreeAction) room.executeAction(i, agreeAction.action);
         }
       }

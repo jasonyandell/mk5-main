@@ -21,16 +21,6 @@ export class RandomAIStrategy implements AIStrategy {
       throw new Error('RandomAIStrategy: No valid actions available to choose from');
     }
 
-    // Still prioritize consensus for game flow
-    const consensusAction = validActions.find(va =>
-      va.action.type === 'agree-complete-trick' ||
-      va.action.type === 'agree-score-hand'
-    );
-
-    if (consensusAction) {
-      return consensusAction;
-    }
-
     // Random choice from available actions
     const index = Math.floor(Math.random() * validActions.length);
     const chosen = validActions[index];
@@ -52,16 +42,6 @@ export class BeginnerAIStrategy implements AIStrategy {
   chooseAction(state: GameState, validActions: ValidAction[]): ValidAction {
     if (validActions.length === 0) {
       throw new Error('BeginnerAIStrategy: No valid actions available to choose from');
-    }
-
-    // Prioritize consensus
-    const consensusAction = validActions.find(va =>
-      va.action.type === 'agree-complete-trick' ||
-      va.action.type === 'agree-score-hand'
-    );
-
-    if (consensusAction) {
-      return consensusAction;
     }
 
     // Get current player for context

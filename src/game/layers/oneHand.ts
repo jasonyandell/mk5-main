@@ -77,7 +77,8 @@ export const oneHandLayer: Layer = {
     }
 
     // After scoring phase, auto-execute score-hand for smooth UX
-    if (state.phase === 'scoring' && state.consensus.scoreHand.size === 4) {
+    const hasScoreHand = prev.some(a => a.type === 'score-hand');
+    if (state.phase === 'scoring' && hasScoreHand) {
       // Replace score-hand with auto-executed version to skip manual button click
       return [
         ...prev.filter(a => a.type !== 'score-hand'),

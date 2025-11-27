@@ -337,10 +337,6 @@ function getActionLabel(action: GameAction, state: GameState): string {
       return 'Pass';
     case 'select-trump':
       return `Trump: ${action.trump.type}`;
-    case 'agree-complete-trick':
-      return 'OK';
-    case 'agree-score-hand':
-      return 'Score';
     case 'complete-trick':
       return 'Complete Trick';
     case 'score-hand':

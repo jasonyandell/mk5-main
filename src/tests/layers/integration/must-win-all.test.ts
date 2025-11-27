@@ -112,7 +112,7 @@ function playMustWinAllHand(
     while (room.getState().phase === 'playing' && room.getState().tricks.length === tricksBeforeConsensus && rounds < 10) {
       rounds++;
       for (let i = 0; i < 4; i++) {
-        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-complete-trick');
+        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-trick');
         if (agreeAction) {
           room.executeAction(i, agreeAction.action);
         }
@@ -132,7 +132,7 @@ function playMustWinAllHand(
     while (room.getState().phase === 'scoring' && rounds < 10) {
       rounds++;
       for (let i = 0; i < 4; i++) {
-        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score-hand');
+        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score');
         if (agreeAction) {
           room.executeAction(i, agreeAction.action);
         }
@@ -183,7 +183,7 @@ const sevensLoseHands = [
 const contracts: ContractTestFixture[] = [
   {
     name: 'plunge',
-    layers: ['base', 'plunge'],
+    layers: ['base', 'plunge', 'consensus'],
     bidType: 'plunge',
     bidValue: 4,
     trumpType: 'suit',
@@ -191,7 +191,7 @@ const contracts: ContractTestFixture[] = [
   },
   {
     name: 'splash',
-    layers: ['base', 'splash'],
+    layers: ['base', 'splash', 'consensus'],
     bidType: 'splash',
     bidValue: 2,
     trumpType: 'suit',
@@ -296,7 +296,7 @@ describe.each(contracts)('$name contract integration', ({ layers, bidType, bidVa
  * Sevens contract tests (separate because trump type differs)
  */
 describe('sevens contract integration', () => {
-  const layers = ['base', 'sevens'];
+  const layers = ['base', 'sevens', 'consensus'];
   const bidType = 'marks';
   const bidValue = 1;
 

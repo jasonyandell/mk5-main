@@ -226,7 +226,7 @@ async function playHand(initialState: GameState) {
 
           // Check if we've completed scoring (one hand is done)
           const newState = room.getState();
-          if (gameState.phase === 'scoring' && chosenTransition.action.type === 'agree-score-hand') {
+          if (gameState.phase === 'scoring' && chosenTransition.action.type === 'agree-score') {
             // If all players agreed to score, the next phase will be bidding for a new hand
             if (newState.phase === 'bidding' && handsPlayed === 0) {
               // We just finished scoring our first hand

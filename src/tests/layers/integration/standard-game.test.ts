@@ -22,7 +22,7 @@ describe('Standard Game Integration', () => {
   function createStandardRoom(seed: number, hands: Domino[][]): HeadlessRoom {
     const config: GameConfig = {
       playerTypes: ['human', 'human', 'human', 'human'],
-      layers: ['base'],
+      layers: ['base', 'consensus'],
       shuffleSeed: seed,
       dealOverrides: { initialHands: hands }
     };
@@ -106,7 +106,7 @@ describe('Standard Game Integration', () => {
       // When all 4 agree, complete-trick is auto-executed
       for (let i = 0; i < 4; i++) {
         const agreeActions = room.getValidActions(i);
-        const agreeAction = agreeActions.find(a => a.action.type === 'agree-complete-trick');
+        const agreeAction = agreeActions.find(a => a.action.type === 'agree-trick');
         if (agreeAction) {
           room.executeAction(i, agreeAction.action);
         }
@@ -132,7 +132,7 @@ describe('Standard Game Integration', () => {
         // All players agree to score (auto-executes score-hand when consensus reached)
         for (let i = 0; i < 4; i++) {
           const agreeActions = room.getValidActions(i);
-          const agreeAction = agreeActions.find(a => a.action.type === 'agree-score-hand');
+          const agreeAction = agreeActions.find(a => a.action.type === 'agree-score');
           if (agreeAction) {
             room.executeAction(i, agreeAction.action);
           }

@@ -34,10 +34,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [0, 0], // Before scoring
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},
@@ -78,10 +74,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [0, 0],
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},
@@ -146,10 +138,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [3, 2], // Initial marks before scoring this hand
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},
@@ -216,10 +204,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [0, 0],
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},
@@ -283,10 +267,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [1, 1],
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},
@@ -351,10 +331,6 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamMarks: [0, 0],
         gameTarget: 7,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
       theme: 'coffee',
       colorOverrides: {},

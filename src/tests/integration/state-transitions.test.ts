@@ -200,10 +200,6 @@ describe('State Transitions Integration', () => {
         currentTrick: [...state.currentTrick],
         teamScores: [...state.teamScores],
         teamMarks: [...state.teamMarks],
-        consensus: {
-          completeTrick: new Set(state.consensus.completeTrick),
-          scoreHand: new Set(state.consensus.scoreHand)
-        },
         actionHistory: [...state.actionHistory]
       };
       
@@ -362,10 +358,6 @@ describe('State Transitions Integration', () => {
         gameTarget: 7,
         shuffleSeed: 12345,
         actionHistory: [],
-        consensus: {
-          completeTrick: new Set<number>(),
-          scoreHand: new Set<number>()
-        },
         theme: 'coffee',
         colorOverrides: {}
       };
