@@ -75,6 +75,10 @@ Transform WHAT actions are possible:
 - **Script**: Inject actions (oneHand scripts bidding)
 - **Replace**: Swap action types (oneHand replaces score-hand with end-game)
 
+## Terminology Note
+
+Traditional Texas 42 term "follow-me" is called `no-trump` in the codebase. When reading game rules or talking to players, "follow-me" = `{ type: 'no-trump' }` in code.
+
 ## How to Add a New Layer
 
 1. Create `src/game/layers/myLayer.ts`:

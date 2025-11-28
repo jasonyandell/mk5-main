@@ -129,17 +129,16 @@ N42PA tournament standard:
 | Sevens | `sevens.ts` | Distance from 7 wins |
 | Tournament | `tournament.ts` | Filters out special bids |
 
-### Trump Type Discrimination
+### Trump Selection Type
 ```typescript
-type Trump =
-  | { type: 'suit'; suit: Suit }
-  | { type: 'doubles' }
-  | { type: 'follow-me' }
-  | { type: 'nello' }
-  | { type: 'splash'; suit: Suit }
-  | { type: 'plunge'; suit: Suit }
-  | { type: 'sevens' }
+// Note: Traditional "follow-me" is called "no-trump" in code
+interface TrumpSelection {
+  type: 'not-selected' | 'suit' | 'doubles' | 'no-trump' | 'nello' | 'sevens';
+  suit?: RegularSuit;  // Only set when type === 'suit'
+}
 ```
+
+**Important**: Splash and Plunge are BID types, not trump types. They use regular suit/doubles trump after partner declares.
 
 Layers check `state.trump.type` to activate their rules.
 

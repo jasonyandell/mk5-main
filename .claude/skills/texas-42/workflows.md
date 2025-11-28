@@ -45,14 +45,25 @@ node scripts/replay-from-url.js "<url>" --hand 3 --show-tricks
 ### Unit Test Pattern
 ```typescript
 import { createTestContext } from '../helpers/executionContext';
+import { StateBuilder } from '../helpers/stateBuilder';
 
 describe('Layer Composition', () => {
   it('should compose nello and plunge correctly', () => {
     const ctx = createTestContext({ layers: ['base', 'nello', 'plunge'] });
-    expect(rules.getTrumpSelector(state, bid)).toBe(expectedPlayer);
+    const state = new StateBuilder()
+      .withPhase('playing')
+      .withTrump({ type: 'suit', suit: 'fives' })
+      .build();
+    expect(ctx.rules.getTrumpSelector(state, bid)).toBe(expectedPlayer);
   });
 });
 ```
+
+### State Building Helpers
+Primary API for constructing test state:
+- `StateBuilder` - Build complete game states fluently
+- `HandBuilder` - Construct player hands with specific dominoes
+- `DominoBuilder` - Create dominoes by pip values
 
 ### Integration Test Pattern
 ```typescript

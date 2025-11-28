@@ -112,7 +112,7 @@ node scripts/replay-from-url.js "<url>" --generate-test
 - `src/game/layers/types.ts` - GameRules interface, Layer type
 - `src/game/layers/compose.ts` - composeRules() reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
-- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed}.ts` - Special contracts
+- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed,consensus}.ts` - Special contracts & consensus
 
 **Multiplayer**:
 - `src/multiplayer/authorization.ts` - authorizeAndExecute()
