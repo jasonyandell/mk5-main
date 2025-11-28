@@ -5,11 +5,13 @@ import { StateBuilder } from '../helpers';
 import { ACES, DEUCES, TRES, FOURS, FIVES } from '../../game/types';
 
 describe('Trick Winner Leads Next Trick', () => {
-  const ctx = createTestContext({ layers: ['consensus'] });
+  // Use all human players so consensus layer generates agree actions for all
+  const ctx = createTestContext({ layers: ['consensus'], playerTypes: ['human', 'human', 'human', 'human'] });
 
   test('trick winner becomes current player for next trick', () => {
-    // Create a state with a completed 4-domino trick
+    // Create a state with a completed 4-domino trick (all human players)
     const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: FIVES })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '6-3', high: 6, low: 3 } }, // follow suit
@@ -22,7 +24,7 @@ describe('Trick Winner Leads Next Trick', () => {
     // Get transitions - should include agreement actions first
     let transitions = getNextStates(state, ctx);
 
-    // All 4 players must agree to complete the trick
+    // All 4 human players must agree to complete the trick
     let currentState = state;
     for (let i = 0; i < 4; i++) {
       const agreeAction = transitions.find(t =>
@@ -42,16 +44,17 @@ describe('Trick Winner Leads Next Trick', () => {
     const newState = completeTrickTransition!.newState;
     expect(newState.tricks).toHaveLength(1);
     expect(newState.tricks[0]!.winner).toBe(2); // Player 2 played trump
-    
+
     // Verify that the trick winner (player 2) is now the current player
     expect(newState.currentPlayer).toBe(2);
-    
+
     // Verify the current trick is cleared
     expect(newState.currentTrick).toHaveLength(0);
   });
 
   test('highest domino of led suit wins when no trump played', () => {
     const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: ACES })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s - 10 points
         { player: 1, domino: { id: '6-5', high: 6, low: 5 } }, // higher 6 - should win
@@ -84,6 +87,7 @@ describe('Trick Winner Leads Next Trick', () => {
 
   test('first trump played wins over non-trump', () => {
     const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: DEUCES })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '2-0', high: 2, low: 0 } }, // play trump - should win
@@ -116,6 +120,7 @@ describe('Trick Winner Leads Next Trick', () => {
 
   test('higher trump beats lower trump', () => {
     const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '3-0', high: 3, low: 0 } }, // low trump
@@ -148,6 +153,7 @@ describe('Trick Winner Leads Next Trick', () => {
 
   test('doubles trump works correctly', () => {
     const state = StateBuilder.inPlayingPhase({ type: 'doubles' })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentTrick([
         { player: 0, domino: { id: '6-4', high: 6, low: 4, points: 10 } }, // lead with 6s
         { player: 1, domino: { id: '3-3', high: 3, low: 3 } }, // double (trump) - should win
@@ -179,8 +185,9 @@ describe('Trick Winner Leads Next Trick', () => {
   });
 
   test('multiple tricks - winner leads each time', () => {
-    // Start with empty state
+    // Start with empty state (all human players)
     let state = StateBuilder.inPlayingPhase({ type: 'suit', suit: FOURS })
+      .withConfig({ playerTypes: ['human', 'human', 'human', 'human'] })
       .withCurrentPlayer(2) // Player 2 starts
       .withTricks([])
       .build();

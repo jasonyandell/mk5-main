@@ -22,7 +22,8 @@ export {
 export {
   processSequentialConsensus,
   processCompleteTrick,
-  processHandScoring
+  processHandScoring,
+  roomConsensus
 } from './consensusHelpers';
 
 // Execution context for tests

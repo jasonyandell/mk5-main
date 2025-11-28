@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { HandBuilder } from '../../helpers';
+import { HandBuilder, roomConsensus } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -111,12 +111,7 @@ function playMustWinAllHand(
     let rounds = 0;
     while (room.getState().phase === 'playing' && room.getState().tricks.length === tricksBeforeConsensus && rounds < 10) {
       rounds++;
-      for (let i = 0; i < 4; i++) {
-        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-trick');
-        if (agreeAction) {
-          room.executeAction(i, agreeAction.action);
-        }
-      }
+      roomConsensus(room, 'trick');
     }
 
     // Check for early termination
@@ -131,12 +126,7 @@ function playMustWinAllHand(
     let rounds = 0;
     while (room.getState().phase === 'scoring' && rounds < 10) {
       rounds++;
-      for (let i = 0; i < 4; i++) {
-        const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score');
-        if (agreeAction) {
-          room.executeAction(i, agreeAction.action);
-        }
-      }
+      roomConsensus(room, 'score');
     }
   }
 

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { HandBuilder } from '../../helpers';
+import { HandBuilder, roomConsensus } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -56,15 +56,9 @@ describe('Nello Three-Player Integration', () => {
 
       // Consensus to complete trick
       while (room.getState().phase === 'playing' && room.getState().tricks.length < tricksPlayed + 1) {
-        let anyConsensus = false;
-        for (let i = 0; i < 4; i++) {
-          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-trick');
-          if (agreeAction) {
-            room.executeAction(i, agreeAction.action);
-            anyConsensus = true;
-          }
-        }
-        if (!anyConsensus) break;
+        const beforeCount = room.getState().tricks.length;
+        roomConsensus(room, 'trick');
+        if (room.getState().tricks.length === beforeCount) break; // No progress
       }
       tricksPlayed++;
       if (room.getState().phase === 'scoring') break;
@@ -75,10 +69,7 @@ describe('Nello Three-Player Integration', () => {
     // Consensus to score hand
     if (room.getState().phase === 'scoring') {
       for (let rounds = 0; rounds < 10 && room.getState().phase === 'scoring'; rounds++) {
-        for (let i = 0; i < 4; i++) {
-          const agreeAction = room.getValidActions(i).find(a => a.action.type === 'agree-score');
-          if (agreeAction) room.executeAction(i, agreeAction.action);
-        }
+        roomConsensus(room, 'score');
       }
     }
 

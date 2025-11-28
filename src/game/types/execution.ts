@@ -38,8 +38,15 @@ export interface ExecutionContext {
 export function createExecutionContext(config: GameConfig): ExecutionContext {
   // Get enabled layers
   const layerNames = config.layers ?? [];
-  const enabledLayers = layerNames.length > 0
-    ? getLayersByNames(layerNames)
+
+  // Always include consensus LAST for tap-to-continue UX
+  // Must be last so it can intercept complete-trick/score-hand from earlier layers
+  const layerNamesWithConsensus = layerNames.includes('consensus')
+    ? layerNames
+    : [...layerNames, 'consensus'];
+
+  const enabledLayers = layerNamesWithConsensus.length > 0
+    ? getLayersByNames(layerNamesWithConsensus)
     : [];
 
   // Compose all layers: base + enabled layers

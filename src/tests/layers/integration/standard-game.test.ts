@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { HandBuilder } from '../../helpers';
+import { HandBuilder, roomConsensus } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -104,13 +104,7 @@ describe('Standard Game Integration', () => {
 
       // All 4 players agree to complete trick (consensus)
       // When all 4 agree, complete-trick is auto-executed
-      for (let i = 0; i < 4; i++) {
-        const agreeActions = room.getValidActions(i);
-        const agreeAction = agreeActions.find(a => a.action.type === 'agree-trick');
-        if (agreeAction) {
-          room.executeAction(i, agreeAction.action);
-        }
-      }
+      roomConsensus(room, 'trick');
 
       // After consensus, trick is automatically completed
       trickCount++;
@@ -130,13 +124,7 @@ describe('Standard Game Integration', () => {
     while (currentState.phase === 'scoring' || currentState.phase === 'setup' || currentState.phase === 'one-hand-complete') {
       if (currentState.phase === 'scoring') {
         // All players agree to score (auto-executes score-hand when consensus reached)
-        for (let i = 0; i < 4; i++) {
-          const agreeActions = room.getValidActions(i);
-          const agreeAction = agreeActions.find(a => a.action.type === 'agree-score');
-          if (agreeAction) {
-            room.executeAction(i, agreeAction.action);
-          }
-        }
+        roomConsensus(room, 'score');
       } else if (currentState.phase === 'setup' || currentState.phase === 'one-hand-complete') {
         // Deal next hand
         const dealActions = room.getValidActions(0);

@@ -17,6 +17,7 @@
 import type { GameState } from '../../game/types';
 import { getNextStates } from '../../game';
 import { createTestContext } from './executionContext';
+import type { HeadlessRoom } from '../../server/HeadlessRoom';
 
 /**
  * Process consensus sequentially for all players in turn order
@@ -178,4 +179,41 @@ export async function processHandScoring(
   }
 
   return state;
+}
+
+// ============================================================================
+// HeadlessRoom-compatible helpers
+// ============================================================================
+
+/**
+ * Execute consensus for all players using HeadlessRoom
+ *
+ * Cycles through all 4 players and executes agree actions if available.
+ * Works with HeadlessRoom's action/execution API.
+ *
+ * @param room - HeadlessRoom instance
+ * @param consensusType - 'trick' for agree-trick, 'score' for agree-score
+ *
+ * @example
+ * ```typescript
+ * // After a trick completes
+ * roomConsensus(room, 'trick');
+ *
+ * // After hand scoring phase
+ * roomConsensus(room, 'score');
+ * ```
+ */
+export function roomConsensus(
+  room: HeadlessRoom,
+  consensusType: 'trick' | 'score'
+): void {
+  const actionType = consensusType === 'trick' ? 'agree-trick' : 'agree-score';
+
+  for (let i = 0; i < 4; i++) {
+    const actions = room.getValidActions(i);
+    const agreeAction = actions.find(a => a.action.type === actionType);
+    if (agreeAction) {
+      room.executeAction(i, agreeAction.action);
+    }
+  }
 }

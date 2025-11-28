@@ -65,9 +65,11 @@ describe('Authorization', () => {
 
   describe('canPlayerExecuteAction', () => {
     it('allows any player to execute neutral actions (no player field)', () => {
-      const ctx = createTestContext();
-      // Create playing phase with complete trick
+      // Use all AI players so consensus layer passes through (no gating)
+      const ctx = createTestContext({ playerTypes: ['ai', 'ai', 'ai', 'ai'] });
+      // Create playing phase with complete trick (all AI players)
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
+        .withConfig({ playerTypes: ['ai', 'ai', 'ai', 'ai'] })
         .withCurrentTrick([
           { player: 0, domino: '0-0' },
           { player: 1, domino: '0-1' },
@@ -155,9 +157,11 @@ describe('Authorization', () => {
     });
 
     it('correctly handles consensus actions with capabilities', () => {
-      const ctx = createTestContext({ layers: ['consensus'] });
+      // Player 1 must be human to have an agree action (consensus only gates humans)
+      const ctx = createTestContext({ layers: ['consensus'], playerTypes: ['human', 'human', 'ai', 'ai'] });
       // Create playing phase with complete trick so consensus action is valid
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: 0 })
+        .withConfig({ playerTypes: ['human', 'human', 'ai', 'ai'] })
         .withCurrentPlayer(1)
         .withCurrentTrick([
           { player: 0, domino: '0-0' },

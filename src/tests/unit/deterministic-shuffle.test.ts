@@ -162,9 +162,9 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   });
 
   it('should maintain determinism through complete hand with scoring', () => {
-
-    const ctx = createTestContext({ layers: ["consensus"] });
-    const initialState = createInitialState();
+    // Use all human players so consensus layer generates agree actions for all
+    const ctx = createTestContext({ layers: ["consensus"], playerTypes: ['human', 'human', 'human', 'human'] });
+    const initialState = createInitialState({ playerTypes: ['human', 'human', 'human', 'human'] });
     
     // Play a complete hand: bid, set trump, play all tricks
     let currentState = initialState;
