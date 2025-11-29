@@ -40,8 +40,7 @@ const EVENT_TO_CHAR: Record<string, string> = {
   
   // Trump (S-a, 9 events)
   // NOTE: Changed from 'ones/twos/threes' to 'aces/deuces/tres' for consistency
-  // with game-terms.ts naming convention. This breaks backward compatibility
-  // with URLs generated before 2025-01-20.
+  // with game-terms.ts naming convention (2025-01-20).
   'trump-blanks': 'S',
   'trump-aces': 'T',
   'trump-deuces': 'U',

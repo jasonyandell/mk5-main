@@ -8,7 +8,7 @@
 import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone, RegularSuit } from '../types';
 import { PLAYED_AS_TRUMP } from '../types';
 import { getTrickWinner } from '../core/rules';
-import { getTrumpSuit, isTrump, trumpToNumber, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
+import { getTrumpSuit, isTrump, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
 import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
 
 /**
@@ -233,12 +233,12 @@ export function orientDomino(
 ): string {
   // Rule 1: Trump dominoes always show trump side first
   if (isTrump(domino, context.trump)) {
-    const trumpValue = trumpToNumber(context.trump);
-    if (trumpValue !== null && trumpValue !== 7) {
+    const trumpSuit = getTrumpSuit(context.trump);
+    if (isRegularSuitTrump(trumpSuit)) {
       // Suit trump - show trump suit first
-      if (domino.high === trumpValue) {
+      if (domino.high === trumpSuit) {
         return `${domino.high}-${domino.low}`;
-      } else if (domino.low === trumpValue) {
+      } else if (domino.low === trumpSuit) {
         return `${domino.low}-${domino.high}`;
       }
     }
@@ -270,8 +270,9 @@ export function formatStrengthAnalysis(
   const context = { suit: strength.playedAsSuit, trump };
   
   // Format label
-  const label = strength.playedAsSuit === -1 
-    ? (trump.type === 'doubles' ? 'doubles' : `${trumpToNumber(trump)}s`)
+  const trumpSuit = getTrumpSuit(trump);
+  const label = strength.playedAsSuit === -1
+    ? (isDoublesTrump(trumpSuit) ? 'doubles' : `${trumpSuit}s`)
     : `${strength.playedAsSuit}s`;
   
   // Format beatenBy list with proper orientation

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  createDominoes, 
-  getDominoSuit, 
-  getDominoValue, 
+import {
+  createDominoes,
+  getLedSuit,
+  getDominoValue,
   isDouble
 } from '../../game';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
@@ -17,7 +17,7 @@ describe('Feature: Doubles Treatment', () => {
       const trump = { type: 'suit', suit: TRES } as const;
       
       doubles.forEach(double => {
-        const suit = getDominoSuit(double, trump);
+        const suit = getLedSuit(double, trump);
         // Double's suit should be its pip value (unless it's the trump double)
         if (double.high === TRES) {
           expect(suit).toBe(TRES); // 3-3 would be trump suit
@@ -30,7 +30,7 @@ describe('Feature: Doubles Treatment', () => {
     it('And 6-6 is the highest six when sixes are not trump', () => {
       const trump = { type: 'suit', suit: TRES } as const; // Threes are trump, not sixes
       const sixDominoes = createDominoes().filter(domino => 
-        getDominoSuit(domino, trump) === SIXES
+        getLedSuit(domino, trump) === SIXES
       );
       
       // Get domino values for comparison (higher value wins)
@@ -55,7 +55,7 @@ describe('Feature: Doubles Treatment', () => {
     it('And 5-5 is the highest five when fives are not trump', () => {
       const trump = { type: 'suit', suit: TRES } as const; // Threes are trump, not fives
       const fiveDominoes = createDominoes().filter(domino => 
-        getDominoSuit(domino, trump) === FIVES
+        getLedSuit(domino, trump) === FIVES
       );
       
       // Get domino values for comparison
@@ -83,7 +83,7 @@ describe('Feature: Doubles Treatment', () => {
       
       // Find all trump dominoes
       const trumpDominoes = allDominoes.filter(domino => 
-        getDominoSuit(domino, trump) === DOUBLES_AS_TRUMP
+        getLedSuit(domino, trump) === DOUBLES_AS_TRUMP
       );
       
       // Should be exactly 7 trump dominoes (all doubles)
@@ -97,7 +97,7 @@ describe('Feature: Doubles Treatment', () => {
       // Non-doubles should not be trump
       const nonDoubles = allDominoes.filter(domino => !isDouble(domino));
       nonDoubles.forEach(domino => {
-        const suit = getDominoSuit(domino, trump);
+        const suit = getLedSuit(domino, trump);
         expect(suit).not.toBe(DOUBLES_AS_TRUMP); // Should not be trump suit (doubles trump uses 7)
       });
     });

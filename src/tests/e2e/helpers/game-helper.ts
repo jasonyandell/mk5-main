@@ -630,16 +630,6 @@ export class PlaywrightGameHelper {
   }
 
   /**
-   * Navigate tabs - DEPRECATED
-   * The game automatically shows the correct view based on game state
-   * This method is kept only for backward compatibility but should not be used
-   */
-  async navigateTo(tab: string): Promise<void> {
-    // Do nothing - the game handles tab switching automatically
-    console.warn(`navigateTo('${tab}') called but is deprecated - game handles tab switching automatically`);
-  }
-
-  /**
    * Debug panel operations
    */
   async openDebugPanel(): Promise<void> {
@@ -869,7 +859,7 @@ export class PlaywrightGameHelper {
   }
 }
 
-// Export singleton pattern for backward compatibility
+// Export singleton pattern as convenience wrapper
 export const playwrightHelper = {
   loadState: async (page: Page, state: { shuffleSeed: number }) => {
     const helper = new PlaywrightGameHelper(page);

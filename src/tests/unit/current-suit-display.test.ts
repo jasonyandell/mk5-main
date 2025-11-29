@@ -2,9 +2,9 @@ import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import type { TrumpSelection, LedSuitOrNone } from '../../game/types';
-import { 
+import {
   BLANKS, FOURS, FIVES, SIXES,
-  DOUBLES_AS_TRUMP, NO_SUIT
+  DOUBLES_AS_TRUMP, NO_LEAD_SUIT
 } from '../../game/types';
 
 describe('Current Suit Display', () => {
@@ -15,7 +15,7 @@ describe('Current Suit Display', () => {
 
   test('should return "None" when no domino is led', () => {
     const state = createInitialState();
-    state.currentSuit = NO_SUIT;
+    state.currentSuit = NO_LEAD_SUIT;
     state.trump = doublesAreTrump;
     expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });

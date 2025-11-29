@@ -73,15 +73,6 @@ export function getTrumpSuit(trump: TrumpSelection): TrumpSuitOrNone {
   }
 }
 
-/**
- * Legacy function for backward compatibility - will be removed
- * @deprecated Use getTrumpSuit instead
- */
-export function trumpToNumber(trump: TrumpSelection): number | null {
-  const suit = getTrumpSuit(trump);
-  return suit === TRUMP_NOT_SELECTED ? null : suit;
-}
-
 // ============================================================================
 // Trump Validation Utilities
 // ============================================================================
@@ -207,14 +198,6 @@ export function getLedSuit(domino: Domino, trump: TrumpSelection): LedSuit {
 }
 
 /**
- * Legacy function for backward compatibility - will be removed
- * @deprecated Use getLedSuit instead
- */
-export function getDominoSuit(domino: Domino, trump: TrumpSelection): LedSuit {
-  return getLedSuit(domino, trump);
-}
-
-/**
  * Checks if a domino contains a specific suit/pip, accounting for doubles rules.
  *
  * NOTE: This does NOT check game legality (trump exclusion). A domino containing
@@ -253,13 +236,6 @@ export function dominoContainsSuit(domino: Domino, ledSuit: number, trump: Trump
 
   // Otherwise, check if domino contains the suit
   return dominoHasSuit(domino, ledSuit);
-}
-
-/**
- * @deprecated Use dominoContainsSuit instead
- */
-export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: TrumpSelection): boolean {
-  return dominoContainsSuit(domino, ledSuit, trump);
 }
 
 /**

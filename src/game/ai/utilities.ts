@@ -7,7 +7,8 @@
 
 import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
 import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
-import { getDominoValue, trumpToNumber, getDominoPoints, getDominoSuit } from '../core/dominoes';
+import { getDominoValue, getTrumpSuit, getDominoPoints, getLedSuit, isDoublesTrump } from '../core/dominoes';
+import { TRUMP_NOT_SELECTED } from '../types';
 import { getTrickWinner } from '../core/rules';
 import { composeRules } from '../layers/compose';
 import { baseLayer } from '../layers';
@@ -134,9 +135,9 @@ function getPlayedDominoes(tricks: Trick[]): Set<string> {
 }
 
 function countPlayedTrump(tricks: Trick[], trump: TrumpSelection): number {
-  const trumpValue = trumpToNumber(trump);
-  if (trumpValue === null) return 0;
-  
+  const trumpSuit = getTrumpSuit(trump);
+  if (trumpSuit === TRUMP_NOT_SELECTED) return 0;
+
   let count = 0;
   for (const trick of tricks) {
     for (const play of trick.plays) {
@@ -149,15 +150,15 @@ function countPlayedTrump(tricks: Trick[], trump: TrumpSelection): number {
 }
 
 function isTrump(domino: Domino, trump: TrumpSelection): boolean {
-  const trumpValue = trumpToNumber(trump);
-  if (trumpValue === null) return false;
-  
-  if (trumpValue === 7) {
+  const trumpSuit = getTrumpSuit(trump);
+  if (trumpSuit === TRUMP_NOT_SELECTED) return false;
+
+  if (isDoublesTrump(trumpSuit)) {
     // Doubles trump
     return domino.high === domino.low;
   } else {
     // Suit trump
-    return domino.high === trumpValue || domino.low === trumpValue;
+    return domino.high === trumpSuit || domino.low === trumpSuit;
   }
 }
 
@@ -208,7 +209,7 @@ function getDominoesCanBeat(
   let effectiveSuit: LedSuitOrNone;
   if (currentTrick.length === 0) {
     // We're leading - the suit is determined by our domino
-    effectiveSuit = getDominoSuit(domino, trump);
+    effectiveSuit = getLedSuit(domino, trump);
   } else {
     // We're following - use the led suit
     effectiveSuit = currentSuit ?? NO_LEAD_SUIT;
@@ -268,7 +269,7 @@ function getDominoesBeaten(
 ): Domino[] {
   // Determine the effective suit for this play
   const effectiveSuit = currentTrick.length === 0
-    ? getDominoSuit(domino, trump)
+    ? getLedSuit(domino, trump)
     : (currentSuit ?? -1);
 
   const result: Domino[] = [];

@@ -31,7 +31,7 @@ import type { GameState, Domino, Bid, Trick, Play, TrumpSelection } from '../../
 import { createInitialState, cloneGameState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { ACES } from '../../game/types';
-import { getDominoSuit } from '../../game/core/dominoes';
+import { getLedSuit } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import {
   generateDealFromConstraints,
@@ -584,7 +584,7 @@ export class StateBuilder {
     // Update currentSuit if there's a lead domino
     if (newState.currentTrick.length > 0 && newState.trump.type !== 'not-selected') {
       const leadDomino = newState.currentTrick[0]!.domino;
-      newState.currentSuit = getDominoSuit(leadDomino, newState.trump);
+      newState.currentSuit = getLedSuit(leadDomino, newState.trump);
     }
 
     return new StateBuilder(newState) as this;
@@ -615,7 +615,7 @@ export class StateBuilder {
     const newState = cloneGameState(this.state);
 
     const ledSuit = newState.trump.type !== 'not-selected' && plays[0]
-      ? getDominoSuit(plays[0].domino, newState.trump)
+      ? getLedSuit(plays[0].domino, newState.trump)
       : undefined;
 
     const trick: Trick = {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   createDominoes,
   dealDominoesWithSeed,
-  getDominoSuit,
+  getLedSuit,
   getDominoValue,
   getDominoPoints,
   isDouble,
@@ -87,33 +87,33 @@ describe('Domino System', () => {
     });
   });
   
-  describe('getDominoSuit', () => {
+  describe('getLedSuit', () => {
     it('should return natural suit for doubles when regular trump is set', () => {
       const double = { high: 5, low: 5, id: '5-5' };
-      
-      expect(getDominoSuit(double, { type: 'suit', suit: DEUCES })).toBe(FIVES); // Natural suit (doubles belong to natural suit)
-      expect(getDominoSuit(double, { type: 'suit', suit: FIVES })).toBe(FIVES); // Natural suit (also trump in this case)
+
+      expect(getLedSuit(double, { type: 'suit', suit: DEUCES })).toBe(FIVES); // Natural suit (doubles belong to natural suit)
+      expect(getLedSuit(double, { type: 'suit', suit: FIVES })).toBe(FIVES); // Natural suit (also trump in this case)
     });
-    
+
     it('should return trump for dominoes with trump value', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
-      
-      expect(getDominoSuit(domino, { type: 'suit', suit: TRES })).toBe(TRES); // 3 is trump
-      expect(getDominoSuit(domino, { type: 'suit', suit: SIXES })).toBe(SIXES); // 6 is trump
+
+      expect(getLedSuit(domino, { type: 'suit', suit: TRES })).toBe(TRES); // 3 is trump
+      expect(getLedSuit(domino, { type: 'suit', suit: SIXES })).toBe(SIXES); // 6 is trump
     });
-    
+
     it('should return high value for non-trump dominoes', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
-      
-      expect(getDominoSuit(domino, { type: 'suit', suit: ACES })).toBe(SIXES); // Neither 6 nor 3 is trump 1
+
+      expect(getLedSuit(domino, { type: 'suit', suit: ACES })).toBe(SIXES); // Neither 6 nor 3 is trump 1
     });
-    
+
     it('should handle null trump', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       const double = { high: 5, low: 5, id: '5-5' };
-      
-      expect(getDominoSuit(domino, { type: 'not-selected' })).toBe(SIXES);
-      expect(getDominoSuit(double, { type: 'not-selected' })).toBe(FIVES);
+
+      expect(getLedSuit(domino, { type: 'not-selected' })).toBe(SIXES);
+      expect(getLedSuit(double, { type: 'not-selected' })).toBe(FIVES);
     });
   });
   

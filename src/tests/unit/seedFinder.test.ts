@@ -2,14 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { testSeedWinRate, findCompetitiveSeed, SEED_FINDER_CONFIG } from '../../game/ai/gameSimulator';
 
 // Override for fast tests
-SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY = 100;
-SEED_FINDER_CONFIG.GAMES_PER_SEED = 10;
-SEED_FINDER_CONFIG.SEARCH_TIMEOUT_MS = 4000;
+SEED_FINDER_CONFIG.MAX_ATTEMPTS = 100;
+SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED = 10;
 
 describe('Game Simulator - Seed Testing', () => {
   describe('testSeedWinRate', () => {
     it('should test a seed and return win rate', async () => {
-      const result = await testSeedWinRate(12345, SEED_FINDER_CONFIG.GAMES_PER_SEED);
+      const result = await testSeedWinRate(12345, SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED);
 
       expect(result).toBeDefined();
       expect(result.winRate).toBeGreaterThanOrEqual(0);
@@ -103,11 +102,5 @@ describe('Game Simulator - Seed Testing', () => {
       expect(SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED).toBeGreaterThan(0);
     });
 
-    it('should have legacy fields for backward compatibility', () => {
-      expect(SEED_FINDER_CONFIG.MAX_SEEDS_TO_TRY).toBeDefined();
-      expect(SEED_FINDER_CONFIG.GAMES_PER_SEED).toBeDefined();
-      expect(SEED_FINDER_CONFIG.SEARCH_TIMEOUT_MS).toBeDefined();
-      expect(SEED_FINDER_CONFIG.PROGRESS_REPORT_INTERVAL).toBeDefined();
-    });
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getDominoValue, getDominoSuit } from '../../game/core/dominoes';
+import { getDominoValue, getLedSuit } from '../../game/core/dominoes';
 import { calculateTrickWinner } from '../../game/core/scoring';
 import type { PlayedDomino, TrumpSelection } from '../../game/types';
 import { TRES, FIVES, DOUBLES_AS_TRUMP } from '../../game/types';
@@ -29,7 +29,7 @@ describe('Doubles Trump Rules', () => {
       
       testCases.forEach(({ domino, shouldBeTrump }) => {
         const value = getDominoValue(domino, trump);
-        const suit = getDominoSuit(domino, trump);
+        const suit = getLedSuit(domino, trump);
         
         if (shouldBeTrump) {
           // Trump dominoes should have values > 100
@@ -79,7 +79,7 @@ describe('Doubles Trump Rules', () => {
       
       doubles.forEach(domino => {
         const value = getDominoValue(domino, trump);
-        const suit = getDominoSuit(domino, trump);
+        const suit = getLedSuit(domino, trump);
         
         // All doubles should be trump with values >= 200
         expect(value).toBeGreaterThanOrEqual(200);
@@ -89,7 +89,7 @@ describe('Doubles Trump Rules', () => {
       // Non-doubles should not be trump
       const nonDouble = { high: 6, low: 5, id: '6-5' };
       const value = getDominoValue(nonDouble, trump);
-      const suit = getDominoSuit(nonDouble, trump);
+      const suit = getLedSuit(nonDouble, trump);
       
       expect(value).toBeLessThan(100);
       expect(suit).not.toBe(DOUBLES_AS_TRUMP);

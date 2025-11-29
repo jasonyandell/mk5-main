@@ -83,15 +83,15 @@ export {
 } from './core/rules';
 
 // Domino utilities
-export { 
-  createDominoes, 
+export {
+  createDominoes,
   shuffleDominoesWithSeed,
   dealDominoesWithSeed,
-  getDominoSuit, 
-  getDominoValue, 
-  getDominoPoints, 
-  isDouble, 
-  countDoubles 
+  getLedSuit,
+  getDominoValue,
+  getDominoPoints,
+  isDouble,
+  countDoubles
 } from './core/dominoes';
 
 // Scoring

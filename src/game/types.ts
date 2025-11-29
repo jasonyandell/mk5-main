@@ -26,9 +26,6 @@ export const TRUMP_NOT_SELECTED = -1 as const; // Trump hasn't been selected yet
 export const PLAYED_AS_TRUMP = -1 as const;    // Domino is being played/analyzed as trump
 export const NO_BIDDER = -1 as const;          // No player has won the bid yet
 
-// @deprecated Use specific semantic constants above
-export const NO_SUIT = NO_LEAD_SUIT;
-
 // ============= SUIT TYPES =============
 // The 7 natural suits (pip values) - self-documenting with constant names
 export type RegularSuit = 

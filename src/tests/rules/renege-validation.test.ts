@@ -3,7 +3,7 @@ import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
 import { canFollowSuit } from '../../game/core/rules';
-import { getDominoSuit } from '../../game/core/dominoes';
+import { getLedSuit } from '../../game/core/dominoes';
 import type { Domino, TrumpSelection } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
 
@@ -96,8 +96,8 @@ describe('Renege Detection and Prevention', () => {
       const trumpDomino: Domino = { id: 'trump', high: 2, low: 5, points: 0 }; // 2-5
       const nonTrumpDomino: Domino = { id: 'non-trump', high: 3, low: 4, points: 0 }; // 3-4
 
-      expect(getDominoSuit(trumpDomino, trump)).toBe(DEUCES); // Should be suit 2 (trump)
-      expect(getDominoSuit(nonTrumpDomino, trump)).not.toBe(DEUCES); // Should not be suit 2
+      expect(getLedSuit(trumpDomino, trump)).toBe(DEUCES); // Should be suit 2 (trump)
+      expect(getLedSuit(nonTrumpDomino, trump)).not.toBe(DEUCES); // Should not be suit 2
     });
   });
 

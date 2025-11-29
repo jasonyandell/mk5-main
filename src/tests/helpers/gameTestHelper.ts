@@ -1,11 +1,11 @@
 /**
- * Legacy GameTestHelper - Contains non-deprecated utility methods
+ * GameTestHelper - Utility methods for testing
  *
  * NOTE: For state creation, use StateBuilder instead.
  * NOTE: For hand creation with doubles, use HandBuilder instead.
  * NOTE: For consensus helpers, import from consensusHelpers.ts instead.
  *
- * This file only contains methods that don't have StateBuilder/HandBuilder equivalents:
+ * This file contains methods that don't have StateBuilder/HandBuilder equivalents:
  * - createTestHand() - Creates dominoes from array/object notation
  * - verifyPointConstants() - Mathematical constant validation
  * - validateGameRules() - Game rule validation
@@ -18,7 +18,7 @@ export class GameTestHelper {
   /**
    * Creates a specific domino hand for testing
    *
-   * Accepts flexible input formats for backward compatibility:
+   * Accepts flexible input formats:
    * - Array notation: [[6, 5], [5, 4]]
    * - Object notation: [{ high: 6, low: 5, points: 10 }]
    *

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Play, TrumpSelection } from '../../game/types';
 import { determineTrickWinner } from '../../game/index';
-import { getDominoSuit } from '../../game/core/dominoes';
+import { getLedSuit } from '../../game/core/dominoes';
 import { ACES, DEUCES, TRES, FIVES } from '../../game/types';
 
 describe('Winning a Trick', () => {
@@ -18,7 +18,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with higher trump (3-2) wins
       });
@@ -34,7 +34,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with highest four (4-3) wins
       });
@@ -50,7 +50,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(2); // player 2 with double six wins
       });
@@ -66,7 +66,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with higher double (5-5) wins
       });
@@ -82,7 +82,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(3); // player 3 with highest three (3-3) wins
       });
@@ -98,7 +98,7 @@ describe('Winning a Trick', () => {
         
         const firstPlay = plays[0];
         if (!firstPlay) throw new Error('First play is undefined');
-        const leadSuit = getDominoSuit(firstPlay.domino, trump);
+        const leadSuit = getLedSuit(firstPlay.domino, trump);
         const winner = determineTrickWinner(plays, trump, leadSuit);
         expect(winner).toBe(2); // player 2 with double one wins
       });

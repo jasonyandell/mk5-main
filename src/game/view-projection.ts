@@ -47,7 +47,7 @@ export interface HandResults {
   winningTeam: number;
   biddingPlayer: number;
   // Perspective-aware messages for each player
-  resultMessage: string;  // Full message with emoji (for backwards compatibility)
+  resultMessage: string;  // Full message with emoji
   resultText: string;  // Text without emoji
   isSuccess: boolean;  // true for success, false for failure
   teamLabel: string;  // e.g., "US" or "THEM" for the bidding team

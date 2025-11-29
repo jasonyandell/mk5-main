@@ -62,9 +62,14 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 - **Use game-helper.ts**: All DOM interactions through PlaywrightGameHelper
 - **No setTimeout()**: BANNED - use proper waits instead
 
-** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
+**No legacy** - CRITICAL. This is a greenfield project. Everything should be unified, even if it takes significant extra work.
+- An architecture test (`src/tests/architecture/no-backwards-compat.test.ts`) enforces this by detecting:
+  - `@deprecated` annotations
+  - "legacy compatibility" / "backward compatibility" comments
+  - `_legacy`, `_old`, `_deprecated` suffixes
+- Delete deprecated code instead of marking it deprecated. There are no external users.
 
-** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
+**No skipped tests** - This is a greenfield project. All tests should pass and be valuable, even if it takes significant extra work.
 
 ## Running TypeScript scripts
 - This project uses `"type": "module"` in package.json - ES modules only!

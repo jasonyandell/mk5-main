@@ -29,12 +29,7 @@ export const SEED_FINDER_CONFIG = {
   TARGET_WIN_RATE: 0.5,  // 50% win rate target
   TOLERANCE: 0.1,        // ±10% tolerance
   MAX_ATTEMPTS: 100,     // Maximum seeds to test
-  SIMULATIONS_PER_SEED: 5, // Number of games per seed
-  // Legacy fields for test compatibility
-  MAX_SEEDS_TO_TRY: 100,
-  GAMES_PER_SEED: 10,
-  SEARCH_TIMEOUT_MS: 5000,
-  PROGRESS_REPORT_INTERVAL: 1
+  SIMULATIONS_PER_SEED: 5 // Number of games per seed
 };
 
 // Progress tracking for seed finding

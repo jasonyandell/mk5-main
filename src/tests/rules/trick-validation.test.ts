@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
 import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
-import { getDominoSuit } from '../../game/core/dominoes';
+import { getLedSuit } from '../../game/core/dominoes';
 import type { TrumpSelection, Play, Domino } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
 import { StateBuilder, DominoBuilder } from '../helpers';
@@ -146,7 +146,7 @@ describe('Trick Validation', () => {
       
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getDominoSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(3); // Player 3 wins by following suit with higher value
     });
@@ -161,7 +161,7 @@ describe('Trick Validation', () => {
       
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getDominoSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with trump
     });
@@ -176,7 +176,7 @@ describe('Trick Validation', () => {
       
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getDominoSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(2); // Player 2 with highest trump
     });
@@ -191,7 +191,7 @@ describe('Trick Validation', () => {
       
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getDominoSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuit(firstPlay.domino, trump);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with double blank
     });
