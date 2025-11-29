@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { StateBuilder, HandBuilder } from '../helpers';
+import { StateBuilder } from '../helpers';
 import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { getNextDealer } from '../../game/core/players';
@@ -92,41 +92,40 @@ describe('Advanced Bidding Rules', () => {
 
   describe('Plunge Bidding Rules', () => {
     it('allows Plunge (4+ marks) only with 4+ doubles in hand', () => {
-      // Create hand with 4+ doubles for Plunge eligibility
-      const handWithFourDoubles = HandBuilder.withDoubles(4);
-
+      // Create state with 4+ doubles for Plunge eligibility
       const plungeEligibleState = StateBuilder
         .inBiddingPhase(0)
         .withCurrentPlayer(1)
         .withBids([])
-        .withPlayerHand(1, handWithFourDoubles)
+        .withPlayerDoubles(1, 4)
+        .withFillSeed(100)
         .build();
 
       // With 4+ doubles, should be able to Plunge (bid 4+ marks from opening)
       const plungeBid: Bid = { type: 'plunge', value: 4, player: 1 };
-      expect(rules.isValidBid(plungeEligibleState, plungeBid, handWithFourDoubles)).toBe(true);
+      const player1Hand = plungeEligibleState.players[1]!.hand;
+      expect(rules.isValidBid(plungeEligibleState, plungeBid, player1Hand)).toBe(true);
 
-      // Create hand with fewer than 4 doubles
-      const handWithThreeDoubles = HandBuilder.withDoubles(3);
-
+      // Create state with fewer than 4 doubles
       const notPlungeEligibleState = StateBuilder
         .inBiddingPhase(0)
         .withCurrentPlayer(1)
         .withBids([])
-        .withPlayerHand(1, handWithThreeDoubles)
+        .withPlayerConstraint(1, { maxDoubles: 3 })
+        .withFillSeed(101)
         .build();
 
       // Without 4+ doubles, should NOT be able to Plunge
       const invalidPlungeBid: Bid = { type: 'plunge', value: 4, player: 1 };
-      expect(rules.isValidBid(notPlungeEligibleState, invalidPlungeBid, handWithThreeDoubles)).toBe(false);
+      const notEligibleHand = notPlungeEligibleState.players[1]!.hand;
+      expect(rules.isValidBid(notPlungeEligibleState, invalidPlungeBid, notEligibleHand)).toBe(false);
     });
 
     it('Plunge requires all 7 doubles as trump', () => {
-      const handWithFourDoubles = HandBuilder.withDoubles(4);
-
       const plungeState = StateBuilder
         .inTrumpSelection(1, 4)
-        .withPlayerHand(1, handWithFourDoubles)
+        .withPlayerDoubles(1, 4)
+        .withFillSeed(102)
         .with({
           bids: [
             { type: BID_TYPES.MARKS, value: 4, player: 1 }

@@ -7,8 +7,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { baseLayer, nelloLayer, plungeLayer, splashLayer, sevensLayer } from '../../../game/layers';
-import type { GameState, GameAction, Domino } from '../../../game/types';
+import type { GameState, GameAction } from '../../../game/types';
 import { createInitialState } from '../../../game/core/state';
+import { StateBuilder } from '../../helpers/stateBuilder';
 
 describe('getValidActions Composition', () => {
   function createTestState(overrides: Partial<GameState> = {}): GameState {
@@ -29,25 +30,16 @@ describe('getValidActions Composition', () => {
     return actions;
   }
 
-  const threeDoubles: Domino[] = [
-    { id: '0-0', high: 0, low: 0, points: 0 },
-    { id: '1-1', high: 1, low: 1, points: 0 },
-    { id: '2-2', high: 2, low: 2, points: 0 },
-    { id: '0-1', high: 0, low: 1, points: 0 },
-    { id: '0-2', high: 0, low: 2, points: 0 },
-    { id: '0-3', high: 0, low: 3, points: 0 },
-    { id: '1-2', high: 1, low: 2, points: 0 }
-  ];
-
-  const fourDoubles: Domino[] = [
-    { id: '0-0', high: 0, low: 0, points: 0 },
-    { id: '1-1', high: 1, low: 1, points: 0 },
-    { id: '2-2', high: 2, low: 2, points: 0 },
-    { id: '3-3', high: 3, low: 3, points: 0 },
-    { id: '0-1', high: 0, low: 1, points: 0 },
-    { id: '0-2', high: 0, low: 2, points: 0 },
-    { id: '0-3', high: 0, low: 3, points: 0 }
-  ];
+  // Helper to create bidding state with specific double count
+  function createBiddingStateWithDoubles(player: 0 | 1 | 2 | 3, minDoubles: number, seed: number): GameState {
+    return StateBuilder
+      .inBiddingPhase()
+      .withCurrentPlayer(player)
+      .withBids([])
+      .withPlayerDoubles(player, minDoubles)
+      .withFillSeed(seed)
+      .build();
+  }
 
   describe('Basic composition', () => {
     it('should thread actions through layers', () => {
@@ -62,8 +54,8 @@ describe('getValidActions Composition', () => {
 
   describe('Filtering', () => {
     it('should preserve actions when conditions not met', () => {
-      const state = createTestState({ phase: 'bidding', currentPlayer: 0 });
-      state.players[0]!.hand = threeDoubles;
+      // State with only 3 doubles - not enough for plunge (4+ required)
+      const state = createBiddingStateWithDoubles(0, 3, 1001);
 
       const prevActions: GameAction[] = [
         { type: 'bid', player: 0, bid: 'marks', value: 2 },
@@ -77,8 +69,7 @@ describe('getValidActions Composition', () => {
 
   describe('Adding actions', () => {
     it('should add plunge bid with 4+ doubles', () => {
-      const state = createTestState({ phase: 'bidding', currentPlayer: 0, bids: [] });
-      state.players[0]!.hand = fourDoubles;
+      const state = createBiddingStateWithDoubles(0, 4, 1002);
 
       const actions = getActionsFromLayers(state, [plungeLayer]);
 
@@ -86,8 +77,7 @@ describe('getValidActions Composition', () => {
     });
 
     it('should add splash bid with 3+ doubles', () => {
-      const state = createTestState({ phase: 'bidding', currentPlayer: 0, bids: [] });
-      state.players[0]!.hand = threeDoubles;
+      const state = createBiddingStateWithDoubles(0, 3, 1003);
 
       const actions = getActionsFromLayers(state, [splashLayer]);
 
@@ -126,12 +116,13 @@ describe('getValidActions Composition', () => {
 
   describe('Annotating', () => {
     it('should calculate plunge value based on highest marks bid', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        currentPlayer: 1,
-        bids: [{ type: 'marks', value: 3, player: 0 }]
-      });
-      state.players[1]!.hand = fourDoubles;
+      const state = StateBuilder
+        .inBiddingPhase()
+        .withCurrentPlayer(1)
+        .withBids([{ type: 'marks', value: 3, player: 0 }])
+        .withPlayerDoubles(1, 4)
+        .withFillSeed(1004)
+        .build();
 
       const actions = plungeLayer.getValidActions!(state, []);
 
@@ -162,8 +153,8 @@ describe('getValidActions Composition', () => {
 
   describe('Union behavior', () => {
     it('should preserve previous actions while adding new ones', () => {
-      const state = createTestState({ phase: 'bidding', currentPlayer: 0, bids: [] });
-      state.players[0]!.hand = fourDoubles;
+      // 4 doubles qualifies for both plunge (4+) and splash (3+)
+      const state = createBiddingStateWithDoubles(0, 4, 1005);
 
       let actions = plungeLayer.getValidActions!(state, [
         { type: 'bid', player: 0, bid: 'marks', value: 2 },
