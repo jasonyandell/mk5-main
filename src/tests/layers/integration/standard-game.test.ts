@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { HandBuilder, roomConsensus } from '../../helpers';
+import { StateBuilder, roomConsensus } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -14,10 +14,14 @@ import type { GameConfig } from '../../../game/types/config';
  * - Trump selection and trick-taking mechanics
  *
  * Uses HeadlessRoom for realistic multiplayer flow simulation.
+ * Hands are generated using dealConstraints to express test intent.
  */
 describe('Standard Game Integration', () => {
   /**
    * Create a HeadlessRoom configured for standard gameplay
+   *
+   * @param seed - Seed for room initialization
+   * @param hands - Pre-dealt hands (from StateBuilder with constraints)
    */
   function createStandardRoom(seed: number, hands: Domino[][]): HeadlessRoom {
     const config: GameConfig = {
@@ -27,6 +31,74 @@ describe('Standard Game Integration', () => {
       dealOverrides: { initialHands: hands }
     };
     return new HeadlessRoom(config, seed);
+  }
+
+  /**
+   * Helper: Generate a strong bidding hand for player 0
+   * Strong = high points, multiple doubles, trump-rich (6s)
+   */
+  function createStrongBiddingHand(fillSeed: number): Domino[][] {
+    const state = StateBuilder.inBiddingPhase()
+      .withDealConstraints({
+        players: {
+          0: {
+            minPoints: 25,      // Strong point-bearing dominoes
+            minDoubles: 2,      // Multiple doubles for control
+            minSuitCount: { 6: 4 } // Rich in 6s (common trump suit)
+          }
+        },
+        fillSeed
+      })
+      .build();
+
+    return state.players.map(p => p.hand);
+  }
+
+  /**
+   * Helper: Generate a weak bidding hand for player 0
+   * Weak = void in high suits, defenders have strong points/trumps
+   */
+  function createWeakBiddingHand(fillSeed: number): Domino[][] {
+    const state = StateBuilder.inBiddingPhase()
+      .withDealConstraints({
+        players: {
+          0: {
+            voidInSuit: [6, 5], // Void in high suits (weak for bidding)
+          },
+          1: {
+            minPoints: 15,      // Defenders have points
+            minSuitCount: { 6: 3 } // Strong in 6s trump
+          },
+          3: {
+            minPoints: 10,      // More defensive strength
+            minSuitCount: { 5: 2 } // Strong in 5s
+          }
+        },
+        fillSeed
+      })
+      .build();
+
+    return state.players.map(p => p.hand);
+  }
+
+  /**
+   * Helper: Generate a balanced hand distribution
+   * All players get roughly equal strength
+   */
+  function createBalancedHands(fillSeed: number): Domino[][] {
+    const state = StateBuilder.inBiddingPhase()
+      .withDealConstraints({
+        players: {
+          0: { minDoubles: 2 },
+          1: { minDoubles: 1 },
+          2: { minDoubles: 1 },
+          3: { minDoubles: 1 }
+        },
+        fillSeed
+      })
+      .build();
+
+    return state.players.map(p => p.hand);
   }
 
   /**
@@ -146,12 +218,8 @@ describe('Standard Game Integration', () => {
 
   describe('Points Bidding', () => {
     it('should complete successful 30-point bid with early termination', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Strong hand for player 0: high points, doubles, trump-rich
+      const hands = createStrongBiddingHand(123456);
 
       const room = createStandardRoom(123456, hands);
       const tricks = playStandardHand(room, 30, 'balanced');
@@ -175,12 +243,8 @@ describe('Standard Game Integration', () => {
     });
 
     it('should handle failed bid (defenders set)', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '1-0', '1-1', '2-0', '2-1', '2-2', '3-0']),
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '5-5', '5-4', '5-3']),
-        HandBuilder.fromStrings(['3-1', '3-2', '3-3', '4-0', '4-1', '4-2', '4-3']),
-        HandBuilder.fromStrings(['6-2', '6-1', '6-0', '5-0', '5-2', '5-1', '4-4'])
-      ];
+      // Weak hand for player 0: low points, void in trump, defenders strong
+      const hands = createWeakBiddingHand(456789);
 
       const room = createStandardRoom(456789, hands);
       const tricks = playStandardHand(room, 30, 'defenders-win');
@@ -199,12 +263,8 @@ describe('Standard Game Integration', () => {
 
   describe('Marks Bidding', () => {
     it('should complete marks bid successfully when bidders get all points', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Strong hand for marks bid (32): needs to capture ALL points
+      const hands = createStrongBiddingHand(234567);
 
       const room = createStandardRoom(234567, hands);
       playStandardHand(room, 32, 'bidder-wins');
@@ -218,12 +278,8 @@ describe('Standard Game Integration', () => {
     });
 
     it('should fail marks bid when defenders score any points', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '1-0', '1-1', '2-0', '2-1', '2-2', '3-0']),
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '5-5', '5-4', '5-3']),
-        HandBuilder.fromStrings(['3-1', '3-2', '3-3', '4-0', '4-1', '4-2', '4-3']),
-        HandBuilder.fromStrings(['6-2', '6-1', '6-0', '5-0', '5-2', '5-1', '4-4'])
-      ];
+      // Weak hand for player 0: marks bid fails if defenders score anything
+      const hands = createWeakBiddingHand(678901);
 
       const room = createStandardRoom(678901, hands);
       const tricks = playStandardHand(room, 32, 'defenders-win');
@@ -241,12 +297,8 @@ describe('Standard Game Integration', () => {
 
   describe('Early Termination', () => {
     it('should end when bidders reach their bid', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Strong hand: bidders will reach 30 before all 7 tricks
+      const hands = createStrongBiddingHand(345678);
 
       const room = createStandardRoom(345678, hands);
       const tricks = playStandardHand(room, 30, 'bidder-wins');
@@ -257,12 +309,8 @@ describe('Standard Game Integration', () => {
     });
 
     it('should end when bidders cannot possibly reach bid', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '1-0', '1-1', '2-0', '2-1', '2-2', '3-0']),
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '5-5', '5-4', '5-3']),
-        HandBuilder.fromStrings(['3-1', '3-2', '3-3', '4-0', '4-1', '4-2', '4-3']),
-        HandBuilder.fromStrings(['6-2', '6-1', '6-0', '5-0', '5-2', '5-1', '4-4'])
-      ];
+      // Weak hand: defenders will prevent bidders from reaching 30
+      const hands = createWeakBiddingHand(567890);
 
       const room = createStandardRoom(567890, hands);
       const tricks = playStandardHand(room, 30, 'defenders-win');
@@ -274,12 +322,8 @@ describe('Standard Game Integration', () => {
 
   describe('Game Mechanics', () => {
     it('should allow bidder to select trump', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Balanced hands: focus is on mechanics, not bidding strength
+      const hands = createBalancedHands(890123);
 
       const room = createStandardRoom(890123, hands);
 
@@ -306,12 +350,8 @@ describe('Standard Game Integration', () => {
     });
 
     it('should have bidder lead first trick', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Balanced hands for all players - testing mechanic, not strength
+      const hands = createBalancedHands(901234);
 
       const room = createStandardRoom(901234, hands);
 
@@ -331,12 +371,8 @@ describe('Standard Game Integration', () => {
     });
 
     it('should complete standard 4-player trick taking', () => {
-      const hands = [
-        HandBuilder.fromStrings(['6-6', '6-5', '6-4', '6-3', '6-2', '6-1', '6-0']),
-        HandBuilder.fromStrings(['5-5', '5-4', '5-3', '5-2', '5-1', '5-0', '4-4']),
-        HandBuilder.fromStrings(['4-3', '4-2', '4-1', '4-0', '3-3', '3-2', '3-1']),
-        HandBuilder.fromStrings(['3-0', '2-2', '2-1', '2-0', '1-1', '1-0', '0-0'])
-      ];
+      // Balanced distribution for standard trick-taking test
+      const hands = createBalancedHands(112233);
 
       const room = createStandardRoom(112233, hands);
       const tricks = playStandardHand(room, 30, 'balanced');

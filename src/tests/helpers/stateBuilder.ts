@@ -33,6 +33,12 @@ import { BID_TYPES } from '../../game/constants';
 import { ACES } from '../../game/types';
 import { getDominoSuit } from '../../game/core/dominoes';
 import { analyzeSuits } from '../../game/core/suit-analysis';
+import {
+  generateDealFromConstraints,
+  type DealConstraints,
+  type PlayerConstraint,
+  type ConstraintDomino
+} from './dealConstraints';
 
 /**
  * Helper class for building Domino objects from string IDs or pairs
@@ -201,12 +207,16 @@ export class HandBuilder {
  */
 export class StateBuilder {
   private state: GameState;
+  private dealConstraints: DealConstraints | null = null;
+  private constraintFillSeed: number = 0;
 
   /**
    * Private constructor - use static factory methods instead
    */
-  private constructor(state: GameState) {
+  private constructor(state: GameState, constraints?: DealConstraints | null, fillSeed?: number) {
     this.state = cloneGameState(state);
+    this.dealConstraints = constraints ?? null;
+    this.constraintFillSeed = fillSeed ?? 0;
   }
 
   // ============================================================================
@@ -682,7 +692,81 @@ export class StateBuilder {
   with(overrides: Partial<GameState>): this {
     const newState = cloneGameState(this.state);
     Object.assign(newState, overrides);
-    return new StateBuilder(newState) as this;
+    return new StateBuilder(newState, this.dealConstraints, this.constraintFillSeed) as this;
+  }
+
+  // ============================================================================
+  // Deal Constraint Methods
+  // ============================================================================
+
+  /**
+   * Set constraints for a specific player's hand.
+   * Constraints are applied during build().
+   *
+   * @example
+   * StateBuilder.inBiddingPhase()
+   *   .withPlayerConstraint(0, { minDoubles: 4 })
+   *   .build();
+   */
+  withPlayerConstraint(player: 0 | 1 | 2 | 3, constraint: PlayerConstraint): this {
+    const newConstraints: DealConstraints = {
+      ...this.dealConstraints,
+      players: {
+        ...this.dealConstraints?.players,
+        [player]: constraint
+      },
+      fillSeed: this.constraintFillSeed
+    };
+    return new StateBuilder(this.state, newConstraints, this.constraintFillSeed) as this;
+  }
+
+  /**
+   * Shorthand: ensure player has minimum number of doubles.
+   * Useful for plunge (4+) or splash (3+) scenarios.
+   *
+   * @example
+   * StateBuilder.inBiddingPhase()
+   *   .withPlayerDoubles(0, 4)  // Plunge-eligible
+   *   .build();
+   */
+  withPlayerDoubles(player: 0 | 1 | 2 | 3, minDoubles: number): this {
+    return this.withPlayerConstraint(player, { minDoubles });
+  }
+
+  /**
+   * Set full deal constraints for all players at once.
+   *
+   * @example
+   * StateBuilder.inBiddingPhase()
+   *   .withDealConstraints({
+   *     players: {
+   *       0: { exactDominoes: ['6-6'], minDoubles: 3 },
+   *       1: { voidInSuit: [6], maxDoubles: 1 }
+   *     },
+   *     fillSeed: 99999
+   *   })
+   *   .build();
+   */
+  withDealConstraints(constraints: DealConstraints): this {
+    return new StateBuilder(this.state, constraints, constraints.fillSeed ?? this.constraintFillSeed) as this;
+  }
+
+  /**
+   * Set the seed for deterministic filling of remaining hand slots.
+   * Same seed + same constraints = identical hands.
+   *
+   * @example
+   * StateBuilder.inBiddingPhase()
+   *   .withPlayerDoubles(0, 4)
+   *   .withFillSeed(42)
+   *   .build();
+   */
+  withFillSeed(seed: number): this {
+    const newConstraints: DealConstraints = {
+      ...this.dealConstraints,
+      fillSeed: seed
+    };
+    return new StateBuilder(this.state, newConstraints, seed) as this;
   }
 
   // ============================================================================
@@ -694,8 +778,46 @@ export class StateBuilder {
    * @returns Frozen GameState object
    */
   build(): GameState {
+    // Apply deal constraints if specified
+    if (this.dealConstraints) {
+      return this.buildWithConstraints();
+    }
+
     // Return a deep clone to ensure immutability
     return cloneGameState(this.state);
+  }
+
+  /**
+   * Internal: Apply deal constraints and return state with constrained hands.
+   */
+  private buildWithConstraints(): GameState {
+    const newState = cloneGameState(this.state);
+
+    // Generate constrained deal
+    const constrainedHands = generateDealFromConstraints(this.dealConstraints!);
+
+    // Convert ConstraintDomino[] to Domino[] and update player hands
+    newState.players = newState.players.map((player, idx) => {
+      const constraintHand = constrainedHands[idx as 0 | 1 | 2 | 3]!;
+      const hand: Domino[] = constraintHand.map(this.constraintToDomino);
+
+      return {
+        ...player,
+        hand,
+        suitAnalysis: newState.trump.type !== 'not-selected'
+          ? analyzeSuits(hand, newState.trump)
+          : analyzeSuits(hand)
+      };
+    });
+
+    return newState;
+  }
+
+  /**
+   * Convert ConstraintDomino to game Domino
+   */
+  private constraintToDomino(d: ConstraintDomino): Domino {
+    return DominoBuilder.from(d.id);
   }
 
   /**
@@ -703,6 +825,6 @@ export class StateBuilder {
    * @returns New StateBuilder with cloned state
    */
   clone(): StateBuilder {
-    return new StateBuilder(this.state);
+    return new StateBuilder(this.state, this.dealConstraints, this.constraintFillSeed);
   }
 }

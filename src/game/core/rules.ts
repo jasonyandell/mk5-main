@@ -2,6 +2,7 @@ import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, LedS
 import { BID_TYPES } from '../constants';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
 import { getSuitName } from '../game-terms';
+import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoLacksSuit } from './dominoes';
 
 /**
  * Validates mark bids with tournament progression rules
@@ -29,11 +30,13 @@ export function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): bo
 }
 
 /**
- * Checks if player can follow the lead suit using suit analysis
+ * Checks if player can follow the lead suit using suit analysis.
+ * Accounts for trump - dominoes containing the trump suit cannot follow non-trump suits.
  */
 export function canFollowSuit(
   player: Player,
-  leadSuit: LedSuit
+  leadSuit: LedSuit,
+  trump: TrumpSelection
 ): boolean {
   if (!player.suitAnalysis) return false;
 
@@ -45,7 +48,27 @@ export function canFollowSuit(
   const suitDominoes = leadSuit >= 0 && leadSuit <= 6
     ? player.suitAnalysis.rank[leadSuit as RegularSuit]
     : undefined;
-  return suitDominoes !== undefined && suitDominoes.length > 0;
+
+  if (!suitDominoes || suitDominoes.length === 0) return false;
+
+  // Check if trump is being led - if so, all dominoes in this array can follow
+  const trumpSuit = getTrumpSuit(trump);
+  if (leadSuit === trumpSuit) {
+    return true;
+  }
+
+  // Non-trump suit led: filter out trump dominoes - they can't follow non-trump suits
+  const nonTrumpSuitDominoes = suitDominoes.filter(d => {
+    if (isRegularSuitTrump(trumpSuit)) {
+      return dominoLacksSuit(d, trumpSuit);
+    }
+    if (isDoublesTrump(trumpSuit)) {
+      return d.high !== d.low;
+    }
+    return true;
+  });
+
+  return nonTrumpSuitDominoes.length > 0;
 }
 
 /**

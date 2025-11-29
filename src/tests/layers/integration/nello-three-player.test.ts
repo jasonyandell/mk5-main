@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { HeadlessRoom } from '../../../server/HeadlessRoom';
-import { HandBuilder, roomConsensus } from '../../helpers';
+import { StateBuilder, roomConsensus } from '../../helpers';
 import type { Domino, Trick } from '../../../game/types';
 import type { GameConfig } from '../../../game/types/config';
 
@@ -12,6 +12,10 @@ import type { GameConfig } from '../../../game/types/config';
  * - Successful nello (bidder loses all 7 tricks)
  * - Failed nello (bidder wins a trick)
  * - Nello trump selection after marks bid
+ *
+ * Uses constraint-based deal generation to express semantic intent:
+ * - Losing hand: void in high suits, low doubles only
+ * - Winning hand: guaranteed suit coverage
  */
 describe('Nello Three-Player Integration', () => {
 
@@ -76,20 +80,53 @@ describe('Nello Three-Player Integration', () => {
     return tricks;
   }
 
-  // Test fixtures
-  const bidderLosesAllHands = [
-    HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-    HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-    HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
-    HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
-  ];
+  // Test fixtures - constraint-based generation
+  // Nello strategy: bidder needs weak hand (can't win tricks) or strong coverage (guarantees wins)
 
-  const bidderWinsOneHands = [
-    HandBuilder.fromStrings(['6-6', '5-6', '4-6', '3-6', '2-6', '1-6', '0-6']),
-    HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-    HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-    HandBuilder.fromStrings(['1-5', '2-4', '2-5', '3-5', '4-4', '4-5', '5-5'])
-  ];
+  /**
+   * Bidder has weak nello hand: void in high suits (5,6), multiple low doubles.
+   * Semantic intent: Limited to low/mid suits with many doubles reduces flexibility.
+   * In nello, doubles are weak (can't use second suit), and void in high suits
+   * means fewer escape options. Combined with test's play strategy (bidder plays
+   * lowest, opponents play highest), this typically results in bidder losing all tricks.
+   *
+   * Note: Constraint-based generation expresses hand properties, not guaranteed
+   * outcomes. Specific trick results depend on play order and strategy. The fillSeed
+   * (1000) was chosen to produce a deal that works with the test's play algorithm.
+   */
+  const bidderLosesAllHands = (() => {
+    const state = StateBuilder.inBiddingPhase()
+      .withDealConstraints({
+        players: {
+          0: {
+            voidInSuit: [5, 6],    // Void in highest suits
+            minDoubles: 4,         // Many doubles (inflexible in nello)
+            maxDoubles: 4          // Exactly 4 to be specific
+          }
+        },
+        fillSeed: 1000  // Chosen to produce a deal compatible with play strategy
+      })
+      .build();
+    return state.players.map(p => p.hand);
+  })();
+
+  /**
+   * Bidder has dominant suit coverage: all sixes (7 dominoes).
+   * Guarantees winning at least one trick by playing high when opponents are void.
+   */
+  const bidderWinsOneHands = (() => {
+    const state = StateBuilder.inBiddingPhase()
+      .withDealConstraints({
+        players: {
+          0: {
+            minSuitCount: { 6: 7 }  // All 7 dominoes must contain suit 6
+          }
+        },
+        fillSeed: 99
+      })
+      .build();
+    return state.players.map(p => p.hand);
+  })();
 
   it('should complete tricks with exactly 3 plays (partner sits out)', () => {
     const room = createNelloRoom(123456, bidderLosesAllHands);

@@ -12,7 +12,13 @@ import { stateToUrl, decodeGameUrl, encodeGameUrl } from '../../game/core/url-co
 import { replayFromUrl } from '../../game/utils/urlReplay';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
 import type { GameConfig } from '../../game/types/config';
-import { HandBuilder } from '../helpers/stateBuilder';
+import { generateDealFromConstraints } from '../helpers/dealConstraints';
+
+// Deterministic hands for URL encoding tests
+// Using dealConstraints with fixed seed ensures same hands every run
+const FIXED_HANDS = generateDealFromConstraints({ fillSeed: 42 }).map(hand =>
+  hand.map(d => ({ high: d.high, low: d.low, id: d.id, points: 0 }))
+);
 
 describe('URL Roundtrip Isomorphism', () => {
   describe('seed-based games', () => {
@@ -71,16 +77,9 @@ describe('URL Roundtrip Isomorphism', () => {
 
   describe('initialHands-based games', () => {
     it('should roundtrip a game with explicit hands', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-        HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-        HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
-        HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
-      ];
-
       const config: GameConfig = {
         playerTypes: ['human', 'ai', 'ai', 'ai'],
-        dealOverrides: { initialHands: hands }
+        dealOverrides: { initialHands: FIXED_HANDS }
       };
       const room = new HeadlessRoom(config);
       const state = room.getState();
@@ -104,14 +103,7 @@ describe('URL Roundtrip Isomorphism', () => {
     });
 
     it('should encode initialHands compactly (~24 chars)', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-        HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-        HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
-        HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
-      ];
-
-      const url = encodeGameUrl(undefined, [], ['human', 'ai', 'ai', 'ai'], 3, undefined, undefined, undefined, undefined, hands);
+      const url = encodeGameUrl(undefined, [], ['human', 'ai', 'ai', 'ai'], 3, undefined, undefined, undefined, undefined, FIXED_HANDS);
 
       // Extract just the 'i=' parameter value
       const params = new URLSearchParams(url);
@@ -124,29 +116,15 @@ describe('URL Roundtrip Isomorphism', () => {
 
   describe('mutual exclusion: seed vs initialHands', () => {
     it('encodeGameUrl with initialHands should omit seed', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-        HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-        HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
-        HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
-      ];
-
       // Even if seed is provided, initialHands takes precedence
-      const url = encodeGameUrl(12345, [], undefined, undefined, undefined, undefined, undefined, undefined, hands);
+      const url = encodeGameUrl(12345, [], undefined, undefined, undefined, undefined, undefined, undefined, FIXED_HANDS);
 
       expect(url).toContain('i=');
       expect(url).not.toContain('s=');
     });
 
     it('decodeGameUrl should return initialHands when i= present', () => {
-      const hands = [
-        HandBuilder.fromStrings(['0-0', '0-1', '0-2', '1-1', '1-2', '2-2', '3-3']),
-        HandBuilder.fromStrings(['0-3', '0-4', '0-5', '1-3', '1-4', '2-3', '3-4']),
-        HandBuilder.fromStrings(['0-6', '1-5', '1-6', '2-4', '2-5', '2-6', '4-4']),
-        HandBuilder.fromStrings(['3-5', '3-6', '4-5', '4-6', '5-5', '5-6', '6-6'])
-      ];
-
-      const url = encodeGameUrl(undefined, [], undefined, undefined, undefined, undefined, undefined, undefined, hands);
+      const url = encodeGameUrl(undefined, [], undefined, undefined, undefined, undefined, undefined, undefined, FIXED_HANDS);
       const decoded = decodeGameUrl(url);
 
       expect(decoded.initialHands).toBeDefined();

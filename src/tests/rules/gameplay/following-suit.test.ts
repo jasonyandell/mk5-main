@@ -74,7 +74,7 @@ describe('Feature: Playing Tricks', () => {
       const validPlays = rules.getValidPlays(gameState, 1);
       
       // Should be able to follow suit with dominoes containing 6
-      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES);
+      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES, gameState.trump);
       expect(canFollowSuitResult).toBe(true);
       
       // Valid plays should include only dominoes that can follow suit (contain 6)
@@ -108,9 +108,9 @@ describe('Feature: Playing Tricks', () => {
       gameState.players[1]!.suitAnalysis = analyzeSuits(playerHand, gameState.trump);
       
       // Check if player can follow suit
-      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES);
+      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES, gameState.trump);
       expect(canFollowSuitResult).toBe(false);
-      
+
       // Since can't follow suit, all dominoes are valid (including trump)
       const validPlays = rules.getValidPlays(gameState, 1);
       expect(validPlays).toHaveLength(4); // All dominoes are valid
@@ -147,9 +147,9 @@ describe('Feature: Playing Tricks', () => {
       gameState.players[1]!.suitAnalysis = analyzeSuits(playerHand, gameState.trump);
       
       // Check if player can follow suit
-      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES);
+      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES, gameState.trump);
       expect(canFollowSuitResult).toBe(false);
-      
+
       // Check if player has trump (they don't)
       const hasTrump = playerHand.some(domino =>
         domino.high === gameState.trump.suit || domino.low === gameState.trump.suit
@@ -187,7 +187,7 @@ describe('Feature: Playing Tricks', () => {
       gameState.players[1]!.suitAnalysis = analyzeSuits(playerHand, gameState.trump);
       
       // Player can follow suit with 5-4
-      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, FIVES);
+      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, FIVES, gameState.trump);
       expect(canFollowSuitResult).toBe(true);
       
       // Only dominoes that can follow suit should be valid
@@ -219,7 +219,7 @@ describe('Feature: Playing Tricks', () => {
       gameState.players[1]!.suitAnalysis = analyzeSuits(playerHand, gameState.trump);
       
       // Player cannot follow suit with 6
-      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES);
+      const canFollowSuitResult = canFollowSuit(gameState.players[1]!, SIXES, gameState.trump);
       expect(canFollowSuitResult).toBe(false);
       
       // Since can't follow suit, all dominoes are valid

@@ -9,6 +9,22 @@ import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
 
 const rules = composeRules([baseLayer]);
 
+/**
+ * Why these tests use exact hands instead of dealConstraints:
+ *
+ * dealConstraints operates on pip values (e.g., "must have pip 2") but is trump-agnostic.
+ * Renege rules require game-suit awareness: "can player follow suit X given trump Y?"
+ *
+ * Example: With ACES trump and DEUCES led:
+ * - A 2-1 domino contains pip 2, but it's TRUMP (contains pip 1), so it can't follow twos
+ * - A 2-4 domino contains pip 2 and is NOT trump, so it CAN follow twos
+ *
+ * dealConstraints cannot express "has pip 2 but NOT pip 1" cleanly, and even if it could,
+ * the constraint would be specific to one trump choice. Renege tests need precise control
+ * over which dominoes are trump vs. followers vs. neither, so exact hands are appropriate.
+ *
+ * See: mk5-tailwind-911, mk5-tailwind-lfy for context.
+ */
 describe('Renege Detection and Prevention', () => {
   describe('Must Follow Suit When Able', () => {
     it('requires following suit when player has matching suit', () => {
@@ -103,7 +119,7 @@ describe('Renege Detection and Prevention', () => {
         .with({ currentSuit: DEUCES }) // Twos were led
         .build();
 
-      expect(canFollowSuit(state.players[1]!, DEUCES)).toBe(false);
+      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(false);
       expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true); // Trump play allowed
       expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(true); // Any play allowed
     });
@@ -125,9 +141,38 @@ describe('Renege Detection and Prevention', () => {
         .with({ currentSuit: DEUCES }) // Twos were led
         .build();
 
-      expect(canFollowSuit(state.players[1]!, DEUCES)).toBe(true);
+      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(true);
       expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true);  // Following suit
       expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(false); // Trump when can follow
+    });
+
+    it('correctly identifies trump dominoes as not able to follow non-trump suits', () => {
+      // Regression test for pip-value vs game-suit bug (mk5-tailwind-lfy)
+      // Player has a domino containing pip 2 (the led suit), but it's also trump (contains pip 1)
+      // Trump dominoes cannot follow non-trump suits, so canFollowSuit should return false
+      const playerHand: Domino[] = [
+        { id: 'trump-with-led-pip', high: 2, low: 1, points: 0 }, // 2-1 contains pip 2 BUT is trump (contains 1)
+        { id: 'other-1', high: 3, low: 5, points: 0 }              // 3-5 (not trump, not led suit)
+      ];
+
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES }) // Aces (1s) are trump
+        .withCurrentPlayer(1)
+        .withPlayerHand(1, playerHand)
+        .withCurrentTrick([{
+          player: 0,
+          domino: { id: 'test-lead', high: 2, low: 2, points: 0 } // 2-2 leads (twos suit)
+        }])
+        .with({ currentSuit: DEUCES }) // Twos were led
+        .build();
+
+      // Key assertion: 2-1 contains pip 2, but it's trump so it can't follow twos suit
+      // canFollowSuit should return false because player has no non-trump dominoes with pip 2
+      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(false);
+
+      // Since player can't follow suit, any play is valid
+      expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true);
+      expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(true);
     });
   });
 
