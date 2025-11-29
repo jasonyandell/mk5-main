@@ -263,6 +263,87 @@ export function canDominoFollowSuit(domino: Domino, ledSuit: number, trump: Trum
 }
 
 /**
+ * Does this domino BELONG to the led suit?
+ *
+ * This is the authoritative function for determining if a domino can be used
+ * to satisfy the "must follow suit" rule in Texas 42.
+ *
+ * A domino "belongs" to a suit if:
+ * 1. It contains the suit structurally (has pips of that value), AND
+ * 2. It is NOT a trump domino (trump dominoes leave their natural suits)
+ *
+ * Key insight: When a suit becomes trump, dominoes containing that suit are
+ * no longer members of their other suit. They become exclusively trump.
+ *
+ * Examples with 4s trump:
+ * - 4-0 does NOT belong to 0s (it's trump - belongs only to 4s)
+ * - 3-0 DOES belong to 0s (has 0, not trump)
+ * - 4-0 DOES belong to 4s (the trump suit was led)
+ * - 5-5 with doubles trump does NOT belong to 5s (it's trump - doubles suit)
+ *
+ * This unifies the scattered implementations:
+ * - compose.ts inline filter in getValidPlaysBase
+ * - constraint-tracker.ts canFollowSuitForConstraints
+ * - rules.ts canFollowSuit (player-level wrapper)
+ *
+ * NOTE: The AI strength analysis (domino-strength.ts) uses different semantics
+ * where trump CAN "respond" by trumping in. That's intentionally different -
+ * it models what opponents might play, not what satisfies follow-suit rules.
+ *
+ * @param domino The domino to check
+ * @param ledSuit The suit that was led (0-6 for regular suits, 7 for doubles)
+ * @param trump The current trump selection
+ * @returns true if this domino can be used to follow the led suit
+ */
+export function dominoBelongsToSuit(
+  domino: Domino,
+  ledSuit: LedSuit,
+  trump: TrumpSelection
+): boolean {
+  const trumpSuit = getTrumpSuit(trump);
+
+  // Case 1: Doubles led (suit 7)
+  // Only doubles can follow the doubles suit
+  if (ledSuit === 7) {
+    return domino.high === domino.low;
+  }
+
+  // Case 2: Trump suit is being led
+  // Check if domino is trump (and thus can follow)
+  if (ledSuit === trumpSuit) {
+    if (isRegularSuitTrump(trumpSuit)) {
+      return dominoHasSuit(domino, trumpSuit);
+    }
+    if (isDoublesTrump(trumpSuit)) {
+      return domino.high === domino.low;
+    }
+  }
+
+  // Case 3: Non-trump suit led
+  // Domino must have the suit AND not be trump
+
+  // First check: does domino have the led suit?
+  if (!dominoHasSuit(domino, ledSuit)) {
+    return false;
+  }
+
+  // Second check: is domino trump? If so, it can't follow a non-trump suit
+  if (isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit)) {
+    return false; // Domino is trump, can't follow non-trump suit
+  }
+  if (isDoublesTrump(trumpSuit) && domino.high === domino.low) {
+    return false; // Doubles are trump, can't follow regular suits
+  }
+
+  // Handle special case: Nello - doubles are their own suit
+  if (trump.type === 'nello' && domino.high === domino.low) {
+    return false; // In Nello, doubles belong only to suit 7, not regular suits
+  }
+
+  return true;
+}
+
+/**
  * Gets the value of a domino for trick-taking purposes
  */
 export function getDominoValue(domino: Domino, trump: TrumpSelection): number {

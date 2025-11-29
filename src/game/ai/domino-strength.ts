@@ -93,15 +93,30 @@ function getUnplayedDominoes(state: GameState, playerId: number): Domino[] {
 }
 
 /**
- * Check if a domino can follow a specific suit
+ * Check if a domino can be played in response to a led suit.
+ *
+ * NOTE: This has DIFFERENT semantics from dominoBelongsToSuit in dominoes.ts!
+ *
+ * - dominoBelongsToSuit: Can this domino satisfy the "must follow suit" rule?
+ *   → Trump dominoes do NOT belong to non-trump suits (can't use them to follow)
+ *
+ * - canPlayIntoSuit: Can this domino be played in response to this suit?
+ *   → Trump dominoes CAN respond by trumping in
+ *
+ * This function is used for AI strength analysis - modeling what opponents
+ * MIGHT play in response, not what they're REQUIRED to play.
+ *
+ * Example with 4s trump, 0s led:
+ * - dominoBelongsToSuit(4-0, 0, trump) = FALSE (it's trump, can't follow 0s)
+ * - canPlayIntoSuit(4-0, 0, trump) = TRUE (can trump in on 0s)
  */
-function canFollowSuit(domino: Domino, suit: LedSuit, trump: TrumpSelection): boolean {
-  // Trump dominoes can always "follow" (they trump in)
+function canPlayIntoSuit(domino: Domino, suit: LedSuit, trump: TrumpSelection): boolean {
+  // Trump dominoes can always respond (they trump in)
   if (isTrump(domino, trump)) {
     return true;
   }
 
-  // Non-trump dominoes can follow if they contain the suit
+  // Non-trump dominoes can respond if they contain the suit
   return dominoHasSuit(domino, suit);
 }
 
@@ -126,10 +141,10 @@ export function analyzeDominoAsSuit(
   
   // Check each unplayed domino
   for (const opponent of unplayed) {
-    // First check if opponent can follow the suit
-    const canFollow = playedAsSuit === PLAYED_AS_TRUMP 
+    // First check if opponent can play into the suit (includes trumping in)
+    const canFollow = playedAsSuit === PLAYED_AS_TRUMP
       ? true  // If we're playing as trump, consider all responses
-      : canFollowSuit(opponent, playedAsSuit as LedSuit, trump);
+      : canPlayIntoSuit(opponent, playedAsSuit as LedSuit, trump);
     
     if (!canFollow) {
       // Opponent cannot follow suit - we win by default

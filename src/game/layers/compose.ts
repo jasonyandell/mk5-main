@@ -11,7 +11,7 @@
 import type { GameRules, Layer } from './types';
 import type { GameState, GameAction, Bid, TrumpSelection, Domino, RegularSuit, GamePhase } from '../types';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
-import { getLedSuit as getLedSuitCore, getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoLacksSuit } from '../core/dominoes';
+import { getLedSuit as getLedSuitCore, getTrumpSuit, dominoBelongsToSuit } from '../core/dominoes';
 import { calculateRoundScore as calculateScoreBase } from '../core/scoring';
 import { BID_TYPES } from '../constants';
 
@@ -100,25 +100,17 @@ function isValidPlayBase(
     ? player.suitAnalysis.rank[leadSuit as RegularSuit]
     : undefined;
 
-  // Filter out trump dominoes - they can't follow non-trump suits
-  const nonTrumpSuitDominoes = suitDominoes ? suitDominoes.filter(d => {
-    // If trump is a regular suit, dominoes containing that suit are trump
-    if (isRegularSuitTrump(trumpSuit)) {
-      return dominoLacksSuit(d, trumpSuit);
-    }
-    // If doubles are trump, doubles can't follow regular suits
-    if (isDoublesTrump(trumpSuit)) {
-      return d.high !== d.low;
-    }
-    return true;
-  }) : [];
+  // Filter to dominoes that belong to the led suit (accounts for trump)
+  const belongsToSuitDominoes = suitDominoes
+    ? suitDominoes.filter(d => dominoBelongsToSuit(d, leadSuit as 0 | 1 | 2 | 3 | 4 | 5 | 6, state.trump))
+    : [];
 
-  // If player has non-trump dominoes in the led suit, must play one of them
-  if (nonTrumpSuitDominoes.length > 0) {
-    return nonTrumpSuitDominoes.some(d => d.id === domino.id);
+  // If player has dominoes that belong to the led suit, must play one of them
+  if (belongsToSuitDominoes.length > 0) {
+    return belongsToSuitDominoes.some(d => d.id === domino.id);
   }
 
-  // If player can't follow suit (no non-trump dominoes in that suit), any play is legal
+  // If player can't follow suit, any play is legal
   return true;
 }
 
@@ -173,25 +165,17 @@ function getValidPlaysBase(
     ? (player.suitAnalysis.rank[leadSuit as RegularSuit] || [])
     : [];
 
-  // Filter out trump dominoes - they can't follow non-trump suits
-  const nonTrumpSuitDominoes = suitDominoes.filter(d => {
-    // If trump is a regular suit, dominoes containing that suit are trump
-    if (isRegularSuitTrump(trumpSuit)) {
-      return dominoLacksSuit(d, trumpSuit);
-    }
-    // If doubles are trump, doubles can't follow regular suits
-    if (isDoublesTrump(trumpSuit)) {
-      return d.high !== d.low;
-    }
-    return true;
-  });
+  // Filter to dominoes that belong to the led suit (accounts for trump)
+  const belongsToSuitDominoes = suitDominoes.filter(d =>
+    dominoBelongsToSuit(d, leadSuit as 0 | 1 | 2 | 3 | 4 | 5 | 6, state.trump)
+  );
 
   // IMPORTANT: Suit analysis may be stale after plays, so filter to only include
   // dominoes still in the player's hand
   const handIds = new Set(player.hand.map(d => d.id));
-  const validSuitPlays = nonTrumpSuitDominoes.filter(d => handIds.has(d.id));
+  const validSuitPlays = belongsToSuitDominoes.filter(d => handIds.has(d.id));
 
-  // If player has non-trump dominoes in the led suit, must play one of them
+  // If player has dominoes that belong to the led suit, must play one of them
   if (validSuitPlays.length > 0) {
     return validSuitPlays;
   }

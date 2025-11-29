@@ -9,76 +9,9 @@
  * we can narrow down what each player might hold.
  */
 
-import type { GameState, Domino, Play, LedSuit, TrumpSelection } from '../types';
+import type { GameState, Domino, Play, LedSuit } from '../types';
 import type { GameRules } from '../layers/types';
-import {
-  createDominoes,
-  getTrumpSuit,
-  isRegularSuitTrump,
-  isDoublesTrump,
-  dominoHasSuit
-} from '../core/dominoes';
-
-/**
- * Check if a domino CAN follow a suit according to game rules.
- *
- * This is different from dominoContainsSuit in a crucial way:
- * - Trump dominoes CANNOT follow non-trump suits (they're always trump)
- * - This matches getValidPlaysBase in compose.ts
- *
- * Examples (with 4s trump):
- * - 4-0 canFollowSuitForConstraints(0) = FALSE (it's trump, can't follow 0)
- * - 3-0 canFollowSuitForConstraints(0) = TRUE (has 0, not trump)
- * - 4-0 canFollowSuitForConstraints(4) = TRUE (it IS trump)
- */
-function canFollowSuitForConstraints(
-  domino: Domino,
-  ledSuit: LedSuit,
-  trump: TrumpSelection
-): boolean {
-  const trumpSuit = getTrumpSuit(trump);
-
-  // Handle doubles led (suit 7)
-  if (ledSuit === 7) {
-    return domino.high === domino.low;
-  }
-
-  // If trump suit is being led, check if domino is trump
-  if (ledSuit === trumpSuit) {
-    // Must have trump suit to follow trump
-    if (isRegularSuitTrump(trumpSuit)) {
-      return dominoHasSuit(domino, trumpSuit);
-    }
-    // For doubles-as-trump, only doubles follow
-    if (isDoublesTrump(trumpSuit)) {
-      return domino.high === domino.low;
-    }
-  }
-
-  // Non-trump suit led - domino must have that suit AND not be trump
-  // This is the critical fix: trump dominoes can't follow non-trump suits
-
-  // First check: does domino have the led suit?
-  if (!dominoHasSuit(domino, ledSuit)) {
-    return false;
-  }
-
-  // Second check: is domino trump? If so, it can't follow a non-trump suit
-  if (isRegularSuitTrump(trumpSuit)) {
-    // If domino contains the trump suit, it IS trump and can't follow non-trump
-    if (dominoHasSuit(domino, trumpSuit)) {
-      return false;
-    }
-  }
-  if (isDoublesTrump(trumpSuit)) {
-    // Doubles are trump, can't follow regular suits
-    if (domino.high === domino.low) {
-      return false;
-    }
-  }
-
-  return true;
-}
+import { createDominoes, dominoBelongsToSuit } from '../core/dominoes';
 
 /**
  * Constraints on what dominoes each player can hold.
@@ -186,16 +119,14 @@ function processTrickForConstraints(
 
     // For non-lead plays, check if they followed suit
     if (i > 0) {
-      // Use canFollowSuitForConstraints which correctly handles trump dominoes
-      // A trump domino (like 4-0 when 4s are trump) CANNOT follow non-trump suits
-      const followedSuit = canFollowSuitForConstraints(play.domino, ledSuit, state.trump);
+      // Use dominoBelongsToSuit - the unified function that correctly handles trump
+      // A trump domino (like 4-0 when 4s are trump) does NOT belong to non-trump suits
+      const followedSuit = dominoBelongsToSuit(play.domino, ledSuit, state.trump);
 
       if (!followedSuit) {
         // Player didn't follow suit - they're void in the led suit
-        // IMPORTANT: This is only valid if the domino they played COULD have followed
-        // but didn't. Trump dominoes playing off-suit doesn't mean void - they might
-        // have chosen to trump! But actually, if they HAD non-trump suit cards, they
-        // MUST follow. So not following = void in that suit (for non-trump cards).
+        // They played a domino that doesn't belong to the led suit, so they must
+        // not have any dominoes that belong to that suit.
         const playerVoids = voidInSuit.get(play.player);
         if (playerVoids) {
           playerVoids.add(ledSuit);
@@ -240,11 +171,10 @@ export function getCandidateDominoes(
     if (constraints.myHand.has(id)) return false;
 
     // Exclude dominoes in suits the player is void in
-    // A domino is excluded if it COULD follow any void suit
-    // IMPORTANT: Use canFollowSuitForConstraints which handles trump correctly
-    // A trump domino (like 4-0) doesn't follow non-trump suits (like 0)
+    // A domino is excluded if it belongs to any void suit
+    // dominoBelongsToSuit handles trump correctly (4-0 doesn't belong to 0s if 4s trump)
     for (const voidSuit of voidSuits) {
-      if (canFollowSuitForConstraints(domino, voidSuit, trump)) {
+      if (dominoBelongsToSuit(domino, voidSuit, trump)) {
         return false;
       }
     }
