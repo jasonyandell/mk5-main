@@ -161,6 +161,35 @@ The GameRules interface currently has 14 methods, but **this number is not fixed
 
 **Composition**: Layers compose action generation via reduce pattern
 
+### Pacing Layers: Consensus vs Speed
+
+Two layers control game pacing with opposite philosophies:
+
+**Consensus Layer** (`consensus.ts`) - Gates progress behind human acknowledgment
+- Replaces `complete-trick` and `score-hand` with `agree-trick` / `agree-score` actions
+- All human players must acknowledge before the game advances
+- AI players don't vote (they're not waiting to see the result)
+- Use for: Multiplayer human games where players need "tap to continue" pacing
+- Derives state from `actionHistory` (pure function, no mutable state)
+
+**Speed Layer** (`speed.ts`) - Auto-executes forced moves
+- Marks single legal actions with `autoExecute: true`
+- Sets `authority: 'system'` to bypass capability checks
+- Use for: AI-only games, single-player practice, faster gameplay
+- Examples: Only one legal play, only one legal bid, consensus actions when no player actions exist
+
+**Contrast**:
+| Aspect | Consensus | Speed |
+|--------|-----------|-------|
+| Philosophy | Wait for humans | Skip trivial decisions |
+| Progress | Gated by acknowledgment | Auto-executed immediately |
+| Use case | Multiplayer human games | AI games, practice mode |
+| Actions | Adds agree-* actions | Annotates with autoExecute |
+
+**Composition Note**: These layers can be composed together, but **order matters**:
+- **Consensus → Speed** (current): Consensus replaces `complete-trick` with `agree-trick`, then speed auto-executes it. Result: human sees trick result, game auto-advances.
+- **Speed → Consensus** (hypothetical): Speed marks `complete-trick` autoExecute, then consensus replaces it with `agree-trick` (losing the autoExecute flag). Result: human must manually tap to continue.
+
 ### The Composition Point (Room Constructor)
 
 **ONE place** where everything composes:
@@ -283,7 +312,7 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/layers/types.ts` - GameRules interface (14 methods), Layer
 - `src/game/layers/compose.ts` - composeRules() - reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
-- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed}.ts` - Layer implementations
+- `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed,consensus}.ts` - Layer implementations
 - `src/game/layers/registry.ts` - LAYER_REGISTRY - name → layer mapping
 
 **Multiplayer** (authorization, visibility):

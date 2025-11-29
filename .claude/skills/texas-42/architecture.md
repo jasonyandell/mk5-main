@@ -216,3 +216,55 @@ type ActionAuthority = 'player' | 'system';
 
 - **Player**: Authorized by session capabilities
 - **System**: Deterministic game script (oneHand transformer), bypasses capability checks
+
+## Pacing Layers
+
+Two layers control game flow with opposite philosophies:
+
+### Consensus Layer
+
+Gates progress actions (`complete-trick`, `score-hand`) behind human acknowledgment.
+
+```typescript
+// Without consensus: complete-trick executes immediately
+// With consensus: all humans must agree-trick first
+
+getValidActions: (state, prev) => {
+  // If complete-trick available but not all humans acknowledged
+  // → replace with agree-trick actions for each unacknowledged human
+  // Once all humans acknowledged → allow complete-trick
+}
+```
+
+**Key characteristics**:
+- Reads `state.playerTypes` to identify human players
+- AI players don't vote (they're not waiting to see results)
+- Derives acknowledgment state from `actionHistory` (pure function)
+- Introduces new action types: `agree-trick`, `agree-score`
+
+**Use for**: Multiplayer human games needing "tap to continue" pacing.
+
+### Speed Layer
+
+Auto-executes forced moves (single legal actions).
+
+```typescript
+getValidActions: (state, prev) => {
+  // Group by player, if player has exactly one action
+  // → annotate with autoExecute: true, authority: 'system'
+}
+```
+
+**Key characteristics**:
+- Marks actions with `autoExecute: true` for immediate execution
+- Sets `authority: 'system'` to bypass capability checks
+- Adds metadata: `speedMode: true`, `reason: 'only-legal-action'`
+
+**Use for**: AI-only games, single-player practice, faster gameplay.
+
+### Composing Pacing Layers
+
+These layers can be composed together:
+- With both enabled, consensus gates progress
+- But speed auto-executes the agree actions when players have no other choices
+- Result: Human sees trick result, taps once, game advances
