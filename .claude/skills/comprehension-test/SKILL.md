@@ -18,18 +18,7 @@ Generate interactive tests over code changes to verify deep understanding, then 
 
 ### Step 1: Read the Content
 
-Determine what to test based on user request:
-
-```bash
-# Uncommitted changes (default)
-git diff HEAD
-
-# Last N commits
-git log -p -n 3
-
-# Specific range
-git diff abc123..def456
-```
+Determine what to test based on user request.
 
 Read related docs or files to understand context deeply.
 
@@ -40,7 +29,6 @@ Create questions that test **deep understanding, not surface recall**. The struc
 Generate HTML at `scratch/comprehension-test-{timestamp}.html` with:
 - Questions with point values
 - Answer textarea for each question
-- Discussion textarea for each question (user notes disagreements/questions inline)
 - Dark theme (#1a1a2e background)
 - Submit button → copies to clipboard → alert: "Copied! Paste results back into Claude Code"
 

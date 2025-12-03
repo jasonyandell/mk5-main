@@ -16,7 +16,7 @@ const strategies: Record<AIStrategyType, AIStrategy> = {
 };
 
 // Current default strategy (can be changed for testing/configuration)
-let defaultStrategy: AIStrategyType = 'beginner';
+let defaultStrategy: AIStrategyType = 'intermediate';
 
 /**
  * Set the default AI strategy for all AI players.
