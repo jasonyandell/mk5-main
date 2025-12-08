@@ -12,7 +12,7 @@
  * Key insight: < 1M canonical info sets → solve directly, > 10M → need abstraction
  */
 
-import type { GameState, Domino, Play, Trick, TrumpSelection, RegularSuit, LedSuit } from '../types';
+import type { GameState, Domino, Trick, TrumpSelection, RegularSuit } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import { getTrumpSuit, isDoublesTrump, isNoTrump } from '../core/dominoes';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
@@ -97,8 +97,8 @@ export function buildCanonicalSuitMap(
   trump: TrumpSelection
 ): Map<RegularSuit, RegularSuit> {
   const trumpSuit = getTrumpSuit(trump);
-  const isDoublesMode = isDoublesTrump(trump);
-  const isNoTrumpMode = isNoTrump(trump);
+  const isDoublesMode = isDoublesTrump(trumpSuit);
+  const isNoTrumpMode = isNoTrump(trumpSuit);
 
   // Count non-trump suits in hand
   const suitCounts = new Map<RegularSuit, number>();
@@ -174,7 +174,8 @@ function canonicalizeDominoId(
   suitMap: Map<RegularSuit, RegularSuit>,
   trump: TrumpSelection
 ): string {
-  const isDoublesMode = isDoublesTrump(trump);
+  const trumpSuit = getTrumpSuit(trump);
+  const isDoublesMode = isDoublesTrump(trumpSuit);
 
   // Doubles stay as-is in doubles mode (they're trump)
   if (isDoublesMode && domino.high === domino.low) {
@@ -349,7 +350,7 @@ function isCountDomino(domino: Domino): boolean {
  *
  * Non-count domino distinctions (4-3 vs 4-2) collapse when irrelevant.
  */
-function computeCountCentricHash(state: GameState, playerIndex: number): string {
+export function computeCountCentricHash(state: GameState, playerIndex: number): string {
   const player = state.players[playerIndex];
   if (!player) {
     return 'INVALID';

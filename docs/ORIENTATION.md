@@ -693,11 +693,52 @@ function myExecutor(state: GameState, action: GameAction, rules: GameRules) {
 
 ---
 
+## AI System
+
+### Strategy Implementations
+
+Located in `src/game/ai/`:
+
+| Strategy | Description | Use Case |
+|----------|-------------|----------|
+| **RandomAIStrategy** | Picks random valid action | Testing, baselines |
+| **BeginnerAIStrategy** | Monte Carlo simulation | Default playable AI |
+| **MCCFRStrategy** | Trained regret minimization | Optimal play (playing phase) |
+
+### MCCFR (Monte Carlo CFR)
+
+The `src/game/ai/cfr/` module implements External Sampling MCCFR for optimal trick-taking:
+
+**Core Components**:
+- `regret-table.ts` - Stores cumulative regrets and strategy sums per information set
+- `mccfr-trainer.ts` - Training loop with external sampling
+- `mccfr-strategy.ts` - AIStrategy implementation using trained regrets
+- `action-abstraction.ts` - Maps game actions to abstract keys
+
+**Training**:
+```bash
+# Single-process training
+npx tsx scripts/train-mccfr.ts --iterations 10000 --progress
+
+# Multi-process parallel training (recommended)
+npx tsx scripts/train-mccfr-parallel.ts --workers 8 --iterations 100000
+```
+
+**Information Set Abstraction**:
+Uses count-centric abstraction (`computeCountCentricHash()` in `cfr-metrics.ts`) achieving 32.5x compression:
+- Which count dominoes (5-0, 5-5, 6-4, 3-2, 4-1) are in hand
+- Points captured by each team
+- Trump control, game progress, position
+
+**Scope**: Currently trains on playing phase only. Bidding/trump use heuristics. See issue mk5-tailwind-i2s for future work.
+
+---
+
 ## What's Not Here Yet
 
 - **Online Mode**: Cloudflare Workers/Durable Objects (design ready, not implemented)
 - **Spectator Mode**: Watch games with commentary (design ready, not implemented)
-- **Advanced AI**: Intermediate/expert strategies beyond beginner (design ready, not implemented)
+- **MCCFR Bidding/Trump**: Training for bidding and trump selection phases (tracked in mk5-tailwind-i2s)
 
 Current mode: Local in-process (browser main thread, createLocalGame wiring)
 

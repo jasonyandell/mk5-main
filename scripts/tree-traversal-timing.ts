@@ -16,7 +16,7 @@
  *   npx tsx scripts/tree-traversal-timing.ts 12345 1000000  # Custom seed, 1M limit
  */
 
-import type { GameState, GameAction } from '../src/game/types';
+import type { GameState } from '../src/game/types';
 import type { ExecutionContext } from '../src/game/types/execution';
 import { executeAction } from '../src/game/core/actions';
 import { StateBuilder } from '../src/tests/helpers/stateBuilder';
