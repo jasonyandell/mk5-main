@@ -333,6 +333,36 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/stores/gameStore.ts` - Svelte facade over GameClient
 - `src/App.svelte` - UI entry point
 
+**Test Helpers**:
+- `src/tests/helpers/stateBuilder.ts` - Fluent StateBuilder for test states
+- `src/tests/helpers/dealConstraints.ts` - Generate hands with specific constraints
+- `src/tests/helpers/executionContext.ts` - createTestContext() for unit tests
+
+---
+
+## StateBuilder (Test State Construction)
+
+Primary API for building game states in tests. Located in `src/tests/helpers/stateBuilder.ts`.
+
+```typescript
+import { StateBuilder } from '../helpers/stateBuilder';
+import { ACES } from '../../game/types';
+
+// Create state at any phase
+const state = StateBuilder
+  .inPlayingPhase({ type: 'suit', suit: ACES })
+  .withSeed(12345)
+  .withPlayerHand(0, ['6-6', '6-5', '5-5', '6-4', '3-2', '4-1', '5-0'])
+  .withCurrentPlayer(1)
+  .build();
+```
+
+**Factory methods**: `inBiddingPhase()`, `inTrumpSelection()`, `inPlayingPhase()`, `withTricksPlayed()`, `inScoringPhase()`, `gameEnded()`, plus special contracts (`nelloContract()`, `splashContract()`, `plungeContract()`, `sevensContract()`).
+
+**Chainable modifiers**: `.withDealer()`, `.withCurrentPlayer()`, `.withTrump()`, `.withPlayerHand()`, `.withHands()`, `.withCurrentTrick()`, `.withTricks()`, `.withTeamScores()`, `.withSeed()`, `.withConfig()`.
+
+**Deal constraints**: `.withPlayerDoubles(player, minCount)`, `.withPlayerConstraint(player, { minDoubles, exactDominoes, voidInSuit })`, `.withFillSeed()`.
+
 ---
 
 ## Essential Components Summary

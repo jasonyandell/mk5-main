@@ -59,11 +59,93 @@ describe('Layer Composition', () => {
 });
 ```
 
-### State Building Helpers
-Primary API for constructing test state:
-- `StateBuilder` - Build complete game states fluently
-- `HandBuilder` - Construct player hands with specific dominoes
-- `DominoBuilder` - Create dominoes by pip values
+### StateBuilder (Primary Test State API)
+
+Located in `src/tests/helpers/stateBuilder.ts`. Fluent API for constructing test states.
+
+#### Factory Methods (Entry Points)
+```typescript
+// Create state at specific phase
+StateBuilder.inBiddingPhase(dealer?)           // Dealt hands, ready to bid
+StateBuilder.inTrumpSelection(bidder?, value?) // After winning bid
+StateBuilder.inPlayingPhase(trump?)            // Trump selected, ready to play
+StateBuilder.withTricksPlayed(count, trump?)   // Mid-hand with N tricks done
+StateBuilder.inScoringPhase(scores)            // All tricks played
+StateBuilder.gameEnded(winningTeam)            // Terminal state
+
+// Special contracts
+StateBuilder.nelloContract(bidder?)            // Marks bid, 3-player tricks
+StateBuilder.splashContract(bidder?, value?)   // Partner selects trump
+StateBuilder.plungeContract(bidder?, value?)   // 4+ marks, partner trump
+StateBuilder.sevensContract(bidder?)           // High card must lead
+```
+
+#### Chainable Modifiers
+```typescript
+.withDealer(player)                 // Set dealer position (0-3)
+.withCurrentPlayer(player)          // Set current player
+.withTrump(trump)                   // Set trump selection
+.withWinningBid(player, bid)        // Set winning bidder and bid
+.withPlayerHand(index, dominoes)    // Set specific hand (strings or Domino[])
+.withHands([hand0, hand1, ...])     // Set all 4 hands at once
+.withCurrentTrick([plays])          // Set current trick in progress
+.withTricks(tricks)                 // Set completed tricks
+.withTeamScores(team0, team1)       // Set hand scores
+.withTeamMarks(team0, team1)        // Set game marks
+.withSeed(seed)                     // Set shuffle seed
+.withConfig(partialConfig)          // Merge partial config
+.with(overrides)                    // Escape hatch for arbitrary state
+```
+
+#### Deal Constraints (Generate Specific Hands)
+```typescript
+// Ensure player has minimum doubles (for plunge testing)
+.withPlayerDoubles(0, 4)
+
+// Full constraint specification
+.withPlayerConstraint(0, {
+  minDoubles: 4,
+  exactDominoes: ['6-6'],
+  voidInSuit: [6]
+})
+
+// Deterministic fill for remaining slots
+.withFillSeed(12345)
+```
+
+#### Example Usage
+```typescript
+// Simple: playing phase with aces as trump
+const state = StateBuilder
+  .inPlayingPhase({ type: 'suit', suit: ACES })
+  .withSeed(12345)
+  .build();
+
+// Complex: mid-hand scenario with specific setup
+const state = StateBuilder
+  .inPlayingPhase({ type: 'suit', suit: SIXES })
+  .withTricksPlayed(3)
+  .withTeamScores(15, 8)
+  .withCurrentTrick([
+    { player: 0, domino: '6-5' },
+    { player: 1, domino: '5-4' }
+  ])
+  .withPlayerHand(2, ['6-6', '6-4', '5-5', '4-4'])
+  .build();
+
+// Special contract: plunge with 4 doubles
+const state = StateBuilder
+  .plungeContract(0, 4)
+  .withPlayerDoubles(0, 4)
+  .withFillSeed(99999)
+  .build();
+```
+
+### Related Helpers
+- `HandBuilder.fromStrings(['6-6', '5-5'])` - Parse hand from string IDs
+- `HandBuilder.withDoubles(count)` - Generate hand with N doubles
+- `DominoBuilder.from('6-5')` - Parse single domino from string
+- `DominoBuilder.doubles(6)` - Create double-six
 
 ### Integration Test Pattern
 ```typescript
