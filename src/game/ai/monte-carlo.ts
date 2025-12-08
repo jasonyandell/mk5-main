@@ -8,19 +8,19 @@
  * Partnership dynamics emerge naturally from the simulation.
  */
 
-import type { GameState, GameAction } from '../types';
+import type { GameState, GameAction, Domino, TrumpSelection } from '../types';
+import { NO_LEAD_SUIT } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import type { HandConstraints } from './constraint-tracker';
 import type { SampledHands } from './hand-sampler';
-import { sampleOpponentHands, createSeededRng } from './hand-sampler';
+import { sampleOpponentHands, sampleBiddingHands, createSeededRng } from './hand-sampler';
 import { getExpectedHandSizes } from './constraint-tracker';
 import { executeAction } from '../core/actions';
-import { BeginnerAIStrategy } from './strategies';
 import type { ExecutionContext } from '../types/execution';
 import { analyzeSuits } from '../core/suit-analysis';
-
-// Dedicated beginner strategy for rollout - NOT affected by default strategy setting
-const rolloutStrategy = new BeginnerAIStrategy();
+import { createDominoes } from '../core/dominoes';
+import { determineBestTrump } from './hand-strength';
+import { getRolloutStrategy } from './rollout-strategy';
 
 /**
  * Configuration for Monte Carlo evaluation
@@ -48,6 +48,195 @@ export interface ActionEvaluation {
 
   /** Number of simulations run */
   simulationCount: number;
+}
+
+/**
+ * Result of evaluating a bid action
+ */
+export interface BidEvaluation {
+  /** The bid action that was evaluated */
+  action: ValidAction;
+
+  /** Numeric bid value (30-42) */
+  bidValue: number;
+
+  /** Fraction of simulations where bid was made */
+  makeBidRate: number;
+
+  /** Average team points when bid was made */
+  avgPointsWhenMade: number;
+
+  /** Average team points overall (including failures) */
+  avgPointsOverall: number;
+
+  /** Number of simulations run */
+  simulationCount: number;
+}
+
+// All 28 dominoes (cached for bidding simulations)
+const ALL_DOMINOES = createDominoes();
+
+/**
+ * Evaluate all candidate bid actions using Monte Carlo simulation.
+ *
+ * For each candidate bid:
+ * 1. Sample opponent hands (no constraints during bidding)
+ * 2. Determine best trump for bidder's hand
+ * 3. Rollout full hand to completion
+ * 4. Check if bidder's team made the bid
+ *
+ * @param state Current game state (bidding phase)
+ * @param bidActions Array of valid bid actions to evaluate
+ * @param myPlayerIndex The AI player's index (0-3)
+ * @param ctx Execution context with composed rules
+ * @param config Monte Carlo configuration
+ * @returns Evaluations for each action, sorted by makeBidRate descending
+ */
+export function evaluateBidActions(
+  state: GameState,
+  bidActions: ValidAction[],
+  myPlayerIndex: number,
+  ctx: ExecutionContext,
+  config: MonteCarloConfig
+): BidEvaluation[] {
+  const rng = config.seed !== undefined
+    ? createSeededRng(config.seed)
+    : { random: () => Math.random() };
+
+  const myTeam = myPlayerIndex % 2;
+  const myHand = state.players[myPlayerIndex]?.hand ?? [];
+
+  // Determine best trump once (same hand, same trump choice)
+  // Use suitAnalysis for better tiebreaking when multiple suits have equal count
+  const suitAnalysis = analyzeSuits(myHand);
+  const bestTrump = determineBestTrump(myHand, suitAnalysis);
+
+  const evaluations: BidEvaluation[] = [];
+
+  for (const bidAction of bidActions) {
+    // Extract bid value from action
+    const bidValue = getBidValue(bidAction);
+    if (bidValue === 0) {
+      // Pass action - skip evaluation (will be handled separately)
+      continue;
+    }
+
+    let totalPoints = 0;
+    let pointsWhenMade = 0;
+    let madeCount = 0;
+
+    for (let sim = 0; sim < config.simulations; sim++) {
+      // Sample opponent hands
+      const sampledHands = sampleBiddingHands(ALL_DOMINOES, myHand, myPlayerIndex, rng);
+
+      // Create state ready for play (skip bidding/trump selection)
+      // We're asking: "if I win this bid, can I make it?"
+      const simState = createPlayReadyState(
+        state,
+        sampledHands,
+        myPlayerIndex,
+        myHand,
+        bestTrump,
+        bidValue
+      );
+
+      // Rollout to hand completion
+      const finalState = rolloutToHandEnd(simState, ctx);
+
+      // Record outcome
+      const teamPoints = finalState.teamScores[myTeam] ?? 0;
+      totalPoints += teamPoints;
+
+      if (teamPoints >= bidValue) {
+        madeCount++;
+        pointsWhenMade += teamPoints;
+      }
+    }
+
+    evaluations.push({
+      action: bidAction,
+      bidValue,
+      makeBidRate: madeCount / config.simulations,
+      avgPointsWhenMade: madeCount > 0 ? pointsWhenMade / madeCount : 0,
+      avgPointsOverall: totalPoints / config.simulations,
+      simulationCount: config.simulations
+    });
+  }
+
+  // Sort by makeBidRate descending
+  evaluations.sort((a, b) => b.makeBidRate - a.makeBidRate);
+
+  return evaluations;
+}
+
+/**
+ * Extract numeric bid value from a bid action.
+ * Returns 0 for pass actions.
+ */
+function getBidValue(action: ValidAction): number {
+  if (action.action.type === 'pass') {
+    return 0;
+  }
+  if (action.action.type === 'bid') {
+    if (action.action.bid === 'marks') {
+      return (action.action.value ?? 1) * 42;
+    }
+    return action.action.value ?? 30;
+  }
+  return 0;
+}
+
+/**
+ * Create a state ready for play simulation.
+ *
+ * Sets up the state as if bidding and trump selection are complete:
+ * - Phase is 'playing'
+ * - Bidder is set as winning bidder with their bid value
+ * - Trump is selected
+ * - All hands are in place
+ * - Bidder leads (currentPlayer = bidder)
+ */
+function createPlayReadyState(
+  state: GameState,
+  sampledHands: SampledHands,
+  bidderIndex: number,
+  bidderHand: Domino[],
+  trump: TrumpSelection,
+  bidValue: number
+): GameState {
+  const newPlayers = state.players.map((player, index) => {
+    let hand: Domino[];
+    if (index === bidderIndex) {
+      hand = bidderHand;
+    } else {
+      hand = sampledHands.get(index) ?? player.hand;
+    }
+
+    const suitAnalysis = analyzeSuits(hand, trump);
+
+    return {
+      ...player,
+      hand,
+      suitAnalysis
+    };
+  });
+
+  return {
+    ...state,
+    players: newPlayers,
+    // Override playerTypes to all AI so consensus layer auto-executes
+    // (without this, simulations with human players would stall on agree-trick)
+    playerTypes: ['ai', 'ai', 'ai', 'ai'] as const,
+    phase: 'playing' as const,
+    trump,
+    winningBidder: bidderIndex,
+    currentBid: { type: 'points' as const, value: bidValue, player: bidderIndex },
+    currentPlayer: bidderIndex, // Bidder leads first trick
+    currentTrick: [],
+    tricks: [],
+    teamScores: [0, 0],
+    currentSuit: NO_LEAD_SUIT
+  };
 }
 
 /**
@@ -187,7 +376,10 @@ function injectSampledHands(
 
   return {
     ...state,
-    players: newPlayers
+    players: newPlayers,
+    // Override playerTypes to all AI so consensus layer auto-executes
+    // (without this, simulations with human players would stall on agree-trick)
+    playerTypes: ['ai', 'ai', 'ai', 'ai'] as const
   };
 }
 
@@ -246,7 +438,7 @@ function rolloutToHandEnd(
       break;
     }
 
-    const selected = rolloutStrategy.chooseAction(state, myActions);
+    const selected = getRolloutStrategy().chooseAction(state, myActions);
 
     if (!selected) {
       // AI couldn't select - shouldn't happen with valid actions

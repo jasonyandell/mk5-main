@@ -1,28 +1,32 @@
 import type { AIStrategy } from './types';
 import type { GameState, Player } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
-import { BID_TYPES } from '../constants';
-import { calculateTrickWinner } from '../core/scoring';
-import { analyzeHand } from '../ai/utilities';
-import {
-  determineBestTrump,
-  LAYDOWN_SCORE,
-  BID_THRESHOLDS
-} from '../ai/hand-strength';
-import { calculateLexicographicStrength } from '../ai/lexicographic-strength';
+import type { ExecutionContext } from '../types/execution';
+import { determineBestTrump } from './hand-strength';
+import { evaluateBidActions, selectBestPlay, type MonteCarloConfig } from './monte-carlo';
+import { buildConstraints } from './constraint-tracker';
+import { createExecutionContext } from '../types/execution';
+import type { RandomGenerator } from './hand-sampler';
+import { defaultRng } from './hand-sampler';
 
 
 /**
  * Random AI strategy - picks random action
  */
 export class RandomAIStrategy implements AIStrategy {
+  private readonly rng: RandomGenerator;
+
+  constructor(rng: RandomGenerator = defaultRng) {
+    this.rng = rng;
+  }
+
   chooseAction(_state: GameState, validActions: ValidAction[]): ValidAction {
     if (validActions.length === 0) {
       throw new Error('RandomAIStrategy: No valid actions available to choose from');
     }
 
     // Random choice from available actions
-    const index = Math.floor(Math.random() * validActions.length);
+    const index = Math.floor(this.rng.random() * validActions.length);
     const chosen = validActions[index];
     if (!chosen) {
       throw new Error(`RandomAIStrategy: Failed to select action at index ${index} from ${validActions.length} actions`);
@@ -31,14 +35,28 @@ export class RandomAIStrategy implements AIStrategy {
   }
 }
 
-// NOTE: All AI decision-making utilities have been moved to src/game/ai/utilities.ts
-// The main analysis function analyzeHand() provides complete context analysis
-// including domino values and trump information
+/** Default configuration for Monte Carlo evaluation */
+const DEFAULT_CONFIG: MonteCarloConfig = {
+  simulations: 100
+};
+
+/** Threshold for bidding - bid if make rate >= this value */
+const BID_THRESHOLD = 0.50;
 
 /**
- * Beginner AI strategy - makes basic intelligent decisions
+ * Beginner AI strategy - the standard playable AI
+ *
+ * Uses Monte Carlo simulation for both bidding and play decisions.
+ * Trump selection uses simple heuristics (strongest suit).
  */
 export class BeginnerAIStrategy implements AIStrategy {
+  private ctx: ExecutionContext | null = null;
+  private readonly config: MonteCarloConfig;
+
+  constructor(config: Partial<MonteCarloConfig> = {}) {
+    this.config = { ...DEFAULT_CONFIG, ...config };
+  }
+
   chooseAction(state: GameState, validActions: ValidAction[]): ValidAction {
     if (validActions.length === 0) {
       throw new Error('BeginnerAIStrategy: No valid actions available to choose from');
@@ -53,11 +71,11 @@ export class BeginnerAIStrategy implements AIStrategy {
     // Use phase-specific logic
     switch (state.phase) {
       case 'bidding':
-        return this.makeBidDecision(state, currentPlayer, validActions);
+        return this.makeBidDecision(state, validActions);
       case 'trump_selection':
-        return this.makeTrumpDecision(state, currentPlayer, validActions);
+        return this.makeTrumpDecision(currentPlayer, validActions);
       case 'playing':
-        return this.makePlayDecision(state, currentPlayer, validActions);
+        return this.makePlayDecision(state, validActions);
       default: {
         const fallback = validActions[0];
         if (!fallback) {
@@ -67,156 +85,77 @@ export class BeginnerAIStrategy implements AIStrategy {
       }
     }
   }
-  
-  private makeBidDecision(state: GameState, player: Player, validActions: ValidAction[]): ValidAction {
-    if (validActions.length === 0) {
-      throw new Error('BeginnerAIStrategy.makeBidDecision: No valid actions available');
+
+  /**
+   * Get or create execution context for MCTS evaluation.
+   */
+  private getExecutionContext(state: GameState): ExecutionContext {
+    if (!this.ctx) {
+      this.ctx = createExecutionContext(state.initialConfig);
     }
+    return this.ctx;
+  }
 
-    // Calculate hand strength using shared utility
-    // Pass undefined to force proper trump analysis for bidding decisions
-    const handStrength = calculateLexicographicStrength(player.hand, state.trump, state);
-
-    // Find pass action
+  /**
+   * Use Monte Carlo simulation to decide whether and what to bid.
+   *
+   * Evaluates each possible bid by simulating many games and tracking
+   * the make rate. Bids the highest value with make rate >= 50%.
+   */
+  private makeBidDecision(state: GameState, validActions: ValidAction[]): ValidAction {
+    // Find pass action (always available during bidding)
     const passAction = validActions.find(va => va.action.type === 'pass');
 
-    // Get current highest bid value
-    const currentBidValue = this.getCurrentBidValue(state);
+    // Get bid actions (exclude pass)
+    const bidActions = validActions.filter(va => va.action.type === 'bid');
 
-    // Weak hand - pass if can't bid 30
-    if (handStrength < 30 && currentBidValue >= 30) {
+    // If no bid actions available, must pass
+    if (bidActions.length === 0) {
       if (passAction) return passAction;
       const fallback = validActions[0];
       if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass action or fallback available for weak hand');
+        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass or fallback available');
       }
       return fallback;
     }
 
-    // Calculate bid based on hand strength with non-linear scoring
-
-    // Special handling for laydown hands
-    if (handStrength === LAYDOWN_SCORE) {
-      // Calculate how many points we can actually make
-      // Count points in hand + 7 tricks we'll win
-      let handCount = 0;
-      for (const domino of player.hand) {
-        const sum = domino.high + domino.low;
-        if (sum % 5 === 0 && sum > 0) {
-          handCount += sum === 5 ? 5 : 10;
-        }
-      }
-      const guaranteedScore = handCount + 7; // 7 tricks we'll win
-
-      // Find the best bid based on what we can actually make
-      const bidActions = validActions.filter(va =>
-        va.action.type === 'bid'
-      );
-
-      // If we can make exactly 42, bid 2 marks (highest bid)
-      if (guaranteedScore >= 42) {
-        const marksBid = bidActions.find(va =>
-          va.action.type === 'bid' &&
-          'bid' in va.action &&
-          va.action.bid === 'marks' &&
-          va.action.value === 2
-        );
-        if (marksBid) return marksBid;
-      }
-
-      // Otherwise bid our actual score (or highest available under our score)
-      const pointBids = bidActions
-        .filter(va =>
-          va.action.type === 'bid' &&
-          'bid' in va.action &&
-          va.action.bid === 'points'
-        )
-        .map(va => {
-          const value = va.action.type === 'bid' && 'value' in va.action ? va.action.value || 0 : 0;
-          return { value, action: va };
-        })
-        .filter(item => !isNaN(item.value) && item.value <= guaranteedScore)
-        .sort((a, b) => b.value - a.value);
-
-      if (pointBids.length > 0 && pointBids[0]) {
-        return pointBids[0].action;
-      }
-
-      // If we can't find a suitable bid, just bid 30 (minimum)
-      const bid30 = bidActions.find(va =>
-        va.action.type === 'bid' &&
-        'value' in va.action &&
-        va.action.value === 30
-      );
-      if (bid30) return bid30;
-
-      // Fallback
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makeBidDecision: No fallback available for laydown hand');
-      }
-      return fallback;
-    }
-
-    // Pass should be the most common bid!
-    if (handStrength < BID_THRESHOLDS.PASS) {
-      if (passAction) return passAction;
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass action or fallback available');
-      }
-      return fallback;
-    }
-
-    // Determine target bid using shared thresholds
-    let targetBid = 30;
-
-    if (handStrength >= BID_THRESHOLDS.BID_31) targetBid = 31;
-    if (handStrength >= BID_THRESHOLDS.BID_32) targetBid = 32;
-    if (handStrength >= BID_THRESHOLDS.BID_33) targetBid = 33;
-    if (handStrength >= BID_THRESHOLDS.BID_34) targetBid = 34;
-    if (handStrength >= BID_THRESHOLDS.BID_35) targetBid = 35;
-
-    // Find best available bid
-    const bidActions = validActions.filter(va =>
-      va.action.type === 'bid' &&
-      'bid' in va.action &&
-      va.action.bid === 'points'
+    // Evaluate bid actions using Monte Carlo
+    const ctx = this.getExecutionContext(state);
+    const evaluations = evaluateBidActions(
+      state,
+      bidActions,
+      state.currentPlayer,
+      ctx,
+      this.config
     );
-    const validBids = bidActions.filter(va => {
-      const value = va.action.type === 'bid' && 'value' in va.action ? va.action.value || 0 : 0;
-      return !isNaN(value) && value >= targetBid && value > currentBidValue;
-    });
 
-    if (validBids.length > 0) {
-      // Sort by bid value and take the lowest valid bid
-      validBids.sort((a, b) => {
-        const aValue = a.action.type === 'bid' && 'value' in a.action ? a.action.value || 0 : 0;
-        const bValue = b.action.type === 'bid' && 'value' in b.action ? b.action.value || 0 : 0;
-        return aValue - bValue;
-      });
-      const chosen = validBids[0];
-      if (!chosen) {
-        throw new Error('BeginnerAIStrategy.makeBidDecision: No valid bid found after sorting');
+    // Find highest bid with make rate >= threshold
+    const viableBids = evaluations.filter(e => e.makeBidRate >= BID_THRESHOLD);
+
+    if (viableBids.length > 0) {
+      // Sort by bid value descending and take highest
+      viableBids.sort((a, b) => b.bidValue - a.bidValue);
+      const bestBid = viableBids[0];
+      if (bestBid) {
+        return bestBid.action;
       }
-      return chosen;
     }
 
-    // Can't make desired bid - pass
+    // No bid meets threshold - pass
     if (passAction) return passAction;
+
+    // Fallback - shouldn't reach here in normal play
     const fallback = validActions[0];
     if (!fallback) {
-      throw new Error('BeginnerAIStrategy.makeBidDecision: Cannot make desired bid and no pass/fallback available');
+      throw new Error('BeginnerAIStrategy.makeBidDecision: No viable bid or pass available');
     }
     return fallback;
   }
-  
-  private makeTrumpDecision(_state: GameState, player: Player, validActions: ValidAction[]): ValidAction {
-    if (validActions.length === 0) {
-      throw new Error('BeginnerAIStrategy.makeTrumpDecision: No valid actions available');
-    }
 
-    // Use the shared utility to determine best trump
+  /**
+   * Pick the strongest suit based on hand composition.
+   */
+  private makeTrumpDecision(player: Player, validActions: ValidAction[]): ValidAction {
     const bestTrump = determineBestTrump(player.hand, player.suitAnalysis);
 
     if (bestTrump.type === 'doubles') {
@@ -243,152 +182,55 @@ export class BeginnerAIStrategy implements AIStrategy {
     }
     return fallback;
   }
-  
-  private makePlayDecision(state: GameState, player: Player, validActions: ValidAction[]): ValidAction {
-    if (validActions.length === 0) {
-      throw new Error('BeginnerAIStrategy.makePlayDecision: No valid actions available');
-    }
 
-    // If completing a trick, do it
+  /**
+   * Use Monte Carlo simulation to choose the best play.
+   */
+  private makePlayDecision(state: GameState, validActions: ValidAction[]): ValidAction {
+    // Handle complete-trick action
     const completeTrickAction = validActions.find(va => va.action.type === 'complete-trick');
     if (completeTrickAction) return completeTrickAction;
 
-    // Extract dominoes from play actions
+    // Filter to play actions only
     const playActions = validActions.filter(va => va.action.type === 'play');
+
     if (playActions.length === 0) {
-      throw new Error('BeginnerAIStrategy.makePlayDecision: No play actions or fallback available');
-    }
-
-    // Analyze hand using simplified interface
-    const analysis = analyzeHand(state, player.id);
-
-    // Leading a trick
-    if (state.currentTrick.length === 0) {
-      // Lead with best domino (already sorted by effective position)
-      // First playable domino is the strongest
-      const playable = analysis.dominoes.filter(d => d.beatenBy !== undefined);
-      if (playable.length > 0) {
-        const bestLead = playable[0];
-        if (bestLead) {
-          const action = playActions.find(va =>
-            va.action.type === 'play' &&
-            'dominoId' in va.action &&
-            va.action.dominoId === bestLead.domino.id
-          );
-          if (action) {
-            return action;
-          }
-        }
-      }
-
-      // Fallback when no suitable lead found
+      // No play actions - take first available
       const fallback = validActions[0];
       if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makePlayDecision: No suitable lead play or fallback available');
+        throw new Error('BeginnerAIStrategy.makePlayDecision: No play actions available');
       }
       return fallback;
     }
 
-    // Following in a trick - determine who's currently winning
-    const myTeam = player.teamId;
-
-    // Find current trick winner player id
-    const currentWinnerPlayerId = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit);
-    if (currentWinnerPlayerId === -1) {
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makePlayDecision: Cannot determine trick winner and no fallback available');
-      }
-      return fallback;
+    if (playActions.length === 1) {
+      // Only one option - no need for simulation
+      return playActions[0]!;
     }
 
-    // Find the winning player
-    const winnerPlayer = state.players[currentWinnerPlayerId];
-    if (!winnerPlayer) {
-      throw new Error(`BeginnerAIStrategy.makePlayDecision: Winner player ${currentWinnerPlayerId} not found in state`);
+    // Get or create execution context
+    const ctx = this.getExecutionContext(state);
+
+    // Build constraints from game history
+    const myPlayerIndex = state.currentPlayer;
+    const constraints = buildConstraints(state, myPlayerIndex, ctx.rules);
+
+    // Evaluate and select best play using Monte Carlo
+    const bestPlay = selectBestPlay(
+      state,
+      playActions,
+      myPlayerIndex,
+      constraints,
+      ctx,
+      this.config
+    );
+
+    if (bestPlay) return bestPlay;
+
+    const fallback = playActions[0];
+    if (!fallback) {
+      throw new Error('BeginnerAIStrategy.makePlayDecision: No fallback available');
     }
-
-    const partnerCurrentlyWinning = winnerPlayer.teamId === myTeam;
-
-    // Map play actions to analyzed dominoes
-    const scoredActions = playActions.map(va => {
-      // Extract domino ID from action
-      if (va.action.type !== 'play' || !('dominoId' in va.action)) {
-        return null;
-      }
-      const dominoId = va.action.dominoId;
-      const dominoAnalysis = analysis.dominoes.find(d => d.domino.id === dominoId);
-
-      if (!dominoAnalysis) {
-        // Skip actions that don't have analysis (should not normally happen)
-        return null;
-      }
-
-      return {
-        action: va,
-        points: dominoAnalysis.points,
-        canBeat: dominoAnalysis.wouldBeatTrick,
-      };
-    }).filter((item): item is { action: ValidAction; points: number; canBeat: boolean } => item !== null);
-
-    if (partnerCurrentlyWinning) {
-      // Partner currently winning - PLAY COUNT (safe points!)
-      // Sort to play highest count first
-      scoredActions.sort((a, b) => {
-        // Always prioritize playing count (10 > 5 > 0)
-        const pointDiff = b.points - a.points;
-        if (pointDiff !== 0) {
-          return pointDiff; // Play high count
-        }
-        return 0;
-      });
-    } else {
-      // Opponent currently winning
-      const winningPlays = scoredActions.filter(a => a.canBeat);
-
-      if (winningPlays.length > 0) {
-        // Can win - use lowest count to win
-        winningPlays.sort((a, b) => a.points - b.points);
-        const chosen = winningPlays[0];
-        if (!chosen?.action) {
-          throw new Error('BeginnerAIStrategy.makePlayDecision: No winning play found after filtering');
-        }
-        return chosen.action;
-      } else {
-        // Can't win - play LOW count (don't give them points!)
-        scoredActions.sort((a, b) => {
-          // First priority: play low count
-          if (Math.abs(a.points - b.points) >= 5) {
-            return a.points - b.points; // Play low count
-          }
-          return 0;
-        });
-      }
-    }
-
-    const chosen = scoredActions[0];
-    if (!chosen?.action) {
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makePlayDecision: No scored action or fallback available');
-      }
-      return fallback;
-    }
-    return chosen.action;
-  }
-  
-  private getCurrentBidValue(state: GameState): number {
-    const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
-    if (nonPassBids.length === 0) return 0;
-    
-    return nonPassBids.reduce((max, bid) => {
-      if (bid.type === BID_TYPES.POINTS) {
-        return Math.max(max, bid.value || 0);
-      }
-      if (bid.type === BID_TYPES.MARKS) {
-        return Math.max(max, (bid.value || 0) * 42);
-      }
-      return max;
-    }, 0);
+    return fallback;
   }
 }

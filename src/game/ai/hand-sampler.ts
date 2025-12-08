@@ -2,10 +2,11 @@
  * Hand Sampler for Monte Carlo AI
  *
  * Generates random but constraint-respecting opponent hand distributions.
- * Uses dynamic greedy algorithm (min-slack first) for deterministic O(n) sampling.
+ * Uses backtracking search with MRV heuristic to guarantee finding a solution
+ * if one exists.
  *
  * Invariant: A valid distribution MUST always exist (the real game state is one).
- * If Hall's condition is violated, that's a bug in constraint tracking.
+ * If no solution is found, that indicates a bug in constraint tracking.
  */
 
 import type { Domino, TrumpSelection } from '../types';
@@ -30,22 +31,100 @@ export const defaultRng: RandomGenerator = {
 export type SampledHands = Map<number, Domino[]>;
 
 /**
+ * Shuffle array in place using Fisher-Yates algorithm.
+ */
+function shuffle<T>(array: T[], rng: RandomGenerator): void {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.random() * (i + 1));
+    [array[i], array[j]] = [array[j]!, array[i]!];
+  }
+}
+
+/**
+ * Backtracking search to find a valid assignment of dominoes to opponents.
+ *
+ * Uses MRV (Minimum Remaining Values) heuristic: always assigns to the
+ * player with minimum slack first. This aggressive pruning makes the
+ * algorithm efficient in practice.
+ *
+ * @returns true if a valid assignment was found, false otherwise
+ */
+function sampleWithBacktracking(
+  opponents: number[],
+  remaining: Map<number, number>,
+  available: Set<string>,
+  candidatesPerOpponent: Map<number, Set<string>>,
+  hands: Map<number, string[]>,
+  rng: RandomGenerator
+): boolean {
+  // Find player with minimum slack (MRV heuristic)
+  let minSlack = Infinity;
+  let mostConstrained: number | null = null;
+
+  for (const opp of opponents) {
+    const need = remaining.get(opp) ?? 0;
+    if (need === 0) continue;
+
+    const candidates = candidatesPerOpponent.get(opp)!;
+    let availableCount = 0;
+    for (const id of candidates) {
+      if (available.has(id)) availableCount++;
+    }
+    const slack = availableCount - need;
+
+    // Early pruning: if any player can't be satisfied, backtrack immediately
+    if (slack < 0) return false;
+
+    if (slack < minSlack) {
+      minSlack = slack;
+      mostConstrained = opp;
+    }
+  }
+
+  // All players satisfied
+  if (mostConstrained === null) return true;
+
+  // Get shuffled candidates for randomness in the solution
+  const candidates = candidatesPerOpponent.get(mostConstrained)!;
+  const availableCandidates = [...candidates].filter(id => available.has(id));
+  shuffle(availableCandidates, rng);
+
+  // Try each candidate with backtracking
+  for (const candidateId of availableCandidates) {
+    // Choose
+    available.delete(candidateId);
+    hands.get(mostConstrained)!.push(candidateId);
+    remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 1) - 1);
+
+    // Recurse
+    if (sampleWithBacktracking(opponents, remaining, available, candidatesPerOpponent, hands, rng)) {
+      return true;
+    }
+
+    // Backtrack
+    available.add(candidateId);
+    hands.get(mostConstrained)!.pop();
+    remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 0) + 1);
+  }
+
+  return false; // No valid assignment found in this branch
+}
+
+/**
  * Sample opponent hands that respect all known constraints.
  *
- * Algorithm (dynamic greedy, min-slack first):
+ * Algorithm (backtracking with MRV heuristic):
  * 1. Get the pool of dominoes to distribute (excludes played + AI's hand)
  * 2. For each opponent, build candidate set (respects void constraints)
- * 3. Repeatedly:
- *    - Find player with minimum slack (available candidates - remaining need)
- *    - Randomly assign one domino from their available candidates
- * 4. Deterministic guarantee: always succeeds if constraints are satisfiable
+ * 3. Use backtracking search to find a valid assignment
+ * 4. Guaranteed to find a solution if one exists
  *
  * @param constraints Built constraints from game history
  * @param expectedSizes How many dominoes each player should have [p0, p1, p2, p3]
  * @param trump Current trump selection (needed for suit membership)
  * @param rng Random number generator
  * @returns Map of player index -> sampled hand
- * @throws Error if Hall's condition violated (indicates bug in constraint tracking)
+ * @throws Error if no valid assignment exists (indicates bug in constraint tracking)
  */
 export function sampleOpponentHands(
   constraints: HandConstraints,
@@ -72,55 +151,74 @@ export function sampleOpponentHands(
     remaining.set(opp, expectedSizes[opp] ?? 0);
   }
 
-  // Result hands
-  const hands = new Map<number, Domino[]>();
+  // Result hands (as string IDs for backtracking)
+  const handIds = new Map<number, string[]>();
   for (const opp of opponents) {
-    hands.set(opp, []);
+    handIds.set(opp, []);
   }
 
-  // Assign one domino at a time, always picking most constrained player
-  while (true) {
-    let minSlack = Infinity;
-    let mostConstrained: number | null = null;
+  // Run backtracking search
+  const success = sampleWithBacktracking(
+    opponents,
+    remaining,
+    available,
+    candidatesPerOpponent,
+    handIds,
+    rng
+  );
 
-    for (const opp of opponents) {
-      const need = remaining.get(opp) ?? 0;
-      if (need === 0) continue;
+  if (!success) {
+    throw new Error(
+      `No valid hand distribution exists. ` +
+      `This indicates a bug in constraint tracking.\n` +
+      `Pool size: ${pool.length}`
+    );
+  }
 
-      const candidates = candidatesPerOpponent.get(opp)!;
-      let availableCount = 0;
-      for (const id of candidates) {
-        if (available.has(id)) availableCount++;
-      }
-      const slack = availableCount - need;
+  // Convert string IDs back to Domino objects
+  const hands = new Map<number, Domino[]>();
+  for (const opp of opponents) {
+    const ids = handIds.get(opp)!;
+    const dominoes = ids.map(id => pool.find(d => String(d.id) === id)!);
+    hands.set(opp, dominoes);
+  }
 
-      if (slack < minSlack) {
-        minSlack = slack;
-        mostConstrained = opp;
-      }
-    }
+  return hands;
+}
 
-    if (mostConstrained === null) break;
+/**
+ * Sample hands for bidding phase (no constraints).
+ *
+ * During bidding, we know only our own hand. The other 21 dominoes
+ * are randomly distributed among the 3 other players (7 each).
+ *
+ * @param allDominoes Complete set of 28 dominoes
+ * @param myHand The bidder's 7 dominoes
+ * @param myPlayerIndex The bidder's player index (0-3)
+ * @param rng Random number generator
+ * @returns Map of player index -> sampled hand (for all 3 opponents)
+ */
+export function sampleBiddingHands(
+  allDominoes: Domino[],
+  myHand: Domino[],
+  myPlayerIndex: number,
+  rng: RandomGenerator = defaultRng
+): SampledHands {
+  // Get dominoes not in my hand
+  const myHandIds = new Set(myHand.map(d => d.id));
+  const pool = allDominoes.filter(d => !myHandIds.has(d.id));
 
-    if (minSlack < 0) {
-      // This should never happen if constraints are correct
-      throw new Error(
-        `Hall's condition violated for player ${mostConstrained}. ` +
-        `This indicates a bug in constraint tracking.\n` +
-        `Pool size: ${pool.length}`
-      );
-    }
+  // Shuffle the pool
+  const shuffled = [...pool];
+  shuffle(shuffled, rng);
 
-    // Random selection from available candidates
-    const candidates = candidatesPerOpponent.get(mostConstrained)!;
-    const availableCandidates = [...candidates].filter(id => available.has(id));
-    const idx = Math.floor(rng.random() * availableCandidates.length);
-    const selectedId = availableCandidates[idx]!;
+  // Deal 7 to each opponent
+  const hands = new Map<number, Domino[]>();
+  const opponents = [0, 1, 2, 3].filter(i => i !== myPlayerIndex);
 
-    const domino = pool.find(d => String(d.id) === selectedId)!;
-    hands.get(mostConstrained)!.push(domino);
-    available.delete(selectedId);
-    remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 1) - 1);
+  for (let i = 0; i < 3; i++) {
+    const oppIndex = opponents[i]!;
+    hands.set(oppIndex, shuffled.slice(i * 7, (i + 1) * 7));
   }
 
   return hands;

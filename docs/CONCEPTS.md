@@ -952,19 +952,6 @@ function attachAIBehavior(client: GameClient, playerIndex: number): void {
 
 ---
 
-### calculateLexicographicStrength
-**Definition**: Evaluates hand strength by ranking dominoes by how many can beat them, then comparing lexicographically.
-
-**Location**: `src/game/ai/lexicographic-strength.ts`
-
-**Purpose**: Provides consistent bidding heuristic (lower score = stronger hand).
-
-**Used For**: Bidding decisions in BeginnerAIStrategy.
-
-**Related**: BeginnerAIStrategy, BID_THRESHOLDS, LAYDOWN_SCORE
-
----
-
 ### determineBestTrump
 **Definition**: Determines optimal trump selection for a player's hand.
 
@@ -975,31 +962,9 @@ function attachAIBehavior(client: GameClient, playerIndex: number): void {
 - Otherwise selects strongest suit by count and composition
 - Tie-breaker: prefers higher suits
 
-**Used By**: BeginnerAIStrategy, calculateLexicographicStrength
+**Used By**: BeginnerAIStrategy, MCTS bidding rollouts
 
 **Related**: TrumpSelection, Hand Analysis
-
----
-
-### BID_THRESHOLDS
-**Definition**: Bidding decision thresholds used to determine when AI should bid vs pass.
-
-**Location**: `src/game/ai/hand-strength.ts`
-
-**Purpose**: Maps hand strength scores to bidding decisions (currently all AI is conservative, mostly bidding 30 or passing).
-
-**Related**: calculateLexicographicStrength, BeginnerAIStrategy
-
----
-
-### LAYDOWN_SCORE
-**Definition**: Special constant (999) indicating a guaranteed-win hand where all 7 dominoes are unbeatable.
-
-**Location**: `src/game/ai/hand-strength.ts`
-
-**Purpose**: Detects when AI has perfect hand and bids appropriately.
-
-**Related**: Hand Analysis, calculateLexicographicStrength
 
 ---
 
@@ -1778,8 +1743,8 @@ colorOverrides: Record<string, string>  // CSS variables
 - strategies.ts: RandomAIStrategy, BeginnerAIStrategy
 - actionSelector.ts: selectAIAction
 - utilities.ts: analyzeHand
-- hand-strength.ts: determineBestTrump, BID_THRESHOLDS, LAYDOWN_SCORE
-- lexicographic-strength.ts: calculateLexicographicStrength
+- hand-strength.ts: determineBestTrump
+- monte-carlo.ts: evaluatePlayActions, evaluateBidActions (MCTS)
 - domino-strength.ts: analyzeDomino, DominoStrength
 - gameSimulator.ts: Game simulation utilities
 

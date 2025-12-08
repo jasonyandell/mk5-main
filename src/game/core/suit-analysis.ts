@@ -1,5 +1,5 @@
 import type { Domino, TrumpSelection } from '../types';
-import { DOUBLES_AS_TRUMP, TRUMP_NOT_SELECTED } from '../types';
+import { DOUBLES_AS_TRUMP } from '../types';
 import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from './dominoes';
 
 /**

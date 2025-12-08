@@ -1,22 +1,23 @@
 import type { GameState } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
-import { IntermediateAIStrategy } from './strategies/intermediate';
 import type { AIStrategy } from './types';
+import type { RandomGenerator } from './hand-sampler';
+import { createSeededRng } from './hand-sampler';
+import type { MonteCarloConfig } from './monte-carlo';
 
 /** Available AI strategy types */
-export type AIStrategyType = 'beginner' | 'intermediate' | 'random';
+export type AIStrategyType = 'beginner' | 'random';
 
 // Strategy instances - reused for pure functions
-// Note: IntermediateAIStrategy creates ExecutionContext lazily from state
+// Note: BeginnerAIStrategy creates ExecutionContext lazily from state
 const strategies: Record<AIStrategyType, AIStrategy> = {
   beginner: new BeginnerAIStrategy(),
-  intermediate: new IntermediateAIStrategy(),
   random: new RandomAIStrategy()
 };
 
 // Current default strategy (can be changed for testing/configuration)
-let defaultStrategy: AIStrategyType = 'intermediate';
+let defaultStrategy: AIStrategyType = 'beginner';
 
 /**
  * Set the default AI strategy for all AI players.
@@ -24,6 +25,44 @@ let defaultStrategy: AIStrategyType = 'intermediate';
  */
 export function setDefaultAIStrategy(strategy: AIStrategyType): void {
   defaultStrategy = strategy;
+}
+
+/**
+ * Set the random strategy to use a specific RNG.
+ * Useful for deterministic testing.
+ */
+export function setRandomStrategyRng(rng: RandomGenerator): void {
+  strategies.random = new RandomAIStrategy(rng);
+}
+
+/**
+ * Set the random strategy to use a seeded RNG.
+ * Useful for deterministic testing.
+ */
+export function setRandomStrategySeed(seed: number): void {
+  strategies.random = new RandomAIStrategy(createSeededRng(seed));
+}
+
+/**
+ * Reset the random strategy to use Math.random().
+ */
+export function resetRandomStrategy(): void {
+  strategies.random = new RandomAIStrategy();
+}
+
+/**
+ * Configure the beginner strategy with custom Monte Carlo settings.
+ * Useful for testing with fewer simulations.
+ */
+export function setBeginnerStrategyConfig(config: Partial<MonteCarloConfig>): void {
+  strategies.beginner = new BeginnerAIStrategy(config);
+}
+
+/**
+ * Reset the beginner strategy to default config (100 simulations).
+ */
+export function resetBeginnerStrategy(): void {
+  strategies.beginner = new BeginnerAIStrategy();
 }
 
 /**

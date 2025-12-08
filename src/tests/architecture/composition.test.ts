@@ -53,7 +53,7 @@ describe('Architecture: Single Composition Point', () => {
       'src/server/HeadlessRoom.ts',
       'src/tests/helpers/',
       'src/game/types/execution.ts', // Definition file
-      'src/game/ai/strategies/intermediate.ts', // Monte Carlo AI needs direct composition for fast simulations
+      'src/game/ai/strategies.ts', // MCTS bidding and plays need direct composition
       '.test.ts',
       '.spec.ts'
     ];
@@ -220,7 +220,7 @@ describe('Architecture: Single Composition Point', () => {
     // Allowlist for files that legitimately need direct composition
     // Monte Carlo AI needs createExecutionContext for fast simulations
     const allowedFiles = [
-      'src/game/ai/strategies/intermediate.ts'
+      'src/game/ai/strategies.ts'  // MCTS bidding and plays
     ];
 
     const violations: string[] = [];

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
@@ -7,6 +7,7 @@ import { processSequentialConsensus } from '../helpers/consensusHelpers';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';
 import { simulateGame } from '../../game/ai/gameSimulator';
+import { setDefaultAIStrategy, getDefaultAIStrategy, setBeginnerStrategyConfig, resetBeginnerStrategy, type AIStrategyType } from '../../game/ai/actionSelector';
 
 describe('Complete Game Flow Integration', () => {
   async function playCompleteHand(state: GameState): Promise<GameState> {
@@ -318,6 +319,18 @@ describe('Complete Game Flow Integration', () => {
   });
 
   describe('Random Gameplay (Hang Detection)', () => {
+    // Use random strategy for fast hang detection tests
+    let originalStrategy: AIStrategyType;
+
+    beforeEach(() => {
+      originalStrategy = getDefaultAIStrategy();
+      setDefaultAIStrategy('random');
+    });
+
+    afterEach(() => {
+      setDefaultAIStrategy(originalStrategy);
+    });
+
     it('should complete game with random actions - seed 12345', async () => {
       // Single seed first to isolate hang issues
       const initialState = createInitialState({
@@ -329,8 +342,6 @@ describe('Complete Game Flow Integration', () => {
         maxHands: 100,         // Allow for redeal loops (all players pass)
         maxActions: 5000,      // Safety limit
         allAI: true
-        // NOTE: strategy is hardcoded to 'beginner' in actionSelector.ts:17
-        // This test name is misleading - it uses beginner AI, not random
       });
 
       // Validate no hang occurred (primary goal)
@@ -361,7 +372,6 @@ describe('Complete Game Flow Integration', () => {
           maxHands: 100,     // Allow for redeal loops
           maxActions: 5000,  // Increased limit
           allAI: true
-          // NOTE: uses beginner AI (hardcoded), not random
         });
 
         // Primary goal: no hangs detected (if we got here, no 1s timeout)
@@ -379,23 +389,32 @@ describe('Complete Game Flow Integration', () => {
         }
       }
     }, 10000); // 10s for 5 games
+  });
 
-    it('should complete game with beginner strategy for comparison', async () => {
-      // Test beginner strategy too to ensure it still works
-      // Beginner strategy may take more actions (more conservative bidding)
+  describe('Beginner AI Strategy', () => {
+    // Use reduced simulations for CI speed (10 instead of 100)
+    beforeEach(() => {
+      setBeginnerStrategyConfig({ simulations: 10 });
+    });
+
+    afterEach(() => {
+      resetBeginnerStrategy();
+    });
+
+    it('should complete game with beginner MCTS strategy', async () => {
+      // Beginner strategy uses MCTS for both bidding and plays
       const initialState = createInitialState({
         shuffleSeed: 12345,
         playerTypes: ['ai', 'ai', 'ai', 'ai']
       });
 
       const result = await simulateGame(initialState, {
-        maxHands: 100,     // Allow for redeal loops
-        maxActions: 5000,
+        maxHands: 10,
+        maxActions: 1000,
         allAI: true
-        // Uses beginner AI (hardcoded in actionSelector.ts)
       });
 
-      // Primary goal: no hangs detected
+      // Primary goal: no crashes/hangs
       expect(result.actionsExecuted).toBeGreaterThan(0);
       expect(result.winner).toBeGreaterThanOrEqual(0);
       expect(result.winner).toBeLessThan(2);
@@ -404,6 +423,6 @@ describe('Complete Game Flow Integration', () => {
       if (result.finalState.phase === 'game_end') {
         expect(result.finalScores[result.winner]).toBeGreaterThanOrEqual(7);
       }
-    }, 10000); // Longer timeout for beginner
+    }, 30000); // 30s timeout with reduced simulations
   });
 });

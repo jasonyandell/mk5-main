@@ -1,9 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { testSeedWinRate, findCompetitiveSeed, SEED_FINDER_CONFIG } from '../../game/ai/gameSimulator';
+import { setDefaultAIStrategy, getDefaultAIStrategy, resetRandomStrategy, setRandomStrategySeed, type AIStrategyType } from '../../game/ai/actionSelector';
 
 // Override for fast tests
 SEED_FINDER_CONFIG.MAX_ATTEMPTS = 100;
 SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED = 10;
+
+// Use random strategy for fast simulation tests
+let originalStrategy: AIStrategyType;
+beforeAll(() => {
+  originalStrategy = getDefaultAIStrategy();
+  setDefaultAIStrategy('random');
+});
+afterAll(() => {
+  setDefaultAIStrategy(originalStrategy);
+  resetRandomStrategy();
+});
 
 describe('Game Simulator - Seed Testing', () => {
   describe('testSeedWinRate', () => {
@@ -20,12 +32,20 @@ describe('Game Simulator - Seed Testing', () => {
       const seed = 54321;
       const simulations = 5;
 
+      // Use seeded RNG for deterministic behavior
+      setRandomStrategySeed(42);
       const result1 = await testSeedWinRate(seed, simulations);
+
+      // Reset to same seed for second run
+      setRandomStrategySeed(42);
       const result2 = await testSeedWinRate(seed, simulations);
 
       // Results should be identical for same seed
       expect(result1.winRate).toBe(result2.winRate);
       expect(result1.avgScore).toBe(result2.avgScore);
+
+      // Reset to non-deterministic for other tests
+      resetRandomStrategy();
     });
 
     it('should respect simulations count', async () => {
