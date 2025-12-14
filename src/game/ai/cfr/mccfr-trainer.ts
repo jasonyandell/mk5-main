@@ -392,11 +392,63 @@ export class MCCFRTrainer {
   }
 
   /**
+   * Run a single training iteration.
+   * Used by external training loops that want checkpoint control.
+   *
+   * @param iterationIndex - The iteration number (used for seed generation)
+   */
+  runSingleIteration(iterationIndex: number): void {
+    if (this.trainingStartTime === 0) {
+      this.trainingStartTime = Date.now();
+    }
+
+    const gameSeed = this.config.seed + iterationIndex * 1000000;
+    this.runIteration(gameSeed, iterationIndex % 4);
+    this.iterationsCompleted = iterationIndex + 1;
+  }
+
+  /**
    * Serialize trained strategy.
    */
   serialize() {
     const trainingTimeMs = Date.now() - this.trainingStartTime;
     return this.regretTable.serialize(this.config, this.iterationsCompleted, trainingTimeMs);
+  }
+
+  /**
+   * Serialize as a checkpoint (marks as incomplete).
+   */
+  serializeCheckpoint(
+    iterationsCompleted: number,
+    seedStart: number,
+    seedEnd: number
+  ) {
+    const trainingTimeMs = Date.now() - this.trainingStartTime;
+    const serialized = this.regretTable.serialize(this.config, iterationsCompleted, trainingTimeMs);
+    return {
+      ...serialized,
+      seedStart,
+      seedEnd,
+      isCheckpoint: true
+    };
+  }
+
+  /**
+   * Serialize as final output (not a checkpoint).
+   */
+  serializeFinal(
+    iterationsCompleted: number,
+    trainingTimeMs: number,
+    seedStart: number,
+    seedEnd: number
+  ) {
+    const serialized = this.regretTable.serialize(this.config, iterationsCompleted, trainingTimeMs);
+    return {
+      ...serialized,
+      seedStart,
+      seedEnd,
+      isCheckpoint: false
+    };
   }
 
   /**

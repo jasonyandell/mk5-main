@@ -81,6 +81,15 @@ export interface SerializedStrategy {
 
   /** Total training time in milliseconds. */
   trainingTimeMs: number;
+
+  /** Seed range start (for partitioned training). */
+  seedStart?: number;
+
+  /** Seed range end (for partitioned training). */
+  seedEnd?: number;
+
+  /** Whether this is an incomplete checkpoint (vs final output). */
+  isCheckpoint?: boolean;
 }
 
 /**

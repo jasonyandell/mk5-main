@@ -12,7 +12,7 @@
  *   --workers <n>       Number of parallel workers (default: CPU cores - 1)
  *   --iterations <n>    Total iterations across all workers (default: 100000)
  *   --seed <n>          Base seed (workers use seed, seed+1M, ...) (default: 42)
- *   --output <file>     Output file (default: trained-strategy.json)
+ *   --output <file>     Output file (default: trained-strategy.json.gz)
  *   --quiet             Suppress output except errors
  */
 
@@ -22,6 +22,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { fileURLToPath } from 'url';
+import { createGzip } from 'zlib';
+import { pipeline } from 'stream/promises';
+import { Readable } from 'stream';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,7 +49,7 @@ function parseArgs() {
     workers: Math.max(1, cpuCount - 1),
     iterations: 100000,
     seed: 42,
-    output: 'trained-strategy.json',
+    output: 'trained-strategy.json.gz',
     quiet: false
   };
 
@@ -91,13 +94,13 @@ Options:
   --workers, -w <n>     Number of parallel workers (default: ${cpuCount - 1})
   --iterations, -i <n>  Total iterations across all workers (default: 100000)
   --seed, -s <n>        Base seed (workers use seed, seed+1M, ...) (default: 42)
-  --output, -o <file>   Output file (default: trained-strategy.json)
+  --output, -o <file>   Output file (default: trained-strategy.json.gz)
   --quiet, -q           Suppress output except errors
   --help, -h            Show this help message
 
 Examples:
   npx tsx scripts/train-mccfr-parallel.ts --workers 4 --iterations 100000
-  npx tsx scripts/train-mccfr-parallel.ts -w 8 -i 500000 -o big-strategy.json
+  npx tsx scripts/train-mccfr-parallel.ts -w 8 -i 500000 -o big-strategy.json.gz
         `);
         process.exit(0);
     }
@@ -202,8 +205,43 @@ function spawnWorker(
 }
 
 /**
+ * Load a strategy file (supports both .json and .json.gz)
+ */
+function loadStrategySync(filePath: string): SerializedStrategy {
+  if (filePath.endsWith('.gz')) {
+    // Decompress gzipped file synchronously using zlib
+    const { gunzipSync } = require('zlib');
+    const compressed = fs.readFileSync(filePath);
+    const json = gunzipSync(compressed).toString('utf-8');
+    return JSON.parse(json);
+  } else {
+    // Plain JSON
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  }
+}
+
+/**
+ * Save a strategy file with optional gzip compression
+ */
+async function saveStrategy(
+  data: SerializedStrategy,
+  filePath: string
+): Promise<void> {
+  const json = JSON.stringify(data);
+
+  if (filePath.endsWith('.gz')) {
+    const gzip = createGzip({ level: 6 });
+    const output = fs.createWriteStream(filePath);
+    await pipeline(Readable.from(json), gzip, output);
+  } else {
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  }
+}
+
+/**
  * Streaming merge - processes one file at a time to avoid OOM.
  * Uses raw Maps instead of RegretTable to minimize memory overhead.
+ * Supports both .json and .json.gz input files.
  */
 function mergeStrategies(files: string[], quiet: boolean): SerializedStrategy {
   // Merged data stored as compact Maps
@@ -227,8 +265,8 @@ function mergeStrategies(files: string[], quiet: boolean): SerializedStrategy {
       process.stdout.write(`\rMerging file ${filesProcessed}/${files.length}...`);
     }
 
-    // Read and parse one file at a time
-    const data: SerializedStrategy = JSON.parse(fs.readFileSync(file, 'utf-8'));
+    // Read and parse one file at a time (supports .gz)
+    const data = loadStrategySync(file);
 
     if (!baseConfig) {
       baseConfig = data.config;
@@ -405,7 +443,12 @@ async function main() {
 
   // Save merged result
   const outputPath = path.resolve(config.output);
-  fs.writeFileSync(outputPath, JSON.stringify(merged, null, 2));
+
+  if (!config.quiet) {
+    console.log('Saving merged strategy...');
+  }
+
+  await saveStrategy(merged, outputPath);
 
   // Cleanup temp files
   for (const file of outputFiles) {
@@ -417,6 +460,7 @@ async function main() {
 
   if (!config.quiet) {
     const stats = fs.statSync(outputPath);
+    const sizeMB = stats.size / (1024 * 1024);
     console.log('');
     console.log('Training Complete!');
     console.log('==================');
@@ -425,7 +469,11 @@ async function main() {
     console.log(`Total time: ${formatDuration(elapsed)}`);
     console.log(`Effective rate: ${Math.round(merged.iterationsCompleted / (elapsed / 1000)).toLocaleString()} iter/s`);
     console.log(`Output: ${outputPath}`);
-    console.log(`Size: ${(stats.size / 1024).toFixed(1)} KB`);
+    if (sizeMB >= 1) {
+      console.log(`Size: ${sizeMB.toFixed(1)} MB`);
+    } else {
+      console.log(`Size: ${(stats.size / 1024).toFixed(1)} KB`);
+    }
   }
 }
 

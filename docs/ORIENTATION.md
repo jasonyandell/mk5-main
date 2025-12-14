@@ -715,14 +715,37 @@ The `src/game/ai/cfr/` module implements External Sampling MCCFR for optimal tri
 - `mccfr-strategy.ts` - AIStrategy implementation using trained regrets
 - `action-abstraction.ts` - Maps game actions to abstract keys
 
-**Training**:
+**Training Scripts**:
 ```bash
-# Single-process training
-npx tsx scripts/train-mccfr.ts --iterations 10000 --progress
+# Single-process training with checkpoints
+npx tsx scripts/train-mccfr.ts -i 100000 --progress -o strategy.json.gz
 
-# Multi-process parallel training (recommended)
-npx tsx scripts/train-mccfr-parallel.ts --workers 8 --iterations 100000
+# Resume from checkpoint after crash
+npx tsx scripts/train-mccfr.ts -i 100000 --resume strategy.checkpoint.json.gz -o strategy.json.gz
+
+# Multi-process parallel training (recommended for large runs)
+npx tsx scripts/train-mccfr-parallel.ts --workers 8 --iterations 100000 -o strategy.json.gz
+
+# Merge results from partitioned/distributed training
+npx tsx scripts/merge-strategies.ts --inputs part1.json.gz part2.json.gz -o combined.json.gz
 ```
+
+**Training Options**:
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-i, --iterations` | Number of training iterations | 10000 |
+| `-s, --seed` | Random seed for reproducibility | 42 |
+| `-o, --output` | Output file (.json.gz recommended) | trained-strategy.json.gz |
+| `-c, --checkpoint-interval` | Save checkpoint every N iterations | 1000 |
+| `--resume` | Resume from checkpoint file | - |
+| `--no-checkpoint` | Disable checkpoints | false |
+| `-p, --progress` | Show progress updates | false |
+
+**Scalability Features**:
+- **Gzip compression**: ~40x size reduction (100K iterations → ~1MB)
+- **Periodic checkpoints**: Automatic saves prevent losing progress
+- **Resume support**: Continue training from any checkpoint
+- **Partitioned training**: Run on multiple machines with different seed ranges, merge results
 
 **Information Set Abstraction**:
 Uses count-centric abstraction (`computeCountCentricHash()` in `cfr-metrics.ts`) achieving 32.5x compression:
