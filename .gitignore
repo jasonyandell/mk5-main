@@ -92,3 +92,9 @@ data/3hand-partitions.json
 trained-strategy*.json
 trained-strategy*.json.gz
 *.zip
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
