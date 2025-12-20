@@ -15,7 +15,7 @@
 
 import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
 import type { Layer, GameRules } from './types';
-import { getDominoValue, getTrumpSuit, dominoContainsSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
+import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
 import { DOUBLES_AS_TRUMP } from '../types';
@@ -176,35 +176,6 @@ function getBidValue(bid: Bid): number {
       return bid.value * 42;
     default:
       return 0;
-  }
-}
-
-/**
- * Checks if a domino is trump based on numeric trump value
- */
-function isDominoTrump(domino: { high: number; low: number }, numericTrump: number | null): boolean {
-  if (numericTrump === null) return false;
-
-  // Special case: doubles trump (numericTrump === 7)
-  if (numericTrump === 7) {
-    return domino.high === domino.low;
-  }
-
-  // Regular trump (contains trump suit number)
-  return domino.high === numericTrump || domino.low === numericTrump;
-}
-
-/**
- * Converts TrumpSelection to numeric value for trick-taking logic
- */
-function trumpToNumeric(trump: TrumpSelection): number | null {
-  switch (trump.type) {
-    case 'not-selected': return null;
-    case 'suit': return trump.suit!;
-    case 'doubles': return 7;
-    case 'no-trump': return 8;
-    case 'nello': return null;  // Nello has no trump
-    case 'sevens': return null; // Sevens has no trump hierarchy
   }
 }
 
@@ -392,61 +363,94 @@ export const baseLayer: Layer = {
     },
 
     /**
+     * HOW: What suits does this domino belong to given trump?
+     *
+     * Base: Natural suits adjusted for trump absorption
+     * - Trump dominoes belong only to trump suit
+     * - Doubles with doubles-trump belong only to suit 7
+     * - Otherwise, dominoes belong to their natural suits
+     */
+    suitsWithTrump(state: GameState, domino: Domino): LedSuit[] {
+      const trumpSuit = getTrumpSuit(state.trump);
+      const isDouble = domino.high === domino.low;
+
+      // Doubles trump: doubles belong only to suit 7
+      if (isDoublesTrump(trumpSuit)) {
+        if (isDouble) {
+          return [7 as LedSuit];
+        }
+        // Non-doubles belong to both their pips
+        return [domino.high as LedSuit, domino.low as LedSuit];
+      }
+
+      // Regular suit trump (0-6)
+      if (isRegularSuitTrump(trumpSuit)) {
+        // Trump dominoes belong only to trump suit
+        if (dominoHasSuit(domino, trumpSuit)) {
+          return [trumpSuit as LedSuit];
+        }
+        // Non-trump doubles belong to their pip
+        if (isDouble) {
+          return [domino.high as LedSuit];
+        }
+        // Non-trump non-doubles belong to both pips
+        return [domino.high as LedSuit, domino.low as LedSuit];
+      }
+
+      // No trump: natural suits
+      if (isDouble) {
+        return [domino.high as LedSuit];
+      }
+      return [domino.high as LedSuit, domino.low as LedSuit];
+    },
+
+    /**
+     * HOW: Can this domino follow the led suit?
+     *
+     * Base: Domino can follow if it belongs to the led suit
+     */
+    canFollow(state: GameState, led: LedSuit, domino: Domino): boolean {
+      const trumpSuit = getTrumpSuit(state.trump);
+      const isDouble = domino.high === domino.low;
+
+      // Doubles led (suit 7): only doubles can follow
+      if (led === 7) {
+        return isDouble;
+      }
+
+      // Doubles trump: doubles belong only to suit 7, can't follow regular suits
+      if (isDoublesTrump(trumpSuit) && isDouble) {
+        return false;
+      }
+
+      // Regular suit trump: trump dominoes can't follow non-trump suits
+      if (isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit)) {
+        // Can only follow if led suit IS the trump suit
+        return led === trumpSuit;
+      }
+
+      // Check if domino has the led suit
+      return dominoHasSuit(domino, led);
+    },
+
+    /**
+     * HOW: What is this domino's rank for trick-taking?
+     *
+     * Base: Pass through - compose.ts handles the base calculation via
+     * rankInTrickBase. Layers like nelloLayer can override for special cases.
+     */
+    rankInTrick(_state: GameState, _led: LedSuit, _domino: Domino, prev: number): number {
+      return prev;
+    },
+
+    /**
      * HOW is the winner of a trick determined?
      *
-     * Base: Standard trick-taking hierarchy
-     * 1. Trump beats non-trump
-     * 2. Higher trump wins
-     * 3. Following suit beats non-following
-     * 4. Higher value wins among followers
+     * Base: Pass through - compose.ts handles the base calculation using
+     * composed rankInTrick which correctly handles all trump variations.
      */
-    calculateTrickWinner(state: GameState, trick: Play[], _prev: number): number {
-      if (trick.length === 0) {
-        throw new Error('Trick cannot be empty');
-      }
-
-      const leadPlay = trick[0];
-      if (!leadPlay) {
-        throw new Error('Cannot determine winner of empty trick');
-      }
-
-      const numericTrump = trumpToNumeric(state.trump);
-      const ledSuit = state.currentSuit;
-
-      let winningPlay = leadPlay;
-      let winningValue = getDominoValue(leadPlay.domino, state.trump);
-      let winningIsTrump = isDominoTrump(leadPlay.domino, numericTrump);
-
-      for (let i = 1; i < trick.length; i++) {
-        const play = trick[i];
-        if (!play) {
-          throw new Error(`Invalid trick play at index ${i}`);
-        }
-
-        const playValue = getDominoValue(play.domino, state.trump);
-        const playIsTrump = isDominoTrump(play.domino, numericTrump);
-
-        // Trump always beats non-trump
-        if (playIsTrump && !winningIsTrump) {
-          winningPlay = play;
-          winningValue = playValue;
-          winningIsTrump = true;
-        }
-        // Both trump - higher value wins
-        else if (playIsTrump && winningIsTrump && playValue > winningValue) {
-          winningPlay = play;
-          winningValue = playValue;
-        }
-        // Both non-trump - must follow suit and higher value wins
-        else if (!playIsTrump && !winningIsTrump &&
-                 ledSuit >= 0 && dominoContainsSuit(play.domino, ledSuit, state.trump) &&
-                 playValue > winningValue) {
-          winningPlay = play;
-          winningValue = playValue;
-        }
-      }
-
-      return winningPlay.player;
+    calculateTrickWinner(_state: GameState, _trick: Play[], prev: number): number {
+      return prev;
     },
 
     // ============================================

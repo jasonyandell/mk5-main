@@ -107,7 +107,65 @@ export const nelloLayer: Layer = {
       return (domino.high === domino.low ? 7 : domino.high) as LedSuit;
     },
 
-    // Standard trick-taking but with no trump (already handled by getLedSuit)
-    // calculateTrickWinner uses prev (base implementation works)
+    // In nello, doubles belong ONLY to suit 7
+    suitsWithTrump: (state, domino, prev) => {
+      if (state.trump?.type !== 'nello') return prev;
+
+      const isDouble = domino.high === domino.low;
+      if (isDouble) {
+        return [7 as LedSuit];
+      }
+      // Non-doubles belong to both their pips
+      return [domino.high as LedSuit, domino.low as LedSuit];
+    },
+
+    // In nello, doubles can only follow suit 7
+    canFollow: (state, led, domino, prev) => {
+      if (state.trump?.type !== 'nello') return prev;
+
+      const isDouble = domino.high === domino.low;
+
+      // Doubles led: only doubles can follow
+      if (led === 7) {
+        return isDouble;
+      }
+
+      // Regular suit led: doubles CANNOT follow
+      if (isDouble) {
+        return false;
+      }
+
+      // Non-doubles: check if they have the led suit
+      return domino.high === led || domino.low === led;
+    },
+
+    // In nello, doubles form their own suit and can't follow regular suits
+    rankInTrick: (state, led, domino, prev) => {
+      if (state.trump?.type !== 'nello') return prev;
+
+      const isDouble = domino.high === domino.low;
+      const pipSum = domino.high + domino.low;
+
+      // No trump in nello, so check suit following
+      let followsSuit = false;
+      if (led === 7) {
+        // Doubles led: only doubles follow
+        followsSuit = isDouble;
+      } else if (isDouble) {
+        // Regular suit led: doubles DON'T follow
+        followsSuit = false;
+      } else {
+        // Non-doubles: check if they have the led suit
+        followsSuit = domino.high === led || domino.low === led;
+      }
+
+      if (followsSuit) {
+        // Doubles of the suit rank highest
+        return isDouble ? 50 + domino.high + 50 : 50 + pipSum;
+      }
+
+      // Slough: just pip sum
+      return pipSum;
+    }
   }
 };

@@ -11,7 +11,7 @@
 
 import type { GameState, Domino, Play, LedSuit } from '../types';
 import type { GameRules } from '../layers/types';
-import { createDominoes, dominoBelongsToSuit } from '../core/dominoes';
+import { createDominoes } from '../core/dominoes';
 
 /**
  * Constraints on what dominoes each player can hold.
@@ -119,14 +119,11 @@ function processTrickForConstraints(
 
     // For non-lead plays, check if they followed suit
     if (i > 0) {
-      // Use dominoBelongsToSuit - the unified function that correctly handles trump
-      // A trump domino (like 4-0 when 4s are trump) does NOT belong to non-trump suits
-      const followedSuit = dominoBelongsToSuit(play.domino, ledSuit, state.trump);
+      // Use rules.canFollow - the composed rule that handles all trump variations
+      const followedSuit = rules.canFollow(state, ledSuit, play.domino);
 
       if (!followedSuit) {
         // Player didn't follow suit - they're void in the led suit
-        // They played a domino that doesn't belong to the led suit, so they must
-        // not have any dominoes that belong to that suit.
         const playerVoids = voidInSuit.get(play.player);
         if (playerVoids) {
           playerVoids.add(ledSuit);
@@ -146,13 +143,15 @@ function processTrickForConstraints(
  *
  * @param constraints The built constraints
  * @param playerIndex Which player to get candidates for
- * @param trump Current trump selection (needed for suit membership)
+ * @param state Current game state (for canFollow rule)
+ * @param rules Composed game rules
  * @returns Array of dominoes that could be in this player's hand
  */
 export function getCandidateDominoes(
   constraints: HandConstraints,
   playerIndex: number,
-  trump: import('../types').TrumpSelection
+  state: GameState,
+  rules: GameRules
 ): Domino[] {
   // Start with all 28 dominoes
   const allDominoes = createDominoes();
@@ -171,10 +170,9 @@ export function getCandidateDominoes(
     if (constraints.myHand.has(id)) return false;
 
     // Exclude dominoes in suits the player is void in
-    // A domino is excluded if it belongs to any void suit
-    // dominoBelongsToSuit handles trump correctly (4-0 doesn't belong to 0s if 4s trump)
+    // A domino is excluded if it can follow any void suit
     for (const voidSuit of voidSuits) {
-      if (dominoBelongsToSuit(domino, voidSuit, trump)) {
+      if (rules.canFollow(state, voidSuit, domino)) {
         return false;
       }
     }

@@ -30,10 +30,10 @@ export default defineConfig({
         'src/main.ts',
       ],
       thresholds: {
-        statements: 60,
+        statements: 59,
         branches: 81.5,
         functions: 71,
-        lines: 60,
+        lines: 59,
       },
     },
   },

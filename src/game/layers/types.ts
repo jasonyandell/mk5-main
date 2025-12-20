@@ -100,6 +100,41 @@ export interface GameRules {
   getLedSuit(state: GameState, domino: Domino): LedSuit;
 
   /**
+   * What suits does this domino belong to given current trump?
+   *
+   * A domino's suit membership depends on trump selection:
+   * - Regular trump: trump dominoes leave their natural suits, belong only to trump
+   * - Doubles trump: doubles belong to suit 7, not their pip value
+   * - Nello: doubles belong to suit 7, not their pip value
+   * - No trump: dominoes belong to their natural suits
+   *
+   * Base: Natural suits, adjusted for trump absorption
+   * Nello: Doubles belong only to suit 7
+   */
+  suitsWithTrump(state: GameState, domino: Domino): LedSuit[];
+
+  /**
+   * Can this domino be used to follow the led suit?
+   *
+   * This is the authoritative rule for "must follow suit" validation.
+   * A domino can follow if it belongs to the led suit (per suitsWithTrump).
+   *
+   * Base: Check if domino belongs to led suit
+   * Sevens: Always true (no follow-suit requirement)
+   */
+  canFollow(state: GameState, led: LedSuit, domino: Domino): boolean;
+
+  /**
+   * What is this domino's rank for trick-taking purposes?
+   *
+   * Higher rank wins. Used by calculateTrickWinner.
+   *
+   * Base: Trump > following suit > slough, with pip-based ordering
+   * Sevens: Closest to 7 total pips wins
+   */
+  rankInTrick(state: GameState, led: LedSuit, domino: Domino): number;
+
+  /**
    * Who won this trick?
    *
    * Base: Trump > suit, higher value wins
@@ -231,6 +266,9 @@ export interface Layer {
     isTrickComplete?: (state: GameState, prev: boolean) => boolean;
     checkHandOutcome?: (state: GameState, prev: HandOutcome) => HandOutcome;
     getLedSuit?: (state: GameState, domino: Domino, prev: LedSuit) => LedSuit;
+    suitsWithTrump?: (state: GameState, domino: Domino, prev: LedSuit[]) => LedSuit[];
+    canFollow?: (state: GameState, led: LedSuit, domino: Domino, prev: boolean) => boolean;
+    rankInTrick?: (state: GameState, led: LedSuit, domino: Domino, prev: number) => number;
     calculateTrickWinner?: (state: GameState, trick: Play[], prev: number) => number;
     isValidPlay?: (state: GameState, domino: Domino, playerId: number, prev: boolean) => boolean;
     getValidPlays?: (state: GameState, playerId: number, prev: Domino[]) => Domino[];

@@ -284,7 +284,8 @@ export function evaluatePlayActions(
         sampledHands = sampleOpponentHands(
           constraints,
           expectedSizes,
-          state.trump,
+          state,
+          ctx.rules,
           rng
         );
       } catch (e) {

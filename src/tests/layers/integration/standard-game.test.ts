@@ -263,16 +263,16 @@ describe('Standard Game Integration', () => {
 
   describe('Marks Bidding', () => {
     it('should complete marks bid successfully when bidders get all points', () => {
-      // Strong hand for marks bid (32): needs to capture ALL points
+      // Strong hand for marks bid: needs to capture ALL 42 points
       const hands = createStrongBiddingHand(234567);
 
       const room = createStandardRoom(234567, hands);
-      playStandardHand(room, 32, 'bidder-wins');
+      playStandardHand(room, 1, 'bidder-wins'); // 1 mark = must win all 42 points
 
       const finalState = room.getState();
       expect(finalState.phase).toBe('bidding');
 
-      // Marks bid awards 2 marks on success
+      // Marks bid awards 1 mark on success
       const totalMarks = finalState.teamMarks[0] + finalState.teamMarks[1];
       expect(totalMarks).toBeGreaterThanOrEqual(1);
     });
@@ -282,15 +282,15 @@ describe('Standard Game Integration', () => {
       const hands = createWeakBiddingHand(678901);
 
       const room = createStandardRoom(678901, hands);
-      const tricks = playStandardHand(room, 32, 'defenders-win');
+      const tricks = playStandardHand(room, 1, 'defenders-win'); // 1 mark bid
 
-      // Early termination when defenders score
+      // Early termination when defenders score any points
       expect(tricks.length).toBeLessThan(7);
 
       const finalState = room.getState();
       expect(finalState.phase).toBe('bidding');
 
-      // Defending team gets mark
+      // Defending team gets the mark (bidder was set)
       expect(finalState.teamMarks[1]).toBeGreaterThan(0);
     });
   });

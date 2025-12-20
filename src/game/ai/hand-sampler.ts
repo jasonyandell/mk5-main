@@ -9,7 +9,8 @@
  * If no solution is found, that indicates a bug in constraint tracking.
  */
 
-import type { Domino, TrumpSelection } from '../types';
+import type { Domino, GameState } from '../types';
+import type { GameRules } from '../layers/types';
 import type { HandConstraints } from './constraint-tracker';
 import { getCandidateDominoes, getDistributionPool } from './constraint-tracker';
 
@@ -121,7 +122,8 @@ function sampleWithBacktracking(
  *
  * @param constraints Built constraints from game history
  * @param expectedSizes How many dominoes each player should have [p0, p1, p2, p3]
- * @param trump Current trump selection (needed for suit membership)
+ * @param state Current game state
+ * @param rules Composed game rules
  * @param rng Random number generator
  * @returns Map of player index -> sampled hand
  * @throws Error if no valid assignment exists (indicates bug in constraint tracking)
@@ -129,7 +131,8 @@ function sampleWithBacktracking(
 export function sampleOpponentHands(
   constraints: HandConstraints,
   expectedSizes: [number, number, number, number],
-  trump: TrumpSelection,
+  state: GameState,
+  rules: GameRules,
   rng: RandomGenerator = defaultRng
 ): SampledHands {
   const myIndex = constraints.myPlayerIndex;
@@ -141,7 +144,7 @@ export function sampleOpponentHands(
   // Build candidate sets
   const candidatesPerOpponent = new Map<number, Set<string>>();
   for (const opp of opponents) {
-    const candidates = getCandidateDominoes(constraints, opp, trump);
+    const candidates = getCandidateDominoes(constraints, opp, state, rules);
     candidatesPerOpponent.set(opp, new Set(candidates.map(d => String(d.id))));
   }
 
