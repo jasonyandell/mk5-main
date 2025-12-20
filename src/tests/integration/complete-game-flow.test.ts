@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
 import { getNextStates } from '../../game/core/state';
 import { createTestContext } from '../helpers/executionContext';
@@ -7,7 +7,6 @@ import { processSequentialConsensus } from '../helpers/consensusHelpers';
 import { BID_TYPES } from '../../game/constants';
 import type { GameState } from '../../game/types';
 import { simulateGame } from '../../game/ai/gameSimulator';
-import { setDefaultAIStrategy, getDefaultAIStrategy, setBeginnerStrategyConfig, resetBeginnerStrategy, type AIStrategyType } from '../../game/ai/actionSelector';
 
 describe('Complete Game Flow Integration', () => {
   async function playCompleteHand(state: GameState): Promise<GameState> {
@@ -320,16 +319,7 @@ describe('Complete Game Flow Integration', () => {
 
   describe('Random Gameplay (Hang Detection)', () => {
     // Use random strategy for fast hang detection tests
-    let originalStrategy: AIStrategyType;
-
-    beforeEach(() => {
-      originalStrategy = getDefaultAIStrategy();
-      setDefaultAIStrategy('random');
-    });
-
-    afterEach(() => {
-      setDefaultAIStrategy(originalStrategy);
-    });
+    const randomConfig = { aiStrategyConfig: { type: 'random' as const } };
 
     it('should complete game with random actions - seed 12345', async () => {
       // Single seed first to isolate hang issues
@@ -341,7 +331,8 @@ describe('Complete Game Flow Integration', () => {
       const result = await simulateGame(initialState, {
         maxHands: 100,         // Allow for redeal loops (all players pass)
         maxActions: 5000,      // Safety limit
-        allAI: true
+        allAI: true,
+        ...randomConfig
       });
 
       // Validate no hang occurred (primary goal)
@@ -371,7 +362,8 @@ describe('Complete Game Flow Integration', () => {
         const result = await simulateGame(initialState, {
           maxHands: 100,     // Allow for redeal loops
           maxActions: 5000,  // Increased limit
-          allAI: true
+          allAI: true,
+          ...randomConfig
         });
 
         // Primary goal: no hangs detected (if we got here, no 1s timeout)
@@ -393,13 +385,7 @@ describe('Complete Game Flow Integration', () => {
 
   describe('Beginner AI Strategy', () => {
     // Use reduced simulations for CI speed (10 instead of 100)
-    beforeEach(() => {
-      setBeginnerStrategyConfig({ simulations: 10 });
-    });
-
-    afterEach(() => {
-      resetBeginnerStrategy();
-    });
+    const beginnerConfig = { aiStrategyConfig: { type: 'beginner' as const, monteCarloConfig: { simulations: 10 } } };
 
     it.skip('should complete game with beginner MCTS strategy', async () => {
       // Beginner strategy uses MCTS for both bidding and plays
@@ -411,7 +397,8 @@ describe('Complete Game Flow Integration', () => {
       const result = await simulateGame(initialState, {
         maxHands: 10,
         maxActions: 1000,
-        allAI: true
+        allAI: true,
+        ...beginnerConfig
       });
 
       // Primary goal: no crashes/hangs

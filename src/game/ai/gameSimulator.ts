@@ -3,8 +3,9 @@
  * Runs games to completion using AI players.
  *
  * AI STRATEGY:
- * - Uses configurable AI strategy via setDefaultAIStrategy() (defaults to 'beginner')
- * - Beginner strategy is deterministic; intermediate uses Monte Carlo (non-deterministic)
+ * - Strategy passed explicitly via options.aiStrategy (no global state)
+ * - Beginner strategy uses Monte Carlo simulation
+ * - Random strategy picks random valid actions (fast for testing)
  * - Same seed + same actions = identical game state (event sourcing guarantee)
  *
  * FAIL-FAST DESIGN:
@@ -16,7 +17,7 @@
 
 import type { GameState } from '../types';
 import { createInitialState } from '../core/state';
-import { selectAIAction } from './actionSelector';
+import { selectAIAction, type AIStrategyConfig } from './actionSelector';
 import { HeadlessRoom } from '../../server/HeadlessRoom';
 import type { ValidAction } from '../../multiplayer/types';
 
@@ -53,8 +54,8 @@ export interface SimulateGameOptions {
   maxActions?: number;
   /** All players are AI */
   allAI?: boolean;
-  /** AI difficulty level (unused - set strategy globally via setDefaultAIStrategy instead) */
-  aiDifficulty?: 'beginner' | 'intermediate' | 'expert';
+  /** AI strategy config for all simulated players */
+  aiStrategyConfig?: AIStrategyConfig;
 }
 
 /**
@@ -91,7 +92,8 @@ export async function simulateGame(
   const {
     maxHands = 100,
     maxActions = 5000,
-    allAI = true
+    allAI = true,
+    aiStrategyConfig = { type: 'beginner' as const }
   } = options;
 
   // Override player types if all AI
@@ -176,9 +178,9 @@ export async function simulateGame(
         );
       }
 
-      // For AI players, select action using configured strategy (defaults to 'beginner')
+      // For AI players, select action using passed config
       if (playerTypes[currentPlayer] === 'ai') {
-        const selected = selectAIAction(state, currentPlayer, playerActions);
+        const selected = selectAIAction(state, currentPlayer, playerActions, aiStrategyConfig);
         selectedAction = selected ?? undefined;
       } else {
         // For human players in simulation, pick first action
@@ -320,13 +322,15 @@ export async function findCompetitiveSeed(options: {
   maxAttempts: number;
   onProgress?: (attempt: number) => void;
   simulationsPerSeed?: number;
+  aiStrategyConfig?: AIStrategyConfig;
 }): Promise<number> {
   const {
     targetWinRate,
     tolerance,
     maxAttempts,
     onProgress,
-    simulationsPerSeed = 5
+    simulationsPerSeed = 5,
+    aiStrategyConfig = { type: 'beginner' as const }
   } = options;
 
   const minWinRate = targetWinRate - tolerance;
@@ -341,8 +345,8 @@ export async function findCompetitiveSeed(options: {
       onProgress(attempt);
     }
 
-    // Test this seed (no maxHands override - allow redeals)
-    const { winRate } = await testSeedWinRate(seed, simulationsPerSeed);
+    // Test this seed
+    const { winRate } = await testSeedWinRate(seed, simulationsPerSeed, { aiStrategyConfig });
 
     // Check if within target range
     if (winRate >= minWinRate && winRate <= maxWinRate) {

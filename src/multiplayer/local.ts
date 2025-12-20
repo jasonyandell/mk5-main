@@ -3,17 +3,18 @@ import type { Socket } from './Socket';
 import { GameClient } from './GameClient';
 import type { ServerMessage } from './protocol';
 import { Room } from '../server/Room';
-import { selectAIAction } from '../game/ai/actionSelector';
+import { selectAIAction, type AIStrategyConfig } from '../game/ai/actionSelector';
 
 export { attachAIBehavior };
 
 /**
  * Attach AI behavior to a GameClient.
  * Subscribes to view updates and sends actions when it's the AI's turn.
+ * Strategy config is immutable for the lifetime of this AI.
  */
-function attachAIBehavior(client: GameClient, playerIndex: number): void {
+function attachAIBehavior(client: GameClient, playerIndex: number, config: AIStrategyConfig = { type: 'beginner' }): void {
   client.subscribe((view) => {
-    const chosen = selectAIAction(view.state, playerIndex, view.validActions);
+    const chosen = selectAIAction(view.state, playerIndex, view.validActions, config);
     if (!chosen) return;
 
     client.send({ type: 'EXECUTE_ACTION', action: chosen.action });
@@ -28,6 +29,8 @@ export interface LocalGameOptions {
   aiPlayerIndexes?: number[];
   /** If true, skip attaching AI behavior (useful when replaying actions first) */
   skipAIBehavior?: boolean;
+  /** AI strategy config for all AI players - immutable once set */
+  aiStrategyConfig?: AIStrategyConfig;
 }
 
 /**
@@ -51,6 +54,7 @@ export interface LocalGame {
 export function createLocalGame(config: GameConfig, options?: LocalGameOptions): LocalGame {
   const aiPlayerIndexes = options?.aiPlayerIndexes ?? [1, 2, 3];
   const skipAIBehavior = options?.skipAIBehavior ?? false;
+  const aiStrategyConfig = options?.aiStrategyConfig ?? { type: 'beginner' as const };
 
   // Message routing: clientId → handler
   const handlers = new Map<string, (data: string) => void>();
@@ -95,14 +99,14 @@ export function createLocalGame(config: GameConfig, options?: LocalGameOptions):
     aiClient.send({ type: 'JOIN', playerIndex: i, name: `AI Player ${i + 1}` });
     aiClients.push({ client: aiClient, playerIndex: i });
     if (!skipAIBehavior) {
-      attachAIBehavior(aiClient, i);
+      attachAIBehavior(aiClient, i, aiStrategyConfig);
     }
   }
 
-  // Function to attach AI behavior after the fact
+  // Function to attach AI behavior after the fact (uses same config)
   const attachAI = () => {
     for (const { client, playerIndex } of aiClients) {
-      attachAIBehavior(client, playerIndex);
+      attachAIBehavior(client, playerIndex, aiStrategyConfig);
     }
   };
 

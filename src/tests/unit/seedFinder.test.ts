@@ -1,26 +1,18 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { testSeedWinRate, findCompetitiveSeed, SEED_FINDER_CONFIG } from '../../game/ai/gameSimulator';
-import { setDefaultAIStrategy, getDefaultAIStrategy, resetRandomStrategy, setRandomStrategySeed, type AIStrategyType } from '../../game/ai/actionSelector';
+import { createSeededRng } from '../../game/ai/hand-sampler';
 
 // Override for fast tests
 SEED_FINDER_CONFIG.MAX_ATTEMPTS = 100;
 SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED = 10;
 
-// Use random strategy for fast simulation tests
-let originalStrategy: AIStrategyType;
-beforeAll(() => {
-  originalStrategy = getDefaultAIStrategy();
-  setDefaultAIStrategy('random');
-});
-afterAll(() => {
-  setDefaultAIStrategy(originalStrategy);
-  resetRandomStrategy();
-});
-
 describe('Game Simulator - Seed Testing', () => {
+  // Use random strategy for fast simulation tests
+  const fastConfig = { aiStrategyConfig: { type: 'random' as const } };
+
   describe('testSeedWinRate', () => {
     it('should test a seed and return win rate', async () => {
-      const result = await testSeedWinRate(12345, SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED);
+      const result = await testSeedWinRate(12345, SEED_FINDER_CONFIG.SIMULATIONS_PER_SEED, fastConfig);
 
       expect(result).toBeDefined();
       expect(result.winRate).toBeGreaterThanOrEqual(0);
@@ -28,31 +20,27 @@ describe('Game Simulator - Seed Testing', () => {
       expect(result.avgScore).toBeGreaterThanOrEqual(0);
     });
 
-    it('should return consistent results for the same seed', async () => {
+    it('should return consistent results for the same seed with injected RNG', async () => {
       const seed = 54321;
       const simulations = 5;
 
-      // Use seeded RNG for deterministic behavior
-      setRandomStrategySeed(42);
-      const result1 = await testSeedWinRate(seed, simulations);
+      // Create configs with same seeded RNG
+      const config1 = { aiStrategyConfig: { type: 'random' as const, rng: createSeededRng(42) } };
+      const config2 = { aiStrategyConfig: { type: 'random' as const, rng: createSeededRng(42) } };
 
-      // Reset to same seed for second run
-      setRandomStrategySeed(42);
-      const result2 = await testSeedWinRate(seed, simulations);
+      const result1 = await testSeedWinRate(seed, simulations, config1);
+      const result2 = await testSeedWinRate(seed, simulations, config2);
 
       // Results should be identical for same seed
       expect(result1.winRate).toBe(result2.winRate);
       expect(result1.avgScore).toBe(result2.avgScore);
-
-      // Reset to non-deterministic for other tests
-      resetRandomStrategy();
     });
 
     it('should respect simulations count', async () => {
       const seed = 11111;
       const simulations = 3;
 
-      const result = await testSeedWinRate(seed, simulations);
+      const result = await testSeedWinRate(seed, simulations, fastConfig);
 
       expect(result).toBeDefined();
       expect(result.winRate).toBeGreaterThanOrEqual(0);
@@ -70,6 +58,7 @@ describe('Game Simulator - Seed Testing', () => {
         tolerance: 0.1,
         maxAttempts: 10,
         simulationsPerSeed: 3,
+        aiStrategyConfig: { type: 'random' },
         onProgress: (attempt) => {
           progressAttempts.push(attempt);
           expect(attempt).toBeGreaterThan(lastAttempt);
@@ -87,7 +76,8 @@ describe('Game Simulator - Seed Testing', () => {
         targetWinRate: 0.5,
         tolerance: 0.01,  // Very tight tolerance
         maxAttempts: 3,    // Very few attempts
-        simulationsPerSeed: 2
+        simulationsPerSeed: 2,
+        aiStrategyConfig: { type: 'random' }
       });
 
       expect(seed).toBeGreaterThan(0);
@@ -103,6 +93,7 @@ describe('Game Simulator - Seed Testing', () => {
         tolerance: 0.1,
         maxAttempts,
         simulationsPerSeed: 2,
+        aiStrategyConfig: { type: 'random' },
         onProgress: () => {
           attempts++;
         }
