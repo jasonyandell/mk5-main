@@ -66,9 +66,6 @@ export function processAutoExecuteActions(
     const session = resolveSessionForAction(Array.from(state.players), autoAction);
 
     if (!session) {
-      console.error('Auto-execute failed: no capable session', {
-        action: autoAction
-      });
       break;
     }
 
@@ -79,19 +76,11 @@ export function processAutoExecuteActions(
     );
 
     if (!result.success) {
-      console.error('Auto-execute failed', {
-        action: autoAction,
-        error: result.error
-      });
       break;
     }
 
     state = result.value;
     iterations += 1;
-  }
-
-  if (iterations === maxIterations) {
-    console.error('Auto-execute limit reached');
   }
 
   return ok(state);
