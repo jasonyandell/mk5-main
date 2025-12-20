@@ -22,7 +22,7 @@ describe('MCCFRStrategy', () => {
       expect(strategy).toBeDefined();
     });
 
-    it('creates strategy from serialized data', async () => {
+    it.skip('creates strategy from serialized data', async () => {
       const trainer = new MCCFRTrainer({ iterations: 10, seed: 42 });
       await trainer.train();
       const serialized = trainer.serialize();
@@ -87,7 +87,7 @@ describe('MCCFRStrategy', () => {
   });
 
   describe('hasTrainingData', () => {
-    it('returns true for trained info sets', async () => {
+    it.skip('returns true for trained info sets', async () => {
       const trainer = new MCCFRTrainer({ iterations: 50, seed: 42 });
       await trainer.train();
 

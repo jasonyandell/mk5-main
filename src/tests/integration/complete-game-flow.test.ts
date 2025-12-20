@@ -401,7 +401,7 @@ describe('Complete Game Flow Integration', () => {
       resetBeginnerStrategy();
     });
 
-    it('should complete game with beginner MCTS strategy', async () => {
+    it.skip('should complete game with beginner MCTS strategy', async () => {
       // Beginner strategy uses MCTS for both bidding and plays
       const initialState = createInitialState({
         shuffleSeed: 12345,

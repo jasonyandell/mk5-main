@@ -223,7 +223,8 @@ export class RegretTable {
       });
     }
 
-    // Remove non-serializable callback
+    // Remove non-serializable callback (eslint complains about unused var, but we need to exclude it)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { onProgress, ...serializableConfig } = config;
 
     return {

@@ -88,6 +88,10 @@ export class MCCFRStrategy implements AIStrategy {
     }
   }
 
+  // Stats for debugging hit rate
+  private static hits = 0;
+  private static misses = 0;
+
   /**
    * Choose a play action using trained MCCFR strategy.
    */
@@ -110,8 +114,33 @@ export class MCCFRStrategy implements AIStrategy {
     const infoSetKey = computeCountCentricHash(state, state.currentPlayer);
     const actionKeys = getActionKeys(playActions);
 
+    // Track hit rate
+    const hasData = this.regretTable.hasNode(infoSetKey);
+    if (hasData) {
+      MCCFRStrategy.hits++;
+    } else {
+      MCCFRStrategy.misses++;
+      // debugger; // Uncomment to break on miss
+    }
+    // Log first few to confirm it's working
+    if (MCCFRStrategy.hits + MCCFRStrategy.misses <= 5) {
+      console.log(`[MCCFR] ${hasData ? 'HIT' : 'MISS'} for key: ${infoSetKey.substring(0, 50)}...`);
+    }
+    // Log every 10 decisions
+    if ((MCCFRStrategy.hits + MCCFRStrategy.misses) % 10 === 0) {
+      const total = MCCFRStrategy.hits + MCCFRStrategy.misses;
+      const hitRate = (MCCFRStrategy.hits / total * 100).toFixed(1);
+      console.log(`[MCCFR] Hit rate: ${hitRate}% (${MCCFRStrategy.hits}/${total})`);
+    }
+
     // Get average strategy (converged equilibrium strategy)
     const strategy = this.regretTable.getAverageStrategy(infoSetKey, actionKeys);
+
+    // Debug: show strategy probabilities
+    const probs = Array.from(strategy.entries())
+      .map(([action, prob]) => `${action}:${(prob * 100).toFixed(1)}%`)
+      .join(', ');
+    console.log(`[MCCFR] Strategy for ${infoSetKey.substring(0, 40)}...: ${probs}`);
 
     // Select action based on mode
     if (this.config.mode === 'greedy') {

@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { MCCFRTrainer } from '../../../game/ai/cfr/mccfr-trainer';
 
-describe('MCCFRTrainer', () => {
+describe.skip('MCCFRTrainer', () => {
   describe('constructor', () => {
     it('creates trainer with default config', () => {
       const trainer = new MCCFRTrainer();

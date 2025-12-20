@@ -332,7 +332,7 @@ describe('CFD2 binary patterns', () => {
   });
 
   it('handles many nodes with shared action sets', () => {
-    const nodes = [];
+    const nodes: SerializedStrategy['nodes'] = [];
     for (let i = 0; i < 100; i++) {
       nodes.push({
         key: `C:none|US:${(i % 8) * 5}|THEM:0|POT:0|LEAD:1|TR:${i % 7}|TK:${i % 6}|POS:${i % 4}|NC:${i % 7}|TT:suit`,
