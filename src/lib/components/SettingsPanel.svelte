@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import { gameState, game } from '../../stores/gameStore';
   import StateTreeView from './StateTreeView.svelte';
   import Icon from '../icons/Icon.svelte';
@@ -10,9 +11,10 @@
     initialTab?: 'state' | 'theme';
   }
 
-  let { onclose, initialTab = 'state' }: Props = $props();
+  const { onclose, initialTab = 'state' }: Props = $props();
 
-  let activeTab = $state(initialTab);
+  // Intentionally only use initialTab on mount, not reactively
+  let activeTab = $state<'state' | 'theme'>(untrack(() => initialTab));
   let showTreeView = $state(true);
 
   // JSON stringify with indentation
