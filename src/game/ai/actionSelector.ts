@@ -85,7 +85,7 @@ export function getStrategy(type: AIStrategyType): AIStrategy {
 function getStrategyForPlayer(_playerId: number, _state: GameState): AIStrategy {
   // Use the default strategy
   // Could extend to check state-based per-player strategies
-  return strategies[defaultStrategy];
+  return getStrategy(defaultStrategy);
 }
 
 /**
