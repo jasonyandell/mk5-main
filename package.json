@@ -31,17 +31,14 @@
     "@playwright/mcp": "^0.0.32",
     "@playwright/test": "^1.54.1",
     "@sveltejs/vite-plugin-svelte": "^6.1.0",
-    "@tailwindcss/forms": "^0.5.10",
     "@tsconfig/svelte": "^5.0.4",
     "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^8.38.0",
     "@typescript-eslint/parser": "^8.38.0",
     "@vitest/coverage-v8": "^3.2.4",
-    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "daisyui": "^4.12.24",
     "eslint": "^9.32.0",
-    "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "svelte": "^5.36.17",
@@ -53,7 +50,6 @@
   },
   "dependencies": {
     "culori": "^4.0.2",
-    "heroicons": "^2.2.0",
     "svelte-awesome-color-picker": "^4.0.2"
   }
 }
