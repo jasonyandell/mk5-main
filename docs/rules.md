@@ -146,7 +146,7 @@ Texas 42 is a trick-taking game played with dominoes instead of cards. Four play
 2. Available trump options:
    - Any suit (blanks, ones, twos, threes, fours, fives, sixes)
    - Doubles as trump
-   - No-trump (follow-me)
+   - No-trump (follow-me): No suit can override another; highest domino of the led suit always wins
 
 ### Basic Play Rules
 
@@ -156,7 +156,10 @@ Texas 42 is a trick-taking game played with dominoes instead of cards. Four play
 - Any domino may be led
 
 #### Following Suit
-1. **Suit Determination**: Higher end of non-trump domino determines suit led
+1. **Suit Determination**:
+   - If the led domino contains a trump pip, it leads as trump
+   - Otherwise, the higher pip determines the suit led
+   - Example: With 4s as trump, leading 4-2 is a trump lead (not a 4s lead)
 2. **Must Follow**: Players must play a domino of led suit if possible
 3. **Trump Option**: May play trump if unable to follow suit
 4. **Forced Play**: If unable to follow suit or trump, play any domino
@@ -173,6 +176,12 @@ Texas 42 is a trick-taking game played with dominoes instead of cards. Four play
 - Doubles belong to their natural suit
 - 6-6 is highest six, 5-5 is highest five, etc.
 - When doubles are trump, only the seven doubles are trump
+
+#### Doubles-Trump Following Rules
+When doubles are declared trump:
+- **Doubles cannot follow non-double leads**: A double is trump, not a member of its pip suit
+- **Non-doubles cannot follow double leads**: Only other doubles can follow a double lead
+- Example: If 5-5 is led with doubles trump, only another double can follow; 5-3 cannot follow because it's not trump
 
 #### Common Variations
 1. **Doubles as Own Suit**: All doubles form separate suit from 6-6 (high) to 0-0 (low)
@@ -254,10 +263,14 @@ Texas 42 is a trick-taking game played with dominoes instead of cards. Four play
 **Rules**:
 - Partner sits out with dominoes face-down
 - No trump suit declared
-- Various doubles treatments:
-  - **Standard**: Doubles form own suit
-  - **High**: Doubles remain high in suits
-  - **Low**: Doubles become low in suits
+- **Doubles treatment (this implementation)**: Doubles form their own suit (suit 7)
+  - All seven doubles are a separate suit ranked 6-6 (high) to 0-0 (low)
+  - Doubles cannot follow pip-suit leads; pip-suits cannot follow double leads
+  - This is the standard tournament treatment for Nello
+
+**Alternative doubles treatments** (not implemented):
+- **High**: Doubles remain high in their pip suits
+- **Low**: Doubles become lowest in their pip suits
 
 #### Plunge
 **Requirements**: 4+ doubles in hand
@@ -278,6 +291,8 @@ Texas 42 is a trick-taking game played with dominoes instead of cards. Four play
 **Requirements**: 1+ mark bid
 **Rules**:
 - Domino closest to 7 total pips wins trick
+- 3-4 (exactly 7 pips) is unbeatable
+- **Equidistant ties**: Dominoes equally distant from 7 (e.g., 6 pips vs 8 pips) tie; first played wins
 - Ties won by first played
 - Must win all tricks
 **Note**: Rarely accepted in serious play
