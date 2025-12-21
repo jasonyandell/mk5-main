@@ -5,11 +5,12 @@
  * in different play contexts.
  */
 
-import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone, RegularSuit } from '../types';
+import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone } from '../types';
 import { PLAYED_AS_TRUMP } from '../types';
 import { getTrickWinner } from '../core/rules';
 import { getTrumpSuit, isTrump, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
 import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
+import { suitsWithTrumpBase } from '../layers/compose';
 
 /**
  * Analysis of a domino's strength when played as a specific suit
@@ -21,51 +22,6 @@ export interface DominoStrength {
   beatenBy: Domino[];    // Dominoes that can follow this suit AND beat us
   beats: Domino[];       // Dominoes that can follow this suit AND lose to us
   cannotFollow: Domino[];  // Dominoes that cannot follow this suit (win by default)
-}
-
-/**
- * Get the suits a domino can be played as (for AI analysis)
- */
-export function getPlayableSuits(domino: Domino, trump: TrumpSelection): LedSuit[] {
-  const trumpSuit = getTrumpSuit(trump);
-
-  // When doubles are trump
-  if (isDoublesTrump(trumpSuit)) {
-    if (domino.high === domino.low) {
-      return [7];  // Doubles can only be played as doubles suit
-    }
-    // Non-doubles can be played as either pip
-    const suits = new Set<RegularSuit>();
-    suits.add(domino.high as RegularSuit);
-    suits.add(domino.low as RegularSuit);
-    return Array.from(suits);
-  }
-
-  // When regular suit is trump
-  if (isRegularSuitTrump(trumpSuit)) {
-    // Trump dominoes can only be played as trump
-    if (dominoHasSuit(domino, trumpSuit)) {
-      return [trumpSuit as RegularSuit];
-    }
-    // Non-trump doubles can only be played as their pip
-    if (domino.high === domino.low) {
-      return [domino.high as RegularSuit];
-    }
-    // Non-trump non-doubles can be played as either pip
-    const suits = new Set<RegularSuit>();
-    suits.add(domino.high as RegularSuit);
-    suits.add(domino.low as RegularSuit);
-    return Array.from(suits);
-  }
-  
-  // No-trump: dominoes can be played as their natural suits
-  if (domino.high === domino.low) {
-    return [domino.high as RegularSuit];
-  }
-  const suits = new Set<RegularSuit>();
-  suits.add(domino.high as RegularSuit);
-  suits.add(domino.low as RegularSuit);
-  return Array.from(suits);
 }
 
 /**
@@ -210,7 +166,7 @@ export function analyzeDomino(
     results.push(analyzeDominoAsSuit(domino, PLAYED_AS_TRUMP, trump, state, playerId));
   } else {
     // Non-trump domino - analyze for each suit
-    const suits = getPlayableSuits(domino, trump);
+    const suits = suitsWithTrumpBase(state, domino);
     for (const suit of suits) {
       results.push(analyzeDominoAsSuit(domino, suit, trump, state, playerId));
     }

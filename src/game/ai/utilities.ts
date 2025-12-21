@@ -7,7 +7,7 @@
 
 import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
 import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
-import { getDominoValue, getTrumpSuit, getDominoPoints, getLedSuit, isDoublesTrump } from '../core/dominoes';
+import { getDominoValue, getTrumpSuit, getDominoPoints, getLedSuit, isTrump } from '../core/dominoes';
 import { TRUMP_NOT_SELECTED } from '../types';
 import { getTrickWinner } from '../core/rules';
 import { composeRules } from '../layers/compose';
@@ -147,19 +147,6 @@ function countPlayedTrump(tricks: Trick[], trump: TrumpSelection): number {
     }
   }
   return count;
-}
-
-function isTrump(domino: Domino, trump: TrumpSelection): boolean {
-  const trumpSuit = getTrumpSuit(trump);
-  if (trumpSuit === TRUMP_NOT_SELECTED) return false;
-
-  if (isDoublesTrump(trumpSuit)) {
-    // Doubles trump
-    return domino.high === domino.low;
-  } else {
-    // Suit trump
-    return domino.high === trumpSuit || domino.low === trumpSuit;
-  }
 }
 
 // Note: findUnbeatableLeads functionality is now integrated into beatenBy

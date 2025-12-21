@@ -2,8 +2,9 @@ import { describe, it, expect } from 'vitest';
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
 import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
-import { analyzeDominoAsSuit, getPlayableSuits } from '../../game/ai/domino-strength';
+import { analyzeDominoAsSuit } from '../../game/ai/domino-strength';
 import { isTrump } from '../../game/core/dominoes';
+import { suitsWithTrumpBase } from '../../game/layers/compose';
 import { StateBuilder } from '../helpers';
 import { SUIT_IDENTIFIERS } from '../../game/game-terms';
 
@@ -60,7 +61,7 @@ describe('Strength Table Generation Verification', () => {
       for (const { trump } of trumpConfigs) {
         state.trump = trump;
         
-        const playableSuits = getPlayableSuits(domino, trump);
+        const playableSuits = suitsWithTrumpBase(state, domino);
         const dominoIsTrump = isTrump(domino, trump);
         
         // Check playing as trump if applicable

@@ -49,9 +49,11 @@ function isValidBidBase(_state: GameState, _bid: Bid, _playerHand?: import('../t
 }
 
 /**
- * Base implementation for suitsWithTrump
+ * Base implementation for suitsWithTrump - gets what suits a domino can be played as
+ *
+ * Exported for direct use by AI modules that need the base logic without full rule composition.
  */
-function suitsWithTrumpBase(state: GameState, domino: Domino): LedSuit[] {
+export function suitsWithTrumpBase(state: GameState, domino: Domino): LedSuit[] {
   const trumpSuit = getTrumpSuit(state.trump);
   const isDouble = domino.high === domino.low;
 

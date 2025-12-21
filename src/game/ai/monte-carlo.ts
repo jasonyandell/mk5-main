@@ -107,9 +107,7 @@ export function evaluateBidActions(
   const myHand = state.players[myPlayerIndex]?.hand ?? [];
 
   // Determine best trump once (same hand, same trump choice)
-  // Use suitAnalysis for better tiebreaking when multiple suits have equal count
-  const suitAnalysis = analyzeSuits(myHand);
-  const bestTrump = determineBestTrump(myHand, suitAnalysis);
+  const bestTrump = determineBestTrump(myHand);
 
   const evaluations: BidEvaluation[] = [];
 

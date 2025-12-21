@@ -1,44 +1,9 @@
-import type { Domino, TrumpSelection } from '../types';
+import type { Domino, TrumpSelection, SuitCount, SuitRanking, SuitAnalysis } from '../types';
 import { DOUBLES_AS_TRUMP } from '../types';
 import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from './dominoes';
 
-/**
- * Suit count for a player's hand - counts dominoes by suit number
- */
-export interface SuitCount {
-  0: number; // blanks
-  1: number; // ones  
-  2: number; // twos
-  3: number; // threes
-  4: number; // fours
-  5: number; // fives
-  6: number; // sixes
-  doubles: number; // count of doubles
-  trump: number; // count of trump dominoes (identical to trump suit when trump is declared)
-}
-
-/**
- * Suit ranking for a player's hand - lists dominoes by suit, highest to lowest
- */
-export interface SuitRanking {
-  0: Domino[]; // blanks
-  1: Domino[]; // ones
-  2: Domino[]; // twos
-  3: Domino[]; // threes
-  4: Domino[]; // fours
-  5: Domino[]; // fives
-  6: Domino[]; // sixes
-  doubles: Domino[]; // all doubles
-  trump: Domino[]; // all trump dominoes (identical to trump suit when trump is declared)
-}
-
-/**
- * Complete suit analysis for a player's hand
- */
-export interface SuitAnalysis {
-  count: SuitCount;
-  rank: SuitRanking;
-}
+// Types are defined in types.ts - re-export for module consumers
+export type { SuitCount, SuitRanking, SuitAnalysis } from '../types';
 
 /**
  * Calculates suit count for a hand - how many dominoes contain each suit number

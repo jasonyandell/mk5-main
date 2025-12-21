@@ -82,7 +82,7 @@ export class HeuristicRolloutStrategy implements RolloutStrategy {
    * Pick the strongest suit based on hand composition.
    */
   private makeTrumpDecision(player: Player, validActions: ValidAction[]): ValidAction {
-    const bestTrump = determineBestTrump(player.hand, player.suitAnalysis);
+    const bestTrump = determineBestTrump(player.hand);
 
     if (bestTrump.type === 'doubles') {
       const doublesAction = validActions.find(va =>

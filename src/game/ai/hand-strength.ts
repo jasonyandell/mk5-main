@@ -4,7 +4,7 @@
  * Utilities for trump selection in bidding decisions.
  */
 
-import type { Domino, TrumpSelection, SuitAnalysis } from '../types';
+import type { Domino, TrumpSelection } from '../types';
 import { countDoubles, dominoHasSuit } from '../core/dominoes';
 
 /**
@@ -48,7 +48,7 @@ function scoreSuitForTrump(hand: Domino[], suit: number): number {
  * - Whether we have the double (highest card) in that suit
  * - 3+ doubles triggers doubles trump
  */
-export function determineBestTrump(hand: Domino[], _suitAnalysis?: SuitAnalysis): TrumpSelection {
+export function determineBestTrump(hand: Domino[]): TrumpSelection {
   // Check if doubles trump would be better (3+ doubles)
   const doubleCount = countDoubles(hand);
   if (doubleCount >= 3) {

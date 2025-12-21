@@ -2,12 +2,17 @@ import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
-import { canFollowSuit } from '../../game/core/rules';
 import { getLedSuit } from '../../game/core/dominoes';
-import type { Domino, TrumpSelection } from '../../game/types';
+import type { Domino, TrumpSelection, GameState, LedSuit } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
 
 const rules = composeRules([baseLayer]);
+
+// Helper: Check if player can follow suit using composed rules
+function canFollowSuit(state: GameState, playerId: number, ledSuit: LedSuit): boolean {
+  const player = state.players[playerId];
+  return player ? player.hand.some(d => rules.canFollow(state, ledSuit, d)) : false;
+}
 
 /**
  * Why these tests use exact hands instead of dealConstraints:
@@ -119,7 +124,7 @@ describe('Renege Detection and Prevention', () => {
         .with({ currentSuit: DEUCES }) // Twos were led
         .build();
 
-      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(false);
+      expect(canFollowSuit(state, 1, DEUCES)).toBe(false);
       expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true); // Trump play allowed
       expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(true); // Any play allowed
     });
@@ -141,7 +146,7 @@ describe('Renege Detection and Prevention', () => {
         .with({ currentSuit: DEUCES }) // Twos were led
         .build();
 
-      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(true);
+      expect(canFollowSuit(state, 1, DEUCES)).toBe(true);
       expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true);  // Following suit
       expect(rules.isValidPlay(state, playerHand[1]!, 1)).toBe(false); // Trump when can follow
     });
@@ -168,7 +173,7 @@ describe('Renege Detection and Prevention', () => {
 
       // Key assertion: 2-1 contains pip 2, but it's trump so it can't follow twos suit
       // canFollowSuit should return false because player has no non-trump dominoes with pip 2
-      expect(canFollowSuit(state.players[1]!, DEUCES, state.trump)).toBe(false);
+      expect(canFollowSuit(state, 1, DEUCES)).toBe(false);
 
       // Since player can't follow suit, any play is valid
       expect(rules.isValidPlay(state, playerHand[0]!, 1)).toBe(true);

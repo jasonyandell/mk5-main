@@ -1,8 +1,7 @@
-import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, Player, LedSuit, LedSuitOrNone } from '../types';
+import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, LedSuit, LedSuitOrNone } from '../types';
 import { BID_TYPES } from '../constants';
 import { calculateTrickWinner, calculateTrickPoints } from './scoring';
 import { getSuitName } from '../game-terms';
-import { dominoBelongsToSuit } from './dominoes';
 
 /**
  * Validates mark bids with tournament progression rules
@@ -27,26 +26,6 @@ export function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): bo
   }
 
   return bid.value >= 1;
-}
-
-/**
- * Checks if player can follow the lead suit.
- *
- * This is a player-level wrapper around dominoBelongsToSuit - it checks if
- * the player has ANY domino that belongs to the led suit.
- *
- * Uses the unified dominoBelongsToSuit function which correctly handles:
- * - Trump dominoes not belonging to non-trump suits
- * - Doubles trump scenarios
- * - Nello (doubles as own suit)
- */
-export function canFollowSuit(
-  player: Player,
-  leadSuit: LedSuit,
-  trump: TrumpSelection
-): boolean {
-  // Check if any domino in the player's hand belongs to the led suit
-  return player.hand.some(d => dominoBelongsToSuit(d, leadSuit, trump));
 }
 
 /**

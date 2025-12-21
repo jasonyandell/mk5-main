@@ -172,7 +172,7 @@ export class MCCFRStrategy implements AIStrategy {
     const player = state.players[state.currentPlayer];
     if (!player) return validActions[0]!;
 
-    const bestTrump = determineBestTrump(player.hand, player.suitAnalysis);
+    const bestTrump = determineBestTrump(player.hand);
 
     if (bestTrump.type === 'doubles') {
       const action = validActions.find(a =>

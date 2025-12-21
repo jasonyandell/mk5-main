@@ -75,7 +75,6 @@ export { executeAction } from './core/actions';
 // rules.getBidComparisonValue(bid)
 // rules.isValidTrump(trump)
 export {
-  canFollowSuit,
   getTrickWinner,
   getTrickPoints,
   determineTrickWinner,

@@ -9,7 +9,8 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { Domino, TrumpSelection, GameState, LedSuitOrNone } from '../src/game/types';
 import { PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../src/game/types';
-import { analyzeDominoAsSuit, getPlayableSuits } from '../src/game/ai/domino-strength';
+import { analyzeDominoAsSuit } from '../src/game/ai/domino-strength';
+import { suitsWithTrumpBase } from '../src/game/layers/compose';
 import { isTrump } from '../src/game/core/dominoes';
 import { getLedSuitName, SUIT_IDENTIFIERS } from '../src/game/game-terms';
 
@@ -143,7 +144,7 @@ function generateTable(): void {
       state.trump = trump;
       
       // Get valid playable suits for this domino
-      const playableSuits = getPlayableSuits(domino, trump);
+      const playableSuits = suitsWithTrumpBase(state, domino);
       const dominoIsTrump = isTrump(domino, trump);
       
       // Generate entry for playing as trump (PLAYED_AS_TRUMP) if applicable
