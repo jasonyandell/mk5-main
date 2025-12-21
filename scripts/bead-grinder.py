@@ -29,7 +29,13 @@ from claude_agent_sdk import (
 )
 
 BEADS = [
-    "mk5-tailwind-g4o"
+    "t42-f26",   # Delete Perfects feature
+    "t42-lq0",   # Rules-base + layer rewiring
+    "t42-mtq",   # Core cleanup: rule logic to GameRules
+    "t42-3xp7",  # Server-owned projection; dumb client
+    "t42-20ue",  # Remove suitAnalysis cache from state
+    "t42-r3ia",  # Guardrails and contract tests
+    "t42-qnwe",  # Follow-through: cleanup and assessment
 ]
 
 def print_message(message):
