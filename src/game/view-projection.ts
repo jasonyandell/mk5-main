@@ -1,9 +1,7 @@
 import type { FilteredGameState, StateTransition, Domino, Play, Trick, TrumpSelection, Bid, GamePhase, LedSuit } from './types';
-import { DOUBLES_AS_TRUMP } from './types';
-import { calculateTrickWinner } from './core/scoring';
 import { GAME_PHASES } from './index';
-import { dominoHasSuit } from './core/dominoes';
 import { getSuitName, getTrumpDisplay } from './game-terms';
+import type { DerivedViewFields } from '../multiplayer/types';
 
 // Represents a player's bid status for UI display
 export interface BidStatus {
@@ -125,6 +123,7 @@ export interface ViewProjection {
 }
 
 // Create view projection from game state and available actions
+// Uses server-computed derived fields for rule-based computations (dumb client pattern)
 export function createViewProjection(
   gameState: FilteredGameState,
   availableActions: StateTransition[],
@@ -133,13 +132,15 @@ export function createViewProjection(
     viewingPlayerIndex?: number;
     canAct?: boolean;
     isAIControlled?: (player: number) => boolean;
-  } = {}
+    derived: DerivedViewFields;  // Server-computed derived fields (required - dumb client pattern)
+  }
 ): ViewProjection {
   const {
     isTestMode = false,
     viewingPlayerIndex,
     canAct = true,
-    isAIControlled = () => false
+    isAIControlled = () => false,
+    derived
   } = options;
 
   const phase = gameState.phase;
@@ -173,14 +174,23 @@ export function createViewProjection(
   const playerHand = isTestMode
     ? (gameState.players[currentPlayer]?.hand || [])
     : (gameState.players[perspectiveIndex]?.hand || []);
-  
-  // Build hand with metadata
-  const hand: HandDomino[] = playerHand.map(domino => ({
-    domino,
-    isPlayable: playableDominoIds.has(`${domino.high}-${domino.low}`) ||
-                playableDominoIds.has(`${domino.low}-${domino.high}`),
-    tooltip: getDominoTooltip(domino, gameState, playableDominoIds)
-  }));
+
+  // Build hand with metadata - use server-derived fields if available (dumb client pattern)
+  const hand: HandDomino[] = playerHand.map(domino => {
+    const dominoId = `${domino.high}-${domino.low}`;
+    const isPlayable = playableDominoIds.has(dominoId) ||
+                playableDominoIds.has(`${domino.low}-${domino.high}`);
+
+    // Use server-computed tooltip hint (dumb client pattern - no fallbacks)
+    const serverMeta = derived.handDominoMeta.find(
+      m => m.dominoId === dominoId || m.dominoId === `${domino.low}-${domino.high}`
+    );
+    const tooltip = serverMeta?.tooltipHint
+      ? `${dominoId} - ${serverMeta.tooltipHint}`
+      : dominoId;
+
+    return { domino, isPlayable, tooltip };
+  });
   
   // Find proceed and consensus actions
   const alwaysShowActions = ['complete-trick', 'score-hand'];
@@ -205,15 +215,13 @@ export function createViewProjection(
   
   // Trump display
   const trumpDisplay = getTrumpDisplay(gameState.trump);
-  
-  // Current trick display
+
+  // Current trick display - use server-computed trick winner (dumb client pattern)
   const currentTrickDisplay: TrickDisplay = {
     plays: [0, 1, 2, 3].map(p =>
       gameState.currentTrick.find(play => play.player === p) || null
     ),
-    winner: gameState.currentTrick.length === 4
-      ? calculateTrickWinner(gameState.currentTrick, gameState.trump, gameState.currentSuit)
-      : -1,
+    winner: derived.currentTrickWinner,
     isComplete: gameState.currentTrick.length === 4,
     currentPlayer
   };
@@ -299,7 +307,7 @@ export function createViewProjection(
     scoring: {
       teamScores: gameState.teamScores,
       teamMarks: gameState.teamMarks,
-      currentHandPoints: calculateTeamPoints(gameState.tricks),
+      currentHandPoints: derived.currentHandPoints,
       handResults
     },
     ui: {
@@ -317,69 +325,8 @@ export function createViewProjection(
   };
 }
 
-// Helper to get domino tooltip
-function getDominoTooltip(
-  domino: Domino,
-  gameState: FilteredGameState,
-  playableDominoIds: Set<string>
-): string {
-  const dominoStr = `${domino.high}-${domino.low}`;
-  
-  if (gameState.phase !== 'playing') {
-    return dominoStr;
-  }
-  
-  if (gameState.currentPlayer !== 0) {
-    return `${dominoStr} - Waiting for P${gameState.currentPlayer}'s turn`;
-  }
-  
-  const isPlayable = playableDominoIds.has(`${domino.high}-${domino.low}`) ||
-                    playableDominoIds.has(`${domino.low}-${domino.high}`);
-  
-  if (gameState.currentTrick.length === 0) {
-    return isPlayable ? `${dominoStr} - Click to lead this domino` : dominoStr;
-  }
-  
-  const leadSuit = gameState.currentSuit;
-  if (leadSuit === -1) {
-    return isPlayable ? `${dominoStr} - Click to play` : dominoStr;
-  }
-  
-  const ledSuitName = getSuitName(leadSuit as LedSuit, { lowercase: true });
-  
-  if (isPlayable) {
-    if (leadSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
-      return `${dominoStr} - Double, follows ${ledSuitName}`;
-    } else if (leadSuit !== DOUBLES_AS_TRUMP && dominoHasSuit(domino, leadSuit)) {
-      return `${dominoStr} - Has ${ledSuitName}, follows suit`;
-    } else {
-      if (gameState.trump.type === 'doubles' && domino.high === domino.low) {
-        return `${dominoStr} - Trump (double)`;
-      } else if (gameState.trump.type === 'suit' &&
-                gameState.trump.suit !== undefined &&
-                dominoHasSuit(domino, gameState.trump.suit)) {
-        return `${dominoStr} - Trump`;
-      } else {
-        return `${dominoStr} - Can't follow ${ledSuitName}`;
-      }
-    }
-  } else {
-    if (leadSuit === DOUBLES_AS_TRUMP) {
-      return `${dominoStr} - Not a double, can't follow ${ledSuitName}`;
-    } else {
-      const playerHand = gameState.players[0]?.hand || [];
-      const playerHasLedSuit = playerHand.some(d =>
-        d.high === leadSuit || d.low === leadSuit
-      );
-      
-      if (playerHasLedSuit) {
-        return `${dominoStr} - Must follow ${getSuitName(leadSuit as LedSuit, { lowercase: true })}`;
-      } else {
-        return `${dominoStr} - Invalid play`;
-      }
-    }
-  }
-}
+// Note: getDominoTooltip has been moved to kernel/kernel.ts (computeTooltipHint)
+// to implement the dumb client pattern - all rule-based computations happen server-side.
 
 // Note: getTrumpDisplay is now imported from game-terms.ts
 
