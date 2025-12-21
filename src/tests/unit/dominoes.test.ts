@@ -9,7 +9,6 @@ import {
   countDoubles
 } from '../../game/core/dominoes';
 import { GameTestHelper } from '../helpers/gameTestHelper';
-import type { TrumpSelection } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, SIXES } from '../../game/types';
 
 describe('Domino System', () => {

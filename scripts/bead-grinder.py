@@ -19,14 +19,30 @@ ONE-LINER:
 """
 
 import asyncio
-from claude_agent_sdk import query, ClaudeAgentOptions
+from claude_agent_sdk import (
+    query,
+    ClaudeAgentOptions,
+    AssistantMessage,
+    ResultMessage,
+    TextBlock,
+    ToolUseBlock,
+)
 
 BEADS = [
-    "mk5-tailwind-f8l",
-    "mk5-tailwind-xb4",
-    "mk5-tailwind-stg",
-    "mk5-tailwind-s6u",
+    "mk5-tailwind-g4o"
 ]
+
+def print_message(message):
+    """Print messages in a readable format."""
+    if isinstance(message, AssistantMessage):
+        for block in message.content:
+            if isinstance(block, TextBlock):
+                print(block.text)
+            elif isinstance(block, ToolUseBlock):
+                print(f"  → {block.name}")
+    elif isinstance(message, ResultMessage):
+        status = "✅" if not message.is_error else "❌"
+        print(f"\n{status} Done in {message.num_turns} turns (${message.total_cost_usd:.4f})")
 
 async def grind_bead(bead_id: str):
     print(f"\n{'='*60}")
@@ -42,15 +58,15 @@ async def grind_bead(bead_id: str):
         prompt=f"Complete bead {bead_id}. Run 'bd show {bead_id}' first for context.",
         options=options
     ):
-        # Print whatever comes back
-        print(message)
-
-    print(f"\n✅ Finished bead: {bead_id}\n")
+        print_message(message)
 
 async def main():
     for bead_id in BEADS:
         await grind_bead(bead_id)
-    print("🎉 All beads complete!")
+    print("\n🎉 All beads complete!")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n\n⏹️  Stopped.")
