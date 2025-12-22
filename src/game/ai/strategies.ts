@@ -37,7 +37,8 @@ export class RandomAIStrategy implements AIStrategy {
 
 /** Default configuration for Monte Carlo evaluation */
 const DEFAULT_CONFIG: MonteCarloConfig = {
-  simulations: 100
+  biddingSimulations: 5,
+  playingSimulations: 10
 };
 
 /** Threshold for bidding - bid if make rate >= this value */

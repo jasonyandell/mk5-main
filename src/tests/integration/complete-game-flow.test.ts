@@ -384,8 +384,8 @@ describe('Complete Game Flow Integration', () => {
   });
 
   describe('Beginner AI Strategy', () => {
-    // Use reduced simulations for CI speed (10 instead of 100)
-    const beginnerConfig = { aiStrategyConfig: { type: 'beginner' as const, monteCarloConfig: { simulations: 10 } } };
+    // Use reduced simulations for CI speed
+    const beginnerConfig = { aiStrategyConfig: { type: 'beginner' as const, monteCarloConfig: { biddingSimulations: 5, playingSimulations: 10 } } };
 
     it.skip('should complete game with beginner MCTS strategy', async () => {
       // Beginner strategy uses MCTS for both bidding and plays

@@ -25,8 +25,11 @@ import { minimaxEvaluate, createTerminalState } from './minimax';
  * Configuration for Monte Carlo evaluation
  */
 export interface MonteCarloConfig {
-  /** Number of simulations per candidate action (default: 50) */
-  simulations: number;
+  /** Number of simulations for bidding decisions (default: 5) */
+  biddingSimulations: number;
+
+  /** Number of simulations for play decisions (default: 10) */
+  playingSimulations: number;
 
   /** Random seed for reproducibility (optional) */
   seed?: number;
@@ -122,7 +125,7 @@ export function evaluateBidActions(
     let pointsWhenMade = 0;
     let madeCount = 0;
 
-    for (let sim = 0; sim < config.simulations; sim++) {
+    for (let sim = 0; sim < config.biddingSimulations; sim++) {
       // Sample opponent hands
       const sampledHands = sampleBiddingHands(ALL_DOMINOES, myHand, myPlayerIndex, rng);
 
@@ -153,10 +156,10 @@ export function evaluateBidActions(
     evaluations.push({
       action: bidAction,
       bidValue,
-      makeBidRate: madeCount / config.simulations,
+      makeBidRate: madeCount / config.biddingSimulations,
       avgPointsWhenMade: madeCount > 0 ? pointsWhenMade / madeCount : 0,
-      avgPointsOverall: totalPoints / config.simulations,
-      simulationCount: config.simulations
+      avgPointsOverall: totalPoints / config.biddingSimulations,
+      simulationCount: config.biddingSimulations
     });
   }
 
@@ -271,7 +274,7 @@ export function evaluatePlayActions(
     let totalTeamPoints = 0;
     let wins = 0;
 
-    for (let sim = 0; sim < config.simulations; sim++) {
+    for (let sim = 0; sim < config.playingSimulations; sim++) {
       // Sample opponent hands
       let sampledHands: SampledHands;
       try {
@@ -324,9 +327,9 @@ export function evaluatePlayActions(
 
     evaluations.push({
       action,
-      avgTeamPoints: totalTeamPoints / config.simulations,
-      winRate: wins / config.simulations,
-      simulationCount: config.simulations
+      avgTeamPoints: totalTeamPoints / config.playingSimulations,
+      winRate: wins / config.playingSimulations,
+      simulationCount: config.playingSimulations
     });
   }
 
