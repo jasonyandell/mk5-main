@@ -13,20 +13,36 @@ import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-term
 const defaultRules = composeRules([baseLayer]);
 
 /**
+ * Options for executeAction
+ */
+export interface ExecuteActionOptions {
+  /** Skip recording action in history (use for simulation/rollouts) */
+  skipHistory?: boolean;
+}
+
+/**
  * Pure function that executes an action on a game state.
  * Throws errors on invalid actions.
- * Always appends to actionHistory for complete audit trail.
+ * Appends to actionHistory unless skipHistory is set.
  *
  * @param state - Current game state
  * @param action - Action to execute
  * @param rules - Game rules (defaults to base rule set if not provided)
+ * @param options - Optional settings (e.g., skipHistory for simulations)
  */
-export function executeAction(state: GameState, action: GameAction, rules: GameRules = defaultRules): GameState {
-  // Always record the action in history (even if invalid)
-  const newState: GameState = {
-    ...state,
-    actionHistory: [...state.actionHistory, action]
-  };
+export function executeAction(
+  state: GameState,
+  action: GameAction,
+  rules: GameRules = defaultRules,
+  options?: ExecuteActionOptions
+): GameState {
+  // Record action in history unless skipped (simulation mode)
+  const newState: GameState = options?.skipHistory
+    ? { ...state }
+    : {
+        ...state,
+        actionHistory: [...state.actionHistory, action]
+      };
 
   // Process the action based on type
   switch (action.type) {

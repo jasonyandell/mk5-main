@@ -14,8 +14,11 @@
 
 import type { GameState, GameAction } from '../types';
 import type { ExecutionContext } from '../types/execution';
-import { executeAction } from '../core/actions';
+import { executeAction, type ExecuteActionOptions } from '../core/actions';
 import { getDominoPoints } from '../core/dominoes';
+
+/** Reusable options object to avoid allocation per call */
+const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
 
 /**
  * Configuration for minimax search
@@ -109,7 +112,7 @@ export function minimaxEvaluate(
     // Handle auto-execute actions (complete-trick, score-hand, etc.)
     const autoAction = actions.find(a => a.autoExecute === true);
     if (autoAction) {
-      const nextState = executeAction(currentState, autoAction, ctx.rules);
+      const nextState = executeAction(currentState, autoAction, ctx.rules, SIMULATION_OPTIONS);
       return search(nextState, alpha, beta);
     }
 
@@ -133,7 +136,7 @@ export function minimaxEvaluate(
     if (isMaximizing) {
       let maxEval = -Infinity;
       for (const action of orderedActions) {
-        const nextState = executeAction(currentState, action, ctx.rules);
+        const nextState = executeAction(currentState, action, ctx.rules, SIMULATION_OPTIONS);
         const evalScore = search(nextState, alpha, beta);
         maxEval = Math.max(maxEval, evalScore);
 
@@ -146,7 +149,7 @@ export function minimaxEvaluate(
     } else {
       let minEval = Infinity;
       for (const action of orderedActions) {
-        const nextState = executeAction(currentState, action, ctx.rules);
+        const nextState = executeAction(currentState, action, ctx.rules, SIMULATION_OPTIONS);
         const evalScore = search(nextState, alpha, beta);
         minEval = Math.min(minEval, evalScore);
 

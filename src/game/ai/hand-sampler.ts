@@ -11,7 +11,7 @@
 
 import type { Domino, GameState } from '../types';
 import type { GameRules } from '../layers/types';
-import type { HandConstraints } from './constraint-tracker';
+import type { HandConstraints, CanFollowCache } from './constraint-tracker';
 import { getCandidateDominoes, getDistributionPool } from './constraint-tracker';
 
 /** Random number generator interface (for testability) */
@@ -125,6 +125,7 @@ function sampleWithBacktracking(
  * @param state Current game state
  * @param rules Composed game rules
  * @param rng Random number generator
+ * @param canFollowCache Optional pre-computed canFollow cache (for performance)
  * @returns Map of player index -> sampled hand
  * @throws Error if no valid assignment exists (indicates bug in constraint tracking)
  */
@@ -133,7 +134,8 @@ export function sampleOpponentHands(
   expectedSizes: [number, number, number, number],
   state: GameState,
   rules: GameRules,
-  rng: RandomGenerator = defaultRng
+  rng: RandomGenerator = defaultRng,
+  canFollowCache?: CanFollowCache
 ): SampledHands {
   const myIndex = constraints.myPlayerIndex;
   const opponents = [0, 1, 2, 3].filter(i => i !== myIndex);
@@ -141,10 +143,10 @@ export function sampleOpponentHands(
   const pool = getDistributionPool(constraints);
   const available = new Set(pool.map(d => String(d.id)));
 
-  // Build candidate sets
+  // Build candidate sets (using cache if provided)
   const candidatesPerOpponent = new Map<number, Set<string>>();
   for (const opp of opponents) {
-    const candidates = getCandidateDominoes(constraints, opp, state, rules);
+    const candidates = getCandidateDominoes(constraints, opp, state, rules, canFollowCache);
     candidatesPerOpponent.set(opp, new Set(candidates.map(d => String(d.id))));
   }
 

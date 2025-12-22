@@ -13,6 +13,42 @@ import type { GameState, Domino, Play, LedSuit } from '../types';
 import type { GameRules } from '../layers/types';
 import { createDominoes } from '../core/dominoes';
 
+/** Cached set of all 28 dominoes (avoid repeated allocation) */
+const ALL_DOMINOES = createDominoes();
+Object.freeze(ALL_DOMINOES);
+
+/**
+ * Pre-computed canFollow lookup table.
+ * Maps dominoId -> Set of suits the domino can follow.
+ * Built once per PIMC evaluation (trump is fixed).
+ */
+export type CanFollowCache = Map<string, Set<LedSuit>>;
+
+/**
+ * Build a canFollow lookup table for all dominoes and suits.
+ * Call once per PIMC evaluation and pass to getCandidateDominoes.
+ *
+ * @param state Game state (only trump matters)
+ * @param rules Composed game rules
+ * @returns Cache mapping dominoId -> set of suits it can follow
+ */
+export function buildCanFollowCache(state: GameState, rules: GameRules): CanFollowCache {
+  const cache: CanFollowCache = new Map();
+
+  for (const domino of ALL_DOMINOES) {
+    const suits = new Set<LedSuit>();
+    // Check all possible led suits (0-7)
+    for (let suit = 0; suit <= 7; suit++) {
+      if (rules.canFollow(state, suit as LedSuit, domino)) {
+        suits.add(suit as LedSuit);
+      }
+    }
+    cache.set(String(domino.id), suits);
+  }
+
+  return cache;
+}
+
 /**
  * Constraints on what dominoes each player can hold.
  *
@@ -145,22 +181,21 @@ function processTrickForConstraints(
  * @param playerIndex Which player to get candidates for
  * @param state Current game state (for canFollow rule)
  * @param rules Composed game rules
+ * @param canFollowCache Optional pre-computed cache (for performance)
  * @returns Array of dominoes that could be in this player's hand
  */
 export function getCandidateDominoes(
   constraints: HandConstraints,
   playerIndex: number,
   state: GameState,
-  rules: GameRules
+  rules: GameRules,
+  canFollowCache?: CanFollowCache
 ): Domino[] {
-  // Start with all 28 dominoes
-  const allDominoes = createDominoes();
-
   // Get this player's void suits
   const voidSuits = constraints.voidInSuit.get(playerIndex) || new Set<LedSuit>();
 
-  // Filter to candidates
-  return allDominoes.filter(domino => {
+  // Filter to candidates (using cached ALL_DOMINOES)
+  return ALL_DOMINOES.filter(domino => {
     const id = String(domino.id);
 
     // Exclude played dominoes
@@ -171,9 +206,22 @@ export function getCandidateDominoes(
 
     // Exclude dominoes in suits the player is void in
     // A domino is excluded if it can follow any void suit
-    for (const voidSuit of voidSuits) {
-      if (rules.canFollow(state, voidSuit, domino)) {
-        return false;
+    if (canFollowCache) {
+      // Use pre-computed cache (fast path)
+      const dominoSuits = canFollowCache.get(id);
+      if (dominoSuits) {
+        for (const voidSuit of voidSuits) {
+          if (dominoSuits.has(voidSuit)) {
+            return false;
+          }
+        }
+      }
+    } else {
+      // Fallback to direct rule calls (slow path)
+      for (const voidSuit of voidSuits) {
+        if (rules.canFollow(state, voidSuit, domino)) {
+          return false;
+        }
       }
     }
 
@@ -192,9 +240,7 @@ export function getCandidateDominoes(
  * @returns Array of dominoes in the distribution pool
  */
 export function getDistributionPool(constraints: HandConstraints): Domino[] {
-  const allDominoes = createDominoes();
-
-  return allDominoes.filter(domino => {
+  return ALL_DOMINOES.filter(domino => {
     const id = String(domino.id);
     return !constraints.played.has(id) && !constraints.myHand.has(id);
   });

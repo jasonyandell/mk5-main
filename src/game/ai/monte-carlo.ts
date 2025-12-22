@@ -14,12 +14,15 @@ import type { ValidAction } from '../../multiplayer/types';
 import type { HandConstraints } from './constraint-tracker';
 import type { SampledHands } from './hand-sampler';
 import { sampleOpponentHands, sampleBiddingHands, createSeededRng } from './hand-sampler';
-import { getExpectedHandSizes } from './constraint-tracker';
-import { executeAction } from '../core/actions';
+import { getExpectedHandSizes, buildCanFollowCache } from './constraint-tracker';
+import { executeAction, type ExecuteActionOptions } from '../core/actions';
 import type { ExecutionContext } from '../types/execution';
 import { createDominoes } from '../core/dominoes';
 import { determineBestTrump } from './hand-strength';
 import { minimaxEvaluate, createTerminalState } from './minimax';
+
+/** Reusable options object to avoid allocation per call */
+const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
 
 /**
  * Configuration for Monte Carlo evaluation
@@ -268,6 +271,9 @@ export function evaluatePlayActions(
   const myTeam = myPlayerIndex % 2; // 0 or 1 (players 0,2 vs 1,3)
   const expectedSizes = getExpectedHandSizes(state);
 
+  // Build canFollow cache once (trump is fixed for entire evaluation)
+  const canFollowCache = buildCanFollowCache(state, ctx.rules);
+
   const evaluations: ActionEvaluation[] = [];
 
   for (const action of playActions) {
@@ -283,7 +289,8 @@ export function evaluatePlayActions(
           expectedSizes,
           state,
           ctx.rules,
-          rng
+          rng,
+          canFollowCache
         );
       } catch (e) {
         // Add debug info to the error
@@ -309,7 +316,7 @@ export function evaluatePlayActions(
       const fullState = injectSampledHands(state, sampledHands, myPlayerIndex);
 
       // Apply the candidate action
-      let simState = executeAction(fullState, action.action, ctx.rules);
+      let simState = executeAction(fullState, action.action, ctx.rules, SIMULATION_OPTIONS);
 
       // Rollout to hand completion
       simState = rolloutToHandEnd(simState, ctx);
