@@ -102,6 +102,34 @@ export interface ActionRequest {
 // ============================================================================
 
 /**
+ * Server-computed derived fields for dumb client consumption.
+ * These fields are computed by the kernel using ExecutionContext.rules
+ * to avoid any client-side rule evaluation.
+ */
+export interface DerivedViewFields {
+  /** Trick winner for current trick (-1 if incomplete) */
+  currentTrickWinner: number;
+
+  /** Tooltip metadata for each domino in hand, pre-computed using rules */
+  handDominoMeta: HandDominoMeta[];
+
+  /** Current hand points per team, computed from completed tricks */
+  currentHandPoints: [number, number];
+}
+
+/**
+ * Server-computed metadata for a domino in hand.
+ * Includes playability and tooltip info derived from rules.
+ */
+export interface HandDominoMeta {
+  dominoId: string;
+  isPlayable: boolean;
+  isTrump: boolean;
+  canFollow: boolean;
+  tooltipHint: string;  // e.g., "Trump", "Follows suit", "Can't follow"
+}
+
+/**
  * Complete view of game for a client.
  * This is everything a client needs to render the game.
  */
@@ -123,6 +151,9 @@ export interface GameView {
     gameId: string;
     layers?: string[];
   };
+
+  /** Server-computed derived fields (no client-side rule evaluation needed) */
+  derived: DerivedViewFields;
 }
 
 /**

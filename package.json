@@ -5,11 +5,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run postbuild",
-    "postbuild": "mkdir -p dist/perfects && cp dist/index.html dist/perfects/index.html && cp dist/index.html dist/404.html",
+    "postbuild": "cp dist/index.html dist/404.html",
     "prebuild": "npm run generate:strength-table",
     "predev": "npm run generate:strength-table",
     "generate:strength-table": "npx tsx scripts/generate-strength-table.ts",
-    "generate:perfects": "npx tsx scripts/find-perfect-hands.ts --json > data/perfect-hands.json && npx tsx scripts/find-3hand-leftover.ts --json > data/3hand-partitions.json",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "typecheck": "tsc --noEmit",

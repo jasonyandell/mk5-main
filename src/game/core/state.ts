@@ -1,10 +1,9 @@
-import type { GameState, Player, StateTransition, GameAction, Domino } from '../types';
+import type { GameState, StateTransition, GameAction, Domino } from '../types';
 import type { ExecutionContext } from '../types/execution';
 import { GAME_CONSTANTS } from '../constants';
 import { EMPTY_BID, NO_LEAD_SUIT, NO_BIDDER } from '../types';
 import { dealDominoesWithSeed } from './dominoes';
 import { getPlayerLeftOfDealer } from './players';
-import { analyzeSuits } from './suit-analysis';
 import { executeAction } from './actions';
 import { actionToId, actionToLabel } from './actions';
 import { InvalidDealOverrideError } from '../types/config';
@@ -174,10 +173,10 @@ export function createInitialState(options?: {
     // Game state
     phase: 'bidding' as const,
     players: [
-      { id: 0, name: 'Player 1', hand: hands[0], teamId: 0 as const, marks: 0, suitAnalysis: analyzeSuits(hands[0]) },
-      { id: 1, name: 'Player 2', hand: hands[1], teamId: 1 as const, marks: 0, suitAnalysis: analyzeSuits(hands[1]) },
-      { id: 2, name: 'Player 3', hand: hands[2], teamId: 0 as const, marks: 0, suitAnalysis: analyzeSuits(hands[2]) },
-      { id: 3, name: 'Player 4', hand: hands[3], teamId: 1 as const, marks: 0, suitAnalysis: analyzeSuits(hands[3]) },
+      { id: 0, name: 'Player 1', hand: hands[0], teamId: 0 as const, marks: 0 },
+      { id: 1, name: 'Player 2', hand: hands[1], teamId: 1 as const, marks: 0 },
+      { id: 2, name: 'Player 3', hand: hands[2], teamId: 0 as const, marks: 0 },
+      { id: 3, name: 'Player 4', hand: hands[3], teamId: 1 as const, marks: 0 },
     ],
     currentPlayer,
     dealer,
@@ -214,31 +213,10 @@ export function cloneGameState(state: GameState): GameState {
       ...(state.initialConfig.colorOverrides ? { colorOverrides: { ...state.initialConfig.colorOverrides } } : {}),
       ...(state.initialConfig.layers ? { layers: [...state.initialConfig.layers] } : {})
     },
-    players: state.players.map(player => {
-      const clonedPlayer: Player = {
-        ...player,
-        hand: [...player.hand]
-      };
-
-      if (player.suitAnalysis) {
-        clonedPlayer.suitAnalysis = {
-          count: { ...player.suitAnalysis.count },
-          rank: {
-            0: [...player.suitAnalysis.rank[0]],
-            1: [...player.suitAnalysis.rank[1]],
-            2: [...player.suitAnalysis.rank[2]],
-            3: [...player.suitAnalysis.rank[3]],
-            4: [...player.suitAnalysis.rank[4]],
-            5: [...player.suitAnalysis.rank[5]],
-            6: [...player.suitAnalysis.rank[6]],
-            doubles: [...player.suitAnalysis.rank.doubles],
-            trump: [...player.suitAnalysis.rank.trump]
-          }
-        };
-      }
-
-      return clonedPlayer;
-    }),
+    players: state.players.map(player => ({
+      ...player,
+      hand: [...player.hand]
+    })),
     bids: [...state.bids],
     tricks: state.tricks.map(trick => ({
       ...trick,

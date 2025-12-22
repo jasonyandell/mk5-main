@@ -1,7 +1,9 @@
-import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, LedSuit, LedSuitOrNone } from '../types';
+import type { GameState, Bid, Domino, TrumpSelection, PlayedDomino, LedSuit, LedSuitOrNone, Play } from '../types';
 import { BID_TYPES } from '../constants';
-import { calculateTrickWinner, calculateTrickPoints } from './scoring';
+import { calculateTrickPoints } from './scoring';
 import { getSuitName } from '../game-terms';
+import { composeRules } from '../layers/compose';
+import { baseLayer } from '../layers';
 
 /**
  * Validates mark bids with tournament progression rules
@@ -29,24 +31,55 @@ export function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): bo
 }
 
 /**
- * Gets the winner of a trick (alias for calculateTrickWinner)
+ * Gets the winner of a trick using the threaded rules system.
+ *
+ * This is a convenience function that creates a minimal state for the rules.
+ * For proper layer support, use rules.calculateTrickWinner(state, trick) directly.
  */
 export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
-  return calculateTrickWinner(trick, trump, leadSuit);
+  const rules = composeRules([baseLayer]);
+  // Create minimal state for rules calculation
+  const state: GameState = {
+    trump,
+    currentSuit: leadSuit,
+    currentTrick: trick as Play[],
+    // Minimal required fields
+    phase: 'playing',
+    players: [],
+    currentPlayer: 0,
+    dealer: 0,
+    bids: [],
+    currentBid: { type: 'pass', player: -1 },
+    winningBidder: -1,
+    tricks: [],
+    teamScores: [0, 0],
+    teamMarks: [0, 0],
+    gameTarget: 7,
+    shuffleSeed: 0,
+    playerTypes: ['human', 'ai', 'ai', 'ai'],
+    actionHistory: [],
+    initialConfig: { playerTypes: ['human', 'ai', 'ai', 'ai'], shuffleSeed: 0, theme: 'coffee', colorOverrides: {} },
+    theme: 'coffee',
+    colorOverrides: {}
+  };
+  return rules.calculateTrickWinner(state, trick as Play[]);
 }
 
 /**
  * Gets the points in a trick (alias for calculateTrickPoints)
  */
 export function getTrickPoints(trick: { player: number; domino: Domino }[]): number {
-  return calculateTrickPoints(trick);
+  return calculateTrickPoints(trick as Play[]);
 }
 
 /**
- * Determines the winner of a trick (alternative interface)
+ * Determines the winner of a trick using the threaded rules system.
+ *
+ * This is a convenience function that creates a minimal state for the rules.
+ * For proper layer support, use rules.calculateTrickWinner(state, trick) directly.
  */
 export function determineTrickWinner(trick: { player: number; domino: Domino }[] | PlayedDomino[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
-  return calculateTrickWinner(trick as PlayedDomino[], trump, leadSuit);
+  return getTrickWinner(trick as { player: number; domino: Domino }[], trump, leadSuit);
 }
 
 /**

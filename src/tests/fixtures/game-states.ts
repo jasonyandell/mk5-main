@@ -5,9 +5,21 @@
  * Use these instead of creating Room instances in tests.
  */
 
-import type { GameView, PlayerInfo, ValidAction, Capability } from '../../multiplayer/types';
-import type { GameState, FilteredGameState, Domino, Player, TrumpSelection, SuitAnalysis } from '../../game/types';
+import type { GameView, PlayerInfo, ValidAction, Capability, DerivedViewFields } from '../../multiplayer/types';
+import type { GameState, FilteredGameState, Domino, Player, TrumpSelection } from '../../game/types';
 import { StateBuilder, HandBuilder } from '../helpers';
+
+/**
+ * Create default derived fields for test GameViews.
+ * These are placeholder values for testing - actual values are computed by buildKernelView.
+ */
+function createDefaultDerived(): DerivedViewFields {
+  return {
+    currentTrickWinner: -1,
+    handDominoMeta: [],
+    currentHandPoints: [0, 0]
+  };
+}
 
 // ============================================================================
 // Helper Functions
@@ -154,8 +166,7 @@ function createGameView(state: GameState, validActions: ValidAction[] = []): Gam
       teamId: player.teamId,
       marks: player.marks,
       hand: player.hand, // In basic test fixtures, show all hands
-      handCount: player.hand.length,
-      ...(player.suitAnalysis && { suitAnalysis: player.suitAnalysis }),
+      handCount: player.hand.length
     })),
   };
 
@@ -176,6 +187,7 @@ function createGameView(state: GameState, validActions: ValidAction[] = []): Gam
     metadata: {
       gameId: 'test-game-123'
     },
+    derived: createDefaultDerived()
   };
 }
 
@@ -204,8 +216,7 @@ export function createCustomGameView(
       teamId: player.teamId,
       marks: player.marks,
       hand: player.hand, // Show all hands in custom views by default
-      handCount: player.hand.length,
-      ...(player.suitAnalysis && { suitAnalysis: player.suitAnalysis }),
+      handCount: player.hand.length
     })),
   };
 
@@ -226,6 +237,7 @@ export function createCustomGameView(
     metadata: {
       gameId: 'test-game-123'
     },
+    derived: createDefaultDerived()
   };
 }
 
@@ -245,31 +257,14 @@ export function createFilteredState(
 ): FilteredGameState {
   return {
     ...state,
-    players: state.players.map((player, index) => {
-      const filtered: {
-        id: number;
-        name: string;
-        teamId: 0 | 1;
-        marks: number;
-        hand: Domino[];
-        handCount: number;
-        suitAnalysis?: SuitAnalysis;
-      } = {
-        id: player.id,
-        name: player.name,
-        teamId: player.teamId,
-        marks: player.marks,
-        hand: index === observerPlayerIndex ? player.hand : [], // Only show observer's own hand
-        handCount: player.hand.length,
-      };
-
-      // Only add suitAnalysis if it exists and this is the observer
-      if (index === observerPlayerIndex && player.suitAnalysis) {
-        filtered.suitAnalysis = player.suitAnalysis;
-      }
-
-      return filtered;
-    }),
+    players: state.players.map((player, index) => ({
+      id: player.id,
+      name: player.name,
+      teamId: player.teamId,
+      marks: player.marks,
+      hand: index === observerPlayerIndex ? player.hand : [], // Only show observer's own hand
+      handCount: player.hand.length
+    })),
   };
 }
 
@@ -308,6 +303,7 @@ export function createObserverGameView(
     metadata: {
       gameId: 'test-game-123'
     },
+    derived: createDefaultDerived()
   };
 }
 

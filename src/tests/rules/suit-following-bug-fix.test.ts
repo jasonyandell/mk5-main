@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
-import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino } from '../../game/types';
 import { ACES, FIVES, SIXES } from '../../game/types';
 
@@ -38,8 +37,7 @@ describe('Suit Following Bug Fix', () => {
             name: 'Player 2',
             teamId: 0,
             marks: 0,
-            hand: playerHand,
-            suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
+            hand: playerHand
           },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }
         ]
@@ -84,8 +82,7 @@ describe('Suit Following Bug Fix', () => {
             name: 'Player 1',
             teamId: 1,
             marks: 0,
-            hand: playerHand,
-            suitAnalysis: analyzeSuits(playerHand, { type: 'suit', suit: ACES }) // Trump = 1
+            hand: playerHand
           },
           { id: 2, name: 'Player 2', teamId: 0, marks: 0, hand: [] },
           { id: 3, name: 'Player 3', teamId: 1, marks: 0, hand: [] }

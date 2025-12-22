@@ -135,6 +135,16 @@ export interface GameRules {
   rankInTrick(state: GameState, led: LedSuit, domino: Domino): number;
 
   /**
+   * Is this domino trump?
+   *
+   * Base: Check if domino belongs to trump suit
+   * - Doubles-trump: all doubles are trump
+   * - Regular suit: dominoes containing trump suit are trump
+   * - No-trump/nello/sevens: nothing is trump
+   */
+  isTrump(state: GameState, domino: Domino): boolean;
+
+  /**
    * Who won this trick?
    *
    * Base: Trump > suit, higher value wins
@@ -269,6 +279,7 @@ export interface Layer {
     suitsWithTrump?: (state: GameState, domino: Domino, prev: LedSuit[]) => LedSuit[];
     canFollow?: (state: GameState, led: LedSuit, domino: Domino, prev: boolean) => boolean;
     rankInTrick?: (state: GameState, led: LedSuit, domino: Domino, prev: number) => number;
+    isTrump?: (state: GameState, domino: Domino, prev: boolean) => boolean;
     calculateTrickWinner?: (state: GameState, trick: Play[], prev: number) => number;
     isValidPlay?: (state: GameState, domino: Domino, playerId: number, prev: boolean) => boolean;
     getValidPlays?: (state: GameState, playerId: number, prev: Domino[]) => Domino[];

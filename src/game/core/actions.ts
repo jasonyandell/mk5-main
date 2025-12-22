@@ -6,7 +6,6 @@ import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
 import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
-import { analyzeSuits } from './suit-analysis';
 import { analyzeBiddingCompletion } from './bidding';
 import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
 
@@ -188,12 +187,6 @@ function executeTrumpSelection(state: GameState, player: number, selection: Trum
     throw new Error('Invalid trump selection');
   }
 
-  // Update suit analysis for all players
-  const newPlayers = state.players.map(p => ({
-    ...p,
-    suitAnalysis: analyzeSuits(p.hand, selection)
-  }));
-
   // Use rules to determine who leads first trick
   const firstLeader = rules.getFirstLeader(state, player, selection);
 
@@ -201,8 +194,7 @@ function executeTrumpSelection(state: GameState, player: number, selection: Trum
     ...state,
     phase: 'playing',
     trump: selection,
-    currentPlayer: firstLeader,
-    players: newPlayers
+    currentPlayer: firstLeader
   };
 }
 
@@ -242,11 +234,7 @@ function executePlay(state: GameState, player: number, dominoId: string, rules: 
   // Create new player with domino removed
   const newPlayer: typeof playerState = {
     ...playerState,
-    hand: playerState.hand.filter(d => d.id !== dominoId),
-    suitAnalysis: analyzeSuits(
-      playerState.hand.filter(d => d.id !== dominoId),
-      state.trump
-    )
+    hand: playerState.hand.filter(d => d.id !== dominoId)
   };
 
   // Update players array
@@ -390,8 +378,7 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
           }
           return {
             ...player,
-            hand,
-            suitAnalysis: analyzeSuits(hand) // No trump yet
+            hand
           };
         });
       })()
@@ -448,8 +435,7 @@ function executeRedeal(state: GameState): GameState {
     }
     return {
       ...player,
-      hand,
-      suitAnalysis: analyzeSuits(hand) // No trump yet
+      hand
     };
   });
 
@@ -515,8 +501,7 @@ function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
     }
     return {
       ...player,
-      hand,
-      suitAnalysis: analyzeSuits(hand) // No trump yet
+      hand
     };
   });
 

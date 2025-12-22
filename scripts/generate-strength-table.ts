@@ -11,7 +11,7 @@ import type { Domino, TrumpSelection, GameState, LedSuitOrNone } from '../src/ga
 import { PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../src/game/types';
 import { analyzeDominoAsSuit } from '../src/game/ai/domino-strength';
 import { suitsWithTrumpBase } from '../src/game/layers/compose';
-import { isTrump } from '../src/game/core/dominoes';
+import { isTrumpBase } from '../src/game/layers/rules-base';
 import { getLedSuitName, SUIT_IDENTIFIERS } from '../src/game/game-terms';
 
 // Use centralized LED_SUIT_NAMES from game-terms.ts
@@ -145,7 +145,7 @@ function generateTable(): void {
       
       // Get valid playable suits for this domino
       const playableSuits = suitsWithTrumpBase(state, domino);
-      const dominoIsTrump = isTrump(domino, trump);
+      const dominoIsTrump = isTrumpBase(state, domino);
       
       // Generate entry for playing as trump (PLAYED_AS_TRUMP) if applicable
       if (dominoIsTrump) {

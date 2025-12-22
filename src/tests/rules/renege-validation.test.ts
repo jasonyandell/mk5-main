@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
-import { getLedSuit } from '../../game/core/dominoes';
+import { getLedSuitBase } from '../../game/layers/rules-base';
 import type { Domino, TrumpSelection, GameState, LedSuit } from '../../game/types';
 import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
 
@@ -97,12 +97,13 @@ describe('Renege Detection and Prevention', () => {
 
     it('correctly identifies trump vs non-trump suits', () => {
       const trump: TrumpSelection = { type: 'suit', suit: DEUCES }; // Twos trump
+      const state: GameState = { trump } as GameState;
 
       const trumpDomino: Domino = { id: 'trump', high: 2, low: 5, points: 0 }; // 2-5
       const nonTrumpDomino: Domino = { id: 'non-trump', high: 3, low: 4, points: 0 }; // 3-4
 
-      expect(getLedSuit(trumpDomino, trump)).toBe(DEUCES); // Should be suit 2 (trump)
-      expect(getLedSuit(nonTrumpDomino, trump)).not.toBe(DEUCES); // Should not be suit 2
+      expect(getLedSuitBase(state, trumpDomino)).toBe(DEUCES); // Should be suit 2 (trump)
+      expect(getLedSuitBase(state, nonTrumpDomino)).not.toBe(DEUCES); // Should not be suit 2
     });
   });
 

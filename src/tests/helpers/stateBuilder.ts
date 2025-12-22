@@ -31,8 +31,7 @@ import type { GameState, Domino, Bid, Trick, Play, TrumpSelection } from '../../
 import { createInitialState, cloneGameState } from '../../game/core/state';
 import { BID_TYPES } from '../../game/constants';
 import { ACES } from '../../game/types';
-import { getLedSuit } from '../../game/core/dominoes';
-import { analyzeSuits } from '../../game/core/suit-analysis';
+import { getLedSuitBase } from '../../game/layers/rules-base';
 import {
   generateDealFromConstraints,
   type DealConstraints,
@@ -543,8 +542,7 @@ export class StateBuilder {
 
     newState.players[playerIndex] = {
       ...newState.players[playerIndex]!,
-      hand,
-      suitAnalysis: newState.trump.type !== 'not-selected' ? analyzeSuits(hand, newState.trump) : analyzeSuits(hand)
+      hand
     };
 
     return new StateBuilder(newState) as this;
@@ -584,7 +582,7 @@ export class StateBuilder {
     // Update currentSuit if there's a lead domino
     if (newState.currentTrick.length > 0 && newState.trump.type !== 'not-selected') {
       const leadDomino = newState.currentTrick[0]!.domino;
-      newState.currentSuit = getLedSuit(leadDomino, newState.trump);
+      newState.currentSuit = getLedSuitBase(newState, leadDomino);
     }
 
     return new StateBuilder(newState) as this;
@@ -615,7 +613,7 @@ export class StateBuilder {
     const newState = cloneGameState(this.state);
 
     const ledSuit = newState.trump.type !== 'not-selected' && plays[0]
-      ? getLedSuit(plays[0].domino, newState.trump)
+      ? getLedSuitBase(newState, plays[0].domino)
       : undefined;
 
     const trick: Trick = {
@@ -803,10 +801,7 @@ export class StateBuilder {
 
       return {
         ...player,
-        hand,
-        suitAnalysis: newState.trump.type !== 'not-selected'
-          ? analyzeSuits(hand, newState.trump)
-          : analyzeSuits(hand)
+        hand
       };
     });
 

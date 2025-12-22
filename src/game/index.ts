@@ -74,6 +74,10 @@ export { executeAction } from './core/actions';
 // rules.isValidBid(state, bid, playerHand)
 // rules.getBidComparisonValue(bid)
 // rules.isValidTrump(trump)
+// rules.getLedSuit(state, domino)
+// rules.isTrump(state, domino)
+// rules.rankInTrick(state, led, domino)
+// rules.calculateTrickWinner(state, trick)
 export {
   getTrickWinner,
   getTrickPoints,
@@ -82,22 +86,22 @@ export {
 } from './core/rules';
 
 // Domino utilities
+// NOTE: For rule-aware functions (led suit, trump checks, rankings), use rules.* methods:
+// rules.getLedSuit(state, domino), rules.isTrump(state, domino), rules.rankInTrick(state, led, domino)
 export {
   createDominoes,
   shuffleDominoesWithSeed,
   dealDominoesWithSeed,
-  getLedSuit,
-  getDominoValue,
   getDominoPoints,
   isDouble,
   countDoubles
 } from './core/dominoes';
 
 // Scoring
-export { 
-  calculateTrickWinner, 
-  calculateTrickPoints, 
-  calculateRoundScore, 
+// NOTE: For trick winner calculation, use rules.calculateTrickWinner(state, trick) instead
+export {
+  calculateTrickPoints,
+  calculateRoundScore,
   calculateGameSummary,
   calculateGameScore,
   getWinningTeam as getWinningTeamFromMarks

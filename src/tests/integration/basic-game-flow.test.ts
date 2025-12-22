@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { createSetupState } from '../../game/core/state';
 import { composeRules, baseLayer } from '../../game/layers';
 import { shuffleDominoesWithSeed } from '../../game/core/dominoes';
-import { analyzeSuits } from '../../game/core/suit-analysis';
 import { BID_TYPES } from '../../game/constants';
 import { StateBuilder } from '../helpers';
 import { getPlayerLeftOfDealer, getNextPlayer, getNextDealer, getPlayerAfter } from '../../game/core/players';
@@ -210,11 +209,6 @@ describe('Basic Game Flow', () => {
         { player: 3, domino: testDominoes[3]! }
       ];
 
-      // Initialize players with suit analysis
-      state.players.forEach((player) => {
-        player.suitAnalysis = analyzeSuits(player.hand, state.trump!);
-      });
-      
       // Set current suit from first play
       state.currentSuit = TRES; // threes led (3-2 high end is 3)
       
@@ -338,7 +332,6 @@ describe('Basic Game Flow', () => {
       state.currentPlayer = 1;
       state.currentSuit = TRES; // threes were led
       state.players[1]!.hand = playerHand;
-      state.players[1]!.suitAnalysis = analyzeSuits(playerHand, state.trump!);
 
       // Valid play - following suit
       const firstDomino = playerHand[0];

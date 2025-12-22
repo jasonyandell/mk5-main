@@ -15,14 +15,18 @@
 
 import type { GameState, Bid, TrumpSelection, Domino, Play, LedSuit, GameAction } from '../types';
 import type { Layer, GameRules } from './types';
-import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { GAME_CONSTANTS, BID_TYPES, TRUMP_SELECTIONS } from '../constants';
-import { DOUBLES_AS_TRUMP } from '../types';
 import { isValidMarkBid } from '../core/rules';
 import { calculateRoundScore } from '../core/scoring';
 import { composeRules } from './compose';
 import { checkHandOutcome as checkStandardHandOutcome } from '../core/handOutcome';
+import {
+  getLedSuitBase,
+  suitsWithTrumpBase,
+  canFollowBase,
+  isTrumpBase
+} from './rules-base';
 
 /**
  * Generates structural actions only (pass, redeal, trump selection, plays).
@@ -337,100 +341,28 @@ export const baseLayer: Layer = {
     /**
      * HOW does a domino determine what suit it leads?
      *
-     * Base: Higher pip leads, or 7 if doubles-trump
-     * - Doubles-trump: doubles lead suit 7, non-doubles lead higher pip
-     * - Regular trump: trump dominoes lead trump suit, others lead higher pip
-     * - No-trump: higher pip (or the pip value for doubles)
+     * Base: Delegates to rules-base.ts (single source of truth)
      */
     getLedSuit(state: GameState, domino: Domino): LedSuit {
-      const trumpSuit = getTrumpSuit(state.trump);
-
-      // When doubles are trump, doubles lead suit 7
-      if (isDoublesTrump(trumpSuit)) {
-        return domino.high === domino.low ? DOUBLES_AS_TRUMP : domino.high as LedSuit;
-      }
-
-      // When a regular suit is trump (0-6)
-      if (isRegularSuitTrump(trumpSuit)) {
-        // Trump dominoes lead trump suit
-        if (dominoHasSuit(domino, trumpSuit)) {
-          return trumpSuit as LedSuit;
-        }
-      }
-
-      // Non-trump or no-trump: higher pip
-      return domino.high as LedSuit;
+      return getLedSuitBase(state, domino);
     },
 
     /**
      * HOW: What suits does this domino belong to given trump?
      *
-     * Base: Natural suits adjusted for trump absorption
-     * - Trump dominoes belong only to trump suit
-     * - Doubles with doubles-trump belong only to suit 7
-     * - Otherwise, dominoes belong to their natural suits
+     * Base: Delegates to rules-base.ts (single source of truth)
      */
     suitsWithTrump(state: GameState, domino: Domino): LedSuit[] {
-      const trumpSuit = getTrumpSuit(state.trump);
-      const isDouble = domino.high === domino.low;
-
-      // Doubles trump: doubles belong only to suit 7
-      if (isDoublesTrump(trumpSuit)) {
-        if (isDouble) {
-          return [7 as LedSuit];
-        }
-        // Non-doubles belong to both their pips
-        return [domino.high as LedSuit, domino.low as LedSuit];
-      }
-
-      // Regular suit trump (0-6)
-      if (isRegularSuitTrump(trumpSuit)) {
-        // Trump dominoes belong only to trump suit
-        if (dominoHasSuit(domino, trumpSuit)) {
-          return [trumpSuit as LedSuit];
-        }
-        // Non-trump doubles belong to their pip
-        if (isDouble) {
-          return [domino.high as LedSuit];
-        }
-        // Non-trump non-doubles belong to both pips
-        return [domino.high as LedSuit, domino.low as LedSuit];
-      }
-
-      // No trump: natural suits
-      if (isDouble) {
-        return [domino.high as LedSuit];
-      }
-      return [domino.high as LedSuit, domino.low as LedSuit];
+      return suitsWithTrumpBase(state, domino);
     },
 
     /**
      * HOW: Can this domino follow the led suit?
      *
-     * Base: Domino can follow if it belongs to the led suit
+     * Base: Delegates to rules-base.ts (single source of truth)
      */
     canFollow(state: GameState, led: LedSuit, domino: Domino): boolean {
-      const trumpSuit = getTrumpSuit(state.trump);
-      const isDouble = domino.high === domino.low;
-
-      // Doubles led (suit 7): only doubles can follow
-      if (led === 7) {
-        return isDouble;
-      }
-
-      // Doubles trump: doubles belong only to suit 7, can't follow regular suits
-      if (isDoublesTrump(trumpSuit) && isDouble) {
-        return false;
-      }
-
-      // Regular suit trump: trump dominoes can't follow non-trump suits
-      if (isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit)) {
-        // Can only follow if led suit IS the trump suit
-        return led === trumpSuit;
-      }
-
-      // Check if domino has the led suit
-      return dominoHasSuit(domino, led);
+      return canFollowBase(state, led, domino);
     },
 
     /**
@@ -441,6 +373,15 @@ export const baseLayer: Layer = {
      */
     rankInTrick(_state: GameState, _led: LedSuit, _domino: Domino, prev: number): number {
       return prev;
+    },
+
+    /**
+     * HOW: Is this domino trump?
+     *
+     * Base: Delegates to rules-base.ts (single source of truth)
+     */
+    isTrump(state: GameState, domino: Domino): boolean {
+      return isTrumpBase(state, domino);
     },
 
     /**

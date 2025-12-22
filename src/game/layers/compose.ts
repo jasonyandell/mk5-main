@@ -11,9 +11,20 @@
 import type { GameRules, Layer } from './types';
 import type { GameState, GameAction, Bid, TrumpSelection, Domino, GamePhase, LedSuit } from '../types';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
-import { getLedSuit as getLedSuitCore, getTrumpSuit, dominoHasSuit, isRegularSuitTrump, isDoublesTrump } from '../core/dominoes';
 import { calculateRoundScore as calculateScoreBase } from '../core/scoring';
 import { BID_TYPES } from '../constants';
+import {
+  getLedSuitBase,
+  suitsWithTrumpBase,
+  canFollowBase,
+  rankInTrickBase,
+  isTrumpBase,
+  isValidPlayBase,
+  getValidPlaysBase
+} from './rules-base';
+
+// Re-export suitsWithTrumpBase for AI modules that need it
+export { suitsWithTrumpBase } from './rules-base';
 
 /**
  * Base implementation for getBidComparisonValue
@@ -46,151 +57,6 @@ function isValidTrumpBase(trump: TrumpSelection): boolean {
  */
 function isValidBidBase(_state: GameState, _bid: Bid, _playerHand?: import('../types').Domino[]): boolean {
   return false; // Base rule set will override this
-}
-
-/**
- * Base implementation for suitsWithTrump - gets what suits a domino can be played as
- *
- * Exported for direct use by AI modules that need the base logic without full rule composition.
- */
-export function suitsWithTrumpBase(state: GameState, domino: Domino): LedSuit[] {
-  const trumpSuit = getTrumpSuit(state.trump);
-  const isDouble = domino.high === domino.low;
-
-  // Doubles trump: doubles belong only to suit 7
-  if (isDoublesTrump(trumpSuit)) {
-    if (isDouble) {
-      return [7 as LedSuit];
-    }
-    return [domino.high as LedSuit, domino.low as LedSuit];
-  }
-
-  // Regular suit trump (0-6)
-  if (isRegularSuitTrump(trumpSuit)) {
-    if (dominoHasSuit(domino, trumpSuit)) {
-      return [trumpSuit as LedSuit];
-    }
-    if (isDouble) {
-      return [domino.high as LedSuit];
-    }
-    return [domino.high as LedSuit, domino.low as LedSuit];
-  }
-
-  // No trump: natural suits
-  if (isDouble) {
-    return [domino.high as LedSuit];
-  }
-  return [domino.high as LedSuit, domino.low as LedSuit];
-}
-
-/**
- * Base implementation for canFollow
- */
-function canFollowBase(state: GameState, led: LedSuit, domino: Domino): boolean {
-  const trumpSuit = getTrumpSuit(state.trump);
-  const isDouble = domino.high === domino.low;
-
-  // Doubles led (suit 7): only doubles can follow
-  if (led === 7) {
-    return isDouble;
-  }
-
-  // Doubles trump: doubles belong only to suit 7, can't follow regular suits
-  if (isDoublesTrump(trumpSuit) && isDouble) {
-    return false;
-  }
-
-  // Regular suit trump: trump dominoes can't follow non-trump suits
-  if (isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit)) {
-    return led === trumpSuit;
-  }
-
-  // Check if domino has the led suit
-  return dominoHasSuit(domino, led);
-}
-
-/**
- * Base implementation for rankInTrick
- */
-function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino): number {
-  const trumpSuit = getTrumpSuit(state.trump);
-  const isDouble = domino.high === domino.low;
-  const pipSum = domino.high + domino.low;
-
-  // Check if domino is trump
-  const isTrump = isDoublesTrump(trumpSuit)
-    ? isDouble
-    : isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit);
-
-  if (isTrump) {
-    return isDouble ? 200 + domino.high + 50 : 200 + pipSum;
-  }
-
-  // Check if domino follows suit
-  let followsSuit = false;
-  if (led === 7) {
-    followsSuit = isDouble;
-  } else if (!(isDoublesTrump(trumpSuit) && isDouble)) {
-    followsSuit = dominoHasSuit(domino, led);
-  }
-
-  if (followsSuit) {
-    return isDouble ? 50 + domino.high + 50 : 50 + pipSum;
-  }
-
-  return pipSum;
-}
-
-/**
- * Base implementation for isValidPlay using canFollow
- */
-function isValidPlayBase(
-  state: GameState,
-  domino: Domino,
-  playerId: number
-): boolean {
-  if (state.phase !== 'playing' || state.trump.type === 'not-selected') return false;
-
-  const player = state.players[playerId];
-  if (!player || !player.hand.some(d => d.id === domino.id)) return false;
-
-  // First play of trick is always legal
-  if (state.currentTrick.length === 0) return true;
-
-  const leadSuit = state.currentSuit;
-  if (leadSuit === -1) return true;
-
-  // Check if player must follow suit (has any domino that can follow)
-  const mustFollow = player.hand.some(d => canFollowBase(state, leadSuit as LedSuit, d));
-  if (!mustFollow) return true;
-
-  // Must play a domino that follows suit
-  return canFollowBase(state, leadSuit as LedSuit, domino);
-}
-
-/**
- * Base implementation for getValidPlays using canFollow
- */
-function getValidPlaysBase(
-  state: GameState,
-  playerId: number
-): Domino[] {
-  if (state.phase !== 'playing' || state.trump.type === 'not-selected') return [];
-
-  const player = state.players[playerId];
-  if (!player) return [];
-
-  // First play of trick - all dominoes are valid
-  if (state.currentTrick.length === 0) return [...player.hand];
-
-  const leadSuit = state.currentSuit;
-  if (leadSuit === -1) return [...player.hand];
-
-  // Filter to dominoes that can follow suit
-  const followers = player.hand.filter(d => canFollowBase(state, leadSuit as LedSuit, d));
-
-  // If player has dominoes that can follow, must play one of them
-  return followers.length > 0 ? followers : [...player.hand];
 }
 
 /**
@@ -265,7 +131,7 @@ export function composeRules(layers: Layer[]): GameRules {
     },
 
     getLedSuit: (state, domino) => {
-      let result = getLedSuitCore(domino, state.trump); // Base identity: use core helper (swapped params)
+      let result = getLedSuitBase(state, domino); // Base identity: use rules-base (canonical source)
 
       for (const layer of layers) {
         if (layer.rules?.getLedSuit) {
@@ -306,6 +172,18 @@ export function composeRules(layers: Layer[]): GameRules {
       for (const layer of layers) {
         if (layer.rules?.rankInTrick) {
           result = layer.rules.rankInTrick(state, led, domino, result);
+        }
+      }
+
+      return result;
+    },
+
+    isTrump: (state, domino) => {
+      let result = isTrumpBase(state, domino);
+
+      for (const layer of layers) {
+        if (layer.rules?.isTrump) {
+          result = layer.rules.isTrump(state, domino, result);
         }
       }
 

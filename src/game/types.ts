@@ -97,7 +97,6 @@ export interface Player {
   hand: Domino[];
   teamId: 0 | 1;
   marks: number;
-  suitAnalysis?: SuitAnalysis;
 }
 
 /**
@@ -206,7 +205,6 @@ export type FilteredGameState = Omit<GameState, 'players'> & {
     marks: number;
     hand: Domino[];  // Empty array if observer can't see this hand
     handCount: number;
-    suitAnalysis?: SuitAnalysis;
   }>;
 };
 

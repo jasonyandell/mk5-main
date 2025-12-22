@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
 import { getTrickWinner, getTrickPoints } from '../../game/core/rules';
-import { getLedSuit } from '../../game/core/dominoes';
-import type { TrumpSelection, Play, Domino } from '../../game/types';
+import { getLedSuitBase } from '../../game/layers/rules-base';
+import type { TrumpSelection, Play, Domino, GameState } from '../../game/types';
 import { TRUMP_SELECTIONS } from '../../game/constants';
 import { StateBuilder, DominoBuilder } from '../helpers';
 
@@ -137,61 +137,67 @@ describe('Trick Validation', () => {
 
   describe('getTrickWinner', () => {
     it('should identify winner of basic trick', () => {
+      const state: GameState = { trump } as GameState;
+      // With blanks trump: 2-1 leads with 2s (higher non-trump pip)
+      // Players who don't have 2s can't follow suit
       const trick: Play[] = [
-        { player: 0, domino: createDomino(1, 2) }, // leads with 2s
-        { player: 1, domino: createDomino(1, 4) }, // 4s - can't follow suit
-        { player: 2, domino: createDomino(1, 6) }, // 6s - can't follow suit  
-        { player: 3, domino: createDomino(2, 3) }  // 3s - CAN follow suit with higher value
+        { player: 0, domino: createDomino(2, 1) }, // leads with 2s (2-1)
+        { player: 1, domino: createDomino(4, 1) }, // 4-1 - doesn't have 2s, can't follow
+        { player: 2, domino: createDomino(6, 1) }, // 6-1 - doesn't have 2s, can't follow
+        { player: 3, domino: createDomino(3, 2) }  // 3-2 - has 2s, CAN follow suit with higher value
       ];
-      
+
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getLedSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuitBase(state, firstPlay.domino);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(3); // Player 3 wins by following suit with higher value
     });
 
     it('should handle trump plays correctly', () => {
+      const state: GameState = { trump } as GameState;
       const trick: Play[] = [
-        { player: 0, domino: createDomino(1, 2) },
-        { player: 1, domino: createDomino(0, 4) }, // trump (blank)
-        { player: 2, domino: createDomino(1, 6) },
-        { player: 3, domino: createDomino(2, 3) }
+        { player: 0, domino: createDomino(2, 1) },
+        { player: 1, domino: createDomino(4, 0) }, // trump (blank)
+        { player: 2, domino: createDomino(6, 1) },
+        { player: 3, domino: createDomino(3, 2) }
       ];
-      
+
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getLedSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuitBase(state, firstPlay.domino);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with trump
     });
 
     it('should handle multiple trump plays', () => {
+      const state: GameState = { trump } as GameState;
       const trick: Play[] = [
         { player: 0, domino: createDomino(0, 1) }, // trump
         { player: 1, domino: createDomino(0, 4) }, // trump
         { player: 2, domino: createDomino(0, 6) }, // trump (highest)
         { player: 3, domino: createDomino(2, 3) }
       ];
-      
+
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getLedSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuitBase(state, firstPlay.domino);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(2); // Player 2 with highest trump
     });
 
     it('should handle double blank (highest trump)', () => {
+      const state: GameState = { trump } as GameState;
       const trick: Play[] = [
         { player: 0, domino: createDomino(0, 1) }, // trump
         { player: 1, domino: createDomino(0, 0) }, // double blank (highest trump)
         { player: 2, domino: createDomino(0, 6) }, // trump
         { player: 3, domino: createDomino(2, 3) }
       ];
-      
+
       const firstPlay = trick[0];
       if (!firstPlay) throw new Error('First play in trick is undefined');
-      const leadSuit = getLedSuit(firstPlay.domino, trump);
+      const leadSuit = getLedSuitBase(state, firstPlay.domino);
       const winner = getTrickWinner(trick, trump, leadSuit);
       expect(winner).toBe(1); // Player 1 with double blank
     });

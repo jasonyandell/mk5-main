@@ -26,3 +26,14 @@ export { consensusLayer } from './consensus';
 // Composition
 export { composeRules, composeGetValidActions } from './compose';
 export { LAYER_REGISTRY, getLayerByName, getLayersByNames } from './registry';
+
+// Base rule implementations (canonical source of truth for trump/suit/follow-suit)
+export {
+  getLedSuitBase,
+  suitsWithTrumpBase,
+  canFollowBase,
+  rankInTrickBase,
+  isTrumpBase,
+  isValidPlayBase,
+  getValidPlaysBase
+} from './rules-base';

@@ -52,8 +52,7 @@ function createPendingView(): GameView {
     players: placeholderState.players.map(player => ({
       ...player,
       hand: [...player.hand],
-      handCount: player.hand.length,
-      ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+      handCount: player.hand.length
     }))
   };
 
@@ -64,6 +63,11 @@ function createPendingView(): GameView {
     players,
     metadata: {
       gameId: 'initializing'
+    },
+    derived: {
+      currentTrickWinner: -1,
+      handDominoMeta: [],
+      currentHandPoints: [0, 0] as [number, number]
     }
   };
 }
@@ -105,7 +109,7 @@ class GameStoreImpl {
     this.currentPerspective = derived(this.currentSessionIdStore, (value) => value);
 
     // Derived: viewProjection (UI-ready projection)
-    // Uses transitions from GameView (server-computed)
+    // Uses transitions and derived fields from GameView (server-computed, dumb client pattern)
     this.viewProjection = derived(
       [this.clientView, this.currentSessionIdStore],
       ([$view, $sessionId]) => {
@@ -127,6 +131,8 @@ class GameStoreImpl {
             const pInfo = $view.players.find(p => p.playerId === player);
             return pInfo?.controlType === 'ai';
           },
+          // Pass server-computed derived fields (dumb client pattern)
+          derived: $view.derived,
           ...(playerInfo ? { viewingPlayerIndex: playerInfo.playerId } : {})
         };
 

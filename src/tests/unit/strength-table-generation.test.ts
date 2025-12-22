@@ -3,7 +3,7 @@ import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../g
 import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { analyzeDominoAsSuit } from '../../game/ai/domino-strength';
-import { isTrump } from '../../game/core/dominoes';
+import { isTrumpBase } from '../../game/layers/rules-base';
 import { suitsWithTrumpBase } from '../../game/layers/compose';
 import { StateBuilder } from '../helpers';
 import { SUIT_IDENTIFIERS } from '../../game/game-terms';
@@ -60,9 +60,9 @@ describe('Strength Table Generation Verification', () => {
     for (const domino of dominoes) {
       for (const { trump } of trumpConfigs) {
         state.trump = trump;
-        
+
         const playableSuits = suitsWithTrumpBase(state, domino);
-        const dominoIsTrump = isTrump(domino, trump);
+        const dominoIsTrump = isTrumpBase(state, domino);
         
         // Check playing as trump if applicable
         if (dominoIsTrump) {
@@ -163,27 +163,28 @@ describe('Strength Table Regeneration', () => {
     // This test documents that regenerating the table produces identical output
     // To regenerate: npm run generate:strength-table
     // Git will not detect changes if the hash is identical
-    
+
     // We're NOT automatically regenerating here because:
     // 1. It's slow (takes several seconds)
     // 2. The prebuild/predev scripts already handle it
     // 3. Git correctly ignores unchanged files
-    
+
     // If this test fails, run: npm run generate:strength-table
+    const trump: TrumpSelection = { type: 'no-trump' };
     const runtime = analyzeDominoAsSuit(
       { high: 6, low: 6, id: '6-6' },
       SIXES,
-      { type: 'no-trump' },
-      StateBuilder.inPlayingPhase().withHands([[], [], [], []]).build(),
+      trump,
+      StateBuilder.inPlayingPhase(trump).withHands([[], [], [], []]).build(),
       0
     );
-    
+
     const generated = getDominoStrength(
       { high: 6, low: 6, id: '6-6' },
-      { type: 'no-trump' },
+      trump,
       SIXES
     );
-    
+
     expect(generated).toBeDefined();
     expect(generated!.beatenBy.sort()).toEqual(runtime.beatenBy.map(d => d.id).sort());
     expect(generated!.beats.sort()).toEqual(runtime.beats.map(d => d.id).sort());

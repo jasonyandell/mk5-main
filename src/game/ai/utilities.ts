@@ -6,12 +6,11 @@
  */
 
 import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
-import { NO_LEAD_SUIT, NO_BIDDER } from '../types';
-import { getDominoValue, getTrumpSuit, getDominoPoints, getLedSuit, isTrump } from '../core/dominoes';
-import { TRUMP_NOT_SELECTED } from '../types';
-import { getTrickWinner } from '../core/rules';
+import { NO_LEAD_SUIT, NO_BIDDER, TRUMP_NOT_SELECTED } from '../types';
+import { getTrumpSuit, getDominoPoints } from '../core/dominoes';
 import { composeRules } from '../layers/compose';
 import { baseLayer } from '../layers';
+import type { GameRules } from '../layers/types';
 
 /**
  * Context for AI analysis - just the essentials
@@ -53,43 +52,50 @@ export interface AIAnalysis {
 export function analyzeHand(state: GameState, playerId: number, forceAnalysis: boolean = false): AIAnalysis {
   const player = state.players[playerId];
   if (!player) throw new Error(`Player ${playerId} not found`);
-  
+
   const hand = player.hand;
-  const { trump, tricks, currentTrick, currentSuit } = state;
-  
+  const { tricks, currentTrick, currentSuit } = state;
+
   // Get played dominoes
   const played = getPlayedDominoes(tricks);
-  
-  // Count trump
-  const trumpPlayed = countPlayedTrump(tricks, trump);
-  const trumpInHand = hand.filter(d => isTrump(d, trump)).length;
-  const trumpRemaining = Math.max(0, 7 - trumpPlayed - trumpInHand);
-  
+
   // Determine which dominoes are playable using threaded rules
   const rules = composeRules([baseLayer]);
+
+  // Count trump using rules
+  const trumpPlayed = countPlayedTrump(tricks, state, rules);
+  const trumpInHand = hand.filter(d => rules.isTrump(state, d)).length;
+  const trumpRemaining = Math.max(0, 7 - trumpPlayed - trumpInHand);
+
   const playableDominoes = rules.getValidPlays(state, playerId);
   const playableIds = new Set(playableDominoes.map(d => d.id.toString()));
-  
+
   // Create set of dominoes in our hand (these can't beat each other in actual play)
   const handDominoIds = new Set(hand.map(d => d.id.toString()));
-  
+
   // Analyze each domino
   const dominoes = hand.map(domino => {
     // If forceAnalysis is true, analyze even if not currently playable
     const shouldAnalyze = forceAnalysis || playableIds.has(domino.id.toString());
-    const beatenBy = shouldAnalyze 
-      ? getDominoesCanBeat(domino, trump, played, currentSuit, currentTrick, handDominoIds)
+    const beatenBy = shouldAnalyze
+      ? getDominoesCanBeat(domino, state, rules, played, currentSuit, currentTrick, handDominoIds)
       : undefined;
     const beats = shouldAnalyze
-      ? getDominoesBeaten(domino, trump, played, currentSuit, currentTrick, handDominoIds)
+      ? getDominoesBeaten(domino, state, rules, played, currentSuit, currentTrick, handDominoIds)
       : undefined;
-    
+
+    // Use rules.rankInTrick for value calculation
+    const ledSuit = currentTrick.length === 0
+      ? rules.getLedSuit(state, domino)
+      : (currentSuit ?? NO_LEAD_SUIT);
+    const value = ledSuit >= 0 ? rules.rankInTrick(state, ledSuit as import('../types').LedSuit, domino) : 0;
+
     return {
       domino,
-      value: getDominoValue(domino, trump),
+      value,
       points: getDominoPoints(domino),
-      isTrump: isTrump(domino, trump),
-      wouldBeatTrick: wouldBeatCurrentTrick(domino, currentTrick, trump, currentSuit),
+      isTrump: rules.isTrump(state, domino),
+      wouldBeatTrick: wouldBeatCurrentTrick(domino, state, rules, currentTrick, currentSuit),
       beatenBy,
       beats
     };
@@ -134,14 +140,14 @@ function getPlayedDominoes(tricks: Trick[]): Set<string> {
   return played;
 }
 
-function countPlayedTrump(tricks: Trick[], trump: TrumpSelection): number {
-  const trumpSuit = getTrumpSuit(trump);
+function countPlayedTrump(tricks: Trick[], state: GameState, rules: GameRules): number {
+  const trumpSuit = getTrumpSuit(state.trump);
   if (trumpSuit === TRUMP_NOT_SELECTED) return 0;
 
   let count = 0;
   for (const trick of tricks) {
     for (const play of trick.plays) {
-      if (isTrump(play.domino, trump)) {
+      if (rules.isTrump(state, play.domino)) {
         count++;
       }
     }
@@ -154,27 +160,34 @@ function countPlayedTrump(tricks: Trick[], trump: TrumpSelection): number {
 
 function wouldBeatCurrentTrick(
   domino: Domino,
+  state: GameState,
+  rules: GameRules,
   currentTrick: Play[],
-  trump: TrumpSelection,
   currentSuit?: LedSuitOrNone
 ): boolean {
   // If leading a trick, any domino we play is provisionally "winning" until others respond
   if (currentTrick.length === 0) return true;
 
-  // Use the led suit from state (passed in) when following
-  const leadSuit = currentSuit ?? NO_LEAD_SUIT;
-
-  // Simulate adding our play as a synthetic player and ask the rules engine
+  // Simulate adding our play as a synthetic player
   const simulated = [...currentTrick, { player: 999, domino }];
-  const winner = getTrickWinner(simulated, trump, leadSuit);
+
+  // Create a temporary state with the simulated trick for rules calculation
+  const tempState: GameState = {
+    ...state,
+    currentTrick: simulated,
+    currentSuit: currentSuit ?? state.currentSuit
+  };
+
+  const winner = rules.calculateTrickWinner(tempState, simulated);
   return winner === 999;
 }
 
 /**
  * Gets all unplayed dominoes that can beat this domino in the current context
- * 
+ *
  * @param domino The domino to check
- * @param trump Trump selection
+ * @param state Game state for rules context
+ * @param rules Composed game rules
  * @param played Set of played domino IDs
  * @param currentSuit The suit being followed (if any)
  * @param currentTrick Current trick plays
@@ -183,7 +196,8 @@ function wouldBeatCurrentTrick(
  */
 function getDominoesCanBeat(
   domino: Domino,
-  trump: TrumpSelection,
+  state: GameState,
+  rules: GameRules,
   played: Set<string>,
   currentSuit: LedSuitOrNone | undefined,
   currentTrick: Play[],
@@ -191,55 +205,63 @@ function getDominoesCanBeat(
 ): Domino[] {
   // Simulate adding our domino to the current trick
   const simulatedTrick = [...currentTrick, { player: 0, domino }];
-  
+
   // Determine the effective suit for this play
   let effectiveSuit: LedSuitOrNone;
   if (currentTrick.length === 0) {
     // We're leading - the suit is determined by our domino
-    effectiveSuit = getLedSuit(domino, trump);
+    effectiveSuit = rules.getLedSuit(state, domino);
   } else {
     // We're following - use the led suit
     effectiveSuit = currentSuit ?? NO_LEAD_SUIT;
   }
-  
+
   const result: Domino[] = [];
-  
+
   // Check all possible dominoes
   for (let high = 6; high >= 0; high--) {
     for (let low = high; low >= 0; low--) {
       const testId = `${high}-${low}`;
-      
+
       // Skip if already played
       if (played.has(testId)) continue;
-      
+
       // Skip our own domino
       if (testId === domino.id.toString()) continue;
-      
+
       // Skip dominoes in our hand (they can't beat each other in actual play)
       if (handDominoIds.has(testId)) continue;
-      
+
       // Create test domino and simulate it being played
       const testDomino: Domino = { high, low, id: testId };
       const testTrick = [...simulatedTrick, { player: 1, domino: testDomino }];
-      
-      // Use getTrickWinner to determine if the test domino would win
-      const winner = getTrickWinner(testTrick, trump, effectiveSuit);
-      
+
+      // Create a temporary state for rules calculation
+      const tempState: GameState = {
+        ...state,
+        currentTrick: testTrick,
+        currentSuit: effectiveSuit
+      };
+
+      // Use rules.calculateTrickWinner to determine if the test domino would win
+      const winner = rules.calculateTrickWinner(tempState, testTrick);
+
       // If the test domino (player 1) wins over our domino (player 0), add it to results
       if (winner === 1) {
         result.push(testDomino);
       }
     }
   }
-  
+
   return result;
 }
 
 /**
  * Gets all unplayed dominoes that this domino can beat in the current context
- * 
+ *
  * @param domino The domino to check
- * @param trump Trump selection
+ * @param state Game state for rules context
+ * @param rules Composed game rules
  * @param played Set of played domino IDs
  * @param currentSuit The suit being followed (if any)
  * @param currentTrick Current trick plays
@@ -248,7 +270,8 @@ function getDominoesCanBeat(
  */
 function getDominoesBeaten(
   domino: Domino,
-  trump: TrumpSelection,
+  state: GameState,
+  rules: GameRules,
   played: Set<string>,
   currentSuit: LedSuitOrNone | undefined,
   currentTrick: Play[],
@@ -256,7 +279,7 @@ function getDominoesBeaten(
 ): Domino[] {
   // Determine the effective suit for this play
   const effectiveSuit = currentTrick.length === 0
-    ? getLedSuit(domino, trump)
+    ? rules.getLedSuit(state, domino)
     : (currentSuit ?? -1);
 
   const result: Domino[] = [];
@@ -282,8 +305,15 @@ function getDominoesBeaten(
         { player: 1, domino: testDomino }
       ];
 
+      // Create a temporary state for rules calculation
+      const tempState: GameState = {
+        ...state,
+        currentTrick: testTrick,
+        currentSuit: effectiveSuit
+      };
+
       // Use rules engine to decide if we beat them
-      const winner = getTrickWinner(testTrick, trump, effectiveSuit);
+      const winner = rules.calculateTrickWinner(tempState, testTrick);
       if (winner === 0) {
         result.push(testDomino);
       }

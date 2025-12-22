@@ -246,8 +246,7 @@ export function getVisibleStateForSession(
         teamId: player.teamId,
         marks: player.marks,
         hand: player.hand,
-        handCount: player.hand.length,
-        ...(player.suitAnalysis ? { suitAnalysis: player.suitAnalysis } : {})
+        handCount: player.hand.length
       };
     }
 

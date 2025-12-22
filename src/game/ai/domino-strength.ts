@@ -7,10 +7,12 @@
 
 import type { Domino, TrumpSelection, GameState, Play, LedSuit, LedSuitOrNone } from '../types';
 import { PLAYED_AS_TRUMP } from '../types';
-import { getTrickWinner } from '../core/rules';
-import { getTrumpSuit, isTrump, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
+import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit, getNonSuitPip } from '../core/dominoes';
 import { getPlayedDominoesFromTricks } from '../core/domino-tracking';
-import { suitsWithTrumpBase } from '../layers/compose';
+import { composeRules, suitsWithTrumpBase } from '../layers/compose';
+import { baseLayer } from '../layers';
+import { isTrumpBase } from '../layers/rules-base';
+import type { GameRules } from '../layers/types';
 
 /**
  * Analysis of a domino's strength when played as a specific suit
@@ -66,9 +68,9 @@ function getUnplayedDominoes(state: GameState, playerId: number): Domino[] {
  * - dominoBelongsToSuit(4-0, 0, trump) = FALSE (it's trump, can't follow 0s)
  * - canPlayIntoSuit(4-0, 0, trump) = TRUE (can trump in on 0s)
  */
-function canPlayIntoSuit(domino: Domino, suit: LedSuit, trump: TrumpSelection): boolean {
+function canPlayIntoSuit(domino: Domino, suit: LedSuit, state: GameState, rules: GameRules): boolean {
   // Trump dominoes can always respond (they trump in)
-  if (isTrump(domino, trump)) {
+  if (rules.isTrump(state, domino)) {
     return true;
   }
 
@@ -82,40 +84,48 @@ function canPlayIntoSuit(domino: Domino, suit: LedSuit, trump: TrumpSelection): 
 export function analyzeDominoAsSuit(
   domino: Domino,
   playedAsSuit: LedSuitOrNone,  // PLAYED_AS_TRUMP means played as trump
-  trump: TrumpSelection,
+  _trump: TrumpSelection,  // Kept for API compatibility, but rules use state.trump
   state: GameState,
   playerId: number
 ): DominoStrength {
+  const rules = composeRules([baseLayer]);
   const unplayed = [domino, ...getUnplayedDominoes(state, playerId)]; // Unplayed dominoes + this domino
   const beatenBy: Domino[] = [];
   const beats: Domino[] = [];
   const cannotFollow: Domino[] = [];
-  
+
   // Determine the effective suit for this analysis
   // If playedAsSuit is PLAYED_AS_TRUMP, the domino is trump and leads naturally
   const effectiveSuit = playedAsSuit;
-  
+
   // Check each unplayed domino
   for (const opponent of unplayed) {
     // First check if opponent can play into the suit (includes trumping in)
     const canFollow = playedAsSuit === PLAYED_AS_TRUMP
       ? true  // If we're playing as trump, consider all responses
-      : canPlayIntoSuit(opponent, playedAsSuit as LedSuit, trump);
-    
+      : canPlayIntoSuit(opponent, playedAsSuit as LedSuit, state, rules);
+
     if (!canFollow) {
       // Opponent cannot follow suit - we win by default
       cannotFollow.push(opponent);
       continue;
     }
-    
+
     // Opponent can follow - determine who wins in fair competition
     const trick: Play[] = [
       { player: 0, domino },
       { player: 1, domino: opponent }
     ];
-    
-    const winner = getTrickWinner(trick, trump, effectiveSuit);
-    
+
+    // Create a temporary state for rules calculation
+    const tempState: GameState = {
+      ...state,
+      currentTrick: trick,
+      currentSuit: effectiveSuit
+    };
+
+    const winner = rules.calculateTrickWinner(tempState, trick);
+
     if (winner === 1) {
       // Opponent can follow AND beats us
       beatenBy.push(opponent);
@@ -124,26 +134,26 @@ export function analyzeDominoAsSuit(
       beats.push(opponent);
     }
   }
-  
+
   // Sort beats and beatenBy to show trumps first
   const sortWithTrumpsFirst = (a: Domino, b: Domino) => {
-    const aIsTrump = isTrump(a, trump);
-    const bIsTrump = isTrump(b, trump);
+    const aIsTrump = rules.isTrump(state, a);
+    const bIsTrump = rules.isTrump(state, b);
     if (aIsTrump && !bIsTrump) return -1;
     if (!aIsTrump && bIsTrump) return 1;
     // Within trumps or non-trumps, sort by value (higher first)
     if (a.high !== b.high) return b.high - a.high;
     return b.low - a.low;
   };
-  
+
   beats.sort(sortWithTrumpsFirst);
   beatenBy.sort(sortWithTrumpsFirst);
   cannotFollow.sort(sortWithTrumpsFirst);
-  
+
   return {
     domino,
     playedAsSuit: playedAsSuit,  // PLAYED_AS_TRUMP indicates trump context
-    isTrump: isTrump(domino, trump),
+    isTrump: rules.isTrump(state, domino),
     beatenBy,
     beats,
     cannotFollow
@@ -159,9 +169,10 @@ export function analyzeDomino(
   state: GameState,
   playerId: number
 ): DominoStrength[] {
+  const rules = composeRules([baseLayer]);
   const results: DominoStrength[] = [];
-  
-  if (isTrump(domino, trump)) {
+
+  if (rules.isTrump(state, domino)) {
     // Trump domino - analyze as trump only
     results.push(analyzeDominoAsSuit(domino, PLAYED_AS_TRUMP, trump, state, playerId));
   } else {
@@ -171,24 +182,29 @@ export function analyzeDomino(
       results.push(analyzeDominoAsSuit(domino, suit, trump, state, playerId));
     }
   }
-  
+
   return results;
 }
 
 /**
  * Orient a domino for display based on context
- * 
+ *
  * Rules:
  * 1. Trump dominoes always show trump side first
  * 2. Non-trump dominoes show context suit first
  * 3. Doubles and same-suit default to high-low
+ *
+ * NOTE: This function uses a minimal state for trump checking since it's display-only.
  */
 export function orientDomino(
   domino: Domino,
   context: { suit: number | null, trump: TrumpSelection }
 ): string {
+  // Create a minimal state for isTrumpBase
+  const minimalState = { trump: context.trump } as GameState;
+
   // Rule 1: Trump dominoes always show trump side first
-  if (isTrump(domino, context.trump)) {
+  if (isTrumpBase(minimalState, domino)) {
     const trumpSuit = getTrumpSuit(context.trump);
     if (isRegularSuitTrump(trumpSuit)) {
       // Suit trump - show trump suit first
@@ -201,7 +217,7 @@ export function orientDomino(
     // Doubles trump or default
     return `${domino.high}-${domino.low}`;
   }
-  
+
   // Rule 2: Non-trump dominoes show context suit first (if specified)
   if (context.suit !== null && context.suit >= 0) {
     const nonSuitPip = getNonSuitPip(domino, context.suit);
@@ -210,7 +226,7 @@ export function orientDomino(
       return `${context.suit}-${nonSuitPip}`;
     }
   }
-  
+
   // Rule 3: Default to high-low
   return `${domino.high}-${domino.low}`;
 }

@@ -9,9 +9,10 @@
 
 import type { GameState, Player } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
-import { calculateTrickWinner } from '../core/scoring';
 import { analyzeHand } from './utilities';
 import { determineBestTrump } from './hand-strength';
+import { composeRules } from '../layers/compose';
+import { baseLayer } from '../layers';
 
 /**
  * Interface for rollout strategies used in Monte Carlo simulations.
@@ -159,7 +160,8 @@ export class HeuristicRolloutStrategy implements RolloutStrategy {
 
     // Following in a trick
     const myTeam = player.teamId;
-    const currentWinnerPlayerId = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit);
+    const rules = composeRules([baseLayer]);
+    const currentWinnerPlayerId = rules.calculateTrickWinner(state, state.currentTrick);
 
     if (currentWinnerPlayerId === -1) {
       const fallback = playActions[0];

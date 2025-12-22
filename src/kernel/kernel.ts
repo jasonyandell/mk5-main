@@ -4,7 +4,8 @@
  * These functions take state as input and return new state as output.
  */
 
-import type { GameState, GameAction } from '../game/types';
+import type { GameState, GameAction, Domino, LedSuit, Trick, FilteredGameState } from '../game/types';
+import { DOUBLES_AS_TRUMP } from '../game/types';
 import type {
   GameView,
   ValidAction,
@@ -13,7 +14,9 @@ import type {
   MultiplayerGameState,
   PlayerSession,
   Capability,
-  Result
+  Result,
+  DerivedViewFields,
+  HandDominoMeta
 } from '../multiplayer/types';
 import { ok, err } from '../multiplayer/types';
 import { authorizeAndExecute } from '../multiplayer/authorization';
@@ -22,6 +25,7 @@ import { updatePlayerSession } from '../multiplayer/stateLifecycle';
 import { cloneGameState, getNextStates } from '../game/core/state';
 import type { ExecutionContext } from '../game/types/execution';
 import { actionToId } from '../game/core/actions';
+import { getSuitName } from '../game/game-terms';
 
 /**
  * Execute a game action with pure state transition.
@@ -89,6 +93,10 @@ export function processAutoExecuteActions(
 /**
  * Build a game view with capability-based filtering (pure).
  * Throws if forPlayerId doesn't correspond to a valid session.
+ *
+ * This is the authoritative view projection - all derived fields are computed
+ * here using ExecutionContext.rules. Clients consume these derived fields
+ * without doing local rule evaluation (dumb client pattern).
  */
 export function buildKernelView(
   state: MultiplayerGameState,
@@ -128,6 +136,9 @@ export function buildKernelView(
     capabilities: playerSession.capabilities.map((cap: Capability) => ({ ...cap }))
   }));
 
+  // Compute derived fields using ExecutionContext.rules (server-owned projection)
+  const derived = computeDerivedFields(coreState, visibleState, session.playerIndex, ctx);
+
   return {
     state: visibleState,
     validActions,
@@ -136,7 +147,8 @@ export function buildKernelView(
     metadata: {
       gameId: metadata.gameId,
       ...(metadata.layers?.length ? { layers: metadata.layers } : {})
-    }
+    },
+    derived
   };
 }
 
@@ -344,4 +356,132 @@ export function cloneActionsMap(actions: Record<string, ValidAction[]>): Record<
     });
   }
   return clone;
+}
+
+// ============================================================================
+// Server-owned projection: Derived field computation
+// ============================================================================
+
+/**
+ * Compute derived fields for the view using ExecutionContext.rules.
+ * This implements the "dumb client" pattern - all rule-based computations
+ * happen here on the server; clients just consume the serialized results.
+ */
+function computeDerivedFields(
+  coreState: GameState,
+  visibleState: FilteredGameState,
+  playerIndex: number,
+  ctx: ExecutionContext
+): DerivedViewFields {
+  const rules = ctx.rules;
+
+  // Compute current trick winner using rules (only if trick is complete)
+  const currentTrickWinner = coreState.currentTrick.length === 4
+    ? rules.calculateTrickWinner(coreState, coreState.currentTrick)
+    : -1;
+
+  // Compute hand domino metadata for the viewing player
+  const playerHand = visibleState.players[playerIndex]?.hand ?? [];
+  const validPlays = rules.getValidPlays(coreState, playerIndex);
+  const validPlayIds = new Set(validPlays.map((d: Domino) => `${d.high}-${d.low}`));
+
+  const handDominoMeta: HandDominoMeta[] = playerHand.map((domino: Domino) => {
+    const dominoId = `${domino.high}-${domino.low}`;
+    const isPlayable = validPlayIds.has(dominoId) || validPlayIds.has(`${domino.low}-${domino.high}`);
+    const isTrump = rules.isTrump(coreState, domino);
+
+    // Check if domino can follow the current led suit
+    const ledSuit = coreState.currentSuit as LedSuit;
+    const canFollow = ledSuit >= 0 ? rules.canFollow(coreState, ledSuit, domino) : false;
+
+    // Generate tooltip hint based on game state
+    const tooltipHint = computeTooltipHint(
+      domino,
+      coreState,
+      isPlayable,
+      isTrump,
+      canFollow,
+      ledSuit
+    );
+
+    return {
+      dominoId,
+      isPlayable,
+      isTrump,
+      canFollow,
+      tooltipHint
+    };
+  });
+
+  // Compute current hand points from completed tricks
+  const currentHandPoints = calculateTeamPointsFromTricks(coreState.tricks);
+
+  return {
+    currentTrickWinner,
+    handDominoMeta,
+    currentHandPoints
+  };
+}
+
+/**
+ * Compute tooltip hint for a domino (pure).
+ * Uses pre-computed isTrump and canFollow values from rules.
+ */
+function computeTooltipHint(
+  domino: Domino,
+  state: GameState,
+  isPlayable: boolean,
+  isTrump: boolean,
+  canFollow: boolean,
+  ledSuit: LedSuit
+): string {
+  // Not in playing phase - just return the domino ID
+  if (state.phase !== 'playing') {
+    return '';
+  }
+
+  // No trick in progress - can lead anything playable
+  if (state.currentTrick.length === 0) {
+    return isPlayable ? 'Click to lead' : '';
+  }
+
+  // Trick in progress - explain why this domino can/cannot be played
+  if (ledSuit < 0) {
+    return isPlayable ? 'Click to play' : '';
+  }
+
+  const ledSuitName = getSuitName(ledSuit as LedSuit, { lowercase: true });
+
+  if (isPlayable) {
+    // Check why this is playable
+    if (ledSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
+      return `Double, follows ${ledSuitName}`;
+    } else if (canFollow) {
+      return `Follows ${ledSuitName}`;
+    } else if (isTrump) {
+      return 'Trump';
+    } else {
+      return `Can't follow ${ledSuitName}`;
+    }
+  } else {
+    // Explain why not playable
+    if (ledSuit === DOUBLES_AS_TRUMP) {
+      return `Must follow ${ledSuitName}`;
+    } else {
+      return `Must follow ${ledSuitName}`;
+    }
+  }
+}
+
+/**
+ * Calculate team points from completed tricks (pure).
+ */
+function calculateTeamPointsFromTricks(tricks: Trick[]): [number, number] {
+  const team0Points = tricks
+    .filter(t => t.winner !== undefined && t.winner % 2 === 0)
+    .reduce((sum, t) => sum + (t.points || 0), 0);
+  const team1Points = tricks
+    .filter(t => t.winner !== undefined && t.winner % 2 === 1)
+    .reduce((sum, t) => sum + (t.points || 0), 0);
+  return [team0Points, team1Points];
 }

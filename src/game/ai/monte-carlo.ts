@@ -17,7 +17,6 @@ import { sampleOpponentHands, sampleBiddingHands, createSeededRng } from './hand
 import { getExpectedHandSizes } from './constraint-tracker';
 import { executeAction } from '../core/actions';
 import type { ExecutionContext } from '../types/execution';
-import { analyzeSuits } from '../core/suit-analysis';
 import { createDominoes } from '../core/dominoes';
 import { determineBestTrump } from './hand-strength';
 import { getRolloutStrategy } from './rollout-strategy';
@@ -210,12 +209,9 @@ function createPlayReadyState(
       hand = sampledHands.get(index) ?? player.hand;
     }
 
-    const suitAnalysis = analyzeSuits(hand, trump);
-
     return {
       ...player,
-      hand,
-      suitAnalysis
+      hand
     };
   });
 
@@ -363,13 +359,9 @@ function injectSampledHands(
       return player;
     }
 
-    // Recompute suit analysis for the new hand
-    const suitAnalysis = analyzeSuits(sampledHand, state.trump);
-
     return {
       ...player,
-      hand: sampledHand,
-      suitAnalysis
+      hand: sampledHand
     };
   });
 
