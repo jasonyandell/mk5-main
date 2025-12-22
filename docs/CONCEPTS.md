@@ -198,11 +198,11 @@
 ## 2. Composition Systems
 
 ### GameRules (Interface)
-**Definition**: Interface of 14 pure methods that determine HOW the game executes.
+**Definition**: Interface of 18 pure methods that determine HOW the game executes.
 
 **Location**: `src/game/layers/types.ts`
 
-**The 14 Methods** (organized by category):
+**The 18 Methods** (organized by category):
 
 **WHO (3 methods)** - Player determination:
 - `getTrumpSelector(state, winningBid): number` - Which player selects trump
@@ -213,8 +213,12 @@
 - `isTrickComplete(state): boolean` - Is current trick done (3 or 4 plays)
 - `checkHandOutcome(state): HandOutcome` - Early termination - returns `{ determined: false }` to continue or `{ determined: true, reason }` when determined
 
-**HOW (2 methods)** - Game mechanics:
+**HOW (6 methods)** - Game mechanics:
 - `getLedSuit(state, domino): LedSuit` - What suit is led (for follow-suit validation)
+- `suitsWithTrump(state, domino): LedSuit[]` - What suits does this domino belong to given trump
+- `canFollow(state, led, domino): boolean` - Can this domino follow the led suit
+- `rankInTrick(state, led, domino): number` - Domino's rank for trick-taking
+- `isTrump(state, domino): boolean` - Is this domino trump
 - `calculateTrickWinner(state, trick): number` - Who won the trick
 
 **VALIDATION (3 methods)** - Legality:
@@ -238,7 +242,7 @@
 
 ### Extending GameRules
 
-**The 14 methods are not fixed** - this is the current count, not a hard limit.
+**The 18 methods are not fixed** - this is the current count, not a hard limit.
 
 **When to add new methods**:
 
@@ -398,7 +402,7 @@ export function composeRules(layers: Layer[]): GameRules {
     // For each rule method
     getTrumpSelector: (state, bid) =>
       layer.rules?.getTrumpSelector?.(state, bid, prev) ?? prev.getTrumpSelector(state, bid),
-    // ... repeat for all 14 methods
+    // ... repeat for all 18 methods
   }), baseRules);
 }
 ```
@@ -1722,7 +1726,8 @@ colorOverrides: Record<string, string>  // CSS variables
 - rules.ts: Rule validation
 
 ### src/game/layers/
-- types.ts: GameRules (14 methods), Layer, HandOutcome
+- types.ts: GameRules (18 methods), Layer, HandOutcome
+- rules-base.ts: Single source of truth for base rule logic
 - compose.ts: Layer composition via reduce
 - base.ts: Base Layer (standard Texas 42)
 - nello.ts, splash.ts, plunge.ts, sevens.ts: Special contracts

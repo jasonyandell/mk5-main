@@ -89,15 +89,15 @@ LAYERS (execution rules + action generation) = Game Configuration
 **Surface 1: Execution Rules**
 Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
-**Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 14 methods)
-- WHO: getTrumpSelector, getFirstLeader, getNextPlayer
-- WHEN: isTrickComplete, checkHandOutcome
-- HOW: getLedSuit, calculateTrickWinner
-- VALIDATION: isValidPlay, getValidPlays, isValidBid
-- SCORING: getBidComparisonValue, isValidTrump, calculateScore
-- LIFECYCLE: getPhaseAfterHandComplete
+**Mechanism**: Override specific methods in the extensible `GameRules` interface (currently 18 methods)
+- WHO (3): getTrumpSelector, getFirstLeader, getNextPlayer
+- WHEN (2): isTrickComplete, checkHandOutcome
+- HOW (6): getLedSuit, suitsWithTrump, canFollow, rankInTrick, isTrump, calculateTrickWinner
+- VALIDATION (3): isValidPlay, getValidPlays, isValidBid
+- SCORING (3): getBidComparisonValue, isValidTrump, calculateScore
+- LIFECYCLE (1): getPhaseAfterHandComplete
 
-**Extensibility**: The 14 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
+**Extensibility**: The 18 methods represent the current execution decision points. This number grows when new modes need new execution semantics. Adding methods is the RIGHT way to extend—it maintains parametric polymorphism and avoids conditional logic in executors.
 
 **When to add methods**: When an executor needs mode-specific behavior and you're tempted to write `if (state.mode)`, add a GameRules method instead. Base provides default, Layers override.
 
@@ -260,6 +260,7 @@ Each piece of information has one authoritative location. Everything else derive
 - Room stores unfiltered state (clients get filtered copies)
 - Action history is source of truth (state is computed)
 - ExecutionContext created once (used everywhere)
+- `rules-base.ts` is single source of truth for base trump/suit/follow-suit semantics
 
 ### Trust Through Verification
 Server validates everything, clients trust completely. Clear security boundary enables simple client code and guaranteed consistency.

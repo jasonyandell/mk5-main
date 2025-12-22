@@ -96,6 +96,20 @@ Given state and action, always produces same new state. No hidden state or side 
 ### A Trust Hierarchy
 Server validates, clients display. Clear security boundary: server is authoritative, clients are delegating.
 
+### Dumb Client Pattern
+The client is intentionally "dumb" - it receives pre-computed data and displays it without computing game logic.
+
+**Server-owned projection**: `buildKernelView()` computes derived fields (suit analysis, valid plays, UI hints) on the server side. The client receives a complete view ready for display.
+
+**No rule logic on client**: The client never imports from `src/game/core/` or implements rule logic. All trump/suit/follow-suit decisions happen server-side via `GameRules`.
+
+**DerivedViewFields**: Fields computed from state + rules that the client needs for display:
+- Which dominoes are valid plays
+- Suit analysis for the current player
+- Trump indicators and hints
+
+This pattern ensures consistency and prevents the client from diverging from server rules.
+
 ---
 
 ## Unified Layer System
@@ -112,10 +126,10 @@ LAYERS (execution rules + action generation) = Game Configuration
 
 **Purpose**: Define HOW the game executes (who acts, when tricks complete, how winners determined)
 
-**Interface**: `GameRules` - 14 pure methods grouped into:
+**Interface**: `GameRules` - 18 pure methods grouped into:
 - **WHO** (3): getTrumpSelector, getFirstLeader, getNextPlayer
 - **WHEN** (2): isTrickComplete, checkHandOutcome
-- **HOW** (2): getLedSuit, calculateTrickWinner
+- **HOW** (6): getLedSuit, suitsWithTrump, canFollow, rankInTrick, isTrump, calculateTrickWinner
 - **VALIDATION** (3): isValidPlay, getValidPlays, isValidBid
 - **SCORING** (3): getBidComparisonValue, isValidTrump, calculateScore
 - **LIFECYCLE** (1): getPhaseAfterHandComplete
@@ -131,7 +145,7 @@ const rules = composeRules([baseLayer, nelloLayer, splashLayer]);
 
 ### When to Add New Rules Methods
 
-The GameRules interface currently has 14 methods, but **this number is not fixed**. Add new rules methods when you need:
+The GameRules interface currently has 18 methods, but **this number is not fixed**. Add new rules methods when you need:
 
 **New terminal states**: Mode needs hand to end for new reasons
 - Example: `checkHandOutcome` was added to support nello/plunge early termination
@@ -309,7 +323,8 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/game/types.ts` - Core types (GameState, GameAction, etc)
 
 **Layer System** (unified execution + actions):
-- `src/game/layers/types.ts` - GameRules interface (14 methods), Layer
+- `src/game/layers/types.ts` - GameRules interface (18 methods), Layer
+- `src/game/layers/rules-base.ts` - Single source of truth for base rule logic (Crystal Palace)
 - `src/game/layers/compose.ts` - composeRules() - reduce pattern
 - `src/game/layers/base.ts` - Standard Texas 42
 - `src/game/layers/{nello,splash,plunge,sevens,tournament,oneHand,hints,speed,consensus}.ts` - Layer implementations
@@ -337,6 +352,11 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 - `src/tests/helpers/stateBuilder.ts` - Fluent StateBuilder for test states
 - `src/tests/helpers/dealConstraints.ts` - Generate hands with specific constraints
 - `src/tests/helpers/executionContext.ts` - createTestContext() for unit tests
+
+**Guardrail Tests** (architectural enforcement):
+- `src/tests/guardrails/no-bypass.test.ts` - Prevent imports bypassing GameRules
+- `src/tests/guardrails/projection-security.test.ts` - Verify no hidden state leaks
+- `src/tests/guardrails/rule-contracts.test.ts` - Base + special contract rule conformance
 
 ---
 
@@ -371,7 +391,7 @@ const state = StateBuilder
 |-----------|---------|-------------|
 | **GameState** | Immutable game position | Never mutated, only transformed |
 | **GameAction** | State transition unit | Source of truth via event sourcing |
-| **GameRules** | 13 execution methods | Injected, never inspected |
+| **GameRules** | 18 execution methods | Injected, never inspected |
 | **Layer** | Unified execution + actions | Compose via reduce pattern |
 | **Capability** | Permission token | Replace identity with permissions |
 | **ExecutionContext** | Composed configuration | Bundles layers + rules + actions |
@@ -381,34 +401,41 @@ const state = StateBuilder
 
 ## Key Abstractions
 
-### GameRules (13 Methods)
+### GameRules (18 Methods)
 
-Interface executors call to determine behavior. RuleSets override specific methods:
+Interface executors call to determine behavior. Layers override specific methods:
 
 ```typescript
 interface GameRules {
-  // WHO: Player determination
+  // WHO: Player determination (3)
   getTrumpSelector(state, winningBid): number
   getFirstLeader(state, trumpSelector, trump): number
   getNextPlayer(state, currentPlayer): number
 
-  // WHEN: Timing and completion
+  // WHEN: Timing and completion (2)
   isTrickComplete(state): boolean
   checkHandOutcome(state): HandOutcome
 
-  // HOW: Game mechanics
+  // HOW: Game mechanics (6)
   getLedSuit(state, domino): LedSuit
+  suitsWithTrump(state, domino): LedSuit[]
+  canFollow(state, led, domino): boolean
+  rankInTrick(state, led, domino): number
+  isTrump(state, domino): boolean
   calculateTrickWinner(state, trick): number
 
-  // VALIDATION: Legality
+  // VALIDATION: Legality (3)
   isValidPlay(state, domino, playerId): boolean
   getValidPlays(state, playerId): Domino[]
   isValidBid(state, bid, playerHand?): boolean
 
-  // SCORING: Outcomes
+  // SCORING: Outcomes (3)
   getBidComparisonValue(bid): number
   isValidTrump(trump): boolean
   calculateScore(state): [number, number]
+
+  // LIFECYCLE: Game flow (1)
+  getPhaseAfterHandComplete(state): GamePhase
 }
 ```
 
@@ -702,58 +729,9 @@ Located in `src/game/ai/`:
 | Strategy | Description | Use Case |
 |----------|-------------|----------|
 | **RandomAIStrategy** | Picks random valid action | Testing, baselines |
-| **BeginnerAIStrategy** | Monte Carlo simulation | Default playable AI |
-| **MCCFRStrategy** | Trained regret minimization | Optimal play (playing phase) |
+| **MonteCarloStrategy** | Monte Carlo simulation with rollouts | Default playable AI |
 
-### MCCFR (Monte Carlo CFR)
-
-The `src/game/ai/cfr/` module implements External Sampling MCCFR for optimal trick-taking:
-
-**Core Components**:
-- `regret-table.ts` - Stores cumulative regrets and strategy sums per information set
-- `mccfr-trainer.ts` - Training loop with external sampling
-- `mccfr-strategy.ts` - AIStrategy implementation using trained regrets
-- `action-abstraction.ts` - Maps game actions to abstract keys
-
-**Training Scripts**:
-```bash
-# Single-process training with checkpoints
-npx tsx scripts/train-mccfr.ts -i 100000 --progress -o strategy.json.gz
-
-# Resume from checkpoint after crash
-npx tsx scripts/train-mccfr.ts -i 100000 --resume strategy.checkpoint.json.gz -o strategy.json.gz
-
-# Multi-process parallel training (recommended for large runs)
-npx tsx scripts/train-mccfr-parallel.ts --workers 8 --iterations 100000 -o strategy.json.gz
-
-# Merge results from partitioned/distributed training
-npx tsx scripts/merge-strategies.ts --inputs part1.json.gz part2.json.gz -o combined.json.gz
-```
-
-**Training Options**:
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-i, --iterations` | Number of training iterations | 10000 |
-| `-s, --seed` | Random seed for reproducibility | 42 |
-| `-o, --output` | Output file (.json.gz recommended) | trained-strategy.json.gz |
-| `-c, --checkpoint-interval` | Save checkpoint every N iterations | 1000 |
-| `--resume` | Resume from checkpoint file | - |
-| `--no-checkpoint` | Disable checkpoints | false |
-| `-p, --progress` | Show progress updates | false |
-
-**Scalability Features**:
-- **Gzip compression**: ~40x size reduction (100K iterations → ~1MB)
-- **Periodic checkpoints**: Automatic saves prevent losing progress
-- **Resume support**: Continue training from any checkpoint
-- **Partitioned training**: Run on multiple machines with different seed ranges, merge results
-
-**Information Set Abstraction**:
-Uses count-centric abstraction (`computeCountCentricHash()` in `cfr-metrics.ts`) achieving 32.5x compression:
-- Which count dominoes (5-0, 5-5, 6-4, 3-2, 4-1) are in hand
-- Points captured by each team
-- Trump control, game progress, position
-
-**Scope**: Currently trains on playing phase only. Bidding/trump use heuristics. See issue mk5-tailwind-i2s for future work.
+The AI system uses Monte Carlo simulation with configurable rollout strategies. See `src/game/ai/monte-carlo.ts` for implementation details.
 
 ---
 
@@ -761,7 +739,6 @@ Uses count-centric abstraction (`computeCountCentricHash()` in `cfr-metrics.ts`)
 
 - **Online Mode**: Cloudflare Workers/Durable Objects (design ready, not implemented)
 - **Spectator Mode**: Watch games with commentary (design ready, not implemented)
-- **MCCFR Bidding/Trump**: Training for bidding and trump selection phases (tracked in mk5-tailwind-i2s)
 
 Current mode: Local in-process (browser main thread, createLocalGame wiring)
 
