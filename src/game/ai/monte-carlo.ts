@@ -8,7 +8,7 @@
  * Partnership dynamics emerge naturally from the simulation.
  */
 
-import type { GameState, GameAction, Domino, TrumpSelection } from '../types';
+import type { GameState, Domino, TrumpSelection } from '../types';
 import { NO_LEAD_SUIT } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import type { HandConstraints } from './constraint-tracker';
@@ -19,7 +19,7 @@ import { executeAction } from '../core/actions';
 import type { ExecutionContext } from '../types/execution';
 import { createDominoes } from '../core/dominoes';
 import { determineBestTrump } from './hand-strength';
-import { getRolloutStrategy } from './rollout-strategy';
+import { minimaxEvaluate, createTerminalState } from './minimax';
 
 /**
  * Configuration for Monte Carlo evaluation
@@ -375,90 +375,25 @@ function injectSampledHands(
 }
 
 /**
- * Rollout from current state to hand completion using beginner AI.
+ * Evaluate hand to completion using minimax.
  *
- * Simulates all players making moves until either:
- * - Hand is complete (all tricks played or early termination)
- * - Max iterations reached (safety limit)
+ * Replaces heuristic rollout with game-theoretic optimal search.
+ * This ensures the AI finds "fighting lines" even when losing,
+ * rather than giving up and dumping count.
+ *
+ * @param initialState State with all hands visible (sampled)
+ * @param ctx Execution context with composed rules
+ * @returns Terminal state representing hand completion
  */
 function rolloutToHandEnd(
   initialState: GameState,
-  ctx: ExecutionContext,
-  maxIterations: number = 200
+  ctx: ExecutionContext
 ): GameState {
-  let state = initialState;
-  let iterations = 0;
+  // Use minimax to find optimal outcome
+  const result = minimaxEvaluate(initialState, ctx);
 
-  while (iterations < maxIterations) {
-    // Check if hand is complete
-    if (isHandComplete(state)) {
-      break;
-    }
-
-    // Get valid actions
-    const actions = ctx.getValidActions(state);
-
-    if (actions.length === 0) {
-      // No actions available - hand should be complete
-      break;
-    }
-
-    // Check for auto-execute actions first
-    const autoAction = actions.find(a => a.autoExecute === true);
-    if (autoAction) {
-      state = executeAction(state, autoAction, ctx.rules);
-      iterations++;
-      continue;
-    }
-
-    // Convert to ValidAction format for AI selector
-    const validActions = actions.map(action => actionToValidAction(action, state));
-
-    // Use beginner AI DIRECTLY to select action
-    // IMPORTANT: Do NOT use selectAIAction as it would use the default strategy,
-    // which might be intermediate, causing infinite recursion
-    const currentPlayer = state.currentPlayer;
-
-    // Filter to current player's actions
-    const myActions = validActions.filter(va => {
-      if (!('player' in va.action)) return true;
-      return va.action.player === currentPlayer;
-    });
-
-    if (myActions.length === 0) {
-      break;
-    }
-
-    const selected = getRolloutStrategy().chooseAction(state, myActions);
-
-    if (!selected) {
-      // AI couldn't select - shouldn't happen with valid actions
-      // Take first action as fallback
-      const fallback = validActions[0];
-      if (fallback) {
-        state = executeAction(state, fallback.action, ctx.rules);
-      }
-      break;
-    }
-
-    state = executeAction(state, selected.action, ctx.rules);
-    iterations++;
-  }
-
-  return state;
-}
-
-/**
- * Check if the current hand is complete.
- *
- * We only check for 'scoring' phase because:
- * 1. All game modes reach 'scoring' before transitioning elsewhere
- * 2. The rollout loop checks this BEFORE executing actions, so we stop
- *    at 'scoring' before any consensus/post-scoring transitions happen
- * 3. This avoids leaking layer-specific phase knowledge (like 'one-hand-complete')
- */
-function isHandComplete(state: GameState): boolean {
-  return state.phase === 'scoring';
+  // Return terminal state with computed scores
+  return createTerminalState(initialState, result);
 }
 
 /**
@@ -488,62 +423,6 @@ function getBidTargetForTeam(state: GameState, teamIndex: number): number {
 
   // For marks bids and special contracts, need all 42
   return 42;
-}
-
-/**
- * Convert a GameAction to ValidAction format.
- */
-function actionToValidAction(action: GameAction, state: GameState): ValidAction {
-  return {
-    action,
-    label: getActionLabel(action, state),
-    group: getActionGroup(action)
-  };
-}
-
-/**
- * Generate a label for an action (simplified version).
- */
-function getActionLabel(action: GameAction, state: GameState): string {
-  switch (action.type) {
-    case 'play': {
-      const player = state.players[action.player];
-      const domino = player?.hand.find(d => String(d.id) === action.dominoId);
-      if (domino) {
-        return `${domino.high}-${domino.low}`;
-      }
-      return action.dominoId;
-    }
-    case 'bid':
-      return `Bid ${action.value}`;
-    case 'pass':
-      return 'Pass';
-    case 'select-trump':
-      return `Trump: ${action.trump.type}`;
-    case 'complete-trick':
-      return 'Complete Trick';
-    case 'score-hand':
-      return 'Score Hand';
-    default:
-      return action.type;
-  }
-}
-
-/**
- * Get action group for UI organization.
- */
-function getActionGroup(action: GameAction): string {
-  switch (action.type) {
-    case 'play':
-      return 'plays';
-    case 'bid':
-    case 'pass':
-      return 'bids';
-    case 'select-trump':
-      return 'trump';
-    default:
-      return 'other';
-  }
 }
 
 /**
