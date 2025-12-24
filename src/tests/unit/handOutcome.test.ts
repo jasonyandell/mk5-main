@@ -68,6 +68,8 @@ describe('Hand Outcome Detection', () => {
     });
 
     it('should detect when bidding team cannot possibly make their bid', () => {
+      // "Cannot make" is mathematically equivalent to "defending team set":
+      // maxPossible = 42 - defendingScore, so maxPossible < bidValue ⟺ defendingScore > 42 - bidValue
       const state = createTestState({
         currentBid: { type: 'points', value: 40, player: 0 },
         teamScores: [15, 27],
@@ -104,11 +106,11 @@ describe('Hand Outcome Detection', () => {
           ], 1, 0)
         ]
       });
-      
+
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
       if (outcome.isDetermined) {
-        expect(outcome.reason).toContain('Bidding team cannot reach 40');
+        expect(outcome.reason).toBe('Defending team set the 40 bid');
         expect(outcome.decidedAtTrick).toBe(6);
       }
     });
