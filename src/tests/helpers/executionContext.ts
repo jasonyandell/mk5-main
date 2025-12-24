@@ -95,3 +95,38 @@ export function createAITestContext(config?: Partial<GameConfig>): ExecutionCont
     ...config
   });
 }
+
+/**
+ * Create ExecutionContext for game simulations (minimax, PIMC, rollouts).
+ *
+ * Uses AI playerTypes so the consensus layer passes through - this means
+ * `complete-trick` and `score-hand` are directly available after plays,
+ * without needing `agree-trick`/`agree-score` acknowledgments.
+ *
+ * ## When to Use
+ * - Minimax evaluation
+ * - Monte Carlo simulations
+ * - Any code that executes game actions in a loop without human interaction
+ *
+ * ## Why This Exists
+ * The consensus layer blocks `complete-trick` until all human players acknowledge
+ * via `agree-trick`. For AI simulation, we don't want this blocking - we want
+ * tricks to complete immediately so scores update correctly.
+ *
+ * @example
+ * ```ts
+ * // Minimax evaluation
+ * const ctx = createSimulationContext();
+ * const state = StateBuilder.inPlayingPhase(trump)
+ *   .withConfig({ playerTypes: ['ai', 'ai', 'ai', 'ai'] })
+ *   .build();
+ * const result = minimaxEvaluate(state, ctx);
+ * ```
+ */
+export function createSimulationContext(config?: Partial<GameConfig>): ExecutionContext {
+  return createExecutionContext({
+    playerTypes: ['ai', 'ai', 'ai', 'ai'],
+    layers: ['base', 'speed'],  // No consensus layer for simulation
+    ...config
+  });
+}

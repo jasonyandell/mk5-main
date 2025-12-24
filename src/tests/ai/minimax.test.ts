@@ -2,20 +2,30 @@
  * Tests for the Minimax Evaluator
  *
  * Verifies that minimax correctly finds optimal play in various scenarios.
+ *
+ * ## Simulation Context
+ * These tests use `createSimulationContext()` which:
+ * - Sets playerTypes to all AI (consensus layer passes through)
+ * - Uses layers ['base', 'speed'] (no consensus blocking)
+ *
+ * This ensures `complete-trick` executes immediately after 4 plays,
+ * allowing scores to update correctly during minimax search.
  */
 
 import { describe, it, expect } from 'vitest';
 import { minimaxEvaluate, createTerminalState } from '../../game/ai/minimax';
-import { createTestContext } from '../helpers/executionContext';
+import { createSimulationContext } from '../helpers/executionContext';
 import { StateBuilder } from '../helpers/stateBuilder';
 import { ACES, SIXES } from '../../game/types';
 
 describe('minimaxEvaluate', () => {
+  // Shared context for all tests - simulation mode (AI players, no consensus blocking)
+  const ctx = createSimulationContext();
+
   describe('trivial endgames', () => {
     it('correctly evaluates single trick remaining with clear winner', () => {
       // Set up: 1 trick remaining, player 0 to lead
       // Player 0 has 6-6 (trump), others have non-trump
-      const ctx = createTestContext({ layers: ['speed'] });
 
       const state = StateBuilder
         .inPlayingPhase({ type: 'suit', suit: ACES })
@@ -44,8 +54,6 @@ describe('minimaxEvaluate', () => {
     });
 
     it('correctly handles already complete hands', () => {
-      const ctx = createTestContext({ layers: ['speed'] });
-
       const state = StateBuilder
         .inScoringPhase([25, 17])
         .build();
@@ -60,8 +68,6 @@ describe('minimaxEvaluate', () => {
 
   describe('alpha-beta pruning', () => {
     it('explores fewer nodes with pruning enabled', () => {
-      const ctx = createTestContext({ layers: ['speed'] });
-
       // Set up a position with branching that can be pruned
       const state = StateBuilder
         .inPlayingPhase({ type: 'suit', suit: SIXES })
@@ -92,8 +98,6 @@ describe('minimaxEvaluate', () => {
 
   describe('partnership play', () => {
     it('team 0 (players 0,2) maximizes while team 1 minimizes', () => {
-      const ctx = createTestContext({ layers: ['speed'] });
-
       // Set up a simple 1-trick endgame where team matters
       // Player 0 leads with ace trump, should win the trick
       const state = StateBuilder
@@ -126,8 +130,6 @@ describe('minimaxEvaluate', () => {
 
   describe('move ordering', () => {
     it('heuristic ordering produces same result as no ordering', () => {
-      const ctx = createTestContext({ layers: ['speed'] });
-
       const state = StateBuilder
         .inPlayingPhase({ type: 'suit', suit: ACES })
         .withPlayerHand(0, ['6-6', '5-5'])
@@ -175,8 +177,6 @@ describe('minimaxEvaluate', () => {
 
   describe('special contracts', () => {
     it('handles doubles-trump correctly', () => {
-      const ctx = createTestContext({ layers: ['speed'] });
-
       // With doubles trump, all doubles are trump
       const state = StateBuilder
         .inPlayingPhase({ type: 'doubles' })

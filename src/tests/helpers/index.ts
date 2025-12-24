@@ -27,4 +27,4 @@ export {
 } from './consensusHelpers';
 
 // Execution context for tests
-export { createTestContext } from './executionContext';
+export { createTestContext, createSimulationContext } from './executionContext';
