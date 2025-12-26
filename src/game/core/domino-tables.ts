@@ -195,14 +195,31 @@ export const SUIT_MASK: readonly (readonly number[])[] = (() => {
 /**
  * RANK[d][powerId] -> number (higher wins)
  *
- * Determines the rank of a domino for trick-winning comparison.
- * - Power dominoes get +50 bonus (trump tier)
- * - Double of power pip gets +100 (highest trump)
- * - Non-power doubles get +20 bonus (highest in their suit)
- * - Base rank is pip sum
+ * Determines the POWER-BASED rank of a domino. This table encodes only
+ * trump status, NOT the full three-tier ranking used in trick resolution.
  *
- * The +20 double bonus ensures doubles beat non-doubles in the same suit
- * (e.g., 3-3 beats 6-3 when following threes).
+ * Rankings:
+ * - 100: Highest trump (double of power pip, e.g., 5-5 when 5s trump)
+ * - 50+: Trump/power dominoes (50 + pip sum)
+ * - 20+: Non-trump doubles (pip sum + 20, highest in their suit)
+ * - 0-12: Non-trump non-doubles (just pip sum)
+ *
+ * ## Why This Table Doesn't Encode "Follows Suit"
+ *
+ * The full ranking has THREE tiers: trump (200+) > follows suit (50+) > slough (0-12)
+ *
+ * But "follows suit" depends on WHAT WAS LED - context not known until the
+ * trick is played. The same domino has different ranks depending on what's led:
+ *
+ *   // 3s are trump, consider 6-2:
+ *   // Sixes led → 6-2 follows → Tier 2 (50+)
+ *   // Blanks led → 6-2 can't follow → Tier 3 (just 8)
+ *
+ * This table answers: "Given this trump config, what's this domino's power rank?"
+ * The `rankInTrickBase` function in rules-base.ts adds the led-suit-dependent
+ * tier at call time using `canFollowFromTable`.
+ *
+ * See ORIENTATION.md "The Algebraic Model: Tables vs Dynamic Computation"
  *
  * 28 × 9 = 252 entries
  */
