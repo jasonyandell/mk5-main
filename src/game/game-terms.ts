@@ -12,7 +12,7 @@
  */
 
 import type { TrumpSelection, LedSuit, RegularSuit, LedSuitOrNone } from './types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from './types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED, PLAYED_AS_TRUMP } from './types';
 
 // ============================================================================
 // Suit Display Names
@@ -30,7 +30,7 @@ export const SUIT_NAMES: Record<LedSuit, string> = {
   [FOURS]: 'Fours',
   [FIVES]: 'Fives',
   [SIXES]: 'Sixes',
-  [DOUBLES_AS_TRUMP]: 'Doubles'
+  [CALLED]: 'Doubles'
 } as const;
 
 /**
@@ -44,7 +44,7 @@ export const SUIT_NAMES_NUMERIC: Record<LedSuit, string> = {
   [FOURS]: 'Fours',
   [FIVES]: 'Fives',
   [SIXES]: 'Sixes',
-  [DOUBLES_AS_TRUMP]: 'Doubles'
+  [CALLED]: 'Doubles'
 } as const;
 
 /**
@@ -345,7 +345,7 @@ export const LED_SUIT_NAMES: Record<LedSuitOrNone, string> = {
   [FOURS]: 'led-fours',
   [FIVES]: 'led-fives',
   [SIXES]: 'led-sixes',
-  [DOUBLES_AS_TRUMP]: 'led-doubles'
+  [CALLED]: 'led-called'
 } as const;
 
 /**
@@ -438,7 +438,7 @@ export function parseTrumpString(trumpStr: string): TrumpSelection {
  * @example
  * getLedSuitName(0) // "led-blanks"
  * getLedSuitName(-1) // "played-as-trump"
- * getLedSuitName(7) // "led-doubles"
+ * getLedSuitName(7) // "led-called"
  */
 export function getLedSuitName(suit: LedSuitOrNone): string {
   return LED_SUIT_NAMES[suit] ?? `led-suit-${suit}`;

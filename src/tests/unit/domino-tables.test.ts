@@ -13,12 +13,10 @@ import {
   EFFECTIVE_SUIT,
   SUIT_MASK,
   RANK,
-  HAS_POWER,
   DOMINO_PIPS,
-  ABSORBED_SUIT,
+  CALLED_SUIT,
   canFollowFromTable,
   isTrumpFromTable,
-  getLedSuitFromTable,
 } from '../../game/core/domino-tables';
 import {
   getLedSuitBase,
@@ -26,8 +24,8 @@ import {
   isTrumpBase,
   rankInTrickBase,
 } from '../../game/layers/rules-base';
-import type { Domino, GameState, TrumpSelection, LedSuit } from '../../game/types';
-import { DOUBLES_AS_TRUMP } from '../../game/types';
+import type { Domino, GameState, TrumpSelection, LedSuit, RegularSuit } from '../../game/types';
+import { CALLED } from '../../game/types';
 
 // Helper to create a minimal domino
 function dom(high: number, low: number): Domino {
@@ -54,7 +52,7 @@ function stateWithTrump(trump: TrumpSelection): GameState {
     shuffleSeed: 0,
     playerTypes: ['human', 'human', 'human', 'human'],
     actionHistory: [],
-    initialConfig: {} as any,
+    initialConfig: {} as GameState['initialConfig'],
     theme: 'business',
     colorOverrides: {},
   };
@@ -80,7 +78,7 @@ describe('domino-tables', () => {
       for (let hi = 0; hi <= 6; hi++) {
         for (let lo = 0; lo <= hi; lo++) {
           const id = dominoToId(dom(hi, lo));
-          const [pipLo, pipHi] = DOMINO_PIPS[id];
+          const [pipLo, pipHi] = DOMINO_PIPS[id]!;
           expect(pipLo).toBe(lo);
           expect(pipHi).toBe(hi);
         }
@@ -91,7 +89,7 @@ describe('domino-tables', () => {
   describe('getAbsorptionId / getPowerId', () => {
     test('suit trump: absorption = power = suit', () => {
       for (let suit = 0; suit <= 6; suit++) {
-        const trump: TrumpSelection = { type: 'suit', suit: suit as any };
+        const trump: TrumpSelection = { type: 'suit', suit: suit as RegularSuit };
         expect(getAbsorptionId(trump)).toBe(suit);
         expect(getPowerId(trump)).toBe(suit);
       }
@@ -136,7 +134,7 @@ describe('domino-tables', () => {
           const id = dominoToId(domino);
 
           const expected = getLedSuitBase(state, domino);
-          const actual = EFFECTIVE_SUIT[id][absorptionId];
+          const actual = EFFECTIVE_SUIT[id]![absorptionId]!;
 
           expect(actual).toBe(expected);
         }
@@ -151,7 +149,7 @@ describe('domino-tables', () => {
       { type: 'no-trump' },
     ];
 
-    const ledSuits: LedSuit[] = [0, 1, 2, 3, 4, 5, 6, DOUBLES_AS_TRUMP];
+    const ledSuits: LedSuit[] = [0, 1, 2, 3, 4, 5, 6, CALLED];
 
     test.each(trumpConfigs)('trump config: %o', (trump) => {
       const state = stateWithTrump(trump);
@@ -208,7 +206,7 @@ describe('domino-tables', () => {
       { type: 'no-trump' },
     ];
 
-    const ledSuits: LedSuit[] = [0, 3, 5, 6, DOUBLES_AS_TRUMP];
+    const ledSuits: LedSuit[] = [0, 3, 5, 6, CALLED];
 
     test.each(trumpConfigs)('trump config: %o', (trump) => {
       const state = stateWithTrump(trump);
@@ -237,13 +235,13 @@ describe('domino-tables', () => {
         // For each pair, verify relative ordering matches
         for (let i = 0; i < participants.length; i++) {
           for (let j = i + 1; j < participants.length; j++) {
-            const a = participants[i];
-            const b = participants[j];
+            const a = participants[i]!;
+            const b = participants[j]!;
 
             const rankBaseA = rankInTrickBase(state, led, a.domino);
             const rankBaseB = rankInTrickBase(state, led, b.domino);
-            const rankTableA = RANK[a.id][powerId];
-            const rankTableB = RANK[b.id][powerId];
+            const rankTableA = RANK[a.id]![powerId]!;
+            const rankTableB = RANK[b.id]![powerId]!;
 
             // Compare relative ordering
             const baseOrder = Math.sign(rankBaseA - rankBaseB);
@@ -263,7 +261,7 @@ describe('domino-tables', () => {
       const doubleOfTrump = dominoToId(dom(5, 5));
       const highestNonDouble = dominoToId(dom(6, 5)); // 6-5 is trump
 
-      expect(RANK[doubleOfTrump][powerId]).toBeGreaterThan(RANK[highestNonDouble][powerId]);
+      expect(RANK[doubleOfTrump]![powerId]!).toBeGreaterThan(RANK[highestNonDouble]![powerId]!);
     });
 
     test('doubles beat non-doubles in same suit (following)', () => {
@@ -272,7 +270,7 @@ describe('domino-tables', () => {
       const double = dominoToId(dom(3, 3));
       const nonDouble = dominoToId(dom(6, 3));
 
-      expect(RANK[double][powerId]).toBeGreaterThan(RANK[nonDouble][powerId]);
+      expect(RANK[double]![powerId]!).toBeGreaterThan(RANK[nonDouble]![powerId]!);
     });
 
     test('trump beats non-trump even when following suit', () => {
@@ -281,7 +279,7 @@ describe('domino-tables', () => {
       const trump = dominoToId(dom(5, 0));
       const follower = dominoToId(dom(6, 6));
 
-      expect(RANK[trump][powerId]).toBeGreaterThan(RANK[follower][powerId]);
+      expect(RANK[trump]![powerId]!).toBeGreaterThan(RANK[follower]![powerId]!);
     });
 
     test('absorbed dominoes cannot follow non-absorbed suits', () => {
@@ -290,7 +288,7 @@ describe('domino-tables', () => {
       const absorbed = dominoToId(dom(6, 5));
 
       expect(canFollowFromTable(absorbed, absorptionId, 6)).toBe(false);
-      expect(canFollowFromTable(absorbed, absorptionId, ABSORBED_SUIT)).toBe(true);
+      expect(canFollowFromTable(absorbed, absorptionId, CALLED_SUIT)).toBe(true);
     });
 
     test('SUIT_MASK correctly filters absorbed vs non-absorbed', () => {
@@ -299,7 +297,7 @@ describe('domino-tables', () => {
       const dominoId65 = dominoToId(dom(6, 5));
       const dominoId64 = dominoToId(dom(6, 4));
 
-      const suitMask6 = SUIT_MASK[absorptionId][6];
+      const suitMask6 = SUIT_MASK[absorptionId]![6]!;
       expect(suitMask6 & (1 << dominoId65)).toBe(0); // 6-5 not in sixes
       expect(suitMask6 & (1 << dominoId64)).not.toBe(0); // 6-4 in sixes
     });

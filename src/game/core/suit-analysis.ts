@@ -1,5 +1,5 @@
 import type { Domino, TrumpSelection, SuitCount, SuitRanking, SuitAnalysis } from '../types';
-import { DOUBLES_AS_TRUMP } from '../types';
+import { CALLED } from '../types';
 import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from './dominoes';
 
 // Types are defined in types.ts - re-export for module consumers
@@ -71,7 +71,7 @@ export function calculateSuitRanking(hand: Domino[], trump: TrumpSelection = { t
 
   // Get trump suit for checking
   const trumpSuit = getTrumpSuit(trump);
-  const isDoublesTrump = trumpSuit === DOUBLES_AS_TRUMP;
+  const isDoublesTrump = trumpSuit === CALLED;
 
   // Add doubles to their natural suit rankings
   doubles.forEach(domino => {

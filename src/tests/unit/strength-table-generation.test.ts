@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
-import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP } from '../../game/types';
+import { SIXES, CALLED, PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
 import { analyzeDominoAsSuit } from '../../game/ai/domino-strength';
 import { isTrumpBase } from '../../game/layers/rules-base';
@@ -143,7 +143,7 @@ describe('Strength Table Generation Verification', () => {
     
     // Test doubles as trump when playing as doubles suit
     const doubleDomino = { high: 3, low: 3, id: '3-3' };
-    const doublesResult = getDominoStrength(doubleDomino, { type: 'doubles' }, DOUBLES_AS_TRUMP);
+    const doublesResult = getDominoStrength(doubleDomino, { type: 'doubles' }, CALLED);
     expect(doublesResult).toBeDefined();
     expect(doublesResult!.cannotFollow).not.toContain('2-2'); // Other doubles can follow
     expect(doublesResult!.cannotFollow).toContain('3-2'); // Non-doubles cannot follow

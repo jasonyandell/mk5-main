@@ -9,7 +9,7 @@ import {
 import { getLedSuitBase, rankInTrickBase } from '../../game/layers/rules-base';
 import { GameTestHelper } from '../helpers/gameTestHelper';
 import type { GameState } from '../../game/types';
-import { ACES, DEUCES, TRES, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { ACES, DEUCES, TRES, FIVES, SIXES, CALLED } from '../../game/types';
 
 describe('Domino System', () => {
   describe('createDominoes', () => {
@@ -92,7 +92,7 @@ describe('Domino System', () => {
       const state2: GameState = { trump: { type: 'suit', suit: FIVES } } as GameState;
 
       expect(getLedSuitBase(state1, double)).toBe(FIVES); // Natural suit (not absorbed - 2s are trump)
-      expect(getLedSuitBase(state2, double)).toBe(DOUBLES_AS_TRUMP); // Absorbed (5-5 contains trump pip 5)
+      expect(getLedSuitBase(state2, double)).toBe(CALLED); // Absorbed (5-5 contains trump pip 5)
     });
 
     it('should return suit 7 for absorbed dominoes (dominoes with trump pip)', () => {
@@ -100,9 +100,9 @@ describe('Domino System', () => {
       const state1: GameState = { trump: { type: 'suit', suit: TRES } } as GameState;
       const state2: GameState = { trump: { type: 'suit', suit: SIXES } } as GameState;
 
-      // Absorbed dominoes lead suit 7 (DOUBLES_AS_TRUMP), not the trump pip value
-      expect(getLedSuitBase(state1, domino)).toBe(DOUBLES_AS_TRUMP); // Contains 3 (trump) -> absorbed
-      expect(getLedSuitBase(state2, domino)).toBe(DOUBLES_AS_TRUMP); // Contains 6 (trump) -> absorbed
+      // Absorbed dominoes lead suit 7 (CALLED), not the trump pip value
+      expect(getLedSuitBase(state1, domino)).toBe(CALLED); // Contains 3 (trump) -> absorbed
+      expect(getLedSuitBase(state2, domino)).toBe(CALLED); // Contains 6 (trump) -> absorbed
     });
 
     it('should return high value for non-trump dominoes', () => {

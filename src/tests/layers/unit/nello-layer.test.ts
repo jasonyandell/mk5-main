@@ -20,7 +20,7 @@ import { nelloLayer } from '../../../game/layers/nello';
 import { composeRules } from '../../../game/layers/compose';
 import { StateBuilder } from '../../helpers';
 import { BID_TYPES } from '../../../game/constants';
-import { BLANKS, DOUBLES_AS_TRUMP } from '../../../game/types';
+import { BLANKS, CALLED } from '../../../game/types';
 
 describe('Nello Layer Overrides', () => {
   const rules = composeRules([baseLayer, nelloLayer]);
@@ -141,7 +141,7 @@ describe('Nello Layer Overrides', () => {
 
       // All doubles become suit 7
       for (let i = 0; i <= 6; i++) {
-        expect(rules.getLedSuit(state, { id: `${i}-${i}`, high: i, low: i })).toBe(DOUBLES_AS_TRUMP);
+        expect(rules.getLedSuit(state, { id: `${i}-${i}`, high: i, low: i })).toBe(CALLED);
       }
 
       // Non-doubles use higher pip

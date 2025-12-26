@@ -4,7 +4,7 @@ import { createInitialState } from '../../game/core/state';
 import type { TrumpSelection, LedSuitOrNone } from '../../game/types';
 import {
   BLANKS, FOURS, FIVES, SIXES,
-  DOUBLES_AS_TRUMP, NO_LEAD_SUIT
+  CALLED, NO_LEAD_SUIT
 } from '../../game/types';
 
 describe('Current Suit Display', () => {
@@ -31,14 +31,14 @@ describe('Current Suit Display', () => {
     test('6-6 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
+      state.currentSuit = CALLED; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('3-3 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
+      state.currentSuit = CALLED; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 

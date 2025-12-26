@@ -4,7 +4,7 @@ import type {
   RegularSuit,
   TrumpSuitOrNone
 } from '../types';
-import { DOUBLES_AS_TRUMP, NO_TRUMP, TRUMP_NOT_SELECTED } from '../types';
+import { CALLED, NO_TRUMP, TRUMP_NOT_SELECTED } from '../types';
 import { DOMINO_VALUES } from '../constants';
 import { createSeededRandom } from './random';
 
@@ -65,7 +65,7 @@ export function getTrumpSuit(trump: TrumpSelection): TrumpSuitOrNone {
   switch (trump.type) {
     case 'not-selected': return TRUMP_NOT_SELECTED;
     case 'suit': return trump.suit!;
-    case 'doubles': return DOUBLES_AS_TRUMP;
+    case 'doubles': return CALLED;
     case 'no-trump': return NO_TRUMP;
     case 'nello': return TRUMP_NOT_SELECTED; // Nello has no trump
     case 'sevens': return TRUMP_NOT_SELECTED; // Sevens has no trump hierarchy
@@ -95,7 +95,7 @@ export function isRegularSuitTrump(trumpSuit: TrumpSuitOrNone): trumpSuit is Reg
  * Checks if trump is the special "doubles as trump" value (7)
  */
 export function isDoublesTrump(trumpSuit: TrumpSuitOrNone): boolean {
-  return trumpSuit === DOUBLES_AS_TRUMP;
+  return trumpSuit === CALLED;
 }
 
 /**

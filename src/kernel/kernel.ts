@@ -5,7 +5,7 @@
  */
 
 import type { GameState, GameAction, Domino, LedSuit, Trick, FilteredGameState } from '../game/types';
-import { DOUBLES_AS_TRUMP } from '../game/types';
+import { CALLED } from '../game/types';
 import type {
   GameView,
   ValidAction,
@@ -454,7 +454,7 @@ function computeTooltipHint(
 
   if (isPlayable) {
     // Check why this is playable
-    if (ledSuit === DOUBLES_AS_TRUMP && domino.high === domino.low) {
+    if (ledSuit === CALLED && domino.high === domino.low) {
       return `Double, follows ${ledSuitName}`;
     } else if (canFollow) {
       return `Follows ${ledSuitName}`;
@@ -465,7 +465,7 @@ function computeTooltipHint(
     }
   } else {
     // Explain why not playable
-    if (ledSuit === DOUBLES_AS_TRUMP) {
+    if (ledSuit === CALLED) {
       return `Must follow ${ledSuitName}`;
     } else {
       return `Must follow ${ledSuitName}`;

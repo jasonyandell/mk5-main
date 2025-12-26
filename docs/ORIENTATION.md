@@ -314,6 +314,53 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 
 ---
 
+## The Suit System: 7 Natural Suits + 1 Called Suit
+
+Texas 42 uses an 8-suit system for game logic:
+
+### The 7 Natural Suits (0-6)
+
+Each pip value defines a suit. A domino's natural suit is its high pip:
+- **0 (Blanks)**: 0-0
+- **1 (Aces)**: 1-0, 1-1
+- **2 (Deuces)**: 2-0, 2-1, 2-2
+- **...and so on through...**
+- **6 (Sixes)**: 6-0, 6-1, 6-2, 6-3, 6-4, 6-5, 6-6
+
+### The Called Suit (Suit 7)
+
+Suit 7 is the 8th suit - its membership is determined by what you **call** (declare as trump):
+
+| Declaration | What goes to suit 7 |
+|-------------|---------------------|
+| "5s are trump" | All dominoes containing 5 (5-0, 5-1, 5-2, 5-3, 5-4, 5-5, 6-5) |
+| "Doubles are trump" | All 7 doubles (0-0, 1-1, 2-2, 3-3, 4-4, 5-5, 6-6) |
+| "Nello" | All 7 doubles (but no power to beat other suits) |
+| "No-trump" | Nothing (empty) |
+
+### Why "Called"?
+
+The name comes from the game vocabulary: "I called 5s" or "I called doubles." When you declare trump, you **call** certain dominoes into suit 7. This terminology:
+
+- **Works for pip-trump**: "I called 5s" → all 5s are in the called suit
+- **Works for doubles-trump**: "I called doubles" → doubles are in the called suit
+- **Works for nello**: Doubles are called together (just without power)
+- **Is grounded in game language**: Players naturally say "I called trump"
+
+### Code References
+
+```typescript
+// src/game/types.ts
+export const CALLED = 7 as const;  // The 8th suit
+
+// Usage in strength table keys:
+"5-0|trump-blanks|led-called"  // Reading: "5-0 when blanks are trump and the called suit was led"
+```
+
+The constant `CALLED` (value 7) is used throughout the codebase. When you see suit 7 or `CALLED`, it refers to the absorbed/called suit whose membership depends on the trump declaration.
+
+---
+
 ## File Map
 
 **Core Engine** (pure utilities):

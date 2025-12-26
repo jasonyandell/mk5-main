@@ -12,7 +12,6 @@
  */
 
 import type { Domino, TrumpSelection, LedSuit } from '../types';
-import { DOUBLES_AS_TRUMP } from '../types';
 
 // ============= TYPE DEFINITIONS =============
 
@@ -43,8 +42,8 @@ export type SuitId = number;
 
 // ============= CONSTANTS =============
 
-/** The absorbed suit index (trump suit, or doubles when doubles are trump) */
-export const ABSORBED_SUIT = 7;
+/** The called suit index (suit 7) - where absorbed dominoes go */
+export const CALLED_SUIT = 7;
 
 /** Pip values for each domino index [low, high] */
 export const DOMINO_PIPS: readonly [Pip, Pip][] = (() => {
@@ -116,31 +115,32 @@ export function getPowerId(trump: TrumpSelection): PowerId {
  *
  * 28 × 9 = 252 entries
  */
-export const EFFECTIVE_SUIT: readonly number[][] = (() => {
+export const EFFECTIVE_SUIT: readonly (readonly number[])[] = (() => {
   const result: number[][] = [];
 
   for (let d = 0; d < 28; d++) {
-    result[d] = [];
-    const [lo, hi] = DOMINO_PIPS[d];
+    const row: number[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
 
     // Pip absorptions (0-6)
     for (let pip = 0; pip <= 6; pip++) {
       if (lo === pip || hi === pip) {
-        result[d][pip] = ABSORBED_SUIT;
+        row[pip] = CALLED_SUIT;
       } else {
-        result[d][pip] = hi;
+        row[pip] = hi;
       }
     }
 
     // Doubles absorption (7)
     if (lo === hi) {
-      result[d][7] = ABSORBED_SUIT;
+      row[7] = CALLED_SUIT;
     } else {
-      result[d][7] = hi;
+      row[7] = hi;
     }
 
     // No absorption (8)
-    result[d][8] = hi;
+    row[8] = hi;
+    result[d] = row;
   }
 
   return result;
@@ -155,20 +155,20 @@ export const EFFECTIVE_SUIT: readonly number[][] = (() => {
  *
  * 9 × 8 = 72 entries (each entry is a 28-bit mask)
  */
-export const SUIT_MASK: readonly number[][] = (() => {
+export const SUIT_MASK: readonly (readonly number[])[] = (() => {
   const result: number[][] = [];
 
   for (let abs = 0; abs < 9; abs++) {
-    result[abs] = [];
+    const row: number[] = [];
     for (let suit = 0; suit < 8; suit++) {
       let mask = 0;
       for (let d = 0; d < 28; d++) {
-        const [lo, hi] = DOMINO_PIPS[d];
-        const effectiveSuit = EFFECTIVE_SUIT[d][abs];
-        const isAbsorbed = (effectiveSuit === ABSORBED_SUIT);
+        const [lo, hi] = DOMINO_PIPS[d]!;
+        const effectiveSuit = EFFECTIVE_SUIT[d]![abs]!;
+        const isAbsorbed = (effectiveSuit === CALLED_SUIT);
 
         let canFollow: boolean;
-        if (suit === ABSORBED_SUIT) {
+        if (suit === CALLED_SUIT) {
           // Absorbed suit led: must be absorbed to follow
           canFollow = isAbsorbed;
         } else if (isAbsorbed) {
@@ -184,8 +184,9 @@ export const SUIT_MASK: readonly number[][] = (() => {
           mask |= (1 << d);
         }
       }
-      result[abs][suit] = mask;
+      row[suit] = mask;
     }
+    result[abs] = row;
   }
 
   return result;
@@ -205,12 +206,12 @@ export const SUIT_MASK: readonly number[][] = (() => {
  *
  * 28 × 9 = 252 entries
  */
-export const RANK: readonly number[][] = (() => {
+export const RANK: readonly (readonly number[])[] = (() => {
   const result: number[][] = [];
 
   for (let d = 0; d < 28; d++) {
-    result[d] = [];
-    const [lo, hi] = DOMINO_PIPS[d];
+    const row: number[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
     const isDouble = lo === hi;
     const pipSum = lo + hi;
 
@@ -220,26 +221,27 @@ export const RANK: readonly number[][] = (() => {
         const hasPower = (lo === power || hi === power);
         if (hasPower) {
           if (isDouble && lo === power) {
-            result[d][power] = 100; // highest trump (e.g., 5-5 when 5s trump)
+            row[power] = 100; // highest trump (e.g., 5-5 when 5s trump)
           } else {
-            result[d][power] = 50 + pipSum;
+            row[power] = 50 + pipSum;
           }
         } else {
           // Non-power: doubles get +20 bonus (highest in their suit)
-          result[d][power] = isDouble ? pipSum + 20 : pipSum;
+          row[power] = isDouble ? pipSum + 20 : pipSum;
         }
       } else if (power === 7) {
         // Doubles power
         if (isDouble) {
-          result[d][power] = 50 + pipSum; // all doubles are trump
+          row[power] = 50 + pipSum; // all doubles are trump
         } else {
-          result[d][power] = pipSum;
+          row[power] = pipSum;
         }
       } else {
         // No power (8): doubles still highest in suit, non-doubles by pip sum
-        result[d][power] = isDouble ? pipSum + 20 : pipSum;
+        row[power] = isDouble ? pipSum + 20 : pipSum;
       }
     }
+    result[d] = row;
   }
 
   return result;
@@ -253,23 +255,24 @@ export const RANK: readonly number[][] = (() => {
  *
  * 28 × 9 = 252 entries
  */
-export const HAS_POWER: readonly boolean[][] = (() => {
+export const HAS_POWER: readonly (readonly boolean[])[] = (() => {
   const result: boolean[][] = [];
 
   for (let d = 0; d < 28; d++) {
-    result[d] = [];
-    const [lo, hi] = DOMINO_PIPS[d];
+    const row: boolean[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
     const isDouble = lo === hi;
 
     for (let power = 0; power < 9; power++) {
       if (power === 8) {
-        result[d][power] = false;
+        row[power] = false;
       } else if (power === 7) {
-        result[d][power] = isDouble;
+        row[power] = isDouble;
       } else {
-        result[d][power] = (lo === power || hi === power);
+        row[power] = (lo === power || hi === power);
       }
     }
+    result[d] = row;
   }
 
   return result;
@@ -281,7 +284,7 @@ export const HAS_POWER: readonly boolean[][] = (() => {
  * Get the suit that a domino leads
  */
 export function getLedSuitFromTable(d: DominoId, absorptionId: AbsorptionId): LedSuit {
-  return EFFECTIVE_SUIT[d][absorptionId] as LedSuit;
+  return EFFECTIVE_SUIT[d]![absorptionId]! as LedSuit;
 }
 
 /**
@@ -299,8 +302,8 @@ export function getLegalPlaysMask(
 ): number {
   if (leadDominoId === null) return hand; // leading: any domino
 
-  const ledSuit = EFFECTIVE_SUIT[leadDominoId][absorptionId];
-  const canFollow = hand & SUIT_MASK[absorptionId][ledSuit];
+  const ledSuit = EFFECTIVE_SUIT[leadDominoId]![absorptionId]!;
+  const canFollow = hand & SUIT_MASK[absorptionId]![ledSuit]!;
   return canFollow !== 0 ? canFollow : hand; // must follow if able
 }
 
@@ -319,24 +322,25 @@ export function getTrickWinnerFromTable(
   powerId: PowerId,
   leadPlayer: number
 ): number {
-  const ledSuit = EFFECTIVE_SUIT[trick[0]][absorptionId];
+  const leadDomino = trick[0]!;
+  const ledSuit = EFFECTIVE_SUIT[leadDomino]![absorptionId]!;
 
   let winner = 0;
-  let maxRank = RANK[trick[0]][powerId];
+  let maxRank = RANK[leadDomino]![powerId]!;
 
   for (let i = 1; i < trick.length; i++) {
-    const domino = trick[i];
-    const dominoSuit = EFFECTIVE_SUIT[domino][absorptionId];
+    const domino = trick[i]!;
+    const dominoSuit = EFFECTIVE_SUIT[domino]![absorptionId]!;
 
     // Only dominoes in led suit OR with power can win
     const inLedSuit = (dominoSuit === ledSuit);
-    const hasPower = HAS_POWER[domino][powerId];
+    const hasPower = HAS_POWER[domino]![powerId]!;
 
     if (!inLedSuit && !hasPower) {
       continue; // played off, can't win
     }
 
-    const rank = RANK[domino][powerId];
+    const rank = RANK[domino]![powerId]!;
     if (rank > maxRank) {
       maxRank = rank;
       winner = i;
@@ -354,21 +358,21 @@ export function canFollowFromTable(
   absorptionId: AbsorptionId,
   ledSuit: SuitId
 ): boolean {
-  return (SUIT_MASK[absorptionId][ledSuit] & (1 << dominoId)) !== 0;
+  return (SUIT_MASK[absorptionId]![ledSuit]! & (1 << dominoId)) !== 0;
 }
 
 /**
  * Check if a domino has trump power
  */
 export function isTrumpFromTable(dominoId: DominoId, powerId: PowerId): boolean {
-  return HAS_POWER[dominoId][powerId];
+  return HAS_POWER[dominoId]![powerId]!;
 }
 
 /**
  * Get the rank of a domino for comparison
  */
 export function getRankFromTable(dominoId: DominoId, powerId: PowerId): number {
-  return RANK[dominoId][powerId];
+  return RANK[dominoId]![powerId]!;
 }
 
 /**
@@ -394,7 +398,7 @@ export function getSuitsForDomino(
   const dominoMask = 1 << dominoId;
 
   for (let suit = 0; suit < 8; suit++) {
-    if (SUIT_MASK[absorptionId][suit] & dominoMask) {
+    if (SUIT_MASK[absorptionId]![suit]! & dominoMask) {
       suits.push(suit);
     }
   }
