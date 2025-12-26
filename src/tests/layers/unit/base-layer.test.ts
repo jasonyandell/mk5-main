@@ -93,16 +93,17 @@ describe('Base Layer Rules', () => {
       )).toBe(6);
     });
 
-    it('returns trump suit when domino contains trump value', () => {
+    it('returns suit 7 when domino is absorbed (contains trump pip)', () => {
+      // Absorbed dominoes lead suit 7 (DOUBLES_AS_TRUMP), not the trump pip value
       expect(rules.getLedSuit(
         StateBuilder.inBiddingPhase().withTrump({ type: 'suit', suit: TRES }).build(),
         { id: '6-3', high: 6, low: 3 }
-      )).toBe(TRES);
+      )).toBe(DOUBLES_AS_TRUMP);
 
       expect(rules.getLedSuit(
         StateBuilder.inBiddingPhase().withTrump({ type: 'suit', suit: DEUCES }).build(),
         { id: '5-2', high: 5, low: 2 }
-      )).toBe(DEUCES);
+      )).toBe(DOUBLES_AS_TRUMP);
     });
 
     it('returns 7 for all doubles when doubles are trump', () => {

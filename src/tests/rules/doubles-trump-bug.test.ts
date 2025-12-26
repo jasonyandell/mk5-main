@@ -38,11 +38,11 @@ describe('Doubles Trump Rules', () => {
         if (shouldBeTrump) {
           // Trump dominoes should have rank >= 200
           expect(rank).toBeGreaterThanOrEqual(200);
-          expect(suit).toBe(FIVES); // 5s are trump
+          expect(suit).toBe(DOUBLES_AS_TRUMP); // Absorbed dominoes lead suit 7
         } else {
           // Non-trump dominoes should have rank < 200
           expect(rank).toBeLessThan(200);
-          expect(suit).not.toBe(FIVES); // Not 5s trump
+          expect(suit).not.toBe(DOUBLES_AS_TRUMP); // Not absorbed
         }
       });
     });

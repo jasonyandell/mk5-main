@@ -9,7 +9,7 @@ import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } fro
 
 describe('Feature: Doubles Treatment', () => {
   describe('Scenario: Standard Doubles Rules', () => {
-    it('Given standard tournament rules apply When playing with doubles Then doubles belong to their natural suit', () => {
+    it('Given standard tournament rules apply When playing with doubles Then non-trump doubles belong to their natural suit', () => {
       const allDominoes = createDominoes();
       const doubles = allDominoes.filter(isDouble);
 
@@ -21,7 +21,7 @@ describe('Feature: Doubles Treatment', () => {
         const suit = getLedSuitBase(state, double);
         // Double's suit should be its pip value (unless it's the trump double)
         if (double.high === TRES) {
-          expect(suit).toBe(TRES); // 3-3 would be trump suit
+          expect(suit).toBe(DOUBLES_AS_TRUMP); // 3-3 is absorbed, leads suit 7
         } else {
           expect(suit).toBe(double.high); // Other doubles are their natural suit
         }

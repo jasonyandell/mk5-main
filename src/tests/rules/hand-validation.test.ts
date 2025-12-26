@@ -21,14 +21,20 @@ describe('Hand Validation Rules', () => {
     state.currentPlayer = options.currentPlayer || 1;
     
     // Set currentSuit based on the first domino in currentTrick
+    // With suit 7 semantics: absorbed dominoes lead suit 7 (DOUBLES_AS_TRUMP)
     if (options.currentTrick.length > 0) {
       const leadDomino = options.currentTrick[0]!.domino;
-      if (options.trump.type === 'doubles') { // doubles are trump
-        state.currentSuit = leadDomino.high === leadDomino.low ? DOUBLES_AS_TRUMP : (Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone);
+      const isDouble = leadDomino.high === leadDomino.low;
+
+      if (options.trump.type === 'doubles') {
+        // Doubles trump: doubles lead suit 7, non-doubles lead higher pip
+        state.currentSuit = isDouble ? DOUBLES_AS_TRUMP : (Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone);
       } else if (options.trump.type === 'suit' && (leadDomino.high === options.trump.suit || leadDomino.low === options.trump.suit)) {
-        state.currentSuit = options.trump.suit!; // trump was led
+        // Regular suit trump: absorbed dominoes lead suit 7
+        state.currentSuit = DOUBLES_AS_TRUMP;
       } else {
-        state.currentSuit = Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone; // higher end for non-trump
+        // Non-trump domino: higher pip
+        state.currentSuit = Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone;
       }
     } else {
       state.currentSuit = NO_LEAD_SUIT;

@@ -12,7 +12,7 @@
  */
 
 import type { Layer } from './types';
-import type { LedSuit } from '../types';
+import type { LedSuit, Domino } from '../types';
 import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome } from './helpers';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { BID_TYPES } from '../constants';
@@ -137,6 +137,35 @@ export const nelloLayer: Layer = {
 
       // Non-doubles: check if they have the led suit
       return domino.high === led || domino.low === led;
+    },
+
+    // In nello, getValidPlays must use nello's canFollow logic
+    // (Base getValidPlaysBase uses canFollowBase which doesn't recognize nello absorption)
+    getValidPlays: (state, playerId, prev) => {
+      if (state.trump?.type !== 'nello') return prev;
+      if (state.phase !== 'playing') return [];
+
+      const player = state.players[playerId];
+      if (!player) return [];
+
+      // First play of trick - all dominoes are valid
+      if (state.currentTrick.length === 0) return [...player.hand];
+
+      // No suit led yet
+      if (state.currentSuit === -1) return [...player.hand];
+
+      const leadSuit = state.currentSuit as LedSuit;
+
+      // Use nello's canFollow logic: doubles can only follow suit 7
+      const nelloCanFollow = (led: LedSuit, domino: Domino): boolean => {
+        const isDouble = domino.high === domino.low;
+        if (led === 7) return isDouble;
+        if (isDouble) return false;
+        return domino.high === led || domino.low === led;
+      };
+
+      const followers = player.hand.filter(d => nelloCanFollow(leadSuit, d));
+      return followers.length > 0 ? followers : [...player.hand];
     },
 
     // In nello, doubles form their own suit and can't follow regular suits
