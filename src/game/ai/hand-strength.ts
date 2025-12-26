@@ -47,6 +47,7 @@ function scoreSuitForTrump(hand: Domino[], suit: number): number {
  * - Number of dominoes in each suit
  * - Whether we have the double (highest card) in that suit
  * - 3+ doubles triggers doubles trump
+ * - Prefers suits with 3+ cards for stronger trump
  */
 export function determineBestTrump(hand: Domino[]): TrumpSelection {
   // Check if doubles trump would be better (3+ doubles)
@@ -55,15 +56,29 @@ export function determineBestTrump(hand: Domino[]): TrumpSelection {
     return { type: 'doubles' as const };
   }
 
-  // Score each suit
-  let bestSuit = 6;
+  // First pass: only consider suits with 3+ cards
+  let bestSuit = -1;
   let bestScore = -1;
 
   for (let suit = 6; suit >= 0; suit--) {
-    const score = scoreSuitForTrump(hand, suit);
-    if (score > bestScore) {
-      bestScore = score;
-      bestSuit = suit;
+    const count = hand.filter(d => dominoHasSuit(d, suit)).length;
+    if (count >= 3) {
+      const score = scoreSuitForTrump(hand, suit);
+      if (score > bestScore) {
+        bestScore = score;
+        bestSuit = suit;
+      }
+    }
+  }
+
+  // Fallback: if no suit has 3+ cards, pick best overall
+  if (bestSuit === -1) {
+    for (let suit = 6; suit >= 0; suit--) {
+      const score = scoreSuitForTrump(hand, suit);
+      if (score > bestScore) {
+        bestScore = score;
+        bestSuit = suit;
+      }
     }
   }
 

@@ -248,21 +248,21 @@ export interface MinimaxStrategyConfig {
   /** Number of simulations for playing (default: 30) */
   playingSimulations?: number;
 
-  /** Use heuristic leads for first N tricks (default: 2) */
+  /** Use heuristic leads for first N tricks (default: 3) */
   heuristicLeadTricks?: number;
 }
 
 const DEFAULT_MINIMAX_CONFIG: Required<MinimaxStrategyConfig> = {
   biddingSimulations: 10,
   playingSimulations: 30,
-  heuristicLeadTricks: 2
+  heuristicLeadTricks: 3
 };
 
 /**
  * Minimax AI Strategy (Phase 1: Ship Now)
  *
  * A stronger AI that combines:
- * - Heuristic opening leads (tricks 1-2): Lead highest trump
+ * - Heuristic opening leads (tricks 1-3): Lead highest trump
  * - PIMC with minimax rollout for mid-game
  * - More aggressive simulation count for accuracy
  *
