@@ -91,9 +91,10 @@ describe('Rule Composition Mechanics', () => {
     it('should produce correct getLedSuit result for non-trump', () => {
       const rules = composeRules([baseLayer]);
       const state = createTestState({ trump: { type: 'suit', suit: 1 } });
-      const domino: Domino = { id: '5-6', high: 5, low: 6, points: 0 };
+      // Domino 5-6: high pip is 6, low pip is 5, leads suit 6 (the higher pip)
+      const domino: Domino = { id: '5-6', high: 6, low: 5, points: 0 };
 
-      expect(rules.getLedSuit(state, domino)).toBe(5);
+      expect(rules.getLedSuit(state, domino)).toBe(6);
     });
 
     it('should produce correct calculateTrickWinner result', () => {
