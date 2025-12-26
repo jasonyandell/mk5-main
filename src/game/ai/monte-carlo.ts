@@ -13,8 +13,11 @@ import { NO_LEAD_SUIT } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import type { HandConstraints } from './constraint-tracker';
 import type { SampledHands } from './hand-sampler';
-import { sampleOpponentHands, sampleBiddingHands, createSeededRng } from './hand-sampler';
+import { sampleOpponentHands, sampleBiddingHands, createSeededRng, countValidConfigurations, enumerateAllConfigurations } from './hand-sampler';
 import { getExpectedHandSizes, buildCanFollowCache } from './constraint-tracker';
+
+/** Threshold for switching from sampling to enumeration */
+const ENUMERATION_THRESHOLD = 100;
 import { executeAction, type ExecuteActionOptions } from '../core/actions';
 import type { ExecutionContext } from '../types/execution';
 import { createDominoes } from '../core/dominoes';
@@ -248,6 +251,10 @@ function createPlayReadyState(
  * 3. Rollout to hand completion using beginner AI
  * 4. Record team outcome
  *
+ * Optimization: In late game when few configurations exist, enumerate all
+ * possible opponent hands rather than sampling. This gives exact expected
+ * value instead of Monte Carlo approximation.
+ *
  * @param state Current game state (with hidden opponent hands)
  * @param playActions Array of valid play actions to evaluate
  * @param myPlayerIndex The AI player's index (0-3)
@@ -264,15 +271,148 @@ export function evaluatePlayActions(
   ctx: ExecutionContext,
   config: MonteCarloConfig
 ): ActionEvaluation[] {
-  const rng = config.seed !== undefined
-    ? createSeededRng(config.seed)
-    : { random: () => Math.random() };
-
   const myTeam = myPlayerIndex % 2; // 0 or 1 (players 0,2 vs 1,3)
   const expectedSizes = getExpectedHandSizes(state);
 
   // Build canFollow cache once (trump is fixed for entire evaluation)
   const canFollowCache = buildCanFollowCache(state, ctx.rules);
+
+  // Check if we should enumerate rather than sample
+  // Count configurations with early termination at threshold
+  const configCount = countValidConfigurations(
+    constraints,
+    expectedSizes,
+    state,
+    ctx.rules,
+    ENUMERATION_THRESHOLD,
+    canFollowCache
+  );
+
+  // Use enumeration for small configuration counts
+  if (configCount <= ENUMERATION_THRESHOLD) {
+    return evaluateWithEnumeration(
+      state,
+      playActions,
+      myPlayerIndex,
+      myTeam,
+      constraints,
+      expectedSizes,
+      ctx,
+      canFollowCache
+    );
+  }
+
+  // Fall back to Monte Carlo sampling
+  return evaluateWithSampling(
+    state,
+    playActions,
+    myPlayerIndex,
+    myTeam,
+    constraints,
+    expectedSizes,
+    ctx,
+    config,
+    canFollowCache
+  );
+}
+
+/**
+ * Evaluate actions by enumerating all possible opponent hand configurations.
+ *
+ * Used in endgame when the number of valid configurations is small.
+ * Gives exact expected value rather than Monte Carlo approximation.
+ */
+function evaluateWithEnumeration(
+  state: GameState,
+  playActions: ValidAction[],
+  myPlayerIndex: number,
+  myTeam: number,
+  constraints: HandConstraints,
+  expectedSizes: [number, number, number, number],
+  ctx: ExecutionContext,
+  canFollowCache: ReturnType<typeof buildCanFollowCache>
+): ActionEvaluation[] {
+  // Enumerate all valid configurations
+  const allConfigurations = enumerateAllConfigurations(
+    constraints,
+    expectedSizes,
+    state,
+    ctx.rules,
+    ENUMERATION_THRESHOLD,
+    canFollowCache
+  );
+
+  // If no configurations found (shouldn't happen), fall back to empty result
+  if (allConfigurations.length === 0) {
+    return playActions.map(action => ({
+      action,
+      avgTeamPoints: 0,
+      winRate: 0,
+      simulationCount: 0
+    }));
+  }
+
+  const evaluations: ActionEvaluation[] = [];
+
+  for (const action of playActions) {
+    let totalTeamPoints = 0;
+    let wins = 0;
+
+    // Evaluate against every possible configuration
+    for (const sampledHands of allConfigurations) {
+      // Create state with injected opponent hands
+      const fullState = injectSampledHands(state, sampledHands, myPlayerIndex);
+
+      // Apply the candidate action
+      let simState = executeAction(fullState, action.action, ctx.rules, SIMULATION_OPTIONS);
+
+      // Rollout to hand completion
+      simState = rolloutToHandEnd(simState, ctx);
+
+      // Record outcome
+      const teamPoints = simState.teamScores[myTeam] ?? 0;
+      totalTeamPoints += teamPoints;
+
+      // Check if team made their bid
+      const bidValue = getBidTargetForTeam(state, myTeam);
+      if (teamPoints >= bidValue) {
+        wins++;
+      }
+    }
+
+    evaluations.push({
+      action,
+      avgTeamPoints: totalTeamPoints / allConfigurations.length,
+      winRate: wins / allConfigurations.length,
+      simulationCount: allConfigurations.length
+    });
+  }
+
+  // Sort by average team points (descending)
+  evaluations.sort((a, b) => b.avgTeamPoints - a.avgTeamPoints);
+
+  return evaluations;
+}
+
+/**
+ * Evaluate actions using Monte Carlo sampling.
+ *
+ * Used when the number of possible configurations is large.
+ */
+function evaluateWithSampling(
+  state: GameState,
+  playActions: ValidAction[],
+  myPlayerIndex: number,
+  myTeam: number,
+  constraints: HandConstraints,
+  expectedSizes: [number, number, number, number],
+  ctx: ExecutionContext,
+  config: MonteCarloConfig,
+  canFollowCache: ReturnType<typeof buildCanFollowCache>
+): ActionEvaluation[] {
+  const rng = config.seed !== undefined
+    ? createSeededRng(config.seed)
+    : { random: () => Math.random() };
 
   const evaluations: ActionEvaluation[] = [];
 
@@ -466,4 +606,429 @@ export function selectBestPlay(
   );
 
   return evaluations[0]?.action ?? null;
+}
+
+// ============================================================================
+// Trump-First Bidding Evaluation
+// ============================================================================
+
+/**
+ * Result of evaluating a single trump option.
+ */
+export interface TrumpEvaluation {
+  /** The trump selection */
+  trump: TrumpSelection;
+
+  /** Average points when this trump is selected */
+  avgPoints: number;
+
+  /** Point distribution percentiles */
+  distribution: {
+    /** Probability of making >= 30 points */
+    p30: number;
+    /** Probability of making >= 34 points */
+    p34: number;
+    /** Probability of making all 42 points */
+    p42: number;
+  };
+
+  /** Expected value considering bid levels */
+  expectedValue: number;
+
+  /** Number of simulations run */
+  simulationCount: number;
+
+  /** Is this a special contract (nello, sevens) with all-or-nothing outcome? */
+  isAllOrNothing: boolean;
+}
+
+/**
+ * Recommended bid based on trump evaluations.
+ */
+export interface BidRecommendation {
+  /** The recommended bid action */
+  action: ValidAction;
+
+  /** The trump to select if bid is won */
+  trump: TrumpSelection;
+
+  /** Expected value of this bid */
+  expectedValue: number;
+
+  /** Confidence level (0-1) */
+  confidence: number;
+
+  /** Should we pass instead? */
+  shouldPass: boolean;
+}
+
+/**
+ * Get all valid trump selections for the current state.
+ *
+ * This discovers trump options from the layer system by simulating
+ * a state where bidding is won and checking getValidActions.
+ *
+ * @param state Current game state (bidding phase)
+ * @param myPlayerIndex The bidder's player index
+ * @param ctx Execution context with composed layers
+ * @returns Array of valid trump selections
+ */
+export function discoverTrumpOptions(
+  state: GameState,
+  myPlayerIndex: number,
+  ctx: ExecutionContext
+): TrumpSelection[] {
+  // Create a hypothetical state where we've won with a marks bid
+  // (marks bids unlock nello/sevens trump options)
+  const trumpSelectionState: GameState = {
+    ...state,
+    phase: 'trump_selection' as const,
+    winningBidder: myPlayerIndex,
+    currentPlayer: myPlayerIndex,
+    currentBid: { type: 'marks' as const, value: 1, player: myPlayerIndex }
+  };
+
+  // Get all valid actions for trump selection phase
+  const actions = ctx.getValidActions(trumpSelectionState);
+
+  // Extract trump selections
+  const trumpOptions: TrumpSelection[] = [];
+  const seen = new Set<string>();
+
+  for (const action of actions) {
+    if (action.type === 'select-trump' && action.trump) {
+      const key = action.trump.type + (action.trump.suit ?? '');
+      if (!seen.has(key)) {
+        seen.add(key);
+        trumpOptions.push(action.trump);
+      }
+    }
+  }
+
+  return trumpOptions;
+}
+
+/**
+ * Evaluate all trump options for a hand.
+ *
+ * For EACH trump option, runs N simulations to hand completion and tracks:
+ * - Average team points
+ * - Distribution: P(≥30), P(≥34), P(≥42)
+ *
+ * This is more efficient than the old approach which ran per-bid-level.
+ *
+ * @param state Current game state (bidding phase)
+ * @param myPlayerIndex The bidder's player index
+ * @param ctx Execution context with composed layers
+ * @param config Monte Carlo configuration
+ * @returns Map of trump selection to evaluation results
+ */
+export function evaluateTrumpOptions(
+  state: GameState,
+  myPlayerIndex: number,
+  ctx: ExecutionContext,
+  config: MonteCarloConfig
+): Map<string, TrumpEvaluation> {
+  const rng = config.seed !== undefined
+    ? createSeededRng(config.seed)
+    : { random: () => Math.random() };
+
+  const myHand = state.players[myPlayerIndex]?.hand ?? [];
+  const myTeam = myPlayerIndex % 2;
+
+  // Discover all trump options from layers
+  const trumpOptions = discoverTrumpOptions(state, myPlayerIndex, ctx);
+
+  const evaluations = new Map<string, TrumpEvaluation>();
+
+  for (const trump of trumpOptions) {
+    const trumpKey = trump.type + (trump.suit ?? '');
+
+    // Check if this is an all-or-nothing contract
+    const isAllOrNothing = trump.type === 'nello' || trump.type === 'sevens';
+
+    // Track outcomes
+    const outcomes: number[] = [];
+    let successCount = 0;
+
+    for (let sim = 0; sim < config.biddingSimulations; sim++) {
+      // Sample opponent hands
+      const sampledHands = sampleBiddingHands(ALL_DOMINOES, myHand, myPlayerIndex, rng);
+
+      // Create state ready for play with this trump
+      const simState = createPlayReadyState(
+        state,
+        sampledHands,
+        myPlayerIndex,
+        myHand,
+        trump,
+        42 // Use max bid for simulation to get accurate point distribution
+      );
+
+      // Rollout to hand completion
+      const finalState = rolloutToHandEnd(simState, ctx);
+
+      // Record outcome
+      const teamPoints = finalState.teamScores[myTeam] ?? 0;
+      outcomes.push(teamPoints);
+
+      // For all-or-nothing contracts, track success rate differently
+      if (isAllOrNothing) {
+        // Nello: success = 0 tricks taken by bidding team (checked by checkHandOutcome)
+        // Sevens: success = all tricks won by bidding team
+        // The teamScores reflect whether we succeeded
+        if (trump.type === 'nello') {
+          // In nello, we want to LOSE all tricks, so our score should be 0
+          // But the way scoring works, we get the marks if we succeed
+          // The final state's teamScores won't directly show this
+          // Instead, check if we took any tricks (we shouldn't)
+          successCount += teamPoints === 0 ? 1 : 0;
+        } else {
+          // For sevens, we need all 42 points
+          successCount += teamPoints === 42 ? 1 : 0;
+        }
+      }
+    }
+
+    // Calculate statistics
+    const avgPoints = outcomes.reduce((a, b) => a + b, 0) / outcomes.length;
+    const p30 = outcomes.filter(p => p >= 30).length / outcomes.length;
+    const p34 = outcomes.filter(p => p >= 34).length / outcomes.length;
+    const p42 = outcomes.filter(p => p >= 42).length / outcomes.length;
+
+    // Calculate expected value
+    let expectedValue: number;
+    if (isAllOrNothing) {
+      // All-or-nothing: EV = P(success) * 42 + P(failure) * 0
+      // (Actually the stakes are in marks, but we normalize to points)
+      const successRate = successCount / config.biddingSimulations;
+      expectedValue = successRate * 42;
+    } else {
+      // Standard trump: EV based on average points
+      expectedValue = avgPoints;
+    }
+
+    evaluations.set(trumpKey, {
+      trump,
+      avgPoints,
+      distribution: { p30, p34, p42 },
+      expectedValue,
+      simulationCount: config.biddingSimulations,
+      isAllOrNothing
+    });
+  }
+
+  return evaluations;
+}
+
+/**
+ * Risk tolerance levels for bid decisions.
+ */
+export type RiskTolerance = 'conservative' | 'balanced' | 'aggressive';
+
+/**
+ * Decide what to bid based on trump evaluations.
+ *
+ * Takes the EV table from evaluateTrumpOptions and applies risk preferences
+ * to determine the optimal bid.
+ *
+ * @param trumpEvaluations Results from evaluateTrumpOptions
+ * @param validBidActions Available bid actions
+ * @param riskTolerance How aggressive to be
+ * @returns Recommended bid and associated trump
+ */
+export function decideBid(
+  trumpEvaluations: Map<string, TrumpEvaluation>,
+  validBidActions: ValidAction[],
+  riskTolerance: RiskTolerance = 'balanced'
+): BidRecommendation {
+  // Find the best trump option
+  let bestTrump: TrumpEvaluation | null = null;
+  let bestEV = -Infinity;
+
+  for (const evaluation of trumpEvaluations.values()) {
+    const ev = evaluation.expectedValue;
+    if (ev > bestEV) {
+      bestEV = ev;
+      bestTrump = evaluation;
+    }
+  }
+
+  // If no trump evaluations, pass
+  if (!bestTrump) {
+    const passAction = validBidActions.find(a => a.action.type === 'pass');
+    return {
+      action: passAction ?? validBidActions[0]!,
+      trump: { type: 'not-selected' },
+      expectedValue: 0,
+      confidence: 0,
+      shouldPass: true
+    };
+  }
+
+  // Determine bid thresholds based on risk tolerance
+  let bidThreshold: number;
+  let minMakeRate: number;
+
+  switch (riskTolerance) {
+    case 'conservative':
+      bidThreshold = 34;  // Only bid if we expect 34+
+      minMakeRate = 0.65; // Need 65% chance of making
+      break;
+    case 'aggressive':
+      bidThreshold = 28;  // Bid with 28+ expected
+      minMakeRate = 0.40; // 40% is enough
+      break;
+    case 'balanced':
+    default:
+      bidThreshold = 30;  // Standard 30-point threshold
+      minMakeRate = 0.50; // 50% chance
+      break;
+  }
+
+  // Find the highest bid we can make with acceptable risk
+  const { distribution, isAllOrNothing, avgPoints } = bestTrump;
+
+  // For all-or-nothing contracts, use p42 as the make rate
+  // For standard contracts, use the appropriate threshold probability
+  let recommendedBidValue = 0;
+  let makeRate = 0;
+
+  if (isAllOrNothing) {
+    // All-or-nothing: either we bid marks or we don't
+    makeRate = distribution.p42;
+    if (makeRate >= minMakeRate) {
+      recommendedBidValue = 42; // Will become a marks bid
+    }
+  } else {
+    // Standard contracts: find highest safe bid
+    if (distribution.p42 >= minMakeRate) {
+      recommendedBidValue = 42;
+      makeRate = distribution.p42;
+    } else if (distribution.p34 >= minMakeRate) {
+      recommendedBidValue = 34;
+      makeRate = distribution.p34;
+    } else if (distribution.p30 >= minMakeRate) {
+      recommendedBidValue = 30;
+      makeRate = distribution.p30;
+    }
+
+    // Also check if expected value meets threshold
+    if (avgPoints < bidThreshold) {
+      recommendedBidValue = 0; // Pass
+    }
+  }
+
+  // Find the matching bid action
+  let bidAction: ValidAction | undefined;
+
+  if (recommendedBidValue >= 42) {
+    // Look for marks bid first (for special contracts)
+    bidAction = validBidActions.find(a =>
+      a.action.type === 'bid' &&
+      'bid' in a.action &&
+      a.action.bid === 'marks'
+    );
+    // Fallback to 42 points bid
+    if (!bidAction) {
+      bidAction = validBidActions.find(a =>
+        a.action.type === 'bid' &&
+        'bid' in a.action &&
+        a.action.bid === 'points' &&
+        a.action.value === 42
+      );
+    }
+  } else if (recommendedBidValue > 0) {
+    // Find the highest valid points bid at or below recommendedBidValue
+    const pointsBids = validBidActions
+      .filter(a =>
+        a.action.type === 'bid' &&
+        'bid' in a.action &&
+        a.action.bid === 'points' &&
+        (a.action.value ?? 0) <= recommendedBidValue
+      )
+      .sort((a, b) => {
+        const aVal = 'value' in a.action ? (a.action.value ?? 0) : 0;
+        const bVal = 'value' in b.action ? (b.action.value ?? 0) : 0;
+        return bVal - aVal;
+      });
+    bidAction = pointsBids[0];
+  }
+
+  // If no suitable bid found, pass
+  if (!bidAction || recommendedBidValue === 0) {
+    const passAction = validBidActions.find(a => a.action.type === 'pass');
+    return {
+      action: passAction ?? validBidActions[0]!,
+      trump: bestTrump.trump,
+      expectedValue: bestTrump.expectedValue,
+      confidence: makeRate,
+      shouldPass: true
+    };
+  }
+
+  return {
+    action: bidAction,
+    trump: bestTrump.trump,
+    expectedValue: bestTrump.expectedValue,
+    confidence: makeRate,
+    shouldPass: false
+  };
+}
+
+/**
+ * Complete bidding decision using trump-first evaluation.
+ *
+ * This is the new recommended entry point for AI bidding decisions.
+ * It discovers all trump options, evaluates each one, and decides
+ * the optimal bid based on the EV table.
+ *
+ * @param state Current game state (bidding phase)
+ * @param validActions All valid actions including bids and pass
+ * @param myPlayerIndex The bidder's player index
+ * @param ctx Execution context with composed layers
+ * @param config Monte Carlo configuration
+ * @param riskTolerance How aggressive to bid
+ * @returns The recommended bid action
+ */
+export function selectBestBid(
+  state: GameState,
+  validActions: ValidAction[],
+  myPlayerIndex: number,
+  ctx: ExecutionContext,
+  config: MonteCarloConfig,
+  riskTolerance: RiskTolerance = 'balanced'
+): ValidAction {
+  // Find pass action (always available during bidding)
+  const passAction = validActions.find(va => va.action.type === 'pass');
+
+  // Get bid actions (exclude pass)
+  const bidActions = validActions.filter(va => va.action.type === 'bid');
+
+  // If no bid actions available, must pass
+  if (bidActions.length === 0) {
+    if (passAction) return passAction;
+    const fallback = validActions[0];
+    if (!fallback) {
+      throw new Error('selectBestBid: No valid actions available');
+    }
+    return fallback;
+  }
+
+  // Evaluate all trump options
+  const trumpEvaluations = evaluateTrumpOptions(
+    state,
+    myPlayerIndex,
+    ctx,
+    config
+  );
+
+  // Decide on the best bid
+  const recommendation = decideBid(
+    trumpEvaluations,
+    validActions,
+    riskTolerance
+  );
+
+  return recommendation.action;
 }

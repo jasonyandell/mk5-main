@@ -244,3 +244,234 @@ export function createSeededRng(seed: number): RandomGenerator {
     }
   };
 }
+
+// ============================================================================
+// Endgame Enumeration
+// ============================================================================
+
+/**
+ * A single valid assignment of dominoes to opponents.
+ * Maps player index -> array of domino IDs.
+ */
+export type HandAssignment = Map<number, string[]>;
+
+/**
+ * Count all valid opponent hand configurations without materializing them.
+ *
+ * Uses the same backtracking algorithm as sampleWithBacktracking but only counts.
+ * This is used to decide whether enumeration is cheaper than sampling.
+ *
+ * @param opponents Array of opponent player indices
+ * @param expectedSizes How many dominoes each opponent should have
+ * @param candidatesPerOpponent Pre-built candidate sets per opponent
+ * @param available Set of available domino IDs
+ * @returns Number of valid configurations, capped at limit+1 to avoid over-counting
+ */
+export function countValidConfigurations(
+  constraints: HandConstraints,
+  expectedSizes: [number, number, number, number],
+  state: GameState,
+  rules: GameRules,
+  limit: number,
+  canFollowCache?: CanFollowCache
+): number {
+  const myIndex = constraints.myPlayerIndex;
+  const opponents = [0, 1, 2, 3].filter(i => i !== myIndex);
+
+  const pool = getDistributionPool(constraints);
+  const available = new Set(pool.map(d => String(d.id)));
+
+  // Build candidate sets
+  const candidatesPerOpponent = new Map<number, Set<string>>();
+  for (const opp of opponents) {
+    const candidates = getCandidateDominoes(constraints, opp, state, rules, canFollowCache);
+    candidatesPerOpponent.set(opp, new Set(candidates.map(d => String(d.id))));
+  }
+
+  // Track remaining need per player
+  const remaining = new Map<number, number>();
+  for (const opp of opponents) {
+    remaining.set(opp, expectedSizes[opp] ?? 0);
+  }
+
+  // Counter for valid configurations
+  let count = 0;
+
+  function countRecursive(availableSet: Set<string>): void {
+    // Early termination if we've exceeded the limit
+    if (count > limit) return;
+
+    // Find player with minimum slack (MRV heuristic)
+    let minSlack = Infinity;
+    let mostConstrained: number | null = null;
+
+    for (const opp of opponents) {
+      const need = remaining.get(opp) ?? 0;
+      if (need === 0) continue;
+
+      const candidates = candidatesPerOpponent.get(opp)!;
+      let availableCount = 0;
+      for (const id of candidates) {
+        if (availableSet.has(id)) availableCount++;
+      }
+      const slack = availableCount - need;
+
+      // Early pruning: if any player can't be satisfied, backtrack immediately
+      if (slack < 0) return;
+
+      if (slack < minSlack) {
+        minSlack = slack;
+        mostConstrained = opp;
+      }
+    }
+
+    // All players satisfied - found a valid configuration!
+    if (mostConstrained === null) {
+      count++;
+      return;
+    }
+
+    // Get candidates for most constrained player
+    const candidates = candidatesPerOpponent.get(mostConstrained)!;
+    const availableCandidates = [...candidates].filter(id => availableSet.has(id));
+
+    // Try each candidate with backtracking
+    for (const candidateId of availableCandidates) {
+      if (count > limit) return;
+
+      // Choose
+      availableSet.delete(candidateId);
+      remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 1) - 1);
+
+      // Recurse
+      countRecursive(availableSet);
+
+      // Backtrack
+      availableSet.add(candidateId);
+      remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 0) + 1);
+    }
+  }
+
+  countRecursive(available);
+
+  return count;
+}
+
+/**
+ * Enumerate all valid opponent hand configurations.
+ *
+ * Instead of sampling randomly, this generates all possible valid assignments.
+ * Use when the number of configurations is small enough (< threshold).
+ *
+ * @param constraints Built constraints from game history
+ * @param expectedSizes How many dominoes each player should have
+ * @param state Current game state
+ * @param rules Composed game rules
+ * @param maxConfigurations Maximum number to enumerate (safety limit)
+ * @param canFollowCache Optional pre-computed canFollow cache
+ * @returns Array of all valid hand assignments, each as a SampledHands map
+ */
+export function enumerateAllConfigurations(
+  constraints: HandConstraints,
+  expectedSizes: [number, number, number, number],
+  state: GameState,
+  rules: GameRules,
+  maxConfigurations: number = 1000,
+  canFollowCache?: CanFollowCache
+): SampledHands[] {
+  const myIndex = constraints.myPlayerIndex;
+  const opponents = [0, 1, 2, 3].filter(i => i !== myIndex);
+
+  const pool = getDistributionPool(constraints);
+  const available = new Set(pool.map(d => String(d.id)));
+
+  // Build candidate sets
+  const candidatesPerOpponent = new Map<number, Set<string>>();
+  for (const opp of opponents) {
+    const candidates = getCandidateDominoes(constraints, opp, state, rules, canFollowCache);
+    candidatesPerOpponent.set(opp, new Set(candidates.map(d => String(d.id))));
+  }
+
+  // Track remaining need per player
+  const remaining = new Map<number, number>();
+  for (const opp of opponents) {
+    remaining.set(opp, expectedSizes[opp] ?? 0);
+  }
+
+  // Current assignment being built (domino IDs per player)
+  const currentAssignment = new Map<number, string[]>();
+  for (const opp of opponents) {
+    currentAssignment.set(opp, []);
+  }
+
+  // Collect all valid configurations
+  const configurations: SampledHands[] = [];
+
+  function enumerateRecursive(availableSet: Set<string>): void {
+    // Safety limit
+    if (configurations.length >= maxConfigurations) return;
+
+    // Find player with minimum slack (MRV heuristic for efficient enumeration)
+    let minSlack = Infinity;
+    let mostConstrained: number | null = null;
+
+    for (const opp of opponents) {
+      const need = remaining.get(opp) ?? 0;
+      if (need === 0) continue;
+
+      const candidates = candidatesPerOpponent.get(opp)!;
+      let availableCount = 0;
+      for (const id of candidates) {
+        if (availableSet.has(id)) availableCount++;
+      }
+      const slack = availableCount - need;
+
+      // Early pruning
+      if (slack < 0) return;
+
+      if (slack < minSlack) {
+        minSlack = slack;
+        mostConstrained = opp;
+      }
+    }
+
+    // All players satisfied - save this configuration
+    if (mostConstrained === null) {
+      // Convert current assignment to SampledHands (Domino objects)
+      const sampledHands: SampledHands = new Map();
+      for (const opp of opponents) {
+        const ids = currentAssignment.get(opp)!;
+        const dominoes = ids.map(id => pool.find(d => String(d.id) === id)!);
+        sampledHands.set(opp, dominoes);
+      }
+      configurations.push(sampledHands);
+      return;
+    }
+
+    // Get sorted candidates for deterministic enumeration
+    const candidates = candidatesPerOpponent.get(mostConstrained)!;
+    const availableCandidates = [...candidates].filter(id => availableSet.has(id)).sort();
+
+    // Try each candidate
+    for (const candidateId of availableCandidates) {
+      if (configurations.length >= maxConfigurations) return;
+
+      // Choose
+      availableSet.delete(candidateId);
+      currentAssignment.get(mostConstrained)!.push(candidateId);
+      remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 1) - 1);
+
+      // Recurse
+      enumerateRecursive(availableSet);
+
+      // Backtrack
+      availableSet.add(candidateId);
+      currentAssignment.get(mostConstrained)!.pop();
+      remaining.set(mostConstrained, (remaining.get(mostConstrained) ?? 0) + 1);
+    }
+  }
+
+  enumerateRecursive(available);
+
+  return configurations;
+}

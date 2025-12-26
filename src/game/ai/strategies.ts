@@ -3,7 +3,12 @@ import type { GameState, Player, Domino } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
 import type { ExecutionContext } from '../types/execution';
 import { determineBestTrump } from './hand-strength';
-import { evaluateBidActions, selectBestPlay, type MonteCarloConfig } from './monte-carlo';
+import {
+  selectBestPlay,
+  selectBestBid,
+  evaluateTrumpOptions,
+  type MonteCarloConfig
+} from './monte-carlo';
 import { buildConstraints } from './constraint-tracker';
 import { createExecutionContext } from '../types/execution';
 import type { RandomGenerator } from './hand-sampler';
@@ -41,14 +46,13 @@ const DEFAULT_CONFIG: MonteCarloConfig = {
   playingSimulations: 10
 };
 
-/** Threshold for bidding - bid if make rate >= this value */
-const BID_THRESHOLD = 0.50;
-
 /**
  * Beginner AI strategy - the standard playable AI
  *
  * Uses Monte Carlo simulation for both bidding and play decisions.
- * Trump selection uses simple heuristics (strongest suit).
+ * Trump selection now uses simulation-based evaluation to discover
+ * the best trump from all available options (including special contracts
+ * like nello and sevens when enabled).
  */
 export class BeginnerAIStrategy implements AIStrategy {
   private ctx: ExecutionContext | null = null;
@@ -74,7 +78,7 @@ export class BeginnerAIStrategy implements AIStrategy {
       case 'bidding':
         return this.makeBidDecision(state, validActions);
       case 'trump_selection':
-        return this.makeTrumpDecision(currentPlayer, validActions);
+        return this.makeTrumpDecision(state, currentPlayer, validActions);
       case 'playing':
         return this.makePlayDecision(state, validActions);
       default: {
@@ -98,65 +102,70 @@ export class BeginnerAIStrategy implements AIStrategy {
   }
 
   /**
-   * Use Monte Carlo simulation to decide whether and what to bid.
+   * Use trump-first Monte Carlo evaluation to decide whether and what to bid.
    *
-   * Evaluates each possible bid by simulating many games and tracking
-   * the make rate. Bids the highest value with make rate >= 50%.
+   * New architecture:
+   * 1. Discover all trump options from layers (suits, doubles, nello, sevens, etc.)
+   * 2. For EACH trump option, simulate to get EV and point distribution
+   * 3. Use the EV table to decide optimal bid and trump selection
+   *
+   * This correctly handles special contracts like nello (all-or-nothing)
+   * and compares "aces at 34" vs "nello at 100% success" properly.
    */
   private makeBidDecision(state: GameState, validActions: ValidAction[]): ValidAction {
-    // Find pass action (always available during bidding)
-    const passAction = validActions.find(va => va.action.type === 'pass');
-
-    // Get bid actions (exclude pass)
-    const bidActions = validActions.filter(va => va.action.type === 'bid');
-
-    // If no bid actions available, must pass
-    if (bidActions.length === 0) {
-      if (passAction) return passAction;
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('BeginnerAIStrategy.makeBidDecision: No pass or fallback available');
-      }
-      return fallback;
-    }
-
-    // Evaluate bid actions using Monte Carlo
     const ctx = this.getExecutionContext(state);
-    const evaluations = evaluateBidActions(
+
+    return selectBestBid(
       state,
-      bidActions,
+      validActions,
+      state.currentPlayer,
+      ctx,
+      this.config,
+      'balanced' // Use balanced risk tolerance for beginner AI
+    );
+  }
+
+  /**
+   * Select the best trump using Monte Carlo evaluation.
+   *
+   * Uses the same evaluateTrumpOptions() as bidding to find the trump
+   * with highest expected value. Falls back to heuristic if evaluation fails.
+   */
+  private makeTrumpDecision(state: GameState, player: Player, validActions: ValidAction[]): ValidAction {
+    const ctx = this.getExecutionContext(state);
+
+    // Evaluate all available trump options
+    const evaluations = evaluateTrumpOptions(
+      state,
       state.currentPlayer,
       ctx,
       this.config
     );
 
-    // Find highest bid with make rate >= threshold
-    const viableBids = evaluations.filter(e => e.makeBidRate >= BID_THRESHOLD);
+    // Find the trump with highest expected value
+    let bestEval: { trump: import('../types').TrumpSelection; ev: number } | null = null;
 
-    if (viableBids.length > 0) {
-      // Sort by bid value descending and take highest
-      viableBids.sort((a, b) => b.bidValue - a.bidValue);
-      const bestBid = viableBids[0];
-      if (bestBid) {
-        return bestBid.action;
+    for (const evaluation of evaluations.values()) {
+      if (!bestEval || evaluation.expectedValue > bestEval.ev) {
+        bestEval = { trump: evaluation.trump, ev: evaluation.expectedValue };
       }
     }
 
-    // No bid meets threshold - pass
-    if (passAction) return passAction;
-
-    // Fallback - shouldn't reach here in normal play
-    const fallback = validActions[0];
-    if (!fallback) {
-      throw new Error('BeginnerAIStrategy.makeBidDecision: No viable bid or pass available');
+    // Find matching action
+    if (bestEval) {
+      const trumpAction = validActions.find(va => {
+        if (va.action.type !== 'select-trump' || !('trump' in va.action)) return false;
+        const actionTrump = va.action.trump;
+        if (actionTrump.type !== bestEval!.trump.type) return false;
+        if (actionTrump.type === 'suit' && bestEval!.trump.type === 'suit') {
+          return actionTrump.suit === bestEval!.trump.suit;
+        }
+        return true;
+      });
+      if (trumpAction) return trumpAction;
     }
-    return fallback;
-  }
 
-  /**
-   * Pick the strongest suit based on hand composition.
-   */
-  private makeTrumpDecision(player: Player, validActions: ValidAction[]): ValidAction {
+    // Fallback to heuristic if simulation failed
     const bestTrump = determineBestTrump(player.hand);
 
     if (bestTrump.type === 'doubles') {
@@ -176,7 +185,7 @@ export class BeginnerAIStrategy implements AIStrategy {
       if (trumpAction) return trumpAction;
     }
 
-    // Fallback
+    // Final fallback
     const fallback = validActions[0];
     if (!fallback) {
       throw new Error('BeginnerAIStrategy.makeTrumpDecision: No trump selection available');
@@ -296,7 +305,7 @@ export class MinimaxStrategy implements AIStrategy {
       case 'bidding':
         return this.makeBidDecision(state, validActions);
       case 'trump_selection':
-        return this.makeTrumpDecision(currentPlayer, validActions);
+        return this.makeTrumpDecision(state, currentPlayer, validActions);
       case 'playing':
         return this.makePlayDecision(state, validActions, currentPlayer);
       default: {
@@ -317,52 +326,67 @@ export class MinimaxStrategy implements AIStrategy {
   }
 
   /**
-   * Bidding: Use Monte Carlo evaluation (same as BeginnerAI but more sims)
+   * Bidding: Use trump-first Monte Carlo evaluation with more simulations.
+   *
+   * Uses the new architecture that:
+   * 1. Discovers all trump options from layers
+   * 2. Evaluates each trump option's EV and distribution
+   * 3. Makes bid decision based on the EV table
    */
   private makeBidDecision(state: GameState, validActions: ValidAction[]): ValidAction {
-    const passAction = validActions.find(va => va.action.type === 'pass');
-    const bidActions = validActions.filter(va => va.action.type === 'bid');
-
-    if (bidActions.length === 0) {
-      if (passAction) return passAction;
-      const fallback = validActions[0];
-      if (!fallback) {
-        throw new Error('MinimaxStrategy.makeBidDecision: No actions available');
-      }
-      return fallback;
-    }
-
     const ctx = this.getExecutionContext(state);
-    const evaluations = evaluateBidActions(
+
+    return selectBestBid(
       state,
-      bidActions,
+      validActions,
+      state.currentPlayer,
+      ctx,
+      this.mcConfig,
+      'balanced' // MinimaxStrategy uses balanced risk (could be made configurable)
+    );
+  }
+
+  /**
+   * Trump selection: Use Monte Carlo evaluation to pick optimal trump.
+   *
+   * Evaluates all available trump options and picks the one with
+   * highest expected value. Falls back to heuristic if needed.
+   */
+  private makeTrumpDecision(state: GameState, player: Player, validActions: ValidAction[]): ValidAction {
+    const ctx = this.getExecutionContext(state);
+
+    // Evaluate all available trump options
+    const evaluations = evaluateTrumpOptions(
+      state,
       state.currentPlayer,
       ctx,
       this.mcConfig
     );
 
-    // Find highest bid with make rate >= threshold
-    const viableBids = evaluations.filter(e => e.makeBidRate >= BID_THRESHOLD);
+    // Find the trump with highest expected value
+    let bestEval: { trump: import('../types').TrumpSelection; ev: number } | null = null;
 
-    if (viableBids.length > 0) {
-      viableBids.sort((a, b) => b.bidValue - a.bidValue);
-      const bestBid = viableBids[0];
-      if (bestBid) return bestBid.action;
+    for (const evaluation of evaluations.values()) {
+      if (!bestEval || evaluation.expectedValue > bestEval.ev) {
+        bestEval = { trump: evaluation.trump, ev: evaluation.expectedValue };
+      }
     }
 
-    if (passAction) return passAction;
-
-    const fallback = validActions[0];
-    if (!fallback) {
-      throw new Error('MinimaxStrategy.makeBidDecision: No viable action');
+    // Find matching action
+    if (bestEval) {
+      const trumpAction = validActions.find(va => {
+        if (va.action.type !== 'select-trump' || !('trump' in va.action)) return false;
+        const actionTrump = va.action.trump;
+        if (actionTrump.type !== bestEval!.trump.type) return false;
+        if (actionTrump.type === 'suit' && bestEval!.trump.type === 'suit') {
+          return actionTrump.suit === bestEval!.trump.suit;
+        }
+        return true;
+      });
+      if (trumpAction) return trumpAction;
     }
-    return fallback;
-  }
 
-  /**
-   * Trump selection: Pick strongest suit (same as BeginnerAI)
-   */
-  private makeTrumpDecision(player: Player, validActions: ValidAction[]): ValidAction {
+    // Fallback to heuristic if simulation failed
     const bestTrump = determineBestTrump(player.hand);
 
     if (bestTrump.type === 'doubles') {
