@@ -370,7 +370,8 @@ describe('endgame enumeration', () => {
 
       const constraints = buildConstraints(state, 0, ctx.rules);
       const playActions = ctx.getValidActions(state)
-        .filter(va => va.action.type === 'play');
+        .filter(a => a.type === 'play')
+        .map(action => ({ action, label: `play-${action.type === 'play' ? action.dominoId : ''}` }));
 
       const evaluations = evaluatePlayActions(
         state,
