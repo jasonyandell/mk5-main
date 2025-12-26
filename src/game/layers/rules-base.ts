@@ -4,11 +4,13 @@
  * This is the SINGLE SOURCE OF TRUTH for base trump/suit/follow-suit semantics.
  * All other modules (base.ts, compose.ts, AI, etc.) must delegate here.
  *
- * These pure functions implement standard Texas 42 rules:
- * - Higher pip leads (or 7 for doubles-trump)
- * - Trump dominoes belong only to trump suit
- * - Follow-suit validation
- * - Rank calculation for trick-taking
+ * Key insight: Trump conflates two independent operations:
+ * 1. Absorption - restructures which dominoes belong to which suit
+ * 2. Power - determines which dominoes beat others
+ *
+ * All absorbed dominoes lead suit 7 (ABSORBED_SUIT). This makes the S₇ symmetry
+ * explicit: all pip trumps are isomorphic, differing only in which pip triggers
+ * absorption.
  *
  * Special contracts (nello, sevens, plunge, splash) override these in their layers.
  */
@@ -17,65 +19,62 @@ import type { GameState, Domino, LedSuit } from '../types';
 import { DOUBLES_AS_TRUMP } from '../types';
 import { getTrumpSuit, isRegularSuitTrump, isDoublesTrump, dominoHasSuit } from '../core/dominoes';
 
+/** Suit 7 is the absorbed suit (trump, or doubles when doubles-trump) */
+const ABSORBED_SUIT = DOUBLES_AS_TRUMP;
+
 /**
  * Base implementation: What suit does this domino lead?
  *
- * - Doubles-trump: doubles lead suit 7, non-doubles lead higher pip
- * - Regular trump: trump dominoes lead trump suit, others lead higher pip
- * - No-trump: higher pip (or the pip value for doubles)
+ * - Absorbed dominoes (trump) lead suit 7
+ * - Non-absorbed dominoes lead their higher pip
  */
 export function getLedSuitBase(state: GameState, domino: Domino): LedSuit {
   const trumpSuit = getTrumpSuit(state.trump);
+  const isDouble = domino.high === domino.low;
 
-  // When doubles are trump, doubles lead suit 7
+  // When doubles are trump, doubles are absorbed
   if (isDoublesTrump(trumpSuit)) {
-    return domino.high === domino.low ? DOUBLES_AS_TRUMP : domino.high as LedSuit;
+    return isDouble ? ABSORBED_SUIT : domino.high as LedSuit;
   }
 
-  // When a regular suit is trump (0-6)
+  // When a regular suit is trump (0-6), dominoes containing that pip are absorbed
   if (isRegularSuitTrump(trumpSuit)) {
-    // Trump dominoes lead trump suit
     if (dominoHasSuit(domino, trumpSuit)) {
-      return trumpSuit as LedSuit;
+      return ABSORBED_SUIT;
     }
   }
 
-  // Non-trump or no-trump: higher pip
+  // Non-absorbed: higher pip
   return domino.high as LedSuit;
 }
 
 /**
  * Base implementation: What suits does this domino belong to?
  *
- * A domino's suit membership depends on trump selection:
- * - Trump dominoes belong only to trump suit (absorbed)
- * - Doubles with doubles-trump belong only to suit 7
- * - Otherwise, dominoes belong to their natural suits
+ * - Absorbed dominoes belong only to suit 7
+ * - Non-absorbed doubles belong to their pip suit
+ * - Non-absorbed non-doubles belong to both pip suits
  */
 export function suitsWithTrumpBase(state: GameState, domino: Domino): LedSuit[] {
   const trumpSuit = getTrumpSuit(state.trump);
   const isDouble = domino.high === domino.low;
 
-  // Doubles trump: doubles belong only to suit 7
+  // Doubles trump: doubles are absorbed
   if (isDoublesTrump(trumpSuit)) {
     if (isDouble) {
-      return [7 as LedSuit];
+      return [ABSORBED_SUIT];
     }
-    // Non-doubles belong to both their pips
     return [domino.high as LedSuit, domino.low as LedSuit];
   }
 
-  // Regular suit trump (0-6)
+  // Regular suit trump (0-6): dominoes containing trump pip are absorbed
   if (isRegularSuitTrump(trumpSuit)) {
-    // Trump dominoes belong only to trump suit
     if (dominoHasSuit(domino, trumpSuit)) {
-      return [trumpSuit as LedSuit];
+      return [ABSORBED_SUIT];
     }
-    // Non-trump doubles belong to their pip
     if (isDouble) {
       return [domino.high as LedSuit];
     }
-    // Non-trump non-doubles belong to both pips
     return [domino.high as LedSuit, domino.low as LedSuit];
   }
 
@@ -89,30 +88,30 @@ export function suitsWithTrumpBase(state: GameState, domino: Domino): LedSuit[] 
 /**
  * Base implementation: Can this domino follow the led suit?
  *
- * A domino can follow if it belongs to the led suit.
- * Trump absorption rules apply.
+ * - Absorbed suit (7) led: only absorbed dominoes can follow
+ * - Regular suit led: non-absorbed dominoes with that pip can follow
+ * - Absorbed dominoes cannot follow regular suits
  */
 export function canFollowBase(state: GameState, led: LedSuit, domino: Domino): boolean {
   const trumpSuit = getTrumpSuit(state.trump);
   const isDouble = domino.high === domino.low;
 
-  // Doubles led (suit 7): only doubles can follow
-  if (led === 7) {
-    return isDouble;
+  // Check if this domino is absorbed
+  const isAbsorbed = isDoublesTrump(trumpSuit)
+    ? isDouble
+    : isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit);
+
+  // Absorbed suit led (7): only absorbed dominoes can follow
+  if (led === ABSORBED_SUIT) {
+    return isAbsorbed;
   }
 
-  // Doubles trump: doubles belong only to suit 7, can't follow regular suits
-  if (isDoublesTrump(trumpSuit) && isDouble) {
+  // Regular suit led: absorbed dominoes cannot follow
+  if (isAbsorbed) {
     return false;
   }
 
-  // Regular suit trump: trump dominoes can't follow non-trump suits
-  if (isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit)) {
-    // Can only follow if led suit IS the trump suit
-    return led === trumpSuit;
-  }
-
-  // Check if domino has the led suit
+  // Non-absorbed domino, regular suit led: check pip membership
   return dominoHasSuit(domino, led);
 }
 
@@ -120,8 +119,8 @@ export function canFollowBase(state: GameState, led: LedSuit, domino: Domino): b
  * Base implementation: What is this domino's rank for trick-taking?
  *
  * Higher rank wins. Ranking tiers:
- * - 200+: Trump (with pip bonus, doubles get +50)
- * - 50+: Follows suit (with pip bonus, doubles get +50)
+ * - 200+: Trump/absorbed with power (doubles get +50)
+ * - 50+: Follows suit (doubles get +50)
  * - 0-12: Slough (just pip sum)
  */
 export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino): number {
@@ -129,22 +128,19 @@ export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino):
   const isDouble = domino.high === domino.low;
   const pipSum = domino.high + domino.low;
 
-  // Check if domino is trump
-  const dominoIsTrump = isDoublesTrump(trumpSuit)
+  // Check if domino is absorbed (has power)
+  const isAbsorbed = isDoublesTrump(trumpSuit)
     ? isDouble
     : isRegularSuitTrump(trumpSuit) && dominoHasSuit(domino, trumpSuit);
 
-  if (dominoIsTrump) {
+  if (isAbsorbed) {
     return isDouble ? 200 + domino.high + 50 : 200 + pipSum;
   }
 
   // Check if domino follows suit
-  let followsSuit = false;
-  if (led === 7) {
-    followsSuit = isDouble;
-  } else if (!(isDoublesTrump(trumpSuit) && isDouble)) {
-    followsSuit = dominoHasSuit(domino, led);
-  }
+  const followsSuit = (led === ABSORBED_SUIT)
+    ? false  // Non-absorbed can't follow absorbed suit
+    : dominoHasSuit(domino, led);
 
   if (followsSuit) {
     return isDouble ? 50 + domino.high + 50 : 50 + pipSum;
@@ -154,24 +150,24 @@ export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino):
 }
 
 /**
- * Base implementation: Is this domino trump?
+ * Base implementation: Is this domino trump (absorbed with power)?
  *
- * - Doubles-trump: all doubles are trump
- * - Regular suit trump: dominoes containing the trump suit are trump
- * - No-trump/not-selected: nothing is trump
+ * - Doubles-trump: all doubles have power
+ * - Regular suit trump: dominoes containing the trump pip have power
+ * - No-trump/not-selected: nothing has power
  */
 export function isTrumpBase(state: GameState, domino: Domino): boolean {
   const trumpSuit = getTrumpSuit(state.trump);
 
   if (isDoublesTrump(trumpSuit)) {
-    return domino.high === domino.low;  // All doubles are trump
+    return domino.high === domino.low;
   }
 
   if (isRegularSuitTrump(trumpSuit)) {
     return dominoHasSuit(domino, trumpSuit);
   }
 
-  return false;  // No trump or no-trump game
+  return false;
 }
 
 /**
