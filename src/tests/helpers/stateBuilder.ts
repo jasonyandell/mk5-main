@@ -444,6 +444,19 @@ export class StateBuilder {
   // ============================================================================
 
   /**
+   * Clear the bid to prevent bid-based early termination.
+   * Useful for cross-validation with solvers that don't model bid contracts.
+   * @example builder.withNoBid()
+   */
+  withNoBid(): this {
+    const newState = cloneGameState(this.state);
+    newState.currentBid = { type: BID_TYPES.PASS, player: -1 };
+    newState.winningBidder = -1;
+    newState.bids = [];
+    return new StateBuilder(newState) as this;
+  }
+
+  /**
    * Set the dealer position
    * @example builder.withDealer(2)
    */

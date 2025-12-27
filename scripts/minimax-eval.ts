@@ -16,7 +16,7 @@ import { dealDominoesWithSeed } from '../src/game/core/dominoes';
 import { StateBuilder } from '../src/tests/helpers/stateBuilder';
 import { createExecutionContext, type ExecutionContext } from '../src/game/types/execution';
 import { executeAction, type ExecuteActionOptions } from '../src/game/core/actions';
-import type { GameState, GameAction, TrumpSelection } from '../src/game/types';
+import type { GameState, TrumpSelection } from '../src/game/types';
 
 /** Reusable options object to avoid allocation per call */
 const SIMULATION_OPTIONS: ExecuteActionOptions = { skipHistory: true };
@@ -117,15 +117,18 @@ function main() {
   };
 
   // Build state with hands set and in playing phase
+  // Clear the bid to prevent early termination based on bid outcome
+  // (Python solver doesn't model bid contracts, plays all 7 tricks)
   const state = StateBuilder.inPlayingPhase(trump)
     .withHands(hands)
-    .withConfig({ playerTypes: ['ai', 'ai', 'ai', 'ai'], layers: ['base', 'speed'] })
+    .withConfig({ playerTypes: ['ai', 'ai', 'ai', 'ai'], layers: ['base'] })
+    .withNoBid()  // Disable bid-based early termination
     .build();
 
-  // Create simulation context (AI players, no consensus layer)
+  // Create simulation context (AI players, base layer only)
   const ctx = createExecutionContext({
     playerTypes: ['ai', 'ai', 'ai', 'ai'],
-    layers: ['base', 'speed'],
+    layers: ['base'],
   });
 
   // Run minimax evaluation (full game, no early termination)

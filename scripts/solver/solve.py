@@ -247,6 +247,7 @@ def solve_seed(seed: int, decl_id: int, device: torch.device = None) -> tuple[to
         device = torch.device('cpu')
 
     ctx = build_context(seed, decl_id)
+    ctx = ctx.to(device)  # Move context tables to device ONCE
 
     # Phase 1: Enumerate all reachable states
     all_states = enumerate_gpu(ctx, device)

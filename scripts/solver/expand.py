@@ -29,11 +29,11 @@ def expand_gpu(states: torch.Tensor, ctx: SeedContext) -> torch.Tensor:
     N = states.shape[0]
     device = states.device
 
-    # Move context tables to same device
-    L = ctx.L.to(device)
-    LOCAL_FOLLOW = ctx.LOCAL_FOLLOW.to(device)
-    TRICK_WINNER = ctx.TRICK_WINNER.to(device)
-    TRICK_POINTS = ctx.TRICK_POINTS.to(device)
+    # Context tables should already be on device (via ctx.to(device) in solve_seed)
+    L = ctx.L
+    LOCAL_FOLLOW = ctx.LOCAL_FOLLOW
+    TRICK_WINNER = ctx.TRICK_WINNER
+    TRICK_POINTS = ctx.TRICK_POINTS
 
     # Unpack all state fields
     remaining = unpack_remaining(states)  # (N, 4)

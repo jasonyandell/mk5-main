@@ -23,7 +23,7 @@ class SeedContext:
     """
     Precomputed tables for a specific seed and declaration.
 
-    All tensors are on CPU initially (will be moved to GPU later).
+    All tensors are on CPU initially. Call to(device) once to move to GPU.
     """
     L: torch.Tensor               # (4, 7) int8 - global domino ID per (player, local_idx)
     LOCAL_FOLLOW: torch.Tensor    # (112,) int8 - flattened follow masks
@@ -31,6 +31,22 @@ class SeedContext:
     TRICK_POINTS: torch.Tensor    # (9604,) int8 - points (1-31, NOT 1-11!)
     absorption_id: int
     power_id: int
+
+    def to(self, device: torch.device) -> 'SeedContext':
+        """
+        Move all tensors to the specified device.
+
+        Returns a new SeedContext with tensors on the target device.
+        This should be called ONCE before solve, not on every expand call.
+        """
+        return SeedContext(
+            L=self.L.to(device),
+            LOCAL_FOLLOW=self.LOCAL_FOLLOW.to(device),
+            TRICK_WINNER=self.TRICK_WINNER.to(device),
+            TRICK_POINTS=self.TRICK_POINTS.to(device),
+            absorption_id=self.absorption_id,
+            power_id=self.power_id,
+        )
 
 
 def _get_domino_points(global_id: int) -> int:
