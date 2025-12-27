@@ -102,7 +102,9 @@ $$\pi(\delta) = \begin{cases}
 \bot & \text{if } \delta \in \{\mathsf{doubles-suit}, \mathsf{notrump}\}
 \end{cases}$$
 
-The suit with power beats all other suits. When $\pi(\delta) = \bot$, no suit has power—Tier 2 is empty, so the highest follower wins. (In the doubles-suit variant, used for "nello" play, the strategic objective is to *lose* tricks, but the trick-taking mechanics are unchanged.)
+The suit with power beats all other suits. When $\pi(\delta) = \bot$, no suit has power—Tier 2 is empty, so the highest follower wins.
+
+**Nello note:** The "doubles-suit" declaration ($\delta = \mathsf{doubles-suit}$) is used for nello contracts. In nello, the strategic objective is to *lose* tricks, but the trick-taking mechanics are unchanged: doubles form suit 7, are ranked by pip value (6-6 highest), and the highest follower wins (no trump power). The implementation uses $\kappa(\delta) = \mathcal{D}^\circ$ to trigger pip-value ranking for doubles in the base ranking function.
 
 ---
 

@@ -36,12 +36,12 @@ describe('Doubles Trump Rules', () => {
         const suit = getLedSuitBase(state, domino);
 
         if (shouldBeTrump) {
-          // Trump dominoes should have rank >= 200
-          expect(rank).toBeGreaterThanOrEqual(200);
+          // Trump dominoes should have Tier 2 rank (32-46)
+          expect(rank).toBeGreaterThanOrEqual(32);
           expect(suit).toBe(CALLED); // Absorbed dominoes lead suit 7
         } else {
-          // Non-trump dominoes should have rank < 200
-          expect(rank).toBeLessThan(200);
+          // Non-trump dominoes should have Tier 0 or 1 rank (< 32)
+          expect(rank).toBeLessThan(32);
           expect(suit).not.toBe(CALLED); // Not absorbed
         }
       });
@@ -86,8 +86,8 @@ describe('Doubles Trump Rules', () => {
         const rank = rankInTrickBase(state, CALLED, domino);
         const suit = getLedSuitBase(state, domino);
 
-        // All doubles should be trump with rank >= 200
-        expect(rank).toBeGreaterThanOrEqual(200);
+        // All doubles should be trump with Tier 2 rank (32-46)
+        expect(rank).toBeGreaterThanOrEqual(32);
         expect(suit).toBe(CALLED);
       });
 
@@ -96,7 +96,7 @@ describe('Doubles Trump Rules', () => {
       const rank = rankInTrickBase(state, CALLED, nonDouble);
       const suit = getLedSuitBase(state, nonDouble);
 
-      expect(rank).toBeLessThan(200);
+      expect(rank).toBeLessThan(32);
       expect(suit).not.toBe(CALLED);
     });
   });

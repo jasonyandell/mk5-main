@@ -318,49 +318,6 @@ export function getLegalPlaysMask(
 }
 
 /**
- * Determine the winner of a trick
- *
- * @param trick - Array of domino IDs in play order
- * @param absorptionId - Current absorption configuration
- * @param powerId - Current power configuration
- * @param leadPlayer - Player index who led
- * @returns Player index who won the trick
- */
-export function getTrickWinnerFromTable(
-  trick: readonly DominoId[],
-  absorptionId: AbsorptionId,
-  powerId: PowerId,
-  leadPlayer: number
-): number {
-  const leadDomino = trick[0]!;
-  const ledSuit = EFFECTIVE_SUIT[leadDomino]![absorptionId]!;
-
-  let winner = 0;
-  let maxRank = RANK[leadDomino]![powerId]!;
-
-  for (let i = 1; i < trick.length; i++) {
-    const domino = trick[i]!;
-    const dominoSuit = EFFECTIVE_SUIT[domino]![absorptionId]!;
-
-    // Only dominoes in led suit OR with power can win
-    const inLedSuit = (dominoSuit === ledSuit);
-    const hasPower = HAS_POWER[domino]![powerId]!;
-
-    if (!inLedSuit && !hasPower) {
-      continue; // played off, can't win
-    }
-
-    const rank = RANK[domino]![powerId]!;
-    if (rank > maxRank) {
-      maxRank = rank;
-      winner = i;
-    }
-  }
-
-  return (leadPlayer + winner) % 4;
-}
-
-/**
  * Check if a domino can follow the led suit
  */
 export function canFollowFromTable(
@@ -376,13 +333,6 @@ export function canFollowFromTable(
  */
 export function isTrumpFromTable(dominoId: DominoId, powerId: PowerId): boolean {
   return HAS_POWER[dominoId]![powerId]!;
-}
-
-/**
- * Get the rank of a domino for comparison
- */
-export function getRankFromTable(dominoId: DominoId, powerId: PowerId): number {
-  return RANK[dominoId]![powerId]!;
 }
 
 /**

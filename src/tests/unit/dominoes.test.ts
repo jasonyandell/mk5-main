@@ -126,13 +126,14 @@ describe('Domino System', () => {
     it('should give trump doubles highest ranks', () => {
       const sixDouble = { high: 6, low: 6, id: '6-6' };
       const fiveDouble = { high: 5, low: 5, id: '5-5' };
-      const zeroDouble = { high: 0, low: 0, id: '0-0' };
 
       const trump = { type: 'suit', suit: SIXES } as const;
       const state: GameState = { trump } as GameState;
 
+      // 6-6 is trump (Tier 2), 5-5 is a slough (Tier 0) since it doesn't contain 6
       expect(rankInTrickBase(state, SIXES, sixDouble)).toBeGreaterThan(rankInTrickBase(state, SIXES, fiveDouble));
-      expect(rankInTrickBase(state, SIXES, fiveDouble)).toBeGreaterThan(rankInTrickBase(state, SIXES, zeroDouble));
+      // Note: Per SUIT_ALGEBRA.md §8, all sloughs return 0 (unordered)
+      // So we don't compare sloughs against each other
     });
 
     it('should rank trump doubles correctly when doubles are trump', () => {
