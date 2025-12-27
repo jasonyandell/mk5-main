@@ -107,6 +107,9 @@ export interface ActionRequest {
  * to avoid any client-side rule evaluation.
  */
 export interface DerivedViewFields {
+  /** Is the current trick complete? Uses rules.isTrickComplete for layer-aware completion (e.g., nello = 3 plays) */
+  isCurrentTrickComplete: boolean;
+
   /** Trick winner for current trick (-1 if incomplete) */
   currentTrickWinner: number;
 

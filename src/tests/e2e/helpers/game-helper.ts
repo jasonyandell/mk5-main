@@ -522,8 +522,8 @@ export class PlaywrightGameHelper {
   }
 
   /**
-   * Complete a full trick (4 plays)
-   * NOTE: This requires players 1-3 to be AI for automated play
+   * Complete a full trick (uses server-computed isCurrentTrickComplete for layer-aware completion)
+   * NOTE: This requires other players to be AI for automated play
    */
   async playFullTrick(): Promise<void> {
     // Check if AI is already enabled for players 1-3
@@ -535,21 +535,21 @@ export class PlaywrightGameHelper {
              view.state.playerTypes[2] !== 'ai' ||
              view.state.playerTypes[3] !== 'ai';
     });
-    
+
     // Only enable AI if not already enabled
     if (needsAI) {
       await this.enableAIForOtherPlayers();
     }
-    
+
     // Play one domino as player 0
     await this.playAnyDomino();
-    
+
     // In test mode, AI should execute synchronously after human action
-    // Just verify trick is complete (should have 4 dominoes)
+    // Wait for trick completion using derived.isCurrentTrickComplete (layer-aware: 4 plays for standard, 3 for nello)
     await this.page.waitForFunction(
       () => {
         const view = (window as any).getGameView?.();
-        return view && view.state?.currentTrick && view.state.currentTrick.length === 4;
+        return view?.derived?.isCurrentTrickComplete === true;
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );

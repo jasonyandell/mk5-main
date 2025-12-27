@@ -375,8 +375,11 @@ function computeDerivedFields(
 ): DerivedViewFields {
   const rules = ctx.rules;
 
+  // Use rules.isTrickComplete for layer-aware completion (e.g., nello = 3 plays)
+  const isCurrentTrickComplete = rules.isTrickComplete(coreState);
+
   // Compute current trick winner using rules (only if trick is complete)
-  const currentTrickWinner = coreState.currentTrick.length === 4
+  const currentTrickWinner = isCurrentTrickComplete
     ? rules.calculateTrickWinner(coreState, coreState.currentTrick)
     : -1;
 
@@ -417,6 +420,7 @@ function computeDerivedFields(
   const currentHandPoints = calculateTeamPointsFromTricks(coreState.tricks);
 
   return {
+    isCurrentTrickComplete,
     currentTrickWinner,
     handDominoMeta,
     currentHandPoints

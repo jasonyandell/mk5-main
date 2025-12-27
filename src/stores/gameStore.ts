@@ -65,6 +65,7 @@ function createPendingView(): GameView {
       gameId: 'initializing'
     },
     derived: {
+      isCurrentTrickComplete: false,
       currentTrickWinner: -1,
       handDominoMeta: [],
       currentHandPoints: [0, 0] as [number, number]
