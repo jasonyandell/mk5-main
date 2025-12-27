@@ -26,7 +26,7 @@ export type Pip = 0 | 1 | 2 | 3 | 4 | 5 | 6;
  * Determines which dominoes are "called" into suit 7.
  *
  * 0-6: "I called Xs" - dominoes containing that pip go to the called suit
- * 7: "I called doubles" - all doubles go to the called suit (doubles-trump, nello)
+ * 7: "I called doubles" - all doubles go to the called suit (doubles-trump, doubles-suit)
  * 8: nothing called - no dominoes move to suit 7 (no-trump)
  */
 export type AbsorptionId = number;
@@ -34,8 +34,8 @@ export type AbsorptionId = number;
 /**
  * Power configuration - determines which dominoes beat others (have trump power).
  * 0-6: dominoes containing that pip have power
- * 7: doubles have power
- * 8: nothing has power (nello, no-trump)
+ * 7: doubles have power (doubles-trump)
+ * 8: nothing has power (doubles-suit, no-trump)
  */
 export type PowerId = number;
 
