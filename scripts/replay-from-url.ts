@@ -32,7 +32,7 @@
  */
 
 import { replayFromUrl, type ReplayOptions } from '../src/game/utils/urlReplay';
-import { decodeGameUrl, compressEvents, decompressEvents } from '../src/game/core/url-compression';
+import { decodeGameUrl, compressEvents } from '../src/game/core/url-compression';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
@@ -72,23 +72,27 @@ let focusHand: number | undefined;
 let compact = false;
 
 for (let i = 1; i < args.length; i++) {
-  if (args[i] === '--stop-at' && args[i + 1]) {
-    stopAt = parseInt(args[i + 1], 10);
+  const arg = args[i];
+  const next = args[i + 1];
+  const next2 = args[i + 2];
+
+  if (arg === '--stop-at' && next) {
+    stopAt = parseInt(next, 10);
     i++;
-  } else if (args[i] === '--verbose') {
+  } else if (arg === '--verbose') {
     verbose = true;
-  } else if (args[i] === '--generate-test') {
+  } else if (arg === '--generate-test') {
     generateTest = true;
-  } else if (args[i] === '--action-range' && args[i + 1] && args[i + 2]) {
-    actionRangeStart = parseInt(args[i + 1], 10);
-    actionRangeEnd = parseInt(args[i + 2], 10);
+  } else if (arg === '--action-range' && next && next2) {
+    actionRangeStart = parseInt(next, 10);
+    actionRangeEnd = parseInt(next2, 10);
     i += 2;
-  } else if (args[i] === '--show-tricks') {
+  } else if (arg === '--show-tricks') {
     showTricks = true;
-  } else if (args[i] === '--hand' && args[i + 1]) {
-    focusHand = parseInt(args[i + 1], 10);
+  } else if (arg === '--hand' && next) {
+    focusHand = parseInt(next, 10);
     i++;
-  } else if (args[i] === '--compact') {
+  } else if (arg === '--compact') {
     compact = true;
   }
 }
@@ -223,15 +227,15 @@ describe('URL replay test', () => {
   process.exit(0);
 }
 
-// Normal replay mode
+// Normal replay mode - build options conditionally to satisfy exactOptionalPropertyTypes
 const options: ReplayOptions = {
-  stopAt,
   verbose,
-  actionRangeStart,
-  actionRangeEnd,
   showTricks,
-  focusHand,
-  compact
+  compact,
+  ...(stopAt !== undefined && { stopAt }),
+  ...(actionRangeStart !== undefined && { actionRangeStart }),
+  ...(actionRangeEnd !== undefined && { actionRangeEnd }),
+  ...(focusHand !== undefined && { focusHand }),
 };
 
 try {
