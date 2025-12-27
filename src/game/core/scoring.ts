@@ -59,29 +59,24 @@ export function calculateRoundScore(state: GameState): [number, number] {
 }
 
 /**
- * Checks if game is complete (any team reached target marks)
- * Overloaded to handle both tuple and individual team marks
+ * Checks if target marks have been reached (any team reached target).
+ * Works on raw marks data, not GameState.
+ *
+ * For GameState-based checks, use isGameComplete() from state.ts.
  */
-export function isGameComplete(teamMarksOrTeam0: [number, number] | number, gameTargetOrTeam1?: number, gameTarget: number = 7): boolean {
-  // Handle signature: isGameComplete(team0, team1, gameTarget = 7)
-  if (typeof teamMarksOrTeam0 === 'number' && typeof gameTargetOrTeam1 === 'number') {
-    const team0 = teamMarksOrTeam0;
-    const team1 = gameTargetOrTeam1;
-    return team0 >= gameTarget || team1 >= gameTarget;
-  }
-  
-  // Handle signature: isGameComplete([team0, team1], gameTarget)
-  const teamMarks = teamMarksOrTeam0 as [number, number];
-  const target = gameTargetOrTeam1 || 7;
-  return teamMarks[0] >= target || teamMarks[1] >= target;
+export function isTargetReached(teamMarks: [number, number], gameTarget: number): boolean {
+  return teamMarks[0] >= gameTarget || teamMarks[1] >= gameTarget;
 }
 
 /**
- * Gets the winning team (0 or 1), or null if game not complete
+ * Gets the winning team (0 or 1) from raw marks, or null if target not reached.
+ * Works on raw marks data, not GameState.
+ *
+ * For GameState-based checks, use getWinningTeam() from state.ts.
  */
-export function getWinningTeam(teamMarks: [number, number], gameTarget: number): number | null {
-  if (!isGameComplete(teamMarks, gameTarget)) return null;
-  
+export function getWinnerFromMarks(teamMarks: [number, number], gameTarget: number): number | null {
+  if (!isTargetReached(teamMarks, gameTarget)) return null;
+
   return teamMarks[0] >= gameTarget ? 0 : 1;
 }
 
@@ -100,7 +95,7 @@ export function calculateGameScore(playerScores: [number, number, number, number
  * Calculates final game score summary
  */
 export function calculateGameSummary(state: GameState) {
-  const winningTeam = getWinningTeam(state.teamMarks, state.gameTarget);
+  const winningTeam = getWinnerFromMarks(state.teamMarks, state.gameTarget);
 
   return {
     winningTeam,

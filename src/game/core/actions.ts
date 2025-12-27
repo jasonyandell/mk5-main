@@ -4,7 +4,7 @@ import { composeRules, baseLayer } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
-import { calculateTrickPoints, isGameComplete } from './scoring';
+import { calculateTrickPoints, isTargetReached } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeBiddingCompletion } from './bidding';
 import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
@@ -358,7 +358,7 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
   const newMarks = rules.calculateScore(state);
 
   // Check if game is complete
-  if (isGameComplete(newMarks, state.gameTarget)) {
+  if (isTargetReached(newMarks, state.gameTarget)) {
     // Game over - clear hands
     const newPlayers = state.players.map(p => ({
       ...p,

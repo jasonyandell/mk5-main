@@ -99,12 +99,15 @@ export {
 
 // Scoring
 // NOTE: For trick winner calculation, use rules.calculateTrickWinner(state, trick) instead
+// NOTE: For game completion checks, use isGameComplete/getWinningTeam from state.ts (takes GameState)
+//       The raw marks versions (isTargetReached/getWinnerFromMarks) are for internal scoring use.
 export {
   calculateTrickPoints,
   calculateRoundScore,
   calculateGameSummary,
   calculateGameScore,
-  getWinningTeam as getWinningTeamFromMarks
+  isTargetReached,
+  getWinnerFromMarks
 } from './core/scoring';
 
 // URL compression utilities (v2 only)

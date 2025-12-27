@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { StateBuilder } from '../helpers';
 import { composeRules, baseLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
-import { isGameComplete } from '../../game/core/scoring';
+import { isTargetReached } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED } from '../../game/types';
@@ -104,10 +104,10 @@ describe('Tournament Standards (N42PA Rules)', () => {
       expect(state.phase).toBe('game_end');
       expect(state.teamMarks[0]).toBeGreaterThanOrEqual(state.gameTarget); // team 0 wins
 
-      // Test with isGameComplete function directly
-      expect(isGameComplete(6, 0)).toBe(false);
-      expect(isGameComplete(7, 0)).toBe(true);
-      expect(isGameComplete(0, 7)).toBe(true);
+      // Test with isTargetReached function directly
+      expect(isTargetReached([6, 0], 7)).toBe(false);
+      expect(isTargetReached([7, 0], 7)).toBe(true);
+      expect(isTargetReached([0, 7], 7)).toBe(true);
     });
   });
 
