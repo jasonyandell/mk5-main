@@ -18,10 +18,12 @@ import {
   suitsWithTrumpBase,
   canFollowBase,
   rankInTrickBase,
+  rankInTrickWithConfig,
   isTrumpBase,
   isValidPlayBase,
   getValidPlaysBase
 } from './rules-base';
+import { getAbsorptionId, getPowerId } from '../core/domino-tables';
 
 // Re-export suitsWithTrumpBase for AI modules that need it
 export { suitsWithTrumpBase } from './rules-base';
@@ -197,9 +199,14 @@ export function composeRules(layers: Layer[]): GameRules {
 
       const ledSuit = state.currentSuit as LedSuit;
 
+      // Compute configuration once for all dominoes in trick
+      const absorptionId = getAbsorptionId(state.trump);
+      const powerId = getPowerId(state.trump);
+
       // Compose rankInTrick inline to use for ranking
       const getRank = (domino: Domino): number => {
-        let rank = rankInTrickBase(state, ledSuit, domino);
+        // Use pre-computed IDs to avoid redundant state.trump conversions
+        let rank = rankInTrickWithConfig(absorptionId, powerId, ledSuit, domino);
         for (const layer of layers) {
           if (layer.rules?.rankInTrick) {
             rank = layer.rules.rankInTrick(state, ledSuit, domino, rank);

@@ -68,26 +68,25 @@ export function canFollowBase(state: GameState, led: LedSuit, domino: Domino): b
 }
 
 /**
- * Base implementation: What is this domino's rank for trick-taking?
+ * Rank computation with pre-computed configuration IDs.
  *
  * Implements τ(d, ℓ, δ) = (tier << 4) + rank from SUIT_ALGEBRA.md §8.
+ *
+ * This is the optimized version used by calculateTrickWinner to avoid
+ * recomputing absorptionId/powerId for each domino in a trick.
  *
  * Three-tier ranking with 6-bit encoding:
  * - Tier 2 (trump):   32-46  (binary 10_xxxx)
  * - Tier 1 (follows): 16-30  (binary 01_xxxx)
  * - Tier 0 (slough):  0      (binary 00_0000)
- *
- * Rank within tier:
- * - Doubles-trump (δ = doubles): rank = pip value (0-6)
- * - Other doubles in play: rank = 14
- * - Non-doubles in play: rank = pipSum (0-12)
- * - Sloughs: rank = 0 (all sloughs tie, but lead always wins per §9)
  */
-export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino): number {
+export function rankInTrickWithConfig(
+  absorptionId: number,
+  powerId: number,
+  led: LedSuit,
+  domino: Domino
+): number {
   const dominoId = dominoToId(domino);
-  const absorptionId = getAbsorptionId(state.trump);
-  const powerId = getPowerId(state.trump);
-
   const isDouble = domino.high === domino.low;
   const pipSum = domino.high + domino.low;
 
@@ -125,6 +124,19 @@ export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino):
 
   // τ = (tier << 4) + rank
   return (tier << 4) + rank;
+}
+
+/**
+ * Base implementation: What is this domino's rank for trick-taking?
+ *
+ * Delegates to rankInTrickWithConfig after computing configuration IDs.
+ * For batch operations (like calculateTrickWinner), use rankInTrickWithConfig
+ * directly to avoid recomputing IDs for each domino.
+ */
+export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino): number {
+  const absorptionId = getAbsorptionId(state.trump);
+  const powerId = getPowerId(state.trump);
+  return rankInTrickWithConfig(absorptionId, powerId, led, domino);
 }
 
 /**
