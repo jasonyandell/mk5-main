@@ -195,31 +195,22 @@ export const SUIT_MASK: readonly (readonly number[])[] = (() => {
 /**
  * RANK[d][powerId] -> number (higher wins)
  *
- * Determines the POWER-BASED rank of a domino. This table encodes only
- * trump status, NOT the full three-tier ranking used in trick resolution.
+ * Implements the ranking portion of τ from SUIT_ALGEBRA.md §8.
  *
- * Rankings:
- * - 100: Highest trump (double of power pip, e.g., 5-5 when 5s trump)
- * - 50+: Trump/power dominoes (50 + pip sum)
- * - 20+: Non-trump doubles (pip sum + 20, highest in their suit)
- * - 0-12: Non-trump non-doubles (just pip sum)
+ * This table encodes:
+ * - Power dominoes: (2 << 4) + rank = 32-46 (full Tier 2 τ value)
+ * - Non-power dominoes: just their rank (0-14) for potential Tier 1
  *
- * ## Why This Table Doesn't Encode "Follows Suit"
+ * The "follows suit" tier (Tier 1 vs Tier 0) is context-dependent—requires
+ * knowing what was led. The `rankInTrickBase` function in rules-base.ts
+ * computes the full τ at call time using this table for power status.
  *
- * The full ranking has THREE tiers: trump (200+) > follows suit (50+) > slough (0-12)
+ * Rank values:
+ * - 14: Doubles (highest in suit)
+ * - 0-12: Non-doubles (pip sum)
+ * - Exception: Doubles-trump (powerId=7) → rank = pip value (0-6)
  *
- * But "follows suit" depends on WHAT WAS LED - context not known until the
- * trick is played. The same domino has different ranks depending on what's led:
- *
- *   // 3s are trump, consider 6-2:
- *   // Sixes led → 6-2 follows → Tier 2 (50+)
- *   // Blanks led → 6-2 can't follow → Tier 3 (just 8)
- *
- * This table answers: "Given this trump config, what's this domino's power rank?"
- * The `rankInTrickBase` function in rules-base.ts adds the led-suit-dependent
- * tier at call time using `canFollowFromTable`.
- *
- * See ORIENTATION.md "The Algebraic Model: Tables vs Dynamic Computation"
+ * See SUIT_ALGEBRA.md "Architectural Note: Configuration vs Context"
  *
  * 28 × 9 = 252 entries
  */
@@ -234,28 +225,28 @@ export const RANK: readonly (readonly number[])[] = (() => {
 
     for (let power = 0; power < 9; power++) {
       if (power <= 6) {
-        // Pip power: dominoes containing that pip beat others
+        // Pip power: dominoes containing that pip have power
         const hasPower = (lo === power || hi === power);
         if (hasPower) {
-          if (isDouble && lo === power) {
-            row[power] = 100; // highest trump (e.g., 5-5 when 5s trump)
-          } else {
-            row[power] = 50 + pipSum;
-          }
+          // Tier 2: (2 << 4) + rank
+          const rank = isDouble ? 14 : pipSum;
+          row[power] = (2 << 4) + rank;
         } else {
-          // Non-power: doubles get +20 bonus (highest in their suit)
-          row[power] = isDouble ? pipSum + 20 : pipSum;
+          // No power: just raw rank for potential Tier 1
+          row[power] = isDouble ? 14 : pipSum;
         }
       } else if (power === 7) {
-        // Doubles power
+        // Doubles power: doubles have power, rank by pip value
         if (isDouble) {
-          row[power] = 50 + pipSum; // all doubles are trump
+          // Tier 2, rank = pip value (not 14!)
+          row[power] = (2 << 4) + lo;
         } else {
+          // No power: raw rank for potential Tier 1
           row[power] = pipSum;
         }
       } else {
-        // No power (8): doubles still highest in suit, non-doubles by pip sum
-        row[power] = isDouble ? pipSum + 20 : pipSum;
+        // No power (8): all dominoes just have raw rank
+        row[power] = isDouble ? 14 : pipSum;
       }
     }
     result[d] = row;

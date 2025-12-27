@@ -70,13 +70,18 @@ export function canFollowBase(state: GameState, led: LedSuit, domino: Domino): b
 /**
  * Base implementation: What is this domino's rank for trick-taking?
  *
- * Higher rank wins. Three-tier ranking:
- * - 200+: Trump/absorbed with power (doubles get +50)
- * - 50+: Follows suit (doubles get +50)
- * - 0-12: Slough (just pip sum)
+ * Implements τ(d, ℓ, δ) = (tier << 4) + rank from SUIT_ALGEBRA.md §8.
  *
- * Note: The RANK table encodes power-only ranking. This function adds
- * the "follows suit" tier which depends on what was led.
+ * Three-tier ranking with 6-bit encoding:
+ * - Tier 2 (trump):   32-46  (binary 10_xxxx)
+ * - Tier 1 (follows): 16-30  (binary 01_xxxx)
+ * - Tier 0 (slough):  0      (binary 00_0000)
+ *
+ * Rank within tier:
+ * - Doubles-trump (δ = doubles): rank = pip value (0-6)
+ * - Other doubles in play: rank = 14
+ * - Non-doubles in play: rank = pipSum (0-12)
+ * - Sloughs: rank = 0 (all sloughs tie, but lead always wins per §9)
  */
 export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino): number {
   const dominoId = dominoToId(domino);
@@ -86,24 +91,39 @@ export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino):
   const isDouble = domino.high === domino.low;
   const pipSum = domino.high + domino.low;
 
-  // Check if domino has power (is trump)
+  // Determine tier
   const hasPower = isTrumpFromTable(dominoId, powerId);
-
-  if (hasPower) {
-    // Trump tier: 200+ (doubles get +50)
-    return isDouble ? 200 + domino.high + 50 : 200 + pipSum;
-  }
-
-  // Check if domino follows the led suit
   const followsSuit = canFollowFromTable(dominoId, absorptionId, led);
 
-  if (followsSuit) {
-    // Following suit tier: 50+ (doubles get +50)
-    return isDouble ? 50 + domino.high + 50 : 50 + pipSum;
+  let tier: number;
+  if (hasPower) {
+    tier = 2;
+  } else if (followsSuit) {
+    tier = 1;
+  } else {
+    tier = 0;
   }
 
-  // Slough tier: just pip sum
-  return pipSum;
+  // Tier 0 (slough): all return 0
+  if (tier === 0) {
+    return 0;
+  }
+
+  // Determine rank within tier
+  let rank: number;
+  if (state.trump.type === 'doubles' && isDouble) {
+    // Doubles-trump special case: rank by pip value (0-6)
+    rank = domino.high;
+  } else if (isDouble) {
+    // Other doubles in play: rank = 14 (highest possible)
+    rank = 14;
+  } else {
+    // Non-doubles: rank = pip sum (0-12)
+    rank = pipSum;
+  }
+
+  // τ = (tier << 4) + rank
+  return (tier << 4) + rank;
 }
 
 /**
