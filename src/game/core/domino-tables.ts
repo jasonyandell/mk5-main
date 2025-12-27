@@ -22,27 +22,29 @@ export type DominoId = number;
 export type Pip = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /**
- * Absorption configuration - determines suit structure
- * 0-6: pip absorption (dominoes containing that pip form absorbed suit)
- * 7: doubles absorption (doubles form their own suit)
- * 8: no absorption (theoretical, used for no-trump)
+ * Called set configuration (absorption pattern) - encodes κ(δ) from SUIT_ALGEBRA.md §3.
+ * Determines which dominoes are "called" into suit 7.
+ *
+ * 0-6: "I called Xs" - dominoes containing that pip go to the called suit
+ * 7: "I called doubles" - all doubles go to the called suit (doubles-trump, nello)
+ * 8: nothing called - no dominoes move to suit 7 (no-trump)
  */
 export type AbsorptionId = number;
 
 /**
- * Power configuration - determines which dominoes beat others
+ * Power configuration - determines which dominoes beat others (have trump power).
  * 0-6: dominoes containing that pip have power
  * 7: doubles have power
  * 8: nothing has power (nello, no-trump)
  */
 export type PowerId = number;
 
-/** Suit index 0-7 (0-6 = pip suits, 7 = absorbed/trump suit) */
+/** Suit index 0-7 (0-6 = pip suits, 7 = called suit) */
 export type SuitId = number;
 
 // ============= CONSTANTS =============
 
-/** The called suit index (suit 7) - where absorbed dominoes go */
+/** The called suit index (suit 7) - where "called" dominoes go */
 export const CALLED_SUIT = 7;
 
 /** Pip values for each domino index [low, high] */
