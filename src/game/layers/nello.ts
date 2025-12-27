@@ -12,7 +12,7 @@
  */
 
 import type { Layer } from './types';
-import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome } from './helpers';
+import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome, calculateTrickBasedScore } from './helpers';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { BID_TYPES } from '../constants';
 
@@ -43,30 +43,10 @@ export const nelloLayer: Layer = {
     },
 
     calculateScore: (state, prev) => {
-      // Nello can be bid as MARKS with nello trump
       if (state.currentBid.type !== BID_TYPES.MARKS || state.trump.type !== 'nello') {
         return prev;
       }
-
-      // Nello scoring: bidding team must take no tricks
-      const bidder = state.players[state.winningBidder];
-      if (!bidder) return prev;
-
-      const biddingTeam = bidder.teamId;
-      const biddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winner = state.players[trick.winner];
-        if (!winner) return false;
-        return winner.teamId === biddingTeam;
-      }).length;
-
-      const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
-      if (biddingTeamTricks === 0) {
-        newMarks[biddingTeam] += state.currentBid.value!;
-      } else {
-        newMarks[biddingTeam === 0 ? 1 : 0] += state.currentBid.value!;
-      }
-      return newMarks;
+      return calculateTrickBasedScore(state, false, prev); // mustWin=false: must win NO tricks
     },
 
     // Bidder leads normally in nello (no override needed)

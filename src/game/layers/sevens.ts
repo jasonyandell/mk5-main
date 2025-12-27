@@ -14,7 +14,7 @@
  */
 
 import type { Layer } from './types';
-import { checkTrickBasedHandOutcome, getPlayerTeam, getDistanceFromSeven, findClosestToSeven } from './helpers';
+import { checkTrickBasedHandOutcome, getPlayerTeam, getDistanceFromSeven, findClosestToSeven, calculateTrickBasedScore } from './helpers';
 import { BID_TYPES } from '../constants';
 
 export const sevensLayer: Layer = {
@@ -49,31 +49,10 @@ export const sevensLayer: Layer = {
     },
 
     calculateScore: (state, prev) => {
-      // Sevens can be bid as MARKS with sevens trump
       if (state.currentBid.type !== BID_TYPES.MARKS || state.trump.type !== 'sevens') {
         return prev;
       }
-
-      // Sevens: bidding team must take all tricks
-      const bidder = state.players[state.winningBidder];
-      if (!bidder) return prev;
-
-      const biddingTeam = bidder.teamId;
-      const opponentTeam = biddingTeam === 0 ? 1 : 0;
-      const nonBiddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winner = state.players[trick.winner];
-        if (!winner) return false;
-        return winner.teamId === opponentTeam;
-      }).length;
-
-      const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
-      if (nonBiddingTeamTricks === 0) {
-        newMarks[biddingTeam] += state.currentBid.value!;
-      } else {
-        newMarks[opponentTeam] += state.currentBid.value!;
-      }
-      return newMarks;
+      return calculateTrickBasedScore(state, true, prev); // mustWin=true: must win ALL tricks
     },
 
     // Completely different trick winner algorithm
