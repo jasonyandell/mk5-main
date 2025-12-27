@@ -4,6 +4,7 @@ import { calculateTrickPoints } from './scoring';
 import { getSuitName } from '../game-terms';
 import { composeRules } from '../layers/compose';
 import { baseLayer } from '../layers';
+import { createMinimalState } from './minimal-state';
 
 /**
  * Validates mark bids with tournament progression rules
@@ -38,30 +39,11 @@ export function isValidMarkBid(bid: Bid, lastBid: Bid, _previousBids: Bid[]): bo
  */
 export function getTrickWinner(trick: { player: number; domino: Domino }[], trump: TrumpSelection, leadSuit: LedSuitOrNone): number {
   const rules = composeRules([baseLayer]);
-  // Create minimal state for rules calculation
-  const state: GameState = {
+  const state = createMinimalState({
     trump,
     currentSuit: leadSuit,
-    currentTrick: trick as Play[],
-    // Minimal required fields
-    phase: 'playing',
-    players: [],
-    currentPlayer: 0,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: -1 },
-    winningBidder: -1,
-    tricks: [],
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 7,
-    shuffleSeed: 0,
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    actionHistory: [],
-    initialConfig: { playerTypes: ['human', 'ai', 'ai', 'ai'], shuffleSeed: 0, theme: 'coffee', colorOverrides: {} },
-    theme: 'coffee',
-    colorOverrides: {}
-  };
+    currentTrick: trick as Play[]
+  });
   return rules.calculateTrickWinner(state, trick as Play[]);
 }
 

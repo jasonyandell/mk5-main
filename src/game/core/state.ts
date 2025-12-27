@@ -200,6 +200,9 @@ export function createInitialState(options?: {
   return initialState;
 }
 
+// Re-export createMinimalState for convenience
+export { createMinimalState } from './minimal-state';
+
 /**
  * Creates a deep copy of the game state for immutable operations
  */

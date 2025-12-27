@@ -26,12 +26,13 @@ export {
 } from './constants';
 
 // Core state management
-export { 
-  createInitialState, 
+export {
+  createInitialState,
   createSetupState,
-  cloneGameState, 
-  validateGameState, 
-  isGameComplete, 
+  createMinimalState,
+  cloneGameState,
+  validateGameState,
+  isGameComplete,
   getWinningTeam,
   advanceToNextPhase
 } from './core/state';

@@ -5,12 +5,13 @@
  * Returns what the AI has and what it means in context.
  */
 
-import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone } from '../types';
-import { NO_LEAD_SUIT, NO_BIDDER, TRUMP_NOT_SELECTED } from '../types';
+import type { Domino, TrumpSelection, Trick, Play, GameState, LedSuitOrNone, Player } from '../types';
+import { NO_LEAD_SUIT, TRUMP_NOT_SELECTED } from '../types';
 import { getTrumpSuit, getDominoPoints } from '../core/dominoes';
 import { composeRules } from '../layers/compose';
 import { baseLayer } from '../layers';
 import type { GameRules } from '../layers/types';
+import { createMinimalState } from '../core/minimal-state';
 
 /**
  * Context for AI analysis - just the essentials
@@ -342,36 +343,16 @@ export function createMinimalAnalysisState(
   trump: TrumpSelection,
   analyzingPlayerId: number = 0
 ): GameState {
-  return {
-    initialConfig: {
-      playerTypes: ['human', 'ai', 'ai', 'ai'],
-      shuffleSeed: 0,
-      theme: 'coffee',
-      colorOverrides: {}
-    },
-    phase: 'playing',
-    players: [
-      { id: 0, name: 'Analyzer', hand: analyzingPlayerId === 0 ? hand : [], teamId: 0, marks: 0 },
-      { id: 1, name: 'Opponent1', hand: analyzingPlayerId === 1 ? hand : [], teamId: 1, marks: 0 },
-      { id: 2, name: 'Partner', hand: analyzingPlayerId === 2 ? hand : [], teamId: 0, marks: 0 },
-      { id: 3, name: 'Opponent2', hand: analyzingPlayerId === 3 ? hand : [], teamId: 1, marks: 0 }
-    ],
-    currentPlayer: analyzingPlayerId,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: NO_BIDDER },
-    winningBidder: NO_BIDDER,
+  const players: Player[] = [
+    { id: 0, name: 'Analyzer', hand: analyzingPlayerId === 0 ? hand : [], teamId: 0, marks: 0 },
+    { id: 1, name: 'Opponent1', hand: analyzingPlayerId === 1 ? hand : [], teamId: 1, marks: 0 },
+    { id: 2, name: 'Partner', hand: analyzingPlayerId === 2 ? hand : [], teamId: 0, marks: 0 },
+    { id: 3, name: 'Opponent2', hand: analyzingPlayerId === 3 ? hand : [], teamId: 1, marks: 0 }
+  ];
+
+  return createMinimalState({
     trump,
-    tricks: [],
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 250,
-    shuffleSeed: 0,
-    playerTypes: ['human', 'ai', 'ai', 'ai'],
-    actionHistory: [],
-    theme: 'coffee',
-    colorOverrides: {}
-  };
+    players,
+    currentPlayer: analyzingPlayerId
+  });
 }
