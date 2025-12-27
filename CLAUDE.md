@@ -61,9 +61,10 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 ## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
   User provides localhost URL with a bug report? Follow this workflow:
 
-  1. **Generate test automatically**: `node scripts/replay-from-url.js "<url>" --generate-test`
-      - Creates test file in scratch/test-{timestamp}.js
+  1. **Generate test automatically**: `npx tsx scripts/replay-from-url.ts "<url>" --generate-test`
+      - Creates test file in scratch/test-{timestamp}.test.ts
       - Test includes all replay logic and state logging
+      - Run with: `npx vitest --config vitest.scratch.config.ts run scratch/test-*.test.ts`
 
   2. **Debug with focused options**:
       - `--action-range 87 92` - Show only actions 87-92 (no grep needed!)
@@ -71,6 +72,10 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
       - `--show-tricks` - Display trick winners and points
       - `--compact` - One line per action with score changes
       - `--stop-at N` - Stop replay at action N
+
+  3. **Other URL scripts**:
+      - `npx tsx scripts/encode-url.ts <seed> [action1] [action2] ...` - Create URL from seed + actions
+      - `npx tsx scripts/decode-url.ts "<url>"` - Decode URL to show components
 
 ## Testing Strategy
 

@@ -6,9 +6,14 @@ When a user provides a localhost URL with a bug report:
 
 ### Step 1: Generate Test Automatically
 ```bash
-node scripts/replay-from-url.js "<url>" --generate-test
+npx tsx scripts/replay-from-url.ts "<url>" --generate-test
 ```
-Creates `scratch/test-{timestamp}.js` with all replay logic and state logging.
+Creates `scratch/test-{timestamp}.test.ts` with Vitest assertions and replay logic.
+
+Run the generated test:
+```bash
+npx vitest --config vitest.scratch.config.ts run scratch/test-*.test.ts
+```
 
 ### Step 2: Debug with Focused Options
 
@@ -23,13 +28,22 @@ Creates `scratch/test-{timestamp}.js` with all replay logic and state logging.
 ### Example Debugging Session
 ```bash
 # First, see overview
-node scripts/replay-from-url.js "<url>" --compact
+npx tsx scripts/replay-from-url.ts "<url>" --compact
 
 # Found issue around action 45, zoom in
-node scripts/replay-from-url.js "<url>" --action-range 40 50
+npx tsx scripts/replay-from-url.ts "<url>" --action-range 40 50
 
 # Check specific hand
-node scripts/replay-from-url.js "<url>" --hand 3 --show-tricks
+npx tsx scripts/replay-from-url.ts "<url>" --hand 3 --show-tricks
+```
+
+### Other URL Scripts
+```bash
+# Encode seed + actions to URL
+npx tsx scripts/encode-url.ts 12345 pass pass pass bid-30
+
+# Decode URL to see components
+npx tsx scripts/decode-url.ts "?s=9ix&a=AAACS"
 ```
 
 ## Testing Patterns
