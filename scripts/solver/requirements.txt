@@ -1,0 +1,4 @@
+# Texas 42 GPU Solver Dependencies
+numpy>=1.24.0
+cupy-cuda12x>=12.0.0  # RTX 3050 uses CUDA 12
+pyarrow>=14.0.0       # Parquet output
