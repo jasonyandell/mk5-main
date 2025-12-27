@@ -581,9 +581,22 @@ export function actionToId(action: GameAction): string {
       return `agree-score-p${action.player}`;
     case 'redeal':
       return 'redeal';
+    case 'retry-one-hand':
+      return 'retry-one-hand';
+    case 'new-one-hand':
+      return 'new-one-hand';
     default:
-      return 'unknown';
+      // TypeScript exhaustiveness check - should never reach here
+      return assertNeverAction(action);
   }
+}
+
+/**
+ * Exhaustiveness check helper for GameAction.
+ * If TypeScript complains about the type of `action`, a case is missing above.
+ */
+function assertNeverAction(action: never): never {
+  throw new Error(`Unhandled action type: ${(action as GameAction).type}`);
 }
 
 /**
@@ -610,7 +623,12 @@ export function actionToLabel(action: GameAction): string {
       return `Player ${action.player} agrees`;
     case 'redeal':
       return 'All passed - Redeal';
+    case 'retry-one-hand':
+      return 'Retry hand';
+    case 'new-one-hand':
+      return 'New hand';
     default:
-      return 'Unknown action';
+      // TypeScript exhaustiveness check - should never reach here
+      return assertNeverAction(action);
   }
 }

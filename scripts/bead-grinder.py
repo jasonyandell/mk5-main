@@ -40,6 +40,22 @@ from claude_agent_sdk import (
 PROJECT_ROOT = Path(__file__).parent.parent.absolute()
 SCRATCH_DIR = PROJECT_ROOT / "scratch"
 
+# Default beads to process when no arguments provided
+DEFAULT_BEADS = [
+    # Codebase review epic: t42-21ze
+    "t42-qsg6",  # Fix trick completion assumptions in kernel/view-projection
+    "t42-zl13",  # Fix hints layer capability + requiredCapabilities semantics
+    "t42-9an8",  # Make actionToId/actionToLabel exhaustive (URL 'unknown' events)
+    "t42-umsi",  # Update URL tooling scripts to match current url-compression
+    "t42-6hv5",  # Unify action equality/matching logic
+    "t42-8s1f",  # Consolidate scoring helpers (avoid duplicate isGameComplete/getWinningTeam)
+    "t42-wutc",  # Deduplicate capability builders and tighten playerIndex typing
+    "t42-nw1n",  # Deduplicate 'which player executes this action' logic
+    "t42-bxxp",  # Remove ad-hoc minimal GameState constructors with magic defaults
+    "t42-u5oc",  # Clean up stores (await void, internal client access, get(store))
+    "t42-43w4",  # Retire markdown checklist planning workflow (use bd instead)
+]
+
 SYSTEM_PROMPT = """You are an autonomous agent completing a task from the beads issue tracker.
 
 ## Project: Texas 42 Dominoes
@@ -89,7 +105,6 @@ async def run_bead(bead_id: str) -> tuple[bool, int, float]:
         cwd=PROJECT_ROOT,
         permission_mode="bypassPermissions",
         max_turns=100,
-        max_budget_usd=10.0,
     )
 
     prompt = f"""Complete bead {bead_id}.
@@ -168,43 +183,53 @@ def _summarize_input(block: ToolUseBlock) -> str:
 async def main():
     bead_ids = [a for a in sys.argv[1:] if not a.startswith("-")]
 
+    # Use default beads if none provided
     if not bead_ids:
-        print("Usage: python scripts/bead-grinder.py <bead-id> [bead-id...]")
-        print("\nRuns autonomous agent on each bead sequentially.")
-        print("Logs saved to scratch/bead-<id>-<timestamp>.log")
-        print("\nFor parallel/worktree workflows, use grinder beads instead:")
-        print('  "Grind t42-abc and t42-def together"')
-        return
+        bead_ids = DEFAULT_BEADS
 
-    print(f"\n🚀 Bead Grinder")
-    print(f"   Beads: {', '.join(bead_ids)}")
-    print()
+    SCRATCH_DIR.mkdir(exist_ok=True)
+    grinder_log = SCRATCH_DIR / f"grinder_log_{datetime.now():%Y%m%d-%H%M%S}.txt"
+
+    def log(msg: str):
+        """Write to both console and grinder log."""
+        print(msg)
+        with open(grinder_log, "a") as f:
+            f.write(msg + "\n")
+
+    log(f"\n🚀 Bead Grinder")
+    log(f"   Started: {datetime.now().isoformat()}")
+    log(f"   Beads: {len(bead_ids)} total")
+    for i, bead_id in enumerate(bead_ids, 1):
+        log(f"     {i}. {bead_id}")
+    log("")
 
     results = []
-    for bead_id in bead_ids:
-        print(f"📋 Processing {bead_id}...")
+    for i, bead_id in enumerate(bead_ids, 1):
+        log(f"📋 [{i}/{len(bead_ids)}] Processing {bead_id}...")
         success, turns, cost = await run_bead(bead_id)
         results.append((bead_id, success, turns, cost))
         status = "✅" if success else "❌"
-        print(f"   {status} {turns} turns, ${cost:.2f}")
+        log(f"   {status} {turns} turns, ${cost:.2f}")
 
     # Summary
-    print()
-    print("=" * 50)
+    log("")
+    log("=" * 50)
     completed = sum(1 for _, s, _, _ in results if s)
     failed = sum(1 for _, s, _, _ in results if not s)
     total_cost = sum(c for _, _, _, c in results)
 
     if failed:
-        print(f"⚠️  {completed} completed, {failed} failed")
+        log(f"⚠️  {completed} completed, {failed} failed")
         for bead_id, success, _, _ in results:
             if not success:
-                print(f"   ❌ {bead_id}")
+                log(f"   ❌ {bead_id}")
     else:
-        print(f"🎉 All {completed} beads complete!")
+        log(f"🎉 All {completed} beads complete!")
 
-    print(f"   Total cost: ${total_cost:.2f}")
-    print("=" * 50)
+    log(f"   Total cost: ${total_cost:.2f}")
+    log(f"   Finished: {datetime.now().isoformat()}")
+    log("=" * 50)
+    log(f"\n📄 Log saved to: {grinder_log}")
 
 
 if __name__ == "__main__":
