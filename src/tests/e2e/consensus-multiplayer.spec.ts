@@ -76,8 +76,11 @@ test.describe('Consensus Layer - Human Only', () => {
     // With 1 human + 3 AI, after human agrees, complete-trick executes automatically
     // Then the next trick begins (P1 won, so P1 leads, but P1 is AI so it plays)
 
-    // Give time for the chain of events
-    await page.waitForTimeout(300);
+    // Wait for the agree-trick-p0 button to disappear (state has advanced)
+    await page.waitForFunction(
+      () => !document.querySelector('[data-testid="agree-trick-p0"]'),
+      { timeout: 5000 }
+    );
 
     // The current trick should now be empty or have new plays
     // Check that we're no longer showing agree-trick-p0
