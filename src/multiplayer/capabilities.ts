@@ -135,17 +135,35 @@ function canSeeHand(session: PlayerSession, playerIndex: number): boolean {
   return false;
 }
 
-function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
+/**
+ * Prune metadata based on session capabilities.
+ *
+ * The `requiredCapabilities` field on metadata controls VISIBILITY of metadata fields,
+ * not execution authorization. If a session lacks required capabilities, the gated
+ * metadata is stripped, but the action itself remains available.
+ *
+ * Currently:
+ * - hint: requires 'see-hints' capability
+ * - aiIntent: always stripped (internal use)
+ * - requiredCapabilities: always stripped (internal use)
+ */
+function pruneMetadata(meta: ActionMeta, session: PlayerSession): Record<string, unknown> {
   const output: Record<string, unknown> = {};
+  const canSeeHints = hasCapability(session, { type: 'see-hints' });
 
   for (const [key, value] of Object.entries(meta)) {
     if (value === undefined) continue;
 
-    if (key === HINT_KEY || key === AI_INTENT_KEY) {
+    // Always strip internal metadata
+    if (key === AI_INTENT_KEY || key === REQUIRED_CAPABILITIES_KEY) {
       continue;
     }
 
-    if (key === REQUIRED_CAPABILITIES_KEY) {
+    // Hint visibility gated by see-hints capability
+    if (key === HINT_KEY) {
+      if (canSeeHints) {
+        output[key] = value;
+      }
       continue;
     }
 
@@ -155,20 +173,16 @@ function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
   return output;
 }
 
-function canExecuteActionWithCapabilities(
+/**
+ * Check if session can EXECUTE this action.
+ *
+ * Execution authorization is based on act-as-player capability.
+ * Note: requiredCapabilities on metadata gates VISIBILITY, not execution.
+ */
+function canExecuteAction(
   session: PlayerSession,
   action: GameAction
 ): boolean {
-  const meta = normalizeMeta((action as { meta?: unknown }).meta);
-  const required = meta?.requiredCapabilities;
-
-  if (Array.isArray(required) && required.length > 0) {
-    const allowed = required.some(cap => hasCapability(session, cap));
-    if (!allowed) {
-      return false;
-    }
-  }
-
   if ('player' in action && typeof action.player === 'number') {
     return hasCapability(session, { type: 'act-as-player', playerIndex: action.player });
   }
@@ -177,13 +191,16 @@ function canExecuteActionWithCapabilities(
 }
 
 /**
- * Removes metadata the viewing session is not authorized to see.
+ * Filter an action for a session's view.
+ *
+ * Returns null if session cannot execute the action.
+ * Otherwise returns action with metadata pruned based on visibility capabilities.
  */
 export function filterActionForSession(
   session: PlayerSession,
   action: GameAction
 ): GameAction | null {
-  if (!canExecuteActionWithCapabilities(session, action)) {
+  if (!canExecuteAction(session, action)) {
     return null;
   }
 
@@ -192,7 +209,7 @@ export function filterActionForSession(
     return action;
   }
 
-  const filteredMeta = pruneMetadata(meta);
+  const filteredMeta = pruneMetadata(meta, session);
 
   if (Object.keys(filteredMeta).length === 0) {
     const { meta, ...actionWithoutMeta } = action;

@@ -33,12 +33,13 @@ export const hintsLayer: Layer = {
         return action;
       }
 
+      // Just add the hint - visibility is handled by capability-based pruning
+      // in filterActionForSession (requires see-hints capability to see hint field)
       return {
         ...action,
         meta: {
           ...('meta' in action ? action.meta : {}),
-          hint,
-          requiredCapabilities: [{ type: 'see-hints' as const }]
+          hint
         }
       };
     });

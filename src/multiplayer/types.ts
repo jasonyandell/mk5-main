@@ -18,10 +18,18 @@ import type { GameAction, GameState, FilteredGameState } from '../game/types';
 /**
  * Capability tokens control what a session can see or do.
  * They are composable and purely descriptive.
+ *
+ * Execution capabilities (gate action execution):
+ * - act-as-player: Can execute actions for a specific player
+ *
+ * Visibility capabilities (gate state/metadata visibility):
+ * - observe-hands: Can see player hands
+ * - see-hints: Can see educational hints in action metadata
  */
 export type Capability =
   | { type: 'act-as-player'; playerIndex: number }
-  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' }
+  | { type: 'see-hints' };
 
 /**
  * Utility: create a capability matcher for comparisons.
