@@ -655,6 +655,39 @@ function assertNeverAction(action: never): never {
 }
 
 /**
+ * Consensus action types that can be executed by any player.
+ * These actions represent system-level transitions (not player moves).
+ */
+const CONSENSUS_ACTION_TYPES = ['complete-trick', 'score-hand', 'redeal'] as const;
+
+/**
+ * Determine which player should execute a given action.
+ *
+ * Policy:
+ * - Actions with explicit `player` field: use that player
+ * - Consensus actions (complete-trick, score-hand, redeal): use fallback (typically player 0)
+ *
+ * @param action - The game action to analyze
+ * @param fallbackPlayer - Player index to use for consensus actions (default: 0)
+ * @returns Player index that should execute this action
+ * @throws Error if player cannot be determined
+ */
+export function getExecutingPlayerIndex(action: GameAction, fallbackPlayer: number = 0): number {
+  // Actions with explicit player field
+  if ('player' in action && typeof action.player === 'number') {
+    return action.player;
+  }
+
+  // Consensus actions can be executed by any player
+  if (CONSENSUS_ACTION_TYPES.includes(action.type as typeof CONSENSUS_ACTION_TYPES[number])) {
+    return fallbackPlayer;
+  }
+
+  // Should not reach here for valid actions
+  throw new Error(`Cannot determine player for action: ${action.type}`);
+}
+
+/**
  * Converts an action to a human-readable label
  */
 export function actionToLabel(action: GameAction): string {
