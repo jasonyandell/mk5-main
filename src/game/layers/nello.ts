@@ -12,8 +12,7 @@
  */
 
 import type { Layer } from './types';
-import type { LedSuit } from '../types';
-import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome } from './helpers';
+import { getPartner, getPlayerTeam, checkTrickBasedHandOutcome, calculateTrickBasedScore } from './helpers';
 import { getNextPlayer as getNextPlayerCore } from '../core/players';
 import { BID_TYPES } from '../constants';
 
@@ -44,30 +43,10 @@ export const nelloLayer: Layer = {
     },
 
     calculateScore: (state, prev) => {
-      // Nello can be bid as MARKS with nello trump
       if (state.currentBid.type !== BID_TYPES.MARKS || state.trump.type !== 'nello') {
         return prev;
       }
-
-      // Nello scoring: bidding team must take no tricks
-      const bidder = state.players[state.winningBidder];
-      if (!bidder) return prev;
-
-      const biddingTeam = bidder.teamId;
-      const biddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winner = state.players[trick.winner];
-        if (!winner) return false;
-        return winner.teamId === biddingTeam;
-      }).length;
-
-      const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
-      if (biddingTeamTricks === 0) {
-        newMarks[biddingTeam] += state.currentBid.value!;
-      } else {
-        newMarks[biddingTeam === 0 ? 1 : 0] += state.currentBid.value!;
-      }
-      return newMarks;
+      return calculateTrickBasedScore(state, false, prev); // mustWin=false: must win NO tricks
     },
 
     // Bidder leads normally in nello (no override needed)
@@ -98,74 +77,12 @@ export const nelloLayer: Layer = {
       if (state.trump?.type !== 'nello') return prev;
       const biddingTeam = getPlayerTeam(state, state.winningBidder);
       return checkTrickBasedHandOutcome(state, biddingTeam, false);
-    },
-
-    // Doubles form own suit (suit 7)
-    getLedSuit: (state, domino, prev) => {
-      if (state.trump?.type !== 'nello') return prev;
-
-      return (domino.high === domino.low ? 7 : domino.high) as LedSuit;
-    },
-
-    // In nello, doubles belong ONLY to suit 7
-    suitsWithTrump: (state, domino, prev) => {
-      if (state.trump?.type !== 'nello') return prev;
-
-      const isDouble = domino.high === domino.low;
-      if (isDouble) {
-        return [7 as LedSuit];
-      }
-      // Non-doubles belong to both their pips
-      return [domino.high as LedSuit, domino.low as LedSuit];
-    },
-
-    // In nello, doubles can only follow suit 7
-    canFollow: (state, led, domino, prev) => {
-      if (state.trump?.type !== 'nello') return prev;
-
-      const isDouble = domino.high === domino.low;
-
-      // Doubles led: only doubles can follow
-      if (led === 7) {
-        return isDouble;
-      }
-
-      // Regular suit led: doubles CANNOT follow
-      if (isDouble) {
-        return false;
-      }
-
-      // Non-doubles: check if they have the led suit
-      return domino.high === led || domino.low === led;
-    },
-
-    // In nello, doubles form their own suit and can't follow regular suits
-    rankInTrick: (state, led, domino, prev) => {
-      if (state.trump?.type !== 'nello') return prev;
-
-      const isDouble = domino.high === domino.low;
-      const pipSum = domino.high + domino.low;
-
-      // No trump in nello, so check suit following
-      let followsSuit = false;
-      if (led === 7) {
-        // Doubles led: only doubles follow
-        followsSuit = isDouble;
-      } else if (isDouble) {
-        // Regular suit led: doubles DON'T follow
-        followsSuit = false;
-      } else {
-        // Non-doubles: check if they have the led suit
-        followsSuit = domino.high === led || domino.low === led;
-      }
-
-      if (followsSuit) {
-        // Doubles of the suit rank highest
-        return isDouble ? 50 + domino.high + 50 : 50 + pipSum;
-      }
-
-      // Slough: just pip sum
-      return pipSum;
     }
+
+    // Note: getLedSuit, suitsWithTrump, canFollow, getValidPlays, and rankInTrick
+    // all delegate to base. The table system handles nello via absorptionId=7:
+    // - EFFECTIVE_SUIT[d][7] returns suit 7 for doubles
+    // - SUIT_MASK[7] correctly handles follow-suit logic
+    // - getAbsorptionId(nello) = 7 triggers this behavior automatically
   }
 };

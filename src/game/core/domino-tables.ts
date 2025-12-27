@@ -1,0 +1,367 @@
+/**
+ * Domino Tables - Precomputed lookup tables for game logic
+ *
+ * This module implements the "Crystal Palace" - the single source of truth
+ * for base game rules via table lookups. See bead t42-9xy3 for the theory.
+ *
+ * Key insight: Trump conflates two independent operations:
+ * 1. Absorption - restructures which dominoes belong to which suit
+ * 2. Power - determines which dominoes beat others
+ *
+ * These are factored into separate table dimensions for clean composition.
+ */
+
+import type { Domino, TrumpSelection, LedSuit } from '../types';
+
+// ============= TYPE DEFINITIONS =============
+
+/** Domino index 0-27 (triangular number encoding) */
+export type DominoId = number;
+
+/** Pip value 0-6 */
+export type Pip = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/**
+ * Called set configuration (absorption pattern) - encodes κ(δ) from SUIT_ALGEBRA.md §3.
+ * Determines which dominoes are "called" into suit 7.
+ *
+ * 0-6: "I called Xs" - dominoes containing that pip go to the called suit
+ * 7: "I called doubles" - all doubles go to the called suit (doubles-trump, doubles-suit)
+ * 8: nothing called - no dominoes move to suit 7 (no-trump)
+ */
+export type AbsorptionId = number;
+
+/**
+ * Power configuration - determines which dominoes beat others (have trump power).
+ * 0-6: dominoes containing that pip have power
+ * 7: doubles have power (doubles-trump)
+ * 8: nothing has power (doubles-suit, no-trump)
+ */
+export type PowerId = number;
+
+/** Suit index 0-7 (0-6 = pip suits, 7 = called suit) */
+export type SuitId = number;
+
+// ============= CONSTANTS =============
+
+/** The called suit index (suit 7) - where "called" dominoes go */
+export const CALLED_SUIT = 7;
+
+/** Pip values for each domino index [low, high] */
+export const DOMINO_PIPS: readonly [Pip, Pip][] = (() => {
+  const result: [Pip, Pip][] = [];
+  for (let hi = 0; hi <= 6; hi++) {
+    for (let lo = 0; lo <= hi; lo++) {
+      result.push([lo as Pip, hi as Pip]);
+    }
+  }
+  return result;
+})();
+
+// ============= CONVERSION FUNCTIONS =============
+
+/**
+ * Convert Domino object to table index (0-27)
+ * Uses triangular number formula: index = hi*(hi+1)/2 + lo
+ */
+export function dominoToId(d: Domino): DominoId {
+  const lo = Math.min(d.high, d.low);
+  const hi = Math.max(d.high, d.low);
+  return (hi * (hi + 1)) / 2 + lo;
+}
+
+/**
+ * Extract absorption configuration from game state's trump selection
+ */
+export function getAbsorptionId(trump: TrumpSelection): AbsorptionId {
+  switch (trump.type) {
+    case 'suit':
+      return trump.suit!;
+    case 'doubles':
+    case 'nello':
+      return 7; // doubles form separate suit
+    case 'no-trump':
+    case 'sevens':
+    case 'not-selected':
+    default:
+      return 8; // no absorption
+  }
+}
+
+/**
+ * Extract power configuration from game state's trump selection
+ */
+export function getPowerId(trump: TrumpSelection): PowerId {
+  switch (trump.type) {
+    case 'suit':
+      return trump.suit!;
+    case 'doubles':
+      return 7; // doubles have power
+    case 'nello':
+    case 'no-trump':
+    case 'sevens':
+    case 'not-selected':
+    default:
+      return 8; // nothing has power
+  }
+}
+
+// ============= PRECOMPUTED TABLES =============
+
+/**
+ * EFFECTIVE_SUIT[d][absorptionId] -> SuitId (0-7)
+ *
+ * Determines what suit a domino belongs to given the absorption config.
+ * - When absorbed: returns 7 (the absorbed suit)
+ * - Otherwise: returns high pip (the domino's natural suit for leading)
+ *
+ * 28 × 9 = 252 entries
+ */
+export const EFFECTIVE_SUIT: readonly (readonly number[])[] = (() => {
+  const result: number[][] = [];
+
+  for (let d = 0; d < 28; d++) {
+    const row: number[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
+
+    // Pip absorptions (0-6)
+    for (let pip = 0; pip <= 6; pip++) {
+      if (lo === pip || hi === pip) {
+        row[pip] = CALLED_SUIT;
+      } else {
+        row[pip] = hi;
+      }
+    }
+
+    // Doubles absorption (7)
+    if (lo === hi) {
+      row[7] = CALLED_SUIT;
+    } else {
+      row[7] = hi;
+    }
+
+    // No absorption (8)
+    row[8] = hi;
+    result[d] = row;
+  }
+
+  return result;
+})();
+
+/**
+ * SUIT_MASK[absorptionId][suit] -> bitmask of dominoes that can follow that suit
+ *
+ * A domino can follow a suit if:
+ * - For absorbed suit (7): domino must be absorbed
+ * - For regular suit: domino must contain that pip AND not be absorbed
+ *
+ * 9 × 8 = 72 entries (each entry is a 28-bit mask)
+ */
+export const SUIT_MASK: readonly (readonly number[])[] = (() => {
+  const result: number[][] = [];
+
+  for (let abs = 0; abs < 9; abs++) {
+    const row: number[] = [];
+    for (let suit = 0; suit < 8; suit++) {
+      let mask = 0;
+      for (let d = 0; d < 28; d++) {
+        const [lo, hi] = DOMINO_PIPS[d]!;
+        const effectiveSuit = EFFECTIVE_SUIT[d]![abs]!;
+        const isAbsorbed = (effectiveSuit === CALLED_SUIT);
+
+        let canFollow: boolean;
+        if (suit === CALLED_SUIT) {
+          // Absorbed suit led: must be absorbed to follow
+          canFollow = isAbsorbed;
+        } else if (isAbsorbed) {
+          // Domino is absorbed: cannot follow non-absorbed suits
+          canFollow = false;
+        } else {
+          // Non-absorbed domino, regular suit led
+          // Can follow if either pip matches
+          canFollow = (lo === suit || hi === suit);
+        }
+
+        if (canFollow) {
+          mask |= (1 << d);
+        }
+      }
+      row[suit] = mask;
+    }
+    result[abs] = row;
+  }
+
+  return result;
+})();
+
+/**
+ * RANK[d][powerId] -> number (higher wins)
+ *
+ * Implements the ranking portion of τ from SUIT_ALGEBRA.md §8.
+ *
+ * This table encodes:
+ * - Power dominoes: (2 << 4) + rank = 32-46 (full Tier 2 τ value)
+ * - Non-power dominoes: just their rank (0-14) for potential Tier 1
+ *
+ * The "follows suit" tier (Tier 1 vs Tier 0) is context-dependent—requires
+ * knowing what was led. The `rankInTrickBase` function in rules-base.ts
+ * computes the full τ at call time using this table for power status.
+ *
+ * Rank values:
+ * - 14: Doubles (highest in suit)
+ * - 0-12: Non-doubles (pip sum)
+ * - Exception: Doubles-trump (powerId=7) → rank = pip value (0-6)
+ *
+ * See SUIT_ALGEBRA.md "Architectural Note: Configuration vs Context"
+ *
+ * 28 × 9 = 252 entries
+ */
+export const RANK: readonly (readonly number[])[] = (() => {
+  const result: number[][] = [];
+
+  for (let d = 0; d < 28; d++) {
+    const row: number[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
+    const isDouble = lo === hi;
+    const pipSum = lo + hi;
+
+    for (let power = 0; power < 9; power++) {
+      if (power <= 6) {
+        // Pip power: dominoes containing that pip have power
+        const hasPower = (lo === power || hi === power);
+        if (hasPower) {
+          // Tier 2: (2 << 4) + rank
+          const rank = isDouble ? 14 : pipSum;
+          row[power] = (2 << 4) + rank;
+        } else {
+          // No power: just raw rank for potential Tier 1
+          row[power] = isDouble ? 14 : pipSum;
+        }
+      } else if (power === 7) {
+        // Doubles power: doubles have power, rank by pip value
+        if (isDouble) {
+          // Tier 2, rank = pip value (not 14!)
+          row[power] = (2 << 4) + lo;
+        } else {
+          // No power: raw rank for potential Tier 1
+          row[power] = pipSum;
+        }
+      } else {
+        // No power (8): all dominoes just have raw rank
+        row[power] = isDouble ? 14 : pipSum;
+      }
+    }
+    result[d] = row;
+  }
+
+  return result;
+})();
+
+/**
+ * HAS_POWER[d][powerId] -> boolean
+ *
+ * Determines if a domino has power (can beat non-power dominoes).
+ * Used for trick winner eligibility.
+ *
+ * 28 × 9 = 252 entries
+ */
+export const HAS_POWER: readonly (readonly boolean[])[] = (() => {
+  const result: boolean[][] = [];
+
+  for (let d = 0; d < 28; d++) {
+    const row: boolean[] = [];
+    const [lo, hi] = DOMINO_PIPS[d]!;
+    const isDouble = lo === hi;
+
+    for (let power = 0; power < 9; power++) {
+      if (power === 8) {
+        row[power] = false;
+      } else if (power === 7) {
+        row[power] = isDouble;
+      } else {
+        row[power] = (lo === power || hi === power);
+      }
+    }
+    result[d] = row;
+  }
+
+  return result;
+})();
+
+// ============= GAME LOGIC FUNCTIONS =============
+
+/**
+ * Get the suit that a domino leads
+ */
+export function getLedSuitFromTable(d: DominoId, absorptionId: AbsorptionId): LedSuit {
+  return EFFECTIVE_SUIT[d]![absorptionId]! as LedSuit;
+}
+
+/**
+ * Get legal plays from a hand given what was led
+ *
+ * @param hand - Bitmask of dominoes in hand (bit i = domino i present)
+ * @param absorptionId - Current absorption configuration
+ * @param leadDominoId - The domino that was led (null if leading)
+ * @returns Bitmask of legal plays
+ */
+export function getLegalPlaysMask(
+  hand: number,
+  absorptionId: AbsorptionId,
+  leadDominoId: DominoId | null
+): number {
+  if (leadDominoId === null) return hand; // leading: any domino
+
+  const ledSuit = EFFECTIVE_SUIT[leadDominoId]![absorptionId]!;
+  const canFollow = hand & SUIT_MASK[absorptionId]![ledSuit]!;
+  return canFollow !== 0 ? canFollow : hand; // must follow if able
+}
+
+/**
+ * Check if a domino can follow the led suit
+ */
+export function canFollowFromTable(
+  dominoId: DominoId,
+  absorptionId: AbsorptionId,
+  ledSuit: SuitId
+): boolean {
+  return (SUIT_MASK[absorptionId]![ledSuit]! & (1 << dominoId)) !== 0;
+}
+
+/**
+ * Check if a domino has trump power
+ */
+export function isTrumpFromTable(dominoId: DominoId, powerId: PowerId): boolean {
+  return HAS_POWER[dominoId]![powerId]!;
+}
+
+/**
+ * Convert a hand (array of Domino) to a bitmask
+ */
+export function handToBitmask(hand: readonly Domino[]): number {
+  let mask = 0;
+  for (const domino of hand) {
+    mask |= (1 << dominoToId(domino));
+  }
+  return mask;
+}
+
+/**
+ * Get all suits a domino can follow (for UI hints)
+ * Returns array of suit indices this domino can legally follow
+ */
+export function getSuitsForDomino(
+  dominoId: DominoId,
+  absorptionId: AbsorptionId
+): SuitId[] {
+  const suits: SuitId[] = [];
+  const dominoMask = 1 << dominoId;
+
+  for (let suit = 0; suit < 8; suit++) {
+    if (SUIT_MASK[absorptionId]![suit]! & dominoMask) {
+      suits.push(suit);
+    }
+  }
+
+  return suits;
+}

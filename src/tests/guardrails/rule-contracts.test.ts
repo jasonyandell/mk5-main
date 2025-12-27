@@ -19,7 +19,7 @@ import { baseLayer } from '../../game/layers/base';
 import { nelloLayer } from '../../game/layers/nello';
 import { sevensLayer } from '../../game/layers/sevens';
 import { StateBuilder, DominoBuilder } from '../helpers';
-import { ACES, TRES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { ACES, TRES, SIXES, CALLED } from '../../game/types';
 import type { LedSuit, Play } from '../../game/types';
 
 describe('Rule Contracts: Base Layer', () => {
@@ -34,20 +34,21 @@ describe('Rule Contracts: Base Layer', () => {
       expect(rules.getLedSuit(state, DominoBuilder.from('4-0'))).toBe(4);
     });
 
-    it('trump dominoes lead the trump suit', () => {
+    it('trump dominoes lead suit 7 (absorbed suit)', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES }).build();
 
-      // Dominoes containing trump suit lead trump
-      expect(rules.getLedSuit(state, DominoBuilder.from('6-3'))).toBe(TRES);
-      expect(rules.getLedSuit(state, DominoBuilder.from('3-0'))).toBe(TRES);
-      expect(rules.getLedSuit(state, DominoBuilder.from('3-3'))).toBe(TRES);
+      // Dominoes containing trump suit lead suit 7 (the absorbed suit)
+      // This is the S₇ symmetry: all pip trumps are isomorphic, using suit 7
+      expect(rules.getLedSuit(state, DominoBuilder.from('6-3'))).toBe(CALLED);
+      expect(rules.getLedSuit(state, DominoBuilder.from('3-0'))).toBe(CALLED);
+      expect(rules.getLedSuit(state, DominoBuilder.from('3-3'))).toBe(CALLED);
     });
 
     it('doubles-trump: doubles lead suit 7', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'doubles' }).build();
 
-      expect(rules.getLedSuit(state, DominoBuilder.from('6-6'))).toBe(DOUBLES_AS_TRUMP);
-      expect(rules.getLedSuit(state, DominoBuilder.from('0-0'))).toBe(DOUBLES_AS_TRUMP);
+      expect(rules.getLedSuit(state, DominoBuilder.from('6-6'))).toBe(CALLED);
+      expect(rules.getLedSuit(state, DominoBuilder.from('0-0'))).toBe(CALLED);
       // Non-doubles still lead higher pip
       expect(rules.getLedSuit(state, DominoBuilder.from('6-2'))).toBe(6);
     });
@@ -63,16 +64,16 @@ describe('Rule Contracts: Base Layer', () => {
       expect(suits).toHaveLength(2);
     });
 
-    it('trump dominoes belong ONLY to trump suit (trump absorption)', () => {
+    it('trump dominoes belong ONLY to suit 7 (trump absorption)', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES }).build();
 
-      // Domino with trump pip belongs only to trump
+      // Domino with trump pip belongs only to suit 7 (absorbed suit)
       const suits = rules.suitsWithTrump(state, DominoBuilder.from('6-3'));
-      expect(suits).toEqual([TRES]);
+      expect(suits).toEqual([CALLED]);
 
-      // Double of trump belongs only to trump
+      // Double of trump belongs only to suit 7
       const doubleSuits = rules.suitsWithTrump(state, DominoBuilder.from('3-3'));
-      expect(doubleSuits).toEqual([TRES]);
+      expect(doubleSuits).toEqual([CALLED]);
     });
 
     it('doubles-trump: doubles belong only to suit 7', () => {
@@ -99,11 +100,12 @@ describe('Rule Contracts: Base Layer', () => {
       expect(rules.canFollow(state, 4 as LedSuit, DominoBuilder.from('6-2'))).toBe(false);
     });
 
-    it('trump dominoes can only follow trump suit', () => {
+    it('trump dominoes can only follow suit 7 (absorbed suit)', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES }).build();
 
-      // 6-3 is trump, can only follow threes (trump)
-      expect(rules.canFollow(state, TRES as LedSuit, DominoBuilder.from('6-3'))).toBe(true);
+      // 6-3 is trump (absorbed), can only follow suit 7
+      expect(rules.canFollow(state, CALLED, DominoBuilder.from('6-3'))).toBe(true);
+      expect(rules.canFollow(state, TRES as LedSuit, DominoBuilder.from('6-3'))).toBe(false); // No longer suit 3!
       expect(rules.canFollow(state, 6 as LedSuit, DominoBuilder.from('6-3'))).toBe(false);
     });
 
@@ -111,7 +113,7 @@ describe('Rule Contracts: Base Layer', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'doubles' }).build();
 
       // Doubles can follow suit 7
-      expect(rules.canFollow(state, DOUBLES_AS_TRUMP, DominoBuilder.from('4-4'))).toBe(true);
+      expect(rules.canFollow(state, CALLED, DominoBuilder.from('4-4'))).toBe(true);
 
       // Doubles cannot follow regular suits
       expect(rules.canFollow(state, 4 as LedSuit, DominoBuilder.from('4-4'))).toBe(false);
@@ -213,8 +215,8 @@ describe('Rule Contracts: Nello Layer', () => {
     it('passes through to base when not nello', () => {
       const state = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES }).build();
 
-      // Should use base layer behavior
-      expect(rules.getLedSuit(state, DominoBuilder.from('6-3'))).toBe(TRES);
+      // Should use base layer behavior: absorbed dominoes lead suit 7
+      expect(rules.getLedSuit(state, DominoBuilder.from('6-3'))).toBe(CALLED);
     });
   });
 
@@ -410,9 +412,9 @@ describe('Rule Contract Invariants', () => {
       const withNello = composeRules([baseLayer, nelloLayer]);
       const withSevens = composeRules([baseLayer, sevensLayer]);
 
-      // Nello override should not affect base trump
+      // Nello override should not affect base trump - absorbed dominoes lead suit 7
       const baseState = StateBuilder.inPlayingPhase({ type: 'suit', suit: TRES }).build();
-      expect(withNello.getLedSuit(baseState, DominoBuilder.from('3-3'))).toBe(TRES);
+      expect(withNello.getLedSuit(baseState, DominoBuilder.from('3-3'))).toBe(CALLED);
 
       // Sevens override should not affect base trump
       expect(withSevens.getValidPlays(baseState, 0)).toBeDefined();

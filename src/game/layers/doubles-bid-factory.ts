@@ -12,7 +12,8 @@ import {
   getPlayerTeam,
   checkTrickBasedHandOutcome,
   getHighestMarksBid,
-  countDoubles
+  countDoubles,
+  calculateTrickBasedScore
 } from './helpers';
 
 interface DoublesBidConfig {
@@ -84,27 +85,7 @@ export function createDoublesBidLayer(config: DoublesBidConfig): Layer {
 
       calculateScore: (state, prev) => {
         if (state.currentBid?.type !== name) return prev;
-
-        // Bidding team must take all tricks
-        const bidder = state.players[state.winningBidder];
-        if (!bidder) return prev;
-        const biddingTeam = bidder.teamId;
-        const opponentTeam = biddingTeam === 0 ? 1 : 0;
-
-        const nonBiddingTeamTricks = state.tricks.filter(trick => {
-          if (trick.winner === undefined) return false;
-          const winner = state.players[trick.winner];
-          if (!winner) return false;
-          return winner.teamId === opponentTeam;
-        }).length;
-
-        const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
-        if (nonBiddingTeamTricks === 0) {
-          newMarks[biddingTeam] += state.currentBid.value!;
-        } else {
-          newMarks[opponentTeam] += state.currentBid.value!;
-        }
-        return newMarks;
+        return calculateTrickBasedScore(state, true, prev); // mustWin=true: must win ALL tricks
       },
 
       // Partner selects trump (not bidder)

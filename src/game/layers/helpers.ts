@@ -137,6 +137,53 @@ export function checkTrickBasedHandOutcome(
 }
 
 /**
+ * Calculate score for trick-based special contracts.
+ *
+ * Used by: sevens, nello, plunge, splash
+ *
+ * All trick-based contracts share identical scoring logic:
+ * 1. Determine which team must have zero tricks
+ * 2. Count that team's tricks
+ * 3. Award marks to winner based on whether count is zero
+ *
+ * @param state Current game state
+ * @param mustWin true = bidding team must win ALL tricks (sevens/plunge/splash)
+ *                false = bidding team must win NO tricks (nello)
+ * @param prev Previous score (returned if bidder not found)
+ * @returns Updated team marks
+ */
+export function calculateTrickBasedScore(
+  state: GameState,
+  mustWin: boolean,
+  prev: [number, number]
+): [number, number] {
+  const bidder = state.players[state.winningBidder];
+  if (!bidder) return prev;
+
+  const biddingTeam = bidder.teamId;
+  const opponentTeam = biddingTeam === 0 ? 1 : 0;
+
+  // Which team must have zero tricks?
+  // mustWin=true: opponents must have zero (bidding team wins all)
+  // mustWin=false: bidding team must have zero (bidding team wins none)
+  const teamToCheck = mustWin ? opponentTeam : biddingTeam;
+
+  const tricksWon = state.tricks.filter(trick => {
+    if (trick.winner === undefined) return false;
+    const winner = state.players[trick.winner];
+    return winner?.teamId === teamToCheck;
+  }).length;
+
+  const newMarks: [number, number] = [state.teamMarks[0], state.teamMarks[1]];
+  if (tricksWon === 0) {
+    newMarks[biddingTeam] += state.currentBid.value!;
+  } else {
+    newMarks[opponentTeam] += state.currentBid.value!;
+  }
+  return newMarks;
+}
+
+/**
  * Get highest marks bid value from bids so far.
  *
  * Used by: plunge, splash to determine automatic bid value.

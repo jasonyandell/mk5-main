@@ -44,9 +44,9 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
     trump: { type: 'no-trump' }
   });
   
-  // Doubles as trump
+  // Called (doubles) as trump
   configs.push({
-    key: 'trump-doubles',
+    key: 'trump-called',
     trump: { type: 'doubles' }
   });
   
@@ -219,7 +219,7 @@ function getTrumpKey(trump: TrumpSelection): string {
   if (trump.type === 'not-selected' || trump.type === 'no-trump') {
     return 'trump-no-trump';
   } else if (trump.type === 'doubles') {
-    return 'trump-doubles';
+    return 'trump-called';
   } else if (trump.type === 'suit') {
     const suitName = SUIT_IDENTIFIERS[trump.suit as keyof typeof SUIT_IDENTIFIERS];
     return \`trump-\${suitName}\`;

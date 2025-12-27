@@ -5,7 +5,7 @@ import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED } from '../../game/types';
 
 const rules = composeRules([baseLayer]);
 
@@ -188,11 +188,11 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
 
     it('allows all valid trump options', () => {
-      const validTrumpSuits = [BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP]; // 0-6 for suits plus doubles (7)
+      const validTrumpSuits = [BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED]; // 0-6 for suits plus doubles (7)
 
       validTrumpSuits.forEach(trump => {
         const numberToTrumpSelection = (trump: number): TrumpSelection => {
-          if (trump === DOUBLES_AS_TRUMP) {
+          if (trump === CALLED) {
             return { type: 'doubles' };
           } else if (trump === 8) {
             return { type: 'no-trump' };

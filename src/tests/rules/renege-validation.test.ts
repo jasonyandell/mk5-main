@@ -4,7 +4,7 @@ import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
 import { getLedSuitBase } from '../../game/layers/rules-base';
 import type { Domino, TrumpSelection, GameState, LedSuit } from '../../game/types';
-import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT } from '../../game/types';
+import { ACES, DEUCES, TRES, FIVES, NO_LEAD_SUIT, CALLED } from '../../game/types';
 
 const rules = composeRules([baseLayer]);
 
@@ -102,8 +102,9 @@ describe('Renege Detection and Prevention', () => {
       const trumpDomino: Domino = { id: 'trump', high: 2, low: 5, points: 0 }; // 2-5
       const nonTrumpDomino: Domino = { id: 'non-trump', high: 3, low: 4, points: 0 }; // 3-4
 
-      expect(getLedSuitBase(state, trumpDomino)).toBe(DEUCES); // Should be suit 2 (trump)
-      expect(getLedSuitBase(state, nonTrumpDomino)).not.toBe(DEUCES); // Should not be suit 2
+      // Absorbed dominoes lead suit 7 (CALLED), not the trump pip value
+      expect(getLedSuitBase(state, trumpDomino)).toBe(CALLED); // Absorbed suit
+      expect(getLedSuitBase(state, nonTrumpDomino)).not.toBe(CALLED); // Not absorbed
     });
   });
 

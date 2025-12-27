@@ -17,7 +17,7 @@ export const TRES = 3 as const;
 export const FOURS = 4 as const;
 export const FIVES = 5 as const;
 export const SIXES = 6 as const;
-export const DOUBLES_AS_TRUMP = 7 as const;
+export const CALLED = 7 as const;
 export const NO_TRUMP = 8 as const;
 
 // Semantic constants for different "-1" contexts
@@ -37,12 +37,12 @@ export type RegularSuit =
   | typeof FIVES    // 5
   | typeof SIXES;   // 6
 
-// What suit can be led (includes doubles as suit 7 when doubles are trump)
-export type LedSuit = RegularSuit | typeof DOUBLES_AS_TRUMP;
+// What suit can be led (includes called suit 7 when dominoes are absorbed)
+export type LedSuit = RegularSuit | typeof CALLED;
 export type LedSuitOrNone = LedSuit | typeof NO_LEAD_SUIT;
 
 // What can be selected as trump
-export type TrumpSuit = RegularSuit | typeof DOUBLES_AS_TRUMP | typeof NO_TRUMP;
+export type TrumpSuit = RegularSuit | typeof CALLED | typeof NO_TRUMP;
 export type TrumpSuitOrNone = TrumpSuit | typeof TRUMP_NOT_SELECTED;
 
 // Enum-like object for convenient access
@@ -54,7 +54,7 @@ export const SUIT = {
   FOURS: 4,
   FIVES: 5,
   SIXES: 6,
-  DOUBLES: 7,  // Only valid when doubles are trump
+  CALLED: 7,  // The 8th suit - where absorbed dominoes go
   NO_TRUMP: 8,
   NONE: -1
 } as const;

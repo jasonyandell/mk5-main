@@ -8,7 +8,7 @@ import { baseLayer } from '../../../game/layers/base';
 import { composeRules } from '../../../game/layers/compose';
 import type { Play, Trick } from '../../../game/types';
 import { StateBuilder } from '../../helpers';
-import { BLANKS, ACES, DEUCES, TRES, SIXES, DOUBLES_AS_TRUMP } from '../../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, SIXES, CALLED } from '../../../game/types';
 import { BID_TYPES } from '../../../game/constants';
 
 describe('Base Layer Rules', () => {
@@ -93,23 +93,24 @@ describe('Base Layer Rules', () => {
       )).toBe(6);
     });
 
-    it('returns trump suit when domino contains trump value', () => {
+    it('returns suit 7 when domino is absorbed (contains trump pip)', () => {
+      // Absorbed dominoes lead suit 7 (CALLED), not the trump pip value
       expect(rules.getLedSuit(
         StateBuilder.inBiddingPhase().withTrump({ type: 'suit', suit: TRES }).build(),
         { id: '6-3', high: 6, low: 3 }
-      )).toBe(TRES);
+      )).toBe(CALLED);
 
       expect(rules.getLedSuit(
         StateBuilder.inBiddingPhase().withTrump({ type: 'suit', suit: DEUCES }).build(),
         { id: '5-2', high: 5, low: 2 }
-      )).toBe(DEUCES);
+      )).toBe(CALLED);
     });
 
     it('returns 7 for all doubles when doubles are trump', () => {
       const state = StateBuilder.inBiddingPhase().withTrump({ type: 'doubles' }).build();
 
-      expect(rules.getLedSuit(state, { id: '0-0', high: 0, low: 0 })).toBe(DOUBLES_AS_TRUMP);
-      expect(rules.getLedSuit(state, { id: '4-4', high: 4, low: 4 })).toBe(DOUBLES_AS_TRUMP);
+      expect(rules.getLedSuit(state, { id: '0-0', high: 0, low: 0 })).toBe(CALLED);
+      expect(rules.getLedSuit(state, { id: '4-4', high: 4, low: 4 })).toBe(CALLED);
       expect(rules.getLedSuit(state, { id: '6-2', high: 6, low: 2 })).toBe(6); // Non-double
     });
   });
@@ -168,7 +169,7 @@ describe('Base Layer Rules', () => {
       it('any double beats non-doubles; highest double wins', () => {
         const state = StateBuilder.inBiddingPhase()
           .withTrump({ type: 'doubles' })
-          .with({ currentSuit: DOUBLES_AS_TRUMP })
+          .with({ currentSuit: CALLED })
           .build();
 
         const trick1: Play[] = [

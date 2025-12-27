@@ -5,11 +5,11 @@ import {
 } from '../../game';
 import { getLedSuitBase, rankInTrickBase } from '../../game/layers/rules-base';
 import type { GameState } from '../../game/types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED } from '../../game/types';
 
 describe('Feature: Doubles Treatment', () => {
   describe('Scenario: Standard Doubles Rules', () => {
-    it('Given standard tournament rules apply When playing with doubles Then doubles belong to their natural suit', () => {
+    it('Given standard tournament rules apply When playing with doubles Then non-trump doubles belong to their natural suit', () => {
       const allDominoes = createDominoes();
       const doubles = allDominoes.filter(isDouble);
 
@@ -21,7 +21,7 @@ describe('Feature: Doubles Treatment', () => {
         const suit = getLedSuitBase(state, double);
         // Double's suit should be its pip value (unless it's the trump double)
         if (double.high === TRES) {
-          expect(suit).toBe(TRES); // 3-3 would be trump suit
+          expect(suit).toBe(CALLED); // 3-3 is absorbed, leads suit 7
         } else {
           expect(suit).toBe(double.high); // Other doubles are their natural suit
         }
@@ -87,7 +87,7 @@ describe('Feature: Doubles Treatment', () => {
 
       // Find all trump dominoes
       const trumpDominoes = allDominoes.filter(domino =>
-        getLedSuitBase(state, domino) === DOUBLES_AS_TRUMP
+        getLedSuitBase(state, domino) === CALLED
       );
 
       // Should be exactly 7 trump dominoes (all doubles)
@@ -102,7 +102,7 @@ describe('Feature: Doubles Treatment', () => {
       const nonDoubles = allDominoes.filter(domino => !isDouble(domino));
       nonDoubles.forEach(domino => {
         const suit = getLedSuitBase(state, domino);
-        expect(suit).not.toBe(DOUBLES_AS_TRUMP); // Should not be trump suit (doubles trump uses 7)
+        expect(suit).not.toBe(CALLED); // Should not be trump suit (doubles trump uses 7)
       });
     });
 
@@ -115,7 +115,7 @@ describe('Feature: Doubles Treatment', () => {
       // Get ranks and sort
       const doubleValues = doubles.map(domino => ({
         domino,
-        rank: rankInTrickBase(state, DOUBLES_AS_TRUMP, domino)
+        rank: rankInTrickBase(state, CALLED, domino)
       }));
 
       doubleValues.sort((a, b) => b.rank - a.rank);

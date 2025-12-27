@@ -314,6 +314,104 @@ Both Room and HeadlessRoom compose ExecutionContext the same way - they are the 
 
 ---
 
+## The Suit System: 7 Natural Suits + 1 Called Suit
+
+Texas 42 uses an 8-suit system for game logic:
+
+### The 7 Natural Suits (0-6)
+
+Each pip value defines a suit. A domino's natural suit is its high pip:
+- **0 (Blanks)**: 0-0
+- **1 (Aces)**: 1-0, 1-1
+- **2 (Deuces)**: 2-0, 2-1, 2-2
+- **...and so on through...**
+- **6 (Sixes)**: 6-0, 6-1, 6-2, 6-3, 6-4, 6-5, 6-6
+
+### The Called Suit (Suit 7)
+
+Suit 7 is the 8th suit - its membership is determined by what you **call** (declare as trump):
+
+| Declaration | What goes to suit 7 |
+|-------------|---------------------|
+| "5s are trump" | All dominoes containing 5 (5-0, 5-1, 5-2, 5-3, 5-4, 5-5, 6-5) |
+| "Doubles are trump" | All 7 doubles (0-0, 1-1, 2-2, 3-3, 4-4, 5-5, 6-6) |
+| "Nello" | All 7 doubles (but no power to beat other suits) |
+| "No-trump" | Nothing (empty) |
+
+### Why "Called"?
+
+The name comes from the game vocabulary: "I called 5s" or "I called doubles." When you declare trump, you **call** certain dominoes into suit 7. This terminology:
+
+- **Works for pip-trump**: "I called 5s" → all 5s are in the called suit
+- **Works for doubles-trump**: "I called doubles" → doubles are in the called suit
+- **Works for nello**: Doubles are called together (just without power)
+- **Is grounded in game language**: Players naturally say "I called trump"
+
+### Code References
+
+```typescript
+// src/game/types.ts
+export const CALLED = 7 as const;  // The 8th suit
+
+// Usage in strength table keys:
+"5-0|trump-blanks|led-called"  // Reading: "5-0 when blanks are trump and the called suit was led"
+```
+
+The constant `CALLED` (value 7) is used throughout the codebase. When you see suit 7 or `CALLED`, it refers to the absorbed/called suit whose membership depends on the trump declaration.
+
+---
+
+## The Algebraic Model: Tables vs Dynamic Computation
+
+The game engine uses precomputed lookup tables (`src/game/core/domino-tables.ts`) for O(1) rule evaluation. However, **not everything can be precomputed** - and understanding the boundary is architecturally important.
+
+### What Tables Encode (Static)
+
+These depend only on the domino and trump configuration - known before the trick:
+
+| Table | Question | Inputs |
+|-------|----------|--------|
+| `EFFECTIVE_SUIT` | What suit does this domino lead? | domino, absorptionId |
+| `SUIT_MASK` | Which dominoes can follow this suit? | absorptionId, ledSuit |
+| `HAS_POWER` | Is this domino trump? | domino, powerId |
+
+### What Must Be Computed Dynamically (Context-Dependent)
+
+**Key insight: Ranking depends on context that isn't known until the trick is played.**
+
+The three-tier ranking system:
+```
+Tier 1 (200+): Trump - always beats non-trump
+Tier 2 (50+):  Follows led suit - beats sloughed dominoes
+Tier 3 (0-12): Slough - can't win
+```
+
+The "follows suit" tier depends on **what was led**, which isn't known until the trick starts:
+
+```typescript
+// Example: 3s are trump, consider domino 6-2
+// With sixes led: 6-2 follows suit → Tier 2 (50+)
+// With twos led:  6-2 follows suit → Tier 2 (50+)
+// With blanks led: 6-2 can't follow → Tier 3 (just pip sum 8)
+```
+
+The same domino has different ranks depending on what was led. This is why `rankInTrickBase` uses table lookups for the static parts (is this trump?) but computes the "follows suit" tier at call time.
+
+### The Boundary
+
+| Aspect | Table-Driven | Dynamically Computed |
+|--------|--------------|---------------------|
+| Led suit | ✅ `EFFECTIVE_SUIT[d][abs]` | |
+| Can follow | ✅ `SUIT_MASK[abs][led]` | |
+| Is trump | ✅ `HAS_POWER[d][power]` | |
+| Trump rank | ✅ Known from power config | |
+| Follow-suit rank | | ✅ Requires knowing led suit |
+| Slough rank | ✅ Just pip sum | |
+
+This boundary reflects a fundamental truth: some game rules are **configuration-dependent** (trump selection) while others are **context-dependent** (what was led this trick).
+
+---
+
 ## File Map
 
 **Core Engine** (pure utilities):

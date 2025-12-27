@@ -3,7 +3,7 @@ import { composeRules } from '../../game/layers/compose';
 import { baseLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
 import type { Domino, GameState, TrumpSelection } from '../../game/types';
-import { DOUBLES_AS_TRUMP } from '../../game/types';
+import { CALLED } from '../../game/types';
 
 // Use threaded rules system
 const rules = composeRules([baseLayer]);
@@ -21,7 +21,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
         domino: { high: 6, low: 6, id: "6-6" } // P0 led double-six
       }
     ];
-    state.currentSuit = DOUBLES_AS_TRUMP; // Doubles were led (doubles are trump)
+    state.currentSuit = CALLED; // Doubles were led (doubles are trump)
     state.currentPlayer = 1;
     if (state.players[1]) {
       state.players[1].hand = playerHand;
