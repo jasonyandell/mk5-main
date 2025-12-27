@@ -12,6 +12,33 @@
 import type { GameAction, GameState, FilteredGameState } from '../game/types';
 
 // ============================================================================
+// Player Index
+// ============================================================================
+
+/**
+ * Valid player index in a 4-player game.
+ * Players are seated at fixed positions 0-3.
+ */
+export type PlayerIndex = 0 | 1 | 2 | 3;
+
+/**
+ * Type guard to check if a number is a valid player index.
+ */
+export function isPlayerIndex(n: number): n is PlayerIndex {
+  return Number.isInteger(n) && n >= 0 && n <= 3;
+}
+
+/**
+ * Assert that a number is a valid player index (0-3).
+ * @throws Error if the value is out of range.
+ */
+export function assertPlayerIndex(n: number): asserts n is PlayerIndex {
+  if (!isPlayerIndex(n)) {
+    throw new Error(`Invalid player index: ${n}. Must be 0, 1, 2, or 3.`);
+  }
+}
+
+// ============================================================================
 // Capability System
 // ============================================================================
 

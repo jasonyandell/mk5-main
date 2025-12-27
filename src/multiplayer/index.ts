@@ -21,10 +21,11 @@ export type {
   ValidAction,
   ViewTransition,
   PlayerInfo,
-  Result
+  Result,
+  PlayerIndex
 } from './types';
 
-export { ok, err, hasCapability, hasCapabilityType } from './types';
+export { ok, err, hasCapability, hasCapabilityType, isPlayerIndex, assertPlayerIndex } from './types';
 
 // Protocol
 export type { ClientMessage, ServerMessage } from './protocol';
@@ -37,8 +38,7 @@ export { GameClient } from './GameClient';
 
 // Capabilities
 export {
-  humanCapabilities,
-  aiCapabilities,
+  playerCapabilities,
   spectatorCapabilities,
   buildBaseCapabilities,
   buildCapabilities,

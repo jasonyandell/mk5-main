@@ -2,36 +2,25 @@
  * Capability System - Merged from game/multiplayer/capabilities.ts and capabilityUtils.ts
  *
  * This file contains:
- * - Capability builders (humanCapabilities, aiCapabilities, spectatorCapabilities)
+ * - Capability builders (playerCapabilities, spectatorCapabilities, buildBaseCapabilities)
  * - Capability filtering (filterActionsForSession, getVisibleStateForSession)
  * - Session resolution (resolveSessionForAction)
  */
 
 import { cloneGameState } from '../game/core/state';
 import type { GameAction, GameState, FilteredGameState } from '../game/types';
-import type { PlayerSession, Capability } from './types';
-import { hasCapability, hasCapabilityType } from './types';
+import type { PlayerSession, Capability, PlayerIndex } from './types';
+import { hasCapability, hasCapabilityType, assertPlayerIndex } from './types';
 
 // ============================================================================
 // Capability Builders
 // ============================================================================
 
 /**
- * Standard capabilities for a human player.
+ * Standard capabilities for a player (human or AI).
  * Can act as player and observe their own hand.
  */
-export function humanCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
-  return [
-    { type: 'act-as-player', playerIndex },
-    { type: 'observe-hands', playerIndices: [playerIndex] }
-  ];
-}
-
-/**
- * Standard capabilities for an AI player.
- * Can act as player and observe their own hand.
- */
-export function aiCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
+export function playerCapabilities(playerIndex: PlayerIndex): Capability[] {
   return [
     { type: 'act-as-player', playerIndex },
     { type: 'observe-hands', playerIndices: [playerIndex] }
@@ -49,13 +38,15 @@ export function spectatorCapabilities(): Capability[] {
 }
 
 /**
- * Build base capability set per control type.
+ * Build base capability set for a player.
+ * Human and AI players have identical base capabilities.
+ *
+ * @param playerIndex - Must be 0-3 (asserted at runtime)
+ * @param _controlType - Preserved for API compatibility, not used
  */
-export function buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai'): Capability[] {
-  const idx = playerIndex as 0 | 1 | 2 | 3;
-  return controlType === 'human'
-    ? humanCapabilities(idx)
-    : aiCapabilities(idx);
+export function buildBaseCapabilities(playerIndex: number, _controlType: 'human' | 'ai'): Capability[] {
+  assertPlayerIndex(playerIndex);
+  return playerCapabilities(playerIndex);
 }
 
 /**
@@ -71,7 +62,7 @@ export function buildBaseCapabilities(playerIndex: number, controlType: 'human' 
 export class CapabilityBuilder {
   private capabilities: Capability[] = [];
 
-  actAsPlayer(playerIndex: 0 | 1 | 2 | 3): this {
+  actAsPlayer(playerIndex: number): this {
     this.capabilities.push({ type: 'act-as-player', playerIndex });
     return this;
   }
