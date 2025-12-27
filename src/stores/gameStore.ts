@@ -512,17 +512,8 @@ export const modes = {
   }
 };
 
-// Utility (2 exports)
+// Utility (1 export)
 export const findingSeed = store.findingSeed;
-
-/**
- * Internal client accessor for window API development/testing tools only.
- * DO NOT use in application code - use the `game` commands instead.
- * @internal
- */
-export function getInternalClient() {
-  return store.client;
-}
 
 /**
  * Get current game view for E2E testing.
