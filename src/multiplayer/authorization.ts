@@ -10,38 +10,8 @@ import type { GameState, GameAction } from '../game/types';
 import type { MultiplayerGameState, ActionRequest, Result, PlayerSession } from './types';
 import type { ExecutionContext } from '../game/types/execution';
 import { ok, err } from './types';
-import { executeAction } from '../game/core/actions';
+import { executeAction, actionsEqual } from '../game/core/actions';
 import { filterActionsForSession } from './capabilities';
-
-function actionsMatch(expected: GameAction, actual: GameAction): boolean {
-  if (expected.type !== actual.type) {
-    return false;
-  }
-
-  if ('player' in expected || 'player' in actual) {
-    if (!('player' in expected) || !('player' in actual)) {
-      return false;
-    }
-    if (expected.player !== actual.player) {
-      return false;
-    }
-  }
-
-  switch (actual.type) {
-    case 'bid':
-      return 'bid' in expected &&
-        expected.bid === actual.bid &&
-        expected.value === actual.value;
-    case 'select-trump':
-      return 'trump' in expected &&
-        JSON.stringify(expected.trump) === JSON.stringify(actual.trump);
-    case 'play':
-      return 'dominoId' in expected &&
-        expected.dominoId === actual.dominoId;
-    default:
-      return true;
-  }
-}
 
 /**
  * Checks if a player session is authorized to execute a specific action.
@@ -58,7 +28,7 @@ export function canPlayerExecuteAction(
 ): boolean {
   const validActions = ctx.getValidActions(state);
   const visibleActions = filterActionsForSession(session, validActions);
-  return visibleActions.some(candidate => actionsMatch(candidate, action));
+  return visibleActions.some(candidate => actionsEqual(candidate, action));
 }
 
 /**
@@ -87,7 +57,7 @@ export function authorizeAndExecute(
 
   if (hasSystemAuthority) {
     const validActions = ctx.getValidActions(coreState);
-    const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
+    const isStructurallyValid = validActions.some(candidate => actionsEqual(candidate, action));
     if (!isStructurallyValid) {
       return err(`Action is not valid in current game state: ${action.type}`);
     }
@@ -100,13 +70,13 @@ export function authorizeAndExecute(
   }
 
   const validActions = ctx.getValidActions(coreState);
-  const isStructurallyValid = validActions.some(candidate => actionsMatch(candidate, action));
+  const isStructurallyValid = validActions.some(candidate => actionsEqual(candidate, action));
   if (!isStructurallyValid) {
     return err(`Action is not valid in current game state: ${action.type}`);
   }
 
   const allowedActions = filterActionsForSession(session, validActions);
-  const matchedAction = allowedActions.find(candidate => actionsMatch(candidate, action));
+  const matchedAction = allowedActions.find(candidate => actionsEqual(candidate, action));
 
   if (!matchedAction) {
     return err(

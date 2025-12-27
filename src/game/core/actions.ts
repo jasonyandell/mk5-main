@@ -547,6 +547,61 @@ function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
 }
 
 /**
+ * Helper to compare TrumpSelection objects for equality.
+ */
+function trumpSelectionsEqual(a: TrumpSelection, b: TrumpSelection): boolean {
+  if (a.type !== b.type) return false;
+  // Only compare suit if both are suit type
+  if (a.type === 'suit' && b.type === 'suit') {
+    return a.suit === b.suit;
+  }
+  return true;
+}
+
+/**
+ * Check if two GameActions are equal (for matching purposes).
+ * Compares all semantically meaningful fields, ignoring meta/autoExecute.
+ *
+ * Use this for authorization checks and action matching.
+ * Prefer this over JSON.stringify comparisons for type safety.
+ */
+export function actionsEqual(a: GameAction, b: GameAction): boolean {
+  // Type must match
+  if (a.type !== b.type) return false;
+
+  // Player must match (if present on either)
+  if ('player' in a || 'player' in b) {
+    if (!('player' in a) || !('player' in b)) return false;
+    if (a.player !== b.player) return false;
+  }
+
+  // Type-specific field comparison
+  switch (a.type) {
+    case 'bid':
+      return b.type === 'bid' && a.bid === b.bid && a.value === b.value;
+    case 'pass':
+      return b.type === 'pass';
+    case 'select-trump':
+      return b.type === 'select-trump' && trumpSelectionsEqual(a.trump, b.trump);
+    case 'play':
+      return b.type === 'play' && a.dominoId === b.dominoId;
+    case 'agree-trick':
+      return b.type === 'agree-trick';
+    case 'agree-score':
+      return b.type === 'agree-score';
+    case 'complete-trick':
+    case 'score-hand':
+    case 'redeal':
+    case 'retry-one-hand':
+    case 'new-one-hand':
+      return true;
+    default:
+      // Exhaustiveness check
+      return assertNeverAction(a);
+  }
+}
+
+/**
  * Converts an action to a transition ID for compatibility
  */
 export function actionToId(action: GameAction): string {

@@ -24,7 +24,7 @@ import { filterActionsForSession, getVisibleStateForSession, resolveSessionForAc
 import { updatePlayerSession } from '../multiplayer/stateLifecycle';
 import { cloneGameState, getNextStates } from '../game/core/state';
 import type { ExecutionContext } from '../game/types/execution';
-import { actionToId } from '../game/core/actions';
+import { actionToId, actionsEqual } from '../game/core/actions';
 import { getSuitName } from '../game/game-terms';
 
 /**
@@ -232,28 +232,7 @@ function findMatchingTransition(
   action: GameAction,
   transitions: ReturnType<typeof getNextStates>
 ) {
-  return transitions.find((t) => {
-    if (t.action.type !== action.type) return false;
-
-    if ('player' in t.action && 'player' in action) {
-      if (t.action.player !== action.player) return false;
-    }
-
-    switch (action.type) {
-      case 'bid':
-        return 'bid' in t.action &&
-          t.action.bid === action.bid &&
-          t.action.value === action.value;
-      case 'select-trump':
-        return 'trump' in t.action &&
-          JSON.stringify(t.action.trump) === JSON.stringify(action.trump);
-      case 'play':
-        return 'dominoId' in t.action && 'dominoId' in action &&
-          t.action.dominoId === action.dominoId;
-      default:
-        return true;
-    }
-  });
+  return transitions.find((t) => actionsEqual(t.action, action));
 }
 
 /**
