@@ -110,12 +110,13 @@ export function rankInTrickBase(state: GameState, led: LedSuit, domino: Domino):
   }
 
   // Determine rank within tier
+  // Per SUIT_ALGEBRA.md §8: when κ(δ) = D° (absorptionId = 7), doubles rank by pip value
   let rank: number;
-  if (state.trump.type === 'doubles' && isDouble) {
-    // Doubles-trump special case: rank by pip value (0-6)
+  if (absorptionId === 7 && isDouble) {
+    // Doubles form suit 7 (doubles-trump or doubles-suit/nello): rank by pip value (0-6)
     rank = domino.high;
   } else if (isDouble) {
-    // Other doubles in play: rank = 14 (highest possible)
+    // Lone double in pip suit: rank = 14 (highest possible)
     rank = 14;
   } else {
     // Non-doubles: rank = pip sum (0-12)

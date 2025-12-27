@@ -168,43 +168,10 @@ export const nelloLayer: Layer = {
       return followers.length > 0 ? followers : [...player.hand];
     },
 
-    // In nello, doubles form their own suit and can't follow regular suits
-    // Per docs/rules.md §8.A: "All seven doubles are a separate suit ranked
-    // 6-6 (high) to 0-0 (low)" - doubles rank by pip value, NOT rank 14.
-    //
-    // NOTE: This differs from the base implementation which gives doubles
-    // rank 14. Nello needs this override because doubles form suit 7 but
-    // rank by pip value, similar to doubles-trump.
-    rankInTrick: (state, led, domino, prev) => {
-      if (state.trump?.type !== 'nello') return prev;
-
-      const isDouble = domino.high === domino.low;
-      const pipSum = domino.high + domino.low;
-
-      // No trump in nello (powerId=8), so only tier 0 or 1
-      // Doubles absorption (absorptionId=7): doubles form suit 7
-      let followsSuit = false;
-      if (led === 7) {
-        // Doubles led: only doubles follow
-        followsSuit = isDouble;
-      } else if (isDouble) {
-        // Regular suit led: doubles DON'T follow (absorbed to suit 7)
-        followsSuit = false;
-      } else {
-        // Non-doubles: check if they have the led suit
-        followsSuit = domino.high === led || domino.low === led;
-      }
-
-      if (followsSuit) {
-        // Tier 1: (1 << 4) + rank
-        // In nello, doubles rank by pip value (0-6), like doubles-trump
-        // Non-doubles rank by pipSum (0-12)
-        const rank = isDouble ? domino.high : pipSum;
-        return (1 << 4) + rank;
-      }
-
-      // Tier 0 (slough): return 0
-      return 0;
-    }
+    // Nello delegates to base for ranking.
+    // Per SUIT_ALGEBRA.md §8: κ(δ) = D° triggers pip-value ranking for doubles.
+    // Base implementation checks absorptionId === 7, which covers nello.
+    // No override needed - just pass through to prev (which is rankInTrickBase result).
+    rankInTrick: (_state, _led, _domino, prev) => prev
   }
 };

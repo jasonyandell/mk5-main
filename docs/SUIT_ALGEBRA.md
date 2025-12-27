@@ -1,7 +1,5 @@
 # Texas 42: Algebraic Suit Structure
 
-> **Scope.** This document defines the algebraic structure for **trick resolution**: suit membership, following, and winner determination. It covers the four standard declarations (pip-trump, doubles-trump, nello, notrump). Point scoring (counters), special contracts (splash, plunge, sevens), and strategic objectives (nello's "lose all tricks") are handled elsewhere—see `docs/rules.md` for the complete game specification.
-
 ## §1. The Domino Set
 
 Let $\mathbb{P} = \{0, 1, 2, 3, 4, 5, 6\}$ be the set of pip values.
@@ -45,13 +43,13 @@ This is **not** a partition—each mixed domino inhabits two suits simultaneousl
 
 A **declaration** $\delta$ specifies how dominoes are called into the 8th suit.
 
-$$\delta \in \Delta = \mathbb{P} \cup \{\mathsf{doubles}, \mathsf{nello}, \mathsf{notrump}\}$$
+$$\delta \in \Delta = \mathbb{P} \cup \{\mathsf{doubles-trump}, \mathsf{doubles-suit}, \mathsf{notrump}\}$$
 
 The **called set** function $\kappa : \Delta \to \mathcal{P}(\mathcal{D})$:
 
 $$\kappa(\delta) = \begin{cases}
 \sigma_p & \text{if } \delta = p \in \mathbb{P} \\[4pt]
-\mathcal{D}^\circ & \text{if } \delta \in \{\mathsf{doubles}, \mathsf{nello}\} \\[4pt]
+\mathcal{D}^\circ & \text{if } \delta \in \{\mathsf{doubles-trump}, \mathsf{doubles-suit}\} \\[4pt]
 \varnothing & \text{if } \delta = \mathsf{notrump}
 \end{cases}$$
 
@@ -100,11 +98,11 @@ Declarations also specify **power**—which suit dominates others.
 Define the **power function** $\pi : \Delta \to \mathcal{P}(\mathcal{D}) \cup \{\bot\}$:
 
 $$\pi(\delta) = \begin{cases}
-\sigma_7^\delta & \text{if } \delta \in \mathbb{P} \cup \{\mathsf{doubles}\} \\[4pt]
-\bot & \text{if } \delta \in \{\mathsf{nello}, \mathsf{notrump}\}
+\sigma_7^\delta & \text{if } \delta \in \mathbb{P} \cup \{\mathsf{doubles-trump}\} \\[4pt]
+\bot & \text{if } \delta \in \{\mathsf{doubles-suit}, \mathsf{notrump}\}
 \end{cases}$$
 
-The suit with power beats all other suits. When $\pi(\delta) = \bot$, no suit has power—Tier 1 is empty, so the highest follower wins. (In nello, the strategic objective is to *lose* tricks, but the trick-taking mechanics are unchanged.)
+The suit with power beats all other suits. When $\pi(\delta) = \bot$, no suit has power—Tier 2 is empty, so the highest follower wins. (In the doubles-suit variant, used for "nello" play, the strategic objective is to *lose* tricks, but the trick-taking mechanics are unchanged.)
 
 ---
 
@@ -121,11 +119,11 @@ $$\rho(d, p) = \begin{cases}
 \mathsf{sum}(d) & \text{otherwise}
 \end{cases}$$
 
-For $\delta = \mathsf{doubles}$:
+For $\delta \in \{\mathsf{doubles-trump}, \mathsf{doubles-suit}\}$ (doubles form suit 7):
 
-$$\rho((p,p), \mathsf{doubles}) = p$$
+$$\rho((p,p), \delta) = p$$
 
-When doubles are trump, rank is by pip value (6-6 beats 5-5 beats ... beats 0-0).
+When doubles form their own suit, rank is by pip value (6-6 beats 5-5 beats ... beats 0-0).
 
 The general principle—double beats all, then by pip sum—applies equally to Tier 1 (following the led suit). See §8 for the complete ranking function.
 
@@ -146,17 +144,15 @@ $$\mathsf{tier}(d, \ell, \delta) = \begin{cases}
 \end{cases}$$
 
 $$\mathsf{rank}(d, \ell, \delta) = \begin{cases}
-p & \text{if } \delta = \mathsf{doubles} \land d = (p,p) & \text{(doubles-trump: by pip)} \\[4pt]
-14 & \text{if } d \in \mathcal{D}^\circ \land \mathsf{tier}(d, \ell, \delta) > 0 & \text{(other double in play)} \\[4pt]
+p & \text{if } \kappa(\delta) = \mathcal{D}^\circ \land d = (p,p) & \text{(doubles as suit: by pip)} \\[4pt]
+14 & \text{if } d \in \mathcal{D}^\circ \land \mathsf{tier}(d, \ell, \delta) > 0 & \text{(lone double in pip suit)} \\[4pt]
 \mathsf{sum}(d) & \text{if } \mathsf{tier}(d, \ell, \delta) > 0 & \text{(non-double in play)} \\[4pt]
 0 & \text{otherwise} & \text{(slough)}
 \end{cases}$$
 
-*Note: Conditions are evaluated top-to-bottom; the first match applies.*
-
 **Key rules:** 
 - The double always ranks highest in its suit, whether trump or not
-- Exception: when doubles are trump, they rank by pip value (6-6 highest)
+- Exception: when doubles form their own suit ($\kappa(\delta) = \mathcal{D}^\circ$, i.e., $\delta \in \{\mathsf{doubles-trump}, \mathsf{doubles-suit}\}$), they rank by pip value (6-6 highest)
 - In Tier 2 (pip-trump), the only double is the trump double
 - In Tier 1, the only double that can follow is $(\ell, \ell)$—other doubles either are trump or don't contain $\ell$
 
@@ -221,19 +217,21 @@ For pip-trump $\delta = t \in \mathbb{P}$:
 
 The called set is $\kappa(t) = \sigma_t$. Non-double members have distinct sums by Lemma 9.1. The double $(t,t)$ gets rank 14, which exceeds $\max_{d \in \sigma_t} \mathsf{sum}(d) = t + 6 \leq 12$. Therefore ranks are injective on $\kappa(t)$. $\square$
 
-For doubles-trump $\delta = \mathsf{doubles}$:
+For doubles-trump $\delta = \mathsf{doubles-trump}$:
 
-The called set is $\kappa(\mathsf{doubles}) = \mathcal{D}^\circ = \{(0,0), (1,1), \ldots, (6,6)\}$.
+The called set is $\kappa(\mathsf{doubles-trump}) = \mathcal{D}^\circ = \{(0,0), (1,1), \ldots, (6,6)\}$.
 
-All members are doubles, so all get rank 14... but wait, this creates a collision!
+All members are doubles. Since $\kappa(\mathsf{doubles-trump}) = \mathcal{D}^\circ$, we use pip value as rank:
 
-**Resolution:** For doubles-trump, we use pip value as rank instead:
-
-$$\rho((p,p), \mathsf{doubles}) = p$$
+$$\mathsf{rank}((p,p)) = p$$
 
 Their ranks are $\{0, 1, 2, 3, 4, 5, 6\}$—all distinct. $\square$
 
+Note: Doubles-suit has $\kappa(\mathsf{doubles\text{-}suit}) = \mathcal{D}^\circ$ but $\pi(\mathsf{doubles\text{-}suit}) = \bot$, so doubles-suit doubles are in Tier 1, not Tier 2. See Lemma 9.3.
+
 ### Lemma 9.3: Tier 1 Has No Collisions
+
+**Case A: Pip-based led suit ($\ell \in \{0..6\}$)**
 
 The effective suit $\hat{\sigma}_\ell^\delta = \sigma_\ell \setminus \kappa(\delta)$ is a subset of $\sigma_\ell$.
 
@@ -242,6 +240,16 @@ The only double in $\hat{\sigma}_\ell^\delta$ (if any) is $(\ell, \ell)$—and o
 All non-double members have distinct sums by Lemma 9.1, with $\max \mathsf{sum} = \ell + 6 \leq 12 < 14$.
 
 Therefore ranks are injective on $\hat{\sigma}_\ell^\delta$. $\square$
+
+**Case B: Doubles-suit with doubles led ($\delta = \mathsf{doubles\text{-}suit}$, $\ell = 7$)**
+
+When a double leads in doubles-suit, the led suit is $\sigma_7 = \mathcal{D}^\circ$. All seven doubles must follow.
+
+Since $\kappa(\mathsf{doubles-suit}) = \mathcal{D}^\circ$, we use pip value as rank:
+
+$$\mathsf{rank}((p,p)) = p$$
+
+Their ranks are $\{0, 1, 2, 3, 4, 5, 6\}$—all distinct. $\square$
 
 ### Lemma 9.4: Tiers Are Strictly Separated
 
@@ -269,8 +277,6 @@ $$\ell = \begin{cases}
 7 & \text{if } d_\ell \in \kappa(\delta) \\[4pt]
 \max(d_\ell) & \text{otherwise}
 \end{cases}$$
-
-> **Rule: "Big End Up."** In Texas 42, mixed dominoes always lead on their higher pip. A player leading 3-5 leads the fives suit, not the threes. The only exception is when the domino is trump—then it leads suit 7 regardless of pip values. This is not a strategic choice; it is a fixed rule of the game.
 
 **Step 2.** For each subsequent domino $d$, legal play requires:
 $$\mathsf{legal}(d, \ell, \delta, H) \iff \mathsf{follows}(d, \ell, \delta) \lor \neg\exists h \in H: \mathsf{follows}(h, \ell, \delta)$$
@@ -414,7 +420,7 @@ rank = (tier > 0) ? (isDouble ? 14 : SUM[d]) : 0
 value = (tier << 4) | rank
 ```
 
-Special case for doubles-trump: rank by pip value, not 14.
+Special case for doubles-trump and doubles-suit: rank by pip value, not 14.
 
 And even this can be precomputed into a single lookup when both $\delta$ and $\ell$ are known.
 
