@@ -17,14 +17,17 @@ class SolveConfig:
     enum_chunk_size: int = 100_000
 
 
-def enumerate_gpu(ctx: SeedContext, config: SolveConfig | None = None) -> torch.Tensor:
+def enumerate_gpu(ctx: SeedContext, config: SolveConfig | None = None, verbose: bool = True) -> torch.Tensor:
     initial = ctx.initial_state()
     frontier = initial.unsqueeze(0)
     all_levels: list[torch.Tensor] = [frontier]
 
     enum_chunk_size = config.enum_chunk_size if config else 0
 
-    for _depth in range(28, 0, -1):
+    for depth in range(28, 0, -1):
+        if verbose and depth % 2 == 0:
+            total_so_far = sum(t.shape[0] for t in all_levels)
+            print(f"  enum depth {depth:2d}: frontier={frontier.shape[0]:,} total={total_so_far:,}", flush=True)
         n = int(frontier.shape[0])
         if enum_chunk_size > 0 and n > enum_chunk_size:
             # Chunked expansion: unique per-chunk, then merge
