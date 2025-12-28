@@ -1,0 +1,3 @@
+# Install a CUDA-enabled PyTorch build separately (see https://pytorch.org/).
+numpy>=1.26
+pyarrow>=14

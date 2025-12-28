@@ -101,3 +101,6 @@ __pycache__/
 
 # Bead grinder worktrees (parallel autonomous agents)
 .worktrees/
+
+# Solver2 output (large parquet files)
+data/solver2/
