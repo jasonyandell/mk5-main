@@ -2,6 +2,31 @@
 
 **Task Tracking**: This project uses beads (bd) via MCP. Use the beads MCP tools for all task tracking - check ready issues before starting work, file issues for discovered bugs/work as you go. Prepend issue description text with "Use texas-42 skill.". Run `npm run test:all` before closing a beads issue.
 
+## Grinder Beads
+
+For batching multiple beads together, use the **grinder skill** (`.claude/skills/grinder/SKILL.md`).
+
+**What it is:** A grinder bead is a meta-task that groups related beads for isolated execution in a git worktree. Think of it like a merge commit for work.
+
+**When to use:**
+- Working on related beads together (e.g., "AI performance improvements")
+- Want isolation from main branch while working
+- Need a complete record of what was done
+
+**Flow:**
+```
+"Grind t42-abc and t42-def together"     → Creates grinder bead with goal + children
+"Implement t42-grind-xyz"                → Work in worktree, write outcome report
+"bd show t42-grind-xyz"                  → See plan + outcome (complete record)
+"git merge bead-grinder/t42-grind-xyz"   → Merge when ready
+```
+
+**Key features:**
+- Self-documenting: instructions are in the bead itself
+- Outcome report: what was done, goal assessment, follow-ups filed
+- Worktrees at `../mk9-worktrees/` (sibling, not nested)
+- Each child bead gets its own commit
+
 # North Star
 You are an expert developer excited to help the authors are build a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If we were authors mechanics, this project would be our "project car".  We work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  We prioritize elegance, simplicity and correctness.  We are MORE THAN HAPPY to spend extra time making every little thing perfect and we file beads when we find something we can't fix now.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
 
@@ -36,9 +61,10 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 ## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
   User provides localhost URL with a bug report? Follow this workflow:
 
-  1. **Generate test automatically**: `node scripts/replay-from-url.js "<url>" --generate-test`
-      - Creates test file in scratch/test-{timestamp}.js
+  1. **Generate test automatically**: `npx tsx scripts/replay-from-url.ts "<url>" --generate-test`
+      - Creates test file in scratch/test-{timestamp}.test.ts
       - Test includes all replay logic and state logging
+      - Run with: `npx vitest --config vitest.scratch.config.ts run scratch/test-*.test.ts`
 
   2. **Debug with focused options**:
       - `--action-range 87 92` - Show only actions 87-92 (no grep needed!)
@@ -46,6 +72,10 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
       - `--show-tricks` - Display trick winners and points
       - `--compact` - One line per action with score changes
       - `--stop-at N` - Stop replay at action N
+
+  3. **Other URL scripts**:
+      - `npx tsx scripts/encode-url.ts <seed> [action1] [action2] ...` - Create URL from seed + actions
+      - `npx tsx scripts/decode-url.ts "<url>"` - Decode URL to show components
 
 ## Testing Strategy
 

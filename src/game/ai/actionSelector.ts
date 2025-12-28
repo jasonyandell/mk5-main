@@ -1,12 +1,12 @@
 import type { GameState } from '../types';
 import type { ValidAction } from '../../multiplayer/types';
-import { BeginnerAIStrategy, RandomAIStrategy } from './strategies';
+import { BeginnerAIStrategy, RandomAIStrategy, MinimaxStrategy, type MinimaxStrategyConfig } from './strategies';
 import type { AIStrategy } from './types';
 import type { RandomGenerator } from './hand-sampler';
 import type { MonteCarloConfig } from './monte-carlo';
 
 /** Available AI strategy types */
-export type AIStrategyType = 'beginner' | 'random';
+export type AIStrategyType = 'beginner' | 'random' | 'minimax';
 
 /**
  * Configuration for AI strategy - all dependencies injected, no globals.
@@ -17,6 +17,8 @@ export interface AIStrategyConfig {
   rng?: RandomGenerator;
   /** Monte Carlo config for beginner strategy */
   monteCarloConfig?: Partial<MonteCarloConfig>;
+  /** Config for minimax strategy */
+  minimaxConfig?: Partial<MinimaxStrategyConfig>;
 }
 
 /**
@@ -29,6 +31,8 @@ export function createStrategy(config: AIStrategyConfig): AIStrategy {
       return new RandomAIStrategy(config.rng);
     case 'beginner':
       return new BeginnerAIStrategy(config.monteCarloConfig);
+    case 'minimax':
+      return new MinimaxStrategy(config.minimaxConfig);
   }
 }
 

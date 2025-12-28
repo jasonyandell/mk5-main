@@ -4,7 +4,7 @@ import { composeRules, baseLayer } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
 import { dealDominoesWithSeed } from './dominoes';
-import { calculateTrickPoints, isGameComplete } from './scoring';
+import { calculateTrickPoints, isTargetReached } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
 import { analyzeBiddingCompletion } from './bidding';
 import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
@@ -358,7 +358,7 @@ function executeScoreHand(state: GameState, rules: GameRules = defaultRules): Ga
   const newMarks = rules.calculateScore(state);
 
   // Check if game is complete
-  if (isGameComplete(newMarks, state.gameTarget)) {
+  if (isTargetReached(newMarks, state.gameTarget)) {
     // Game over - clear hands
     const newPlayers = state.players.map(p => ({
       ...p,
@@ -547,6 +547,61 @@ function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
 }
 
 /**
+ * Helper to compare TrumpSelection objects for equality.
+ */
+function trumpSelectionsEqual(a: TrumpSelection, b: TrumpSelection): boolean {
+  if (a.type !== b.type) return false;
+  // Only compare suit if both are suit type
+  if (a.type === 'suit' && b.type === 'suit') {
+    return a.suit === b.suit;
+  }
+  return true;
+}
+
+/**
+ * Check if two GameActions are equal (for matching purposes).
+ * Compares all semantically meaningful fields, ignoring meta/autoExecute.
+ *
+ * Use this for authorization checks and action matching.
+ * Prefer this over JSON.stringify comparisons for type safety.
+ */
+export function actionsEqual(a: GameAction, b: GameAction): boolean {
+  // Type must match
+  if (a.type !== b.type) return false;
+
+  // Player must match (if present on either)
+  if ('player' in a || 'player' in b) {
+    if (!('player' in a) || !('player' in b)) return false;
+    if (a.player !== b.player) return false;
+  }
+
+  // Type-specific field comparison
+  switch (a.type) {
+    case 'bid':
+      return b.type === 'bid' && a.bid === b.bid && a.value === b.value;
+    case 'pass':
+      return b.type === 'pass';
+    case 'select-trump':
+      return b.type === 'select-trump' && trumpSelectionsEqual(a.trump, b.trump);
+    case 'play':
+      return b.type === 'play' && a.dominoId === b.dominoId;
+    case 'agree-trick':
+      return b.type === 'agree-trick';
+    case 'agree-score':
+      return b.type === 'agree-score';
+    case 'complete-trick':
+    case 'score-hand':
+    case 'redeal':
+    case 'retry-one-hand':
+    case 'new-one-hand':
+      return true;
+    default:
+      // Exhaustiveness check
+      return assertNeverAction(a);
+  }
+}
+
+/**
  * Converts an action to a transition ID for compatibility
  */
 export function actionToId(action: GameAction): string {
@@ -581,9 +636,55 @@ export function actionToId(action: GameAction): string {
       return `agree-score-p${action.player}`;
     case 'redeal':
       return 'redeal';
+    case 'retry-one-hand':
+      return 'retry-one-hand';
+    case 'new-one-hand':
+      return 'new-one-hand';
     default:
-      return 'unknown';
+      // TypeScript exhaustiveness check - should never reach here
+      return assertNeverAction(action);
   }
+}
+
+/**
+ * Exhaustiveness check helper for GameAction.
+ * If TypeScript complains about the type of `action`, a case is missing above.
+ */
+function assertNeverAction(action: never): never {
+  throw new Error(`Unhandled action type: ${(action as GameAction).type}`);
+}
+
+/**
+ * Consensus action types that can be executed by any player.
+ * These actions represent system-level transitions (not player moves).
+ */
+const CONSENSUS_ACTION_TYPES = ['complete-trick', 'score-hand', 'redeal'] as const;
+
+/**
+ * Determine which player should execute a given action.
+ *
+ * Policy:
+ * - Actions with explicit `player` field: use that player
+ * - Consensus actions (complete-trick, score-hand, redeal): use fallback (typically player 0)
+ *
+ * @param action - The game action to analyze
+ * @param fallbackPlayer - Player index to use for consensus actions (default: 0)
+ * @returns Player index that should execute this action
+ * @throws Error if player cannot be determined
+ */
+export function getExecutingPlayerIndex(action: GameAction, fallbackPlayer: number = 0): number {
+  // Actions with explicit player field
+  if ('player' in action && typeof action.player === 'number') {
+    return action.player;
+  }
+
+  // Consensus actions can be executed by any player
+  if (CONSENSUS_ACTION_TYPES.includes(action.type as typeof CONSENSUS_ACTION_TYPES[number])) {
+    return fallbackPlayer;
+  }
+
+  // Should not reach here for valid actions
+  throw new Error(`Cannot determine player for action: ${action.type}`);
 }
 
 /**
@@ -610,7 +711,12 @@ export function actionToLabel(action: GameAction): string {
       return `Player ${action.player} agrees`;
     case 'redeal':
       return 'All passed - Redeal';
+    case 'retry-one-hand':
+      return 'Retry hand';
+    case 'new-one-hand':
+      return 'New hand';
     default:
-      return 'Unknown action';
+      // TypeScript exhaustiveness check - should never reach here
+      return assertNeverAction(action);
   }
 }

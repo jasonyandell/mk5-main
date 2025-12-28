@@ -9,6 +9,7 @@ import { createLocalGame, type LocalGame } from '../multiplayer/local';
 import { GameClient } from '../multiplayer/GameClient';
 import type { Room } from '../server/Room';
 import { resolveActionIds } from '../game/core/action-resolution';
+import { getExecutingPlayerIndex } from '../game/core/actions';
 
 /**
  * GameStore - Clean facade over the simplified Room/Socket/GameClient architecture.
@@ -65,6 +66,7 @@ function createPendingView(): GameView {
       gameId: 'initializing'
     },
     derived: {
+      isCurrentTrickComplete: false,
       currentTrickWinner: -1,
       handDominoMeta: [],
       currentHandPoints: [0, 0] as [number, number]
@@ -321,7 +323,7 @@ class GameStoreImpl {
         }
 
         // Determine which player should execute this action
-        const playerIndex = this.getPlayerIndexForAction(action);
+        const playerIndex = getExecutingPlayerIndex(action, 0);
         const playerId = `player-${playerIndex}`;
 
         // Execute the action in the Room
@@ -335,27 +337,6 @@ class GameStoreImpl {
     } catch (error) {
       console.error('[gameStore] Failed to replay actions:', error);
     }
-  }
-
-  /**
-   * Get the player index that should execute a given action.
-   */
-  private getPlayerIndexForAction(action: GameAction): number {
-    // Actions with explicit player field
-    if ('player' in action && typeof action.player === 'number') {
-      return action.player;
-    }
-
-    // Consensus actions can be executed by any player
-    // For URL replay, we use player 0
-    if (action.type === 'complete-trick' ||
-        action.type === 'score-hand' ||
-        action.type === 'redeal') {
-      return 0;
-    }
-
-    // Default to player 0
-    return 0;
   }
 
   // ========================================================================
@@ -531,17 +512,8 @@ export const modes = {
   }
 };
 
-// Utility (2 exports)
+// Utility (1 export)
 export const findingSeed = store.findingSeed;
-
-/**
- * Internal client accessor for window API development/testing tools only.
- * DO NOT use in application code - use the `game` commands instead.
- * @internal
- */
-export function getInternalClient() {
-  return store.client;
-}
 
 /**
  * Get current game view for E2E testing.

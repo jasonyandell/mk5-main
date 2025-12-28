@@ -15,6 +15,7 @@ import { StateBuilder, HandBuilder } from '../helpers';
  */
 function createDefaultDerived(): DerivedViewFields {
   return {
+    isCurrentTrickComplete: false,
     currentTrickWinner: -1,
     handDominoMeta: [],
     currentHandPoints: [0, 0]

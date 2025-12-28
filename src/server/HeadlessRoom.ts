@@ -18,6 +18,7 @@ import { Room } from './Room';
 import type { GameConfig } from '../game/types/config';
 import type { GameAction, GameState } from '../game/types';
 import type { ValidAction } from '../multiplayer/types';
+import { getExecutingPlayerIndex } from '../game/core/actions';
 
 /**
  * HeadlessRoom - Minimal Room API for tools and scripts.
@@ -111,7 +112,7 @@ export class HeadlessRoom {
   replayActions(actions: GameAction[]): void {
     for (const action of actions) {
       // Determine which player should execute this action
-      const playerIndex = this.getPlayerForAction(action);
+      const playerIndex = getExecutingPlayerIndex(action, 0);
       this.executeAction(playerIndex, action);
     }
   }
@@ -135,27 +136,4 @@ export class HeadlessRoom {
     return this.room.getActionsMap();
   }
 
-  /**
-   * Helper to determine which player should execute an action.
-   *
-   * @param action - Action to execute
-   * @returns Player index that should execute this action
-   */
-  private getPlayerForAction(action: GameAction): number {
-    // Actions with explicit player field
-    if ('player' in action && typeof action.player === 'number') {
-      return action.player;
-    }
-
-    // Consensus actions can be executed by any player
-    // For tools, we just use player 0
-    if (action.type === 'complete-trick' ||
-        action.type === 'score-hand' ||
-        action.type === 'redeal') {
-      return 0;
-    }
-
-    // Should not reach here
-    throw new Error(`Cannot determine player for action: ${action.type}`);
-  }
 }

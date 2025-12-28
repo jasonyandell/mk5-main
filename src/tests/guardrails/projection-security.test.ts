@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getVisibleStateForSession, humanCapabilities, spectatorCapabilities, buildCapabilities } from '../../multiplayer/capabilities';
+import { getVisibleStateForSession, playerCapabilities, spectatorCapabilities, buildCapabilities } from '../../multiplayer/capabilities';
 import { buildKernelView } from '../../kernel/kernel';
 import { createInitialState } from '../../game/core/state';
 import { createExecutionContext } from '../../game/types/execution';
@@ -85,7 +85,7 @@ function createSession(playerIndex: 0 | 1 | 2 | 3, type: 'human' | 'spectator' =
     playerId: `player-${playerIndex}`,
     playerIndex,
     controlType: 'human',
-    capabilities: humanCapabilities(playerIndex)
+    capabilities: playerCapabilities(playerIndex)
   };
 }
 

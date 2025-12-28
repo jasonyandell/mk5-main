@@ -36,19 +36,9 @@ const INITIAL_STATE: SeedFinderState = {
 function createSeedFinderStore() {
   const { subscribe, set, update } = writable<SeedFinderState>(INITIAL_STATE);
 
-  // Helper to get current store value
-  const getStoreValue = <T>(selector: (state: SeedFinderState) => T): T => {
-    let value: T;
-    const unsubscribe = subscribe(state => {
-      value = selector(state);
-    });
-    unsubscribe();
-    return value!;
-  };
-
   return {
     subscribe,
-    
+
     startSearch: () => {
       set({
         ...INITIAL_STATE,
@@ -118,13 +108,7 @@ function createSeedFinderStore() {
         ...state,
         waitingForConfirmation: false
       }));
-    },
-    
-    isCancelled: (): boolean => getStoreValue(state => state.cancelled),
-
-    shouldUseBest: (): boolean => getStoreValue(state => state.useBest),
-
-    getFoundSeed: (): number | null => getStoreValue(state => state.foundSeed)
+    }
   };
 }
 

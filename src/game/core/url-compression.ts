@@ -110,7 +110,10 @@ const ESCAPED_EVENT_TO_CHAR: Record<string, string> = {
   'timeout-p1': 'G',
   'timeout-p2': 'H',
   'timeout-p3': 'I',
-  // Room for 56 more future events
+  // One-hand mode actions
+  'retry-one-hand': 'J',
+  'new-one-hand': 'K',
+  // Room for more future events
 };
 
 // Reverse mapping for escaped events

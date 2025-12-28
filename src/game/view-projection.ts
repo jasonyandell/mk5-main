@@ -216,13 +216,13 @@ export function createViewProjection(
   // Trump display
   const trumpDisplay = getTrumpDisplay(gameState.trump);
 
-  // Current trick display - use server-computed trick winner (dumb client pattern)
+  // Current trick display - use server-computed values (dumb client pattern)
   const currentTrickDisplay: TrickDisplay = {
     plays: [0, 1, 2, 3].map(p =>
       gameState.currentTrick.find(play => play.player === p) || null
     ),
     winner: derived.currentTrickWinner,
-    isComplete: gameState.currentTrick.length === 4,
+    isComplete: derived.isCurrentTrickComplete,
     currentPlayer
   };
   

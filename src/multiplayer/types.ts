@@ -12,16 +12,51 @@
 import type { GameAction, GameState, FilteredGameState } from '../game/types';
 
 // ============================================================================
+// Player Index
+// ============================================================================
+
+/**
+ * Valid player index in a 4-player game.
+ * Players are seated at fixed positions 0-3.
+ */
+export type PlayerIndex = 0 | 1 | 2 | 3;
+
+/**
+ * Type guard to check if a number is a valid player index.
+ */
+export function isPlayerIndex(n: number): n is PlayerIndex {
+  return Number.isInteger(n) && n >= 0 && n <= 3;
+}
+
+/**
+ * Assert that a number is a valid player index (0-3).
+ * @throws Error if the value is out of range.
+ */
+export function assertPlayerIndex(n: number): asserts n is PlayerIndex {
+  if (!isPlayerIndex(n)) {
+    throw new Error(`Invalid player index: ${n}. Must be 0, 1, 2, or 3.`);
+  }
+}
+
+// ============================================================================
 // Capability System
 // ============================================================================
 
 /**
  * Capability tokens control what a session can see or do.
  * They are composable and purely descriptive.
+ *
+ * Execution capabilities (gate action execution):
+ * - act-as-player: Can execute actions for a specific player
+ *
+ * Visibility capabilities (gate state/metadata visibility):
+ * - observe-hands: Can see player hands
+ * - see-hints: Can see educational hints in action metadata
  */
 export type Capability =
   | { type: 'act-as-player'; playerIndex: number }
-  | { type: 'observe-hands'; playerIndices: number[] | 'all' };
+  | { type: 'observe-hands'; playerIndices: number[] | 'all' }
+  | { type: 'see-hints' };
 
 /**
  * Utility: create a capability matcher for comparisons.
@@ -107,6 +142,9 @@ export interface ActionRequest {
  * to avoid any client-side rule evaluation.
  */
 export interface DerivedViewFields {
+  /** Is the current trick complete? Uses rules.isTrickComplete for layer-aware completion (e.g., nello = 3 plays) */
+  isCurrentTrickComplete: boolean;
+
   /** Trick winner for current trick (-1 if incomplete) */
   currentTrickWinner: number;
 

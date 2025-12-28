@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { StateBuilder, HandBuilder } from '../helpers';
-import { calculateGameScore, isGameComplete } from '../../game/core/scoring';
+import { calculateGameScore, isTargetReached } from '../../game/core/scoring';
 import { composeRules, baseLayer, plungeLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import type { Domino, Bid } from '../../game/types';
@@ -198,7 +198,7 @@ describe('Special Gameplay Scenarios', () => {
     it('handles exact 7-mark victory', () => {
       // Team 0 wins one more mark to reach exactly 7
       const newMarks: [number, number] = [7, 5];
-      expect(isGameComplete(newMarks, 7)).toBe(true);
+      expect(isTargetReached(newMarks, 7)).toBe(true);
     });
 
     it('handles over-mark victory', () => {
@@ -209,11 +209,11 @@ describe('Special Gameplay Scenarios', () => {
 
       // Verify initial state before over-mark scenario
       expect(state.teamMarks).toEqual([5, 4]);
-      expect(isGameComplete(state.teamMarks, 7)).toBe(false);
+      expect(isTargetReached(state.teamMarks, 7)).toBe(false);
 
       // Team 0 bids and makes 3 marks, going to 8
       const newMarks: [number, number] = [8, 4];
-      expect(isGameComplete(newMarks, 7)).toBe(true);
+      expect(isTargetReached(newMarks, 7)).toBe(true);
     });
 
     it('handles simultaneous high marks', () => {
@@ -225,14 +225,14 @@ describe('Special Gameplay Scenarios', () => {
 
       // Verify current state has both teams at 6 marks
       expect(state.teamMarks).toEqual([6, 6]);
-      expect(isGameComplete(state.teamMarks, 7)).toBe(false); // Game not over yet
+      expect(isTargetReached(state.teamMarks, 7)).toBe(false); // Game not over yet
 
       // Either team winning next hand wins game
       const team0Wins: [number, number] = [7, 6];
       const team1Wins: [number, number] = [6, 7];
 
-      expect(isGameComplete(team0Wins, 7)).toBe(true);
-      expect(isGameComplete(team1Wins, 7)).toBe(true);
+      expect(isTargetReached(team0Wins, 7)).toBe(true);
+      expect(isTargetReached(team1Wins, 7)).toBe(true);
     });
   });
 

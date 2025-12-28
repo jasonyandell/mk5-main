@@ -45,7 +45,7 @@ describe('Capability Utils', () => {
     expect(visible.players[3]?.hand.length).toBe(state.players[3]?.hand.length);
   });
 
-  it('strips hint and aiIntent metadata (future features not yet implemented)', () => {
+  it('strips hint metadata unless session has see-hints capability', () => {
     const action: GameAction = {
       type: 'bid',
       player: 0,
@@ -58,14 +58,27 @@ describe('Capability Utils', () => {
       }
     };
 
-    const session = createPlayerSession(0);
-    const filteredActions = filterActionsForSession(session, [action]);
+    // Session WITHOUT see-hints capability
+    const sessionWithoutHints = createPlayerSession(0);
+    const filteredWithoutHints = filterActionsForSession(sessionWithoutHints, [action]);
 
-    // Hint and aiIntent should be stripped (future features)
-    expect(filteredActions[0]?.meta?.hint).toBeUndefined();
-    expect(filteredActions[0]?.meta?.aiIntent).toBeUndefined();
-    // Other metadata should be preserved
-    expect(filteredActions[0]?.meta?.someOtherField).toBe('should be preserved');
+    expect(filteredWithoutHints[0]?.meta?.hint).toBeUndefined();
+    expect(filteredWithoutHints[0]?.meta?.aiIntent).toBeUndefined();
+    expect(filteredWithoutHints[0]?.meta?.someOtherField).toBe('should be preserved');
+
+    // Session WITH see-hints capability
+    const sessionWithHints = createPlayerSession(0, {
+      capabilities: [
+        { type: 'act-as-player', playerIndex: 0 },
+        { type: 'observe-hands', playerIndices: [0] },
+        { type: 'see-hints' }
+      ]
+    });
+    const filteredWithHints = filterActionsForSession(sessionWithHints, [action]);
+
+    expect(filteredWithHints[0]?.meta?.hint).toBe('Safe opener');
+    expect(filteredWithHints[0]?.meta?.aiIntent).toBeUndefined(); // aiIntent always stripped
+    expect(filteredWithHints[0]?.meta?.someOtherField).toBe('should be preserved');
   });
 
   it('removes actions requiring capabilities the viewer lacks', () => {

@@ -2,36 +2,25 @@
  * Capability System - Merged from game/multiplayer/capabilities.ts and capabilityUtils.ts
  *
  * This file contains:
- * - Capability builders (humanCapabilities, aiCapabilities, spectatorCapabilities)
+ * - Capability builders (playerCapabilities, spectatorCapabilities, buildBaseCapabilities)
  * - Capability filtering (filterActionsForSession, getVisibleStateForSession)
  * - Session resolution (resolveSessionForAction)
  */
 
 import { cloneGameState } from '../game/core/state';
 import type { GameAction, GameState, FilteredGameState } from '../game/types';
-import type { PlayerSession, Capability } from './types';
-import { hasCapability, hasCapabilityType } from './types';
+import type { PlayerSession, Capability, PlayerIndex } from './types';
+import { hasCapability, hasCapabilityType, assertPlayerIndex } from './types';
 
 // ============================================================================
 // Capability Builders
 // ============================================================================
 
 /**
- * Standard capabilities for a human player.
+ * Standard capabilities for a player (human or AI).
  * Can act as player and observe their own hand.
  */
-export function humanCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
-  return [
-    { type: 'act-as-player', playerIndex },
-    { type: 'observe-hands', playerIndices: [playerIndex] }
-  ];
-}
-
-/**
- * Standard capabilities for an AI player.
- * Can act as player and observe their own hand.
- */
-export function aiCapabilities(playerIndex: 0 | 1 | 2 | 3): Capability[] {
+export function playerCapabilities(playerIndex: PlayerIndex): Capability[] {
   return [
     { type: 'act-as-player', playerIndex },
     { type: 'observe-hands', playerIndices: [playerIndex] }
@@ -49,13 +38,15 @@ export function spectatorCapabilities(): Capability[] {
 }
 
 /**
- * Build base capability set per control type.
+ * Build base capability set for a player.
+ * Human and AI players have identical base capabilities.
+ *
+ * @param playerIndex - Must be 0-3 (asserted at runtime)
+ * @param _controlType - Preserved for API compatibility, not used
  */
-export function buildBaseCapabilities(playerIndex: number, controlType: 'human' | 'ai'): Capability[] {
-  const idx = playerIndex as 0 | 1 | 2 | 3;
-  return controlType === 'human'
-    ? humanCapabilities(idx)
-    : aiCapabilities(idx);
+export function buildBaseCapabilities(playerIndex: number, _controlType: 'human' | 'ai'): Capability[] {
+  assertPlayerIndex(playerIndex);
+  return playerCapabilities(playerIndex);
 }
 
 /**
@@ -71,7 +62,7 @@ export function buildBaseCapabilities(playerIndex: number, controlType: 'human' 
 export class CapabilityBuilder {
   private capabilities: Capability[] = [];
 
-  actAsPlayer(playerIndex: 0 | 1 | 2 | 3): this {
+  actAsPlayer(playerIndex: number): this {
     this.capabilities.push({ type: 'act-as-player', playerIndex });
     return this;
   }
@@ -135,17 +126,35 @@ function canSeeHand(session: PlayerSession, playerIndex: number): boolean {
   return false;
 }
 
-function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
+/**
+ * Prune metadata based on session capabilities.
+ *
+ * The `requiredCapabilities` field on metadata controls VISIBILITY of metadata fields,
+ * not execution authorization. If a session lacks required capabilities, the gated
+ * metadata is stripped, but the action itself remains available.
+ *
+ * Currently:
+ * - hint: requires 'see-hints' capability
+ * - aiIntent: always stripped (internal use)
+ * - requiredCapabilities: always stripped (internal use)
+ */
+function pruneMetadata(meta: ActionMeta, session: PlayerSession): Record<string, unknown> {
   const output: Record<string, unknown> = {};
+  const canSeeHints = hasCapability(session, { type: 'see-hints' });
 
   for (const [key, value] of Object.entries(meta)) {
     if (value === undefined) continue;
 
-    if (key === HINT_KEY || key === AI_INTENT_KEY) {
+    // Always strip internal metadata
+    if (key === AI_INTENT_KEY || key === REQUIRED_CAPABILITIES_KEY) {
       continue;
     }
 
-    if (key === REQUIRED_CAPABILITIES_KEY) {
+    // Hint visibility gated by see-hints capability
+    if (key === HINT_KEY) {
+      if (canSeeHints) {
+        output[key] = value;
+      }
       continue;
     }
 
@@ -155,20 +164,16 @@ function pruneMetadata(meta: ActionMeta): Record<string, unknown> {
   return output;
 }
 
-function canExecuteActionWithCapabilities(
+/**
+ * Check if session can EXECUTE this action.
+ *
+ * Execution authorization is based on act-as-player capability.
+ * Note: requiredCapabilities on metadata gates VISIBILITY, not execution.
+ */
+function canExecuteAction(
   session: PlayerSession,
   action: GameAction
 ): boolean {
-  const meta = normalizeMeta((action as { meta?: unknown }).meta);
-  const required = meta?.requiredCapabilities;
-
-  if (Array.isArray(required) && required.length > 0) {
-    const allowed = required.some(cap => hasCapability(session, cap));
-    if (!allowed) {
-      return false;
-    }
-  }
-
   if ('player' in action && typeof action.player === 'number') {
     return hasCapability(session, { type: 'act-as-player', playerIndex: action.player });
   }
@@ -177,13 +182,16 @@ function canExecuteActionWithCapabilities(
 }
 
 /**
- * Removes metadata the viewing session is not authorized to see.
+ * Filter an action for a session's view.
+ *
+ * Returns null if session cannot execute the action.
+ * Otherwise returns action with metadata pruned based on visibility capabilities.
  */
 export function filterActionForSession(
   session: PlayerSession,
   action: GameAction
 ): GameAction | null {
-  if (!canExecuteActionWithCapabilities(session, action)) {
+  if (!canExecuteAction(session, action)) {
     return null;
   }
 
@@ -192,7 +200,7 @@ export function filterActionForSession(
     return action;
   }
 
-  const filteredMeta = pruneMetadata(meta);
+  const filteredMeta = pruneMetadata(meta, session);
 
   if (Object.keys(filteredMeta).length === 0) {
     const { meta, ...actionWithoutMeta } = action;

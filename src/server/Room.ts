@@ -22,7 +22,7 @@ import type {
   GameView,
   ValidAction
 } from '../multiplayer/types';
-import { ok, err } from '../multiplayer/types';
+import { ok, err, assertPlayerIndex } from '../multiplayer/types';
 import type { ExecutionContext } from '../game/types/execution';
 import { createExecutionContext } from '../game/types/execution';
 import type { ClientMessage, ServerMessage } from '../multiplayer/protocol';
@@ -85,13 +85,16 @@ export class Room {
 
     // === 3. CREATE DEFAULT PLAYER SESSIONS ===
     const playerTypes = config.playerTypes ?? ['human', 'ai', 'ai', 'ai'];
-    const defaultPlayers: PlayerSession[] = playerTypes.map((type, i) => ({
-      playerId: `player-${i}`,
-      playerIndex: i as 0 | 1 | 2 | 3,
-      controlType: type,
-      isConnected: false,
-      capabilities: buildBaseCapabilities(i as 0 | 1 | 2 | 3, type)
-    }));
+    const defaultPlayers: PlayerSession[] = playerTypes.map((type, i) => {
+      assertPlayerIndex(i);
+      return {
+        playerId: `player-${i}`,
+        playerIndex: i,
+        controlType: type,
+        isConnected: false,
+        capabilities: buildBaseCapabilities(i, type)
+      };
+    });
 
     // === 4. CREATE MULTIPLAYER STATE ===
     this.mpState = createMultiplayerGame({
