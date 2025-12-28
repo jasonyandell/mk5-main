@@ -10,7 +10,7 @@ def expand_gpu(states: torch.Tensor, ctx: SeedContext) -> torch.Tensor:
     """Expand packed states into children. Returns (N,7) int64, -1 for illegal."""
     if states.dtype != torch.int64:
         raise ValueError(f"states must be int64, got {states.dtype}")
-    if states.device != ctx.device:
+    if states.device.type != ctx.device.type:
         raise ValueError(f"states on {states.device} but ctx.device is {ctx.device}")
 
     leader = (states >> 28) & 0x3
