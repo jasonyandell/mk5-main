@@ -24,6 +24,7 @@ class SeedContext:
     # TRICK_*[leader * 2401 + p0*343 + p1*49 + p2*7 + p3]
     TRICK_WINNER: torch.Tensor  # (9604,) int8
     TRICK_POINTS: torch.Tensor  # (9604,) int8
+    TRICK_REWARD: torch.Tensor  # (9604,) int8 - signed: +points if team0 wins, -points if team1
 
     def initial_state(self) -> torch.Tensor:
         # remaining masks all 7 bits set; leader=0; trick_len=0; plays unset (7)
@@ -74,6 +75,16 @@ def build_context(seed: int, decl_id: int, device: torch.device) -> SeedContext:
                         trick_winner[idx] = outcome.winner_offset
                         trick_points[idx] = outcome.points
 
+    # Precompute signed rewards: +points if team0 wins, -points if team1 wins
+    # Sign depends on (leader + winner_offset) % 2
+    trick_reward = torch.empty((4 * 7 * 7 * 7 * 7,), dtype=torch.int8)
+    for idx in range(4 * 2401):
+        leader = idx // 2401
+        winner_offset = int(trick_winner[idx])
+        winner = (leader + winner_offset) % 4
+        team0_wins = (winner % 2) == 0
+        trick_reward[idx] = trick_points[idx] if team0_wins else -trick_points[idx]
+
     return SeedContext(
         seed=seed,
         decl_id=decl_id,
@@ -82,5 +93,6 @@ def build_context(seed: int, decl_id: int, device: torch.device) -> SeedContext:
         LOCAL_FOLLOW=local_follow.to(device=device, non_blocking=True),
         TRICK_WINNER=trick_winner.to(device=device, non_blocking=True),
         TRICK_POINTS=trick_points.to(device=device, non_blocking=True),
+        TRICK_REWARD=trick_reward.to(device=device, non_blocking=True),
     )
 

@@ -74,35 +74,31 @@ def compute_transition_rewards(states: torch.Tensor, ctx: SeedContext) -> torch.
 
     Returns (N, 7) int16 tensor of rewards.
     """
-    leader = (states >> 28) & 0x3
-    trick_len = (states >> 30) & 0x3
-    p0 = (states >> 32) & 0x7
-    p1 = (states >> 35) & 0x7
-    p2 = (states >> 38) & 0x7
-
-    completes = trick_len == 3
     n = states.shape[0]
+    trick_len = (states >> 30) & 0x3
+    completes = trick_len == 3
+
     rewards = torch.zeros((n, 7), dtype=torch.int16, device=states.device)
 
     if not bool(completes.any()):
         return rewards
 
-    # Only compute for completing states
-    safe_p0 = p0.clamp(0, 6)
-    safe_p1 = p1.clamp(0, 6)
-    safe_p2 = p2.clamp(0, 6)
+    # Filter to only completing states for efficiency
+    complete_idx = completes.nonzero(as_tuple=True)[0]
+    complete_states = states[complete_idx]
 
-    for move in range(7):
-        trick_idx = (leader * 2401 + safe_p0 * 343 + safe_p1 * 49 + safe_p2 * 7 + move).to(torch.int64)
-        winner_offset = ctx.TRICK_WINNER[trick_idx].to(torch.int64)
-        points = ctx.TRICK_POINTS[trick_idx].to(torch.int16)
-        winner = (leader + winner_offset) & 0x3
-        team0_wins = (winner & 0x1) == 0
+    leader = (complete_states >> 28) & 0x3
+    p0 = ((complete_states >> 32) & 0x7).clamp(0, 6)
+    p1 = ((complete_states >> 35) & 0x7).clamp(0, 6)
+    p2 = ((complete_states >> 38) & 0x7).clamp(0, 6)
 
-        # +points if Team 0 wins, -points if Team 1 wins
-        reward = torch.where(team0_wins, points, -points)
-        # Only apply to completing moves
-        rewards[:, move] = torch.where(completes, reward, torch.zeros_like(reward))
+    # Vectorized (M, 7) trick index computation - no Python loop
+    base_idx = (leader * 2401 + p0 * 343 + p1 * 49 + p2 * 7).to(torch.int64)
+    moves = torch.arange(7, device=states.device, dtype=torch.int64)
+    trick_idx = base_idx.unsqueeze(1) + moves  # (M, 7)
+
+    # Single vectorized gather from precomputed signed rewards table
+    rewards[complete_idx] = ctx.TRICK_REWARD[trick_idx].to(torch.int16)
 
     return rewards
 

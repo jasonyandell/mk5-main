@@ -16,7 +16,7 @@ _POPCOUNT_CACHE: dict[torch.device, torch.Tensor] = {}
 def popcount_table(device: torch.device) -> torch.Tensor:
     t = _POPCOUNT_CACHE.get(device)
     if t is None:
-        t = torch.tensor([bin(i).count("1") for i in range(128)], dtype=torch.int16, device=device)
+        t = torch.tensor([bin(i).count("1") for i in range(128)], dtype=torch.int8, device=device)
         _POPCOUNT_CACHE[device] = t
     return t
 
@@ -56,7 +56,8 @@ def compute_level(states: torch.Tensor) -> torch.Tensor:
     r1 = (states >> 7) & 0x7F
     r2 = (states >> 14) & 0x7F
     r3 = (states >> 21) & 0x7F
-    return pc[r0] + pc[r1] + pc[r2] + pc[r3]
+    # Cast to int16 for downstream compatibility (max level is 28)
+    return (pc[r0] + pc[r1] + pc[r2] + pc[r3]).to(torch.int16)
 
 
 def compute_team(states: torch.Tensor) -> torch.Tensor:
