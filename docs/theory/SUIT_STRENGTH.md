@@ -2,13 +2,15 @@
 
 ## Overview
 
-This document formalizes the three interlocking systems that determine game value in Texas 42:
+This document is a **research memo** about structural features of play-phase value in Texas 42. It is not a rules authority; for a rules/spec companion see `docs/theory/PLAY_PHASE_SPEC.md`.
+
+It formalizes three interlocking axes that appear repeatedly in analysis:
 
 1. **Rank Algebra**: Domino strength under suit/trump context
 2. **Void Lattice**: Who can respond to which suits
 3. **Control System**: Lead token dynamics and tempo
 
-The conjecture is that game value decomposes (or nearly decomposes) as a function of these three axes, enabling efficient computation without full tree enumeration.
+A working hypothesis is that (for the **play phase** at fixed $(\text{deal},\delta)$) minimax value exhibits useful structure in terms of these three axes, possibly only as an approximation, and that this structure can be exploited for analysis and for heuristic evaluation.
 
 This document assumes the core definitions from:
 
@@ -296,7 +298,7 @@ The token determines who names the comparison function (led suit) for the next t
 
 The lead token obeys:
 
-**Initial condition**: Leader$(t=0)$ determined by bidding winner.
+**Initial condition**: Leader$(t=0)$ is exogenous to play-phase analysis (determined upstream, or fixed by convention in a solver).
 
 **Transition rule**: 
 $$\text{Leader}(t+1) = \text{TrickWinner}(t)$$
@@ -425,7 +427,7 @@ This creates a **two-level positional structure**:
 - Within-trick: positions 1-4
 - Across-tricks: who gets position 1
 
-$$\text{PositionalValue}(s) = \sum_{t} \mathbb{1}[\text{Leader}(t) = s] \cdot \text{LeadValue}(s, t)$$
+To turn this into features, it is better to define position value relative to the current state (e.g. via lead-strength and interrupt-risk) than to introduce an undefined per-trick scalar $\text{LeadValue}(s,t)$.
 
 ### 5.6 Positional Summary
 
@@ -490,13 +492,7 @@ Where $\alpha$ is the base value of holding the token, $\beta$ weights lead stre
 
 ### 6.4 The Potential Function Hypothesis
 
-An exact identity of the form:
-
-$$\Phi(\sigma) - \Phi(\sigma') = r(\sigma \to \sigma')$$
-
-for *all* legal transitions would make cumulative reward essentially path-dependent only through the endpoint, which is incompatible with nontrivial trick-taking play.
-
-The meaningful analogue is: find a simple $\Phi$ that approximates the true minimax value function $V$ (low Bellman error), so that greedy $\Phi$-improvement is a strong move-ordering / heuristic.
+We do not expect an exact potential identity for all transitions in a nontrivial adversarial trick-taking game. The meaningful goal is to find a simple $\Phi$ that approximates the true minimax value function $V$ (low Bellman error), so that $\Phi$ is useful as a heuristic and for move ordering.
 
 ### 6.5 The Weaker Conjecture
 
@@ -572,7 +568,7 @@ def test_void_sufficiency(logs):
     return variance_ratio
 ```
 
-**Success criterion**: Variance ratio < 0.1
+Report: variance ratio (within-group vs total) explained by void pattern, stratified by level and declaration.
 
 ### 8.2 Phase 2: Rank Features Alone
 
@@ -591,7 +587,7 @@ def compute_rank_features(state, context):
     return features
 ```
 
-**Success criterion**: Linear model R² > 0.9
+Report: best-fit quality for linear and shallow nonlinear models, stratified by declaration and game stage.
 
 ### 8.3 Phase 3: Control Features Alone
 
@@ -636,7 +632,7 @@ def test_tensor_rank(value_tensor):
     return optimal_rank, reconstruction_error
 ```
 
-Low tensor rank → separable structure → efficient computation.
+A low tensor rank would suggest a separable structure that can be exploited for more compact evaluation.
 
 ---
 
@@ -653,7 +649,7 @@ Value: minimax value (or optimal move)
 
 Estimated size: ~100M entries, few GB storage.
 
-**Solve any position in O(1) lookups.**
+If such a table is feasible, it yields $O(1)$ lookup evaluation (and potentially $O(1)$ policy lookup) for positions within the table’s domain.
 
 ### 9.2 If Linear Decomposition Holds
 
@@ -668,7 +664,7 @@ def evaluate(state):
     )
 ```
 
-**Solve any position in O(1) arithmetic.**
+This yields an $O(1)$ arithmetic evaluation model.
 
 ### 9.3 If Tensor Structure Holds
 
@@ -682,7 +678,7 @@ def evaluate(state):
     return contract(Pi, r, v, c)
 ```
 
-**Solve any position in O(k³) where k is tensor rank.**
+This yields an evaluation model with per-state cost $O(k^3)$ for rank $k$.
 
 ### 9.4 Move Ordering Heuristic
 
@@ -694,19 +690,6 @@ def order_moves(state, moves):
 ```
 
 Better move ordering → more alpha-beta pruning → faster exact solve.
-
-### 9.5 Bidding Application
-
-The decomposition directly enables bidding evaluation:
-
-```python
-def evaluate_bid(hand, declaration):
-    # Compute expected void pattern trajectory
-    # Compute expected rank distribution
-    # Compute expected control dynamics
-    # Integrate to get expected value
-    return expected_points
-```
 
 ---
 
@@ -866,9 +849,9 @@ The structure of 42—built on $K_7$, exactly 42 points, 7 tricks, the suit cove
 
 ## Appendix B: Key Conjectures
 
-**Conjecture 1 (Void Sufficiency)**: States with identical void patterns have value variance < 10% of total variance.
+**Conjecture 1 (Void Predictiveness)**: Conditioning on void pattern reduces value variance relative to conditioning on level alone.
 
-**Conjecture 2 (Linear Decomposition)**: A linear model on (rank, void, control) features achieves R² > 0.95.
+**Conjecture 2 (Low-Complexity Approximation)**: A low-complexity model on (rank, void, control) features approximates minimax value well enough to be useful as a heuristic.
 
 **Conjecture 3 (Low Bellman Error)**: There exists a simple $\Phi$ such that the Bellman residual is small:
 
@@ -878,13 +861,13 @@ $$\Phi(\sigma) \approx
 \min_a \big(r(\sigma,a)+\Phi(\sigma')\big) & \text{Team 1 to act}
 \end{cases}$$
 
-**Conjecture 4 (Low Tensor Rank)**: The interaction tensor $\Pi_{r,v,c}$ has rank < 10.
+**Conjecture 4 (Low Effective Rank)**: The interaction tensor admits a low-rank (or otherwise low-complexity) approximation at acceptable error.
 
 ---
 
-## Appendix C: Experimental Results (2025-12-28)
+## Appendix C: Experimental Snapshot (2025-12-28)
 
-Validation performed using `scripts/solver2/validate_conjecture.py` on minimax-solved positions from `data/solver2/`.
+This section records one early experimental run and should be read as a snapshot, not as a definitive falsification/verification of the hypotheses.
 
 ### Setup
 
@@ -910,18 +893,18 @@ Validation performed using `scripts/solver2/validate_conjecture.py` on minimax-s
 
 | Conjecture | Criterion | Observed | Status |
 |------------|-----------|----------|--------|
-| Void Sufficiency | within-group variance < 10% | ~95% residual | **REFUTED** |
-| Linear Decomposition | R² > 0.95 | R² = 0.19 | **REFUTED** |
+| Void Predictiveness | variance reduction | small reduction in this sample | not supported by this sample |
+| Low-Complexity Approximation | high R² | R² = 0.19 (linear) | not supported by this sample |
 
 ### Analysis
 
-1. **Rank dominates**: The rank axis (14.5%) contributes more than void (5.7%) or control (8.2%) individually.
+1. Rank features explained more variance than void or control features individually in this sample.
 
-2. **Synergy exists but weak**: Combining axes adds +4.7% beyond the best individual axis.
+2. Combining axes improved fit over the best single axis by a small margin in this sample.
 
-3. **Nonlinearity is minor**: MLP gains only +3.6% over linear model.
+3. Nonlinearity appears limited in this sample: the MLP gain over linear is small.
 
-4. **77% unexplained**: The three-axis framework captures only ~23% of minimax value variance.
+4. The three-axis feature set explains a minority of minimax value variance in this sample.
 
 ### Interpretation
 
@@ -933,13 +916,13 @@ The simple aggregate features (team differentials, counts) miss critical informa
 
 ### Implications
 
-1. **Not a simple decomposition**: Game value does not factor cleanly into rank + void + control.
+1. A simple decomposition into coarse (rank, void, control) aggregates is not supported by this sample.
 
-2. **Features need enrichment**: To reach R² > 0.9, likely need:
+2. Feature enrichment seems necessary to reach very high $R^2$:
    - Per-domino presence indicators (28 binary features per seat)
    - Trick-in-progress context
    - Suit-specific control analysis
 
-3. **MLP is promising**: Even with weak features, MLP extracts some nonlinear signal. With richer features, neural evaluation may approach minimax quality.
+3. MLP shows incremental improvement over linear in this sample. With richer features, neural evaluation may become more competitive.
 
-4. **Heuristic value**: The 23% explained variance may still provide useful move ordering, even if not sufficient for accurate evaluation.
+4. The explained variance may still provide useful move ordering, even if it is not sufficient for accurate evaluation.
