@@ -792,9 +792,11 @@ def main():
     parser.add_argument("--dropout", type=float, default=0.1)
     parser.add_argument("--temperature", type=float, default=3.0,
                         help="Soft target temperature (higher = softer)")
-    parser.add_argument("--soft-weight", type=float, default=0.3,
+    parser.add_argument("--soft-weight", type=float, default=0.7,
                         help="Weight for soft targets (0=hard only, 1=soft only)")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--save-model", type=str, default=None,
+                        help="Path to save best model (e.g., data/solver2/transformer_best.pt)")
     args = parser.parse_args()
 
     # Set seeds
@@ -912,6 +914,16 @@ def main():
         if test_acc > best_test_acc:
             best_test_acc = test_acc
             best_train_acc = train_acc
+            # Save model if requested
+            if args.save_model:
+                torch.save({
+                    'model_state_dict': model.state_dict(),
+                    'epoch': epoch,
+                    'test_acc': test_acc,
+                    'train_acc': train_acc,
+                    'args': vars(args),
+                }, args.save_model)
+                log(f"  → Saved best model to {args.save_model}")
 
         log(f"{epoch:5d} | {train_loss:10.4f} | {train_acc:8.2%} | {test_loss:10.4f} | {test_acc:8.2%} | {gap:5.2f}x")
 
