@@ -122,12 +122,12 @@ EMBED_LOW_PIP = 7       # 0-6
 EMBED_IS_DOUBLE = 2     # bool
 EMBED_COUNT_VALUE = 3   # 0, 5, 10 -> 0, 1, 2
 EMBED_TRUMP_RANK = 8    # 0-6 for ranks, 7 for non-trump
-EMBED_PLAYER_ID = 4     # 0-3
-EMBED_IS_CURRENT = 2    # bool
-EMBED_IS_PARTNER = 2    # bool
+EMBED_PLAYER_ID = 4     # 0-3 (NORMALIZED: 0=current, 2=partner, 1,3=opponents)
+EMBED_IS_CURRENT = 2    # bool (always 1 for position 0 after normalization)
+EMBED_IS_PARTNER = 2    # bool (always 1 for position 2 after normalization)
 EMBED_IS_REMAINING = 2  # bool (for hand tokens)
 EMBED_DECL = 10         # declaration type
-EMBED_LEADER = 4        # who leads
+EMBED_LEADER = 4        # who leads (NORMALIZED relative to current player)
 
 # Count value mapping
 COUNT_VALUE_MAP = {0: 0, 5: 1, 10: 2}
@@ -294,8 +294,7 @@ class DominoTransformer(nn.Module):
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
 
-        # Output head: takes the 7 hand tokens for current player
-        # and produces 7 logits
+        # Single output head - perspective normalization means model always maximizes
         self.output_proj = nn.Linear(embed_dim, 1)
 
     def _calc_input_dim(self) -> int:
@@ -306,13 +305,13 @@ class DominoTransformer(nn.Module):
             self.embed_dim // 12 +  # is_double
             self.embed_dim // 12 +  # count_value
             self.embed_dim // 6 +   # trump_rank
-            self.embed_dim // 12 +  # player_id
-            self.embed_dim // 12 +  # is_current
-            self.embed_dim // 12 +  # is_partner
+            self.embed_dim // 12 +  # player_id (normalized)
+            self.embed_dim // 12 +  # is_current (redundant but kept for compatibility)
+            self.embed_dim // 12 +  # is_partner (redundant but kept for compatibility)
             self.embed_dim // 12 +  # is_remaining
             self.embed_dim // 6 +   # token_type
             self.embed_dim // 6 +   # decl
-            self.embed_dim // 12    # leader
+            self.embed_dim // 12    # leader (normalized)
         )
 
     def forward(
@@ -330,20 +329,20 @@ class DominoTransformer(nn.Module):
         batch_size = tokens.size(0)
         device = tokens.device
 
-        # Embed each feature
+        # Embed each feature (12 features, no team signal needed with perspective normalization)
         embeds = []
         embeds.append(self.high_pip_embed(tokens[:, :, 0]))
         embeds.append(self.low_pip_embed(tokens[:, :, 1]))
         embeds.append(self.is_double_embed(tokens[:, :, 2]))
         embeds.append(self.count_value_embed(tokens[:, :, 3]))
         embeds.append(self.trump_rank_embed(tokens[:, :, 4]))
-        embeds.append(self.player_id_embed(tokens[:, :, 5]))
+        embeds.append(self.player_id_embed(tokens[:, :, 5]))   # normalized: 0=me, 2=partner
         embeds.append(self.is_current_embed(tokens[:, :, 6]))
         embeds.append(self.is_partner_embed(tokens[:, :, 7]))
         embeds.append(self.is_remaining_embed(tokens[:, :, 8]))
         embeds.append(self.token_type_embed(tokens[:, :, 9]))
         embeds.append(self.decl_embed(tokens[:, :, 10]))
-        embeds.append(self.leader_embed(tokens[:, :, 11]))
+        embeds.append(self.leader_embed(tokens[:, :, 11]))     # normalized relative to current
 
         # Concatenate and project
         x = torch.cat(embeds, dim=-1)  # (batch, max_tokens, input_dim)
@@ -371,7 +370,7 @@ class DominoTransformer(nn.Module):
         # Gather the hand representations
         hand_repr = torch.gather(x, dim=1, index=gather_indices)  # (batch, 7, embed_dim)
 
-        # Project to logits
+        # Single output head - perspective normalization means model always maximizes
         logits = self.output_proj(hand_repr).squeeze(-1)  # (batch, 7)
 
         return logits
@@ -385,7 +384,7 @@ def process_file_vectorized(
     file_path: Path,
     max_samples: int | None,
     rng: np.random.Generator,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray] | None:
     """
     Process one parquet file with vectorized operations.
 
@@ -395,6 +394,8 @@ def process_file_vectorized(
         current_players: (N,)
         targets: (N,) - optimal local move index
         legal_masks: (N, 7) - 1 if legal, 0 if not
+        q_values: (N, 7) - raw Q-values (int32) for Q-gap analysis
+        teams: (N,) - 0 for Team 0, 1 for Team 1
     """
     try:
         pf = pq.ParquetFile(file_path)
@@ -435,15 +436,7 @@ def process_file_vectorized(
         legal_masks = legal_masks[has_legal]
         n_samples = len(states)
 
-        # Find optimal move: argmax over legal Q-values
-        # Convert to int32 to avoid overflow when masking with -129
-        q_int32 = q_values_all.astype(np.int32)
-        q_masked = np.where(legal_masks > 0, q_int32, -129)
-        targets = q_masked.argmax(axis=1).astype(np.int64)  # (N,)
-
-        # ===== Vectorized tokenization =====
-
-        # Extract state fields (vectorized bit operations)
+        # ===== Extract state fields FIRST (needed for target computation) =====
         remaining = np.zeros((n_samples, 4), dtype=np.int64)
         for p in range(4):
             remaining[:, p] = (states >> (p * 7)) & 0x7F
@@ -457,6 +450,20 @@ def process_file_vectorized(
         current_player = ((leader + trick_len) % 4).astype(np.int64)  # (N,)
         partner = ((current_player + 2) % 4).astype(np.int64)  # (N,)
 
+        # Find optimal move: TEAM-AWARE target computation
+        # Q-values are from Team 0's perspective:
+        #   - Team 0 (players 0,2) wants argmax
+        #   - Team 1 (players 1,3) wants argmin
+        # Convert to int32 to avoid overflow when masking
+        q_int32 = q_values_all.astype(np.int32)
+        team = current_player % 2  # 0 = Team 0, 1 = Team 1
+
+        # For Team 0: use Q as-is (argmax finds best for Team 0)
+        # For Team 1: negate Q (argmax on -Q finds best for Team 1 = worst for Team 0)
+        q_for_argmax = np.where(team[:, np.newaxis] == 0, q_int32, -q_int32)
+        q_masked = np.where(legal_masks > 0, q_for_argmax, -129)
+        targets = q_masked.argmax(axis=1).astype(np.int64)  # (N,)
+
         # Precompute static domino features (same for all samples in this file)
         # For each of 28 hand positions: [high, low, is_double, count_val, trump_rank]
         domino_features = np.zeros((28, 5), dtype=np.int64)
@@ -468,19 +475,36 @@ def process_file_vectorized(
             domino_features[i, 4] = TRUMP_RANK_TABLE[(global_id, decl_id)]
 
         # Build tokens array: (N, 32, 12)
+        # Features: [high_pip, low_pip, is_double, count_value, trump_rank,
+        #            player_id, is_current, is_partner, is_remaining, token_type,
+        #            decl_id, leader_id]
+        # PERSPECTIVE NORMALIZATION:
+        #   - player_id is NORMALIZED: (physical - current_player + 4) % 4
+        #     So 0 = current player ("me"), 2 = partner, 1,3 = opponents
+        #   - leader_id is NORMALIZED: (physical_leader - current_player + 4) % 4
+        #     So 0 = "I lead", 1 = "left opponent leads", etc.
+        #   - Model always learns to MAXIMIZE (no team-conditional logic needed)
         MAX_TOKENS = 32
         N_FEATURES = 12
         tokens = np.zeros((n_samples, MAX_TOKENS, N_FEATURES), dtype=np.int64)
         masks = np.zeros((n_samples, MAX_TOKENS), dtype=np.float32)
 
+        # Compute normalized leader: (physical_leader - current_player + 4) % 4
+        # This gives: 0 = I lead, 1 = left opponent leads, 2 = partner leads, 3 = right opponent leads
+        normalized_leader = ((leader - current_player + 4) % 4).astype(np.int64)
+
         # Token 0: Context
         tokens[:, 0, 9] = TOKEN_TYPE_CONTEXT
         tokens[:, 0, 10] = decl_id
-        tokens[:, 0, 11] = leader
+        tokens[:, 0, 11] = normalized_leader
         masks[:, 0] = 1.0
 
-        # Tokens 1-28: Hand positions
+        # Tokens 1-28: Hand positions (in physical order, but with normalized player_id)
         for p in range(4):
+            # Normalized player_id: (physical - current_player + 4) % 4
+            # This is different per sample since current_player varies
+            normalized_player = ((p - current_player + 4) % 4).astype(np.int64)
+
             for local_idx in range(7):
                 flat_idx = p * 7 + local_idx
                 token_idx = 1 + flat_idx
@@ -492,15 +516,15 @@ def process_file_vectorized(
                 tokens[:, token_idx, 2] = domino_features[flat_idx, 2]  # is_double
                 tokens[:, token_idx, 3] = domino_features[flat_idx, 3]  # count_value
                 tokens[:, token_idx, 4] = domino_features[flat_idx, 4]  # trump_rank
-                tokens[:, token_idx, 5] = p  # player_id
+                tokens[:, token_idx, 5] = normalized_player  # NORMALIZED player_id
 
                 # Dynamic per-sample features
-                tokens[:, token_idx, 6] = (current_player == p).astype(np.int64)  # is_current
-                tokens[:, token_idx, 7] = (partner == p).astype(np.int64)  # is_partner
+                tokens[:, token_idx, 6] = (normalized_player == 0).astype(np.int64)  # is_current (redundant but kept)
+                tokens[:, token_idx, 7] = (normalized_player == 2).astype(np.int64)  # is_partner (redundant but kept)
                 tokens[:, token_idx, 8] = ((remaining[:, p] >> local_idx) & 1).astype(np.int64)  # is_remaining
-                tokens[:, token_idx, 9] = TOKEN_TYPE_PLAYER0 + p
+                tokens[:, token_idx, 9] = TOKEN_TYPE_PLAYER0 + p  # token_type still uses physical for gather
                 tokens[:, token_idx, 10] = decl_id
-                tokens[:, token_idx, 11] = leader
+                tokens[:, token_idx, 11] = normalized_leader
 
                 masks[:, token_idx] = 1.0
 
@@ -528,22 +552,26 @@ def process_file_vectorized(
                 li = int(local_idx[sample_idx])
                 global_id = hands[pp][li]
 
+                # Normalized player_id for the playing player
+                cp = int(current_player[sample_idx])
+                normalized_pp = (pp - cp + 4) % 4
+
                 tokens[sample_idx, token_idx, 0] = DOMINO_HIGH[global_id]
                 tokens[sample_idx, token_idx, 1] = DOMINO_LOW[global_id]
                 tokens[sample_idx, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[global_id] else 0
                 tokens[sample_idx, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[global_id]]
                 tokens[sample_idx, token_idx, 4] = TRUMP_RANK_TABLE[(global_id, decl_id)]
-                tokens[sample_idx, token_idx, 5] = pp
-                tokens[sample_idx, token_idx, 6] = 1 if pp == current_player[sample_idx] else 0
-                tokens[sample_idx, token_idx, 7] = 1 if pp == partner[sample_idx] else 0
+                tokens[sample_idx, token_idx, 5] = normalized_pp  # NORMALIZED player_id
+                tokens[sample_idx, token_idx, 6] = 1 if normalized_pp == 0 else 0  # is_current
+                tokens[sample_idx, token_idx, 7] = 1 if normalized_pp == 2 else 0  # is_partner
                 tokens[sample_idx, token_idx, 8] = 0  # not in hand anymore
                 tokens[sample_idx, token_idx, 9] = trick_token_types[trick_pos]
                 tokens[sample_idx, token_idx, 10] = decl_id
-                tokens[sample_idx, token_idx, 11] = leader[sample_idx]
+                tokens[sample_idx, token_idx, 11] = int(normalized_leader[sample_idx])
 
                 masks[sample_idx, token_idx] = 1.0
 
-        return (tokens, masks, current_player, targets, legal_masks)
+        return (tokens, masks, current_player, targets, legal_masks, q_int32, team)
 
     except Exception as e:
         log(f"  ERROR processing {file_path}: {e}")
@@ -559,8 +587,11 @@ def load_data(
     max_files: int | None,
     rng: np.random.Generator,
     label: str,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Load data from parquet files for given seed range."""
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Load data from parquet files for given seed range.
+
+    Returns: (tokens, masks, players, targets, legal, q_values, teams)
+    """
 
     log(f"\n=== Loading {label} Data (seeds {seed_range[0]}-{seed_range[1]}) ===")
 
@@ -590,17 +621,21 @@ def load_data(
     all_players = []
     all_targets = []
     all_legal = []
+    all_qvals = []
+    all_teams = []
 
     t0 = time.time()
     for i, f in enumerate(relevant_files):
         result = process_file_vectorized(f, max_samples_per_file, rng)
         if result is not None:
-            tokens, masks, players, targets, legal = result
+            tokens, masks, players, targets, legal, qvals, teams = result
             all_tokens.append(tokens)
             all_masks.append(masks)
             all_players.append(players)
             all_targets.append(targets)
             all_legal.append(legal)
+            all_qvals.append(qvals)
+            all_teams.append(teams)
 
             if (i + 1) % 10 == 0 or i == len(relevant_files) - 1:
                 total_samples = sum(len(t) for t in all_targets)
@@ -616,6 +651,8 @@ def load_data(
         np.concatenate(all_players, axis=0),
         np.concatenate(all_targets, axis=0),
         np.concatenate(all_legal, axis=0),
+        np.concatenate(all_qvals, axis=0),
+        np.concatenate(all_teams, axis=0),
     )
 
 
@@ -666,27 +703,62 @@ def train_epoch(
     loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
+    temperature: float = 3.0,
+    soft_weight: float = 0.5,
 ) -> tuple[float, float]:
-    """Train for one epoch, return (accuracy, loss)."""
+    """Train for one epoch using hybrid hard+soft targets.
+
+    Hybrid approach:
+    - Hard targets: cross-entropy on argmax label (for accuracy)
+    - Soft targets: cross-entropy on Q-softmax (for blunder avoidance)
+    - Loss = (1-soft_weight) * hard_CE + soft_weight * soft_CE
+    """
     model.train()
     total_correct = 0
     total_samples = 0
     total_loss = 0.0
 
-    for tokens, masks, players, targets, legal in loader:
+    for tokens, masks, players, targets, legal, qvals, teams in loader:
         tokens = tokens.to(device)
         masks = masks.to(device)
         players = players.to(device)
         targets = targets.to(device)
         legal = legal.to(device)
+        qvals = qvals.to(device).float()  # (batch, 7)
+        teams = teams.to(device)          # (batch,)
 
         optimizer.zero_grad()
         logits = model(tokens, masks, players)
 
-        # Mask illegal moves before loss
+        # Mask illegal moves in logits
         logits_masked = logits.masked_fill(legal == 0, float('-inf'))
 
-        loss = F.cross_entropy(logits_masked, targets)
+        # === Hard target loss (standard cross-entropy) ===
+        hard_loss = F.cross_entropy(logits_masked, targets)
+
+        # === Soft target loss (Q-value weighted) ===
+        # Team 0 wants to maximize Q, Team 1 wants to minimize Q
+        team_sign = torch.where(teams == 0, 1.0, -1.0).unsqueeze(1)  # (batch, 1)
+        q_for_soft = qvals * team_sign  # (batch, 7)
+
+        # Replace -128 (illegal marker) with -inf BEFORE softmax
+        q_masked = torch.where(legal > 0, q_for_soft, torch.tensor(float('-inf'), device=device))
+
+        # Soft targets: higher Q gets more probability
+        soft_targets = F.softmax(q_masked / temperature, dim=-1)  # (batch, 7)
+
+        # Clamp and renormalize for numerical stability
+        soft_targets = soft_targets.clamp(min=1e-8)
+        soft_targets = soft_targets / soft_targets.sum(dim=-1, keepdim=True)
+
+        # Soft cross-entropy
+        log_probs = F.log_softmax(logits_masked, dim=-1)
+        log_probs_safe = log_probs.masked_fill(legal == 0, 0.0)
+        soft_loss = -(soft_targets * log_probs_safe).sum(dim=-1).mean()
+
+        # === Hybrid loss ===
+        loss = (1 - soft_weight) * hard_loss + soft_weight * soft_loss
+
         loss.backward()
         optimizer.step()
 
@@ -718,6 +790,10 @@ def main():
     parser.add_argument("--n-layers", type=int, default=2)
     parser.add_argument("--ff-dim", type=int, default=128)
     parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--temperature", type=float, default=3.0,
+                        help="Soft target temperature (higher = softer)")
+    parser.add_argument("--soft-weight", type=float, default=0.3,
+                        help="Weight for soft targets (0=hard only, 1=soft only)")
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -740,19 +816,20 @@ def main():
     log(f"Batch size: {args.batch_size}")
     log(f"Learning rate: {args.lr}")
     log(f"Epochs: {args.epochs}")
+    log(f"Temperature: {args.temperature}, Soft weight: {args.soft_weight}")
     log(f"Architecture: {args.n_layers} layers, {args.n_heads} heads, {args.embed_dim} dim")
 
     data_dir = Path(args.data_dir)
 
     # Load data
     # Train: seeds 0-89, Test: seeds 90-99
-    train_tokens, train_masks, train_players, train_targets, train_legal = load_data(
+    train_tokens, train_masks, train_players, train_targets, train_legal, train_qvals, train_teams = load_data(
         data_dir, (0, 89), args.max_samples, args.max_files, rng, "Train"
     )
 
     # Use proportional max_files for test (10% of train seeds)
     test_max_files = max(1, args.max_files // 9) if args.max_files else None
-    test_tokens, test_masks, test_players, test_targets, test_legal = load_data(
+    test_tokens, test_masks, test_players, test_targets, test_legal, test_qvals, test_teams = load_data(
         data_dir, (90, 99), args.max_samples, test_max_files, rng, "Test"
     )
 
@@ -765,13 +842,15 @@ def main():
     train_target_counts = np.bincount(train_targets, minlength=7)
     log(f"Train target distribution: {train_target_counts}")
 
-    # Create data loaders
+    # Create data loaders (include Q-values and teams for soft target training)
     train_dataset = TensorDataset(
         torch.tensor(train_tokens),
         torch.tensor(train_masks),
         torch.tensor(train_players),
         torch.tensor(train_targets),
         torch.tensor(train_legal),
+        torch.tensor(train_qvals),
+        torch.tensor(train_teams),
     )
     test_dataset = TensorDataset(
         torch.tensor(test_tokens),
@@ -823,7 +902,7 @@ def main():
     for epoch in range(1, args.epochs + 1):
         t0 = time.time()
 
-        train_acc, train_loss = train_epoch(model, train_loader, optimizer, device)
+        train_acc, train_loss = train_epoch(model, train_loader, optimizer, device, args.temperature, args.soft_weight)
         test_acc, test_loss = compute_accuracy(model, test_loader, device)
 
         scheduler.step()
@@ -886,6 +965,138 @@ def main():
             log(f"{true:6d} | {pred:6d} | {correct:>7} | {legal_str:>12}")
 
     log(f"\nSpot check accuracy: {correct_count}/20 = {correct_count/20:.0%}")
+
+    # Q-Gap Analysis on full test set
+    log("\n=== Q-Gap Analysis ===")
+    model.eval()
+
+    all_gaps = []
+    all_is_error = []
+    blunder_cases = []
+
+    batch_size = args.batch_size
+    n_test = len(test_targets)
+
+    with torch.no_grad():
+        for start in range(0, n_test, batch_size):
+            end = min(start + batch_size, n_test)
+
+            tokens = torch.tensor(test_tokens[start:end]).to(device)
+            masks = torch.tensor(test_masks[start:end]).to(device)
+            players = torch.tensor(test_players[start:end]).to(device)
+            legal = torch.tensor(test_legal[start:end]).to(device)
+
+            logits = model(tokens, masks, players)
+            logits = logits.masked_fill(legal == 0, float('-inf'))
+            preds = logits.argmax(dim=-1).cpu().numpy()
+
+            # Compute Q-gaps for this batch
+            for i in range(end - start):
+                idx = start + i
+                q = test_qvals[idx]  # (7,) int32
+                legal_mask = test_legal[idx]  # (7,) float32
+                t = test_teams[idx]  # 0 or 1
+                pred_idx = preds[i]
+                true_idx = test_targets[idx]
+
+                # Q-values are from Team 0's perspective
+                if t == 0:
+                    # Team 0 wants max Q
+                    legal_q = np.where(legal_mask > 0, q, -999)
+                    optimal_q = legal_q.max()
+                    pred_q = q[pred_idx]
+                    gap = optimal_q - pred_q
+                else:
+                    # Team 1 wants min Q (minimize Team 0's score)
+                    legal_q = np.where(legal_mask > 0, q, 999)
+                    optimal_q = legal_q.min()
+                    pred_q = q[pred_idx]
+                    # Gap = how much worse than optimal (higher Q is bad for Team 1)
+                    gap = pred_q - optimal_q
+
+                is_error = (pred_idx != true_idx)
+                all_gaps.append(gap)
+                all_is_error.append(is_error)
+
+                # Track blunder cases
+                if gap > 10 and len(blunder_cases) < 10:
+                    blunder_cases.append({
+                        'idx': idx,
+                        'team': t,
+                        'q_values': q.tolist(),
+                        'legal_mask': legal_mask.tolist(),
+                        'optimal_idx': int(true_idx),
+                        'pred_idx': int(pred_idx),
+                        'optimal_q': int(optimal_q),
+                        'pred_q': int(pred_q),
+                        'gap': int(gap),
+                    })
+
+    gaps = np.array(all_gaps)
+    is_error = np.array(all_is_error)
+    teams_arr = test_teams[:len(gaps)]
+
+    log(f"Total samples: {len(gaps):,}")
+    log(f"Errors: {is_error.sum():,} ({is_error.mean()*100:.1f}%)")
+
+    # Per-team accuracy
+    team0_mask = (teams_arr == 0)
+    team1_mask = (teams_arr == 1)
+    team0_acc = 1.0 - is_error[team0_mask].mean()
+    team1_acc = 1.0 - is_error[team1_mask].mean()
+    team0_gap = gaps[team0_mask].mean()
+    team1_gap = gaps[team1_mask].mean()
+    log(f"\n--- Per-Team Analysis ---")
+    log(f"Team 0: {team0_mask.sum():,} samples, {team0_acc*100:.1f}% acc, mean gap {team0_gap:.2f}")
+    log(f"Team 1: {team1_mask.sum():,} samples, {team1_acc*100:.1f}% acc, mean gap {team1_gap:.2f}")
+
+    log(f"\n--- All Predictions ---")
+    log(f"Mean Q-gap: {gaps.mean():.3f}")
+    log(f"Median Q-gap: {np.median(gaps):.1f}")
+    log(f"Max Q-gap: {gaps.max()}")
+    log(f"Min Q-gap: {gaps.min()}")
+
+    # Error analysis
+    error_gaps = gaps[is_error]
+    if len(error_gaps) > 0:
+        log(f"\n--- Errors Only ---")
+        log(f"Mean Q-gap: {error_gaps.mean():.3f}")
+
+        # Bucket by gap size
+        ties = (error_gaps == 0).sum()
+        near = ((error_gaps >= 1) & (error_gaps <= 2)).sum()
+        minor = ((error_gaps >= 3) & (error_gaps <= 5)).sum()
+        bad = ((error_gaps >= 6) & (error_gaps <= 10)).sum()
+        blunder = (error_gaps > 10).sum()
+
+        total_errors = len(error_gaps)
+        log(f"\nError buckets:")
+        log(f"  Ties (gap=0):    {ties:5d} ({ties/total_errors*100:5.1f}%)")
+        log(f"  Near (1-2):      {near:5d} ({near/total_errors*100:5.1f}%)")
+        log(f"  Minor (3-5):     {minor:5d} ({minor/total_errors*100:5.1f}%)")
+        log(f"  Bad (6-10):      {bad:5d} ({bad/total_errors*100:5.1f}%)")
+        log(f"  Blunder (>10):   {blunder:5d} ({blunder/total_errors*100:5.1f}%)")
+
+    # Verdict
+    log(f"\n=== Verdict ===")
+    mean_gap = gaps.mean()
+    if mean_gap < 1.0 and mean_gap >= 0:
+        log(f"✓ SOLID: Mean Q-gap {mean_gap:.3f} in [0, 1.0) target range")
+    elif mean_gap < 0:
+        log(f"✗ BUG: Negative mean Q-gap {mean_gap:.3f} - impossible, check calculation")
+    else:
+        log(f"~ CONCERN: Mean Q-gap {mean_gap:.3f} >= 1.0 target")
+
+    # Show blunder cases
+    if blunder_cases:
+        log(f"\n=== Blunder Cases (first {len(blunder_cases)}) ===")
+        for case in blunder_cases:
+            log(f"\nSample {case['idx']}: Team {case['team']}")
+            log(f"  Q-values: {case['q_values']}")
+            log(f"  Legal: {case['legal_mask']}")
+            log(f"  Optimal idx: {case['optimal_idx']}, Q={case['optimal_q']}")
+            log(f"  Predicted idx: {case['pred_idx']}, Q={case['pred_q']}")
+            log(f"  Gap: {case['gap']}")
 
 
 if __name__ == "__main__":
