@@ -256,7 +256,7 @@ For void pattern $V$, define the **interrupt graph** $G_V^\delta$:
 - Nodes: seats $\mathcal{S}$
 - Edges: directed, labeled by suit
 
-$$s_1 \xrightarrow{\ell} s_2 \in G_V^\delta \iff \text{canInterrupt}(s_2, \ell, V, H_{s_2}, \delta) \land s_1 \text{ would lead } \ell$$
+$$s_1 \xrightarrow{\ell} s_2 \in G_V^\delta \iff \text{canInterrupt}(s_2, \ell, V, R_{s_2}, \delta) \land s_1 \text{ would lead } \ell$$
 
 This graph shows who can steal control from whom under which leads.
 
@@ -265,10 +265,10 @@ This graph shows who can steal control from whom under which leads.
 For a seat $s$ with lead token:
 
 **Safe suits** (no interrupt possible):
-$$\text{Safe}(s, V, \delta) = \{\ell : \forall s' \neq s, \neg\text{canInterrupt}(s', \ell, V, H_{s'}, \delta)\}$$
+$$\text{Safe}(s, V, \delta) = \{\ell : \forall s' \neq s, \neg\text{canInterrupt}(s', \ell, V, R_{s'}, \delta)\}$$
 
 **Contested suits** (interrupt threat exists):
-$$\text{Contested}(s, V, \delta) = \{\ell : \exists s' \neq s, \text{canInterrupt}(s', \ell, V, H_{s'}, \delta)\}$$
+$$\text{Contested}(s, V, \delta) = \{\ell : \exists s' \neq s, \text{canInterrupt}(s', \ell, V, R_{s'}, \delta)\}$$
 
 A key strategic decision: lead safe to guarantee win, or lead contested to probe/bait?
 
