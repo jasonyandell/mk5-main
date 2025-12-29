@@ -8,10 +8,13 @@ Data files are stored in `data/solver2/` (gitignored due to size).
 
 | Metric | Value |
 |--------|-------|
-| Total states | 134,217,553 |
-| Total size | 829.9 MB |
-| Seeds solved | 3 (seed 0, 1, 2) |
-| Declaration types | 3 (blanks, ones, fives) |
+| Total states | 8,412,036,886 |
+| Total size | 48.8 GB |
+| Seeds solved | 100 (seed 0-99) |
+| Declaration types | 10 (all types) |
+| Files | 305 |
+
+**Generation method**: For each seed, 3 random declarations are selected (reproducible via `random.Random(seed)`). See `scripts/solver2/campaign.py`.
 
 ## File Format
 
@@ -44,7 +47,7 @@ Each file includes `seed` and `decl_id` in the schema metadata.
 | 8 | doubles-suit | Doubles rank high in each suit |
 | 9 | notrump | No trump suit |
 
-**Current coverage**: Only pip trump declarations 0, 1, and 5 have been solved.
+**Current coverage**: All 10 declaration types are represented across 100 seeds (3 random declarations per seed).
 
 ## State Encoding (41 bits)
 
