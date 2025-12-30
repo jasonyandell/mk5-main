@@ -6,6 +6,23 @@ This package solves the full play-phase game tree for a single **(deal seed, dec
 - Minimax value per state (int8)
 - Child-value per move (7 moves, int8; `-128` means illegal)
 
+## Using the Output Data
+
+**See `schema.py` for the parquet format reference and helper functions.**
+
+```python
+from scripts.solver2.schema import load_file, unpack_state, DECL_NAMES
+
+# Load a file
+df, seed, decl_id = load_file("data/solver2/seed_00000000_decl_5.parquet")
+
+# Columns: state (int64), V (int8), mv0..mv6 (int8)
+print(f"Loaded {len(df):,} states for {DECL_NAMES[decl_id]}")
+
+# Decode packed states
+remaining, leader, trick_len, p0, p1, p2 = unpack_state(df["state"].values)
+```
+
 The core algorithm and state encoding are described in `docs/SOLVER_GPU_TRAINING.md`.
 
 ## Install (common denominator)

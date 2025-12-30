@@ -23,7 +23,7 @@ All state manipulation is **packed int64 + bitwise ops**. No Python objects.
 
 ---
 
-## State Representation (47 bits in int64)
+## State Representation (41 bits in int64)
 
 ```
 Bits 0-27: Remaining hands (4 × 7-bit masks)
@@ -32,18 +32,21 @@ Bits 0-27: Remaining hands (4 × 7-bit masks)
   [14:21] remaining[2] - Player 2's
   [21:28] remaining[3] - Player 3's
 
-Bits 28-35: Game progress
-  [28:34] score       - Team 0's points (0-42, 6 bits)
-  [34:36] leader      - Current trick leader (0-3, 2 bits)
+Bits 28-31: Game progress
+  [28:30] leader      - Current trick leader (0-3, 2 bits)
+  [30:32] trick_len   - Plays so far (0-3, 2 bits)
 
-Bits 36-47: Current trick
-  [36:38] trick_len   - Plays so far (0-3, 2 bits)
-  [38:41] play0       - Leader's local index (0-6, or 7 if N/A)
-  [41:44] play1       - Second player's local index
-  [44:47] play2       - Third player's local index
+Bits 32-41: Current trick plays (3 bits each)
+  [32:35] play0       - Leader's local index (0-6, or 7 if N/A)
+  [35:38] play1       - Second player's local index
+  [38:41] play2       - Third player's local index
 ```
 
-**Total: 47 bits.** Fits int64 with 17 bits to spare.
+**Total: 41 bits.** Fits int64 with 23 bits to spare.
+
+**Note:** Score is NOT stored in the packed state. The solver tracks cumulative
+score implicitly through minimax values (V). At terminal states, V represents
+team 0's point advantage over the game.
 
 ### Why Local Indices?
 
@@ -84,7 +87,7 @@ These tables are built once per seed from the deal and declaration.
 ### pack_state / unpack
 
 ```python
-def pack_state(remaining: torch.Tensor, score, leader, trick_len, p0, p1, p2) -> torch.Tensor:
+def pack_state(remaining: torch.Tensor, leader, trick_len, p0, p1, p2) -> torch.Tensor:
     """
     remaining: (N, 4) tensor of 7-bit masks
     others: (N,) tensors
@@ -95,12 +98,11 @@ def pack_state(remaining: torch.Tensor, score, leader, trick_len, p0, p1, p2) ->
         (remaining[:, 1].to(torch.int64) << 7) |
         (remaining[:, 2].to(torch.int64) << 14) |
         (remaining[:, 3].to(torch.int64) << 21) |
-        (score.to(torch.int64) << 28) |
-        (leader.to(torch.int64) << 34) |
-        (trick_len.to(torch.int64) << 36) |
-        (p0.to(torch.int64) << 38) |
-        (p1.to(torch.int64) << 41) |
-        (p2.to(torch.int64) << 44)
+        (leader.to(torch.int64) << 28) |
+        (trick_len.to(torch.int64) << 30) |
+        (p0.to(torch.int64) << 32) |
+        (p1.to(torch.int64) << 35) |
+        (p2.to(torch.int64) << 38)
     )
 
 def unpack_remaining(states: torch.Tensor) -> torch.Tensor:
@@ -128,15 +130,14 @@ def compute_level(states: torch.Tensor) -> torch.Tensor:
 
 def compute_team(states: torch.Tensor) -> torch.Tensor:
     """Is current player on team 0?"""
-    leader = (states >> 34) & 0x3
-    trick_len = (states >> 36) & 0x3
+    leader = (states >> 28) & 0x3
+    trick_len = (states >> 30) & 0x3
     player = (leader + trick_len) % 4
     return (player % 2 == 0)
 
 def compute_terminal_value(states: torch.Tensor) -> torch.Tensor:
-    """Terminal value = 2 * score - 42 (team 0's advantage)."""
-    score = (states >> 28) & 0x3F
-    return (2 * score - 42).to(torch.int8)
+    """Terminal states have no more points to gain - return 0."""
+    return torch.zeros(states.shape[0], dtype=torch.int8, device=states.device)
 ```
 
 ---
@@ -151,81 +152,59 @@ def expand_gpu(states: torch.Tensor, ctx: SeedContext) -> torch.Tensor:
     states: (N,) int64 packed states
     returns: (N, 7) int64 children, -1 for illegal moves
     """
-    N = len(states)
-    device = states.device
-
     # === UNPACK ===
-    r0 = (states >> 0) & 0x7F
-    r1 = (states >> 7) & 0x7F
-    r2 = (states >> 14) & 0x7F
-    r3 = (states >> 21) & 0x7F
-    score = (states >> 28) & 0x3F
-    leader = (states >> 34) & 0x3
-    trick_len = (states >> 36) & 0x3
-    p0 = (states >> 38) & 0x7
-    p1 = (states >> 41) & 0x7
-    p2 = (states >> 44) & 0x7
-
-    remaining = torch.stack([r0, r1, r2, r3], dim=1)  # (N, 4)
+    leader = (states >> 28) & 0x3
+    trick_len = (states >> 30) & 0x3
+    p0 = (states >> 32) & 0x7
+    p1 = (states >> 35) & 0x7
+    p2 = (states >> 38) & 0x7
 
     # === WHOSE TURN? ===
-    player = (leader + trick_len) % 4  # (N,)
+    player = (leader + trick_len) & 0x3
 
-    # === PLAYER'S HAND ===
-    hand = remaining.gather(1, player.unsqueeze(1)).squeeze(1)  # (N,)
+    # === PLAYER'S HAND (variable-shift extraction) ===
+    shift = player * 7
+    hand = torch.bitwise_right_shift(states, shift) & 0x7F
 
     # === LEGAL MOVES ===
     leading = (trick_len == 0)
-
-    # Follow mask lookup: LOCAL_FOLLOW[leader * 28 + p0 * 4 + trick_len]
     safe_p0 = p0.clamp(0, 6)
     follow_idx = leader * 28 + safe_p0 * 4 + trick_len
     follow_mask = ctx.LOCAL_FOLLOW[follow_idx]
 
     can_follow = hand & follow_mask
-    must_slough = (can_follow == 0) & ~leading
+    must_slough = (can_follow == 0) & (~leading)
     legal = torch.where(leading | must_slough, hand, can_follow)
 
     # === COMPUTE CHILDREN ===
-    children = torch.full((N, 7), -1, dtype=torch.int64, device=device)
+    children = torch.full((states.shape[0], 7), -1, dtype=torch.int64, device=states.device)
+    completes = trick_len == 3
 
     for move in range(7):
         move_bit = 1 << move
         is_legal = (legal & move_bit) != 0
-
         if not is_legal.any():
             continue
 
-        # Remove domino from player's hand
-        new_hand = hand ^ move_bit
-        new_remaining = remaining.scatter(1, player.unsqueeze(1), new_hand.unsqueeze(1))
-
-        # Does this complete a trick?
-        completes = (trick_len == 3)
+        # Remove domino from player's hand (XOR the bit)
+        move_mask = torch.bitwise_left_shift(
+            torch.tensor(move_bit, dtype=torch.int64, device=states.device), shift)
+        base = states ^ move_mask
 
         # --- BRANCH A: Mid-trick ---
-        new_trick_len = trick_len + 1
+        new_trick_len = trick_len + (trick_len != 3).to(torch.int64)
         new_p0 = torch.where(trick_len == 0, move, p0)
         new_p1 = torch.where(trick_len == 1, move, p1)
         new_p2 = torch.where(trick_len == 2, move, p2)
-
-        child_mid = pack_state(new_remaining, score, leader,
-                               new_trick_len, new_p0, new_p1, new_p2)
+        child_mid = (base & ~TRICK_FIELDS_MASK) | (new_trick_len << 30) | \
+                    (new_p0 << 32) | (new_p1 << 35) | (new_p2 << 38)
 
         # --- BRANCH B: Trick completes ---
         trick_idx = leader * 2401 + p0 * 343 + p1 * 49 + p2 * 7 + move
         winner_offset = ctx.TRICK_WINNER[trick_idx]
-        points = ctx.TRICK_POINTS[trick_idx]
-
-        winner = (leader + winner_offset) % 4
-        team0_wins = (winner % 2 == 0)
-        new_score = score + torch.where(team0_wins, points, torch.zeros_like(points))
-
-        child_done = pack_state(new_remaining, new_score, winner,
-                                torch.zeros_like(trick_len),
-                                torch.full_like(p0, 7),
-                                torch.full_like(p1, 7),
-                                torch.full_like(p2, 7))
+        winner = (leader + winner_offset) & 0x3
+        child_done = (base & ~LEADER_MASK) | (winner << 28)
+        child_done = (child_done & ~TRICK_FIELDS_MASK) | (7 << 32) | (7 << 35) | (7 << 38)
 
         # Select branch
         child = torch.where(completes, child_done, child_mid)
