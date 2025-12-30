@@ -320,6 +320,10 @@ def main():
                         help="NPZ file with high-regret indices from mine_high_regret.py")
     parser.add_argument("--high-regret-weight", type=float, default=3.0,
                         help="Weight multiplier for high-regret samples (default: 3.0)")
+    parser.add_argument("--resume", type=str, default=None,
+                        help="Resume from checkpoint (for fine-tuning)")
+    parser.add_argument("--test-data-dir", type=str, default=None,
+                        help="Separate directory for test data (for fine-tuning on new data)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -339,10 +343,11 @@ def main():
     log(f"Soft weight: {args.soft_weight}")
 
     data_dir = Path(args.data_dir)
+    test_dir = Path(args.test_data_dir) if args.test_data_dir else data_dir
 
     # Load data
     train_data = load_split(data_dir, "train", args.max_train_samples)
-    test_data = load_split(data_dir, "test", args.max_test_samples)
+    test_data = load_split(test_dir, "test", args.max_test_samples)
 
     # Create datasets
     # Use Int8Dataset to avoid 8x memory overhead of int64
@@ -407,6 +412,14 @@ def main():
         ff_dim=128,
         dropout=0.1,
     ).to(device)
+
+    # Resume from checkpoint if provided (for fine-tuning)
+    if args.resume:
+        log(f"\nLoading pretrained model from {args.resume}...")
+        checkpoint = torch.load(args.resume, map_location=device, weights_only=True)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        log(f"  Loaded model from epoch {checkpoint.get('epoch', '?')}")
+        log(f"  Previous test acc: {checkpoint.get('test_acc', 0):.2%}")
 
     param_count = sum(p.numel() for p in model.parameters())
     log(f"Parameters: {param_count:,}")
