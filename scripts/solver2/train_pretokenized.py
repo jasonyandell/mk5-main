@@ -24,7 +24,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler
 
 
 def log(msg: str) -> None:
@@ -316,6 +316,10 @@ def main():
                         help="Limit training samples (for memory-constrained systems)")
     parser.add_argument("--max-test-samples", type=int, default=None,
                         help="Limit test samples")
+    parser.add_argument("--high-regret-file", type=str, default=None,
+                        help="NPZ file with high-regret indices from mine_high_regret.py")
+    parser.add_argument("--high-regret-weight", type=float, default=3.0,
+                        help="Weight multiplier for high-regret samples (default: 3.0)")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -345,10 +349,46 @@ def main():
     train_dataset = Int8Dataset(train_data, include_qvals=True)
     test_dataset = Int8Dataset(test_data, include_qvals=False)
 
+    # Create weighted sampler if high-regret file provided
+    sampler = None
+    if args.high_regret_file:
+        log(f"\nLoading high-regret indices from {args.high_regret_file}...")
+        hr_data = np.load(args.high_regret_file)
+        hr_indices = hr_data["high_regret_indices"]
+        hr_threshold = float(hr_data["threshold"])
+        hr_split = str(hr_data["split"])
+
+        # Verify the file is for training data
+        if hr_split != "train":
+            log(f"  WARNING: High-regret file is for '{hr_split}' split, not 'train'")
+            log(f"  You may want to run mine_high_regret.py on the train split")
+
+        # Filter indices to valid range (in case of subsampling)
+        n_train = train_data["n_samples"]
+        valid_mask = hr_indices < n_train
+        hr_indices = hr_indices[valid_mask]
+
+        log(f"  Threshold: {hr_threshold}")
+        log(f"  High-regret samples: {len(hr_indices):,} ({len(hr_indices)/n_train*100:.1f}%)")
+        log(f"  Weight multiplier: {args.high_regret_weight}")
+
+        # Create sample weights
+        weights = np.ones(n_train, dtype=np.float32)
+        weights[hr_indices] = args.high_regret_weight
+
+        # Create weighted sampler
+        sampler = WeightedRandomSampler(
+            weights=weights,
+            num_samples=n_train,
+            replacement=True,
+        )
+        log(f"  Using weighted sampling for training")
+
     train_loader = DataLoader(
         train_dataset,
         batch_size=args.batch_size,
-        shuffle=True,
+        shuffle=(sampler is None),  # Don't shuffle if using sampler
+        sampler=sampler,
         pin_memory=True,
         num_workers=args.num_workers,
     )
@@ -416,62 +456,75 @@ def main():
     model.eval()
 
     all_preds = []
+    all_targets = []
+    all_qvals = []
+    all_legal = []
+    all_teams = []
+
     with torch.no_grad():
         for batch in test_loader:
             tokens, masks, players, targets, legal = batch[:5]
             tokens = tokens.to(device)
             masks = masks.to(device)
             players = players.to(device)
-            legal = legal.to(device)
+            legal_gpu = legal.to(device)
 
             logits = model(tokens, masks, players)
-            logits_masked = logits.masked_fill(legal == 0, float('-inf'))
+            logits_masked = logits.masked_fill(legal_gpu == 0, float('-inf'))
             preds = logits_masked.argmax(dim=-1).cpu().numpy()
+
             all_preds.extend(preds)
+            all_targets.extend(targets.numpy())
 
     preds = np.array(all_preds)
+    targets = np.array(all_targets)
     n_test = test_data["n_samples"]
-    targets = np.array(test_data["targets"][:n_test])
-    qvals = np.array(test_data["qvals"][:n_test])
-    legal = np.array(test_data["legal"][:n_test])
+
+    # Load Q-values and compute gaps in batches (memory efficient)
+    qvals = np.array(test_data["qvals"][:n_test], dtype=np.float32)
+    legal = np.array(test_data["legal"][:n_test], dtype=np.float32)
     teams = np.array(test_data["teams"][:n_test])
 
-    # Compute Q-gaps
-    gaps = []
-    errors = []
+    # Vectorized Q-gap computation
+    team_0_mask = (teams == 0)
 
-    for i in range(n_test):
-        q = qvals[i]
-        legal_mask = legal[i]
-        t = teams[i]
-        pred_idx = preds[i]
-        true_idx = targets[i]
+    # Mask illegal moves: team 0 wants max (so illegal = -inf), team 1 wants min (illegal = +inf)
+    q_masked = np.where(
+        legal > 0,
+        qvals,
+        np.where(team_0_mask[:, np.newaxis], -1000.0, 1000.0)
+    )
 
-        if t == 0:
-            legal_q = np.where(legal_mask > 0, q, -999)
-            optimal_q = legal_q.max()
-            pred_q = q[pred_idx]
-            gap = optimal_q - pred_q
-        else:
-            legal_q = np.where(legal_mask > 0, q, 999)
-            optimal_q = legal_q.min()
-            pred_q = q[pred_idx]
-            gap = pred_q - optimal_q
+    # Find optimal Q-value per sample
+    optimal_q = np.where(
+        team_0_mask,
+        q_masked.max(axis=1),  # Team 0 wants max
+        q_masked.min(axis=1),  # Team 1 wants min
+    )
 
-        gaps.append(gap)
-        errors.append(pred_idx != true_idx)
+    # Get predicted Q-value
+    pred_q = qvals[np.arange(n_test), preds]
 
-    gaps = np.array(gaps)
-    errors = np.array(errors)
+    # Compute gap (always positive: how much worse is our choice?)
+    gaps = np.where(
+        team_0_mask,
+        optimal_q - pred_q,  # Team 0: higher is better
+        pred_q - optimal_q,  # Team 1: lower is better
+    )
+
+    correct = (preds == targets)
+    errors = ~correct
 
     log(f"Total samples: {n_test:,}")
-    log(f"Errors: {errors.sum():,} ({errors.mean()*100:.1f}%)")
-    log(f"Mean Q-gap: {gaps.mean():.3f}")
+    log(f"Accuracy: {correct.mean()*100:.2f}%")
+    log(f"Mean Q-gap: {gaps.mean():.2f}")
     log(f"Median Q-gap: {np.median(gaps):.1f}")
 
     # Blunder analysis
     blunders = gaps > 10
     log(f"Blunders (gap > 10): {blunders.sum():,} ({blunders.mean()*100:.2f}%)")
+    log(f"  Error mean gap: {gaps[errors].mean():.2f}")
+    log(f"  Correct mean gap: {gaps[correct].mean():.2f}")
 
 
 if __name__ == "__main__":
