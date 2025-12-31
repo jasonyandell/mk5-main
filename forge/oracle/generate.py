@@ -44,6 +44,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--solve-chunk", type=int, default=1_000_000, help="Chunk size for backward induction")
     p.add_argument("--enum-chunk", type=int, default=100_000, help="Chunk size for enumeration (0=disable)")
     p.add_argument("--log-memory", action="store_true", help="Log peak VRAM usage per phase")
+    p.add_argument("-v", "--verbose", action="store_true", help="Verbose output (show enumeration progress)")
     p.add_argument("--wandb", action="store_true", help="Log metrics to Weights & Biases")
     p.add_argument("--wandb-group", type=str, default=None, help="Wandb group name for organizing runs")
     return p.parse_args()
@@ -163,7 +164,7 @@ def main() -> None:
             if (vram := _log_memory("setup", args.log_memory)) is not None:
                 timer.record_vram("setup", vram)
 
-            all_states = enumerate_gpu(ctx, config=config)
+            all_states = enumerate_gpu(ctx, config=config, verbose=args.verbose)
             timer.phase("enumerate", extra=f"states={int(all_states.shape[0]):,}")
             if (vram := _log_memory("enumerate", args.log_memory)) is not None:
                 timer.record_vram("enumerate", vram)
