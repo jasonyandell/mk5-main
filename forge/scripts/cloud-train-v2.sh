@@ -41,48 +41,20 @@ wait $PID1 $PID2 $PID3 $PID4
 echo "Golden seeds complete!"
 echo ""
 
-# Phase 1b: Training seeds (200 seeds, diversity strategy)
-echo "Phase 1b: Generating training seeds (0-199)..."
+# Phase 1b: Training seeds (200 seeds, diversity strategy: decl = seed % 10)
+echo "Phase 1b: Generating training seeds (0-199, 1 decl per seed)..."
 
-# Batch 1: seeds 0-39 (4 parallel jobs of 10 seeds)
-echo "  Batch 1: seeds 0-39..."
-for offset in 0 10 20 30; do
-    end=$((offset + 10))
-    python -m forge.oracle.generate --seed-range ${offset}:${end} --out data/shards &
-done
-wait
+for batch in 0 1 2 3 4 5 6 7 8 9; do
+    start=$((batch * 20))
+    end=$((start + 20))
+    echo "  Batch $((batch + 1))/10: seeds $start-$((end - 1))..."
 
-# Batch 2: seeds 40-79
-echo "  Batch 2: seeds 40-79..."
-for offset in 40 50 60 70; do
-    end=$((offset + 10))
-    python -m forge.oracle.generate --seed-range ${offset}:${end} --out data/shards &
+    for seed in $(seq "$start" "$((end - 1))"); do
+        decl=$((seed % 10))
+        python -m forge.oracle.generate --seed "$seed" --decl "$decl" --out data/shards &
+    done
+    wait
 done
-wait
-
-# Batch 3: seeds 80-119
-echo "  Batch 3: seeds 80-119..."
-for offset in 80 90 100 110; do
-    end=$((offset + 10))
-    python -m forge.oracle.generate --seed-range ${offset}:${end} --out data/shards &
-done
-wait
-
-# Batch 4: seeds 120-159
-echo "  Batch 4: seeds 120-159..."
-for offset in 120 130 140 150; do
-    end=$((offset + 10))
-    python -m forge.oracle.generate --seed-range ${offset}:${end} --out data/shards &
-done
-wait
-
-# Batch 5: seeds 160-199
-echo "  Batch 5: seeds 160-199..."
-for offset in 160 170 180 190; do
-    end=$((offset + 10))
-    python -m forge.oracle.generate --seed-range ${offset}:${end} --out data/shards &
-done
-wait
 
 echo "Training seeds complete!"
 echo ""
