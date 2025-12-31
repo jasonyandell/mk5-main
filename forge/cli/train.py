@@ -39,6 +39,7 @@ def main():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num-workers', type=int, default=None, help='Dataloader workers (default: auto-detect)')
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument('--wandb-group', type=str, default=None, help='Wandb group name for organizing runs')
     parser.add_argument('--fast-dev-run', action='store_true', help='Quick sanity check')
     parser.add_argument('--limit-batches', type=int, default=None, help='Limit train/val batches (for quick testing)')
     parser.add_argument('--compile', action=argparse.BooleanOptionalAction, default=True, help='Use torch.compile')
@@ -86,13 +87,43 @@ def main():
         num_workers=num_workers,
     )
 
+    # Compute model size for wandb naming/config
+    total_params = sum(p.numel() for p in model.parameters())
+    if total_params >= 1_000_000:
+        model_size = f"{total_params / 1_000_000:.1f}M"
+    else:
+        model_size = f"{total_params // 1000}k"
+
     # Loggers
     loggers = [CSVLogger(args.run_dir, name='domino')]
     if args.wandb:
+        # Build run name with model size and architecture
+        run_name = f"train-{model_size}-{args.n_layers}L-{args.n_heads}H-d{args.embed_dim}"
+
+        # Build tags
+        tags = ["train", model_size]
+        if args.wandb_group:
+            group_root = args.wandb_group.split("/")[0]
+            tags.append(group_root)
+
         loggers.append(WandbLogger(
             project='crystal-forge',
+            name=run_name,
+            group=args.wandb_group,
+            tags=tags,
             save_dir=args.run_dir,
             log_model=False,  # Don't upload checkpoints (too large)
+            config={
+                "total_params": total_params,
+                "model_size": model_size,
+                "embed_dim": args.embed_dim,
+                "n_heads": args.n_heads,
+                "n_layers": args.n_layers,
+                "ff_dim": args.ff_dim,
+                "batch_size": args.batch_size,
+                "lr": args.lr,
+                "precision": args.precision,
+            },
         ))
 
     # Callbacks (following best practices)

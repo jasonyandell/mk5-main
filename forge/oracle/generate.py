@@ -45,6 +45,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--enum-chunk", type=int, default=100_000, help="Chunk size for enumeration (0=disable)")
     p.add_argument("--log-memory", action="store_true", help="Log peak VRAM usage per phase")
     p.add_argument("--wandb", action="store_true", help="Log metrics to Weights & Biases")
+    p.add_argument("--wandb-group", type=str, default=None, help="Wandb group name for organizing runs")
     return p.parse_args()
 
 
@@ -106,10 +107,17 @@ def main() -> None:
 
     if use_wandb:
         run_name = f"gen-{seeds[0]}" if len(seeds) == 1 else f"gen-{seeds[0]}-{seeds[-1]}"
+        # Build tags: always include oracle/generation, plus group root if provided
+        tags = ["oracle", "generation"]
+        if args.wandb_group:
+            # Extract root from group (e.g., "cloud-run-xyz/generate" -> "cloud-run-xyz")
+            group_root = args.wandb_group.split("/")[0]
+            tags.append(group_root)
         wandb.init(
             project="crystal-forge",
             job_type="generate",
             name=run_name,
+            group=args.wandb_group,
             config={
                 "seed_start": seeds[0],
                 "seed_end": seeds[-1],
@@ -124,7 +132,7 @@ def main() -> None:
                 "solve_chunk": args.solve_chunk,
                 "enum_chunk": args.enum_chunk,
             },
-            tags=["oracle", "generation"],
+            tags=tags,
         )
 
     # Create a separate stream for I/O to overlap with next seed's computation.

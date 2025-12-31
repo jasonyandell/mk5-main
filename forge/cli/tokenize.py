@@ -106,6 +106,12 @@ Examples:
         action="store_true",
         help="Log metrics to Weights & Biases",
     )
+    parser.add_argument(
+        "--wandb-group",
+        type=str,
+        default=None,
+        help="Wandb group name for organizing runs",
+    )
 
     args = parser.parse_args()
 
@@ -132,10 +138,16 @@ Examples:
         print("Warning: --wandb requested but wandb not installed. Run: pip install wandb")
 
     if use_wandb:
+        # Build tags: always include tokenize/preprocessing, plus group root if provided
+        tags = ["tokenize", "preprocessing"]
+        if args.wandb_group:
+            group_root = args.wandb_group.split("/")[0]
+            tags.append(group_root)
         wandb.init(
             project="crystal-forge",
             job_type="tokenize",
             name=f"tokenize-{output_dir.name}",
+            group=args.wandb_group,
             config={
                 "input_dir": str(input_dir),
                 "output_dir": str(output_dir),
@@ -143,7 +155,7 @@ Examples:
                 "max_samples_per_shard": args.max_samples_per_shard,
                 "max_files": args.max_files,
             },
-            tags=["tokenize", "preprocessing"],
+            tags=tags,
         )
 
     # Create progress callback for wandb
