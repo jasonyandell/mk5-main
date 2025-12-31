@@ -185,9 +185,6 @@ for shard in shards:
 - `data/tokenized/{train,val,test}/` - Preprocessed numpy arrays
 - `runs/domino/version_X/` - Training outputs (Lightning convention)
 
-**Archive** (historical reference):
-- `forge/archive/solver2/` - Original solver scripts (frozen, do not modify)
-
 ---
 
 ## Key Abstractions
@@ -200,7 +197,7 @@ Each shard contains ~50k game states from one (seed, declaration) pair:
 |--------|------|-------------|
 | `state` | int64 | Packed game state (41 bits) |
 | `V` | int8 | Value: expected point differential (Team 0 perspective) |
-| `Q0`-`Q6` | int8 | Q-values for each action (-128 = illegal) |
+| `q0`-`q6` | int8 | Q-values for each action (-128 = illegal) |
 
 Metadata in parquet schema: `seed`, `decl_id`, `generator_version`
 
@@ -234,7 +231,13 @@ def get_split(seed: int) -> str:
 ```bash
 # Generate shards for seeds 0-99, all 10 declarations
 python -m forge.oracle.generate --seeds 0-99 --out data/shards
+
+# With memory logging (useful for tuning chunk sizes)
+python -m forge.oracle.generate --seed 0 --decl all --out data/shards --log-memory
 ```
+
+The generator logs progress per (seed, decl): `start → enumerate → child_index → solve → write → DONE`.
+Run in foreground to watch, or monitor output directory: `watch -n2 'ls data/shards/*.parquet | wc -l'`
 
 ### Tokenize for Training
 
@@ -244,6 +247,8 @@ python -m forge.cli.tokenize --input data/shards --output data/tokenized
 ```
 
 ### Train Model
+
+The training script auto-detects hardware and scales appropriately:
 
 ```bash
 # Quick sanity check (1 batch)
@@ -255,6 +260,40 @@ python -m forge.cli.train --epochs 10 --wandb
 # Resume from checkpoint
 python -m forge.cli.train --resume runs/domino/version_0/checkpoints/last.ckpt
 ```
+
+**Observability**:
+- `--wandb` → live dashboard at wandb.ai (recommended)
+- `--no-wandb` → local only: `runs/domino/version_X/metrics.csv`
+- Rich progress bar shows loss/accuracy/q_gap in terminal (if `rich` installed)
+
+### Portable Training: Local vs Cloud
+
+Training works identically on local workstations and cloud GPU servers. Lightning auto-detects:
+- **accelerator**: GPU/CPU/MPS
+- **devices**: All available GPUs
+- **strategy**: DDP if multi-GPU, single device otherwise
+- **num_workers**: 4 per GPU, capped at CPU count
+
+**Local (RTX 3050 Ti, consumer GPUs):**
+```bash
+python -m forge.cli.train                    # Just works - uses 16-mixed precision
+```
+
+**Cloud (Lambda Labs 8×A100, datacenter GPUs):**
+```bash
+python -m forge.cli.train --precision bf16-mixed   # One flag for bf16
+```
+
+The only difference is `--precision bf16-mixed` for A100/H100 servers (better numeric stability, faster on datacenter GPUs). Everything else auto-detects.
+
+| Setting | Local (3050 Ti) | Cloud (8×A100) |
+|---------|-----------------|----------------|
+| precision | 16-mixed (default) | bf16-mixed (flag) |
+| devices | 1 (auto) | 8 (auto) |
+| strategy | auto | ddp (auto) |
+| num_workers | 4 (auto) | 32 (auto) |
+
+**Why not auto-detect precision?** bf16 can be flaky on consumer Ampere GPUs (driver issues, laptop variants). FP16 works everywhere, so it's the safe default.
 
 ### Evaluate Model
 
@@ -352,7 +391,6 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 ## What's Not Here Yet
 
 - **Hyperparameter tuning**: Optuna integration
-- **Distributed training**: Multi-GPU with DDP/FSDP
 - **Model serving**: Export to ONNX or TorchScript
 - **Active learning**: Mine hard examples for retraining
 
@@ -373,6 +411,89 @@ python -m forge.cli.train --data data/tokenized --fast-dev-run --no-wandb
 # 4. Train for real
 python -m forge.cli.train --data data/tokenized --epochs 10 --wandb
 ```
+
+---
+
+## LLM Workflow
+
+This section is for you, the LLM working on this codebase.
+
+### State Diagnosis
+
+Before making changes, understand the current state:
+
+```bash
+# What shards exist?
+ls data/shards/*.parquet 2>/dev/null | wc -l
+
+# What's tokenized?
+cat data/tokenized/manifest.yaml 2>/dev/null || echo "No tokenized data"
+
+# Any training runs?
+ls runs/domino/ 2>/dev/null || echo "No runs yet"
+
+# What's currently running?
+pgrep -af "forge.oracle\|forge.cli" || echo "Nothing running"
+```
+
+### Change Impact
+
+| If you modify... | Regenerate... | Invalidates... |
+|------------------|---------------|----------------|
+| `forge/oracle/schema.py` | shards | data/shards/, data/tokenized/ |
+| `forge/oracle/*.py` | shards | data/shards/, data/tokenized/ |
+| `forge/ml/tokenize.py` | tokenized | data/tokenized/ |
+| `forge/ml/module.py` | train | runs/ (retrain needed) |
+| `forge/ml/data.py` | train | runs/ (retrain needed) |
+| `forge/ml/metrics.py` | nothing | (metrics-only change) |
+
+### Verification Commands
+
+After making changes, verify they work:
+
+```bash
+# After any forge/ changes - verify imports
+python -c "from forge.ml import module, data, metrics; from forge.oracle import schema; print('OK')"
+
+# After schema/output changes - verify parquet columns
+python -c "import pyarrow.parquet as pq; pf = pq.ParquetFile('data/shards/seed_00000000_decl_0.parquet'); print(pf.schema_arrow.names)"
+
+# After tokenize changes - verify tokenization works
+python -c "
+from forge.ml.tokenize import process_shard
+from pathlib import Path
+r = process_shard(Path('data/shards/seed_00000000_decl_0.parquet'), 42, 100)
+print(f'OK: tokens={r.tokens.shape}, qvals={r.qvals.shape}')
+"
+
+# After model changes - quick training test
+python -m forge.cli.train --fast-dev-run --no-wandb
+```
+
+### Expected Generator Output
+
+Normal output looks like:
+```
+seed=0 decl=0 | start | 0.00s | decl=blanks device=cuda
+seed=0 decl=0 | enumerate | 1.18s | states=7,607,411
+seed=0 decl=0 | child_index | 0.51s
+seed=0 decl=0 | solve | 0.13s | root=+1
+seed=0 decl=0 | write | 1.26s | data/shards/seed_00000000_decl_0.parquet
+seed=0 decl=0 | DONE | 3.68s | root=+1
+```
+
+Timing varies: 3-60s per (seed, decl) depending on state space complexity.
+
+### Glossary
+
+| Term | Definition |
+|------|------------|
+| **q0-q6** | Q-values: optimal value of each action. Parquet columns, saved as qvals.npy |
+| **V** | State value. V = max(q) for Team 0, min(q) for Team 1 |
+| **seed** | RNG seed for deal generation. Determines train/val/test split via seed % 1000 |
+| **shard** | One parquet file per (seed, decl) pair. Contains all reachable game states |
+| **declaration (decl)** | Trump suit choice, 0-9. See `DECL_NAMES` in schema.py |
+| **Team 0 perspective** | All values from Team 0's view. Positive = Team 0 winning |
 
 ---
 

@@ -168,8 +168,8 @@ def process_shard(
         df = pd.read_parquet(path)
         states = df["state"].values.astype(np.int64)
 
-        mv_cols = [f"mv{i}" for i in range(7)]
-        q_values_all = np.stack([df[c].values for c in mv_cols], axis=1)
+        q_cols = [f"q{i}" for i in range(7)]
+        q_values_all = np.stack([df[c].values for c in q_cols], axis=1)
 
         # Deal hands
         hands = deal_from_seed(seed)

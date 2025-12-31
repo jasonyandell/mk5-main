@@ -26,7 +26,7 @@ Files are named `seed_{SEED:08d}_decl_{DECL_ID}.parquet` with Snappy compression
 |--------|------|-------------|
 | `state` | int64 | Packed game state (41 bits used) |
 | `V` | int8 | Minimax value: team0_points - team1_points |
-| `mv0`-`mv6` | int8 | Per-move values (-128 = illegal move) |
+| `q0`-`q6` | int8 | Q-values: optimal value per move (-128 = illegal) |
 
 ### Parquet Metadata
 
@@ -73,12 +73,12 @@ Bits 38-40: p2            - Third play: local domino index
 - Negative: Team 1 (players 1,3) is winning
 - Conversion: `team0_points = (V + 42) / 2`
 
-### Move Values (mv0-mv6)
-- Each `mv[i]` is the resulting V after playing local domino i
+### Q-values (q0-q6)
+- Each `q[i]` is the resulting V after playing local domino i (i.e., Q*(s, action_i))
 - `-128` sentinel indicates the move is illegal
 - Relationship to V:
-  - Team 0 to play: `V = max(legal mv)`
-  - Team 1 to play: `V = min(legal mv)`
+  - Team 0 to play: `V = max(legal q)`
+  - Team 1 to play: `V = min(legal q)`
 
 ## Usage for Training
 
@@ -117,3 +117,71 @@ current_team = current_player % 2  # 0 or 1
 3. **All game tree states included**: Data includes root states, intermediate trick states, and near-terminal states.
 
 4. **Balanced perspective**: V is from Team 0's perspective. For team-agnostic training, negate V when Team 1 is to play.
+
+## Cross-Validation
+
+The Python oracle rules (`forge/oracle/`) are validated against the TypeScript game engine (`src/game/`) using the scripts in `scratch/cross-validate/`.
+
+### Table Comparison
+
+Exhaustive comparison of lookup tables between Python and TypeScript:
+
+```bash
+# Export tables from both implementations
+npx tsx scratch/cross-validate/export-ts-tables.ts
+python scratch/cross-validate/export_py_tables.py
+
+# Compare (5,000+ entries)
+npx tsx scratch/cross-validate/compare-tables.ts
+```
+
+**Tables verified:**
+| Table | Size | Purpose |
+|-------|------|---------|
+| effectiveSuit | 28×9 | What suit does each domino lead? |
+| suitMask | 9×8 | Which dominoes can follow each suit? |
+| hasPower | 28×9 | Is each domino trump for each config? |
+| ranks | 10×8×28 | Trick ranking for each domino |
+| canFollow | 10×8×28 | Follow-suit legality |
+| ledSuit | 10×28 | Led suit when each domino leads |
+
+### Trick Resolution
+
+Tests that both implementations agree on trick winners:
+
+```bash
+npx tsx scratch/cross-validate/test-trick-resolution.ts
+```
+
+Samples tricks across all 10 declaration types and verifies winner/points match.
+
+### Parquet Spot-Check
+
+Validates deserialized oracle output for self-consistency:
+
+```bash
+# Quick check (5 files, 500 samples each)
+python scratch/cross-validate/spot-check-oracle.py --files 5 --samples 500
+
+# Thorough check
+python scratch/cross-validate/spot-check-oracle.py --files 30 --samples 1000 --verbose
+```
+
+**Validations performed:**
+
+| Check | What it verifies |
+|-------|------------------|
+| **Structural** | trick_len ∈ [0,3], play indices ∈ [0,7], V ∈ [-42,42], q ∈ {-128} ∪ [-42,42] |
+| **Semantic** | Optimal Q-value equals V (max for team 0, min for team 1) |
+| **Playthrough** | Following optimal moves leads to states that exist in the table |
+
+### Declaration ID Mapping
+
+The Python oracle uses a single `decl_id` while TypeScript uses separate `absorptionId` and `powerId`:
+
+| Python decl_id | Name | TS absorptionId | TS powerId |
+|----------------|------|-----------------|------------|
+| 0-6 | pip trump | 0-6 | 0-6 |
+| 7 | doubles-trump | 7 | 7 |
+| 8 | doubles-suit | 7 | 8 |
+| 9 | no-trump | 8 | 8 |

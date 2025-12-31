@@ -23,8 +23,8 @@ Parquet Columns
         - V represents the expected point differential from optimal play
         - At terminal states (all dominoes played), V equals Team 0's total point advantage
 
-    mv0..mv6 : int8
-        Q-values: Value of playing local domino index 0-6 from current player's hand.
+    q0..q6 : int8
+        Q-values (Q*): Optimal value of playing local domino index 0-6 from current player's hand.
 
         **Q-value Semantics (Team 0 perspective):**
         - All Q-values are from Team 0's perspective, regardless of whose turn it is
@@ -85,7 +85,7 @@ Example Usage
     # Access columns
     states = df["state"].values   # (N,) int64
     values = df["V"].values       # (N,) int8
-    move_values = df[["mv0", "mv1", "mv2", "mv3", "mv4", "mv5", "mv6"]].values
+    move_values = df[["q0", "q1", "q2", "q3", "q4", "q5", "q6"]].values
 
     # Decode states
     remaining, leader, trick_len, p0, p1, p2 = unpack_state(states)
@@ -160,7 +160,7 @@ def load_file(path: str | Path) -> tuple["pd.DataFrame", int, int]:
 
     Returns:
         (df, seed, decl_id) where:
-        - df: DataFrame with columns [state, V, mv0..mv6]
+        - df: DataFrame with columns [state, V, q0..q6]
         - seed: int - deal seed
         - decl_id: int - declaration type (0-9)
     """
