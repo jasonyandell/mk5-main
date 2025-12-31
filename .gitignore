@@ -102,3 +102,4 @@ __pycache__/
 data/
 runs/
 lightning_logs/
+*.tar.gz
