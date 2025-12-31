@@ -4,49 +4,26 @@ set -euo pipefail
 # Crystal Forge Cloud Training Script
 # Usage: ./forge/scripts/cloud-run.sh
 #
+# Prerequisites: Run cloud-setup.sh first!
 # Runs on Lambda Labs A100 80GB (or similar)
-# Expects: git, python3, pip, CUDA
 
-REPO_URL="https://github.com/jasonyandell/mk5-main.git"
-BRANCH="forge"
 WORK_DIR="$HOME/crystal-forge"
 
 # Generate unique group ID for this run (used for wandb organization)
 GROUP_ID="cloud-run-$(date +%Y%m%d-%H%M%S)"
 
 echo "=== Crystal Forge Cloud Run ==="
-echo "Repo: $REPO_URL (branch: $BRANCH)"
 echo "Work dir: $WORK_DIR"
 echo "Wandb group: $GROUP_ID"
 echo ""
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Phase 0: Setup
-# ─────────────────────────────────────────────────────────────────────────────
-phase_setup() {
-    echo "=== Phase 0: Setup ==="
+# Verify we're set up
+if [ ! -d "$WORK_DIR" ]; then
+    echo "ERROR: Work dir not found. Run cloud-setup.sh first!"
+    exit 1
+fi
 
-    if [ -d "$WORK_DIR" ]; then
-        echo "Work dir exists, pulling latest..."
-        cd "$WORK_DIR"
-        git fetch origin
-        git checkout "$BRANCH"
-        git pull origin "$BRANCH"
-    else
-        echo "Cloning repo..."
-        git clone --branch "$BRANCH" "$REPO_URL" "$WORK_DIR"
-        cd "$WORK_DIR"
-    fi
-
-    echo "Installing Python dependencies..."
-    pip install -r forge/requirements.txt
-
-    echo "Verifying GPU..."
-    python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, Device: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"N/A\"}')"
-
-    echo "Setup complete."
-    echo ""
-}
+cd "$WORK_DIR"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Phase 1a: Generate golden seeds (val + test, all decls)
@@ -196,7 +173,6 @@ phase_package() {
 # Main
 # ─────────────────────────────────────────────────────────────────────────────
 main() {
-    phase_setup
     phase_generate_golden
     phase_generate_train
     phase_tokenize
