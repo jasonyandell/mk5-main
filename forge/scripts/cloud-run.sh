@@ -116,6 +116,7 @@ phase_train() {
     python -m forge.cli.train \
         --epochs 20 \
         --precision bf16-mixed \
+        --no-compile \
         --wandb \
         --wandb-group "$GROUP_ID/main"
 
@@ -128,6 +129,7 @@ phase_train() {
         --n-layers 3 \
         --ff-dim 256 \
         --precision bf16-mixed \
+        --no-compile \
         --wandb \
         --wandb-group "$GROUP_ID/main"
 
