@@ -54,8 +54,8 @@ phase_generate_golden() {
     wait
     echo "  Batch 2 complete."
 
-    echo "Golden seeds complete. Shards:"
-    ls data/shards/seed_0009*.parquet 2>/dev/null | wc -l
+    echo "Golden seeds complete. Total shards so far:"
+    ls data/shards/*.parquet 2>/dev/null | wc -l
     echo ""
 }
 
