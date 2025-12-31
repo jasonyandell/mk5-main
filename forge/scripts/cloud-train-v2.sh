@@ -6,7 +6,7 @@ set -euo pipefail
 #
 # Trains a model with value head for MC bidding inference.
 # - 200 train seeds (2x previous), decl = seed % 10
-# - Val/Test: 20 seeds × 10 decls each
+# - Val/Test: 10 seeds × 10 decls each (200 golden shards)
 # - Large config (817K + value head)
 
 WORK_DIR="$HOME/crystal-forge"
@@ -18,26 +18,18 @@ echo "=== Crystal Forge v2: Value Head Training ==="
 echo "Wandb group: $GROUP_ID"
 echo ""
 
-# Phase 1a: Golden seeds for val/test (parallel batches)
+# Phase 1a: Golden seeds for val/test (parallel)
 echo "Phase 1a: Generating golden seeds (val + test)..."
 
 echo "  Generating val seeds 900-909 (all decls)..."
 python -m forge.oracle.generate --seed-range 900:910 --decl all --out data/shards &
 PID1=$!
 
-echo "  Generating val seeds 910-919 (all decls)..."
-python -m forge.oracle.generate --seed-range 910:920 --decl all --out data/shards &
-PID2=$!
-
 echo "  Generating test seeds 950-959 (all decls)..."
 python -m forge.oracle.generate --seed-range 950:960 --decl all --out data/shards &
-PID3=$!
+PID2=$!
 
-echo "  Generating test seeds 960-969 (all decls)..."
-python -m forge.oracle.generate --seed-range 960:970 --decl all --out data/shards &
-PID4=$!
-
-wait $PID1 $PID2 $PID3 $PID4
+wait $PID1 $PID2
 echo "Golden seeds complete!"
 echo ""
 
