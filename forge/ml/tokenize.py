@@ -424,6 +424,7 @@ def tokenize_shards(
     max_files: int | None = None,
     verbose: bool = True,
     progress_callback: Callable[[ShardProgress], None] | None = None,
+    force: bool = False,
 ) -> TokenizationManifest:
     """Tokenize all shards in input_dir to output_dir.
 
@@ -437,11 +438,32 @@ def tokenize_shards(
         max_files: Max files to process (for testing)
         verbose: Print progress
         progress_callback: Optional callback for per-shard progress (for wandb logging)
+        force: Force re-tokenization even if output exists
 
     Returns:
         TokenizationManifest with statistics
     """
     start_time = time.time()
+
+    # Check for existing output
+    manifest_path = output_dir / "manifest.yaml"
+    if manifest_path.exists() and not force:
+        if verbose:
+            print(f"Output already exists at {output_dir}, skipping (use --force to rebuild)")
+        # Load and return existing manifest
+        with open(manifest_path) as f:
+            data = yaml.safe_load(f)
+        manifest = TokenizationManifest(
+            version=data.get("version", 1),
+            created=data.get("created", ""),
+            generator=data.get("generator", ""),
+            git_hash=data.get("git_hash", ""),
+            source=data.get("source", ""),
+            global_seed=data.get("sampling", {}).get("global_seed", 42),
+            max_samples_per_shard=data.get("sampling", {}).get("max_samples_per_shard"),
+            splits=data.get("splits", {}),
+        )
+        return manifest
 
     def log(msg: str) -> None:
         if verbose:

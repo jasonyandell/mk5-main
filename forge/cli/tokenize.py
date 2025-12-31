@@ -112,6 +112,11 @@ Examples:
         default=None,
         help="Wandb group name for organizing runs",
     )
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force re-tokenization even if output exists",
+    )
 
     args = parser.parse_args()
 
@@ -188,6 +193,7 @@ Examples:
             max_files=args.max_files,
             verbose=not args.quiet,
             progress_callback=progress_callback if use_wandb else None,
+            force=args.force,
         )
 
         # Log final summary to wandb
