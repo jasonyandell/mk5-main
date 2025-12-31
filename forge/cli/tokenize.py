@@ -37,7 +37,15 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
+
+try:
+    import wandb
+
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
 
 
 def main() -> int:
@@ -93,6 +101,11 @@ Examples:
         action="store_true",
         help="Suppress progress output",
     )
+    parser.add_argument(
+        "--wandb",
+        action="store_true",
+        help="Log metrics to Weights & Biases",
+    )
 
     args = parser.parse_args()
 
@@ -111,7 +124,48 @@ Examples:
         return 1
 
     # Import here to avoid slow startup for --help
-    from forge.ml.tokenize import tokenize_shards
+    from forge.ml.tokenize import ShardProgress, tokenize_shards
+
+    # Initialize wandb if requested
+    use_wandb = args.wandb and WANDB_AVAILABLE
+    if args.wandb and not WANDB_AVAILABLE:
+        print("Warning: --wandb requested but wandb not installed. Run: pip install wandb")
+
+    if use_wandb:
+        wandb.init(
+            project="crystal-forge",
+            job_type="tokenize",
+            name=f"tokenize-{output_dir.name}",
+            config={
+                "input_dir": str(input_dir),
+                "output_dir": str(output_dir),
+                "global_seed": args.seed,
+                "max_samples_per_shard": args.max_samples_per_shard,
+                "max_files": args.max_files,
+            },
+            tags=["tokenize", "preprocessing"],
+        )
+
+    # Create progress callback for wandb
+    start_time = time.time()
+
+    def progress_callback(progress: ShardProgress) -> None:
+        if not use_wandb:
+            return
+        wandb.log({
+            "shard/seed": progress.seed,
+            "shard/decl_id": progress.decl_id,
+            "shard/split": progress.split,
+            "shard/samples": progress.samples,
+            "shard/elapsed_time": progress.elapsed_time,
+            "progress/completed": progress.file_index + 1,
+            "progress/total": progress.total_files,
+            "progress/percent": 100.0 * (progress.file_index + 1) / progress.total_files,
+            "cumulative/train_samples": progress.cumulative_samples["train"],
+            "cumulative/val_samples": progress.cumulative_samples["val"],
+            "cumulative/test_samples": progress.cumulative_samples["test"],
+            "cumulative/total_samples": sum(progress.cumulative_samples.values()),
+        })
 
     try:
         manifest = tokenize_shards(
@@ -121,7 +175,20 @@ Examples:
             max_samples_per_shard=args.max_samples_per_shard,
             max_files=args.max_files,
             verbose=not args.quiet,
+            progress_callback=progress_callback if use_wandb else None,
         )
+
+        # Log final summary to wandb
+        if use_wandb:
+            total_time = time.time() - start_time
+            total_samples = sum(s["samples"] for s in manifest.splits.values())
+            wandb.run.summary["total_time"] = total_time
+            wandb.run.summary["total_samples"] = total_samples
+            wandb.run.summary["samples_per_second"] = total_samples / total_time if total_time > 0 else 0
+            for split, stats in manifest.splits.items():
+                wandb.run.summary[f"{split}_samples"] = stats["samples"]
+                wandb.run.summary[f"{split}_files"] = stats["files"]
+            wandb.finish()
 
         # Summary
         if not args.quiet:
@@ -132,6 +199,8 @@ Examples:
         return 0
 
     except Exception as e:
+        if use_wandb:
+            wandb.finish(exit_code=1)
         print(f"ERROR: {e}", file=sys.stderr)
         return 1
 

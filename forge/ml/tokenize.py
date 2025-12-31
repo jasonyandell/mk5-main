@@ -25,7 +25,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Callable, Iterator
 
 import numpy as np
 import pandas as pd
@@ -128,6 +128,20 @@ class ShardResult:
     split: str             # 'train', 'val', or 'test'
     seed: int              # deal seed
     decl_id: int           # declaration id
+
+
+@dataclass
+class ShardProgress:
+    """Progress info for a single shard, passed to progress callback."""
+    file_index: int        # 0-based index of current file
+    total_files: int       # total files to process
+    file_path: str         # path to the shard file
+    seed: int              # deal seed
+    decl_id: int           # declaration id
+    split: str             # 'train', 'val', or 'test'
+    samples: int           # samples produced from this shard
+    elapsed_time: float    # time to process this shard (seconds)
+    cumulative_samples: dict[str, int]  # running totals by split
 
 
 def process_shard(
@@ -404,6 +418,7 @@ def tokenize_shards(
     max_samples_per_shard: int | None = 50000,
     max_files: int | None = None,
     verbose: bool = True,
+    progress_callback: Callable[[ShardProgress], None] | None = None,
 ) -> TokenizationManifest:
     """Tokenize all shards in input_dir to output_dir.
 
@@ -416,6 +431,7 @@ def tokenize_shards(
         max_samples_per_shard: Max samples per shard (None = all)
         max_files: Max files to process (for testing)
         verbose: Print progress
+        progress_callback: Optional callback for per-shard progress (for wandb logging)
 
     Returns:
         TokenizationManifest with statistics
@@ -442,9 +458,14 @@ def tokenize_shards(
     }
     split_file_counts = {'train': 0, 'val': 0, 'test': 0}
 
+    # Track cumulative samples for progress callback
+    cumulative_samples = {'train': 0, 'val': 0, 'test': 0}
+
     # Process each file
     for i, f in enumerate(files):
+        shard_start = time.time()
         result = process_shard(f, global_seed, max_samples_per_shard)
+        shard_elapsed = time.time() - shard_start
 
         if result is not None:
             split = result.split
@@ -456,6 +477,23 @@ def tokenize_shards(
             split_data[split]['teams'].append(result.teams)
             split_data[split]['players'].append(result.players)
             split_file_counts[split] += 1
+
+            shard_samples = len(result.targets)
+            cumulative_samples[split] += shard_samples
+
+            # Call progress callback if provided
+            if progress_callback is not None:
+                progress_callback(ShardProgress(
+                    file_index=i,
+                    total_files=len(files),
+                    file_path=str(f),
+                    seed=result.seed,
+                    decl_id=result.decl_id,
+                    split=split,
+                    samples=shard_samples,
+                    elapsed_time=shard_elapsed,
+                    cumulative_samples=cumulative_samples.copy(),
+                ))
 
         if verbose and ((i + 1) % 50 == 0 or i == len(files) - 1):
             totals = {s: sum(len(t) for t in split_data[s]['targets']) for s in split_data}
