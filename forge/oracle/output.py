@@ -38,7 +38,15 @@ def write_result(
     move_values: torch.Tensor,
     *,
     fmt: OutputFormat | None = None,
+    non_blocking: bool = False,
 ) -> None:
+    """Write solver results to disk.
+
+    Args:
+        non_blocking: If True, uses non_blocking GPU→CPU transfers. The caller
+            must ensure the CUDA stream is synchronized before the next seed
+            reuses GPU memory.
+    """
     fmt = fmt or ("parquet" if output_path.suffix == ".parquet" else "pt")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
@@ -48,9 +56,9 @@ def write_result(
             {
                 "seed": int(seed),
                 "decl_id": int(decl_id),
-                "all_states": all_states.detach().cpu(),
-                "V": v.detach().cpu(),
-                "move_values": move_values.detach().cpu(),
+                "all_states": all_states.detach().to("cpu", non_blocking=non_blocking),
+                "V": v.detach().to("cpu", non_blocking=non_blocking),
+                "move_values": move_values.detach().to("cpu", non_blocking=non_blocking),
             },
             tmp_path,
         )
@@ -63,21 +71,23 @@ def write_result(
     if not (HAS_PYARROW and HAS_NUMPY):
         raise RuntimeError("Parquet output requires `pyarrow` and `numpy` (or use --format pt).")
 
-    states_cpu = all_states.detach().cpu()
-    v_cpu = v.detach().cpu()
-    mv_cpu = move_values.detach().cpu()
+    # Non-blocking transfers: GPU can continue while data moves to CPU.
+    # The .numpy() call will implicitly synchronize when accessing the data.
+    states_cpu = all_states.detach().to("cpu", non_blocking=non_blocking)
+    v_cpu = v.detach().to("cpu", non_blocking=non_blocking)
+    mv_cpu = move_values.detach().to("cpu", non_blocking=non_blocking)
 
     table = pa.table(
         {
             "state": pa.array(states_cpu.numpy().astype("int64", copy=False)),
             "V": pa.array(v_cpu.numpy().astype("int8", copy=False)),
-            "mv0": pa.array(mv_cpu[:, 0].numpy().astype("int8", copy=False)),
-            "mv1": pa.array(mv_cpu[:, 1].numpy().astype("int8", copy=False)),
-            "mv2": pa.array(mv_cpu[:, 2].numpy().astype("int8", copy=False)),
-            "mv3": pa.array(mv_cpu[:, 3].numpy().astype("int8", copy=False)),
-            "mv4": pa.array(mv_cpu[:, 4].numpy().astype("int8", copy=False)),
-            "mv5": pa.array(mv_cpu[:, 5].numpy().astype("int8", copy=False)),
-            "mv6": pa.array(mv_cpu[:, 6].numpy().astype("int8", copy=False)),
+            "q0": pa.array(mv_cpu[:, 0].numpy().astype("int8", copy=False)),
+            "q1": pa.array(mv_cpu[:, 1].numpy().astype("int8", copy=False)),
+            "q2": pa.array(mv_cpu[:, 2].numpy().astype("int8", copy=False)),
+            "q3": pa.array(mv_cpu[:, 3].numpy().astype("int8", copy=False)),
+            "q4": pa.array(mv_cpu[:, 4].numpy().astype("int8", copy=False)),
+            "q5": pa.array(mv_cpu[:, 5].numpy().astype("int8", copy=False)),
+            "q6": pa.array(mv_cpu[:, 6].numpy().astype("int8", copy=False)),
         }
     )
     table = table.replace_schema_metadata(

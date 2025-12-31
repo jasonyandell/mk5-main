@@ -83,6 +83,11 @@ def main() -> None:
         enum_chunk_size=args.enum_chunk,
     )
 
+    # Create a separate stream for I/O to overlap with next seed's computation.
+    # The write stream handles GPU→CPU transfers and disk writes while the
+    # main stream proceeds to the next seed's setup/enumerate phases.
+    write_stream = torch.cuda.Stream() if device.type == "cuda" else None
+
     for seed in seeds:
         for decl_id in decl_ids:
             out_path = output_path_for(args.out, seed, decl_id, args.format)
@@ -92,6 +97,11 @@ def main() -> None:
 
             timer = SeedTimer(seed=seed, decl_id=decl_id)
             timer.phase("start", extra=f"decl={DECL_ID_TO_NAME.get(decl_id, str(decl_id))} device={device}")
+
+            # Wait for previous write to complete before reusing GPU memory.
+            # This ensures the previous seed's tensors have been copied to CPU.
+            if write_stream is not None:
+                torch.cuda.current_stream().wait_stream(write_stream)
 
             if args.log_memory and torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
@@ -113,9 +123,21 @@ def main() -> None:
             timer.phase("solve", extra=f"root={root_value:+d}")
             _log_memory("solve", args.log_memory)
 
-            write_result(out_path, seed, decl_id, all_states, v, move_values, fmt=args.format)
+            # Write on separate stream to overlap with next seed's computation.
+            if write_stream is not None:
+                with torch.cuda.stream(write_stream):
+                    write_result(
+                        out_path, seed, decl_id, all_states, v, move_values,
+                        fmt=args.format, non_blocking=True,
+                    )
+            else:
+                write_result(out_path, seed, decl_id, all_states, v, move_values, fmt=args.format)
             timer.phase("write", extra=str(out_path))
             timer.done(root_value=root_value)
+
+    # Ensure final write completes before exiting.
+    if write_stream is not None:
+        write_stream.synchronize()
 
 
 if __name__ == "__main__":
