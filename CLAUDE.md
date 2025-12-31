@@ -78,3 +78,40 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
   - Use ES module imports: `import { thing } from './path'`
   - NOT CommonJS: ~~`const { thing } = require('./path')`~~
 - Common pitfall: npm run build outputs to dist/ which may not exist yet
+
+## ML Training (Crystal Forge)
+
+PyTorch Lightning-based ML pipeline for training game-playing models.
+
+### Quick Start
+
+```bash
+# Generate oracle shards (GPU required)
+python -m forge.oracle.generate --seed-range 0:100 --out data/shards
+
+# Tokenize for training
+python -m forge.cli.tokenize --input data/shards --output data/tokenized
+
+# Train model
+python -m forge.cli.train --wandb
+
+# Evaluate
+python -m forge.cli.eval --checkpoint runs/domino/version_0/checkpoints/best.ckpt
+```
+
+### Directory Structure
+
+- `data/shards/` - Oracle parquet files (raw training data from GPU solver)
+- `data/tokenized/` - Pre-tokenized numpy arrays (train/val/test splits)
+- `runs/` - Training outputs (checkpoints, logs, metrics)
+- `forge/oracle/` - GPU tablebase solver
+- `forge/ml/` - Lightning module and data pipeline
+- `forge/cli/` - Command-line tools (train, eval, tokenize)
+- `forge/archive/solver2/` - Frozen legacy scripts (reference only)
+
+### Split Assignment
+
+Seeds are assigned to splits based on `seed % 1000`:
+- train: buckets 0-899 (90%)
+- val: buckets 900-949 (5%)
+- test: buckets 950-999 (5%) - sacred, never touched during development

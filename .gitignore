@@ -84,8 +84,7 @@ pnpm-lock.yaml
 coverage.*/
 
 # Generated data files (regenerate with: npm run generate:perfects)
-data/perfect-hands.json
-data/3hand-partitions.json
+# Now covered by data/ ignore above
 
 # MCCFR training artifacts (large files, keep in scratch/ or gitignored)
 # Final compressed models go in models/ and ARE checked in
@@ -99,5 +98,7 @@ venv/
 __pycache__/
 *.py[cod]
 
-# Solver2 output (large parquet files)
-data/solver2/
+# ML data and training outputs (large files)
+data/
+runs/
+lightning_logs/
