@@ -214,8 +214,9 @@ class DominoLightningModule(L.LightningModule):
 
         # Value loss: MSE between predicted and oracle value
         # Oracle value is from team 0's perspective, adjust for current team
+        # Normalize to [-1, 1] range (divide by 42) so loss scale matches action loss
         team_sign_value = torch.where(teams == 0, 1.0, -1.0)
-        target_value = oracle_values * team_sign_value
+        target_value = (oracle_values * team_sign_value) / 42.0
         value_loss = F.mse_loss(value, target_value)
 
         # Total loss
@@ -253,9 +254,10 @@ class DominoLightningModule(L.LightningModule):
         blunder_rate = compute_blunder_rate(gaps)
 
         # Value prediction error (MAE in points)
+        # Model predicts normalized [-1,1], multiply by 42 to get points
         team_sign_value = torch.where(teams == 0, 1.0, -1.0)
-        target_value = values * team_sign_value
-        value_mae = (value - target_value).abs().mean()
+        target_value_normalized = (values * team_sign_value) / 42.0
+        value_mae = ((value - target_value_normalized) * 42.0).abs().mean()
 
         # CRITICAL: sync_dist=True for multi-GPU
         self.log('val/loss', loss, sync_dist=True, prog_bar=True)
@@ -281,9 +283,10 @@ class DominoLightningModule(L.LightningModule):
         blunder_rate = compute_blunder_rate(gaps)
 
         # Value prediction error (MAE in points)
+        # Model predicts normalized [-1,1], multiply by 42 to get points
         team_sign_value = torch.where(teams == 0, 1.0, -1.0)
-        target_value = values * team_sign_value
-        value_mae = (value - target_value).abs().mean()
+        target_value_normalized = (values * team_sign_value) / 42.0
+        value_mae = ((value - target_value_normalized) * 42.0).abs().mean()
 
         # Log with test/ prefix
         self.log('test/loss', loss, sync_dist=True)
