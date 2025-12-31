@@ -30,6 +30,12 @@ def main():
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--batch-size', type=int, default=512)
     parser.add_argument('--lr', type=float, default=3e-4)
+
+    # Architecture hyperparameters
+    parser.add_argument('--embed-dim', type=int, default=64, help='Transformer embedding dimension')
+    parser.add_argument('--n-heads', type=int, default=4, help='Number of attention heads')
+    parser.add_argument('--n-layers', type=int, default=2, help='Number of transformer layers')
+    parser.add_argument('--ff-dim', type=int, default=128, help='Feed-forward dimension')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num-workers', type=int, default=None, help='Dataloader workers (default: auto-detect)')
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
@@ -39,6 +45,7 @@ def main():
     parser.add_argument('--precision', default='16-mixed', help='Training precision (32, 16-mixed, bf16-mixed for A100/H100)')
     parser.add_argument('--strategy', default='auto', help='DDP strategy (auto, ddp, fsdp, deepspeed_stage_2)')
     parser.add_argument('--deterministic', action=argparse.BooleanOptionalAction, default=False, help='Deterministic mode (slower)')
+    parser.add_argument('--log-every-n-steps', type=int, default=25, help='Log metrics every N steps (~5s with default batch)')
     args = parser.parse_args()
 
     # Reproducibility
@@ -60,7 +67,13 @@ def main():
         num_workers = args.num_workers
 
     # Model and data
-    model = DominoLightningModule(lr=args.lr)
+    model = DominoLightningModule(
+        embed_dim=args.embed_dim,
+        n_heads=args.n_heads,
+        n_layers=args.n_layers,
+        ff_dim=args.ff_dim,
+        lr=args.lr,
+    )
 
     # torch.compile for PyTorch 2.0+ JIT optimization
     # Compile the inner model, not the LightningModule (required for DDP)
@@ -110,6 +123,7 @@ def main():
         logger=loggers,
         callbacks=callbacks,
         default_root_dir=args.run_dir,
+        log_every_n_steps=args.log_every_n_steps,
 
         # Reproducibility (off by default for performance)
         deterministic=args.deterministic,
