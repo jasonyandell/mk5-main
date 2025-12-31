@@ -1,0 +1,9 @@
+# Crystal Forge ML dependencies
+# Install: pip install -r forge/requirements.txt
+
+torch>=2.0
+lightning>=2.0
+pyarrow>=14.0
+wandb>=0.16
+numpy>=1.26
+rich  # Optional: pretty progress bars

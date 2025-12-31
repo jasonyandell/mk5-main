@@ -13,6 +13,13 @@ from .output import output_path_for, write_result
 from .solve import SolveConfig, build_child_index, enumerate_gpu, solve_gpu
 from .timer import SeedTimer
 
+try:
+    import wandb
+
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 
 def _parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="GPU solver: generate per-seed regret/value tables.")
@@ -37,6 +44,7 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("--solve-chunk", type=int, default=1_000_000, help="Chunk size for backward induction")
     p.add_argument("--enum-chunk", type=int, default=100_000, help="Chunk size for enumeration (0=disable)")
     p.add_argument("--log-memory", action="store_true", help="Log peak VRAM usage per phase")
+    p.add_argument("--wandb", action="store_true", help="Log metrics to Weights & Biases")
     return p.parse_args()
 
 
@@ -51,14 +59,18 @@ def _parse_seed_range(value: str) -> tuple[int, int]:
     return start, end
 
 
-def _log_memory(phase: str, enabled: bool) -> None:
-    """Log peak VRAM since last reset, then reset for next phase."""
+def _log_memory(phase: str, enabled: bool) -> float | None:
+    """Log peak VRAM since last reset, then reset for next phase.
+
+    Returns peak VRAM in GB if logging is enabled, None otherwise.
+    """
     if not enabled or not torch.cuda.is_available():
-        return
+        return None
     peak_bytes = torch.cuda.max_memory_allocated()
     peak_gb = peak_bytes / (1024**3)
     print(f"  [{phase}] peak VRAM: {peak_gb:.3f} GB")
     torch.cuda.reset_peak_memory_stats()
+    return peak_gb
 
 
 def main() -> None:
@@ -82,6 +94,38 @@ def main() -> None:
         solve_chunk_size=args.solve_chunk,
         enum_chunk_size=args.enum_chunk,
     )
+
+    # Calculate total work for progress tracking
+    total_shards = len(seeds) * len(decl_ids)
+    completed = 0
+
+    # Initialize wandb if requested
+    use_wandb = args.wandb and WANDB_AVAILABLE
+    if args.wandb and not WANDB_AVAILABLE:
+        print("Warning: --wandb requested but wandb not installed. Run: pip install wandb")
+
+    if use_wandb:
+        run_name = f"gen-{seeds[0]}" if len(seeds) == 1 else f"gen-{seeds[0]}-{seeds[-1]}"
+        wandb.init(
+            project="crystal-forge",
+            job_type="generate",
+            name=run_name,
+            config={
+                "seed_start": seeds[0],
+                "seed_end": seeds[-1],
+                "seed_count": len(seeds),
+                "decl_ids": decl_ids,
+                "decl_count": len(decl_ids),
+                "total_shards": total_shards,
+                "device": str(device),
+                "output_dir": str(args.out),
+                "format": args.format,
+                "child_index_chunk": args.child_index_chunk,
+                "solve_chunk": args.solve_chunk,
+                "enum_chunk": args.enum_chunk,
+            },
+            tags=["oracle", "generation"],
+        )
 
     # Create a separate stream for I/O to overlap with next seed's computation.
     # The write stream handles GPU→CPU transfers and disk writes while the
@@ -108,20 +152,24 @@ def main() -> None:
 
             ctx = build_context(seed=seed, decl_id=decl_id, device=device)
             timer.phase("setup")
-            _log_memory("setup", args.log_memory)
+            if (vram := _log_memory("setup", args.log_memory)) is not None:
+                timer.record_vram("setup", vram)
 
             all_states = enumerate_gpu(ctx, config=config)
             timer.phase("enumerate", extra=f"states={int(all_states.shape[0]):,}")
-            _log_memory("enumerate", args.log_memory)
+            if (vram := _log_memory("enumerate", args.log_memory)) is not None:
+                timer.record_vram("enumerate", vram)
 
             child_idx = build_child_index(all_states, ctx, config=config)
             timer.phase("child_index")
-            _log_memory("child_index", args.log_memory)
+            if (vram := _log_memory("child_index", args.log_memory)) is not None:
+                timer.record_vram("child_index", vram)
 
             v, move_values = solve_gpu(all_states, child_idx, ctx, config=config)
             root_value = int(v[0])
             timer.phase("solve", extra=f"root={root_value:+d}")
-            _log_memory("solve", args.log_memory)
+            if (vram := _log_memory("solve", args.log_memory)) is not None:
+                timer.record_vram("solve", vram)
 
             # Write on separate stream to overlap with next seed's computation.
             if write_stream is not None:
@@ -133,11 +181,25 @@ def main() -> None:
             else:
                 write_result(out_path, seed, decl_id, all_states, v, move_values, fmt=args.format)
             timer.phase("write", extra=str(out_path))
-            timer.done(root_value=root_value)
+            metrics = timer.done(root_value=root_value)
+
+            # Log to wandb
+            completed += 1
+            if use_wandb:
+                wandb.log({
+                    **metrics,
+                    "progress/completed": completed,
+                    "progress/total": total_shards,
+                    "progress/percent": 100.0 * completed / total_shards,
+                })
 
     # Ensure final write completes before exiting.
     if write_stream is not None:
         write_stream.synchronize()
+
+    # Finalize wandb run
+    if use_wandb:
+        wandb.finish()
 
 
 if __name__ == "__main__":
