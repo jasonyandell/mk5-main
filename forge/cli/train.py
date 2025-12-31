@@ -36,6 +36,7 @@ def main():
     parser.add_argument('--n-heads', type=int, default=4, help='Number of attention heads')
     parser.add_argument('--n-layers', type=int, default=2, help='Number of transformer layers')
     parser.add_argument('--ff-dim', type=int, default=128, help='Feed-forward dimension')
+    parser.add_argument('--value-weight', type=float, default=0.5, help='Weight for value head loss')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num-workers', type=int, default=None, help='Dataloader workers (default: auto-detect)')
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
@@ -74,6 +75,7 @@ def main():
         n_layers=args.n_layers,
         ff_dim=args.ff_dim,
         lr=args.lr,
+        value_weight=args.value_weight,
     )
 
     # torch.compile for PyTorch 2.0+ JIT optimization
@@ -123,6 +125,7 @@ def main():
                 "batch_size": args.batch_size,
                 "lr": args.lr,
                 "precision": args.precision,
+                "value_weight": args.value_weight,
             },
         ))
 

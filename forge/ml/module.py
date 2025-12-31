@@ -56,7 +56,8 @@ class DominoTransformer(nn.Module):
             batch_first=True,
         )
         self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
-        self.output_proj = nn.Linear(embed_dim, 1)
+        self.output_proj = nn.Linear(embed_dim, 1)  # Action logits
+        self.value_head = nn.Linear(embed_dim, 1)   # State value prediction
 
     def _calc_input_dim(self) -> int:
         """Calculate total dimension of concatenated embeddings."""
@@ -67,7 +68,7 @@ class DominoTransformer(nn.Module):
             self.embed_dim // 12
         )
 
-    def forward(self, tokens: Tensor, mask: Tensor, current_player: Tensor) -> Tensor:
+    def forward(self, tokens: Tensor, mask: Tensor, current_player: Tensor) -> Tuple[Tensor, Tensor]:
         """
         Forward pass.
 
@@ -77,7 +78,9 @@ class DominoTransformer(nn.Module):
             current_player: Current player index, shape (batch,)
 
         Returns:
-            Logits for 7 possible actions, shape (batch, 7)
+            Tuple of:
+                logits: Action logits, shape (batch, 7)
+                value: State value prediction, shape (batch,)
         """
         device = tokens.device
 
@@ -114,7 +117,11 @@ class DominoTransformer(nn.Module):
         hand_repr = torch.gather(x, dim=1, index=gather_indices)
         logits = self.output_proj(hand_repr).squeeze(-1)
 
-        return logits
+        # Value prediction: mean pool over valid tokens
+        # Use context token (always present at position 0) for value
+        value = self.value_head(x[:, 0, :]).squeeze(-1)
+
+        return logits, value
 
 
 class DominoLightningModule(L.LightningModule):
@@ -137,6 +144,7 @@ class DominoLightningModule(L.LightningModule):
         weight_decay: float = 0.01,
         temperature: float = 3.0,
         soft_weight: float = 0.7,
+        value_weight: float = 0.5,
     ):
         """
         Initialize the Lightning module.
@@ -151,28 +159,34 @@ class DominoLightningModule(L.LightningModule):
             weight_decay: AdamW weight decay
             temperature: Temperature for soft target distribution
             soft_weight: Weight for soft loss (1 - soft_weight = hard loss weight)
+            value_weight: Weight for value head loss
         """
         super().__init__()
         self.save_hyperparameters()  # Auto-save all args
         self.model = DominoTransformer(embed_dim, n_heads, n_layers, ff_dim, dropout)
 
-    def forward(self, tokens: Tensor, mask: Tensor, current_player: Tensor) -> Tensor:
-        """Forward pass through the model."""
+    def forward(self, tokens: Tensor, mask: Tensor, current_player: Tensor) -> Tuple[Tensor, Tensor]:
+        """Forward pass through the model. Returns (logits, value)."""
         return self.model(tokens, mask, current_player)
 
     def _compute_loss(
         self,
         logits: Tensor,
+        value: Tensor,
         targets: Tensor,
         legal: Tensor,
         qvals: Tensor,
         teams: Tensor,
-    ) -> Tensor:
+        oracle_values: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         """
-        Compute combined hard + soft loss.
+        Compute combined action + value loss.
 
-        Hard loss: cross-entropy with oracle best move
-        Soft loss: KL divergence with Q-value derived soft targets
+        Action loss: hard (cross-entropy) + soft (distillation from Q-values)
+        Value loss: MSE between predicted and oracle state value
+
+        Returns:
+            Tuple of (total_loss, action_loss, value_loss) for logging
         """
         logits_masked = logits.masked_fill(legal == 0, float('-inf'))
 
@@ -195,54 +209,87 @@ class DominoLightningModule(L.LightningModule):
         log_probs_safe = log_probs.masked_fill(legal == 0, 0.0)
         soft_loss = -(soft_targets * log_probs_safe).sum(dim=-1).mean()
 
-        # Combined loss
-        loss = (1 - self.hparams.soft_weight) * hard_loss + self.hparams.soft_weight * soft_loss
-        return loss
+        # Combined action loss
+        action_loss = (1 - self.hparams.soft_weight) * hard_loss + self.hparams.soft_weight * soft_loss
+
+        # Value loss: MSE between predicted and oracle value
+        # Oracle value is from team 0's perspective, adjust for current team
+        team_sign_value = torch.where(teams == 0, 1.0, -1.0)
+        target_value = oracle_values * team_sign_value
+        value_loss = F.mse_loss(value, target_value)
+
+        # Total loss
+        total_loss = action_loss + self.hparams.value_weight * value_loss
+        return total_loss, action_loss, value_loss
 
     def training_step(self, batch: Tuple, batch_idx: int) -> Tensor:
         """Training step."""
-        tokens, masks, players, targets, legal, qvals, teams = batch
-        logits = self(tokens, masks, players)
-        loss = self._compute_loss(logits, targets, legal, qvals, teams)
+        tokens, masks, players, targets, legal, qvals, teams, values = batch
+        logits, value = self(tokens, masks, players)
+        loss, action_loss, value_loss = self._compute_loss(
+            logits, value, targets, legal, qvals, teams, values
+        )
         acc = compute_accuracy(logits, targets, legal)
 
         # Structured logging with prefixes (sync_dist for multi-GPU)
         self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('train/action_loss', action_loss, on_step=True, on_epoch=True, sync_dist=True)
+        self.log('train/value_loss', value_loss, on_step=True, on_epoch=True, sync_dist=True)
         self.log('train/acc', acc, on_step=True, on_epoch=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch: Tuple, batch_idx: int) -> None:
         """Validation step with comprehensive metrics."""
-        tokens, masks, players, targets, legal, qvals, teams = batch
-        logits = self(tokens, masks, players)
+        tokens, masks, players, targets, legal, qvals, teams, values = batch
+        logits, value = self(tokens, masks, players)
 
         # Compute all metrics
-        loss = self._compute_loss(logits, targets, legal, qvals, teams)
+        loss, action_loss, value_loss = self._compute_loss(
+            logits, value, targets, legal, qvals, teams, values
+        )
         acc = compute_accuracy(logits, targets, legal)
         gaps = compute_qgaps_per_sample(logits, qvals, legal, teams)
         q_gap = gaps.mean()
         blunder_rate = compute_blunder_rate(gaps)
 
+        # Value prediction error (MAE in points)
+        team_sign_value = torch.where(teams == 0, 1.0, -1.0)
+        target_value = values * team_sign_value
+        value_mae = (value - target_value).abs().mean()
+
         # CRITICAL: sync_dist=True for multi-GPU
         self.log('val/loss', loss, sync_dist=True, prog_bar=True)
+        self.log('val/action_loss', action_loss, sync_dist=True)
+        self.log('val/value_loss', value_loss, sync_dist=True)
+        self.log('val/value_mae', value_mae, sync_dist=True, prog_bar=True)
         self.log('val/accuracy', acc, sync_dist=True, prog_bar=True)
         self.log('val/q_gap', q_gap, sync_dist=True, prog_bar=True)
         self.log('val/blunder_rate', blunder_rate, sync_dist=True)
 
     def test_step(self, batch: Tuple, batch_idx: int) -> None:
         """Test step - same as validation."""
-        tokens, masks, players, targets, legal, qvals, teams = batch
-        logits = self(tokens, masks, players)
+        tokens, masks, players, targets, legal, qvals, teams, values = batch
+        logits, value = self(tokens, masks, players)
 
         # Compute all metrics
-        loss = self._compute_loss(logits, targets, legal, qvals, teams)
+        loss, action_loss, value_loss = self._compute_loss(
+            logits, value, targets, legal, qvals, teams, values
+        )
         acc = compute_accuracy(logits, targets, legal)
         gaps = compute_qgaps_per_sample(logits, qvals, legal, teams)
         q_gap = gaps.mean()
         blunder_rate = compute_blunder_rate(gaps)
 
+        # Value prediction error (MAE in points)
+        team_sign_value = torch.where(teams == 0, 1.0, -1.0)
+        target_value = values * team_sign_value
+        value_mae = (value - target_value).abs().mean()
+
         # Log with test/ prefix
         self.log('test/loss', loss, sync_dist=True)
+        self.log('test/action_loss', action_loss, sync_dist=True)
+        self.log('test/value_loss', value_loss, sync_dist=True)
+        self.log('test/value_mae', value_mae, sync_dist=True)
         self.log('test/accuracy', acc, sync_dist=True)
         self.log('test/q_gap', q_gap, sync_dist=True)
         self.log('test/blunder_rate', blunder_rate, sync_dist=True)

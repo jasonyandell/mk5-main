@@ -125,6 +125,7 @@ class ShardResult:
     qvals: np.ndarray      # (N, 7) int8
     teams: np.ndarray      # (N,) int8
     players: np.ndarray    # (N,) int8
+    values: np.ndarray     # (N,) int8 - oracle V (state value)
     split: str             # 'train', 'val', or 'test'
     seed: int              # deal seed
     decl_id: int           # declaration id
@@ -181,6 +182,7 @@ def process_shard(
         # Load data
         df = pd.read_parquet(path)
         states = df["state"].values.astype(np.int64)
+        v_values_all = df["V"].values.astype(np.int8)  # Oracle state value
 
         q_cols = [f"q{i}" for i in range(7)]
         q_values_all = np.stack([df[c].values for c in q_cols], axis=1)
@@ -196,6 +198,7 @@ def process_shard(
             indices = shard_rng.choice(n_states, size=max_samples, replace=False)
             states = states[indices]
             q_values_all = q_values_all[indices]
+            v_values_all = v_values_all[indices]
 
         # Filter invalid states
         legal_masks = (q_values_all != -128).astype(np.float32)
@@ -205,6 +208,7 @@ def process_shard(
 
         states = states[has_legal]
         q_values_all = q_values_all[has_legal]
+        v_values_all = v_values_all[has_legal]
         legal_masks = legal_masks[has_legal]
         n_samples = len(states)
 
@@ -320,6 +324,7 @@ def process_shard(
             qvals=q_int,
             teams=team_int8,
             players=current_player.astype(np.int8),
+            values=v_values_all,
             split=split,
             seed=seed,
             decl_id=decl_id,
@@ -452,9 +457,9 @@ def tokenize_shards(
 
     # Collect by split
     split_data: dict[str, dict[str, list]] = {
-        'train': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': []},
-        'val': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': []},
-        'test': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': []},
+        'train': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
+        'val': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
+        'test': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
     }
     split_file_counts = {'train': 0, 'val': 0, 'test': 0}
 
@@ -476,6 +481,7 @@ def tokenize_shards(
             split_data[split]['qvals'].append(result.qvals)
             split_data[split]['teams'].append(result.teams)
             split_data[split]['players'].append(result.players)
+            split_data[split]['values'].append(result.values)
             split_file_counts[split] += 1
 
             shard_samples = len(result.targets)
@@ -527,6 +533,7 @@ def tokenize_shards(
         qvals = np.concatenate(data['qvals'], axis=0)
         teams = np.concatenate(data['teams'], axis=0)
         players = np.concatenate(data['players'], axis=0)
+        values = np.concatenate(data['values'], axis=0)
 
         n_samples = len(targets)
         log(f"\n{split_name}: {n_samples:,} samples from {split_file_counts[split_name]} files")
@@ -542,6 +549,7 @@ def tokenize_shards(
         np.save(split_dir / "qvals.npy", qvals)
         np.save(split_dir / "teams.npy", teams)
         np.save(split_dir / "players.npy", players)
+        np.save(split_dir / "values.npy", values)
 
         # Update manifest
         manifest.splits[split_name] = {
@@ -550,11 +558,11 @@ def tokenize_shards(
         }
 
         # Size report
-        total_mb = sum(arr.nbytes for arr in [tokens, masks, targets, legal, qvals, teams, players]) / 1024 / 1024
+        total_mb = sum(arr.nbytes for arr in [tokens, masks, targets, legal, qvals, teams, players, values]) / 1024 / 1024
         log(f"  Total size: {total_mb:.1f} MB")
 
         # Free memory
-        del tokens, masks, targets, legal, qvals, teams, players
+        del tokens, masks, targets, legal, qvals, teams, players, values
         gc.collect()
 
     # Save manifest

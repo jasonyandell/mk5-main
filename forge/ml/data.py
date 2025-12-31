@@ -15,7 +15,7 @@ class DominoDataset(Dataset):
     Loads pre-tokenized numpy arrays with memory mapping.
 
     Expected files in each split directory:
-        tokens.npy, masks.npy, players.npy, targets.npy, legal.npy, qvals.npy, teams.npy
+        tokens.npy, masks.npy, players.npy, targets.npy, legal.npy, qvals.npy, teams.npy, values.npy
 
     Uses memory-mapped files to handle large datasets without loading
     everything into RAM.
@@ -42,11 +42,12 @@ class DominoDataset(Dataset):
         self.legal = np.load(split_dir / 'legal.npy', mmap_mode='r')
         self.qvals = np.load(split_dir / 'qvals.npy', mmap_mode='r')
         self.teams = np.load(split_dir / 'teams.npy', mmap_mode='r')
+        self.values = np.load(split_dir / 'values.npy', mmap_mode='r')
 
     def __len__(self) -> int:
         return len(self.tokens)
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """
         Get a single sample.
 
@@ -58,6 +59,7 @@ class DominoDataset(Dataset):
             legal: (7,) float32 - legal action mask
             qvals: (7,) float32 - oracle Q-values
             teams: () int64 - team assignment (0 or 1)
+            values: () float32 - oracle state value V
         """
         # Copy from mmap for PyTorch compatibility
         # np.array() forces a copy from memmap, which is needed for PyTorch
@@ -68,8 +70,9 @@ class DominoDataset(Dataset):
         legal = torch.from_numpy(np.array(self.legal[idx], dtype=np.float32))
         qvals = torch.from_numpy(np.array(self.qvals[idx], dtype=np.float32))
         teams = torch.tensor(int(self.teams[idx]), dtype=torch.long)
+        values = torch.tensor(float(self.values[idx]), dtype=torch.float32)
 
-        return tokens, masks, players, targets, legal, qvals, teams
+        return tokens, masks, players, targets, legal, qvals, teams, values
 
 
 class DominoDataModule(L.LightningDataModule):
@@ -83,7 +86,7 @@ class DominoDataModule(L.LightningDataModule):
     Expected directory structure:
         data_path/
             train/
-                tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy, teams.npy, players.npy
+                tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy, teams.npy, players.npy, values.npy
             val/
                 ...
             test/
