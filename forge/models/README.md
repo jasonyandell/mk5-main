@@ -6,9 +6,104 @@ Pre-trained models for Texas 42 domino play prediction.
 
 | Model | File | Params | Val Acc | Val Q-Gap | Date |
 |-------|------|--------|---------|-----------|------|
+| Large v2 (value head) | `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt` | 817K | 97.79% | 0.072 | 2026-01-01 |
 | Large v1 | `domino-large-817k-acc97.1-qgap0.11.ckpt` | 817K | 97.09% | 0.112 | 2025-12-31 |
 
-## Current Best: Large v1
+## Current Best: Large v2 (value head)
+
+**File**: `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt`
+
+### Architecture
+
+Same as Large v1, with added value head:
+
+```
+DominoTransformer(
+    embed_dim=128,
+    n_heads=8,
+    n_layers=4,
+    ff_dim=512,
+    dropout=0.1,
+    value_head=Linear(128, 1)  # NEW: predicts game value
+)
+```
+
+### Training Configuration
+
+| Hyperparameter | Value |
+|----------------|-------|
+| Epochs | 20 |
+| Batch Size | 512 |
+| Learning Rate | 3e-4 |
+| Optimizer | AdamW |
+| Weight Decay | 0.01 |
+| Gradient Clipping | 1.0 (norm) |
+| Precision | bfloat16 mixed |
+| Loss | Soft cross-entropy + 0.5 * value MSE |
+| Temperature | 3.0 |
+| Soft Weight | 0.7 |
+| Value Weight | 0.5 |
+
+### Training Data
+
+| Split | Seeds | Declarations | Shards | Samples |
+|-------|-------|--------------|--------|---------|
+| Train | 0-199 | 1 per seed (seed % 10) | 200 | ~10M |
+| Val | 900-904 | All 10 | 50 | ~2.5M |
+| Test | 950-954 | All 10 | 50 | ~2.5M |
+
+**Key change**: 2x more training seeds (200 vs 100). Declaration diversity strategy maintained.
+
+### Results
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| Val Accuracy | 97.79% | Model's top choice matches oracle's best move |
+| Val Q-Gap | 0.072 | Mean regret in points (lower is better) |
+| Val Value MAE | 7.4 pts | Mean absolute error on game value prediction |
+| Val Blunder Rate | 0.15% | Moves with Q-gap > 10 points |
+
+### Value Head Findings
+
+The value head experiment revealed important insights:
+
+| Finding | Evidence |
+|---------|----------|
+| Value head doesn't hurt policy | 97.8% acc (up from 97.1%) |
+| More data helps | q_gap 0.072 vs 0.112 |
+| Value prediction is hard | 7.4 MAE plateaued after epoch 9 |
+
+**Conclusion**: Value head regression is the wrong approach for bidding. The "cliff" landscape of bid thresholds (30, 31, 32, 36, 42, 84) doesn't suit smooth MSE regression. Simulation-based bidding (System 2) is the path forward.
+
+### Loading the Model
+
+```python
+from forge.ml.module import DominoLightningModule
+
+# Load for inference
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
+)
+model.eval()
+
+# Get predictions (policy)
+logits, value = model(tokens, mask, current_player)
+probs = torch.softmax(logits, dim=-1)
+best_move = probs.argmax(dim=-1)
+
+# Value prediction (not recommended for bidding - use simulation instead)
+predicted_value = value * 42  # denormalize to points
+```
+
+### Provenance
+
+- **Bead**: t42-1e1y (value head experiment)
+- **Wandb**: crystal-forge v2-valuehead run
+- **Git commit**: (see git log)
+
+---
+
+## Large v1
 
 **File**: `domino-large-817k-acc97.1-qgap0.11.ckpt`
 
@@ -79,7 +174,8 @@ DominoTransformer(
 | Prior best (solver2) | 73K | 94.6% | — | Plateau, limited diversity |
 | Baseline v1 | 73K | 93.6% | 0.367 | Same arch, more diversity |
 | Medium v1 | 275K | 95.8% | 0.198 | |
-| **Large v1** | **817K** | **97.1%** | **0.112** | Current best |
+| Large v1 | 817K | 97.1% | 0.112 | 100 seeds |
+| **Large v2** | **817K** | **97.8%** | **0.072** | 200 seeds, value head |
 
 ### Reproducing This Model
 
