@@ -418,6 +418,73 @@ See `forge/bidding/EXAMPLES.md` for worked examples with analysis.
 
 ---
 
+## Flywheel: Iterative Fine-Tuning
+
+The flywheel automates iterative model improvement: generate new seeds → train → evaluate → repeat.
+
+**To start the flywheel:**
+```bash
+# Read the runbook first
+cat forge/flywheel/RUNBOOK.md
+
+# Check current state
+python -m forge.cli.flywheel status
+
+# Run one iteration (30-60 min)
+python -m forge.cli.flywheel
+```
+
+### How It Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Each iteration:                                         │
+│  1. Generate oracle shards for seed range (e.g., 200:210)│
+│  2. Tokenize all data                                    │
+│  3. Fine-tune model (1-2 epochs)                         │
+│  4. Log to W&B with artifact lineage                     │
+│  5. Update state.yaml → ready for next iteration         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `forge/flywheel/state.yaml` | Current state - **read this first** |
+| `forge/flywheel/RUNBOOK.md` | Full instructions for Claude Code |
+| `forge/cli/flywheel.py` | Main CLI script |
+
+### State Machine
+
+```
+ready ──run──> running ──success──> ready (next iteration)
+                  │
+                  └──failure──> failed ──fix──> ready
+```
+
+### W&B Observability
+
+- **Project**: `crystal-forge`
+- **Group**: From `state.yaml` wandb_group (e.g., `flywheel-large-v3`)
+- **Per iteration**: Config, final metrics, checkpoint artifact with lineage
+- **Custom chart**: Plot `final/q_gap` vs `total_seeds` to see learning curve
+
+### For Claude Code
+
+If user says "start the flywheel" or "run flywheel training":
+
+1. Read `forge/flywheel/RUNBOOK.md`
+2. Run `python -m forge.cli.flywheel status`
+3. Based on status:
+   - `ready` → run `python -m forge.cli.flywheel`
+   - `running` → spawn haiku monitor (see RUNBOOK)
+   - `failed` → read `last_error`, fix issue, set `status: ready`
+
+When a new best model is found, the flywheel prints promotion instructions.
+
+---
+
 ## What's Not Here Yet
 
 - **Hyperparameter tuning**: Optuna integration
