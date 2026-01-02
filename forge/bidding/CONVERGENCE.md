@@ -36,8 +36,10 @@ Tested on 4 hands spanning the difficulty range:
 | 10 | 0.37 | 75% | 1.7s |
 | 25 | 0.20 | 50% | 3.7s |
 | 50 | 0.15 | 100% | 7.1s |
+| 200 | 0.07 | 75% | 21s |
+| 500 | 0.04 | 100% | 53s |
 
-### Raw Data
+### Raw Data (N=10, 25, 50)
 
 | Hand | N | Best Trump/Bid | P(make) | CI Width | Stable? | Time |
 |------|---|----------------|---------|----------|---------|------|
@@ -54,15 +56,30 @@ Tested on 4 hands spanning the difficulty range:
 | weak | 25 | blanks/30 | 96% | 0.19 | Yes | 30.4s |
 | weak | 50 | blanks/30 | 84% | 0.20 | Yes | 61.6s |
 
+### Raw Data (N=200, 500)
+
+| Hand | N | Best Trump/Bid | P(make) | CI Width | Stable? | Time |
+|------|---|----------------|---------|----------|---------|------|
+| monster | 200 | sixes/30 | 100% | 0.02 | Yes | 168.8s |
+| monster | 500 | sixes/30 | 100% | 0.01 | Yes | 528.4s |
+| strong | 200 | sixes/30 | 100% | 0.02 | No | 165.7s |
+| strong | 500 | doubles-trump/30 | 100% | 0.01 | Yes | 375.0s |
+| marginal | 200 | fours/30 | 45% | 0.14 | Yes | 157.8s |
+| marginal | 500 | fours/30 | 43% | 0.09 | Yes | 381.4s |
+| weak | 200 | blanks/30 | 81% | 0.11 | Yes | 175.6s |
+| weak | 500 | blanks/30 | 78% | 0.07 | Yes | 419.4s |
+
 ## Observations
 
-1. **Extreme probabilities converge fast**: The "monster" hand shows 100% at all sample sizes with tight CI.
+1. **Extreme probabilities converge fast**: The "monster" hand shows 100% at all sample sizes with tight CI (0.01 at N=500).
 
-2. **Marginal hands have high variance**: The 50% hands fluctuate the most between runs (CI width ~0.26-0.53).
+2. **Marginal hands have high variance**: The ~45% hands fluctuate the most (CI width 0.09-0.14 even at N=200-500).
 
-3. **Rankings can flip at low N**: The "strong" hand picked fives at N=10,25 but sixes at N=50. Both are near 100%, so the "best" is essentially a tie.
+3. **Rankings can flip even at high N when tied**: The "strong" hand picked sixes at N=200 but doubles-trump at N=500. Both are 100%, so the "best" is essentially a coin flip.
 
-4. **Time scales linearly**: ~1.7s/trump at N=10 → ~7s/trump at N=50.
+4. **Time scales linearly with N**: ~1.7s/trump at N=10 → ~53s/trump at N=500.
+
+5. **Throughput bottleneck is Python, not GPU**: Analysis of `simulator.py` shows 1000× gap between theoretical forward pass time (~0.2s/hand) and actual (~180s/hand). Python loops in `build_tokens()`, `get_legal_mask()`, `step()` dominate. See bead t42-oz1y for vectorization plan.
 
 ## Recommendations
 
