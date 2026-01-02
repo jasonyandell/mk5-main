@@ -388,6 +388,36 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 
 ---
 
+## Bidding Evaluation (System 2)
+
+The trained model can evaluate bid strength by simulating complete games:
+
+```bash
+python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 100
+```
+
+**How it works:**
+1. Fix the bidder's 7 dominoes (player 0)
+2. Randomly deal remaining 21 dominoes to players 1, 2, 3
+3. Simulate complete games using the policy model (greedy action selection)
+4. Count how often team 0 scores ≥ threshold for each bid level
+
+**Output:** P(make) matrix showing probability of making each bid (30-42) for each trump choice.
+
+```
+Trump          30  31  32  33  34  35  36  37  38  39  40  41  42
+-----------------------------------------------------------------
+fives         100 100 100 100 100 100 100 100 100 100 100 100 100
+notrump        66  56  56  56  56  50  40  34  34  34  34  30  20
+doubles-trump  64  62  62  62  62  50  42  32  32  32  26  24  16
+```
+
+**Key insight:** The simulation naturally captures partner synergy. A 2% chance of making 42 with a weak trump suit means "occasionally your partner gets dealt a monster hand that saves you."
+
+See `forge/bidding/EXAMPLES.md` for worked examples with analysis.
+
+---
+
 ## What's Not Here Yet
 
 - **Hyperparameter tuning**: Optuna integration
