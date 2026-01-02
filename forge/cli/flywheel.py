@@ -428,6 +428,22 @@ def cmd_run(args: argparse.Namespace) -> int:
         state["next_action"] = "Run: python -m forge.cli.flywheel"
         save_state(state)
 
+        # Check if this is a new best
+        is_new_best = False
+        best_q_gap = None
+        baseline_q_gap = 0.072  # Large v2 baseline
+
+        if metrics["q_gap"] is not None:
+            # Find best from history (excluding current)
+            prev_q_gaps = [h.get("q_gap") for h in state["history"][:-1] if h.get("q_gap") is not None]
+            if prev_q_gaps:
+                best_q_gap = min(prev_q_gaps)
+                is_new_best = metrics["q_gap"] < best_q_gap
+            else:
+                # First iteration - compare to baseline
+                is_new_best = metrics["q_gap"] < baseline_q_gap
+                best_q_gap = baseline_q_gap
+
         print(f"\n{'='*60}")
         print("[FLYWHEEL] Iteration complete!")
         print(f"  Iteration:    {iteration_num}")
@@ -440,6 +456,23 @@ def cmd_run(args: argparse.Namespace) -> int:
             print(f"  Accuracy:     {metrics['accuracy']:.2f}%")
         print(f"  Next:         {state['current']['seed_range']}")
         print(f"{'='*60}\n")
+
+        # Print promotion instructions if new best
+        if is_new_best and new_checkpoint:
+            q_gap_str = f"{metrics['q_gap']:.3f}" if metrics['q_gap'] else "unknown"
+            acc_str = f"{metrics['accuracy']:.1f}" if metrics['accuracy'] else "unknown"
+            print(f"{'='*60}")
+            print("[FLYWHEEL] NEW BEST MODEL FOUND!")
+            print(f"  Previous best q_gap: {best_q_gap:.4f}")
+            print(f"  New best q_gap:      {metrics['q_gap']:.4f}")
+            print(f"")
+            print("To promote this model to forge/models/:")
+            print(f"")
+            print(f"  cp {new_checkpoint} \\")
+            print(f"     forge/models/domino-large-817k-flywheel-qgap{q_gap_str}-acc{acc_str}.ckpt")
+            print(f"")
+            print("Then update forge/models/README.md with the new model details.")
+            print(f"{'='*60}\n")
 
         return 0
 
