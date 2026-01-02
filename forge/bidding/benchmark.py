@@ -11,8 +11,8 @@ Usage:
     # Custom batch size and iterations
     python -m forge.bidding.benchmark --n-games 500 --n-hands 10
 
-    # Compare with baseline (if available)
-    python -m forge.bidding.benchmark --compare
+    # Multi-GPU cluster mode (one worker per GPU)
+    python -m forge.bidding.benchmark --n-hands 20 --cluster
 """
 
 from __future__ import annotations
@@ -187,6 +187,72 @@ def run_profiled_benchmark(
     prof.export_chrome_trace(trace_path)
 
 
+def run_parallel_benchmark(
+    n_hands: int = 20,
+    n_games: int = 200,
+    n_workers: int | None = None,
+    seed: int = 42,
+    verbose: bool = True,
+) -> BenchmarkResult:
+    """Run benchmark using multi-process parallelism.
+
+    Args:
+        n_hands: Number of hands to evaluate
+        n_games: Number of games per hand
+        n_workers: Number of worker processes (None = one per GPU)
+        seed: Random seed for reproducibility
+        verbose: Whether to print progress
+
+    Returns:
+        BenchmarkResult with timing statistics
+    """
+    from .parallel import MultiProcessSimulator
+
+    # Generate random hands upfront
+    torch.manual_seed(seed)
+    hands = []
+    for _ in range(n_hands):
+        perm = torch.randperm(28).tolist()
+        hands.append(sorted(perm[:7]))
+
+    with timer() as elapsed:
+        with MultiProcessSimulator(n_workers=n_workers) as sim:
+            actual_workers = sim.n_workers
+            actual_gpus = sim.n_gpus
+            if verbose:
+                print(f"Spawned {actual_workers} worker(s) across {actual_gpus} GPU(s)")
+                print(f"Simulating {n_hands} hands...")
+
+            results = sim.simulate_hands(
+                hands=hands,
+                trump=5,  # Fives as trump
+                n_games=n_games,
+                seed=seed,
+                greedy=False,
+            )
+
+    total_time = elapsed[0]
+    total_games = n_hands * n_games
+
+    # Compute average points
+    total_points = sum(r.float().mean().item() for r in results)
+    avg_points = total_points / n_hands
+
+    hands_per_min = n_hands / total_time * 60
+    games_per_sec = total_games / total_time
+
+    return BenchmarkResult(
+        n_hands=n_hands,
+        n_games_per_hand=n_games,
+        total_games=total_games,
+        total_time_s=total_time,
+        hands_per_minute=hands_per_min,
+        games_per_second=games_per_sec,
+        avg_points=avg_points,
+        device=f"cluster ({actual_workers} workers, {actual_gpus} GPUs)",
+    )
+
+
 def run_component_benchmark(model: PolicyModel, n_games: int = 500) -> None:
     """Benchmark individual components of the simulation."""
     print(f"\nComponent benchmark (n_games={n_games}):")
@@ -264,6 +330,7 @@ def main():
     parser.add_argument("--profile", action="store_true", help="Run with PyTorch profiler")
     parser.add_argument("--components", action="store_true", help="Benchmark individual components")
     parser.add_argument("--no-compile", action="store_true", help="Disable torch.compile")
+    parser.add_argument("--cluster", action="store_true", help="Multi-GPU cluster mode (one worker per GPU)")
     args = parser.parse_args()
 
     # Check for CUDA
@@ -272,7 +339,41 @@ def main():
     if device == "cuda":
         print(f"GPU: {torch.cuda.get_device_name()}")
 
-    # Load model
+    # Cluster mode: one worker per GPU
+    if args.cluster:
+        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+        if n_gpus <= 1:
+            print(f"\nWarning: --cluster mode is for multi-GPU machines.")
+            print(f"Detected {n_gpus} GPU(s). On single GPU, use normal mode instead.")
+            print(f"Continuing anyway for testing...\n")
+
+        print(f"\nRunning cluster benchmark: {args.n_hands} hands × {args.n_games} games")
+        print("-" * 60)
+
+        result = run_parallel_benchmark(
+            n_hands=args.n_hands,
+            n_games=args.n_games,
+            n_workers=None,  # Auto-detect from GPU count
+            seed=args.seed,
+            verbose=True,
+        )
+
+        # Print summary
+        print("\n" + "=" * 60)
+        print("CLUSTER BENCHMARK RESULTS")
+        print("=" * 60)
+        print(f"  Mode:             {result.device}")
+        print(f"  Hands evaluated:  {result.n_hands}")
+        print(f"  Games per hand:   {result.n_games_per_hand}")
+        print(f"  Total games:      {result.total_games}")
+        print(f"  Total time:       {result.total_time_s:.2f}s")
+        print(f"  Hands/minute:     {result.hands_per_minute:.2f}")
+        print(f"  Games/second:     {result.games_per_second:.2f}")
+        print(f"  Avg points:       {result.avg_points:.2f}")
+        print("=" * 60)
+        return
+
+    # Single-process modes: load model in main process
     print("\nLoading model...")
     model = PolicyModel(compile_model=not args.no_compile)
     print(f"Model loaded on {model.device}")

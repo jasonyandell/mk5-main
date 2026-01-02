@@ -4,6 +4,9 @@
 Usage:
     python -m forge.bidding.convergence
 
+    # Multi-GPU cluster mode
+    python -m forge.bidding.convergence --cluster
+
 Runs convergence analysis to determine optimal sample sizes for different use cases.
 """
 
@@ -15,7 +18,9 @@ import time
 from dataclasses import dataclass
 from typing import List
 
-from .estimator import find_best_bid, wilson_ci
+from forge.oracle.declarations import N_DECLS
+
+from .estimator import evaluate_bids, find_best_bid, wilson_ci
 from .evaluate import format_hand, parse_hand, run_evaluation
 from .inference import PolicyModel
 
@@ -102,6 +107,93 @@ def analyze_convergence(
                     rankings=rankings,
                 )
             )
+
+    return results
+
+
+def analyze_convergence_parallel(
+    hands: dict[str, List[int]],
+    seed: int,
+    n_workers: int,
+) -> List[ConvergenceResult]:
+    """Run convergence analysis with parallel workers.
+
+    Parallelizes across all (hand, sample_size, trump) combinations.
+    """
+    from .parallel import MultiProcessSimulator
+
+    # Build all work items: (hand_name, hand, n_samples, trump_id)
+    work_items = []
+    trump_ids = [i for i in range(N_DECLS) if i != 8]  # Exclude doubles-suit
+
+    for hand_name, hand in hands.items():
+        for n_samples in SAMPLE_SIZES:
+            for trump_id in trump_ids:
+                trump_seed = seed + trump_id if seed is not None else None
+                work_items.append((hand_name, hand, n_samples, trump_id, trump_seed))
+
+    log.info(f"Running {len(work_items)} simulations across {n_workers} workers...")
+
+    # Run all simulations in parallel
+    with MultiProcessSimulator(n_workers=n_workers) as sim:
+        # Submit all work
+        batch = [
+            (hand, trump_id, n_samples, trump_seed, True)  # greedy=True
+            for (_, hand, n_samples, trump_id, trump_seed) in work_items
+        ]
+        sim_results = sim.simulate_batch(batch)
+
+    # Group results by (hand_name, n_samples)
+    grouped = {}
+    for (hand_name, hand, n_samples, trump_id, _), result in zip(work_items, sim_results):
+        key = (hand_name, n_samples)
+        if key not in grouped:
+            grouped[key] = []
+        # Evaluate bids for this trump
+        points_list = result.points.tolist()
+        trump_result = evaluate_bids(points_list, trump_id)
+        grouped[key].append(trump_result)
+
+    # Build ConvergenceResults
+    results = []
+    for (hand_name, n_samples), trump_results in grouped.items():
+        # Find best bid
+        best_trump, best_bid, _ = find_best_bid(trump_results)
+
+        # Find P(make) and CI for best bid
+        best_p_make = 0.0
+        best_ci_width = 0.0
+        for tr in trump_results:
+            for br in tr.bid_results:
+                if br.trump_name == best_trump and br.bid == best_bid:
+                    best_p_make = br.p_make
+                    best_ci_width = br.ci_high - br.ci_low
+                    break
+
+        # Get top 3 rankings by mark swing
+        all_bids = []
+        for tr in trump_results:
+            for br in tr.bid_results:
+                all_bids.append((br.trump_name, br.bid, br.mark_swing))
+        all_bids.sort(key=lambda x: -x[2])
+        rankings = [(t, b) for t, b, _ in all_bids[:3]]
+
+        results.append(
+            ConvergenceResult(
+                hand_name=hand_name,
+                n_samples=n_samples,
+                elapsed_seconds=0.0,  # Not tracked per-item in parallel
+                best_trump=best_trump,
+                best_bid=best_bid,
+                best_p_make=best_p_make,
+                best_ci_width=best_ci_width,
+                rankings=rankings,
+            )
+        )
+
+    # Sort to match original order (by hand, then sample size)
+    hand_order = list(hands.keys())
+    results.sort(key=lambda r: (hand_order.index(r.hand_name), r.n_samples))
 
     return results
 
@@ -202,6 +294,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--checkpoint", type=str, default=None, help="Model checkpoint")
     parser.add_argument("--compile", action="store_true", help="Enable torch.compile")
+    parser.add_argument("--cluster", action="store_true", help="Multi-GPU cluster mode")
 
     args = parser.parse_args()
 
@@ -212,15 +305,28 @@ def main() -> None:
     for name, hand in hands.items():
         log.info(f"  {name}: {format_hand(hand)}")
 
-    # Load model
-    log.info("Loading model...")
-    start_load = time.time()
-    model = PolicyModel(checkpoint_path=args.checkpoint, compile_model=args.compile)
-    log.info(f"Model loaded in {time.time() - start_load:.2f}s on {model.device}")
-
     # Run analysis
     log.info("Running convergence analysis...")
-    results = analyze_convergence(model, hands, args.seed)
+    start_time = time.time()
+
+    if args.cluster:
+        import torch
+        n_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+        n_workers = max(n_gpus, 1)
+        if n_gpus <= 1:
+            log.warning(f"--cluster mode is for multi-GPU machines. Detected {n_gpus} GPU(s).")
+        log.info(f"Cluster mode: {n_workers} worker(s) across {n_gpus} GPU(s)")
+        results = analyze_convergence_parallel(hands, args.seed, n_workers)
+    else:
+        # Load model for single-process mode
+        log.info("Loading model...")
+        start_load = time.time()
+        model = PolicyModel(checkpoint_path=args.checkpoint, compile_model=args.compile)
+        log.info(f"Model loaded in {time.time() - start_load:.2f}s on {model.device}")
+        results = analyze_convergence(model, hands, args.seed)
+
+    total_time = time.time() - start_time
+    log.info(f"Analysis completed in {total_time:.1f}s")
 
     # Compute stability
     stability = compute_ranking_stability(results)

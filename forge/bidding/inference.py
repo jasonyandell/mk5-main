@@ -65,11 +65,12 @@ class PolicyModel:
         self.model.to(self.device)
 
         # Compile for faster inference
+        # Note: mode="reduce-overhead" uses CUDA graphs which are incompatible
+        # with TransformerEncoder's nested tensor fast path
         if compile_model and hasattr(torch, "compile"):
             self.model = torch.compile(
                 self.model,
-                mode="reduce-overhead",
-                fullgraph=True,
+                mode="default",
             )
 
         self._warmed_up = False
