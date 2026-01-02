@@ -48,6 +48,7 @@ def main():
     parser.add_argument('--strategy', default='auto', help='DDP strategy (auto, ddp, fsdp, deepspeed_stage_2)')
     parser.add_argument('--deterministic', action=argparse.BooleanOptionalAction, default=False, help='Deterministic mode (slower)')
     parser.add_argument('--log-every-n-steps', type=int, default=25, help='Log metrics every N steps (~5s with default batch)')
+    parser.add_argument('--resume', type=str, default=None, help='Resume from checkpoint (load weights only, fresh training)')
     args = parser.parse_args()
 
     # Reproducibility
@@ -77,6 +78,18 @@ def main():
         lr=args.lr,
         value_weight=args.value_weight,
     )
+
+    # Load pretrained weights if resuming
+    if args.resume:
+        print(f'Loading weights from {args.resume}')
+        checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
+        # Handle both full Lightning checkpoint and state_dict
+        if 'state_dict' in checkpoint:
+            state_dict = checkpoint['state_dict']
+        else:
+            state_dict = checkpoint
+        model.load_state_dict(state_dict, strict=True)
+        print(f'Loaded pretrained weights from {args.resume}')
 
     # torch.compile for PyTorch 2.0+ JIT optimization
     # Compile the inner model, not the LightningModule (required for DDP)

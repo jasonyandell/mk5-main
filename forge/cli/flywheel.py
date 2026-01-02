@@ -177,7 +177,7 @@ def cmd_status(args: argparse.Namespace) -> int:
             q_gap = h.get('q_gap')
             acc = h.get('accuracy')
             q_str = f"{q_gap:.3f}" if q_gap is not None else "N/A"
-            acc_str = f"{acc:.2f}%" if acc is not None else "N/A"
+            acc_str = f"{acc * 100:.2f}%" if acc is not None else "N/A"
             print(f"  {i+1}. seeds {h['seed_range']}: q_gap={q_str}, acc={acc_str}")
 
     print(f"{'='*50}\n")
@@ -308,32 +308,34 @@ def cmd_run(args: argparse.Namespace) -> int:
                 print(f"[FLYWHEEL] Note: No existing artifact for {parent_artifact_name}")
 
     try:
-        # Step 1: Generate oracle shards
-        run_command([
-            "python", "-m", "forge.oracle.generate",
-            "--seed-range", f"{start_seed}:{end_seed}",
-            "--decl", "auto",  # 1 decl per seed
-            "--out", "data/shards",
-        ], f"Generating oracle shards for seeds {start_seed}:{end_seed}")
+        # Step 1: Generate oracle shards (1 decl per seed, decl = seed % 10)
+        for seed in range(start_seed, end_seed):
+            decl = seed % 10
+            run_command([
+                "python", "-m", "forge.oracle.generate",
+                "--seed", str(seed),
+                "--decl", str(decl),
+                "--out", "data/flywheel-shards",
+            ], f"Generating shard for seed {seed} decl {decl}")
 
         if wandb_run:
             wandb.log({"stage": 1, "stage_name": "generate"})
 
-        # Step 2: Tokenize (append to existing)
+        # Step 2: Tokenize flywheel shards only
         run_command([
             "python", "-m", "forge.cli.tokenize",
-            "--input", "data/shards",
-            "--output", "data/tokenized",
-            "--force",  # Re-tokenize all
+            "--input", "data/flywheel-shards",
+            "--output", "data/flywheel-tokenized",
+            "--force",  # Re-tokenize all flywheel data
         ], "Tokenizing data")
 
         if wandb_run:
             wandb.log({"stage": 2, "stage_name": "tokenize"})
 
-        # Step 3: Train (without its own wandb - we handle it here)
+        # Step 3: Train (fine-tune from previous checkpoint)
         train_cmd = [
             "python", "-m", "forge.cli.train",
-            "--data", "data/tokenized",
+            "--data", "data/flywheel-tokenized",
             "--epochs", str(args.epochs),
             "--embed-dim", "128",
             "--n-heads", "8",
@@ -343,8 +345,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             "--wandb-group", state["wandb_group"],
         ]
         if resume_from and Path(resume_from).exists():
-            # TODO: Add --resume flag to train.py when implemented
-            pass
+            train_cmd.extend(["--resume", resume_from])
 
         run_command(train_cmd, "Training model")
 
@@ -453,7 +454,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         if metrics["q_gap"] is not None:
             print(f"  Q-gap:        {metrics['q_gap']:.4f}")
         if metrics["accuracy"] is not None:
-            print(f"  Accuracy:     {metrics['accuracy']:.2f}%")
+            print(f"  Accuracy:     {metrics['accuracy'] * 100:.2f}%")
         print(f"  Next:         {state['current']['seed_range']}")
         print(f"{'='*60}\n")
 
