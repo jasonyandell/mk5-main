@@ -62,13 +62,40 @@ Training complete. Review history for results.
 
 ## Haiku Monitor Pattern
 
-Spawn a haiku subagent to monitor long-running flywheel:
+Each iteration takes 30-60+ minutes. Spawn a haiku subagent to monitor:
 
 ```
-Task: Monitor flywheel training. Tail the latest log in runs/domino/.
-If you see "CUDA out of memory" or no output for 10+ minutes:
-1. Update forge/flywheel/state.yaml: status: failed, last_error: <what you saw>
-2. Report back
+Monitor the flywheel training process. Check every 60 seconds:
+
+1. Is training running? Run: pgrep -af 'forge.cli.train'
+2. Check latest metrics: tail -20 runs/domino/version_*/metrics.csv 2>/dev/null | tail -5
+3. Check for errors: grep -i 'error\|oom\|cuda' runs/domino/version_*/events.out.tfevents.* 2>/dev/null
+
+Watch for these problems:
+- "CUDA out of memory" → OOM error
+- No new CSV lines for 10+ minutes → stuck
+- Process not running but state.yaml says "running" → crashed
+
+If problem detected:
+1. Edit forge/flywheel/state.yaml:
+   - Change status: failed
+   - Set last_error: "<describe what you saw>"
+   - Set next_action: "<suggested fix>"
+2. Report back to main agent
+
+If training completes successfully, the flywheel script auto-updates state.yaml.
+Just confirm completion and report final metrics.
+```
+
+### Running in Background
+
+To run flywheel and monitor simultaneously:
+```bash
+# Option 1: Run flywheel, spawn haiku monitor
+python -m forge.cli.flywheel  # (in foreground or background)
+
+# Option 2: Check W&B dashboard for live metrics
+# Project: crystal-forge, Group: <wandb_group from state.yaml>
 ```
 
 ## Manual Recovery
