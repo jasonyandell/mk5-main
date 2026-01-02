@@ -81,15 +81,4 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 
 ## ML Training (Crystal Forge)
 
-See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture and mental models.
-
-### Quick Commands
-
-```bash
-python -m forge.oracle.generate --seed-range 0:100 --out data/shards
-python -m forge.cli.tokenize --input data/shards --output data/tokenized
-python -m forge.cli.train --wandb
-python -m forge.cli.eval --checkpoint runs/domino/version_0/checkpoints/best.ckpt
-```
-
-Use `--help` on any command for options.
+See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture, setup, and commands.

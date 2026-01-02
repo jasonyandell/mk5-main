@@ -20,6 +20,33 @@
 
 ---
 
+## Setup
+
+### Dependencies
+
+```bash
+pip install -r forge/requirements.txt
+```
+
+Core requirements:
+- `torch>=2.0` - PyTorch for neural networks
+- `lightning>=2.0` - PyTorch Lightning for training structure
+- `pyarrow>=14.0` - Parquet file I/O
+- `wandb>=0.16` - Experiment tracking
+- `numpy>=1.26,<2` - Pinned for torch compatibility
+
+### Verification
+
+```bash
+# Verify imports work
+python -c "from forge.ml import module, data, metrics; from forge.oracle import schema; print('OK')"
+
+# Quick training sanity check
+python -m forge.cli.train --fast-dev-run --no-wandb
+```
+
+---
+
 ## Core Architecture Pattern
 
 The entire ML pipeline is built around this fundamental transformation:
@@ -73,6 +100,13 @@ Everything exists to:
 │  - evaluate.py                  │  P(make) matrix
 │  - simulator.py                 │  Monte Carlo simulation
 │  - poster.py                    │  Visual PDF output
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  forge/scripts/                 │  Cloud training automation
+│  - cloud-setup.sh               │  Environment setup on Lambda/etc
+│  - cloud-run.sh                 │  End-to-end training pipeline
+│  - cloud-train*.sh              │  Training job variants
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -331,9 +365,3 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 | **declaration (decl)** | Trump suit choice, 0-9. See `DECL_NAMES` in schema.py |
 | **Team 0 perspective** | All values from Team 0's view. Positive = Team 0 winning |
 
----
-
-**Skill References**:
-- For Lightning patterns → invoke `pytorch-lightning` skill
-- For PyTorch fundamentals → invoke `pytorch` skill
-- For experiment tracking → invoke `wandb` skill
