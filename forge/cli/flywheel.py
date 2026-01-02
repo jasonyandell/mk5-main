@@ -49,6 +49,13 @@ FLYWHEEL_DIR = Path(__file__).parent.parent / "flywheel"
 STATE_FILE = FLYWHEEL_DIR / "state.yaml"
 DEFAULT_BASELINE = "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
 
+# Golden val/test seed ranges - MUST match original training data exactly
+# Original data/shards/ has: val=900-902 (30 shards), test=950 (10 shards)
+# Oracle generation is deterministic, so regenerating produces binary identical data
+GOLDEN_VAL_SEEDS = range(900, 903)   # seeds 900-902 → val split (30 shards, ~1.5M samples)
+GOLDEN_TEST_SEEDS = range(950, 951)  # seed 950 only → test split (10 shards, ~500K samples)
+ALL_DECLS = range(10)                # 0-9: blanks, ones, twos, ..., nines
+
 
 def load_state() -> dict[str, Any]:
     """Load state from state.yaml."""
@@ -108,6 +115,68 @@ def run_command(cmd: list[str], desc: str) -> subprocess.CompletedProcess:
     if result.returncode != 0:
         raise RuntimeError(f"{desc} failed with code {result.returncode}")
     return result
+
+
+def ensure_golden_val_test(shards_dir: Path, verbose: bool = True) -> bool:
+    """Ensure golden val/test shards exist, generating any that are missing.
+
+    Golden shards provide a consistent benchmark for comparing flywheel iterations.
+    These MUST match the original training data exactly for apples-to-apples comparison.
+    Val: seeds 900-902 with all 10 decls (30 shards, ~1.5M samples)
+    Test: seed 950 with all 10 decls (10 shards, ~500K samples)
+
+    Args:
+        shards_dir: Directory containing parquet shards (e.g., data/flywheel-shards)
+        verbose: Print progress messages
+
+    Returns:
+        True if all golden shards now exist, False on generation failure
+    """
+    shards_dir = Path(shards_dir)
+    shards_dir.mkdir(parents=True, exist_ok=True)
+
+    # Collect missing shards
+    missing = []
+    for seed in list(GOLDEN_VAL_SEEDS) + list(GOLDEN_TEST_SEEDS):
+        for decl in ALL_DECLS:
+            shard_path = shards_dir / f"seed_{seed:08d}_decl_{decl}.parquet"
+            if not shard_path.exists():
+                missing.append((seed, decl))
+
+    if not missing:
+        if verbose:
+            print("[FLYWHEEL] Golden val/test shards already exist (40 shards)")
+        return True
+
+    # Report what we need to generate
+    val_missing = sum(1 for s, _ in missing if s in GOLDEN_VAL_SEEDS)
+    test_missing = sum(1 for s, _ in missing if s in GOLDEN_TEST_SEEDS)
+
+    if verbose:
+        print(f"\n{'='*60}")
+        print("[FLYWHEEL] Generating missing golden val/test shards")
+        print(f"           Val shards needed:  {val_missing}/30")
+        print(f"           Test shards needed: {test_missing}/10")
+        print(f"{'='*60}")
+
+    # Generate missing shards
+    for i, (seed, decl) in enumerate(missing):
+        split_name = "val" if seed in GOLDEN_VAL_SEEDS else "test"
+        try:
+            run_command([
+                "python", "-m", "forge.oracle.generate",
+                "--seed", str(seed),
+                "--decl", str(decl),
+                "--out", str(shards_dir),
+            ], f"Generating golden {split_name} shard [{i+1}/{len(missing)}]: seed {seed} decl {decl}")
+        except RuntimeError as e:
+            print(f"[FLYWHEEL] ERROR: Failed to generate golden shard: {e}")
+            return False
+
+    if verbose:
+        print(f"\n[FLYWHEEL] Generated {len(missing)} golden shards successfully")
+
+    return True
 
 
 def extract_metrics_from_csv(runs_dir: Path) -> dict[str, float | None]:
@@ -308,6 +377,13 @@ def cmd_run(args: argparse.Namespace) -> int:
                 print(f"[FLYWHEEL] Note: No existing artifact for {parent_artifact_name}")
 
     try:
+        # Step 0: Ensure golden val/test shards exist for consistent benchmarking
+        if not ensure_golden_val_test(Path("data/flywheel-shards")):
+            raise RuntimeError("Failed to generate golden val/test shards")
+
+        if wandb_run:
+            wandb.log({"stage": 0, "stage_name": "golden_val_test"})
+
         # Step 1: Generate oracle shards (1 decl per seed, decl = seed % 10)
         for seed in range(start_seed, end_seed):
             decl = seed % 10
@@ -341,6 +417,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             "--n-heads", "8",
             "--n-layers", "4",
             "--ff-dim", "512",
+            "--lr", "3e-5",  # Lower LR for fine-tuning (vs 3e-4 for training from scratch)
             "--wandb",
             "--wandb-group", state["wandb_group"],
         ]
@@ -521,13 +598,31 @@ def main() -> int:
     parser.add_argument("--epochs", type=int, default=2, help="Epochs per iteration")
     parser.add_argument("--seeds-per-iter", type=int, default=10, help="Seeds per iteration")
     parser.add_argument("--no-wandb", action="store_true", help="Disable W&B logging")
+    parser.add_argument("--once", action="store_true", help="Run only one iteration (default: run continuously)")
 
     args = parser.parse_args()
 
     if args.command:
         return args.func(args)
     else:
-        return cmd_run(args)
+        # Run continuously until interrupted or error
+        if args.once:
+            return cmd_run(args)
+        else:
+            print("[FLYWHEEL] Running continuously. Press Ctrl+C to stop.")
+            iteration = 0
+            while True:
+                iteration += 1
+                print(f"\n{'#'*60}")
+                print(f"[FLYWHEEL] Starting iteration {iteration}")
+                print(f"{'#'*60}\n")
+                result = cmd_run(args)
+                if result != 0:
+                    print(f"[FLYWHEEL] Iteration failed with code {result}. Stopping.")
+                    return result
+                # Small delay between iterations
+                import time
+                time.sleep(2)
 
 
 if __name__ == "__main__":

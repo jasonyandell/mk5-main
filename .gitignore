@@ -102,4 +102,5 @@ __pycache__/
 data/
 runs/
 lightning_logs/
+wandb/
 *.tar.gz
