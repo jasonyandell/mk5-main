@@ -1,0 +1,10 @@
+status: ready
+wandb_group: flywheel-large-v3
+baseline_checkpoint: forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt
+current:
+  seed_range: 200:210
+  checkpoint: null
+  started_at: null
+last_error: null
+next_action: 'Run: python -m forge.cli.flywheel'
+history: []
