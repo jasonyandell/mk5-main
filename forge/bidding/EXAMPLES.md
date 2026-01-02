@@ -187,3 +187,38 @@ python -m forge.bidding.evaluate --hand "..." --samples 100 --list
 # JSON output for programmatic use
 python -m forge.bidding.evaluate --hand "..." --samples 100 --json
 ```
+
+---
+
+## Poster Generation
+
+Generate visual PDF posters with domino tiles and P(make) heatmaps:
+
+```bash
+# Generate a poster for a specific hand
+python -m forge.bidding.poster --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --output poster.pdf
+
+# More samples for accuracy (default: 50)
+python -m forge.bidding.poster --hand "..." --output poster.pdf --samples 100
+
+# Reproducible output
+python -m forge.bidding.poster --hand "..." --output poster.pdf --seed 42
+```
+
+### Poster Layout
+
+- **Top**: Visual domino tiles with pips
+- **Bottom**: P(make) heatmap (9 trumps × 13 bid levels)
+- **Color scale**: Red (0%) → Yellow (50%) → Green (100%)
+
+### Pre-generated Examples
+
+See `scratch/posters/` for posters of all example hands:
+
+| File | Hand |
+|------|------|
+| `01-monster-all-sixes.pdf` | All 7 sixes |
+| `02-near-monster-fives.pdf` | 6 fives + 6-6 |
+| `03-doubles-hand.pdf` | 5 doubles |
+| `04-mixed-count.pdf` | Marginal hand |
+| `05-weak-hand.pdf` | Weak/pass hand |
