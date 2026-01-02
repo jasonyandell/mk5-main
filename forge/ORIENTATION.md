@@ -382,6 +382,36 @@ python -c "from forge.ml import module, data, metrics; print('OK')"
 python -m forge.cli.train --fast-dev-run --no-wandb
 ```
 
+### Debugging with Custom Hands
+
+When investigating whether the oracle computes correct Q-values for a specific hand, use `--p0-hand` to fix P0's hand and `--show-qvals` to display the Q-values:
+
+```bash
+# Check oracle Q-values for P0 opening with a specific hand
+python -m forge.oracle.generate \
+    --seed 0 \
+    --decl sixes \
+    --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+    --show-qvals \
+    --out /dev/null
+
+# Compare across multiple opponent distributions
+for seed in 0 1 2 3 4; do
+    python -m forge.oracle.generate \
+        --seed $seed \
+        --decl sixes \
+        --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+        --show-qvals \
+        --out /dev/null
+done
+```
+
+The output shows each legal move with its Q-value and gap from optimal:
+- **Q-value**: Expected game value (Team 0 perspective) after playing that domino
+- **Δbest**: Points lost compared to the optimal move (0 = best move)
+
+Use this to verify the oracle agrees with expert intuition about correct play.
+
 ---
 
 ## Architectural Invariants

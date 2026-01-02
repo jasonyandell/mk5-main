@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import torch
 
 from .declarations import N_DECLS
-from .rng import deal_from_seed
+from .rng import deal_from_seed, deal_with_fixed_p0
 from .tables import can_follow, led_suit_for_lead_domino, resolve_trick
 
 
@@ -33,11 +33,31 @@ class SeedContext:
         return torch.tensor(state, dtype=torch.int64, device=self.device)
 
 
-def build_context(seed: int, decl_id: int, device: torch.device) -> SeedContext:
+def build_context(
+    seed: int,
+    decl_id: int,
+    device: torch.device,
+    *,
+    p0_hand: list[int] | None = None,
+) -> SeedContext:
+    """Build context for GPU solving.
+
+    Args:
+        seed: RNG seed for deal generation
+        decl_id: Declaration/trump type (0-9)
+        device: Torch device for tensors
+        p0_hand: If provided, use these 7 dominoes for P0 and deal remaining to others
+
+    Returns:
+        SeedContext with all precomputed lookup tables
+    """
     if not (0 <= decl_id < N_DECLS):
         raise ValueError(f"decl_id out of range: {decl_id}")
 
-    hands = deal_from_seed(seed)
+    if p0_hand is not None:
+        hands = deal_with_fixed_p0(p0_hand, seed)
+    else:
+        hands = deal_from_seed(seed)
     L_cpu = torch.tensor(hands, dtype=torch.int8)
 
     local_follow = torch.zeros((4 * 7 * 4,), dtype=torch.int64)

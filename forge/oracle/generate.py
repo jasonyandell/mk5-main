@@ -11,6 +11,7 @@ from .declarations import DECL_ID_TO_NAME, ParsedDecls, parse_decl_arg
 from .context import build_context
 from .output import output_path_for, write_result
 from .solve import SolveConfig, build_child_index, enumerate_gpu, solve_gpu
+from .tables import DOMINO_HIGH, DOMINO_LOW
 from .timer import SeedTimer
 
 try:
@@ -19,6 +20,62 @@ try:
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
+
+
+def parse_hand(hand_str: str) -> list[int]:
+    """Parse hand string like '6-4,5-5,4-2,3-1,2-0,1-1,0-0' to domino IDs.
+
+    Args:
+        hand_str: Comma-separated high-low pairs
+
+    Returns:
+        List of 7 domino IDs
+    """
+    dom_lookup = {}
+    for dom_id in range(28):
+        high = DOMINO_HIGH[dom_id]
+        low = DOMINO_LOW[dom_id]
+        dom_lookup[(high, low)] = dom_id
+
+    parts = hand_str.strip().split(",")
+    if len(parts) != 7:
+        raise ValueError(f"Expected 7 dominoes, got {len(parts)}")
+
+    hand = []
+    for part in parts:
+        part = part.strip()
+        if "-" in part:
+            high, low = part.split("-")
+            high, low = int(high), int(low)
+        elif len(part) == 2:
+            high, low = int(part[0]), int(part[1])
+        else:
+            raise ValueError(f"Cannot parse domino: {part}")
+
+        if high < low:
+            high, low = low, high
+
+        key = (high, low)
+        if key not in dom_lookup:
+            raise ValueError(f"Invalid domino: {high}-{low}")
+
+        dom_id = dom_lookup[key]
+        if dom_id in hand:
+            raise ValueError(f"Duplicate domino: {high}-{low}")
+
+        hand.append(dom_id)
+
+    return hand
+
+
+def format_hand(hand: list[int]) -> str:
+    """Format hand for display."""
+    parts = []
+    for dom_id in hand:
+        high = DOMINO_HIGH[dom_id]
+        low = DOMINO_LOW[dom_id]
+        parts.append(f"{high}-{low}")
+    return ", ".join(parts)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -47,6 +104,19 @@ def _parse_args() -> argparse.Namespace:
     p.add_argument("-v", "--verbose", action="store_true", help="Verbose output (show enumeration progress)")
     p.add_argument("--wandb", action="store_true", help="Log metrics to Weights & Biases")
     p.add_argument("--wandb-group", type=str, default=None, help="Wandb group name for organizing runs")
+
+    # Debugging options
+    p.add_argument(
+        "--p0-hand",
+        type=str,
+        default=None,
+        help='Fix P0 hand (e.g., "6-6,6-5,6-4,6-2,6-1,6-0,2-2"). Remaining dominoes dealt from --seed.',
+    )
+    p.add_argument(
+        "--show-qvals",
+        action="store_true",
+        help="Print Q-values for root state (P0's opening move)",
+    )
     return p.parse_args()
 
 
@@ -84,6 +154,15 @@ def main() -> None:
 
     parsed: ParsedDecls = parse_decl_arg(args.decl)
     decl_ids = parsed.decl_ids
+
+    # Parse fixed P0 hand if provided
+    p0_hand: list[int] | None = None
+    if args.p0_hand:
+        try:
+            p0_hand = parse_hand(args.p0_hand)
+            print(f"P0 hand: {format_hand(p0_hand)}")
+        except ValueError as e:
+            raise SystemExit(f"Invalid --p0-hand: {e}")
 
     if args.seed is not None:
         seeds = [args.seed]
@@ -160,7 +239,7 @@ def main() -> None:
             if args.log_memory and torch.cuda.is_available():
                 torch.cuda.reset_peak_memory_stats()
 
-            ctx = build_context(seed=seed, decl_id=decl_id, device=device)
+            ctx = build_context(seed=seed, decl_id=decl_id, device=device, p0_hand=p0_hand)
             timer.phase("setup")
             if (vram := _log_memory("setup", args.log_memory)) is not None:
                 timer.record_vram("setup", vram)
@@ -180,6 +259,33 @@ def main() -> None:
             timer.phase("solve", extra=f"root={root_value:+d}")
             if (vram := _log_memory("solve", args.log_memory)) is not None:
                 timer.record_vram("solve", vram)
+
+            # Show Q-values for root state if requested
+            if args.show_qvals:
+                # Find the initial state in all_states (they're sorted, so can't use index 0)
+                initial_state = ctx.initial_state()
+                root_idx = int(torch.searchsorted(all_states, initial_state))
+                if root_idx >= all_states.shape[0] or all_states[root_idx].item() != initial_state.item():
+                    print(f"WARNING: Could not find initial state in enumerated states")
+                else:
+                    root_v = int(v[root_idx])
+                    root_q = move_values[root_idx].cpu().numpy()
+                    print(f"\n=== Q-values for root state (seed={seed}, decl={DECL_ID_TO_NAME.get(decl_id, str(decl_id))}) ===")
+                    print(f"V(root) = {root_v:+d}")
+                    print(f"P0 hand: {format_hand(list(ctx.L[0].cpu().numpy()))}")
+                    print()
+                    q_with_idx = [(i, int(root_q[i])) for i in range(7) if root_q[i] != -128]
+                    q_with_idx.sort(key=lambda x: -x[1])  # Descending by Q
+                    print("Action    Domino    Q-value    Δbest")
+                    print("-" * 44)
+                    best_q = q_with_idx[0][1] if q_with_idx else 0
+                    for local_idx, q_val in q_with_idx:
+                        dom_id = int(ctx.L[0, local_idx])
+                        dom_str = f"{DOMINO_HIGH[dom_id]}-{DOMINO_LOW[dom_id]}"
+                        delta = q_val - best_q
+                        marker = " ← BEST" if delta == 0 else ""
+                        print(f"  {local_idx}        {dom_str:5}     {q_val:+3d}       {delta:+3d}{marker}")
+                    print()
 
             # Write on separate stream to overlap with next seed's computation.
             if write_stream is not None:
