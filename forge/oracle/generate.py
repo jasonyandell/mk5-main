@@ -119,6 +119,7 @@ def main() -> None:
             job_type="generate",
             name=run_name,
             group=args.wandb_group,
+            dir="runs",  # Consolidate all wandb logs in runs/wandb/
             config={
                 "seed_start": seeds[0],
                 "seed_end": seeds[-1],

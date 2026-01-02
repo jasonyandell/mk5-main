@@ -346,6 +346,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             name=run_name,
             job_type="flywheel",
             tags=["flywheel", state["wandb_group"].split("-")[0]],
+            dir="runs",  # Consolidate all wandb logs in runs/wandb/
             config={
                 "flywheel_iteration": iteration_num,
                 "seed_range": seed_range,

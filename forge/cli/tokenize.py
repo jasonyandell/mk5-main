@@ -153,6 +153,7 @@ Examples:
             job_type="tokenize",
             name=f"tokenize-{output_dir.name}",
             group=args.wandb_group,
+            dir="runs",  # Consolidate all wandb logs in runs/wandb/
             config={
                 "input_dir": str(input_dir),
                 "output_dir": str(output_dir),
