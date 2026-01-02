@@ -125,9 +125,9 @@ def main() -> None:
         help="Path to model checkpoint (uses default if not specified)",
     )
     parser.add_argument(
-        "--greedy",
+        "--sample",
         action="store_true",
-        help="Use greedy action selection instead of sampling",
+        help="Sample from policy distribution instead of greedy (introduces blunders)",
     )
     parser.add_argument(
         "--list",
@@ -199,7 +199,7 @@ def main() -> None:
             decl_id=decl_id,
             n_games=args.samples,
             seed=trump_seed,
-            greedy=args.greedy,
+            greedy=not args.sample,
         )
 
         points_list = points.cpu().tolist()
