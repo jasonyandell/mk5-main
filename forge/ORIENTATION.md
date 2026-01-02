@@ -431,6 +431,26 @@ python -m forge.bidding.poster --hand "..." --seed 42      # Reproducible
 - **Middle**: P(make) heatmap (9 trumps × 13 bid levels)
 - **Color scale**: Red (0%) → Yellow (50%) → Green (100%)
 
+### Investigation Mode
+
+Debug why near-certain hands occasionally lose in simulation:
+
+```bash
+python -m forge.bidding.investigate --hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" --trump sixes --below 42 --samples 500
+```
+
+**Use case**: A hand with 6 of 7 trumps shows 99% instead of 100%. Investigation mode:
+1. Runs simulations and captures full game state (hands + play history)
+2. Filters for games where score < threshold
+3. Prints losing deals with trick-by-trick replay showing where model misplayed
+
+**Options:**
+- `--sample`: Use stochastic policy instead of greedy (reveals model uncertainty)
+- `--max-show N`: Limit detailed replays (default: 5)
+- `--seed N`: Reproducible results (default: 0)
+
+**Output shows**: Each losing game with hands, trick-by-trick plays, and which trick was lost.
+
 ---
 
 ## Flywheel: Iterative Fine-Tuning
