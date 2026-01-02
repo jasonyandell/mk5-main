@@ -416,6 +416,21 @@ doubles-trump  64  62  62  62  62  50  42  32  32  32  26  24  16
 
 See `forge/bidding/EXAMPLES.md` for worked examples with analysis.
 
+### Bidding Posters
+
+Generate visual PDF posters showing the hand with domino tiles and a P(make) heatmap:
+
+```bash
+python -m forge.bidding.poster --hand "6-6,5-5,3-3,1-1,0-0,6-3,5-1" --output poster.pdf
+python -m forge.bidding.poster --hand "..." --samples 100  # More accurate
+python -m forge.bidding.poster --hand "..." --seed 42      # Reproducible
+```
+
+**Poster layout:**
+- **Top**: Visual domino tiles with pips
+- **Middle**: P(make) heatmap (9 trumps × 13 bid levels)
+- **Color scale**: Red (0%) → Yellow (50%) → Green (100%)
+
 ---
 
 ## Flywheel: Iterative Fine-Tuning

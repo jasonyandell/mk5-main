@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 # Sample sizes to test
-SAMPLE_SIZES = [10, 25, 50]
+SAMPLE_SIZES = [10, 25, 50, 100, 200, 500, 1000]
 
 # Test hands spanning the difficulty range
 TEST_HANDS = {
