@@ -6,6 +6,12 @@ Reads state from forge/flywheel/state.yaml, runs one iteration,
 updates state with results. Designed for token-efficient operation
 by Claude Code agents.
 
+W&B Integration:
+- Each iteration is one W&B run in a group
+- Checkpoint artifacts with lineage (baseline → iter-1 → iter-2)
+- Custom x-axis: plot metrics by total_seeds_trained
+- Summary metrics for easy comparison in runs table
+
 Usage:
     # Run next iteration
     python -m forge.cli.flywheel
@@ -23,14 +29,20 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import sys
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
 
 # Paths
 FLYWHEEL_DIR = Path(__file__).parent.parent / "flywheel"
@@ -67,6 +79,24 @@ def next_seed_range(current: str, step: int = 10) -> str:
     return f"{end}:{end + step}"
 
 
+def compute_total_seeds(state: dict[str, Any], current_end: int) -> int:
+    """Compute total seeds trained including current iteration."""
+    # Start from baseline (200 seeds trained initially)
+    baseline_seeds = 200
+
+    # Add seeds from history
+    history_seeds = 0
+    for h in state.get("history", []):
+        start, end = parse_seed_range(h["seed_range"])
+        history_seeds += end - start
+
+    # Add current iteration
+    current_start, _ = parse_seed_range(state["current"]["seed_range"])
+    current_seeds = current_end - current_start
+
+    return baseline_seeds + history_seeds + current_seeds
+
+
 def run_command(cmd: list[str], desc: str) -> subprocess.CompletedProcess:
     """Run a command with logging."""
     print(f"\n{'='*60}")
@@ -80,12 +110,51 @@ def run_command(cmd: list[str], desc: str) -> subprocess.CompletedProcess:
     return result
 
 
+def extract_metrics_from_csv(runs_dir: Path) -> dict[str, float | None]:
+    """Extract final metrics from Lightning CSV logs."""
+    metrics = {"q_gap": None, "accuracy": None, "val_loss": None}
+
+    versions = sorted(runs_dir.glob("version_*"), key=lambda p: p.stat().st_mtime)
+    if not versions:
+        return metrics
+
+    latest = versions[-1]
+    csv_path = latest / "metrics.csv"
+
+    if not csv_path.exists():
+        return metrics
+
+    try:
+        import csv
+        with open(csv_path) as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        if not rows:
+            return metrics
+
+        # Get last row with validation metrics
+        for row in reversed(rows):
+            if row.get("val/q_gap"):
+                metrics["q_gap"] = float(row["val/q_gap"])
+            if row.get("val/accuracy"):
+                metrics["accuracy"] = float(row["val/accuracy"])
+            if row.get("val/loss"):
+                metrics["val_loss"] = float(row["val/loss"])
+            if metrics["q_gap"] is not None:
+                break
+    except Exception as e:
+        print(f"[FLYWHEEL] Warning: Could not extract metrics from CSV: {e}")
+
+    return metrics
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     """Show current flywheel status."""
     state = load_state()
 
     print(f"\n{'='*50}")
-    print(f"FLYWHEEL STATUS")
+    print("FLYWHEEL STATUS")
     print(f"{'='*50}")
     print(f"Status:       {state['status']}")
     print(f"W&B Group:    {state['wandb_group']}")
@@ -105,7 +174,11 @@ def cmd_status(args: argparse.Namespace) -> int:
     if state.get('history'):
         print(f"\nHistory ({len(state['history'])} iterations):")
         for i, h in enumerate(state['history'][-5:]):  # Last 5
-            print(f"  {i+1}. seeds {h['seed_range']}: q_gap={h.get('q_gap', 'N/A')}, acc={h.get('accuracy', 'N/A')}")
+            q_gap = h.get('q_gap')
+            acc = h.get('accuracy')
+            q_str = f"{q_gap:.3f}" if q_gap is not None else "N/A"
+            acc_str = f"{acc:.2f}%" if acc is not None else "N/A"
+            print(f"  {i+1}. seeds {h['seed_range']}: q_gap={q_str}, acc={acc_str}")
 
     print(f"{'='*50}\n")
     return 0
@@ -148,7 +221,7 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """Run one flywheel iteration."""
+    """Run one flywheel iteration with W&B tracking."""
     state = load_state()
 
     # Check status
@@ -175,12 +248,16 @@ def cmd_run(args: argparse.Namespace) -> int:
         seed_range = state["current"]["seed_range"]
 
     start_seed, end_seed = parse_seed_range(seed_range)
+    iteration_num = len(state["history"]) + 1
+    total_seeds = compute_total_seeds(state, end_seed)
 
     # Determine checkpoint to resume from
     if state["history"]:
         resume_from = state["history"][-1]["checkpoint"]
+        parent_artifact_name = f"{state['wandb_group']}-checkpoint"
     else:
         resume_from = state["baseline_checkpoint"]
+        parent_artifact_name = None  # Baseline, no artifact yet
 
     # Update state to running
     state["status"] = "running"
@@ -188,6 +265,47 @@ def cmd_run(args: argparse.Namespace) -> int:
     state["last_error"] = None
     state["next_action"] = "Waiting for iteration to complete..."
     save_state(state)
+
+    # Initialize W&B run for this iteration
+    wandb_run = None
+    if WANDB_AVAILABLE and not args.no_wandb:
+        run_name = f"iter-{iteration_num:03d}-seeds-{start_seed}-{end_seed}"
+
+        wandb_run = wandb.init(
+            project="crystal-forge",
+            group=state["wandb_group"],
+            name=run_name,
+            job_type="flywheel",
+            tags=["flywheel", state["wandb_group"].split("-")[0]],
+            config={
+                "flywheel_iteration": iteration_num,
+                "seed_range": seed_range,
+                "start_seed": start_seed,
+                "end_seed": end_seed,
+                "total_seeds_trained": total_seeds,
+                "parent_checkpoint": resume_from,
+                "epochs": args.epochs,
+                "model_size": "817K",
+                "embed_dim": 128,
+                "n_heads": 8,
+                "n_layers": 4,
+                "ff_dim": 512,
+            },
+        )
+
+        # Define custom x-axis for plotting metrics by total seeds
+        wandb.define_metric("total_seeds")
+        wandb.define_metric("final/*", step_metric="total_seeds")
+
+        # Log parent artifact for lineage (if not baseline)
+        if parent_artifact_name and resume_from:
+            try:
+                parent_artifact = wandb_run.use_artifact(
+                    f"{parent_artifact_name}:latest"
+                )
+                print(f"[FLYWHEEL] Linked parent artifact: {parent_artifact.name}")
+            except wandb.errors.CommError:
+                print(f"[FLYWHEEL] Note: No existing artifact for {parent_artifact_name}")
 
     try:
         # Step 1: Generate oracle shards
@@ -198,6 +316,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             "--out", "data/shards",
         ], f"Generating oracle shards for seeds {start_seed}:{end_seed}")
 
+        if wandb_run:
+            wandb.log({"stage": 1, "stage_name": "generate"})
+
         # Step 2: Tokenize (append to existing)
         run_command([
             "python", "-m", "forge.cli.tokenize",
@@ -206,7 +327,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             "--force",  # Re-tokenize all
         ], "Tokenizing data")
 
-        # Step 3: Train
+        if wandb_run:
+            wandb.log({"stage": 2, "stage_name": "tokenize"})
+
+        # Step 3: Train (without its own wandb - we handle it here)
         train_cmd = [
             "python", "-m", "forge.cli.train",
             "--data", "data/tokenized",
@@ -224,9 +348,13 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         run_command(train_cmd, "Training model")
 
+        if wandb_run:
+            wandb.log({"stage": 3, "stage_name": "train"})
+
         # Step 4: Find the new checkpoint
         runs_dir = Path("runs/domino")
         versions = sorted(runs_dir.glob("version_*"), key=lambda p: p.stat().st_mtime)
+        new_checkpoint = None
         if versions:
             latest = versions[-1]
             checkpoints = list((latest / "checkpoints").glob("*.ckpt"))
@@ -234,24 +362,60 @@ def cmd_run(args: argparse.Namespace) -> int:
                 # Prefer 'last.ckpt' if exists
                 last_ckpt = latest / "checkpoints" / "last.ckpt"
                 new_checkpoint = str(last_ckpt if last_ckpt.exists() else checkpoints[-1])
-            else:
-                new_checkpoint = None
-        else:
-            new_checkpoint = None
 
-        # Step 5: Get metrics from latest run (parse from logs or wandb)
-        # For now, placeholder values - can be improved
-        metrics = {
-            "q_gap": None,
-            "accuracy": None,
-            "val_loss": None,
-        }
+        # Step 5: Extract metrics from training
+        metrics = extract_metrics_from_csv(runs_dir)
+
+        # Step 6: Log final metrics and artifact to W&B
+        if wandb_run:
+            # Log final metrics with total_seeds as x-axis
+            final_metrics = {
+                "total_seeds": total_seeds,
+                "final/q_gap": metrics["q_gap"],
+                "final/accuracy": metrics["accuracy"],
+                "final/val_loss": metrics["val_loss"],
+            }
+            # Filter out None values
+            final_metrics = {k: v for k, v in final_metrics.items() if v is not None}
+            wandb.log(final_metrics)
+
+            # Update summary for runs table
+            wandb_run.summary["total_seeds"] = total_seeds
+            wandb_run.summary["iteration"] = iteration_num
+            if metrics["q_gap"] is not None:
+                wandb_run.summary["final_q_gap"] = metrics["q_gap"]
+            if metrics["accuracy"] is not None:
+                wandb_run.summary["final_accuracy"] = metrics["accuracy"]
+
+            # Log checkpoint as artifact with lineage
+            if new_checkpoint and Path(new_checkpoint).exists():
+                artifact = wandb.Artifact(
+                    name=f"{state['wandb_group']}-checkpoint",
+                    type="model",
+                    description=f"Flywheel iteration {iteration_num}, seeds {seed_range}",
+                    metadata={
+                        "iteration": iteration_num,
+                        "seed_range": seed_range,
+                        "total_seeds": total_seeds,
+                        "q_gap": metrics["q_gap"],
+                        "accuracy": metrics["accuracy"],
+                    },
+                )
+                artifact.add_file(new_checkpoint)
+                wandb_run.log_artifact(
+                    artifact,
+                    aliases=["latest", f"iter-{iteration_num:03d}"]
+                )
+                print(f"[FLYWHEEL] Logged checkpoint artifact: {artifact.name}")
+
+            wandb.finish()
 
         # Update state with success
         history_entry = {
             "seed_range": seed_range,
             "checkpoint": new_checkpoint,
             "completed_at": datetime.now(timezone.utc).isoformat(),
+            "total_seeds": total_seeds,
             **metrics,
         }
         state["history"].append(history_entry)
@@ -266,9 +430,15 @@ def cmd_run(args: argparse.Namespace) -> int:
 
         print(f"\n{'='*60}")
         print("[FLYWHEEL] Iteration complete!")
-        print(f"  Seeds:      {seed_range}")
-        print(f"  Checkpoint: {new_checkpoint}")
-        print(f"  Next:       {state['current']['seed_range']}")
+        print(f"  Iteration:    {iteration_num}")
+        print(f"  Seeds:        {seed_range}")
+        print(f"  Total seeds:  {total_seeds}")
+        print(f"  Checkpoint:   {new_checkpoint}")
+        if metrics["q_gap"] is not None:
+            print(f"  Q-gap:        {metrics['q_gap']:.4f}")
+        if metrics["accuracy"] is not None:
+            print(f"  Accuracy:     {metrics['accuracy']:.2f}%")
+        print(f"  Next:         {state['current']['seed_range']}")
         print(f"{'='*60}\n")
 
         return 0
@@ -279,6 +449,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         state["last_error"] = str(e)
         state["next_action"] = f"Fix error and set status to 'ready': {e}"
         save_state(state)
+
+        if wandb_run:
+            wandb.finish(exit_code=1)
 
         print(f"\n{'='*60}")
         print(f"[FLYWHEEL] ERROR: {e}")
@@ -313,6 +486,7 @@ def main() -> int:
     parser.add_argument("--seed-range", type=str, help="Override seed range (e.g., 200:210)")
     parser.add_argument("--epochs", type=int, default=2, help="Epochs per iteration")
     parser.add_argument("--seeds-per-iter", type=int, default=10, help="Seeds per iteration")
+    parser.add_argument("--no-wandb", action="store_true", help="Disable W&B logging")
 
     args = parser.parse_args()
 
