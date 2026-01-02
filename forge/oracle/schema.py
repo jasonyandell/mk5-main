@@ -108,23 +108,11 @@ if TYPE_CHECKING:
     import pandas as pd
 
 # =============================================================================
-# Declaration Types
+# Declaration Types (re-exported from declarations.py for convenience)
 # =============================================================================
 
-DECL_NAMES: dict[int, str] = {
-    0: "blanks",
-    1: "ones",
-    2: "twos",
-    3: "threes",
-    4: "fours",
-    5: "fives",
-    6: "sixes",
-    7: "doubles-trump",
-    8: "doubles-suit",
-    9: "notrump",
-}
-
-DECL_NAME_TO_ID: dict[str, int] = {v: k for k, v in DECL_NAMES.items()}
+from .declarations import DECL_ID_TO_NAME as DECL_NAMES
+from .declarations import DECL_NAME_TO_ID
 
 # =============================================================================
 # State Bit Layout Constants

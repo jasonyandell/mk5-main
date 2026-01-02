@@ -60,6 +60,37 @@ Everything exists to:
 2. **Transform** game states into learnable representations (tokenization)
 3. **Train** a neural network to imitate the oracle (Lightning training loop)
 
+### Relationship to Game Engine
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     DEVELOPMENT TIME                            │
+├─────────────────────────────────────────────────────────────────┤
+│  TypeScript Game Engine    Oracle (Python/PyTorch)              │
+│  (src/core/)               (forge/oracle/)                      │
+│       │                          │                              │
+│       │ Same game rules          │ GPU-parallel                 │
+│       │ (authoritative)          │ (reimplemented)              │
+│       ▼                          ▼                              │
+│  Browser gameplay          Perfect play data                    │
+│                                  │                              │
+│                                  ▼                              │
+│                            forge/ml/ → Trained Model (.ckpt)    │
+│                                  │                              │
+│                                  ▼                              │
+│                            ONNX export (.onnx)                  │
+└─────────────────────────────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                        RUNTIME                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Browser loads ONNX model → AI opponent plays in real-time      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key insight**: The oracle **reimplements** game rules in PyTorch for GPU solving. It must match the TypeScript engine exactly, or the trained model learns wrong behavior.
+
 ## Philosophy
 
 1. **Separation of Concerns**: Oracle generates data, tokenizer transforms it, trainer learns from it
@@ -82,24 +113,36 @@ Everything exists to:
               ↕
 ┌─────────────────────────────────┐
 │  forge/ml/                      │  ★ LIGHTNING CORE ★
-│  - module.py                    │  DominoLightningModule
+│  - module.py                    │  DominoLightningModule + DominoTransformer
 │  - data.py                      │  DominoDataModule
 │  - metrics.py                   │  Q-gap, accuracy, blunder rate
-│  - tokenize.py                  │  Tokenization logic
+│  - tokenize.py                  │  State → token conversion, split logic
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
 │  forge/oracle/                  │  GPU tablebase solver
-│  - solve.py                     │  Minimax with alpha-beta
+│  - generate.py                  │  CLI: explicit decl selection
+│  - campaign.py                  │  CLI: random decl sampling (diversity)
+│  - solve.py                     │  Backward induction algorithm
+│  - expand.py                    │  Child state expansion (vectorized)
+│  - context.py                   │  SeedContext: per-deal lookup tables
+│  - state.py                     │  State packing/unpacking (GPU tensors)
+│  - tables.py                    │  Game rules: suits, tricks, points
+│  - declarations.py              │  Trump types (0-9) and parsing
 │  - schema.py                    │  Parquet format, V/Q semantics
-│  - generate.py                  │  CLI entry point
+│  - rng.py                       │  Deterministic deal generation
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
 │  forge/bidding/                 │  Bid strength evaluation
-│  - evaluate.py                  │  P(make) matrix
-│  - simulator.py                 │  Monte Carlo simulation
-│  - poster.py                    │  Visual PDF output
+│  - evaluate.py                  │  CLI entry point
+│  - simulator.py                 │  Batched game simulation
+│  - inference.py                 │  PolicyModel wrapper for fast batching
+│  - estimator.py                 │  P(make) calculation, Wilson CI
+│  - poster.py                    │  Visual PDF output with heatmaps
+│  - parallel.py                  │  Multi-GPU cluster simulation
+│  - convergence.py               │  Sample size vs accuracy analysis
+│  - benchmark.py                 │  Performance profiling
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -144,6 +187,26 @@ Everything exists to:
 
 Use `--help` on any command for full options.
 
+### Generation Strategies
+
+Two CLI tools for oracle generation with different use cases:
+
+| Tool | Command | Strategy | Best For |
+|------|---------|----------|----------|
+| **generate.py** | `python -m forge.oracle.generate` | Explicit `--decl` flag | Val/test (all 10 decls per seed) |
+| **campaign.py** | `python -m forge.oracle.campaign` | Random decls per seed | Training (diversity over volume) |
+
+**Campaign mode** (recommended for training data):
+```bash
+# 3 random declarations per seed (default) - maximizes declaration diversity
+python -m forge.oracle.campaign --seed-range 0:100 --out data/shards
+
+# Or specify count
+python -m forge.oracle.campaign --seed-range 0:100 --decls-per-seed 1 --out data/shards
+```
+
+**Key insight**: Declaration diversity (100 seeds × 1 decl each) outperforms sample volume (10 seeds × 10 decls). Campaign mode with `--decls-per-seed 1` gives best coverage.
+
 ---
 
 ## Mental Models
@@ -156,6 +219,22 @@ The GPU solver computes **perfect play** via minimax search. For every game stat
 - **Best move**: The action with highest Q (for Team 0) or lowest Q (for Team 1)
 
 The neural network learns to approximate this oracle.
+
+### How the Oracle Works
+
+The solver uses **backward induction** on a complete game tree:
+
+1. **Enumerate** all reachable game states from the initial deal (~50k states per seed/decl)
+2. **Build child index**: For each state, compute which states result from each legal move
+3. **Solve backwards**: Starting from terminal states (all dominoes played), propagate V/Q values up:
+   - Terminal: V = Team 0's point advantage
+   - Non-terminal: V = max(Q) for Team 0's turn, min(Q) for Team 1's turn
+   - Q[action] = V of resulting child state
+
+Key implementation details:
+- **GPU-parallel**: All states processed in batches on GPU (`expand.py`, `solve.py`)
+- **SeedContext**: Precomputed lookup tables for trick resolution (`context.py`)
+- **41-bit state packing**: Compact representation for GPU efficiency (`state.py`)
 
 ### Team 0 Perspective (Critical!)
 
@@ -207,18 +286,13 @@ Neural network input is `int8[batch, 32, 12]`:
 
 ### Split Assignment
 
-Deterministic train/val/test split by seed:
+Deterministic train/val/test split by seed (see `forge.ml.tokenize.get_split()`):
 
-```python
-def get_split(seed: int) -> str:
-    bucket = seed % 1000
-    if bucket >= 950:
-        return 'test'   # 5% - sacred, never touched
-    elif bucket >= 900:
-        return 'val'    # 5% - model selection
-    else:
-        return 'train'  # 90%
-```
+| Bucket (seed % 1000) | Split | Percentage |
+|---------------------|-------|------------|
+| 0-899 | train | 90% |
+| 900-949 | val | 5% |
+| 950-999 | test | 5% - **sacred, never touched during development** |
 
 ---
 
@@ -245,6 +319,35 @@ python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 
 ```
 
 Training auto-detects hardware. Use `--precision bf16-mixed` for A100/H100 servers.
+
+---
+
+## Model Inference
+
+Load and use a trained model for predictions:
+
+```python
+import torch
+from forge.ml.module import DominoLightningModule
+
+# Load checkpoint
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
+)
+model.eval()
+
+# Prepare inputs (see forge/ml/tokenize.py for token format)
+# tokens: [batch, 32, 12] int8 - game state representation
+# mask: [batch, 7] bool - which hand positions are valid
+# current_player: [batch] int - whose turn (0-3)
+
+with torch.no_grad():
+    logits, value = model(tokens, mask, current_player)
+    probs = torch.softmax(logits, dim=-1)
+    best_move = probs.argmax(dim=-1)  # local index 0-6
+```
+
+See [models/README.md](models/README.md) for architecture details, training configs, and model catalog.
 
 ---
 
@@ -362,6 +465,6 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 | **V** | State value. V = max(q) for Team 0, min(q) for Team 1 |
 | **seed** | RNG seed for deal generation. Determines train/val/test split via seed % 1000 |
 | **shard** | One parquet file per (seed, decl) pair. Contains all reachable game states |
-| **declaration (decl)** | Trump suit choice, 0-9. See `DECL_NAMES` in schema.py |
+| **declaration (decl)** | Trump suit choice, 0-9. See `DECL_ID_TO_NAME` in declarations.py |
 | **Team 0 perspective** | All values from Team 0's view. Positive = Team 0 winning |
 
