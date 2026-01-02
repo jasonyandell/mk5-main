@@ -106,6 +106,43 @@ results: TrumpResult = evaluate_bids(points, decl_id=6)
 
 See [CONVERGENCE.md](CONVERGENCE.md) for detailed analysis.
 
+## Debugging & Analysis Tools
+
+### investigate.py - Debug Losing Games
+
+When a near-certain hand loses unexpectedly, use `investigate.py` to replay games trick-by-trick:
+
+```bash
+# Find games where Team 0 scored below 42 with sixes trump
+python -m forge.bidding.investigate \
+    --hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+    --trump sixes \
+    --below 42 \
+    --samples 500
+
+# Show more losing games (default: 5)
+python -m forge.bidding.investigate --hand "..." --trump sixes --max-show 10
+
+# Use sampling instead of greedy play
+python -m forge.bidding.investigate --hand "..." --trump sixes --sample
+```
+
+Output includes:
+- All 4 players' hands (showing how opponents were dealt)
+- Trick-by-trick replay with winner and points
+- Identification of where Team 0 lost tricks
+
+### stability_experiment.py - Variance Analysis
+
+Compare sample size stability across random hands:
+
+```bash
+# Run stability experiment on 100 random hands
+python -m forge.bidding.stability_experiment --hands 100 --output results.csv
+```
+
+Compares N=200 vs N=500 vs N=1000 to determine if rankings are stable at lower sample counts.
+
 ## Related Documentation
 
 - [EXAMPLES.md](EXAMPLES.md) - Worked examples with analysis

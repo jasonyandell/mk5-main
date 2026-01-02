@@ -91,7 +91,7 @@ Everything exists to:
 
 **Key insight**: The oracle **reimplements** game rules in PyTorch for GPU solving. It must match the TypeScript engine exactly, or the trained model learns wrong behavior.
 
-## Philosophy
+## ML Pipeline Principles
 
 1. **Separation of Concerns**: Oracle generates data, tokenizer transforms it, trainer learns from it
 2. **Reproducibility**: Per-shard deterministic RNG, Lightning seed_everything
@@ -131,6 +131,8 @@ Everything exists to:
 │  - declarations.py              │  Trump types (0-9) and parsing
 │  - schema.py                    │  Parquet format, V/Q semantics
 │  - rng.py                       │  Deterministic deal generation
+│  - output.py                    │  Parquet/PT file writing utilities
+│  - timer.py                     │  Per-shard timing and metrics
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -142,6 +144,8 @@ Everything exists to:
 │  - poster.py                    │  Visual PDF output with heatmaps
 │  - parallel.py                  │  Multi-GPU cluster simulation
 │  - convergence.py               │  Sample size vs accuracy analysis
+│  - stability_experiment.py      │  N=200 vs N=500 variance analysis
+│  - investigate.py               │  Debug losing games trick-by-trick
 │  - benchmark.py                 │  Performance profiling
 └─────────────────────────────────┘
               ↕
@@ -156,6 +160,8 @@ Everything exists to:
 │  Data Storage                   │  Versioned directories
 │  - data/shards/                 │  Oracle parquet output
 │  - data/tokenized/              │  Preprocessed numpy arrays
+│  - data/flywheel-shards/        │  Flywheel oracle output
+│  - data/flywheel-tokenized/     │  Flywheel preprocessed data
 │  - runs/                        │  Training outputs
 │  - forge/models/                │  Pre-trained checkpoints
 └─────────────────────────────────┘
@@ -324,45 +330,21 @@ Training auto-detects hardware. Use `--precision bf16-mixed` for A100/H100 serve
 
 ## Model Inference
 
-Load and use a trained model for predictions:
-
-```python
-import torch
-from forge.ml.module import DominoLightningModule
-
-# Load checkpoint
-model = DominoLightningModule.load_from_checkpoint(
-    "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
-)
-model.eval()
-
-# Prepare inputs (see forge/ml/tokenize.py for token format)
-# tokens: [batch, 32, 12] int8 - game state representation
-# mask: [batch, 7] bool - which hand positions are valid
-# current_player: [batch] int - whose turn (0-3)
-
-with torch.no_grad():
-    logits, value = model(tokens, mask, current_player)
-    probs = torch.softmax(logits, dim=-1)
-    best_move = probs.argmax(dim=-1)  # local index 0-6
-```
-
-See [models/README.md](models/README.md) for architecture details, training configs, and model catalog.
+See [models/README.md](models/README.md) for:
+- Model catalog with architecture details
+- Loading checkpoints for inference
+- Training configs and provenance
 
 ---
 
 ## Bidding Evaluation (System 2)
 
-Monte Carlo simulation evaluates bid strength by playing out complete games with the trained model.
+See [bidding/README.md](bidding/README.md) for:
+- Monte Carlo simulation for P(make) estimation
+- Module structure and key classes
+- Sample size guidelines
 
-**Quick start:**
-```bash
-python -m forge.bidding.evaluate --hand "6-6,6-5,6-4,6-3,6-2,6-1,6-0" --samples 100
-```
-
-**Output:** P(make) matrix showing probability of making each bid (30-42) for each trump choice.
-
-See [bidding/README.md](bidding/README.md) for module overview, and [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis.
+See [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis.
 
 ---
 
