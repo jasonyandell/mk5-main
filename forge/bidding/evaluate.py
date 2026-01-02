@@ -19,7 +19,7 @@ import torch
 from forge.oracle.declarations import DECL_ID_TO_NAME, N_DECLS
 from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
 
-from .estimator import evaluate_bids, find_best_bid, format_json, format_matrix, format_results_table
+from .estimator import evaluate_bids, find_best_bid, format_json, format_matrix, format_results_table, TrumpResult
 from .inference import PolicyModel
 from .simulator import simulate_games
 
@@ -90,6 +90,51 @@ def format_hand(hand: List[int]) -> str:
         low = DOMINO_LOW[dom_id]
         parts.append(f"{high}-{low}")
     return ", ".join(parts)
+
+
+def run_evaluation(
+    model: PolicyModel,
+    hand: List[int],
+    n_samples: int,
+    seed: int | None = None,
+    trump_ids: List[int] | None = None,
+) -> tuple[List[TrumpResult], float]:
+    """Run evaluation for a hand across all trumps.
+
+    Args:
+        model: The policy model
+        hand: List of 7 domino IDs
+        n_samples: Number of simulations per trump
+        seed: Random seed for reproducibility
+        trump_ids: Which trumps to evaluate (default: all except doubles-suit)
+
+    Returns:
+        (results, elapsed_seconds)
+    """
+    if trump_ids is None:
+        trump_ids = [i for i in range(N_DECLS) if i != 8]
+
+    results = []
+    start_sim = time.time()
+
+    for decl_id in trump_ids:
+        trump_seed = seed + decl_id if seed is not None else None
+
+        points = simulate_games(
+            model=model,
+            bidder_hand=hand,
+            decl_id=decl_id,
+            n_games=n_samples,
+            seed=trump_seed,
+            greedy=True,
+        )
+
+        points_list = points.cpu().tolist()
+        trump_result = evaluate_bids(points_list, decl_id)
+        results.append(trump_result)
+
+    elapsed = time.time() - start_sim
+    return results, elapsed
 
 
 def main() -> None:
