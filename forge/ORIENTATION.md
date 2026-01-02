@@ -4,11 +4,19 @@
 
 ## Related Resources
 
-- **Skills** (invoke these for implementation guidance):
-  - `pytorch-lightning` - LightningModule patterns, Trainer configuration, callbacks, logging
-  - `pytorch` - Core PyTorch patterns, distributed training, optimization
-- **Game Architecture**: [docs/ORIENTATION.md](../docs/ORIENTATION.md) - TypeScript game engine
-- **Game Rules**: [docs/rules.md](../docs/rules.md) - Official Texas 42 rules
+**Skills** (invoke these for implementation guidance):
+- `pytorch-lightning` - LightningModule patterns, Trainer configuration, callbacks, logging
+- `pytorch` - Core PyTorch patterns, distributed training, optimization
+- `wandb` - Experiment tracking, sweeps, artifact versioning, reports
+
+**Documentation**:
+- [forge/models/README.md](models/README.md) - Model catalog, loading, architecture details
+- [forge/bidding/README.md](bidding/README.md) - Bidding evaluation (System 2)
+- [forge/flywheel/RUNBOOK.md](flywheel/RUNBOOK.md) - Iterative training operations
+
+**Game Context**:
+- [docs/ORIENTATION.md](../docs/ORIENTATION.md) - TypeScript game engine architecture
+- [docs/rules.md](../docs/rules.md) - Official Texas 42 rules
 
 ---
 
@@ -28,7 +36,7 @@ Everything exists to:
 ## Philosophy
 
 1. **Separation of Concerns**: Oracle generates data, tokenizer transforms it, trainer learns from it
-2. **Reproducibility**: Per-shard deterministic RNG, Lightning seed_everything, RNG state in checkpoints
+2. **Reproducibility**: Per-shard deterministic RNG, Lightning seed_everything
 3. **PyTorch Lightning First**: Structure prevents slop - LightningModule for model, DataModule for data
 4. **Team 0 Perspective**: All V/Q values from Team 0's viewpoint (positive = Team 0 ahead)
 
@@ -42,6 +50,7 @@ Everything exists to:
 │  - train.py                     │  Train models with Wandb
 │  - eval.py                      │  Evaluate checkpoints
 │  - tokenize.py                  │  Preprocess shards
+│  - flywheel.py                  │  Iterative training
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -60,10 +69,18 @@ Everything exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
+│  forge/bidding/                 │  Bid strength evaluation
+│  - evaluate.py                  │  P(make) matrix
+│  - simulator.py                 │  Monte Carlo simulation
+│  - poster.py                    │  Visual PDF output
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
 │  Data Storage                   │  Versioned directories
 │  - data/shards/                 │  Oracle parquet output
 │  - data/tokenized/              │  Preprocessed numpy arrays
 │  - runs/                        │  Training outputs
+│  - forge/models/                │  Pre-trained checkpoints
 └─────────────────────────────────┘
 ```
 
@@ -73,23 +90,25 @@ Everything exists to:
 
 ```
 1. GENERATE (GPU solver)
-   forge/oracle/generate.py --seeds 0-99 --out data/shards
+   python -m forge.oracle.generate --seed-range 0:100 --out data/shards
 
    Output: data/shards/seed_XXXXXXXX_decl_Y.parquet
            └── Each file: ~50k game states with perfect V/Q values
 
 2. TOKENIZE (CPU preprocessing)
-   forge/cli/tokenize --input data/shards --output data/tokenized
+   python -m forge.cli.tokenize --input data/shards --output data/tokenized
 
    Output: data/tokenized/{train,val,test}/
-           └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy, teams.npy
+           └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy
 
 3. TRAIN (GPU learning)
-   forge/cli/train --data data/tokenized --wandb
+   python -m forge.cli.train --data data/tokenized --wandb
 
    Output: runs/domino/version_X/
            └── checkpoints/, hparams.yaml, metrics.csv
 ```
+
+Use `--help` on any command for full options.
 
 ---
 
@@ -102,7 +121,7 @@ The GPU solver computes **perfect play** via minimax search. For every game stat
 - **Q (action-values)**: Expected value after each legal move
 - **Best move**: The action with highest Q (for Team 0) or lowest Q (for Team 1)
 
-The neural network learns to approximate this oracle. Training loss measures how well predictions match oracle decisions.
+The neural network learns to approximate this oracle.
 
 ### Team 0 Perspective (Critical!)
 
@@ -110,12 +129,6 @@ All values are from Team 0's viewpoint:
 - **Positive V** = Team 0 is ahead
 - **Negative V** = Team 1 is ahead
 - **Team 0 maximizes Q**, Team 1 minimizes Q
-
-When computing metrics, we apply a team sign:
-```python
-team_sign = 1 if team == 0 else -1
-q_for_team = q_values * team_sign
-```
 
 ### Q-Gap as the Key Metric
 
@@ -131,59 +144,12 @@ q_gap = oracle_best_q - oracle_q[model_prediction]
 
 ### Lightning as Guardrails
 
-PyTorch Lightning enforces structure that prevents slop:
-
 | Component | Responsibility | Lightning Provides |
 |-----------|---------------|-------------------|
 | **DominoTransformer** | Model architecture | Pure nn.Module |
 | **DominoLightningModule** | Training logic | Logging, checkpoints, optimization |
 | **DominoDataModule** | Data pipeline | prepare_data/setup separation, DataLoaders |
 | **Trainer** | Training loop | Devices, precision, callbacks |
-
-**Invoke the `pytorch-lightning` skill** for implementation patterns.
-
-### Per-Shard Deterministic RNG
-
-Sampling must be reproducible regardless of which shards are processed:
-
-```python
-# BAD: Global RNG - adding shards changes all samples
-rng = np.random.default_rng(seed)
-for shard in shards:
-    samples = rng.choice(...)  # Depends on processing order!
-
-# GOOD: Per-shard RNG - each shard is independent
-for shard in shards:
-    shard_rng = np.random.default_rng((global_seed, shard.seed, shard.decl_id))
-    samples = shard_rng.choice(...)  # Same samples every time
-```
-
----
-
-## File Map
-
-**Oracle** (GPU solver):
-- `forge/oracle/solve.py` - Minimax search with alpha-beta pruning
-- `forge/oracle/schema.py` - Parquet format, state packing, V/Q semantics
-- `forge/oracle/state.py` - Game state representation (41 bits packed in int64)
-- `forge/oracle/rng.py` - Deterministic deal generation from seed
-- `forge/oracle/generate.py` - CLI: generate shards
-
-**ML Core** (Lightning):
-- `forge/ml/module.py` - DominoTransformer + DominoLightningModule
-- `forge/ml/data.py` - DominoDataset + DominoDataModule
-- `forge/ml/metrics.py` - Q-gap, accuracy, blunder rate computation
-- `forge/ml/tokenize.py` - State → token conversion logic
-
-**CLI** (user-facing):
-- `forge/cli/train.py` - Training with Wandb, callbacks, checkpointing
-- `forge/cli/eval.py` - Evaluate checkpoint on test set
-- `forge/cli/tokenize.py` - Preprocess shards to numpy arrays
-
-**Data** (versioned storage):
-- `data/shards/` - Oracle parquet output
-- `data/tokenized/{train,val,test}/` - Preprocessed numpy arrays
-- `runs/domino/version_X/` - Training outputs (Lightning convention)
 
 ---
 
@@ -198,8 +164,6 @@ Each shard contains ~50k game states from one (seed, declaration) pair:
 | `state` | int64 | Packed game state (41 bits) |
 | `V` | int8 | Value: expected point differential (Team 0 perspective) |
 | `q0`-`q6` | int8 | Q-values for each action (-128 = illegal) |
-
-Metadata in parquet schema: `seed`, `decl_id`, `generator_version`
 
 ### Token Format
 
@@ -226,121 +190,56 @@ def get_split(seed: int) -> str:
 
 ## Essential Commands
 
-### Generate Oracle Data
-
 ```bash
-# Generate shards for seeds 0-99, all 10 declarations
-python -m forge.oracle.generate --seeds 0-99 --out data/shards
+# Generate oracle shards
+python -m forge.oracle.generate --seed-range 0:100 --out data/shards
 
-# With memory logging (useful for tuning chunk sizes)
-python -m forge.oracle.generate --seed 0 --decl all --out data/shards --log-memory
-```
-
-The generator logs progress per (seed, decl): `start → enumerate → child_index → solve → write → DONE`.
-Run in foreground to watch, or monitor output directory: `watch -n2 'ls data/shards/*.parquet | wc -l'`
-
-### Tokenize for Training
-
-```bash
-# Preprocess shards into train/val/test splits
+# Tokenize for training
 python -m forge.cli.tokenize --input data/shards --output data/tokenized
-```
 
-### Train Model
-
-The training script auto-detects hardware and scales appropriately:
-
-```bash
-# Quick sanity check (1 batch)
+# Quick sanity check
 python -m forge.cli.train --fast-dev-run --no-wandb
 
 # Full training with Wandb
 python -m forge.cli.train --epochs 10 --wandb
 
-# Resume from checkpoint
-python -m forge.cli.train --resume runs/domino/version_0/checkpoints/last.ckpt
-```
-
-**Observability**:
-- `--wandb` → live dashboard at wandb.ai (recommended)
-- `--no-wandb` → local only: `runs/domino/version_X/metrics.csv`
-- Rich progress bar shows loss/accuracy/q_gap in terminal (if `rich` installed)
-
-### Portable Training: Local vs Cloud
-
-Training works identically on local workstations and cloud GPU servers. Lightning auto-detects:
-- **accelerator**: GPU/CPU/MPS
-- **devices**: All available GPUs
-- **strategy**: DDP if multi-GPU, single device otherwise
-- **num_workers**: 4 per GPU, capped at CPU count
-
-**Local (RTX 3050 Ti, consumer GPUs):**
-```bash
-python -m forge.cli.train                    # Just works - uses 16-mixed precision
-```
-
-**Cloud (Lambda Labs 8×A100, datacenter GPUs):**
-```bash
-python -m forge.cli.train --precision bf16-mixed   # One flag for bf16
-```
-
-The only difference is `--precision bf16-mixed` for A100/H100 servers (better numeric stability, faster on datacenter GPUs). Everything else auto-detects.
-
-| Setting | Local (3050 Ti) | Cloud (8×A100) |
-|---------|-----------------|----------------|
-| precision | 16-mixed (default) | bf16-mixed (flag) |
-| devices | 1 (auto) | 8 (auto) |
-| strategy | auto | ddp (auto) |
-| num_workers | 4 (auto) | 32 (auto) |
-
-**Why not auto-detect precision?** bf16 can be flaky on consumer Ampere GPUs (driver issues, laptop variants). FP16 works everywhere, so it's the safe default.
-
-### Evaluate Model
-
-```bash
-# Test set evaluation
+# Evaluate on test set
 python -m forge.cli.eval --checkpoint runs/domino/version_0/checkpoints/best.ckpt
 
-# Validation set
-python -m forge.cli.eval --checkpoint runs/domino/version_0/checkpoints/best.ckpt --split val
+# Bidding evaluation
+python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 100
 ```
+
+Training auto-detects hardware. Use `--precision bf16-mixed` for A100/H100 servers.
 
 ---
 
-## Common Patterns
+## Bidding Evaluation (System 2)
 
-### Adding a New Metric
+Monte Carlo simulation evaluates bid strength by playing out complete games with the trained model.
 
-1. Implement in `forge/ml/metrics.py`:
-```python
-def compute_my_metric(logits: Tensor, targets: Tensor, ...) -> Tensor:
-    ...
+**Quick start:**
+```bash
+python -m forge.bidding.evaluate --hand "6-6,6-5,6-4,6-3,6-2,6-1,6-0" --samples 100
 ```
 
-2. Log in `DominoLightningModule.validation_step`:
-```python
-self.log('val/my_metric', value, sync_dist=True)
+**Output:** P(make) matrix showing probability of making each bid (30-42) for each trump choice.
+
+See [bidding/README.md](bidding/README.md) for module overview, and [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis.
+
+---
+
+## Flywheel: Iterative Fine-Tuning
+
+Automates iterative model improvement: generate new seeds → train → evaluate → repeat.
+
+```bash
+python -m forge.cli.flywheel status   # Check current state
+python -m forge.cli.flywheel          # Run continuously
+python -m forge.cli.flywheel --once   # Run one iteration
 ```
 
-### Modifying the Model
-
-1. Change architecture in `DominoTransformer` (pure nn.Module)
-2. Training logic stays in `DominoLightningModule`
-3. Use `self.save_hyperparameters()` to track changes
-
-### Adding a Callback
-
-```python
-# In forge/cli/train.py
-from lightning.pytorch.callbacks import MyCallback
-
-callbacks = [
-    ...,
-    MyCallback(...),
-]
-```
-
-**Invoke the `pytorch-lightning` skill** for callback patterns.
+See [flywheel/RUNBOOK.md](flywheel/RUNBOOK.md) for full operations guide.
 
 ---
 
@@ -351,7 +250,6 @@ callbacks = [
 | Model not learning | Check Q-gap trend, verify data loading |
 | OOM errors | Reduce batch size, enable gradient checkpointing |
 | Slow training | Check num_workers, enable pin_memory |
-| Metrics not logging | Verify `self.log()` calls, check sync_dist |
 | Checkpoint won't load | Check hparams match, verify Lightning version |
 | Inconsistent results | Check RNG seeds, verify deterministic mode |
 
@@ -360,14 +258,6 @@ callbacks = [
 ```bash
 # Verify imports work
 python -c "from forge.ml import module, data, metrics; print('OK')"
-
-# Check data structure
-python -c "
-from pathlib import Path
-import numpy as np
-p = Path('data/tokenized/train')
-print(f'tokens: {np.load(p/\"tokens.npy\", mmap_mode=\"r\").shape}')
-"
 
 # Fast training test
 python -m forge.cli.train --fast-dev-run --no-wandb
@@ -381,168 +271,9 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 2. **Deterministic Splits**: seed % 1000 determines train/val/test
 3. **Per-Shard RNG**: Sampling independent of shard processing order
 4. **Lightning Structure**: LightningModule for training, DataModule for data
-5. **No Models in data/**: Checkpoints go to runs/, not data/
-6. **Manifests Track Provenance**: Each stage has manifest.yaml
+5. **No Models in data/**: Checkpoints go to runs/ or forge/models/
 
 **Violation of any invariant = pipeline regression.**
-
----
-
-## Bidding Evaluation (System 2)
-
-The trained model can evaluate bid strength by simulating complete games:
-
-```bash
-python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 100
-```
-
-**How it works:**
-1. Fix the bidder's 7 dominoes (player 0)
-2. Randomly deal remaining 21 dominoes to players 1, 2, 3
-3. Simulate complete games using the policy model (greedy action selection)
-4. Count how often team 0 scores ≥ threshold for each bid level
-
-**Output:** P(make) matrix showing probability of making each bid (30-42) for each trump choice.
-
-```
-Trump          30  31  32  33  34  35  36  37  38  39  40  41  42
------------------------------------------------------------------
-fives         100 100 100 100 100 100 100 100 100 100 100 100 100
-notrump        66  56  56  56  56  50  40  34  34  34  34  30  20
-doubles-trump  64  62  62  62  62  50  42  32  32  32  26  24  16
-```
-
-**Key insight:** The simulation naturally captures partner synergy. A 2% chance of making 42 with a weak trump suit means "occasionally your partner gets dealt a monster hand that saves you."
-
-See `forge/bidding/EXAMPLES.md` for worked examples with analysis.
-
-### Bidding Posters
-
-Generate visual PDF posters showing the hand with domino tiles and a P(make) heatmap:
-
-```bash
-python -m forge.bidding.poster --hand "6-6,5-5,3-3,1-1,0-0,6-3,5-1" --output poster.pdf
-python -m forge.bidding.poster --hand "..." --samples 100  # More accurate
-python -m forge.bidding.poster --hand "..." --seed 42      # Reproducible
-```
-
-**Poster layout:**
-- **Top**: Visual domino tiles with pips
-- **Middle**: P(make) heatmap (9 trumps × 13 bid levels)
-- **Color scale**: Red (0%) → Yellow (50%) → Green (100%)
-
-### Investigation Mode
-
-Debug why near-certain hands occasionally lose in simulation:
-
-```bash
-python -m forge.bidding.investigate --hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" --trump sixes --below 42 --samples 500
-```
-
-**Use case**: A hand with 6 of 7 trumps shows 99% instead of 100%. Investigation mode:
-1. Runs simulations and captures full game state (hands + play history)
-2. Filters for games where score < threshold
-3. Prints losing deals with trick-by-trick replay showing where model misplayed
-
-**Options:**
-- `--sample`: Use stochastic policy instead of greedy (reveals model uncertainty)
-- `--max-show N`: Limit detailed replays (default: 5)
-- `--seed N`: Reproducible results (default: 0)
-
-**Output shows**: Each losing game with hands, trick-by-trick plays, and which trick was lost.
-
----
-
-## Flywheel: Iterative Fine-Tuning
-
-The flywheel automates iterative model improvement: generate new seeds → train → evaluate → repeat.
-
-**To start the flywheel:**
-```bash
-# Read the runbook first
-cat forge/flywheel/RUNBOOK.md
-
-# Check current state
-python -m forge.cli.flywheel status
-
-# Run one iteration (30-60 min)
-python -m forge.cli.flywheel
-```
-
-### How It Works
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Each iteration:                                         │
-│  1. Generate oracle shards for seed range (e.g., 200:210)│
-│  2. Tokenize all data                                    │
-│  3. Fine-tune model (1-2 epochs)                         │
-│  4. Log to W&B with artifact lineage                     │
-│  5. Update state.yaml → ready for next iteration         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Key Files
-
-| File | Purpose |
-|------|---------|
-| `forge/flywheel/state.yaml` | Current state - **read this first** |
-| `forge/flywheel/RUNBOOK.md` | Full instructions for Claude Code |
-| `forge/cli/flywheel.py` | Main CLI script |
-
-### State Machine
-
-```
-ready ──run──> running ──success──> ready (next iteration)
-                  │
-                  └──failure──> failed ──fix──> ready
-```
-
-### W&B Observability
-
-- **Project**: `crystal-forge`
-- **Group**: From `state.yaml` wandb_group (e.g., `flywheel-large-v3`)
-- **Per iteration**: Config, final metrics, checkpoint artifact with lineage
-- **Custom chart**: Plot `final/q_gap` vs `total_seeds` to see learning curve
-
-### For Claude Code
-
-If user says "start the flywheel" or "run flywheel training":
-
-1. Read `forge/flywheel/RUNBOOK.md`
-2. Run `python -m forge.cli.flywheel status`
-3. Based on status:
-   - `ready` → run `python -m forge.cli.flywheel`
-   - `running` → spawn haiku monitor (see RUNBOOK)
-   - `failed` → read `last_error`, fix issue, set `status: ready`
-
-When a new best model is found, the flywheel prints promotion instructions.
-
----
-
-## What's Not Here Yet
-
-- **Hyperparameter tuning**: Optuna integration
-- **Model serving**: Export to ONNX or TorchScript
-- **Active learning**: Mine hard examples for retraining
-
----
-
-## Quick Start
-
-```bash
-# 1. Verify environment
-python -c "import torch; import lightning; print('PyTorch:', torch.__version__)"
-
-# 2. Check existing data
-ls data/tokenized/
-
-# 3. Run fast training test
-python -m forge.cli.train --data data/tokenized --fast-dev-run --no-wandb
-
-# 4. Train for real
-python -m forge.cli.train --data data/tokenized --epochs 10 --wandb
-```
 
 ---
 
@@ -572,51 +303,24 @@ pgrep -af "forge.oracle\|forge.cli" || echo "Nothing running"
 
 | If you modify... | Regenerate... | Invalidates... |
 |------------------|---------------|----------------|
-| `forge/oracle/schema.py` | shards | data/shards/, data/tokenized/ |
 | `forge/oracle/*.py` | shards | data/shards/, data/tokenized/ |
 | `forge/ml/tokenize.py` | tokenized | data/tokenized/ |
 | `forge/ml/module.py` | train | runs/ (retrain needed) |
-| `forge/ml/data.py` | train | runs/ (retrain needed) |
 | `forge/ml/metrics.py` | nothing | (metrics-only change) |
 
 ### Verification Commands
-
-After making changes, verify they work:
 
 ```bash
 # After any forge/ changes - verify imports
 python -c "from forge.ml import module, data, metrics; from forge.oracle import schema; print('OK')"
 
-# After schema/output changes - verify parquet columns
-python -c "import pyarrow.parquet as pq; pf = pq.ParquetFile('data/shards/seed_00000000_decl_0.parquet'); print(pf.schema_arrow.names)"
-
-# After tokenize changes - verify tokenization works
-python -c "
-from forge.ml.tokenize import process_shard
-from pathlib import Path
-r = process_shard(Path('data/shards/seed_00000000_decl_0.parquet'), 42, 100)
-print(f'OK: tokens={r.tokens.shape}, qvals={r.qvals.shape}')
-"
-
 # After model changes - quick training test
 python -m forge.cli.train --fast-dev-run --no-wandb
 ```
 
-### Expected Generator Output
+---
 
-Normal output looks like:
-```
-seed=0 decl=0 | start | 0.00s | decl=blanks device=cuda
-seed=0 decl=0 | enumerate | 1.18s | states=7,607,411
-seed=0 decl=0 | child_index | 0.51s
-seed=0 decl=0 | solve | 0.13s | root=+1
-seed=0 decl=0 | write | 1.26s | data/shards/seed_00000000_decl_0.parquet
-seed=0 decl=0 | DONE | 3.68s | root=+1
-```
-
-Timing varies: 3-60s per (seed, decl) depending on state space complexity.
-
-### Glossary
+## Glossary
 
 | Term | Definition |
 |------|------------|
@@ -632,3 +336,4 @@ Timing varies: 3-60s per (seed, decl) depending on state space complexity.
 **Skill References**:
 - For Lightning patterns → invoke `pytorch-lightning` skill
 - For PyTorch fundamentals → invoke `pytorch` skill
+- For experiment tracking → invoke `wandb` skill
