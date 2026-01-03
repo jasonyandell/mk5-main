@@ -24,26 +24,22 @@ echo "Wandb group: $GROUP_ID"
 echo "Batch size: $BATCH_SIZE"
 echo ""
 
-# Phase 1a: Golden seeds for val/test (parallel batches of 5)
+# Phase 1a: Golden seeds for val/test (batch size 5)
 echo "Phase 1a: Generating golden seeds (val + test)..."
 echo ""
 
 echo "  Generating val seeds 900-904 (all 10 decls each)..."
 for seed in 900 901 902 903 904; do
-    # Run 2 decls at a time to stay under batch limit
-    python -m forge.oracle.generate --seed "$seed" --decl 0,1,2,3,4 --out data/shards \
+    python -m forge.oracle.generate --seed "$seed" --decl all --out data/shards \
         --wandb --wandb-group "$GROUP_ID/golden" &
-    python -m forge.oracle.generate --seed "$seed" --decl 5,6,7,8,9 --out data/shards \
-        --wandb --wandb-group "$GROUP_ID/golden" &
+    # Batch of 5: wait after each seed (10 decls each is too much to parallelize)
     wait
 done
 echo "  Val seeds complete!"
 
 echo "  Generating test seeds 950-954 (all 10 decls each)..."
 for seed in 950 951 952 953 954; do
-    python -m forge.oracle.generate --seed "$seed" --decl 0,1,2,3,4 --out data/shards \
-        --wandb --wandb-group "$GROUP_ID/golden" &
-    python -m forge.oracle.generate --seed "$seed" --decl 5,6,7,8,9 --out data/shards \
+    python -m forge.oracle.generate --seed "$seed" --decl all --out data/shards \
         --wandb --wandb-group "$GROUP_ID/golden" &
     wait
 done
