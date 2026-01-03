@@ -25,8 +25,30 @@ except Exception:
 OutputFormat = Literal["parquet", "pt"]
 
 
-def output_path_for(output_dir: Path, seed: int, decl_id: int, fmt: OutputFormat) -> Path:
-    return output_dir / f"seed_{seed:08d}_decl_{decl_id}.{'parquet' if fmt == 'parquet' else 'pt'}"
+def output_path_for(
+    output_dir: Path,
+    seed: int,
+    decl_id: int,
+    fmt: OutputFormat,
+    *,
+    opp_seed: int | None = None,
+) -> Path:
+    """Generate output path for a shard.
+
+    Args:
+        output_dir: Directory for output files
+        seed: Base seed (determines P0 hand in marginalized mode)
+        decl_id: Declaration ID (0-9)
+        fmt: Output format ('parquet' or 'pt')
+        opp_seed: If provided, creates marginalized naming: seed_X_oppY_decl_Z
+
+    Returns:
+        Path for the output file
+    """
+    ext = "parquet" if fmt == "parquet" else "pt"
+    if opp_seed is not None:
+        return output_dir / f"seed_{seed:08d}_opp{opp_seed}_decl_{decl_id}.{ext}"
+    return output_dir / f"seed_{seed:08d}_decl_{decl_id}.{ext}"
 
 
 def write_result(

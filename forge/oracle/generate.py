@@ -117,6 +117,20 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print Q-values for root state (P0's opening move)",
     )
+
+    # Marginalized training options
+    p.add_argument(
+        "--base-seed",
+        type=int,
+        default=None,
+        help="Base seed for output naming (used with --p0-hand for marginalized data)",
+    )
+    p.add_argument(
+        "--opp-seed",
+        type=int,
+        default=None,
+        help="Opponent seed label for output naming (creates seed_X_oppY_decl_Z filename)",
+    )
     return p.parse_args()
 
 
@@ -223,7 +237,9 @@ def main() -> None:
 
     for seed in seeds:
         for decl_id in decl_ids:
-            out_path = output_path_for(args.out, seed, decl_id, args.format)
+            # For marginalized data: use base_seed for naming, seed for opponent distribution
+            name_seed = args.base_seed if args.base_seed is not None else seed
+            out_path = output_path_for(args.out, name_seed, decl_id, args.format, opp_seed=args.opp_seed)
             if out_path.exists() and not args.overwrite:
                 print(f"skip existing: {out_path}")
                 continue
@@ -287,15 +303,18 @@ def main() -> None:
                         print(f"  {local_idx}        {dom_str:5}     {q_val:+3d}       {delta:+3d}{marker}")
                     print()
 
+            # For metadata, use base_seed if provided (so tokenizer split works correctly)
+            metadata_seed = args.base_seed if args.base_seed is not None else seed
+
             # Write on separate stream to overlap with next seed's computation.
             if write_stream is not None:
                 with torch.cuda.stream(write_stream):
                     write_result(
-                        out_path, seed, decl_id, all_states, v, move_values,
+                        out_path, metadata_seed, decl_id, all_states, v, move_values,
                         fmt=args.format, non_blocking=True,
                     )
             else:
-                write_result(out_path, seed, decl_id, all_states, v, move_values, fmt=args.format)
+                write_result(out_path, metadata_seed, decl_id, all_states, v, move_values, fmt=args.format)
             timer.phase("write", extra=str(out_path))
             metrics = timer.done(root_value=root_value)
 

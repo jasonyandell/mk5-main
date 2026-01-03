@@ -154,6 +154,7 @@ Everything exists to:
 │  - cloud-setup.sh               │  Environment setup on Lambda/etc
 │  - cloud-run.sh                 │  End-to-end training pipeline
 │  - cloud-train*.sh              │  Training job variants
+│  - campaign_marginalized.py     │  Marginalized Q-value generation
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -411,6 +412,63 @@ The output shows each legal move with its Q-value and gap from optimal:
 - **Δbest**: Points lost compared to the optimal move (0 = best move)
 
 Use this to verify the oracle agrees with expert intuition about correct play.
+
+---
+
+## Marginalized Q-Values (Imperfect Information Training)
+
+### The Problem
+
+The oracle computes perfect-play Q-values for **one specific deal**. But in real play, the model doesn't know opponents' hands. When two moves have equal Q-values in one deal (e.g., 6-6 and 2-2 both show Q=+42), the model can't distinguish which is **universally optimal** vs **situationally optimal**.
+
+Example: With a trump-heavy hand (6-6, 6-5, 6-4, 6-2, 6-1, 6-0, 2-2) calling sixes:
+- 6-6 (double-six) is **always** the best lead (unbeatable highest trump)
+- 2-2 **might** work if opponents can't beat it, but often fails
+
+Training on single-deal data causes the model to learn fragile strategies.
+
+### The Solution: Sample Multiple Opponent Distributions
+
+Instead of one shard per P0 hand, generate **3 shards** with different opponent distributions:
+
+```bash
+# Same P0 hand, 3 different opponent shuffles → 3 shards
+python -m forge.scripts.campaign_marginalized --base-seed-range 0:200 --n-opp-seeds 3
+```
+
+This creates:
+- `seed_00000000_opp0_decl_0.parquet` - Base seed 0, opponent shuffle 0
+- `seed_00000000_opp1_decl_0.parquet` - Base seed 0, opponent shuffle 1
+- `seed_00000000_opp2_decl_0.parquet` - Base seed 0, opponent shuffle 2
+
+The model sees the same P0 hand with different Q-values depending on opponent distribution. Through gradient descent, it implicitly learns to prefer **robust** moves (high Q across all samples) over **fragile** ones (high Q only sometimes).
+
+### Training Script
+
+Use `cloud-train-v3-marginalized.sh` for the full pipeline:
+
+```bash
+./forge/scripts/cloud-train-v3-marginalized.sh
+```
+
+Generates:
+- **600 train shards**: 200 base seeds × 3 opponent seeds × 1 decl
+- **50 val shards**: seeds 900-904 × 10 decls (golden, not marginalized)
+- **50 test shards**: seeds 950-954 × 10 decls (golden, not marginalized)
+
+### Shard Naming
+
+| Pattern | Meaning |
+|---------|---------|
+| `seed_XXXXXXXX_decl_Y.parquet` | Standard shard (seed X, decl Y) |
+| `seed_XXXXXXXX_oppZ_decl_Y.parquet` | Marginalized shard (base seed X, opp seed Z, decl Y) |
+
+The **base_seed** in the filename determines train/val/test split (via `seed % 1000`).
+
+### References
+
+- Paper: ["Efficiently Training NNs for Imperfect Information Games"](https://arxiv.org/abs/2407.05876) - Key finding: ~3 samples per position is sufficient
+- Bead t42-elle for implementation context
 
 ---
 
