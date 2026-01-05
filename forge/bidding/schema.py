@@ -103,23 +103,147 @@ Relationship to Oracle Schema
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 from forge.oracle.declarations import DECL_ID_TO_NAME as DECL_NAMES
 
 # Re-export for convenience
-__all__ = ["DECL_NAMES", "load_file", "load_points_only", "BID_THRESHOLDS", "EVAL_DECLS"]
+__all__ = [
+    "DECL_NAMES",
+    "EVAL_DECLS",
+    "BID_THRESHOLDS",
+    "load_file",
+    "load_points_only",
+    "get_pmake_matrix",
+    "build_pyarrow_schema",
+    "write_result",
+    "points_col",
+    "pmake_col",
+    "ci_low_col",
+    "ci_high_col",
+]
 
 # Declarations evaluated (skips 8=doubles-suit)
 EVAL_DECLS = [0, 1, 2, 3, 4, 5, 6, 7, 9]
 
 # Bid thresholds
 BID_THRESHOLDS = list(range(30, 43))
+
+
+# =============================================================================
+# Column Name Functions (single source of truth)
+# =============================================================================
+
+
+def points_col(decl: int) -> str:
+    """Column name for raw points array."""
+    return f"points_{decl}"
+
+
+def pmake_col(decl: int, bid: int) -> str:
+    """Column name for P(make) value."""
+    return f"pmake_{decl}_{bid}"
+
+
+def ci_low_col(decl: int, bid: int) -> str:
+    """Column name for CI lower bound."""
+    return f"ci_low_{decl}_{bid}"
+
+
+def ci_high_col(decl: int, bid: int) -> str:
+    """Column name for CI upper bound."""
+    return f"ci_high_{decl}_{bid}"
+
+
+# =============================================================================
+# Schema and Writing
+# =============================================================================
+
+
+def build_pyarrow_schema() -> "pa.Schema":
+    """Build the PyArrow schema for bidding evaluation files.
+
+    This is the single source of truth for the file format.
+    """
+    import pyarrow as pa
+
+    fields = [
+        pa.field("seed", pa.int64()),
+        pa.field("hand", pa.string()),
+        pa.field("n_samples", pa.int32()),
+        pa.field("model_checkpoint", pa.string()),
+        pa.field("timestamp", pa.string()),
+    ]
+
+    # Points columns (list of int8)
+    for decl in EVAL_DECLS:
+        fields.append(pa.field(points_col(decl), pa.list_(pa.int8())))
+
+    # P(make) and CI columns
+    for decl in EVAL_DECLS:
+        for bid in BID_THRESHOLDS:
+            fields.append(pa.field(pmake_col(decl, bid), pa.float32()))
+            fields.append(pa.field(ci_low_col(decl, bid), pa.float32()))
+            fields.append(pa.field(ci_high_col(decl, bid), pa.float32()))
+
+    return pa.schema(fields)
+
+
+def write_result(output_path: Path, result: dict[str, Any]) -> None:
+    """Write evaluation result to parquet file.
+
+    Args:
+        output_path: Path to write the parquet file
+        result: Dict containing all evaluation data. Expected keys:
+            - seed: int
+            - hand: str
+            - n_samples: int
+            - model_checkpoint: str
+            - timestamp: str
+            - points_{decl}: np.ndarray of int8 for each decl in EVAL_DECLS
+            - pmake_{decl}_{bid}: float for each decl/bid combination
+            - ci_low_{decl}_{bid}: float
+            - ci_high_{decl}_{bid}: float
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    schema = build_pyarrow_schema()
+
+    # Build single-row table
+    arrays = {
+        "seed": pa.array([result["seed"]], type=pa.int64()),
+        "hand": pa.array([result["hand"]], type=pa.string()),
+        "n_samples": pa.array([result["n_samples"]], type=pa.int32()),
+        "model_checkpoint": pa.array([result["model_checkpoint"]], type=pa.string()),
+        "timestamp": pa.array([result["timestamp"]], type=pa.string()),
+    }
+
+    # Points arrays
+    for decl in EVAL_DECLS:
+        col = points_col(decl)
+        points = result[col]
+        arrays[col] = pa.array([points.tolist()], type=pa.list_(pa.int8()))
+
+    # P(make) and CI arrays
+    for decl in EVAL_DECLS:
+        for bid in BID_THRESHOLDS:
+            for col_fn in (pmake_col, ci_low_col, ci_high_col):
+                col = col_fn(decl, bid)
+                arrays[col] = pa.array([result[col]], type=pa.float32())
+
+    table = pa.table(arrays, schema=schema)
+
+    # Ensure output directory exists
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    pq.write_table(table, output_path)
 
 
 def load_file(path: str | Path) -> tuple["pd.DataFrame", int, str]:
@@ -153,7 +277,7 @@ def load_points_only(path: str | Path) -> tuple[dict[int, np.ndarray], int, str]
     """
     import pandas as pd
 
-    columns = ["seed", "hand"] + [f"points_{d}" for d in EVAL_DECLS]
+    columns = ["seed", "hand"] + [points_col(d) for d in EVAL_DECLS]
     df = pd.read_parquet(path, columns=columns)
 
     seed = int(df["seed"].iloc[0])
@@ -161,7 +285,7 @@ def load_points_only(path: str | Path) -> tuple[dict[int, np.ndarray], int, str]
 
     points_dict = {}
     for decl in EVAL_DECLS:
-        points_dict[decl] = np.array(df[f"points_{decl}"].iloc[0], dtype=np.int8)
+        points_dict[decl] = np.array(df[points_col(decl)].iloc[0], dtype=np.int8)
 
     return points_dict, seed, hand
 
@@ -179,6 +303,6 @@ def get_pmake_matrix(df: "pd.DataFrame") -> np.ndarray:
 
     for i, decl in enumerate(EVAL_DECLS):
         for j, bid in enumerate(BID_THRESHOLDS):
-            matrix[i, j] = df[f"pmake_{decl}_{bid}"].iloc[0]
+            matrix[i, j] = df[pmake_col(decl, bid)].iloc[0]
 
     return matrix

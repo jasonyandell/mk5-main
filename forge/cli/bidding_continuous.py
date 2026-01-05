@@ -23,13 +23,19 @@ from pathlib import Path
 from typing import Iterator
 
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 import torch
 
 from forge.bidding.estimator import wilson_ci
 from forge.bidding.inference import PolicyModel
-from forge.bidding.schema import BID_THRESHOLDS, EVAL_DECLS
+from forge.bidding.schema import (
+    BID_THRESHOLDS,
+    EVAL_DECLS,
+    ci_high_col,
+    ci_low_col,
+    pmake_col,
+    points_col,
+    write_result,
+)
 from forge.bidding.simulator import simulate_games
 from forge.oracle.declarations import DECL_ID_TO_NAME
 from forge.oracle.rng import deal_from_seed
@@ -77,6 +83,7 @@ def evaluate_seed(
     """Evaluate a single seed across all declarations.
 
     Returns dict with all data for parquet storage.
+    Uses column names from forge.bidding.schema for consistency.
     """
     # Get P0's hand from seed
     hands = deal_from_seed(seed)
@@ -105,79 +112,20 @@ def evaluate_seed(
 
         # Store raw points as numpy array
         points_np = points.cpu().numpy().astype(np.int8)
-        result[f"points_{decl_id}"] = points_np
+        result[points_col(decl_id)] = points_np
 
         # Compute P(make) and CI for each bid threshold
         n = len(points_np)
         for bid in BID_THRESHOLDS:
             successes = int((points_np >= bid).sum())
             p_make = successes / n
-            ci_low, ci_high = wilson_ci(successes, n)
+            ci_lo, ci_hi = wilson_ci(successes, n)
 
-            result[f"pmake_{decl_id}_{bid}"] = float(p_make)
-            result[f"ci_low_{decl_id}_{bid}"] = float(ci_low)
-            result[f"ci_high_{decl_id}_{bid}"] = float(ci_high)
+            result[pmake_col(decl_id, bid)] = float(p_make)
+            result[ci_low_col(decl_id, bid)] = float(ci_lo)
+            result[ci_high_col(decl_id, bid)] = float(ci_hi)
 
     return result
-
-
-def write_result(output_path: Path, result: dict) -> None:
-    """Write evaluation result to parquet file."""
-    # Build schema: metadata as single-value columns, points as list columns
-    fields = [
-        pa.field("seed", pa.int64()),
-        pa.field("hand", pa.string()),
-        pa.field("n_samples", pa.int32()),
-        pa.field("model_checkpoint", pa.string()),
-        pa.field("timestamp", pa.string()),
-    ]
-
-    # Add points columns (list of int8)
-    for decl_id in EVAL_DECLS:
-        fields.append(pa.field(f"points_{decl_id}", pa.list_(pa.int8())))
-
-    # Add P(make) and CI columns
-    for decl_id in EVAL_DECLS:
-        for bid in BID_THRESHOLDS:
-            fields.append(pa.field(f"pmake_{decl_id}_{bid}", pa.float32()))
-            fields.append(pa.field(f"ci_low_{decl_id}_{bid}", pa.float32()))
-            fields.append(pa.field(f"ci_high_{decl_id}_{bid}", pa.float32()))
-
-    schema = pa.schema(fields)
-
-    # Build single-row table
-    arrays = {
-        "seed": pa.array([result["seed"]], type=pa.int64()),
-        "hand": pa.array([result["hand"]], type=pa.string()),
-        "n_samples": pa.array([result["n_samples"]], type=pa.int32()),
-        "model_checkpoint": pa.array([result["model_checkpoint"]], type=pa.string()),
-        "timestamp": pa.array([result["timestamp"]], type=pa.string()),
-    }
-
-    # Points arrays
-    for decl_id in EVAL_DECLS:
-        points = result[f"points_{decl_id}"]
-        arrays[f"points_{decl_id}"] = pa.array([points.tolist()], type=pa.list_(pa.int8()))
-
-    # P(make) and CI arrays
-    for decl_id in EVAL_DECLS:
-        for bid in BID_THRESHOLDS:
-            arrays[f"pmake_{decl_id}_{bid}"] = pa.array(
-                [result[f"pmake_{decl_id}_{bid}"]], type=pa.float32()
-            )
-            arrays[f"ci_low_{decl_id}_{bid}"] = pa.array(
-                [result[f"ci_low_{decl_id}_{bid}"]], type=pa.float32()
-            )
-            arrays[f"ci_high_{decl_id}_{bid}"] = pa.array(
-                [result[f"ci_high_{decl_id}_{bid}"]], type=pa.float32()
-            )
-
-    table = pa.table(arrays, schema=schema)
-
-    # Ensure output directory exists
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    pq.write_table(table, output_path)
 
 
 def count_gaps(base_dir: Path, start_seed: int, limit: int = 20) -> list[str]:
