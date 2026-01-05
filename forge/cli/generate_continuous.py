@@ -236,10 +236,19 @@ def main() -> None:
         default=100_000,
         help="Chunk size for enumeration",
     )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=None,
+        help="Output directory (default: data/shards-standard or data/shards-marginalized)",
+    )
     args = parser.parse_args()
 
     # Determine output directory
-    if args.marginalized:
+    if args.output_dir:
+        base_dir = args.output_dir
+        mode_name = "marginalized" if args.marginalized else "standard"
+    elif args.marginalized:
         base_dir = Path("data/shards-marginalized")
         mode_name = "marginalized"
     else:
