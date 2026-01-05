@@ -159,7 +159,8 @@ Everything exists to:
               ↕
 ┌─────────────────────────────────┐
 │  Data Storage                   │  Versioned directories
-│  - data/shards/                 │  Oracle parquet output
+│  - data/shards-standard/        │  Standard oracle output (1 decl/seed)
+│  - data/shards-marginalized/    │  Marginalized oracle output (N opp/seed)
 │  - data/tokenized/              │  Preprocessed numpy arrays
 │  - data/flywheel-shards/        │  Flywheel oracle output
 │  - data/flywheel-tokenized/     │  Flywheel preprocessed data
@@ -173,14 +174,15 @@ Everything exists to:
 ## Data Flow
 
 ```
-1. GENERATE (GPU solver)
-   python -m forge.oracle.generate --seed-range 0:100 --out data/shards
+1. GENERATE (GPU solver - continuous mode recommended)
+   python -m forge.cli.generate_continuous              # Standard mode
+   python -m forge.cli.generate_continuous --marginalized  # Marginalized mode
 
-   Output: data/shards/seed_XXXXXXXX_decl_Y.parquet
-           └── Each file: ~50k game states with perfect V/Q values
+   Output: data/shards-{standard,marginalized}/{train,val,test}/
+           └── Each file: ~50k-100k game states with perfect V/Q values
 
 2. TOKENIZE (CPU preprocessing)
-   python -m forge.cli.tokenize --input data/shards --output data/tokenized
+   python -m forge.cli.tokenize --input data/shards-standard --output data/tokenized
 
    Output: data/tokenized/{train,val,test}/
            └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy
@@ -196,23 +198,35 @@ Use `--help` on any command for full options.
 
 ### Generation Strategies
 
-Two CLI tools for oracle generation with different use cases:
-
-| Tool | Command | Strategy | Best For |
-|------|---------|----------|----------|
-| **generate.py** | `python -m forge.oracle.generate` | Explicit `--decl` flag | Val/test (all 10 decls per seed) |
-| **campaign.py** | `python -m forge.oracle.campaign` | Random decls per seed | Training (diversity over volume) |
-
-**Campaign mode** (recommended for training data):
+**Continuous generation** (recommended - runs unattended, fills gaps):
 ```bash
-# 3 random declarations per seed (default) - maximizes declaration diversity
-python -m forge.oracle.campaign --seed-range 0:100 --out data/shards
+# Standard mode: 1 decl per seed (decl = seed % 10)
+python -m forge.cli.generate_continuous
 
-# Or specify count
-python -m forge.oracle.campaign --seed-range 0:100 --decls-per-seed 1 --out data/shards
+# Marginalized mode: 3 opp seeds per P0 hand
+python -m forge.cli.generate_continuous --marginalized
+
+# Start at specific seed (no backfill before)
+python -m forge.cli.generate_continuous --start-seed 1000
+
+# Preview what would be generated
+python -m forge.cli.generate_continuous --dry-run
 ```
 
-**Key insight**: Declaration diversity (100 seeds × 1 decl each) outperforms sample volume (10 seeds × 10 decls). Campaign mode with `--decls-per-seed 1` gives best coverage.
+**Standard vs Marginalized** (separate experiments):
+| Mode | Output Directory | Strategy | Training Goal |
+|------|-----------------|----------|---------------|
+| Standard | `data/shards-standard/` | 1 decl per seed | Perfect play for specific deals |
+| Marginalized | `data/shards-marginalized/` | N opp seeds per P0 hand | Robust/averaged play |
+
+**Legacy tools** (still available for debugging/one-off generation):
+
+| Tool | Command | Use Case |
+|------|---------|----------|
+| **generate.py** | `python -m forge.oracle.generate` | Debugging with `--show-qvals` |
+| **campaign.py** | `python -m forge.oracle.campaign` | Batch generation with random decls |
+
+**Key insight**: Declaration diversity (100 seeds × 1 decl each) outperforms sample volume (10 seeds × 10 decls). The continuous generator uses `decl = seed % 10` for optimal coverage.
 
 ---
 
@@ -429,32 +443,29 @@ Training on single-deal data causes the model to learn fragile strategies.
 
 ### The Solution: Sample Multiple Opponent Distributions
 
-Instead of one shard per P0 hand, generate **3 shards** with different opponent distributions:
+Instead of one shard per P0 hand, generate **N shards** with different opponent distributions:
 
 ```bash
-# Same P0 hand, 3 different opponent shuffles → 3 shards
-python -m forge.scripts.campaign_marginalized --base-seed-range 0:200 --n-opp-seeds 3
+# Continuous marginalized generation (recommended)
+python -m forge.cli.generate_continuous --marginalized
+
+# With custom opponent seeds per P0 hand (default: 3)
+python -m forge.cli.generate_continuous --marginalized --n-opp-seeds 5
 ```
 
-This creates:
+This creates files like:
 - `seed_00000000_opp0_decl_0.parquet` - Base seed 0, opponent shuffle 0
 - `seed_00000000_opp1_decl_0.parquet` - Base seed 0, opponent shuffle 1
 - `seed_00000000_opp2_decl_0.parquet` - Base seed 0, opponent shuffle 2
 
 The model sees the same P0 hand with different Q-values depending on opponent distribution. Through gradient descent, it implicitly learns to prefer **robust** moves (high Q across all samples) over **fragile** ones (high Q only sometimes).
 
-### Training Script
+### Data Organization
 
-Use `cloud-train-v3-marginalized.sh` for the full pipeline:
-
-```bash
-./forge/scripts/cloud-train-v3-marginalized.sh
-```
-
-Generates:
-- **600 train shards**: 200 base seeds × 3 opponent seeds × 1 decl
-- **50 val shards**: seeds 900-904 × 10 decls (golden, not marginalized)
-- **50 test shards**: seeds 950-954 × 10 decls (golden, not marginalized)
+Marginalized data is stored in `data/shards-marginalized/{train,val,test}/`:
+- Seeds routed by `seed % 1000`: 0-899 → train, 900-949 → val, 950-999 → test
+- Gap-filling: CLI automatically detects and generates missing shards
+- Changing `--n-opp-seeds` backfills new opp seeds for existing base seeds
 
 ### Shard Naming
 
