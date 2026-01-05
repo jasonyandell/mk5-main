@@ -142,6 +142,8 @@ Each seed produces a parquet file at `data/bidding-results/{train,val,test}/seed
 - **Bid thresholds**: 30-42 (13 values)
 - **Total columns**: 365 (5 metadata + 9 points arrays + 351 stats)
 
+See `forge/bidding/schema.py` for full schema documentation and loading utilities.
+
 ### Performance
 
 | N | CI Width | Time/seed | Seeds/day (1 GPU) |
