@@ -31,6 +31,11 @@ from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
 from forge.oracle.timer import SeedTimer
 
 
+class SkipSeedError(Exception):
+    """Raised when a seed should be skipped (e.g., too many states)."""
+    pass
+
+
 def get_output_dir(base_dir: Path, seed: int) -> Path:
     """Route seed to train/val/test subdirectory."""
     bucket = seed % 1000
@@ -90,6 +95,7 @@ def generate_standard_shard(
     output_path: Path,
     device: torch.device,
     config: SolveConfig,
+    max_states: int | None = None,
 ) -> None:
     """Generate a single standard shard."""
     timer = SeedTimer(seed=seed, decl_id=decl_id)
@@ -99,7 +105,11 @@ def generate_standard_shard(
     timer.phase("setup")
 
     all_states = enumerate_gpu(ctx, config=config)
-    timer.phase("enumerate", extra=f"states={int(all_states.shape[0]):,}")
+    state_count = int(all_states.shape[0])
+    timer.phase("enumerate", extra=f"states={state_count:,}")
+
+    if max_states is not None and state_count > max_states:
+        raise SkipSeedError(f"seed {seed} has {state_count:,} states (max={max_states:,})")
 
     child_idx = build_child_index(all_states, ctx, config=config)
     timer.phase("child_index")
@@ -123,6 +133,7 @@ def generate_marginalized_shard(
     output_path: Path,
     device: torch.device,
     config: SolveConfig,
+    max_states: int | None = None,
 ) -> None:
     """Generate a single marginalized shard.
 
@@ -140,7 +151,11 @@ def generate_marginalized_shard(
     timer.phase("setup")
 
     all_states = enumerate_gpu(ctx, config=config)
-    timer.phase("enumerate", extra=f"states={int(all_states.shape[0]):,}")
+    state_count = int(all_states.shape[0])
+    timer.phase("enumerate", extra=f"states={state_count:,}")
+
+    if max_states is not None and state_count > max_states:
+        raise SkipSeedError(f"seed {base_seed}/opp{opp_seed} has {state_count:,} states (max={max_states:,})")
 
     child_idx = build_child_index(all_states, ctx, config=config)
     timer.phase("child_index")
@@ -237,6 +252,12 @@ def main() -> None:
         help="Chunk size for enumeration",
     )
     parser.add_argument(
+        "--max-states",
+        type=int,
+        default=None,
+        help="Skip seeds that enumerate more than this many states (e.g., 100000000)",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
@@ -265,6 +286,8 @@ def main() -> None:
     print(f"Device: {device}")
     if args.marginalized:
         print(f"Opponent seeds per P0 hand: {args.n_opp_seeds}")
+    if args.max_states:
+        print(f"Max states: {args.max_states:,}")
     if args.limit:
         print(f"Limit: {args.limit} shards")
     print()
@@ -287,18 +310,27 @@ def main() -> None:
 
     generated = 0
 
+    skipped = 0
+
     if args.marginalized:
         iterator = find_missing_marginalized(base_dir, args.start_seed, args.n_opp_seeds)
         for base_seed, opp_seed, decl_id, output_path in iterator:
             while True:  # Retry loop
                 try:
                     generate_marginalized_shard(
-                        base_seed, opp_seed, decl_id, output_path, device, config
+                        base_seed, opp_seed, decl_id, output_path, device, config,
+                        max_states=args.max_states,
                     )
                     generated += 1
                     break  # Success, exit retry loop
+                except SkipSeedError as e:
+                    print(f"SKIP: {e}")
+                    skipped += 1
+                    break  # Skip this seed, don't retry
                 except Exception as e:
                     print(f"ERROR: {e}")
+                    if "out of memory" in str(e).lower():
+                        print("HINT: Try --max-states 150000000, or 10M less if OOM persists")
                     print("Retrying in 5 seconds...")
                     time.sleep(5)
                     continue
@@ -311,11 +343,20 @@ def main() -> None:
         for seed, decl_id, output_path in iterator:
             while True:  # Retry loop
                 try:
-                    generate_standard_shard(seed, decl_id, output_path, device, config)
+                    generate_standard_shard(
+                        seed, decl_id, output_path, device, config,
+                        max_states=args.max_states,
+                    )
                     generated += 1
                     break  # Success, exit retry loop
+                except SkipSeedError as e:
+                    print(f"SKIP: {e}")
+                    skipped += 1
+                    break  # Skip this seed, don't retry
                 except Exception as e:
                     print(f"ERROR: {e}")
+                    if "out of memory" in str(e).lower():
+                        print("HINT: Try --max-states 150000000, or 10M less if OOM persists")
                     print("Retrying in 5 seconds...")
                     time.sleep(5)
                     continue
@@ -324,7 +365,8 @@ def main() -> None:
                 print(f"\nReached limit of {args.limit} shards.")
                 break
 
-    print(f"\n=== Complete: {generated} shards generated ===")
+    skip_msg = f", {skipped} skipped" if skipped else ""
+    print(f"\n=== Complete: {generated} shards generated{skip_msg} ===")
 
 
 if __name__ == "__main__":
