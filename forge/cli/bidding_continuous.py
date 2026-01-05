@@ -29,17 +29,11 @@ import torch
 
 from forge.bidding.estimator import wilson_ci
 from forge.bidding.inference import PolicyModel
+from forge.bidding.schema import BID_THRESHOLDS, EVAL_DECLS
 from forge.bidding.simulator import simulate_games
-from forge.oracle.declarations import DECL_ID_TO_NAME, N_DECLS
+from forge.oracle.declarations import DECL_ID_TO_NAME
 from forge.oracle.rng import deal_from_seed
 from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
-
-
-# Declarations to evaluate: 0-7 and 9 (skip 8=doubles-suit)
-EVAL_DECLS = [i for i in range(N_DECLS) if i != 8]
-
-# Bid thresholds to compute P(make) for
-BID_THRESHOLDS = list(range(30, 43))  # 30-42
 
 
 def get_output_dir(base_dir: Path, seed: int) -> Path:
