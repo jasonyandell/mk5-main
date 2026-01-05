@@ -106,6 +106,48 @@ results: TrumpResult = evaluate_bids(points, decl_id=6)
 
 See [CONVERGENCE.md](CONVERGENCE.md) for detailed analysis.
 
+## Continuous Evaluation
+
+For generating large-scale bidding evaluation datasets, use the continuous CLI:
+
+```bash
+# Run forever with N=500 samples per declaration
+python -m forge.cli.bidding_continuous
+
+# Single seed test
+python -m forge.cli.bidding_continuous --limit 1
+
+# Preview gaps without running
+python -m forge.cli.bidding_continuous --dry-run
+
+# Start at specific seed
+python -m forge.cli.bidding_continuous --start-seed 1000
+```
+
+### Output Schema
+
+Each seed produces a parquet file at `data/bidding-results/{train,val,test}/seed_XXXXXXXX.parquet`:
+
+| Column Pattern | Type | Description |
+|----------------|------|-------------|
+| `seed` | int64 | RNG seed for hand generation |
+| `hand` | string | Hand as "6-4,5-5,..." format |
+| `n_samples` | int32 | Samples per declaration |
+| `points_{decl}` | list[int8] | Raw simulation results (N values, 0-84) |
+| `pmake_{decl}_{bid}` | float32 | P(make) for bid threshold |
+| `ci_low_{decl}_{bid}` | float32 | Wilson CI lower bound |
+| `ci_high_{decl}_{bid}` | float32 | Wilson CI upper bound |
+
+- **Declarations**: 0-7 and 9 (skips 8=doubles-suit)
+- **Bid thresholds**: 30-42 (13 values)
+- **Total columns**: 365 (5 metadata + 9 points arrays + 351 stats)
+
+### Performance
+
+| N | CI Width | Time/seed | Seeds/day (1 GPU) |
+|---|----------|-----------|-------------------|
+| 500 | ±0.04 | ~10 min | ~137 |
+
 ## Debugging & Analysis Tools
 
 ### investigate.py - Debug Losing Games

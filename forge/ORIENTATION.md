@@ -164,6 +164,7 @@ Everything exists to:
 │  - data/tokenized/              │  Preprocessed numpy arrays
 │  - data/flywheel-shards/        │  Flywheel oracle output
 │  - data/flywheel-tokenized/     │  Flywheel preprocessed data
+│  - data/bidding-results/        │  P(make) Monte Carlo evaluations
 │  - runs/                        │  Training outputs
 │  - forge/models/                │  Pre-trained checkpoints
 └─────────────────────────────────┘
@@ -354,10 +355,25 @@ See [models/README.md](models/README.md) for:
 
 ## Bidding Evaluation (System 2)
 
+Monte Carlo simulation for P(make) estimation. Uses trained policy model to simulate games.
+
+**Continuous generation** (recommended - runs unattended, fills gaps):
+```bash
+python -m forge.cli.bidding_continuous              # Run forever, N=500 samples
+python -m forge.cli.bidding_continuous --limit 1    # Single seed test
+python -m forge.cli.bidding_continuous --dry-run    # Preview gaps
+```
+
+Output: `data/bidding-results/{train,val,test}/seed_XXXXXXXX.parquet`
+- Raw points: `points_{decl}` (int8 array, N samples per declaration)
+- P(make): `pmake_{decl}_{bid}` for bids 30-42
+- Wilson CI: `ci_low_{decl}_{bid}`, `ci_high_{decl}_{bid}`
+- Metadata: seed, hand string, n_samples, model checkpoint, timestamp
+
 See [bidding/README.md](bidding/README.md) for:
-- Monte Carlo simulation for P(make) estimation
 - Module structure and key classes
 - Sample size guidelines
+- Single-hand evaluation CLI
 
 See [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis.
 
