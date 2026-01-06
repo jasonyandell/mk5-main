@@ -360,6 +360,7 @@ Monte Carlo simulation for P(make) estimation. Uses trained policy model to simu
 **Continuous generation** (recommended - runs unattended, fills gaps):
 ```bash
 python -m forge.cli.bidding_continuous              # Run forever, N=500 samples
+python -m forge.cli.bidding_continuous --start-seed 1000  # Start at seed 1000
 python -m forge.cli.bidding_continuous --limit 1    # Single seed test
 python -m forge.cli.bidding_continuous --dry-run    # Preview gaps
 ```

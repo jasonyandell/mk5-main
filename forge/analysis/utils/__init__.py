@@ -1,0 +1,60 @@
+"""Shared utilities for analysis notebooks.
+
+Modules:
+    loading - Shard loading with caching
+    features - Feature extraction from packed states
+    viz - Visualization helpers
+    compression - Entropy and compressibility metrics
+    navigation - State space navigation (PV tracing, children)
+    symmetry - Canonical forms and orbit enumeration
+"""
+
+from forge.analysis.utils.loading import (
+    load_seed,
+    load_seeds,
+    iterate_shards,
+    find_shard_files,
+)
+from forge.analysis.utils.features import (
+    depth,
+    team,
+    player,
+    count_locations,
+    counts_remaining,
+    extract_all,
+)
+from forge.analysis.utils.compression import (
+    entropy_bits,
+    conditional_entropy,
+    mutual_information,
+    lzma_ratio,
+)
+from forge.analysis.utils.viz import (
+    plot_v_distribution,
+    plot_v_by_depth,
+    setup_notebook_style,
+)
+
+__all__ = [
+    # loading
+    "load_seed",
+    "load_seeds",
+    "iterate_shards",
+    "find_shard_files",
+    # features
+    "depth",
+    "team",
+    "player",
+    "count_locations",
+    "counts_remaining",
+    "extract_all",
+    # compression
+    "entropy_bits",
+    "conditional_entropy",
+    "mutual_information",
+    "lzma_ratio",
+    # viz
+    "plot_v_distribution",
+    "plot_v_by_depth",
+    "setup_notebook_style",
+]

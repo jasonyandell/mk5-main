@@ -1,9 +1,10 @@
-# Crystal Forge ML dependencies
+# Crystal Forge - Core ML Training
 # Install: pip install -r forge/requirements.txt
 
 torch>=2.0
 lightning>=2.0
 pyarrow>=14.0
 wandb>=0.16
-numpy>=1.26,<2  # Pin to 1.x for torch compatibility
-rich  # Optional: pretty progress bars
+numpy>=1.26
+pandas>=2.0
+rich  # Pretty progress bars

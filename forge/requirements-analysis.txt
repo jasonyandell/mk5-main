@@ -1,0 +1,23 @@
+# Crystal Forge - Analysis Notebooks
+# Install: pip install -r forge/requirements-analysis.txt
+
+-r requirements.txt  # Include core dependencies
+
+# Jupyter environment
+jupyter>=1.0
+jupyterlab>=4.0
+
+# Visualization
+matplotlib>=3.8
+seaborn>=0.13
+
+# Scientific computing
+scipy>=1.11
+scikit-learn>=1.4
+
+# Utilities
+tqdm>=4.66
+networkx>=3.2
+
+# Optional: Persistent homology (requires C++ compiler)
+# gudhi>=3.9
