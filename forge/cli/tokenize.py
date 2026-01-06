@@ -8,29 +8,22 @@ Converts oracle parquet files to pre-tokenized numpy arrays with:
 - Output format matching DominoDataset expectations
 
 Usage:
-    # Default: read from data/shards/, write to data/tokenized/
+    # Default: read from data/shards-standard/, write to data/tokenized/
     python -m forge.cli.tokenize
 
-    # Explicit paths
+    # Explicit paths (e.g., external drive)
     python -m forge.cli.tokenize \\
-      --input data/shards \\
-      --output data/tokenized \\
-      --max-samples-per-shard 50000 \\
-      --seed 42
+      --input-dir /mnt/d/shards-standard \\
+      --output-dir /mnt/d/tokenized
 
-    # During transition: read from legacy location
-    python -m forge.cli.tokenize \\
-      --input data/solver2 \\
-      --output data/tokenized \\
-      --seed 42
+    # Preview without processing
+    python -m forge.cli.tokenize --dry-run
 
     # Quick test with small subset
     python -m forge.cli.tokenize \\
-      --input data/solver2 \\
-      --output scratch/tok_test \\
+      --output-dir scratch/tok_test \\
       --max-files 5 \\
-      --max-samples-per-shard 1000 \\
-      --seed 42
+      --max-samples-per-shard 1000
 """
 
 from __future__ import annotations
@@ -100,27 +93,27 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Default paths
+  # Default paths (local)
   python -m forge.cli.tokenize
 
-  # Custom paths
-  python -m forge.cli.tokenize --input data/solver2 --output data/tokenized
+  # External drive
+  python -m forge.cli.tokenize --input-dir /mnt/d/shards-standard --output-dir /mnt/d/tokenized
 
   # Quick test
-  python -m forge.cli.tokenize --input data/solver2 --output scratch/tok_test --max-files 5 --max-samples-per-shard 1000
+  python -m forge.cli.tokenize --output-dir scratch/tok_test --max-files 5 --max-samples-per-shard 1000
         """,
     )
 
     parser.add_argument(
-        "--input", "-i",
-        type=str,
-        default="data/shards",
-        help="Input directory containing seed_*.parquet files (default: data/shards)",
+        "--input-dir",
+        type=Path,
+        default=None,
+        help="Input directory containing seed_*.parquet files (default: data/shards-standard)",
     )
     parser.add_argument(
-        "--output", "-o",
-        type=str,
-        default="data/tokenized",
+        "--output-dir",
+        type=Path,
+        default=None,
         help="Output directory for tokenized data (default: data/tokenized)",
     )
     parser.add_argument(
@@ -170,8 +163,9 @@ Examples:
 
     args = parser.parse_args()
 
-    input_dir = Path(args.input)
-    output_dir = Path(args.output)
+    # Apply defaults (matches generate_continuous.py pattern)
+    input_dir = args.input_dir if args.input_dir else Path("data/shards-standard")
+    output_dir = args.output_dir if args.output_dir else Path("data/tokenized")
 
     # Validate input directory
     if not input_dir.exists():
