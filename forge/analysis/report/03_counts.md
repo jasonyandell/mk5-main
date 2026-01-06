@@ -1,95 +1,180 @@
 # 03: Count Domino Analysis
 
-## Context
+## Overview
 
-This is the most important section. Count dominoes explain **76% of game value variance**—and our model explicitly encodes them. This section explains why our 97.8% accuracy is possible.
+This section presents our most significant finding: **count domino capture explains 76% of V variance overall, rising to >99% in late-game positions**. This suggests the game's complexity concentrates in a small number of key dominoes.
 
-## The Five Count Dominoes
+---
 
-Texas 42 has five "count" dominoes worth points:
+## 3.1 The Count Dominoes
 
-| Domino | Points | Nickname |
-|--------|--------|----------|
-| 5-5 | 10 | Big Ten |
-| 0-5 | 5 | Five-Blank |
-| 1-4 | 5 | Fifteen |
-| 2-3 | 5 | Twenty-Three |
-| 3-3 | 5 | Double-Three |
+Texas 42 has five "count" dominoes that award points when captured in tricks:
 
-Total: **35 points** of 42 possible. Capturing these dominoes determines 83% of points directly.
+| Domino | Pips | Points | % of Total |
+|--------|------|--------|------------|
+| 5-5 | 10 | 10 | 23.8% |
+| 6-4 | 10 | 10 | 23.8% |
+| 5-0 | 5 | 5 | 11.9% |
+| 4-1 | 5 | 5 | 11.9% |
+| 3-2 | 5 | 5 | 11.9% |
 
-## R² = 0.76: Counts Dominate Everything
+**Total count points**: 35 of 42 possible (83.3%)
+**Remaining 7 points**: 1 per trick won (7 tricks × 1 point)
 
-We built progressively complex models predicting V from count information:
+**Hypothesis**: If count capture determines most points, it should predict V strongly.
+
+---
+
+## 3.2 Count Capture Statistics
+
+From a sample of 50,000 states:
+
+| Domino | Played % | Team0 Capture % |
+|--------|----------|-----------------|
+| 3-2 | 68.1% | 40.7% |
+| 4-1 | 65.6% | 50.1% |
+| 5-0 | 66.4% | 29.3% |
+| 5-5 | 65.7% | 68.0% |
+| 6-4 | 72.6% | 36.5% |
+
+**Observations**:
+1. Counts are played ~65-73% of the time by late game
+2. 5-5 strongly favors Team0 (68.0%) — likely correlation with declaration
+3. 5-0 strongly favors Team1 (70.7%) — possibly a defensive domino
+
+**Question**: Is the Team0 bias due to declaration advantage, or does the domino distribution vary by seed?
+
+---
+
+## 3.3 Regression Model: Count Capture → V
+
+We model V as a linear function of count capture indicators:
+
+```
+V = Σᵢ βᵢ · capture(countᵢ, Team0) + ε
+```
+
+Where `capture(d, t)` = 1 if team t captured domino d, 0 otherwise.
+
+### Learned Coefficients
+
+| Count | True Points | Learned β | Ratio |
+|-------|-------------|-----------|-------|
+| 3-2 | 5 | 5.84 | 1.17 |
+| 4-1 | 5 | 5.66 | 1.13 |
+| 5-0 | 5 | 4.92 | 0.98 |
+| 6-4 | 10 | 10.42 | 1.04 |
+| 5-5 | 10 | 9.14 | 0.91 |
+| depth | - | 0.088 | - |
+
+**Observations**:
+1. Learned coefficients closely match true point values (ratio 0.91-1.17)
+2. 3-2 and 4-1 are slightly overweighted (capturing them also implies trick wins)
+3. 5-5 is slightly underweighted (perhaps easier to lose)
+4. Depth coefficient is small but positive (later game → more determined)
+
+### Model Performance
+
+| Model | R² | RMSE |
+|-------|-----|------|
+| Simple (fixed β = point values) | 0.552 | 6.96 |
+| Learned coefficients | 0.759 | 5.11 |
+| Learned + depth | 0.759 | 5.11 |
 
 ![Model Comparison](../results/figures/03c_model_comparison.png)
 
-| Model | R² | Description |
-|-------|-----|-------------|
-| Simple (fixed coef) | 55% | Each count worth its point value |
-| Learned coefficients | 76% | Weights learned from data |
-| Learned + depth | 76% | Adding depth doesn't help much |
+**Key finding**: Learned coefficients achieve R² = 0.759, explaining three-quarters of V variance with only 5 binary features.
 
-**The finding**: Knowing which team holds which counts explains three-quarters of the outcome.
+---
 
-**Model relevance**: Our DominoTransformer encodes `count_value` (0/5/10) as one of 12 token features. This is probably the single most important feature for the model's success.
+## 3.4 Variance Decomposition by Depth
 
-## Count Capture Basins
+We partition states into "count basins" — groups sharing the same count capture outcomes — and compute within-basin vs. total variance:
 
-We grouped positions by their "count basin"—which counts have been captured by which team.
-
-![Basin V Distributions](../results/figures/03b_basin_v_distributions.png)
-
-**Finding**: Late-game basins are extremely pure:
-
-| Depth | Within-Basin Variance |
-|-------|----------------------|
-| 8 | 0.31 |
-| 12 | 0.31 |
-| 16 | 0.38 |
-
-At depth 16, if you know which counts were captured, you can predict V with variance < 1. The endgame is nearly deterministic.
+| Depth | Total σ² | Within-Basin σ² | R² (explained) | n States | n Basins |
+|-------|----------|-----------------|----------------|----------|----------|
+| 5 | 96.7 | 33.5 | 0.653 | 7,149 | 16 |
+| 6 | 82.6 | 20.0 | 0.758 | 4,494 | 18 |
+| 7 | 81.6 | 10.2 | 0.875 | 2,798 | 16 |
+| 8 | 73.2 | 0.31 | **0.996** | 1,412 | 15 |
+| 9 | 101.9 | 32.8 | 0.678 | 14,594 | 23 |
+| 10 | 80.8 | 18.3 | 0.773 | 7,799 | 25 |
+| 11 | 78.3 | 8.9 | 0.887 | 3,830 | 20 |
+| 12 | 66.4 | 0.31 | **0.995** | 1,345 | 14 |
+| 13 | 104.2 | 29.6 | 0.716 | 3,325 | 22 |
+| 14 | 76.3 | 16.5 | 0.784 | 1,654 | 18 |
+| 15 | 70.8 | 6.7 | 0.905 | 821 | 11 |
+| 16 | 59.1 | 0.38 | **0.994** | 197 | 7 |
+| 17 | 89.7 | 27.9 | 0.689 | 205 | 7 |
+| 18 | 108.6 | 11.7 | 0.892 | 115 | 6 |
 
 ![Variance by Depth](../results/figures/03b_var_explained_by_depth.png)
 
-**Model relevance**: This explains our 0.15% blunder rate. Late-game positions fall into pure basins with obvious optimal moves. Blunders require ambiguous positions—which are rare once counts are determined.
+**Pattern**: R² follows a 4-depth cycle:
+- Depths 5, 9, 13, 17 (first play of trick): R² ≈ 0.65-0.72
+- Depths 8, 12, 16 (trick boundary): R² > 0.99
 
-## Residual Analysis: What Counts Don't Explain
+**Interpretation**: At trick boundaries, all uncertainty resolves to count capture. Mid-trick, additional variance comes from *which* counts will be captured in the current trick.
 
-The 24% unexplained variance comes from:
+---
+
+## 3.5 Basin Structure Analysis
+
+Within each count basin, what explains the residual variance?
+
+![Basin V Distributions](../results/figures/03b_basin_v_distributions.png)
+
+**Late-game basins** (depth 8, 12, 16): Within-basin σ² < 0.4, nearly deterministic
+**Early-game basins** (depth 5, 9): Within-basin σ² ≈ 20-35, substantial residual variation
+
+The residual variance at depth 5 implies other factors matter early:
+- Which team will win future tricks (not yet determined)
+- Positional advantages that don't show in current count state
+
+---
+
+## 3.6 Residual Analysis
 
 ![Residual Analysis](../results/figures/03c_residual_analysis.png)
 
-1. **Trick-taking dynamics** — *How* counts are captured, not just *whether*
-2. **Trump control** — Who controls the trump suit
-3. **Timing** — When to cash counts vs. when to hold them
-
-**Model relevance**: This is what the Transformer's attention mechanism captures. Simple count ownership isn't enough—you need sequential reasoning about trick flow.
+**Residual distribution**: Roughly symmetric, centered at 0, with tails extending ±15 points
 
 ![Residual by Depth](../results/figures/03c_residual_by_depth.png)
 
-## The Trump-Heavy Hand Problem Revisited
+**Residual by depth**: Decreases systematically from early game to late game, consistent with the variance decomposition.
 
-Our known bug (t42-pa69): model plays 2-2 instead of 6-6 with seven trumps.
+---
 
-**Why count analysis doesn't help**: Both 2-2 and 6-6 capture the same count points (none—neither is a count domino). The difference is *reliability*:
-- 6-6 always wins (highest trump)
-- 2-2 might lose to higher trump
+## 3.7 Implications
 
-Count features don't distinguish these. The model needs to learn *robustness*, not count capture.
+### The Game's Core Structure
+Texas 42 is fundamentally a count-capture game. The trick-taking mechanics determine *which team captures which counts*, and counts determine ~76% of the outcome. This is analogous to how chess is "about" king safety despite having many other pieces.
 
-**Solution**: Marginalized Q-values train on multiple opponent distributions, teaching that 6-6 is universally good while 2-2 is situational.
+### For Neural Networks
+A model that accurately predicts count capture outcomes should achieve high V prediction accuracy. Our 97.8% accurate Transformer explicitly encodes count information (0/5/10 point value per domino), which this analysis validates.
 
-## What This Means for the Model
+### For Simplified Oracles
+A "count-only" oracle that tracks only count capture states would be ~250× smaller (16 basins vs ~4000 states per depth) while retaining >99% accuracy in late game and ~75% overall.
 
-| Finding | Model Implication |
-|---------|-------------------|
-| Counts = 76% R² | `count_value` feature is critical |
-| Pure late-game basins | Explains low blunder rate |
-| 24% unexplained = trick dynamics | Why attention matters |
-| Counts don't cover robustness | Why marginalized training needed |
+### The Remaining 24%
+The unexplained variance comes from:
+1. Mid-trick uncertainty (which counts will be captured)
+2. Non-count trick points (7 points total)
+3. Subtle positional advantages (tempo, trump control)
 
-**Bottom line**: Texas 42 is largely "count poker." Our model's explicit count encoding is probably its most important architectural decision.
+---
+
+## 3.8 Questions for Statistical Review
+
+1. **Model specification**: Should we include interaction terms (e.g., capturing both 5-5 and 6-4)? The current model assumes additivity.
+
+2. **Heteroscedasticity**: Residual variance depends strongly on depth. Should we fit separate models by game phase, or use a heteroscedastic model?
+
+3. **Causal interpretation**: The coefficients differ from true point values. Is this a causal effect (some counts are harder to capture), or confounding (count capture correlates with trick wins)?
+
+4. **Basin definition**: We define basins by exact count outcomes. Would fuzzy clustering or hierarchical methods reveal more structure?
+
+5. **Sample weighting**: States at different depths have vastly different counts (1K vs 1M). How should we weight the regression?
 
 ---
 

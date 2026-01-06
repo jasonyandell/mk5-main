@@ -1,99 +1,181 @@
-# 06: Scaling Analysis
+# 06: Scaling and Temporal Analysis
 
-## Context
+## Overview
 
-We analyzed how the game tree scales and whether game trajectories have temporal structure. The strong temporal correlations (α ≈ 31.5) explain why our Transformer architecture works.
+We analyze how game tree size scales with depth and investigate temporal correlations in game value trajectories. The key finding: **strong autocorrelation (DFA α = 31.5 vs 0.55 shuffled)** indicates game values evolve with significant memory.
 
-## State Count Scaling
+---
 
-How does the reachable state count grow with depth?
+## 6.1 State Count Scaling
+
+### State Counts by Depth
+
+| Depth | Mean | Std | Min | Max | CV |
+|-------|------|-----|-----|-----|-----|
+| 5 | 1.82M | 646K | 927K | 3.67M | 0.35 |
+| 9 | 8.66M | 6.75M | 1.48M | 27.1M | 0.78 |
+| 13 | 3.16M | 3.20M | 261K | 11.3M | 1.01 |
+| 17 | 196K | 191K | 17.6K | 702K | 0.97 |
+| 21 | 3,593 | 2,907 | 456 | 12K | 0.81 |
+| 25 | 35 | 17 | 10 | 69 | 0.49 |
+| 27 | 7 | 0 | 7 | 7 | 0.00 |
 
 ![State Count Scaling](../results/figures/06a_state_count_scaling.png)
 
-**Finding**: Approximately exponential decay from midgame to endgame, with branching factor ~2.2.
+**Observations**:
+1. Peak at depth 9 (after second trick), not uniform
+2. High coefficient of variation (0.35-1.01) indicates substantial seed variation
+3. Deterministic endpoints: depth 27 always has 7 states, depth 28 always has 1
+
+### Scaling Model Comparison
+
+We fit power law (N ∝ d^α) and exponential (N ∝ e^(βd)) models:
+
+| Model | Parameter | R² |
+|-------|-----------|-----|
+| Power law | α = -2.6 | 0.24 |
+| Exponential | β = -0.26 | 0.24 |
 
 ![Scaling Comparison](../results/figures/06a_scaling_comparison.png)
 
-| Depth | Typical State Count |
-|-------|-------------------|
-| 8 | ~320,000 |
-| 12 | ~630,000 |
-| 16 | ~130,000 |
-| 20 | ~6,000 |
+**Conclusion**: Neither model fits well (R² = 0.24). The state count has structure not captured by simple scaling laws.
 
-**Model relevance**: The manageable state count (millions, not billions) is why exhaustive DP solving works. If branching were higher, we couldn't generate perfect training data.
+---
 
-## Branching Factor Analysis
+## 6.2 Branching Factor Analysis
+
+Effective branching factor B(d) = N(d) / N(d+4) measures growth per trick:
+
+| Depth | Branching Factor |
+|-------|-----------------|
+| 0→4 | 0.0005 |
+| 4→8 | 0.0046 |
+| 5→9 | **1.69** |
+| 6→10 | **1.68** |
+| 7→11 | **2.00** |
+| 8→12 | 0.037 |
+| 9→13 | **2.14** |
+| 10→14 | **2.15** |
+| 11→15 | **3.00** |
+| 12→16 | 0.20 |
 
 ![Branching Factor](../results/figures/06a_branching_factor.png)
 
-Effective branching factor varies by depth:
-- Early game: ~4-5 (many choices)
-- Midgame: ~2-3 (more constrained)
-- Endgame: ~1-2 (often forced)
+**Pattern**: The branching factor shows strong 4-depth periodicity:
+- **Depths 5,6,9,10,13,14,17,18...** (mid-trick): B ≈ 1.7-2.6
+- **Depths 8,12,16,20...** (trick boundary): B ≈ 0.04-0.68
 
-**Model relevance**: Variable branching means the model faces different decision complexity at different depths. The 97.8% accuracy averages across this—easier late-game decisions boost the metric.
+**Interpretation**: At trick boundaries, many game paths converge (same count outcome regardless of specific cards played). Mid-trick, paths diverge.
 
-## Principal Variation Analysis
+---
 
-The "principal variation" (PV) is the sequence of optimal moves from any position. We extracted V along PV paths:
+## 6.3 Principal Variation Analysis
+
+The **principal variation (PV)** is the sequence of minimax-optimal moves from any position. We extracted V along PV paths:
+
+### PV Metadata (sample of 90 paths)
+
+| Metric | Value |
+|--------|-------|
+| Mean PV length | 22.4 moves |
+| Min length | 21 |
+| Max length | 24 |
+| Mean |start V| | 32.1 |
+| End V (all) | 0 |
 
 ![PV Overview](../results/figures/06b_pv_overview.png)
 
-**Finding**: V evolves smoothly along optimal play, with occasional jumps when counts are captured.
+All paths end at V = 0 (game terminal state), but start values vary widely.
+
+### V Changes Along PV
 
 ![V Changes](../results/figures/06b_v_changes.png)
 
+**Pattern**: V typically decreases along the PV (as uncertainty resolves), with occasional jumps when count dominoes are captured.
+
 ![Mean Trajectory](../results/figures/06b_mean_trajectory.png)
 
-## Temporal Correlations: DFA Analysis
+---
 
-Detrended Fluctuation Analysis (DFA) measures long-range correlations:
+## 6.4 Temporal Correlation Analysis
 
-![DFA Analysis](../results/figures/06c_dfa_analysis.png)
-
-| Condition | DFA α |
-|-----------|-------|
-| Real game trajectories | 31.5 |
-| Shuffled baseline | 0.55 |
-
-**The 50x difference is striking.** Game values are highly autocorrelated—what happened 3 moves ago affects what's optimal now.
-
-![Hurst Analysis](../results/figures/06c_hurst_analysis.png)
-
-## Why Transformers Work: Sequential Dependencies
-
-The DFA result explains our architecture choice:
-
-| Architecture | Can Capture α=31.5? |
-|--------------|-------------------|
-| Feedforward MLP | No (no memory) |
-| RNN/LSTM | Partially (fading memory) |
-| Transformer | Yes (attention over full sequence) |
-
-Our DominoTransformer attends over 32 tokens including trick history. This lets it capture "if the 5-0 was played trick 2, then X is optimal now"—exactly the correlations DFA detects.
-
-**Model relevance**: The 97.8% accuracy requires temporal reasoning. An MLP on just the current state would perform worse because it can't access the sequential structure.
-
-## Autocorrelation Structure
+### Autocorrelation Function
 
 ![Autocorrelation](../results/figures/06b_autocorrelation.png)
 
-V at move N correlates with V at moves N-1, N-2, etc. The correlation decays slowly—moves 5+ ago still matter.
+| Lag | Autocorrelation |
+|-----|-----------------|
+| 1 | 0.94 |
+| 2 | 0.89 |
+| 4 | 0.78 |
+| 8 | 0.51 |
+| 12 | 0.28 |
 
-**Model relevance**: The Transformer's self-attention lets the model learn which historical moves matter for current decisions. This is more flexible than RNN's fixed decay pattern.
+**Finding**: Strong positive autocorrelation persists to lag 8+. V at move n is highly correlated with V at move n-4 (previous trick).
 
-## What This Means for the Model
+---
 
-| Finding | Implication |
-|---------|-------------|
-| Manageable state count | DP solving feasible |
-| Variable branching | Depth affects decision complexity |
-| α=31.5 correlations | Temporal structure is real |
-| Slow correlation decay | History matters for decisions |
-| Transformer fits structure | Architecture choice validated |
+## 6.5 Detrended Fluctuation Analysis (DFA)
 
-**Bottom line**: The strong temporal correlations (α=31.5 vs 0.55 shuffled) justify our Transformer architecture. Attention over trick history captures dependencies that simpler architectures would miss.
+DFA estimates the Hurst exponent H, which characterizes long-range correlations:
+- H = 0.5: Random walk (no memory)
+- H > 0.5: Persistent (trending)
+- H < 0.5: Anti-persistent (mean-reverting)
+
+### DFA Results
+
+| Metric | Observed | Shuffled |
+|--------|----------|----------|
+| Mean α | 31.5 | 0.55 |
+| Std α | 40.7 | - |
+| Mean H | 0.925 | 0.61 |
+| Std H | 0.12 | - |
+
+![DFA Analysis](../results/figures/06c_dfa_analysis.png)
+
+**Key findings**:
+1. **α = 31.5 vs 0.55**: 57× higher than shuffled baseline
+2. **H = 0.925**: Strong persistence (near-perfect trending)
+3. **High variance (σ = 40.7)**: Heterogeneous dynamics across games
+
+![Hurst Analysis](../results/figures/06c_hurst_analysis.png)
+
+### Interpretation
+The DFA exponent of 31.5 is unusually high. Typical time series have α ∈ [0.5, 1.5]. Our value suggests:
+- Either the game has extreme long-range memory
+- Or the DFA methodology needs adjustment for this discrete, finite domain
+
+**Caution**: Standard DFA assumes continuous, stationary processes. Game trajectories are discrete and bounded. The absolute α value should be interpreted cautiously, but the comparison to shuffled baseline is meaningful.
+
+---
+
+## 6.6 Implications
+
+### For Sequential Models
+The strong autocorrelation (ρ₁ = 0.94, H = 0.925) validates our use of Transformer architecture with attention over game history. Feedforward networks that ignore history would miss this temporal structure.
+
+### For Training
+Trajectory-based training (full game sequences) may capture structure that IID sampling misses. Curriculum learning along game trajectories could exploit the correlation structure.
+
+### For Game Theory
+The 4-depth periodicity in branching factor reflects the trick structure fundamentally shaping the game tree. Count captures at trick boundaries act as "bottlenecks" where paths merge.
+
+### For Oracle Optimization
+The branching factor analysis suggests tricks are natural units for compression. A trick-level oracle (storing outcomes per trick rather than per move) could dramatically reduce storage.
+
+---
+
+## 6.7 Questions for Statistical Review
+
+1. **DFA validity**: Is DFA appropriate for bounded, discrete sequences of length ~24? What alternative methods exist for short time series?
+
+2. **α interpretation**: Why is α = 31.5 so extreme? Is this a real phenomenon or a methodological artifact?
+
+3. **Heterogeneity**: The high variance in α (40.7) suggests different games have very different dynamics. Should we stratify by game characteristics?
+
+4. **Stationarity**: The mean V decreases along PV (non-stationary). How does this affect the correlation analysis?
+
+5. **Causal structure**: The 4-depth periodicity matches trick structure. Can we formally test whether trick boundaries cause the observed correlation pattern?
 
 ---
 
