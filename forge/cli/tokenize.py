@@ -48,6 +48,51 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 
+def _dry_run(input_dir: Path, output_dir: Path, files: list[Path], args: argparse.Namespace) -> int:
+    """Preview tokenization without processing."""
+    # Count files by source location
+    subdir_counts = {'train': 0, 'val': 0, 'test': 0, 'flat': 0}
+    total_bytes = 0
+
+    for f in files:
+        # Check if file is in a subdir
+        parent_name = f.parent.name
+        if parent_name in ('train', 'val', 'test'):
+            subdir_counts[parent_name] += 1
+        else:
+            subdir_counts['flat'] += 1
+        total_bytes += f.stat().st_size
+
+    # Estimate output size (roughly 1:8 compression from parquet to tokenized numpy)
+    # Based on empirical data: 15GB tokenized from ~120GB parquet
+    estimated_output_gb = total_bytes / (1024**3) * 0.125
+
+    print("=== Tokenization Preview (dry-run) ===\n")
+    print(f"Input:  {input_dir}")
+    print(f"Output: {output_dir}")
+    print(f"Found {len(files)} parquet files ({total_bytes / (1024**3):.1f} GB)\n")
+
+    # Show structure
+    has_subdirs = any(subdir_counts[s] > 0 for s in ('train', 'val', 'test'))
+    if has_subdirs:
+        print("Source structure: {train,val,test}/ subdirectories")
+        for split in ('train', 'val', 'test'):
+            if subdir_counts[split] > 0:
+                print(f"  {split}/: {subdir_counts[split]} files")
+    else:
+        print(f"Source structure: flat directory ({subdir_counts['flat']} files)")
+
+    print(f"\nEstimated output: ~{estimated_output_gb:.1f} GB")
+    print(f"Max samples/shard: {args.max_samples_per_shard}")
+    print(f"Global seed: {args.seed}")
+
+    if args.max_files:
+        print(f"\nNote: Limited to first {args.max_files} files (--max-files)")
+
+    print("\nTo run tokenization, remove --dry-run flag")
+    return 0
+
+
 def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -117,6 +162,11 @@ Examples:
         action="store_true",
         help="Force re-tokenization even if output exists",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview file counts and estimated output size without processing",
+    )
 
     args = parser.parse_args()
 
@@ -128,14 +178,19 @@ Examples:
         print(f"ERROR: Input directory not found: {input_dir}", file=sys.stderr)
         return 1
 
-    # Check for parquet files
-    parquet_files = list(input_dir.glob("seed_*.parquet"))
+    # Import here to avoid slow startup for --help
+    from forge.ml.tokenize import ShardProgress, find_parquet_files, tokenize_shards
+
+    # Check for parquet files (supports both subdir and flat structures)
+    parquet_files = find_parquet_files(input_dir, max_files=args.max_files)
     if not parquet_files:
         print(f"ERROR: No seed_*.parquet files found in {input_dir}", file=sys.stderr)
+        print("  Checked: {train,val,test}/*.parquet and *.parquet", file=sys.stderr)
         return 1
 
-    # Import here to avoid slow startup for --help
-    from forge.ml.tokenize import ShardProgress, tokenize_shards
+    # Dry-run mode: preview without processing
+    if args.dry_run:
+        return _dry_run(input_dir, output_dir, parquet_files, args)
 
     # Initialize wandb if requested
     use_wandb = args.wandb and WANDB_AVAILABLE

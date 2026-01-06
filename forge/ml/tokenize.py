@@ -403,6 +403,9 @@ def _get_git_hash() -> str:
 def find_parquet_files(input_dir: Path, max_files: int | None = None) -> list[Path]:
     """Find all parquet files in input directory.
 
+    Searches for {train,val,test}/ subdirectories first (new structure),
+    falls back to flat directory (legacy structure).
+
     Args:
         input_dir: Directory to search
         max_files: Maximum files to return (for testing)
@@ -410,7 +413,17 @@ def find_parquet_files(input_dir: Path, max_files: int | None = None) -> list[Pa
     Returns:
         Sorted list of parquet file paths
     """
-    files = sorted(input_dir.glob("seed_*.parquet"))
+    # Try subdirs first (new structure: {input}/{train,val,test}/)
+    files = []
+    for subdir in ['train', 'val', 'test']:
+        subpath = input_dir / subdir
+        if subpath.exists():
+            files.extend(sorted(subpath.glob("seed_*.parquet")))
+
+    # Fall back to flat structure (legacy)
+    if not files:
+        files = sorted(input_dir.glob("seed_*.parquet"))
+
     if max_files:
         files = files[:max_files]
     return files
