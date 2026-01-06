@@ -34,6 +34,13 @@ from forge.analysis.utils.viz import (
     plot_v_by_depth,
     setup_notebook_style,
 )
+from forge.analysis.utils.navigation import (
+    build_state_lookup_fast,
+    trace_principal_variation,
+    track_count_captures,
+    count_capture_signature,
+    get_children,
+)
 
 __all__ = [
     # loading
@@ -57,4 +64,10 @@ __all__ = [
     "plot_v_distribution",
     "plot_v_by_depth",
     "setup_notebook_style",
+    # navigation
+    "build_state_lookup_fast",
+    "trace_principal_variation",
+    "track_count_captures",
+    "count_capture_signature",
+    "get_children",
 ]
