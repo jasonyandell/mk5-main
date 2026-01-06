@@ -6,7 +6,15 @@ This section synthesizes findings across all analyses and poses open questions f
 
 ---
 
-## 7.1 Summary of Key Findings
+## 7.1 Findings Dashboard
+
+The following dashboard summarizes all key findings from our analysis:
+
+![Findings Dashboard](../results/figures/07a_findings_dashboard.png)
+
+---
+
+## 7.2 Summary of Key Findings
 
 ### The Structural Picture
 
@@ -24,7 +32,7 @@ This section synthesizes findings across all analyses and poses open questions f
 
 ---
 
-## 7.2 Interconnections Between Findings
+## 7.3 Interconnections Between Findings
 
 ### Why Symmetry Fails
 The count dominoes use 6 of 7 pip values (0,1,2,3,4,5). This leaves almost no room for pip-permutation symmetries that preserve game value. **The count structure breaks symmetry.**
@@ -40,7 +48,7 @@ V evolves smoothly between count captures and jumps at captures. The 4-depth per
 
 ---
 
-## 7.3 What We Learned vs. What We Expected
+## 7.4 What We Learned vs. What We Expected
 
 | Question | Expectation | Reality |
 |----------|-------------|---------|
@@ -52,7 +60,7 @@ V evolves smoothly between count captures and jumps at captures. The 4-depth per
 
 ---
 
-## 7.4 Practical Applications
+## 7.5 Practical Applications
 
 ### Neural Network Training (Achieved)
 Our Transformer model achieves 97.8% move prediction accuracy. This analysis validates:
@@ -78,9 +86,30 @@ State-ordered V compresses to 8% of original size. Combined with the count struc
 
 **Open question**: What's the engineering trade-off curve?
 
+### Representation Comparison
+
+We compared different feature representations for predicting V:
+
+![Representation Comparison](../results/figures/07b_representation_comparison.png)
+
+| Representation | Features | R² |
+|----------------|----------|-----|
+| Depth only | 1 | 0.157 |
+| Depth + counts remaining | 2 | 0.372 |
+| Depth + team counts | 3 | 0.372 |
+| All features | 5 | 0.375 |
+
+The marginal benefit of additional features beyond count capture is minimal, confirming that counts dominate.
+
+### Residual Analysis Across Representations
+
+![Residual Analysis](../results/figures/07b_residual_analysis.png)
+
+This analysis shows how prediction residuals vary across different feature representations, highlighting where each representation succeeds and fails.
+
 ---
 
-## 7.5 Open Statistical Questions
+## 7.6 Open Statistical Questions
 
 ### Methodology Questions
 
@@ -110,7 +139,7 @@ State-ordered V compresses to 8% of original size. Combined with the count struc
 
 ---
 
-## 7.6 What Would Help
+## 7.7 What Would Help
 
 ### From a Statistics Perspective
 
@@ -133,7 +162,7 @@ State-ordered V compresses to 8% of original size. Combined with the count struc
 
 ---
 
-## 7.7 Conclusion
+## 7.8 Conclusion
 
 ### What We Know
 

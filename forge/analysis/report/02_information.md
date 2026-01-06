@@ -109,6 +109,14 @@ Entropy varies systematically with game phase:
 
 ![Information Gain](../results/figures/02a_info_gain.png)
 
+### Cumulative Information Structure
+
+The cumulative information plot shows how information about V accumulates as the game progresses:
+
+![Cumulative Information](../results/figures/02a_cumulative_info.png)
+
+This visualization reveals that information about the final outcome accumulates non-uniformly — significant jumps occur at trick boundaries when count dominoes are captured.
+
 ---
 
 ## 2.5 Conditional Entropy Structure

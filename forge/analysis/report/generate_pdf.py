@@ -202,7 +202,7 @@ def main():
 """
 
     # Generate PDF
-    output_path = REPORT_DIR / "analysis_report.pdf"
+    output_path = REPORT_DIR / "analysis_report_detailed.pdf"
     print(f"  Writing PDF to {output_path}...")
 
     HTML(string=html_content, base_url=str(REPORT_DIR)).write_pdf(

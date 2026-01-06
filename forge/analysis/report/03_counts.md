@@ -44,6 +44,24 @@ From a sample of 50,000 states:
 
 **Question**: Is the Team0 bias due to declaration advantage, or does the domino distribution vary by seed?
 
+### Count Distribution Visualization
+
+![Count Distribution](../results/figures/03a_count_distribution.png)
+
+The distribution shows that count dominoes are captured at varying rates, with clear team biases for certain counts.
+
+### Counts Remaining by Depth
+
+![Counts vs Depth](../results/figures/03a_counts_vs_depth.png)
+
+As expected, counts remaining decreases with game depth. The rate of count capture is non-uniform — most captures occur in the middle game when players have more strategic options.
+
+### V Distribution by Count Advantage
+
+![V by Count Advantage](../results/figures/03a_v_by_count_adv.png)
+
+This shows the relationship between count point advantage (Team0 counts - Team1 counts) and the minimax value V. The strong linear relationship visually confirms that count capture dominates game outcome.
+
 ---
 
 ## 3.3 Regression Model: Count Capture → V
@@ -121,6 +139,20 @@ We partition states into "count basins" — groups sharing the same count captur
 ## 3.5 Basin Structure Analysis
 
 Within each count basin, what explains the residual variance?
+
+### Basin Distribution
+
+![Basin Distribution](../results/figures/03b_basin_distribution.png)
+
+The basin distribution shows how states are partitioned among count outcome configurations. Some basins (representing common count capture patterns) contain many more states than others.
+
+### V vs Capture Relationship
+
+![V vs Capture](../results/figures/03b_v_vs_capture.png)
+
+This plot shows V as a function of count capture outcomes, demonstrating the tight coupling between which team captured which counts and the resulting minimax value.
+
+### Within-Basin V Distributions
 
 ![Basin V Distributions](../results/figures/03b_basin_v_distributions.png)
 
