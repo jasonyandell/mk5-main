@@ -1,0 +1,6 @@
+finding,evidence,implication
+Count dominoes are primary drivers of V,R² = 0.76 for count capture model; within-basin variance < 1 at depth 16,Simplified representation possible based on count domino features
+Exact symmetries provide minimal compression,Compression ratio ~1.0x; self-symmetric states < 0.5%,Cannot reduce state space via symmetry quotients
+Feature-based clustering is more effective than symmetry,K-means achieves 35% variance reduction vs 0% from symmetry,Approximate methods outperform exact algebraic structure
+V has significant structure beyond randomness,LZMA compression ratio < 0.5; entropy patterns with depth,Neural network approximation feasible with right features
+Game dynamics show temporal correlations,DFA exponent differs from 0.5; autocorrelation in PVs,Sequential models (RNN/Transformer) may capture structure
