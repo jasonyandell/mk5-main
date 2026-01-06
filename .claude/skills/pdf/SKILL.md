@@ -9,6 +9,24 @@ description: Comprehensive PDF manipulation toolkit for extracting text and tabl
 
 This guide covers essential PDF processing operations using Python libraries and command-line tools. For advanced features, JavaScript libraries, and detailed examples, see reference.md. If you need to fill out a PDF form, read forms.md and follow its instructions.
 
+## Environment Setup (This Project)
+
+**IMPORTANT**: This project uses a virtual environment. Always use the project's Python:
+
+```bash
+# Use the project's venv Python
+/home/jason/v2/mk5-tailwind/.venv/bin/python your_script.py
+
+# Or activate first
+source /home/jason/v2/mk5-tailwind/.venv/bin/activate
+python your_script.py
+```
+
+**Install PDF dependencies** (if not already installed):
+```bash
+/home/jason/v2/mk5-tailwind/.venv/bin/pip install markdown weasyprint pypdf pdfplumber
+```
+
 ## Quick Start
 
 ```python
@@ -116,6 +134,74 @@ if all_tables:
     combined_df = pd.concat(all_tables, ignore_index=True)
     combined_df.to_excel("extracted_tables.xlsx", index=False)
 ```
+
+### weasyprint - Markdown/HTML to PDF
+
+**Best for**: Converting markdown documents with embedded images to polished PDFs.
+
+#### Basic Markdown to PDF
+```python
+import markdown
+from weasyprint import HTML, CSS
+from pathlib import Path
+
+# Convert markdown to HTML
+md_content = Path("document.md").read_text()
+html_body = markdown.Markdown(extensions=['tables', 'fenced_code']).convert(md_content)
+
+# Wrap in HTML document
+html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body>{html_body}</body></html>
+"""
+
+# Generate PDF
+HTML(string=html).write_pdf("output.pdf")
+```
+
+#### With Images and Custom CSS
+```python
+import markdown
+from weasyprint import HTML, CSS
+from pathlib import Path
+
+REPORT_DIR = Path(".")
+FIGURES_DIR = Path("./figures")
+
+CSS_STYLE = """
+@page { size: letter; margin: 1in; }
+body { font-family: sans-serif; font-size: 11pt; line-height: 1.5; }
+h1 { color: #1a1a2e; border-bottom: 2px solid #4a90d9; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #ddd; padding: 8pt; }
+img { max-width: 100%; height: auto; display: block; margin: 16pt auto; }
+"""
+
+def fix_image_paths(html: str) -> str:
+    """Convert relative paths to absolute file:// URLs."""
+    return html.replace(
+        'src="../figures/',
+        f'src="file://{FIGURES_DIR.absolute()}/'
+    )
+
+# Read and convert markdown
+md = Path("report.md").read_text()
+html_body = markdown.Markdown(extensions=['tables', 'fenced_code']).convert(md)
+html_body = fix_image_paths(html_body)
+
+html = f"<!DOCTYPE html><html><body>{html_body}</body></html>"
+
+HTML(string=html, base_url=str(REPORT_DIR)).write_pdf(
+    "report.pdf",
+    stylesheets=[CSS(string=CSS_STYLE)]
+)
+```
+
+#### Multi-file Report (like forge/analysis/report/)
+See `forge/analysis/report/generate_pdf.py` for a complete example that:
+- Combines multiple markdown files with section breaks
+- Embeds PNG figures with proper paths
+- Applies professional styling with page numbers
 
 ### reportlab - Create PDFs
 
@@ -276,11 +362,12 @@ with open("encrypted.pdf", "wb") as output:
 
 | Task | Best Tool | Command/Code |
 |------|-----------|--------------|
+| **Markdown → PDF** | **weasyprint** | `HTML(string=html).write_pdf()` |
 | Merge PDFs | pypdf | `writer.add_page(page)` |
 | Split PDFs | pypdf | One page per file |
 | Extract text | pdfplumber | `page.extract_text()` |
 | Extract tables | pdfplumber | `page.extract_tables()` |
-| Create PDFs | reportlab | Canvas or Platypus |
+| Create PDFs from scratch | reportlab | Canvas or Platypus |
 | Command line merge | qpdf | `qpdf --empty --pages ...` |
 | OCR scanned PDFs | pytesseract | Convert to image first |
 | Fill PDF forms | pdf-lib or pypdf (see forms.md) | See forms.md |
