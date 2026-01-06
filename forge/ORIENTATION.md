@@ -515,14 +515,40 @@ The **base_seed** in the filename determines train/val/test split (via `seed % 1
 
 This section is for you, the LLM working on this codebase.
 
+### Checking Seed Inventory
+
+Shards may be stored locally or on external drives. Use these patterns to find them:
+
+```bash
+# Find all shard directories (standard and marginalized)
+find /mnt -name "shards-*" -type d 2>/dev/null
+find data -name "shards-*" -type d 2>/dev/null
+
+# Count files per split (adjust path as needed)
+SHARD_DIR="/mnt/d/shards-standard"  # or data/shards-standard
+echo "train: $(ls $SHARD_DIR/train/*.parquet 2>/dev/null | wc -l)"
+echo "val: $(ls $SHARD_DIR/val/*.parquet 2>/dev/null | wc -l)"
+echo "test: $(ls $SHARD_DIR/test/*.parquet 2>/dev/null | wc -l)"
+
+# Find seed range (highest/lowest seed numbers)
+ls $SHARD_DIR/*/*.parquet | grep -o 'seed_[0-9]*' | sed 's/seed_//' | sort -n | head -1  # lowest
+ls $SHARD_DIR/*/*.parquet | grep -o 'seed_[0-9]*' | sed 's/seed_//' | sort -n | tail -1  # highest
+
+# Find gaps (missing seeds in a range)
+for seed in $(seq 0 999); do
+  f=$(printf "$SHARD_DIR/*/seed_%08d_*.parquet" $seed)
+  ls $f >/dev/null 2>&1 || echo "missing: $seed"
+done
+
+# Total disk usage
+du -sh $SHARD_DIR/
+```
+
 ### State Diagnosis
 
 Before making changes, understand the current state:
 
 ```bash
-# What shards exist?
-ls data/shards/*.parquet 2>/dev/null | wc -l
-
 # What's tokenized?
 cat data/tokenized/manifest.yaml 2>/dev/null || echo "No tokenized data"
 
