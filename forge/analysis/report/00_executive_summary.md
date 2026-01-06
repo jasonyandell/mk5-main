@@ -27,6 +27,41 @@ This report presents a structural analysis of exhaustively-solved Texas 42 domin
 
 ---
 
+## Glossary of Technical Terms
+
+### Game Theory / Decision Theory
+
+| Term | Definition |
+|------|------------|
+| **Minimax** | Optimal strategy in two-player zero-sum games: maximize your minimum guaranteed outcome, assuming the opponent plays optimally |
+| **V (state value)** | The minimax value of a game state—the expected point differential under perfect play by both teams |
+| **Q (action value)** | The minimax value of taking a specific action from a state: Q(s,a) = V(successor state after action a) |
+| **Backward induction** | Dynamic programming algorithm that computes V by working backward from terminal states to the root |
+| **Principal variation (PV)** | The sequence of optimal moves from any position to game end, assuming both sides play perfectly |
+| **Oracle** | A lookup table providing exact minimax values for all states—enables perfect play but requires large storage |
+
+### Machine Learning
+
+| Term | Definition |
+|------|------------|
+| **Transformer** | Neural network architecture using self-attention mechanisms; excels at sequence modeling. Our model has 817K parameters. |
+| **Attention** | Mechanism allowing the model to weigh the relevance of different parts of the input (e.g., earlier moves in game history) |
+| **Move prediction accuracy** | Fraction of states where the model selects a minimax-optimal action (97.8% in our case) |
+| **MAE** | Mean Absolute Error—average of |predicted - actual| across samples |
+| **Data augmentation** | Generating additional training examples by applying transformations (e.g., symmetries) that preserve labels |
+| **Curriculum learning** | Training strategy that presents examples in a structured order (e.g., easy-to-hard) rather than randomly |
+
+### This Analysis
+
+| Term | Definition |
+|------|------------|
+| **Depth** | Number of dominoes remaining across all hands (28 at start, 0 at terminal). Depth 5 = after first trick, depth 9 = after second, etc. |
+| **Count dominoes** | The five dominoes worth points when captured: 5-5 (10 pts), 6-4 (10 pts), 5-0 (5 pts), 4-1 (5 pts), 3-2 (5 pts) |
+| **Count basin** | A partition of states by which team captured which count dominoes—our key explanatory variable |
+| **Seed** | Random number seed determining the initial 28-domino shuffle; different seeds produce different deals |
+
+---
+
 ## Key Findings Summary
 
 ### 1. Count Domino Ownership Explains 76% of Variance (R² = 0.76)
