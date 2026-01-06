@@ -41,6 +41,15 @@ from forge.analysis.utils.navigation import (
     count_capture_signature,
     get_children,
 )
+from forge.analysis.utils.symmetry import (
+    team_swap,
+    seat_rotate,
+    canonical_form,
+    enumerate_orbits,
+    orbit_sizes,
+    orbit_compression_ratio,
+    check_v_consistency,
+)
 
 __all__ = [
     # loading
@@ -70,4 +79,12 @@ __all__ = [
     "track_count_captures",
     "count_capture_signature",
     "get_children",
+    # symmetry
+    "team_swap",
+    "seat_rotate",
+    "canonical_form",
+    "enumerate_orbits",
+    "orbit_sizes",
+    "orbit_compression_ratio",
+    "check_v_consistency",
 ]
