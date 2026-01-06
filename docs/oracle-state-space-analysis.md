@@ -27,62 +27,62 @@ Analysis of state space characteristics across 1000 seeds (0-999) generated with
 
 | Decl | Name | Avg States | Min | Max | StdDev |
 |------|------|-----------|-----|-----|--------|
-| 7 | sevens | **33.8M** | 5.8M | 111.6M | 28.2M |
+| 7 | doubles-trump | **33.8M** | 5.8M | 111.6M | 28.2M |
 | 2 | twos | 32.1M | 10.0M | 76.2M | 16.6M |
 | 6 | sixes | 30.8M | 5.2M | 77.3M | 18.8M |
 | 4 | fours | 29.2M | 3.1M | 102.2M | 23.2M |
 | 0 | blanks | 27.4M | 3.2M | 73.1M | 16.1M |
 | 5 | fives | 26.1M | 4.4M | 71.8M | 17.2M |
 | 1 | ones | 25.6M | 5.8M | 115.0M | 18.5M |
-| 9 | nello-1 | 24.5M | 4.0M | 102.9M | 20.7M |
+| 9 | notrump | 24.5M | 4.0M | 102.9M | 20.7M |
 | 3 | threes | 24.4M | 3.4M | 72.2M | 17.1M |
-| 8 | follow-me | **23.1M** | 6.7M | 76.0M | 14.0M |
+| 8 | doubles-suit | **23.1M** | 6.7M | 76.0M | 14.0M |
 
 ## By Variance (Descending)
 
 | Decl | Name | Avg States | Min | Max | StdDev | Range |
 |------|------|-----------|-----|-----|--------|-------|
-| 7 | sevens | 33.8M | 5.8M | 111.6M | **28.2M** | 19.3x |
+| 7 | doubles-trump | 33.8M | 5.8M | 111.6M | **28.2M** | 19.3x |
 | 4 | fours | 29.2M | 3.1M | 102.2M | 23.2M | 32.6x |
-| 9 | nello-1 | 24.5M | 4.0M | 102.9M | 20.7M | 25.7x |
+| 9 | notrump | 24.5M | 4.0M | 102.9M | 20.7M | 25.7x |
 | 6 | sixes | 30.8M | 5.2M | 77.3M | 18.8M | 14.8x |
 | 1 | ones | 25.6M | 5.8M | 115.0M | 18.5M | 19.9x |
 | 5 | fives | 26.1M | 4.4M | 71.8M | 17.2M | 16.4x |
 | 3 | threes | 24.4M | 3.4M | 72.2M | 17.1M | 21.2x |
 | 2 | twos | 32.1M | 10.0M | 76.2M | 16.6M | 7.6x |
 | 0 | blanks | 27.4M | 3.2M | 73.1M | 16.1M | 23.1x |
-| 8 | follow-me | 23.1M | 6.7M | 76.0M | **14.0M** | 11.3x |
+| 8 | doubles-suit | 23.1M | 6.7M | 76.0M | **14.0M** | 11.3x |
 
 ## By Disk Size (Descending)
 
 | Decl | Name | Total Size | Files | Avg Size |
 |------|------|-----------|-------|----------|
 | 2 | twos | **23.1 GB** | 129 | 179 MB |
-| 7 | sevens | 22.2 GB | 130 | 171 MB |
+| 7 | doubles-trump | 22.2 GB | 130 | 171 MB |
 | 6 | sixes | 22.0 GB | 130 | 169 MB |
 | 5 | fives | 20.5 GB | 130 | 158 MB |
 | 0 | blanks | 20.3 GB | 129 | 157 MB |
 | 3 | threes | 20.2 GB | 128 | 158 MB |
 | 1 | ones | 19.3 GB | 129 | 149 MB |
 | 4 | fours | 18.8 GB | 127 | 148 MB |
-| 8 | follow-me | 17.5 GB | 130 | 135 MB |
-| 9 | nello-1 | **17.1 GB** | 130 | 131 MB |
+| 8 | doubles-suit | 17.5 GB | 130 | 135 MB |
+| 9 | notrump | **17.1 GB** | 130 | 131 MB |
 
 ## Key Observations
 
 ### Largest State Spaces
 
-**Sevens (decl=7)** consistently creates the largest state spaces:
+**Doubles-trump (decl=7)** consistently creates the largest state spaces:
 - Highest average (33.8M)
 - Highest variance (σ=28.2M)
-- The 7-suit has multiple high-value scoring opportunities
+- All 7 doubles are trump, creating complex branching
 
 ### Smallest/Most Predictable
 
-**Follow-me (decl=8)** is the most constrained:
+**Doubles-suit (decl=8)** is the most constrained:
 - Lowest average (23.1M)
 - Lowest variance (σ=14.0M)
-- Dynamic trump selection may prune more branches early
+- Doubles form their own suit (not trump), may simplify branching
 
 ### Disk vs State Count Mismatch
 
@@ -90,7 +90,7 @@ Analysis of state space characteristics across 1000 seeds (0-999) generated with
 - Highest min floor (10M states) - no small games
 - Consistent large games = more total data
 
-**Nello-1** uses least disk despite mid-range state counts:
+**Notrump** uses least disk despite mid-range state counts:
 - High variance seeds balance out
 - Possibly more efficient state representations
 
@@ -98,7 +98,7 @@ Analysis of state space characteristics across 1000 seeds (0-999) generated with
 
 | Category | Seed | Decl | States |
 |----------|------|------|--------|
-| Largest computed | 727 | sevens | 111.6M |
+| Largest computed | 727 | doubles-trump | 111.6M |
 | Skipped (OOM) | 434 | fours | ~190M |
 | Smallest | 930 | blanks | 3.2M |
 
