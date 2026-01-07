@@ -159,6 +159,59 @@ The SHAP analysis corroborates bootstrap CIs:
 
 ---
 
-## Remaining Tasks
+## 14c: SHAP Interaction Values
 
-- SHAP interaction values analysis (optional)
+### Key Question
+Do any feature pairs have synergistic effects on E[V]?
+
+### Method
+- shap.TreeExplainer.shap_interaction_values()
+- Returns (n_samples, n_features, n_features) matrix
+- Diagonal = main effects, off-diagonal = interactions
+
+### Key Findings
+
+#### Top Feature Interactions
+
+| Feature 1 | Feature 2 | Mean |Interaction| |
+|-----------|-----------|---------------------|
+| n_doubles | n_singletons | 0.73 |
+| trump_count | total_pips | 0.54 |
+| max_suit_length | n_singletons | 0.47 |
+| trump_count | has_trump_double | 0.40 |
+| **n_doubles** | **trump_count** | **0.37** |
+
+#### Main Effects vs Interactions
+
+| Feature | Main Effect | Total Interactions | Main/Total |
+|---------|-------------|-------------------|------------|
+| n_doubles | 4.92 | 2.27 | 68% |
+| trump_count | 3.94 | 2.18 | 64% |
+| count_points | 1.92 | 1.41 | 58% |
+| n_singletons | 1.75 | 2.30 | 43% |
+
+### Critical Insight: Main Effects Dominate
+
+**Main effects account for 60-70% of SHAP for the key predictors**:
+- n_doubles: 68% main effect, 32% interactions
+- trump_count: 64% main effect, 36% interactions
+
+**Feature effects are largely additive**:
+- No strong synergies discovered
+- n_doubles × trump_count interaction (0.37) is smaller than main effects (4.9, 3.9)
+- Supports simple additive napkin formula
+
+**Surprise finding**: n_doubles × n_singletons (0.73) is the top interaction, likely because hands with many doubles tend to have fewer singletons (structural correlation).
+
+### Implications
+
+1. **Napkin formula is justified**: Additive model captures most signal
+2. **No multiplicative terms needed**: E[V] = a×doubles + b×trumps works
+3. **Interactions are second-order**: Main effects dominate
+
+### Files Generated
+
+- `results/tables/14c_shap_interactions.csv` - Top feature pair interactions
+- `results/tables/14c_main_vs_interactions.csv` - Main vs interaction breakdown
+- `results/figures/14c_shap_interaction_heatmap.png` - Full interaction matrix
+- `results/figures/14c_doubles_trump_interaction.png` - Key interaction scatter

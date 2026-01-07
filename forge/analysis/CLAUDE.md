@@ -438,6 +438,17 @@ SHAP analysis on risk/variance model:
 
 **Key insight**: The σ(V) model has negative CV R², proving risk is unpredictable from hand features. n_doubles has 6.9× higher SHAP importance for E[V] than for σ(V). Focus bidding decisions on expected value (doubles, trumps); outcome variance is determined by unknown opponent hands.
 
+### SHAP Interaction Values (14c)
+
+SHAP interaction analysis reveals main effects dominate:
+
+| Feature | Main Effect | Total Interactions | Main/Total |
+|---------|-------------|-------------------|------------|
+| n_doubles | 4.92 | 2.27 | **68%** |
+| trump_count | 3.94 | 2.18 | **64%** |
+
+**Key insight**: n_doubles and trump_count effects are largely **additive** (60-70% main effect). n_doubles × trump_count interaction (0.37) is much smaller than main effects (4.9, 3.9). This validates the simple napkin formula without interaction terms.
+
 ### Risk-Return Scatter Plot (15a)
 
 Publication-quality visualization of the headline finding:
