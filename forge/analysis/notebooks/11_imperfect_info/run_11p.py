@@ -12,20 +12,20 @@ across opponent configurations.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 from scipy.stats import pearsonr
 
-from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Full analysis
 np.random.seed(42)
 
@@ -54,36 +54,37 @@ def dtw_distance(seq1: np.ndarray, seq2: np.ndarray) -> float:
     return dtw_matrix[n, m] / (n + m)
 
 
-def load_depth_v_profile(path: Path) -> dict | None:
-    """Load V distribution stats at each depth level.
+def load_depth_v_profile(db: SeedDB, path: Path) -> dict | None:
+    """Load V distribution stats at each depth level via SQL GROUP BY.
 
     Returns dict mapping depth -> (mean_V, std_V, n_states)
     """
+    depth_list = ",".join(str(d) for d in DEPTH_LEVELS)
+
+    sql = f"""
+    SELECT depth(state) as depth,
+           AVG(CAST(V AS DOUBLE)) as mean_v,
+           STDDEV_POP(CAST(V AS DOUBLE)) as std_v,
+           COUNT(*) as n_states
+    FROM read_parquet('{path}')
+    WHERE depth(state) IN ({depth_list})
+    GROUP BY depth(state)
+    """
+
     try:
-        pf = pq.ParquetFile(path)
+        result = db.execute(sql)
+        df = result.data
+        if df is None or len(df) == 0:
+            return None
 
-        depth_stats = {d: [] for d in DEPTH_LEVELS}
-
-        for batch in pf.iter_batches(batch_size=100000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
-
-            for d in DEPTH_LEVELS:
-                mask = depths == d
-                if mask.any():
-                    depth_stats[d].extend(V[mask].tolist())
-
-        # Compute stats
         profile = {}
-        for d in DEPTH_LEVELS:
-            vs = depth_stats[d]
-            if len(vs) > 0:
-                profile[d] = {
-                    'mean_v': float(np.mean(vs)),
-                    'std_v': float(np.std(vs)),
-                    'n_states': len(vs)
-                }
+        for _, row in df.iterrows():
+            d = int(row['depth'])
+            profile[d] = {
+                'mean_v': float(row['mean_v']),
+                'std_v': float(row['std_v']) if row['std_v'] is not None else 0.0,
+                'n_states': int(row['n_states'])
+            }
 
         return profile if len(profile) > 2 else None
 
@@ -130,7 +131,7 @@ def compare_profiles(p1: dict, p2: dict) -> dict:
     }
 
 
-def analyze_path_similarity(base_seed: int) -> dict | None:
+def analyze_path_similarity(db: SeedDB, base_seed: int) -> dict | None:
     """Analyze path similarity for one base seed across opponent configs."""
     decl_id = base_seed % 10
 
@@ -140,11 +141,10 @@ def analyze_path_similarity(base_seed: int) -> dict | None:
         if not path.exists():
             return None
 
-        profile = load_depth_v_profile(path)
+        profile = load_depth_v_profile(db, path)
         if profile is None:
             return None
         profiles.append(profile)
-        gc.collect()
 
     if len(profiles) != 3:
         return None
@@ -191,6 +191,9 @@ def main():
     print("Depth-based V trajectory comparison")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -203,10 +206,11 @@ def main():
     all_results = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_path_similarity(base_seed)
+        result = analyze_path_similarity(db, base_seed)
         if result:
             all_results.append(result)
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
     if len(all_results) == 0:
