@@ -369,6 +369,20 @@ Created `forge/analysis/utils/hand_features.py` to replace duplicated feature ex
 
 **R² = 0.26** (95% CI: [0.20, 0.40]) - model explains 20-40% of E[V] variance.
 
+### Bootstrap CIs for Risk Formula (13b)
+
+Risk (σ(V)) is **nearly unpredictable** from hand features:
+
+| Feature | Coefficient | 95% CI | Significant? |
+|---------|-------------|--------|--------------|
+| total_pips | +0.30 | [+0.01, +0.57] | Marginal |
+| n_doubles | -1.40 | [-3.32, +0.77] | No |
+| n_5_high | -1.09 | [-2.84, +0.63] | No |
+
+**R² = 0.08** (95% CI: [0.06, 0.20]) - model explains only 6-20% of σ(V) variance.
+
+**Key insight**: Risk is fundamentally unpredictable from your hand. The uncertainty in 42 comes from opponent hands, not your own.
+
 ## Useful One-Liners
 
 ```bash

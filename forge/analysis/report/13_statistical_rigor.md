@@ -63,6 +63,54 @@ Everything else is noise. The simpler 2-feature model may generalize better than
 
 ---
 
+## 13b: Bootstrap CIs for Risk Formula
+
+### Key Question
+Are the risk formula coefficients (predicting σ(V)) statistically significant?
+
+### Method
+Same bootstrap approach as 13a: 1000 iterations, percentile CIs.
+
+### Key Findings
+
+| Feature | Coefficient | 95% CI | Significant? |
+|---------|-------------|--------|--------------|
+| total_pips | **+0.30** | [+0.01, +0.57] | **Marginal** |
+| n_doubles | -1.40 | [-3.32, +0.77] | No |
+| n_5_high | -1.09 | [-2.84, +0.63] | No |
+| trump_count | -0.61 | [-1.56, +0.42] | No |
+| has_trump_double | -0.55 | [-4.51, +3.08] | No |
+| n_voids | +0.53 | [-3.49, +4.38] | No |
+
+### Model Performance
+
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| R² | 0.081 | [0.058, 0.203] |
+
+### Critical Insight: Risk is Unpredictable
+
+Only **total_pips** barely reaches significance (CI just excludes zero at [+0.01, +0.57]).
+
+All other features have CIs that include zero. Combined with R² of only 6-20%, this confirms:
+
+**Risk (outcome variance) is fundamentally unpredictable from hand features alone.**
+
+The uncertainty in Texas 42 comes from opponent hand distribution, not from your own hand quality.
+
+### Implications
+
+1. **Don't try to assess hand "riskiness"**: No reliable signal exists
+2. **Focus on E[V] predictors**: n_doubles and trump_count are meaningful; risk is not
+3. **Embrace uncertainty**: Half of game outcomes are determined by luck (opponent hands)
+
+### Files Generated
+
+- `results/tables/13b_bootstrap_risk_coefficients.csv` - Full coefficient table with CIs
+- `results/figures/13b_bootstrap_risk_ci.png` - Forest plot visualization
+
+---
+
 ## Remaining Tasks
 
 - Additional rigor tasks TBD based on epic t42-6xhh
