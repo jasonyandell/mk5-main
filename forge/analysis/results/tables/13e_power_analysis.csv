@@ -1,0 +1,9 @@
+Analysis,Effect Size,Effect Type,Current Power,n for 80%,Sufficient?
+"r(E[V], σ[V])",-0.380,r,1.000,51,✓
+"r(n_doubles, E[V])",0.400,r,1.000,46,✓
+"r(trump_count, E[V])",0.230,r,0.911,145,✓
+d(≥2 doubles vs <2),0.760,d,1.000,29×2=58,✓
+d(high vs low risk),0.790,d,1.000,27×2=54,✓
+d(≥2 trumps vs <2),0.480,d,0.922,70×2=140,✓
+R²(hand→E[V]),0.260,R²,1.000,57,✓
+R²(hand→σ[V]),0.080,R²,0.810,197,✓

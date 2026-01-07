@@ -450,6 +450,25 @@ Available formats:
 - `results/figures/15a_risk_return_scatter.pdf` (vector for publication)
 - `results/figures/15a_risk_return_clean.png` (simplified version)
 
+### Power Analysis (13e)
+
+Statistical power analysis confirms n=200 is sufficient for all key findings:
+
+| Analysis | Effect Size | Power | n for 80% |
+|----------|-------------|-------|-----------|
+| r(E[V], σ[V]) | -0.38 | 1.000 | 51 |
+| r(n_doubles, E[V]) | +0.40 | 1.000 | 46 |
+| r(trump_count, E[V]) | +0.23 | 0.911 | 145 |
+| d(≥2 doubles vs <2) | 0.76 | 1.000 | 58 total |
+| R²(hand→E[V]) | 0.26 | 1.000 | 57 |
+| R²(hand→σ[V]) | 0.08 | 0.810 | 197 |
+
+**Key insight**: All key findings have power >80%. Main effects (E[V]-σ[V] correlation, n_doubles) have power ≈ 1.00 and would only need n≈50. No immediate scale-up needed. To detect smaller effects (r=0.1), would need n≈782.
+
+Available at:
+- `results/tables/13e_power_analysis.csv` - Summary table
+- `results/figures/13e_power_curves.png` - Power curves
+
 ## Useful One-Liners
 
 ```bash

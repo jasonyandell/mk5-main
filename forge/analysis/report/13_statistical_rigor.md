@@ -235,6 +235,80 @@ Yet in the multivariate regression (13a), these features have CIs that include z
 
 ---
 
-## Remaining Tasks
+## 13e: Power Analysis
 
-- Additional rigor tasks TBD based on epic t42-6xhh
+### Key Question
+Is n=200 sufficient to detect our observed effects with adequate statistical power?
+
+### Method
+- Power functions for correlation tests (t-distribution with non-centrality parameter)
+- statsmodels.stats.power for Cohen's d (TTestIndPower)
+- F-test power for regression R²
+- Target: 80% power at α=0.05
+
+### Key Findings
+
+#### Power for Current Sample Size (n=200)
+
+| Analysis | Effect Size | Type | Power | n for 80% | Sufficient? |
+|----------|-------------|------|-------|-----------|-------------|
+| r(E[V], σ[V]) | -0.38 | r | 1.000 | 51 | ✓ |
+| r(n_doubles, E[V]) | +0.40 | r | 1.000 | 46 | ✓ |
+| r(trump_count, E[V]) | +0.23 | r | 0.911 | 145 | ✓ |
+| d(≥2 doubles vs <2) | 0.76 | d | 1.000 | 29×2=58 | ✓ |
+| d(high vs low risk) | 0.79 | d | 1.000 | 27×2=54 | ✓ |
+| d(≥2 trumps vs <2) | 0.48 | d | 0.922 | 70×2=140 | ✓ |
+| R²(hand→E[V]) | 0.26 | R² | 1.000 | 57 | ✓ |
+| R²(hand→σ[V]) | 0.08 | R² | 0.810 | 197 | ✓ |
+
+#### Sample Size Requirements for 80% Power
+
+**Correlations:**
+| Target r | n needed |
+|----------|----------|
+| 0.1 (small) | 782 |
+| 0.2 (small-medium) | 193 |
+| 0.3 (medium) | 84 |
+| 0.4 (medium) | 46 |
+| 0.5 (large) | 29 |
+
+**Group Comparisons (Cohen's d):**
+| Target d | n per group |
+|----------|-------------|
+| 0.2 (small) | 394 |
+| 0.5 (medium) | 64 |
+| 0.8 (large) | 26 |
+
+### Critical Insight: n=200 is Sufficient
+
+**All key findings are well-powered:**
+1. **r(E[V], σ[V]) = -0.38**: Power ≈ 1.00 — would only need n=51
+2. **r(n_doubles, E[V]) = +0.40**: Power ≈ 1.00 — would only need n=46
+3. **d(≥2 doubles vs <2) = 0.76**: Power ≈ 1.00 — would only need n=58 total
+
+**Borderline but adequate:**
+- R²(hand→σ[V]) = 0.08: Power = 0.81, would need n=197 for 80%
+- We have n=200, so this is just at the threshold
+
+### Implications
+
+1. **No immediate scale-up needed**: n=200 provides >80% power for all key findings
+2. **Main effects are robust**: Core relationships (E[V]-σ[V], n_doubles) have power ≈ 1.00
+3. **If detecting smaller effects**: To find r=0.1 effects, would need n≈782
+4. **Risk model is at limit**: The weak R²=0.08 for σ(V) just barely achieves 80% power
+
+### Files Generated
+
+- `results/tables/13e_power_analysis.csv` - Summary table
+- `results/figures/13e_power_curves.png` - Power curves for correlations, d, and R²
+
+---
+
+## Summary
+
+Statistical rigor analyses confirm:
+
+1. **Only two predictors survive multivariate analysis**: n_doubles and trump_count
+2. **Risk is unpredictable**: σ(V) model has weak R² (0.08) and borderline power
+3. **Effect sizes are medium**: Practically meaningful, not just statistically significant
+4. **n=200 is sufficient**: All key findings have adequate power (>80%)
