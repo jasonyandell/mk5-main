@@ -562,6 +562,24 @@ Available at:
 - `results/figures/15d_phase_transition.png` - Progress-based view
 - `results/figures/15d_phase_by_depth.png` - Depth-based view with state counts
 
+### Word2Vec Domino Embeddings (16a)
+
+Word2Vec trained on hand co-occurrence (40K hands, skip-gram):
+
+| Comparison | Mean Similarity |
+|------------|-----------------|
+| Double-to-double | **0.079** |
+| Double-to-non-double | 0.071 |
+| Random baseline | 0.069 |
+
+**Key insight**: Domino embeddings show **weak structure**. Doubles cluster slightly (11% higher sim), but suit structure is near-random. The random deal mechanism means hands don't have "themes" - strategic value comes from game context, not co-occurrence.
+
+Available at:
+- `results/tables/16a_word2vec_embeddings.csv` - 32D embeddings
+- `results/tables/16a_word2vec_similarity.csv` - 28×28 similarity matrix
+- `results/models/16a_word2vec.model` - Trained gensim model
+- `results/figures/16a_word2vec_tsne.png` - t-SNE visualization
+
 ## Useful One-Liners
 
 ```bash
