@@ -1341,4 +1341,102 @@ Two hands with identical (doubles, trumps, counts) can have very different outco
 
 ---
 
+## 11x: Information Value (Perfect vs Imperfect) (Preliminary)
+
+### Key Question
+How much does knowing opponent hands help?
+
+### Method
+Compare Q-values with perfect info (knowing which opponent holds which cards) vs imperfect info (average Q across opponent configurations).
+
+- **Perfect info**: Best move under each config separately, value = Q[best_action]
+- **Imperfect info**: Best move using average Q across configs, value = mean(Q[avg_best_action])
+- **Information gain**: Perfect value - Imperfect value
+
+### Key Findings (Preliminary - 50 seeds, 84K states)
+
+#### Information Value Summary
+
+| Metric | Value |
+|--------|-------|
+| Mean information gain | **0.84 points** |
+| Median information gain | **0.00 points** |
+| Std information gain | 2.58 points |
+| Max information gain | 31.33 points |
+
+**Critical Finding**: Knowing opponent hands gains only **0.8 points on average**. The median is 0 - in most positions, perfect information provides no advantage.
+
+#### How Often Does Perfect Info Help?
+
+| Threshold | Percentage |
+|-----------|------------|
+| Any benefit (>0) | **26.7%** |
+| Significant (>2 pts) | **16.6%** |
+| Large (>5 pts) | **6.3%** |
+
+**Insight**: Only 27% of positions benefit from perfect info. The vast majority (73%) have the same optimal move regardless of whether you know opponent hands.
+
+#### Action Agreement Rate
+
+| Metric | Value |
+|--------|-------|
+| Perfect/Imperfect agreement | **74.7%** |
+
+**Key Finding**: 75% of the time, the best move under perfect information is the SAME as the best move under imperfect information. Opponent inference provides only marginal improvement.
+
+#### Information Value by Game Phase
+
+| Depth | Mean Info Gain | n |
+|-------|----------------|---|
+| 1 (near end) | +0.00 | 915 |
+| 5 (late) | +0.55 | 56,567 |
+| 9 (mid) | +1.43 | 25,969 |
+| 13 (early) | +2.70 | 729 |
+| 17 (very early) | +8.83 | 2 |
+
+**Insight**: Information value increases with game depth. Early in the game, knowing opponent hands is worth ~3-9 points. By endgame, it's worth essentially nothing.
+
+### Interpretation
+
+This is perhaps the most surprising finding of the entire imperfect information analysis:
+
+1. **Information has marginal value**: Contrary to intuition, knowing opponent hands typically doesn't change what you should do
+
+2. **Most positions are "dominant"**: The best move is best regardless of opponent distribution
+
+3. **Early game is where it matters**: Information value peaks at depth 17+ (very early game), where there's maximum uncertainty
+
+4. **Endgame is deterministic**: At depth 1-5, perfect information adds virtually nothing
+
+### Reconciling with Other Findings
+
+- **11c** found 54.5% best move consistency → different from 75% agreement here
+- **Explanation**: 11c counted divergent paths separately; 11x averages across opponent configs within the same position
+- **11n** found 36% of critical decisions are opponent-dependent → aligns with 27% benefiting from perfect info
+- **11o** found 97% of common states have robust best moves → strong alignment
+
+### Implications for Strategy
+
+1. **Don't overthink opponent hands**: 75% of the time, the right move is the right move regardless
+
+2. **Focus on your own play**: With only 0.8 expected points from perfect info, execution matters more than reading
+
+3. **Early game exceptions**: The 6% of positions with >5 point info value ARE worth careful analysis
+
+4. **Simplify decision-making**: For most positions, use heuristics instead of modeling opponents
+
+### The Practical Takeaway
+
+> "Play the board, not the player."
+
+Opponent inference adds <1 point of expected value on average. Unless you're in the rare (6%) high-value situations, focus on basic strategy.
+
+### Files Generated
+
+- `results/tables/11x_information_value_by_seed.csv` - Per-seed data
+- `results/tables/11x_information_value_summary.csv` - Summary
+- `results/figures/11x_information_value.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
