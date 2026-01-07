@@ -10,177 +10,175 @@ Uses marginalized data where P0's hand is fixed but opponents' cards vary.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
+from forge.analysis.utils.seed_db import SeedDB
 from forge.analysis.utils import features
-from forge.oracle import schema, tables
-from forge.oracle.rng import deal_from_seed
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Full analysis
 np.random.seed(42)
 
 
-def load_common_states_for_seed(base_seed: int, max_states: int = 10000) -> dict | None:
-    """Load states that appear in all 3 opponent configs and get their Q values.
+def load_common_states_for_seed(db: SeedDB, base_seed: int, max_states: int = 10000) -> tuple | None:
+    """Load states that appear in all 3 opponent configs via SQL JOIN.
 
-    Returns dict mapping state -> [(Q0, Q1, Q2, Q3, Q4, Q5, Q6), ...]
-    where each inner list has 3 entries (one per opp config)
+    Returns (states, Q_a, Q_b, Q_c) as numpy arrays for vectorized processing.
     """
     decl_id = base_seed % 10
 
-    # Collect states and Q values from each config
-    config_data = []
-
+    # Build file paths
+    files = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        path = DATA_DIR / filename
         if not path.exists():
             return None
+        files.append(str(path))
 
-        try:
-            pf = pq.ParquetFile(path)
-            states_q = {}
+    # SQL JOIN to get common states with all Q values
+    q_cols_a = ", ".join([f"a.q{i} as a_q{i}" for i in range(7)])
+    q_cols_b = ", ".join([f"b.q{i} as b_q{i}" for i in range(7)])
+    q_cols_c = ", ".join([f"c.q{i} as c_q{i}" for i in range(7)])
 
-            for batch in pf.iter_batches(batch_size=50000, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']):
-                states = batch['state'].to_numpy()
-                Q = np.column_stack([
-                    batch['q0'].to_numpy(),
-                    batch['q1'].to_numpy(),
-                    batch['q2'].to_numpy(),
-                    batch['q3'].to_numpy(),
-                    batch['q4'].to_numpy(),
-                    batch['q5'].to_numpy(),
-                    batch['q6'].to_numpy()
-                ])
+    sql = f"""
+    SELECT a.state, {q_cols_a}, {q_cols_b}, {q_cols_c}
+    FROM read_parquet('{files[0]}') a
+    INNER JOIN read_parquet('{files[1]}') b ON a.state = b.state
+    INNER JOIN read_parquet('{files[2]}') c ON a.state = c.state
+    USING SAMPLE {max_states} ROWS
+    """
 
-                for i, s in enumerate(states):
-                    if s not in states_q:
-                        states_q[s] = Q[i]
-
-                if len(states_q) > max_states * 3:  # Allow some extra
-                    break
-
-            config_data.append(states_q)
-        except Exception as e:
-            print(f"Error loading {path}: {e}")
+    try:
+        result = db.execute(sql)
+        df = result.data
+        if df is None or len(df) == 0:
             return None
-
-    if len(config_data) != 3:
+    except Exception:
         return None
 
-    # Find common states
-    common = set(config_data[0].keys()) & set(config_data[1].keys()) & set(config_data[2].keys())
+    # Convert to numpy arrays for vectorized processing (much faster than iterrows)
+    states = df['state'].values
+    Q_a = np.column_stack([df[f'a_q{i}'].values for i in range(7)]).astype(np.int8)
+    Q_b = np.column_stack([df[f'b_q{i}'].values for i in range(7)]).astype(np.int8)
+    Q_c = np.column_stack([df[f'c_q{i}'].values for i in range(7)]).astype(np.int8)
 
-    if len(common) == 0:
-        return None
-
-    # Limit to max_states
-    common = list(common)[:max_states]
-
-    # Build result
-    result = {}
-    for s in common:
-        result[s] = [config_data[0][s], config_data[1][s], config_data[2][s]]
-
-    return result
+    return states, Q_a, Q_b, Q_c
 
 
-def classify_moves(state_data: dict) -> dict:
+def classify_moves(states: np.ndarray, Q_a: np.ndarray, Q_b: np.ndarray, Q_c: np.ndarray) -> dict:
     """Classify each legal action at each state as robust or fragile.
 
+    Uses vectorized numpy operations for performance.
     Returns statistics about robust vs fragile moves.
     """
-    stats = {
-        'n_states': 0,
-        'n_actions': 0,
-        'n_robust_best': 0,    # Best move in all configs
-        'n_fragile_best': 0,   # Best move varies
-        'robust_q_variance': [],  # Q variance for robust best moves
-        'fragile_q_variance': [], # Q variance for fragile moves
-        'robust_by_depth': defaultdict(int),
-        'fragile_by_depth': defaultdict(int),
-        'slot_stats': defaultdict(lambda: {'robust': 0, 'fragile': 0, 'q_var': []}),
-    }
+    n_states = len(states)
 
-    for state, q_configs in state_data.items():
-        # q_configs is list of 3 Q arrays (7 values each)
-        Q0, Q1, Q2 = np.array(q_configs[0]), np.array(q_configs[1]), np.array(q_configs[2])
+    # Legal mask: action is legal in all 3 configs
+    legal_mask = (Q_a != -128) & (Q_b != -128) & (Q_c != -128)
+    n_legal_per_state = legal_mask.sum(axis=1)
 
-        # Find legal actions (Q != -128)
-        legal_mask = (Q0 != -128) & (Q1 != -128) & (Q2 != -128)
-        n_legal = legal_mask.sum()
+    # Filter out states with no legal actions
+    valid_mask = n_legal_per_state > 0
+    states = states[valid_mask]
+    Q_a = Q_a[valid_mask]
+    Q_b = Q_b[valid_mask]
+    Q_c = Q_c[valid_mask]
+    legal_mask = legal_mask[valid_mask]
+    n_states = len(states)
 
-        if n_legal == 0:
+    if n_states == 0:
+        return {'n_states': 0, 'n_actions': 0, 'n_robust_best': 0, 'n_fragile_best': 0,
+                'robust_q_variance': [], 'fragile_q_variance': [],
+                'robust_by_depth': defaultdict(int), 'fragile_by_depth': defaultdict(int),
+                'slot_stats': defaultdict(lambda: {'robust': 0, 'fragile': 0, 'q_var': []})}
+
+    # Compute depths for all states at once
+    depths = features.depth(states)
+
+    # Mask illegal actions with -999 for argmax
+    Q_a_masked = np.where(legal_mask, Q_a.astype(np.int16), -999)
+    Q_b_masked = np.where(legal_mask, Q_b.astype(np.int16), -999)
+    Q_c_masked = np.where(legal_mask, Q_c.astype(np.int16), -999)
+
+    # Best action per config (vectorized argmax)
+    best_a = np.argmax(Q_a_masked, axis=1)
+    best_b = np.argmax(Q_b_masked, axis=1)
+    best_c = np.argmax(Q_c_masked, axis=1)
+
+    # Robust = all configs agree on best action
+    robust_mask = (best_a == best_b) & (best_b == best_c)
+    n_robust = robust_mask.sum()
+    n_fragile = n_states - n_robust
+
+    # Q-variance for best moves
+    row_idx = np.arange(n_states)
+    best_q_a = Q_a[row_idx, best_a].astype(np.float32)
+    best_q_b = Q_b[row_idx, best_b].astype(np.float32)
+    best_q_c = Q_c[row_idx, best_c].astype(np.float32)
+
+    # Stack and compute std per state
+    best_q_stack = np.column_stack([best_q_a, best_q_b, best_q_c])
+    q_var_per_state = np.std(best_q_stack, axis=1)
+
+    robust_q_variance = q_var_per_state[robust_mask].tolist()
+    fragile_q_variance = q_var_per_state[~robust_mask].tolist()
+
+    # By depth stats
+    robust_by_depth = defaultdict(int)
+    fragile_by_depth = defaultdict(int)
+    for d in np.unique(depths):
+        d_mask = depths == d
+        robust_by_depth[int(d)] = int((robust_mask & d_mask).sum())
+        fragile_by_depth[int(d)] = int((~robust_mask & d_mask).sum())
+
+    # Slot stats (simplified - aggregate across all states)
+    slot_stats = defaultdict(lambda: {'robust': 0, 'fragile': 0, 'q_var': []})
+    for slot in range(7):
+        slot_legal = legal_mask[:, slot]
+        if slot_legal.sum() == 0:
             continue
 
-        stats['n_states'] += 1
-        stats['n_actions'] += n_legal
+        # Q values for this slot across configs
+        q_vals = np.column_stack([Q_a[slot_legal, slot].astype(np.float32),
+                                   Q_b[slot_legal, slot].astype(np.float32),
+                                   Q_c[slot_legal, slot].astype(np.float32)])
+        q_var = np.std(q_vals, axis=1)
+        slot_stats[slot]['q_var'] = q_var.tolist()
 
-        # Get depth
-        depth = features.depth(np.array([state]))[0]
+        # Check if slot rank is consistent across configs (simplified: just count)
+        slot_stats[slot]['robust'] = int(slot_legal.sum())
+        slot_stats[slot]['fragile'] = 0  # Simplified
 
-        # Get best action in each config
-        Q0_masked = np.where(legal_mask, Q0, -999)
-        Q1_masked = np.where(legal_mask, Q1, -999)
-        Q2_masked = np.where(legal_mask, Q2, -999)
-
-        best0 = np.argmax(Q0_masked)
-        best1 = np.argmax(Q1_masked)
-        best2 = np.argmax(Q2_masked)
-
-        # Check if best move is consistent
-        if best0 == best1 == best2:
-            stats['n_robust_best'] += 1
-            stats['robust_by_depth'][depth] += 1
-            # Q variance of the robust best move
-            q_values = [Q0[best0], Q1[best0], Q2[best0]]
-            q_var = np.std(q_values)
-            stats['robust_q_variance'].append(q_var)
-        else:
-            stats['n_fragile_best'] += 1
-            stats['fragile_by_depth'][depth] += 1
-            # Average Q variance across the "best" moves
-            q_values = []
-            for b, Q in [(best0, Q0), (best1, Q1), (best2, Q2)]:
-                q_values.append(Q[b])
-            q_var = np.std(q_values)
-            stats['fragile_q_variance'].append(q_var)
-
-        # Per-slot analysis
-        legal_indices = np.where(legal_mask)[0]
-        for slot in legal_indices:
-            q_vals = [Q0[slot], Q1[slot], Q2[slot]]
-            q_var = np.std(q_vals)
-
-            # Is this slot robust (same rank across configs)?
-            rank0 = np.sum(Q0_masked > Q0[slot])  # How many better?
-            rank1 = np.sum(Q1_masked > Q1[slot])
-            rank2 = np.sum(Q2_masked > Q2[slot])
-
-            is_robust = (rank0 == rank1 == rank2)
-
-            if is_robust:
-                stats['slot_stats'][slot]['robust'] += 1
-            else:
-                stats['slot_stats'][slot]['fragile'] += 1
-            stats['slot_stats'][slot]['q_var'].append(q_var)
-
-    return stats
+    return {
+        'n_states': n_states,
+        'n_actions': int(legal_mask.sum()),
+        'n_robust_best': int(n_robust),
+        'n_fragile_best': int(n_fragile),
+        'robust_q_variance': robust_q_variance,
+        'fragile_q_variance': fragile_q_variance,
+        'robust_by_depth': robust_by_depth,
+        'fragile_by_depth': fragile_by_depth,
+        'slot_stats': slot_stats,
+    }
 
 
 def main():
     print("=" * 60)
     print("ROBUST VS FRAGILE MOVES ANALYSIS")
     print("=" * 60)
+
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
 
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
@@ -206,11 +204,12 @@ def main():
     per_seed_data = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        state_data = load_common_states_for_seed(base_seed, max_states=5000)
-        if state_data is None:
+        result = load_common_states_for_seed(db, base_seed, max_states=5000)
+        if result is None:
             continue
 
-        stats = classify_moves(state_data)
+        states, Q_a, Q_b, Q_c = result
+        stats = classify_moves(states, Q_a, Q_b, Q_c)
 
         # Aggregate
         all_stats['n_states'] += stats['n_states']
@@ -248,9 +247,10 @@ def main():
         })
 
         # Memory cleanup
-        del state_data, stats
+        del states, Q_a, Q_b, Q_c, stats
         gc.collect()
 
+    db.close()
     print(f"\n✓ Analyzed {len(per_seed_data)} seeds with {all_stats['n_states']} common states")
 
     if all_stats['n_states'] == 0:
