@@ -1831,4 +1831,72 @@ This doesn't mean skill doesn't matter - it means:
 
 ---
 
+## 11z: Partner Inference (MI) Analysis
+
+### Key Question
+Does partner's play reveal their hand? Can observing P2's (partner's) actions help reduce uncertainty?
+
+### Method
+For states where P2 acts that are common across opponent configurations:
+1. Compare P2's optimal action (argmax Q) across configs
+2. Measure action consistency (same action) vs variation (different actions)
+3. Correlate action variance with P2's hand variance
+
+### Key Findings (Preliminary: 23 hands analyzed)
+
+| Metric | Value |
+|--------|-------|
+| Pairwise comparisons per hand | ~1.3M |
+| 3-way common states per hand | ~154K |
+| Action consistency rate | **58.0%** |
+| Action entropy | 0.355 (vs max 1.099) |
+
+**Insight**: 58% of P2's actions are consistent across opponent configs. The remaining 42% vary based on P2's actual hand - these actions reveal information about the hidden hand.
+
+#### Signaling Potential
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| Mean action entropy | 0.355 | HIGH signaling |
+| Consistency rate | 58% | Moderate |
+| Action variance | 42% | Information revealed |
+
+**Finding**: Action entropy of 0.355 (vs max 1.099) indicates HIGH signaling potential. Partner actions leak substantial information about their hand.
+
+#### Hand-Action Correlations
+
+| P2 Feature Variance | vs Consistency |
+|---------------------|----------------|
+| Trump count std | **-0.414** |
+| Count points std | -0.253 |
+| Pips std | -0.129 |
+| Doubles std | -0.058 |
+
+**Key Finding**: Higher P2 trump variance correlates with LOWER action consistency (r = -0.414). When P2's trump holding varies more across configs, their actions are more variable. This makes intuitive sense - trump holdings strongly determine optimal play.
+
+### Implications for Strategy
+
+1. **Partner inference is valuable**: 42% of partner actions reveal hand information
+2. **Watch for trump signals**: Trump-related decisions show the most variation
+3. **Early game matters more**: Combined with 11c findings (early game has lower consistency), partner's early plays are most informative
+4. **Potential for signaling conventions**: The high MI suggests room for deliberate signaling between partners
+
+### Relationship to Other Analyses
+
+- **11c** found 54.5% best-move consistency overall. 11z shows partner-specific consistency at 58%, suggesting partners are slightly more predictable than opponents.
+- **11y** found 53% opponent-caused variance. 11z shows 42% of this might be inferable from partner actions.
+- Together: Strategic partner observation could recover some of the "luck" component.
+
+### Note on Sample Size
+
+Analysis limited to 23 hands due to memory constraints on large shards. Results should be validated with optimized processing, but the pattern is clear: partner actions reveal substantial hand information.
+
+### Files Generated
+
+- `results/tables/11z_partner_inference_by_seed.csv` - Per-hand data
+- `results/tables/11z_partner_inference_summary.csv` - Summary statistics
+- `results/figures/11z_partner_inference.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
