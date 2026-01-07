@@ -383,6 +383,20 @@ Risk (σ(V)) is **nearly unpredictable** from hand features:
 
 **Key insight**: Risk is fundamentally unpredictable from your hand. The uncertainty in 42 comes from opponent hands, not your own.
 
+### Effect Sizes Summary (13c)
+
+Effect sizes distinguish "statistically significant" from "practically meaningful":
+
+| Finding | Effect Size | Magnitude |
+|---------|-------------|-----------|
+| n_doubles → E[V] | r = +0.40 | **Medium** |
+| E[V] ↔ σ(V) | r = -0.38 | **Medium** |
+| ≥2 doubles vs <2 on E[V] | d = +0.76 | **Medium** |
+| Hand features → E[V] | R² = 0.26 | **Large** |
+| Hand features → σ(V) | R² = 0.08 | **Small** |
+
+**Key insight**: The n_doubles and E[V]-σ(V) relationships have medium effect sizes - practically meaningful, not just statistically significant. Risk prediction is weak (small R²).
+
 ## Useful One-Liners
 
 ```bash

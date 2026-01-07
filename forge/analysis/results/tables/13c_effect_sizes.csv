@@ -1,0 +1,16 @@
+type,comparison,effect_size,effect_type,r_squared,magnitude
+correlation,E[V] vs σ(V),-0.3808813410944754,r,0.14507059599392613,medium
+correlation,E[V] vs V_spread,-0.39793558969208287,r,0.15835273354358573,medium
+correlation,n_doubles vs E[V],0.3953004007890242,r,0.15626240686396314,medium
+correlation,trump_count vs E[V],0.22876920600346973,r,0.05233534961545797,small
+correlation,count_points vs E[V],0.19677121271101647,r,0.03871891015176409,small
+correlation,n_6_high vs E[V],-0.16053908265439457,r,0.02577279705951453,small
+correlation,total_pips vs E[V],0.03535229347687586,r,0.0012497846540751594,negligible
+correlation,n_6_high vs σ(V),0.19089948875123627,r,0.036442614805483386,small
+correlation,total_pips vs σ(V),0.14909144522563159,r,0.022228259039467502,small
+group_comparison,≥2 doubles vs <2 doubles on E[V],0.7627483421149468,Cohen's d,,medium
+group_comparison,≥2 trumps vs <2 trumps on E[V],0.4799777407114195,Cohen's d,,small
+group_comparison,≥15 count pts vs <15 on E[V],0.2656535873953396,Cohen's d,,small
+group_comparison,High risk vs Low risk on E[V],-0.7933714681632591,Cohen's d,,medium
+regression,Hand features → E[V],0.2589233742020369,R²,0.2589233742020369,large
+regression,Hand features → σ(V),0.08053557514484122,R²,0.08053557514484122,small
