@@ -26,7 +26,7 @@ from forge.analysis.utils import features
 
 DATA_DIR = Path("/mnt/d/shards-marginalized/train")
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
-N_BASE_SEEDS = 50  # Preliminary
+N_BASE_SEEDS = 201  # Full analysis
 np.random.seed(42)
 
 # Depth levels to sample

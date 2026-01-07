@@ -1341,7 +1341,7 @@ Two hands with identical (doubles, trumps, counts) can have very different outco
 
 ---
 
-## 11p: Path Similarity Analysis (DTW) (Preliminary)
+## 11p: Path Similarity Analysis (DTW)
 
 ### Key Question
 How similar are V-trajectories across opponent configs?
@@ -1352,66 +1352,68 @@ For each hand across 3 opponent configurations:
 2. Compute mean V at each depth level
 3. Compare depth-V trajectories using DTW and Pearson correlation
 
-### Key Findings (Preliminary - 50 seeds)
+### Key Findings (Full 201 seeds)
 
 #### Path Stability Summary
 
 | Metric | Value |
 |--------|-------|
-| Mean trajectory correlation | **0.169** |
-| Median trajectory correlation | 0.125 |
-| Min trajectory correlation | **-0.980** |
-| Mean DTW distance | 5.79 |
+| Mean trajectory correlation | **0.316** |
+| Median trajectory correlation | 0.272 |
+| Min trajectory correlation | **-0.998** |
+| Mean DTW distance | 5.08 |
 
-**Critical Finding**: V-trajectories show very LOW correlation across opponent configurations. The mean correlation of 0.169 indicates trajectories are almost uncorrelated.
+**Critical Finding**: V-trajectories show LOW correlation across opponent configurations (mean 0.316). Most trajectories are weakly correlated or uncorrelated.
 
 #### Stability Categories
 
 | Category | Count | Percentage |
 |----------|-------|------------|
-| High stability (corr > 0.9) | 3 | **6.0%** |
-| Medium stability (0.7-0.9) | 3 | **6.0%** |
-| Low stability (corr ≤ 0.7) | 44 | **88.0%** |
+| High stability (corr > 0.9) | 18 | **9.0%** |
+| Medium stability (0.7-0.9) | 26 | **13.0%** |
+| Low stability (corr ≤ 0.7) | 156 | **78.0%** |
 
-**Finding**: 88% of hands have low stability - the V trajectory through the game varies significantly based on opponent hands.
+**Finding**: 78% of hands have low stability - the V trajectory through the game varies significantly based on opponent hands. Only 9% maintain highly similar trajectories.
 
 #### Root vs Terminal V Spread
 
 | Depth | Mean Spread | Max Spread |
 |-------|-------------|------------|
-| Root (depth 28) | **40.9 points** | 82 points |
-| Terminal (depth 1) | **3.0 points** | 9 points |
+| Root (depth 28) | **35.0 points** | 82 points |
+| Terminal (depth 1) | **2.7 points** | 9 points |
 
-**Key Insight**: Games START with high V divergence (41 points) but CONVERGE toward similar endpoints (3 points). The path to get there varies wildly.
+**Key Insight**: Games START with high V divergence (35 points) but CONVERGE toward similar endpoints (2.7 points). The path to get there varies wildly.
 
 #### Path-Value Correlations
 
 | Correlation | Value |
 |-------------|-------|
-| DTW vs root V spread | **+0.843** |
-| Corr vs root V spread | **-0.725** |
-| DTW vs terminal V spread | **+0.731** |
+| DTW vs root V spread | **+0.860** |
+| Corr vs root V spread | **-0.779** |
+| DTW vs terminal V spread | **+0.717** |
 
-**Critical Finding**: Strong correlation (+0.84) between initial V spread and path divergence. Hands that start with high uncertainty in outcomes also have the most divergent trajectories.
+**Critical Finding**: Very strong correlation (+0.86) between initial V spread and path divergence. Hands that start with high uncertainty in outcomes have the most divergent trajectories through the game.
 
 ### Reconciling with 11x (Information Value)
 
 This seems to contradict 11x which found 75% action agreement:
 
 - **11x**: At any given position, the best *move* is usually the same regardless of opponents (75%)
-- **11p**: The overall *V trajectory* through the game diverges significantly (88% low correlation)
+- **11p**: The overall *V trajectory* through the game diverges significantly (78% low correlation)
 
 **Resolution**: Individual moves are robust, but the cumulative effect of different opponent distributions leads to very different game progressions. You often make the same move, but the consequences (V values at each stage) differ dramatically.
 
 ### Implications for Strategy
 
-1. **Games converge at the end**: Terminal V spread is only 3 points despite 41 points at start. Endgames are predictable.
+1. **Games converge at the end**: Terminal V spread is only 2.7 points despite 35 points at start. Endgames are predictable.
 
 2. **Early/mid game trajectories diverge**: The path from start to end varies based on opponents, even if individual moves are similar.
 
-3. **High-variance hands have divergent paths**: The +0.84 correlation means that hands with uncertain V also have the most unpredictable game progressions.
+3. **High-variance hands have divergent paths**: The +0.86 correlation means that hands with uncertain V also have the most unpredictable game progressions.
 
 4. **Focus on endgame**: Since games converge, endgame calculation becomes increasingly reliable.
+
+5. **Only 9% are predictable**: Just 9% of hands maintain highly similar trajectories regardless of opponent distribution. These are the safest bids.
 
 ### Files Generated
 
