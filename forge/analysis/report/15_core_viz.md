@@ -112,7 +112,58 @@ UMAP reveals **no sharp clusters** of hand archetypes:
 
 ---
 
+## 15c: Pareto Frontier
+
+### Key Question
+Which hands offer the best risk-return tradeoff?
+
+### Method
+- Pareto optimality: max E[V], min σ(V)
+- A hand is Pareto-optimal if no other hand dominates it
+- Dominated = another hand has higher E[V] AND lower σ(V)
+
+### Key Findings
+
+#### Extreme Dominance
+
+**Only 3 hands (1.5%) are Pareto-optimal**:
+- All have E[V] = 42 (maximum) and σ(V) = 0 (no risk)
+- 197 hands (98.5%) are dominated
+
+This is a consequence of the **inverse risk-return relationship**:
+- High E[V] hands also have low σ(V)
+- The best hands dominate almost everything else
+
+#### Pareto Frontier Shape
+
+Unlike typical portfolio theory (upward-sloping frontier):
+- Texas 42 has a **degenerate** Pareto frontier
+- It collapses to a few points at E[V]=42, σ(V)=0
+- No meaningful risk-return tradeoff exists
+
+#### Optimal Hand Characteristics
+
+The 3 Pareto-optimal hands:
+| Feature | Mean |
+|---------|------|
+| n_doubles | 2.33 |
+| trump_count | 1.67 |
+
+These are the "perfect" hands with deterministic outcomes.
+
+### Implications for Bidding
+
+1. **No risk-return tradeoff**: Just maximize E[V]
+2. **Perfect hands exist**: Some hands guarantee +42
+3. **Most hands are dominated**: Better alternatives exist in the sample
+
+### Files Generated
+
+- `results/tables/15c_pareto_frontier.csv` - All hands with Pareto classification
+- `results/figures/15c_pareto_frontier.png` - Visualization with frontier
+
+---
+
 ## Remaining Tasks
 
-- 15c: Pareto frontier
 - 15d: Phase transition plots

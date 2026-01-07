@@ -474,6 +474,18 @@ Available at:
 - `results/figures/15b_umap_annotated.png` - With extreme hands labeled
 - `results/tables/15b_umap_coordinates.csv` - Coordinates for all hands
 
+### Pareto Frontier (15c)
+
+Pareto optimality analysis (max E[V], min σ(V)):
+- **Only 3 hands (1.5%) are Pareto-optimal** - all have E[V]=42, σ(V)=0
+- 197 hands (98.5%) are dominated
+- Degenerate frontier due to inverse risk-return relationship
+- No meaningful risk-return tradeoff exists in Texas 42
+
+Available at:
+- `results/figures/15c_pareto_frontier.png` - Visualization
+- `results/tables/15c_pareto_frontier.csv` - Classification
+
 ### Power Analysis (13e)
 
 Statistical power analysis confirms n=200 is sufficient for all key findings:
