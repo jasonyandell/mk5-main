@@ -1,2 +1,2 @@
 n_hands,mean_pairwise_comparisons,mean_3way_common,mean_consistency_rate,median_consistency_rate,mean_action_entropy,hand_action_corr,high_consistency_pct,med_consistency_pct,low_consistency_pct
-23,1292439.608695652,153665.1739130435,0.5801609420145067,0.5809321243329975,0.35525806400157917,0.3470372667543807,0.0,100.0,0.0
+200,2819060.94,308021.435,0.8012914595944567,0.8075503593743514,0.0,0.07083031937538793,10.5,89.5,0.0

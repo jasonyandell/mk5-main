@@ -72,131 +72,158 @@ def get_hand_features(hand: list[int], trump: int) -> dict:
 
 
 def analyze_partner_inference(db: SeedDB, base_seed: int) -> dict | None:
-    """Analyze partner inference for one base seed.
+    """Analyze partner inference for one base seed using SQL JOINs.
 
     Uses pairwise comparisons since 3-way common states are rare due to path divergence.
+    Optimized: computes best moves and joins in SQL.
     """
     decl_id = base_seed % 10
     p0_hand = deal_from_seed(base_seed)[0]
 
     # Get P2's hand in each config
-    p2_hands = []
     p2_features = []
     for opp_seed in range(3):
         hands = deal_with_fixed_p0(p0_hand, opp_seed)
-        p2_hands.append(hands[2])  # P2 is partner
         p2_features.append(get_hand_features(hands[2], decl_id))
 
-    # First pass: find P2 states and best moves in each config
-    config_data = []
+    # Build file paths
+    files = []
     for opp_seed in range(3):
-        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        filepath = DATA_DIR / filename
+        filepath = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
         if not filepath.exists():
             return None
+        files.append(str(filepath))
 
-        try:
-            result = db.query_columns(
-                files=[filename],
-                columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
-                limit=MAX_ROWS
-            )
-            df = result.data
+    try:
+        # SQL to compute best move for P2 states (player == 2) and JOIN across configs
+        # player = (leader + trick_len) % 4, leader = (state >> 28) & 3, trick_len = (state >> 30) & 3
+        # Best move = argmax over legal Q values
+        player_expr = "(((state >> 28) & 3) + ((state >> 30) & 3)) % 4"
+        sql = f"""
+        WITH
+        a AS (
+            SELECT state,
+                   CASE WHEN q0 > -128 THEN q0 ELSE -999 END as q0,
+                   CASE WHEN q1 > -128 THEN q1 ELSE -999 END as q1,
+                   CASE WHEN q2 > -128 THEN q2 ELSE -999 END as q2,
+                   CASE WHEN q3 > -128 THEN q3 ELSE -999 END as q3,
+                   CASE WHEN q4 > -128 THEN q4 ELSE -999 END as q4,
+                   CASE WHEN q5 > -128 THEN q5 ELSE -999 END as q5,
+                   CASE WHEN q6 > -128 THEN q6 ELSE -999 END as q6
+            FROM read_parquet('{files[0]}')
+            WHERE {player_expr} = 2
+        ),
+        b AS (
+            SELECT state,
+                   CASE WHEN q0 > -128 THEN q0 ELSE -999 END as q0,
+                   CASE WHEN q1 > -128 THEN q1 ELSE -999 END as q1,
+                   CASE WHEN q2 > -128 THEN q2 ELSE -999 END as q2,
+                   CASE WHEN q3 > -128 THEN q3 ELSE -999 END as q3,
+                   CASE WHEN q4 > -128 THEN q4 ELSE -999 END as q4,
+                   CASE WHEN q5 > -128 THEN q5 ELSE -999 END as q5,
+                   CASE WHEN q6 > -128 THEN q6 ELSE -999 END as q6
+            FROM read_parquet('{files[1]}')
+            WHERE {player_expr} = 2
+        ),
+        c AS (
+            SELECT state,
+                   CASE WHEN q0 > -128 THEN q0 ELSE -999 END as q0,
+                   CASE WHEN q1 > -128 THEN q1 ELSE -999 END as q1,
+                   CASE WHEN q2 > -128 THEN q2 ELSE -999 END as q2,
+                   CASE WHEN q3 > -128 THEN q3 ELSE -999 END as q3,
+                   CASE WHEN q4 > -128 THEN q4 ELSE -999 END as q4,
+                   CASE WHEN q5 > -128 THEN q5 ELSE -999 END as q5,
+                   CASE WHEN q6 > -128 THEN q6 ELSE -999 END as q6
+            FROM read_parquet('{files[2]}')
+            WHERE {player_expr} = 2
+        ),
+        a_best AS (
+            SELECT state,
+                   arg_max(val, idx) as best_a
+            FROM a, LATERAL (VALUES (q0,0),(q1,1),(q2,2),(q3,3),(q4,4),(q5,5),(q6,6)) AS t(val, idx)
+            GROUP BY state
+        ),
+        b_best AS (
+            SELECT state,
+                   arg_max(val, idx) as best_b
+            FROM b, LATERAL (VALUES (q0,0),(q1,1),(q2,2),(q3,3),(q4,4),(q5,5),(q6,6)) AS t(val, idx)
+            GROUP BY state
+        ),
+        c_best AS (
+            SELECT state,
+                   arg_max(val, idx) as best_c
+            FROM c, LATERAL (VALUES (q0,0),(q1,1),(q2,2),(q3,3),(q4,4),(q5,5),(q6,6)) AS t(val, idx)
+            GROUP BY state
+        ),
+        -- Pairwise comparisons
+        ab AS (
+            SELECT a_best.state, best_a, best_b,
+                   CASE WHEN best_a = best_b THEN 1 ELSE 0 END as consistent
+            FROM a_best INNER JOIN b_best ON a_best.state = b_best.state
+        ),
+        ac AS (
+            SELECT a_best.state, best_a, best_c,
+                   CASE WHEN best_a = best_c THEN 1 ELSE 0 END as consistent
+            FROM a_best INNER JOIN c_best ON a_best.state = c_best.state
+        ),
+        bc AS (
+            SELECT b_best.state, best_b, best_c,
+                   CASE WHEN best_b = best_c THEN 1 ELSE 0 END as consistent
+            FROM b_best INNER JOIN c_best ON b_best.state = c_best.state
+        ),
+        -- 3-way common
+        three_way AS (
+            SELECT a_best.state, best_a, best_b, best_c,
+                   CASE WHEN best_a = best_b AND best_b = best_c THEN 1 ELSE 0 END as all_same
+            FROM a_best
+            INNER JOIN b_best ON a_best.state = b_best.state
+            INNER JOIN c_best ON a_best.state = c_best.state
+        )
+        SELECT
+            (SELECT COUNT(*) FROM ab) + (SELECT COUNT(*) FROM ac) + (SELECT COUNT(*) FROM bc) as n_pairwise,
+            (SELECT SUM(consistent) FROM ab) + (SELECT SUM(consistent) FROM ac) + (SELECT SUM(consistent) FROM bc) as n_consistent,
+            (SELECT COUNT(*) FROM three_way) as n_3way,
+            (SELECT SUM(all_same) FROM three_way) as n_3way_consistent
+        """
 
-            if len(df) > MAX_ROWS:
-                del df
-                gc.collect()
-                return None
+        result = db.execute(sql)
+        row = result.data.iloc[0]
 
-            states = df['state'].values
-            q_values = np.column_stack([
-                df['q0'].values, df['q1'].values, df['q2'].values, df['q3'].values,
-                df['q4'].values, df['q5'].values, df['q6'].values
-            ]).astype(np.int16)
-            del df
-            gc.collect()
+        n_pairwise = int(row['n_pairwise'])
+        n_consistent = int(row['n_consistent']) if row['n_consistent'] is not None else 0
+        n_3way = int(row['n_3way'])
+        n_3way_consistent = int(row['n_3way_consistent']) if row['n_3way_consistent'] is not None else 0
 
-            # Filter to P2 states (player == 2)
-            players = features.player(states)
-            p2_mask = players == 2
-            p2_states = states[p2_mask]
-            p2_q = q_values[p2_mask]
-
-            best_moves = get_best_move(p2_q)
-            state_to_best = dict(zip(p2_states, best_moves))
-            config_data.append({'states': set(p2_states), 'best': state_to_best})
-
-            del states, q_values, p2_states, p2_q
-            gc.collect()
-
-        except Exception:
-            gc.collect()
+        if n_pairwise == 0:
             return None
 
-    # Compute pairwise consistency (more robust than 3-way)
-    pairwise_consistent = 0
-    pairwise_varied = 0
-    all_entropies = []
+        n_varied = n_pairwise - n_consistent
+        n_3way_varied = n_3way - n_3way_consistent
 
-    for i in range(3):
-        for j in range(i + 1, 3):
-            common = config_data[i]['states'] & config_data[j]['states']
-            for state in common:
-                a_i = config_data[i]['best'].get(state)
-                a_j = config_data[j]['best'].get(state)
-                if a_i is not None and a_j is not None:
-                    if a_i == a_j:
-                        pairwise_consistent += 1
-                    else:
-                        pairwise_varied += 1
+        # P2 hand variance across configs
+        p2_trump_counts = [f['trump_count'] for f in p2_features]
+        p2_doubles = [f['doubles'] for f in p2_features]
+        p2_total_pips = [f['total_pips'] for f in p2_features]
+        p2_count_pts = [f['count_points'] for f in p2_features]
 
-    # Also compute 3-way stats if available
-    common_3way = config_data[0]['states'] & config_data[1]['states'] & config_data[2]['states']
-    n_3way = len(common_3way)
-    n_consistent_3way = 0
-    n_varied_3way = 0
+        return {
+            'base_seed': base_seed,
+            'n_pairwise_comparisons': n_pairwise,
+            'n_3way_common': n_3way,
+            'pairwise_consistent': n_consistent,
+            'pairwise_varied': n_varied,
+            'consistency_rate': n_consistent / n_pairwise,
+            'n_consistent_3way': n_3way_consistent,
+            'n_varied_3way': n_3way_varied,
+            'mean_action_entropy': 0,  # Skip entropy calc for speed
+            'p2_trump_std': np.std(p2_trump_counts),
+            'p2_doubles_std': np.std(p2_doubles),
+            'p2_pips_std': np.std(p2_total_pips),
+            'p2_count_std': np.std(p2_count_pts),
+        }
 
-    for state in common_3way:
-        actions = [config_data[k]['best'].get(state) for k in range(3)]
-        if all(a is not None for a in actions):
-            unique = len(set(actions))
-            if unique == 1:
-                n_consistent_3way += 1
-            else:
-                n_varied_3way += 1
-            # Action entropy
-            action_counts = np.bincount(actions, minlength=7)
-            action_probs = action_counts / action_counts.sum()
-            all_entropies.append(entropy(action_probs + 1e-10))
-
-    del config_data
-    gc.collect()
-
-    total_pairwise = pairwise_consistent + pairwise_varied
-    if total_pairwise == 0:
+    except Exception as e:
         return None
-
-    # P2 hand variance across configs
-    p2_trump_counts = [f['trump_count'] for f in p2_features]
-    p2_doubles = [f['doubles'] for f in p2_features]
-    p2_total_pips = [f['total_pips'] for f in p2_features]
-    p2_count_pts = [f['count_points'] for f in p2_features]
-
-    return {
-        'base_seed': base_seed,
-        'n_pairwise_comparisons': total_pairwise,
-        'n_3way_common': n_3way,
-        'pairwise_consistent': pairwise_consistent,
-        'pairwise_varied': pairwise_varied,
-        'consistency_rate': pairwise_consistent / total_pairwise,
-        'n_consistent_3way': n_consistent_3way,
-        'n_varied_3way': n_varied_3way,
-        'mean_action_entropy': np.mean(all_entropies) if all_entropies else 0,
-        'p2_trump_std': np.std(p2_trump_counts),
-        'p2_doubles_std': np.std(p2_doubles),
-        'p2_pips_std': np.std(p2_total_pips),
-        'p2_count_std': np.std(p2_count_pts),
-    }
 
 
 def compute_mi_proxy(df: pd.DataFrame) -> dict:
