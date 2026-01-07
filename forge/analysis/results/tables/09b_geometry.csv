@@ -1,0 +1,8 @@
+metric,value
+Total paths analyzed,30
+Unique basins observed,14
+PCA dim for 90% variance,2
+PCA dim for 95% variance,5
+Levina-Bickel dim (k=10),3.04
+K-means ARI (k=32),N/A
+K-means NMI (k=32),N/A

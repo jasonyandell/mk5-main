@@ -1,0 +1,12 @@
+metric,value
+Total paths analyzed,29
+Mean path length,27.7
+Unique basins,15
+Prefix compression ratio,1.04x
+Suffix compression ratio,1.05x
+LZ compression ratio,2.15x
+Mean shared prefix (same basin),0.29
+Mean shared suffix (same basin),0.27
+H(path | basin) [bits],2.72
+H(path) [bits],4.86
+I(path; basin) [bits],2.13
