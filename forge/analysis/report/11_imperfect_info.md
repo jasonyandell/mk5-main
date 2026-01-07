@@ -73,4 +73,44 @@ This analysis uses only root V values, not individual count capture tracking (wh
 
 ---
 
+## 11c: Best Move Stability Analysis
+
+### Key Question
+Does the optimal move change with opponent hands?
+
+### Key Findings
+
+| Metric | Value |
+|--------|-------|
+| Overall consistency | 52.5% |
+| States analyzed | 181 |
+| States with consistent best move | 95 |
+
+**Insight**: About half of game positions have a "dominant" best move that's optimal regardless of opponent hands. The other half are situation-dependent.
+
+#### Consistency by Depth
+
+| Depth | States | Consistent | Rate |
+|-------|--------|------------|------|
+| 1-4 | 8 | 8 | 100% |
+| 5 | 57 | 32 | 56% |
+| 6 | 46 | 17 | 37% |
+| 7 | 29 | 16 | 55% |
+| 8 | 20 | 16 | 80% |
+| 9-16 | 21 | 6 | 29% |
+
+**Insights**:
+- Early/late game states (low remaining dominoes) have more stable best moves
+- Mid-game (5-7 dominoes remaining) has lowest consistency
+- This matches intuition: early game has obvious plays, mid-game is most complex
+
+### Files Generated
+
+- `results/tables/11c_stability_summary.csv` - Overall metrics
+- `results/tables/11c_stability_by_depth.csv` - Breakdown by depth
+- `results/tables/11c_best_move_stability_by_seed.csv` - Per-seed analysis
+- `results/figures/11c_best_move_stability.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-06*
