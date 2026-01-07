@@ -59,8 +59,60 @@ Bad hands leave outcomes to **chance**:
 
 ---
 
+## 15b: UMAP Hand Space
+
+### Key Question
+How do hands cluster in feature space? Are there distinct archetypes?
+
+### Method
+- UMAP (Uniform Manifold Approximation and Projection)
+- 10 features → 2D embedding
+- n_neighbors=15, min_dist=0.1, metric='euclidean'
+
+### Key Findings
+
+#### Hand Space is Continuous
+
+UMAP reveals **no sharp clusters** of hand archetypes:
+- Hands form a continuous manifold
+- Gradual transitions between good and bad hands
+- No distinct "hand types" - more like a spectrum
+
+#### Feature Correlations with UMAP
+
+| Feature | UMAP1 Corr | UMAP2 Corr |
+|---------|------------|------------|
+| has_trump_double | 0.57 | 0.67 |
+| n_voids | 0.44 | -0.51 |
+| trump_count | 0.33 | 0.42 |
+| n_6_high | 0.23 | 0.10 |
+| n_doubles | 0.17 | -0.01 |
+
+**E[V] vs UMAP1**: r = 0.23 (modest gradient in embedding space)
+
+#### Extreme Hands Location
+
+- **Best hand (E[V]=42)**: Located in high-doubles region
+- **Worst hand (E[V]=-29)**: Located in low-doubles region
+- High/low risk hands also separate spatially
+
+### Interpretation
+
+**No natural hand archetypes** - the hand space is continuous:
+1. You can't categorize hands into "types"
+2. Feature importance is a gradient, not categories
+3. UMAP confirms the linear relationships found in regression
+
+### Files Generated
+
+- `results/tables/15b_umap_coordinates.csv` - UMAP coordinates for all 200 hands
+- `results/figures/15b_umap_hand_space.png` - Side-by-side E[V] and σ(V) coloring
+- `results/figures/15b_umap_doubles.png` - Colored by n_doubles
+- `results/figures/15b_umap_annotated.png` - With extreme hands labeled
+
+---
+
 ## Remaining Tasks
 
-- 15b: UMAP hand space visualization
 - 15c: Pareto frontier
 - 15d: Phase transition plots

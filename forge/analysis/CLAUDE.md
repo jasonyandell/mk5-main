@@ -461,6 +461,19 @@ Available formats:
 - `results/figures/15a_risk_return_scatter.pdf` (vector for publication)
 - `results/figures/15a_risk_return_clean.png` (simplified version)
 
+### UMAP Hand Space (15b)
+
+UMAP dimensionality reduction (10 features → 2D) reveals:
+- **No distinct clusters** - hand space is a continuous manifold
+- Gradual E[V] gradient across embedding
+- has_trump_double and n_voids drive UMAP structure
+- Best/worst hands occupy distinct regions
+
+Available at:
+- `results/figures/15b_umap_hand_space.png` - E[V] and σ(V) coloring
+- `results/figures/15b_umap_annotated.png` - With extreme hands labeled
+- `results/tables/15b_umap_coordinates.csv` - Coordinates for all hands
+
 ### Power Analysis (13e)
 
 Statistical power analysis confirms n=200 is sufficient for all key findings:
