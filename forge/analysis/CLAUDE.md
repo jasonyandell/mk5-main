@@ -325,6 +325,19 @@ gc.collect()
 
 **Python scripts vs notebooks**: For memory-intensive analysis, convert notebook logic to a `.py` script (see `run_08c.py`, `run_08d_manifold.py` as examples). Scripts handle memory better than jupyter kernels.
 
+## Key Statistical Findings
+
+### E[V] vs σ(V) Negative Correlation (12a)
+
+At n=200 seeds, there's a **confirmed negative correlation** between expected value and risk:
+
+| Metric | r | 95% CI | p-value |
+|--------|---|--------|---------|
+| r(E[V], σ[V]) | **-0.381** | [-0.494, -0.256] | 2.6×10⁻⁸ |
+| r(E[V], V_spread) | **-0.398** | [-0.509, -0.274] | 5.4×10⁻⁹ |
+
+**Interpretation**: Good hands (high E[V]) have **lower** variance/risk. This is the opposite of typical financial markets where higher returns require higher risk. Effect size is "medium" by Cohen's conventions (|r| ≈ 0.38-0.40).
+
 ## Useful One-Liners
 
 ```bash
