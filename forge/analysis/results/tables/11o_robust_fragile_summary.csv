@@ -1,0 +1,2 @@
+n_states,n_robust_best,n_fragile_best,robust_pct,robust_q_var_mean,fragile_q_var_mean
+283279,274750,8529,96.98918733827782,9.677961666317524,69.69542839113971

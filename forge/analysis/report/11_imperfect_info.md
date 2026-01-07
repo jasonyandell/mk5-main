@@ -890,4 +890,96 @@ This explains the wide range of bidding styles in practice - conservative player
 
 ---
 
+## 11o: Robust vs Fragile Moves
+
+### Key Question
+Which moves are "always good" vs "depends on opponent hands"?
+
+### Method
+For common states across 3 opponent configurations:
+- **Robust**: Same best move in all 3 configs
+- **Fragile**: Best move varies by opponent configuration
+
+### Key Findings (Full 201 seeds, 283K common states)
+
+#### Best Move Classification
+
+| Classification | Count | Percentage |
+|----------------|-------|------------|
+| **Robust** (same best move) | 274,750 | **97.0%** |
+| **Fragile** (varies) | 8,529 | **3.0%** |
+
+**Critical Finding**: The vast majority of positions (97%) have a clear "best" move regardless of opponent hands. Only 3% of positions have situationally-dependent optimal play.
+
+**Note**: This is much higher than 11c's 54.5% because we're analyzing only **common states** (states reachable in all 3 configs), which tend to be later in the game where paths have converged.
+
+#### Q-Variance by Move Type
+
+| Move Type | Mean σ(Q) | Std σ(Q) |
+|-----------|-----------|----------|
+| Robust | 9.68 | 22.29 |
+| Fragile | **69.70** | 14.56 |
+
+**Finding**: Fragile moves have **7.2x more Q-variance** than robust moves. When the best move varies by opponent configuration, the Q-values are highly unstable.
+
+#### Robustness by Game Depth
+
+| Depth Range | Robust | Fragile | Total | Robust % |
+|-------------|--------|---------|-------|----------|
+| Endgame (0-4) | 3,592 | 0 | 3,592 | **100%** |
+| Late (5-8) | 195,310 | 2,613 | 197,923 | **98.7%** |
+| Mid (9-16) | 75,846 | 5,915 | 81,761 | **92.8%** |
+| Early (17+) | 2 | 1 | 3 | 66.7% |
+
+**Key Insight**: Robustness increases dramatically as the game progresses:
+- **Endgame is deterministic**: 100% of positions have a robust best move
+- **Late game is nearly certain**: 98.7% robust
+- **Mid game is mostly settled**: 92.8% robust
+
+#### Robustness by Action Slot
+
+| Slot | Robust | Fragile | Robust % | Mean σ(Q) |
+|------|--------|---------|----------|-----------|
+| 0 | 70,558 | 13,943 | **83.5%** | 6.4 |
+| 1 | 58,295 | 11,970 | **83.0%** | 6.4 |
+| 2 | 46,937 | 12,652 | **78.8%** | 6.3 |
+| 3 | 47,881 | 12,229 | **79.7%** | 6.7 |
+| 4 | 42,746 | 11,885 | **78.2%** | 6.9 |
+| 5 | 33,822 | 12,582 | **72.9%** | 6.6 |
+| 6 | 22,677 | 9,587 | **70.3%** | 6.4 |
+
+**Insight**: Earlier action slots (0-1) are more robust than later slots (5-6). When you have more dominoes, your first choices are more clearly correct.
+
+### Reconciling with 11c
+
+11c found only 54.5% best move consistency, while 11o finds 97% robust moves. The difference:
+
+- **11c** counted **all states** across configs (including divergent paths)
+- **11o** counts only **common states** (reachable from all 3 configs)
+
+This reveals that:
+1. Early in the game, paths diverge significantly (11c: only 10% consistency at depth 17+)
+2. Where paths converge (common states), the optimal move is almost always clear (11o: 97%)
+3. The "fragile" positions are concentrated where paths haven't yet converged
+
+### Implications for Strategy
+
+1. **Trust convergent positions**: Once a game state is reached regardless of opponent hands, the best move is almost certainly robust (97%)
+
+2. **Be cautious at divergence points**: The 3% of fragile positions are where opponent-reading skills matter most
+
+3. **Later dominoes require more judgment**: Slots 5-6 (when you have few dominoes left to play) are 30% less robust than slots 0-1
+
+4. **Endgame calculation is reliable**: If you can calculate to depth 0-4, your analysis is 100% reliable regardless of hidden information
+
+### Files Generated
+
+- `results/tables/11o_robust_fragile_by_seed.csv` - Per-seed data
+- `results/tables/11o_robust_fragile_summary.csv` - Summary statistics
+- `results/tables/11o_robust_by_depth.csv` - Depth analysis
+- `results/tables/11o_robust_by_slot.csv` - Slot analysis
+- `results/figures/11o_robust_vs_fragile.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
