@@ -187,6 +187,95 @@ We have trained a Transformer model on this data achieving **97.8% move predicti
 
 ---
 
+## 8. Imperfect Information Analysis (Section 11)
+
+Using marginalized oracle data (201 base seeds × 3 opponent configurations), we quantified the impact of hidden information on game outcomes.
+
+### The Skill vs Luck Ratio
+
+| Component | % of Total Variance | Interpretation |
+|-----------|---------------------|----------------|
+| Between-hand (skill) | **47%** | Your hand quality |
+| Within-hand (luck) | **53%** | Opponent distribution |
+| True skill (features→E[V]) | **12%** | Predictable from hand features |
+| Pure luck | **49%** | Irreducible opponent variance |
+
+**The definitive answer: Texas 42 is 19% skill, 81% luck per hand.**
+
+### The Napkin Bidding Formula
+
+From hand features regression (R² = 0.25, CV R² = 0.18):
+
+```
+E[V] ≈ -4.1 + 6.4×(doubles) + 3.2×(trump_count) + 2.2×(trump_double) - 1.2×(6_highs)
+```
+
+**Key predictors (by |correlation|)**:
+1. **n_doubles**: +0.40 (strongest predictor)
+2. **has_trump_double**: +0.24
+3. **trump_count**: +0.23
+4. **count_points**: +0.20
+5. **n_6_high**: -0.16 (6-highs are liabilities!)
+
+### Count Lock Predictability
+
+From count locks analysis (R² = 0.46, CV R² = 0.37):
+
+| Count | Lock Rate | Holding→Lock Correlation |
+|-------|-----------|-------------------------|
+| 5-5 | **48%** | +0.79 |
+| 3-2 | 44% | +0.51 |
+| 4-1 | 34% | +0.68 |
+| 6-4 | 30% | +0.81 |
+| 5-0 | 25% | **+0.81** |
+
+**Key insight**: count_points is the dominant predictor (+0.607). Total pips is irrelevant (+0.01).
+
+### Information Value is Surprisingly Low
+
+| Metric | Value |
+|--------|-------|
+| Mean info gain from perfect knowledge | **0.84 points** |
+| Moves that agree with/without perfect info | **75%** |
+| Positions benefiting from perfect info | 27% |
+
+**Implication**: "Play the board, not the player." Opponent inference adds <1 point of expected value on average.
+
+### Partner Inference Potential
+
+| Metric | Value |
+|--------|-------|
+| Action consistency rate | 58% |
+| Actions revealing hand info | **42%** |
+| Action entropy | 0.355 (HIGH signaling) |
+
+**Implication**: Partner actions reveal substantial hand information. Strategic signaling is valuable.
+
+### Best Move Robustness
+
+| Analysis | Finding |
+|----------|---------|
+| Overall consistency (11c) | 54.5% same best move across configs |
+| Common state robustness (11o) | **97%** robust (same best move) |
+| Endgame (depth 0-4) | **100%** deterministic |
+| Early game (depth 17+) | **10%** consistency |
+
+**Interpretation**: Early game is chaos (10% consistency), but most game states (97% of common positions) have clear optimal moves regardless of opponent hands.
+
+### Hand Classification
+
+Hands naturally cluster into three types:
+
+| Type | % | E[V] | σ(V) | Recommendation |
+|------|---|------|------|----------------|
+| **STRONG** | 18% | +33.7 | 4.4 | Bid confidently |
+| **VOLATILE** | 40% | +16.9 | 11.9 | Cautious |
+| **WEAK** | 42% | +2.7 | 22.7 | Pass |
+
+**The 18/40/42 rule**: Only ~18% of hands justify confident bidding.
+
+---
+
 ## Report Structure
 
 - **Section 01**: Baseline distributions (V, Q, state counts by depth)
@@ -197,5 +286,6 @@ We have trained a Transformer model on this data achieving **97.8% move predicti
 - **Section 06**: Scaling analysis (state counts, temporal correlations, DFA)
 - **Section 07**: Synthesis and open questions
 - **Section 08**: Deep count capture analysis (lock-in depth, residual decomposition, capture predictors, manifold structure)
+- **Section 11**: Imperfect information analysis (skill vs luck, bidding formulas, hand classification)
 
 Each section includes methodology, complete results, and interpretation. Figures are embedded throughout.
