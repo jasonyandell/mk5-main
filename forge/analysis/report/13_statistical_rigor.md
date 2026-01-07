@@ -173,6 +173,68 @@ Computed standardized effect sizes:
 
 ---
 
+## 13d: Fisher z-Transform Correlation CIs
+
+### Key Question
+Which correlations are statistically significant when properly accounting for sampling uncertainty?
+
+### Method
+- scipy.stats.pearsonr with confidence_interval() method
+- Fisher z-transformation: z = arctanh(r), SE = 1/sqrt(n-3)
+- 95% confidence intervals via inverse transform
+
+### Key Findings
+
+#### Significant Correlations (10 of 16)
+
+| Comparison | r | 95% CI | Magnitude |
+|------------|---|--------|-----------|
+| E[V] vs V_spread | -0.40 | [-0.51, -0.27] | **Medium** |
+| n_doubles vs E[V] | +0.40 | [+0.27, +0.51] | **Medium** |
+| E[V] vs σ(V) | -0.38 | [-0.49, -0.26] | **Medium** |
+| has_trump_double vs E[V] | +0.24 | [+0.11, +0.37] | Small |
+| trump_count vs E[V] | +0.23 | [+0.09, +0.36] | Small |
+| n_voids vs E[V] | +0.20 | [+0.06, +0.33] | Small |
+| count_points vs E[V] | +0.20 | [+0.06, +0.33] | Small |
+| n_6_high vs σ(V) | +0.19 | [+0.05, +0.32] | Small |
+| n_6_high vs E[V] | -0.16 | [-0.29, -0.02] | Small |
+| total_pips vs σ(V) | +0.15 | [+0.01, +0.28] | Small |
+
+#### Non-Significant Correlations (6 of 16)
+
+| Comparison | r | 95% CI | Note |
+|------------|---|--------|------|
+| n_doubles vs σ(V) | -0.14 | [-0.27, +0.00] | Marginal |
+| trump_count vs σ(V) | -0.09 | [-0.23, +0.05] | Negligible |
+| max_suit_length vs E[V] | -0.08 | [-0.22, +0.06] | Negligible |
+| n_5_high vs E[V] | +0.08 | [-0.06, +0.21] | Negligible |
+| total_pips vs E[V] | +0.04 | [-0.10, +0.17] | Negligible |
+| n_singletons vs E[V] | +0.00 | [-0.14, +0.14] | Negligible |
+
+### Critical Insight: Bivariate vs Multivariate
+
+The Fisher z-transform CIs reveal an important distinction:
+
+**Bivariately significant but multivariately not**:
+- has_trump_double vs E[V]: r = +0.24 (significant)
+- n_voids vs E[V]: r = +0.20 (significant)
+- count_points vs E[V]: r = +0.20 (significant)
+
+Yet in the multivariate regression (13a), these features have CIs that include zero. This means their bivariate correlations are largely explained by their association with n_doubles and trump_count.
+
+### Implications
+
+1. **Bivariate screening is encouraging**: Many features correlate with E[V]
+2. **Multivariate tells the real story**: Only n_doubles and trump_count survive
+3. **Risk remains unpredictable**: Even with CIs, σ(V) predictors are weak
+
+### Files Generated
+
+- `results/tables/13d_correlation_cis.csv` - Full correlation table with Fisher CIs
+- `results/figures/13d_correlation_cis.png` - Forest plot visualization
+
+---
+
 ## Remaining Tasks
 
 - Additional rigor tasks TBD based on epic t42-6xhh

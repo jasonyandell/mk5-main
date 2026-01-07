@@ -397,6 +397,22 @@ Effect sizes distinguish "statistically significant" from "practically meaningfu
 
 **Key insight**: The n_doubles and E[V]-σ(V) relationships have medium effect sizes - practically meaningful, not just statistically significant. Risk prediction is weak (small R²).
 
+### Fisher z-Transform Correlation CIs (13d)
+
+Fisher z-transform confidence intervals for all correlations (n=200):
+
+**Significant correlations (10 of 16)**:
+| Comparison | r | 95% CI |
+|------------|---|--------|
+| n_doubles vs E[V] | +0.40 | [+0.27, +0.51] |
+| E[V] vs σ(V) | -0.38 | [-0.49, -0.26] |
+| has_trump_double vs E[V] | +0.24 | [+0.11, +0.37] |
+| trump_count vs E[V] | +0.23 | [+0.09, +0.36] |
+| n_voids vs E[V] | +0.20 | [+0.06, +0.33] |
+| count_points vs E[V] | +0.20 | [+0.06, +0.33] |
+
+**Key insight**: Many features show bivariately significant correlations with E[V], but in multivariate regression (13a), only n_doubles and trump_count survive. This indicates that has_trump_double, n_voids, and count_points are largely explained by their association with the two key predictors.
+
 ## Useful One-Liners
 
 ```bash
