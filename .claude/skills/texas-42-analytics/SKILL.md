@@ -19,7 +19,7 @@ python -c "from forge.analysis.utils import loading, features, viz; print('OK')"
 | Location | Purpose |
 |----------|---------|
 | `/mnt/d/shards-standard/` | Primary oracle shards (~200GB, external drive) |
-| `/mnt/d/shards-marginalized/` | Imperfect info data: same hand, 3 opponent configs (~92GB) |
+| `data/shards-marginalized/` | Imperfect info data: same hand, 3 opponent configs (~92GB) |
 | `data/flywheel-shards/` | Smaller local dataset for testing |
 
 **Schema:** `state` (int64), `V` (int8 -42 to +42), `q0`-`q6` (int8 actions, -128 = illegal)
@@ -58,6 +58,7 @@ forge/analysis/
 | `viz.py` | Matplotlib helpers with consistent styling |
 | `navigation.py` | State traversal, principal variation tracing |
 | `symmetry.py` | Canonical forms, orbit enumeration |
+| `seed_db.py` | **DuckDB interface** for SQL queries on parquet (see below) |
 
 ## Analysis Modules
 
@@ -86,7 +87,7 @@ jupyter nbconvert --to notebook --execute --inplace \
   --ExecutePreprocessor.timeout=600 <notebook.ipynb>
 ```
 
-## Common Pattern
+## Common Pattern (Traditional Loading)
 
 ```python
 from forge.analysis.utils import loading, features, viz
@@ -104,14 +105,56 @@ viz.setup_notebook_style()
 viz.plot_v_distribution(df['V'])
 ```
 
+## DuckDB Pattern (Preferred for Large Data)
+
+Use `SeedDB` for efficient SQL queries on 100GB+ data without loading into memory:
+
+```python
+from forge.analysis.utils.seed_db import SeedDB
+
+db = SeedDB("data/shards-marginalized/train")
+
+# Get root V (depth=28) from a file - fast, no full load
+result = db.get_root_v("seed_00000000_opp0_decl_0.parquet")
+print(f"Root V: {result.data}, took {result.elapsed_ms:.1f}ms")
+
+# Aggregate root V across many files
+result = db.root_v_stats(limit=100)
+df = result.data  # DataFrame: file, root_v, rows
+
+# Query with filtering - only scans needed data
+result = db.query_columns(
+    pattern="*.parquet",
+    columns=["state", "V"],
+    depth_filter=28,  # Root states only
+    limit=1000,
+)
+
+# Custom SQL with depth() UDF
+result = db.execute("""
+    SELECT depth(state) as d, AVG(V) as mean_v
+    FROM read_parquet('/mnt/d/shards-standard/train/*.parquet')
+    GROUP BY depth(state)
+    ORDER BY d DESC
+""")
+```
+
+**QueryResult fields:** `data`, `elapsed_ms`, `cpu_time_ms`, `io_wait_ms`, `rows_scanned`, `rows_returned`
+
+**When to use DuckDB vs traditional loading:**
+- **DuckDB**: Root V extraction, aggregations, filtered queries, large-scale analysis
+- **Traditional**: Full shard access for navigation, PV tracing, state-by-state analysis
+
 ## Anti-Patterns
 
 | DO NOT | DO INSTEAD |
 |--------|------------|
-| Load all shards at once | Keep N_SHARDS ≤ 5 |
+| Load all shards at once | Keep N_SHARDS ≤ 5 (or use DuckDB) |
 | Skip memory cleanup | `del df; gc.collect()` after each shard |
 | Use notebooks for heavy compute | Convert to .py scripts (see run_08c.py) |
 | Forget mount check | `ls /mnt/d/` before assuming data exists |
+| Write `get_root_v_fast()` in scripts | Use `SeedDB.get_root_v()` |
+| Read CSV intermediate files | Query Parquet directly with DuckDB |
 
 ## Bead Close Protocol
 
