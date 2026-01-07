@@ -305,4 +305,63 @@ Linear regression with features extracted from P0's hand:
 
 ---
 
+## 11g: Hand Features → Count Locks
+
+### Key Question
+What hand features predict count locks (consistently capturing a count across opponent configurations)?
+
+### Method
+For each hand, track whether Team 0 captures each count in all 3 opponent configurations. Regress lock rate against hand features.
+
+### Key Findings (Preliminary - 10 seeds)
+
+**Note**: Small sample size (n=10) causes overfitting. Full analysis needed.
+
+#### Lock Rates by Count
+
+| Count | Avg Lock Rate | % Fully Locked |
+|-------|---------------|----------------|
+| 3-2 | 0.37 | 0% |
+| 4-1 | 0.27 | 0% |
+| 5-0 | 0.10 | 0% |
+| 5-5 | 0.37 | 0% |
+| 6-4 | 0.20 | 0% |
+
+**Insight**: No count was fully locked in this sample. Count control is contested, not deterministic.
+
+#### Does Holding a Count Predict Locking It?
+
+| Count | Holding→Lock Correlation |
+|-------|-------------------------|
+| 5-0 | **+0.89** (strong) |
+| 6-4 | **+0.70** (strong) |
+| 3-2 | **+0.67** (strong) |
+| 4-1 | +0.47 (moderate) |
+| 5-5 | +0.37 (weak) |
+
+**Insight**: Holding a count strongly predicts locking it for 5-0, 6-4, and 3-2. The 5-5 is hardest to lock even when held.
+
+#### Feature Correlations with Total Lock Rate
+
+| Feature | Correlation |
+|---------|-------------|
+| total_pips | **-0.93** |
+| trump_count | **+0.56** |
+| n_6_high | -0.24 |
+
+**Insights** (tentative):
+1. **High total pips = fewer locks**: Counterintuitive but consistent with 11f. Strong hands by pip count may lack trump control.
+2. **Trump count helps**: More trumps = more control = more locks.
+3. **The 5-5 paradox**: Holding it barely predicts locking it (0.37), suggesting opponents can often steal it.
+
+### Files Generated
+
+- `results/tables/11g_count_locks_by_seed.csv` - Per-seed lock rates
+- `results/tables/11g_lock_correlations.csv` - Feature correlations
+- `results/tables/11g_per_count_predictors.csv` - Per-count analysis
+- `results/tables/11g_regression_coefficients.csv` - Model coefficients
+- `results/figures/11g_hand_features_to_locks.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-06*
