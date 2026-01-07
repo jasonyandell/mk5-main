@@ -375,12 +375,75 @@ For exploratory analysis with 16 tests, **FDR is appropriate**. We accept that ~
 
 ---
 
+## 13g: Cross-Validation for Regressions
+
+### Key Question
+How well do our regression models generalize to unseen data?
+
+### Method
+- 10-fold CV with 10 repeats (100 total fits)
+- Compared napkin formula (2 features) vs full model (10 features)
+- Also tested Ridge regularization
+- sklearn.model_selection.RepeatedKFold
+
+### Key Findings
+
+#### E[V] Prediction
+
+| Model | Train R² | CV R² | Overfit Ratio |
+|-------|----------|-------|---------------|
+| **Napkin (2 features)** | 0.233 | **0.152 ± 0.21** | **1.5x** |
+| Full (10 features) | 0.259 | 0.109 ± 0.25 | 2.4x |
+| Ridge Full | 0.259 | 0.111 ± 0.24 | 2.3x |
+
+**Key insight**: The napkin formula **generalizes better** than the full model:
+- Lower overfit ratio (1.5x vs 2.4x)
+- Higher CV R² (0.152 vs 0.109)
+- Simpler models win for this task
+
+#### σ(V) Prediction
+
+| Model | Train R² | CV R² | Status |
+|-------|----------|-------|--------|
+| Napkin | 0.030 | -0.065 ± 0.17 | **FAILS** |
+| Full | 0.081 | -0.126 ± 0.20 | **FAILS** |
+| Ridge Full | 0.081 | -0.123 ± 0.20 | **FAILS** |
+
+**Key insight**: σ(V) prediction **completely fails cross-validation**:
+- All models have negative CV R² (worse than predicting the mean)
+- Any training R² is pure overfitting
+- Confirms 13b, 14b: risk is fundamentally unpredictable
+
+### Critical Insight: Napkin Formula Wins
+
+The 2-feature napkin formula (n_doubles, trump_count) is the **best model**:
+1. Lowest overfitting
+2. Best generalization
+3. Simplest interpretation
+
+**Recommended formula**: E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trumps)
+
+### Implications
+
+1. **Simpler is better**: Adding features hurts generalization
+2. **Don't predict risk**: No model works for σ(V)
+3. **Use the napkin formula**: Validated by cross-validation
+
+### Files Generated
+
+- `results/tables/13g_cross_validation.csv` - Summary statistics
+- `results/figures/13g_cross_validation.png` - Train vs CV comparison
+- `results/figures/13g_learning_curve.png` - Learning curve
+
+---
+
 ## Summary
 
 Statistical rigor analyses confirm:
 
 1. **Only two predictors survive multivariate analysis**: n_doubles and trump_count
-2. **Risk is unpredictable**: σ(V) model has weak R² (0.08) and borderline power
+2. **Risk is unpredictable**: σ(V) model has weak R² (0.08) and fails cross-validation
 3. **Effect sizes are medium**: Practically meaningful, not just statistically significant
 4. **n=200 is sufficient**: All key findings have adequate power (>80%)
 5. **Multiple testing robust**: 9 of 10 correlations survive BH FDR correction
+6. **Napkin formula validated**: CV R² = 0.15, lowest overfitting of all models

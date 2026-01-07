@@ -488,6 +488,25 @@ Available at:
 - `results/tables/13f_multiple_comparison.csv` - Adjusted p-values
 - `results/figures/13f_multiple_comparison.png` - BH procedure visualization
 
+### Cross-Validation (13g)
+
+K-fold cross-validation (10-fold, 10 repeats) for regression models:
+
+**E[V] Prediction:**
+| Model | Train R² | CV R² | Overfit |
+|-------|----------|-------|---------|
+| **Napkin (2 features)** | 0.23 | **0.15** | 1.5x |
+| Full (10 features) | 0.26 | 0.11 | 2.4x |
+
+**σ(V) Prediction:** All models have **negative CV R²** (fails completely)
+
+**Key insight**: The napkin formula (n_doubles, trump_count) generalizes best with lowest overfitting. Full model hurts generalization. σ(V) prediction is confirmed impossible.
+
+Available at:
+- `results/tables/13g_cross_validation.csv` - Summary
+- `results/figures/13g_cross_validation.png` - Train vs CV bars
+- `results/figures/13g_learning_curve.png` - Learning curve
+
 ## Useful One-Liners
 
 ```bash
