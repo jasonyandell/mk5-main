@@ -1421,6 +1421,105 @@ This seems to contradict 11x which found 75% action agreement:
 
 ---
 
+## 11q: Per-Hand PCA Analysis (Preliminary)
+
+### Key Question
+Is the 5D structure (V at multiple depths) preserved within a fixed hand?
+
+### Method
+For each hand across 3 opponent configurations:
+1. Extract V statistics at depth levels (28, 24, 20, 16, 12, 8, 4, 1)
+2. Build feature matrix: mean V, std V, and spread (max-min) at each depth
+3. PCA to find intrinsic dimensionality
+
+### Key Findings (Preliminary - 50 seeds)
+
+#### PCA Variance Explained
+
+| Component | Variance | Cumulative |
+|-----------|----------|------------|
+| PC1 | **45.6%** | 45.6% |
+| PC2 | 17.3% | 62.9% |
+| PC3 | 15.5% | 78.4% |
+| PC4 | 7.4% | 85.8% |
+| PC5 | 4.5% | 90.3% |
+
+**Key Finding**: 5 components explain 90% of variance from 24 original features.
+
+#### Dimensionality Metrics
+
+| Metric | Value |
+|--------|-------|
+| Original features | 24 |
+| Components for 90% variance | **5** |
+| Components for 95% variance | 7 |
+| Components for 99% variance | 10 |
+| Effective dimensionality | **4.9** |
+| Dimensionality compression | **4.8x** |
+
+**Critical Finding**: Fixing P0's hand constrains the outcome manifold from 24 dimensions to ~5. This is a significant compression.
+
+#### PC1 Loadings (Top Features)
+
+| Feature | Loading |
+|---------|---------|
+| v_spread_d8 | **+0.385** |
+| v_spread_d12 | +0.377 |
+| v_spread_d4 | +0.366 |
+| v_spread_d16 | +0.355 |
+| v_spread_d20 | +0.325 |
+
+**Insight**: PC1 is dominated by V SPREAD at mid-game depths. This represents the "uncertainty dimension" - how much V varies across opponent configurations.
+
+#### V Spread by Depth
+
+| Depth | Mean V Spread |
+|-------|---------------|
+| 28 (start) | **40.6** |
+| 24 | 18.3 |
+| 20 | 11.5 |
+| 16 | 8.6 |
+| 12 | 6.3 |
+| 8 | 5.0 |
+| 4 | 4.0 |
+| 1 (end) | **3.0** |
+
+**Key Pattern**: V spread decreases monotonically from 41 points at game start to 3 points at end. Games converge as they progress.
+
+### Interpretation
+
+1. **Manifold structure exists**: The 4.8x compression shows that hand-conditioned outcomes live on a ~5D manifold, not the full 24D feature space.
+
+2. **Uncertainty is the main axis**: PC1 (45.6%) captures V spread - the primary variation between hands is how much their outcomes depend on opponents.
+
+3. **Convergence is universal**: The V spread → depth relationship is consistent across hands, suggesting a shared funnel structure.
+
+4. **Hand constrains but doesn't determine**: 5 dimensions still allow significant outcome variation within a fixed hand.
+
+### Relationship to Other Analyses
+
+- **11p** found 88% low-correlation trajectories - 11q explains this via the high-spread PC1 loadings
+- **11j** found 82% of hands cross multiple basins - aligns with the 5D manifold allowing diverse outcomes
+- **11f** found R² = 0.25 - the remaining 75% variance maps to the 5 PCA dimensions
+
+### Implications
+
+1. **Bidding heuristics are 5D**: A good bidding formula needs ~5 independent factors
+
+2. **Mid-game depth matters most**: PC1 loadings peak at depths 8-16, not early or late game
+
+3. **Convergence is reliable**: The funnel structure (41→3 spread) means endgame analysis is stable
+
+### Files Generated
+
+- `results/tables/11q_per_hand_pca_features.csv` - Per-hand features
+- `results/tables/11q_pca_variance.csv` - Variance explained
+- `results/tables/11q_pca_loadings.csv` - Component loadings
+- `results/tables/11q_pca_summary.csv` - Summary statistics
+- `results/figures/11q_per_hand_pca.png` - Visualization
+
+---
+
 ## 11x: Information Value (Perfect vs Imperfect) (Preliminary)
 
 ### Key Question
