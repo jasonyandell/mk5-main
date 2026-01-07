@@ -181,4 +181,69 @@ For common states across 3 opponent configs, compute σ(Q) for each legal action
 
 ---
 
+## 11e: Contest State Distribution
+
+### Key Question
+What's P(Team 0 captures) for each count domino?
+
+### Method
+For each base_seed with fixed P0 hand across 3 opponent configurations:
+1. Track which counts are held by Team 0 (P0+P2) vs Team 1 (P1+P3)
+2. Use V distribution as proxy for capture outcomes
+3. Estimate 5-vector of capture probabilities
+
+### Key Findings
+
+| Count | Mean P(capture) | Std | V when Team 0 holds | V when Team 1 holds | V Diff |
+|-------|-----------------|-----|---------------------|---------------------|--------|
+| 3-2 | 0.43 | 0.21 | 12.3 | 16.6 | **-4.2** |
+| 4-1 | 0.34 | 0.26 | 12.7 | 14.9 | **-2.2** |
+| 5-0 | 0.28 | 0.27 | 15.3 | 13.1 | +2.2 |
+| 5-5 | 0.44 | 0.23 | 20.1 | 5.4 | **+14.7** |
+| 6-4 | 0.30 | 0.24 | 18.2 | 11.2 | **+7.0** |
+
+**Key Insights**:
+
+1. **5-5 (double-five) is the most valuable count**: +14.7 point advantage when Team 0 holds it. This 10-point domino is often a trump-stopper and hard to steal.
+
+2. **6-4 is second most valuable**: +7.0 point advantage. Also 10 points and often protected by holding the 6-suit.
+
+3. **5-0 provides modest advantage**: +2.2 points when held. Being a 5-point count, less impactful but controllable.
+
+4. **3-2 and 4-1 show *negative* holding advantage**: Counterintuitively, Team 0 does *worse* when holding these. Possible explanations:
+   - These low-value counts often appear in weak hands overall
+   - Opponent hands with these counts may have compensating strengths
+   - Small sample size effect
+
+5. **All counts are contested**: Mean capture probabilities range 0.28-0.44, all far from deterministic. No count is a "lock" based on ownership alone.
+
+### Capture Probability Correlations
+
+| | 3-2 | 4-1 | 5-0 | 5-5 | 6-4 |
+|---|-----|-----|-----|-----|-----|
+| 3-2 | 1.00 | 0.08 | -0.02 | **0.24** | 0.04 |
+| 4-1 | 0.08 | 1.00 | 0.00 | -0.02 | 0.08 |
+| 5-0 | -0.02 | 0.00 | 1.00 | **0.16** | 0.00 |
+| 5-5 | **0.24** | -0.02 | **0.16** | 1.00 | 0.01 |
+| 6-4 | 0.04 | 0.08 | 0.00 | 0.01 | 1.00 |
+
+**Insight**: Capture probabilities are largely independent across counts. The 5-5 shows weak positive correlation with 3-2 (0.24) and 5-0 (0.16), suggesting hands that capture the double-five also tend to capture other 5-suit counts.
+
+### Implications for Bidding
+
+1. **5-5 is king**: Holding the double-five provides the largest expected value swing (+14.7 points)
+2. **10-point counts matter more**: 5-5 and 6-4 provide larger advantages than 5-point counts
+3. **Don't overvalue low counts**: Holding 3-2 or 4-1 doesn't predict winning - other factors dominate
+4. **Count control is contested**: Even when holding a count, capture is ~40-45% likely (not guaranteed)
+
+### Files Generated
+
+- `results/tables/11e_contest_state_by_seed.csv` - Per-seed capture probabilities
+- `results/tables/11e_count_ownership.csv` - Ownership statistics
+- `results/tables/11e_capture_probabilities.csv` - 5-vector statistics
+- `results/tables/11e_capture_correlations.csv` - Correlation matrix
+- `results/figures/11e_contest_state_distribution.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-06*
