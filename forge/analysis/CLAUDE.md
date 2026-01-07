@@ -210,6 +210,94 @@ for d in features.COUNT_DOMINO_IDS:
 3. **State packing**: Use `schema.unpack_state()` to decode packed states.
 4. **Team 0 perspective**: All V/Q values are from Team 0's viewpoint (positive = good for Team 0).
 
+## Converting Scripts to SeedDB
+
+When converting existing `run_*.py` scripts to use SeedDB, follow this checklist:
+
+### Common Issues to Fix
+
+1. **Undefined PROJECT_ROOT**: Many scripts use `Path(PROJECT_ROOT)` without defining it
+   ```python
+   # BAD - PROJECT_ROOT undefined
+   DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+
+   # GOOD - Define PROJECT_ROOT first
+   PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+   DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+   ```
+
+2. **Replace pyarrow imports**:
+   ```python
+   # REMOVE
+   import pyarrow.parquet as pq
+   from forge.oracle import schema  # if only used for load_file
+
+   # ADD
+   from forge.analysis.utils.seed_db import SeedDB
+   ```
+
+3. **Replace loading patterns**:
+   ```python
+   # OLD: pq.read_table() or schema.load_file()
+   table = pq.read_table(path, columns=['state', 'V'])
+   df, seed, decl_id = schema.load_file(path)
+
+   # NEW: SeedDB.query_columns()
+   result = db.query_columns(files=[filename], columns=['state', 'V'])
+   df = result.data
+   ```
+
+4. **For root V extraction**:
+   ```python
+   # OLD: Custom get_root_v_fast() function
+   def get_root_v_fast(path):
+       pf = pq.ParquetFile(path)
+       for batch in pf.iter_batches(...):
+           # find depth==28
+
+   # NEW: Use SeedDB.get_root_v()
+   result = db.get_root_v(filename)  # filename, not full path
+   root_v = float(result.data) if result.data is not None else None
+   ```
+
+### Conversion Pattern
+
+```python
+# 1. Update imports at top
+import sys
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
+
+from forge.analysis.utils.seed_db import SeedDB
+
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+
+# 2. Update function signatures to accept db parameter
+def analyze_something(db: SeedDB, base_seed: int) -> dict | None:
+    filename = f"seed_{base_seed:08d}_opp0_decl_0.parquet"
+    result = db.query_columns(files=[filename], columns=['state', 'V'])
+    # ... rest of analysis
+
+# 3. Initialize SeedDB in main()
+def main():
+    db = SeedDB(DATA_DIR)
+
+    for seed in seeds:
+        result = analyze_something(db, seed)
+
+    db.close()  # Don't forget to close!
+```
+
+### Key Differences
+
+| Old Pattern | New Pattern |
+|-------------|-------------|
+| `pq.read_table(path)` | `db.query_columns(files=[filename])` |
+| `schema.load_file(path)` | `db.query_columns(files=[filename])` |
+| Custom root V extraction | `db.get_root_v(filename)` |
+| Full path to file | Filename only (relative to DATA_DIR) |
+| Return DataFrame directly | Return `QueryResult`, access `.data` |
+
 ## Running Notebooks
 
 **Execute from command line** (more reliable than IDE):

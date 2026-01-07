@@ -155,6 +155,65 @@ result = db.execute("""
 | Forget mount check | `ls /mnt/d/` before assuming data exists |
 | Write `get_root_v_fast()` in scripts | Use `SeedDB.get_root_v()` |
 | Read CSV intermediate files | Query Parquet directly with DuckDB |
+| Use `pyarrow.parquet as pq` | Use `SeedDB.query_columns()` |
+| Use undefined `PROJECT_ROOT` | Define it at top of script |
+
+## Converting Scripts to SeedDB
+
+When converting `run_*.py` scripts from pyarrow/schema.load_file to SeedDB:
+
+### Common Bugs to Fix
+
+1. **Undefined PROJECT_ROOT** - Many scripts reference it without defining:
+   ```python
+   # FIX: Add at top of script after imports
+   PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+   DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+   ```
+
+2. **Replace import statements**:
+   ```python
+   # REMOVE
+   import pyarrow.parquet as pq
+   from forge.oracle import schema  # if only used for load_file
+
+   # ADD
+   from forge.analysis.utils.seed_db import SeedDB
+   ```
+
+3. **Update function signatures** to accept `db` parameter:
+   ```python
+   # OLD
+   def analyze_seed(base_seed: int):
+       df, _, _ = schema.load_file(path)
+
+   # NEW
+   def analyze_seed(db: SeedDB, base_seed: int):
+       result = db.query_columns(files=[filename], columns=['state', 'V'])
+       df = result.data
+   ```
+
+4. **Initialize and close SeedDB in main()**:
+   ```python
+   def main():
+       db = SeedDB(DATA_DIR)
+       for seed in seeds:
+           analyze_seed(db, seed)
+       db.close()  # Don't forget!
+   ```
+
+### Conversion Checklist
+
+- [ ] Define `PROJECT_ROOT` at top
+- [ ] Replace `import pyarrow.parquet as pq` with SeedDB import
+- [ ] Update `DATA_DIR` to use `Path(PROJECT_ROOT) / "data/..."`
+- [ ] Add `db: SeedDB` parameter to analysis functions
+- [ ] Replace `pq.read_table()` → `db.query_columns(files=[filename])`
+- [ ] Replace `schema.load_file()` → `db.query_columns(files=[filename])`
+- [ ] Replace custom `get_root_v_fast()` → `db.get_root_v(filename)`
+- [ ] Add `db = SeedDB(DATA_DIR)` at start of main()
+- [ ] Add `db.close()` after processing loop
+- [ ] Use filename (not full path) for SeedDB methods
 
 ## Bead Close Protocol
 

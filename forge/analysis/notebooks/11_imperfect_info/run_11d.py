@@ -10,7 +10,8 @@ Uses marginalized data where P0's hand is fixed but opponents' cards vary.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
@@ -19,166 +20,156 @@ from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
-from forge.analysis.utils import loading, features
-from forge.oracle import schema
+from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Analyze all available base seeds
 MAX_STATES_PER_SHARD = 500_000  # Sample if larger (balance memory vs coverage)
 np.random.seed(42)  # For reproducibility
 
 
-def analyze_q_variance_for_base_seed(base_seed: int) -> dict | None:
-    """Analyze Q-value variance across 3 opponent configs for one base seed.
+def analyze_q_variance_for_base_seed(db: SeedDB, base_seed: int) -> dict | None:
+    """Analyze Q-value variance across 3 opponent configs using SQL JOIN.
 
-    Memory-optimized: load one shard at a time, build minimal mappings.
+    Optimized: Single SQL query joins all 3 files and computes variance in DuckDB.
     """
     decl_id = base_seed % 10
     ILLEGAL = -128
 
-    # First pass: get states and Q-values for each config
-    state_to_q = [{}, {}, {}]
-    states_set = [set(), set(), set()]
+    # Build file paths
+    files = [
+        str(DATA_DIR / f"seed_{base_seed:08d}_opp{i}_decl_{decl_id}.parquet")
+        for i in range(3)
+    ]
 
-    for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        if not path.exists():
-            return None
-        try:
-            df, _, _ = schema.load_file(path)
-            # Skip very large files
-            if len(df) > 20_000_000:
-                del df
-                gc.collect()
-                return None
-
-            # Extract only what we need, with sampling for large shards
-            n_rows = len(df)
-            if n_rows > MAX_STATES_PER_SHARD:
-                indices = np.random.choice(n_rows, MAX_STATES_PER_SHARD, replace=False)
-                states = df['state'].values[indices]
-                q_cols = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-                q_values = df[q_cols].values[indices].astype(np.int16)
-            else:
-                states = df['state'].values
-                q_cols = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-                q_values = df[q_cols].values.astype(np.int16)
-
-            state_to_q[opp_seed] = dict(zip(states, [tuple(q) for q in q_values]))
-            states_set[opp_seed] = set(states)
-
-            # Save depths from first config
-            if opp_seed == 0:
-                depths = features.depth(states)
-                state_to_depth = dict(zip(states, depths))
-
-            del df, states, q_values
-            gc.collect()
-
-        except Exception as e:
-            print(f"Error loading {path}: {e}")
-            gc.collect()
+    # Check files exist
+    for f in files:
+        if not Path(f).exists():
             return None
 
-    # Find common states
-    common_states = states_set[0] & states_set[1] & states_set[2]
+    try:
+        # Single SQL query: JOIN all 3 files on state, compute variance per slot
+        # This is MUCH faster than loading into Python and doing set intersection
+        sql = f"""
+        WITH joined AS (
+            SELECT
+                a.state,
+                depth(a.state) as depth,
+                a.q0 as q0_0, a.q1 as q1_0, a.q2 as q2_0, a.q3 as q3_0, a.q4 as q4_0, a.q5 as q5_0, a.q6 as q6_0,
+                b.q0 as q0_1, b.q1 as q1_1, b.q2 as q2_1, b.q3 as q3_1, b.q4 as q4_1, b.q5 as q5_1, b.q6 as q6_1,
+                c.q0 as q0_2, c.q1 as q1_2, c.q2 as q2_2, c.q3 as q3_2, c.q4 as q4_2, c.q5 as q5_2, c.q6 as q6_2
+            FROM read_parquet('{files[0]}') a
+            INNER JOIN read_parquet('{files[1]}') b ON a.state = b.state
+            INNER JOIN read_parquet('{files[2]}') c ON a.state = c.state
+            USING SAMPLE {MAX_STATES_PER_SHARD} ROWS
+        ),
+        per_state AS (
+            SELECT
+                state, depth,
+                -- Variance for each slot (only if all 3 are legal, i.e., != -128)
+                -- stddev = sqrt((sum of squares)/n - mean^2) for population stddev
+                -- Cast to DOUBLE to avoid INT8 overflow when squaring
+                CASE WHEN q0_0 != {ILLEGAL} AND q0_1 != {ILLEGAL} AND q0_2 != {ILLEGAL}
+                     THEN sqrt((q0_0::DOUBLE*q0_0 + q0_1::DOUBLE*q0_1 + q0_2::DOUBLE*q0_2)/3.0 - power((q0_0 + q0_1 + q0_2)/3.0, 2)) END as std_0,
+                CASE WHEN q1_0 != {ILLEGAL} AND q1_1 != {ILLEGAL} AND q1_2 != {ILLEGAL}
+                     THEN sqrt((q1_0::DOUBLE*q1_0 + q1_1::DOUBLE*q1_1 + q1_2::DOUBLE*q1_2)/3.0 - power((q1_0 + q1_1 + q1_2)/3.0, 2)) END as std_1,
+                CASE WHEN q2_0 != {ILLEGAL} AND q2_1 != {ILLEGAL} AND q2_2 != {ILLEGAL}
+                     THEN sqrt((q2_0::DOUBLE*q2_0 + q2_1::DOUBLE*q2_1 + q2_2::DOUBLE*q2_2)/3.0 - power((q2_0 + q2_1 + q2_2)/3.0, 2)) END as std_2,
+                CASE WHEN q3_0 != {ILLEGAL} AND q3_1 != {ILLEGAL} AND q3_2 != {ILLEGAL}
+                     THEN sqrt((q3_0::DOUBLE*q3_0 + q3_1::DOUBLE*q3_1 + q3_2::DOUBLE*q3_2)/3.0 - power((q3_0 + q3_1 + q3_2)/3.0, 2)) END as std_3,
+                CASE WHEN q4_0 != {ILLEGAL} AND q4_1 != {ILLEGAL} AND q4_2 != {ILLEGAL}
+                     THEN sqrt((q4_0::DOUBLE*q4_0 + q4_1::DOUBLE*q4_1 + q4_2::DOUBLE*q4_2)/3.0 - power((q4_0 + q4_1 + q4_2)/3.0, 2)) END as std_4,
+                CASE WHEN q5_0 != {ILLEGAL} AND q5_1 != {ILLEGAL} AND q5_2 != {ILLEGAL}
+                     THEN sqrt((q5_0::DOUBLE*q5_0 + q5_1::DOUBLE*q5_1 + q5_2::DOUBLE*q5_2)/3.0 - power((q5_0 + q5_1 + q5_2)/3.0, 2)) END as std_5,
+                CASE WHEN q6_0 != {ILLEGAL} AND q6_1 != {ILLEGAL} AND q6_2 != {ILLEGAL}
+                     THEN sqrt((q6_0::DOUBLE*q6_0 + q6_1::DOUBLE*q6_1 + q6_2::DOUBLE*q6_2)/3.0 - power((q6_0 + q6_1 + q6_2)/3.0, 2)) END as std_6
+            FROM joined
+        )
+        SELECT
+            depth,
+            COUNT(*) as n_states,
+            -- Per-slot aggregates
+            AVG(std_0) as mean_std_0, COUNT(std_0) as n_0,
+            AVG(std_1) as mean_std_1, COUNT(std_1) as n_1,
+            AVG(std_2) as mean_std_2, COUNT(std_2) as n_2,
+            AVG(std_3) as mean_std_3, COUNT(std_3) as n_3,
+            AVG(std_4) as mean_std_4, COUNT(std_4) as n_4,
+            AVG(std_5) as mean_std_5, COUNT(std_5) as n_5,
+            AVG(std_6) as mean_std_6, COUNT(std_6) as n_6,
+            -- High variance rate (any slot > 5)
+            SUM(CASE WHEN COALESCE(std_0,0) > 5 OR COALESCE(std_1,0) > 5 OR COALESCE(std_2,0) > 5
+                       OR COALESCE(std_3,0) > 5 OR COALESCE(std_4,0) > 5 OR COALESCE(std_5,0) > 5
+                       OR COALESCE(std_6,0) > 5 THEN 1 ELSE 0 END) as high_var_count
+        FROM per_state
+        GROUP BY depth
+        ORDER BY depth DESC
+        """
 
-    del states_set
-    gc.collect()
+        result = db.execute(sql)
+        if result.data is None or len(result.data) == 0:
+            return None
 
-    if len(common_states) == 0:
-        return None
+        df = result.data
 
-    # Analyze Q-value variance
-    q_std_by_slot = defaultdict(list)  # slot -> list of std values
-    q_std_by_depth = defaultdict(list)  # depth -> list of (slot, std) tuples
-    q_range_by_slot = defaultdict(list)  # slot -> list of ranges
+        # Aggregate results from SQL output
+        n_analyzed = int(df['n_states'].sum())
+        if n_analyzed == 0:
+            return None
 
-    n_analyzed = 0
-    total_legal_actions = 0
-    high_variance_positions = 0  # σ(Q) > 5 for at least one action
-
-    for state in common_states:
-        q0 = state_to_q[0].get(state)
-        q1 = state_to_q[1].get(state)
-        q2 = state_to_q[2].get(state)
-
-        if q0 is None or q1 is None or q2 is None:
-            continue
-
-        n_analyzed += 1
-        depth = state_to_depth.get(state, -1)
-
-        has_high_variance = False
-
-        # For each action slot
+        # Slot stats
+        slot_stats = {}
+        total_legal_actions = 0
         for slot in range(7):
-            v0, v1, v2 = q0[slot], q1[slot], q2[slot]
+            n_col = f'n_{slot}'
+            mean_col = f'mean_std_{slot}'
+            n_obs = int(df[n_col].sum())
+            if n_obs > 0:
+                # Weighted average across depths
+                weighted_mean = (df[mean_col] * df[n_col]).sum() / n_obs
+                slot_stats[slot] = {
+                    'mean_std': float(weighted_mean),
+                    'n_observations': n_obs
+                }
+                total_legal_actions += n_obs
 
-            # Skip illegal actions
-            if v0 == ILLEGAL or v1 == ILLEGAL or v2 == ILLEGAL:
-                continue
+        # Depth stats
+        depth_stats = {}
+        for _, row in df.iterrows():
+            depth = int(row['depth'])
+            # Average across all slots for this depth
+            slot_means = [row[f'mean_std_{s}'] for s in range(7) if pd.notna(row[f'mean_std_{s}'])]
+            if slot_means:
+                depth_stats[depth] = {
+                    'mean_std': float(np.mean(slot_means)),
+                    'n_observations': int(row['n_states'])
+                }
 
-            total_legal_actions += 1
-            q_std = np.std([v0, v1, v2])
-            q_range = max(v0, v1, v2) - min(v0, v1, v2)
+        high_variance_positions = int(df['high_var_count'].sum())
 
-            q_std_by_slot[slot].append(q_std)
-            q_range_by_slot[slot].append(q_range)
+        return {
+            'base_seed': base_seed,
+            'decl_id': decl_id,
+            'n_common_states': n_analyzed,
+            'total_legal_actions': total_legal_actions,
+            'high_variance_rate': high_variance_positions / n_analyzed if n_analyzed > 0 else 0,
+            'slot_stats': slot_stats,
+            'depth_stats': depth_stats
+        }
 
-            if depth >= 0:
-                q_std_by_depth[depth].append((slot, q_std))
-
-            if q_std > 5:
-                has_high_variance = True
-
-        if has_high_variance:
-            high_variance_positions += 1
-
-    del state_to_q, common_states, state_to_depth
-    gc.collect()
-
-    if n_analyzed == 0:
+    except Exception as e:
+        print(f"Error analyzing base_seed {base_seed}: {e}")
         return None
-
-    # Aggregate results
-    slot_stats = {}
-    for slot in range(7):
-        if q_std_by_slot[slot]:
-            slot_stats[slot] = {
-                'mean_std': np.mean(q_std_by_slot[slot]),
-                'median_std': np.median(q_std_by_slot[slot]),
-                'max_std': np.max(q_std_by_slot[slot]),
-                'mean_range': np.mean(q_range_by_slot[slot]),
-                'n_observations': len(q_std_by_slot[slot])
-            }
-
-    depth_stats = {}
-    for depth in sorted(q_std_by_depth.keys()):
-        stds = [s for _, s in q_std_by_depth[depth]]
-        if stds:
-            depth_stats[depth] = {
-                'mean_std': np.mean(stds),
-                'median_std': np.median(stds),
-                'n_observations': len(stds)
-            }
-
-    return {
-        'base_seed': base_seed,
-        'decl_id': decl_id,
-        'n_common_states': n_analyzed,
-        'total_legal_actions': total_legal_actions,
-        'high_variance_rate': high_variance_positions / n_analyzed if n_analyzed > 0 else 0,
-        'slot_stats': slot_stats,
-        'depth_stats': depth_stats
-    }
 
 
 def main():
     print("=" * 60)
     print("Q-VALUE VARIANCE ANALYSIS")
     print("=" * 60)
+
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
 
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
@@ -198,7 +189,7 @@ def main():
     all_results = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_q_variance_for_base_seed(base_seed)
+        result = analyze_q_variance_for_base_seed(db, base_seed)
         if result:
             all_results.append({
                 'base_seed': result['base_seed'],
@@ -216,6 +207,7 @@ def main():
             for depth, stats in result['depth_stats'].items():
                 all_depth_stds[depth].extend([stats['mean_std']] * stats['n_observations'])
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} base seeds")
 
     # Build results DataFrames
