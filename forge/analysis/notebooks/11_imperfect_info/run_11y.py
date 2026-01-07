@@ -11,17 +11,18 @@ using the marginalized oracle data.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle.rng import deal_from_seed
 from forge.oracle import schema
 
@@ -30,21 +31,11 @@ RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
 np.random.seed(42)
 
 
-def load_root_v(path: Path) -> float | None:
-    """Load root V (depth 28) from a shard."""
+def load_root_v(db: SeedDB, filename: str) -> float | None:
+    """Load root V (depth 28) from a shard using SeedDB."""
     try:
-        pf = pq.ParquetFile(path)
-
-        for batch in pf.iter_batches(batch_size=10000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
-
-            mask = depths == 28
-            if mask.any():
-                return float(V[mask][0])
-
-        return None
+        result = db.get_root_v(filename)
+        return float(result.data) if result.data is not None else None
     except Exception:
         return None
 
@@ -95,6 +86,9 @@ def main():
     print("Skill vs Luck Analysis")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -110,10 +104,11 @@ def main():
 
         v_values = []
         for opp_seed in range(3):
-            path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-            if not path.exists():
+            filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+            filepath = DATA_DIR / filename
+            if not filepath.exists():
                 continue
-            v = load_root_v(path)
+            v = load_root_v(db, filename)
             if v is not None:
                 v_values.append(v)
 
@@ -129,6 +124,7 @@ def main():
 
         gc.collect()
 
+    db.close()
     print(f"\n✓ Loaded {len(all_data)} observations ({len(all_data)//3} hands × 3 configs)")
 
     if len(all_data) == 0:
