@@ -17,21 +17,21 @@ Approach:
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
-import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle import schema, tables
 from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
 N_BASE_SEEDS = 201  # Analyze all available base seeds
 np.random.seed(42)
@@ -42,18 +42,15 @@ COUNT_NAMES = ['3-2', '4-1', '5-0', '5-5', '6-4']
 COUNT_POINTS = [5, 5, 5, 10, 10]
 
 
+# Global SeedDB instance (created in main)
+_db: SeedDB | None = None
+
+
 def get_root_v_fast(path: Path) -> float | None:
-    """Get root state V value without loading entire shard."""
+    """Get root state V value using SeedDB."""
     try:
-        pf = pq.ParquetFile(path)
-        for batch in pf.iter_batches(batch_size=10000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
-            root_mask = depths == 28
-            if root_mask.any():
-                return float(V[root_mask][0])
-        return None
+        result = _db.get_root_v(path.name)
+        return float(result.data) if result.data is not None else None
     except Exception:
         return None
 
@@ -188,6 +185,9 @@ def analyze_contest_for_base_seed(base_seed: int) -> dict | None:
 
 
 def main():
+    global _db
+    _db = SeedDB(DATA_DIR)
+
     print("=" * 60)
     print("CONTEST STATE DISTRIBUTION ANALYSIS")
     print("=" * 60)
@@ -436,6 +436,8 @@ def main():
             corr = corr_matrix[i, j]
             if abs(corr) > 0.3:
                 print(f"   {COUNT_NAMES[i]} ↔ {COUNT_NAMES[j]}: {corr:.2f}")
+
+    _db.close()
 
 
 if __name__ == "__main__":

@@ -9,7 +9,8 @@ Processes one base_seed at a time, loading only necessary data.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
@@ -18,12 +19,11 @@ from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
-import pyarrow.parquet as pq
-
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 
 # Skip shards larger than this
 MAX_ROWS = 8_000_000
@@ -36,28 +36,32 @@ def get_best_move(q_values: np.ndarray) -> np.ndarray:
     return np.argmax(q_for_max, axis=1)
 
 
-def analyze_base_seed(base_seed: int) -> dict | None:
+def analyze_base_seed(db: SeedDB, base_seed: int) -> dict | None:
     """Analyze one base seed by loading 3 configs sequentially."""
     decl_id = base_seed % 10
 
     # First: collect states from all 3 configs to find common ones
     all_states = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        path = DATA_DIR / filename
         if not path.exists():
             return None
 
         try:
             # Just read the state column to find common states
-            table = pq.read_table(path, columns=['state'])
-            if table.num_rows > MAX_ROWS:
-                del table
+            result = db.query_columns(files=[filename], columns=['state'])
+            if result.data is None or len(result.data) == 0:
+                gc.collect()
+                return None
+            if len(result.data) > MAX_ROWS:
+                del result
                 gc.collect()
                 return None
 
-            states = set(table.column('state').to_numpy())
+            states = set(result.data['state'].values)
             all_states.append(states)
-            del table
+            del result
             gc.collect()
 
         except Exception as e:
@@ -77,13 +81,13 @@ def analyze_base_seed(base_seed: int) -> dict | None:
     state_to_depth = {}
 
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        table = pq.read_table(path, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        result = db.query_columns(files=[filename], columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
 
-        states = table.column('state').to_numpy()
+        states = result.data['state'].values
         q_cols = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-        q_values = np.column_stack([table.column(c).to_numpy() for c in q_cols]).astype(np.int16)
-        del table
+        q_values = np.column_stack([result.data[c].values for c in q_cols]).astype(np.int16)
+        del result
         gc.collect()
 
         # Filter to common states only
@@ -149,6 +153,9 @@ def main():
     print("BEST MOVE STABILITY ANALYSIS")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -159,7 +166,7 @@ def main():
     depth_agg = defaultdict(lambda: {'consistent': 0, 'total': 0})
 
     for base_seed in tqdm(base_seeds, desc="Analyzing"):
-        result = analyze_base_seed(base_seed)
+        result = analyze_base_seed(db, base_seed)
         if result:
             all_results.append({
                 'base_seed': result['base_seed'],
@@ -172,6 +179,7 @@ def main():
                 depth_agg[d]['consistent'] += counts['consistent']
                 depth_agg[d]['total'] += counts['total']
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} base seeds with common states")
 
     if len(all_results) == 0:

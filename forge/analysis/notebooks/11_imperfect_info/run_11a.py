@@ -4,14 +4,14 @@
 Uses terminal V values to infer count outcomes rather than tracing PV.
 Key insight: Terminal V = 7 (tricks) + count_points. If we know V, we can
 infer roughly how many counts each team captured.
+
+Uses SeedDB for efficient root V queries via DuckDB.
 """
-import gc
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from tqdm import tqdm
 
 # Setup imports
@@ -20,34 +20,18 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle import schema, tables
 from forge.oracle.rng import deal_from_seed
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 OUTPUT_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 
 
-def get_root_v_fast(path):
-    """Get root state V value without loading entire shard."""
-    # Read just the first few thousand rows - root is at depth 28
-    pf = pq.ParquetFile(path)
-    
-    # Read in batches to find depth-28 state
-    for batch in pf.iter_batches(batch_size=10000, columns=['state', 'V']):
-        states = batch['state'].to_numpy()
-        V = batch['V'].to_numpy()
-        
-        # Check depth
-        depths = features.depth(states)
-        root_mask = depths == 28
-        
-        if root_mask.any():
-            return V[root_mask][0]
-    
-    return None
-
-
 def main():
+    # Create SeedDB for efficient queries
+    db = SeedDB(DATA_DIR)
+
     # Find all base seeds
     shard_files = list(DATA_DIR.glob("seed_*_opp*_decl_*.parquet"))
     base_seeds = sorted(set(int(f.name.split("_")[1]) for f in shard_files))
@@ -75,16 +59,17 @@ def main():
             pips = schema.domino_pips(d)
             row[f"holds_{pips[0]}_{pips[1]}"] = d in p0_counts
 
-        # Load each opponent config - just root V
+        # Load each opponent config - just root V via DuckDB
         v_values = []
         for opp_seed in range(3):
-            path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+            filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
             try:
-                v = get_root_v_fast(path)
+                result = db.get_root_v(filename)
+                v = result.data
                 row[f"V_opp{opp_seed}"] = v
                 if v is not None:
                     v_values.append(v)
-            except FileNotFoundError:
+            except Exception:
                 row[f"V_opp{opp_seed}"] = None
 
         if v_values:
@@ -95,6 +80,8 @@ def main():
             row["V_max"] = max(v_values)
 
         results.append(row)
+
+    db.close()
 
     results_df = pd.DataFrame(results)
     print(f"\nAnalyzed {len(results_df)} base seeds")

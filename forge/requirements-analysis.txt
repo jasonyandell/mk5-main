@@ -19,5 +19,8 @@ scikit-learn>=1.4
 tqdm>=4.66
 networkx>=3.2
 
+# Database
+duckdb>=0.9
+
 # Optional: Persistent homology (requires C++ compiler)
 # gudhi>=3.9

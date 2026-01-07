@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 from forge.analysis.utils import features
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
 N_BASE_SEEDS = 201  # Analyze all available base seeds
 MAX_ROWS = 8_000_000

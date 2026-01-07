@@ -29,7 +29,7 @@ from forge.analysis.utils import features
 from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
 from forge.oracle import schema
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
 N_BASE_SEEDS = 201  # Full analysis
 MAX_ROWS = 20_000_000  # Increased to allow larger files

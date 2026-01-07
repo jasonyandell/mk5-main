@@ -27,7 +27,7 @@ python -c "from forge.analysis.utils import loading, features, viz; print('OK')"
 
 **Marginalized shards (imperfect info analysis):**
 ```
-/mnt/d/shards-marginalized/      # External drive mount (~92GB)
+data/shards-marginalized/      # External drive mount (~92GB)
 └── train/                        # 601 files (201 base_seeds × 3 opponent configs)
 ```
 
@@ -73,13 +73,69 @@ if PROJECT_ROOT not in sys.path:
 
 ```python
 from forge.analysis.utils import loading, features, viz, navigation
+from forge.analysis.utils.seed_db import SeedDB  # DuckDB interface
 from forge.oracle import schema, tables
 
 # For visualization
 viz.setup_notebook_style()
 ```
 
-## Loading Data
+## DuckDB Interface (SeedDB)
+
+For efficient queries on 100GB+ datasets without loading into memory:
+
+```python
+from forge.analysis.utils.seed_db import SeedDB
+
+# Create database connection
+db = SeedDB("data/shards-marginalized/train")
+
+# Get root V (depth=28 state) from a single file
+result = db.get_root_v("seed_00000000_opp0_decl_0.parquet")
+print(f"Root V: {result.data}, took {result.elapsed_ms:.1f}ms")
+
+# Get root V stats across all files
+result = db.root_v_stats(limit=100)
+df = result.data  # DataFrame: file, root_v, rows
+
+# Query specific columns with filtering
+result = db.query_columns(
+    files=["seed_00000000_opp0_decl_0.parquet"],
+    columns=["state", "V", "q0"],
+    where="V > 0",
+    limit=1000,
+)
+
+# Filter by game depth (dominoes remaining)
+result = db.query_columns(
+    pattern="*.parquet",
+    columns=["state", "V"],
+    depth_filter=28,  # Root states only
+)
+
+# Register a view for repeated queries
+db.register_view("all_shards", "*.parquet")
+result = db.execute("SELECT COUNT(*) FROM all_shards")
+
+# Custom SQL with depth UDF
+result = db.execute("""
+    SELECT depth(state) as d, AVG(V) as mean_v
+    FROM read_parquet('/mnt/d/shards-standard/train/*.parquet')
+    GROUP BY depth(state)
+    ORDER BY d DESC
+""")
+```
+
+**QueryResult fields:**
+- `data`: Query result (DataFrame, scalar, etc.)
+- `elapsed_ms`: Wall-clock time
+- `cpu_time_ms`: CPU compute time
+- `io_wait_ms`: Estimated I/O time (property)
+- `rows_scanned`, `rows_returned`, `files_accessed`
+
+**Depth UDF:** `depth(state)` computes dominoes remaining (0-28) using bit operations.
+
+## Loading Data (Traditional)
 
 ```python
 # Find all shard files
@@ -101,7 +157,7 @@ from pathlib import Path
 from forge.oracle import schema
 from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
 
-MARG_DIR = Path("/mnt/d/shards-marginalized/train")
+MARG_DIR = Path("data/shards-marginalized/train")
 
 def load_marginalized_group(base_seed: int) -> list[tuple]:
     """Load all 3 opponent configs for a base_seed.

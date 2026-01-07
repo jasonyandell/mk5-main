@@ -22,7 +22,7 @@ from tqdm import tqdm
 from forge.analysis.utils import loading, features
 from forge.oracle import schema
 
-DATA_DIR = Path("/mnt/d/shards-marginalized/train")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
 N_BASE_SEEDS = 201  # Analyze all available base seeds
 MAX_STATES_PER_SHARD = 500_000  # Sample if larger (balance memory vs coverage)

@@ -8,20 +8,20 @@ rather than individual hands.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
-import gc
+import re
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from collections import defaultdict
 from tqdm import tqdm
 
-from forge.analysis.utils import loading, features, navigation
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle import schema, tables
 
-DATA_DIR = "/mnt/d/shards-standard/"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+DATA_DIR = Path(PROJECT_ROOT) / "data/flywheel-shards"  # Local flywheel data for standard shards
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_SHARDS = 200  # More shards for better statistics
 
 
@@ -76,29 +76,30 @@ def extract_hand_features(hand: list[int], decl_id: int) -> dict:
     }
 
 
-def analyze_hand_v(shard_path):
-    """Analyze initial V for a single shard."""
+def parse_seed_from_filename(filename: str) -> tuple[int, int] | None:
+    """Extract seed and decl_id from shard filename."""
+    # Pattern: seed_{SEED}_decl_{DECL}.parquet
+    match = re.match(r'seed_(\d+)_decl_(\d+)\.parquet', filename)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    return None
+
+
+def analyze_hand_v(db: SeedDB, filename: str) -> list[dict] | None:
+    """Analyze initial V for a single shard using SeedDB."""
     try:
-        df, seed, decl_id = schema.load_file(shard_path)
-
-        # Skip large shards
-        if len(df) > 30_000_000:
-            del df
-            gc.collect()
+        parsed = parse_seed_from_filename(filename)
+        if parsed is None:
             return None
+        seed, decl_id = parsed
 
-        # Find initial state (depth = 28)
-        depths = features.depth(df['state'].values)
-        initial_mask = depths == 28
-
-        if not initial_mask.any():
-            del df
-            gc.collect()
+        # Get initial V using SeedDB (much faster than loading full shard)
+        result = db.get_root_v(filename)
+        if result.data is None:
             return None
+        initial_V = float(result.data)
 
-        initial_V = df.loc[initial_mask, 'V'].values[0]
-
-        # Get hands for all 4 players
+        # Get hands for all 4 players (no parquet loading needed)
         hands = schema.deal_from_seed(seed)
 
         # Extract features for each player's hand
@@ -121,14 +122,10 @@ def analyze_hand_v(shard_path):
 
             results.append(hand_feats)
 
-        del df
-        gc.collect()
-
         return results
 
     except Exception as e:
-        print(f"Error: {e}")
-        gc.collect()
+        print(f"Error processing {filename}: {e}")
         return None
 
 
@@ -137,8 +134,11 @@ def main():
     print("V DISTRIBUTION PER HAND ANALYSIS")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Find shards
-    shard_files = loading.find_shard_files(DATA_DIR)
+    shard_files = sorted(DATA_DIR.glob("*.parquet"))
     print(f"Total shards available: {len(shard_files)}")
     sample_files = shard_files[:N_SHARDS]
     print(f"Analyzing {len(sample_files)} shards...")
@@ -146,9 +146,11 @@ def main():
     # Collect data
     all_results = []
     for path in tqdm(sample_files, desc="Processing"):
-        results = analyze_hand_v(path)
+        results = analyze_hand_v(db, path.name)
         if results:
             all_results.extend(results)
+
+    db.close()
 
     print(f"\n✓ Collected {len(all_results)} hand-V pairs")
 

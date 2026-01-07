@@ -4,7 +4,7 @@ Analysis of how hidden opponent hands affect game outcomes, using marginalized o
 
 ## Data Source
 
-**Marginalized shards**: `/mnt/d/shards-marginalized/train/`
+**Marginalized shards**: `data/shards-marginalized/train/`
 - 201 unique base_seeds × 3 opponent configurations = 603 shards
 - P0's hand fixed per base_seed, opponent hands vary
 
