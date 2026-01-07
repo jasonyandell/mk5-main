@@ -10,21 +10,20 @@ Uses marginalized data where P0's hand is fixed but opponents' cards vary.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
-import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 
-from forge.analysis.utils import features
-from forge.oracle import schema, tables
-from forge.oracle.rng import deal_from_seed
+from forge.analysis.utils.seed_db import SeedDB
+from forge.oracle import tables
+from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
 
-DATA_DIR = Path("data/shards-marginalized/train")
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Full analysis
 np.random.seed(42)
 
@@ -39,22 +38,6 @@ TEN_POINT_COUNTS = [
     (27, '6-4', 10),  # domino ID 27 = 6-4
 ]
 ALL_COUNTS = FIVE_POINT_COUNTS + TEN_POINT_COUNTS
-
-
-def get_root_v_fast(path: Path) -> float | None:
-    """Get root state V value without loading entire shard."""
-    try:
-        pf = pq.ParquetFile(path)
-        for batch in pf.iter_batches(batch_size=10000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
-            root_mask = depths == 28
-            if root_mask.any():
-                return float(V[root_mask][0])
-        return None
-    except Exception:
-        return None
 
 
 def get_team_ownership(hands: list[list[int]]) -> dict[int, int]:
@@ -72,7 +55,7 @@ def get_team_ownership(hands: list[list[int]]) -> dict[int, int]:
     return ownership
 
 
-def analyze_lock_rates_for_base_seed(base_seed: int) -> dict | None:
+def analyze_lock_rates_for_base_seed(db: SeedDB, base_seed: int) -> dict | None:
     """Analyze lock rates for counts in one base seed."""
     decl_id = base_seed % 10
     p0_hand = deal_from_seed(base_seed)[0]
@@ -80,16 +63,17 @@ def analyze_lock_rates_for_base_seed(base_seed: int) -> dict | None:
     # Collect V and ownership for each opponent config
     config_data = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        path = DATA_DIR / filename
         if not path.exists():
             return None
 
-        V = get_root_v_fast(path)
-        if V is None:
+        result = db.get_root_v(filename)
+        if result.data is None:
             return None
+        V = float(result.data)
 
         # Reconstruct full deal for this config
-        from forge.oracle.rng import deal_with_fixed_p0
         hands = deal_with_fixed_p0(p0_hand, opp_seed)
         ownership = get_team_ownership(hands)
 
@@ -149,6 +133,9 @@ def main():
     print("LOCK RATE BY COUNT VALUE")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -161,10 +148,11 @@ def main():
     all_results = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_lock_rates_for_base_seed(base_seed)
+        result = analyze_lock_rates_for_base_seed(db, base_seed)
         if result:
             all_results.append(result)
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
     if len(all_results) == 0:
