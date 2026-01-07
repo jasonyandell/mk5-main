@@ -613,6 +613,20 @@ Available at:
 - `results/tables/16c_pair_synergies.csv` - Pairs ranked by synergy
 - `results/tables/16c_single_effects.csv` - Single-domino effects
 
+### Winner vs Loser Enrichment (17a)
+
+Fisher's exact test for domino enrichment in top 25% E[V] hands:
+
+**Significant at FDR < 0.05**:
+- **5-5**: log₂(enrichment) = +1.50, 2.8× more common in winners
+- **6-0**: log₂(enrichment) = -1.56, 3× more common in losers
+
+**Key insight**: Only 2 dominoes survive multiple testing correction. 5-5 (10 count points, high trump) is the strongest positive signal; 6-0 (weak domino) is the strongest negative signal. Consistent with regression and SHAP findings.
+
+Available at:
+- `results/tables/17a_enrichment.csv` - Full enrichment results
+- `results/figures/17a_volcano_plot.png` - Volcano plot
+
 ## Useful One-Liners
 
 ```bash
