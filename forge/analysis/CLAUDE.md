@@ -469,6 +469,25 @@ Available at:
 - `results/tables/13e_power_analysis.csv` - Summary table
 - `results/figures/13e_power_curves.png` - Power curves
 
+### Multiple Comparison Correction (13f)
+
+Benjamini-Hochberg FDR correction applied to all 16 correlation tests:
+
+| Method | Significant | Type |
+|--------|-------------|------|
+| Uncorrected | 10 | None |
+| **BH FDR** | **9** | FDR |
+| Bonferroni | 5 | FWER |
+
+**Key insight**: 9 of 10 correlations survive BH FDR correction. Only total_pips vs σ(V) (r=0.15, p_adj=0.056) is lost - a marginal finding anyway. All core findings remain robust:
+- E[V] vs σ(V) (r = -0.38, p_adj < 0.0001)
+- n_doubles vs E[V] (r = +0.40, p_adj < 0.0001)
+- trump_count vs E[V] (r = +0.23, p_adj = 0.0036)
+
+Available at:
+- `results/tables/13f_multiple_comparison.csv` - Adjusted p-values
+- `results/figures/13f_multiple_comparison.png` - BH procedure visualization
+
 ## Useful One-Liners
 
 ```bash

@@ -304,6 +304,77 @@ Is n=200 sufficient to detect our observed effects with adequate statistical pow
 
 ---
 
+## 13f: Multiple Comparison Correction (BH FDR)
+
+### Key Question
+Do our significant findings survive correction for multiple testing?
+
+### Method
+- Benjamini-Hochberg (BH) false discovery rate correction
+- Controls FDR (expected proportion of false discoveries)
+- Also compared with Bonferroni, Holm, Sidak for reference
+- statsmodels.stats.multitest.multipletests
+
+### Key Findings
+
+#### Tests by Correction Method
+
+| Method | Significant | Type |
+|--------|-------------|------|
+| Uncorrected | 10 | None |
+| **BH FDR** | **9** | **FDR** |
+| BY FDR | 8 | FDR |
+| Holm | 6 | FWER |
+| Bonferroni | 5 | FWER |
+| Sidak | 5 | FWER |
+
+#### Tests Surviving BH FDR Correction
+
+| Comparison | r | p_raw | p_adj_BH |
+|------------|---|-------|----------|
+| E[V] vs V_spread | -0.40 | 5.4×10⁻⁹ | <0.0001 |
+| n_doubles vs E[V] | +0.40 | 6.9×10⁻⁹ | <0.0001 |
+| E[V] vs σ(V) | -0.38 | 2.6×10⁻⁸ | <0.0001 |
+| has_trump_double vs E[V] | +0.24 | 5.6×10⁻⁴ | 0.0022 |
+| trump_count vs E[V] | +0.23 | 1.1×10⁻³ | 0.0036 |
+| n_voids vs E[V] | +0.20 | 4.5×10⁻³ | 0.0119 |
+| count_points vs E[V] | +0.20 | 5.2×10⁻³ | 0.0119 |
+| n_6_high vs σ(V) | +0.19 | 6.8×10⁻³ | 0.0135 |
+| n_6_high vs E[V] | -0.16 | 2.3×10⁻² | 0.0412 |
+
+#### Test Lost to BH FDR
+
+| Comparison | r | p_raw | p_adj_BH |
+|------------|---|-------|----------|
+| total_pips vs σ(V) | +0.15 | 0.035 | 0.056 |
+
+### Critical Insight: Core Findings Are Robust
+
+**9 of 10 significant correlations survive BH FDR correction** at α = 0.05.
+
+The only test lost (total_pips vs σ(V)) was marginal anyway:
+- Effect size: small (r = 0.15)
+- p_adj = 0.056 (just above threshold)
+
+**All key findings survive**:
+1. E[V] vs σ(V) (r = -0.38) — headline inverse risk-return
+2. n_doubles vs E[V] (r = +0.40) — strongest predictor
+3. trump_count vs E[V] (r = +0.23) — second key predictor
+
+### FWER vs FDR
+
+- **FWER** (Bonferroni, Holm): Controls family-wise error rate (any false positive)
+- **FDR** (BH, BY): Controls expected proportion of false discoveries
+
+For exploratory analysis with 16 tests, **FDR is appropriate**. We accept that ~1 in 20 discoveries may be false positive.
+
+### Files Generated
+
+- `results/tables/13f_multiple_comparison.csv` - Full table with adjusted p-values
+- `results/figures/13f_multiple_comparison.png` - Visualization of BH procedure
+
+---
+
 ## Summary
 
 Statistical rigor analyses confirm:
@@ -312,3 +383,4 @@ Statistical rigor analyses confirm:
 2. **Risk is unpredictable**: σ(V) model has weak R² (0.08) and borderline power
 3. **Effect sizes are medium**: Practically meaningful, not just statistically significant
 4. **n=200 is sufficient**: All key findings have adequate power (>80%)
+5. **Multiple testing robust**: 9 of 10 correlations survive BH FDR correction
