@@ -580,6 +580,22 @@ Available at:
 - `results/models/16a_word2vec.model` - Trained gensim model
 - `results/figures/16a_word2vec_tsne.png` - t-SNE visualization
 
+### UMAP Domino Embeddings (16b)
+
+UMAP projection of Word2Vec embeddings confirms weak structure:
+
+- **No strong clusters** emerge in 2D projection
+- Doubles partially group but not tightly
+- Suit membership doesn't create clusters
+- Category separation ratios ~1.0 (random)
+
+**Key insight**: Dominoes are strategically undifferentiated in co-occurrence space. Value comes from game context (trump, position), not hand composition.
+
+Available at:
+- `results/figures/16b_umap_dominoes.png` - 2×2 visualization grid
+- `results/figures/16b_umap_annotated.png` - Annotated view
+- `results/tables/16b_umap_coordinates.csv` - UMAP coordinates
+
 ## Useful One-Liners
 
 ```bash

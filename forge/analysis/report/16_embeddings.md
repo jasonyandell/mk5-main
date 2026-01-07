@@ -77,9 +77,44 @@ Word2Vec on hand composition reveals that **Texas 42 dominoes are strategically 
 
 ---
 
+## 16b: UMAP of Domino Embeddings
+
+### Key Question
+Do strategic clusters emerge when projecting Word2Vec embeddings to 2D?
+
+### Method
+- UMAP projection of 32D Word2Vec embeddings
+- Parameters: n_neighbors=5, min_dist=0.3, metric='cosine'
+- Colored by: doubles, total pips, blank-suit, six-suit
+
+### Key Findings
+
+#### Weak Clustering
+
+UMAP projection confirms the Word2Vec finding - **no strong clusters emerge**:
+
+1. **Doubles partially cluster**: Red points tend to group, but not tightly
+2. **No suit clustering**: Blank-suit and six-suit dominoes are dispersed
+3. **No pip gradient**: High/low pip dominoes are scattered
+
+#### Category Separation
+
+Intra-category vs inter-category distances in UMAP space show ratios close to 1.0, indicating categories are not well-separated.
+
+### Interpretation
+
+The random dealing mechanism doesn't create "themed" hands. Dominoes don't develop strategic similarities based on which other dominoes they co-occur with. Strategic value comes from game context (trump selection, position), not hand composition.
+
+### Files Generated
+
+- `results/figures/16b_umap_dominoes.png` - 2×2 grid visualization
+- `results/figures/16b_umap_annotated.png` - Annotated single view
+- `results/tables/16b_umap_coordinates.csv` - UMAP coordinates with metadata
+
+---
+
 ## Remaining Tasks
 
-- 16b: UMAP of domino embeddings
 - 16c: Domino interaction matrix
 - 16d: Interaction network visualization
 - 16e: Find domino cliques
