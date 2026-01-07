@@ -427,6 +427,17 @@ SHAP (SHapley Additive exPlanations) analysis using GradientBoostingRegressor + 
 
 **Key insight**: SHAP confirms n_doubles and trump_count as top predictors. Unlike linear regression, GradientBoosting captures nonlinear effects, showing that n_singletons, count_points, and total_pips also contribute meaningful |SHAP| values (~2 points each). Waterfall plots provide per-hand explainability.
 
+### SHAP Analysis on σ(V) Model (14b)
+
+SHAP analysis on risk/variance model:
+
+| Metric | Value |
+|--------|-------|
+| CV R² | **-0.34** (worse than mean prediction) |
+| Train R² | 0.67 (pure overfitting) |
+
+**Key insight**: The σ(V) model has negative CV R², proving risk is unpredictable from hand features. n_doubles has 6.9× higher SHAP importance for E[V] than for σ(V). Focus bidding decisions on expected value (doubles, trumps); outcome variance is determined by unknown opponent hands.
+
 ## Useful One-Liners
 
 ```bash

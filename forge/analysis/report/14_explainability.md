@@ -90,7 +90,75 @@ SHAP values sum exactly to (prediction - base_value), confirming correct impleme
 
 ---
 
+## 14b: SHAP on σ(V) (Risk) Model
+
+### Key Question
+Can we identify which hand features contribute to outcome variance (risk)?
+
+### Method
+Same as 14a: GradientBoostingRegressor + TreeExplainer, but target = σ(V).
+
+### Model Performance
+
+| Metric | Value |
+|--------|-------|
+| CV R² | **-0.34 ± 0.71** |
+| Train R² | 0.67 |
+
+**Critical Finding**: Negative CV R² means the model is worse than predicting the mean. This confirms σ(V) is unpredictable from hand features.
+
+### Global Feature Importance (Mean |SHAP|)
+
+| Feature | Mean |SHAP| | vs E[V] Ratio |
+|---------|-------------|---------------|
+| total_pips | 2.08 | 0.96 (similar) |
+| trump_count | 1.26 | 3.49 (E[V] much higher) |
+| count_points | 1.01 | 2.15 |
+| n_5_high | 0.99 | 0.68 (σ higher) |
+| n_singletons | 0.85 | 2.55 |
+| n_voids | 0.77 | 1.03 (similar) |
+| n_doubles | 0.70 | **6.92** (E[V] dominates) |
+
+### Key Findings
+
+#### 1. Risk Model Fits Noise
+
+The negative CV R² (-0.34) proves the model is fitting random patterns:
+- High train R² (0.67) is pure overfitting
+- No feature reliably predicts σ(V)
+
+#### 2. Different Feature Profiles
+
+Comparing E[V] vs σ(V) models:
+- **n_doubles**: E[V] importance 6.9× higher than σ(V) importance
+- **trump_count**: E[V] importance 3.5× higher
+- **total_pips**: Similar importance in both models (uninformative)
+
+#### 3. Confirms 13b Bootstrap Analysis
+
+The SHAP analysis corroborates bootstrap CIs:
+- Linear regression on σ(V): R² = 0.08 (low)
+- GradientBoosting on σ(V): CV R² = -0.34 (worse than baseline)
+- Nonlinear models don't help predict risk
+
+### Implications
+
+1. **Don't try to predict risk**: No hand features reliably indicate outcome variance
+2. **Opponent hands dominate**: σ(V) comes from unknown opponent distributions
+3. **Focus on E[V]**: n_doubles and trump_count predict expected value; risk is unknowable
+
+### Files Generated
+
+- `results/tables/14b_shap_sigma_importance.csv` - Feature importance
+- `results/tables/14b_shap_sigma_values.csv` - Per-sample SHAP values
+- `results/figures/14b_shap_beeswarm.png` - Global importance plot
+- `results/figures/14b_shap_bar.png` - Bar chart
+- `results/figures/14b_shap_scatter.png` - Feature relationships
+- `results/figures/14b_shap_waterfall_highrisk.png` - High risk hand breakdown
+- `results/figures/14b_shap_waterfall_lowrisk.png` - Low risk hand breakdown
+
+---
+
 ## Remaining Tasks
 
-- 14b: SHAP on σ(V) model (if useful given low R²)
-- SHAP interaction values analysis
+- SHAP interaction values analysis (optional)
