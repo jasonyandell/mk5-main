@@ -1257,4 +1257,88 @@ Track positions where Q-gap > threshold in ALL 3 opponent configs, then check if
 
 ---
 
+## 11v: Hand Similarity Clustering
+
+### Key Question
+Do structurally similar hands have similar outcomes?
+
+### Method
+Cluster hands by FEATURES (doubles, trump count, count points, etc.), then measure within-cluster E[V] variance.
+
+### Key Findings (200 hands)
+
+#### Feature-Based Clusters
+
+| Cluster | n | % | E[V] | σ(E[V]) | Characteristics |
+|---------|---|---|------|---------|-----------------|
+| Multi-Double/Trump-Heavy | 34 | 17% | +22.7 | 13.9 | 2.2 doubles, 2.4 trumps |
+| Multi-Double/Trump-Light | 33 | 16% | +20.1 | 17.7 | 2.9 doubles, 0.4 trumps |
+| Count-Rich/Six-Heavy | 37 | 18% | +13.0 | 10.6 | 17 count points, 2.7 6-highs |
+| Few-Double/Count-Poor | 55 | 28% | +5.8 | 18.2 | 1.0 doubles, 4 count points |
+| Mixed | 41 | 20% | +13.2 | 15.0 | Average features |
+
+**Observation**: Multi-double hands have highest E[V] (~+21) regardless of trump count.
+
+#### Within-Cluster Variance Analysis
+
+| Metric | Value |
+|--------|-------|
+| Overall E[V] std | 16.62 |
+| Within-cluster E[V] std | 15.08 |
+| Variance reduction | **9%** |
+| Improvement over random | **9%** |
+
+**Critical Finding**: Feature clustering only explains **9% of E[V] variance**. Structurally similar hands do NOT guarantee similar outcomes.
+
+#### Best and Worst Clusters
+
+| Cluster | Variance Reduction | Interpretation |
+|---------|-------------------|----------------|
+| Count-Rich/Six-Heavy | **36%** | Most predictable |
+| Multi-Double/Trump-Heavy | 16% | Moderately predictable |
+| Multi-Double/Trump-Light | **-7%** | More variance than average |
+| Few-Double/Count-Poor | **-10%** | Highly unpredictable |
+
+**Insight**: Holding many counts makes outcomes more predictable, while few doubles/counts leads to extreme variance.
+
+### Interpretation
+
+This confirms the "luck factor" finding from 11a and 11f:
+
+1. **Hand features explain ~25% of E[V]** (from 11f regression)
+2. **Feature clustering explains ~9% of E[V] variance** (from 11v)
+3. **Opponent distribution dominates** - the remaining 75%+ comes from who holds what
+
+### Why Feature Similarity Fails
+
+Two hands with identical (doubles, trumps, counts) can have very different outcomes because:
+- The specific dominoes matter (which suits, which ranks)
+- Opponent hands can be favorable or unfavorable
+- The interaction between your hand and opponents' is unpredictable
+
+### Implications for Bidding
+
+1. **Don't assume similar = equivalent**: Two hands with "3 doubles, 2 trumps" can have wildly different outcomes.
+
+2. **Features are necessary but not sufficient**: Count doubles/trumps/counts for general guidance, but recognize high variance.
+
+3. **The 28% problem**: "Few-Double/Count-Poor" hands (28% of all hands) are the most unpredictable. Pass these.
+
+4. **Count-rich hands are safest**: Best variance reduction (36%) - holding counts makes you more predictable.
+
+### Relationship to Other Analyses
+
+- **11f** found R² = 0.25 for features → E[V]
+- **11k** clustered by outcomes (STRONG/VOLATILE/WEAK)
+- **11v** clusters by features - confirms features don't fully determine outcomes
+
+### Files Generated
+
+- `results/tables/11v_hand_similarity.csv` - Per-hand clusters
+- `results/tables/11v_cluster_summary.csv` - Cluster statistics
+- `results/tables/11v_variance_analysis.csv` - Variance analysis
+- `results/figures/11v_hand_similarity.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
