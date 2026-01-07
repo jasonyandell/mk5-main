@@ -438,6 +438,18 @@ SHAP analysis on risk/variance model:
 
 **Key insight**: The σ(V) model has negative CV R², proving risk is unpredictable from hand features. n_doubles has 6.9× higher SHAP importance for E[V] than for σ(V). Focus bidding decisions on expected value (doubles, trumps); outcome variance is determined by unknown opponent hands.
 
+### Risk-Return Scatter Plot (15a)
+
+Publication-quality visualization of the headline finding:
+- **r = -0.38** (95% CI: [-0.49, -0.26])
+- Good hands have LOWER risk (inverse of typical markets)
+- Points colored by n_doubles show higher doubles → upper left quadrant
+
+Available formats:
+- `results/figures/15a_risk_return_scatter.png` (300 DPI, annotated)
+- `results/figures/15a_risk_return_scatter.pdf` (vector for publication)
+- `results/figures/15a_risk_return_clean.png` (simplified version)
+
 ## Useful One-Liners
 
 ```bash
