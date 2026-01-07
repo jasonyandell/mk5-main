@@ -447,30 +447,41 @@ Divide V into 5 basins (outcome categories):
 
 For each hand, check if all 3 opponent configs land in the same basin.
 
-### Key Findings (Preliminary - 10 seeds)
-
-**Note**: Preliminary analysis with n=10. Full analysis recommended.
+### Key Findings (Full 201-seed analysis)
 
 #### Basin Convergence
 
 | Metric | Value |
 |--------|-------|
-| Basin convergence rate | **10%** |
-| Mean V spread | 44.8 points |
-| Median V spread | 48.0 points |
-| Hands crossing ≥3 basins | 80% |
+| Basin convergence rate | **18.5%** |
+| Mean V spread | 35.0 points |
+| Median V spread | 34.0 points |
+| Hands with spread > 40 | 38% |
+| Hands with spread < 10 | 10% |
 
-**Insight**: Only 10% of hands reach the same outcome basin regardless of opponent hands. Most hands (80%) swing across 3+ basins depending on who holds what.
+**Insight**: Only 18.5% of hands reach the same outcome basin regardless of opponent hands. This is slightly higher than preliminary (10%) but still low - opponents matter enormously.
+
+#### Basin Spread Distribution
+
+| Basins Crossed | % of Hands |
+|----------------|------------|
+| 0 (same basin) | **18%** |
+| 1 | **25%** |
+| 2 | **20%** |
+| 3 | **23%** |
+| 4 | **14%** |
+
+**Insight**: Most hands (57%) cross 2+ basins across opponent configurations. 14% cross all 4 possible basins - anything can happen.
 
 #### Hand Dominance Classification
 
 | Classification | Criteria | % of Hands |
 |----------------|----------|------------|
-| Dominant | V spread < 15 | **10%** |
-| Moderate | 15 ≤ spread ≤ 35 | **10%** |
-| Luck-dependent | V spread > 35 | **80%** |
+| Dominant | V spread < 15 | **24%** |
+| Moderate | 15 ≤ spread ≤ 35 | **28%** |
+| Luck-dependent | V spread > 35 | **48%** |
 
-**Insight**: 80% of hands are "luck-dependent" - the outcome can swing from Big Loss to Big Win based on opponent card distribution. Only 10% of hands are "dominant" with predictable outcomes.
+**Insight**: Nearly half (48%) of hands are "luck-dependent" - the outcome can swing 35+ points based on opponent distribution. Only 24% of hands are "dominant" with predictable outcomes.
 
 ### Interpretation
 
@@ -503,55 +514,63 @@ What hand features predict outcome variance (risk)?
 ### Method
 Regression with features: trump count, high dominoes, doubles → σ(V) and V_spread
 
-### Key Findings (Preliminary - 10 seeds)
+### Key Findings (Full 201-seed analysis)
 
-**Note**: Preliminary analysis with n=10. CV shows severe overfitting - full analysis required.
+#### Model Performance
+
+| Metric | Value |
+|--------|-------|
+| R² | **0.081** |
+| CV R² | **-0.137 ± 0.14** |
+
+**Critical Finding**: Hand features explain only **8% of σ(V)**. The negative CV R² confirms the model doesn't generalize - risk is fundamentally unpredictable from hand features alone.
 
 #### Feature Correlations with σ(V)
 
 | Feature | Correlation with σ(V) | Interpretation |
 |---------|----------------------|----------------|
-| total_pips | **+0.63** | High pip count = HIGH risk |
-| n_6_high | **+0.53** | More 6-highs = HIGH risk |
-| trump_count | **-0.40** | More trumps = LOWER risk |
-| has_trump_double | **-0.32** | Trump double = LOWER risk |
-| n_doubles | **-0.25** | More doubles = LOWER risk |
+| n_6_high | **+0.191** | More 6-highs = HIGH risk |
+| total_pips | **+0.149** | High pip count = HIGH risk |
+| n_doubles | **-0.136** | More doubles = LOWER risk |
+| n_5_high | **-0.101** | More 5-highs = LOWER risk |
+| has_trump_double | **-0.095** | Trump double = LOWER risk |
+| trump_count | **-0.090** | More trumps = LOWER risk |
 
-**Key Insight**: The features that predict high expected value (doubles, trumps) ALSO predict low variance. Strong hands are both better AND safer.
+**Key Insight**: The same features that predict high E[V] (doubles, trumps) also predict low σ(V), but the correlations are weak (~0.1-0.2).
 
 #### E[V] vs σ(V) Relationship
 
 | Metric | Value |
 |--------|-------|
-| Correlation E[V] vs σ(V) | **-0.55** |
-| Correlation E[V] vs V_spread | **-0.60** |
+| Correlation E[V] vs σ(V) | **-0.381** |
+| Correlation E[V] vs V_spread | **-0.398** |
 
-**Critical Finding**: E[V] and σ(V) are **negatively correlated**. Good hands are not just higher EV - they're also more consistent. This has major bidding implications.
+**Critical Finding**: E[V] and σ(V) are **negatively correlated**. Good hands are not just higher EV - they're also more consistent. This is the opposite of typical financial markets (where higher return = higher risk).
 
-#### Risk Profiles
+#### Risk Classification (Full 200 hands)
 
-| Classification | Criteria | % | Avg Doubles | Avg Trumps | Avg Pips |
-|----------------|----------|---|-------------|------------|----------|
-| Low risk | spread < 20 | 10% | 3.0 | 3.0 | 29 |
-| Medium risk | 20-45 | 30% | - | - | - |
-| High risk | spread > 45 | 60% | 1.7 | 1.5 | 42 |
+| Classification | Criteria | % of Hands | Avg Doubles | Avg Trumps | Avg Pips |
+|----------------|----------|------------|-------------|------------|----------|
+| Low risk | spread < 20 | **25%** | 2.0 | 1.4 | 41.5 |
+| Medium risk | 20-45 | **42%** | - | - | - |
+| High risk | spread > 45 | **33%** | 1.6 | 1.2 | 43.7 |
 
-**Insight**: Low-risk hands have MORE doubles, MORE trumps, and FEWER total pips. High-risk hands are "pip-heavy" with few trumps.
+**Insight**: 33% of hands are high-risk with 45+ point outcome swings. Low-risk hands have slightly more doubles and trumps.
+
+#### The Risk Formula
+
+```
+V_spread ≈ 17.9 - 3.2×(doubles) - 2.3×(5_highs) - 2.1×(trump_double) - 1.4×(trump_count) + 0.7×(total_pips)
+```
+
+**Note**: R² = 0.08 means this formula has minimal predictive power. Risk is fundamentally luck-driven.
 
 ### Implications for Bidding
 
-1. **Doubles reduce risk**: Each double not only adds EV but also reduces variance
-2. **Trump length is protective**: Long trump suits create predictable outcomes
-3. **Beware high-pip hands**: Hands with many high pips but few trumps are volatile
-4. **No risk-return tradeoff**: Unlike financial markets, Texas 42 has NEGATIVE risk-return correlation. Aggressive bidding on strong hands is doubly justified.
-
-### The Risk Formula (Tentative)
-
-```
-V_spread ≈ -124 + 80×(trump_double) + 72×(6_highs) + 37×(singletons) - 21×(trump_count)
-```
-
-(Requires full-sample validation - these coefficients are unstable)
+1. **Risk is unpredictable**: R² = 0.08 means 92% of variance is unexplained. You can't assess hand risk reliably.
+2. **Negative risk-return**: Higher E[V] hands have lower σ(V) - no tradeoff to navigate.
+3. **Doubles help but weakly**: Each double reduces risk slightly (-3.2 spread points)
+4. **6-high is risky**: The strongest risk signal is n_6_high (+0.19 correlation)
 
 ### Files Generated
 
