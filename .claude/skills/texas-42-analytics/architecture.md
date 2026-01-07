@@ -28,6 +28,54 @@ Reports (markdown)
 
 **Team 0 perspective**: Positive V = good for Team 0.
 
+## Critical Data Semantics
+
+### V/Q Perspective Rules
+
+| Situation | How to Interpret |
+|-----------|------------------|
+| V value | Always Team 0's expected point differential |
+| Positive V | Good for Team 0 (P0, P2) |
+| Negative V | Good for Team 1 (P1, P3) |
+| Team 0's turn | Optimal move = argmax(Q) |
+| Team 1's turn | Optimal move = argmin(Q) |
+
+### Player-to-Team Mapping
+
+```
+Team 0: Players 0, 2 (partners across table)
+Team 1: Players 1, 3 (partners across table)
+```
+
+**When analyzing per-player outcomes**: For P1/P3, negate V to get their perspective.
+
+### Hands and Local Indices
+
+```python
+hands = schema.deal_from_seed(seed)  # 4 lists of 7 domino IDs
+# hands[0] = [2, 5, 11, 14, 19, 23, 27]  # Player 0's dominoes (global IDs)
+# hands[1] = [0, 3, 8, 12, 16, 20, 25]   # Player 1's dominoes
+# ...
+
+# Local index 0-6 maps to that player's hand
+global_domino_id = hands[player][local_index]
+```
+
+### Depth Definition
+
+- **depth = dominoes remaining** (not turns played)
+- Start of game: depth = 28
+- End of game: depth = 0
+- Each trick removes 4 dominoes
+
+### Combinatorics Reference
+
+| Entity | Count |
+|--------|-------|
+| Possible hands | C(28,7) = 1,184,040 |
+| Possible deals | 28! / (7!)^4 = ~2.75×10^15 |
+| States per shard | 5M - 75M (varies by decl_id) |
+
 ## Utility Modules
 
 ### loading.py
