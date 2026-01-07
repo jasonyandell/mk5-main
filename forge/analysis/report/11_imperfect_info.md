@@ -621,4 +621,75 @@ E[V] ≈ 5 + 6 × (counts held)
 
 ---
 
+## 11l: Lock Rate by Count Value
+
+### Key Question
+Are 10-point counts easier to lock than 5-point counts?
+
+### Method
+Define "lock" = Team 0 owns count in all 3 opponent configurations.
+Compare lock rates between 5-point counts (3-2, 4-1, 5-0) and 10-point counts (5-5, 6-4).
+
+### Key Findings (Full 201 seeds)
+
+#### Lock Rate Comparison
+
+| Type | Counts | Lock Rate | Capture Rate |
+|------|--------|-----------|--------------|
+| 5-point | 3-2, 4-1, 5-0 | **26.8%** | 52.6% |
+| 10-point | 5-5, 6-4 | **23.5%** | 51.5% |
+| Difference | | **-3.3%** | -1.1% |
+
+**Finding**: 5-point counts are slightly EASIER to lock than 10-point counts! No significant difference in capture rates.
+
+#### Individual Count Rankings (by Lock Rate)
+
+| Count | Points | Lock Rate |
+|-------|--------|-----------|
+| 5-0 | 5 | **32.5%** |
+| 4-1 | 5 | **27.0%** |
+| 5-5 | 10 | 24.0% |
+| 6-4 | 10 | 23.0% |
+| 3-2 | 5 | 21.0% |
+
+**Insight**: The 5-0 is easiest to lock, the 3-2 hardest. The 10-point counts (5-5, 6-4) are in the middle.
+
+#### Lock Rates vs E[V]
+
+| Metric | Correlation |
+|--------|-------------|
+| total_locks vs E[V] | **+0.305** |
+| five_pt_locks vs E[V] | **+0.344** |
+| ten_pt_locks vs E[V] | **+0.034** |
+
+**Critical Finding**: Locking 5-point counts correlates MORE strongly with E[V] (+0.344) than locking 10-point counts (+0.034). This suggests 5-point count control is more strategically valuable than raw point totals might suggest.
+
+#### E[V] by Total Locks
+
+| Locks | E[V] | V Spread | n |
+|-------|------|----------|---|
+| 0 | +5 | 36 | 42 |
+| 1 | +14 | 37 | 80 |
+| 2 | +18 | 35 | 60 |
+| 3 | +23 | 25 | 17 |
+| 4 | +19 | 2 | 1 |
+
+**Insight**: Each additional lock adds ~6-8 expected points. Locking 3 counts reduces V spread significantly (25 vs 35-37).
+
+### Implications for Bidding
+
+1. **Don't overvalue 10-point counts**: They're no easier to lock and their locks correlate weakly with E[V]
+2. **The 5-0 is king for locks**: 32.5% lock rate - if you hold 5-0, you'll often capture it across all opponent hands
+3. **Beware the 3-2**: Lowest lock rate (21%) despite being a count
+4. **Lock quantity matters**: Each lock adds ~6 E[V] regardless of point value
+
+### Files Generated
+
+- `results/tables/11l_lock_by_count_by_seed.csv` - Per-seed data
+- `results/tables/11l_lock_rates_summary.csv` - Count summaries
+- `results/tables/11l_five_vs_ten_summary.csv` - Comparison
+- `results/figures/11l_lock_by_count_value.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*

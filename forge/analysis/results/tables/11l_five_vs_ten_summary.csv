@@ -1,0 +1,2 @@
+five_pt_lock_rate,ten_pt_lock_rate,five_pt_capture_rate,ten_pt_capture_rate,lock_diff,capture_diff,total_locks_vs_ev_corr,n_samples
+0.26833333333333337,0.235,0.5255555555555556,0.515,-0.03333333333333338,-0.01055555555555554,0.3051830508443688,200
