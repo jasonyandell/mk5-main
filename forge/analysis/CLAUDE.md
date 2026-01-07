@@ -413,6 +413,20 @@ Fisher z-transform confidence intervals for all correlations (n=200):
 
 **Key insight**: Many features show bivariately significant correlations with E[V], but in multivariate regression (13a), only n_doubles and trump_count survive. This indicates that has_trump_double, n_voids, and count_points are largely explained by their association with the two key predictors.
 
+### SHAP Analysis on E[V] Model (14a)
+
+SHAP (SHapley Additive exPlanations) analysis using GradientBoostingRegressor + TreeExplainer:
+
+| Feature | Mean |SHAP| | Rank |
+|---------|-------------|------|
+| n_doubles | **4.84** | 1 |
+| trump_count | **4.39** | 2 |
+| n_singletons | 2.17 | 3 |
+| count_points | 2.17 | 4 |
+| total_pips | 2.00 | 5 |
+
+**Key insight**: SHAP confirms n_doubles and trump_count as top predictors. Unlike linear regression, GradientBoosting captures nonlinear effects, showing that n_singletons, count_points, and total_pips also contribute meaningful |SHAP| values (~2 points each). Waterfall plots provide per-hand explainability.
+
 ## Useful One-Liners
 
 ```bash
