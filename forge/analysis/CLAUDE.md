@@ -19,10 +19,33 @@ python -c "from forge.analysis.utils import loading, features, viz; print('OK')"
 
 **Oracle shards (primary data source):**
 ```
-/mnt/d/shards-standard/          # External drive mount
+/mnt/d/shards-standard/          # External drive mount (~200GB)
 ├── train/                        # seed % 1000 < 900
 ├── val/                          # seed % 1000 in [900, 950)
 └── test/                         # seed % 1000 >= 950
+```
+
+**Marginalized shards (imperfect info analysis):**
+```
+/mnt/d/shards-marginalized/      # External drive mount (~92GB)
+└── train/                        # 601 files (201 base_seeds × 3 opponent configs)
+```
+
+Marginalized data structure:
+- **Filename**: `seed_{BASE_SEED:08d}_opp{OPP_SEED}_decl_{DECL_ID}.parquet`
+- **P0 hand fixed**: For each base_seed, P0's hand = `deal_from_seed(base_seed)[0]`
+- **3 opponent configs**: opp0, opp1, opp2 shuffle remaining 21 dominoes among P1, P2, P3
+- **Use case**: Imperfect information analysis - same hand, different opponent distributions
+- **Key insight**: V varies significantly across opponent configs (spread 2-68 points observed)
+
+```python
+from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
+
+# Get P0's hand for a base_seed
+p0_hand = deal_from_seed(base_seed)[0]
+
+# Reconstruct the full deal for a specific opponent config
+hands = deal_with_fixed_p0(p0_hand, opp_seed)  # hands[0] == p0_hand
 ```
 
 **Local flywheel shards (smaller dataset):**
@@ -70,6 +93,32 @@ df, seed, decl_id = loading.load_seed(seed=123, base_dir=DATA_DIR)
 
 # Load multiple seeds (parallel)
 df = loading.load_seeds([0, 1, 2], base_dir=DATA_DIR)
+```
+
+**Loading marginalized data:**
+```python
+from pathlib import Path
+from forge.oracle import schema
+from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
+
+MARG_DIR = Path("/mnt/d/shards-marginalized/train")
+
+def load_marginalized_group(base_seed: int) -> list[tuple]:
+    """Load all 3 opponent configs for a base_seed.
+
+    Returns: [(df, seed, decl_id, opp_seed, hands), ...]
+    """
+    decl_id = base_seed % 10
+    p0_hand = deal_from_seed(base_seed)[0]
+    results = []
+
+    for opp_seed in range(3):
+        path = MARG_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        df, seed, decl_id = schema.load_file(path)
+        hands = deal_with_fixed_p0(p0_hand, opp_seed)
+        results.append((df, seed, decl_id, opp_seed, hands))
+
+    return results
 ```
 
 ## Parquet Schema
