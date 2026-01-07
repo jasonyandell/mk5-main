@@ -543,6 +543,25 @@ Available at:
 - `results/figures/13g_cross_validation.png` - Train vs CV bars
 - `results/figures/13g_learning_curve.png` - Learning curve
 
+### Phase Transition (15d)
+
+Best-move consistency across game depth reveals three distinct phases:
+
+| Phase | Depth | Consistency | States |
+|-------|-------|-------------|--------|
+| Early game | 24-28 | 40% | 18 |
+| Mid-game | 5-23 | 22% | 147,529 |
+| End-game | 0-4 | **100%** | 19,472 |
+
+**Key insight**: Game transitions from **order → chaos → resolution**:
+1. **Opening**: Few states, declarers control the game
+2. **Mid-game**: Maximum uncertainty, multiple good strategies exist
+3. **End-game**: Outcomes locked in, mechanical play
+
+Available at:
+- `results/figures/15d_phase_transition.png` - Progress-based view
+- `results/figures/15d_phase_by_depth.png` - Depth-based view with state counts
+
 ## Useful One-Liners
 
 ```bash

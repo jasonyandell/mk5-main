@@ -164,6 +164,60 @@ These are the "perfect" hands with deterministic outcomes.
 
 ---
 
-## Remaining Tasks
+## 15d: Phase Transition
 
-- 15d: Phase transition plots
+### Key Question
+How does move consistency change as the game progresses?
+
+### Method
+- Data source: 11c stability analysis (best-move consistency by depth)
+- Depth = dominoes remaining (28 = start, 0 = end)
+- Consistency = percentage of states where best move is unique
+
+### Key Findings
+
+#### Three Phases of the Game
+
+| Phase | Depth | Dominoes Played | Consistency | # States |
+|-------|-------|-----------------|-------------|----------|
+| **Early game** | 24-28 | 0-4 | 40% | 18 |
+| **Mid-game** | 5-23 | 5-23 | 22% | 147,529 |
+| **End-game** | 0-4 | 24-28 | **100%** | 19,472 |
+
+#### Game Progression
+
+1. **Opening (first 4 dominoes)**:
+   - Few unique states exist (only 18)
+   - Consistency around 40%
+   - Declarer controls the game
+
+2. **Mid-game (dominoes 5-23)**:
+   - Maximum uncertainty phase
+   - Consistency drops to 22% average
+   - Minimum consistency 0% at depth 18
+   - Multiple good strategies often exist
+   - Game is in "chaotic" phase
+
+3. **End-game (last 5 dominoes)**:
+   - Consistency rises to **100%**
+   - 19,472 unique states
+   - Outcomes largely locked in
+   - Mechanical, deterministic play
+
+### Interpretation
+
+The phase transition reflects **information revelation**:
+- Early: Few cards played, but opener sets tempo
+- Mid: Hands revealed, many strategic options
+- Late: Most cards known, outcome determined
+
+### Implications for Play
+
+1. **Opening matters most**: Declarer's first few moves set the trajectory
+2. **Mid-game is chaotic**: Multiple good strategies exist - don't overoptimize
+3. **Endgame is mechanical**: Outcomes are largely fixed by this point
+
+### Files Generated
+
+- `results/figures/15d_phase_transition.png` - Progress-based view (dominoes played)
+- `results/figures/15d_phase_by_depth.png` - Depth-based view with state counts
