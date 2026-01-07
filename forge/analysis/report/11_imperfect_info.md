@@ -253,47 +253,70 @@ What hand features predict expected value (E[V])?
 
 ### Method
 Linear regression with features extracted from P0's hand:
-- Trump count (dominoes containing trump pip)
 - Number of doubles
-- High dominoes (6-high, 5-high)
+- Trump count (dominoes containing trump pip)
+- High dominoes (6-high, 5-high, 4-high)
 - Count points held
+- Has trump double
 - Max suit length
 - Total pip count
 
-### Key Findings (Preliminary - 10 seeds)
-
-**Note**: Small sample size (n=10) causes overfitting. Full analysis needed for reliable results.
-
-#### Feature Correlations with E[V]
-
-| Feature | Correlation |
-|---------|-------------|
-| total_pips | **-0.78** |
-| n_5_high | -0.42 |
-| trump_count | **+0.38** |
-| n_6_high | -0.18 |
-| count_points | -0.15 |
-| n_doubles | +0.10 |
-
-**Insights** (tentative):
-1. **Total pips negatively correlates with E[V]**: Counterintuitive - hands with more pips do *worse*. May reflect that high-pip hands without trump suit strength are vulnerable.
-2. **Trump count positively correlates**: Having more dominoes in trump suit helps (expected).
-3. **Count points weakly negative**: Holding counts doesn't strongly predict winning (consistent with 11a).
+### Key Findings (200 seeds)
 
 #### Model Performance
 
 | Metric | Value |
 |--------|-------|
-| In-sample R² | 0.81 |
-| Cross-validation R² | -4.1 ± 2.4 |
+| R² | **0.247** |
+| CV R² | 0.182 ± 0.08 |
 
-**Note**: Negative CV R² indicates severe overfitting with only 10 samples. Results are illustrative only.
+**Insight**: Hand features explain only ~25% of E[V] variance. The remaining 75% comes from opponent hands (imperfect information). This quantifies the "luck factor" - even with a great hand, opponent distribution matters enormously.
 
-### Implications for Bidding (Tentative)
+#### Feature Correlations with E[V]
 
-1. **Trump length matters most**: More trumps → better expected outcomes
-2. **Raw hand strength misleading**: High total pips doesn't guarantee success
-3. **Need full dataset**: 10 samples insufficient for reliable napkin formula
+| Feature | Correlation |
+|---------|-------------|
+| n_doubles | **+0.40** |
+| has_trump_double | **+0.24** |
+| trump_count | **+0.23** |
+| count_points | +0.20 |
+| n_6_high | **-0.16** |
+| max_suit_length | -0.08 |
+| n_5_high | +0.08 |
+| total_pips | +0.04 |
+
+**Key Insights**:
+
+1. **Doubles are king**: The strongest predictor of E[V] is number of doubles (+0.40). Each double adds ~6.4 points expected value.
+
+2. **Trump suit matters**: Both trump_count (+0.23) and has_trump_double (+0.24) are strong predictors. Having the trump double alone adds ~2.2 points.
+
+3. **6-high is a trap**: Counterintuitively, n_6_high has *negative* correlation (-0.16). Having 6-high dominoes without trump suit strength may make them vulnerable to capture.
+
+4. **Count points modestly helpful**: +0.20 correlation - holding counts helps but isn't decisive.
+
+5. **Total pips irrelevant**: Near-zero correlation (+0.04). Raw hand strength doesn't predict success.
+
+### The Napkin Formula
+
+```
+E[V] ≈ -4.1 + 6.4×(doubles) + 3.2×(trump_count) + 2.2×(trump_double) - 1.2×(6_highs)
+```
+
+**Example applications**:
+- 0 doubles, 2 trumps, no trump double, 1 six-high: E[V] ≈ -4.1 + 6.4 + 0 - 1.2 = +1.1
+- 2 doubles, 3 trumps, trump double, 0 six-high: E[V] ≈ -4.1 + 12.8 + 9.6 + 2.2 = +20.5
+- 3 doubles (one is trump): E[V] ≈ -4.1 + 19.2 + 3.2 + 2.2 = +20.5
+
+### Implications for Bidding
+
+1. **Count doubles first**: The most reliable bidding signal. Each double is worth ~6 points expected value.
+
+2. **Trump length matters but isn't everything**: 3 trumps with no doubles may be worse than 2 doubles with 1 trump.
+
+3. **Be wary of "strong" hands**: 6-high dominoes can be liabilities if you're not calling that suit.
+
+4. **R² = 0.25 means uncertainty**: Even optimal bidding has 75% unexplained variance from opponent hands.
 
 ### Files Generated
 
