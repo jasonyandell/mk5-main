@@ -982,4 +982,109 @@ This reveals that:
 
 ---
 
+## 11j: Basin Variance Analysis
+
+### Key Question
+How many outcome basins are reachable from a hand?
+
+### Method
+Divide V into 5 basins (Big Loss, Loss, Draw, Win, Big Win). For each hand across 3 opponent configs, count unique basins reached. "Converged" = same basin in all 3 configs.
+
+### Key Findings (Full 201 seeds, 200 hands analyzed)
+
+#### Basin Convergence
+
+| Metric | Value |
+|--------|-------|
+| Hands converging to same basin | **37 / 200 (18.5%)** |
+| Mean basin spread | **1.89** |
+| Median basin spread | **2.0** |
+
+**Key Finding**: Only 18.5% of hands reach the same outcome category regardless of opponent distribution. Most hands (81.5%) cross multiple outcome categories.
+
+#### Distribution of Unique Basins Reached
+
+| Basins Reached | Count | Percentage |
+|----------------|-------|------------|
+| 1 (converged) | 37 | **18.5%** |
+| 2 | 102 | **51.0%** |
+| 3 | 61 | **30.5%** |
+
+**Insight**: The majority (51%) of hands span exactly 2 basins across opponent configs. Nearly a third (30.5%) span all 3 sampled basins.
+
+#### High Variance vs Low Variance Hands
+
+| Metric | Low Variance (Converged) | High Variance (Diverged) |
+|--------|--------------------------|--------------------------|
+| Count | 37 | 163 |
+| Mean E[V] | **+30.9** | **+10.0** |
+| Mean doubles | 2.1 | 1.6 |
+| Mean trump count | 1.6 | 1.3 |
+| % with trump double | 22% | 16% |
+
+**Critical Finding**: Converged (safe) hands have:
+- **3x higher E[V]** (+30.9 vs +10.0)
+- More doubles (2.1 vs 1.6)
+- More likely to have trump double (22% vs 16%)
+
+This confirms the negative risk-return relationship: strong hands are both higher EV AND more predictable.
+
+#### Feature Correlations with Basin Spread
+
+| Feature | Correlation |
+|---------|-------------|
+| V_std | **+0.899** |
+| V_mean | **-0.529** |
+| n_doubles | **-0.181** |
+| trump_count | **-0.183** |
+| n_6_high | **+0.177** |
+| count_points | -0.073 |
+
+**Insights**:
+1. **V_std perfectly tracks basin spread** (0.899) - variance and basin crossing are essentially the same metric
+2. **High E[V] = low basin spread** (-0.529) - the best hands don't swing across categories
+3. **More doubles/trumps = less spread** - the same features that predict E[V] also predict convergence
+4. **6-high is risky** (+0.177) - hands heavy in 6-suit dominoes tend to span more basins
+
+#### Safest Hands (Lowest Basin Spread)
+
+Top 3 hands with E[V] = +42 and Spread = 0 (always Big Win):
+1. 6-4 4-4 4-3 4-1 4-0 2-2 1-1 (4s trump, 3 doubles)
+2. 6-4 5-4 4-4 4-3 4-0 3-3 3-0 (4s trump, 2 doubles)
+3. 5-4 4-4 4-3 2-1 2-0 1-1 1-0 (4s trump, 2 doubles)
+
+**Pattern**: All three are heavy in the trump suit with multiple doubles.
+
+#### Riskiest Hands (Highest Basin Spread)
+
+Top hand: Spread = 82 points, basins = Big Win / Loss / Big Loss
+- E[V] = -3.3
+- Hand: 6-5 5-5 4-3 3-3 3-2 3-0 2-2
+
+**Pattern**: High-risk hands often have:
+- Multiple 5s or 6s but not as trump
+- Moderate doubling (2 doubles) but wrong suits
+- Basins that span the entire range (Big Win to Big Loss)
+
+### Relationship to Other Analyses
+
+- **11i** (preliminary 10 seeds) found 10% convergence - full analysis shows 18.5%
+- **11u** (Pareto analysis) found only 3 hands with σ(V) = 0 - these are the only guaranteed "same basin" hands
+- **11s** found E[V] vs σ(V) correlation of -0.55 - 11j confirms this pattern with basin categories
+
+### Implications for Bidding
+
+1. **Recognize convergent hands**: Hands with 2+ doubles in trump suit tend to stay in the same outcome category
+2. **Beware high-variance hands**: 82% of hands cross multiple outcome basins - bidding confidently is risky
+3. **The 30/50/20 rule**: ~20% converge, ~50% span 2 basins, ~30% span 3+ basins
+4. **E[V] and stability go together**: The highest EV hands are also the most predictable
+
+### Files Generated
+
+- `results/tables/11j_basin_variance_by_seed.csv` - Per-seed data
+- `results/tables/11j_basin_variance_summary.csv` - Summary statistics
+- `results/figures/11j_basin_variance.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
