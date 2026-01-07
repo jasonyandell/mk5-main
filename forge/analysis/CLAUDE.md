@@ -596,6 +596,23 @@ Available at:
 - `results/figures/16b_umap_annotated.png` - Annotated view
 - `results/tables/16b_umap_coordinates.csv` - UMAP coordinates
 
+### Domino Interaction Matrix (16c)
+
+Synergy scores for domino pairs (observed - expected under additive model):
+
+**Top single-domino effects**:
+- 4-4: **+8.21**, 5-5: **+7.67**, 5-0: +6.12 (doubles dominate)
+- 6-0: **-9.55** (worst - weak trick winner)
+
+**Synergy range**: -11.86 to +14.61
+
+**Key insight**: The additive model mostly works - most pair synergies near zero. Some non-additive interactions exist (e.g., 2-2 + 3-3 = -11.9, two doubles can conflict).
+
+Available at:
+- `results/tables/16c_interaction_matrix.csv` - 28×28 synergy matrix
+- `results/tables/16c_pair_synergies.csv` - Pairs ranked by synergy
+- `results/tables/16c_single_effects.csv` - Single-domino effects
+
 ## Useful One-Liners
 
 ```bash

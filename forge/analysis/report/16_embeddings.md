@@ -113,8 +113,72 @@ The random dealing mechanism doesn't create "themed" hands. Dominoes don't devel
 
 ---
 
+## 16c: Domino Interaction Matrix
+
+### Key Question
+Which domino pairs have synergistic effects on E[V]?
+
+### Method
+- **Single effects**: Mean E[V] when domino is present vs absent
+- **Pair synergy**: Observed E[V] - Expected (additive model)
+- Expected = global_mean + effect(d1) + effect(d2)
+
+### Key Findings
+
+#### Single-Domino Effects (Top 5)
+
+| Domino | Effect on E[V] |
+|--------|---------------|
+| 4-4 | **+8.21** |
+| 5-5 | **+7.67** |
+| 5-0 | +6.12 |
+| 3-3 | +5.56 |
+| 6-6 | +5.24 |
+
+Doubles dominate the top effects - consistent with earlier regression findings.
+
+#### Worst Single Effects
+
+| Domino | Effect on E[V] |
+|--------|---------------|
+| 6-0 | **-9.55** |
+| 4-2 | -5.61 |
+| 6-5 | -5.57 |
+
+The 6-0 has a strongly negative effect - it's a weak domino that doesn't win tricks.
+
+#### Pair Synergies
+
+Synergy range: **-11.86 to +14.61**
+
+**Top positive synergies** (better together than expected):
+- 4-0 + 5-3: +14.6
+- 2-2 + 6-0: +12.0
+- 5-0 + 5-1: +10.4
+
+**Top negative synergies** (worse together):
+- 2-2 + 3-3: -11.9 (two doubles can conflict)
+- 4-0 + 4-2: -11.4
+- 2-0 + 5-0: -11.0
+
+### Interpretation
+
+1. **Additive model works mostly**: Most synergies near zero
+2. **Some non-additive pairs exist**: Range of ±15 points
+3. **Doubles can conflict**: Having two doubles doesn't always add up
+4. **Sample size limits precision**: With 200 hands, many pairs have few observations
+
+### Files Generated
+
+- `results/tables/16c_interaction_matrix.csv` - 28×28 synergy matrix
+- `results/tables/16c_pair_synergies.csv` - All pairs ranked by synergy
+- `results/tables/16c_single_effects.csv` - Single-domino effects
+- `results/figures/16c_interaction_matrix.png` - Heatmap visualization
+- `results/figures/16c_synergy_distribution.png` - Synergy histogram
+
+---
+
 ## Remaining Tasks
 
-- 16c: Domino interaction matrix
 - 16d: Interaction network visualization
 - 16e: Find domino cliques
