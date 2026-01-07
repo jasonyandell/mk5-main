@@ -1087,4 +1087,101 @@ Top hand: Spread = 82 points, basins = Big Win / Loss / Big Loss
 
 ---
 
+## 11k: Hand Classification Clustering
+
+### Key Question
+Can we cluster hands by outcome profile into meaningful categories?
+
+### Method
+K-means clustering on standardized (E[V], σ(V), n_unique_basins) feature vectors. Optimal k found via silhouette score.
+
+### Key Findings (200 hands from 11j data)
+
+#### Optimal Cluster Count
+
+| k | Silhouette Score |
+|---|------------------|
+| 2 | 0.399 |
+| 3 | 0.375 |
+| 4 | 0.414 |
+| 5 | 0.433 |
+| 6 | 0.451 |
+| 7 | 0.474 |
+
+Statistically optimal k=7, but k=3 provides interpretable hand types.
+
+#### Three Natural Hand Types
+
+| Type | Count | % | E[V] | σ(V) | Basins | Spread |
+|------|-------|---|------|------|--------|--------|
+| **STRONG** | 35 | 18% | +33.7 | 4.4 | 1.0 | 10 |
+| **VOLATILE** | 81 | 40% | +16.9 | 11.9 | 2.0 | 27 |
+| **WEAK** | 84 | 42% | +2.7 | 22.7 | 2.7 | 53 |
+
+**Key Finding**: Hands naturally cluster into three interpretable categories:
+- **STRONG** (18%): High E[V], low variance, single basin outcome
+- **VOLATILE** (40%): Medium E[V], medium variance, outcome varies
+- **WEAK** (42%): Low E[V], high variance, unpredictable
+
+#### Hand Features by Cluster
+
+| Feature | STRONG | VOLATILE | WEAK |
+|---------|--------|----------|------|
+| n_doubles | **2.14** | 1.83 | 1.46 |
+| trump_count | **1.66** | 1.40 | 1.11 |
+| has_trump_double | **23%** | 22% | 10% |
+| count_points | **10.43** | 10.00 | 7.92 |
+| n_6_high | 1.34 | 1.74 | **1.90** |
+
+**Insights**:
+1. **Doubles separate STRONG from WEAK**: 2.1 vs 1.5 average
+2. **Trump count matters**: STRONG have 50% more trumps than WEAK
+3. **Trump double is key**: 23% of STRONG vs 10% of WEAK have it
+4. **6-high is a liability**: WEAK hands have most 6-highs (1.9 avg)
+
+#### Sample Hands
+
+**STRONG** (bid confidently):
+- E[V]=+42.0, σ=0.0: 6-4 5-4 4-4 4-3 4-0 3-3 3-0
+- E[V]=+38.7, σ=0.9: 6-6 5-5 5-1 5-0 3-3 2-1 1-1
+
+**VOLATILE** (bid cautiously):
+- E[V]=+32.7, σ=10.5: 5-5 5-4 5-2 4-0 3-1 2-0 1-0
+- E[V]=+18.0, σ=17.0: 6-5 6-2 6-1 5-5 4-2 3-0 0-0
+
+**WEAK** (pass):
+- E[V]=-12.0, σ=21.2: 6-5 6-0 5-4 5-2 3-2 3-0 1-1
+- E[V]=+2.7, σ=22.7: 6-5 6-4 6-1 4-4 4-3 3-1 2-2
+
+### Bidding Recommendations
+
+| Type | Recommendation | Expected Outcome |
+|------|----------------|------------------|
+| **STRONG** | Bid 30-42 confidently | +33.7 ± 4.4 |
+| **VOLATILE** | Cautious bid or pass | +16.9 ± 11.9 |
+| **WEAK** | Pass | +2.7 ± 22.7 |
+
+### The 18/40/42 Rule
+
+- **18%** of hands are STRONG - bid with confidence
+- **40%** of hands are VOLATILE - judgment call
+- **42%** of hands are WEAK - pass and wait
+
+This explains why experienced players pass most hands - 82% of hands are either weak or volatile.
+
+### Relationship to Other Analyses
+
+- **11j** (basin variance) provides the clustering features
+- **11f** (hand features → E[V]) explains why doubles/trumps predict cluster membership
+- **11u** (risk-adjusted ranking) confirms STRONG hands are both high EV and low risk
+
+### Files Generated
+
+- `results/tables/11k_hand_classification.csv` - Per-hand clusters
+- `results/tables/11k_cluster_summary.csv` - Cluster statistics
+- `results/tables/11k_silhouette_scores.csv` - Cluster quality metrics
+- `results/figures/11k_hand_classification.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
