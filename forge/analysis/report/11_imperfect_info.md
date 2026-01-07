@@ -538,4 +538,87 @@ V_spread ≈ -124 + 80×(trump_double) + 72×(6_highs) + 37×(singletons) - 21×
 
 ---
 
+## 11t: Lock Count → Bid Level Correlation
+
+### Key Question
+Does number of locked counts predict optimal bid level?
+
+### Method
+Track count holdings per hand, correlate with E[V], translate to bid recommendations.
+
+### Key Findings (Full 201 seeds)
+
+#### Correlations
+
+| Metric | Value |
+|--------|-------|
+| n_counts_held vs E[V] | **+0.305** |
+| total_count_points vs E[V] | **+0.197** |
+| likely_locks vs E[V] | **+0.607** |
+
+**Key Finding**: Holding more counts does predict higher E[V], confirming traditional bidding wisdom.
+
+#### Bidding Heuristics by Count Holdings
+
+| Counts Held | E[V] | E[V] Range | Recommended Bid | n |
+|-------------|------|------------|-----------------|---|
+| 0 | +5 | [-26, +37] | Pass | 42 |
+| 1 | +14 | [-29, +42] | Pass | 80 |
+| 2 | +18 | [-29, +42] | Low bid (~30) | 60 |
+| 3 | +23 | [-28, +39] | ~30-31 | 17 |
+| 4 | +19 | [19, 19] | Pass | 1 |
+
+**Key Insight**: Each additional count held adds approximately **6 expected points**.
+
+#### E[V] by Count Points Held
+
+| Points Held | E[V] | V Spread | n |
+|-------------|------|----------|---|
+| 0 | +9.5 | 38 | 37 |
+| 5 | +9.3 | 37 | 54 |
+| 10 | +18.7 | 32 | 46 |
+| 15 | +15.9 | 33 | 37 |
+| 20 | +19.3 | 32 | 19 |
+| 25 | +15.7 | 36 | 7 |
+
+**Insight**: The sweet spot is 10-20 count points held (E[V] ~18-19).
+
+#### Bid Recommendations
+
+| Recommendation | % of Hands |
+|----------------|------------|
+| Pass | 70% |
+| 30 | 10% |
+| 31-34 | 10% |
+| 38-42 | 10% |
+
+**Insight**: 70% of hands don't justify bidding even with E[V] data. Conservative bidding is appropriate.
+
+### The Count Rule of Thumb
+
+```
+E[V] ≈ 5 + 6 × (counts held)
+```
+
+**Examples**:
+- 0 counts: E[V] ≈ 5 (pass)
+- 2 counts: E[V] ≈ 17 (marginal bid)
+- 3 counts: E[V] ≈ 23 (low bid justified)
+
+### Implications for Bidding
+
+1. **Counts matter**: Each count adds ~6 expected points
+2. **But variance is high**: Range spans 60+ points regardless of count holdings
+3. **Likely locks strongly predictive**: +0.607 correlation suggests lock potential matters more than mere possession
+4. **Conservative bidding wise**: Only 30% of hands justify any bid
+
+### Files Generated
+
+- `results/tables/11t_lock_count_by_seed.csv` - Per-seed data
+- `results/tables/11t_bidding_heuristics.csv` - Bid level heuristics
+- `results/tables/11t_correlations.csv` - Correlation summary
+- `results/figures/11t_lock_count_bid_level.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
