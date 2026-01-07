@@ -10,79 +10,72 @@ A "critical decision" is one where Q-gap > threshold, meaning the choice matters
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 
+from forge.analysis.utils.seed_db import SeedDB
 from forge.analysis.utils import features
-from forge.oracle import schema
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 50  # Use subset for speed (preliminary)
 MAX_STATES_PER_SEED = 5000
 Q_GAP_THRESHOLD = 5  # Points - a "critical" decision
 np.random.seed(42)
 
 
-def load_common_states_for_seed(base_seed: int, max_states: int = MAX_STATES_PER_SEED) -> dict | None:
-    """Load states that appear in all 3 opponent configs and get their Q values."""
+ILLEGAL = -128
+
+def load_common_states_for_seed(db: SeedDB, base_seed: int, max_states: int = MAX_STATES_PER_SEED) -> dict | None:
+    """Load states that appear in all 3 opponent configs and get their Q values via SQL JOIN."""
     decl_id = base_seed % 10
 
-    config_data = []
-
+    # Build file paths
+    files = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        path = DATA_DIR / filename
         if not path.exists():
             return None
+        files.append(str(path))
 
-        try:
-            pf = pq.ParquetFile(path)
-            states_q = {}
+    # SQL JOIN to get common states with all Q values
+    q_cols_a = ", ".join([f"a.q{i} as a_q{i}" for i in range(7)])
+    q_cols_b = ", ".join([f"b.q{i} as b_q{i}" for i in range(7)])
+    q_cols_c = ", ".join([f"c.q{i} as c_q{i}" for i in range(7)])
 
-            for batch in pf.iter_batches(batch_size=50000, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']):
-                states = batch['state'].to_numpy()
-                Q = np.column_stack([
-                    batch['q0'].to_numpy(),
-                    batch['q1'].to_numpy(),
-                    batch['q2'].to_numpy(),
-                    batch['q3'].to_numpy(),
-                    batch['q4'].to_numpy(),
-                    batch['q5'].to_numpy(),
-                    batch['q6'].to_numpy()
-                ])
+    sql = f"""
+    SELECT a.state, {q_cols_a}, {q_cols_b}, {q_cols_c}
+    FROM read_parquet('{files[0]}') a
+    INNER JOIN read_parquet('{files[1]}') b ON a.state = b.state
+    INNER JOIN read_parquet('{files[2]}') c ON a.state = c.state
+    USING SAMPLE {max_states} ROWS
+    """
 
-                for i, s in enumerate(states):
-                    if s not in states_q:
-                        states_q[s] = Q[i]
-
-                if len(states_q) > max_states * 3:
-                    break
-
-            config_data.append(states_q)
-        except Exception:
+    try:
+        result = db.execute(sql)
+        df = result.data
+        if df is None or len(df) == 0:
             return None
-
-    if len(config_data) != 3:
+    except Exception:
         return None
 
-    common = set(config_data[0].keys()) & set(config_data[1].keys()) & set(config_data[2].keys())
+    # Convert to dict format expected by analyze_decision_consistency
+    state_data = {}
+    for _, row in df.iterrows():
+        state = row['state']
+        Q_a = np.array([row[f'a_q{i}'] for i in range(7)], dtype=np.int8)
+        Q_b = np.array([row[f'b_q{i}'] for i in range(7)], dtype=np.int8)
+        Q_c = np.array([row[f'c_q{i}'] for i in range(7)], dtype=np.int8)
+        state_data[state] = [Q_a, Q_b, Q_c]
 
-    if len(common) == 0:
-        return None
-
-    common = list(common)[:max_states]
-
-    result = {}
-    for s in common:
-        result[s] = [config_data[0][s], config_data[1][s], config_data[2][s]]
-
-    return result
+    return state_data
 
 
 def get_q_gap(Q: np.ndarray) -> float:
@@ -162,6 +155,9 @@ def main():
     print(f"Q-gap threshold: {Q_GAP_THRESHOLD} points")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -185,7 +181,7 @@ def main():
     inconsistent_q_gaps = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        state_data = load_common_states_for_seed(base_seed)
+        state_data = load_common_states_for_seed(db, base_seed)
         if state_data is None:
             continue
 
@@ -220,6 +216,7 @@ def main():
         del state_data
         gc.collect()
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} seeds, {total_stats['total_states']:,} common states")
 
     # Summary statistics
