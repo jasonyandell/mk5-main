@@ -692,4 +692,88 @@ Compare lock rates between 5-point counts (3-2, 4-1, 5-0) and 10-point counts (5
 
 ---
 
+## 11m: Lock Rate by Trump Length
+
+### Key Question
+Does holding trump lock more counts?
+
+### Method
+Count trump dominoes in P0's hand (any domino with trump pip). Track whether having the trump double affects lock rates.
+
+### Key Findings (Full 201 seeds)
+
+#### Trump Length vs Lock Rate
+
+| Metric | Correlation |
+|--------|-------------|
+| trump_count vs total_locks | **-0.051** |
+| trump_count vs capture_rate | **-0.070** |
+| trump_count vs E[V] | **+0.229** |
+| trump_count vs V_spread | **-0.094** |
+
+**Critical Finding**: Trump LENGTH does NOT predict count locks! The correlation is essentially zero (-0.05). Having more trumps doesn't help you capture counts.
+
+#### Lock Rate by Trump Count
+
+| Trumps | Avg Locks | Capture Rate | E[V] | V Spread | n |
+|--------|-----------|--------------|------|----------|---|
+| 0 | 1.28 | 52% | +15 | 33 | 72 |
+| 1 | 1.42 | 55% | +4 | 43 | 43 |
+| 2 | 1.22 | 52% | +13 | 38 | 45 |
+| 3 | 1.17 | 49% | +21 | 30 | 30 |
+| 4 | 1.22 | 53% | +33 | 22 | 9 |
+| 5 | 1.00 | 47% | +42 | 0 | 1 |
+
+**Insight**: Lock rate is flat (~1.2-1.4) across trump lengths. However, E[V] increases and V spread decreases with more trumps - trump length helps you WIN but not by locking counts.
+
+#### Trump Double Effect
+
+| Has Trump Double | n | Avg Locks | Capture Rate | E[V] |
+|------------------|---|-----------|--------------|------|
+| No | 166 | 1.20 | 51.4% | +12.1 |
+| Yes | 34 | **1.62** | **55.9%** | **+22.7** |
+| **Difference** | | **+0.41** | **+4.5%** | **+10.7** |
+
+**Key Finding**: The **trump double** matters enormously for count control:
+- +0.41 additional locks on average
+- +4.5% higher capture rate
+- +10.7 E[V] advantage
+
+#### Per-Count Correlations with Trump Length
+
+| Count | Correlation |
+|-------|-------------|
+| 3-2 | -0.063 |
+| 4-1 | -0.023 |
+| 5-0 | -0.029 |
+| 5-5 | -0.038 |
+| 6-4 | +0.012 |
+
+**Insight**: All counts show near-zero correlation with trump length. Trump dominoes don't help lock any specific count.
+
+### Interpretation
+
+This finding is **counterintuitive**. Conventional wisdom says "long trump = control = locks." The data shows:
+
+1. **Trump length helps E[V] but not locks**: More trumps improve expected value (+0.23 correlation) but not by capturing counts
+2. **The trump DOUBLE is what matters**: Having the highest trump (e.g., 6-6 when 6 is trump) is the key to count control
+3. **Trump control ≠ count control**: Winning tricks (high E[V]) and capturing counts are different skills
+
+**Why?** Possible explanation: Trump length lets you win tricks, but counts are won by having the count domino + timing. Having the trump double protects your count plays.
+
+### Implications for Bidding
+
+1. **Don't bid on trump length alone**: 4 trumps without the trump double may lock fewer counts than 1 trump with the double
+2. **The trump double is critical**: Worth ~11 E[V] points and +0.4 locks on average
+3. **Separate decisions**: "Can I win tricks?" (trump length) vs "Can I lock counts?" (trump double + count holdings)
+
+### Files Generated
+
+- `results/tables/11m_lock_by_trump_by_seed.csv` - Per-seed data
+- `results/tables/11m_lock_by_trump_summary.csv` - Summary by trump count
+- `results/tables/11m_correlations.csv` - Correlation summary
+- `results/figures/11m_lock_by_trump.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
