@@ -191,16 +191,18 @@ We have trained a Transformer model on this data achieving **97.8% move predicti
 
 Using marginalized oracle data (201 base seeds × 3 opponent configurations), we quantified the impact of hidden information on game outcomes.
 
-### The Skill vs Luck Ratio
+### Outcome Variance Decomposition
 
 | Component | % of Total Variance | Interpretation |
 |-----------|---------------------|----------------|
-| Between-hand (skill) | **47%** | Your hand quality |
-| Within-hand (luck) | **53%** | Opponent distribution |
-| True skill (features→E[V]) | **12%** | Predictable from hand features |
-| Pure luck | **49%** | Irreducible opponent variance |
+| Between-hand | **47%** | Which hand you were dealt |
+| Within-hand | **53%** | Which cards opponents hold |
+| Predictable hand effect | **12%** | Explainable by features (doubles, trumps) |
+| Pure opponent effect | **49%** | Irreducible opponent distribution variance |
 
-**The definitive answer: Texas 42 is 19% skill, 81% luck per hand.**
+**Important**: This is NOT a "skill vs luck" measurement. Both components are determined by the random deal, not player decisions. The oracle plays perfectly - no human skill is measured here.
+
+**What this tells us**: Even with perfect play, 53% of outcome variance comes from opponent card distribution. This is irreducible through better play - it's baked into the deal.
 
 ### The Napkin Bidding Formula
 
@@ -286,6 +288,6 @@ Hands naturally cluster into three types:
 - **Section 06**: Scaling analysis (state counts, temporal correlations, DFA)
 - **Section 07**: Synthesis and open questions
 - **Section 08**: Deep count capture analysis (lock-in depth, residual decomposition, capture predictors, manifold structure)
-- **Section 11**: Imperfect information analysis (skill vs luck, bidding formulas, hand classification)
+- **Section 11**: Imperfect information analysis (variance decomposition, bidding formulas, hand classification)
 
 Each section includes methodology, complete results, and interpretation. Figures are embedded throughout.

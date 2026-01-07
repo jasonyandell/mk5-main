@@ -1755,16 +1755,18 @@ Opponent inference adds <1 point of expected value on average. Unless you're in 
 
 ---
 
-## 11y: Reducible Uncertainty Decomposition
+## 11y: Outcome Variance Decomposition
 
 ### Key Question
-What % of variance is opponent-dependent? (Skill vs Luck ratio)
+How much of outcome variance comes from the dealt hand vs opponent distribution?
 
 ### Method
 ANOVA-style variance decomposition:
 - Total variance = Between-hand variance + Within-hand variance
-- Between-hand = variance explained by P0's hand (controllable via bidding)
-- Within-hand = variance across opponent configurations (luck)
+- Between-hand = variance explained by which hand P0 was dealt
+- Within-hand = variance across opponent configurations (same hand, different opponents)
+
+**Important caveat**: This analysis measures variance sources, NOT player skill. The oracle plays perfectly with perfect information - no human decisions are measured here.
 
 ### Key Findings (Full 201 seeds, 600 observations)
 
@@ -1772,30 +1774,34 @@ ANOVA-style variance decomposition:
 
 | Component | Sum of Squares | % of Total |
 |-----------|----------------|------------|
-| Between-hand (skill) | 164,898 | **47.0%** |
-| Within-hand (luck) | 186,221 | **53.0%** |
+| Between-hand (which hand you got) | 164,898 | **47.0%** |
+| Within-hand (which opponents got) | 186,221 | **53.0%** |
 | Total | 351,119 | 100% |
 
-**Critical Finding**: The variance is almost evenly split between hand quality (47%) and opponent distribution (53%). Your hand explains about half of what happens.
+**Critical Finding**: Outcome variance splits roughly evenly between hand quality (47%) and opponent distribution (53%). Neither factor dominates.
 
-#### The Skill Hierarchy
+**What this means**: Even with perfect play (like the oracle), 53% of outcome variance is determined by opponent cards - this is irreducible through better play. It's baked into the deal.
+
+#### Variance Hierarchy
 
 | Component | % of Total Variance | Interpretation |
 |-----------|---------------------|----------------|
-| True skill (features → E[V]) | **11.6%** | Predictable from hand features |
-| Unpredictable hand effect | **35.4%** | Hand matters, but features don't capture it |
-| Reducible luck | **3.9%** | Luck correlated with hand |
-| Pure luck | **49.2%** | Irreducible opponent variance |
+| Predictable hand effect | **11.6%** | Explainable by hand features (doubles, trumps, etc.) |
+| Unpredictable hand effect | **35.4%** | Hand matters, but simple features don't capture why |
+| Correlated opponent effect | **3.9%** | Opponent variance that correlates with hand |
+| Pure opponent effect | **49.2%** | Irreducible variance from opponent distribution |
 
 **Interpretation**:
-- Only 11.6% of variance is "true skill" - predictable from features like doubles, trumps, counts
+- 11.6% of variance can be predicted from features like doubles, trumps, counts
 - 35.4% comes from hand effects we can't predict from simple features
-- 49% is pure luck from opponent distribution
+- 49% is determined by opponent distribution alone
+
+**Note**: None of this is "skill" - you don't choose your hand. The 47% between-hand variance represents the random deal, not player decisions.
 
 #### Feature Correlations
 
-| Feature | E[V] (Skill) | σ(V) (Luck) |
-|---------|--------------|-------------|
+| Feature | Correlation with E[V] | Correlation with σ(V) |
+|---------|----------------------|----------------------|
 | n_doubles | **+0.40** | **-0.14** |
 | trump_count | **+0.23** | -0.09 |
 | has_trump_double | **+0.24** | -0.10 |
@@ -1803,20 +1809,19 @@ ANOVA-style variance decomposition:
 | n_6_high | **-0.16** | **+0.19** |
 | total_pips | +0.04 | +0.15 |
 
-**Key Insight**: Features that predict high E[V] (doubles, trumps) ALSO predict low σ(V). Good hands are both better AND more predictable.
+**Key Insight**: Features that predict high E[V] (doubles, trumps) ALSO predict low σ(V). Strong hands are both higher value AND more deterministic.
 
-#### The Luck Paradox: Confirmed
+#### The Negative Risk-Return Correlation
 
 | Metric | Value |
 |--------|-------|
 | E[V] vs σ(V) correlation | **-0.381** |
 
-**Critical Finding**: Strong hands have LESS luck (negative correlation). This means:
-- Good bidding BOTH improves expected value AND reduces variance
-- There is no risk-return tradeoff in Texas 42
-- The core skill is recognizing hands where luck matters less
+**Critical Finding**: Strong hands have LESS variance (negative correlation). This is the opposite of typical financial markets where higher return = higher risk.
 
-#### Uncertainty by Hand Quality
+In Texas 42: strong hands are both better AND more predictable. There's no risk-return tradeoff to navigate.
+
+#### Variance by Hand Quality
 
 | Hand Category | Mean E[V] | Mean σ(V) | Mean Spread | Count |
 |---------------|-----------|-----------|-------------|-------|
@@ -1825,46 +1830,49 @@ ANOVA-style variance decomposition:
 | Weak (-10 to 10) | +2.7 | 21.7 | 42 | 63 |
 | Very Weak (<-10) | -19.4 | 21.5 | 41 | 18 |
 
-**Insight**: Strong hands have HALF the variance (σ=11) of other hands (σ=21). Strong hands are fundamentally different - they collapse the outcome space.
+**Insight**: Strong hands have HALF the variance (σ=11) of other hands (σ=21). Strong hands collapse the outcome space - opponents matter less.
 
-### The Definitive Skill vs Luck Ratio
+### What This Analysis Does NOT Measure
 
-```
-SKILL / LUCK RATIO: 19% / 81%
-```
+This decomposition characterizes the **game's structure**, not player skill:
 
-**Texas 42 is 81% luck, 19% skill.**
+| NOT Measured | Why It Matters |
+|--------------|----------------|
+| Bidding decisions | Players choose when to compete for contract |
+| Play execution | Humans don't play like the oracle |
+| Opponent exploitation | Oracle assumes perfect opponents |
+| Partner coordination | Real games involve signaling |
+| Learning/adaptation | Skill develops over many games |
 
-This doesn't mean skill doesn't matter - it means:
-1. In any single hand, luck dominates (49% pure luck + 32% mixed)
-2. Over many hands, the 19% skill edge compounds
-3. The core skill is recognizing AND BIDDING ON the 27% of hands where collapse occurs
+**The 47/53 split is not "skill vs luck"** - it's "which random hand you got vs which random hands opponents got." Both are determined by the deal, not player choices.
 
 ### Relationship to Other Analyses
 
-- **11f** found R² = 0.25 for features → E[V]. This aligns with 11y's finding that 25% of hand-level variance is predictable
+- **11f** found R² = 0.25 for features → E[V]. This aligns with 11y's finding that ~12% of total variance is feature-predictable
 - **11r** found strong hands collapse more. 11y explains this: strong hands have lower σ(V)
 - **11s** found negative E[V] vs σ(V) correlation. 11y confirms with full ANOVA decomposition
 
-### Implications for Bidding
+### Implications for Hand Evaluation
 
-1. **The 19% rule**: Your skill as a bidder explains at most ~20% of outcomes. Accept variance.
+1. **The deal matters enormously**: 100% of this variance is from the deal - 47% from your hand, 53% from opponents.
 
-2. **Bid on collapse, not EV**: A hand with E[V]=+25 and σ=20 may be worse than E[V]=+20 and σ=10. The collapsed hand is more reliable.
+2. **Strong hands are doubly good**: They have higher E[V] AND lower variance. Look for hands that collapse the outcome space.
 
-3. **Doubles are the key**: They correlate +0.40 with E[V] and -0.14 with σ(V). They improve both skill components.
+3. **Doubles are the best indicator**: They correlate +0.40 with E[V] and -0.14 with σ(V). They make hands both stronger and more predictable.
 
-4. **Avoid 6-high hands**: They correlate -0.16 with E[V] and +0.19 with σ(V). They're both worse AND riskier.
+4. **Avoid 6-high hands**: They correlate -0.16 with E[V] and +0.19 with σ(V). They're both weaker AND less predictable.
 
-5. **Over many hands, skill wins**: The 19% edge compounds. Play the percentages, bid conservatively on weak hands, aggressively on collapsed hands.
+5. **Variance is irreducible**: Even perfect play can't overcome the 53% opponent-distribution variance. Accept that outcomes will vary.
 
-### The Heritage Answer
+### The Honest Answer
 
-> "How much of Texas 42 is luck vs skill?"
+> "How much of Texas 42 outcomes depend on the deal vs opponent cards?"
 
-**47% of what happens comes from your hand (which you can bid wisely on). 53% comes from what opponents hold (which you can't control). Of the 47% you control, only about half (25%) is predictable from the features experienced players look for. The rest is hidden hand quality.**
+**47% of outcome variance comes from which hand you're dealt. 53% comes from how opponent cards are distributed. Both are determined at the deal - before any player makes any decision.**
 
-**Net result: ~19% skill, ~81% luck per hand. But that 19% compounds over a lifetime of playing.**
+**Of the 47% hand effect, only about 25% (≈12% of total) is predictable from simple features like doubles and trump count. The rest is "hidden hand quality" - the hand matters, but we can't easily say why.**
+
+**What this analysis CANNOT tell you**: How much skilled players outperform unskilled players. That would require comparing human decisions, not oracle perfect play.
 
 ### Files Generated
 
