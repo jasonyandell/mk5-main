@@ -353,6 +353,22 @@ Created `forge/analysis/utils/hand_features.py` to replace duplicated feature ex
 
 **Key insight**: Doubles are the strongest predictor of E[V] (r = 0.40). Each double improves expected outcome significantly.
 
+### Bootstrap CIs for Regression Coefficients (13a)
+
+95% bootstrap confidence intervals (1000 iterations) for the E[V] regression model:
+
+| Feature | Coefficient | 95% CI | Significant? |
+|---------|-------------|--------|--------------|
+| n_doubles | **+5.7** | [+2.3, +9.2] | **Yes** |
+| trump_count | **+3.2** | [+1.3, +4.7] | **Yes** |
+| has_trump_double | +2.8 | [-2.6, +8.4] | No |
+| n_voids | +2.8 | [-3.5, +8.9] | No |
+| n_6_high | -1.6 | [-5.0, +1.8] | No |
+
+**Key insight**: Only **n_doubles** and **trump_count** have CIs that exclude zero - they are the only statistically significant predictors. Other features (has_trump_double, n_voids, n_6_high) have wide CIs that include zero.
+
+**R² = 0.26** (95% CI: [0.20, 0.40]) - model explains 20-40% of E[V] variance.
+
 ## Useful One-Liners
 
 ```bash
