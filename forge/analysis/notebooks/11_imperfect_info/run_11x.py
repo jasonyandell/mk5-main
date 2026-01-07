@@ -11,16 +11,17 @@ Imperfect info: You only know your own hand (average across possible opponent di
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
 RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
@@ -29,38 +30,33 @@ MAX_STATES_PER_SEED = 5000
 np.random.seed(42)
 
 
-def load_common_states_for_seed(base_seed: int, max_states: int = MAX_STATES_PER_SEED) -> dict | None:
+def load_common_states_for_seed(db: SeedDB, base_seed: int, max_states: int = MAX_STATES_PER_SEED) -> dict | None:
     """Load states common to all 3 opponent configs with Q values."""
     decl_id = base_seed % 10
     config_data = []
 
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        if not path.exists():
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filepath = DATA_DIR / filename
+        if not filepath.exists():
             return None
 
         try:
-            pf = pq.ParquetFile(path)
+            result = db.query_columns(
+                files=[filename],
+                columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
+                limit=max_states * 3
+            )
+            df = result.data
+
             states_q = {}
-
-            for batch in pf.iter_batches(batch_size=50000, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']):
-                states = batch['state'].to_numpy()
-                Q = np.column_stack([
-                    batch['q0'].to_numpy(),
-                    batch['q1'].to_numpy(),
-                    batch['q2'].to_numpy(),
-                    batch['q3'].to_numpy(),
-                    batch['q4'].to_numpy(),
-                    batch['q5'].to_numpy(),
-                    batch['q6'].to_numpy()
-                ])
-
-                for i, s in enumerate(states):
-                    if s not in states_q:
-                        states_q[s] = Q[i]
-
-                if len(states_q) > max_states * 3:
-                    break
+            for _, row in df.iterrows():
+                s = row['state']
+                if s not in states_q:
+                    states_q[s] = np.array([
+                        row['q0'], row['q1'], row['q2'], row['q3'],
+                        row['q4'], row['q5'], row['q6']
+                    ], dtype=np.int8)
 
             config_data.append(states_q)
         except Exception:
@@ -163,6 +159,9 @@ def main():
     print("Perfect vs Imperfect Information")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
 
@@ -177,7 +176,7 @@ def main():
     per_seed_results = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        state_data = load_common_states_for_seed(base_seed)
+        state_data = load_common_states_for_seed(db, base_seed)
         if state_data is None:
             continue
 
@@ -199,6 +198,7 @@ def main():
         del state_data
         gc.collect()
 
+    db.close()
     print(f"\n✓ Analyzed {len(per_seed_results)} seeds, {len(all_info_gains):,} states")
 
     # Summary statistics
