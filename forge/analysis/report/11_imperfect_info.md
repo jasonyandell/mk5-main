@@ -387,4 +387,25 @@ For each hand, track whether Team 0 captures each count in all 3 opponent config
 
 ---
 
-*Analysis date: 2026-01-06*
+## 11h: Path Divergence Analysis
+
+### Key Question
+When do paths diverge across opponent configs?
+
+### Finding
+**This analysis is redundant with 11c** (Best Move Stability), which answered the same question more efficiently.
+
+From 11c:
+
+| Depth Range | Consistency | Interpretation |
+|-------------|-------------|----------------|
+| 0-4 (endgame) | **100%** | Paths never diverge |
+| 5-8 (late) | **50%** | Moderate divergence |
+| 9-16 (mid) | **22%** | High divergence |
+| 17+ (early) | **10%** | Maximum divergence |
+
+**Conclusion**: Paths diverge almost immediately (10% consistency at depth 17+). By endgame, paths are deterministic (100% consistency).
+
+---
+
+*Analysis date: 2026-01-07*
