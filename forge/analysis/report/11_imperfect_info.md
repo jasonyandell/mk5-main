@@ -408,4 +408,67 @@ From 11c:
 
 ---
 
+## 11i: Basin Convergence Analysis
+
+### Key Question
+Do different opponent configurations reach the same outcome basin (V category)?
+
+### Method
+Divide V into 5 basins (outcome categories):
+- Big Loss: V < -20
+- Loss: -20 ≤ V < -5
+- Draw: -5 ≤ V < 5
+- Win: 5 ≤ V < 20
+- Big Win: V ≥ 20
+
+For each hand, check if all 3 opponent configs land in the same basin.
+
+### Key Findings (Preliminary - 10 seeds)
+
+**Note**: Preliminary analysis with n=10. Full analysis recommended.
+
+#### Basin Convergence
+
+| Metric | Value |
+|--------|-------|
+| Basin convergence rate | **10%** |
+| Mean V spread | 44.8 points |
+| Median V spread | 48.0 points |
+| Hands crossing ≥3 basins | 80% |
+
+**Insight**: Only 10% of hands reach the same outcome basin regardless of opponent hands. Most hands (80%) swing across 3+ basins depending on who holds what.
+
+#### Hand Dominance Classification
+
+| Classification | Criteria | % of Hands |
+|----------------|----------|------------|
+| Dominant | V spread < 15 | **10%** |
+| Moderate | 15 ≤ spread ≤ 35 | **10%** |
+| Luck-dependent | V spread > 35 | **80%** |
+
+**Insight**: 80% of hands are "luck-dependent" - the outcome can swing from Big Loss to Big Win based on opponent card distribution. Only 10% of hands are "dominant" with predictable outcomes.
+
+### Interpretation
+
+This is the strongest evidence yet for the **high luck factor** in Texas 42:
+
+1. **Outcomes are not predictable from own hand**: Even a "great" hand can lose big or win big depending on opponents
+2. **Bidding is inherently risky**: 80% of hands have 35+ point outcome swings
+3. **Risk assessment > point estimation**: Understanding variance matters as much as expected value
+4. **Basin spread quantifies uncertainty**: Most hands cross 3-4 basins - practically anything can happen
+
+### Relationship to Other Analyses
+
+- **11a** found mean V spread of 34.8 points - basin analysis confirms this is the norm
+- **11f** found R² = 0.25 for hand features - basin analysis shows why (75% unexplained = luck)
+- **11c** found 10% early-game consistency - basin analysis confirms outcomes diverge wildly
+
+### Files Generated
+
+- `results/tables/11i_basin_convergence_by_seed.csv` - Per-seed basin analysis
+- `results/tables/11i_basin_convergence_summary.csv` - Summary statistics
+- `results/figures/11i_basin_convergence.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
