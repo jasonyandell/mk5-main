@@ -10,150 +10,157 @@ Uses marginalized data where P0's hand is fixed but opponents' cards vary.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Analyze all available base seeds
 MAX_ROWS = 8_000_000
 np.random.seed(42)
 
 
-def get_best_move(q_values: np.ndarray) -> int:
-    """Get argmax(Q), handling illegals."""
-    ILLEGAL = -128
-    q_for_max = np.where(q_values != ILLEGAL, q_values, -1000)
-    return int(np.argmax(q_for_max))
+ILLEGAL = -128
+MAX_STATES_PER_SEED = 500000  # Sample to keep memory/time bounded
 
 
-def get_best_moves_by_depth(path: Path) -> dict | None:
-    """Get best moves organized by depth.
-
-    Returns: {depth: {state: best_action}} for depths 5-28 (skip very low depths)
-    """
-    try:
-        pf = pq.ParquetFile(path)
-
-        # Read in batches to handle large files
-        result = defaultdict(dict)
-
-        for batch in pf.iter_batches(batch_size=500000, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']):
-            states = batch['state'].to_numpy()
-            q_cols = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-            q_values = np.column_stack([batch[c].to_numpy() for c in q_cols]).astype(np.int16)
-            depths = features.depth(states)
-
-            # Only keep states at depth 5-28 (skip endgame clutter)
-            for state, q, d in zip(states, q_values, depths):
-                if 5 <= d <= 28:
-                    best = get_best_move(q)
-                    result[d][state] = best
-
-            del states, q_values, depths
-
-        gc.collect()
-        return dict(result) if result else None
-
-    except Exception as e:
-        print(f"Error: {e}")
-        gc.collect()
-        return None
-
-
-def analyze_divergence_for_base_seed(base_seed: int) -> dict | None:
-    """Compare best moves across 3 configs at each depth."""
+def analyze_divergence_for_base_seed(db: SeedDB, base_seed: int) -> dict | None:
+    """Compare best moves across 3 configs at each depth using SQL JOIN."""
     decl_id = base_seed % 10
 
-    # Get best moves for each config
-    configs_data = []
+    # Build file paths
+    files = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        path = DATA_DIR / filename
         if not path.exists():
             return None
+        files.append(str(path))
 
-        data = get_best_moves_by_depth(path)
-        if data is None:
+    # SQL to compute argmax(Q) for each config
+    # argmax with CASE WHEN chains - find max legal Q then which index has it
+    def argmax_sql(prefix: str) -> str:
+        """Generate SQL for argmax of Q values with given prefix."""
+        # First compute the max value among legal actions
+        max_expr = f"GREATEST(" + ", ".join([
+            f"CASE WHEN {prefix}q{i} != {ILLEGAL} THEN {prefix}q{i} ELSE -1000 END"
+            for i in range(7)
+        ]) + ")"
+        # Then find which index matches (first match wins)
+        return f"""CASE
+            WHEN {prefix}q0 != {ILLEGAL} AND {prefix}q0 = {max_expr} THEN 0
+            WHEN {prefix}q1 != {ILLEGAL} AND {prefix}q1 = {max_expr} THEN 1
+            WHEN {prefix}q2 != {ILLEGAL} AND {prefix}q2 = {max_expr} THEN 2
+            WHEN {prefix}q3 != {ILLEGAL} AND {prefix}q3 = {max_expr} THEN 3
+            WHEN {prefix}q4 != {ILLEGAL} AND {prefix}q4 = {max_expr} THEN 4
+            WHEN {prefix}q5 != {ILLEGAL} AND {prefix}q5 = {max_expr} THEN 5
+            WHEN {prefix}q6 != {ILLEGAL} AND {prefix}q6 = {max_expr} THEN 6
+            ELSE -1
+        END"""
+
+    sql = f"""
+    WITH joined AS (
+        SELECT
+            a.state,
+            depth(a.state) as depth,
+            a.q0 as a_q0, a.q1 as a_q1, a.q2 as a_q2, a.q3 as a_q3, a.q4 as a_q4, a.q5 as a_q5, a.q6 as a_q6,
+            b.q0 as b_q0, b.q1 as b_q1, b.q2 as b_q2, b.q3 as b_q3, b.q4 as b_q4, b.q5 as b_q5, b.q6 as b_q6,
+            c.q0 as c_q0, c.q1 as c_q1, c.q2 as c_q2, c.q3 as c_q3, c.q4 as c_q4, c.q5 as c_q5, c.q6 as c_q6
+        FROM read_parquet('{files[0]}') a
+        INNER JOIN read_parquet('{files[1]}') b ON a.state = b.state
+        INNER JOIN read_parquet('{files[2]}') c ON a.state = c.state
+        WHERE depth(a.state) >= 5 AND depth(a.state) <= 28
+        USING SAMPLE {MAX_STATES_PER_SEED} ROWS
+    ),
+    with_best AS (
+        SELECT
+            depth,
+            {argmax_sql('a_')} as best_a,
+            {argmax_sql('b_')} as best_b,
+            {argmax_sql('c_')} as best_c
+        FROM joined
+    )
+    SELECT
+        depth,
+        COUNT(*) as n_common,
+        SUM(CASE WHEN best_a = best_b AND best_b = best_c THEN 1 ELSE 0 END) as n_consistent
+    FROM with_best
+    GROUP BY depth
+    ORDER BY depth DESC
+    """
+
+    try:
+        result = db.execute(sql)
+        if result.data is None or len(result.data) == 0:
             return None
-        configs_data.append(data)
 
-    if len(configs_data) != 3:
-        return None
+        df = result.data
 
-    # Find common states at each depth and check consistency
-    depth_stats = {}
-    first_divergence_depth = None
+        # Build depth stats
+        depth_stats = {}
+        first_divergence_depth = None
 
-    for depth in range(28, 0, -1):  # Start from root (28) to endgame (1)
-        # Get states present in all 3 configs at this depth
-        states_0 = set(configs_data[0].get(depth, {}).keys())
-        states_1 = set(configs_data[1].get(depth, {}).keys())
-        states_2 = set(configs_data[2].get(depth, {}).keys())
+        for _, row in df.iterrows():
+            d = int(row['depth'])
+            n_common = int(row['n_common'])
+            n_consistent = int(row['n_consistent'])
+            rate = n_consistent / n_common if n_common > 0 else None
 
-        common = states_0 & states_1 & states_2
+            depth_stats[d] = {
+                'n_common': n_common,
+                'n_consistent': n_consistent,
+                'rate': rate
+            }
 
-        if not common:
-            depth_stats[depth] = {'n_common': 0, 'n_consistent': 0, 'rate': None}
-            continue
+            if first_divergence_depth is None and rate is not None and rate < 1.0:
+                first_divergence_depth = d
 
-        # Check consistency
-        n_consistent = 0
-        for state in common:
-            a0 = configs_data[0][depth][state]
-            a1 = configs_data[1][depth][state]
-            a2 = configs_data[2][depth][state]
-            if a0 == a1 == a2:
-                n_consistent += 1
+        # Summary metrics
+        early_game_consistency = []
+        mid_game_consistency = []
+        late_game_consistency = []
 
-        rate = n_consistent / len(common)
-        depth_stats[depth] = {
-            'n_common': len(common),
-            'n_consistent': n_consistent,
-            'rate': rate
+        for d, stats in depth_stats.items():
+            if stats['rate'] is not None:
+                if d >= 20:
+                    early_game_consistency.append(stats['rate'])
+                elif d >= 10:
+                    mid_game_consistency.append(stats['rate'])
+                else:
+                    late_game_consistency.append(stats['rate'])
+
+        return {
+            'base_seed': base_seed,
+            'decl_id': decl_id,
+            'first_divergence_depth': first_divergence_depth or 0,
+            'early_game_rate': np.mean(early_game_consistency) if early_game_consistency else None,
+            'mid_game_rate': np.mean(mid_game_consistency) if mid_game_consistency else None,
+            'late_game_rate': np.mean(late_game_consistency) if late_game_consistency else None,
+            'depth_stats': depth_stats
         }
 
-        # Track first divergence (rate < 1.0)
-        if first_divergence_depth is None and rate < 1.0:
-            first_divergence_depth = depth
-
-    # Summary metrics
-    early_game_consistency = []  # depths 20-28
-    mid_game_consistency = []    # depths 10-19
-    late_game_consistency = []   # depths 1-9
-
-    for d, stats in depth_stats.items():
-        if stats['rate'] is not None:
-            if d >= 20:
-                early_game_consistency.append(stats['rate'])
-            elif d >= 10:
-                mid_game_consistency.append(stats['rate'])
-            else:
-                late_game_consistency.append(stats['rate'])
-
-    return {
-        'base_seed': base_seed,
-        'decl_id': decl_id,
-        'first_divergence_depth': first_divergence_depth or 0,
-        'early_game_rate': np.mean(early_game_consistency) if early_game_consistency else None,
-        'mid_game_rate': np.mean(mid_game_consistency) if mid_game_consistency else None,
-        'late_game_rate': np.mean(late_game_consistency) if late_game_consistency else None,
-        'depth_stats': depth_stats
-    }
+    except Exception as e:
+        print(f"Error on seed {base_seed}: {e}")
+        return None
 
 
 def main():
     print("=" * 60)
     print("PATH DIVERGENCE ANALYSIS")
     print("=" * 60)
+
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
 
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -166,7 +173,7 @@ def main():
     depth_agg = defaultdict(lambda: {'total_common': 0, 'total_consistent': 0})
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_divergence_for_base_seed(base_seed)
+        result = analyze_divergence_for_base_seed(db, base_seed)
         if result:
             all_results.append({
                 'base_seed': result['base_seed'],
@@ -182,6 +189,7 @@ def main():
                 depth_agg[d]['total_common'] += stats['n_common']
                 depth_agg[d]['total_consistent'] += stats['n_consistent']
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
     if len(all_results) == 0:
