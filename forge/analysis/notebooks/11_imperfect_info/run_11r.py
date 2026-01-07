@@ -14,19 +14,19 @@ Approach:
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 
-from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 
 DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 100  # Expanded from 50 for better statistics
 np.random.seed(42)
 
@@ -34,33 +34,33 @@ np.random.seed(42)
 DEPTH_LEVELS = [28, 24, 20, 16, 12, 8, 4, 1]
 
 
-def load_depth_v_means(path: Path) -> dict | None:
-    """Load mean V at each depth level."""
+def load_depth_v_means(db: SeedDB, path: Path) -> dict | None:
+    """Load mean V at each depth level via SQL GROUP BY."""
+    depth_list = ",".join(str(d) for d in DEPTH_LEVELS)
+
+    sql = f"""
+    SELECT depth(state) as depth, AVG(CAST(V AS DOUBLE)) as mean_v
+    FROM read_parquet('{path}')
+    WHERE depth(state) IN ({depth_list})
+    GROUP BY depth(state)
+    """
+
     try:
-        pf = pq.ParquetFile(path)
-        depth_vs = {d: [] for d in DEPTH_LEVELS}
+        result = db.execute(sql)
+        df = result.data
+        if df is None or len(df) == 0:
+            return None
 
-        for batch in pf.iter_batches(batch_size=100000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
+        result_dict = {}
+        for _, row in df.iterrows():
+            result_dict[int(row['depth'])] = float(row['mean_v'])
 
-            for d in DEPTH_LEVELS:
-                mask = depths == d
-                if mask.any():
-                    depth_vs[d].extend(V[mask].tolist())
-
-        result = {}
-        for d in DEPTH_LEVELS:
-            if len(depth_vs[d]) > 0:
-                result[d] = float(np.mean(depth_vs[d]))
-
-        return result if len(result) >= 4 else None
+        return result_dict if len(result_dict) >= 4 else None
     except Exception:
         return None
 
 
-def compute_manifold_metrics(base_seed: int) -> dict | None:
+def compute_manifold_metrics(db: SeedDB, base_seed: int) -> dict | None:
     """Compute manifold collapse metrics for one hand."""
     decl_id = base_seed % 10
 
@@ -70,11 +70,10 @@ def compute_manifold_metrics(base_seed: int) -> dict | None:
         path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
         if not path.exists():
             return None
-        profile = load_depth_v_means(path)
+        profile = load_depth_v_means(db, path)
         if profile is None:
             return None
         profiles.append(profile)
-        gc.collect()
 
     if len(profiles) != 3:
         return None
@@ -174,6 +173,9 @@ def main():
     print("Intrinsic Dimensionality per Hand")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -185,10 +187,11 @@ def main():
     # Collect results
     all_results = []
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = compute_manifold_metrics(base_seed)
+        result = compute_manifold_metrics(db, base_seed)
         if result:
             all_results.append(result)
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
     if len(all_results) == 0:
