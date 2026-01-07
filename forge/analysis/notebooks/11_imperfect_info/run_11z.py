@@ -14,18 +14,19 @@ Approach:
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 from scipy.stats import entropy
 
 from forge.analysis.utils import features
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle.rng import deal_from_seed, deal_with_fixed_p0
 from forge.oracle import schema
 
@@ -70,7 +71,7 @@ def get_hand_features(hand: list[int], trump: int) -> dict:
     }
 
 
-def analyze_partner_inference(base_seed: int) -> dict | None:
+def analyze_partner_inference(db: SeedDB, base_seed: int) -> dict | None:
     """Analyze partner inference for one base seed.
 
     Uses pairwise comparisons since 3-way common states are rare due to path divergence.
@@ -89,21 +90,30 @@ def analyze_partner_inference(base_seed: int) -> dict | None:
     # First pass: find P2 states and best moves in each config
     config_data = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        if not path.exists():
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filepath = DATA_DIR / filename
+        if not filepath.exists():
             return None
 
         try:
-            table = pq.read_table(path, columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'])
-            if table.num_rows > MAX_ROWS:
-                del table
+            result = db.query_columns(
+                files=[filename],
+                columns=['state', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
+                limit=MAX_ROWS
+            )
+            df = result.data
+
+            if len(df) > MAX_ROWS:
+                del df
                 gc.collect()
                 return None
 
-            states = table.column('state').to_numpy()
-            q_cols = ['q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6']
-            q_values = np.column_stack([table.column(c).to_numpy() for c in q_cols]).astype(np.int16)
-            del table
+            states = df['state'].values
+            q_values = np.column_stack([
+                df['q0'].values, df['q1'].values, df['q2'].values, df['q3'].values,
+                df['q4'].values, df['q5'].values, df['q6'].values
+            ]).astype(np.int16)
+            del df
             gc.collect()
 
             # Filter to P2 states (player == 2)
@@ -217,6 +227,9 @@ def main():
     print("Does partner's play reveal their hand?")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -228,9 +241,11 @@ def main():
     # Collect results
     all_results = []
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_partner_inference(base_seed)
+        result = analyze_partner_inference(db, base_seed)
         if result:
             all_results.append(result)
+
+    db.close()
 
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
