@@ -1657,7 +1657,7 @@ For each hand across 3 opponent configurations:
 
 ---
 
-## 11x: Information Value (Perfect vs Imperfect) (Preliminary)
+## 11x: Information Value (Perfect vs Imperfect)
 
 ### Key Question
 How much does knowing opponent hands help?
@@ -1669,26 +1669,25 @@ Compare Q-values with perfect info (knowing which opponent holds which cards) vs
 - **Imperfect info**: Best move using average Q across configs, value = mean(Q[avg_best_action])
 - **Information gain**: Perfect value - Imperfect value
 
-### Key Findings (Preliminary - 50 seeds, 84K states)
+### Key Findings (Full analysis: 49 seeds, 31,654 states)
 
 #### Information Value Summary
 
 | Metric | Value |
 |--------|-------|
-| Mean information gain | **0.84 points** |
+| Mean information gain | **0.54 points** |
 | Median information gain | **0.00 points** |
-| Std information gain | 2.58 points |
-| Max information gain | 31.33 points |
+| Max information gain | 18.7 points |
 
-**Critical Finding**: Knowing opponent hands gains only **0.8 points on average**. The median is 0 - in most positions, perfect information provides no advantage.
+**Critical Finding**: Knowing opponent hands gains only **0.5 points on average**. The median is 0 - in most positions, perfect information provides no advantage.
 
 #### How Often Does Perfect Info Help?
 
 | Threshold | Percentage |
 |-----------|------------|
-| Any benefit (>0) | **26.7%** |
-| Significant (>2 pts) | **16.6%** |
-| Large (>5 pts) | **6.3%** |
+| Any benefit (>0) | **26.8%** |
+| Significant (>2 pts) | **14.5%** |
+| Large (>5 pts) | **4.3%** |
 
 **Insight**: Only 27% of positions benefit from perfect info. The vast majority (73%) have the same optimal move regardless of whether you know opponent hands.
 
@@ -1696,9 +1695,9 @@ Compare Q-values with perfect info (knowing which opponent holds which cards) vs
 
 | Metric | Value |
 |--------|-------|
-| Perfect/Imperfect agreement | **74.7%** |
+| Perfect/Imperfect agreement | **73.7%** |
 
-**Key Finding**: 75% of the time, the best move under perfect information is the SAME as the best move under imperfect information. Opponent inference provides only marginal improvement.
+**Key Finding**: 74% of the time, the best move under perfect information is the SAME as the best move under imperfect information. Opponent inference provides only marginal improvement.
 
 #### Information Value by Game Phase
 
@@ -1893,54 +1892,67 @@ For states where P2 acts that are common across opponent configurations:
 2. Measure action consistency (same action) vs variation (different actions)
 3. Correlate action variance with P2's hand variance
 
-### Key Findings (Preliminary: 23 hands analyzed)
+### Key Findings (Full analysis: 200 hands, 564M pairwise comparisons)
 
 | Metric | Value |
 |--------|-------|
-| Pairwise comparisons per hand | ~1.3M |
-| 3-way common states per hand | ~154K |
-| Action consistency rate | **58.0%** |
-| Action entropy | 0.355 (vs max 1.099) |
+| Pairwise comparisons per hand | ~2.8M |
+| 3-way common states per hand | ~308K |
+| Action consistency rate | **80.1%** |
+| Std deviation | 8.4% |
 
-**Insight**: 58% of P2's actions are consistent across opponent configs. The remaining 42% vary based on P2's actual hand - these actions reveal information about the hidden hand.
+**Insight**: 80% of P2's actions are consistent across opponent configs. The remaining 20% vary based on P2's actual hand - these actions reveal information about the hidden hand.
+
+#### Consistency Distribution
+
+| Category | Percentage | Interpretation |
+|----------|------------|----------------|
+| High consistency (>90%) | 10.5% | Very predictable hands |
+| Medium consistency (50-90%) | 89.5% | Most hands |
+| Low consistency (≤50%) | 0.0% | None! |
+
+**Key Finding**: No hands show low consistency. Even the most variable hands still have >50% action consistency.
 
 #### Signaling Potential
 
 | Metric | Value | Interpretation |
 |--------|-------|----------------|
-| Mean action entropy | 0.355 | HIGH signaling |
-| Consistency rate | 58% | Moderate |
-| Action variance | 42% | Information revealed |
+| Consistency rate | 80% | HIGH |
+| Action variance | 20% | Moderate info revealed |
 
-**Finding**: Action entropy of 0.355 (vs max 1.099) indicates HIGH signaling potential. Partner actions leak substantial information about their hand.
+**Finding**: Partner actions are more consistent than previously estimated. The 20% action variance represents a moderate but not dominant source of inference potential.
 
 #### Hand-Action Correlations
 
 | P2 Feature Variance | vs Consistency |
 |---------------------|----------------|
-| Trump count std | **-0.414** |
-| Count points std | -0.253 |
-| Pips std | -0.129 |
-| Doubles std | -0.058 |
+| Doubles std | **-0.102** |
+| Pips std | +0.106 |
+| Count points std | +0.075 |
+| Trump count std | -0.010 |
 
-**Key Finding**: Higher P2 trump variance correlates with LOWER action consistency (r = -0.414). When P2's trump holding varies more across configs, their actions are more variable. This makes intuitive sense - trump holdings strongly determine optimal play.
+**Key Finding**: Correlations are weak across all features, suggesting action consistency is more about game state than hand composition.
 
 ### Implications for Strategy
 
-1. **Partner inference is valuable**: 42% of partner actions reveal hand information
-2. **Watch for trump signals**: Trump-related decisions show the most variation
-3. **Early game matters more**: Combined with 11c findings (early game has lower consistency), partner's early plays are most informative
-4. **Potential for signaling conventions**: The high MI suggests room for deliberate signaling between partners
+1. **Partner actions are mostly predictable**: 80% consistency means partner's hand doesn't usually change optimal play
+2. **Moderate inference value**: The 20% action variance provides some inference potential
+3. **Game state dominates**: Actions are determined more by position than partner's hidden cards
+4. **Aligns with 11x**: Low information value (<1 point) matches high action consistency
 
 ### Relationship to Other Analyses
 
-- **11c** found 54.5% best-move consistency overall. 11z shows partner-specific consistency at 58%, suggesting partners are slightly more predictable than opponents.
-- **11y** found 53% opponent-caused variance. 11z shows 42% of this might be inferable from partner actions.
-- Together: Strategic partner observation could recover some of the "luck" component.
+- **11c** found 54.5% best-move consistency overall vs 80% for P2 states here
+- **11x** found 74% action agreement rate - aligns with 80% P2 consistency
+- **11y** found 53% opponent-caused variance. With 80% action consistency, less of this can be inferred from partner actions than expected.
 
-### Note on Sample Size
+### Interpretation
 
-Analysis limited to 23 hands due to memory constraints on large shards. Results should be validated with optimized processing, but the pattern is clear: partner actions reveal substantial hand information.
+The full analysis substantially revises the preliminary finding:
+- Original (23 hands): 58% consistency, 42% inference potential
+- Full (200 hands): **80% consistency, 20% inference potential**
+
+Partner inference has moderate but limited value. Most of the time, partner's optimal action is the same regardless of their hand.
 
 ### Files Generated
 

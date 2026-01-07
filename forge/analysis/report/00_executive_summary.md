@@ -237,8 +237,8 @@ From count locks analysis (R² = 0.46, CV R² = 0.37):
 
 | Metric | Value |
 |--------|-------|
-| Mean info gain from perfect knowledge | **0.84 points** |
-| Moves that agree with/without perfect info | **75%** |
+| Mean info gain from perfect knowledge | **0.54 points** |
+| Moves that agree with/without perfect info | **74%** |
 | Positions benefiting from perfect info | 27% |
 
 **Implication**: "Play the board, not the player." Opponent inference adds <1 point of expected value on average.
@@ -247,11 +247,10 @@ From count locks analysis (R² = 0.46, CV R² = 0.37):
 
 | Metric | Value |
 |--------|-------|
-| Action consistency rate | 58% |
-| Actions revealing hand info | **42%** |
-| Action entropy | 0.355 (HIGH signaling) |
+| Action consistency rate | **80.1%** |
+| Actions revealing hand info | **20%** |
 
-**Implication**: Partner actions reveal substantial hand information. Strategic signaling is valuable.
+**Implication**: Partner actions are mostly determined by game state, not hand. Moderate inference potential - 20% of actions vary with partner's hand.
 
 ### Best Move Robustness
 
@@ -263,6 +262,15 @@ From count locks analysis (R² = 0.46, CV R² = 0.37):
 | Early game (depth 17+) | **10%** consistency |
 
 **Interpretation**: Early game is chaos (10% consistency), but most game states (97% of common positions) have clear optimal moves regardless of opponent hands.
+
+### Risk vs Return (11s)
+
+| Metric | Value |
+|--------|-------|
+| E[V] vs σ(V) correlation | **-0.381** |
+| Hand features → σ(V) R² | **0.081** |
+
+**Critical Finding**: Good hands are also safer hands (negative correlation). This is the opposite of typical financial markets. Risk is fundamentally unpredictable from hand features (R² = 0.08 means 92% unexplained).
 
 ### Hand Classification
 
