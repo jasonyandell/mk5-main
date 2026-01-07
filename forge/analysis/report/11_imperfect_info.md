@@ -78,31 +78,39 @@ This analysis uses only root V values, not individual count capture tracking (wh
 ### Key Question
 Does the optimal move change with opponent hands?
 
+### Method
+For states that appear in all 3 opponent configurations (same P0 hand, different opponent deals), check if argmax(Q) is consistent.
+
 ### Key Findings
 
 | Metric | Value |
 |--------|-------|
-| Overall consistency | 52.5% |
-| States analyzed | 181 |
-| States with consistent best move | 95 |
+| Overall consistency | **54.5%** |
+| Common states analyzed | 167,019 |
+| States with consistent best move | 91,094 |
 
-**Insight**: About half of game positions have a "dominant" best move that's optimal regardless of opponent hands. The other half are situation-dependent.
+**Insight**: About half of all game positions have a "dominant" best move that's optimal regardless of opponent hands. The other half are situation-dependent - hidden information matters!
 
-#### Consistency by Depth
+#### Consistency by Game Phase
 
-| Depth | States | Consistent | Rate |
-|-------|--------|------------|------|
-| 1-4 | 8 | 8 | 100% |
-| 5 | 57 | 32 | 56% |
-| 6 | 46 | 17 | 37% |
-| 7 | 29 | 16 | 55% |
-| 8 | 20 | 16 | 80% |
-| 9-16 | 21 | 6 | 29% |
+| Depth | States | Consistent | Rate | Interpretation |
+|-------|--------|------------|------|----------------|
+| 0-4 (endgame) | 19,472 | 19,472 | **100%** | Perfect information at end |
+| 5-8 (late game) | 136,805 | 68,851 | **50%** | Moderate uncertainty |
+| 9-16 (mid game) | 10,557 | 2,368 | **22%** | High uncertainty |
+| 17+ (early game) | 115 | 12 | **10%** | Maximum uncertainty |
 
-**Insights**:
-- Early/late game states (low remaining dominoes) have more stable best moves
-- Mid-game (5-7 dominoes remaining) has lowest consistency
-- This matches intuition: early game has obvious plays, mid-game is most complex
+**Key Insights**:
+
+1. **Endgame is deterministic**: With ≤4 dominoes left, the best move is always the same regardless of opponent hands
+2. **Mid-game is most complex**: 9-16 dominoes remaining shows only 22% consistency - this is where "reading" opponents matters most
+3. **Early game is chaos**: With 17+ dominoes, best moves are almost entirely opponent-dependent
+
+### Implications for Strategy
+
+1. **Play heuristics early, calculate late**: In early game, general principles matter more than exact calculation since you can't know opponent hands
+2. **Focus calculation on endgame**: Perfect play becomes possible once you've seen most cards
+3. **Mid-game adaptation**: This is where inference about opponent hands pays off most
 
 ### Files Generated
 
