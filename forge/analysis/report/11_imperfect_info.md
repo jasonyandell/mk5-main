@@ -471,4 +471,71 @@ This is the strongest evidence yet for the **high luck factor** in Texas 42:
 
 ---
 
+## 11s: σ(V) vs Hand Features Regression
+
+### Key Question
+What hand features predict outcome variance (risk)?
+
+### Method
+Regression with features: trump count, high dominoes, doubles → σ(V) and V_spread
+
+### Key Findings (Preliminary - 10 seeds)
+
+**Note**: Preliminary analysis with n=10. CV shows severe overfitting - full analysis required.
+
+#### Feature Correlations with σ(V)
+
+| Feature | Correlation with σ(V) | Interpretation |
+|---------|----------------------|----------------|
+| total_pips | **+0.63** | High pip count = HIGH risk |
+| n_6_high | **+0.53** | More 6-highs = HIGH risk |
+| trump_count | **-0.40** | More trumps = LOWER risk |
+| has_trump_double | **-0.32** | Trump double = LOWER risk |
+| n_doubles | **-0.25** | More doubles = LOWER risk |
+
+**Key Insight**: The features that predict high expected value (doubles, trumps) ALSO predict low variance. Strong hands are both better AND safer.
+
+#### E[V] vs σ(V) Relationship
+
+| Metric | Value |
+|--------|-------|
+| Correlation E[V] vs σ(V) | **-0.55** |
+| Correlation E[V] vs V_spread | **-0.60** |
+
+**Critical Finding**: E[V] and σ(V) are **negatively correlated**. Good hands are not just higher EV - they're also more consistent. This has major bidding implications.
+
+#### Risk Profiles
+
+| Classification | Criteria | % | Avg Doubles | Avg Trumps | Avg Pips |
+|----------------|----------|---|-------------|------------|----------|
+| Low risk | spread < 20 | 10% | 3.0 | 3.0 | 29 |
+| Medium risk | 20-45 | 30% | - | - | - |
+| High risk | spread > 45 | 60% | 1.7 | 1.5 | 42 |
+
+**Insight**: Low-risk hands have MORE doubles, MORE trumps, and FEWER total pips. High-risk hands are "pip-heavy" with few trumps.
+
+### Implications for Bidding
+
+1. **Doubles reduce risk**: Each double not only adds EV but also reduces variance
+2. **Trump length is protective**: Long trump suits create predictable outcomes
+3. **Beware high-pip hands**: Hands with many high pips but few trumps are volatile
+4. **No risk-return tradeoff**: Unlike financial markets, Texas 42 has NEGATIVE risk-return correlation. Aggressive bidding on strong hands is doubly justified.
+
+### The Risk Formula (Tentative)
+
+```
+V_spread ≈ -124 + 80×(trump_double) + 72×(6_highs) + 37×(singletons) - 21×(trump_count)
+```
+
+(Requires full-sample validation - these coefficients are unstable)
+
+### Files Generated
+
+- `results/tables/11s_sigma_v_by_seed.csv` - Per-seed features and variance
+- `results/tables/11s_sigma_correlations.csv` - Feature correlations
+- `results/tables/11s_regression_coefficients.csv` - Model coefficients
+- `results/figures/11s_sigma_v_regression.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
