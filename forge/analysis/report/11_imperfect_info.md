@@ -121,4 +121,64 @@ For states that appear in all 3 opponent configurations (same P0 hand, different
 
 ---
 
+## 11d: Q-Value Variance Analysis
+
+### Key Question
+How much do Q-values vary per position across opponent configurations?
+
+### Method
+For common states across 3 opponent configs, compute σ(Q) for each legal action. This measures confidence in move evaluation under uncertainty.
+
+### Key Findings
+
+| Metric | Value |
+|--------|-------|
+| Mean σ(Q) | **6.43 points** |
+| Actions with high variance (σ > 5) | **76.8%** |
+| States analyzed | 1,189 |
+| Legal actions analyzed | 1,588 |
+
+**Insight**: Most action evaluations vary significantly (6+ points) across opponent configurations. This means move quality is genuinely uncertain - a move that's great against one opponent distribution may be mediocre against another.
+
+#### Q-Variance by Action Slot
+
+| Slot | Mean σ(Q) | % High Variance | n |
+|------|-----------|-----------------|---|
+| 0 | 5.77 | 65% | 261 |
+| 1 | 6.13 | 89% | 280 |
+| 2 | 6.08 | 70% | 251 |
+| 3 | 6.37 | 70% | 248 |
+| 4 | 7.03 | 80% | 217 |
+| 5 | 6.98 | 75% | 213 |
+| 6 | 7.44 | 89% | 118 |
+
+**Insight**: Later action slots (5-6) show higher variance than earlier slots (0-2). This suggests that as players have fewer options, the remaining choices become more situational.
+
+#### Q-Variance by Depth
+
+| Depth Range | Mean σ(Q) | Interpretation |
+|-------------|-----------|----------------|
+| 1-4 (endgame) | 4.5-6.0 | Lower uncertainty |
+| 5-8 (late game) | 6.1-6.6 | Moderate uncertainty |
+| 9-12 (mid game) | 6.5-9.0 | High uncertainty |
+| 15+ (early game) | 9.2-21.2 | Maximum uncertainty |
+
+**Insight**: Consistent with 11c, Q-value uncertainty peaks in early game and decreases toward endgame. Early game moves have σ(Q) > 20 points - opponent hands completely change which move is best.
+
+### Implications for Strategy
+
+1. **Trust early-game Q-values less**: With σ(Q) > 10, the "best" move by expected value may actually be worse than alternatives in many opponent configurations
+2. **Endgame Q-values are reliable**: σ(Q) < 5 means move evaluations are stable across opponent distributions
+3. **Prefer robust moves over optimal moves**: A move with slightly lower mean Q but lower σ(Q) may be preferable (risk aversion)
+
+### Files Generated
+
+- `results/tables/11d_q_variance_summary.csv` - Overall metrics
+- `results/tables/11d_q_variance_by_slot.csv` - By action slot
+- `results/tables/11d_q_variance_by_depth.csv` - By depth
+- `results/tables/11d_q_variance_by_seed.csv` - Per-seed analysis
+- `results/figures/11d_q_value_variance.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-06*
