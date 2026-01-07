@@ -246,4 +246,63 @@ For each base_seed with fixed P0 hand across 3 opponent configurations:
 
 ---
 
+## 11f: Hand Features → E[V] Regression
+
+### Key Question
+What hand features predict expected value (E[V])?
+
+### Method
+Linear regression with features extracted from P0's hand:
+- Trump count (dominoes containing trump pip)
+- Number of doubles
+- High dominoes (6-high, 5-high)
+- Count points held
+- Max suit length
+- Total pip count
+
+### Key Findings (Preliminary - 10 seeds)
+
+**Note**: Small sample size (n=10) causes overfitting. Full analysis needed for reliable results.
+
+#### Feature Correlations with E[V]
+
+| Feature | Correlation |
+|---------|-------------|
+| total_pips | **-0.78** |
+| n_5_high | -0.42 |
+| trump_count | **+0.38** |
+| n_6_high | -0.18 |
+| count_points | -0.15 |
+| n_doubles | +0.10 |
+
+**Insights** (tentative):
+1. **Total pips negatively correlates with E[V]**: Counterintuitive - hands with more pips do *worse*. May reflect that high-pip hands without trump suit strength are vulnerable.
+2. **Trump count positively correlates**: Having more dominoes in trump suit helps (expected).
+3. **Count points weakly negative**: Holding counts doesn't strongly predict winning (consistent with 11a).
+
+#### Model Performance
+
+| Metric | Value |
+|--------|-------|
+| In-sample R² | 0.81 |
+| Cross-validation R² | -4.1 ± 2.4 |
+
+**Note**: Negative CV R² indicates severe overfitting with only 10 samples. Results are illustrative only.
+
+### Implications for Bidding (Tentative)
+
+1. **Trump length matters most**: More trumps → better expected outcomes
+2. **Raw hand strength misleading**: High total pips doesn't guarantee success
+3. **Need full dataset**: 10 samples insufficient for reliable napkin formula
+
+### Files Generated
+
+- `results/tables/11f_hand_features_by_seed.csv` - Per-seed features and V
+- `results/tables/11f_feature_correlations.csv` - Correlation analysis
+- `results/tables/11f_regression_coefficients.csv` - Model coefficients
+- `results/tables/11f_napkin_formula.csv` - Formula parameters
+- `results/figures/11f_hand_features_to_ev.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-06*
