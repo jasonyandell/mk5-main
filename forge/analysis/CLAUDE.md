@@ -627,6 +627,21 @@ Available at:
 - `results/tables/17a_enrichment.csv` - Full enrichment results
 - `results/figures/17a_volcano_plot.png` - Volcano plot
 
+### High-Risk vs Low-Risk Enrichment (17b)
+
+Fisher's exact test for domino enrichment in top 25% σ(V) hands:
+
+**Significant at FDR < 0.05**:
+- **6-5**: log₂ = +2.09, 4× more common in high-risk
+- **5-5**: log₂ = -1.32, 2.5× more common in low-risk
+- **2-0**: log₂ = -1.65, 3× more common in low-risk
+
+**Key insight**: 5-5 is good for E[V] AND reduces risk. Confirms inverse E[V]-σ(V) relationship: good dominoes lead to predictable outcomes.
+
+Available at:
+- `results/tables/17b_risk_enrichment.csv` - Risk enrichment results
+- `results/figures/17b_risk_volcano.png` - Volcano plot
+
 ## Useful One-Liners
 
 ```bash
