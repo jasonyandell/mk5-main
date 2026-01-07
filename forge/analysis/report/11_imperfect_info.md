@@ -776,4 +776,118 @@ This finding is **counterintuitive**. Conventional wisdom says "long trump = con
 
 ---
 
+## 11u: Hand Ranking by Risk-Adjusted Value
+
+### Key Question
+Which hands are objectively strongest considering both expected value and risk?
+
+### Method
+Rank hands by utility function: `U = E[V] - λ×σ(V)`
+- λ = 0: Risk-neutral (rank by E[V] only)
+- λ = 1: Standard risk penalty
+- λ = 2: Highly risk-averse
+
+### Key Findings (Full 201 seeds)
+
+#### Top 10 Hands by Risk-Adjusted Utility (λ=1)
+
+| Rank | E[V] | σ(V) | Utility | Hand |
+|------|------|------|---------|------|
+| 1 | +42.0 | 0.0 | +42.0 | 6-4 4-4 4-3 4-1 4-0 2-2 1-1 |
+| 2 | +42.0 | 0.0 | +42.0 | 6-4 5-4 4-4 4-3 4-0 3-3 3-0 |
+| 3 | +42.0 | 0.0 | +42.0 | 5-4 4-4 4-3 2-1 2-0 1-1 1-0 |
+| 4 | +41.3 | 0.9 | +40.4 | 5-2 4-4 4-0 3-1 2-2 2-0 0-0 |
+| 5 | +41.3 | 0.9 | +40.4 | 6-6 6-1 5-2 5-0 3-3 2-0 0-0 |
+| 6 | +39.3 | 0.9 | +38.4 | 5-3 5-1 5-0 4-4 2-2 2-1 1-0 |
+| 7 | +40.0 | 1.6 | +38.4 | 6-5 6-4 5-5 4-2 3-3 2-1 0-0 |
+| 8 | +38.7 | 0.9 | +37.7 | 6-6 5-5 5-1 5-0 3-3 2-1 1-1 |
+| 9 | +40.0 | 2.8 | +37.2 | 6-2 5-5 5-2 4-0 3-0 2-2 1-0 |
+| 10 | +36.7 | 0.9 | +35.7 | 5-5 5-4 5-2 3-3 2-1 2-0 1-0 |
+
+**Key Pattern**: The top hands all have E[V] > 36 AND σ(V) < 3. They combine high expected value with consistency.
+
+#### Ranking Stability Across Risk Preferences
+
+| Comparison | Spearman ρ |
+|------------|------------|
+| λ=0 vs λ=1 | **0.923** |
+| λ=0 vs λ=2 | **0.822** |
+| λ=1 vs λ=2 | **0.974** |
+
+**Critical Finding**: Rankings are **VERY STABLE** across risk preferences. The best hands by E[V] are also the best hands when accounting for risk. This is because E[V] and σ(V) are negatively correlated.
+
+#### Dominated Hands Analysis (Pareto Frontier)
+
+| Metric | Value |
+|--------|-------|
+| Total dominated hands | **197 / 200 (98.5%)** |
+| Pareto-optimal hands | **3** |
+
+**Finding**: Only **3 hands** are Pareto-optimal (no other hand has higher E[V] with lower σ(V)). All three have:
+- E[V] = +42 (maximum)
+- σ(V) = 0 (no variance across opponent configs)
+- Average 2.3 doubles
+
+**Interpretation**: These are the only "unambiguously best" hands - all others could be improved in at least one dimension.
+
+#### Bidding Thresholds by Risk Preference
+
+| Risk Level (λ) | % Would Bid (U ≥ 25) | Avg E[V] | Avg σ(V) | Avg Doubles |
+|----------------|----------------------|----------|----------|-------------|
+| 0 (neutral) | **30%** | +33.0 | 9.1 | 2.2 |
+| 1 (standard) | **14%** | +36.6 | 3.6 | 2.4 |
+| 2 (risk-averse) | **7%** | +39.3 | 2.0 | 2.4 |
+
+**Insight**: Risk aversion dramatically reduces the number of "biddable" hands:
+- Risk-neutral: 30% would bid
+- Standard risk penalty: Only 14%
+- Highly risk-averse: Just 7%
+
+This explains the wide range of bidding styles in practice - conservative players bid ~7% of hands, aggressive players ~30%.
+
+#### Feature Correlations with Utility
+
+| Feature | λ=0 (E[V] only) | λ=1 (risk-adjusted) |
+|---------|-----------------|---------------------|
+| n_doubles | **+0.395** | **+0.359** |
+| trump_count | **+0.229** | **+0.212** |
+| count_points | +0.197 | +0.187 |
+| n_6_high | **-0.161** | **-0.202** |
+| total_pips | +0.035 | **-0.035** |
+
+**Insights**:
+1. **Doubles remain the best predictor** regardless of risk preference
+2. **6-high becomes MORE negative** with risk adjustment (-0.16 → -0.20)
+3. **Total pips FLIPS** from slightly positive to slightly negative with risk adjustment
+
+#### Risk-Return Relationship
+
+| Metric | Value |
+|--------|-------|
+| E[V] vs σ(V) correlation | **-0.381** |
+
+**Critical Finding**: This is the **reverse** of typical financial markets. In Texas 42:
+- Higher expected value → LOWER risk
+- Strong hands are both better AND safer
+- No risk-return tradeoff to navigate
+
+### Implications for Bidding
+
+1. **Risk preference matters less than you'd think**: Rankings are 92% correlated across risk levels. If a hand is good, it's good.
+
+2. **The Pareto-optimal hands are exceptional**: Only 3/200 hands are unambiguously best. Recognize these when you see them.
+
+3. **Conservative bidding is reasonable**: With risk adjustment, only 14% of hands justify bidding. "When in doubt, pass" is mathematically sound.
+
+4. **Doubles predict everything**: They correlate with high E[V], low σ(V), and high utility regardless of λ.
+
+### Files Generated
+
+- `results/tables/11u_hand_rankings.csv` - Full rankings
+- `results/tables/11u_top_hands.csv` - Top 20 hands by each λ
+- `results/tables/11u_ranking_summary.csv` - Summary statistics
+- `results/figures/11u_hand_ranking.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*
