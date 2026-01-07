@@ -7,20 +7,24 @@ degrees of freedom in the game.
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
+import re
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from pathlib import Path
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
 from forge.analysis.utils import loading, features, navigation
+from forge.analysis.utils.seed_db import SeedDB
 from forge.oracle import schema, tables
 
 # Configuration
-DATA_DIR = "/mnt/d/shards-standard/"
+DATA_DIR = "/mnt/d/shards-standard/train"
 N_SHARDS = 50  # Process more shards for manifold analysis
 RESULTS_DIR = "/home/jason/v2/mk5-tailwind/forge/analysis/results"
 MAX_SHARD_ROWS = 20_000_000  # Skip very large shards
@@ -38,9 +42,20 @@ def get_basin_id(captures: dict) -> int:
     return basin
 
 
+def extract_seed_decl(filename: str) -> tuple[int, int]:
+    """Extract seed and decl_id from shard filename."""
+    match = re.match(r'seed_(\d+)_decl_(\d+)\.parquet', filename)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    raise ValueError(f"Cannot parse filename: {filename}")
+
+
 def main():
     shard_files = loading.find_shard_files(DATA_DIR)
     print(f"Processing {N_SHARDS} shards for manifold analysis...")
+
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
 
     # Step 1: Count unique outcomes per seed
     print("\n=== Step 1: Unique Outcomes Per Seed ===")
@@ -49,7 +64,18 @@ def main():
     seed_v_values = {}  # seed -> list of terminal V values
 
     for shard_file in tqdm(shard_files[:N_SHARDS], desc="Step 1"):
-        df, seed, decl_id = schema.load_file(shard_file)
+        filename = Path(shard_file).name
+        try:
+            seed, decl_id = extract_seed_decl(filename)
+        except ValueError:
+            continue
+
+        # Load using SeedDB for efficient column access
+        result = db.query_columns(
+            files=[filename],
+            columns=['state', 'V', 'q0', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
+        )
+        df = result.data
 
         if len(df) > MAX_SHARD_ROWS:
             del df
@@ -257,6 +283,9 @@ def main():
         'cumulative': cumvar,
     })
     pca_df.to_csv(f'{RESULTS_DIR}/tables/08d_pca_variance.csv', index=False)
+
+    # Close database connection
+    db.close()
 
     # Final summary
     print("\n" + "=" * 60)
