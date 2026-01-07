@@ -336,46 +336,70 @@ What hand features predict count locks (consistently capturing a count across op
 ### Method
 For each hand, track whether Team 0 captures each count in all 3 opponent configurations. Regress lock rate against hand features.
 
-### Key Findings (Preliminary - 10 seeds)
-
-**Note**: Small sample size (n=10) causes overfitting. Full analysis needed.
+### Key Findings (Full 200 seeds)
 
 #### Lock Rates by Count
 
 | Count | Avg Lock Rate | % Fully Locked |
 |-------|---------------|----------------|
-| 3-2 | 0.37 | 0% |
-| 4-1 | 0.27 | 0% |
-| 5-0 | 0.10 | 0% |
-| 5-5 | 0.37 | 0% |
-| 6-4 | 0.20 | 0% |
+| 3-2 | 0.44 | 10% |
+| 4-1 | 0.34 | 10% |
+| 5-0 | 0.25 | 12% |
+| 5-5 | **0.48** | **20%** |
+| 6-4 | 0.30 | 10% |
 
-**Insight**: No count was fully locked in this sample. Count control is contested, not deterministic.
+**Insight**: 5-5 is both the most commonly locked count (48% rate) and most often fully locked (20%). On average, hands lock 0.6 counts.
 
 #### Does Holding a Count Predict Locking It?
 
 | Count | Holding→Lock Correlation |
 |-------|-------------------------|
-| 5-0 | **+0.89** (strong) |
-| 6-4 | **+0.70** (strong) |
-| 3-2 | **+0.67** (strong) |
-| 4-1 | +0.47 (moderate) |
-| 5-5 | +0.37 (weak) |
+| 5-0 | **+0.813** (strongest) |
+| 6-4 | **+0.811** |
+| 5-5 | **+0.787** |
+| 4-1 | +0.675 |
+| 3-2 | +0.506 |
 
-**Insight**: Holding a count strongly predicts locking it for 5-0, 6-4, and 3-2. The 5-5 is hardest to lock even when held.
+**Insight**: Holding ANY count strongly predicts locking it (all >+0.5). The 5-0 and 6-4 show strongest holding→locking correlation.
 
 #### Feature Correlations with Total Lock Rate
 
 | Feature | Correlation |
 |---------|-------------|
-| total_pips | **-0.93** |
-| trump_count | **+0.56** |
-| n_6_high | -0.24 |
+| count_points | **+0.607** |
+| n_doubles | **+0.262** |
+| trump_count | **+0.203** |
+| n_5_high | +0.175 |
+| has_trump_double | +0.163 |
+| total_pips | +0.013 |
+| n_6_high | **-0.171** |
 
-**Insights** (tentative):
-1. **High total pips = fewer locks**: Counterintuitive but consistent with 11f. Strong hands by pip count may lack trump control.
-2. **Trump count helps**: More trumps = more control = more locks.
-3. **The 5-5 paradox**: Holding it barely predicts locking it (0.37), suggesting opponents can often steal it.
+**Key Insights**:
+1. **Count points is the dominant predictor** (+0.607). Holding counts predicts locking counts - straightforward.
+2. **Doubles and trumps help** (+0.26, +0.20). Control features enable count capture.
+3. **Total pips is irrelevant** (+0.01). The preliminary n=10 finding of -0.93 was spurious overfitting!
+4. **6-highs hurt** (-0.17). High 6-suit dominoes without count ownership reduce lock rate.
+
+#### Regression Model
+
+| Metric | Value |
+|--------|-------|
+| R² | **0.459** |
+| CV R² | **0.374 ± 0.06** |
+
+**Interpretation**: Hand features explain ~46% of lock rate variance, with valid cross-validation (no overfitting). The remaining 54% comes from opponent distribution.
+
+#### Per-Count Best Predictors
+
+| Count | Holding Correlation | Best Feature | Feature Corr |
+|-------|---------------------|--------------|--------------|
+| 3-2 | +0.51 | count_points | +0.33 |
+| 4-1 | +0.68 | count_points | +0.19 |
+| 5-0 | +0.81 | n_5_high | +0.43 |
+| 5-5 | +0.79 | count_points | +0.49 |
+| 6-4 | +0.81 | count_points | +0.54 |
+
+**Insight**: 5-0 is uniquely predicted by n_5_high (suit length), while other counts are best predicted by total count_points.
 
 ### Files Generated
 
