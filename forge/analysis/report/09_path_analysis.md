@@ -392,7 +392,47 @@ Can we predict the final basin from early moves? At what depth does prediction s
 
 ## 9.8 Fractal/Scaling Analysis
 
-*To be completed*
+### Question
+Does the game have scale-invariant structure? Is there persistent memory (early advantages compound) or mean reversion?
+
+### Method
+1. **Roughness scaling**: Variance of ΔV vs window size (power law fit gives Hurst H)
+2. **DFA (Detrended Fluctuation Analysis)**: Alternative Hurst exponent estimation
+3. **Tree scaling**: State count by depth (exponential growth rate)
+
+### Results
+
+![Roughness Scaling](../results/figures/09h_roughness.png)
+
+| Metric | Value |
+|--------|-------|
+| Total V-trajectories | 48 |
+| Mean trajectory length | 25.9 |
+| Hurst (roughness scaling) | **0.267** |
+| Hurst (DFA mean) | 1.259 |
+| Exponential growth rate | 0.592/move |
+| Effective branching factor | **1.81** |
+
+### Tree Scaling
+
+![Tree Scaling](../results/figures/09h_tree_scaling.png)
+
+Exponential growth rate of ~0.59 per move implies effective branching factor of ~1.81.
+
+### Interpretation
+
+**Key findings:**
+
+1. **Strong mean reversion (H=0.27)**: The roughness-based Hurst exponent is well below 0.5. This indicates the game *corrects toward equilibrium* — early advantages do NOT compound. Instead, the game tends to "rubber-band" back.
+
+2. **DFA estimate unreliable**: The DFA Hurst (1.26) is implausibly high, likely due to short trajectories. The roughness estimate is more robust for our data.
+
+3. **Moderate branching**: Effective branching factor of 1.81 means the tree grows exponentially but not explosively. This aligns with 61% of states having multiple legal moves (mean ~2).
+
+**Implication for ML:**
+- Mean reversion (H < 0.5) suggests the game has "comeback potential" — a model shouldn't over-weight early position quality
+- The effective branching factor of ~1.8 bounds search complexity
+- Games are not "decided early" in the sense of compounding advantages
 
 ---
 
@@ -470,7 +510,50 @@ Sample states from oracle shards and analyze Q-value structure:
 
 ## 9.10 Synthesis
 
-*To be completed after all sub-analyses*
+### Core Question: What is the effective dimensionality of Texas 42?
+
+**Answer: Low structural dimension (~5), but rich strategic depth.**
+
+### Key Findings Summary
+
+| Analysis | Key Result | Implication |
+|----------|------------|-------------|
+| **09a Convergence** | ~16 basins reachable per deal | NOT decided at declaration |
+| **09b Geometry** | PCA 95% dim = 5 | V-trajectory structure is 5D (count dominoes) |
+| **09c Information** | H(path\|deal) = 0 | Optimal paths are deterministic from deal |
+| **09d Temporal** | R²(lag1)=0.80 vs R²(depth)=0.005 | Path history dominates, depth useless |
+| **09e Topology** | Diversity ratio 0.55 | Significant DAG reconvergence |
+| **09f Compression** | No prefix/suffix sharing | No opening theory or endgame templates |
+| **09g Prediction** | 80.9% forced along PV | Most moves forced on optimal path |
+| **09h Fractal** | Hurst H=0.27 | Mean reversion, not compounding advantages |
+| **09i Decision** | ~3 critical decisions/game | Few high-stakes choices determine outcome |
+
+### The "Decided at Declaration" Hypothesis: REJECTED
+
+Evidence against:
+1. ~16 distinct basins reachable per deal (09a)
+2. Basin entropy remains high until terminal (09a)
+3. Path history strongly affects V, not just depth (09d)
+
+Evidence supporting (partial):
+4. Optimal path is deterministic from deal (09c)
+5. 80.9% of moves along PV are forced (09g)
+
+**Resolution:** The game IS complex (many possible outcomes), but optimal play leaves little room for choice. The game's strategic depth emerges from ~3 critical decision points per game where the Q-gap is large.
+
+### Effective Dimensions
+
+1. **Basin outcomes**: 5 bits (which team gets each count domino)
+2. **V-trajectory structure**: 5 PCA components
+3. **Decision points**: ~3 per game
+4. **Branching factor**: ~1.8 (moderate)
+
+### Implications for ML Training
+
+1. **Architecture**: Must use sequential/attention — depth alone is useless (R²=0.005)
+2. **Training focus**: ~22% of positions have non-zero Q-gap; critical decisions matter most
+3. **Search**: Mean reversion (H=0.27) suggests "comeback potential" — don't over-weight early positions
+4. **Complexity bounds**: Effective branching ~1.8, manageable for search-based approaches
 
 ---
 
