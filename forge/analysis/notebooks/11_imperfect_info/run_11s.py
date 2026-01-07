@@ -11,12 +11,12 @@ Reuses feature extraction from 11f but targets σ(V) instead of E[V].
 """
 
 import sys
-sys.path.insert(0, "/home/jason/v2/mk5-tailwind")
+PROJECT_ROOT = "/home/jason/v2/mk5-tailwind"
+sys.path.insert(0, PROJECT_ROOT)
 
 import gc
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 from pathlib import Path
 from tqdm import tqdm
 from sklearn.linear_model import LinearRegression, Ridge
@@ -25,30 +25,14 @@ from sklearn.model_selection import cross_val_score
 import warnings
 warnings.filterwarnings('ignore')
 
-from forge.analysis.utils import features
-from forge.oracle import schema, tables
+from forge.analysis.utils.seed_db import SeedDB
+from forge.oracle import tables
 from forge.oracle.rng import deal_from_seed
 
-DATA_DIR = Path("data/shards-marginalized/train")
-RESULTS_DIR = Path("/home/jason/v2/mk5-tailwind/forge/analysis/results")
+DATA_DIR = Path(PROJECT_ROOT) / "data/shards-marginalized/train"
+RESULTS_DIR = Path(PROJECT_ROOT) / "forge/analysis/results"
 N_BASE_SEEDS = 201  # Full analysis
 np.random.seed(42)
-
-
-def get_root_v_fast(path: Path) -> float | None:
-    """Get root state V value without loading entire shard."""
-    try:
-        pf = pq.ParquetFile(path)
-        for batch in pf.iter_batches(batch_size=10000, columns=['state', 'V']):
-            states = batch['state'].to_numpy()
-            V = batch['V'].to_numpy()
-            depths = features.depth(states)
-            root_mask = depths == 28
-            if root_mask.any():
-                return float(V[root_mask][0])
-        return None
-    except Exception:
-        return None
 
 
 def extract_hand_features(hand: list[int], trump_suit: int) -> dict:
@@ -110,7 +94,7 @@ def extract_hand_features(hand: list[int], trump_suit: int) -> dict:
     return features_dict
 
 
-def analyze_hand_for_base_seed(base_seed: int) -> dict | None:
+def analyze_hand_for_base_seed(db: SeedDB, base_seed: int) -> dict | None:
     """Extract hand features and V statistics for one base seed."""
     decl_id = base_seed % 10
     trump_suit = decl_id
@@ -121,13 +105,17 @@ def analyze_hand_for_base_seed(base_seed: int) -> dict | None:
     # Get V values across all 3 opponent configs
     V_values = []
     for opp_seed in range(3):
-        path = DATA_DIR / f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
-        if not path.exists():
-            return None
-        V = get_root_v_fast(path)
-        if V is None:
+        filename = f"seed_{base_seed:08d}_opp{opp_seed}_decl_{decl_id}.parquet"
+        filepath = DATA_DIR / filename
+
+        # Skip if file doesn't exist
+        if not filepath.exists():
             continue
-        V_values.append(V)
+
+        result = db.get_root_v(filename)
+        if result.data is None:
+            continue
+        V_values.append(float(result.data))
 
     if len(V_values) != 3:
         return None
@@ -153,6 +141,9 @@ def main():
     print("σ(V) vs HAND FEATURES REGRESSION")
     print("=" * 60)
 
+    # Initialize SeedDB
+    db = SeedDB(DATA_DIR)
+
     # Get available base seeds
     files = sorted(DATA_DIR.glob("seed_*_opp0_decl_*.parquet"))
     base_seeds = [int(f.stem.split('_')[1]) for f in files]
@@ -165,10 +156,11 @@ def main():
     all_results = []
 
     for base_seed in tqdm(sample_seeds, desc="Processing"):
-        result = analyze_hand_for_base_seed(base_seed)
+        result = analyze_hand_for_base_seed(db, base_seed)
         if result:
             all_results.append(result)
 
+    db.close()
     print(f"\n✓ Analyzed {len(all_results)} hands")
 
     if len(all_results) == 0:
