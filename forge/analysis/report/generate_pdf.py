@@ -18,6 +18,7 @@ SECTIONS = [
     "05_topology.md",
     "06_scaling.md",
     "07_synthesis.md",
+    "08_count_capture_deep.md",
 ]
 
 # CSS styling for the PDF
