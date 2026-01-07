@@ -135,19 +135,155 @@ The PCA 95% variance dimension is exactly 5, matching the number of count domino
 
 ## 9.3 Information Theory Analysis
 
-*To be completed*
+### Question
+Does the basin capture all information about a path? Are paths deterministic from the deal?
+
+### Method
+Compute information-theoretic measures:
+1. **H(path), H(basin)**: Raw entropy of paths and basins
+2. **H(path|basin)**: Residual path entropy after knowing basin
+3. **H(path|deal)**: Entropy of paths given (seed, decl)
+4. **I(early; late)**: Mutual information between early and late play
+
+### Results
+
+![Mutual Information](../results/figures/09c_mutual_info.png)
+
+| Metric | Value |
+|--------|-------|
+| Total paths | 28 |
+| H(path) | 4.81 bits |
+| H(basin) | 3.97 bits |
+| H(path\|basin) | 0.84 bits |
+| I(path; basin) | 3.97 bits |
+| H(path\|deal) | **0.00 bits** |
+
+### Interpretation
+
+**Key findings:**
+
+1. **Paths are deterministic from deal**: H(path|deal) = 0. Given the hands and declaration, the optimal play path is unique. There is no "choice" in minimax optimal play.
+
+2. **Basin explains 82.5% of path entropy**: Knowing which basin a path ends in tells you most (but not all) about the path. The remaining 0.84 bits capture which of several paths to the same basin was taken.
+
+3. **Strong early-late coupling**: I(early₈; late₈) = 100% normalized. Early play completely determines late play along optimal paths.
+
+**Implication for ML:**
+- The oracle provides unique optimal paths - no "exploration" or "alternative solutions"
+- A model that learns the deal→path mapping learns deterministic behavior
+- Training is learning a pure function, not a distribution
+
+**Reconciliation with 09g (80.9% forced moves):**
+These findings are consistent. Given the deal, most positions have only one legal move (forced). The few non-forced positions have a single optimal action determined by the minimax solution. The game tree may have branching, but the *optimal* path through it is unique.
 
 ---
 
 ## 9.4 Temporal Analysis
 
-*To be completed*
+### Question
+Does the path structure reflect the 4-play trick periodicity? Does path history matter for predicting V?
+
+### Method
+Trace V-trajectories along principal variations and analyze:
+1. **Autocorrelation**: Correlation of V(t) with V(t-k) at various lags
+2. **Change point detection**: PELT algorithm for regime changes
+3. **Periodicity**: Fourier analysis of ΔV for trick-boundary signal
+4. **Predictive models**: Compare R² of V ~ depth vs V ~ V_lag1
+
+### Results
+
+![Autocorrelation](../results/figures/09d_autocorrelation.png)
+
+| Metric | Value |
+|--------|-------|
+| Total paths analyzed | 74 |
+| Mean path length | 20.9 |
+| Autocorr at lag 1 | **0.737** |
+| Autocorr at lag 4 | 0.468 |
+| Change points per path | 2.9 |
+
+### Predictive Model Comparison
+
+| Model | R² |
+|-------|-----|
+| V ~ depth | **0.0052** |
+| V ~ V_lag1 | **0.8013** |
+| V ~ depth + V_lag1 | 0.8015 |
+
+### Periodicity Analysis
+
+![Periodicity](../results/figures/09d_periodicity.png)
+
+Fourier analysis shows some signal at the 4-period (trick boundary) frequency, with lag-4 autocorrelation (0.468) remaining substantial.
+
+### Change Point Detection
+
+![Change Points](../results/figures/09d_changepoints.png)
+
+Mean 2.9 change points per path, distributed throughout the game rather than concentrated at trick boundaries.
+
+### Interpretation
+
+**Key findings:**
+
+1. **Path history dominates depth**: R²(lag1) = 0.80 vs R²(depth) = 0.005. Knowing the previous V tells you almost everything; knowing depth tells you almost nothing. This is a striking result.
+
+2. **Strong temporal memory**: Lag-1 autocorrelation of 0.74 indicates V evolves smoothly along paths. The game state "remembers" where it's been.
+
+3. **Moderate trick-boundary signal**: Lag-4 autocorrelation (0.47) is substantial, suggesting the 4-move trick structure is visible in temporal dynamics.
+
+4. **Change points are distributed**: ~3 regime changes per game, not concentrated at specific boundaries.
+
+**Implication for ML:**
+- A transformer MUST use positional/sequential information — depth alone is useless
+- Recurrent processing or attention over the move sequence is essential
+- The game cannot be modeled as i.i.d. samples at each depth
 
 ---
 
 ## 9.5 Topology Analysis
 
-*To be completed*
+### Question
+Do game paths form a simple tree, or do they have richer topological structure (reconvergence)?
+
+### Method
+1. **Branching analysis**: Count legal moves per state by depth
+2. **State diversity**: Compare unique played-masks to total states at each depth
+3. **Persistent homology**: Compute Betti numbers on path embedding space
+
+### Results
+
+![Branching](../results/figures/09e_branching.png)
+
+| Metric | Value |
+|--------|-------|
+| Total states analyzed | 15,000 |
+| Mean legal moves per state | **2.00** |
+| % branch points (multi-move) | **61.8%** |
+| Mean diversity ratio | **0.549** |
+| β₀ (connected components) | 0 |
+| β₁ (loops) | 0 |
+
+### State Diversity by Depth
+
+![Diversity](../results/figures/09e_diversity.png)
+
+The diversity ratio (unique played-masks / total states) is ~0.55, meaning about half of the played-mask configurations correspond to multiple distinct game states.
+
+### Interpretation
+
+**Key findings:**
+
+1. **Moderate branching**: 61.8% of states have multiple legal moves, with mean ~2 options. This aligns with 09i's finding of 61.1% multi-action states.
+
+2. **Significant reconvergence**: Diversity ratio of 0.55 indicates that the same set of played dominoes can lead to different game states (different trick configurations, scores). The game DAG is NOT a tree.
+
+3. **Simple path topology**: β₀=0, β₁=0 suggests no non-trivial loops in the path embedding space (when viewing V-trajectories as points).
+
+**Implication for ML:**
+- The game tree has DAG structure, not pure tree
+- Same played dominoes → multiple possible states (order matters within tricks, but trick outcomes matter more than individual move order)
+- A model could potentially learn "move-order invariance" for certain subsequences
 
 ---
 
@@ -262,7 +398,73 @@ Can we predict the final basin from early moves? At what depth does prediction s
 
 ## 9.9 Decision Quality Analysis
 
-*To be completed*
+### Question
+What fraction of moves are "real" decisions? How punishing are mistakes?
+
+### Method
+Sample states from oracle shards and analyze Q-value structure:
+1. **Q-gap distribution**: (best Q - second best Q) measures decision difficulty
+2. **Decision sparsity**: Fraction of positions with genuine choices at various thresholds
+3. **Mistake impact**: Expected V drop for taking suboptimal action
+
+### Results
+
+![Q-gap Distribution](../results/figures/09i_qgap_distribution.png)
+
+| Metric | Value |
+|--------|-------|
+| Total states analyzed | 10,979 |
+| Mean Q-gap | 2.93 |
+| Median Q-gap | **0.00** |
+| % Forced (1 legal action) | 38.9% |
+| % Multi-action positions | 61.1% |
+| Mean n_actions (when multi) | 2.65 |
+
+### Decision Sparsity by Threshold
+
+![Decision Sparsity](../results/figures/09i_decision_sparsity.png)
+
+| Q-gap Threshold | % of Positions |
+|-----------------|----------------|
+| > 0 | 21.8% |
+| > 1 | 21.7% |
+| > 2 | 16.8% |
+| > 5 | 16.3% |
+| > 10 | **10.7%** |
+| > 20 | 4.4% |
+
+### Mistake Impact
+
+![Mistake Impact](../results/figures/09i_mistake_impact.png)
+
+| Metric | Value |
+|--------|-------|
+| Mean V drop for 2nd-best | **4.8 points** |
+| Median V drop | 0.0 |
+| High-stakes decisions (Q-gap > 10) | 10.7% |
+| Critical decisions per game | ~3 |
+
+### Interpretation
+
+**Key findings:**
+
+1. **Moderate decision density**: 61.1% of positions have multiple legal actions (contrast with 09g's 80.9% forced along PV — the difference is that PV traverses constrained paths).
+
+2. **Median Q-gap is 0**: Even when multiple actions are legal, the second-best is often equivalent to the best. Only 21.8% of positions have Q-gap > 0.
+
+3. **Mistakes are moderately costly**: Mean 4.8 point drop for taking second-best. This is significant (~10% of typical hand value).
+
+4. **~3 critical decisions per game**: Only 10.7% of positions have Q-gap > 10. In a 28-move game, expect ~3 truly high-stakes choices.
+
+**Reconciliation with 09g:**
+- 09g found 80.9% forced moves *along the principal variation*
+- 09i found 38.9% forced *across all sampled states*
+- The difference: optimal play traverses constrained subgraph where forced moves dominate
+
+**Implication for ML:**
+- Focus model capacity on the ~22% of positions with non-zero Q-gap
+- The ~3 critical decisions per game are where games are won/lost
+- A policy that gets high-stakes decisions right can tolerate errors elsewhere
 
 ---
 

@@ -1,0 +1,9 @@
+metric,value
+Total paths analyzed,74
+Mean path length,20.9
+Autocorr at lag 1,0.737
+Autocorr at lag 4,0.468
+Change points per path,2.9
+R² (V ~ depth),0.0052
+R² (V ~ V_lag1),0.8013
+R² (V ~ depth + lag1),0.8015
