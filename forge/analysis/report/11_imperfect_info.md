@@ -1184,4 +1184,77 @@ This explains why experienced players pass most hands - 82% of hands are either 
 
 ---
 
+## 11n: Decision Point Consistency (Preliminary)
+
+### Key Question
+Are critical decisions (Q-gap > 5) the same across opponent configs?
+
+### Method
+Track positions where Q-gap > threshold in ALL 3 opponent configs, then check if best move is consistent.
+
+### Key Findings (Preliminary - 50 seeds, 84K states)
+
+#### Critical Decision Frequency
+
+| Condition | Count | Percentage |
+|-----------|-------|------------|
+| Critical in ALL configs | 545 | **0.6%** |
+| Critical in ANY config | 22,150 | **26.3%** |
+
+**Key Finding**: Only 0.6% of positions have Q-gap > 5 in ALL opponent configs. Most high-stakes decisions are opponent-dependent.
+
+#### Consistency of Critical Decisions
+
+| Outcome | Count | Percentage |
+|---------|-------|------------|
+| Same best move | 347 | **63.7%** |
+| Different best moves | 198 | **36.3%** |
+
+**Finding**: When a decision is critical in all configs, there's only 63.7% chance the best move is the same. Over a third of critical decisions depend on opponent hands.
+
+#### Q-Gap Analysis
+
+| Metric | Value |
+|--------|-------|
+| Mean Q-gap | 1.86 |
+| Median Q-gap | 0.00 |
+| % with Q-gap > 5 | 13.2% |
+| % with Q-gap > 10 | 4.4% |
+
+**Insight**: Most positions (87%) have Q-gap < 5 - the moves are roughly equivalent. Only 4.4% have Q-gap > 10 (high-stakes).
+
+#### Critical Decisions by Depth
+
+| Depth | Count | Percentage |
+|-------|-------|------------|
+| 5 (late game) | 396 | **72.7%** |
+| 9 (mid game) | 148 | **27.2%** |
+| 13 (early) | 1 | 0.2% |
+
+**Insight**: Critical decisions concentrate in late game (depth 5). Early decisions rarely have large Q-gaps because outcomes depend heavily on future play.
+
+### Implications for Strategy
+
+1. **Most decisions don't matter much**: 87% of positions have Q-gap < 5. Playing "reasonably" is usually good enough.
+
+2. **Critical decisions ARE opponent-dependent**: 36.3% of high-stakes positions have different best moves depending on who holds what.
+
+3. **Late game is where it counts**: 73% of critical decisions occur at depth 5. Focus your calculation here.
+
+4. **Opponent inference helps at key moments**: When Q-gap is large AND opponents' hands affect the answer (36% of the time), reading opponents is valuable.
+
+### Relationship to Other Analyses
+
+- **11c** found 54.5% overall best-move consistency
+- **11o** found 97% robustness on common states
+- **11n** adds nuance: for CRITICAL decisions specifically, only 64% are consistent
+
+### Files Generated
+
+- `results/tables/11n_decision_consistency_by_seed.csv` - Per-seed data
+- `results/tables/11n_decision_consistency_summary.csv` - Summary
+- `results/figures/11n_decision_consistency.png` - Visualization
+
+---
+
 *Analysis date: 2026-01-07*

@@ -1,0 +1,2 @@
+n_seeds,n_states,q_gap_threshold,critical_in_all,critical_in_all_pct,critical_consistent,critical_inconsistent,consistency_pct,mean_q_gap
+50,84182,5,545,0.6474068090565679,347,198,63.6697247706422,1.8551630198062925
