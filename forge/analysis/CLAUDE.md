@@ -338,6 +338,21 @@ At n=200 seeds, there's a **confirmed negative correlation** between expected va
 
 **Interpretation**: Good hands (high E[V]) have **lower** variance/risk. This is the opposite of typical financial markets where higher returns require higher risk. Effect size is "medium" by Cohen's conventions (|r| ≈ 0.38-0.40).
 
+### Unified Feature Extraction (12b)
+
+Created `forge/analysis/utils/hand_features.py` to replace duplicated feature extraction in run_11*.py scripts.
+
+**Master feature file**: `results/tables/12b_unified_features.csv` (200 seeds × 20 columns)
+
+**Strongest E[V] predictors**:
+| Feature | r with E[V] | p-value |
+|---------|-------------|---------|
+| n_doubles | **+0.395** | 6.9×10⁻⁹ |
+| has_trump_double | +0.242 | 5.6×10⁻⁴ |
+| trump_count | +0.229 | 1.1×10⁻³ |
+
+**Key insight**: Doubles are the strongest predictor of E[V] (r = 0.40). Each double improves expected outcome significantly.
+
 ## Useful One-Liners
 
 ```bash

@@ -43,6 +43,49 @@ The task hypothesized r ≈ -0.55. Actual finding: **r ≈ -0.38 to -0.40**. The
 
 ---
 
+## 12b: Unified Feature Extraction
+
+### Key Question
+Can we consolidate the duplicated feature extraction code across 7+ run_11*.py scripts?
+
+### Method
+Created `forge/analysis/utils/hand_features.py` with:
+- `extract_hand_features(hand, trump_suit)` - single source of truth
+- `HAND_FEATURE_NAMES` - consistent column ordering
+- `REGRESSION_FEATURES` - subset for ML models
+
+### Output
+
+**Master feature file**: `results/tables/12b_unified_features.csv`
+- 200 base seeds × 20 columns
+- V statistics: E[V], σ(V), V_spread, V_min, V_max
+- 12 hand features
+
+### Feature Summary
+
+| Feature | Mean | Range | r with E[V] |
+|---------|------|-------|-------------|
+| n_doubles | 1.73 | [0, 4] | **+0.395** |
+| trump_count | 1.32 | [0, 5] | +0.229 |
+| has_trump_double | 0.17 | [0, 1] | +0.242 |
+| count_points | 9.20 | [0, 25] | +0.197 |
+| n_voids | 0.67 | [0, 3] | +0.200 |
+| n_6_high | 1.74 | [0, 4] | **-0.161** |
+
+### Key Findings
+
+1. **n_doubles is king**: Strongest predictor of E[V] (r = +0.40, p < 10⁻⁸)
+2. **Trump features matter**: trump_count and has_trump_double both positive predictors
+3. **6-highs are risky**: Negative correlation with E[V] (-0.16)
+4. **Total pips irrelevant**: Near-zero correlation (+0.04) - raw hand strength doesn't predict outcomes
+
+### Files Generated
+
+- `utils/hand_features.py` - Unified feature extraction module
+- `results/tables/12b_unified_features.csv` - Master feature dataset
+
+---
+
 ## Remaining Tasks
 
 - Additional validation tasks TBD based on epic t42-1wp2
