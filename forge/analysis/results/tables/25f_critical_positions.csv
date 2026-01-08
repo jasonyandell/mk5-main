@@ -1,0 +1,14 @@
+metric,value
+n_samples,150000
+critical_threshold_p90,12.0
+n_critical,12507
+critical_rate,0.08338
+roc_auc_test,0.6488107987646596
+roc_auc_cv_mean,0.6367860729657864
+roc_auc_cv_std,0.025749480627687758
+top_feature_1,remaining_p0
+top_shap_1,0.24243635172854547
+top_feature_2,remaining_p3
+top_shap_2,0.17790297010744652
+top_feature_3,remaining_p2
+top_shap_3,0.1778765396518423

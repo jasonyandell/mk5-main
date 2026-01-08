@@ -261,6 +261,73 @@ What makes a good lead at each trick? How does lead strategy evolve?
 
 ---
 
+## 25f: Critical Position Detection
+
+### Key Question
+When should you think hard vs play fast? What features predict "critical" positions?
+
+### Method
+- Define criticality: Q-spread (max - min of valid Q-values) > 90th percentile
+- Extract state features: depth, trick position, game phase, player remaining counts
+- Train GradientBoosting classifier to predict criticality
+- Use SHAP for feature importance
+
+### Key Findings
+
+#### Criticality Definition
+
+| Metric | Value |
+|--------|-------|
+| Samples analyzed | 150,000 |
+| Critical threshold (P90) | Q-spread > **12 points** |
+| Critical positions | 12,507 (8.3%) |
+
+#### Classification Performance
+
+| Metric | Value |
+|--------|-------|
+| ROC AUC (test) | 0.649 |
+| 5-Fold CV AUC | 0.637 ± 0.026 |
+
+#### Feature Importance (SHAP)
+
+| Rank | Feature | Mean |SHAP| |
+|------|---------|-------------|
+| 1 | remaining_p0 | **0.242** |
+| 2 | remaining_p3 | **0.178** |
+| 3 | remaining_p2 | **0.178** |
+| 4 | remaining_p1 | 0.073 |
+| 5 | trick_position | 0.069 |
+| 6 | depth | 0.059 |
+| 7 | team_0_leads | 0.027 |
+| 8 | end_game | 0.023 |
+
+### Interpretation
+
+**Watch out when players have asymmetric hand sizes!**
+
+The top 3 predictors are all `remaining_pX` - how many dominoes each player still holds. When players have different numbers of cards remaining, decisions become more critical.
+
+1. **Asymmetry creates uncertainty**: Unequal remaining counts mean more possible branches
+2. **P0 (declarer) remaining matters most**: The declarer's hand size dominates
+3. **Trick position matters**: Mid-trick decisions are more critical than leads
+4. **Game phase is secondary**: Depth and phase contribute but aren't dominant
+
+### Practical Implications
+
+1. **Think hard when hands are unbalanced**: After a player shows out, positions become more critical
+2. **Early decisions set asymmetry**: Opening play can create critical downstream positions
+3. **Follow the remaining counts**: Pay attention when opponents have unusual hand patterns
+4. **AUC = 0.65 means moderate predictability**: Critical positions are partially detectable but not fully predictable
+
+### Files Generated
+
+- `results/tables/25f_critical_positions.csv` - Summary statistics
+- `results/tables/25f_feature_importance.csv` - Full feature ranking
+- `results/figures/25f_critical_positions.png` - 4-panel visualization
+
+---
+
 ## 25j: Heuristic Derivation
 
 ### Key Question
