@@ -1,0 +1,8 @@
+metric,value
+total_plays,148266.0
+observed_voids,104033.0
+expected_voids,109705.1000000054
+observed_rate,0.7016645758299273
+expected_rate,0.739920817989326
+relative_risk,0.9482968430819977
+p_value,1.0
