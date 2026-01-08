@@ -1,6 +1,19 @@
 # 11: Imperfect Information Analysis
 
-Analysis of how hidden opponent hands affect game outcomes, using marginalized oracle data.
+Analysis of how hidden opponent hands affect oracle game outcomes, using marginalized oracle data.
+
+> **Epistemic Status**: This report uses marginalized oracle data—oracle computations with fixed P0 hand across varying opponent configurations—to quantify how opponent hands affect outcomes. All findings describe oracle (minimax optimal) play. The "Implications for Bidding" and "Implications for Strategy" sections throughout this report are **hypotheses about human play** based on oracle structure—they have NOT been validated against actual human gameplay. Human players may face different tradeoffs due to imperfect play, signaling, and inference.
+
+---
+
+## Methodological Note on "Bidding Implications"
+
+This report contains many sections with "Implications for Bidding" or "Implications for Strategy". These are **extrapolations** from oracle analysis to human gameplay. The extrapolations assume:
+1. Human players face similar decision structures to the oracle
+2. Features that predict oracle outcomes also predict human outcomes
+3. The variance decomposition under perfect play applies to imperfect play
+
+None of these assumptions have been validated. The bidding heuristics (e.g., "E[V] ≈ -4.1 + 6.4×(doubles)") describe oracle expected values, not guaranteed human outcomes.
 
 ## Data Source
 
@@ -1959,6 +1972,38 @@ Partner inference has moderate but limited value. Most of the time, partner's op
 - `results/tables/11z_partner_inference_by_seed.csv` - Per-hand data
 - `results/tables/11z_partner_inference_summary.csv` - Summary statistics
 - `results/figures/11z_partner_inference.png` - Visualization
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human gameplay validation**: Test whether the napkin formula and bidding heuristics predict human outcomes, not just oracle outcomes
+
+2. **Signaling effects**: This analysis assumes minimax play with no signaling. Real human games involve partner communication that could change the variance decomposition.
+
+3. **Sample size effects**: Many sub-analyses use 200 seeds. Verify key findings (47/53 variance split, negative risk-return correlation) at larger scales.
+
+4. **Declaration selection bias**: The marginalized data fixes P0's hand but not the declaration. In real games, players choose whether to declare, introducing selection effects.
+
+### Methodological Questions
+
+1. **Opponent configuration coverage**: 3 opponent configs per hand may not capture the full distribution of opponent possibilities. How sensitive are findings to more opponent samples?
+
+2. **Variance decomposition**: The ANOVA decomposition treats oracle V as the outcome variable. Human outcomes (game scores) may decompose differently.
+
+3. **Lock definition**: "Lock" is defined as capturing a count in all 3 opponent configs. With more configs, lock rates would decrease. How to define "reliably capture"?
+
+### Open Questions
+
+1. **Human bidding calibration**: Do experienced human players bid more or less aggressively than the oracle-based thresholds suggest?
+
+2. **Partner inference in practice**: The 80% action consistency suggests limited inference potential. Do skilled human players exploit the 20% variance?
+
+3. **Feature interactions**: The napkin formula is additive. Do doubles + trumps interact non-additively in ways that affect bidding decisions?
+
+4. **Skill vs luck decomposition**: This analysis decomposes variance by deal components (your hand vs opponent hands). What fraction of human game outcomes is attributable to skill vs deal?
 
 ---
 
