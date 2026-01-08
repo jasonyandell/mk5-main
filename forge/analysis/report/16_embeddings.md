@@ -2,6 +2,8 @@
 
 Word2Vec domino embeddings, interaction matrices, and network visualizations.
 
+> **Epistemic Status**: This report uses machine learning techniques (Word2Vec, UMAP) to find structure in domino co-occurrence and oracle E[V] data. The co-occurrence analysis uses deal distributions (not oracle values). The interaction matrix (16c) uses oracle E[V] from marginalized data. Findings describe patterns in the data; interpretations about "strategic value" are hypotheses.
+
 ## 16a: Word2Vec Domino Embeddings
 
 ### Key Question
@@ -63,9 +65,11 @@ The random deal mechanism means hands don't have strong "themes":
 2. High-pip dominoes (6-x) don't cluster strongly with each other
 3. No clear "archetypes" emerge from co-occurrence alone
 
-### Implications
+### Implications (Co-occurrence Data)
 
-Word2Vec on hand composition reveals that **Texas 42 dominoes are strategically undifferentiated** in terms of which hands they appear in. The strategic value of a domino comes from the game context (trump selection, who leads), not from co-occurrence patterns.
+Word2Vec on hand composition reveals that **Texas 42 dominoes are undifferentiated in co-occurrence space**—which dominoes appear together is largely random. This is a property of the dealing mechanism, not a strategic claim.
+
+**Hypothesis**: Strategic value comes from game context (trump selection, who leads), not from co-occurrence patterns. This hypothesis is consistent with the weak embeddings but not directly tested.
 
 ### Files Generated
 
@@ -101,9 +105,11 @@ UMAP projection confirms the Word2Vec finding - **no strong clusters emerge**:
 
 Intra-category vs inter-category distances in UMAP space show ratios close to 1.0, indicating categories are not well-separated.
 
-### Interpretation
+### Interpretation (UMAP Structure)
 
-The random dealing mechanism doesn't create "themed" hands. Dominoes don't develop strategic similarities based on which other dominoes they co-occur with. Strategic value comes from game context (trump selection, position), not hand composition.
+The random dealing mechanism doesn't create "themed" hands. Dominoes don't develop co-occurrence similarities based on which other dominoes they appear with.
+
+**Hypothesis**: Strategic value comes from game context (trump selection, position), not hand composition. The UMAP projection is consistent with this view but doesn't test it directly—it only shows that co-occurrence structure is weak.
 
 ### Files Generated
 
@@ -161,12 +167,14 @@ Synergy range: **-11.86 to +14.61**
 - 4-0 + 4-2: -11.4
 - 2-0 + 5-0: -11.0
 
-### Interpretation
+### Interpretation (Oracle E[V] Data)
 
-1. **Additive model works mostly**: Most synergies near zero
-2. **Some non-additive pairs exist**: Range of ±15 points
-3. **Doubles can conflict**: Having two doubles doesn't always add up
+1. **Additive model works mostly**: Most synergies near zero in oracle E[V]
+2. **Some non-additive pairs exist**: Range of ±15 points under oracle play
+3. **Doubles can conflict**: Having two doubles doesn't always add up (oracle finding)
 4. **Sample size limits precision**: With 200 hands, many pairs have few observations
+
+**Note**: These synergies are measured in oracle (minimax) E[V]. Whether the same synergies apply to human play is untested.
 
 ### Files Generated
 
@@ -175,6 +183,34 @@ Synergy range: **-11.86 to +14.61**
 - `results/tables/16c_single_effects.csv` - Single-domino effects
 - `results/figures/16c_interaction_matrix.png` - Heatmap visualization
 - `results/figures/16c_synergy_distribution.png` - Synergy histogram
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Co-occurrence vs oracle synergy**: The co-occurrence embeddings (16a/b) and interaction matrix (16c) measure different things—one uses deal distributions, the other uses oracle E[V]. A comparison could reveal whether co-occurrence predicts oracle synergy.
+
+2. **Larger sample sizes**: The interaction matrix uses only 200 hands. Many domino pairs have few observations. Larger samples could sharpen the synergy estimates.
+
+3. **Human play validation**: Do the oracle-derived synergies predict actual human gameplay outcomes? This requires human game data.
+
+### Methodological Questions
+
+1. **Word2Vec hyperparameters**: Would different vector_size, window, or epochs reveal more structure? The 32D embedding may be too high for the weak signal present.
+
+2. **Alternative embedding methods**: Would matrix factorization (SVD) or node2vec reveal different structure than Word2Vec skip-gram?
+
+3. **Synergy statistical significance**: The synergy values range ±15, but no confidence intervals are reported. Bootstrap CIs could distinguish real synergies from sampling noise.
+
+### Open Questions
+
+1. **Why do doubles cluster weakly?**: The 11% similarity premium for doubles is small. Is this from true strategic similarity or just the 7-of-28 sampling constraint?
+
+2. **What drives pair synergies?**: The top synergies (+14.6 for 4-0 + 5-3) lack clear strategic explanation. What game mechanism creates these interactions?
+
+3. **Embedding utility**: Can the Word2Vec embeddings improve oracle prediction, or is the structure too weak to be useful?
 
 ---
 
