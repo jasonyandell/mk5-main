@@ -1,13 +1,19 @@
 # 08: Deep Count Capture Analysis
 
+Extended analysis of count capture dynamics in the oracle game tree.
+
+> **Epistemic Status**: This report extends Section 03's count analysis. All findings describe the oracle (perfect-information minimax) game tree. The finding that "count capture remains uncertain until depth 2-3" describes the oracle tree structure, not human gameplay. Implications for AI architecture are hypotheses.
+
+---
+
 ## Overview
 
-This section extends the count analysis from Section 03, investigating three key questions:
-1. **Lock-in depth**: When does each count's fate become determined?
+This section investigates:
+1. **Lock-in depth**: When does each count's fate become determined in the oracle tree?
 2. **Residual decomposition**: What explains the ~0.3-0.4 residual variance within basins?
-3. **Capture predictors**: What features predict who captures each count?
+3. **Capture predictors**: What features predict who captures each count under oracle play?
 
-**Key finding**: Count capture remains uncertain until the last 2-3 dominoes, and the primary predictor of capture is simply who holds the count domino.
+**Key finding**: In the oracle tree, count capture remains uncertain until the last 2-3 dominoes.
 
 ---
 
@@ -33,14 +39,16 @@ For states at each depth, track P(Team 0 captures count_i) along the principal v
 
 ![Lock-In Combined](../results/figures/08a_lock_in_combined.png)
 
-### Interpretation
+### Interpretation (Oracle Tree Structure)
 
-**Counts remain uncertain until depth 2-3** (the last few dominoes). This means:
-1. The oracle is NOT simply confirming foregone conclusions
-2. Strategic play matters throughout most of the game
-3. Counts can swing until the very end
+In the oracle tree, counts remain uncertain until depth 2-3 (the last few dominoes). This means:
+1. The oracle tree is NOT simply confirming foregone conclusions
+2. Optimal (oracle) play matters throughout most of the game tree
+3. Count capture outcomes can vary until the final dominoes
 
-This contradicts a hypothesis that counts "lock in early." Instead, the game maintains genuine uncertainty almost to the finish.
+This contradicts a hypothesis that count outcomes "lock in early" in the oracle tree. The minimax tree maintains structural uncertainty almost to the finish.
+
+**Caveat**: This describes oracle tree structure. Human games with hidden information may have different dynamics—e.g., counts might become "psychologically locked" earlier when a player gains insurmountable positional advantage, even if the oracle tree still shows alternatives.
 
 ---
 
@@ -86,7 +94,7 @@ Residual variance decreases with depth as remaining trick outcomes become determ
 | Count capture (explained) | ~550 | ~92% |
 | Residual (trick points) | ~50 | ~8% |
 
-**Key finding**: Count capture explains ~92% of V variance. The residual (~8%) corresponds to the 7 non-count trick points.
+**Key finding**: In the oracle data, count capture explains ~92% of V variance. The residual (~8%) corresponds to the 7 non-count trick points.
 
 ---
 
@@ -136,27 +144,33 @@ Holding the count gives roughly 50-70% capture probability — better than rando
 2. Which team holds each count
 3. Whether count is a trump
 
-### Interpretation
+### Interpretation (Oracle Play)
 
-Models achieve ~72% accuracy predicting capture from initial features. This is better than the 50-57% baseline (holder wins) but still leaves substantial uncertainty. The game is NOT "decided at declaration time" — play matters.
+Models achieve ~72% accuracy predicting oracle capture outcomes from initial features. This is better than the 50-57% baseline (holder wins) but leaves substantial uncertainty. Under oracle play, the game is NOT "decided at declaration time" — subsequent optimal moves matter.
+
+**Note**: These predictions are for oracle play. Human gameplay prediction accuracy could differ due to skill variance and suboptimal play.
 
 ---
 
-## 8.4 Synthesis
+## 8.4 Interim Synthesis
 
-### What We Learned
+### Summary of Oracle Tree Findings
 
-1. **Counts don't lock in early**: Uncertainty persists until depth 2-3. The game has genuine strategic depth throughout.
+1. **Counts don't lock in early in the oracle tree**: Uncertainty persists until depth 2-3. The minimax tree has structural complexity throughout.
 
-2. **Residual = trick points**: The ~8% unexplained variance matches the theoretical 7 trick points. Count capture fully explains the count-point component.
+2. **Residual = trick points**: The ~8% unexplained oracle V variance matches the theoretical 7 trick points. Count capture fully explains the count-point component of oracle V.
 
-3. **Prediction is imperfect**: Initial features predict capture with ~72% accuracy. Holding the count helps (50-70%), but trump control and play quality matter.
+3. **Prediction is imperfect**: Initial features predict oracle capture with ~72% accuracy. Holding the count helps (50-70%), but trump control and optimal play matter.
 
-### Implications
+### Grounded Implications
 
-- **For players**: Don't give up early — counts can flip until the last tricks
-- **For models**: A model that perfectly predicts count capture would achieve R² ≈ 0.92
-- **For complexity**: The game's irreducible randomness comes from play decisions, not initial deal
+- **For oracle-based models**: A model that perfectly predicts oracle count capture would achieve R² ≈ 0.92 on oracle V
+- **For game tree structure**: The oracle tree's complexity comes from play decisions, not just initial deal
+
+### Potential Human Play Implications (Hypotheses)
+
+- **Hypothesis**: Human players may also find that counts can flip until late game. **Untested**: This would require human gameplay analysis.
+- **Hypothesis**: The difficulty of predicting oracle outcomes from initial features *may* generalize to human play. **Untested**: Human play likely has different patterns.
 
 ---
 
@@ -193,40 +207,74 @@ Do game paths lie on a low-dimensional manifold? Is the intrinsic dimension ≈ 
 | PC4 | 7.6% | 94.7% |
 | PC5 | 5.3% | 100.0% |
 
-### Interpretation
+### Interpretation (Oracle Outcome Space)
 
-**5 components for 95% variance**: This matches the hypothesis that the game has ~5 effective degrees of freedom (one per count domino). The count capture outcomes form the natural coordinates of the game's "manifold."
+**5 components for 95% variance**: This is consistent with the hypothesis that oracle outcomes have ~5 effective degrees of freedom (one per count domino). The count capture outcomes form natural coordinates of the oracle outcome space.
 
-**13 of 32 basins observed**: Not all count combinations are equally reachable. Some basins (where one team sweeps all counts) are rare.
+**13 of 32 basins observed**: Not all count combinations are equally reachable under oracle play. Some basins (where one team sweeps all counts) are rare.
 
-**Entropy = 61% of max**: Outcomes are neither fully uniform nor highly concentrated. There's genuine diversity in how games play out.
+**Entropy = 61% of max**: Oracle outcomes are neither fully uniform nor highly concentrated. There's structural diversity in how oracle games resolve.
 
 ---
 
 ## 8.6 Synthesis
 
-### Key Findings
+### Key Findings (Oracle Data)
 
-| Analysis | Finding | Implication |
-|----------|---------|-------------|
-| 08a Lock-in | Counts uncertain until depth 2-3 | Game has strategic depth throughout |
-| 08b Residual | ~92% variance from counts, ~8% from tricks | Count capture is the game |
-| 08c Predictors | ~72% accuracy from initial features | Play matters, not just the deal |
-| 08d Manifold | 5 dimensions, 61% entropy | The game explores its possibility space |
+| Analysis | Finding | Scope |
+|----------|---------|-------|
+| 08a Lock-in | Counts uncertain until depth 2-3 | Oracle tree structure |
+| 08b Residual | ~92% variance from counts, ~8% from tricks | Oracle V decomposition |
+| 08c Predictors | ~72% accuracy from initial features | Oracle play prediction |
+| 08d Manifold | 5 dimensions, 61% entropy | Oracle outcome space |
 
-### The Game's True Structure
+### Oracle Game Structure
 
-Texas 42 is a **5-dimensional game** in the space of count capture outcomes:
-- Each count domino represents one degree of freedom
-- Count capture explains ~92% of V variance
+Under perfect-information minimax play, Texas 42 exhibits a **5-dimensional** outcome structure:
+- Each count domino represents one degree of freedom in the oracle tree
+- Count capture explains ~92% of oracle V variance
 - The remaining 8% is from trick points (7 points distributed among 7 tricks)
-- Play decisions matter: outcomes aren't determined by the initial deal
+- Oracle play decisions matter: outcomes aren't determined by the initial deal alone
 
-### Implications for AI
+**Note**: This characterizes the oracle (perfect information) game. Human gameplay with hidden information has different effective dimensionality.
 
-A perfect count-capture predictor would achieve R² ≈ 0.92 on V. The remaining 8% requires modeling trick-by-trick dynamics. This suggests a two-level architecture:
+### Implications for AI (Hypotheses)
+
+**Hypothesis**: A perfect oracle count-capture predictor would achieve R² ≈ 0.92 on oracle V. The remaining 8% requires modeling trick-by-trick dynamics.
+
+**Hypothesis**: This suggests a potential two-level architecture:
 1. **Count module**: Predict which team captures each count
 2. **Trick module**: Given counts, predict final trick point distribution
+
+**Untested**: No such architecture has been implemented and compared to alternatives.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human gameplay analysis**: Do count lock-in patterns differ under human play with hidden information?
+
+2. **Architecture experiments**: Implement and test two-level (count + trick) models against end-to-end alternatives
+
+3. **Cross-seed validation**: Verify manifold dimensionality holds across larger seed samples
+
+### Methodological Questions
+
+1. **Lock-in definition**: Is P < 0.05 / P > 0.95 the right threshold? Sensitivity analysis needed.
+
+2. **PCA limitations**: PCA assumes linear structure. Would nonlinear dimensionality reduction reveal different structure?
+
+3. **Basin sampling**: 13 of 32 basins observed with 28 seeds. How many seeds needed to observe all reachable basins?
+
+### Open Questions
+
+1. **Human dimensionality**: Does the 5-dimensional structure apply to human play, or does hidden information change the effective degrees of freedom?
+
+2. **Strategic implications**: If count capture dominates oracle V, does tracking count capture help human players?
+
+3. **Trick point modeling**: Is the 8% residual variance from trick points learnable, or is it effectively noise?
 
 ---
 
