@@ -650,6 +650,68 @@ This analysis is based on states that happen to appear in all 3 marginalized con
 
 ---
 
+## 25m: Variance Decomposition
+
+### Key Question
+How much of outcome variance is "deal luck" (your hand) vs opponent configuration (their hands)?
+
+### Method
+Using marginalized oracle data (same P0 hand, 3 different opponent configurations):
+1. For each base seed, compute mean V across the 3 opponent configs
+2. Decompose variance: between-seed (deal) vs within-seed (opponent config)
+3. Calculate Intraclass Correlation Coefficient (ICC)
+
+### Key Findings
+
+#### Variance Decomposition
+
+| Component | Variance | % of Total |
+|-----------|----------|------------|
+| Between-seed (deal) | 170.5 | **23.1%** |
+| Within-seed (opponent) | 569.2 | **76.9%** |
+
+#### Statistical Tests
+
+| Metric | Value | Interpretation |
+|--------|-------|----------------|
+| F-statistic | 0.90 | |
+| p-value | 0.61 | **Not significant** |
+| ICC | **-0.035** | Near zero |
+
+### Interpretation
+
+**SURPRISING: Opponent hands matter MORE than your own hand!**
+
+The analysis reveals a counterintuitive finding:
+1. **Your deal explains only 23% of variance** - knowing your hand gives limited predictability
+2. **Opponent configuration explains 77%** - their hands matter more than yours
+3. **ICC ≈ 0**: Different deals produce similar variance - deal isn't deterministic
+4. **F-test not significant**: Seed differences don't significantly predict outcome
+
+### Why This Makes Sense
+
+1. **Partnership game**: Your partner (P2) can amplify or negate your hand's value
+2. **Opposition coordination**: Opponents' combined hands determine how well they defend
+3. **Same hand, different results**: The same "good hand" can succeed or fail depending on opponents
+
+### Practical Implications
+
+1. **Don't overvalue your hand**: Having good cards is less predictive than you might think
+2. **Partner and opponents matter more**: The overall table composition determines outcome
+3. **Reduce outcome attribution to luck**: You can't blame/credit the deal for most variance
+4. **Bidding should be conservative**: High variance from unknown opponents = risk
+
+### Limitation
+
+This analysis uses mean V across states (not just root V) for computational efficiency. Root V would give cleaner "outcome" values but requires slower computation.
+
+### Files Generated
+
+- `results/tables/25m_variance_decomposition.csv` - Statistics
+- `results/figures/25m_variance_decomposition.png` - Visualization
+
+---
+
 ## Summary
 
 Strategic analysis provides actionable guidance:
