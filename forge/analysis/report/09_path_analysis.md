@@ -1,10 +1,16 @@
 # 09: Path Analysis Battery
 
+Geometric and information-theoretic structure of oracle game paths.
+
+> **Epistemic Status**: This report analyzes paths through the oracle (perfect-information minimax) game tree. All findings describe oracle tree structure, not human gameplay. The "dimensionality" and "decision points" characterize optimal play trajectories. Implications for ML architectures are hypotheses.
+
+---
+
 ## Overview
 
-This section investigates the fundamental structure of game paths through geometric and information-theoretic analysis.
+This section investigates the structure of optimal paths through the oracle game tree.
 
-**Core Question:** What is the effective dimensionality of Texas 42?
+**Core Question:** What is the effective dimensionality of the oracle game space?
 
 **Sub-analyses:**
 - 09a: Convergence (basin funnel, depth, divergence points)
@@ -60,18 +66,18 @@ Basin entropy remains high (~2-3 bits) throughout the game, only dropping near t
 
 Paths diverge early (depth 26-27, after trick 1-2), not late.
 
-### Interpretation
+### Interpretation (Oracle Tree Structure)
 
-**The "decided at declaration" hypothesis is REJECTED.**
+**In the oracle tree, single-outcome declarations are rare.**
 
-With mean unique basins ≈ 16 per deal, there's genuine strategic depth. All analyzed deals have multiple reachable basins — none have a single deterministic outcome.
+With mean unique basins ≈ 16 per deal, the oracle tree has structural complexity. All analyzed deals have multiple reachable basins under different play sequences.
 
 **Key findings:**
-1. **Many outcomes possible**: ~16 of 32 basins are reachable from a typical deal
-2. **Early divergence**: Paths split early (trick 1-2), not converging until the very end
-3. **High entropy throughout**: Basin uncertainty remains ~2-3 bits until terminal
+1. **Many oracle outcomes possible**: ~16 of 32 basins are reachable from a typical deal in the oracle tree
+2. **Early divergence**: Oracle paths split early (trick 1-2), not converging until the very end
+3. **High entropy throughout**: Basin uncertainty in the oracle tree remains ~2-3 bits until terminal
 
-**Implication for ML:** A transformer cannot simply "classify the deal type" — it must genuinely reason about game dynamics. The effective dimensionality is NOT ~5 (count capture outcomes), but much higher.
+**Potential Implication for ML (Hypothesis):** This *suggests* a model cannot simply classify deals — it may need to reason about game dynamics. **Untested**: No direct experiments on deal classification vs dynamic models.
 
 ---
 
@@ -113,23 +119,23 @@ Apply dimensionality analysis:
 
 Clustering moderately aligns with basin IDs — paths leading to the same basin tend to cluster together, but not perfectly.
 
-### Interpretation
+### Interpretation (Oracle Path Geometry)
 
-**The "5-dimensional" hypothesis is SUPPORTED.**
+**The "5-dimensional" hypothesis is consistent with the data.**
 
 The PCA 95% variance dimension is exactly 5, matching the number of count dominoes. The Levina-Bickel estimator suggests even lower effective dimension (~3).
 
 **Key findings:**
-1. **Low intrinsic dimension**: 95% of V-trajectory variance explained by 5 components
-2. **Count capture dominates**: The 5 count domino outcomes largely explain path structure
+1. **Low intrinsic dimension**: 95% of oracle V-trajectory variance explained by 5 components
+2. **Count capture dominates**: The 5 count domino outcomes largely explain oracle path structure
 3. **Partial clustering**: Paths to same basin are similar but not identical (ARI=0.39)
 
-**Reconciliation with 9.1:** While 09a found ~16 distinct basins are reachable (high outcome diversity), 09b finds the *structure* of paths is low-dimensional. This means:
-- **Many endpoints** (basins) are possible from a deal
-- But the **path geometry** connecting them is governed by just ~5 degrees of freedom
-- The game has strategic depth in *which* basin to reach, but paths are constrained
+**Reconciliation with 9.1:** While 09a found ~16 distinct basins are reachable (high outcome diversity), 09b finds the *structure* of oracle paths is low-dimensional. This means:
+- **Many endpoints** (basins) are possible from a deal in the oracle tree
+- But the **path geometry** connecting them is governed by ~5 degrees of freedom
+- The oracle tree has structural complexity in *which* basin is reached, but paths are geometrically constrained
 
-**Implication for ML:** A transformer can learn a low-dimensional latent representation (~5D) for V-trajectories. The challenge is not representing path structure but predicting *which* of the ~16 reachable basins optimal play achieves.
+**Potential Implication for ML (Hypothesis):** This *suggests* a model could learn a low-dimensional latent representation (~5D) for oracle V-trajectories. **Untested**: Whether this simplifies actual learning remains to be validated.
 
 ---
 
@@ -158,23 +164,25 @@ Compute information-theoretic measures:
 | I(path; basin) | 3.97 bits |
 | H(path\|deal) | **0.00 bits** |
 
-### Interpretation
+### Interpretation (Oracle Information Structure)
 
 **Key findings:**
 
-1. **Paths are deterministic from deal**: H(path|deal) = 0. Given the hands and declaration, the optimal play path is unique. There is no "choice" in minimax optimal play.
+1. **Oracle paths are deterministic from deal**: H(path|deal) = 0. Given the hands and declaration, the oracle-optimal play path is unique. There is no "choice" in minimax optimal play.
 
 2. **Basin explains 82.5% of path entropy**: Knowing which basin a path ends in tells you most (but not all) about the path. The remaining 0.84 bits capture which of several paths to the same basin was taken.
 
-3. **Strong early-late coupling**: I(early₈; late₈) = 100% normalized. Early play completely determines late play along optimal paths.
+3. **Strong early-late coupling**: I(early₈; late₈) = 100% normalized. Early oracle play completely determines late oracle play.
 
-**Implication for ML:**
-- The oracle provides unique optimal paths - no "exploration" or "alternative solutions"
-- A model that learns the deal→path mapping learns deterministic behavior
+**Implication for Oracle-Based Training (Grounded):**
+- The oracle provides unique optimal paths — no "exploration" or "alternative solutions"
+- A model trained on oracle paths learns deterministic behavior
 - Training is learning a pure function, not a distribution
 
+**Note**: This describes oracle play. Human games have hidden information, so the "unique path" property doesn't apply — humans must reason under uncertainty.
+
 **Reconciliation with 09g (80.9% forced moves):**
-These findings are consistent. Given the deal, most positions have only one legal move (forced). The few non-forced positions have a single optimal action determined by the minimax solution. The game tree may have branching, but the *optimal* path through it is unique.
+These findings are consistent. Given the deal, most oracle positions have only one legal move (forced). The few non-forced positions have a single optimal action determined by the minimax solution. The oracle game tree may have branching, but the *optimal* path through it is unique.
 
 ---
 
@@ -222,22 +230,24 @@ Fourier analysis shows some signal at the 4-period (trick boundary) frequency, w
 
 Mean 2.9 change points per path, distributed throughout the game rather than concentrated at trick boundaries.
 
-### Interpretation
+### Interpretation (Oracle Temporal Structure)
 
 **Key findings:**
 
-1. **Path history dominates depth**: R²(lag1) = 0.80 vs R²(depth) = 0.005. Knowing the previous V tells you almost everything; knowing depth tells you almost nothing. This is a striking result.
+1. **Path history dominates depth**: R²(lag1) = 0.80 vs R²(depth) = 0.005. Knowing the previous oracle V tells you almost everything; knowing depth tells you almost nothing. This is a striking result.
 
-2. **Strong temporal memory**: Lag-1 autocorrelation of 0.74 indicates V evolves smoothly along paths. The game state "remembers" where it's been.
+2. **Strong temporal memory**: Lag-1 autocorrelation of 0.74 indicates oracle V evolves smoothly along paths. The oracle state "remembers" where it's been.
 
-3. **Moderate trick-boundary signal**: Lag-4 autocorrelation (0.47) is substantial, suggesting the 4-move trick structure is visible in temporal dynamics.
+3. **Moderate trick-boundary signal**: Lag-4 autocorrelation (0.47) is substantial, suggesting the 4-move trick structure is visible in oracle temporal dynamics.
 
-4. **Change points are distributed**: ~3 regime changes per game, not concentrated at specific boundaries.
+4. **Change points are distributed**: ~3 regime changes per oracle game, not concentrated at specific boundaries.
 
-**Implication for ML:**
-- A transformer MUST use positional/sequential information — depth alone is useless
-- Recurrent processing or attention over the move sequence is essential
-- The game cannot be modeled as i.i.d. samples at each depth
+**Potential Implication for ML (Hypothesis):**
+- This *suggests* models should use sequential/positional information — depth alone appears useless for oracle V prediction
+- Recurrent processing or attention over the move sequence may be beneficial
+- Oracle paths cannot be modeled as i.i.d. samples at each depth
+
+**Untested**: No direct comparison of sequential vs depth-only models has been conducted.
 
 ---
 
@@ -270,20 +280,20 @@ Do game paths form a simple tree, or do they have richer topological structure (
 
 The diversity ratio (unique played-masks / total states) is ~0.55, meaning about half of the played-mask configurations correspond to multiple distinct game states.
 
-### Interpretation
+### Interpretation (Oracle Tree Topology)
 
 **Key findings:**
 
-1. **Moderate branching**: 61.8% of states have multiple legal moves, with mean ~2 options. This aligns with 09i's finding of 61.1% multi-action states.
+1. **Moderate branching**: 61.8% of oracle states have multiple legal moves, with mean ~2 options. This aligns with 09i's finding of 61.1% multi-action states.
 
-2. **Significant reconvergence**: Diversity ratio of 0.55 indicates that the same set of played dominoes can lead to different game states (different trick configurations, scores). The game DAG is NOT a tree.
+2. **Significant reconvergence**: Diversity ratio of 0.55 indicates that the same set of played dominoes can lead to different oracle states (different trick configurations, scores). The oracle game DAG is NOT a pure tree.
 
 3. **Simple path topology**: β₀=0, β₁=0 suggests no non-trivial loops in the path embedding space (when viewing V-trajectories as points).
 
-**Implication for ML:**
-- The game tree has DAG structure, not pure tree
+**Potential Implication for ML (Hypothesis):**
+- The oracle tree has DAG structure, not pure tree
 - Same played dominoes → multiple possible states (order matters within tricks, but trick outcomes matter more than individual move order)
-- A model could potentially learn "move-order invariance" for certain subsequences
+- **Hypothesis**: A model could potentially learn "move-order invariance" for certain subsequences. **Untested**.
 
 ---
 
@@ -323,21 +333,21 @@ For each sampled path (action sequence along PV):
 | H(path \| basin) | 2.72 bits |
 | I(path; basin) | 2.13 bits |
 
-### Interpretation
+### Interpretation (Oracle Path Compression)
 
 **Key findings:**
 
-1. **No late game stereotype**: Paths don't share common endings (mean suffix sharing < 1 action). Even within the same basin, late game play varies.
+1. **No late game stereotype**: Oracle paths don't share common endings (mean suffix sharing < 1 action). Even within the same basin, late game optimal play varies.
 
-2. **No opening theory**: Paths start diversely (mean prefix sharing < 1 action). There's no dominant opening sequence.
+2. **No opening theory**: Oracle paths start diversely (mean prefix sharing < 1 action). There's no dominant opening sequence in oracle play.
 
-3. **Moderate compressibility**: LZ compression ratio of 2.15x is similar to random baseline (2.2x), indicating paths have minimal repetitive structure.
+3. **Moderate compressibility**: LZ compression ratio of 2.15x is similar to random baseline (2.2x), indicating oracle paths have minimal repetitive structure.
 
 4. **Partial basin predictability**: Knowing the basin explains 44% of path entropy. Significant path variation remains after conditioning on outcome.
 
-**Implication for data storage:** Standard compression (zlib) provides ~2x reduction. Domain-specific compression schemes (e.g., based on game structure) may not significantly outperform this. The oracle data cannot be dramatically compressed by exploiting path structure.
+**Implication for Oracle Data Storage (Grounded):** Standard compression (zlib) provides ~2x reduction on oracle data. Domain-specific compression schemes (e.g., based on game structure) may not significantly outperform this.
 
-**Contrast with 09b:** While path *value trajectories* are low-dimensional (5 PCA components), the *action sequences* themselves are highly varied. The same basin can be reached through many different action paths.
+**Contrast with 09b:** While oracle path *value trajectories* are low-dimensional (5 PCA components), the *action sequences* themselves are highly varied. The same basin can be reached through many different action paths in the oracle tree.
 
 ---
 
@@ -373,20 +383,20 @@ Can we predict the final basin from early moves? At what depth does prediction s
 
 **Most moves in Texas 42 are forced** — there's only one legal action. The 20% of positions with genuine choices are the critical decision points.
 
-### Interpretation
+### Interpretation (Oracle Path Prediction)
 
 **Key findings:**
 
-1. **Basin prediction doesn't stabilize early**: With limited data, prediction accuracy remains low throughout. More data needed for definitive answer, but results suggest late-game determination.
+1. **Basin prediction doesn't stabilize early**: With limited data, prediction accuracy remains low throughout. More data needed for definitive answer, but results suggest late-game determination in the oracle tree.
 
-2. **Moderate continuation entropy** (1.18 bits, 42% of max): Given a prefix, next moves are somewhat predictable but not deterministic.
+2. **Moderate continuation entropy** (1.18 bits, 42% of max): Given a prefix, oracle next moves are somewhat predictable but not deterministic.
 
-3. **Most moves forced**: 80.9% of positions have only one legal action. The game's complexity emerges from the ~20% of positions where multiple moves are available.
+3. **Most moves forced on oracle PV**: 80.9% of oracle principal variation positions have only one legal action. The oracle tree's complexity emerges from the ~20% of positions where multiple moves are available.
 
-**Implication for transformer training:**
-- The model should focus learning capacity on the ~20% of non-forced positions
-- Planning/search is likely required since basin prediction doesn't stabilize early
-- The high fraction of forced moves may simplify training (fewer "decision" states to learn)
+**Potential Implications for Training (Hypotheses):**
+- **Hypothesis**: Models should focus learning capacity on the ~20% of non-forced positions. **Untested**.
+- **Hypothesis**: Planning/search may be required since basin prediction doesn't stabilize early. **Untested**.
+- **Hypothesis**: The high fraction of forced moves may simplify training. **Untested**.
 
 ---
 
@@ -419,20 +429,20 @@ Does the game have scale-invariant structure? Is there persistent memory (early 
 
 Exponential growth rate of ~0.59 per move implies effective branching factor of ~1.81.
 
-### Interpretation
+### Interpretation (Oracle Scaling Properties)
 
 **Key findings:**
 
-1. **Strong mean reversion (H=0.27)**: The roughness-based Hurst exponent is well below 0.5. This indicates the game *corrects toward equilibrium* — early advantages do NOT compound. Instead, the game tends to "rubber-band" back.
+1. **Strong mean reversion (H=0.27)**: The roughness-based Hurst exponent is well below 0.5. This indicates oracle V *corrects toward equilibrium* — early oracle advantages do NOT compound. Instead, oracle paths tend to "rubber-band" back.
 
 2. **DFA estimate unreliable**: The DFA Hurst (1.26) is implausibly high, likely due to short trajectories. The roughness estimate is more robust for our data.
 
-3. **Moderate branching**: Effective branching factor of 1.81 means the tree grows exponentially but not explosively. This aligns with 61% of states having multiple legal moves (mean ~2).
+3. **Moderate branching**: Effective branching factor of 1.81 means the oracle tree grows exponentially but not explosively. This aligns with 61% of states having multiple legal moves (mean ~2).
 
-**Implication for ML:**
-- Mean reversion (H < 0.5) suggests the game has "comeback potential" — a model shouldn't over-weight early position quality
-- The effective branching factor of ~1.8 bounds search complexity
-- Games are not "decided early" in the sense of compounding advantages
+**Potential Implications for ML (Hypotheses):**
+- **Hypothesis**: Mean reversion (H < 0.5) *suggests* the oracle game has "comeback potential" — a model shouldn't over-weight early position quality. **Note**: This characterizes oracle play; human games may differ.
+- The effective branching factor of ~1.8 bounds search complexity (grounded)
+- **Hypothesis**: Oracle outcomes are not "decided early" in the sense of compounding advantages. **Untested**: Whether this applies to human play.
 
 ---
 
@@ -484,76 +494,108 @@ Sample states from oracle shards and analyze Q-value structure:
 | High-stakes decisions (Q-gap > 10) | 10.7% |
 | Critical decisions per game | ~3 |
 
-### Interpretation
+### Interpretation (Oracle Decision Structure)
 
 **Key findings:**
 
-1. **Moderate decision density**: 61.1% of positions have multiple legal actions (contrast with 09g's 80.9% forced along PV — the difference is that PV traverses constrained paths).
+1. **Moderate decision density**: 61.1% of oracle positions have multiple legal actions (contrast with 09g's 80.9% forced along PV — the difference is that PV traverses constrained paths).
 
-2. **Median Q-gap is 0**: Even when multiple actions are legal, the second-best is often equivalent to the best. Only 21.8% of positions have Q-gap > 0.
+2. **Median Q-gap is 0**: Even when multiple actions are legal, the second-best is often equivalent to the best in oracle value. Only 21.8% of positions have Q-gap > 0.
 
-3. **Mistakes are moderately costly**: Mean 4.8 point drop for taking second-best. This is significant (~10% of typical hand value).
+3. **Oracle mistakes are moderately costly**: Mean 4.8 point oracle V drop for taking second-best. This is significant (~10% of typical hand value).
 
-4. **~3 critical decisions per game**: Only 10.7% of positions have Q-gap > 10. In a 28-move game, expect ~3 truly high-stakes choices.
+4. **~3 critical oracle decisions per game**: Only 10.7% of positions have Q-gap > 10. In a 28-move oracle game, expect ~3 truly high-stakes choices.
 
 **Reconciliation with 09g:**
-- 09g found 80.9% forced moves *along the principal variation*
-- 09i found 38.9% forced *across all sampled states*
+- 09g found 80.9% forced moves *along the oracle principal variation*
+- 09i found 38.9% forced *across all sampled oracle states*
 - The difference: optimal play traverses constrained subgraph where forced moves dominate
 
-**Implication for ML:**
-- Focus model capacity on the ~22% of positions with non-zero Q-gap
-- The ~3 critical decisions per game are where games are won/lost
-- A policy that gets high-stakes decisions right can tolerate errors elsewhere
+**Potential Implications for ML (Hypotheses):**
+- **Hypothesis**: Focus model capacity on the ~22% of positions with non-zero Q-gap. **Untested**.
+- **Hypothesis**: The ~3 critical oracle decisions per game are where oracle outcomes are determined. **Note**: Human games may have different critical points due to uncertainty.
+- **Hypothesis**: A policy that gets high-stakes decisions right can tolerate errors elsewhere. **Untested**.
 
 ---
 
 ## 9.10 Synthesis
 
-### Core Question: What is the effective dimensionality of Texas 42?
+### Core Question: What is the effective dimensionality of the oracle game?
 
-**Answer: Low structural dimension (~5), but rich strategic depth.**
+**Answer: Low structural dimension (~5) in the oracle game tree.**
 
-### Key Findings Summary
+### Key Findings Summary (Oracle Data)
 
-| Analysis | Key Result | Implication |
-|----------|------------|-------------|
-| **09a Convergence** | ~16 basins reachable per deal | NOT decided at declaration |
-| **09b Geometry** | PCA 95% dim = 5 | V-trajectory structure is 5D (count dominoes) |
-| **09c Information** | H(path\|deal) = 0 | Optimal paths are deterministic from deal |
-| **09d Temporal** | R²(lag1)=0.80 vs R²(depth)=0.005 | Path history dominates, depth useless |
-| **09e Topology** | Diversity ratio 0.55 | Significant DAG reconvergence |
-| **09f Compression** | No prefix/suffix sharing | No opening theory or endgame templates |
-| **09g Prediction** | 80.9% forced along PV | Most moves forced on optimal path |
-| **09h Fractal** | Hurst H=0.27 | Mean reversion, not compounding advantages |
-| **09i Decision** | ~3 critical decisions/game | Few high-stakes choices determine outcome |
+| Analysis | Key Result | Scope |
+|----------|------------|-------|
+| **09a Convergence** | ~16 basins reachable per deal | Oracle tree structure |
+| **09b Geometry** | PCA 95% dim = 5 | Oracle V-trajectory geometry |
+| **09c Information** | H(path\|deal) = 0 | Oracle paths deterministic |
+| **09d Temporal** | R²(lag1)=0.80 vs R²(depth)=0.005 | Oracle path history |
+| **09e Topology** | Diversity ratio 0.55 | Oracle DAG structure |
+| **09f Compression** | No prefix/suffix sharing | Oracle path diversity |
+| **09g Prediction** | 80.9% forced along PV | Oracle PV constraint |
+| **09h Fractal** | Hurst H=0.27 | Oracle mean reversion |
+| **09i Decision** | ~3 critical decisions/game | Oracle Q-gap distribution |
 
-### The "Decided at Declaration" Hypothesis: REJECTED
+### The "Decided at Declaration" Hypothesis in the Oracle Tree
 
-Evidence against:
+**In the oracle tree, single-outcome declarations are rare:**
 1. ~16 distinct basins reachable per deal (09a)
 2. Basin entropy remains high until terminal (09a)
-3. Path history strongly affects V, not just depth (09d)
+3. Path history strongly affects oracle V, not just depth (09d)
 
-Evidence supporting (partial):
-4. Optimal path is deterministic from deal (09c)
-5. 80.9% of moves along PV are forced (09g)
+**However, oracle play is highly constrained:**
+4. Oracle optimal path is deterministic from deal (09c)
+5. 80.9% of moves along oracle PV are forced (09g)
 
-**Resolution:** The game IS complex (many possible outcomes), but optimal play leaves little room for choice. The game's strategic depth emerges from ~3 critical decision points per game where the Q-gap is large.
+**Resolution for Oracle:** The oracle tree IS structurally complex (many possible outcomes), but optimal play leaves little room for choice. The oracle's strategic depth emerges from ~3 critical decision points per game where the Q-gap is large.
 
-### Effective Dimensions
+**Note**: This characterizes the oracle (perfect information) game. Human gameplay with hidden information has different dynamics—the "decided at declaration" hypothesis for human play remains untested.
+
+### Effective Dimensions (Oracle)
 
 1. **Basin outcomes**: 5 bits (which team gets each count domino)
 2. **V-trajectory structure**: 5 PCA components
-3. **Decision points**: ~3 per game
+3. **Decision points**: ~3 per oracle game
 4. **Branching factor**: ~1.8 (moderate)
 
-### Implications for ML Training
+### Potential Implications for ML Training (Hypotheses)
 
-1. **Architecture**: Must use sequential/attention — depth alone is useless (R²=0.005)
-2. **Training focus**: ~22% of positions have non-zero Q-gap; critical decisions matter most
-3. **Search**: Mean reversion (H=0.27) suggests "comeback potential" — don't over-weight early positions
-4. **Complexity bounds**: Effective branching ~1.8, manageable for search-based approaches
+All of the following are untested hypotheses based on oracle structure:
+
+1. **Architecture hypothesis**: Sequential/attention mechanisms *may* be beneficial — depth alone appears useless for oracle V prediction (R²=0.005)
+2. **Training focus hypothesis**: ~22% of positions have non-zero Q-gap; focusing on critical decisions may improve efficiency
+3. **Search hypothesis**: Mean reversion (H=0.27) *suggests* "comeback potential" — don't over-weight early positions
+4. **Complexity bounds**: Effective branching ~1.8 bounds search complexity (grounded)
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **ML architecture experiments**: Directly compare sequential vs depth-only vs attention models on oracle prediction
+
+2. **Human gameplay analysis**: Test whether oracle findings (5D structure, ~3 critical decisions, mean reversion) apply to human play
+
+3. **Cross-seed validation**: Verify basin reachability and PCA dimensionality across larger seed samples
+
+### Methodological Questions
+
+1. **Dimensionality estimators**: Compare PCA, Levina-Bickel, and other intrinsic dimension estimators
+
+2. **Short trajectory methods**: Validate Hurst exponent methods for trajectories of length ~24
+
+3. **Q-gap thresholds**: Sensitivity analysis for "critical decision" threshold (currently Q-gap > 10)
+
+### Open Questions
+
+1. **Human decision points**: Do humans face the same ~3 critical decisions per game, or does uncertainty create different decision structure?
+
+2. **Opening theory in human play**: Oracle shows no prefix sharing, but do human players develop opening patterns?
+
+3. **Generalization**: Do these structural findings generalize to other trick-taking games?
 
 ---
 
