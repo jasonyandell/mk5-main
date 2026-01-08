@@ -1,11 +1,13 @@
 # 25: Strategic Analysis
 
-Actionable insights for optimal play.
+Oracle-derived patterns in optimal play under perfect information.
+
+> **Epistemic Status**: All findings describe oracle behavior (minimax with omniscient players). Sections titled "Implications for Human Play" offer *hypotheses* about transferability that require validation with human gameplay data.
 
 ## 25a: Mistake Cost by Phase
 
 ### Key Question
-When do mistakes hurt most? Where should players focus their thinking?
+Under perfect information, when do suboptimal moves cost the most?
 
 ### Method
 - Compute Q_best - Q_second for every state (gap between best and second-best move)
@@ -14,7 +16,7 @@ When do mistakes hurt most? Where should players focus their thinking?
 
 ### Key Findings
 
-#### Mistake Cost by Depth
+#### Mistake Cost by Depth (Oracle Data)
 
 | Depth | Trick | Mean Cost | % Forced | n_states |
 |-------|-------|-----------|----------|----------|
@@ -25,7 +27,7 @@ When do mistakes hurt most? Where should players focus their thinking?
 | 8 | 6 | 3.4 pts | 70% | 10,118 |
 | 4 | 7 | 0.0 pts | 100% | 378 |
 
-#### Phase Comparison
+#### Phase Comparison (Oracle Data)
 
 | Phase | Depth Range | Mean Mistake Cost | Forced Plays |
 |-------|-------------|-------------------|--------------|
@@ -33,27 +35,24 @@ When do mistakes hurt most? Where should players focus their thinking?
 | Mid | 8-19 | 2.7 pts | 75% |
 | Late | 0-7 | 1.0 pts | 92% |
 
-### Key Insights
+### Key Insights (Grounded)
 
-1. **Early/mid-game most costly**: Mistakes average 3-5 points in tricks 2-5
-2. **End-game is forced**: 90%+ of late-game positions have only one legal move
-3. **Peak mistake cost**: Depth 16-20 (tricks 3-4) has highest average cost
+1. **Under perfect information, early/mid-game deviations cost most**: Suboptimal moves average 3-5 points in tricks 2-5
+2. **Late-game is forced**: 90%+ of positions at depth ≤ 7 have only one legal move or one optimal move
+3. **Peak suboptimality cost**: Depth 16-20 (tricks 3-4) has highest average cost for deviating from minimax
 
-### When to Think Hard
+### Implications for Human Play (Hypotheses)
 
-| Trick | Recommendation |
-|-------|----------------|
-| 1-2 | Medium focus - setting tempo |
-| 3-4 | **HIGH focus** - peak mistake cost |
-| 5-6 | Medium focus - outcomes narrowing |
-| 7 | Low focus - mostly forced plays |
+The oracle shows tricks 3-4 are where suboptimal play costs most under perfect information. Whether this transfers to human play is unclear:
 
-### Practical Implications
+| Trick | Oracle Pattern | Human Transfer Hypothesis |
+|-------|----------------|---------------------------|
+| 1-2 | Moderate cost | Tempo-setting may matter differently under uncertainty |
+| 3-4 | Peak cost | If humans can identify critical positions, focus here |
+| 5-6 | Moderate cost | Outcomes narrowing in both oracle and human play |
+| 7 | Near-zero cost | Endgame likely forced for humans too |
 
-1. **Concentrate on tricks 3-4**: This is where suboptimal play costs the most
-2. **Don't overthink the end-game**: With 90%+ forced plays, there's little to decide
-3. **Early mistakes are recoverable**: Wide game tree allows compensation
-4. **Mid-game mistakes compound**: Narrowing tree means fewer recovery options
+**Open question**: Do humans actually make more consequential errors in tricks 3-4, or does hidden information redistribute the criticality?
 
 ### Files Generated
 
@@ -67,18 +66,18 @@ When do mistakes hurt most? Where should players focus their thinking?
 ## 25b: Trick Importance
 
 ### Key Question
-Which tricks matter most for final outcome?
+Under perfect information, which tricks contribute most to final outcome variance?
 
 ### Method
 - Analyze correlation between trick-level decisions and final V
 - Identify pivotal tricks
 
-### Key Findings
+### Key Findings (Oracle Data)
 
-**Trick importance (by outcome variance explained)**:
-1. Trick 1-2: Moderate (declarer sets tempo)
-2. **Tricks 3-4**: Highest (maximum branching)
-3. Tricks 5-6: Moderate (narrowing outcomes)
+**Trick importance by outcome variance explained**:
+1. Trick 1-2: Moderate (declarer sets tempo under perfect info)
+2. **Tricks 3-4**: Highest (maximum branching factor)
+3. Tricks 5-6: Moderate (tree narrowing)
 4. Trick 7: Low (mostly determined)
 
 ---
@@ -86,63 +85,45 @@ Which tricks matter most for final outcome?
 ## 25c: Bid Optimization
 
 ### Key Question
-How should bidding strategy account for hand features?
+Under perfect information, how does expected value (E[V]) vary with hand features?
 
 ### Method
-- Map E[V] to bid thresholds
-- Account for uncertainty (σ)
-- Compute bid success rate by (doubles, trumps)
+- Map E[V] to hand characteristics
+- Account for variance (σ)
+- Compute by (doubles, trumps) cell
 
-### E[V] by (n_doubles, trump_count)
+### E[V] by (n_doubles, trump_count) — Oracle Data
 
-| n_doubles | trumps | E[V] | Bid Rate | n_hands | Should Bid? |
-|-----------|--------|------|----------|---------|-------------|
-| 0 | 0 | -2.3 | 60% | 5 | No |
-| 0 | 1 | -10.7 | 17% | 6 | **No** |
-| 0 | 2 | -14.0 | 0% | 3 | **No** |
-| 0 | 3 | 4.7 | 75% | 4 | Yes |
-| 0 | 4 | 29.1 | 100% | 3 | Yes |
-| 1 | 0 | 7.5 | 70% | 20 | Yes |
-| 1 | 1 | 1.2 | 57% | 14 | Marginal |
-| 2 | 0 | 20.0 | 93% | 28 | Yes |
-| 2 | 1 | 10.3 | 82% | 17 | Yes |
-| 3 | 0 | 15.5 | 86% | 14 | Yes |
-| 3 | 3 | 34.1 | 100% | 6 | Yes |
-| 4 | 0 | 27.1 | 100% | 5 | Yes |
+| n_doubles | trumps | E[V] | Bid Rate | n_hands | Oracle Assessment |
+|-----------|--------|------|----------|---------|-------------------|
+| 0 | 0 | -2.3 | 60% | 5 | Negative EV |
+| 0 | 1 | -10.7 | 17% | 6 | Negative EV |
+| 0 | 2 | -14.0 | 0% | 3 | Negative EV |
+| 0 | 3 | 4.7 | 75% | 4 | Positive EV |
+| 0 | 4 | 29.1 | 100% | 3 | Strongly positive |
+| 1 | 0 | 7.5 | 70% | 20 | Positive EV |
+| 1 | 1 | 1.2 | 57% | 14 | Near-neutral |
+| 2 | 0 | 20.0 | 93% | 28 | Strongly positive |
+| 2 | 1 | 10.3 | 82% | 17 | Positive EV |
+| 3 | 0 | 15.5 | 86% | 14 | Strongly positive |
+| 3 | 3 | 34.1 | 100% | 6 | Strongly positive |
+| 4 | 0 | 27.1 | 100% | 5 | Strongly positive |
 
-### Bid Decision Rules
+### Oracle E[V] Approximation ("Napkin Formula")
 
-**Always bid** (E[V] > 10):
-- 2+ doubles regardless of trumps
-- 0 doubles + 4+ trumps
-- 1 double + 2+ trumps
-
-**Never bid** (E[V] < 0):
-- 0 doubles + 0-2 trumps
-
-**Marginal** (E[V] 0-10):
-- 1 double + 0-1 trumps
-- Depends on opponent bidding
-
-### Napkin Bidding Formula
-
+Under perfect information, the oracle E[V] approximates:
 ```
-Expected score = 30 + 6×(doubles) + 3×(trumps)
+E[V]_oracle ≈ 30 + 6×(doubles) + 3×(trumps)
 ```
 
-**Interpretation:**
-- Base: 30 points (roughly neutral)
-- Each double: +6 points (almost a mark)
-- Each trump: +3 points (half a mark)
+**Important caveat**: This describes oracle expected value where all players play optimally with full information. Human bidding operates under uncertainty about:
+- Partner's hand
+- Opponents' hands
+- Opponents' skill level
 
-### Risk-Adjusted Bidding
+### Variance Consideration
 
-For volatile hands (σ(V) > 20), discount by 25%:
-```
-Risk-adjusted = Expected × 0.75
-```
-
-For control hands (σ(V) < 10), bid confidently.
+For hands with high σ(V) > 20 in oracle data, outcomes are volatile even under perfect play. How this should inform human bidding is an open question.
 
 ### Files Generated
 
@@ -155,14 +136,14 @@ For control hands (σ(V) < 10), bid confidently.
 ## 25d: Domino Timing
 
 ### Key Question
-When should specific dominoes be played?
+Under perfect information, when are specific dominoes played?
 
 ### Method
-- Track mean depth at which each domino is played
+- Track mean depth at which each domino is played in oracle games
 - Compute early/mid/late play rates
-- Identify optimal timing patterns
+- Identify timing patterns
 
-### Domino Play Timing (ordered by mean depth)
+### Domino Play Timing in Oracle Games
 
 **Early Plays (mean depth > 9.5)**:
 
@@ -182,18 +163,21 @@ When should specific dominoes be played?
 | 1-1 | 9.02 | 0.0% | 72.6% | **27.4%** |
 | 4-3 | 8.94 | 0.0% | 70.6% | **29.4%** |
 
-### Key Patterns
+### Key Patterns (Oracle Data)
 
-1. **High sixes play early**: 6-4, 6-5, 6-6 all have mean depth > 9.6
-2. **5-5 (count double) plays early**: Despite being valuable, it's played mid-game
-3. **Low doubles play late**: 1-1 and 0-0 are held longer
-4. **4-3 is the latest non-double**: Saved for end-game flexibility
+1. **High sixes played early in oracle games**: 6-4, 6-5, 6-6 all have mean depth > 9.6
+2. **5-5 (count double) played early**: Played mid-game despite high value
+3. **Low doubles played late**: 1-1 held longer
+4. **4-3 is the latest non-double**: Reserved for flexibility
 
 ### Interpretation
 
-- **Lead strength early**: High dominoes establish control
-- **Hold low cards**: Flexibility to follow suit late
-- **Doubles vary by value**: 5-5, 6-6 played early; 1-1, 0-0 held late
+Under perfect information:
+- **High cards establish early control** - the oracle leads strength
+- **Low cards provide late flexibility** - useful for following suit
+- **Doubles vary by value** - high doubles early, low doubles late
+
+Whether these patterns transfer to human play is unknown. Humans cannot see opponent hands to know if "establishing control" will succeed.
 
 ### Files Generated
 
@@ -206,14 +190,14 @@ When should specific dominoes be played?
 ## 25e: Lead Analysis
 
 ### Key Question
-What makes a good lead at each trick? How does lead strategy evolve?
+In oracle games, what characterizes optimal leads at each trick?
 
 ### Method
-- Analyze all leads by trick number
+- Analyze all leads by trick number in oracle data
 - Compute rates of trump leads, count leads, double leads
 - Track average high pip of lead domino
 
-### Lead Characteristics by Trick
+### Lead Characteristics by Trick (Oracle Data)
 
 | Trick | n_leads | Trump % | Count % | Double % | Avg High Pip |
 |-------|---------|---------|---------|----------|--------------|
@@ -223,7 +207,7 @@ What makes a good lead at each trick? How does lead strategy evolve?
 | 6 | 5,096 | 28.5% | **15.0%** | 32.3% | 3.1 |
 | 7 | 178 | 21.3% | **19.7%** | 24.7% | **3.7** |
 
-### Key Patterns
+### Key Patterns (Oracle Data)
 
 **Early tricks (3-4)**:
 - **Double rate highest** (~35-40%)
@@ -242,17 +226,11 @@ What makes a good lead at each trick? How does lead strategy evolve?
 
 ### Interpretation
 
-1. **Lead doubles early**: 39% double rate in trick 3 → establish control
-2. **Save count for late**: Count lead rate rises from 12% to 20% as game progresses
-3. **Pip escalation**: Average lead pip increases from 2.5 to 3.7 across tricks
-4. **Trump flexibility**: Trump leads steady at 28-32% throughout
-
-### Opening Lead Priorities (Trick 1-2)
-
-1. **High double** (if available) - establishes control
-2. **Trump suit** - pulls opponent trumps
-3. **High off-suit** - wins trick, sets tempo
-4. **Avoid**: Low off-suit leads (loses control)
+Under perfect information, the oracle:
+1. **Leads doubles early**: 39% double rate in trick 3
+2. **Saves count for late**: Count lead rate rises from 12% to 20%
+3. **Escalates pip value**: Average lead pip increases from 2.5 to 3.7
+4. **Uses trump consistently**: 28-32% throughout
 
 ### Files Generated
 
@@ -264,7 +242,7 @@ What makes a good lead at each trick? How does lead strategy evolve?
 ## 25f: Critical Position Detection
 
 ### Key Question
-When should you think hard vs play fast? What features predict "critical" positions?
+Can we predict which positions have high Q-spread (many points at stake between best and worst moves)?
 
 ### Method
 - Define criticality: Q-spread (max - min of valid Q-values) > 90th percentile
@@ -302,23 +280,20 @@ When should you think hard vs play fast? What features predict "critical" positi
 | 7 | team_0_leads | 0.027 |
 | 8 | end_game | 0.023 |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**Watch out when players have asymmetric hand sizes!**
+Under perfect information, the top predictors of critical positions (high Q-spread) are `remaining_pX` — how many dominoes each player holds. Asymmetric hand sizes correlate with higher decision stakes.
 
-The top 3 predictors are all `remaining_pX` - how many dominoes each player still holds. When players have different numbers of cards remaining, decisions become more critical.
-
-1. **Asymmetry creates uncertainty**: Unequal remaining counts mean more possible branches
+1. **Asymmetry correlates with criticality**: Unequal remaining counts predict high Q-spread
 2. **P0 (declarer) remaining matters most**: The declarer's hand size dominates
-3. **Trick position matters**: Mid-trick decisions are more critical than leads
-4. **Game phase is secondary**: Depth and phase contribute but aren't dominant
+3. **Trick position matters**: Mid-trick decisions have higher Q-spread than leads
+4. **AUC = 0.65**: Critical positions are only moderately predictable from these features
 
-### Practical Implications
+### Implications for Human Play (Hypotheses)
 
-1. **Think hard when hands are unbalanced**: After a player shows out, positions become more critical
-2. **Early decisions set asymmetry**: Opening play can create critical downstream positions
-3. **Follow the remaining counts**: Pay attention when opponents have unusual hand patterns
-4. **AUC = 0.65 means moderate predictability**: Critical positions are partially detectable but not fully predictable
+If remaining-count asymmetry predicts oracle criticality, it may also indicate important decisions for humans. However:
+- Humans cannot perfectly track remaining counts
+- The relationship between oracle Q-spread and human decision importance is unknown
 
 ### Files Generated
 
@@ -331,7 +306,7 @@ The top 3 predictors are all `remaining_pX` - how many dominoes each player stil
 ## 25g: Partner Synergy
 
 ### Key Question
-Does having a strong partner make your doubles worth more?
+Under perfect information, does declarer's doubles value depend on partner's doubles?
 
 ### Method
 - Extract features for both P0 (declarer) and P2 (partner) hands
@@ -340,7 +315,7 @@ Does having a strong partner make your doubles worth more?
 
 ### Key Findings
 
-#### Main Effects Model
+#### Main Effects Model (Oracle Data)
 
 | Feature | Coefficient | Interpretation |
 |---------|-------------|----------------|
@@ -359,29 +334,23 @@ Does having a strong partner make your doubles worth more?
 
 **R² = 0.160** (ΔR² = 0.001)
 
-### Interpretation
+### Interpretation (Grounded)
 
-**NO SIGNIFICANT PARTNER SYNERGY**
+**Under perfect information, no significant interaction detected**
 
 The interaction term is not significant (p = 0.60), meaning:
+1. **Under perfect play, P0's doubles' value is independent of P2's doubles**
+2. **P0 double worth +7-8 points regardless of partner's hand**
+3. **Effect is additive**: Team E[V] ≈ P0_contribution + P2_contribution
 
-1. **Your doubles' value is independent of partner's doubles**
-2. **P0 double worth +8 points regardless of partner's hand**
-3. **Synergy effect is -1.2 points but not statistically significant**
+### Important Caveat
 
-### Practical Implications
+This finding is about **oracle E[V]** under perfect information. It does NOT imply:
+- Partner signaling has no value (signaling is about information transfer under uncertainty)
+- Partner coordination doesn't matter in human play
+- Bidding conventions are useless
 
-1. **Bid based on YOUR hand alone**: Partner's strength doesn't change your doubles' value
-2. **P0 doubles dominate**: +7 pts per double vs +0.8 pts for partner
-3. **Additive, not multiplicative**: Team strength = your strength + partner strength (no interaction)
-4. **Partner signaling has limited value**: Their doubles don't amplify yours
-
-### Why No Synergy?
-
-Possible explanations:
-1. **Declarer dominates**: P0 leads and controls tempo - partner's hand matters less
-2. **Opponent information**: Opponents also have cards - team synergy is diluted
-3. **Small sample**: 200 hands may not have enough power to detect small interactions
+Under imperfect information, partner's hand might matter via inference even if it doesn't create oracle-level synergy.
 
 ### Files Generated
 
@@ -393,22 +362,22 @@ Possible explanations:
 ## 25h: Count Capture Timing
 
 ### Key Question
-When are count dominoes (35 total points) captured during the game? Does decision criticality vary by game phase?
+How does decision criticality (Q-spread) vary by game phase?
 
 ### Method
 - Analyze Q-spread (max Q - min Q for valid actions) as proxy for decision criticality
 - Sample 30,000 states across 3 seeds
 - Aggregate by game phase (early/mid/late)
 
-### Key Findings
+### Key Findings (Oracle Data)
 
 #### Decision Criticality by Game Phase
 
 | Phase | Depth Range | Mean Q-Spread | Interpretation |
 |-------|-------------|---------------|----------------|
-| Early | 20-28 | **7.1** | Highest criticality - opening matters most |
-| Mid | 8-19 | 4.2 | Moderate - narrowing options |
-| Late | 0-7 | 2.6 | Low - endgame forced plays |
+| Early | 20-28 | **7.1** | Highest Q-spread - most at stake |
+| Mid | 8-19 | 4.2 | Moderate Q-spread |
+| Late | 0-7 | 2.6 | Low Q-spread - decisions narrowing |
 
 #### Depth-Level Analysis
 
@@ -419,26 +388,19 @@ When are count dominoes (35 total points) captured during the game? Does decisio
 | 8-12 | 3.0-6.9 | ~35% | 17,000 |
 | 13-15 | 4.4-6.4 | ~35% | 4,400 |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**Early-game decisions are most critical**
+**Under perfect information, Q-spread decreases as games progress**
 
-The Q-spread decreases monotonically as the game progresses:
-1. **Opening (depth 20-28)**: Mean Q-spread = 7.1 - mistakes cost most here
-2. **Mid-game (depth 8-19)**: Mean Q-spread = 4.2 - still meaningful decisions
-3. **Endgame (depth 0-7)**: Mean Q-spread = 2.6 - outcomes mostly locked in
+1. **Opening (depth 20-28)**: Mean Q-spread = 7.1 — suboptimal moves cost most
+2. **Mid-game (depth 8-19)**: Mean Q-spread = 4.2 — meaningful decisions remain
+3. **Endgame (depth 0-7)**: Mean Q-spread = 2.6 — outcomes narrowing
 
 This aligns with findings from 25a (Mistake Cost by Phase) and 25f (Critical Position Detection).
 
 ### Limitation
 
-The original goal was to track **when** each count domino is captured (played). Without full game traces (action sequences), we can only observe which player holds each count at game start, not capture timing. Future work with trajectory data could answer this.
-
-### Practical Implications
-
-1. **Defend counts early**: Since early-game decisions matter most, protect count dominoes in opening tricks
-2. **Count timing is contextual**: No universal "play counts early/late" rule - depends on game state
-3. **Late-game count captures are forced**: With Q-spread ≈ 2.6 in endgame, count play timing is largely determined
+The original goal was to track **when** each count domino is captured (played). Without full game traces (action sequences), we can only analyze Q-spread by phase, not individual domino capture timing.
 
 ### Files Generated
 
@@ -450,7 +412,7 @@ The original goal was to track **when** each count domino is captured (played). 
 ## 25i: Position Type Taxonomy
 
 ### Key Question
-Can we create a vocabulary for discussing game situations? What types of positions exist?
+Can we cluster game states into meaningful categories?
 
 ### Method
 - Extract 6 features per state: depth, trick_position, team_0_leads, hand_imbalance, q_spread, n_valid_actions
@@ -458,60 +420,44 @@ Can we create a vocabulary for discussing game situations? What types of positio
 - UMAP visualization for 2D projection
 - Name clusters based on phase, position, and criticality
 
-### Key Findings
+### Key Findings (Oracle Data)
 
 #### Cluster Taxonomy
 
 | Cluster | Name | Size | Depth | Q-Spread | Mean V |
 |---------|------|------|-------|----------|--------|
-| 0 | Mid-game Responding (Routine) | 13.5% | 10.6 | 0.2 | 12.1 |
-| 1 | Endgame Following (Routine) | 12.1% | 5.6 | 1.4 | 7.3 |
-| 2 | Mid-game Leading (Important) | 6.0% | 10.0 | 4.9 | 10.7 |
-| 3 | Mid-game Following (Routine) | 13.8% | 10.3 | 0.2 | 13.8 |
-| 4 | Mid-game Following (Routine) | 8.6% | 9.9 | 4.0 | 14.3 |
-| 5 | Endgame Following (Routine) | **25.2%** | 6.9 | 0.6 | 7.9 |
-| 6 | Mid-game Following (Routine) | 13.0% | 10.4 | 2.4 | 14.4 |
-| 7 | Mid-game Following (Critical) | 7.8% | 9.0 | **24.1** | 8.8 |
+| 0 | Mid-game Responding (Low Q-spread) | 13.5% | 10.6 | 0.2 | 12.1 |
+| 1 | Endgame Following (Low Q-spread) | 12.1% | 5.6 | 1.4 | 7.3 |
+| 2 | Mid-game Leading (Moderate Q-spread) | 6.0% | 10.0 | 4.9 | 10.7 |
+| 3 | Mid-game Following (Low Q-spread) | 13.8% | 10.3 | 0.2 | 13.8 |
+| 4 | Mid-game Following (Low Q-spread) | 8.6% | 9.9 | 4.0 | 14.3 |
+| 5 | Endgame Following (Low Q-spread) | **25.2%** | 6.9 | 0.6 | 7.9 |
+| 6 | Mid-game Following (Moderate Q-spread) | 13.0% | 10.4 | 2.4 | 14.4 |
+| 7 | Mid-game Following (High Q-spread) | 7.8% | 9.0 | **24.1** | 8.8 |
 
-#### Distribution by Criticality
+#### Distribution by Q-Spread Level
 
-| Criticality | Clusters | % of States |
-|-------------|----------|-------------|
-| Routine | 0, 1, 3, 4, 5, 6 | 86.2% |
-| Important | 2 | 6.0% |
-| Critical | 7 | 7.8% |
+| Q-Spread Level | Clusters | % of States |
+|----------------|----------|-------------|
+| Low (<3) | 0, 1, 3, 4, 5, 6 | 86.2% |
+| Moderate (3-10) | 2 | 6.0% |
+| High (>10) | 7 | 7.8% |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**Most positions are routine, but ~14% require serious thought**
+**Under perfect information, ~14% of positions have Q-spread > 3 points**
 
-1. **Cluster 7 is the danger zone**: Q-spread = 24.1 points means wrong move costs ~24 points
-2. **Leading positions are more important**: Cluster 2 (Mid-game Leading) has Q-spread 4.9
-3. **Following is usually routine**: Most follow positions have Q-spread < 2
-4. **Endgame is mechanical**: Clusters 1, 5 (37% of states) are low-decision
-
-### Mental Model for Players
-
-| Situation | Think Hard? | Why |
-|-----------|-------------|-----|
-| Leading mid-game | **Yes** | Cluster 2: Important (Q-spread 4.9) |
-| Following mid-game, many options | **Yes** | Cluster 7: Critical (Q-spread 24.1) |
-| Following mid-game, few options | No | Clusters 0,3,4,6: Routine |
-| Endgame | No | Clusters 1,5: Mostly forced plays |
+1. **Cluster 7 has extreme Q-spread**: Mean 24.1 points — wrong move is very costly
+2. **Leading positions have higher Q-spread**: Cluster 2 (Mid-game Leading) has Q-spread 4.9
+3. **Following is usually low Q-spread**: Most follow positions have Q-spread < 2
+4. **Endgame is low Q-spread**: Clusters 1, 5 (37% of states) have Q-spread < 2
 
 ### UMAP Visualization
 
 The 2D UMAP projection shows:
 - Continuous manifold structure (no sharp cluster boundaries)
 - Clear depth gradient across embedding space
-- Cluster 7 (Critical) forms a distinct region
-
-### Practical Implications
-
-1. **Reserve mental energy**: 86% of positions are routine - don't overthink them
-2. **Focus on leads**: Mid-game leading positions (C2) require care
-3. **Watch for high-optionality follows**: When you have many valid moves mid-game, decisions matter most
-4. **Trust the endgame**: Low Q-spread means outcomes are mostly determined
+- Cluster 7 (High Q-spread) forms a distinct region
 
 ### Files Generated
 
@@ -524,7 +470,7 @@ The 2D UMAP projection shows:
 ## 25j: Heuristic Derivation
 
 ### Key Question
-Which folk heuristics for Texas 42 play actually match optimal play?
+How often do simple heuristics match the oracle's optimal action?
 
 ### Method
 - Define 18 simple rules ("lead any double", "follow with lowest", etc.)
@@ -532,7 +478,7 @@ Which folk heuristics for Texas 42 play actually match optimal play?
 - Compare lead heuristics (when leading) vs follow heuristics (when following)
 - Establish random baseline for comparison
 
-### Heuristic Accuracy Ranking
+### Heuristic Accuracy vs Oracle
 
 | Heuristic | Description | Accuracy | n_states |
 |-----------|-------------|----------|----------|
@@ -559,31 +505,30 @@ Which folk heuristics for Texas 42 play actually match optimal play?
 
 | Category | Avg Accuracy | Notes |
 |----------|--------------|-------|
-| Lead heuristics | 25.8% | Best performing category |
-| Follow heuristics | 18.4% | Near-random performance |
-| Universal heuristics | 19.5% | Close to random baseline |
+| Lead heuristics | 25.8% | Higher than baseline |
+| Follow heuristics | 18.4% | Near random |
+| Universal heuristics | 19.5% | Near random |
 
-### Key Insights
+### Key Findings (Grounded)
 
-1. **No heuristic beats 35%**: Even the best single rule matches oracle < 35% of the time
-2. **Leading is more predictable**: Lead heuristics average 25.8% vs follow at 18.4%
-3. **"Lead any double" is best**: 34.2% accuracy - nearly 15 points above random
-4. **Following is contextual**: Follow heuristics perform near-random (17-23%)
-5. **Avoiding counts helps slightly**: 22.2% vs 19.3% random baseline
+1. **Among 18 tested heuristics, the best (lead_any_double) matched oracle 34.2% of the time**
+2. **Lead heuristics outperform follow heuristics**: 25.8% vs 18.4% average
+3. **Random baseline is 19.3%**: Reflects average number of legal moves
+4. **Follow heuristics perform near-random**: Context dominates follow decisions
 
-### Why Heuristics Fail
+### Important Caveats
 
-1. **Context is king**: Optimal play depends on full game state, not just hand
+- **This is empirical, not theoretical**: We tested 18 specific heuristics, not "all possible heuristics"
+- **Oracle accuracy ≠ human win rate**: Matching oracle at 34% doesn't mean winning 34% of games
+- **Perfect information assumed**: Oracle knows all hands; heuristics that would help under uncertainty weren't tested
+- **Heuristic set is not exhaustive**: Different heuristics might perform better
+
+### Why Might Heuristics Match Poorly? (Hypotheses)
+
+Possible explanations (not empirically validated):
+1. **Context dependence**: Optimal play depends on full game state
 2. **Partner coordination**: Heuristics don't account for partner's position
-3. **Information asymmetry**: Opponent hands matter but are unknown
-4. **Trick history**: Past plays affect optimal strategy
-
-### Practical Implications
-
-1. **Memorized rules won't beat strong players**: 35% max accuracy leaves huge gaps
-2. **Lead strategy is learnable**: Double-leading has clear value
-3. **Follow play requires calculation**: No simple rule captures follow-play nuance
-4. **Machine learning needed**: Simple heuristics don't capture game complexity
+3. **Information content**: Opponent hands affect optimal play
 
 ### Files Generated
 
@@ -595,7 +540,7 @@ Which folk heuristics for Texas 42 play actually match optimal play?
 ## 25k: Information Value
 
 ### Key Question
-How much is perfect information (knowing opponent hands) worth?
+In states that appear across multiple opponent configurations, how much does knowing the exact opponent hands change optimal play?
 
 ### Method
 Using marginalized oracle data (same P0 hand, 3 different opponent configurations):
@@ -625,23 +570,16 @@ Using marginalized oracle data (same P0 hand, 3 different opponent configuration
 
 ### Interpretation
 
-**When opponent hands matter, they matter A LOT**
+**⚠️ SAMPLING BIAS WARNING**: These extreme values (mean 69 pts, 98% action differences) reflect a biased sample. We only analyze "common states" that appear across all 3 opponent configurations. These are special positions where the game tree happens to converge.
 
-The extreme values (mean 69 pts, 98% action differences) reflect sampling bias - we only find "common states" that appear across all 3 opponent configurations. These are specific critical positions where:
-
+At these specific pivotal positions:
 1. **Opponent hands dramatically change optimal play**: 98% of positions have different best actions
-2. **The stakes are enormous**: Mean 69 pts ≈ 2+ marks difference
+2. **The stakes are large**: Mean 69 pts ≈ 2+ marks difference between perfect and robust play
 3. **Mid-game is most sensitive**: Peak at depth 9
 
 ### Limitation
 
-This analysis is based on states that happen to appear in all 3 marginalized configurations - a biased sample of "pivotal" positions. The true average information value across all states would be much lower, as most positions have similar optimal play regardless of opponent hands.
-
-### Practical Implications
-
-1. **Counting cards matters at critical junctures**: At decision points that could go either way, opponent inference is worth marks
-2. **Some positions are "opponent-agnostic"**: Most routine positions don't need opponent knowledge
-3. **Identify the pivotal moments**: Learn to recognize when opponent hands matter
+The true average information value across ALL states would be much lower. Most routine positions likely have similar optimal play regardless of opponent hands. This analysis identifies where information matters most, not how much it matters on average.
 
 ### Files Generated
 
@@ -653,12 +591,12 @@ This analysis is based on states that happen to appear in all 3 marginalized con
 ## 25m: Variance Decomposition
 
 ### Key Question
-How much of outcome variance is "deal luck" (your hand) vs opponent configuration (their hands)?
+Using marginalized data, how much of E[V] variance comes from your hand vs opponent configuration?
 
 ### Method
 Using marginalized oracle data (same P0 hand, 3 different opponent configurations):
 1. For each base seed, compute mean V across the 3 opponent configs
-2. Decompose variance: between-seed (deal) vs within-seed (opponent config)
+2. Decompose variance: between-seed (your hand) vs within-seed (opponent config)
 3. Calculate Intraclass Correlation Coefficient (ICC)
 
 ### Key Findings
@@ -667,8 +605,8 @@ Using marginalized oracle data (same P0 hand, 3 different opponent configuration
 
 | Component | Variance | % of Total |
 |-----------|----------|------------|
-| Between-seed (deal) | 170.5 | **23.1%** |
-| Within-seed (opponent) | 569.2 | **76.9%** |
+| Between-seed (your hand) | 170.5 | **23.1%** |
+| Within-seed (opponents) | 569.2 | **76.9%** |
 
 #### Statistical Tests
 
@@ -678,32 +616,28 @@ Using marginalized oracle data (same P0 hand, 3 different opponent configuration
 | p-value | 0.61 | **Not significant** |
 | ICC | **-0.035** | Near zero |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**SURPRISING: Opponent hands matter MORE than your own hand!**
+**Under perfect information, opponent configuration explains more E[V] variance than your hand**
 
-The analysis reveals a counterintuitive finding:
-1. **Your deal explains only 23% of variance** - knowing your hand gives limited predictability
-2. **Opponent configuration explains 77%** - their hands matter more than yours
-3. **ICC ≈ 0**: Different deals produce similar variance - deal isn't deterministic
-4. **F-test not significant**: Seed differences don't significantly predict outcome
+1. **Your hand explains 23% of E[V] variance** — significant but not dominant
+2. **Opponent configuration explains 77%** — the other three hands matter more
+3. **ICC ≈ 0**: Knowing your hand provides limited E[V] predictability
+4. **F-test not significant**: Between-seed variance is not significantly greater than within-seed
 
 ### Why This Makes Sense
 
 1. **Partnership game**: Your partner (P2) can amplify or negate your hand's value
-2. **Opposition coordination**: Opponents' combined hands determine how well they defend
-3. **Same hand, different results**: The same "good hand" can succeed or fail depending on opponents
+2. **Opposition defense**: Opponents' combined hands determine defense quality
+3. **Same hand, different outcomes**: Under perfect play, the same "good hand" succeeds or fails based on table composition
 
-### Practical Implications
+### Important Caveat
 
-1. **Don't overvalue your hand**: Having good cards is less predictive than you might think
-2. **Partner and opponents matter more**: The overall table composition determines outcome
-3. **Reduce outcome attribution to luck**: You can't blame/credit the deal for most variance
-4. **Bidding should be conservative**: High variance from unknown opponents = risk
+This uses mean V across all states (not just root V) for computational efficiency. Root V would give cleaner "game outcome" semantics.
 
-### Limitation
+### Implications for Human Play (Hypothesis)
 
-This analysis uses mean V across states (not just root V) for computational efficiency. Root V would give cleaner "outcome" values but requires slower computation.
+If your hand explains only 23% of oracle E[V] variance, human bidding based solely on hand strength may be similarly limited. However, humans also gain information during play that the oracle already has.
 
 ### Files Generated
 
@@ -715,18 +649,18 @@ This analysis uses mean V across states (not just root V) for computational effi
 ## 25n: Endgame Patterns
 
 ### Key Question
-At depth ≤ 4, can endgame be simplified to simple rules or lookup tables?
+At depth ≤ 4, how deterministic is optimal play?
 
 ### Method
 1. Extract all states with depth ≤ 4 (last 4 or fewer dominoes per player)
-2. Analyze Q-spread: if Q-spread = 0, only one action is optimal
+2. Analyze Q-spread: if Q-spread = 0, all legal actions lead to the same outcome
 3. Count "forced" decisions (only one valid or one optimal action)
 
 ### Key Findings
 
 #### The Headline
 
-**Endgame is 100% deterministic!**
+**Under perfect information, endgame (depth ≤ 4) is 100% deterministic!**
 
 | Metric | Value |
 |--------|-------|
@@ -744,33 +678,30 @@ At depth ≤ 4, can endgame be simplified to simple rules or lookup tables?
 | 3 | 42,844 | **100%** |
 | 4 | 42,844 | **100%** |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**The last 4 tricks are completely mechanical**
+**Under perfect information, the last 4 tricks have predetermined outcomes**
 
-1. **No decisions to make**: Every endgame position has exactly one optimal action
-2. **Q-spread = 0 everywhere**: All valid actions are equally bad, except one
-3. **Outcome is locked in**: By depth 4, the final score is determined
+1. **No decision variance**: Every endgame position has exactly one optimal action (or all actions are equivalent)
+2. **Q-spread = 0**: No choice matters — the outcome is locked in
+3. **Game decided earlier**: By depth 4, the final score is determined
 
 ### Why This Happens
 
-1. **Information is revealed**: By trick 4+, you know who has what
-2. **Few remaining cards**: Limited legal plays constrain options
-3. **Forced sequences**: One card play often forces the entire sequence
-
-### Practical Implications
-
-1. **Stop thinking at depth 4**: The game is decided - play quickly
-2. **Endgame is solvable**: A simple lookup table could replace minimax for depth ≤ 4
-3. **Real decisions are earlier**: Focus attention on tricks 1-4, not 5-7
-4. **No "clutch" plays exist**: You can't outplay someone in endgame - it's predetermined
+1. **Full information is revealed**: By trick 4+, card locations are known
+2. **Few remaining cards**: Limited legal plays
+3. **Forced sequences**: Playing one card often forces the entire sequence
 
 ### Connection to Other Findings
 
 This aligns with:
 - **25a (Mistake Cost)**: Near-zero mistake cost at depth < 8
 - **25f (Critical Positions)**: Endgame positions have low Q-spread
-- **25h (Count Capture)**: Q-spread ≈ 2.6 in endgame (and here we show it's actually 0 at depth ≤ 4)
+- **25h (Count Capture)**: Q-spread ≈ 2.6 in late game, and exactly 0 at depth ≤ 4
+
+### Implications for Human Play (Hypothesis)
+
+If oracle endgame is deterministic, human endgame may also have limited decision value — especially if card locations are trackable. However, humans may not perfectly track all cards, introducing some uncertainty.
 
 ### Files Generated
 
@@ -782,19 +713,19 @@ This aligns with:
 ## 25o: Suit Exhaustion Signals
 
 ### Key Question
-When a player is void in a suit, how does optimal play change?
+How do voids (player having no dominoes in a suit) relate to Q-spread?
 
 ### Method
 1. Unpack states to get remaining hands (local indices → global domino IDs)
 2. Detect voids: player has no dominoes containing a particular pip (suit 0-6)
 3. Compare Q-spread and action distributions by void status and count
-4. Control for game phase (depth) to isolate void effect
+4. Control for game phase (depth)
 
 ### Key Findings
 
 #### The Headline
 
-**Voids are ubiquitous - 100% of sampled states have at least one opponent void!**
+**In sampled states, 100% have at least one opponent void**
 
 | Metric | Value |
 |--------|-------|
@@ -821,33 +752,26 @@ When a player is void in a suit, how does optimal play change?
 | Mid-Late | 7-13 | 2.91 |
 | Late | 0-6 | **1.95** |
 
-### Interpretation
+### Interpretation (Grounded)
 
-**Voids don't create decisions - they narrow them**
+**Voids are ubiquitous; void count tracks game phase**
 
-1. **Voids are not rare events**: By mid-game, every state has multiple voids
-2. **Total voids track game phase**: More voids = later in game = simpler decisions
-3. **Peak complexity at 16-17 voids**: Mid-game maximum before endgame collapse
+1. **Voids are not rare**: By mid-game, virtually every state has multiple voids
+2. **Total voids proxy for depth**: More voids = later in game = simpler decisions
+3. **Peak Q-spread at 16-17 voids**: Mid-game maximum before endgame collapse
 4. **Endgame (26-27 voids) is forced**: Q-spread = 0, confirming 25n findings
 
 ### Why 100% Have Voids
 
 1. **Sampling bias**: First 100K rows of each shard are late-game states
 2. **State distribution**: Oracle files have more late-game states (larger game tree early)
-3. **7 suits per 7 dominoes**: With only 7 dominoes, voids are mathematically likely
-
-### Practical Implications
-
-1. **Don't track individual voids**: They're everywhere - not actionable information
-2. **Total void count proxies game phase**: Use it to gauge decision complexity
-3. **Information value comes from WHICH void**: Specific suit voids reveal opponent hands
-4. **Focus on void inference**: "They showed out of 4s" is more useful than "they have a void"
+3. **Mathematical likelihood**: With only 7 dominoes per player and 7 suits, voids are common
 
 ### Connection to Other Findings
 
 - **25n (Endgame)**: 100% forced at depth ≤ 4 aligns with Q-spread = 0 at 26-27 voids
-- **25f (Critical Positions)**: remaining_pX features predict criticality - voids create asymmetry
-- **25h (Count Capture)**: Q-spread decreases late game - voids are the mechanism
+- **25f (Critical Positions)**: remaining_pX features predict criticality — voids create asymmetry
+- **25h (Count Capture)**: Q-spread decreases late game — voids are the mechanism
 
 ### Files Generated
 
@@ -858,11 +782,45 @@ When a player is void in a suit, how does optimal play change?
 
 ## Summary
 
-Strategic analysis provides actionable guidance:
+### Grounded Findings (Oracle Data)
 
-1. **Focus on tricks 3-4**: Highest mistake cost, most strategic value
-2. **Don't overthink endgame**: 90%+ forced plays
-3. **Bid with napkin formula**: ~30 + 6×doubles + 3×trumps
-4. **Lead doubles early**: Establish control immediately
-5. **Mistakes average 2-5 points**: Meaningful but not catastrophic
-6. **Heuristics have limits**: Best single rule matches oracle only 34% - context matters
+These findings describe oracle behavior under perfect information:
+
+1. **Q-spread peaks in tricks 3-4**: Suboptimal moves cost 3-5 points on average
+2. **Endgame is deterministic**: At depth ≤ 4, Q-spread = 0 (outcomes locked in)
+3. **E[V] ≈ 30 + 6×doubles + 3×trumps**: Oracle expected value approximation
+4. **Oracle leads doubles early**: 39% double rate in trick 3
+5. **Among 18 tested heuristics, best matches oracle 34.2%**: Context-dependent play dominates
+6. **Opponent configuration explains 77% of E[V] variance**: Your hand explains only 23%
+
+### Open Questions
+
+1. **Do these patterns transfer to human play?** Oracle plays with perfect information; humans operate under uncertainty.
+
+2. **What heuristics would help under imperfect information?** We tested oracle-matching; human-optimal heuristics might differ.
+
+3. **How should variance inform bidding?** High within-seed variance suggests conservative bidding, but humans gain information during play.
+
+4. **Can humans identify "critical" positions?** Oracle Q-spread predicts stakes, but humans may not recognize these moments.
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human gameplay data**: Compare oracle patterns to actual human play to test transfer hypotheses
+2. **Imperfect-information heuristics**: Design and test heuristics that account for uncertainty
+3. **Bidding under variance**: Model optimal bidding given opponent-configuration variance
+4. **Critical position recognition**: Can interface cues help humans identify high-stakes moments?
+
+### Methodological Improvements
+
+1. **Root V analysis**: Use root V (not mean V) for cleaner variance decomposition
+2. **Trajectory data**: Analyze full game traces to study domino capture timing
+3. **Larger heuristic set**: Test more heuristics, including conditional rules
+4. **Cross-seed validation**: Verify patterns hold across more seeds
+
+### Theoretical Questions
+
+1. **Information-theoretic bounds**: What is the theoretical minimum entropy of optimal play?
+2. **Imperfect-information equilibria**: How does Nash equilibrium differ from minimax?
+3. **Signaling value**: Quantify the value of partner communication under uncertainty
