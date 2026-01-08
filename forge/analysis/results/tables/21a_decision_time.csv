@@ -1,0 +1,7 @@
+threshold_name,threshold,depth,plays,trick,actual_std
+very_uncertain,20,25.0,3.0,1.0,0.0
+uncertain,15,25.0,3.0,1.0,0.0
+leaning,12,25.0,3.0,1.0,0.0
+probable,10,25.0,3.0,1.0,0.0
+decided,8,25.0,3.0,1.0,0.0
+locked,5,25.0,3.0,1.0,0.0
