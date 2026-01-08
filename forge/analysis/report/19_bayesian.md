@@ -2,6 +2,8 @@
 
 Full Bayesian inference on E[V] regression with PyMC.
 
+> **Epistemic Status**: This report applies Bayesian inference to oracle (perfect-information minimax) E[V] and σ(V). All posterior distributions, model comparisons, and archetype-specific effects describe oracle outcomes. The "napkin formula" validation and hierarchical archetype findings characterize oracle predictions. Whether these Bayesian relationships hold for human gameplay outcomes is untested.
+
 ## 19a: PyMC Bayesian Regression for E[V]
 
 ### Key Question
@@ -45,11 +47,11 @@ y ~ Normal(α + Xβ, σ)
 | max_suit_length | -0.88 | [-5.19, +3.65] | No |
 | n_6_high | -1.52 | [-4.64, +1.42] | No |
 
-### Key Findings
+### Key Findings (Oracle Data)
 
-1. **Only n_doubles and trump_count significant**: 95% HDIs exclude zero
-2. **Bayesian confirms frequentist**: Similar to bootstrap CIs from 13a
-3. **R² = 0.26**: Model explains ~26% of E[V] variance
+1. **Only n_doubles and trump_count significant for oracle E[V]**: 95% HDIs exclude zero
+2. **Bayesian confirms frequentist on oracle**: Similar to bootstrap CIs from 13a
+3. **R² = 0.26**: Model explains ~26% of oracle E[V] variance
 
 ### Advantages of Bayesian Approach
 
@@ -106,18 +108,20 @@ Can we jointly predict E[V] and σ(V) using a heteroskedastic model?
 | Heteroskedastic | -822.4 | 0.64 |
 | Homoskedastic | -823.8 | 0.36 |
 
-### Key Findings
+### Key Findings (Oracle Data)
 
-1. **Mean prediction R² = 0.23**: Reasonable E[V] prediction
-2. **Variance prediction r = 0.11**: Near-zero correlation
-3. **No significant variance predictors**: All β_σ CIs include zero
-4. **Model comparison**: Heteroskedastic slightly preferred but marginal difference
+1. **Mean prediction R² = 0.23**: Reasonable oracle E[V] prediction
+2. **Variance prediction r = 0.11**: Near-zero correlation for oracle σ(V)
+3. **No significant variance predictors for oracle**: All β_σ CIs include zero
+4. **Model comparison**: Heteroskedastic slightly preferred but marginal difference for oracle
 
-### Critical Insight
+### Critical Insight (Oracle Variance)
 
-The heteroskedastic model confirms that **variance is fundamentally unpredictable** from hand features:
-- CV r ≈ 0.1 for σ(V) prediction
-- Outcome uncertainty comes from opponent hands, not your own
+The heteroskedastic model confirms that **oracle variance is fundamentally unpredictable** from hand features:
+- CV r ≈ 0.1 for oracle σ(V) prediction
+- Oracle outcome uncertainty comes from opponent hands in marginalized data, not your own hand
+
+**Note**: In human play with inference and signaling, variance dynamics might differ from the oracle. This finding describes oracle game tree variance.
 
 ### Files Generated
 
@@ -151,16 +155,18 @@ Which model complexity is optimal? Does adding features beyond the napkin formul
 | M5_Full | 5 | -828.1 | 0.0% | All 10 features |
 | M0_Intercept | 6 | -847.3 | 3.8% | Intercept only |
 
-### Key Findings
+### Key Findings (Oracle Model Comparison)
 
-1. **Napkin model (M1) is nearly optimal**: ΔELPD from best model is only 0.4
-2. **Adding features hurts**: M5_Full has ELPD 5.7 worse than napkin
-3. **Stacking weights favor simplicity**: 28.8% napkin, 67.5% napkin+voids, 0% for complex models
+1. **Napkin model (M1) is nearly optimal for oracle**: ΔELPD from best model is only 0.4
+2. **Adding features hurts oracle prediction**: M5_Full has ELPD 5.7 worse than napkin
+3. **Stacking weights favor simplicity for oracle**: 28.8% napkin, 67.5% napkin+voids, 0% for complex models
 4. **No warnings**: All models passed PSIS diagnostics
 
-### Critical Insight
+### Critical Insight (Oracle Complexity)
 
-The Bayesian model comparison confirms that **complexity beyond the napkin formula is penalized**. The full 10-feature model performs worse than the 2-feature napkin model in predictive accuracy.
+The Bayesian model comparison confirms that **complexity beyond the napkin formula is penalized for oracle prediction**. The full 10-feature model performs worse than the 2-feature napkin model in oracle predictive accuracy.
+
+**Note**: This model comparison uses oracle outcomes. The optimal model complexity for predicting human gameplay outcomes might differ.
 
 ### Files Generated
 
@@ -175,7 +181,7 @@ The Bayesian model comparison confirms that **complexity beyond the napkin formu
 Bayesian hierarchical model with archetype-specific regression coefficients.
 
 ### Key Question
-Do the effects of doubles and trumps vary by hand archetype (control/balanced/volatile)?
+Do the effects of doubles and trumps on oracle E[V] vary by oracle hand archetype (control/balanced/volatile)?
 
 ### Method
 - Hierarchical linear model with random slopes by archetype
@@ -190,18 +196,20 @@ Do the effects of doubles and trumps vary by hand archetype (control/balanced/vo
 | balanced | +6.26 | [+3.56, +8.91] | **+4.29** | [+2.39, +6.59] |
 | volatile | +5.74 | [+2.60, +8.92] | +2.66 | [-0.24, +5.08] |
 
-### Key Findings
+### Key Findings (Oracle Archetypes)
 
-1. **Control archetype**: Doubles have the strongest effect (+8.21 pts/double)
-2. **Balanced archetype**: Both doubles (+6.26) and trumps (+4.29) contribute significantly
-3. **Volatile archetype**: Effects are weaker and less certain; trumps CI includes zero
-4. **Doubles matter more when outcomes are predictable**: Strong effect in control (+8.21) vs volatile (+5.74)
+1. **Control archetype**: Doubles have the strongest oracle effect (+8.21 oracle pts/double)
+2. **Balanced archetype**: Both doubles (+6.26) and trumps (+4.29) contribute significantly to oracle E[V]
+3. **Volatile archetype**: Oracle effects are weaker and less certain; trumps CI includes zero
+4. **Doubles matter more when oracle outcomes are predictable**: Strong effect in control (+8.21) vs volatile (+5.74)
 
-### Critical Insight
+### Critical Insight (Oracle Archetype Effects)
 
-Hand archetype moderates the napkin formula:
-- **Control hands** (low σ(V)): Focus on doubles - they're worth +8 pts each
-- **Volatile hands** (high σ(V)): Effects are attenuated - less predictable outcomes
+Hand archetype (defined by oracle σ(V) clustering) moderates the napkin formula:
+- **Control hands** (low oracle σ(V)): Doubles worth +8 oracle pts each
+- **Volatile hands** (high oracle σ(V)): Oracle effects are attenuated - less predictable oracle outcomes
+
+**Note**: These archetypes come from k-means clustering on oracle features (18_clustering). Whether human players perceive or should use similar archetypes is untested. The "control" vs "volatile" distinction describes oracle outcome variance, not necessarily human-perceived risk.
 
 ### Files Generated
 
@@ -210,11 +218,41 @@ Hand archetype moderates the napkin formula:
 
 ---
 
-## Summary
+## Summary (Oracle Bayesian Analysis)
 
-Bayesian analysis confirms and extends frequentist findings:
+Bayesian analysis of oracle data confirms and extends frequentist findings:
 
-1. **Two significant predictors**: n_doubles (+5.4) and trump_count (+3.0)
-2. **Risk unpredictable**: Heteroskedastic model shows σ(V) cannot be predicted from hand features
-3. **Proper uncertainty quantification**: Full posteriors available for any inference
-4. **Napkin formula validated**: Bayesian posterior means match frequentist estimates
+1. **Two significant predictors for oracle E[V]**: n_doubles (+5.4) and trump_count (+3.0)
+2. **Oracle risk unpredictable**: Heteroskedastic model shows oracle σ(V) cannot be predicted from hand features
+3. **Proper uncertainty quantification for oracle**: Full posteriors available for any oracle inference
+4. **Oracle napkin formula validated**: Bayesian posterior means match frequentist estimates on oracle data
+
+**Scope limitation**: These Bayesian findings describe oracle (perfect-information) outcomes. Whether the same posterior distributions and model comparisons hold for human gameplay—with hidden information and strategic complexity—is untested.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Bayesian regression on human data**: Would the posterior distributions for n_doubles and trump_count differ when predicting human game outcomes? Human gameplay might show different coefficient posteriors.
+
+2. **Hierarchical model transfer**: Do the oracle archetypes (control/balanced/volatile) exist in human gameplay? Would a hierarchical model on human data show similar archetype-specific effects?
+
+3. **Model comparison on human outcomes**: The LOO-CV favors the napkin formula for oracle prediction. Would human game outcomes favor a different model complexity?
+
+### Methodological Questions
+
+1. **Prior sensitivity**: The weakly informative priors (Normal(0, 5)) may influence posteriors with n=200. How sensitive are the posterior CIs to prior choices?
+
+2. **Archetype definition**: The archetypes come from k-means on oracle features. Would different clustering algorithms or feature sets yield different archetype-specific effects?
+
+3. **Heteroskedastic model assumptions**: The log-link for variance ensures positivity. Is this the appropriate functional form for oracle variance?
+
+### Open Questions
+
+1. **Why are archetype effects attenuated for volatile hands?**: Is this an inherent property of oracle outcomes, or could human players show different patterns?
+
+2. **Bayesian vs frequentist agreement**: The Bayesian and bootstrap CIs largely agree. Is this expected for n=200, or does it suggest the priors have minimal influence?
+
+3. **Practical use of posteriors**: Full posteriors enable probabilistic statements like P(β_doubles > 4). What practical questions about Texas 42 could benefit from such posterior inferences?
