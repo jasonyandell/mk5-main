@@ -2,10 +2,12 @@
 
 SHAP (SHapley Additive exPlanations) analysis for understanding per-hand feature contributions.
 
+> **Epistemic Status**: This report uses SHAP to explain model predictions of oracle E[V] and oracle σ(V). All findings describe what drives oracle outcome predictions—not human gameplay outcomes. The "implications for bidding" are hypotheses extrapolated from oracle model behavior; none have been validated against human gameplay.
+
 ## 14a: SHAP on E[V] Model
 
 ### Key Question
-What drives individual hand predictions? Can we explain why specific hands have high or low E[V]?
+What drives individual oracle E[V] predictions? Can we explain why specific hands have high or low oracle E[V]?
 
 ### Method
 - Model: GradientBoostingRegressor (n_estimators=100, max_depth=3)
@@ -70,12 +72,16 @@ SHAP values sum exactly to (prediction - base_value), confirming correct impleme
 - Sum of SHAP values = prediction - 14.03
 - Max error: 0.000000
 
-### Implications for Bidding
+### Hypothetical Implications for Bidding (Oracle-Derived)
 
-1. **n_doubles matters most**: Each double can swing E[V] by several points
-2. **trump_count is second**: Strong trump holding improves outcomes
-3. **Other features matter at margins**: n_singletons, count_points provide additional signal
-4. **Per-hand analysis possible**: SHAP waterfall explains any specific hand's prediction
+The following are extrapolations from oracle model behavior. **None have been validated against human gameplay.**
+
+1. **n_doubles matters most for oracle E[V]**: Each double can swing oracle E[V] by several points
+2. **trump_count is second for oracle**: Strong trump holding improves oracle outcomes
+3. **Other features matter at margins**: n_singletons, count_points provide additional oracle signal
+4. **Per-hand analysis possible**: SHAP waterfall explains any specific hand's oracle prediction
+
+**Note**: Whether these oracle-derived insights translate to human bidding decisions is untested.
 
 ### Files Generated
 
@@ -141,11 +147,13 @@ The SHAP analysis corroborates bootstrap CIs:
 - GradientBoosting on σ(V): CV R² = -0.34 (worse than baseline)
 - Nonlinear models don't help predict risk
 
-### Implications
+### Implications (Oracle Risk)
 
-1. **Don't try to predict risk**: No hand features reliably indicate outcome variance
-2. **Opponent hands dominate**: σ(V) comes from unknown opponent distributions
-3. **Focus on E[V]**: n_doubles and trump_count predict expected value; risk is unknowable
+1. **Oracle risk is unpredictable from hand features**: No hand features reliably indicate oracle σ(V)
+2. **Opponent hands dominate oracle variance**: σ(V) comes from opponent distributions in marginalized data
+3. **Focus on oracle E[V]**: n_doubles and trump_count predict oracle expected value; oracle risk is unknowable from your hand
+
+**Note**: These findings describe oracle outcome variance. Whether human players should similarly "ignore risk" in bidding is untested.
 
 ### Files Generated
 
@@ -203,11 +211,13 @@ Do any feature pairs have synergistic effects on E[V]?
 
 **Surprise finding**: n_doubles × n_singletons (0.73) is the top interaction, likely because hands with many doubles tend to have fewer singletons (structural correlation).
 
-### Implications
+### Implications (Oracle Additivity)
 
-1. **Napkin formula is justified**: Additive model captures most signal
-2. **No multiplicative terms needed**: E[V] = a×doubles + b×trumps works
-3. **Interactions are second-order**: Main effects dominate
+1. **Napkin formula is justified for oracle**: Additive model captures most oracle signal
+2. **No multiplicative terms needed for oracle**: Oracle E[V] = a×doubles + b×trumps works
+3. **Interactions are second-order in oracle**: Main effects dominate oracle predictions
+
+**Note**: This validates additive structure in oracle data. Whether human game outcomes are similarly additive in doubles/trumps is untested.
 
 ### Files Generated
 
@@ -215,3 +225,31 @@ Do any feature pairs have synergistic effects on E[V]?
 - `results/tables/14c_main_vs_interactions.csv` - Main vs interaction breakdown
 - `results/figures/14c_shap_interaction_heatmap.png` - Full interaction matrix
 - `results/figures/14c_doubles_trump_interaction.png` - Key interaction scatter
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human SHAP analysis**: Apply SHAP to models trained on human game outcomes. Do n_doubles and trump_count have similar importance for human wins?
+
+2. **Cross-validation of bidding implications**: Test whether bidders who count doubles (as SHAP suggests matters most) actually win more human games.
+
+3. **Risk model on human data**: The oracle σ(V) is unpredictable. Is human outcome variance similarly unpredictable from hand features?
+
+### Methodological Questions
+
+1. **Model overfitting**: CV R² = 0.20 vs Train R² = 0.81 suggests overfitting. Does SHAP still provide valid feature importance when the model overfits?
+
+2. **SHAP on small samples**: With n=200 hands, how stable are the SHAP values? Bootstrap analysis of SHAP importance could quantify this.
+
+3. **Alternative models**: Would SHAP on a different model (Random Forest, XGBoost) give consistent feature importance rankings?
+
+### Open Questions
+
+1. **Why are main effects so dominant?**: The 60-70% main effect proportion suggests near-additive structure. What game mechanism causes this?
+
+2. **Surprising interaction**: n_doubles × n_singletons (0.73) is the top interaction. Is this a spurious structural correlation or a real game effect?
+
+3. **Transfer to human play**: If SHAP explains oracle predictions, can these explanations help human players understand their hands better?
