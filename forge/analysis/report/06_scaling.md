@@ -1,8 +1,8 @@
 # 06: Scaling and Temporal Analysis
 
-## Overview
+Oracle game tree scaling and temporal structure of minimax values.
 
-We analyze how game tree size scales with depth and investigate temporal correlations in game value trajectories. The key finding: **strong autocorrelation (DFA α = 31.5 vs 0.55 shuffled)** indicates game values evolve with significant memory.
+> **Epistemic Status**: This report analyzes scaling properties of the oracle game tree and temporal correlations in minimax values. State counts and autocorrelation statistics are empirical. The DFA results should be interpreted cautiously (see Section 6.5 caveats). Implications for ML architecture are hypotheses.
 
 ---
 
@@ -149,19 +149,21 @@ The DFA exponent of 31.5 is unusually high. Typical time series have α ∈ [0.5
 
 ---
 
-## 6.6 Implications
+## 6.6 Potential Implications (Hypotheses)
 
-### For Sequential Models
-The strong autocorrelation (ρ₁ = 0.94, H = 0.925) validates our use of Transformer architecture with attention over game history. Feedforward networks that ignore history would miss this temporal structure.
+The following are speculative implications of the scaling findings. None have been experimentally validated.
 
-### For Training
-Trajectory-based training (full game sequences) may capture structure that IID sampling misses. Curriculum learning along game trajectories could exploit the correlation structure.
+### For Sequential Models (Hypothesis)
+The strong autocorrelation (ρ₁ = 0.94) *suggests* that models with history access may perform better than memoryless models. **Hypothesis**: Transformer architectures with attention over game history could exploit this temporal structure. **Untested**: No direct comparison of architectures has been conducted.
 
-### For Game Theory
-The 4-depth periodicity in branching factor reflects the trick structure fundamentally shaping the game tree. Count captures at trick boundaries act as "bottlenecks" where paths merge.
+### For Training (Hypothesis)
+**Hypothesis**: Trajectory-based training (full game sequences) may capture structure that IID sampling misses. Curriculum learning along game trajectories could exploit the correlation structure. **Untested**: These training strategies have not been compared.
 
-### For Oracle Optimization
-The branching factor analysis suggests tricks are natural units for compression. A trick-level oracle (storing outcomes per trick rather than per move) could dramatically reduce storage.
+### For Game Structure (Grounded Interpretation)
+The 4-depth periodicity in branching factor aligns with the trick structure of the game (4 cards per trick). Count captures at trick boundaries appear to act as "bottlenecks" where game paths converge. **Note**: This is an interpretation of the data pattern, not a formal proof of causality.
+
+### For Oracle Compression (Hypothesis)
+**Hypothesis**: Tricks may be natural units for compression. A trick-level oracle (storing outcomes per trick rather than per move) could potentially reduce storage. **Untested**: No trick-level compression has been implemented.
 
 ---
 
@@ -176,6 +178,34 @@ The branching factor analysis suggests tricks are natural units for compression.
 4. **Stationarity**: The mean V decreases along PV (non-stationary). How does this affect the correlation analysis?
 
 5. **Causal structure**: The 4-depth periodicity matches trick structure. Can we formally test whether trick boundaries cause the observed correlation pattern?
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **DFA methodology**: Consult time series literature on appropriate methods for short, bounded, discrete sequences
+
+2. **Architecture comparison**: Experimentally compare memoryless vs history-aware models to test the temporal structure hypothesis
+
+3. **Trick-level compression**: Implement and benchmark a trick-level oracle to test compression hypothesis
+
+### Methodological Questions
+
+1. **Alternative correlation methods**: Test Hurst exponent with R/S analysis, wavelets, or other short-series methods
+
+2. **Stratified analysis**: Analyze DFA by game characteristics (seed, declaration) to understand the high variance
+
+3. **Detrending approaches**: Test different detrending methods given the non-stationary V trajectory
+
+### Open Questions
+
+1. **Branching factor causality**: Can trick structure formally explain the 4-depth periodicity, or is this coincidental?
+
+2. **Human relevance**: Do human players perceive the temporal correlation structure, or is it only apparent with perfect information?
+
+3. **Cross-game comparison**: Do other trick-taking games show similar branching factor periodicity?
 
 ---
 
