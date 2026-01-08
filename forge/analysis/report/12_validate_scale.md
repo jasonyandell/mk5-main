@@ -2,6 +2,8 @@
 
 Scaling existing analyses to n=201 seeds and recomputing with consistent methodology.
 
+> **Epistemic Status**: This report validates oracle (marginalized data) findings from Section 11 at larger scale. All correlations and feature relationships describe oracle E[V] and oracle σ(V). The "inverse risk-return" finding is a property of oracle outcomes. Whether these relationships hold for human gameplay outcomes is untested.
+
 ## 12a: E[V] vs σ(V) Correlation at Scale
 
 ### Key Question
@@ -24,13 +26,15 @@ Using scipy.stats.pearsonr with Fisher transformation confidence intervals on th
 - **R² = 0.158** for V_spread
 - **Effect size**: medium by Cohen's conventions (0.3 < |r| < 0.5)
 
-### Interpretation
+### Interpretation (Oracle Data)
 
-The negative correlation is **confirmed** at scale with high statistical confidence:
+The negative correlation in oracle data is **confirmed** at scale with high statistical confidence:
 
-1. **Inverse risk-return relationship**: Higher expected value hands also have lower variance - the opposite of typical financial markets
-2. **Not spurious**: p < 10⁻⁸ rules out sampling artifact
+1. **Inverse oracle risk-return relationship**: Higher oracle E[V] hands also have lower oracle σ(V) - the opposite of typical financial markets
+2. **Not spurious in oracle**: p < 10⁻⁸ rules out sampling artifact
 3. **Moderate effect**: ~15% of variance explained - meaningful but not dominant
+
+**Note**: This is an oracle finding. Whether human players experience a similar inverse risk-return relationship in actual gameplay is untested.
 
 ### Original Hypothesis Correction
 
@@ -72,17 +76,47 @@ Created `forge/analysis/utils/hand_features.py` with:
 | n_voids | 0.67 | [0, 3] | +0.200 |
 | n_6_high | 1.74 | [0, 4] | **-0.161** |
 
-### Key Findings
+### Key Findings (Oracle Predictors)
 
-1. **n_doubles is king**: Strongest predictor of E[V] (r = +0.40, p < 10⁻⁸)
-2. **Trump features matter**: trump_count and has_trump_double both positive predictors
-3. **6-highs are risky**: Negative correlation with E[V] (-0.16)
-4. **Total pips irrelevant**: Near-zero correlation (+0.04) - raw hand strength doesn't predict outcomes
+1. **n_doubles is king for oracle E[V]**: Strongest predictor of oracle E[V] (r = +0.40, p < 10⁻⁸)
+2. **Trump features matter for oracle**: trump_count and has_trump_double both positive oracle predictors
+3. **6-highs correlate with lower oracle E[V]**: Negative correlation (-0.16)
+4. **Total pips irrelevant for oracle**: Near-zero correlation (+0.04) - raw hand strength doesn't predict oracle outcomes
+
+**Note**: These are oracle-predictor relationships. Whether n_doubles and trump_count similarly predict human game outcomes is untested.
 
 ### Files Generated
 
 - `utils/hand_features.py` - Unified feature extraction module
 - `results/tables/12b_unified_features.csv` - Master feature dataset
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human gameplay validation**: Do the oracle correlations (E[V]-σ[V], n_doubles-E[V]) hold in human game outcomes? This requires human gameplay data.
+
+2. **Cross-declaration stability**: The unified features pool across declarations. Do the correlations hold within each trump suit separately?
+
+3. **Sample size sensitivity**: n=200 provides adequate power for the observed effects. Would n=1000 reveal additional significant predictors?
+
+### Methodological Questions
+
+1. **Marginalized vs full oracle**: These findings use marginalized data (fixed P0 hand). Would full oracle data show similar patterns?
+
+2. **Feature collinearity**: n_doubles and has_trump_double may be correlated. Is there multicollinearity affecting the regression?
+
+3. **Heterogeneity by declaration**: The feature correlations may vary by trump suit. A stratified analysis could reveal this.
+
+### Open Questions
+
+1. **Why inverse risk-return?**: The negative E[V]-σ[V] correlation is unexpected. What game mechanism causes high-value hands to also be low-variance?
+
+2. **Why are 6-highs negative?**: Intuitively, 6-highs seem strong. Why do they correlate negatively with oracle E[V]?
+
+3. **Human decision relevance**: If n_doubles predicts oracle E[V], should human bidders count their doubles? This assumes oracle patterns transfer to human play.
 
 ---
 
