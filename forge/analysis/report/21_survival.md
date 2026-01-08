@@ -2,6 +2,8 @@
 
 Defining and analyzing "decision time" - when game outcomes become determined.
 
+> **Epistemic Status**: This report analyzes when oracle (minimax) outcomes become "decided" based on σ(V) thresholds. All findings describe oracle game tree dynamics. The "decision time" and "survival curves" are properties of perfect-information optimal play. Gameplay advice (cognitive investment, bidding implications) is hypothetical extrapolation—none has been validated against human gameplay.
+
 ## 21a: Decision Time Definition
 
 ### Key Question
@@ -35,19 +37,23 @@ Based on 20a trajectory data:
 | Decided (σ<8) | Depth ~6 | 6 | ~22 |
 | Locked (σ<5) | Depth ~4 | 7 | ~24 |
 
-### Practical Implications
+### Hypothetical Implications (Oracle-Derived)
 
-1. **First 3 tricks**: High uncertainty, decisions matter most
-2. **Tricks 4-5**: Outcome becoming clear, still room for impact
-3. **Tricks 6-7**: Game essentially decided, play mechanically
+The following extrapolations from oracle data have NOT been validated against human gameplay:
 
-### Cognitive Investment Strategy
+1. **First 3 tricks**: High oracle uncertainty; **hypothesis**: human decisions matter most here
+2. **Tricks 4-5**: Oracle outcome becoming clear; **hypothesis**: still room for human impact
+3. **Tricks 6-7**: Oracle outcome essentially decided; **hypothesis**: mechanical play suffices
 
-| Game Phase | Depth | σ(V) | Recommendation |
-|------------|-------|------|----------------|
-| Early | 20+ | >15 | Think carefully, decisions matter |
-| Mid | 8-20 | 8-15 | Strategic focus, key decisions |
-| Late | <8 | <8 | Execute optimally, outcomes fixed |
+### Cognitive Investment Strategy (Hypothesis)
+
+Based on oracle σ(V) patterns. **Untested** whether human games follow these dynamics.
+
+| Game Phase | Depth | Oracle σ(V) | Hypothetical Recommendation |
+|------------|-------|-------------|----------------------------|
+| Early | 20+ | >15 | Decisions may matter most |
+| Mid | 8-20 | 8-15 | Strategic focus potentially valuable |
+| Late | <8 | <8 | Outcomes may be largely fixed |
 
 ### Files Generated
 
@@ -59,7 +65,7 @@ Based on 20a trajectory data:
 ## 21b: Survival Archetype Analysis
 
 ### Key Question
-Do different hand archetypes have different "survival curves" (time to decision)?
+Do different hand archetypes have different oracle "survival curves" (time to decision)?
 
 ### Method
 - Group hands by k-means cluster from 18a
@@ -74,38 +80,38 @@ Do different hand archetypes have different "survival curves" (time to decision)
 | **control** | 19.6 | 19.4 | **5.0** | 3.0 | 1.89 | 1.34 | 64 |
 | **volatile** | 6.5 | 11.7 | **26.1** | 4.7 | 1.64 | 1.26 | 61 |
 
-### Key Findings
+### Key Findings (Oracle Data)
 
 **Control archetype** (n=64):
-- **Lowest σ(V)** = 5.0 (outcomes predictable)
+- **Lowest oracle σ(V)** = 5.0 (oracle outcomes predictable)
 - Highest n_doubles (1.89)
-- Reach "decided" threshold earliest
-- Outcomes locked by trick 4-5
+- Reach oracle "decided" threshold earliest
+- Oracle outcomes locked by trick 4-5
 
 **Volatile archetype** (n=61):
-- **Highest σ(V)** = 26.1 (highly uncertain)
+- **Highest oracle σ(V)** = 26.1 (oracle outcomes highly uncertain)
 - Lowest n_doubles (1.64)
-- Stay uncertain longest
-- May not reach "decided" until trick 6-7
+- Stay uncertain longest in oracle tree
+- May not reach oracle "decided" until trick 6-7
 
 **Balanced archetype** (n=75):
-- Middle σ(V) = 14.7
+- Middle oracle σ(V) = 14.7
 - Average hand composition
-- Decision time matches overall average
+- Oracle decision time matches overall average
 
-### Survival Curve Interpretation
+### Oracle Survival Curve Interpretation
 
-| Archetype | Time to σ<10 | Time to σ<5 | Interpretation |
-|-----------|--------------|-------------|----------------|
-| Control | Trick 3-4 | Trick 5 | Fast convergence |
-| Balanced | Trick 4-5 | Trick 6 | Normal progression |
-| Volatile | Trick 5-6 | Trick 7+ | Late or never |
+| Archetype | Time to oracle σ<10 | Time to oracle σ<5 | Oracle Interpretation |
+|-----------|---------------------|--------------------|-----------------------|
+| Control | Trick 3-4 | Trick 5 | Fast oracle convergence |
+| Balanced | Trick 4-5 | Trick 6 | Normal oracle progression |
+| Volatile | Trick 5-6 | Trick 7+ | Late oracle convergence or never |
 
-### Key Insights
+### Key Insights (Oracle)
 
-1. **Doubles drive predictability**: Control hands have more doubles → lower σ(V) → faster decision
-2. **Volatility is sticky**: High-σ hands stay uncertain because opponent configurations dominate
-3. **Bidding implication**: Control hands bid confidently; volatile hands are risky bids
+1. **Doubles drive oracle predictability**: Control hands have more doubles → lower oracle σ(V) → faster oracle decision
+2. **Volatility is sticky in oracle**: High-σ hands stay uncertain because opponent configurations dominate oracle outcomes
+3. **Hypothesis for bidding**: Control hands may warrant confident bids; volatile hands may be risky. **Untested** in human play.
 
 ### Files Generated
 
@@ -115,11 +121,41 @@ Do different hand archetypes have different "survival curves" (time to decision)
 
 ---
 
-## Summary
+## Summary (Oracle Dynamics)
 
-Survival analysis reveals:
+Survival analysis of oracle data reveals:
 
-1. **Decision time varies**: Games reach "decided" status between tricks 5-7
-2. **Archetype matters**: Strong hands converge faster than weak hands
-3. **Practical guidance**: Focus cognitive effort on tricks 1-4 where outcomes are still malleable
-4. **Late game is mechanical**: After trick 5, optimal play requires less strategic thinking
+1. **Oracle decision time varies**: Oracle games reach "decided" status between tricks 5-7
+2. **Archetype matters for oracle convergence**: Control hands converge faster than volatile hands in oracle
+3. **Hypothesis for play**: Focus cognitive effort on tricks 1-4 where oracle outcomes are still malleable
+4. **Hypothesis for late game**: After trick 5, oracle outcomes are largely fixed, suggesting mechanical play may suffice
+
+**Scope limitation**: These patterns describe oracle (perfect-information) game dynamics. Whether human games with hidden information have similar decision timing is untested.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human decision timing**: Do human games show similar "decision points" where outcomes become determined? This requires human gameplay data with move-by-move analysis.
+
+2. **Archetype validation**: Do human players with "control" hands (high doubles) experience faster convergence than those with "volatile" hands?
+
+3. **Cognitive strategy testing**: Does focusing cognitive effort on tricks 1-4 actually improve human outcomes? A/B testing with human players could validate this hypothesis.
+
+### Methodological Questions
+
+1. **Threshold sensitivity**: The σ thresholds (σ<10, σ<8, σ<5) are arbitrary. Would different thresholds change the decision timing conclusions?
+
+2. **Archetype stability**: The k=3 clustering (control/balanced/volatile) differs from 18a's k=2. Which clustering is more meaningful for survival analysis?
+
+3. **Sample size**: With 200 hands split into 3 archetypes (61-75 per group), survival curves have limited precision. Larger samples could sharpen the archetype differences.
+
+### Open Questions
+
+1. **Hidden information effect**: Human players don't know opponent hands. Does hidden information delay perceived "decision time" or accelerate it (premature resignation)?
+
+2. **Psychological decision time**: When do human players "feel" a game is decided? Does this correlate with oracle σ(V) thresholds?
+
+3. **Strategy adaptation**: If a player knows their hand is "volatile", should they play more aggressively early? More conservatively? The oracle doesn't tell us optimal human strategy.
