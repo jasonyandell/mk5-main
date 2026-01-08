@@ -1,0 +1,4 @@
+archetype,V_mean_mean,V_mean_std,V_std_mean,V_std_std,n_doubles_mean,trump_count_mean,n_hands
+balanced,14.99,15.38,14.72,2.9,1.67,1.35,75
+control,19.58,19.41,5.03,3.03,1.89,1.34,64
+volatile,6.54,11.73,26.13,4.74,1.64,1.26,61
