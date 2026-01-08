@@ -447,6 +447,80 @@ The original goal was to track **when** each count domino is captured (played). 
 
 ---
 
+## 25i: Position Type Taxonomy
+
+### Key Question
+Can we create a vocabulary for discussing game situations? What types of positions exist?
+
+### Method
+- Extract 6 features per state: depth, trick_position, team_0_leads, hand_imbalance, q_spread, n_valid_actions
+- K-means clustering (k=8) on 40,000 sampled states
+- UMAP visualization for 2D projection
+- Name clusters based on phase, position, and criticality
+
+### Key Findings
+
+#### Cluster Taxonomy
+
+| Cluster | Name | Size | Depth | Q-Spread | Mean V |
+|---------|------|------|-------|----------|--------|
+| 0 | Mid-game Responding (Routine) | 13.5% | 10.6 | 0.2 | 12.1 |
+| 1 | Endgame Following (Routine) | 12.1% | 5.6 | 1.4 | 7.3 |
+| 2 | Mid-game Leading (Important) | 6.0% | 10.0 | 4.9 | 10.7 |
+| 3 | Mid-game Following (Routine) | 13.8% | 10.3 | 0.2 | 13.8 |
+| 4 | Mid-game Following (Routine) | 8.6% | 9.9 | 4.0 | 14.3 |
+| 5 | Endgame Following (Routine) | **25.2%** | 6.9 | 0.6 | 7.9 |
+| 6 | Mid-game Following (Routine) | 13.0% | 10.4 | 2.4 | 14.4 |
+| 7 | Mid-game Following (Critical) | 7.8% | 9.0 | **24.1** | 8.8 |
+
+#### Distribution by Criticality
+
+| Criticality | Clusters | % of States |
+|-------------|----------|-------------|
+| Routine | 0, 1, 3, 4, 5, 6 | 86.2% |
+| Important | 2 | 6.0% |
+| Critical | 7 | 7.8% |
+
+### Interpretation
+
+**Most positions are routine, but ~14% require serious thought**
+
+1. **Cluster 7 is the danger zone**: Q-spread = 24.1 points means wrong move costs ~24 points
+2. **Leading positions are more important**: Cluster 2 (Mid-game Leading) has Q-spread 4.9
+3. **Following is usually routine**: Most follow positions have Q-spread < 2
+4. **Endgame is mechanical**: Clusters 1, 5 (37% of states) are low-decision
+
+### Mental Model for Players
+
+| Situation | Think Hard? | Why |
+|-----------|-------------|-----|
+| Leading mid-game | **Yes** | Cluster 2: Important (Q-spread 4.9) |
+| Following mid-game, many options | **Yes** | Cluster 7: Critical (Q-spread 24.1) |
+| Following mid-game, few options | No | Clusters 0,3,4,6: Routine |
+| Endgame | No | Clusters 1,5: Mostly forced plays |
+
+### UMAP Visualization
+
+The 2D UMAP projection shows:
+- Continuous manifold structure (no sharp cluster boundaries)
+- Clear depth gradient across embedding space
+- Cluster 7 (Critical) forms a distinct region
+
+### Practical Implications
+
+1. **Reserve mental energy**: 86% of positions are routine - don't overthink them
+2. **Focus on leads**: Mid-game leading positions (C2) require care
+3. **Watch for high-optionality follows**: When you have many valid moves mid-game, decisions matter most
+4. **Trust the endgame**: Low Q-spread means outcomes are mostly determined
+
+### Files Generated
+
+- `results/tables/25i_position_taxonomy.csv` - Cluster statistics
+- `results/tables/25i_cluster_profiles.csv` - Detailed profiles
+- `results/figures/25i_position_taxonomy.png` - 4-panel visualization
+
+---
+
 ## 25j: Heuristic Derivation
 
 ### Key Question
