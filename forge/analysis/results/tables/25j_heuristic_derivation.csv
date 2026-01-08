@@ -1,0 +1,14 @@
+heuristic,description,applies_to,applicable,correct,accuracy
+lead_any_double,Lead any double,lead,6566,2182,33.23180018275967
+lead_lowest_offsuit,Lead your lowest non-trump,lead,11514,3434,29.82456140350877
+lead_highest_double,Lead your highest double,lead,6566,1766,26.896131586963147
+play_lowest,Play lowest domino,all,236170,51861,21.95918194520896
+lead_count_domino,Lead a count domino,lead,4611,1002,21.73064411190631
+lead_highest_trump,Lead your highest trump,lead,7344,1560,21.241830065359476
+play_winning,Play to win the trick,all,123063,21665,17.604804043457417
+play_highest,Play highest domino,all,236170,40816,17.28246602023966
+follow_highest_in_suit,Follow with highest in suit,follow,0,0,0.0
+follow_dump_lowest,Dump lowest if can't follow,follow,0,0,0.0
+follow_trump_if_cant,Trump if can't follow suit,follow,0,0,0.0
+follow_lowest_in_suit,Follow with lowest in suit,follow,0,0,0.0
+follow_protect_count,Avoid playing count dominoes,follow,0,0,0.0
