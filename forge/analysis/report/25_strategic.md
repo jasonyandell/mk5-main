@@ -328,6 +328,68 @@ The top 3 predictors are all `remaining_pX` - how many dominoes each player stil
 
 ---
 
+## 25g: Partner Synergy
+
+### Key Question
+Does having a strong partner make your doubles worth more?
+
+### Method
+- Extract features for both P0 (declarer) and P2 (partner) hands
+- Run interaction regression: E[V] ~ p0_doubles + p2_doubles + p0_doubles:p2_doubles
+- Test if interaction term is significant
+
+### Key Findings
+
+#### Main Effects Model
+
+| Feature | Coefficient | Interpretation |
+|---------|-------------|----------------|
+| P0 doubles | **+6.96** | Each P0 double adds ~7 points E[V] |
+| P2 doubles | +0.80 | Each P2 double adds ~1 point E[V] |
+
+**R² = 0.158**
+
+#### Interaction Model
+
+| Term | Coefficient | p-value | Significant? |
+|------|-------------|---------|--------------|
+| P0 doubles | +7.97 | <0.001 | Yes |
+| P2 doubles | +1.39 | 0.23 | No |
+| P0×P2 interaction | **-0.59** | **0.60** | **No** |
+
+**R² = 0.160** (ΔR² = 0.001)
+
+### Interpretation
+
+**NO SIGNIFICANT PARTNER SYNERGY**
+
+The interaction term is not significant (p = 0.60), meaning:
+
+1. **Your doubles' value is independent of partner's doubles**
+2. **P0 double worth +8 points regardless of partner's hand**
+3. **Synergy effect is -1.2 points but not statistically significant**
+
+### Practical Implications
+
+1. **Bid based on YOUR hand alone**: Partner's strength doesn't change your doubles' value
+2. **P0 doubles dominate**: +7 pts per double vs +0.8 pts for partner
+3. **Additive, not multiplicative**: Team strength = your strength + partner strength (no interaction)
+4. **Partner signaling has limited value**: Their doubles don't amplify yours
+
+### Why No Synergy?
+
+Possible explanations:
+1. **Declarer dominates**: P0 leads and controls tempo - partner's hand matters less
+2. **Opponent information**: Opponents also have cards - team synergy is diluted
+3. **Small sample**: 200 hands may not have enough power to detect small interactions
+
+### Files Generated
+
+- `results/tables/25g_partner_synergy.csv` - Summary statistics
+- `results/figures/25g_partner_synergy.png` - 4-panel visualization
+
+---
+
 ## 25j: Heuristic Derivation
 
 ### Key Question
