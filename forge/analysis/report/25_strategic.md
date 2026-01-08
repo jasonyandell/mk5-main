@@ -779,6 +779,83 @@ This aligns with:
 
 ---
 
+## 25o: Suit Exhaustion Signals
+
+### Key Question
+When a player is void in a suit, how does optimal play change?
+
+### Method
+1. Unpack states to get remaining hands (local indices → global domino IDs)
+2. Detect voids: player has no dominoes containing a particular pip (suit 0-6)
+3. Compare Q-spread and action distributions by void status and count
+4. Control for game phase (depth) to isolate void effect
+
+### Key Findings
+
+#### The Headline
+
+**Voids are ubiquitous - 100% of sampled states have at least one opponent void!**
+
+| Metric | Value |
+|--------|-------|
+| States analyzed | 1,000,000 |
+| States with opponent void | **100%** |
+| Mean Q-spread | 2.76 |
+
+#### Q-Spread by Total Voids
+
+| Total Voids | Mean Q-spread | n_states |
+|-------------|---------------|----------|
+| 2-7 | 2.0-3.0 | 8K |
+| 8-12 | 2.4-3.1 | 207K |
+| 13-17 | 2.6-3.5 | 610K |
+| 18-22 | 1.8-2.4 | 175K |
+| 26-27 | **0.0** | 884 |
+
+#### Q-Spread by Game Phase
+
+| Phase | Depth Range | Mean Q-Spread |
+|-------|-------------|---------------|
+| Early | 20-28 | 3.00 |
+| Mid-Early | 14-19 | 3.35 |
+| Mid-Late | 7-13 | 2.91 |
+| Late | 0-6 | **1.95** |
+
+### Interpretation
+
+**Voids don't create decisions - they narrow them**
+
+1. **Voids are not rare events**: By mid-game, every state has multiple voids
+2. **Total voids track game phase**: More voids = later in game = simpler decisions
+3. **Peak complexity at 16-17 voids**: Mid-game maximum before endgame collapse
+4. **Endgame (26-27 voids) is forced**: Q-spread = 0, confirming 25n findings
+
+### Why 100% Have Voids
+
+1. **Sampling bias**: First 100K rows of each shard are late-game states
+2. **State distribution**: Oracle files have more late-game states (larger game tree early)
+3. **7 suits per 7 dominoes**: With only 7 dominoes, voids are mathematically likely
+
+### Practical Implications
+
+1. **Don't track individual voids**: They're everywhere - not actionable information
+2. **Total void count proxies game phase**: Use it to gauge decision complexity
+3. **Information value comes from WHICH void**: Specific suit voids reveal opponent hands
+4. **Focus on void inference**: "They showed out of 4s" is more useful than "they have a void"
+
+### Connection to Other Findings
+
+- **25n (Endgame)**: 100% forced at depth ≤ 4 aligns with Q-spread = 0 at 26-27 voids
+- **25f (Critical Positions)**: remaining_pX features predict criticality - voids create asymmetry
+- **25h (Count Capture)**: Q-spread decreases late game - voids are the mechanism
+
+### Files Generated
+
+- `results/tables/25o_suit_exhaustion.csv` - Statistics
+- `results/figures/25o_suit_exhaustion.png` - Visualization
+
+---
+
 ## Summary
 
 Strategic analysis provides actionable guidance:
