@@ -2,6 +2,8 @@
 
 Analyzing how game value V evolves during play.
 
+> **Epistemic Status**: This report analyzes how oracle (minimax) V values evolve along game tree paths. All findings describe oracle game tree structure—how perfect-information optimal play unfolds. The "phases" and "volatility patterns" are properties of the oracle tree, not necessarily how human players experience game progression. Gameplay advice extrapolated from oracle dynamics is hypothetical.
+
 ## 20a: V Trajectory Extraction
 
 ### Key Question
@@ -39,11 +41,15 @@ How does V (game value) change as dominoes are played?
 2. **Progressive resolution**: V range narrows as game progresses
 3. **Convergence depth**: ~50% of outcome uncertainty resolved by trick 4
 
-### Implications for Play
+### Potential Implications (Hypotheses)
 
-- **Opening plays have outsized impact**: Decisions when σ is highest matter most
-- **Late-game is mechanical**: With outcomes largely determined, play optimally but don't overthink
-- **Focus cognitive resources on tricks 1-4**: This is where strategic thinking pays off
+The following are speculative extrapolations from oracle data. None have been validated against human gameplay.
+
+- **Hypothesis**: Opening plays may have outsized impact if human games have similar variance profiles
+- **Hypothesis**: Late-game may be more mechanical if outcomes are similarly determined
+- **Hypothesis**: Strategic focus on tricks 1-4 may be warranted if oracle volatility patterns apply
+
+**Untested**: Whether human games exhibit the same variance-by-depth pattern is unknown. Hidden information could change these dynamics entirely.
 
 ### Files Generated
 
@@ -84,12 +90,14 @@ Can we predict game outcome from the shape of the V trajectory?
 - **Stable 95-97% accuracy** across all prefix lengths
 - **No late-game degradation** - larger dataset eliminates noise
 
-### Interpretation
+### Interpretation (Oracle Trajectories)
 
-1. **Early game is highly predictive**: The first 3 tricks (97.7%) contain nearly all signal for final outcome
-2. **Stable across game phases**: 95-97% accuracy throughout - no privileged observation window
-3. **Excellent generalization**: 100% train vs 96-98% test shows model captures true patterns
-4. **Time series features work**: MiniRocket's random convolutional kernels capture game dynamics effectively
+1. **Early oracle trajectory is highly predictive**: The first 3 tricks (97.7%) of oracle V trajectory predict final oracle outcome
+2. **Stable across game phases**: 95-97% accuracy throughout oracle game depth
+3. **Excellent generalization**: 100% train vs 96-98% test shows model captures oracle trajectory patterns
+4. **Time series features work**: MiniRocket's random convolutional kernels capture oracle game dynamics
+
+**Note**: This predicts oracle outcomes from oracle trajectories. Whether early human game states similarly predict final human outcomes is untested.
 
 ### Technical Notes
 
@@ -146,13 +154,15 @@ Key transitions occur at:
 - **Depth 12**: σ drops from 17 to 14 (transition begins)
 - **Depth 4**: σ drops from 11 to 8 (end-game lock)
 
-### Interpretation
+### Interpretation (Oracle Tree Structure)
 
-The game transitions from **order → chaos → resolution**:
-1. **Opening (deterministic)**: Declarer plays first few dominoes, single path
-2. **Mid-game (chaotic)**: Opponents enter, σ peaks at 22 points
-3. **Transition**: Count dominoes captured, outcomes narrow
-4. **End-game (deterministic)**: Last trick, mechanical execution
+The oracle game tree transitions from **order → chaos → resolution**:
+1. **Opening (deterministic)**: Declarer plays first few dominoes, single path in oracle tree
+2. **Mid-game (chaotic)**: Opponents enter, oracle σ(V) peaks at 22 points
+3. **Transition**: Count dominoes captured in oracle play, outcomes narrow
+4. **End-game (deterministic)**: Last trick, oracle outcomes locked
+
+**Note**: This describes the oracle tree structure. Human games with hidden information may have different phase dynamics—e.g., uncertainty about opponent hands persists throughout.
 
 ### Files Generated
 
@@ -167,11 +177,41 @@ Pattern mining in V trajectories to find common game dynamics.
 
 ---
 
-## Summary
+## Summary (Oracle Game Tree)
 
-Time series analysis reveals:
+Time series analysis of oracle data reveals:
 
-1. **Games resolve progressively**: V uncertainty decreases monotonically with depth
-2. **Outcome predictable by trick 3**: MiniRocket achieves 97.7% accuracy from first 9 plays
-3. **Three distinct phases**: Opening (control), mid-game (chaos), end-game (resolution)
-4. **Early decisions dominate**: First few tricks determine most of the outcome
+1. **Oracle games resolve progressively**: Oracle V uncertainty decreases monotonically with depth
+2. **Oracle outcome predictable by trick 3**: MiniRocket achieves 97.7% accuracy from first 9 oracle plays
+3. **Three distinct oracle phases**: Opening (control), mid-game (chaos), end-game (resolution)
+4. **Early oracle decisions dominate**: First few tricks determine most of the oracle outcome
+
+**Scope limitation**: These patterns describe the oracle (perfect information) game tree. Whether human games with hidden information exhibit similar phase structure and early predictability is untested.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human game trajectories**: Do actual human games show similar variance-by-depth profiles? This requires human gameplay data with move-by-move records.
+
+2. **Prediction transfer**: Can the MiniRocket model trained on oracle trajectories predict human game outcomes? This would test whether oracle patterns transfer.
+
+3. **Phase perception**: Do human players perceive the three-phase structure (order → chaos → resolution), or does hidden information mask these dynamics?
+
+### Methodological Questions
+
+1. **Trajectory representation**: Using median V at each depth may obscure important variation. Would individual game paths reveal different patterns?
+
+2. **Sample representativeness**: 732 seeds balanced by outcome. Does the phase structure hold for unbalanced samples and extreme outcomes?
+
+3. **MiniRocket sensitivity**: The 97.7% accuracy is high. What features drive classification? SHAP analysis on MiniRocket could reveal which time points matter most.
+
+### Open Questions
+
+1. **Why such high early accuracy?**: Is 97.7% by trick 3 a ceiling, or would more data push accuracy higher? What information in the first 9 plays is so predictive?
+
+2. **Human vs oracle phase timing**: If human games have phases, do they occur at the same depths as oracle phases?
+
+3. **Strategic intervention**: If outcomes are "determined" early in oracle play, does early strategic intervention in human games have similar leverage?
