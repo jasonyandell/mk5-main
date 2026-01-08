@@ -1,8 +1,8 @@
 # 03: Count Domino Analysis
 
-## Overview
+Count capture as the dominant predictor of oracle minimax value.
 
-This section presents our most significant finding: **count domino capture explains 76% of V variance overall, rising to >99% in late-game positions**. This suggests the game's complexity concentrates in a small number of key dominoes.
+> **Epistemic Status**: This report analyzes the oracle minimax value V. All findings describe the perfect-information game tree. The claim that "count capture explains 76% of oracle V variance" is empirically grounded. Claims about game structure implications are interpretive.
 
 ---
 
@@ -21,13 +21,13 @@ Texas 42 has five "count" dominoes that award points when captured in tricks:
 **Total count points**: 35 of 42 possible (83.3%)
 **Remaining 7 points**: 1 per trick won (7 tricks × 1 point)
 
-**Hypothesis**: If count capture determines most points, it should predict V strongly.
+**Hypothesis**: If count capture determines most points, it should strongly predict oracle V.
 
 ---
 
-## 3.2 Count Capture Statistics
+## 3.2 Count Capture Statistics (Oracle Data)
 
-From a sample of 50,000 states:
+From a sample of 50,000 oracle states:
 
 | Domino | Played % | Team0 Capture % |
 |--------|----------|-----------------|
@@ -39,10 +39,10 @@ From a sample of 50,000 states:
 
 **Observations**:
 1. Counts are played ~65-73% of the time by late game
-2. 5-5 strongly favors Team0 (68.0%) — likely correlation with declaration
-3. 5-0 strongly favors Team1 (70.7%) — possibly a defensive domino
+2. 5-5 strongly favors Team0 (68.0%) — **hypothesis**: correlation with declaration bias
+3. 5-0 strongly favors Team1 (70.7%) — **hypothesis**: possibly a defensive domino
 
-**Question**: Is the Team0 bias due to declaration advantage, or does the domino distribution vary by seed?
+**Open question**: Is the Team0 bias due to declaration advantage, or does domino distribution vary systematically by seed?
 
 ### Count Distribution Visualization
 
@@ -54,19 +54,19 @@ The distribution shows that count dominoes are captured at varying rates, with c
 
 ![Counts vs Depth](../results/figures/03a_counts_vs_depth.png)
 
-As expected, counts remaining decreases with game depth. The rate of count capture is non-uniform — most captures occur in the middle game when players have more strategic options.
+As expected, counts remaining decreases with game depth. The rate of count capture is non-uniform — most captures occur in the middle game.
 
 ### V Distribution by Count Advantage
 
 ![V by Count Advantage](../results/figures/03a_v_by_count_adv.png)
 
-This shows the relationship between count point advantage (Team0 counts - Team1 counts) and the minimax value V. The strong linear relationship visually confirms that count capture dominates game outcome.
+This shows the relationship between count point advantage (Team0 counts - Team1 counts) and the oracle minimax value V. The strong linear relationship visually confirms that count capture dominates oracle V.
 
 ---
 
-## 3.3 Regression Model: Count Capture → V
+## 3.3 Regression Model: Count Capture → Oracle V
 
-We model V as a linear function of count capture indicators:
+We model oracle V as a linear function of count capture indicators:
 
 ```
 V = Σᵢ βᵢ · capture(countᵢ, Team0) + ε
@@ -87,8 +87,8 @@ Where `capture(d, t)` = 1 if team t captured domino d, 0 otherwise.
 
 **Observations**:
 1. Learned coefficients closely match true point values (ratio 0.91-1.17)
-2. 3-2 and 4-1 are slightly overweighted (capturing them also implies trick wins)
-3. 5-5 is slightly underweighted (perhaps easier to lose)
+2. 3-2 and 4-1 are slightly overweighted (capturing them may correlate with trick wins)
+3. 5-5 is slightly underweighted (reason unknown)
 4. Depth coefficient is small but positive (later game → more determined)
 
 ### Model Performance
@@ -101,7 +101,7 @@ Where `capture(d, t)` = 1 if team t captured domino d, 0 otherwise.
 
 ![Model Comparison](../results/figures/03c_model_comparison.png)
 
-**Key finding**: Learned coefficients achieve R² = 0.759, explaining three-quarters of V variance with only 5 binary features.
+**Key finding**: Learned coefficients achieve R² = 0.759, explaining three-quarters of oracle V variance with only 5 binary features.
 
 ---
 
@@ -132,13 +132,13 @@ We partition states into "count basins" — groups sharing the same count captur
 - Depths 5, 9, 13, 17 (first play of trick): R² ≈ 0.65-0.72
 - Depths 8, 12, 16 (trick boundary): R² > 0.99
 
-**Interpretation**: At trick boundaries, all uncertainty resolves to count capture. Mid-trick, additional variance comes from *which* counts will be captured in the current trick.
+**Interpretation**: At trick boundaries in oracle games, nearly all V uncertainty resolves to count capture outcomes. Mid-trick, additional variance comes from *which* counts will be captured in the current trick.
 
 ---
 
 ## 3.5 Basin Structure Analysis
 
-Within each count basin, what explains the residual variance?
+Within each count basin, what explains the residual oracle V variance?
 
 ### Basin Distribution
 
@@ -150,7 +150,7 @@ The basin distribution shows how states are partitioned among count outcome conf
 
 ![V vs Capture](../results/figures/03b_v_vs_capture.png)
 
-This plot shows V as a function of count capture outcomes, demonstrating the tight coupling between which team captured which counts and the resulting minimax value.
+This plot shows oracle V as a function of count capture outcomes, demonstrating the tight coupling between which team captured which counts and the resulting minimax value.
 
 ### Within-Basin V Distributions
 
@@ -159,7 +159,7 @@ This plot shows V as a function of count capture outcomes, demonstrating the tig
 **Late-game basins** (depth 8, 12, 16): Within-basin σ² < 0.4, nearly deterministic
 **Early-game basins** (depth 5, 9): Within-basin σ² ≈ 20-35, substantial residual variation
 
-The residual variance at depth 5 implies other factors matter early:
+The residual variance at depth 5 implies other factors affect oracle V early:
 - Which team will win future tricks (not yet determined)
 - Positional advantages that don't show in current count state
 
@@ -177,22 +177,28 @@ The residual variance at depth 5 implies other factors matter early:
 
 ---
 
-## 3.7 Implications
+## 3.7 Interpretations and Hypotheses
 
-### The Game's Core Structure
-Texas 42 is fundamentally a count-capture game. The trick-taking mechanics determine *which team captures which counts*, and counts determine ~76% of the outcome. This is analogous to how chess is "about" king safety despite having many other pieces.
+### Grounded Findings
 
-### For Neural Networks
-A model that accurately predicts count capture outcomes should achieve high V prediction accuracy. Our 97.8% accurate Transformer explicitly encodes count information (0/5/10 point value per domino), which this analysis validates.
+1. **Count capture explains 76% of oracle V variance**: This is empirical (R² = 0.759)
+2. **Late-game R² > 99%**: At trick boundaries (depth 8, 12, 16), count basins almost perfectly determine oracle V
+3. **Learned coefficients ≈ true point values**: The linear model recovers game rules
 
-### For Simplified Oracles
-A "count-only" oracle that tracks only count capture states would be ~250× smaller (16 basins vs ~4000 states per depth) while retaining >99% accuracy in late game and ~75% overall.
+### Interpretive Claims (Less Certain)
+
+**Hypothesis**: The game's strategic complexity may concentrate in determining count capture outcomes. **Caveat**: This interprets oracle structure; human gameplay may differ.
+
+**Hypothesis**: A simplified model tracking only count outcomes could approximate oracle V well. **Untested**: No "count-only oracle" has been implemented.
 
 ### The Remaining 24%
-The unexplained variance comes from:
+
+The unexplained oracle V variance comes from:
 1. Mid-trick uncertainty (which counts will be captured)
 2. Non-count trick points (7 points total)
-3. Subtle positional advantages (tempo, trump control)
+3. Subtle positional factors (tempo, trump control)
+
+The relative contribution of each factor has not been decomposed.
 
 ---
 
@@ -207,6 +213,34 @@ The unexplained variance comes from:
 4. **Basin definition**: We define basins by exact count outcomes. Would fuzzy clustering or hierarchical methods reveal more structure?
 
 5. **Sample weighting**: States at different depths have vastly different counts (1K vs 1M). How should we weight the regression?
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Interaction effects**: Test whether count combinations have non-additive effects on oracle V
+
+2. **Causal analysis**: Determine why learned coefficients deviate from true point values
+
+3. **Count-only oracle**: Implement and benchmark a simplified oracle using only count basins
+
+### Methodological Questions
+
+1. **Residual structure**: What explains the ±15 point residual tails? Specific game situations?
+
+2. **Depth weighting**: Optimal weighting scheme for cross-depth regression
+
+3. **Heteroscedastic models**: Fit depth-conditional variance models
+
+### Open Questions
+
+1. **Human relevance**: Do human players implicitly track count capture? Would explicit count-tracking UI help?
+
+2. **Bidding implications**: Does count potential in initial hand predict oracle V? (Report 25 addresses this)
+
+3. **Strategic implications**: If count capture dominates oracle V, what does this imply about human strategy under uncertainty?
 
 ---
 
