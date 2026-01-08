@@ -1,0 +1,44 @@
+metric,value
+n_samples,40000
+n_clusters,8
+n_features,6
+cluster_0_name,Mid-game Responding (Routine)
+cluster_0_size,5395
+cluster_0_mean_depth,10.57
+cluster_0_mean_q_spread,0.24
+cluster_0_mean_V,12.07
+cluster_1_name,Endgame Following (Routine)
+cluster_1_size,4843
+cluster_1_mean_depth,5.56
+cluster_1_mean_q_spread,1.44
+cluster_1_mean_V,7.3
+cluster_2_name,Mid-game Leading (Important)
+cluster_2_size,2408
+cluster_2_mean_depth,10.02
+cluster_2_mean_q_spread,4.9
+cluster_2_mean_V,10.68
+cluster_3_name,Mid-game Following (Routine)
+cluster_3_size,5511
+cluster_3_mean_depth,10.26
+cluster_3_mean_q_spread,0.2
+cluster_3_mean_V,13.84
+cluster_4_name,Mid-game Following (Routine)
+cluster_4_size,3436
+cluster_4_mean_depth,9.92
+cluster_4_mean_q_spread,3.96
+cluster_4_mean_V,14.34
+cluster_5_name,Endgame Following (Routine)
+cluster_5_size,10091
+cluster_5_mean_depth,6.94
+cluster_5_mean_q_spread,0.61
+cluster_5_mean_V,7.91
+cluster_6_name,Mid-game Following (Routine)
+cluster_6_size,5198
+cluster_6_mean_depth,10.35
+cluster_6_mean_q_spread,2.41
+cluster_6_mean_V,14.39
+cluster_7_name,Mid-game Following (Critical)
+cluster_7_size,3118
+cluster_7_mean_depth,9.03
+cluster_7_mean_q_spread,24.11
+cluster_7_mean_V,8.76
