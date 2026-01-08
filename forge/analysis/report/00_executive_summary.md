@@ -286,6 +286,190 @@ Hands naturally cluster into three types:
 
 ---
 
+## 9. Statistical Rigor (Section 12-13)
+
+Scaled analyses to n=201 seeds with rigorous statistical testing.
+
+### E[V] vs σ(V) Correlation Confirmed
+
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| r(E[V], σ[V]) | **-0.381** | [-0.494, -0.256] |
+| p-value | 2.6×10⁻⁸ | |
+| Effect size | Medium | |
+
+**The inverse risk-return relationship is real** - good hands are also safer hands.
+
+### The Napkin Formula (Bootstrap Validated)
+
+Only **two features survive multivariate analysis**:
+
+| Feature | Coefficient | 95% CI | Significant? |
+|---------|-------------|--------|--------------|
+| n_doubles | **+5.7** | [+2.3, +9.2] | **Yes** |
+| trump_count | **+3.2** | [+1.3, +4.7] | **Yes** |
+| All others | varies | includes 0 | No |
+
+**Cross-validation confirms**: Napkin model (2 features) has CV R² = 0.15, outperforming the full 10-feature model.
+
+### Power Analysis
+
+All key findings have >80% power at n=200:
+- Main effects (r ≈ 0.4): Power ≈ 1.00
+- Group comparisons (d ≈ 0.76): Power ≈ 1.00
+- Risk model (R² = 0.08): Power = 0.81 (borderline)
+
+---
+
+## 10. Explainability (Section 14)
+
+SHAP analysis confirms regression findings.
+
+### Feature Importance (Mean |SHAP|)
+
+| Rank | Feature | Mean |SHAP| |
+|------|---------|-------------|
+| 1 | n_doubles | **4.84** |
+| 2 | trump_count | **4.39** |
+| 3-10 | Others | < 2.2 |
+
+**Key insight**: Main effects account for 68% of prediction; interactions are small. The napkin formula is justified.
+
+### Risk Model Fails Cross-Validation
+
+| Model | Train R² | CV R² |
+|-------|----------|-------|
+| E[V] (napkin) | 0.23 | **+0.15** |
+| σ(V) | 0.08 | **-0.13** |
+
+**Risk is fundamentally unpredictable** from hand features.
+
+---
+
+## 11. Core Visualizations (Section 15)
+
+### Risk-Return Scatter
+- **r = -0.38**: Inverse relationship confirmed
+- Good hands (high E[V]) cluster in low-σ region
+- No hands have both high E[V] AND high risk
+
+### UMAP Hand Space
+- **No natural archetypes**: Hand space is continuous
+- Gradual transitions between good and bad hands
+- Features show gradients, not clusters
+
+### Phase Transition
+| Phase | Depth | Consistency |
+|-------|-------|-------------|
+| Opening | 24-28 | 40% |
+| Mid-game | 5-23 | 22% (chaos) |
+| End-game | 0-4 | **100%** (deterministic) |
+
+---
+
+## 12. Advanced Analysis (Sections 16-23)
+
+### Embeddings (Section 16)
+- Word2Vec on hand composition shows **weak structure**
+- Doubles cluster slightly (sim = 0.079 vs 0.069 random)
+- No strong strategic archetypes from co-occurrence
+
+### Differential Analysis (Section 17)
+Only 2 dominoes survive FDR correction:
+- **5-5**: 2.8× enriched in winners (best domino)
+- **6-0**: 3× enriched in losers (worst domino)
+
+### Clustering (Section 18)
+- Optimal k=2 clusters (silhouette = 0.19)
+- **Strong Balanced** (17%): High doubles/trumps, E[V]=22.7
+- **Average** (83%): Modal hand type, E[V]=12.1
+
+### Bayesian Modeling (Section 19)
+- PyMC confirms frequentist findings
+- LOO-CV favors napkin model (67.5% weight)
+- Hierarchical model shows doubles worth +8 pts in control hands
+
+### Time Series (Section 20)
+- V trajectories are predictive of outcome
+- MiniRocket achieves **93% accuracy by trick 3**
+- Three phases: Deterministic → Chaotic → Resolution
+
+### Survival Analysis (Section 21)
+- Control hands reach "decided" by trick 4-5
+- Volatile hands stay uncertain until trick 6-7
+- Decision time correlates with n_doubles
+
+### Ecological Analysis (Section 22)
+- **Diversity hurts E[V]**: r = -0.21
+- Specialists (concentrated in doubles) beat generalists
+- Double-double pairs (4-4 + 5-5) appear in 8 winners, 0 losers
+
+### Phase Diagram (Section 23)
+Additive structure confirmed across (doubles, trumps) grid:
+- +1 double → **+6.7 E[V]**
+- +1 trump → **+3.0 E[V]**
+- Ratio: 2.2:1 (doubles twice as valuable)
+
+---
+
+## 13. Strategic Analysis (Section 25)
+
+### Mistake Cost by Phase
+| Phase | Mean Cost | Forced Plays |
+|-------|-----------|--------------|
+| Early (20-28) | **4.9 pts** | 69% |
+| Mid (8-19) | 2.7 pts | 75% |
+| Late (0-7) | 1.0 pts | 92% |
+
+**Focus on tricks 3-4**: Peak mistake cost occurs here.
+
+### Endgame is 100% Deterministic
+At depth ≤ 4, **every position has exactly one optimal action**. Q-spread = 0 everywhere.
+
+### Heuristic Accuracy
+| Heuristic | Accuracy |
+|-----------|----------|
+| Lead any double | **34.2%** |
+| Play random | 19.3% |
+| Follow with lowest | 17.7% |
+
+**No heuristic beats 35%**: Context is king.
+
+### Variance Decomposition
+| Component | % of Total |
+|-----------|------------|
+| Your hand | 23% |
+| Opponent hands | **77%** |
+
+**Opponent configuration matters more than your own hand!**
+
+### Partner Synergy
+- P0×P2 interaction: **Not significant** (p = 0.60)
+- Your doubles' value is independent of partner's doubles
+- Team strength is additive, not multiplicative
+
+---
+
+## Summary of Key Findings
+
+### The Napkin Formula
+```
+E[V] ≈ 14 + 6×(n_doubles) + 3×(trump_count)
+```
+
+### Key Numbers to Remember
+| Finding | Value |
+|---------|-------|
+| E[V]-σ(V) correlation | **-0.38** (inverse risk-return) |
+| Doubles per point | **+6 pts** each |
+| Trumps per point | **+3 pts** each |
+| Risk R² | **0.08** (unpredictable) |
+| Endgame determinism | **100%** at depth ≤ 4 |
+| Best heuristic accuracy | **34%** |
+| Opponent variance share | **77%** |
+
+---
+
 ## Report Structure
 
 - **Section 01**: Baseline distributions (V, Q, state counts by depth)
@@ -295,7 +479,21 @@ Hands naturally cluster into three types:
 - **Section 05**: Topological analysis (level sets, Reeb graphs)
 - **Section 06**: Scaling analysis (state counts, temporal correlations, DFA)
 - **Section 07**: Synthesis and open questions
-- **Section 08**: Deep count capture analysis (lock-in depth, residual decomposition, capture predictors, manifold structure)
-- **Section 11**: Imperfect information analysis (variance decomposition, bidding formulas, hand classification)
+- **Section 08**: Deep count capture analysis (lock-in depth, residual decomposition)
+- **Section 11**: Imperfect information analysis (variance decomposition, bidding formulas)
+- **Section 12**: Validate & Scale (n=201 seeds, unified features)
+- **Section 13**: Statistical Rigor (bootstrap CIs, effect sizes, power analysis, cross-validation)
+- **Section 14**: Explainability (SHAP analysis)
+- **Section 15**: Core Visualizations (risk-return, UMAP, phase transition)
+- **Section 16**: Embeddings & Networks (Word2Vec, interaction matrix)
+- **Section 17**: Differential Analysis (winner/loser enrichment, volcano plots)
+- **Section 18**: Clustering & Archetypes (K-means, silhouette)
+- **Section 19**: Bayesian Modeling (PyMC, LOO-CV, hierarchical by archetype)
+- **Section 20**: Time Series (V trajectory, MiniRocket classification, phase segmentation)
+- **Section 21**: Survival Analysis (decision time, archetype survival curves)
+- **Section 22**: Ecological Analysis (alpha diversity, co-occurrence matrix)
+- **Section 23**: Phase Diagram (doubles-trumps grid, contour plots)
+- **Section 24**: Writing (publication figures)
+- **Section 25**: Strategic Analysis (mistake costs, bid optimization, heuristic derivation)
 
-Each section includes methodology, complete results, and interpretation. Figures are embedded throughout.
+Each section includes methodology, complete results, and interpretation. Figures are in `results/figures/`.
