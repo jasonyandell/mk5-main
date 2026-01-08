@@ -69,3 +69,75 @@ Using the normal approximation method, neither claimed threshold cliff shows a s
 - `results/figures/26a_threshold_cliffs.png` - 4-panel visualization
 
 ---
+
+## 26f: Coverage vs Trump Count
+
+### Key Question
+Does "coverage" (ability to compete in multiple suits) matter as much as trump count?
+
+### Folk Wisdom Claim
+"2 trumps + perfect coverage beats 4 trumps + naked lows"
+
+Translation: Off-suit quality matters as much as raw trump count.
+
+### Method
+- Define `coverage_score` = composite measure of off-suit quality:
+  - +1 per domino beyond first in each off-suit (depth bonus)
+  - +1 if max rank in suit ≥ 5 (high card bonus)
+  - -2 for singleton with rank ≤ 2 (naked low penalty)
+- Regress E[V] on trump_count + coverage_score
+- Compare standardized coefficients (β) for fair comparison
+
+### Key Findings
+
+#### Bivariate Correlations with E[V]
+
+| Feature | r | p-value | Interpretation |
+|---------|---|---------|----------------|
+| trump_count | **+0.229** | 0.0011 | More trumps → higher E[V] |
+| coverage_score | **-0.333** | 1.4×10⁻⁶ | More coverage → LOWER E[V] |
+
+#### Multivariate Regression
+
+| Feature | Coef | 95% CI | p-value | β (standardized) |
+|---------|------|--------|---------|------------------|
+| trump_count | +1.55 | [-0.34, 3.44] | 0.107 | +0.117 |
+| coverage_score | **-1.63** | [-2.44, -0.82] | **0.0001** | **-0.288** |
+
+**R² = 0.123**
+
+#### Effect Size Comparison
+
+- |β(coverage)| / |β(trump)| = **2.45×**
+- Coverage effect is 2.45× larger in magnitude than trump effect
+- BUT coverage effect is **NEGATIVE** - higher coverage → worse outcomes
+
+### Interpretation
+
+**FOLK WISDOM REFUTED (INVERTED)**
+
+The data shows the **opposite** of folk wisdom:
+
+1. **Coverage hurts, not helps**: Higher coverage_score is associated with **lower** E[V]
+2. **Trump count helps**: More trumps correlate with higher E[V] (though not significant after controlling for coverage)
+3. **Voids are valuable**: The negative coverage effect suggests that voids (enabling trump plays) are more valuable than being "covered" in all suits
+
+### Why Coverage Hurts
+
+1. **Voids enable trumping**: When you have no cards in a suit, you can trump when opponents lead it
+2. **Following suit is weak**: If you must follow with a low card, you lose the trick
+3. **Trumping is powerful**: Cutting in with a trump often wins even against high leads
+4. **Coverage = commitment**: Being spread across all suits means fewer trumps and fewer void-based ruff opportunities
+
+### Revised Folk Wisdom
+
+**Correct interpretation**: "4 trumps + voids beats 2 trumps + coverage"
+
+Having voids (which the coverage metric penalizes as depth=0) is actually beneficial because it enables trump plays. The folk wisdom appears to have the relationship backwards.
+
+### Files Generated
+
+- `results/tables/26f_coverage_vs_trump.csv` - Summary statistics
+- `results/figures/26f_coverage_vs_trump.png` - 4-panel visualization
+
+---
