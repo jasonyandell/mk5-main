@@ -2,10 +2,12 @@
 
 Mapping E[V] across the (n_doubles, trump_count) feature space.
 
+> **Epistemic Status**: This report maps oracle (minimax) E[V] across hand feature dimensions. All findings describe oracle outcome structure. The "napkin formula" and phase boundaries characterize oracle predictions. Whether these relationships hold for human gameplay outcomes is untested.
+
 ## 23a: (Doubles, Trumps) Grid
 
 ### Key Question
-How does E[V] vary across the primary feature dimensions?
+How does oracle E[V] vary across the primary feature dimensions?
 
 ### Method
 - Create pivot table: mean E[V] by (n_doubles, trump_count)
@@ -74,21 +76,23 @@ Linear regression slopes:
 
 **Doubles are more valuable per unit than trumps** (ratio ~2.2:1).
 
-### Key Findings
+### Key Findings (Oracle Data)
 
-1. **Additive structure**: E[V] increases monotonically with both doubles and trumps
-2. **Doubles dominate**: Per-unit effect of doubles is ~2× that of trumps
-3. **No plateau**: Even 4 doubles continues to improve E[V]
+1. **Additive structure**: Oracle E[V] increases monotonically with both doubles and trumps
+2. **Doubles dominate in oracle**: Per-unit effect of doubles is ~2× that of trumps on oracle E[V]
+3. **No plateau**: Even 4 doubles continues to improve oracle E[V]
 4. **Synergy weak**: Cell values roughly match additive prediction
 
-### Interpretation
+### Interpretation (Oracle Structure)
 
-The phase diagram confirms the napkin formula:
+The phase diagram confirms the napkin formula for oracle E[V]:
 ```
-E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trumps)
+Oracle E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trumps)
 ```
 
-The grid shows this relationship holds across the entire (doubles, trumps) space without major non-linearities.
+The grid shows this relationship holds across the entire (doubles, trumps) space without major non-linearities in oracle outcomes.
+
+**Note**: This characterizes oracle prediction accuracy. Whether human game outcomes follow the same additive structure is untested.
 
 ### Files Generated
 
@@ -101,18 +105,18 @@ The grid shows this relationship holds across the entire (doubles, trumps) space
 ## 23b: Phase Boundaries
 
 ### Key Question
-Where are the transitions between "good", "neutral", and "bad" hands?
+Where are the transitions between oracle-favorable and oracle-unfavorable hands?
 
 ### Method
 - Identify E[V] = 0 contour
 - Characterize regions above/below
 
-### Key Findings
+### Key Findings (Oracle Boundaries)
 
-**E[V] = 0 boundary** (approximately):
-- 0 doubles: Needs 3+ trumps
-- 1 double: Needs 1+ trumps
-- 2+ doubles: Positive E[V] regardless of trumps
+**Oracle E[V] = 0 boundary** (approximately):
+- 0 doubles: Needs 3+ trumps for positive oracle E[V]
+- 1 double: Needs 1+ trumps for positive oracle E[V]
+- 2+ doubles: Positive oracle E[V] regardless of trumps
 
 ---
 
@@ -122,11 +126,41 @@ Smooth visualization of E[V] surface over feature space.
 
 ---
 
-## Summary
+## Summary (Oracle Feature Structure)
 
-Phase diagram analysis confirms:
+Phase diagram analysis of oracle data confirms:
 
-1. **Two-dimensional structure**: E[V] is well-predicted by (doubles, trumps) alone
-2. **Additive effects**: No strong interactions between features
-3. **Doubles > trumps**: Per-unit marginal effect ratio ~2:1
-4. **Clear boundaries**: E[V] = 0 contour separates favorable from unfavorable hands
+1. **Two-dimensional structure**: Oracle E[V] is well-predicted by (doubles, trumps) alone
+2. **Additive effects**: No strong interactions between features in oracle data
+3. **Doubles > trumps in oracle**: Per-unit marginal effect ratio ~2:1
+4. **Clear oracle boundaries**: Oracle E[V] = 0 contour separates oracle-favorable from oracle-unfavorable hands
+
+**Scope limitation**: These patterns describe oracle (perfect-information) outcomes. Whether human gameplay outcomes follow the same phase structure and boundaries is untested.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human outcome phase diagram**: Does the (doubles, trumps) grid predict human game outcomes with similar structure? This requires human gameplay data.
+
+2. **Boundary validation**: Do human players with "2+ doubles" consistently win regardless of trumps, as the oracle boundary suggests?
+
+3. **Marginal effect stability**: The 2:1 doubles-to-trumps ratio comes from 200 hands. Would a larger sample confirm this ratio?
+
+### Methodological Questions
+
+1. **Cell sample sizes**: Many grid cells have small n (e.g., n=1 for 3 doubles/5 trumps). How reliable are estimates from sparse cells?
+
+2. **Feature interactions**: The report claims "synergy weak", but has interaction testing been done formally? Could there be hidden non-additivities?
+
+3. **Declaration conditioning**: The phase diagram pools across all declarations. Do the boundaries shift for different trump suits?
+
+### Open Questions
+
+1. **Why are doubles more valuable?**: The 2:1 ratio for doubles vs trumps is a finding, but what game mechanism causes this?
+
+2. **Boundary practical use**: If a bidder knows they're at the E[V]=0 boundary, what should they do? The oracle doesn't prescribe strategy.
+
+3. **Human boundary perception**: Do experienced 42 players have intuitions about where the "good hand" boundary lies? Do they align with oracle boundaries?
