@@ -1,15 +1,15 @@
 # 05: Topological Analysis
 
-## Overview
+Level set structure and connectivity of the oracle value function.
 
-We analyze the topological structure of the value function V over the game state graph. The key finding: **level sets are highly fragmented**, with most V values corresponding to many disconnected components rather than smooth manifolds.
+> **Epistemic Status**: This report analyzes topological properties of the oracle V function. Level set fragmentation statistics are empirical. Implications for learning are hypotheses requiring experimental validation.
 
 ---
 
 ## 5.1 Definitions
 
 ### Game State Graph
-- **Vertices**: All reachable game states
+- **Vertices**: All reachable game states in the oracle tree
 - **Edges**: Legal transitions (one player plays one domino)
 - **Direction**: Edges point from higher depth to lower depth (game progresses)
 
@@ -18,7 +18,7 @@ For a given value v:
 ```
 L(v) = {s : V(s) = v}
 ```
-The level set is all states with minimax value exactly v.
+The level set is all oracle states with minimax value exactly v.
 
 ### Fragmentation
 ```
@@ -28,7 +28,7 @@ A fragmentation of 1.0 means every state is isolated; 0.0 means fully connected.
 
 ---
 
-## 5.2 Level Set Analysis
+## 5.2 Level Set Analysis (Oracle Data)
 
 We computed level set statistics for one seed-declaration pair:
 
@@ -60,13 +60,13 @@ We computed level set statistics for one seed-declaration pair:
 
 ## 5.3 V Transition Analysis
 
-How often does V change when traversing an edge?
+How often does oracle V change when traversing an edge?
 
 ![V Transitions](../results/figures/05a_v_transitions.png)
 
-**Finding**: V changes on the vast majority of edges. States with the same V are rarely adjacent in the game graph.
+**Finding**: Oracle V changes on the vast majority of edges. States with the same V are rarely adjacent in the game graph.
 
-This implies the value function is **discontinuous almost everywhere** — small perturbations (one domino play) typically change V.
+This implies the oracle value function is **discontinuous almost everywhere** — single domino plays typically change oracle V.
 
 ---
 
@@ -87,7 +87,7 @@ The Reeb graph contracts each level set to a point while preserving adjacency:
 
 ![Reeb Graph](../results/figures/05b_reeb_graph.png)
 
-**Interpretation**: The Reeb graph has ~400× more nodes than V values, reflecting extreme fragmentation.
+**Interpretation**: The Reeb graph has ~400× more nodes than V values, reflecting extreme fragmentation of level sets.
 
 ---
 
@@ -119,24 +119,26 @@ Sample critical point sequence:
 
 ---
 
-## 5.6 Implications
+## 5.6 Potential Implications (Hypotheses)
 
-### For Value Prediction
-The high fragmentation explains why direct V regression is difficult:
-- Nearby states in feature space may have very different V
+The following are speculative implications of the fragmentation findings. None have been experimentally validated.
+
+### For Value Prediction (Hypothesis)
+The high fragmentation *may* explain difficulty in direct V regression:
+- Nearby states in feature space may have very different oracle V
 - The mapping from state → V is highly non-smooth
-- Local averaging methods will fail
+- **Hypothesis**: Local averaging methods may fail (untested)
 
-### For Search Algorithms
-Tree search methods may not benefit from value function smoothness assumptions. Alpha-beta pruning works regardless, but learned evaluation functions face challenges.
+### For Search Algorithms (Hypothesis)
+**Hypothesis**: Tree search methods may not benefit from value function smoothness assumptions. Alpha-beta pruning works regardless, but learned evaluation functions *may* face challenges. (Untested)
 
-### For Neural Networks
-The fragmentation suggests that neural V predictors need:
+### For Neural Networks (Hypothesis)
+The fragmentation suggests that neural V predictors *may* need:
 - Sufficient capacity to represent discontinuities
 - Training data covering the disconnected components
 - Possibly explicit representation of count/trick outcomes
 
-Our current model achieves only MAE ≈ 7.4 on V prediction despite 97.8% move accuracy — consistent with a fragmented V landscape.
+**Note**: These are design hypotheses, not validated recommendations.
 
 ---
 
@@ -149,7 +151,7 @@ Our current model achieves only MAE ≈ 7.4 on V prediction despite 97.8% move a
 
 Move prediction only requires *relative* comparison of Q values within a state. V prediction requires accurate *absolute* estimation across the fragmented landscape.
 
-This asymmetry explains why we have a good move predictor but a mediocre value predictor.
+**Hypothesis**: This asymmetry may explain the gap between good move prediction and mediocre value prediction. **Caveat**: This is a post-hoc explanation; alternative explanations exist (e.g., training objective differences, feature engineering).
 
 ---
 
@@ -164,6 +166,34 @@ This asymmetry explains why we have a good move predictor but a mediocre value p
 4. **Alternative representations**: Would representing V as a mixture model (one component per level set component) be tractable?
 
 5. **Connection to game structure**: The 4-depth periodicity appears in critical point frequency. Is this formally related to the trick structure?
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Smoothing experiments**: Test whether smoothed V improves prediction without hurting move accuracy
+
+2. **Fragmentation vs learnability**: Experimentally verify whether fragmentation predicts model error
+
+3. **Cross-seed consistency**: Confirm fragmentation patterns hold across multiple seeds
+
+### Methodological Questions
+
+1. **Topological descriptors**: Apply persistence homology or other TDA methods to characterize structure
+
+2. **Component analysis**: Characterize what distinguishes different components at the same V value
+
+3. **Edge transition rates**: Quantify V change magnitude distribution across edges
+
+### Open Questions
+
+1. **Human relevance**: Do human players perceive the fragmented V landscape, or does uncertainty smooth it?
+
+2. **Alternative value functions**: Would a different V definition (e.g., expected value under random play) have different topology?
+
+3. **Game design**: Is high fragmentation a general property of trick-taking games or specific to Texas 42?
 
 ---
 
