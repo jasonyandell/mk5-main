@@ -172,7 +172,7 @@ For each candidate trump T ∈ {Blanks, Ones, Twos, Threes, Fours, Fives, Sixes,
 For each (trump, bid_level) pair:
 
 **Primary output:**
-- `P̂_upper(make | T, k)` = fraction where V_i ≥ k
+- `P̂_upper(make | T, k)` = fraction where `(42 + V_i) / 2 ≥ k`
 - `CI` = Wilson score interval (handles near 0/1)
 
 **Risk metrics:**
