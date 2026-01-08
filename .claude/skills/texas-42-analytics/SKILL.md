@@ -221,6 +221,7 @@ When closing a bead for analysis work:
 
 1. **Update report** - Add/update findings in `forge/analysis/report/`
 2. **Save outputs** - Figures to `results/figures/`, tables to `results/tables/`
+3. **Update CLAUDE.md** - Any failed tool call and its fix go to `forge/analysis/CLAUDE.md`
 3. **Git commit** - Stage and commit all changes
 4. **bd sync** - Sync beads database
 5. **Git push** - Push to remote
@@ -290,9 +291,69 @@ from forge.analysis.utils import symmetry
 canonical = symmetry.canonical_form(state)
 ```
 
+## Key Statistical Findings (Cite These)
+
+### The Napkin Formula (Validated by Cross-Validation)
+**Only two features matter for E[V] prediction:**
+- `n_doubles`: +5.7 points per double (95% CI: [+2.3, +9.2])
+- `trump_count`: +3.2 points per trump (95% CI: [+1.3, +4.7])
+
+Full model R² = 0.26, but Napkin model (2 features) has **better CV R² = 0.15** (less overfitting).
+
+### E[V] vs σ(V) Negative Correlation
+| Metric | r | 95% CI | Effect Size |
+|--------|---|--------|-------------|
+| r(E[V], σ[V]) | **-0.381** | [-0.494, -0.256] | Medium |
+
+**Key insight:** Good hands have LOWER variance. Opposite of financial markets.
+
+### Risk is Unpredictable
+- σ(V) prediction: R² = 0.08 (95% CI: [0.06, 0.20])
+- **CV R² is NEGATIVE** - model is worse than mean prediction
+- Risk comes from opponent hands, not your own
+
+### Strongest E[V] Predictors (Bivariate)
+| Feature | r with E[V] | p-value |
+|---------|-------------|---------|
+| n_doubles | **+0.395** | 6.9×10⁻⁹ |
+| has_trump_double | +0.242 | 5.6×10⁻⁴ |
+| trump_count | +0.229 | 1.1×10⁻³ |
+
+### SHAP Analysis Confirms
+- n_doubles: Mean |SHAP| = **4.84** (rank 1)
+- trump_count: Mean |SHAP| = **4.39** (rank 2)
+- Effects are **68% additive** - interactions are small
+
+### Phase Transition (Order → Chaos → Resolution)
+| Phase | Depth | Best-Move Consistency |
+|-------|-------|----------------------|
+| Opening | 24-28 | 40% |
+| Mid-game | 5-23 | 22% (chaos) |
+| End-game | 0-4 | **100%** (locked) |
+
+### Count Ownership Dominates
+- Count capture explains ~92% of game value variance
+- Basin model R² > 0.99 at late game (depth ≤ 12)
+
+### Enrichment Analysis
+- **5-5**: 2.8× more common in winners, reduces risk
+- **6-0**: 3× more common in losers (worst domino)
+
+### Power Analysis
+All key findings have power > 80% at n=200. Main effects need only n≈50.
+
+## Statistical Rigor Requirements
+
+Always follow theme 13 patterns:
+1. **Bootstrap CIs**: 1000 iterations, percentile method
+2. **Effect sizes**: Report Cohen's d, r, or R² with interpretation
+3. **Power analysis**: Verify n is sufficient for effect size
+4. **Multiple comparison correction**: BH FDR for > 3 tests
+5. **Cross-validation**: 10-fold, 10 repeats for generalization
+
 ## References
 
 - [architecture.md](architecture.md) - System design and utility details
 - [workflows.md](workflows.md) - Running analyses, adding notebooks
-- `forge/analysis/CLAUDE.md` - Quick setup reference
+- `forge/analysis/CLAUDE.md` - Complete reference with all findings
 - `forge/analysis/report/00_executive_summary.md` - Key findings

@@ -84,22 +84,60 @@ Diversity does not predict risk.
 ## 22b: Co-occurrence Matrix
 
 ### Key Question
-Which dominoes tend to appear together in hands?
+Which dominoes tend to appear together in winning vs losing hands?
 
 ### Method
 - Build 28×28 co-occurrence matrix from hand compositions
-- Normalize to joint and conditional probabilities
-- Identify dominant associations
+- Compare winner hands (E[V] > 0) vs loser hands (E[V] < 0)
+- Compute enrichment ratio: (winner count) / (loser count)
 
 ### Key Findings
 
-**Expected result**: Due to random dealing (7 of 28), most co-occurrences are near-random.
+**Top Positive Co-occurrences (Winners)**:
 
-**Observed**: Co-occurrence matrix is approximately uniform, with no strong domino "pairings" emerging from the dealing mechanism.
+| Domino 1 | Domino 2 | Winner | Loser | Enrichment |
+|----------|----------|--------|-------|------------|
+| 4-4 + 5-5 | | 8 | 0 | 10.0 |
+| 5-5 + 6-1 | | 7 | 0 | 10.0 |
+| 3-3 + 5-4 | | 6 | 0 | 10.0 |
+| 5-0 + 6-6 | | 6 | 0 | 10.0 |
+| 4-0 + 4-4 | | 9 | 1 | 9.18 |
+| 3-3 + 5-5 | | 9 | 1 | 9.18 |
+
+**Key pattern:** Double-double pairs dominate winner hands. The 4-4 + 5-5 combination appears in 8 winners and 0 losers.
+
+**Top Negative Co-occurrences (Losers)**:
+
+| Domino 1 | Domino 2 | Winner | Loser | Enrichment |
+|----------|----------|--------|-------|------------|
+| 4-2 + 6-0 | | 0 | 9 | 0.0 |
+| 5-4 + 6-2 | | 0 | 4 | 0.0 |
+| 3-0 + 6-0 | | 0 | 9 | 0.0 |
+
+**Key pattern:** 6-0 paired with non-doubles appears in losers.
+
+### Enrichment Distribution
+
+| Enrichment | n_pairs | Interpretation |
+|------------|---------|----------------|
+| > 5.0 | 41 | Strong winner signal |
+| 2.0-5.0 | 89 | Moderate winner |
+| 0.5-2.0 | 127 | Near-random |
+| < 0.5 | 48 | Loser signal |
+| = 0.0 | 69 | Only in losers |
 
 ### Interpretation
 
-Unlike ecological species that form communities, domino co-occurrence is driven by sampling statistics, not strategic affinity. The dealing mechanism treats all dominoes equally, producing near-random hand compositions.
+1. **Doubles cluster together**: Double-double pairs are heavily enriched in winners
+2. **6-0 is toxic**: Pairing 6-0 with other dominoes predicts losing
+3. **Strategic pairs exist**: Despite random dealing, certain combinations win more often
+4. **Count dominoes together**: 5-5 + 5-0 (15 count points together) enrichment = 8.16
+
+### Files Generated
+
+- `results/tables/22b_cooccurrence_pairs.csv` - All pair enrichments
+- `results/tables/22b_cooccurrence_matrices.npz` - Full 28×28 matrices
+- `results/figures/22b_cooccurrence.png` - Heatmap visualization
 
 ---
 
