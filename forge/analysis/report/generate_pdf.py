@@ -19,6 +19,21 @@ SECTIONS = [
     "06_scaling.md",
     "07_synthesis.md",
     "08_count_capture_deep.md",
+    "09_path_analysis.md",
+    "11_imperfect_info.md",
+    "12_validate_scale.md",
+    "13_statistical_rigor.md",
+    "14_explainability.md",
+    "15_core_viz.md",
+    "16_embeddings.md",
+    "17_differential.md",
+    "18_clustering.md",
+    "19_bayesian.md",
+    "20_time_series.md",
+    "21_survival.md",
+    "22_ecological.md",
+    "23_phase_diagram.md",
+    "25_strategic.md",
 ]
 
 # CSS styling for the PDF
