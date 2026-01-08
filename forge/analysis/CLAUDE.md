@@ -651,3 +651,61 @@ ls /mnt/d/shards-standard/*/*.parquet | wc -l
 # Check data is accessible
 python -c "from forge.analysis.utils import loading; print(len(loading.find_shard_files('/mnt/d/shards-standard/')))"
 ```
+
+## DuckDB Performance Tips
+
+### Use `bit_count()` for Depth Calculation
+
+**10x faster** than Python UDFs for computing game depth from packed state:
+
+```sql
+-- Depth = number of dominoes remaining = popcount of lower 28 bits
+SELECT bit_count(state::BIGINT & 268435455) as depth, V
+FROM read_parquet('path/to/shard.parquet')
+WHERE bit_count(state::BIGINT & 268435455) = 28  -- Root states only
+```
+
+The magic number `268435455` = `0x0FFFFFFF` (28-bit mask).
+
+### Efficient Aggregation by Depth
+
+Query median V at each depth in one shot (much faster than Python loops):
+
+```sql
+SELECT bit_count(state::BIGINT & 268435455) as d, MEDIAN(V) as med_v
+FROM read_parquet('path/to/shard.parquet')
+GROUP BY bit_count(state::BIGINT & 268435455)
+ORDER BY d DESC
+```
+
+## Monitoring Long-Running Notebooks
+
+### Check Partial Results
+
+Notebooks executed with `jupyter nbconvert --inplace` update as cells complete. Parse the notebook JSON to see partial results:
+
+```bash
+cat notebook.ipynb | python3 -c "
+import json, sys
+nb = json.load(sys.stdin)
+for i, cell in enumerate(nb['cells']):
+    if cell['cell_type'] == 'code':
+        outputs = cell.get('outputs', [])
+        if outputs:
+            print(f'Cell {i}:')
+            for out in outputs[-2:]:
+                if 'text' in out:
+                    print(''.join(out['text'])[-500:])
+            print('---')
+"
+```
+
+### Watch Execution Progress
+
+```bash
+# If running via nbconvert with output redirect
+tail -f /path/to/output.log
+
+# Check if jupyter process is still running
+ps aux | grep jupyter | grep -v grep
+```

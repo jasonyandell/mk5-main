@@ -63,7 +63,7 @@ Can we predict game outcome from the shape of the V trajectory?
 - Extract V trajectories as time series (depth 28→0) using DuckDB for efficiency
 - Use MiniRocket kernel features for classification (n_kernels=5000-10000)
 - Binary classification: winner (V > 0) vs loser (V ≤ 0)
-- **Balanced dataset**: 200 seeds (100 wins, 100 losses), 70/30 train/test split
+- **Balanced dataset**: 732 seeds (366 wins, 366 losses), 70/30 train/test split
 
 ### Key Findings
 
@@ -71,24 +71,24 @@ Can we predict game outcome from the shape of the V trajectory?
 
 | Prefix Length | Plays | Trick | Train Acc | Test Acc |
 |---------------|-------|-------|-----------|----------|
-| 9 | 9 | 3 | 100% | **93.3%** |
-| 12 | 12 | 4 | 100% | 93.3% |
-| 16 | 16 | 5 | 100% | **95.0%** |
-| 20 | 20 | 6 | 100% | 95.0% |
-| 24 | 24 | 7 | 100% | 91.7% |
-| 28 | 28 | 8 | 100% | 90.0% |
-| 29 | 29 | 8 | 100% | 91.7% |
+| 9 | 9 | 3 | 100% | **97.7%** |
+| 12 | 12 | 4 | 100% | 95.9% |
+| 16 | 16 | 5 | 100% | 96.4% |
+| 20 | 20 | 6 | 100% | 95.9% |
+| 24 | 24 | 7 | 100% | 95.9% |
+| 28 | 28 | 8 | 100% | 95.9% |
+| 29 | 29 | 8 | 100% | **96.8%** |
 
 **Key insights:**
-- **93%+ accuracy by trick 3** (9 plays) - early game signal is strong
-- **Peak accuracy at trick 5** (16 plays) - 95% test accuracy
-- **Slight decrease in late game** - possibly due to noisy endgame patterns
+- **97.7% accuracy by trick 3** (9 plays) - early game signal is extremely strong
+- **Stable 95-97% accuracy** across all prefix lengths
+- **No late-game degradation** - larger dataset eliminates noise
 
 ### Interpretation
 
-1. **Early game is predictive**: The first 3 tricks contain most of the signal for final outcome
-2. **Mid-game optimal**: Peak accuracy at trick 5 suggests mid-game V patterns are most discriminative
-3. **Generalization gap**: 100% train vs 90-95% test indicates some overfitting, but model generalizes well
+1. **Early game is highly predictive**: The first 3 tricks (97.7%) contain nearly all signal for final outcome
+2. **Stable across game phases**: 95-97% accuracy throughout - no privileged observation window
+3. **Excellent generalization**: 100% train vs 96-98% test shows model captures true patterns
 4. **Time series features work**: MiniRocket's random convolutional kernels capture game dynamics effectively
 
 ### Technical Notes
@@ -172,6 +172,6 @@ Pattern mining in V trajectories to find common game dynamics.
 Time series analysis reveals:
 
 1. **Games resolve progressively**: V uncertainty decreases monotonically with depth
-2. **Mid-game is critical**: Tricks 3-5 have highest strategic value
+2. **Outcome predictable by trick 3**: MiniRocket achieves 97.7% accuracy from first 9 plays
 3. **Three distinct phases**: Opening (control), mid-game (chaos), end-game (resolution)
 4. **Early decisions dominate**: First few tricks determine most of the outcome
