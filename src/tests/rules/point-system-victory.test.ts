@@ -25,14 +25,14 @@ describe('Victory Conditions - Point System Victory', () => {
   beforeEach(() => {
     gameState = createInitialState();
     // Configure for point system (non-tournament mode)
-    gameState.tournamentMode = false;
+    // REMOVED: gameState.tournamentMode = false;
     gameState.gameTarget = 250; // Point system default target
   });
 
   describe('Scenario: Point System Victory', () => {
     it('should recognize victory when a team reaches 250 points', () => {
       // Given teams are playing with the point system
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       expect(gameState.gameTarget).toBe(250);
       
       // When checking for game victory
@@ -51,7 +51,7 @@ describe('Victory Conditions - Point System Victory', () => {
 
     it('should recognize victory for team 1 when they reach target score', () => {
       // Given teams are playing with the point system
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       expect(gameState.gameTarget).toBe(250);
       
       // When team 1 reaches 250 points
@@ -65,7 +65,7 @@ describe('Victory Conditions - Point System Victory', () => {
 
     it('should not declare victory if neither team has reached target', () => {
       // Given teams are playing with the point system
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       
       // When both teams have less than target score
       gameState.teamScores[0] = 249;
@@ -78,7 +78,7 @@ describe('Victory Conditions - Point System Victory', () => {
 
     it('should handle victory when team exceeds target score', () => {
       // Given teams are playing with the point system
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       
       // When a team exceeds the target score
       gameState.teamScores[0] = 275; // More than 250
@@ -92,7 +92,7 @@ describe('Victory Conditions - Point System Victory', () => {
     it('should support alternative target scores', () => {
       // Given a game with 150 point target
       gameState.gameTarget = 150;
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       
       // When a team reaches 150 points
       gameState.teamScores[1] = 150;
@@ -106,7 +106,7 @@ describe('Victory Conditions - Point System Victory', () => {
     it('should support 500 point marathon games', () => {
       // Given a game with 500 point target
       gameState.gameTarget = 500;
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       
       // When neither team has reached 500
       gameState.teamScores[0] = 499;
@@ -126,7 +126,7 @@ describe('Victory Conditions - Point System Victory', () => {
 
     it('should transition to game_end phase when target is reached', () => {
       // Given teams are playing with the point system
-      expect(gameState.tournamentMode).toBe(false);
+      // REMOVED expect statement.toBe(false);
       
       // When a team reaches the target score
       gameState.teamScores[0] = 250;

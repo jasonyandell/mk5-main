@@ -27,20 +27,6 @@ interface GotoOptions {
   testMode?: boolean; // default true; when false, main loop runs
 }
 
-interface QuickplayState {
-  enabled: boolean;
-  aiPlayers: Set<number>;
-}
-
-interface QuickplayActions {
-  toggle(): void;
-  togglePlayer(playerId: number): void;
-}
-
-interface GameWindow {
-  quickplayActions?: QuickplayActions;
-  getQuickplayState?: () => QuickplayState;
-}
 
 export class PlaywrightGameHelper {
   private page: Page;
@@ -97,7 +83,7 @@ export class PlaywrightGameHelper {
       timeTravelButton: '[data-testid="time-travel-button"], .time-travel-button'
     },
     playingArea: '[data-testid="playing-area"]',
-    tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
+    tapIndicator: '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
     tapText: '.tap-text',
     turnPlayer: '.turn-player'
   };
@@ -142,19 +128,7 @@ export class PlaywrightGameHelper {
         }
       `;
       document.head.appendChild(style);
-      
-      // Disable AI for all players
-      const gameWindow = window as GameWindow;
-      if (gameWindow.quickplayActions && gameWindow.getQuickplayState) {
-        const state = gameWindow.getQuickplayState();
-        if (state.enabled) {
-          gameWindow.quickplayActions.toggle();
-        }
-        for (const playerId of state.aiPlayers) {
-          gameWindow.quickplayActions.togglePlayer(playerId);
-        }
-      }
-      
+
       // Disable URL updates unless explicitly enabled
       if (opts?.disableUrlUpdates !== false) {
         window.history.pushState = () => {};
@@ -175,11 +149,11 @@ export class PlaywrightGameHelper {
       () => {
         const container = document.querySelector('.app-container');
         const phase = container?.getAttribute('data-phase');
-        const gameState = (window as any).getGameState?.();
-        
-        // Check that we have both a phase and a game state
+        const gameView = (window as any).getGameView?.();
+
+        // Check that we have both a phase and a game view
         // and that the game is not in a transitional state
-        return !!(phase && gameState && !gameState.isProcessing);
+        return !!(phase && gameView && !gameView.isProcessing);
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -190,11 +164,11 @@ export class PlaywrightGameHelper {
    * Simply waits for game state to be ready after navigation
    */
   async waitForNavigationRestore(): Promise<void> {
-    // Wait for game state to exist and be stable
+    // Wait for game view to exist and be stable
     await this.page.waitForFunction(
       () => {
-        const gameState = (window as any).getGameState?.();
-        return !!gameState && !('isProcessing' in gameState && gameState.isProcessing);
+        const gameView = (window as any).getGameView?.();
+        return !!gameView && !('isProcessing' in gameView && gameView.isProcessing);
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -374,9 +348,9 @@ export class PlaywrightGameHelper {
    * Set trump suit
    */
   async setTrump(suit: string): Promise<void> {
-    // Normalize suit name
+    // Normalize suit name (updated to use 'aces/deuces/tres' naming)
     const suitMap: Record<string, string> = {
-      '0s': 'blanks', '1s': 'ones', '2s': 'twos', '3s': 'threes',
+      '0s': 'blanks', '1s': 'aces', '2s': 'deuces', '3s': 'tres',
       '4s': 'fours', '5s': 'fives', '6s': 'sixes', 'doubles': 'doubles'
     };
     const normalizedSuit = (suitMap[suit] || suit).toLowerCase();
@@ -449,8 +423,8 @@ export class PlaywrightGameHelper {
     // Use waitForFunction to detect when game processes the move
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        return state && !(state as any).isProcessing;
+        const view = (window as any).getGameView?.();
+        return view && !(view as any).isProcessing;
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
     );
@@ -554,12 +528,12 @@ export class PlaywrightGameHelper {
   async playFullTrick(): Promise<void> {
     // Check if AI is already enabled for players 1-3
     const needsAI = await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state || !state.playerTypes) return true;
+      const view = (window as any).getGameView?.();
+      if (!view || !view.state?.playerTypes) return true;
       // Check if players 1-3 are already AI
-      return state.playerTypes[1] !== 'ai' || 
-             state.playerTypes[2] !== 'ai' || 
-             state.playerTypes[3] !== 'ai';
+      return view.state.playerTypes[1] !== 'ai' ||
+             view.state.playerTypes[2] !== 'ai' ||
+             view.state.playerTypes[3] !== 'ai';
     });
     
     // Only enable AI if not already enabled
@@ -574,8 +548,8 @@ export class PlaywrightGameHelper {
     // Just verify trick is complete (should have 4 dominoes)
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        return state && state.currentTrick && state.currentTrick.length === 4;
+        const view = (window as any).getGameView?.();
+        return view && view.state?.currentTrick && view.state.currentTrick.length === 4;
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );
@@ -609,47 +583,50 @@ export class PlaywrightGameHelper {
    * Load game state from URL
    */
   async loadStateWithActions(
-    seed: number, 
-    actions: string[], 
+    seed: number,
+    actions: string[],
     playerTypes: ('human' | 'ai')[] = ['human', 'human', 'human', 'human'],
-    dealer?: number,
-    tournamentMode?: boolean
+    dealer?: number
   ): Promise<void> {
-    const urlStr = encodeGameUrl(seed, actions, playerTypes, dealer, tournamentMode);
-    
-    // Include testMode=true to disable controllers, but AI will execute synchronously
-    // when explicitly specified in the URL data
-    await this.page.goto(`${urlStr}&testMode=true`, { 
-      waitUntil: 'networkidle',
-      timeout: PlaywrightGameHelper.TIMEOUTS.slow 
-    });
-    await this.waitForGameReady();
-    
-    // If AI players are specified, they execute synchronously in test mode
-    // Just verify the state is stable after loading
-    if (playerTypes.some(t => t === 'ai')) {
-      await this.page.waitForFunction(
-        () => {
-          const state = (window as any).getGameState?.();
-          if (!state) return false;
-          // State is stable when current player is human or game ended
-          return state.playerTypes[state.currentPlayer] === 'human' ||
-                 state.phase === 'scoring' ||
-                 state.phase === 'game_over';
-        },
-        { timeout: PlaywrightGameHelper.TIMEOUTS.quick }
-      );
-    }
-  }
+    const urlStr = encodeGameUrl(seed, actions, playerTypes, dealer);
 
-  /**
-   * Navigate tabs - DEPRECATED
-   * The game automatically shows the correct view based on game state
-   * This method is kept only for backward compatibility but should not be used
-   */
-  async navigateTo(tab: string): Promise<void> {
-    // Do nothing - the game handles tab switching automatically
-    console.warn(`navigateTo('${tab}') called but is deprecated - game handles tab switching automatically`);
+    // Don't use testMode when loading with actions - actions need to be replayed
+    // testMode=true would force all players to human and prevent action replay
+    await this.page.goto(urlStr, {
+      waitUntil: 'networkidle',
+      timeout: PlaywrightGameHelper.TIMEOUTS.slow
+    });
+
+    // Disable animations for deterministic testing
+    await this.page.evaluate(() => {
+      const style = document.createElement('style');
+      style.textContent = `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      // Disable URL updates
+      window.history.pushState = () => {};
+      window.history.replaceState = () => {};
+    });
+
+    await this.waitForGameReady();
+
+    // Wait for actions to be fully replayed - state should be stable
+    await this.page.waitForFunction(
+      () => {
+        const view = (window as any).getGameView?.();
+        if (!view || !view.state) return false;
+        // State is stable and no longer processing
+        return !view.isProcessing && view.state.phase !== 'initializing';
+      },
+      { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
+    );
   }
 
   /**
@@ -662,8 +639,9 @@ export class PlaywrightGameHelper {
     
     // Wait for dropdown menu to be visible
     await this.page.waitForSelector('.dropdown-content', { state: 'visible' });
-    
+
     // Now click the settings button inside the dropdown
+    await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button).waitFor({ state: 'visible', timeout: 5000 });
     await this.page.locator(PlaywrightGameHelper.SELECTORS.debug.button).click();
     
     // Wait for debug panel to be visible (it's a fixed fullscreen drawer)
@@ -703,11 +681,11 @@ export class PlaywrightGameHelper {
         gameWindow.gameActions.enableAI();
       } else {
         // Fallback to direct state update if action not available
-        if (gameWindow.gameState && gameWindow.getGameState) {
-          const currentState = gameWindow.getGameState();
+        if (gameWindow.gameState && gameWindow.getGameView) {
+          const currentView = gameWindow.getGameView();
           // Set players 1-3 as AI
           const newState = {
-            ...currentState,
+            ...currentView,
             playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[]
           };
           // Update the game state directly - gameState now has methods exposed
@@ -717,19 +695,6 @@ export class PlaywrightGameHelper {
             // Already an object with set method
             gameWindow.gameState.set(newState);
           }
-        }
-      }
-      
-      // Also enable quickplay if available (for backward compatibility)
-      if (gameWindow.quickplayActions && gameWindow.getQuickplayState) {
-        const state = gameWindow.getQuickplayState();
-        for (let i = 1; i <= 3; i++) {
-          if (!state.aiPlayers.has(i)) {
-            gameWindow.quickplayActions.togglePlayer(i);
-          }
-        }
-        if (!state.enabled) {
-          gameWindow.quickplayActions.toggle();
         }
       }
     });
@@ -743,13 +708,13 @@ export class PlaywrightGameHelper {
     // In test mode, AI executes synchronously, so just verify state has changed
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        if (!state) return false;
-        
+        const view = (window as any).getGameView?.();
+        if (!view || !view.state) return false;
+
         // AI has finished if it's human's turn or game phase changed
-        return state.playerTypes[state.currentPlayer] === 'human' ||
-               state.phase === 'scoring' ||
-               state.phase === 'game_over';
+        return view.state.playerTypes[view.state.currentPlayer] === 'human' ||
+               view.state.phase === 'scoring' ||
+               view.state.phase === 'game_over';
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.quick } // Quick timeout since it's synchronous
     );
@@ -793,8 +758,8 @@ export class PlaywrightGameHelper {
     const mappings: Record<string, string> = {
       '.trick-horizontal': '.trick-table',
       '.trick-position': '.trick-spot',
-      '.proceed-action-button': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
-      '[data-testid="complete-trick"]': '[data-testid*="complete-trick"], [data-testid*="agree-complete-trick"]',
+      '.proceed-action-button': '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
+      '[data-testid="complete-trick"]': '[data-testid*="complete-trick"], [data-testid*="agree-trick"]',
       '.history-row': '.history-item',
       '.trump-display': PlaywrightGameHelper.SELECTORS.trump
     };
@@ -807,9 +772,9 @@ export class PlaywrightGameHelper {
    */
   async isCurrentPlayerHuman(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return true; // Default to human if no state
-      return state.playerTypes[state.currentPlayer] === 'human';
+      const view = (window as any).getGameView?.();
+      if (!view || !view.state) return true; // Default to human if no view
+      return view.state.playerTypes[view.state.currentPlayer] === 'human';
     });
   }
 
@@ -818,9 +783,9 @@ export class PlaywrightGameHelper {
    */
   async isAITurn(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return false;
-      return state.playerTypes[state.currentPlayer] === 'ai';
+      const view = (window as any).getGameView?.();
+      if (!view || !view.state) return false;
+      return view.state.playerTypes[view.state.currentPlayer] === 'ai';
     });
   }
 
@@ -830,12 +795,12 @@ export class PlaywrightGameHelper {
   async waitForHumanTurn(): Promise<void> {
     await this.page.waitForFunction(
       () => {
-        const state = (window as any).getGameState?.();
-        if (!state) return false;
+        const view = (window as any).getGameView?.();
+        if (!view || !view.state) return false;
         // Wait for human turn or game end
-        return state.playerTypes[state.currentPlayer] === 'human' ||
-               state.phase === 'scoring' ||
-               state.phase === 'game_over';
+        return view.state.playerTypes[view.state.currentPlayer] === 'human' ||
+               view.state.phase === 'scoring' ||
+               view.state.phase === 'game_over';
       },
       { timeout: PlaywrightGameHelper.TIMEOUTS.normal }
     );
@@ -846,11 +811,11 @@ export class PlaywrightGameHelper {
    */
   async canPlayerAct(): Promise<boolean> {
     return await this.page.evaluate(() => {
-      const state = (window as any).getGameState?.();
-      if (!state) return false;
+      const view = (window as any).getGameView?.();
+      if (!view || !view.state) return false;
       // Player 0 can act if it's their turn or there are consensus actions
-      return state.currentPlayer === 0 || 
-             (window as any).getAvailableActions?.().some((a: any) => 
+      return view.state.currentPlayer === 0 ||
+             (window as any).getAvailableActions?.().some((a: any) =>
                a.id.includes('agree-') || a.id === 'complete-trick' || a.id === 'score-hand'
              );
     });
@@ -894,7 +859,7 @@ export class PlaywrightGameHelper {
   }
 }
 
-// Export singleton pattern for backward compatibility
+// Export singleton pattern as convenience wrapper
 export const playwrightHelper = {
   loadState: async (page: Page, state: { shuffleSeed: number }) => {
     const helper = new PlaywrightGameHelper(page);

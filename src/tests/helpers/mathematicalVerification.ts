@@ -165,15 +165,7 @@ export class MathematicalVerification {
         case 'marks':
           if (bid.value === undefined || bid.value < 1 || bid.value > 6) return false;
           break;
-        case 'nello':
-          if (bid.value === undefined || bid.value < 1 || bid.value > 4) return false;
-          break;
-        case 'splash':
-          if (bid.value === undefined || bid.value < 2 || bid.value > 6) return false;
-          break;
-        case 'plunge':
-          if (bid.value === undefined || bid.value < 4 || bid.value > 8) return false;
-          break;
+        // Nello is not a bid type - it's a trump selection
         case 'pass':
           // Pass bids don't have values
           break;

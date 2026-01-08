@@ -1,49 +1,12 @@
 import type { GameState } from '../types';
-import { createDominoes, getDominoPoints } from './dominoes';
-
-export interface HandOutcome {
-  isDetermined: boolean;
-  reason?: string;
-  decidedAtTrick?: number;
-}
 
 /**
- * Calculates the maximum possible points that can still be earned from unplayed dominoes
+ * Result of checking if hand outcome is determined early.
+ * Uses discriminated union to make invalid states unrepresentable.
  */
-function calculateRemainingPoints(state: GameState): number {
-  // Get all played dominoes
-  const playedDominoes = new Set<string>();
-  
-  // Add dominoes from completed tricks
-  state.tricks.forEach(trick => {
-    trick.plays.forEach(play => {
-      playedDominoes.add(play.domino.id.toString());
-    });
-  });
-  
-  // Add dominoes from current trick
-  state.currentTrick.forEach(play => {
-    playedDominoes.add(play.domino.id.toString());
-  });
-  
-  // Calculate remaining points from counting dominoes
-  let remainingPoints = 0;
-  const allDominoes = createDominoes();
-  
-  allDominoes.forEach(domino => {
-    if (!playedDominoes.has(domino.id.toString())) {
-      const points = getDominoPoints(domino);
-      remainingPoints += points;
-    }
-  });
-  
-  // Add remaining tricks (1 point each)
-  const tricksPlayed = state.tricks.length;
-  const remainingTricks = 7 - tricksPlayed;
-  remainingPoints += remainingTricks;
-  
-  return remainingPoints;
-}
+export type HandOutcome =
+  | { isDetermined: false }
+  | { isDetermined: true; reason: string; decidedAtTrick?: number };
 
 /**
  * Checks if the hand outcome is mathematically determined
@@ -71,20 +34,17 @@ export function checkHandOutcome(state: GameState): HandOutcome {
     throw new Error(`Invalid bid player index: ${bid.player}`);
   }
   const biddingTeam = bidPlayer.teamId;
-  const defendingTeam = biddingTeam === 0 ? 1 : 0;
-  
+
   const [team0Score, team1Score] = state.teamScores;
   const biddingTeamScore = biddingTeam === 0 ? team0Score : team1Score;
   const defendingTeamScore = biddingTeam === 0 ? team1Score : team0Score;
-  
-  const remainingPoints = calculateRemainingPoints(state);
   const currentTrick = state.tricks.length + 1;
-  
+
   switch (bid.type) {
     case 'points': {
       // Points bid (30-41)
       const bidValue = bid.value!;
-      
+
       // Bidding team has made their bid
       if (biddingTeamScore >= bidValue) {
         return {
@@ -93,31 +53,27 @@ export function checkHandOutcome(state: GameState): HandOutcome {
           decidedAtTrick: currentTrick
         };
       }
-      
-      // Bidding team cannot possibly make their bid
-      const maxPossibleScore = biddingTeamScore + remainingPoints;
-      if (maxPossibleScore < bidValue) {
-        return {
-          isDetermined: true,
-          reason: `Bidding team cannot reach ${bidValue} (max possible: ${maxPossibleScore})`,
-          decidedAtTrick: currentTrick
-        };
-      }
-      
+
       // Defending team has set the bid
-      if (defendingTeamScore > (42 - bidValue)) {
+      // Note: "can't make" check (maxPossible < bidValue) is mathematically
+      // equivalent since maxPossible = 42 - defendingTeamScore
+      if (defendingTeamScore > 42 - bidValue) {
         return {
           isDetermined: true,
           reason: `Defending team set the ${bidValue} bid`,
           decidedAtTrick: currentTrick
         };
       }
-      
+
       break;
     }
-    
+
     case 'marks': {
-      // Marks bid - bidding team must win all 42 points
+      // Standard marks bid logic (suit/doubles/no-trump trump)
+      // Special contracts override via their layers
+      //
+      // Note: "can't win all" check (biddingScore + remaining < 42) is
+      // mathematically equivalent since remaining = 42 - biddingScore - defendingScore
       if (defendingTeamScore > 0) {
         return {
           isDetermined: true,
@@ -125,63 +81,7 @@ export function checkHandOutcome(state: GameState): HandOutcome {
           decidedAtTrick: currentTrick
         };
       }
-      
-      // If bidding team lost any points, they can't win
-      if (biddingTeamScore + remainingPoints < 42) {
-        return {
-          isDetermined: true,
-          reason: 'Bidding team cannot win all 42 points',
-          decidedAtTrick: currentTrick
-        };
-      }
-      
-      break;
-    }
-    
-    case 'nello': {
-      // Nello - bidding team must lose all tricks
-      // Check if bidding team has won any tricks
-      const biddingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === biddingTeam;
-      }).length;
-      
-      if (biddingTeamTricks > 0) {
-        return {
-          isDetermined: true,
-          reason: 'Bidding team won a trick on nello',
-          decidedAtTrick: currentTrick
-        };
-      }
-      
-      break;
-    }
-    
-    case 'splash':
-    case 'plunge': {
-      // Splash/Plunge - bidding team must win all tricks
-      // Check if defending team has won any tricks
-      const defendingTeamTricks = state.tricks.filter(trick => {
-        if (trick.winner === undefined) return false;
-        const winnerPlayer = state.players[trick.winner];
-        if (!winnerPlayer) {
-          throw new Error(`Invalid trick winner index: ${trick.winner}`);
-        }
-        return winnerPlayer.teamId === defendingTeam;
-      }).length;
-      
-      if (defendingTeamTricks > 0) {
-        return {
-          isDetermined: true,
-          reason: `Defending team won a trick on ${bid.type}`,
-          decidedAtTrick: currentTrick
-        };
-      }
-      
+
       break;
     }
   }

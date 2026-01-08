@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState } from '../../game/core/state';
-import { getNextStates } from '../../game/core/gameEngine';
+import { getNextStates } from '../../game/core/state';
+import { createTestContext } from '../helpers/executionContext';
 import { getNextPlayer } from '../../game/core/players';
 import type { GameState } from '../../game/types';
 import { testLog } from '../helpers/testConsole';
@@ -9,12 +10,13 @@ import { BLANKS } from '../../game/types';
 describe('State Transitions Integration', () => {
   describe('Phase Transitions', () => {
     it('should transition from bidding to playing correctly', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
       expect(state.phase).toBe('bidding');
       
       // Complete bidding phase
       // Player 1 bids 30
-      let transitions = getNextStates(state);
+      let transitions = getNextStates(state, ctx);
       const bid30 = transitions.find(t => t.id === 'bid-30');
       if (bid30) {
         state = bid30.newState;
@@ -22,7 +24,7 @@ describe('State Transitions Integration', () => {
       
       // Others pass
       for (let i = 0; i < 3; i++) {
-        transitions = getNextStates(state);
+        transitions = getNextStates(state, ctx);
         const pass = transitions.find(t => t.id === 'pass');
         if (pass) {
           state = pass.newState;
@@ -30,7 +32,7 @@ describe('State Transitions Integration', () => {
       }
       
       // Select trump
-      transitions = getNextStates(state);
+      transitions = getNextStates(state, ctx);
       const trumpAction = transitions.find(t => t.id.startsWith('trump-'));
       if (trumpAction) {
         state = trumpAction.newState;
@@ -82,11 +84,12 @@ describe('State Transitions Integration', () => {
 
   describe('Action Availability', () => {
     it('should provide correct actions for each phase', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
       
       // Bidding phase actions
       expect(state.phase).toBe('bidding');
-      let actions = getNextStates(state);
+      let actions = getNextStates(state, ctx);
       expect(actions.some(a => a.id.startsWith('bid-'))).toBe(true);
       expect(actions.some(a => a.id === 'pass')).toBe(true);
       
@@ -97,7 +100,7 @@ describe('State Transitions Integration', () => {
         
         // Pass for other players
         for (let i = 0; i < 3; i++) {
-          actions = getNextStates(state);
+          actions = getNextStates(state, ctx);
           const pass = actions.find(a => a.id === 'pass');
           if (pass) {
             state = pass.newState;
@@ -105,7 +108,7 @@ describe('State Transitions Integration', () => {
         }
         
         // Trump selection actions
-        actions = getNextStates(state);
+        actions = getNextStates(state, ctx);
         expect(actions.some(a => a.id.startsWith('trump-'))).toBe(true);
         
         // Select trump and transition to playing
@@ -115,17 +118,19 @@ describe('State Transitions Integration', () => {
           expect(state.phase).toBe('playing');
           
           // Playing phase actions
-          actions = getNextStates(state);
+          actions = getNextStates(state, ctx);
           expect(actions.every(a => a.id.startsWith('play-'))).toBe(true);
         }
       }
     });
 
     it('should respect player turn order', () => {
+
+      const ctx = createTestContext();
       const state = createInitialState();
       const initialPlayer = state.currentPlayer;
       
-      const actions = getNextStates(state);
+      const actions = getNextStates(state, ctx);
       expect(actions.length).toBeGreaterThan(0);
       
       // Execute first action
@@ -139,12 +144,14 @@ describe('State Transitions Integration', () => {
     });
 
     it('should prevent invalid actions', () => {
+
+      const ctx = createTestContext();
       const state = createInitialState();
       state.phase = 'playing';
       state.trump = { type: 'suit', suit: BLANKS }; // blanks
       
       // Should only have play actions in playing phase
-      const actions = getNextStates(state);
+      const actions = getNextStates(state, ctx);
       expect(actions.every(a => a.id.startsWith('play-'))).toBe(true);
       expect(actions.some(a => a.id.startsWith('bid-'))).toBe(false);
       expect(actions.some(a => a.id.startsWith('trump-'))).toBe(false);
@@ -153,11 +160,12 @@ describe('State Transitions Integration', () => {
 
   describe('State Consistency', () => {
     it('should maintain valid game state through transitions', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
       
       // Execute several random transitions
       for (let i = 0; i < 10; i++) {
-        const actions = getNextStates(state);
+        const actions = getNextStates(state, ctx);
         if (actions.length === 0) break;
         
         // Pick random action
@@ -180,6 +188,8 @@ describe('State Transitions Integration', () => {
     });
 
     it('should preserve immutability of state', () => {
+
+      const ctx = createTestContext();
       const state = createInitialState();
       // Deep clone for comparison, handling Sets properly
       const originalState = {
@@ -190,14 +200,10 @@ describe('State Transitions Integration', () => {
         currentTrick: [...state.currentTrick],
         teamScores: [...state.teamScores],
         teamMarks: [...state.teamMarks],
-        consensus: {
-          completeTrick: new Set(state.consensus.completeTrick),
-          scoreHand: new Set(state.consensus.scoreHand)
-        },
         actionHistory: [...state.actionHistory]
       };
       
-      const actions = getNextStates(state);
+      const actions = getNextStates(state, ctx);
       if (actions.length > 0) {
         const newState = actions[0]!.newState;
         
@@ -226,6 +232,8 @@ describe('State Transitions Integration', () => {
     });
 
     it('should provide trump selection moves when in trump_selection phase', () => {
+
+      const ctx = createTestContext();
       // Create a state in trump_selection phase with a winning bidder
       const state = createInitialState();
       state.phase = 'trump_selection';
@@ -239,7 +247,7 @@ describe('State Transitions Integration', () => {
         { type: 'pass', player: 3 }
       ];
       
-      const actions = getNextStates(state);
+      const actions = getNextStates(state, ctx);
       
       // Should have trump selection actions available
       expect(actions.length).toBeGreaterThan(0);
@@ -257,8 +265,16 @@ describe('State Transitions Integration', () => {
     });
 
     it('should provide trump selection moves with exact user-provided state', () => {
+
+      const ctx = createTestContext();
       // Create state exactly matching the user's provided JSON
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'trump_selection',
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -340,59 +356,13 @@ describe('State Transitions Integration', () => {
         teamScores: [0, 0],
         teamMarks: [0, 0],
         gameTarget: 7,
-        tournamentMode: true,
-        hands: {
-          '0': [
-            { high: 1, low: 2, id: '1-2' },
-            { high: 2, low: 5, id: '2-5' },
-            { high: 1, low: 6, id: '1-6' },
-            { high: 3, low: 4, id: '3-4' },
-            { high: 5, low: 5, id: '5-5' },
-            { high: 0, low: 0, id: '0-0' },
-            { high: 5, low: 6, id: '5-6' }
-          ],
-          '1': [
-            { high: 1, low: 4, id: '1-4' },
-            { high: 4, low: 4, id: '4-4' },
-            { high: 2, low: 2, id: '2-2' },
-            { high: 1, low: 5, id: '1-5' },
-            { high: 0, low: 6, id: '0-6' },
-            { high: 1, low: 3, id: '1-3' },
-            { high: 0, low: 5, id: '0-5' }
-          ],
-          '2': [
-            { high: 3, low: 5, id: '3-5' },
-            { high: 2, low: 6, id: '2-6' },
-            { high: 4, low: 6, id: '4-6' },
-            { high: 0, low: 1, id: '0-1' },
-            { high: 3, low: 6, id: '3-6' },
-            { high: 6, low: 6, id: '6-6' },
-            { high: 2, low: 3, id: '2-3' }
-          ],
-          '3': [
-            { high: 3, low: 3, id: '3-3' },
-            { high: 0, low: 3, id: '0-3' },
-            { high: 0, low: 2, id: '0-2' },
-            { high: 2, low: 4, id: '2-4' },
-            { high: 4, low: 5, id: '4-5' },
-            { high: 0, low: 4, id: '0-4' },
-            { high: 1, low: 1, id: '1-1' }
-          ]
-        },
-        bidWinner: -1,
-        isComplete: false,
-        winner: -1,
         shuffleSeed: 12345,
         actionHistory: [],
-        consensus: {
-          completeTrick: new Set<number>(),
-          scoreHand: new Set<number>()
-        },
         theme: 'coffee',
         colorOverrides: {}
       };
       
-      const actions = getNextStates(state);
+      const actions = getNextStates(state, ctx);
       
       // Debug: log the actions to see what's happening
       testLog('Trump selection actions:', actions);
@@ -405,13 +375,14 @@ describe('State Transitions Integration', () => {
 
   describe('Complex State Scenarios', () => {
     it('should handle multiple bid rounds', () => {
+      const ctx = createTestContext();
       let state = createInitialState();
       
       // Simulate competitive bidding
       const bidSequence = ['bid-30', 'bid-32', 'pass', 'bid-35', 'pass', 'pass', 'pass'];
       
       for (const actionId of bidSequence) {
-        const actions = getNextStates(state);
+        const actions = getNextStates(state, ctx);
         const action = actions.find(a => a.id === actionId);
         if (action) {
           state = action.newState;
@@ -428,11 +399,13 @@ describe('State Transitions Integration', () => {
     });
 
     it('should handle all-pass scenario', () => {
+
+      const ctx = createTestContext();
       let state = createInitialState();
       
       // All players pass
       for (let i = 0; i < 4; i++) {
-        const actions = getNextStates(state);
+        const actions = getNextStates(state, ctx);
         const pass = actions.find(a => a.id === 'pass');
         if (pass) {
           state = pass.newState;

@@ -8,7 +8,6 @@ export interface PartialGameState {
   winningBidder?: GameState['winningBidder'];
   playerTypes?: GameState['playerTypes'];
   dealer?: GameState['dealer'];
-  tournamentMode?: GameState['tournamentMode'];
   shuffleSeed?: GameState['shuffleSeed'];
   gameTarget?: GameState['gameTarget'];
 }

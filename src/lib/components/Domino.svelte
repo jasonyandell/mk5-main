@@ -8,20 +8,22 @@
     clickable?: boolean;
     small?: boolean;
     tiny?: boolean;
+    micro?: boolean;
     showPoints?: boolean;
     winner?: boolean;
     tooltip?: string;
   }
 
-  let { 
-    domino, 
-    playable = false, 
-    clickable = false, 
-    small = false, 
-    tiny = false, 
-    showPoints = true, 
-    winner = false, 
-    tooltip = '' 
+  let {
+    domino,
+    playable = false,
+    clickable = false,
+    small = false,
+    tiny = false,
+    micro = false,
+    showPoints = true,
+    winner = false,
+    tooltip = ''
   }: Props = $props();
 
   const dispatch = createEventDispatcher();
@@ -47,8 +49,18 @@
   const pointValue = $derived(domino.points || 0);
 
   // Size classes
-  const sizeClasses = $derived(tiny ? 'w-11 h-[72px]' : small ? 'w-9 h-14' : 'w-14 h-[88px]');
-  const pipSize = $derived(tiny ? 'w-1.5 h-1.5' : small ? 'w-1.5 h-1.5' : 'w-2 h-2');
+  const sizeClasses = $derived(
+    micro ? 'w-7 h-11' :
+    tiny ? 'w-9 h-14' :
+    small ? 'w-11 h-[68px]' :
+    'w-14 h-[88px]'
+  );
+  const pipSize = $derived(
+    micro ? 'w-1 h-1' :
+    tiny ? 'w-1.5 h-1.5' :
+    small ? 'w-1.5 h-1.5' :
+    'w-2 h-2'
+  );
   
   // State classes - keeping white background but adding colored borders/rings
   const stateClasses = $derived(playable 

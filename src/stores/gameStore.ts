@@ -1,981 +1,562 @@
-/* global HTMLStyleElement, getComputedStyle */
-import { writable, derived, get } from 'svelte/store';
-import { converter } from 'culori';
-import type { GameState, StateTransition } from '../game/types';
-import { createInitialState, getNextStates } from '../game';
-import { ControllerManager } from '../game/controllers';
-import { TransitionDispatcher } from '../game/core/dispatcher';
-import { decodeGameUrl } from '../game/core/url-compression';
-import { selectAIAction, resetAISchedule, setAISpeedProfile } from '../game/core/ai-scheduler';
-import { startSection } from '../game/core/sectionRunner';
-import { oneHand as oneHandPreset, fromSlug as sectionFromSlug } from '../game/core/sectionPresets';
+import { writable, derived, get, type Readable } from 'svelte/store';
+import type { GameAction, FilteredGameState } from '../game/types';
+import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
-import { findBalancedSeed } from '../game/core/seedFinder';
-import { seedFinderStore } from './seedFinderStore';
+import { createSetupState } from '../game/core/state';
+import type { GameView, PlayerInfo } from '../multiplayer/types';
+import { decodeGameUrl, stateToUrl } from '../game/core/url-compression';
+import { createLocalGame, type LocalGame } from '../multiplayer/local';
+import { GameClient } from '../multiplayer/GameClient';
+import type { Room } from '../server/Room';
+import { resolveActionIds } from '../game/core/action-resolution';
 
-// Import extracted utilities
-import { deepClone, deepCompare } from './utils/deepUtils';
-import { updateURLWithState, setURLToMinimal, setCurrentScenario, beginUrlBatch, endUrlBatch } from './utils/urlManager';
-import { incrementAttempts } from './utils/oneHandStats';
-import { executeAllAIImmediate, injectConsensusIfNeeded } from './utils/aiHelpers';
-import { prepareDeterministicHand, buildActionsToPlayingFromState, buildOverlayPayload } from './utils/sectionHelpers';
+/**
+ * GameStore - Clean facade over the simplified Room/Socket/GameClient architecture.
+ *
+ * Philosophy:
+ * - Uses createLocalGame() for all game wiring
+ * - Fire-and-forget actions, updates via subscription
+ * - Client is dumb - server handles ALL game logic
+ */
 
-
-// Re-export for backwards compatibility
-export { setCurrentScenario, beginUrlBatch, endUrlBatch };
-
-// Helper function for seed finding and confirmation flow
-async function findAndConfirmSeed(): Promise<number> {
-  // Start seed search UI
-  seedFinderStore.startSearch();
-
-  try {
-    const result = await findBalancedSeed(
-      (progress) => {
-        seedFinderStore.updateProgress(progress);
-      },
-      () => seedFinderStore.shouldUseBest()
-    );
-
-    // Show confirmation modal with the already-calculated win rate
-    seedFinderStore.setSeedFound(result.seed, result.winRate);
-
-    // Wait for user confirmation or regeneration
-    return new Promise((resolve) => {
-      const checkConfirmation = () => {
-        const unsubscribe = seedFinderStore.subscribe(state => {
-          if (!state.waitingForConfirmation) {
-            unsubscribe();
-            // Always resolve with the seed - user can't cancel out of the confirmation modal
-            resolve(result.seed);
-          }
-        });
-      };
-
-      // Listen for regenerate event
-      const handleRegenerate = () => {
-        window.removeEventListener('regenerate-seed', handleRegenerate);
-        // Recursively find another seed
-        findAndConfirmSeed().then(resolve);
-      };
-      window.addEventListener('regenerate-seed', handleRegenerate);
-
-      checkConfirmation();
-    });
-  } catch (error) {
-    // If there's an error during seed search (shouldn't happen in normal flow)
-    // Use fallback seed
-    seedFinderStore.stopSearch();
-    console.error('Error during seed search:', error);
-    return 424242; // Fallback seed
-  }
-}
-
-// Create the initial state once
-const urlParams = typeof window !== 'undefined' ? 
+// Detect test mode
+const urlParams = typeof window !== 'undefined' ?
   new URLSearchParams(window.location.search) : null;
 const testMode = urlParams?.get('testMode') === 'true';
-const firstInitialState = createInitialState({
-  playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-});
 
-// Core game state store
-export const gameState = writable<GameState>(firstInitialState);
+// Player types configuration
+const playerTypes = testMode ?
+  ['human', 'human', 'human', 'human'] as ('human' | 'ai')[] :
+  ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[];
 
-// Store the initial state (snapshot) - deep clone to prevent mutations
-export const initialState = writable<GameState>(deepClone(firstInitialState));
+const DEFAULT_SESSION_ID = 'player-0';
 
-// Store all actions taken from initial state
-export const actionHistory = writable<StateTransition[]>([]);
+// ============================================================================
+// PRIVATE IMPLEMENTATION
+// ============================================================================
 
-// Store for validation errors
-export const stateValidationError = writable<string | null>(null);
+function createPendingView(): GameView {
+  const placeholderState = createSetupState({ playerTypes });
 
-// Track which players are controlled by humans on this client
-export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
-
-// Current player ID for primary view (can be changed for spectating)
-export const currentPlayerId = writable<number>(0);
-
-// Section completion overlay state
-export const sectionOverlay = writable<
-  | null
-  | {
-      type: 'oneHand';
-      phase: GameState['phase'];
-      seed: number;
-      canChallenge?: boolean;
-      attemptsForWin?: number;
-      attemptsCount?: number;
-      weWon?: boolean;
-      usScore?: number;
-      themScore?: number;
-    }
->(null);
-
-
-// Available actions store - filtered for privacy
-export const availableActions = derived(
-  [gameState, currentPlayerId],
-  ([$gameState, _$playerId]) => {
-    const allActions = getNextStates($gameState);
-    
-    // In test mode, show all actions for current player in game state
-    if (testMode) {
-      return allActions;
-    }
-    
-    // In normal mode, only show actions for player 0
-    // Filter to only actions that player 0 can take
-    return allActions.filter(action => {
-      // Actions without a player field are neutral (like complete-trick, score-hand)
-      if (!('player' in action.action)) {
-        return true;
-      }
-      // Only show actions for player 0
-      return action.action.player === 0;
-    });
-  }
-);
-
-// Unified view projection for all UI rendering needs
-export const viewProjection = derived<
-  [typeof gameState, typeof availableActions],
-  ViewProjection
->(
-  [gameState, availableActions],
-  ([$gameState, $availableActions]) => {
-    const urlParams = typeof window !== 'undefined' ? 
-      new URLSearchParams(window.location.search) : null;
-    const testMode = urlParams?.get('testMode') === 'true' || false;
-    
-    return createViewProjection(
-      $gameState,
-      $availableActions,
-      testMode,
-      (player: number) => controllerManager.isAIControlled(player)
-    );
-  }
-);
-
-// Recompute state from initial + actions and validate
-function validateState() {
-  const initial = get(initialState);
-  const actions = get(actionHistory);
-  const currentState = get(gameState);
-  
-  // Recompute state from scratch
-  let computedState = initial;
-  
-  for (const action of actions) {
-    const availableTransitions = getNextStates(computedState);
-    const matchingTransition = availableTransitions.find(t => t.id === action.id);
-    
-    if (!matchingTransition) {
-      stateValidationError.set(
-        `ERROR: Invalid action sequence at "${action.label}" (${action.id})\n` +
-        `Available actions were: ${availableTransitions.map(t => t.id).join(', ')}\n` +
-        `This indicates a bug in the game logic.`
-      );
-      return;
-    }
-    
-    computedState = matchingTransition.newState;
-  }
-  
-  // Deep compare computed vs actual state
-  const differences = deepCompare(computedState, currentState);
-  
-  if (differences.length > 0) {
-    const errorMessage = 
-      `ERROR: State mismatch detected!\n` +
-      `After ${actions.length} actions, the computed state differs from actual state:\n\n` +
-      differences.join('\n') +
-      `\n\nThis indicates a bug in the state management.`;
-    stateValidationError.set(errorMessage);
-  } else {
-    stateValidationError.set(null);
-  }
-}
-
-// Forward declaration for circular reference
-let controllerManager: ControllerManager;
-
-
-// Game actions
-export const gameActions = {
-  executeAction: (transition: StateTransition) => {
-    // Validate transition was offered by the game engine
-    const currentState = get(gameState);
-    const validTransitions = getNextStates(currentState);
-    const validIds = validTransitions.map(t => t.id);
-    
-    if (!validIds.includes(transition.id)) {
-      throw new Error(
-        `Invalid transition attempted: "${transition.id}". ` +
-        `Valid transitions are: [${validIds.join(', ')}]`
-      );
-    }
-    
-    // Use the fresh transition to avoid stale state issues
-    const freshTransition = validTransitions.find(t => t.id === transition.id)!;
-    
-    const actions = get(actionHistory);
-    
-    // Add action to history (use fresh transition)
-    let finalActions = [...actions, freshTransition];
-    actionHistory.set(finalActions);
-    
-    // Update to new state (use fresh state)
-    let newState = freshTransition.newState;
-    
-    // In test mode, execute AI immediately after human actions
-    // This ensures deterministic behavior for tests
-    // Skip this immediate chaining if a custom gate is active (SectionRunner)
-    if (testMode && !dispatcher.hasCustomGate() && newState.playerTypes[newState.currentPlayer] === 'ai') {
-      const result = executeAllAIImmediate(newState);
-      newState = result.state;
-      // Add AI actions to history
-      if (result.aiActions.length > 0) {
-        finalActions = [...finalActions, ...result.aiActions];
-        actionHistory.set(finalActions);
-      }
-    }
-    
-    gameState.set(newState);
-    
-    // Validate state matches computed state
-    validateState();
-    
-    // Update URL with initial state and actions (including any AI actions)
-    // Pure approach: every action always updates the URL
-    updateURLWithState(get(initialState), finalActions, true);
-    
-    // Notify all controllers of state change
-    controllerManager.onStateChange(newState);
-  },
-  
-  skipAIDelays: () => {
-    // Execute all scheduled transitions immediately
-    dispatcher.executeAllScheduled();
-  },
-  
-  resetGame: () => {
-    const oldActionCount = get(actionHistory).length;
-    const currentState = get(gameState);
-    
-    // Preserve theme settings when resetting
-    const newInitialState = createInitialState({
-      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
-      theme: currentState.theme,
-      colorOverrides: currentState.colorOverrides
-    });
-    // Deep clone to prevent mutations
-    initialState.set(deepClone(newInitialState));
-    gameState.set(newInitialState);
-    actionHistory.set([]);
-    stateValidationError.set(null);
-    updateURLWithState(newInitialState, [], true);
-    
-    // Notify controllers of reset
-    controllerManager.onStateChange(newInitialState);
-    
-    // Debug logging
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      const newActionCount = get(actionHistory).length;
-      console.log('[GameStore] Game reset - action history cleared from', oldActionCount, 'to', newActionCount);
-    }
-  },
-  
-  loadState: (state: GameState) => {
-    // When loading a state directly, make it the new initial state
-    // Deep clone to prevent mutations
-    initialState.set(deepClone(state));
-    gameState.set(deepClone(state));
-    actionHistory.set([]);
-    stateValidationError.set(null);
-    updateURLWithState(state, [], true);
-    
-    // Notify controllers of new state
-    controllerManager.onStateChange(state);
-  },
-  
-  loadFromURL: async () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        if (!params.get('s')) {
-          // Supply a seed if missing and update URL (preserving scenario if present)
-          // Reuse existing URL decode to capture theme/overrides even without seed
-          const { theme: urlTheme, colorOverrides: urlColorOverrides } = decodeGameUrl(window.location.search);
-          const scenarioParam = params.get('h') || '';
-          
-          // For one_hand scenario without seed, use balanced seed finder
-          let seedToUse: number | undefined;
-          if (scenarioParam === 'one_hand') {
-            if (testMode) {
-              // In test mode, skip seed finder and use default seed
-              seedToUse = 424242;
-            } else {
-              // Find new balanced seed
-              const balancedSeed = await findAndConfirmSeed();
-              // findAndConfirmSeed now always returns a seed (user can't cancel out of the flow)
-              seedToUse = balancedSeed;
-            }
-          }
-          
-          const supplied = createInitialState({
-            playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
-            theme: urlTheme,
-            colorOverrides: urlColorOverrides,
-            ...(seedToUse !== undefined && { shuffleSeed: seedToUse }) // Only include if defined
-          });
-          setCurrentScenario(scenarioParam || null);
-
-          // Initialize stores
-          initialState.set(deepClone(supplied));
-          gameState.set(supplied);
-          actionHistory.set([]);
-          stateValidationError.set(null);
-
-          // Only update URL with a supplied seed if a scenario is requested
-          if (scenarioParam) {
-            updateURLWithState(supplied, [], false);
-          }
-
-          // If a scenario is provided, prepare and start it now
-          if (scenarioParam) {
-            const preset = sectionFromSlug(scenarioParam);
-            if (preset) {
-              if (scenarioParam === 'one_hand') {
-                // Prevent AI from running ahead while preparing and before runner is active
-                stopGameLoop();
-                dispatcher.setFrozen(true);
-
-                const actionIds = buildActionsToPlayingFromState(supplied);
-                gameActions.loadFromHistoryState({ initialState: supplied, actions: actionIds });
-                updateURLWithState(get(initialState), get(actionHistory), false);
-                // Increment attempts for this seed
-                incrementAttempts(supplied.shuffleSeed);
-              }
-              const runner = startSection(preset());
-              if (scenarioParam === 'one_hand') {
-                // Now allow progression
-                dispatcher.setFrozen(false);
-                startGameLoop();
-              }
-              if (scenarioParam === 'one_hand') {
-                // HACK: Direct state monitoring for URL-triggered sections
-                // The section runner's .done promise doesn't resolve properly for URL-triggered sections
-                // because the initial actions (buildActionsToPlayingFromState) are applied before the
-                // section runner's dispatcher listeners are set up. This causes the section runner to
-                // never "see" the state transitions during gameplay.
-                //
-                // TODO: Fix the root cause by either:
-                // 1. Ensuring all state transitions go through the dispatcher (including loadFromHistoryState)
-                // 2. Starting the section runner before applying initial actions
-                // 3. Restructuring how URL-triggered sections initialize vs user-triggered sections
-                //
-                // For now, we directly monitor the game state for completion:
-                let completed = false;
-                const checkCompletion = (state: GameState) => {
-                  if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
-                    completed = true;
-                    sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
-                    setURLToMinimal(get(initialState));
-                  }
-                };
-                
-                // Check immediately in case we're already at scoring
-                checkCompletion(get(gameState));
-                
-                // Then subscribe for future changes
-                const unsubscribe = gameState.subscribe(checkCompletion);
-                
-                // TODO: Handle consensus as part of game state machine
-                runner.done.then((result) => {
-                  stopGameLoop();
-                  dispatcher.setFrozen(true);
-                  sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
-                  setURLToMinimal(get(initialState));
-                }).finally(() => unsubscribe());
-              }
-            }
-          }
-
-          controllerManager.onStateChange(get(gameState));
-          return;
-        }
-
-        const { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides, scenario } = decodeGameUrl(window.location.search);
-        
-        // If no seed, there's no game to load
-        if (!seed) {
-          return;
-        }
-        
-        // Theme will be applied reactively by App.svelte $effect
-        
-        // Use the player types from the URL
-        const finalPlayerTypes = playerTypes;
-        
-        // Create initial state with ALL properties including theme
-        const newInitialState = createInitialState({
-          shuffleSeed: seed,
-          playerTypes: finalPlayerTypes,
-          dealer,
-          tournamentMode,
-          theme,
-          colorOverrides
-        });
-        initialState.set(deepClone(newInitialState));
-        
-        // CRITICAL: Must deep clone here to avoid mutating the stored initial state
-        let currentState = deepClone(newInitialState);
-        const validActions: StateTransition[] = [];
-        
-        // Replay actions (supports compact consensus)
-        let invalidActionFound = false;
-        for (const actionId of actions) {
-          if (actionId === 'complete-trick' || actionId === 'score-hand') {
-            currentState = injectConsensusIfNeeded(currentState, actionId, validActions);
-          }
-          const availableTransitions = getNextStates(currentState);
-          const matchingTransition = availableTransitions.find(t => t.id === actionId);
-          
-          if (matchingTransition) {
-            validActions.push(matchingTransition);
-            currentState = matchingTransition.newState;
-          } else {
-            // Log warning but continue loading what we can
-            const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-            console.warn(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
-            console.warn('Stopping replay at this point - game will continue from here');
-            invalidActionFound = true;
-            break; // Stop processing further actions
-          }
-        }
-        
-        // After replaying all actions, if in test mode and current player is AI, execute AI
-        if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-          const result = executeAllAIImmediate(currentState);
-          currentState = result.state;
-          // Add AI actions to the valid actions list
-          validActions.push(...result.aiActions);
-        }
-        
-        // Reset AI scheduling for clean state
-        currentState = resetAISchedule(currentState);
-        
-        gameState.set(currentState);
-        actionHistory.set(validActions);
-        // Reflect scenario for ongoing URL updates
-        setCurrentScenario(scenario || null);
-        
-        // If we had invalid actions, update the URL to reflect the valid state
-        if (invalidActionFound) {
-          updateURLWithState(get(initialState), validActions, false);
-        }
-        
-        validateState();
-        
-        // Notify controllers of the state change so AI can take action
-        controllerManager.onStateChange(currentState);
-
-        // If scenario is provided, start the corresponding section.
-        // If no actions were supplied and scenario needs a prepared state (e.g., one_hand),
-        // build a deterministic action list up to that point and redirect URL accordingly.
-        if (scenario) {
-          const preset = sectionFromSlug(scenario);
-          if (preset) {
-            if (scenario === 'one_hand' && actions.length === 0) {
-              // Prevent AI from running ahead while preparing and before runner is active
-              stopGameLoop();
-              dispatcher.setFrozen(true);
-              // Build actions to reach playing from this initial state and load them as history
-              const actionIds = buildActionsToPlayingFromState(newInitialState);
-              gameActions.loadFromHistoryState({ initialState: newInitialState, actions: actionIds });
-              // Ensure URL reflects the actions up to this point
-              updateURLWithState(get(initialState), get(actionHistory), false);
-              // Increment attempts
-              incrementAttempts(newInitialState.shuffleSeed);
-            }
-            const runner = startSection(preset());
-            if (scenario === 'one_hand') {
-              // Now allow progression
-              dispatcher.setFrozen(false);
-              startGameLoop();
-            }
-            if (scenario === 'one_hand') {
-              runner.done.then((result) => {
-                stopGameLoop();
-                dispatcher.setFrozen(true);
-                sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
-                setURLToMinimal(get(initialState));
-              });
-            }
-          }
-        }
-        return;
-      } catch (e: unknown) {
-        const error = e as Error;
-        if (error.message && error.message.includes('outdated format')) {
-          window.alert(error.message);
-          return;
-        }
-        if (error.message && (error.message.includes('Invalid URL') || error.message.includes('Missing version'))) {
-          // Not an error - just no game to load
-          return;
-        }
-        console.error('Failed to load URL:', e);
-        console.warn('Starting fresh game instead');
-        // Ensure we have a clean fresh game state
-        const freshState = createInitialState({
-          playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-        });
-        initialState.set(deepClone(freshState));
-        gameState.set(freshState);
-        actionHistory.set([]);
-        stateValidationError.set(null);
-        // Don't update URL - leave the invalid param there but game starts fresh
-        // Notify controllers of the fresh state
-        controllerManager.onStateChange(freshState);
-        return; // Important: return here to avoid fallthrough
-      }
-    }
-  },
-  
-  undo: () => {
-    const actions = get(actionHistory);
-    if (actions.length > 0) {
-      // Remove last action
-      const newActions = actions.slice(0, -1);
-      actionHistory.set(newActions);
-      
-      // Recompute state from initial + remaining actions
-      let currentState = get(initialState);
-      
-      for (const action of newActions) {
-        const availableTransitions = getNextStates(currentState);
-        const matchingTransition = availableTransitions.find(t => t.id === action.id);
-        
-        if (matchingTransition) {
-          currentState = matchingTransition.newState;
-        }
-      }
-      
-      gameState.set(currentState);
-      validateState();
-      updateURLWithState(get(initialState), newActions, true);
-    }
-  },
-  
-  enableAI: () => {
-    const state = get(gameState);
-    const newState = { ...state, playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[] };
-    
-    // Update state first
-    gameState.set(newState);
-    
-    // If current player is now AI, execute immediately in test mode
-    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
-      const result = executeAllAIImmediate(newState);
-      gameState.set(result.state);
-      // Add AI actions to history
-      const currentHistory = get(actionHistory);
-      const newHistory = [...currentHistory, ...result.aiActions];
-      actionHistory.set(newHistory);
-      // Update URL with new actions - use pushState for pure approach
-      updateURLWithState(get(initialState), newHistory, true);
-    }
-    
-    // Notify controllers of state change
-    controllerManager.onStateChange(get(gameState));
-  },
-  
-  updateTheme: (theme: string, colorOverrides: Record<string, string> = {}) => {
-    const currentState = get(gameState);
-    // Minimize overrides to only changed-from-default values
-    let minimalOverrides = colorOverrides;
-    try {
-      if (typeof window !== 'undefined') {
-        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
-        const prevDisabled = styleEl ? styleEl.disabled : undefined;
-        if (styleEl) styleEl.disabled = true;
-        const styles = getComputedStyle(document.documentElement);
-        const toOklch = converter('oklch');
-        const approxEqual = (a: string, b: string): boolean => {
-          const parse = (val: string): [number, number, number] | null => {
-            const v = val.trim();
-            if (!v) return null;
-            const parts = v.split(/\s+/);
-            if (parts.length !== 3) return null;
-            if (parts[0] && parts[0].includes('%')) {
-              const l = parseFloat(parts[0].replace('%', ''));
-              const c = parseFloat(parts[1] || '0');
-              const h = parseFloat(parts[2] || '0');
-              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
-              return null;
-            }
-            const h = parseFloat(parts[0] || '0');
-            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
-            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
-            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
-            const ok = toOklch({ mode: 'hsl', h, s, l });
-            if (!ok) return null;
-            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
-          };
-          const A = parse(a);
-          const B = parse(b);
-          if (!A || !B) return false;
-          const [l1, c1, h1] = A;
-          const [l2, c2, h2] = B;
-          return Math.abs(l1 - l2) < 0.02 && Math.abs(c1 - c2) < 0.0005 && Math.abs(h1 - h2) < 0.1;
-        };
-        const out: Record<string, string> = {};
-        for (const [varName, value] of Object.entries(colorOverrides)) {
-          const base = styles.getPropertyValue(varName).trim();
-          if (!base || !approxEqual(base, String(value).trim())) {
-            out[varName] = value;
-          }
-        }
-        minimalOverrides = out;
-        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
-      }
-    } catch {
-      // Ignore; keep provided overrides
-    }
-    const newState = {
-      ...currentState,
-      theme,
-      colorOverrides: minimalOverrides
-    };
-    
-    // Theme will be applied reactively by App.svelte $effect
-    
-    // Update state
-    gameState.set(newState);
-    
-    // Update initial state too (so it persists through resets)
-    const currentInitial = get(initialState);
-    initialState.set({
-      ...currentInitial,
-      theme,
-      colorOverrides: minimalOverrides
-    });
-    
-    // Update URL on next frame so App.svelte can apply data-theme first
-    if (typeof window !== 'undefined') {
-      requestAnimationFrame(() => {
-        updateURLWithState(get(initialState), get(actionHistory), false);
-      });
-    } else {
-      updateURLWithState(get(initialState), get(actionHistory), false);
-    }
-  },
-  
-  loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {
-    if (historyState && historyState.initialState && historyState.actions) {
-      // Deep clone to prevent mutations
-      initialState.set(deepClone(historyState.initialState));
-      
-      // CRITICAL: Must deep clone here to avoid mutating the stored initial state
-      let currentState = deepClone(historyState.initialState);
-      const validActions: StateTransition[] = [];
-      
-      for (const actionId of historyState.actions) {
-        // Inflate compact consensus if needed right before boundary actions
-        if (actionId === 'complete-trick' || actionId === 'score-hand') {
-          currentState = injectConsensusIfNeeded(currentState, actionId, validActions);
-        }
-        const availableTransitions = getNextStates(currentState);
-        const matchingTransition = availableTransitions.find(t => t.id === actionId);
-        
-        if (matchingTransition) {
-          validActions.push(matchingTransition);
-          currentState = matchingTransition.newState;
-        } else {
-          const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-          throw new Error(`Invalid action in history: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
-        }
-      }
-      
-      // After replaying all actions, if in test mode and current player is AI, execute AI
-      if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-        const result = executeAllAIImmediate(currentState);
-        currentState = result.state;
-        // Add AI actions to the valid actions list
-        validActions.push(...result.aiActions);
-      }
-      
-      // Reset AI scheduling for clean navigation
-      currentState = resetAISchedule(currentState);
-      
-      gameState.set(currentState);
-      actionHistory.set(validActions);
-      validateState();
-      
-      // Notify controllers of the state change so AI can take action
-      controllerManager.onStateChange(currentState);
-    }
-  }
-};
-
-// Unified dispatcher: single entry for executing transitions
-export const dispatcher = new TransitionDispatcher(
-  (t) => gameActions.executeAction(t),
-  () => get(gameState)
-);
-
-// Initialize controller manager after gameActions is defined
-controllerManager = new ControllerManager((transition) => {
-  // Route through unified dispatcher as a UI-originated transition
-  dispatcher.requestTransition(transition, 'ui');
-});
-
-// Initialize controllers with default configuration
-if (typeof window !== 'undefined') {
-  if (testMode) {
-    // In test mode, all players are human-controlled for deterministic testing
-    controllerManager.setupLocalGame([
-      { type: 'human' },
-      { type: 'human' },
-      { type: 'human' },
-      { type: 'human' }
-    ]);
-  } else {
-    // Normal game: default configuration
-    controllerManager.setupLocalGame();
-  }
-}
-
-// Export controller manager
-export { controllerManager };
-
-// Helper function to wrap getNextStates with delay attachment
-function getNextStatesWithDelays(state: GameState): (StateTransition & { delayTicks?: number })[] {
-  const transitions = getNextStates(state);
-  return transitions.map(t => ({
-    ...t,
-    delayTicks: getDelayTicksForAction(t.action, state)
+  const players: PlayerInfo[] = playerTypes.map((type, index) => ({
+    playerId: index,
+    controlType: type,
+    sessionId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+    connected: true,
+    name: `Player ${index + 1}`,
+    capabilities: []
   }));
+
+  const filteredState: FilteredGameState = {
+    ...placeholderState,
+    players: placeholderState.players.map(player => ({
+      ...player,
+      hand: [...player.hand],
+      handCount: player.hand.length
+    }))
+  };
+
+  return {
+    state: filteredState,
+    validActions: [],
+    transitions: [],
+    players,
+    metadata: {
+      gameId: 'initializing'
+    },
+    derived: {
+      currentTrickWinner: -1,
+      handDominoMeta: [],
+      currentHandPoints: [0, 0] as [number, number]
+    }
+  };
 }
 
-// Determines delay based on action and state context
-function getDelayTicksForAction(action: StateTransition['action'], state: GameState): number {
-  // AI delays (at 60fps: 30 ticks = ~500ms)
-  if ('player' in action && state.playerTypes[action.player] === 'ai') {
-    switch (action.type) {
-      case 'bid': return 30;           // ~500ms
-      case 'pass': return 30;          // ~500ms
-      case 'play': return 18;          // ~300ms
-      case 'select-trump': return 60;  // ~1000ms
-      case 'agree-complete-trick': return 0;  // Instant consensus
-      case 'agree-score-hand': return 0;      // Instant consensus
-      default: return 12;  // ~200ms
+/**
+ * Private GameStore implementation - encapsulates all complexity.
+ */
+class GameStoreImpl {
+  // Internal state - new simplified architecture
+  private localGame?: LocalGame;
+  private unsubscribe?: (() => void) | undefined;
+
+  // Internal stores
+  private clientView = writable<GameView>(createPendingView());
+  private currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
+  private findingSeedStore = writable<boolean>(false);
+
+  // Public reactive stores
+  public readonly gameState: Readable<FilteredGameState>;
+  public readonly viewProjection: Readable<ViewProjection>;
+  public readonly currentPerspective: Readable<string>;
+  public readonly availablePerspectives: Readable<Array<{ id: string; label: string }>>;
+
+  constructor() {
+    // Derived: game state from view
+    this.gameState = derived(this.clientView, $view => $view.state);
+
+    // Derived: available perspectives
+    this.availablePerspectives = derived(this.clientView, ($view) =>
+      $view.players.map((player) => ({
+        // PlayerInfo.sessionId is protocol-defined as optional to support different
+        // session identification schemes. Fall back to player index for perspectives.
+        id: player.sessionId ?? `player-${player.playerId}`,
+        label: player.name ? `${player.name}` : `P${player.playerId}`
+      }))
+    );
+
+    // Derived: current perspective ID
+    this.currentPerspective = derived(this.currentSessionIdStore, (value) => value);
+
+    // Derived: viewProjection (UI-ready projection)
+    // Uses transitions and derived fields from GameView (server-computed, dumb client pattern)
+    this.viewProjection = derived(
+      [this.clientView, this.currentSessionIdStore],
+      ([$view, $sessionId]) => {
+        const playerInfo = $view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === $sessionId);
+        const canAct = !!(playerInfo && playerInfo.capabilities?.some(cap => cap.type === 'act-as-player'));
+
+        // Convert ViewTransitions to StateTransitions for createViewProjection
+        const stateTransitions = $view.transitions.map(t => ({
+          id: t.id,
+          label: t.label,
+          action: t.action,
+          newState: $view.state  // Placeholder - not used by createViewProjection
+        }));
+
+        const viewProjectionOptions = {
+          isTestMode: testMode,
+          canAct,
+          isAIControlled: (player: number) => {
+            const pInfo = $view.players.find(p => p.playerId === player);
+            return pInfo?.controlType === 'ai';
+          },
+          // Pass server-computed derived fields (dumb client pattern)
+          derived: $view.derived,
+          ...(playerInfo ? { viewingPlayerIndex: playerInfo.playerId } : {})
+        };
+
+        return createViewProjection($view.state, stateTransitions, viewProjectionOptions);
+      }
+    );
+
+    // Auto-correct perspective if current becomes invalid
+    this.clientView.subscribe(($view) => {
+      if ($view.players.length === 0) return;
+
+      const current = get(this.currentSessionIdStore);
+      const firstPlayer = $view.players[0];
+      const firstSessionId = firstPlayer?.sessionId ?? `player-${firstPlayer?.playerId}`;
+      if (!$view.players.some(p => (p.sessionId ?? `player-${p.playerId}`) === current) && firstPlayer) {
+        void this.setPerspective(firstSessionId);
+      }
+    });
+
+    // Reactive URL sync: keep browser URL in sync with game state
+    // Uses replaceState to avoid polluting browser history
+    this.clientView.subscribe(($view) => {
+      if (typeof window === 'undefined') return;
+      if ($view.metadata.gameId === 'initializing') return;
+
+      // Generate URL from current state
+      const url = stateToUrl($view.state);
+      const fullUrl = window.location.pathname + url;
+
+      // Update browser URL without adding history entry
+      window.history.replaceState(
+        { timestamp: Date.now() },
+        '',
+        fullUrl
+      );
+    });
+
+    // Initialize from URL or with default config
+    void this.initializeFromURL();
+  }
+
+  /**
+   * Initialize game from URL parameters or create new game
+   */
+  private async initializeFromURL(): Promise<void> {
+    try {
+      // Check if we have URL parameters to load from
+      if (typeof window === 'undefined') {
+        // SSR - initialize with default config
+        this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasSeed = urlParams.has('s');
+      const hasInitialHands = urlParams.has('i');
+
+      if (hasSeed || hasInitialHands) {
+        // URL has game state - decode and initialize
+        const urlData = decodeGameUrl(window.location.search);
+
+        // Build config from URL data
+        // initialHands and seed are mutually exclusive
+        const config: GameConfig = {
+          playerTypes: urlData.playerTypes,
+          ...(urlData.initialHands
+            ? { dealOverrides: { initialHands: urlData.initialHands } }
+            : { shuffleSeed: urlData.seed || Math.floor(Math.random() * 1000000) }),
+          ...(urlData.dealer !== undefined && urlData.dealer !== 3 ? { dealer: urlData.dealer } : {}),
+          ...(urlData.theme ? { theme: urlData.theme } : {}),
+          ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0
+            ? { colorOverrides: urlData.colorOverrides }
+            : {}),
+          ...(urlData.layers ? { layers: urlData.layers } : {})
+        };
+
+        // Initialize game with URL config and replay actions if present
+        this.wireUpGame(config, urlData.actions.length > 0 ? urlData.actions : undefined);
+      } else {
+        // No URL state - initialize with default config
+        this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to initialize from URL:', error);
+      // Fallback to default initialization
+      this.wireUpGame({
+        playerTypes,
+        shuffleSeed: Math.floor(Math.random() * 1000000)
+      });
     }
   }
-  
-  // Human actions and system actions - no delay
-  return 0;
-}
 
-// Check if AI should act
-function shouldAIAct(state: GameState): boolean {
-  // AI should act if:
-  // 1. It's an AI player's turn
-  // 2. Not already scheduled
-  // 3. Game is in playable state
-  if (state.phase === 'game_end') return false;
-  
-  // Check if current player is AI
-  const currentPlayerType = state.playerTypes[state.currentPlayer];
-  if (currentPlayerType !== 'ai') return false;
-  
-  // Check if already has scheduled action
-  if (dispatcher.hasScheduledAction(state.currentPlayer)) return false;
-  
-  return true;
-}
+  /**
+   * Core method: Create game using new simplified architecture.
+   * Uses createLocalGame() which handles Room + Socket wiring.
+   * @param config - Game configuration
+   * @param actionIds - Optional action IDs to replay after Room creation
+   */
+  private wireUpGame(config: GameConfig, actionIds?: string[]): void {
+    // Clean up old game
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+    if (this.localGame) {
+      this.localGame.client.disconnect();
+    }
 
-// Pure game loop - advances game ticks and executes AI decisions
-let animationFrame: number | null = null;
-let gameLoopRunning = false;
+    // Determine AI configuration based on test mode
+    // In test mode, all players are human (no AI)
+    const configPlayerTypes = config.playerTypes ?? playerTypes;
+    const aiPlayerIndexes = configPlayerTypes
+      .map((type, index) => type === 'ai' ? index : -1)
+      .filter(index => index >= 0);
 
-const runGameLoop = () => {
-  // Advance dispatcher's internal tick and process scheduled transitions
-  dispatcher.advanceTick();
-  
-  let currentState = get(gameState);
-  
-  // Check if AI needs to make a decision
-  if (shouldAIAct(currentState)) {
-    // Get available actions with delays attached
-    const transitions = getNextStatesWithDelays(currentState);
-    
-    // Ask AI for its decision (pure computation)
-    const choice = selectAIAction(currentState, currentState.currentPlayer, transitions);
-    
-    if (choice) {
-      // Decision already has delayTicks from getNextStatesWithDelays
-      dispatcher.requestTransition(choice, 'ai');
+    // Create new game using simplified architecture
+    // If replaying actions, skip AI behavior until after replay completes
+    const hasActionsToReplay = actionIds !== undefined && actionIds.length > 0;
+    this.localGame = createLocalGame(config, {
+      aiPlayerIndexes,
+      skipAIBehavior: hasActionsToReplay
+    });
+
+    // Replay actions if provided (before subscribing to avoid intermediate updates)
+    if (hasActionsToReplay) {
+      this.replayActionsInRoom(this.localGame.room, actionIds, config);
+      // Now attach AI behavior so they see the post-replay state
+      this.localGame.attachAI();
+    }
+
+    // Subscribe to view updates
+    this.installClient(this.localGame.client);
+
+    // Send JOIN to associate with player-0
+    this.localGame.client.send({ type: 'JOIN', playerIndex: 0, name: 'Player 1' });
+  }
+
+  /**
+   * Install a GameClient and set up subscriptions.
+   */
+  private installClient(client: GameClient): void {
+    // Unsubscribe from old client
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+
+    // Subscribe to updates
+    this.unsubscribe = client.subscribe((view: GameView) => {
+      this.clientView.set(view);
+    });
+
+    // Set initial view if available
+    if (client.view) {
+      this.clientView.set(client.view);
     }
   }
-  
-  // Schedule next frame if still running
-  if (gameLoopRunning) {
-    animationFrame = requestAnimationFrame(runGameLoop);
+
+  /**
+   * Replay actions directly in the Room (before client connection).
+   * Uses the same approach as HeadlessRoom replay for deterministic state restoration.
+   */
+  private replayActionsInRoom(room: Room, actionIds: string[], config: GameConfig): void {
+    try {
+      const seed = config.shuffleSeed;
+      if (!seed) {
+        console.error('[gameStore] Cannot replay actions: no shuffle seed in config');
+        return;
+      }
+
+      // Resolve action IDs to GameActions (uses HeadlessRoom internally)
+      const actions = resolveActionIds(actionIds, config, seed);
+
+      // Execute each action directly in the Room
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        if (!action) {
+          console.error('[gameStore] Action is undefined at index', i);
+          break;
+        }
+
+        // Determine which player should execute this action
+        const playerIndex = this.getPlayerIndexForAction(action);
+        const playerId = `player-${playerIndex}`;
+
+        // Execute the action in the Room
+        const result = room.executeAction(playerId, action);
+
+        if (!result.success) {
+          console.error('[gameStore] Action replay failed:', result.error);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('[gameStore] Failed to replay actions:', error);
+    }
+  }
+
+  /**
+   * Get the player index that should execute a given action.
+   */
+  private getPlayerIndexForAction(action: GameAction): number {
+    // Actions with explicit player field
+    if ('player' in action && typeof action.player === 'number') {
+      return action.player;
+    }
+
+    // Consensus actions can be executed by any player
+    // For URL replay, we use player 0
+    if (action.type === 'complete-trick' ||
+        action.type === 'score-hand' ||
+        action.type === 'redeal') {
+      return 0;
+    }
+
+    // Default to player 0
+    return 0;
+  }
+
+  // ========================================================================
+  // PUBLIC API
+  // ========================================================================
+
+  /**
+   * Execute a game action. Fire-and-forget - result comes via subscription.
+   */
+  executeAction(action: GameAction): void {
+    if (!this.localGame) throw new Error('Game not initialized');
+
+    const view = get(this.clientView);
+    const sessionId = get(this.currentPerspective);
+    const currentPlayer = view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === sessionId);
+
+    if (!currentPlayer || !currentPlayer.capabilities?.some(cap => cap.type === 'act-as-player')) {
+      throw new Error('Current perspective cannot execute actions');
+    }
+
+    const preparedAction = { ...action } as GameAction;
+    if ('player' in preparedAction) {
+      preparedAction.player = currentPlayer.playerId;
+    }
+
+    // Fire-and-forget - result comes via subscription
+    this.localGame.client.send({ type: 'EXECUTE_ACTION', action: preparedAction });
+  }
+
+  /**
+   * Create a new game with optional config.
+   */
+  createGame(config?: GameConfig): void {
+    const finalConfig = config ?? {
+      playerTypes,
+      shuffleSeed: Math.floor(Math.random() * 1000000)
+    };
+    this.wireUpGame(finalConfig);
+  }
+
+  /**
+   * Reset the game with default config.
+   */
+  resetGame(): void {
+    this.createGame();
+  }
+
+  /**
+   * Change the current viewing perspective.
+   * Sends JOIN message to Room to switch player association.
+   */
+  setPerspective(playerId: string): void {
+    const current = get(this.currentSessionIdStore);
+    if (current !== playerId) {
+      this.currentSessionIdStore.set(playerId);
+    }
+
+    if (!this.localGame) {
+      throw new Error('Game client not yet initialized');
+    }
+
+    // Extract player index from playerId (e.g., "player-2" -> 2)
+    const match = playerId.match(/player-(\d+)/);
+    if (match && match[1]) {
+      const playerIndex = parseInt(match[1], 10);
+      this.localGame.client.send({ type: 'JOIN', playerIndex, name: `Player ${playerIndex + 1}` });
+    }
+  }
+
+  /**
+   * Change a player's control type (human/AI).
+   */
+  setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
+    if (!this.localGame) throw new Error('Game not initialized');
+    this.localGame.client.send({ type: 'SET_CONTROL', playerIndex, controlType: type });
+  }
+
+  /**
+   * Start one-hand mode with optional seed.
+   */
+  startOneHand(seed?: number): void {
+    // oneHand layer handles bidding automation, terminal phase, and action generation
+    const config: GameConfig = {
+      playerTypes,
+      layers: ['oneHand'],
+      shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
+    };
+
+    this.findingSeedStore.set(false);
+    this.wireUpGame(config);
+  }
+
+  /**
+   * Retry one-hand mode with the same seed.
+   */
+  retryOneHand(): void {
+    const view = get(this.clientView);
+    if (!view.state.shuffleSeed) {
+      throw new Error('No seed available to retry');
+    }
+    this.startOneHand(view.state.shuffleSeed);
+  }
+
+  /**
+   * Exit one-hand mode and return to normal game.
+   */
+  exitOneHand(): void {
+    this.resetGame();
+  }
+
+  // One-hand state (derived)
+  get oneHandState() {
+    return derived(this.gameState, ($gameState) => {
+      // Check for one-hand-complete phase (terminal state set by oneHandLayer)
+      const isComplete = $gameState.phase === 'one-hand-complete';
+      const attempts = 1; // Could track this if needed
+
+      return {
+        complete: isComplete,
+        seed: $gameState.shuffleSeed,
+        attempts,
+        scores: isComplete ? {
+          us: $gameState.teamScores[0],
+          them: $gameState.teamScores[1],
+          won: $gameState.teamScores[0] > $gameState.teamScores[1]
+        } : null
+      };
+    });
+  }
+
+  get findingSeed() {
+    return this.findingSeedStore;
+  }
+
+  // Internal accessor for testing
+  get client(): GameClient | undefined {
+    return this.localGame?.client;
+  }
+}
+
+// ============================================================================
+// SINGLETON INSTANCE
+// ============================================================================
+
+const store = new GameStoreImpl();
+
+// ============================================================================
+// PUBLIC EXPORTS (9 items total)
+// ============================================================================
+
+// Reactive state (5 stores)
+export const gameState = store.gameState;
+export const viewProjection = store.viewProjection;
+export const currentPerspective = store.currentPerspective;
+export const availablePerspectives = store.availablePerspectives;
+export const oneHandState = store.oneHandState;
+
+// Commands (1 object)
+export const game = {
+  executeAction: (action: GameAction) => store.executeAction(action),
+  createGame: (config?: GameConfig) => store.createGame(config),
+  resetGame: () => store.resetGame(),
+  setPerspective: (playerId: string) => store.setPerspective(playerId),
+  setPlayerControl: (playerIndex: number, type: 'human' | 'ai') => store.setPlayerControl(playerIndex, type)
+};
+
+// Special modes (1 object)
+export const modes = {
+  oneHand: {
+    start: (seed?: number) => store.startOneHand(seed),
+    retry: () => store.retryOneHand(),
+    exit: () => store.exitOneHand()
   }
 };
 
-// Export function to start game loop on demand
-export function startGameLoop(): void {
-  // Don't start in test mode or if already running
-  if (testMode || gameLoopRunning) {
-    return;
-  }
-  
-  gameLoopRunning = true;
-  animationFrame = requestAnimationFrame(runGameLoop);
+// Utility (2 exports)
+export const findingSeed = store.findingSeed;
+
+/**
+ * Internal client accessor for window API development/testing tools only.
+ * DO NOT use in application code - use the `game` commands instead.
+ * @internal
+ */
+export function getInternalClient() {
+  return store.client;
 }
 
-// Export function to stop game loop
-export function stopGameLoop(): void {
-  gameLoopRunning = false;
-  if (animationFrame !== null) {
-    cancelAnimationFrame(animationFrame);
-    animationFrame = null;
-  }
+/**
+ * Get current game view for E2E testing.
+ * Returns the ViewProjection with additional state information.
+ * @internal
+ */
+export function getGameView() {
+  const view = get(store['clientView']);
+  const projection = get(store.viewProjection);
+
+  return {
+    ...projection,
+    state: view.state,
+    isProcessing: projection.ui.isAIThinking,
+    validActions: view.validActions,
+    players: view.players
+  };
 }
-
-// Clean up on page unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    stopGameLoop();
-  });
-}
-
-
-// High-level section actions
-export const sectionActions = {
-  startOneHand: async () => {
-    let balancedSeed: number;
-    
-    if (testMode) {
-      // In test mode, skip seed finder and use default seed
-      balancedSeed = 424242;
-    } else {
-      // Find new balanced seed
-      const foundSeed = await findAndConfirmSeed();
-      // findAndConfirmSeed now always returns a seed (user can't cancel out of the flow)
-      balancedSeed = foundSeed;
-    }
-    
-    // Prepare a deterministic hand with the balanced seed, preserving current theme settings
-    const prepared = await prepareDeterministicHand(balancedSeed);
-    const currentTheme = get(gameState).theme;
-    const currentOverrides = get(gameState).colorOverrides;
-    const preparedWithTheme = { ...prepared, theme: currentTheme, colorOverrides: currentOverrides };
-    // Set scenario before load so initial URL already includes it
-    setCurrentScenario('oneHand');
-    // Track attempts for this seed
-    incrementAttempts(prepared.shuffleSeed);
-    gameActions.loadState(preparedWithTheme);
-
-    // Start a one-hand section
-    // TODO: Handle consensus as part of game state machine
-    const runner = startSection(oneHandPreset());
-    // Allow progression now that runner is listening
-    dispatcher.setFrozen(false);
-    startGameLoop();
-    // Show overlay as soon as we reach scoring/game_end
-    let completed = false;
-    const checkCompletion = (state: GameState) => {
-      if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
-        completed = true;
-        sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
-        setURLToMinimal(get(initialState));
-      }
-    };
-    // Immediate check + subscribe
-    checkCompletion(get(gameState));
-    const unsubscribe = gameState.subscribe(checkCompletion);
-    const result = await runner.done;
-    // Freeze the game at completion and update overlay with final phase
-    stopGameLoop();
-    dispatcher.setFrozen(true);
-    sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
-    setURLToMinimal(get(initialState));
-    unsubscribe();
-  },
-  clearOverlay: (unfreeze = false) => {
-    sectionOverlay.set(null);
-    if (unfreeze) {
-      // Ensure AI speed returns to normal when resuming general play
-      setAISpeedProfile('normal');
-      dispatcher.setFrozen(false);
-      dispatcher.clearGate();
-      startGameLoop();
-    }
-  },
-  restartOneHand: async (seedOverride?: number) => {
-    // Clear overlay and prevent AI from running ahead during setup
-    sectionOverlay.set(null);
-    dispatcher.clearGate();
-    stopGameLoop();
-    dispatcher.setFrozen(true);
-    // Use current seed by default
-    const seed = seedOverride ?? get(initialState).shuffleSeed;
-    setCurrentScenario('oneHand');
-    // Load fresh initial with this seed, preserving theme
-    const currentTheme = get(gameState).theme;
-    const currentOverrides = get(gameState).colorOverrides;
-    const fresh = createInitialState({ shuffleSeed: seed, playerTypes: ['human', 'ai', 'ai', 'ai'], theme: currentTheme, colorOverrides: currentOverrides });
-    initialState.set(deepClone(fresh));
-    gameState.set(fresh);
-    actionHistory.set([]);
-    stateValidationError.set(null);
-    updateURLWithState(fresh, [], false);
-    // Build actions to playing and load
-    const actionIds = buildActionsToPlayingFromState(fresh);
-    gameActions.loadFromHistoryState({ initialState: fresh, actions: actionIds });
-    updateURLWithState(get(initialState), get(actionHistory), false);
-    // Increment attempts for this seed
-    incrementAttempts(seed);
-    // Start section and handle completion overlay
-    const runner = startSection(oneHandPreset());
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      console.log('[OneHand Restart] Runner started');
-    }
-    // Allow progression now that runner is listening
-    dispatcher.setFrozen(false);
-    startGameLoop();
-    // Show overlay as soon as we reach scoring/game_end
-    let completed = false;
-    const checkCompletion = (state: GameState) => {
-      if (!completed && (state.phase === 'scoring' || state.phase === 'game_end')) {
-        completed = true;
-        sectionOverlay.set(buildOverlayPayload(state, get(initialState)));
-        setURLToMinimal(get(initialState));
-      }
-    };
-    // Immediate check + subscribe
-    checkCompletion(get(gameState));
-    const unsubscribe = gameState.subscribe(checkCompletion);
-    const result = await runner.done;
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      console.log('[OneHand Restart] Runner done with phase', result.state.phase);
-    }
-    stopGameLoop();
-    dispatcher.setFrozen(true);
-    sectionOverlay.set(buildOverlayPayload(result.state, get(initialState)));
-    setURLToMinimal(get(initialState));
-    unsubscribe();
-  },
-  newOneHand: async () => {
-    // Clear overlay first to prevent immediate re-triggering
-    sectionOverlay.set(null);
-    // Then start the seed finder flow
-    await sectionActions.startOneHand();
-  }
-};

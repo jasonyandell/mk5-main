@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { 
-  createDominoes, 
-  dealDominoesWithSeed, 
-  getDominoSuit, 
-  getDominoValue, 
-  getDominoPoints, 
-  isDouble, 
-  countDoubles 
+import {
+  createDominoes,
+  dealDominoesWithSeed,
+  getDominoPoints,
+  isDouble,
+  countDoubles
 } from '../../game/core/dominoes';
+import { getLedSuitBase, rankInTrickBase } from '../../game/layers/rules-base';
 import { GameTestHelper } from '../helpers/gameTestHelper';
-import { ACES, DEUCES, TRES, FIVES, SIXES } from '../../game/types';
+import type { GameState } from '../../game/types';
+import { ACES, DEUCES, TRES, FIVES, SIXES, CALLED } from '../../game/types';
 
 describe('Domino System', () => {
   describe('createDominoes', () => {
@@ -85,50 +85,60 @@ describe('Domino System', () => {
     });
   });
   
-  describe('getDominoSuit', () => {
-    it('should return natural suit for doubles when regular trump is set', () => {
+  describe('getLedSuitBase', () => {
+    it('should return natural suit for doubles when not absorbed by trump', () => {
       const double = { high: 5, low: 5, id: '5-5' };
-      
-      expect(getDominoSuit(double, { type: 'suit', suit: DEUCES })).toBe(FIVES); // Natural suit (doubles belong to natural suit)
-      expect(getDominoSuit(double, { type: 'suit', suit: FIVES })).toBe(FIVES); // Natural suit (also trump in this case)
+      const state1: GameState = { trump: { type: 'suit', suit: DEUCES } } as GameState;
+      const state2: GameState = { trump: { type: 'suit', suit: FIVES } } as GameState;
+
+      expect(getLedSuitBase(state1, double)).toBe(FIVES); // Natural suit (not absorbed - 2s are trump)
+      expect(getLedSuitBase(state2, double)).toBe(CALLED); // Absorbed (5-5 contains trump pip 5)
     });
-    
-    it('should return trump for dominoes with trump value', () => {
+
+    it('should return suit 7 for absorbed dominoes (dominoes with trump pip)', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
-      
-      expect(getDominoSuit(domino, { type: 'suit', suit: TRES })).toBe(TRES); // 3 is trump
-      expect(getDominoSuit(domino, { type: 'suit', suit: SIXES })).toBe(SIXES); // 6 is trump
+      const state1: GameState = { trump: { type: 'suit', suit: TRES } } as GameState;
+      const state2: GameState = { trump: { type: 'suit', suit: SIXES } } as GameState;
+
+      // Absorbed dominoes lead suit 7 (CALLED), not the trump pip value
+      expect(getLedSuitBase(state1, domino)).toBe(CALLED); // Contains 3 (trump) -> absorbed
+      expect(getLedSuitBase(state2, domino)).toBe(CALLED); // Contains 6 (trump) -> absorbed
     });
-    
+
     it('should return high value for non-trump dominoes', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
-      
-      expect(getDominoSuit(domino, { type: 'suit', suit: ACES })).toBe(SIXES); // Neither 6 nor 3 is trump 1
+      const state: GameState = { trump: { type: 'suit', suit: ACES } } as GameState;
+
+      expect(getLedSuitBase(state, domino)).toBe(SIXES); // Neither 6 nor 3 is trump 1
     });
-    
+
     it('should handle null trump', () => {
       const domino = { high: 6, low: 3, id: '6-3' };
       const double = { high: 5, low: 5, id: '5-5' };
-      
-      expect(getDominoSuit(domino, { type: 'not-selected' })).toBe(SIXES);
-      expect(getDominoSuit(double, { type: 'not-selected' })).toBe(FIVES);
+      const state: GameState = { trump: { type: 'not-selected' } } as GameState;
+
+      expect(getLedSuitBase(state, domino)).toBe(SIXES);
+      expect(getLedSuitBase(state, double)).toBe(FIVES);
     });
   });
   
-  describe('getDominoValue', () => {
-    it('should give trump doubles highest values', () => {
+  describe('rankInTrickBase', () => {
+    it('should give trump doubles highest ranks', () => {
       const sixDouble = { high: 6, low: 6, id: '6-6' };
       const fiveDouble = { high: 5, low: 5, id: '5-5' };
-      const zeroDouble = { high: 0, low: 0, id: '0-0' };
-      
+
       const trump = { type: 'suit', suit: SIXES } as const;
-      
-      expect(getDominoValue(sixDouble, trump)).toBeGreaterThan(getDominoValue(fiveDouble, trump));
-      expect(getDominoValue(fiveDouble, trump)).toBeGreaterThan(getDominoValue(zeroDouble, trump));
+      const state: GameState = { trump } as GameState;
+
+      // 6-6 is trump (Tier 2), 5-5 is a slough (Tier 0) since it doesn't contain 6
+      expect(rankInTrickBase(state, SIXES, sixDouble)).toBeGreaterThan(rankInTrickBase(state, SIXES, fiveDouble));
+      // Note: Per SUIT_ALGEBRA.md §8, all sloughs return 0 (unordered)
+      // So we don't compare sloughs against each other
     });
-    
+
     it('should rank trump doubles correctly when doubles are trump', () => {
       const trump = { type: 'doubles' } as const; // Doubles trump
+      const state: GameState = { trump } as GameState;
       const doubles = [
         { high: 6, low: 6, id: '6-6' },
         { high: 5, low: 5, id: '5-5' },
@@ -138,21 +148,22 @@ describe('Domino System', () => {
         { high: 1, low: 1, id: '1-1' },
         { high: 0, low: 0, id: '0-0' }
       ];
-      
-      const values = doubles.map(d => getDominoValue(d, trump));
-      
+
+      const ranks = doubles.map(d => rankInTrickBase(state, 7, d));
+
       // Should be in descending order: 6-6, 5-5, 4-4, 3-3, 2-2, 1-1, 0-0
-      for (let i = 0; i < values.length - 1; i++) {
-        expect(values[i]).toBeGreaterThan(values[i + 1] ?? 0);
+      for (let i = 0; i < ranks.length - 1; i++) {
+        expect(ranks[i]).toBeGreaterThan(ranks[i + 1] ?? 0);
       }
     });
-    
-    it('should value trump non-doubles higher than non-trump', () => {
+
+    it('should rank trump non-doubles higher than non-trump', () => {
       const trumpDomino = { high: 6, low: 3, id: '6-3' };
       const nonTrumpDomino = { high: 6, low: 5, id: '6-5' };
       const trump = { type: 'suit', suit: TRES } as const;
-      
-      expect(getDominoValue(trumpDomino, trump)).toBeGreaterThan(getDominoValue(nonTrumpDomino, trump));
+      const state: GameState = { trump } as GameState;
+
+      expect(rankInTrickBase(state, TRES, trumpDomino)).toBeGreaterThan(rankInTrickBase(state, SIXES, nonTrumpDomino));
     });
   });
   
@@ -250,15 +261,15 @@ describe('Domino System', () => {
   describe('Point system validation', () => {
     it('should verify total counting points equal 42', () => {
       const allDominoes = createDominoes();
-      const totalPoints = allDominoes.reduce((sum, domino) => 
+      const totalPoints = allDominoes.reduce((sum, domino) =>
         sum + getDominoPoints(domino), 0
       );
-      
+
       // Total points from 5-5(10) + 6-4(10) + 5-0(5) + 6-5(5) + 6-6(42) = 72
       // But this needs to be validated against actual Texas 42 rules
       expect(totalPoints).toBeGreaterThan(0);
     });
-    
+
     it('should verify mathematical constants', () => {
       expect(GameTestHelper.verifyPointConstants()).toBe(true);
     });

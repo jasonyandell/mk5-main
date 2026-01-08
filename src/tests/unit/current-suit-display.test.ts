@@ -2,9 +2,9 @@ import { describe, test, expect } from 'vitest';
 import { getCurrentSuit } from '../../game/core/rules';
 import { createInitialState } from '../../game/core/state';
 import type { TrumpSelection, LedSuitOrNone } from '../../game/types';
-import { 
+import {
   BLANKS, FOURS, FIVES, SIXES,
-  DOUBLES_AS_TRUMP, NO_SUIT
+  CALLED, NO_LEAD_SUIT
 } from '../../game/types';
 
 describe('Current Suit Display', () => {
@@ -15,7 +15,7 @@ describe('Current Suit Display', () => {
 
   test('should return "None" when no domino is led', () => {
     const state = createInitialState();
-    state.currentSuit = NO_SUIT;
+    state.currentSuit = NO_LEAD_SUIT;
     state.trump = doublesAreTrump;
     expect(getCurrentSuit(state)).toBe('None (no domino led)');
   });
@@ -31,14 +31,14 @@ describe('Current Suit Display', () => {
     test('6-6 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
+      state.currentSuit = CALLED; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 
     test('3-3 leads -> Doubles (Trump)', () => {
       const state = createInitialState();
       state.trump = doublesAreTrump;
-      state.currentSuit = DOUBLES_AS_TRUMP; // Doubles led
+      state.currentSuit = CALLED; // Doubles led
       expect(getCurrentSuit(state)).toBe('Doubles (Trump)');
     });
 

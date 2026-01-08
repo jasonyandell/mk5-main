@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
-import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection, LedSuitOrNone } from '../../game/types';
-import { ACES, TRES, FIVES, SIXES, DOUBLES_AS_TRUMP, NO_LEAD_SUIT } from '../../game/types';
+import { ACES, TRES, FIVES, SIXES, CALLED, NO_LEAD_SUIT } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Hand Validation Rules', () => {
   function createTestState(options: {
@@ -19,14 +21,20 @@ describe('Hand Validation Rules', () => {
     state.currentPlayer = options.currentPlayer || 1;
     
     // Set currentSuit based on the first domino in currentTrick
+    // With suit 7 semantics: absorbed dominoes lead suit 7 (CALLED)
     if (options.currentTrick.length > 0) {
       const leadDomino = options.currentTrick[0]!.domino;
-      if (options.trump.type === 'doubles') { // doubles are trump
-        state.currentSuit = leadDomino.high === leadDomino.low ? DOUBLES_AS_TRUMP : (Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone);
+      const isDouble = leadDomino.high === leadDomino.low;
+
+      if (options.trump.type === 'doubles') {
+        // Doubles trump: doubles lead suit 7, non-doubles lead higher pip
+        state.currentSuit = isDouble ? CALLED : (Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone);
       } else if (options.trump.type === 'suit' && (leadDomino.high === options.trump.suit || leadDomino.low === options.trump.suit)) {
-        state.currentSuit = options.trump.suit!; // trump was led
+        // Regular suit trump: absorbed dominoes lead suit 7
+        state.currentSuit = CALLED;
       } else {
-        state.currentSuit = Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone; // higher end for non-trump
+        // Non-trump domino: higher pip
+        state.currentSuit = Math.max(leadDomino.high, leadDomino.low) as LedSuitOrNone;
       }
     } else {
       state.currentSuit = NO_LEAD_SUIT;
@@ -35,9 +43,8 @@ describe('Hand Validation Rules', () => {
     const player = state.players[state.currentPlayer];
     if (player) {
       player.hand = options.playerHand;
-      player.suitAnalysis = analyzeSuits(options.playerHand, state.trump);
     }
-    
+
     return state;
   }
 
@@ -56,13 +63,13 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe(8); // Must play [4|1]
       
       // Verify invalid play is rejected
       const invalidPlay = { id: 5, low: 2, high: 3 };
-      expect(isValidPlay(state, invalidPlay, state.currentPlayer)).toBe(false);
+      expect(rules.isValidPlay(state, invalidPlay, state.currentPlayer)).toBe(false);
     });
 
     it('should allow trump when unable to follow suit', () => {
@@ -79,12 +86,12 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(2); // Can play either trump or any domino
       
       // Verify trump is valid
       const trumpPlay = { id: 10, low: 0, high: 5 };
-      expect(isValidPlay(state, trumpPlay, state.currentPlayer)).toBe(true);
+      expect(rules.isValidPlay(state, trumpPlay, state.currentPlayer)).toBe(true);
     });
 
     it('should allow any domino when unable to follow suit or trump', () => {
@@ -101,11 +108,11 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(2); // Can play any domino
       
       validPlays.forEach(domino => {
-        expect(isValidPlay(state, domino, state.currentPlayer)).toBe(true);
+        expect(rules.isValidPlay(state, domino, state.currentPlayer)).toBe(true);
       });
     });
   });
@@ -125,7 +132,7 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe(6); // Must play [3|3]
     });
@@ -145,7 +152,7 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(2); // Must play a double
       expect(validPlays.every(d => d.high === d.low)).toBe(true);
     });
@@ -166,7 +173,7 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe(10); // Must play [5|0]
     });
@@ -185,7 +192,7 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1); // Must follow trump
       expect(validPlays[0]?.id).toBe(8); // [4|1] is the only trump
     });
@@ -206,7 +213,7 @@ describe('Hand Validation Rules', () => {
         playerHand
       });
 
-      const validPlays = getValidPlays(state, state.currentPlayer);
+      const validPlays = rules.getValidPlays(state, state.currentPlayer);
       expect(validPlays).toHaveLength(1);
       expect(validPlays[0]?.id).toBe(12); // Must play [4|3]
     });

@@ -6,7 +6,7 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
   describe('Scenario: Domino Arrangement', () => {
     it('Given players have drawn their dominoes', () => {
       // Test setup - create initial state and deal dominoes
-      const gameState: GameState = createInitialState({ tournamentMode: true });
+      const gameState: GameState = createInitialState();
       const hands = dealDominoesWithSeed(12345);
       
       // Assign dealt hands to players
@@ -45,7 +45,7 @@ describe('Feature: Game Setup - Domino Arrangement', () => {
 
     it('And once bidding begins, dominoes cannot be rearranged', () => {
       // Test that arrangement is locked once bidding phase starts
-      const gameStateBeforeBidding: GameState = createInitialState({ tournamentMode: true });
+      const gameStateBeforeBidding: GameState = createInitialState();
       const hands = dealDominoesWithSeed(12345);
       
       // Assign dealt hands to players

@@ -1,8 +1,10 @@
 import { describe, test, expect } from 'vitest';
 import type { GameState } from '../../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../../game';
+import { createTestContext } from '../../helpers/executionContext';
 
 describe('Feature: Special Bids', () => {
+  const ctx = createTestContext();
   describe('Scenario: All Players Pass', () => {
     test('Given all players have had a chance to bid', () => {
       const gameState = createInitialState({ shuffleSeed: 12345 });
@@ -13,7 +15,7 @@ describe('Feature: Special Bids', () => {
 
       // Simulate all players passing using game engine
       for (let i = 0; i < 4; i++) {
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const passTransition = transitions.find(t => t.id === 'pass');
         expect(passTransition).toBeDefined();
         
@@ -32,12 +34,12 @@ describe('Feature: Special Bids', () => {
       gameState.phase = 'bidding';
       gameState.dealer = 3;
       gameState.currentPlayer = getPlayerLeftOfDealer(3); // Player 0
-      gameState.tournamentMode = true;
+      // REMOVED: gameState.tournamentMode = true;
       gameState.bids = [];
 
       // Simulate all players passing
       for (let i = 0; i < 4; i++) {
-        const transitions = getNextStates(gameState);
+        const transitions = getNextStates(gameState, ctx);
         const passTransition = transitions.find(t => t.id === 'pass');
         if (passTransition) {
           Object.assign(gameState, passTransition.newState);
@@ -67,7 +69,6 @@ describe('Feature: Special Bids', () => {
           { type: 'pass', player: 1 },
           { type: 'pass', player: 2 },
         ],
-        tournamentMode: false, // Not tournament mode - common variation
       };
 
       // When it's the dealer's turn and all others have passed

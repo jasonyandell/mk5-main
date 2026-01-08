@@ -1,19 +1,18 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager, dispatcher } from '../../stores/gameStore';
+  import { game, viewProjection } from '../../stores/gameStore';
   import type { StateTransition } from '../../game/types';
   import Domino from './Domino.svelte';
   import Icon from '../icons/Icon.svelte';
-  
+
   interface Props {
     onswitchToPlay?: () => void;
   }
-  
-  let { onswitchToPlay }: Props = $props();
 
+  let { onswitchToPlay }: Props = $props();
 
   let shakeActionId = $state<string | null>(null);
   let previousPhase = $state($viewProjection.phase);
-  
+
   // React to phase changes for panel switching
   $effect(() => {
     if ($viewProjection.phase === 'playing' && previousPhase === 'trump_selection') {
@@ -22,24 +21,12 @@
     previousPhase = $viewProjection.phase;
   });
 
-  async function executeAction(action: StateTransition) {
+  async function executeAction(transition: StateTransition) {
     try {
-      // Find which human controller should handle this
-      const playerId = 'player' in action.action ? action.action.player : 0;
-      const humanController = controllerManager.getHumanController(playerId);
-      
-      if (humanController) {
-        humanController.handleUserAction(action);
-      } else {
-        // Fallback to unified dispatcher (used in testMode)
-        console.log('[ActionPanel] Direct execution (no controller):', action.label, 'for player', playerId);
-        dispatcher.requestTransition(action, 'ui');
-      }
-      
-      // Panel switching is handled by the reactive effect above
+      await game.executeAction(transition.action);
     } catch (error) {
       // Trigger shake animation on error
-      shakeActionId = action.id;
+      shakeActionId = transition.id;
     }
   }
 
@@ -61,26 +48,6 @@
     }
   }
 
-  
-  // Track skip attempts for automatic retry
-  let skipAttempts = $state(0);
-  
-  // Reactive skip logic - automatically retry skip in bidding/trump phases
-  $effect(() => {
-    if (($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') && 
-        $viewProjection.ui.isAIThinking && skipAttempts > 0 && skipAttempts < 3) {
-      // Automatically try skip on state change
-      gameActions.skipAIDelays();
-      skipAttempts++;
-    }
-  });
-  
-  // Reset skip attempts when not AI thinking
-  $effect(() => {
-    if (!$viewProjection.ui.isAIThinking) {
-      skipAttempts = 0;
-    }
-  });
 </script>
 
 <div class="action-panel h-full flex flex-col bg-base-200 overflow-hidden" data-testid="action-panel">
@@ -139,7 +106,12 @@
     {#if ($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') && $viewProjection.hand.length > 0}
       <div class="card bg-base-100 shadow-xl mb-4 animate-fadeInDown">
         <div class="card-body p-4">
-          <h3 class="card-title text-sm uppercase tracking-wider justify-center mb-4">Your Hand</h3>
+          <h3 class="card-title text-sm uppercase tracking-wider justify-center mb-4">
+            {$viewProjection.canAct ? 'Your Hand' : 'Selected Hand'}
+          </h3>
+          {#if !$viewProjection.canAct}
+            <p class="text-center text-xs opacity-60 mb-2">Viewing only — actions disabled.</p>
+          {/if}
           <div class="grid grid-cols-[repeat(auto-fit,minmax(45px,1fr))] gap-2 max-w-full justify-items-center">
           {#each $viewProjection.hand as handDomino, i (handDomino.domino.high + '-' + handDomino.domino.low)}
             <div class="animate-handFadeIn" style="--delay: {i * 30}ms; animation-delay: var(--delay)">
@@ -147,7 +119,7 @@
                 domino={handDomino.domino}
                 small={true}
                 showPoints={true}
-                clickable={true}
+                clickable={$viewProjection.canAct}
               />
             </div>
           {/each}
@@ -157,27 +129,13 @@
     {/if}
     
     {#if $viewProjection.ui.isWaiting && $viewProjection.ui.isAIThinking}
-      <button 
-        class="w-full p-5 text-center text-base-content/60 flex items-center justify-center gap-2 animate-pulse bg-transparent border-none font-inherit cursor-pointer transition-transform hover:scale-105 active:scale-[0.98] ai-thinking-indicator"
-        onclick={() => {
-          // Skip current AI delay
-          gameActions.skipAIDelays();
-          // Enable automatic retry for bidding/trump phases
-          if ($viewProjection.phase === 'bidding' || $viewProjection.phase === 'trump_selection') {
-            skipAttempts = 1; // Start retry counter
-          }
-        }}
-        type="button"
-        aria-label="Click to skip AI thinking"
-        title="Click to skip AI thinking"
-      >
+      <div class="w-full p-5 text-center text-base-content/60 flex items-center justify-center gap-2 animate-pulse">
         <Icon name="cpuChip" size="md" />
         <span class="text-sm">P{$viewProjection.ui.waitingOnPlayer} is thinking...</span>
-        <span class="text-xs opacity-70 ml-1">(tap to skip)</span>
-      </button>
+      </div>
     {/if}
     
-    {#if $viewProjection.phase === 'bidding' && $viewProjection.actions.bidding.length > 0}
+    {#if $viewProjection.canAct && $viewProjection.phase === 'bidding' && $viewProjection.actions.bidding.length > 0}
       <div class="mb-6 animate-fadeInUp">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Bidding</h3>
         <div class="grid grid-cols-3 gap-3 max-w-[400px] mx-auto">
@@ -225,7 +183,7 @@
       </div>
     {/if}
 
-    {#if $viewProjection.phase === 'trump_selection' && $viewProjection.actions.trump.length > 0}
+    {#if $viewProjection.canAct && $viewProjection.phase === 'trump_selection' && $viewProjection.actions.trump.length > 0}
       <div class="mb-6 animate-fadeInUp">
         <h3 class="mb-4 text-sm font-semibold uppercase tracking-wider text-center opacity-70">Select Trump</h3>
         <div class="flex flex-col gap-3 max-w-[320px] mx-auto">
@@ -239,6 +197,12 @@
             </button>
           {/each}
         </div>
+      </div>
+    {/if}
+
+    {#if !$viewProjection.canAct}
+      <div class="mt-6 text-xs text-center opacity-60">
+        Viewing perspective only — no actions available.
       </div>
     {/if}
 

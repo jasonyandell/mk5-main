@@ -1,44 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { Domino, TrumpSelection, LedSuitOrNone, RegularSuit } from '../../game/types';
-import { SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../../game/types';
+import { SIXES, CALLED, PLAYED_AS_TRUMP } from '../../game/types';
 import { getDominoStrength } from '../../game/ai/strength-table.generated';
-import { analyzeDominoAsSuit, getPlayableSuits } from '../../game/ai/domino-strength';
-import { isTrump } from '../../game/core/dominoes';
-import type { GameState } from '../../game/types';
-
-function createMinimalState(): GameState {
-  return {
-    phase: 'playing',
-    players: [
-      { id: 0, name: 'P0', hand: [], teamId: 0, marks: 0 },
-      { id: 1, name: 'P1', hand: [], teamId: 1, marks: 0 },
-      { id: 2, name: 'P2', hand: [], teamId: 0, marks: 0 },
-      { id: 3, name: 'P3', hand: [], teamId: 1, marks: 0 },
-    ],
-    currentPlayer: 0,
-    dealer: 0,
-    bids: [],
-    currentBid: { type: 'pass', player: NO_BIDDER },
-    winningBidder: NO_BIDDER,
-    trump: { type: 'not-selected' },
-    tricks: [],
-    currentTrick: [],
-    currentSuit: NO_LEAD_SUIT,
-    teamScores: [0, 0],
-    teamMarks: [0, 0],
-    gameTarget: 7,
-    tournamentMode: false,
-    shuffleSeed: 0,
-    playerTypes: ['ai', 'ai', 'ai', 'ai'],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()
-    },
-    actionHistory: [],
-    theme: 'coffee',
-    colorOverrides: {}
-  };
-}
+import { analyzeDominoAsSuit } from '../../game/ai/domino-strength';
+import { isTrumpBase } from '../../game/layers/rules-base';
+import { suitsWithTrumpBase } from '../../game/layers/compose';
+import { StateBuilder } from '../helpers';
+import { SUIT_IDENTIFIERS } from '../../game/game-terms';
 
 function generateAllDominoes(): Domino[] {
   const dominoes: Domino[] = [];
@@ -70,10 +38,9 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
   });
   
   // Each suit as trump (0-6)
-  const suitNames = ['blanks', 'aces', 'deuces', 'tres', 'fours', 'fives', 'sixes'];
   for (let suit = 0; suit <= 6; suit++) {
     configs.push({
-      key: `trump-${suitNames[suit]}`,
+      key: `trump-${SUIT_IDENTIFIERS[suit as RegularSuit]}`,
       trump: { type: 'suit', suit: suit as RegularSuit }
     });
   }
@@ -84,7 +51,7 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
 describe('Strength Table Generation Verification', () => {
   const dominoes = generateAllDominoes();
   const trumpConfigs = getTrumpConfigurations();
-  const state = createMinimalState();
+  const state = StateBuilder.inPlayingPhase().withHands([[], [], [], []]).build();
 
   it('should match runtime calculations for all domino/trump/suit combinations', () => {
     let totalChecks = 0;
@@ -93,9 +60,9 @@ describe('Strength Table Generation Verification', () => {
     for (const domino of dominoes) {
       for (const { trump } of trumpConfigs) {
         state.trump = trump;
-        
-        const playableSuits = getPlayableSuits(domino, trump);
-        const dominoIsTrump = isTrump(domino, trump);
+
+        const playableSuits = suitsWithTrumpBase(state, domino);
+        const dominoIsTrump = isTrumpBase(state, domino);
         
         // Check playing as trump if applicable
         if (dominoIsTrump) {
@@ -157,12 +124,13 @@ describe('Strength Table Generation Verification', () => {
       }
     }
     
+    expect(totalChecks).toEqual(455);
+
     if (mismatches.length > 0) {
       console.error('Mismatches found:', mismatches);
     }
     
     expect(mismatches).toHaveLength(0);
-    console.log(`✅ Verified ${totalChecks} entries successfully`);
   });
 
   it('should handle edge cases correctly', () => {
@@ -175,7 +143,7 @@ describe('Strength Table Generation Verification', () => {
     
     // Test doubles as trump when playing as doubles suit
     const doubleDomino = { high: 3, low: 3, id: '3-3' };
-    const doublesResult = getDominoStrength(doubleDomino, { type: 'doubles' }, DOUBLES_AS_TRUMP);
+    const doublesResult = getDominoStrength(doubleDomino, { type: 'doubles' }, CALLED);
     expect(doublesResult).toBeDefined();
     expect(doublesResult!.cannotFollow).not.toContain('2-2'); // Other doubles can follow
     expect(doublesResult!.cannotFollow).toContain('3-2'); // Non-doubles cannot follow
@@ -195,27 +163,28 @@ describe('Strength Table Regeneration', () => {
     // This test documents that regenerating the table produces identical output
     // To regenerate: npm run generate:strength-table
     // Git will not detect changes if the hash is identical
-    
+
     // We're NOT automatically regenerating here because:
     // 1. It's slow (takes several seconds)
     // 2. The prebuild/predev scripts already handle it
     // 3. Git correctly ignores unchanged files
-    
+
     // If this test fails, run: npm run generate:strength-table
+    const trump: TrumpSelection = { type: 'no-trump' };
     const runtime = analyzeDominoAsSuit(
       { high: 6, low: 6, id: '6-6' },
       SIXES,
-      { type: 'no-trump' },
-      createMinimalState(),
+      trump,
+      StateBuilder.inPlayingPhase(trump).withHands([[], [], [], []]).build(),
       0
     );
-    
+
     const generated = getDominoStrength(
       { high: 6, low: 6, id: '6-6' },
-      { type: 'no-trump' },
+      trump,
       SIXES
     );
-    
+
     expect(generated).toBeDefined();
     expect(generated!.beatenBy.sort()).toEqual(runtime.beatenBy.map(d => d.id).sort());
     expect(generated!.beats.sort()).toEqual(runtime.beats.map(d => d.id).sort());

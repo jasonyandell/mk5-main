@@ -1,15 +1,19 @@
 import { describe, it, expect } from 'vitest';
-import { getDominoValue, getDominoSuit } from '../../game/core/dominoes';
-import { calculateTrickWinner } from '../../game/core/scoring';
-import type { PlayedDomino, TrumpSelection } from '../../game/types';
-import { TRES, FIVES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { getLedSuitBase, rankInTrickBase } from '../../game/layers/rules-base';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
+import type { PlayedDomino, TrumpSelection, GameState } from '../../game/types';
+import { TRES, FIVES, CALLED } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Doubles Trump Rules', () => {
   describe('when a regular suit (0-6) is trump', () => {
     it('should only treat dominoes containing that number as trump', () => {
       // Test with 5s as trump
       const trump: TrumpSelection = { type: 'suit', suit: FIVES };
-      
+      const state: GameState = { trump } as GameState;
+
       const testCases = [
         { domino: { high: 5, low: 5, id: '5-5' }, shouldBeTrump: true, reason: 'contains 5' },
         { domino: { high: 6, low: 5, id: '6-5' }, shouldBeTrump: true, reason: 'contains 5' },
@@ -26,26 +30,27 @@ describe('Doubles Trump Rules', () => {
         { domino: { high: 0, low: 0, id: '0-0' }, shouldBeTrump: false, reason: 'does not contain 5' },
         { domino: { high: 6, low: 4, id: '6-4' }, shouldBeTrump: false, reason: 'does not contain 5' }
       ];
-      
+
       testCases.forEach(({ domino, shouldBeTrump }) => {
-        const value = getDominoValue(domino, trump);
-        const suit = getDominoSuit(domino, trump);
-        
+        const rank = rankInTrickBase(state, FIVES, domino);
+        const suit = getLedSuitBase(state, domino);
+
         if (shouldBeTrump) {
-          // Trump dominoes should have values > 100
-          expect(value).toBeGreaterThan(100);
-          expect(suit).toBe(FIVES); // 5s are trump
+          // Trump dominoes should have Tier 2 rank (32-46)
+          expect(rank).toBeGreaterThanOrEqual(32);
+          expect(suit).toBe(CALLED); // Absorbed dominoes lead suit 7
         } else {
-          // Non-trump dominoes should have values < 100
-          expect(value).toBeLessThan(100);
-          expect(suit).not.toBe(FIVES); // Not 5s trump
+          // Non-trump dominoes should have Tier 0 or 1 rank (< 32)
+          expect(rank).toBeLessThan(32);
+          expect(suit).not.toBe(CALLED); // Not absorbed
         }
       });
     });
     
     it('should correctly determine trick winners with proper trump rules', () => {
       const trump: TrumpSelection = { type: 'suit', suit: TRES }; // 3s are trump
-      
+      const state: GameState = { trump, currentSuit: TRES } as GameState;
+
       // Test case: 4-4 should NOT beat 3-2 when 3s are trump
       const trick: PlayedDomino[] = [
         { domino: { high: 3, low: 2, id: '3-2' }, player: 0 }, // Trump (contains 3)
@@ -53,11 +58,10 @@ describe('Doubles Trump Rules', () => {
         { domino: { high: 6, low: 2, id: '6-2' }, player: 2 }, // Not trump
         { domino: { high: 5, low: 1, id: '5-1' }, player: 3 }  // Not trump
       ];
-      
+
       // First domino led 3-2, with 3s trump, so trump (3) was led
-      const leadSuit = TRES; // Trump was led
-      const winner = calculateTrickWinner(trick, trump, leadSuit);
-      
+      const winner = rules.calculateTrickWinner(state, trick);
+
       // Player 0 should win because 3-2 is trump and 4-4 is not
       expect(winner).toBe(0);
     });
@@ -66,7 +70,8 @@ describe('Doubles Trump Rules', () => {
   describe('when doubles are trump (trump = 7)', () => {
     it('should treat all doubles as trump', () => {
       const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump
-      
+      const state: GameState = { trump } as GameState;
+
       const doubles = [
         { high: 6, low: 6, id: '6-6' },
         { high: 5, low: 5, id: '5-5' },
@@ -76,23 +81,23 @@ describe('Doubles Trump Rules', () => {
         { high: 1, low: 1, id: '1-1' },
         { high: 0, low: 0, id: '0-0' }
       ];
-      
+
       doubles.forEach(domino => {
-        const value = getDominoValue(domino, trump);
-        const suit = getDominoSuit(domino, trump);
-        
-        // All doubles should be trump with values >= 200
-        expect(value).toBeGreaterThanOrEqual(200);
-        expect(suit).toBe(DOUBLES_AS_TRUMP);
+        const rank = rankInTrickBase(state, CALLED, domino);
+        const suit = getLedSuitBase(state, domino);
+
+        // All doubles should be trump with Tier 2 rank (32-46)
+        expect(rank).toBeGreaterThanOrEqual(32);
+        expect(suit).toBe(CALLED);
       });
-      
+
       // Non-doubles should not be trump
       const nonDouble = { high: 6, low: 5, id: '6-5' };
-      const value = getDominoValue(nonDouble, trump);
-      const suit = getDominoSuit(nonDouble, trump);
-      
-      expect(value).toBeLessThan(100);
-      expect(suit).not.toBe(DOUBLES_AS_TRUMP);
+      const rank = rankInTrickBase(state, CALLED, nonDouble);
+      const suit = getLedSuitBase(state, nonDouble);
+
+      expect(rank).toBeLessThan(32);
+      expect(suit).not.toBe(CALLED);
     });
   });
 });

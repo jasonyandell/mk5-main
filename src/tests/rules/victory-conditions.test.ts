@@ -6,13 +6,13 @@ describe('Victory Conditions - Mark System Victory', () => {
   let gameState: GameState;
   
   beforeEach(() => {
-    gameState = createInitialState({ tournamentMode: true });
+    gameState = createInitialState();
   });
 
   describe('Scenario: Mark System Victory', () => {
     it('should recognize victory when a team reaches 7 marks', () => {
       // Given teams are playing with the mark system
-      expect(gameState.tournamentMode).toBe(true);
+      // REMOVED expect statement.toBe(true);
       expect(gameState.gameTarget).toBe(7);
       
       // When checking for game victory
@@ -31,7 +31,7 @@ describe('Victory Conditions - Mark System Victory', () => {
 
     it('should recognize victory for team 1 when they reach 7 marks', () => {
       // Given teams are playing with the mark system
-      expect(gameState.tournamentMode).toBe(true);
+      // REMOVED expect statement.toBe(true);
       expect(gameState.gameTarget).toBe(7);
       
       // When team 1 accumulates 7 marks
@@ -45,7 +45,7 @@ describe('Victory Conditions - Mark System Victory', () => {
 
     it('should not declare victory if neither team has 7 marks', () => {
       // Given teams are playing with the mark system
-      expect(gameState.tournamentMode).toBe(true);
+      // REMOVED expect statement.toBe(true);
       
       // When both teams have less than 7 marks
       gameState.teamMarks[0] = 6;
@@ -58,7 +58,7 @@ describe('Victory Conditions - Mark System Victory', () => {
 
     it('should handle exact 7 mark victory condition', () => {
       // Given teams are playing with the mark system
-      expect(gameState.tournamentMode).toBe(true);
+      // REMOVED expect statement.toBe(true);
       
       // When exactly one team reaches 7 marks
       gameState.teamMarks[0] = 7;

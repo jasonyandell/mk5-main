@@ -20,7 +20,7 @@ if (!input) {
 try {
   // Create a temporary TypeScript file to execute using the replay utility
   const tempScript = `
-import { replayFromUrl } from '../src/game/utils/replay';
+import { replayFromUrl } from '../src/game/utils/urlReplay';
 
 const url = ${JSON.stringify(input)};
 

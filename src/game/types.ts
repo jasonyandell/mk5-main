@@ -17,7 +17,7 @@ export const TRES = 3 as const;
 export const FOURS = 4 as const;
 export const FIVES = 5 as const;
 export const SIXES = 6 as const;
-export const DOUBLES_AS_TRUMP = 7 as const;
+export const CALLED = 7 as const;
 export const NO_TRUMP = 8 as const;
 
 // Semantic constants for different "-1" contexts
@@ -25,9 +25,6 @@ export const NO_LEAD_SUIT = -1 as const;       // No domino has been led in curr
 export const TRUMP_NOT_SELECTED = -1 as const; // Trump hasn't been selected yet
 export const PLAYED_AS_TRUMP = -1 as const;    // Domino is being played/analyzed as trump
 export const NO_BIDDER = -1 as const;          // No player has won the bid yet
-
-// @deprecated Use specific semantic constants above
-export const NO_SUIT = NO_LEAD_SUIT;
 
 // ============= SUIT TYPES =============
 // The 7 natural suits (pip values) - self-documenting with constant names
@@ -40,12 +37,12 @@ export type RegularSuit =
   | typeof FIVES    // 5
   | typeof SIXES;   // 6
 
-// What suit can be led (includes doubles as suit 7 when doubles are trump)
-export type LedSuit = RegularSuit | typeof DOUBLES_AS_TRUMP;
+// What suit can be led (includes called suit 7 when dominoes are absorbed)
+export type LedSuit = RegularSuit | typeof CALLED;
 export type LedSuitOrNone = LedSuit | typeof NO_LEAD_SUIT;
 
 // What can be selected as trump
-export type TrumpSuit = RegularSuit | typeof DOUBLES_AS_TRUMP | typeof NO_TRUMP;
+export type TrumpSuit = RegularSuit | typeof CALLED | typeof NO_TRUMP;
 export type TrumpSuitOrNone = TrumpSuit | typeof TRUMP_NOT_SELECTED;
 
 // Enum-like object for convenient access
@@ -57,7 +54,7 @@ export const SUIT = {
   FOURS: 4,
   FIVES: 5,
   SIXES: 6,
-  DOUBLES: 7,  // Only valid when doubles are trump
+  CALLED: 7,  // The 8th suit - where absorbed dominoes go
   NO_TRUMP: 8,
   NONE: -1
 } as const;
@@ -100,14 +97,37 @@ export interface Player {
   hand: Domino[];
   teamId: 0 | 1;
   marks: number;
-  suitAnalysis?: SuitAnalysis;
 }
 
-export type BidType = 'pass' | 'points' | 'marks' | 'nello' | 'splash' | 'plunge';
+/**
+ * Base bid types - always available (invariants)
+ */
+export type BaseBidType = 'pass' | 'points' | 'marks';
+
+/**
+ * Special bid types - compositional, enabled by layers
+ * - splash: Requires splashLayer
+ * - plunge: Requires plungeLayer
+ */
+export type SpecialBidType = 'splash' | 'plunge';
+
+/**
+ * All possible bid types in Texas 42.
+ *
+ * Base types (constants - always available):
+ * - pass: Decline to bid
+ * - points: Bid number of points (30-42)
+ * - marks: Bid number of marks (1-7)
+ *
+ * Special types (compositional - enabled by layers):
+ * - splash: Auto-bid requiring 3+ doubles (2-3 marks)
+ * - plunge: Auto-bid requiring 4+ doubles (4+ marks)
+ */
+export type BidType = BaseBidType | SpecialBidType;
 
 // Clean Trump type - no legacy support
 export interface TrumpSelection {
-  type: 'not-selected' | 'suit' | 'doubles' | 'no-trump';
+  type: 'not-selected' | 'suit' | 'doubles' | 'no-trump' | 'nello' | 'sevens';
   suit?: RegularSuit;  // Only when type === 'suit'
 }
 
@@ -145,14 +165,17 @@ export interface Trick {
   ledSuit?: LedSuit;
 }
 
-export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end';
+export type GamePhase = 'setup' | 'bidding' | 'trump_selection' | 'playing' | 'scoring' | 'game_end' | 'one-hand-complete';
 
 export interface GameState {
+  // Event sourcing: source of truth (config + actions = state)
+  initialConfig: import('./types/config').GameConfig;
+
   // Theme configuration (first-class citizen)
   theme: string; // DaisyUI theme name (default: 'business')
   colorOverrides: Record<string, string>; // CSS variable overrides (e.g., '--p': '71.9967% 0.123825 62.756393')
-  
-  // Game state
+
+  // Game state (all derived from initialConfig + actionHistory)
   phase: GamePhase;
   players: Player[];
   currentPlayer: number;
@@ -167,23 +190,23 @@ export interface GameState {
   teamScores: [number, number];
   teamMarks: [number, number];
   gameTarget: number;
-  tournamentMode: boolean;
   shuffleSeed: number; // Seed for deterministic shuffling
   // Player control types - who is human vs AI (supports drop-in/drop-out)
   playerTypes: ('human' | 'ai')[];
-  // Consensus tracking for neutral actions
-  consensus: {
-    completeTrick: Set<number>;  // Players who agreed to complete trick
-    scoreHand: Set<number>;       // Players who agreed to score hand
-  };
   // Action history for replay and debugging
   actionHistory: GameAction[];
-  // Additional properties for test compatibility
-  hands?: { [playerId: number]: Domino[] };
-  bidWinner?: number; // -1 instead of null
-  isComplete?: boolean;
-  winner?: number; // -1 instead of null
 }
+
+export type FilteredGameState = Omit<GameState, 'players'> & {
+  players: Array<{
+    id: number;
+    name: string;
+    teamId: 0 | 1;
+    marks: number;
+    hand: Domino[];  // Empty array if observer can't see this hand
+    handCount: number;
+  }>;
+};
 
 export interface StateTransition {
   id: string;
@@ -193,49 +216,24 @@ export interface StateTransition {
 }
 
 // Simplified Game Action types - pure data, no nesting
-export type GameAction = 
-  | { type: 'bid'; player: number; bid: BidType; value?: number }
-  | { type: 'pass'; player: number }
-  | { type: 'select-trump'; player: number; trump: TrumpSelection }
-  | { type: 'play'; player: number; dominoId: string }
-  | { type: 'agree-complete-trick'; player: number }  // Consensus action
-  | { type: 'agree-score-hand'; player: number }     // Consensus action
-  | { type: 'complete-trick' }  // Executed when all agree
-  | { type: 'score-hand' }      // Executed when all agree
-  | { type: 'redeal' }
+// Note: autoExecute and meta are optional action transformer extensions (not core game logic)
+export type GameAction =
+  | { type: 'bid'; player: number; bid: BidType; value?: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'pass'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'select-trump'; player: number; trump: TrumpSelection; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'play'; player: number; dominoId: string; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'complete-trick'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'score-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'agree-trick'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'agree-score'; player: number; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'redeal'; autoExecute?: boolean; meta?: Record<string, unknown> }
+  | { type: 'retry-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }  // Retry one-hand mode with same seed
+  | { type: 'new-one-hand'; autoExecute?: boolean; meta?: Record<string, unknown> }    // Start new one-hand mode with new seed
 
 // History tracking for undo/redo
 export interface GameHistory {
   actions: GameAction[];
   stateSnapshots: GameState[];
-}
-
-
-// Type-safe public player without hand visibility
-export interface PublicPlayer {
-  id: number;
-  name: string;
-  teamId: 0 | 1;
-  marks: number;
-  handCount: number;  // No hand field exists in type!
-}
-
-// Player-specific view with privacy
-export interface PlayerView {
-  playerId: number;
-  phase: GamePhase;
-  self: { id: number; hand: Domino[] };  // Only self has hands
-  players: PublicPlayer[];  // Others have no hand field
-  validTransitions: StateTransition[];  // Only transitions this player can take
-  consensus: {
-    completeTrick: Set<number>;
-    scoreHand: Set<number>;
-  };
-  currentTrick: Play[];
-  tricks: Trick[];
-  teamScores: [number, number];
-  teamMarks: [number, number];
-  trump: TrumpSelection;
 }
 
 export interface GameConstants {

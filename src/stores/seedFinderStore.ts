@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import type { SeedProgress } from '../game/core/seedFinder';
+import type { SeedProgress } from '../game/ai/gameSimulator';
 
 interface SeedFinderState {
   isSearching: boolean;

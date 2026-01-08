@@ -3,21 +3,23 @@ import type { GameState, Bid } from '../../../game/types';
 
 describe('Feature: Nel-O Contract', () => {
   describe('Scenario: Nel-O Gameplay', () => {
-    it('Given Nel-O has been bid', () => {
-      // Create a game state with Nel-O bid
-      const nelOBid: Bid = {
-        type: 'nello' as const,
+    it('Given Nel-O trump has been selected after marks bid', () => {
+      // Nello is a trump selection, not a bid type
+      const marksBid: Bid = {
+        type: 'marks',
         value: 1, // 1 mark
         player: 0
       };
-      
+
       const gameState: Partial<GameState> = {
-        currentBid: nelOBid,
+        currentBid: marksBid,
         winningBidder: 0,
-        phase: 'trump_selection'
+        trump: { type: 'nello' },
+        phase: 'playing'
       };
-      
-      expect(gameState.currentBid?.type).toBe('nello');
+
+      expect(gameState.currentBid?.type).toBe('marks');
+      expect(gameState.trump?.type).toBe('nello');
       expect(gameState.winningBidder).toBe(0);
     });
 
@@ -30,9 +32,9 @@ describe('Feature: Nel-O Contract', () => {
       // In Nel-O, the bidder plays alone against both opponents
       // Partner of player 0 is player 2 (teams: 0&2 vs 1&3)
       const partner = 2;
-      
+
       // Create a Nel-O game state
-      // In this variant, the bidder plays alone
+      // In Nel-O, the bidder plays alone
       
       // In Nel-O, partner should not participate
       const activePlayers = [0, 1, 3]; // Bidder and both opponents
@@ -43,16 +45,16 @@ describe('Feature: Nel-O Contract', () => {
       expect(activePlayers.length).toBe(3);
     });
 
-    it('And no trump suit is declared', () => {
-      // Nel-O is played without trump
+    it('And nello trump is selected (no regular trump)', () => {
+      // Nel-O is played with nello as the trump type (effectively no trump suit)
       const gameState: Partial<GameState> = {
-        currentBid: { type: 'nello' as const, value: 1, player: 0 },
+        currentBid: { type: 'marks', value: 1, player: 0 },
         winningBidder: 0,
-        trump: { type: 'not-selected' },
+        trump: { type: 'nello' },
         phase: 'playing'
       };
-      
-      expect(gameState.trump).toEqual({ type: 'not-selected' });
+
+      expect(gameState.trump).toEqual({ type: 'nello' });
     });
 
     it('And doubles may form their own suit (standard)', () => {

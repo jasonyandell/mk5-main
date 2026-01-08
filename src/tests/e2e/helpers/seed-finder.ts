@@ -1,23 +1,22 @@
 import type { Page } from '@playwright/test';
-import type { TestWindow } from '../test-window';
 
 /**
  * Helper function to play one hand to completion
  */
 async function playOneHandToCompletion(page: Page): Promise<void> {
-  // Set AI to instant speed
-  await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
-    if (w.setAISpeedProfile) w.setAISpeedProfile('instant');
-  });
-  
-  // Play loop: nudge human turns until overlay appears
+  // Play loop: nudge human turns until game ends
   const start = Date.now();
   while (Date.now() - start < 20000) {
     const done = await page.evaluate(() => {
-      const w = window as unknown as TestWindow;
-      const overlay = w.getSectionOverlay?.();
-      if (overlay && overlay.type === 'oneHand') return true;
+      type WindowWithGame = typeof window & {
+        getGameView?: () => import('../../../multiplayer/types').GameView;
+        playFirstAction?: () => void;
+      };
+      const w = window as WindowWithGame;
+      const view = w.getGameView?.();
+      // Check if game ended
+      if (view?.state?.phase === 'game_end') return true;
+      // Otherwise play next action
       if (w.playFirstAction) w.playFirstAction();
       return false;
     });
@@ -28,23 +27,22 @@ async function playOneHandToCompletion(page: Page): Promise<void> {
 
 /**
  * Helper function to determine game outcome
+ * TODO: Rewrite for new action transformer system (getSectionOverlay removed)
  */
 async function getGameOutcome(page: Page): Promise<'won' | 'lost'> {
   return await page.evaluate(() => {
-    const w = window as unknown as TestWindow;
-    const overlay = w.getSectionOverlay?.();
-    const state = w.getGameState?.();
-    
-    // Check the overlay for outcome information
-    if (overlay && 'weWon' in overlay) {
-      return overlay.weWon ? 'won' : 'lost';
+    type WindowWithGame = typeof window & {
+      getGameView?: () => import('../../../multiplayer/types').GameView;
+    };
+    const w = window as WindowWithGame;
+    const view = w.getGameView?.();
+
+    // Check team scores (for one hand, higher score wins)
+    const teamScores = view?.state?.teamScores;
+    if (teamScores && Array.isArray(teamScores)) {
+      return teamScores[0] > teamScores[1] ? 'won' : 'lost';
     }
-    
-    // Fallback: check team scores (for one hand, higher score wins)
-    if (state?.teamScores && Array.isArray(state.teamScores)) {
-      return state.teamScores[0] > state.teamScores[1] ? 'won' : 'lost';
-    }
-    
+
     // Default to lost if we can't determine
     return 'lost';
   });

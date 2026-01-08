@@ -82,3 +82,22 @@ pnpm-lock.yaml
 
 # Vitest
 coverage.*/
+
+# Generated data files (regenerate with: npm run generate:perfects)
+data/perfect-hands.json
+data/3hand-partitions.json
+
+# MCCFR training artifacts (large files, keep in scratch/ or gitignored)
+# Final compressed models go in models/ and ARE checked in
+trained-strategy*.json
+trained-strategy*.json.gz
+*.zip
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Solver2 output (large parquet files)
+data/solver2/

@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createInitialState, getNextStates } from '../../game';
+import { createTestContext } from '../helpers/executionContext';
 import type { GameState, StateTransition } from '../../game/types';
 
 describe('Deterministic Shuffle with Undo/Redo', () => {
   
   it('should maintain deterministic shuffling after undo/redo', () => {
+  
+    const ctx = createTestContext({ layers: ["consensus"] });
     // Create initial state
     const initialState = createInitialState();
     const initialSeed = initialState.shuffleSeed;
@@ -17,7 +20,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     const passActions: StateTransition[] = [];
     
     for (let i = 0; i < 4; i++) {
-      const transitions = getNextStates(currentState);
+      const transitions = getNextStates(currentState, ctx);
       const passAction = transitions.find(t => t.label === 'Pass');
       expect(passAction).toBeDefined();
       
@@ -30,7 +33,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     expect(currentState.bids.length).toBe(4);
     
     // Get the redeal action
-    const redealTransitions = getNextStates(currentState);
+    const redealTransitions = getNextStates(currentState, ctx);
     const redealAction = redealTransitions.find(t => t.id === 'redeal');
     expect(redealAction).toBeDefined();
     currentState = redealAction!.newState;
@@ -51,7 +54,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Now replay from initial state - should get exact same results
     let replayState = initialState;
     for (const action of passActions) {
-      const transitions = getNextStates(replayState);
+      const transitions = getNextStates(replayState, ctx);
       const matchingAction = transitions.find(t => t.id === action.id);
       expect(matchingAction).toBeDefined();
       replayState = matchingAction!.newState;
@@ -63,6 +66,8 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   });
 
   it('should produce same shuffle result with same seed', () => {
+
+    const ctx = createTestContext({ layers: ["consensus"] });
     // Create two states with same seed
     const state1 = createInitialState();
     const seed = 12345;
@@ -76,7 +81,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Simulate redeal by making all pass
     let current = stateWithSeed;
     for (let i = 0; i < 4; i++) {
-      const transitions = getNextStates(current);
+      const transitions = getNextStates(current, ctx);
       const passAction = transitions.find(t => t.label === 'Pass');
       current = passAction!.newState;
     }
@@ -86,7 +91,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Do it again with same starting seed
     current = stateWithSeed;
     for (let i = 0; i < 4; i++) {
-      const transitions = getNextStates(current);
+      const transitions = getNextStates(current, ctx);
       const passAction = transitions.find(t => t.label === 'Pass');
       if (!passAction) throw new Error('Pass action not found');
       current = passAction.newState;
@@ -99,6 +104,8 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   });
 
   it('should handle multiple redeals deterministically', () => {
+
+    const ctx = createTestContext({ layers: ["consensus"] });
     const initialState = createInitialState();
     const states: GameState[] = [initialState];
     
@@ -108,13 +115,13 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     for (let round = 0; round < 3; round++) {
       // All 4 players pass
       for (let player = 0; player < 4; player++) {
-        const transitions = getNextStates(currentState);
+        const transitions = getNextStates(currentState, ctx);
         const passAction = transitions.find(t => t.label === 'Pass');
         currentState = passAction!.newState;
       }
       
       // Execute the redeal
-      const redealTransitions = getNextStates(currentState);
+      const redealTransitions = getNextStates(currentState, ctx);
       const redealAction = redealTransitions.find(t => t.id === 'redeal');
       if (!redealAction) throw new Error('Redeal action not found');
       currentState = redealAction.newState;
@@ -132,13 +139,13 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     for (let round = 0; round < 3; round++) {
       for (let player = 0; player < 4; player++) {
-        const transitions = getNextStates(replayState);
+        const transitions = getNextStates(replayState, ctx);
         const passAction = transitions.find(t => t.label === 'Pass');
         replayState = passAction!.newState;
       }
       
       // Execute the redeal
-      const redealTransitions = getNextStates(replayState);
+      const redealTransitions = getNextStates(replayState, ctx);
       const redealAction = redealTransitions.find(t => t.id === 'redeal');
       if (!redealAction) throw new Error('Redeal action not found');
       replayState = redealAction.newState;
@@ -155,14 +162,16 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   });
 
   it('should maintain determinism through complete hand with scoring', () => {
-    const initialState = createInitialState();
+    // Use all human players so consensus layer generates agree actions for all
+    const ctx = createTestContext({ layers: ["consensus"], playerTypes: ['human', 'human', 'human', 'human'] });
+    const initialState = createInitialState({ playerTypes: ['human', 'human', 'human', 'human'] });
     
     // Play a complete hand: bid, set trump, play all tricks
     let currentState = initialState;
     const actions: StateTransition[] = [];
     
     // First player bids 30
-    let transitions = getNextStates(currentState);
+    let transitions = getNextStates(currentState, ctx);
     // console.log('Available transitions:', transitions.map(t => ({ id: t.id, label: t.label })));
     let bidAction = transitions.find(t => t.label === '30' || t.label === 'Bid 30' || t.label === 'Bid 30 points');
     expect(bidAction).toBeDefined();
@@ -171,7 +180,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // Other players pass
     for (let i = 0; i < 3; i++) {
-      transitions = getNextStates(currentState);
+      transitions = getNextStates(currentState, ctx);
       const passAction = transitions.find(t => t.label === 'Pass');
       if (!passAction) throw new Error('Pass action not found');
       actions.push(passAction);
@@ -179,14 +188,14 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     }
     
     // Set trump
-    transitions = getNextStates(currentState);
+    transitions = getNextStates(currentState, ctx);
     const trumpAction = transitions[0]!; // Just pick first available trump
     actions.push(trumpAction);
     currentState = trumpAction.newState;
     
     // Play all tricks (just play first available domino each time)
     while (currentState.phase === 'playing') {
-      transitions = getNextStates(currentState);
+      transitions = getNextStates(currentState, ctx);
       if (transitions.length > 0 && transitions[0]) {
         actions.push(transitions[0]);
         currentState = transitions[0].newState;
@@ -198,20 +207,20 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Should be in scoring phase
     expect(currentState.phase).toBe('scoring');
     
-    // Score the hand - all players must agree sequentially
+    // Score the hand - all 4 players must agree
     for (let i = 0; i < 4; i++) {
-      transitions = getNextStates(currentState);
-      const agreeAction = transitions.find(t => 
-        t.action.type === 'agree-score-hand' &&
-        t.action.player === currentState.currentPlayer
+      transitions = getNextStates(currentState, ctx);
+      const agreeAction = transitions.find(t =>
+        t.action.type === 'agree-score' &&
+        t.action.player === i
       );
-      if (!agreeAction) throw new Error(`Agree score action for current player ${currentState.currentPlayer} not found`);
+      if (!agreeAction) throw new Error(`Agree score action for player ${i} not found`);
       actions.push(agreeAction);
       currentState = agreeAction.newState;
     }
     
     // Now the score-hand action should be available
-    transitions = getNextStates(currentState);
+    transitions = getNextStates(currentState, ctx);
     const scoreAction = transitions.find(t => t.id === 'score-hand');
     if (!scoreAction) throw new Error('Score hand action not found');
     actions.push(scoreAction);
@@ -228,7 +237,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     // Replay entire sequence
     let replayState = initialState;
     for (const action of actions) {
-      transitions = getNextStates(replayState);
+      transitions = getNextStates(replayState, ctx);
       const matchingAction = transitions.find(t => t.id === action.id);
       expect(matchingAction).toBeDefined();
       replayState = matchingAction!.newState;
@@ -240,6 +249,8 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
   });
 
   it('should handle undo across redeals correctly', () => {
+
+    const ctx = createTestContext({ layers: ["consensus"] });
     const initialState = createInitialState();
     const stateHistory: GameState[] = [initialState];
     
@@ -248,14 +259,14 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     
     // All pass to trigger redeal
     for (let i = 0; i < 4; i++) {
-      const transitions = getNextStates(currentState);
+      const transitions = getNextStates(currentState, ctx);
       const passAction = transitions.find(t => t.label === 'Pass');
       currentState = passAction!.newState;
       stateHistory.push(currentState);
     }
     
     // Execute the redeal
-    let transitions = getNextStates(currentState);
+    let transitions = getNextStates(currentState, ctx);
     const redealAction = transitions.find(t => t.id === 'redeal');
     expect(redealAction).toBeDefined();
     currentState = redealAction!.newState;
@@ -265,7 +276,7 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     const handsAfterRedeal = currentState.players.map(p => p.hand.map(d => d.id));
     
     // Make a bid after redeal
-    transitions = getNextStates(currentState);
+    transitions = getNextStates(currentState, ctx);
     const bidAction = transitions.find(t => t.label === '30' || t.label === 'Bid 30' || t.label === 'Bid 30 points');
     expect(bidAction).toBeDefined();
     currentState = bidAction!.newState;
@@ -277,13 +288,13 @@ describe('Deterministic Shuffle with Undo/Redo', () => {
     expect(stateBeforeRedeal.shuffleSeed).toBe(initialState.shuffleSeed);
     
     // Redo the last pass
-    const redoTransitions = getNextStates(stateBeforeRedeal);
+    const redoTransitions = getNextStates(stateBeforeRedeal, ctx);
     const redoPass = redoTransitions.find(t => t.label === 'Pass');
     if (!redoPass) throw new Error('Pass action not found');
     const afterFourthPass = redoPass.newState;
     
     // Now get the redeal action
-    const afterPassTransitions = getNextStates(afterFourthPass);
+    const afterPassTransitions = getNextStates(afterFourthPass, ctx);
     const redoRedeal = afterPassTransitions.find(t => t.id === 'redeal');
     if (!redoRedeal) throw new Error('Redeal action not found');
     const redoState = redoRedeal.newState;

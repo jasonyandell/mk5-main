@@ -1,15 +1,25 @@
 # Texas 42
 
+**Task Tracking**: This project uses beads (bd) via MCP. Use the beads MCP tools for all task tracking - check ready issues before starting work, file issues for discovered bugs/work as you go. Prepend issue description text with "Use texas-42 skill.". Run `npm run test:all` before closing a beads issue.
+
+# North Star
+You are an expert developer excited to help the authors are build a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If we were authors mechanics, this project would be our "project car".  We work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  We prioritize elegance, simplicity and correctness.  We are MORE THAN HAPPY to spend extra time making every little thing perfect and we file beads when we find something we can't fix now.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
+
+## Quick Start
+
+**New to the codebase?** Read [docs/ORIENTATION.md](docs/ORIENTATION.md) first for architecture overview.
+
+**Detailed references:**
+- [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) - Multiplayer architecture (simple Socket/GameClient/Room pattern)
+- [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - Layer system deep-dive (historical)
+- [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
+
 ## Overview
-Web implementation of Texas 42 dominoes game
-- Complete rule enforcement and scoring
-- Svelte/TypeScript/Vite/Tailwind CSS SPA with real-time gameplay
-  - GameState type: src/game/types.ts:93-133 — Single source of truth
-  - GameAction type: src/game/types.ts:143-151 — Event sourcing primitives
-  - State store: src/stores/gameStore.ts:136 — Reactive state container
-  - Action handlers: src/stores/gameStore.ts:373-476 — Pure state transitions
-  - UI root: src/App.svelte — View layer entry point
-Official rules are in docs/rules.md
+Web implementation of Texas 42 dominoes game with pure functional architecture:
+- Event sourcing: `state = replayActions(config, history)`
+- Unified Layer system with two surfaces (execution rules + action generation)
+- Capability-based multiplayer with filtered views
+- Zero coupling between core engine and layers/multiplayer
 
 ## Philosophy
 - Immutable state transitions
@@ -37,16 +47,29 @@ Official rules are in docs/rules.md
       - `--compact` - One line per action with score changes
       - `--stop-at N` - Stop replay at action N
 
-** Unit Tests ** - for pure game logic and pasted URLs.
+## Testing Strategy
 
-** Playwright ** - 
-Use src/tests/e2e/helpers/game-helper.ts for all interactions
-Locators go in game-helper.ts, NOT in tests
-CRITICAL: setTimeout() is BANNED and can NEVER be used in playwright tests
+### Unit Tests (Vitest)
+- For pure game logic and pasted URLs
+- Test core functions in isolation
+- Uses `environment: 'node'` (not jsdom) - tests are pure logic, no DOM needed
 
-** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
+### E2E Tests (Playwright)
 
-** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
+**Architecture Principles:**
+- **Clean separation**: Tests interact with UI, not game internals
+- **Minimal window API**: Prefer DOM inspection over `window.getGameState()`
+- **Use game-helper.ts**: All DOM interactions through PlaywrightGameHelper
+- **No setTimeout()**: BANNED - use proper waits instead
+
+**No legacy** - CRITICAL. This is a greenfield project. Everything should be unified, even if it takes significant extra work.
+- An architecture test (`src/tests/architecture/no-backwards-compat.test.ts`) enforces this by detecting:
+  - `@deprecated` annotations
+  - "legacy compatibility" / "backward compatibility" comments
+  - `_legacy`, `_old`, `_deprecated` suffixes
+- Delete deprecated code instead of marking it deprecated. There are no external users.
+
+**No skipped tests** - This is a greenfield project. All tests should pass and be valuable, even if it takes significant extra work.
 
 ## Running TypeScript scripts
 - This project uses `"type": "module"` in package.json - ES modules only!

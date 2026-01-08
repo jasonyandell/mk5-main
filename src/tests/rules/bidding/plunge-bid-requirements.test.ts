@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid, Domino } from '../../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer, countDoubles } from '../../../game';
+import { createTestContext } from '../../helpers/executionContext';
 
 describe('Feature: Special Bids', () => {
+  const ctx = createTestContext();
   describe('Scenario: Plunge Bid Requirements', () => {
     // Note: The game engine appears to not fully implement plunge bids as a separate bid type.
     // These tests verify the theoretical requirements for plunge bids per the rules.
@@ -21,7 +23,7 @@ describe('Feature: Special Bids', () => {
       
       // Apply each bid using the game engine
       for (const bid of bids) {
-        const transitions = getNextStates(state);
+        const transitions = getNextStates(state, ctx);
         const transition = transitions.find(t => {
           if (bid.type === 'pass') return t.id === 'pass';
           if (bid.type === 'points') return t.id === `bid-${bid.value}`;

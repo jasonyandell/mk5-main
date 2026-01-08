@@ -1,19 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { checkHandOutcome } from '../../game/core/handOutcome';
-import { createInitialState } from '../../game/core/state';
+import { StateBuilder } from '../helpers';
 import type { GameState, Domino, Trick, LedSuit } from '../../game/types';
 import { BLANKS, SIXES, NO_BIDDER } from '../../game/types';
 
+// Helper to create a playing phase state with common defaults
 function createTestState(overrides?: Partial<GameState>): GameState {
-  const state = createInitialState({ shuffleSeed: 1234 });
-  return {
-    ...state,
-    phase: 'playing',
-    currentBid: { type: 'points', value: 35, player: 0 },
-    winningBidder: 0,
-    trump: { type: 'suit', suit: SIXES },
-    ...overrides
-  };
+  return StateBuilder
+    .inPlayingPhase({ type: 'suit', suit: SIXES })
+    .withWinningBid(0, { type: 'points', value: 35, player: 0 })
+    .withSeed(1234)
+    .with(overrides || {})
+    .build();
 }
 
 function createDomino(high: number, low: number): Domino {
@@ -63,11 +61,15 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Bidding team made their 30 bid');
-      expect(outcome.decidedAtTrick).toBe(4);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Bidding team made their 30 bid');
+        expect(outcome.decidedAtTrick).toBe(4);
+      }
     });
 
     it('should detect when bidding team cannot possibly make their bid', () => {
+      // "Cannot make" is mathematically equivalent to "defending team set":
+      // maxPossible = 42 - defendingScore, so maxPossible < bidValue ⟺ defendingScore > 42 - bidValue
       const state = createTestState({
         currentBid: { type: 'points', value: 40, player: 0 },
         teamScores: [15, 27],
@@ -104,11 +106,13 @@ describe('Hand Outcome Detection', () => {
           ], 1, 0)
         ]
       });
-      
+
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toContain('Bidding team cannot reach 40');
-      expect(outcome.decidedAtTrick).toBe(6);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team set the 40 bid');
+        expect(outcome.decidedAtTrick).toBe(6);
+      }
     });
 
     it('should detect when defending team sets the bid', () => {
@@ -127,8 +131,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team set the 35 bid');
-      expect(outcome.decidedAtTrick).toBe(2);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team set the 35 bid');
+        expect(outcome.decidedAtTrick).toBe(2);
+      }
     });
   });
 
@@ -149,8 +155,10 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team scored points on marks bid');
-      expect(outcome.decidedAtTrick).toBe(2);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team scored points on marks bid');
+        expect(outcome.decidedAtTrick).toBe(2);
+      }
     });
 
     it('should detect when defending team scores any points on marks bid', () => {
@@ -175,110 +183,21 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team scored points on marks bid');
-      expect(outcome.decidedAtTrick).toBe(3);
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Defending team scored points on marks bid');
+        expect(outcome.decidedAtTrick).toBe(3);
+      }
     });
   });
 
-  describe('Nello', () => {
-    it('should detect when bidding team wins a trick on nello', () => {
-      const state = createTestState({
-        currentBid: { type: 'nello', value: 1, player: 0 },
-        teamScores: [1, 41],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 0, 10)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Bidding team won a trick on nello');
-      expect(outcome.decidedAtTrick).toBe(2);
-    });
+  // NOTE: Nello tests removed - nello is now a trump selection (not bid type)
+  // and early termination logic is handled by nello layer's checkHandOutcome.
+  // See src/tests/layers/unit/nello-layer.test.ts for nello-specific tests.
 
-    it('should not end nello when bidding team has lost all tricks so far', () => {
-      const state = createTestState({
-        currentBid: { type: 'nello', value: 1, player: 0 },
-        teamScores: [0, 25],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 10),
-          createTrick([
-            {player: 1, domino: createDomino(6, 4)},
-            {player: 2, domino: createDomino(6, 3)},
-            {player: 3, domino: createDomino(6, 2)},
-            {player: 0, domino: createDomino(6, 1)}
-          ], 1, 10),
-          createTrick([
-            {player: 1, domino: createDomino(3, 2)},
-            {player: 2, domino: createDomino(3, 1)},
-            {player: 3, domino: createDomino(3, 0)},
-            {player: 0, domino: createDomino(2, 1)}
-          ], 1, 5)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(false);
-    });
-  });
-
-  describe('Splash/Plunge', () => {
-    it('should detect when defending team wins a trick on splash', () => {
-      const state = createTestState({
-        currentBid: { type: 'splash', value: 3, player: 0 },
-        teamScores: [41, 1],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 0)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team won a trick on splash');
-      expect(outcome.decidedAtTrick).toBe(2);
-    });
-
-    it('should detect when defending team wins a trick on plunge', () => {
-      const state = createTestState({
-        currentBid: { type: 'plunge', value: 4, player: 0 },
-        teamScores: [40, 2],
-        tricks: [
-          createTrick([
-            {player: 0, domino: createDomino(5, 5)},
-            {player: 1, domino: createDomino(5, 4)},
-            {player: 2, domino: createDomino(5, 3)},
-            {player: 3, domino: createDomino(5, 2)}
-          ], 1, 0),
-          createTrick([
-            {player: 1, domino: createDomino(0, 0)},
-            {player: 2, domino: createDomino(1, 0)},
-            {player: 3, domino: createDomino(2, 0)},
-            {player: 0, domino: createDomino(3, 0)}
-          ], 3, 0)
-        ]
-      });
-      
-      const outcome = checkHandOutcome(state);
-      expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Defending team won a trick on plunge');
-      expect(outcome.decidedAtTrick).toBe(3);
-    });
-  });
+  // NOTE: Splash/Plunge handling has been moved to their respective layers
+  // (splashLayer, plungeLayer). The core handOutcome function no longer handles
+  // these special bid types directly - they are handled through the layer composition system.
+  // See ADR-20251112-onehand-terminal-phase.md for details on this architectural change.
 
   describe('Edge Cases', () => {
     it('should not detect outcome during bidding phase', () => {
@@ -299,7 +218,9 @@ describe('Hand Outcome Detection', () => {
       
       const outcome = checkHandOutcome(state);
       expect(outcome.isDetermined).toBe(true);
-      expect(outcome.reason).toBe('Hand complete');
+      if (outcome.isDetermined) {
+        expect(outcome.reason).toBe('Hand complete');
+      }
     });
 
     it('should handle empty current trick correctly', () => {

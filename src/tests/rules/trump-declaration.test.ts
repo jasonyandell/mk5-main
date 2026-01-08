@@ -1,9 +1,11 @@
 import { describe, test, expect } from 'vitest';
 import { createInitialState, getNextStates } from '../../game';
+import { createTestContext } from '../helpers/executionContext';
 import type { TrumpSelection } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
 
 describe('Feature: Trump Declaration', () => {
+  const ctx = createTestContext();
   describe('Scenario: Declaring Trump', () => {
     test('Given a player has won the bidding', () => {
       // Create a state where player 1 has won the bidding
@@ -14,20 +16,20 @@ describe('Feature: Trump Declaration', () => {
       gameState.bids = [];
       
       // Simulate bidding where player 1 wins with 30 points
-      const transitions = getNextStates(gameState);
+      const transitions = getNextStates(gameState, ctx);
       const passBid = transitions.find(t => t.id === 'pass');
       if (passBid) {
         Object.assign(gameState, passBid.newState); // Player 1 passes
       }
       
-      const bid30 = getNextStates(gameState).find(t => t.id === 'bid-30');
+      const bid30 = getNextStates(gameState, ctx).find(t => t.id === 'bid-30');
       if (bid30) {
         Object.assign(gameState, bid30.newState); // Player 2 bids 30
       }
       
       // Players 3 and 0 pass
       for (let i = 0; i < 2; i++) {
-        const pass = getNextStates(gameState).find(t => t.id === 'pass');
+        const pass = getNextStates(gameState, ctx).find(t => t.id === 'pass');
         if (pass) {
           Object.assign(gameState, pass.newState);
         }
@@ -56,15 +58,15 @@ describe('Feature: Trump Declaration', () => {
       expect(gameState.currentTrick.length).toBe(0);
       
       // Get available trump options
-      const trumpOptions = getNextStates(gameState);
+      const trumpOptions = getNextStates(gameState, ctx);
       expect(trumpOptions.length).toBeGreaterThan(0);
       
-      // After declaring trump (e.g., threes), can proceed to playing
-      const declareThrees = trumpOptions.find(t => t.id === 'trump-threes');
-      expect(declareThrees).toBeDefined();
+      // After declaring trump (e.g., tres), can proceed to playing
+      const declareTres = trumpOptions.find(t => t.id === 'trump-tres');
+      expect(declareTres).toBeDefined();
       
-      if (declareThrees) {
-        const afterTrumpState = declareThrees.newState;
+      if (declareTres) {
+        const afterTrumpState = declareTres.newState;
         expect(afterTrumpState.trump).toEqual({ type: 'suit', suit: TRES });
         expect(afterTrumpState.phase).toBe('playing');
       }
@@ -80,15 +82,15 @@ describe('Feature: Trump Declaration', () => {
       gameState.trump = { type: 'not-selected' };
       
       // Get available trump options
-      const trumpOptions = getNextStates(gameState);
+      const trumpOptions = getNextStates(gameState, ctx);
       const trumpIds = trumpOptions.map(t => t.id);
       
-      // Test all valid suit options
+      // Test all valid suit options (updated to use 'aces/deuces/tres' naming)
       const expectedSuits = [
         'trump-blanks',   // 0
-        'trump-ones',     // 1
-        'trump-twos',     // 2
-        'trump-threes',   // 3
+        'trump-aces',     // 1
+        'trump-deuces',   // 2
+        'trump-tres',     // 3
         'trump-fours',    // 4
         'trump-fives',    // 5
         'trump-sixes'     // 6
@@ -105,7 +107,7 @@ describe('Feature: Trump Declaration', () => {
       ];
       
       validSuitTrumps.forEach((trumpValue, index) => {
-        const suitName = ['blanks', 'ones', 'twos', 'threes', 'fours', 'fives', 'sixes'][index];
+        const suitName = ['blanks', 'aces', 'deuces', 'tres', 'fours', 'fives', 'sixes'][index];
         const transition = trumpOptions.find(t => t.id === `trump-${suitName}`);
         
         expect(transition).toBeDefined();
@@ -125,7 +127,7 @@ describe('Feature: Trump Declaration', () => {
       gameState.trump = { type: 'not-selected' };
       
       // Get available trump options
-      const trumpOptions = getNextStates(gameState);
+      const trumpOptions = getNextStates(gameState, ctx);
       
       // Doubles as trump should be available
       const doublesOption = trumpOptions.find(t => t.id === 'trump-doubles');
@@ -138,20 +140,10 @@ describe('Feature: Trump Declaration', () => {
     });
 
     test('And trump options include no-trump (follow-me)', () => {
-      // Create a state in trump selection phase
-      const gameState = createInitialState({ shuffleSeed: 12345 });
-      gameState.phase = 'trump_selection';
-      gameState.winningBidder = 1;
-      gameState.currentPlayer = 1;
-      gameState.currentBid = { type: 'points', value: 30, player: 1 };
-      gameState.trump = { type: 'not-selected' };
-      
-      // Get available trump options
-      // const trumpOptions = getNextStates(gameState);
-      
       // Note: No-trump is not currently implemented in the game engine
       // The game engine only supports suits 0-6 and doubles
       // No-trump would need to be added to the trump selection system
+      // TODO: Implement no-trump trump selection
     });
   });
 });

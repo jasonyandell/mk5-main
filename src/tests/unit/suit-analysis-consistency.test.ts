@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { createTestState } from '../helpers/gameTestHelper';
+import { StateBuilder } from '../helpers';
 import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, TrumpSelection } from '../../game/types';
 import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES } from '../../game/types';
@@ -71,14 +71,6 @@ describe('Suit Analysis Consistency', () => {
 
   it('should handle state persistence correctly', () => {
     // Create a game state with specific hands
-    const initialState = createTestState({
-      phase: 'bidding',
-      dealer: 0,
-      currentPlayer: 1,
-      bids: []
-    });
-
-    // Manually set hands to ensure consistency
     const player0Hand: Domino[] = [
       { id: 'p0d1', high: 1, low: 0, points: 0 },
       { id: 'p0d2', high: 2, low: 1, points: 0 },
@@ -89,31 +81,24 @@ describe('Suit Analysis Consistency', () => {
       { id: 'p0d7', high: 6, low: 6, points: 0 }
     ];
 
-    if (initialState.players[0]) {
-      initialState.players[0].hand = player0Hand;
-    }
-    initialState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
+    StateBuilder.inBiddingPhase()
+      .withDealer(0)
+      .withCurrentPlayer(1)
+      .withPlayerHand(0, player0Hand)
+      .build();
 
     // Analyze suits for this player
     const analysis1 = analyzeSuits(player0Hand, { type: 'not-selected' });
-    
-    // Simulate what happens after a bid (trump selection phase)
-    const afterBidState = createTestState({
-      phase: 'trump_selection',
-      dealer: 0,
-      currentPlayer: 1,
-      bids: [{ type: 'points', value: 30, player: 1 }],
-      winningBidder: 1
-    });
 
-    if (afterBidState.players[0]) {
-      afterBidState.players[0].hand = player0Hand;
-    }
-    afterBidState.hands = { 0: player0Hand, 1: [], 2: [], 3: [] };
+    // Simulate what happens after a bid (trump selection phase)
+    StateBuilder.inTrumpSelection(1, 30)
+      .withDealer(0)
+      .withPlayerHand(0, player0Hand)
+      .build();
 
     // Analyze suits again - should be identical when trump is none
     const analysis2 = analyzeSuits(player0Hand, { type: 'not-selected' });
-    
+
     expect(analysis1).toEqual(analysis2);
 
     // Now test with specific trump

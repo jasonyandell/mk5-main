@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { BID_TYPES } from '../../../game/constants';
 
 describe('Feature: Nel-O Contract', () => {
   describe('Scenario: Nel-O Requirements', () => {
@@ -15,15 +14,13 @@ describe('Feature: Nel-O Contract', () => {
 
     it('Then they must bid at least 1 mark', () => {
       // Nel-O requires at least 1 mark (42 points) bid
-      const minNelOBidInMarks = 1;
-      const minNelOBidInPoints = minNelOBidInMarks * 42;
-      
-      // Test that Nel-O bid type exists
-      expect(BID_TYPES.NELLO).toBe('nello');
-      
+      // Nello is a trump selection, not a bid type
+      const minMarksForNello = 1;
+      const minPointsForNello = minMarksForNello * 42;
+
       // Test minimum bid requirement
-      expect(minNelOBidInPoints).toBe(42);
-      expect(minNelOBidInMarks).toBeGreaterThanOrEqual(1);
+      expect(minPointsForNello).toBe(42);
+      expect(minMarksForNello).toBeGreaterThanOrEqual(1);
     });
 
     it('And their objective is to lose every trick', () => {
