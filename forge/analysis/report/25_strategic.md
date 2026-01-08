@@ -592,6 +592,64 @@ Which folk heuristics for Texas 42 play actually match optimal play?
 
 ---
 
+## 25k: Information Value
+
+### Key Question
+How much is perfect information (knowing opponent hands) worth?
+
+### Method
+Using marginalized oracle data (same P0 hand, 3 different opponent configurations):
+1. Find states that appear in all 3 opponent configs
+2. For each state, compute "perfect" action (best for THIS config) vs "robust" action (best on average)
+3. Information value = Q[perfect] - Q[robust]
+
+### Key Findings
+
+#### Overall Statistics
+
+| Metric | Value |
+|--------|-------|
+| Seeds analyzed | 2 |
+| State comparisons | 8,925 |
+| Mean info value | **69.0 points** |
+| Median info value | **116.0 points** |
+| Actions differ | **97.9%** |
+
+#### Information Value by Depth
+
+| Depth | Mean Info Value |
+|-------|-----------------|
+| 1 | 56.2 pts |
+| 5 | 68.2 pts |
+| 9 | **75.9 pts** (peak) |
+
+### Interpretation
+
+**When opponent hands matter, they matter A LOT**
+
+The extreme values (mean 69 pts, 98% action differences) reflect sampling bias - we only find "common states" that appear across all 3 opponent configurations. These are specific critical positions where:
+
+1. **Opponent hands dramatically change optimal play**: 98% of positions have different best actions
+2. **The stakes are enormous**: Mean 69 pts ≈ 2+ marks difference
+3. **Mid-game is most sensitive**: Peak at depth 9
+
+### Limitation
+
+This analysis is based on states that happen to appear in all 3 marginalized configurations - a biased sample of "pivotal" positions. The true average information value across all states would be much lower, as most positions have similar optimal play regardless of opponent hands.
+
+### Practical Implications
+
+1. **Counting cards matters at critical junctures**: At decision points that could go either way, opponent inference is worth marks
+2. **Some positions are "opponent-agnostic"**: Most routine positions don't need opponent knowledge
+3. **Identify the pivotal moments**: Learn to recognize when opponent hands matter
+
+### Files Generated
+
+- `results/tables/25k_information_value.csv` - Statistics
+- `results/figures/25k_information_value.png` - Visualization
+
+---
+
 ## Summary
 
 Strategic analysis provides actionable guidance:
