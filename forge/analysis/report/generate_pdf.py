@@ -33,7 +33,9 @@ SECTIONS = [
     "21_survival.md",
     "22_ecological.md",
     "23_phase_diagram.md",
+    "24_writing.md",
     "25_strategic.md",
+    "26_austin_verification.md",
 ]
 
 # CSS styling for the PDF
