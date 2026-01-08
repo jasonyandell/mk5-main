@@ -1,14 +1,19 @@
 heuristic,description,applies_to,applicable,correct,accuracy
-lead_any_double,Lead any double,lead,6566,2182,33.23180018275967
-lead_lowest_offsuit,Lead your lowest non-trump,lead,11514,3434,29.82456140350877
-lead_highest_double,Lead your highest double,lead,6566,1766,26.896131586963147
-play_lowest,Play lowest domino,all,236170,51861,21.95918194520896
-lead_count_domino,Lead a count domino,lead,4611,1002,21.73064411190631
-lead_highest_trump,Lead your highest trump,lead,7344,1560,21.241830065359476
-play_winning,Play to win the trick,all,123063,21665,17.604804043457417
-play_highest,Play highest domino,all,236170,40816,17.28246602023966
-follow_highest_in_suit,Follow with highest in suit,follow,0,0,0.0
-follow_dump_lowest,Dump lowest if can't follow,follow,0,0,0.0
-follow_trump_if_cant,Trump if can't follow suit,follow,0,0,0.0
-follow_lowest_in_suit,Follow with lowest in suit,follow,0,0,0.0
-follow_protect_count,Avoid playing count dominoes,follow,0,0,0.0
+lead_any_double,Lead any double,lead,6566,2243,34.16082851050868
+lead_lowest_offsuit,Lead your lowest non-trump,lead,11514,3355,29.138440159805455
+lead_highest_double,Lead your highest double,lead,6566,1761,26.8199817240329
+lead_count_domino,Lead a count domino,lead,4611,1086,23.552374756018217
+follow_dump_lowest,Dump lowest if can't follow,follow,129635,30058,23.186639410652987
+avoid_count,Avoid count dominoes,all,226221,50153,22.16991349167407
+play_lowest,Play lowest domino,all,236170,51010,21.59884828725071
+follow_play_double,Play double when following,follow,113090,24359,21.539481828632063
+lead_highest_trump,Lead your highest trump,lead,7344,1559,21.228213507625274
+play_random,Play random (baseline),all,236170,45553,19.28822458398611
+lead_highest_overall,Lead highest domino,lead,12253,2324,18.966783644821678
+follow_protect_count,Avoid playing count when following,follow,78069,14672,18.793631274897844
+follow_trump_if_cant,Trump if can't follow suit,follow,59807,10814,18.08149547711806
+follow_lowest_in_suit,Follow with lowest in suit,follow,94282,16669,17.679938906684203
+play_winning,Play to win the trick,all,123063,21480,17.454474537432045
+play_highest,Play highest domino,all,236170,41056,17.384087733412372
+follow_highest_in_suit,Follow with highest in suit,follow,94282,15251,16.175940264313443
+follow_play_count,Play count domino when following,follow,22071,2965,13.433917810701827

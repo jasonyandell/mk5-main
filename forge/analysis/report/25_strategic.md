@@ -261,6 +261,77 @@ What makes a good lead at each trick? How does lead strategy evolve?
 
 ---
 
+## 25j: Heuristic Derivation
+
+### Key Question
+Which folk heuristics for Texas 42 play actually match optimal play?
+
+### Method
+- Define 18 simple rules ("lead any double", "follow with lowest", etc.)
+- Test each against oracle's optimal action on 250K+ states
+- Compare lead heuristics (when leading) vs follow heuristics (when following)
+- Establish random baseline for comparison
+
+### Heuristic Accuracy Ranking
+
+| Heuristic | Description | Accuracy | n_states |
+|-----------|-------------|----------|----------|
+| lead_any_double | Lead any double | **34.2%** | 6,566 |
+| lead_lowest_offsuit | Lead your lowest non-trump | 29.1% | 11,514 |
+| lead_highest_double | Lead your highest double | 26.8% | 6,566 |
+| lead_count_domino | Lead a count domino | 23.6% | 4,611 |
+| follow_dump_lowest | Dump lowest if can't follow | 23.2% | 129,635 |
+| avoid_count | Avoid count dominoes | 22.2% | 226,221 |
+| play_lowest | Play lowest domino | 21.6% | 236,170 |
+| follow_play_double | Play double when following | 21.5% | 113,090 |
+| lead_highest_trump | Lead your highest trump | 21.2% | 7,344 |
+| **play_random** | **Random baseline** | **19.3%** | 236,170 |
+| lead_highest_overall | Lead highest domino | 19.0% | 12,253 |
+| follow_protect_count | Avoid count when following | 18.8% | 78,069 |
+| follow_trump_if_cant | Trump if can't follow | 18.1% | 59,807 |
+| follow_lowest_in_suit | Follow with lowest in suit | 17.7% | 94,282 |
+| play_winning | Play to win the trick | 17.5% | 123,063 |
+| play_highest | Play highest domino | 17.4% | 236,170 |
+| follow_highest_in_suit | Follow with highest in suit | 16.2% | 94,282 |
+| follow_play_count | Play count when following | 13.4% | 22,071 |
+
+### Category Comparison
+
+| Category | Avg Accuracy | Notes |
+|----------|--------------|-------|
+| Lead heuristics | 25.8% | Best performing category |
+| Follow heuristics | 18.4% | Near-random performance |
+| Universal heuristics | 19.5% | Close to random baseline |
+
+### Key Insights
+
+1. **No heuristic beats 35%**: Even the best single rule matches oracle < 35% of the time
+2. **Leading is more predictable**: Lead heuristics average 25.8% vs follow at 18.4%
+3. **"Lead any double" is best**: 34.2% accuracy - nearly 15 points above random
+4. **Following is contextual**: Follow heuristics perform near-random (17-23%)
+5. **Avoiding counts helps slightly**: 22.2% vs 19.3% random baseline
+
+### Why Heuristics Fail
+
+1. **Context is king**: Optimal play depends on full game state, not just hand
+2. **Partner coordination**: Heuristics don't account for partner's position
+3. **Information asymmetry**: Opponent hands matter but are unknown
+4. **Trick history**: Past plays affect optimal strategy
+
+### Practical Implications
+
+1. **Memorized rules won't beat strong players**: 35% max accuracy leaves huge gaps
+2. **Lead strategy is learnable**: Double-leading has clear value
+3. **Follow play requires calculation**: No simple rule captures follow-play nuance
+4. **Machine learning needed**: Simple heuristics don't capture game complexity
+
+### Files Generated
+
+- `results/tables/25j_heuristic_derivation.csv` - Full accuracy ranking
+- `results/figures/25j_heuristic_derivation.png` - Visualization
+
+---
+
 ## Summary
 
 Strategic analysis provides actionable guidance:
@@ -270,3 +341,4 @@ Strategic analysis provides actionable guidance:
 3. **Bid with napkin formula**: ~30 + 6×doubles + 3×trumps
 4. **Lead doubles early**: Establish control immediately
 5. **Mistakes average 2-5 points**: Meaningful but not catastrophic
+6. **Heuristics have limits**: Best single rule matches oracle only 34% - context matters
