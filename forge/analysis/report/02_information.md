@@ -1,32 +1,34 @@
 # 02: Information-Theoretic Analysis
 
-## Overview
+Information content and compressibility of oracle values.
 
-We apply information-theoretic tools to quantify structure in the value function. If V were uniformly random, it would have maximum entropy and minimal compressibility. Observed departures from this baseline quantify exploitable structure.
+> **Epistemic Status**: This report quantifies structure in the oracle minimax value V. All measurements describe the perfect-information game tree, not information available to human players during actual gameplay.
 
 ---
 
 ## 2.1 Methodology
 
 ### Mutual Information
-For discrete feature X and value V:
+For discrete feature X and oracle value V:
 ```
 I(X; V) = H(V) - H(V|X)
 ```
-We discretize continuous features and compute empirical estimates from the full state distribution.
+We discretize continuous features and compute empirical estimates from the full oracle state distribution.
 
 ### Compression
-We serialize V values under different orderings and measure LZMA compression ratio:
+We serialize oracle V values under different orderings and measure LZMA compression ratio:
 ```
 ratio = compressed_size / original_size
 ```
 Lower ratios indicate more structure. Random data compresses to ~100%; highly structured data to <50%.
 
+**Note**: These metrics quantify redundancy in the oracle value function, which may or may not translate to learnable structure for neural networks or useful structure for human players.
+
 ---
 
 ## 2.2 Feature Importance via Mutual Information
 
-We computed mutual information between V and various observable features:
+We computed mutual information between oracle V and various observable features:
 
 | Feature | I(X; V) bits | H(V|X) | Reduction % |
 |---------|-------------|--------|-------------|
@@ -44,10 +46,10 @@ We computed mutual information between V and various observable features:
 
 **Baseline entropy**: H(V) ≈ 5.62 bits (empirical, treating V as discrete integers)
 
-**Key findings**:
-1. **Depth is most informative** (18% reduction) — game phase strongly predicts V
+**Key findings (oracle data)**:
+1. **Depth is most informative** (18% reduction) — game phase strongly predicts oracle V
 2. **Count information is secondary** (12.7%) — but this understates its importance (see Section 03)
-3. **Positional features are nearly uninformative** (<0.2%) — who leads, whose turn, etc. barely predict V
+3. **Positional features are nearly uninformative** (<0.2%) — who leads, whose turn, etc. barely predict oracle V
 
 **Statistical note**: These are unconditional mutual informations. The count features' low MI here contrasts with their high R² in regression (Section 03) because the *combination* of count features is predictive, not individual features marginally.
 
@@ -55,7 +57,7 @@ We computed mutual information between V and various observable features:
 
 ## 2.3 Compression Analysis
 
-We serialized V values three ways:
+We serialized oracle V values three ways:
 1. **Depth-ordered**: All states at depth 28, then 27, etc.
 2. **State-ordered**: By packed state integer value
 3. **Random-ordered**: Shuffled uniformly
@@ -81,11 +83,11 @@ We serialized V values three ways:
 ![Compression Results](../results/figures/02b_compression_single.png)
 
 **Observations**:
-1. **State-ordering achieves best compression** (0.08) — adjacent states in integer order have similar V
+1. **State-ordering achieves best compression** (0.08) — adjacent states in integer order have similar oracle V
 2. **Even random ordering compresses** (0.67) — significant redundancy exists regardless of ordering
 3. **High variance across seeds** — compression ranges from 0.03 to 0.18 for state-order
 
-**Interpretation**: The state encoding implicitly groups similar game configurations, explaining why state-order compresses well. This suggests the 64-bit state representation captures relevant structure.
+**Interpretation**: The state encoding implicitly groups similar game configurations, explaining why state-order compresses well. This suggests the 64-bit state representation captures relevant structure for the oracle value function.
 
 ![Multi-seed Compression](../results/figures/02b_compression_multi.png)
 
@@ -93,7 +95,7 @@ We serialized V values three ways:
 
 ## 2.4 Entropy by Depth
 
-Entropy varies systematically with game phase:
+Oracle V entropy varies systematically with game phase:
 
 | Depth | H(V) bits | Unique V | Interpretation |
 |-------|-----------|----------|----------------|
@@ -105,17 +107,17 @@ Entropy varies systematically with game phase:
 | 21 | 3.4 | 25 | Late game |
 | 25 | 0.8 | 3 | Nearly determined |
 
-**Pattern**: Entropy peaks mid-game (depth 9-13) where uncertainty is maximal, then decreases as outcomes become determined.
+**Pattern**: Entropy of oracle V peaks mid-game (depth 9-13) where outcome variability is maximal, then decreases as final scores become determined.
 
 ![Information Gain](../results/figures/02a_info_gain.png)
 
 ### Cumulative Information Structure
 
-The cumulative information plot shows how information about V accumulates as the game progresses:
+The cumulative information plot shows how information about oracle V accumulates as the game progresses:
 
 ![Cumulative Information](../results/figures/02a_cumulative_info.png)
 
-This visualization reveals that information about the final outcome accumulates non-uniformly — significant jumps occur at trick boundaries when count dominoes are captured.
+This visualization reveals that information about the oracle's final outcome accumulates non-uniformly — significant jumps occur at trick boundaries when count dominoes are captured.
 
 ---
 
@@ -126,20 +128,22 @@ The joint entropy decomposition:
 H(V, depth) = H(depth) + H(V|depth)
 ```
 
-Suggests that conditioning on depth removes ~18% of V uncertainty. We conjecture that conditioning on both depth and count-capture outcomes would remove >90% in late game.
+Conditioning on depth removes ~18% of oracle V uncertainty. We conjecture (but have not tested) that conditioning on both depth and count-capture outcomes would remove substantially more in late game.
 
 ---
 
-## 2.6 Implications
+## 2.6 Potential Applications (Hypotheses)
+
+The following are untested hypotheses suggested by the information-theoretic findings:
 
 ### For Dimensionality Reduction
-The compression results suggest that ~70-90% of V's apparent complexity is redundant structure that can be exploited. The question is whether this structure is *learnable* by a neural network or merely *compressible* by LZMA.
+The compression results suggest that 70-90% of oracle V's apparent complexity may be redundant structure. **Hypothesis**: This structure could potentially be exploited for compact representations. **Untested**: Whether this compressibility translates to neural network learnability.
 
 ### For Neural Network Training
-The ordering effects suggest that training examples should be organized to exploit locality. Curriculum learning (early game → late game, or vice versa) may help.
+The ordering effects suggest adjacent states have similar oracle V. **Hypothesis**: Curriculum learning (organized by game phase) might improve training efficiency. **Untested**: No experiments conducted.
 
 ### For Faster Oracles
-If state-ordered V compresses to 8% of original size, a lookup table with appropriate indexing could dramatically reduce memory requirements for perfect-play oracles.
+If state-ordered oracle V compresses to 8% of original size, a lookup table with appropriate indexing could reduce memory requirements. **Hypothesis**: This could enable compact perfect-play oracles. **Untested**: Implementation and latency trade-offs not explored.
 
 ---
 
@@ -151,7 +155,35 @@ If state-ordered V compresses to 8% of original size, a lookup table with approp
 
 3. **Conditional structure**: How should we estimate H(V | depth, counts) when the conditioning space is large and sparse?
 
-4. **Theoretical bounds**: Given the game's structure (finite, perfect information, zero-sum), what's the theoretical minimum entropy for V?
+4. **Theoretical bounds**: Given the game's structure (finite, perfect information, zero-sum), what's the theoretical minimum entropy for oracle V?
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Compression algorithms**: Compare LZMA with other compressors (gzip, Huffman, arithmetic) to verify results aren't algorithm-specific
+
+2. **Conditional entropy**: Actually compute H(V | depth, counts) to test the >90% reduction conjecture
+
+3. **Neural network experiments**: Test whether compression structure translates to improved learning
+
+### Methodological Questions
+
+1. **Entropy estimator bias**: Apply Miller-Madow or other bias corrections to entropy estimates
+
+2. **Feature engineering**: Test mutual information with more sophisticated features (hand patterns, trump distributions)
+
+3. **Ordering effects**: Characterize which state ordering properties drive compression
+
+### Open Questions
+
+1. **Human information**: How does oracle V entropy relate to information available to human players?
+
+2. **Theoretical limits**: What are the information-theoretic lower bounds on predicting oracle V from observable features?
+
+3. **Learnability**: Does high compressibility imply high learnability for function approximators?
 
 ---
 
