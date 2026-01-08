@@ -1,8 +1,8 @@
 # 04: Symmetry Analysis
 
-## Overview
+Exact symmetries in the oracle game tree provide negligible state space reduction.
 
-We investigated whether permutation symmetries could reduce the state space or enable data augmentation. **Result: negligible benefit (1.005× compression).** This negative finding is important for understanding why algebraic approaches don't help.
+> **Epistemic Status**: This report investigates algebraic symmetries in the oracle state space. The finding that symmetries yield only 1.005× compression is empirically grounded. The theoretical analysis of why symmetries are rare follows from game structure.
 
 ---
 
@@ -14,7 +14,7 @@ Consider swapping all dominoes with pip value 2 for those with pip value 3 throu
 - No count dominoes are affected (3-2 is a count, but the swap 3-2 ↔ 2-3 is identity)
 - The swap is applied consistently to all hands and history
 
-Then the resulting position should have identical V.
+Then the resulting position should have identical oracle V.
 
 ### The Symmetry Group
 For a game with trump suit T, the valid symmetry group is:
@@ -25,13 +25,13 @@ G = Sym({0,1,2,3,4,5,6} \ {T, count_pips})
 With typical trump (6) and count pips (0,1,2,3,4,5), this leaves very few non-trivial permutations.
 
 ### Orbit Structure
-An **orbit** is an equivalence class of states under the symmetry group. If |G| > 1, some orbits contain multiple states that should share the same V.
+An **orbit** is an equivalence class of states under the symmetry group. If |G| > 1, some orbits contain multiple states that should share the same oracle V.
 
 ---
 
 ## 4.2 Empirical Orbit Analysis
 
-We computed orbits for a sample of 7,564 states:
+We computed orbits for a sample of 7,564 oracle states:
 
 | Metric | Value |
 |--------|-------|
@@ -83,7 +83,7 @@ The only safe swaps are those preserving the count domino set: {0,1,2,3,4,5} min
 
 ## 4.5 V Consistency Within Orbits
 
-For the 36 non-trivial orbits found, we verified V consistency:
+For the 36 non-trivial orbits found, we verified oracle V consistency:
 
 | Metric | Value |
 |--------|-------|
@@ -126,14 +126,14 @@ Features: depth, hand balance, count locations
 
 ![Cluster V Analysis](../results/figures/04c_cluster_v_analysis.png)
 
-**Conclusion**: Feature-based methods dominate exact algebraic approaches by 70×.
+**Finding**: Feature-based methods (k-means) achieve 70× more variance reduction than exact symmetry (35.7% vs 0.5%).
 
 ---
 
-## 4.7 Implications
+## 4.7 Implications (Grounded)
 
 ### For State Space Reduction
-Symmetry quotients are not useful for Texas 42. The state space cannot be meaningfully compressed via algebraic equivalences.
+Exact symmetry quotients are not useful for Texas 42. The oracle state space cannot be meaningfully compressed via algebraic pip permutations.
 
 ### For Data Augmentation
 Symmetry-based augmentation (generating training examples by applying symmetries) would produce almost no new data—99.5% of states are already their own canonical form.
@@ -141,8 +141,7 @@ Symmetry-based augmentation (generating training examples by applying symmetries
 ### For Theoretical Understanding
 The failure of symmetry stems from the count domino structure. The game's point system breaks almost all potential symmetries by distinguishing specific pip combinations.
 
-### Alternative Approaches
-Approximate methods (clustering, neural compression) offer more promise than exact algebraic methods. The count-capture structure (Section 03) provides more compression than any symmetry approach could.
+**Note**: This is a property of the game rules, not the oracle analysis method.
 
 ---
 
@@ -157,6 +156,34 @@ Approximate methods (clustering, neural compression) offer more promise than exa
 4. **Clustering methods**: K-means achieved 35.7% variance reduction at k=200. Would spectral clustering, hierarchical methods, or learned embeddings do better?
 
 5. **The gap**: Why is k-means (35.7%) so much worse than count capture (76%)? What structure does count capture exploit that clustering misses?
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Alternative symmetry types**: Explore team swaps, seat rotations, or other game-theoretic equivalences
+
+2. **Near-symmetry quantification**: Measure V deviation when applying approximate symmetries
+
+3. **Larger sample verification**: Confirm 1.005× compression holds across more seeds
+
+### Methodological Questions
+
+1. **Formal orbit analysis**: Derive expected orbit size distribution from game structure
+
+2. **Clustering comparison**: Test spectral clustering, DBSCAN, hierarchical methods
+
+3. **Feature selection**: Optimize clustering features for V prediction
+
+### Open Questions
+
+1. **Other games**: Do similar trick-taking games have more exploitable symmetry?
+
+2. **Human perception**: Do human players perceive approximate symmetries even when exact ones don't exist?
+
+3. **Neural network symmetry**: Do learned representations implicitly discover near-symmetries?
 
 ---
 
