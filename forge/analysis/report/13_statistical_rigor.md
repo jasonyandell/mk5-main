@@ -2,6 +2,8 @@
 
 Adding confidence intervals, effect sizes, and rigorous statistical testing to key findings.
 
+> **Epistemic Status**: This report applies statistical rigor to oracle (perfect-information minimax) findings from Sections 11-12. All regressions, confidence intervals, effect sizes, and cross-validation results describe oracle E[V] and oracle σ(V). The "napkin formula" and its validation characterize oracle predictions. Whether these statistical relationships hold for human gameplay outcomes is untested.
+
 ## 13a: Bootstrap CIs for Regression Coefficients
 
 ### Key Question
@@ -42,19 +44,23 @@ This is a major refinement from 11f/12b:
 - **Original claim**: "n_doubles (+5.7), trump_count (+3.2), has_trump_double (+2.8), n_voids (+2.8) all predict E[V]"
 - **Refined claim**: "Only n_doubles and trump_count are statistically significant; other features have too much uncertainty"
 
-### The Robust Napkin Formula
+### The Robust Oracle Napkin Formula
 
 ```
-E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trump_count)
+Oracle E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trump_count)
 ```
 
-Everything else is noise. The simpler 2-feature model may generalize better than the 10-feature model.
+Everything else is noise in the oracle model. The simpler 2-feature model may generalize better than the 10-feature model for oracle prediction.
 
-### Implications for Bidding
+### Hypothetical Implications for Bidding (Oracle-Derived)
 
-1. **Count your doubles**: The most reliable signal (+5.7 points per double)
-2. **Count your trumps**: Second most reliable (+3.2 points per trump)
-3. **Everything else is uncertain**: has_trump_double, n_voids, and n_6_high all have CIs that include zero
+The following are hypotheses extrapolated from oracle regression analysis. **None have been validated against human gameplay.**
+
+1. **Hypothesis**: Counting doubles may be the most reliable bidding signal (+5.7 oracle points per double)
+2. **Hypothesis**: Counting trumps may be second most reliable (+3.2 oracle points per trump)
+3. **Hypothesis**: Other features (has_trump_double, n_voids, n_6_high) may not add bidding value
+
+**Note**: Human bidding involves strategic considerations (signaling, partner communication) not captured by oracle regression.
 
 ### Files Generated
 
@@ -88,21 +94,25 @@ Same bootstrap approach as 13a: 1000 iterations, percentile CIs.
 |--------|-------|--------|
 | R² | 0.081 | [0.058, 0.203] |
 
-### Critical Insight: Risk is Unpredictable
+### Critical Insight: Oracle Risk is Unpredictable
 
 Only **total_pips** barely reaches significance (CI just excludes zero at [+0.01, +0.57]).
 
 All other features have CIs that include zero. Combined with R² of only 6-20%, this confirms:
 
-**Risk (outcome variance) is fundamentally unpredictable from hand features alone.**
+**Oracle risk (σ(V)) is fundamentally unpredictable from hand features alone in marginalized data.**
 
-The uncertainty in Texas 42 comes from opponent hand distribution, not from your own hand quality.
+The oracle variance comes from opponent hand distribution (which is marginalized), not from your own hand quality.
 
-### Implications
+### Hypothetical Implications (Oracle-Derived)
 
-1. **Don't try to assess hand "riskiness"**: No reliable signal exists
-2. **Focus on E[V] predictors**: n_doubles and trump_count are meaningful; risk is not
-3. **Embrace uncertainty**: Half of game outcomes are determined by luck (opponent hands)
+The following are hypotheses extrapolated from oracle risk analysis. **None have been validated against human gameplay.**
+
+1. **Hypothesis**: Human players may not be able to assess hand "riskiness" reliably
+2. **Hypothesis**: Bidders might focus on E[V] predictors (doubles, trumps) rather than risk assessment
+3. **Hypothesis**: A significant portion of game outcomes may be determined by opponent hands
+
+**Note**: In human play with hidden information, players may use inference and signaling to reduce uncertainty. This oracle analysis doesn't capture such dynamics.
 
 ### Files Generated
 
@@ -152,19 +162,21 @@ Computed standardized effect sizes:
 | Hand features → E[V] | 0.26 | 26% | **Large** |
 | Hand features → σ(V) | 0.08 | 8% | Small |
 
-### Practical Significance Summary
+### Practical Significance Summary (Oracle Data)
 
-**Medium/Large Effects (Practically Meaningful)**:
-1. **n_doubles → E[V]**: r = +0.40, d = +0.76 — Real impact on outcomes
-2. **E[V] ↔ σ(V)**: r = -0.38 — Genuine inverse risk-return relationship
-3. **Hand features → E[V]**: R² = 0.26 — Useful prediction
+**Medium/Large Effects in Oracle Data (Practically Meaningful)**:
+1. **n_doubles → oracle E[V]**: r = +0.40, d = +0.76 — Real impact on oracle outcomes
+2. **Oracle E[V] ↔ oracle σ(V)**: r = -0.38 — Genuine inverse oracle risk-return relationship
+3. **Hand features → oracle E[V]**: R² = 0.26 — Useful oracle prediction
 
-**Small Effects (Modest Impact)**:
-- trump_count, count_points have small correlations with E[V]
-- Risk prediction (R² = 0.08) is weak
+**Small Effects in Oracle Data (Modest Impact)**:
+- trump_count, count_points have small correlations with oracle E[V]
+- Oracle risk prediction (R² = 0.08) is weak
 
-**Negligible Effects**:
-- total_pips → E[V]: r = +0.04 — Raw hand "strength" doesn't matter
+**Negligible Effects in Oracle Data**:
+- total_pips → oracle E[V]: r = +0.04 — Raw hand "strength" doesn't predict oracle outcomes
+
+**Note**: These effect sizes characterize oracle outcomes. Whether similar effect sizes hold for human game outcomes is untested.
 
 ### Files Generated
 
@@ -222,11 +234,13 @@ The Fisher z-transform CIs reveal an important distinction:
 
 Yet in the multivariate regression (13a), these features have CIs that include zero. This means their bivariate correlations are largely explained by their association with n_doubles and trump_count.
 
-### Implications
+### Implications (Oracle Analysis)
 
-1. **Bivariate screening is encouraging**: Many features correlate with E[V]
-2. **Multivariate tells the real story**: Only n_doubles and trump_count survive
-3. **Risk remains unpredictable**: Even with CIs, σ(V) predictors are weak
+1. **Bivariate screening is encouraging in oracle data**: Many features correlate with oracle E[V]
+2. **Multivariate tells the real story for oracle**: Only n_doubles and trump_count survive
+3. **Oracle risk remains unpredictable**: Even with CIs, oracle σ(V) predictors are weak
+
+**Note**: These correlations describe oracle outcomes. The distinction between bivariate and multivariate significance may or may not transfer to human game outcomes.
 
 ### Files Generated
 
@@ -290,12 +304,14 @@ Is n=200 sufficient to detect our observed effects with adequate statistical pow
 - R²(hand→σ[V]) = 0.08: Power = 0.81, would need n=197 for 80%
 - We have n=200, so this is just at the threshold
 
-### Implications
+### Implications (Oracle Sample Size)
 
-1. **No immediate scale-up needed**: n=200 provides >80% power for all key findings
-2. **Main effects are robust**: Core relationships (E[V]-σ[V], n_doubles) have power ≈ 1.00
-3. **If detecting smaller effects**: To find r=0.1 effects, would need n≈782
-4. **Risk model is at limit**: The weak R²=0.08 for σ(V) just barely achieves 80% power
+1. **No immediate scale-up needed for oracle analysis**: n=200 provides >80% power for all key oracle findings
+2. **Main oracle effects are robust**: Core oracle relationships (E[V]-σ[V], n_doubles) have power ≈ 1.00
+3. **If detecting smaller oracle effects**: To find r=0.1 effects in oracle data, would need n≈782
+4. **Oracle risk model is at limit**: The weak R²=0.08 for oracle σ(V) just barely achieves 80% power
+
+**Note**: This power analysis applies to oracle data. Human gameplay data would require separate power analysis with potentially different effect sizes.
 
 ### Files Generated
 
@@ -356,10 +372,10 @@ The only test lost (total_pips vs σ(V)) was marginal anyway:
 - Effect size: small (r = 0.15)
 - p_adj = 0.056 (just above threshold)
 
-**All key findings survive**:
-1. E[V] vs σ(V) (r = -0.38) — headline inverse risk-return
-2. n_doubles vs E[V] (r = +0.40) — strongest predictor
-3. trump_count vs E[V] (r = +0.23) — second key predictor
+**All key oracle findings survive**:
+1. Oracle E[V] vs oracle σ(V) (r = -0.38) — headline inverse oracle risk-return
+2. n_doubles vs oracle E[V] (r = +0.40) — strongest oracle predictor
+3. trump_count vs oracle E[V] (r = +0.23) — second key oracle predictor
 
 ### FWER vs FDR
 
@@ -414,20 +430,22 @@ How well do our regression models generalize to unseen data?
 - Any training R² is pure overfitting
 - Confirms 13b, 14b: risk is fundamentally unpredictable
 
-### Critical Insight: Napkin Formula Wins
+### Critical Insight: Oracle Napkin Formula Wins
 
-The 2-feature napkin formula (n_doubles, trump_count) is the **best model**:
+The 2-feature napkin formula (n_doubles, trump_count) is the **best model for oracle prediction**:
 1. Lowest overfitting
-2. Best generalization
+2. Best generalization to unseen oracle data
 3. Simplest interpretation
 
-**Recommended formula**: E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trumps)
+**Recommended oracle formula**: Oracle E[V] ≈ -3 + 5.7×(doubles) + 3.2×(trumps)
 
-### Implications
+### Implications (Oracle Prediction)
 
-1. **Simpler is better**: Adding features hurts generalization
-2. **Don't predict risk**: No model works for σ(V)
-3. **Use the napkin formula**: Validated by cross-validation
+1. **Simpler is better for oracle**: Adding features hurts oracle generalization
+2. **Don't predict oracle risk**: No model works for oracle σ(V)
+3. **Use the napkin formula for oracle**: Validated by cross-validation on oracle data
+
+**Note**: Whether this formula generalizes to human gameplay outcomes is untested. Human games may have different predictors or relationships.
 
 ### Files Generated
 
@@ -437,13 +455,43 @@ The 2-feature napkin formula (n_doubles, trump_count) is the **best model**:
 
 ---
 
-## Summary
+## Summary (Oracle Statistical Rigor)
 
-Statistical rigor analyses confirm:
+Statistical rigor analyses of oracle data confirm:
 
-1. **Only two predictors survive multivariate analysis**: n_doubles and trump_count
-2. **Risk is unpredictable**: σ(V) model has weak R² (0.08) and fails cross-validation
-3. **Effect sizes are medium**: Practically meaningful, not just statistically significant
-4. **n=200 is sufficient**: All key findings have adequate power (>80%)
-5. **Multiple testing robust**: 9 of 10 correlations survive BH FDR correction
-6. **Napkin formula validated**: CV R² = 0.15, lowest overfitting of all models
+1. **Only two predictors survive multivariate analysis for oracle E[V]**: n_doubles and trump_count
+2. **Oracle risk is unpredictable**: Oracle σ(V) model has weak R² (0.08) and fails cross-validation
+3. **Effect sizes are medium in oracle data**: Practically meaningful, not just statistically significant
+4. **n=200 is sufficient for oracle analysis**: All key oracle findings have adequate power (>80%)
+5. **Multiple testing robust for oracle**: 9 of 10 oracle correlations survive BH FDR correction
+6. **Oracle napkin formula validated**: CV R² = 0.15, lowest overfitting of all oracle models
+
+**Scope limitation**: These statistical rigor findings describe oracle (perfect-information) outcomes. Whether the same statistical relationships hold for human gameplay—with hidden information, suboptimal play, and strategic considerations—is untested.
+
+---
+
+## Further Investigation
+
+### Validation Needed
+
+1. **Human gameplay regression**: Does the napkin formula (n_doubles + trump_count) predict human game outcomes? This requires human gameplay data with hand-level outcomes.
+
+2. **Human risk prediction**: Is human outcome variance also unpredictable from hand features? Human inference and signaling might change this relationship.
+
+3. **Effect size transfer**: Do the medium effect sizes (r ≈ 0.4 for n_doubles) hold for human data? Effect sizes might be larger (human games more correlated with hand features) or smaller (more variance from skill/luck).
+
+### Methodological Questions
+
+1. **Bootstrap assumptions**: Bootstrap CIs assume exchangeability. With 200 hands from random deals, this is likely satisfied, but domain-specific violations could exist.
+
+2. **Cross-validation leakage**: Do hands share any structure (e.g., similar trump suits) that could create dependence across folds?
+
+3. **Regression linearity**: The napkin formula assumes linear relationships. Are there threshold effects (e.g., "2+ doubles" vs "1 or fewer") that would justify different functional forms?
+
+### Open Questions
+
+1. **Why do only two features survive?**: The multivariate reduction from 10 to 2 significant features is striking. Is this a sample size issue, or is there fundamental redundancy in hand features?
+
+2. **Oracle vs human predictor structure**: If human gameplay involves more strategic complexity, might different features (e.g., flexibility, signaling potential) become predictive?
+
+3. **Generalization to bidding strategy**: The napkin formula describes oracle outcomes. Should bidders use it directly, or does optimal human bidding require different considerations?
