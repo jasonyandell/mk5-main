@@ -8,9 +8,17 @@ The game uses seven tricks, each containing four dominoes. Five dominoes carry "
 
 ## 2.2 Oracle Construction
 
-We implemented a minimax solver with alpha-beta pruning and perfect recall. The oracle computes optimal play under perfect information—each player can see all 28 dominoes. The solver is exhaustive: at depth 28 (game start), it evaluates all legal play sequences to determine V, the value of the root state.
+We implemented a perfect-information minimax solver via exhaustive dynamic programming over the reachable state graph.
+Each player can see all 28 dominoes, and both teams play optimally.
 
-**State representation**: Game states are packed into 64-bit integers encoding trump (3 bits), lead suit (3 bits), current trick (4 domino slots × 5 bits each), player hands (28 bits), and game phase. This enables efficient memoization via hash maps.
+The solver enumerates reachable packed states from the initial deal, computes all legal transitions, and solves
+backwards from terminal states. Transition rewards are applied when a trick completes: `+trick_points` if Team 0 wins
+the trick else `-trick_points`.
+
+**State representation**: Game states are packed into 41 bits in an int64, encoding remaining local-index hand masks,
+current trick leader, trick length, and up to three local plays. The packed state does not encode "score so far", so the
+minimax value `V` is a **value-to-go** (remaining Team0 − Team1 point differential). Terminal states have `V=0`; at the
+initial state, V equals the final hand differential.
 
 ## 2.3 Marginalization Over Opponent Configurations
 
@@ -102,9 +110,8 @@ With n=200 hands:
 
 ## 2.7 Software and Reproducibility
 
-- **Oracle**: Custom C++ with Python bindings
-- **Analysis**: Python 3.10, scikit-learn 1.3, SHAP 0.42, statsmodels 0.14
-- **Visualization**: matplotlib 3.7, seaborn 0.12
-- **Code**: Available at [repository URL]
+- **Oracle**: Python implementation with GPU execution via PyTorch
+- **Analysis**: Python (see repository for exact dependencies)
+- **Visualization**: matplotlib / seaborn (see repository for exact dependencies)
 
 All random seeds are fixed for reproducibility. Data pipeline: base_seed → deal_from_seed → oracle → features → analysis.

@@ -249,7 +249,7 @@ The solver uses **backward induction** on a complete game tree:
 1. **Enumerate** all reachable game states from the initial deal (~50k states per seed/decl)
 2. **Build child index**: For each state, compute which states result from each legal move
 3. **Solve backwards**: Starting from terminal states (all dominoes played), propagate V/Q values up:
-   - Terminal: V = Team 0's point advantage
+   - Terminal: V = 0 (no remaining points to win)
    - Non-terminal: V = max(Q) for Team 0's turn, min(Q) for Team 1's turn
    - Q[action] = V of resulting child state
 
@@ -591,4 +591,3 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 | **shard** | One parquet file per (seed, decl) pair. Contains all reachable game states |
 | **declaration (decl)** | Trump suit choice, 0-9. See `DECL_ID_TO_NAME` in declarations.py |
 | **Team 0 perspective** | All values from Team 0's view. Positive = Team 0 winning |
-

@@ -64,11 +64,16 @@ We have an exact perfect-information solver for fully specified deals. We want t
 
 
 
-**Perfect-information oracle (DP solver):** Given a fully specified deal and a contract, computes the exact achievable points for Team0 under perfect play. Correct by construction for that deal. Output is points (0–42).
+**Perfect-information oracle (DP solver):** Given a fully specified deal and a contract, computes the exact minimax
+**value-to-go** in Team 0 point-differential units, `V ∈ [-42, +42]`.
+
+At the start of the hand (root state), no points have been scored yet, so this value equals the final hand point
+differential. You can convert that root differential to Team 0's final points via `team0_points = (42 + V) / 2`.
 
 
 
-**"Make" a bid:** For bid level k, a contract makes on a completed deal if Team0's oracle value ≥ k.
+**"Make" a bid:** For bid level k (in points), a contract makes on a completed deal if Team 0's final points are ≥ k.
+When using the oracle differential `V` at the root state, this is equivalent to `(42 + V) / 2 ≥ k`.
 
 
 

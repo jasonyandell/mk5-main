@@ -15,7 +15,7 @@ You can use your perfect-information DP solver to evaluate imperfect-information
 
 1. **Use it as an evaluator, not a policy teacher.** Compute outcomes, aggregate values—never imitate oracle actions.
 
-2. **Fix trump before aggregation.** Compute `max_trump(E[V])` not `E[max_trump(V)]`. This eliminates Strategy Fusion at the trump-selection layer.
+2. **Fix trump before aggregation.** Compute `max_trump(E[V])` not `E[max_trump(V)]`. This eliminates Strategy Fusion at the trump-selection layer. (Here `V` is the oracle’s Team 0 point-differential value at the root of each completed deal.)
 
 3. **Label all outputs.** Every probability must specify its completion model. `P(make)` is undefined without `M`.
 
@@ -77,9 +77,9 @@ Evaluate each trump candidate separately across all completions, then compare av
 
 | Use | Rationale |
 |-----|-----------|
-| Compute `V(d,c)` for a fully specified deal | Ground truth for that PI game instance |
-| Aggregate `E_M[V(d,c)]` over sampled deals | Optimistic upper bound on expected score |
-| Compute `P_M(V(d,c) ≥ k)` | Upper bound on make probability |
+| Compute `V(d,c)` for a fully specified deal | Ground truth PI value (Team 0 point differential) |
+| Aggregate `E_M[V(d,c)]` over sampled deals | Optimistic upper bound on expected differential |
+| Compute `P_M(score(d,c) ≥ k)` | Upper bound on make probability (using `score(d,c)=(42+V(d,c))/2` at the root) |
 | Audit compressed oracle on specific deals | Certification / arbitration |
 | Compute score quantiles under M | Risk metrics (5th percentile, CVaR) |
 
@@ -188,8 +188,8 @@ For each (trump, bid_level) pair:
 Evaluate the same completions with an imperfect-information policy:
 
 - Define a deterministic greedy player (e.g., "lead highest trump," "follow with lowest losing card")
-- Compute `V_heur_i` for each completion
-- `P̂_lower(make | T, k)` = fraction where V_heur_i ≥ k
+- Compute `V_heur_i` for each completion (Team 0 point differential at the root)
+- `P̂_lower(make | T, k)` = fraction where `(42 + V_heur_i) / 2 ≥ k`
 
 **Gap metric:**
 - `Δ_fusion = P̂_upper - P̂_lower`

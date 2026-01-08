@@ -11,12 +11,14 @@ Marginal distributions of minimax values and state counts from the oracle.
 **State space definition**: A state encodes:
 - Which dominoes remain in each player's hand (4 × 7-bit masks initially)
 - Which dominoes have been played in the current trick (0-3 dominoes)
-- Trick history (which team won each completed trick)
-- Current player to act
+- Current trick leader and trick length (derivable current player to act)
 
-**Minimax computation**: For each terminal state (all dominoes played), V equals the declaring team's score minus 21 (centering at zero). For non-terminal states:
-- If declaring team to play: V = max over actions of successor V
-- If defending team to play: V = min over actions of successor V
+**Minimax computation (Team 0 perspective)**: V is a minimax **value-to-go** in point differential units.
+
+- Terminal: V = 0 (no remaining points)
+- Transition rewards: only applied when a trick completes; reward is `+trick_points` if Team 0 wins the trick else
+  `-trick_points`, where `trick_points = 1 + count_points_in_trick`
+- Non-terminal: Team 0 turns maximize; Team 1 turns minimize
 
 **Critical context**: This is perfect-information minimax. Both teams play optimally knowing all hands. V represents the theoretical outcome with perfect play, not expected human outcomes.
 
@@ -53,7 +55,8 @@ Oracle V distributions vary substantially across configurations:
 
 "Depth" = dominoes remaining across all hands (28 at start, 4 at final trick, 0 at terminal).
 
-**Key structural feature**: Depths 1-4 are identical because the first trick hasn't resolved. V at these depths equals the expected V over all possible first tricks.
+**Key structural feature**: Depths 1-4 are identical because the final trick hasn't resolved yet (the last trick has
+4 dominoes). Until the 4th domino is played, no trick reward is applied.
 
 Sample from seed 0, declaration 0:
 

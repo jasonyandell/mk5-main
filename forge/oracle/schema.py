@@ -18,10 +18,15 @@ Parquet Columns
         Minimax value from this state. Range [-42, +42].
 
         **V Semantics (Team 0 perspective):**
-        - Positive V = Team 0 expected to gain more points than Team 1
-        - Negative V = Team 1 expected to gain more points than Team 0
-        - V represents the expected point differential from optimal play
-        - At terminal states (all dominoes played), V equals Team 0's total point advantage
+        - V is a minimax **value-to-go**: the expected remaining (Team 0 − Team 1) point differential from this
+          state to the end of the hand, assuming perfect play by all players with full information.
+        - Positive V = Team 0 is advantaged from here; negative V = Team 1 is advantaged from here.
+        - Terminal states have no remaining points to win, so `V(terminal) = 0`.
+        - At the initial state (start of hand), V equals the final hand point differential because no points have been
+          scored yet.
+
+        **Important**: The packed `state` does not encode "score so far" or trick history, so V cannot represent an
+        accumulated score; it must be value-to-go.
 
     q0..q6 : int8
         Q-values (Q*): Optimal value of playing local domino index 0-6 from current player's hand.
@@ -30,6 +35,7 @@ Parquet Columns
         - All Q-values are from Team 0's perspective, regardless of whose turn it is
         - -128 indicates illegal move (domino not in hand or can't follow suit)
         - Legal moves have values in [-42, +42]
+        - Q-values are in the same units as V (remaining point differential from this move onward)
         - For Team 0's turn: argmax(Q) is optimal
         - For Team 1's turn: argmin(Q) is optimal (they minimize Team 0's value)
 
