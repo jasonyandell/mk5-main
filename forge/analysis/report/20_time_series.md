@@ -60,9 +60,10 @@ Time series classification of V trajectories using MiniRocket features.
 Can we predict game outcome from the shape of the V trajectory?
 
 ### Method
-- Extract V trajectories as time series (depth 28→0)
-- Use MiniRocket kernel features for classification
+- Extract V trajectories as time series (depth 28→0) using DuckDB for efficiency
+- Use MiniRocket kernel features for classification (n_kernels=5000-10000)
 - Binary classification: winner (V > 0) vs loser (V ≤ 0)
+- **Balanced dataset**: 200 seeds (100 wins, 100 losses), 70/30 train/test split
 
 ### Key Findings
 
@@ -70,26 +71,36 @@ Can we predict game outcome from the shape of the V trajectory?
 
 | Prefix Length | Plays | Trick | Train Acc | Test Acc |
 |---------------|-------|-------|-----------|----------|
-| 4 | 4 | 2 | 100% | **100%** |
-| 8 | 8 | 3 | 100% | **100%** |
-| 12 | 12 | 4 | 100% | **100%** |
-| 16 | 16 | 5 | 100% | **100%** |
-| 20 | 20 | 6 | 100% | **100%** |
-| 24 | 24 | 7 | 100% | **100%** |
-| 28 | 28 | 8 | 100% | **100%** |
+| 9 | 9 | 3 | 100% | **93.3%** |
+| 12 | 12 | 4 | 100% | 93.3% |
+| 16 | 16 | 5 | 100% | **95.0%** |
+| 20 | 20 | 6 | 100% | 95.0% |
+| 24 | 24 | 7 | 100% | 91.7% |
+| 28 | 28 | 8 | 100% | 90.0% |
+| 29 | 29 | 8 | 100% | 91.7% |
 
-**Key insight:** MiniRocket achieves **100% accuracy** from just 4 plays! This is remarkable - the V trajectory shape perfectly predicts outcome even before trick 2 is complete.
+**Key insights:**
+- **93%+ accuracy by trick 3** (9 plays) - early game signal is strong
+- **Peak accuracy at trick 5** (16 plays) - 95% test accuracy
+- **Slight decrease in late game** - possibly due to noisy endgame patterns
 
 ### Interpretation
 
-This result has two interpretations:
-1. **V is deterministic**: The value function is computed perfectly, so any prefix uniquely identifies the trajectory
-2. **No trajectory ambiguity**: For our sample, V trajectories don't cross between winners and losers
+1. **Early game is predictive**: The first 3 tricks contain most of the signal for final outcome
+2. **Mid-game optimal**: Peak accuracy at trick 5 suggests mid-game V patterns are most discriminative
+3. **Generalization gap**: 100% train vs 90-95% test indicates some overfitting, but model generalizes well
+4. **Time series features work**: MiniRocket's random convolutional kernels capture game dynamics effectively
+
+### Technical Notes
+
+- Used DuckDB `bit_count()` for efficient depth calculation (10x faster than Python UDF)
+- Trajectory = median V at each depth level per seed
+- MiniRocket requires minimum 9 timepoints
 
 ### Files Generated
 
 - `results/tables/20b_minirocket_accuracy.csv` - Accuracy by prefix length
-- `results/figures/20b_minirocket_classification.png` - Confusion matrices
+- `results/figures/20b_minirocket_classification.png` - Accuracy curves and sample trajectories
 
 ---
 
