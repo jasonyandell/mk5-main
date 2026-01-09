@@ -109,6 +109,8 @@ Everything exists to:
 │  - eval.py                      │  Evaluate checkpoints
 │  - tokenize.py                  │  Preprocess shards
 │  - flywheel.py                  │  Iterative training
+│  - generate_continuous.py       │  Continuous oracle generation
+│  - bidding_continuous.py        │  Continuous P(make) evaluation
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -144,9 +146,15 @@ Everything exists to:
 │  - poster.py                    │  Visual PDF output with heatmaps
 │  - parallel.py                  │  Multi-GPU cluster simulation
 │  - convergence.py               │  Sample size vs accuracy analysis
-│  - stability_experiment.py      │  N=200 vs N=500 variance analysis
 │  - investigate.py               │  Debug losing games trick-by-trick
 │  - benchmark.py                 │  Performance profiling
+│  - schema.py                    │  Parquet schema for bidding results
+└─────────────────────────────────┘
+              ↕
+┌─────────────────────────────────┐
+│  forge/flywheel/                │  Iterative fine-tuning pipeline
+│  - state.yaml                   │  State machine configuration
+│  - RUNBOOK.md                   │  Operational instructions
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
@@ -186,7 +194,7 @@ Everything exists to:
    python -m forge.cli.tokenize --input data/shards-standard --output data/tokenized
 
    Output: data/tokenized/{train,val,test}/
-           └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy
+           └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy, etc.
 
 3. TRAIN (GPU learning)
    python -m forge.cli.train --data data/tokenized --wandb
@@ -251,7 +259,7 @@ The solver uses **backward induction** on a complete game tree:
 3. **Solve backwards**: Starting from terminal states (all dominoes played), propagate V/Q values up:
    - Terminal: V = 0 (no remaining points to win)
    - Non-terminal: V = max(Q) for Team 0's turn, min(Q) for Team 1's turn
-   - Q[action] = V of resulting child state
+   - Q[action] = V of resulting child state + reward for trick completion
 
 Key implementation details:
 - **GPU-parallel**: All states processed in batches on GPU (`expand.py`, `solve.py`)
@@ -264,6 +272,18 @@ All values are from Team 0's viewpoint:
 - **Positive V** = Team 0 is ahead
 - **Negative V** = Team 1 is ahead
 - **Team 0 maximizes Q**, Team 1 minimizes Q
+
+### V/Q Semantics (Critical!)
+
+**V is value-to-go**, not cumulative score:
+- V represents expected remaining (Team 0 − Team 1) point differential from this state to end
+- Terminal states have V = 0 (no remaining points to win)
+- At initial state, V equals the final hand point differential
+
+**Q-values** follow the same semantics:
+- Q[action] = expected value-to-go after playing that action
+- All Q-values from Team 0's perspective regardless of whose turn
+- -128 indicates illegal move
 
 ### Q-Gap as the Key Metric
 
@@ -297,13 +317,33 @@ Each shard contains ~50k game states from one (seed, declaration) pair:
 | Column | Type | Description |
 |--------|------|-------------|
 | `state` | int64 | Packed game state (41 bits) |
-| `V` | int8 | Value: expected point differential (Team 0 perspective) |
+| `V` | int8 | Value-to-go: expected remaining point differential (Team 0 perspective) |
 | `q0`-`q6` | int8 | Q-values for each action (-128 = illegal) |
+
+### State Packing (41 bits)
+
+```
+Bits 0-27:   Remaining hands (4 × 7-bit masks)
+   [0:7]    P0's local indices still in hand
+   [7:14]   P1's local indices
+   [14:21]  P2's local indices
+   [21:28]  P3's local indices
+
+Bits 28-29:  leader (2 bits) - current trick leader (0-3)
+Bits 30-31:  trick_len (2 bits) - plays so far (0-3)
+
+Bits 32-40:  Current trick plays (3 × 3 bits)
+   [32:35]  p0 - leader's local index (0-6, or 7 if N/A)
+   [35:38]  p1 - 2nd player's local index
+   [38:41]  p2 - 3rd player's local index
+```
+
+**Why local indices?** State encoding is deal-independent; same bit layout for all seeds.
 
 ### Token Format
 
 Neural network input is `int8[batch, 32, 12]`:
-- **32 positions**: 7 hand + 21 trick history + 4 metadata
+- **32 positions**: 7 hand + 21 (4×7 domino positions) + 4 (trick/metadata)
 - **12 features per position**: pip values, trump rank, player info, etc.
 
 ### Split Assignment
@@ -320,36 +360,102 @@ Deterministic train/val/test split by seed (see `forge.ml.tokenize.get_split()`)
 
 ## Essential Commands
 
+### Oracle Generation
+
 ```bash
-# Generate oracle shards
-python -m forge.oracle.generate --seed-range 0:100 --out data/shards
+# Continuous generation (recommended)
+python -m forge.cli.generate_continuous           # Standard mode
+python -m forge.cli.generate_continuous --marginalized  # Marginalized mode
+python -m forge.cli.generate_continuous --dry-run      # Preview gaps
 
-# Tokenize for training
-python -m forge.cli.tokenize --input data/shards --output data/tokenized
+# Single-seed debugging with Q-value inspection
+python -m forge.oracle.generate --seed 0 --decl sixes --show-qvals --out /dev/null
+```
 
+### Tokenization
+
+```bash
+python -m forge.cli.tokenize --input data/shards-standard --output data/tokenized
+python -m forge.cli.tokenize --dry-run  # Preview file counts
+```
+
+### Training
+
+```bash
 # Quick sanity check
 python -m forge.cli.train --fast-dev-run --no-wandb
 
 # Full training with Wandb
-python -m forge.cli.train --epochs 10 --wandb
+python -m forge.cli.train --epochs 20 --wandb
 
-# Evaluate on test set
+# Large model with A100 precision
+python -m forge.cli.train --precision bf16-mixed --n-layers 4 --n-heads 8 --embed-dim 128
+```
+
+### Evaluation
+
+```bash
+# Evaluate checkpoint on test set
 python -m forge.cli.eval --checkpoint runs/domino/version_0/checkpoints/best.ckpt
+```
 
-# Bidding evaluation
+### Bidding Evaluation
+
+```bash
+# Single hand evaluation
 python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 100
+
+# Continuous evaluation (fills gaps)
+python -m forge.cli.bidding_continuous
+python -m forge.cli.bidding_continuous --dry-run  # Preview gaps
+```
+
+### Flywheel (Iterative Training)
+
+```bash
+python -m forge.cli.flywheel status   # Check current state
+python -m forge.cli.flywheel --once   # Run one iteration
+python -m forge.cli.flywheel          # Run continuously
 ```
 
 Training auto-detects hardware. Use `--precision bf16-mixed` for A100/H100 servers.
 
 ---
 
-## Model Inference
+## Model Catalog
 
-See [models/README.md](models/README.md) for:
-- Model catalog with architecture details
-- Loading checkpoints for inference
-- Training configs and provenance
+See [models/README.md](models/README.md) for complete details.
+
+| Model | File | Params | Val Acc | Val Q-Gap |
+|-------|------|--------|---------|-----------|
+| Large v2 (value head) | `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt` | 817K | 97.79% | 0.072 |
+| Large v1 | `domino-large-817k-acc97.1-qgap0.11.ckpt` | 817K | 97.09% | 0.112 |
+
+**Current best architecture**:
+```python
+DominoTransformer(
+    embed_dim=128,
+    n_heads=8,
+    n_layers=4,
+    ff_dim=512,
+    dropout=0.1,
+)
+```
+
+**Loading for inference**:
+```python
+from forge.ml.module import DominoLightningModule
+
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
+)
+model.eval()
+
+# Get predictions
+logits, value = model(tokens, mask, current_player)
+probs = torch.softmax(logits, dim=-1)
+best_move = probs.argmax(dim=-1)
+```
 
 ---
 
@@ -357,7 +463,9 @@ See [models/README.md](models/README.md) for:
 
 Monte Carlo simulation for P(make) estimation. Uses trained policy model to simulate games.
 
-**Continuous generation** (recommended - runs unattended, fills gaps):
+**Why not use the value head?** The value head predicts smooth game values, but bidding thresholds (30, 31, 32, 36, 42) create a "cliff" landscape that doesn't suit MSE regression. Simulation naturally handles this.
+
+**Continuous generation** (recommended):
 ```bash
 python -m forge.cli.bidding_continuous              # Run forever, N=500 samples
 python -m forge.cli.bidding_continuous --start-seed 1000  # Start at seed 1000
@@ -369,14 +477,17 @@ Output: `data/bidding-results/{train,val,test}/seed_XXXXXXXX.parquet`
 - Raw points: `points_{decl}` (int8 array, N samples per declaration)
 - P(make): `pmake_{decl}_{bid}` for bids 30-42
 - Wilson CI: `ci_low_{decl}_{bid}`, `ci_high_{decl}_{bid}`
-- Metadata: seed, hand string, n_samples, model checkpoint, timestamp
 
-See [bidding/README.md](bidding/README.md) for:
-- Module structure and key classes
-- Sample size guidelines
-- Single-hand evaluation CLI
+**Sample size guidelines**:
 
-See [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis.
+| Use Case | N | CI Width | Time/Trump |
+|----------|---|----------|------------|
+| Quick screening | 50 | ±0.15 | ~7s |
+| Standard analysis | 100 | ±0.10 | ~14s |
+| Publication quality | 200 | ±0.07 | ~28s |
+| Ground truth | 500 | ±0.04 | ~70s |
+
+See [bidding/README.md](bidding/README.md) for module structure and examples.
 
 ---
 
@@ -384,65 +495,30 @@ See [bidding/EXAMPLES.md](bidding/EXAMPLES.md) for worked examples with analysis
 
 Automates iterative model improvement: generate new seeds → train → evaluate → repeat.
 
+**State machine**:
+```
+ready ──run──> running ──success──> ready (next iteration)
+                  │
+                  └──failure──> failed
+```
+
+**Per-iteration workflow**:
+1. Ensure golden val/test shards exist (seeds 900-902 for val, 950 for test)
+2. Generate oracle shards for current seed range
+3. Tokenize all data
+4. Fine-tune from previous checkpoint (2 epochs, LR=3e-5)
+5. Evaluate against golden benchmarks
+6. Log metrics to W&B with lineage tracking
+
+**Commands**:
 ```bash
-python -m forge.cli.flywheel status   # Check current state
+python -m forge.cli.flywheel init --wandb-group my-experiment --start-seed 200
+python -m forge.cli.flywheel status
+python -m forge.cli.flywheel --once   # One iteration
 python -m forge.cli.flywheel          # Run continuously
-python -m forge.cli.flywheel --once   # Run one iteration
 ```
 
 See [flywheel/RUNBOOK.md](flywheel/RUNBOOK.md) for full operations guide.
-
----
-
-## Debugging Tips
-
-| Issue | Where to Look |
-|-------|---------------|
-| Model not learning | Check Q-gap trend, verify data loading |
-| OOM errors | Reduce batch size, enable gradient checkpointing |
-| Slow training | Check num_workers, enable pin_memory |
-| Checkpoint won't load | Check hparams match, verify Lightning version |
-| Inconsistent results | Check RNG seeds, verify deterministic mode |
-
-### Quick Diagnostics
-
-```bash
-# Verify imports work
-python -c "from forge.ml import module, data, metrics; print('OK')"
-
-# Fast training test
-python -m forge.cli.train --fast-dev-run --no-wandb
-```
-
-### Debugging with Custom Hands
-
-When investigating whether the oracle computes correct Q-values for a specific hand, use `--p0-hand` to fix P0's hand and `--show-qvals` to display the Q-values:
-
-```bash
-# Check oracle Q-values for P0 opening with a specific hand
-python -m forge.oracle.generate \
-    --seed 0 \
-    --decl sixes \
-    --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
-    --show-qvals \
-    --out /dev/null
-
-# Compare across multiple opponent distributions
-for seed in 0 1 2 3 4; do
-    python -m forge.oracle.generate \
-        --seed $seed \
-        --decl sixes \
-        --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
-        --show-qvals \
-        --out /dev/null
-done
-```
-
-The output shows each legal move with its Q-value and gap from optimal:
-- **Q-value**: Expected game value (Team 0 perspective) after playing that domino
-- **Δbest**: Points lost compared to the optimal move (0 = best move)
-
-Use this to verify the oracle agrees with expert intuition about correct play.
 
 ---
 
@@ -496,17 +572,83 @@ The **base_seed** in the filename determines train/val/test split (via `seed % 1
 ### References
 
 - Paper: ["Efficiently Training NNs for Imperfect Information Games"](https://arxiv.org/abs/2407.05876) - Key finding: ~3 samples per position is sufficient
-- Bead t42-elle for implementation context
+
+---
+
+## Debugging Tips
+
+| Issue | Where to Look |
+|-------|---------------|
+| Model not learning | Check Q-gap trend, verify data loading |
+| OOM errors | Reduce batch size, reduce chunk sizes in generate |
+| Slow training | Check num_workers, enable pin_memory |
+| Checkpoint won't load | Check hparams match, verify Lightning version |
+| Inconsistent results | Check RNG seeds, verify deterministic mode |
+
+### Quick Diagnostics
+
+```bash
+# Verify imports work
+python -c "from forge.ml import module, data, metrics; print('OK')"
+
+# Fast training test
+python -m forge.cli.train --fast-dev-run --no-wandb
+
+# Check GPU available
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, devices: {torch.cuda.device_count()}')"
+```
+
+### Debugging with Custom Hands
+
+When investigating whether the oracle computes correct Q-values for a specific hand, use `--p0-hand` to fix P0's hand and `--show-qvals` to display the Q-values:
+
+```bash
+# Check oracle Q-values for P0 opening with a specific hand
+python -m forge.oracle.generate \
+    --seed 0 \
+    --decl sixes \
+    --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+    --show-qvals \
+    --out /dev/null
+
+# Compare across multiple opponent distributions
+for seed in 0 1 2 3 4; do
+    python -m forge.oracle.generate \
+        --seed $seed \
+        --decl sixes \
+        --p0-hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+        --show-qvals \
+        --out /dev/null
+done
+```
+
+The output shows each legal move with its Q-value and gap from optimal:
+- **Q-value**: Expected game value (Team 0 perspective) after playing that domino
+- **Δbest**: Points lost compared to the optimal move (0 = best move)
+
+### Debugging Bidding Simulation
+
+When a near-certain hand loses unexpectedly:
+
+```bash
+# Find and replay losing games trick-by-trick
+python -m forge.bidding.investigate \
+    --hand "6-6,6-5,6-4,6-2,6-1,6-0,2-2" \
+    --trump sixes \
+    --below 42 \
+    --samples 500
+```
 
 ---
 
 ## Architectural Invariants
 
 1. **Team 0 Perspective**: All V/Q values from Team 0's viewpoint
-2. **Deterministic Splits**: seed % 1000 determines train/val/test
-3. **Per-Shard RNG**: Sampling independent of shard processing order
-4. **Lightning Structure**: LightningModule for training, DataModule for data
-5. **No Models in data/**: Checkpoints go to runs/ or forge/models/
+2. **V is Value-to-Go**: Not cumulative score; terminal states have V=0
+3. **Deterministic Splits**: seed % 1000 determines train/val/test
+4. **Per-Shard RNG**: Sampling keyed by (global_seed, base_seed, decl_id)
+5. **Lightning Structure**: LightningModule for training, DataModule for data
+6. **No Models in data/**: Checkpoints go to runs/ or forge/models/
 
 **Violation of any invariant = pipeline regression.**
 
@@ -526,7 +668,7 @@ find /mnt -name "shards-*" -type d 2>/dev/null
 find data -name "shards-*" -type d 2>/dev/null
 
 # Count files per split (adjust path as needed)
-SHARD_DIR="/mnt/d/shards-standard"  # or data/shards-standard
+SHARD_DIR="data/shards-standard"  # or /mnt/d/shards-standard
 echo "train: $(ls $SHARD_DIR/train/*.parquet 2>/dev/null | wc -l)"
 echo "val: $(ls $SHARD_DIR/val/*.parquet 2>/dev/null | wc -l)"
 echo "test: $(ls $SHARD_DIR/test/*.parquet 2>/dev/null | wc -l)"
@@ -534,12 +676,6 @@ echo "test: $(ls $SHARD_DIR/test/*.parquet 2>/dev/null | wc -l)"
 # Find seed range (highest/lowest seed numbers)
 ls $SHARD_DIR/*/*.parquet | grep -o 'seed_[0-9]*' | sed 's/seed_//' | sort -n | head -1  # lowest
 ls $SHARD_DIR/*/*.parquet | grep -o 'seed_[0-9]*' | sed 's/seed_//' | sort -n | tail -1  # highest
-
-# Find gaps (missing seeds in a range)
-for seed in $(seq 0 999); do
-  f=$(printf "$SHARD_DIR/*/seed_%08d_*.parquet" $seed)
-  ls $f >/dev/null 2>&1 || echo "missing: $seed"
-done
 
 # Total disk usage
 du -sh $SHARD_DIR/
@@ -556,6 +692,9 @@ cat data/tokenized/manifest.yaml 2>/dev/null || echo "No tokenized data"
 # Any training runs?
 ls runs/domino/ 2>/dev/null || echo "No runs yet"
 
+# Flywheel status?
+python -m forge.cli.flywheel status 2>/dev/null || echo "Flywheel not initialized"
+
 # What's currently running?
 pgrep -af "forge.oracle\|forge.cli" || echo "Nothing running"
 ```
@@ -564,10 +703,11 @@ pgrep -af "forge.oracle\|forge.cli" || echo "Nothing running"
 
 | If you modify... | Regenerate... | Invalidates... |
 |------------------|---------------|----------------|
-| `forge/oracle/*.py` | shards | data/shards/, data/tokenized/ |
+| `forge/oracle/*.py` | shards | data/shards-*, data/tokenized/ |
 | `forge/ml/tokenize.py` | tokenized | data/tokenized/ |
 | `forge/ml/module.py` | train | runs/ (retrain needed) |
 | `forge/ml/metrics.py` | nothing | (metrics-only change) |
+| `forge/bidding/*.py` | bidding results | data/bidding-results/ |
 
 ### Verification Commands
 
@@ -577,6 +717,9 @@ python -c "from forge.ml import module, data, metrics; from forge.oracle import 
 
 # After model changes - quick training test
 python -m forge.cli.train --fast-dev-run --no-wandb
+
+# After bidding changes - quick simulation test
+python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 10
 ```
 
 ---
@@ -585,9 +728,15 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 
 | Term | Definition |
 |------|------------|
-| **q0-q6** | Q-values: optimal value of each action. Parquet columns, saved as qvals.npy |
-| **V** | State value. V = max(q) for Team 0, min(q) for Team 1 |
+| **q0-q6** | Q-values: optimal value-to-go of each action. Parquet columns, saved as qvals.npy |
+| **V** | State value-to-go. V = max(q) for Team 0, min(q) for Team 1. Terminal states = 0 |
 | **seed** | RNG seed for deal generation. Determines train/val/test split via seed % 1000 |
 | **shard** | One parquet file per (seed, decl) pair. Contains all reachable game states |
 | **declaration (decl)** | Trump suit choice, 0-9. See `DECL_ID_TO_NAME` in declarations.py |
 | **Team 0 perspective** | All values from Team 0's view. Positive = Team 0 winning |
+| **Q-gap** | Oracle regret: optimal_q - predicted_q. Lower is better |
+| **Blunder** | A move with Q-gap > 10 points. Catastrophic mistake |
+| **P(make)** | Probability of making a bid, estimated via Monte Carlo simulation |
+| **Wilson CI** | Confidence interval for P(make) using Wilson score method |
+| **Marginalized** | Training with multiple opponent distributions per P0 hand |
+| **Flywheel** | Iterative fine-tuning loop: generate → train → evaluate → repeat |
