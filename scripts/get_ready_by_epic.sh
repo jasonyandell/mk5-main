@@ -16,11 +16,11 @@ BEAD_ID="$1"
 STATUS=$(bd show "$BEAD_ID" 2>/dev/null | grep -E "^Status:" | awk '{print $2}')
 if [ "$STATUS" = "closed" ]; then
     echo "$BEAD_ID closed"
-    exit 0
+    exit 1
 fi
 if [ "$STATUS" = "blocked" ]; then
     echo "$BEAD_ID blocked"
-    exit 0
+    exit 1
 fi
 
 # Drill down through highest priority children until we hit a leaf
