@@ -12,10 +12,14 @@ fi
 
 BEAD_ID="$1"
 
-# Check if bead is closed
+# Check if bead is closed or blocked
 STATUS=$(bd show "$BEAD_ID" 2>/dev/null | grep -E "^Status:" | awk '{print $2}')
 if [ "$STATUS" = "closed" ]; then
     echo "$BEAD_ID closed"
+    exit 0
+fi
+if [ "$STATUS" = "blocked" ]; then
+    echo "$BEAD_ID blocked"
     exit 0
 fi
 
@@ -26,11 +30,7 @@ while true; do
     CHILDREN=$(bd list --parent "$CURRENT" --status=open 2>/dev/null | awk '{print $1}' | head -1)
 
     if [ -z "$CHILDREN" ]; then
-        # No children - CURRENT is a leaf (or input has no children)
-        if [ "$CURRENT" = "$BEAD_ID" ]; then
-            # Input bead itself has no open children
-            exit 0
-        fi
+        # No open children - return CURRENT (could be input or a descendant)
         echo "$CURRENT"
         exit 0
     fi
