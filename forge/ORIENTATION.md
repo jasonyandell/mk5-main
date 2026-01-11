@@ -107,7 +107,7 @@ Everything exists to:
 │  forge/cli/                     │  User-facing commands
 │  - train.py                     │  Train models with Wandb
 │  - eval.py                      │  Evaluate checkpoints
-│  - tokenize.py                  │  Preprocess shards
+│  - tokenize_data.py             │  Preprocess shards
 │  - flywheel.py                  │  Iterative training
 │  - generate_continuous.py       │  Continuous oracle generation
 │  - bidding_continuous.py        │  Continuous P(make) evaluation
@@ -166,15 +166,20 @@ Everything exists to:
 └─────────────────────────────────┘
               ↕
 ┌─────────────────────────────────┐
-│  Data Storage                   │  Versioned directories
-│  - data/shards-standard/        │  Standard oracle output (1 decl/seed)
-│  - data/shards-marginalized/    │  Marginalized oracle output (N opp/seed)
-│  - data/tokenized/              │  Preprocessed numpy arrays
-│  - data/flywheel-shards/        │  Flywheel oracle output
-│  - data/flywheel-tokenized/     │  Flywheel preprocessed data
-│  - data/bidding-results/        │  P(make) Monte Carlo evaluations
+│  Data Storage                   │  Actual locations
+│                                 │
+│  External drive (/mnt/d/):      │
+│  - shards-standard/             │  215GB, 1124 train parquet files
+│  - shards-marginalized/         │  191GB, marginalized oracle output
+│                                 │
+│  Local (mk5-tailwind/data/):    │
+│  - tokenized-full/              │  5GB, 11.2M samples (ready to use)
+│  - bidding-results/             │  P(make) Monte Carlo evaluations
+│                                 │
+│  Forge-relative:                │
 │  - runs/                        │  Training outputs
 │  - forge/models/                │  Pre-trained checkpoints
+│  - forge/data/tokenized/        │  Small test tokenized data
 └─────────────────────────────────┘
 ```
 
@@ -191,7 +196,7 @@ Everything exists to:
            └── Each file: ~50k-100k game states with perfect V/Q values
 
 2. TOKENIZE (CPU preprocessing)
-   python -m forge.cli.tokenize --input data/shards-standard --output data/tokenized
+   python -m forge.cli.tokenize_data --input data/shards-standard --output data/tokenized
 
    Output: data/tokenized/{train,val,test}/
            └── tokens.npy, masks.npy, targets.npy, legal.npy, qvals.npy, etc.
@@ -375,8 +380,8 @@ python -m forge.oracle.generate --seed 0 --decl sixes --show-qvals --out /dev/nu
 ### Tokenization
 
 ```bash
-python -m forge.cli.tokenize --input data/shards-standard --output data/tokenized
-python -m forge.cli.tokenize --dry-run  # Preview file counts
+python -m forge.cli.tokenize_data --input data/shards-standard --output data/tokenized
+python -m forge.cli.tokenize_data --dry-run  # Preview file counts
 ```
 
 ### Training
@@ -385,8 +390,8 @@ python -m forge.cli.tokenize --dry-run  # Preview file counts
 # Quick sanity check
 python -m forge.cli.train --fast-dev-run --no-wandb
 
-# Full training with Wandb
-python -m forge.cli.train --epochs 20 --wandb
+# Full training with Wandb (use full tokenized dataset, BS=4096-8192 for RTX 3060)
+python -m forge.cli.train --data ../data/tokenized-full --batch-size 4096 --epochs 20 --wandb
 
 # Large model with A100 precision
 python -m forge.cli.train --precision bf16-mixed --n-layers 4 --n-heads 8 --embed-dim 128
