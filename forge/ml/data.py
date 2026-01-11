@@ -21,28 +21,31 @@ class DominoDataset(Dataset):
     everything into RAM.
     """
 
-    def __init__(self, data_path: str, split: str):
+    def __init__(self, data_path: str, split: str, mmap: bool = False):
         """
         Initialize dataset for a specific split.
 
         Args:
             data_path: Base directory containing split subdirectories
             split: One of 'train', 'val', or 'test'
+            mmap: If True, use memory-mapped files (slow random access but low RAM).
+                  If False, load fully into RAM (fast but needs ~5GB for full dataset).
         """
         split_dir = Path(data_path) / split
 
         if not split_dir.exists():
             raise FileNotFoundError(f"Split directory not found: {split_dir}")
 
-        # Memory-mapped for large datasets
-        self.tokens = np.load(split_dir / 'tokens.npy', mmap_mode='r')
-        self.masks = np.load(split_dir / 'masks.npy', mmap_mode='r')
-        self.players = np.load(split_dir / 'players.npy', mmap_mode='r')
-        self.targets = np.load(split_dir / 'targets.npy', mmap_mode='r')
-        self.legal = np.load(split_dir / 'legal.npy', mmap_mode='r')
-        self.qvals = np.load(split_dir / 'qvals.npy', mmap_mode='r')
-        self.teams = np.load(split_dir / 'teams.npy', mmap_mode='r')
-        self.values = np.load(split_dir / 'values.npy', mmap_mode='r')
+        # Load data - mmap for huge datasets, RAM for speed
+        mmap_mode = 'r' if mmap else None
+        self.tokens = np.load(split_dir / 'tokens.npy', mmap_mode=mmap_mode)
+        self.masks = np.load(split_dir / 'masks.npy', mmap_mode=mmap_mode)
+        self.players = np.load(split_dir / 'players.npy', mmap_mode=mmap_mode)
+        self.targets = np.load(split_dir / 'targets.npy', mmap_mode=mmap_mode)
+        self.legal = np.load(split_dir / 'legal.npy', mmap_mode=mmap_mode)
+        self.qvals = np.load(split_dir / 'qvals.npy', mmap_mode=mmap_mode)
+        self.teams = np.load(split_dir / 'teams.npy', mmap_mode=mmap_mode)
+        self.values = np.load(split_dir / 'values.npy', mmap_mode=mmap_mode)
 
     def __len__(self) -> int:
         return len(self.tokens)
@@ -100,6 +103,7 @@ class DominoDataModule(L.LightningDataModule):
         num_workers: int = 8,
         pin_memory: bool = True,
         prefetch_factor: int = 4,
+        mmap: bool = False,
     ):
         """
         Initialize DataModule.
@@ -110,6 +114,7 @@ class DominoDataModule(L.LightningDataModule):
             num_workers: Number of dataloader workers (8 = half of 16 threads)
             pin_memory: Whether to pin memory for faster GPU transfer
             prefetch_factor: Number of batches to prefetch per worker
+            mmap: If True, use memory-mapped files (low RAM, slow). Default False (load to RAM).
         """
         super().__init__()
         self.save_hyperparameters()
@@ -138,18 +143,19 @@ class DominoDataModule(L.LightningDataModule):
         Args:
             stage: One of 'fit', 'validate', 'test', or None (all)
         """
+        mmap = self.hparams.mmap
         if stage == 'fit' or stage is None:
-            self.train_dataset = DominoDataset(self.hparams.data_path, 'train')
-            self.val_dataset = DominoDataset(self.hparams.data_path, 'val')
+            self.train_dataset = DominoDataset(self.hparams.data_path, 'train', mmap=mmap)
+            self.val_dataset = DominoDataset(self.hparams.data_path, 'val', mmap=mmap)
 
         if stage == 'validate':
             if self.val_dataset is None:
-                self.val_dataset = DominoDataset(self.hparams.data_path, 'val')
+                self.val_dataset = DominoDataset(self.hparams.data_path, 'val', mmap=mmap)
 
         if stage == 'test' or stage is None:
             test_path = Path(self.hparams.data_path) / 'test'
             if test_path.exists():
-                self.test_dataset = DominoDataset(self.hparams.data_path, 'test')
+                self.test_dataset = DominoDataset(self.hparams.data_path, 'test', mmap=mmap)
 
     def train_dataloader(self) -> DataLoader:
         """Return training dataloader."""
