@@ -47,6 +47,9 @@ Texas 42 AIs using hand-coded heuristics are **point estimates applied to a dist
 # Generate training data (1000 games, ~7 minutes on RTX 3050 Ti)
 python -m forge.eq.generate_dataset --n-games 1000 --output forge/data/eq_dataset.pt
 
+# Continuous generation with monitoring (resumes from existing dataset)
+python -m forge.eq.generate_continuous --target-games 100000
+
 # View training examples interactively
 python -m forge.eq.viewer forge/data/eq_dataset.pt
 
@@ -66,6 +69,7 @@ forge/eq/
 ├── transcript_tokenize.py   # Tokenizer for Stage 2 (public info only)
 ├── generate.py              # generate_eq_game() - play one game, record decisions
 ├── generate_dataset.py      # CLI for batch generation
+├── generate_continuous.py   # Continuous generation with monitoring (Ctrl+C safe)
 ├── viewer.py                # Interactive training data inspector
 └── test_*.py                # Unit tests for each module
 ```
@@ -169,7 +173,34 @@ Each `DecisionRecord` contains:
 - `legal_mask`: Which actions were legal (7,)
 - `action_taken`: Index of action played
 
-### 7. Debug Viewer (`viewer.py`)
+### 7. Continuous Generation (`generate_continuous.py`)
+
+Runs indefinitely generating training data with monitoring:
+
+```bash
+# Run until 100K games (resumes automatically if dataset exists)
+python -m forge.eq.generate_continuous --target-games 100000
+
+# Custom batch size (saves after each batch)
+python -m forge.eq.generate_continuous --batch-size 50 --target-games 100000
+
+# Run forever (Ctrl+C to stop)
+python -m forge.eq.generate_continuous --target-games 0
+```
+
+Features:
+- **Resumable**: Detects existing dataset and continues from where it left off
+- **Atomic saves**: Uses temp file + rename to prevent corruption
+- **Graceful shutdown**: Ctrl+C saves current state before exiting
+- **Progress monitoring**: Shows games/sec, file size, ETA to target
+- **Deterministic seeds**: Same dataset reproduced if starting fresh
+
+Example output:
+```
+Batch   42 | Games:    5100/100000 |   2.1 g/s |  326.4 MB | ETA: 12h 32m
+```
+
+### 8. Debug Viewer (`viewer.py`)
 
 Interactive console viewer for inspecting training data:
 
