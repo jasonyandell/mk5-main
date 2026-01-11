@@ -487,7 +487,10 @@ def _merge_batches(
     split_name: str,
     log: Callable[[str], None],
 ) -> int:
-    """Merge batch files into final arrays. Returns sample count."""
+    """Merge batch files into final arrays. Returns sample count.
+
+    Uses memory-mapped arrays to avoid loading everything into RAM.
+    """
     batch_dir = output_dir / split_name / "batches"
     if not batch_dir.exists():
         return 0
@@ -497,33 +500,55 @@ def _merge_batches(
     if not batch_files:
         return 0
 
-    arrays = {
-        'tokens': [], 'masks': [], 'targets': [], 'legal': [],
-        'qvals': [], 'teams': [], 'players': [], 'values': []
-    }
-
+    # First pass: calculate total samples and get shapes
+    total_samples = 0
+    shapes = {}
     for bf in batch_files:
         batch_idx = bf.stem.split('_')[1]
-        for key in arrays:
-            arr = np.load(batch_dir / f"{key}_{batch_idx}.npy")
-            arrays[key].append(arr)
+        # Use mmap to read just the header
+        arr = np.load(batch_dir / f"targets_{batch_idx}.npy", mmap_mode='r')
+        total_samples += len(arr)
 
-    # Concatenate all batches
+        # Get shapes from first batch
+        if not shapes:
+            for key in ['tokens', 'masks', 'targets', 'legal', 'qvals', 'teams', 'players', 'values']:
+                arr = np.load(batch_dir / f"{key}_{batch_idx}.npy", mmap_mode='r')
+                shapes[key] = arr.shape[1:] if len(arr.shape) > 1 else ()
+
+    log(f"  Total samples to merge: {total_samples:,}")
+
     split_dir = output_dir / split_name
-    n_samples = 0
-    for key, arr_list in arrays.items():
-        merged = np.concatenate(arr_list, axis=0)
-        np.save(split_dir / f"{key}.npy", merged)
-        if key == 'targets':
-            n_samples = len(merged)
-        del merged
+
+    # Second pass: copy batch by batch into pre-allocated arrays
+    for key in ['tokens', 'masks', 'targets', 'legal', 'qvals', 'teams', 'players', 'values']:
+        # Create output file with correct shape
+        if shapes[key]:
+            out_shape = (total_samples,) + shapes[key]
+        else:
+            out_shape = (total_samples,)
+
+        # Pre-allocate and fill
+        out_arr = np.empty(out_shape, dtype=np.int8)
+        offset = 0
+
+        for bf in batch_files:
+            batch_idx = bf.stem.split('_')[1]
+            batch_arr = np.load(batch_dir / f"{key}_{batch_idx}.npy")
+            batch_len = len(batch_arr)
+            out_arr[offset:offset + batch_len] = batch_arr
+            offset += batch_len
+            del batch_arr
+
+        np.save(split_dir / f"{key}.npy", out_arr)
+        del out_arr
+        gc.collect()
 
     # Clean up batch files
     import shutil
     shutil.rmtree(batch_dir)
 
     gc.collect()
-    return n_samples
+    return total_samples
 
 
 def tokenize_shards(
