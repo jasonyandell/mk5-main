@@ -50,10 +50,11 @@ def generate_eq_game(
     1. Get current player's perspective
     2. Infer voids from play history (incrementally)
     3. Sample N consistent worlds
-    4. Query oracle for Q-values on each world
-    5. Average logits to get E[Q]
-    6. Record decision with transcript tokens
-    7. Play the best action (argmax of E[Q] over legal actions)
+    4. Reconstruct hypothetical initial hands for each world
+    5. Query oracle for Q-values on each hypothetical world
+    6. Average logits to get E[Q]
+    7. Record decision with transcript tokens
+    8. Play the best action (argmax of E[Q] over legal actions)
 
     Args:
         oracle: Stage 1 oracle for querying Q-values
@@ -64,15 +65,6 @@ def generate_eq_game(
     Returns:
         GameRecord with 28 DecisionRecords
     """
-    # Store initial deal - oracle needs this for tokenization
-    initial_deal = [list(hand) for hand in hands]
-
-    # Precompute: which domino is at which (player, local_idx) in initial deal
-    domino_to_initial_pos: dict[int, tuple[int, int]] = {}
-    for p in range(4):
-        for local_idx, domino_id in enumerate(initial_deal[p]):
-            domino_to_initial_pos[domino_id] = (p, local_idx)
-
     game = GameState.from_hands(hands, decl_id, leader=0)
     decisions = []
 
@@ -80,13 +72,17 @@ def generate_eq_game(
     voids: dict[int, set[int]] = {0: set(), 1: set(), 2: set(), 3: set()}
     plays_processed = 0
 
+    # Track which dominoes each player has played (for reconstructing initial hands)
+    played_by: dict[int, list[int]] = {0: [], 1: [], 2: [], 3: []}
+
     while not game.is_complete():
         player = game.current_player()
         my_hand = list(game.hands[player])
 
-        # 1. Incrementally update voids from new plays only
+        # 1. Incrementally update voids and played_by from new plays
         for play_idx in range(plays_processed, len(game.play_history)):
             play_player, domino_id, lead_domino_id = game.play_history[play_idx]
+            played_by[play_player].append(domino_id)
             led_suit = led_suit_for_lead_domino(lead_domino_id, decl_id)
             if not can_follow(domino_id, led_suit, decl_id):
                 voids[play_player].add(led_suit)
@@ -103,14 +99,12 @@ def generate_eq_game(
             n_samples=n_samples,
         )
 
-        # 3. Query oracle for each world (pass initial_deal directly)
-        # Build game_state_info efficiently using precomputed lookup
-        game_state_info = _build_game_state_info_fast(
-            game, remaining_worlds, initial_deal, domino_to_initial_pos, player
+        # 3. Reconstruct hypothetical initial hands and query oracle for each world
+        hypothetical_deals, game_state_info = _build_hypothetical_worlds(
+            game, remaining_worlds, played_by, player
         )
-        # Pass same initial_deal for all worlds (current player's hand is constant)
         logits = oracle.query_batch(
-            [initial_deal] * n_samples, game_state_info, player
+            hypothetical_deals, game_state_info, player
         )  # (N, 7)
 
         # 4. Average to get E[Q]
@@ -146,68 +140,79 @@ def generate_eq_game(
     return GameRecord(decisions=decisions)
 
 
-def _build_game_state_info_fast(
+def _build_hypothetical_worlds(
     game: GameState,
     remaining_worlds: list[list[list[int]]],
-    initial_deal: list[list[int]],
-    domino_to_initial_pos: dict[int, tuple[int, int]],
+    played_by: dict[int, list[int]],
     current_player: int,
-) -> dict:
-    """Extract game state information for oracle query (optimized version).
+) -> tuple[list[list[list[int]]], dict]:
+    """Reconstruct hypothetical initial hands for each sampled world.
 
-    Key optimizations:
-    1. Uses precomputed domino_to_initial_pos lookup instead of list.index()
-    2. Builds remaining bitmasks directly from remaining_worlds (no reconstruction)
-    3. For current player, bitmask uses actual initial_deal (constant across worlds)
+    For proper E[Q] marginalization, we need to query the oracle on HYPOTHETICAL
+    worlds, not the true game state. Each sampled world gives us remaining hands
+    for opponents. We reconstruct initial hands as:
+        initial[p] = remaining[p] + played_by[p]
 
     Args:
         game: Current game state
         remaining_worlds: List of N worlds, each with 4 hands of remaining dominoes
-        initial_deal: The actual initial deal (constant, known for current player)
-        domino_to_initial_pos: Precomputed {domino_id: (player, local_idx)} lookup
+        played_by: Dict mapping player -> list of dominoes they've played
         current_player: Current player making the decision
 
     Returns:
-        Dict with keys: decl_id, leader, trick_plays, remaining
+        Tuple of (hypothetical_deals, game_state_info) where:
+        - hypothetical_deals: List of N initial deals, one per world
+        - game_state_info: Dict with decl_id, leader, trick_plays, remaining
     """
-    # Extract current trick as (player, local_idx) tuples
-    # local_idx refers to position in the INITIAL hand
-    trick_plays = []
-    for play_player, domino_id in game.current_trick:
-        # Use precomputed lookup instead of list.index()
-        _, local_idx = domino_to_initial_pos[domino_id]
-        trick_plays.append((play_player, local_idx))
-
-    # Build remaining bitmasks for each world
-    # Bitmask indicates which dominoes from initial hand are still available
     n_worlds = len(remaining_worlds)
-    remaining = np.zeros((n_worlds, 4), dtype=np.int32)
+    hypothetical_deals = []
+    remaining_bitmasks = np.zeros((n_worlds, 4), dtype=np.int32)
+
+    # We need trick_plays indexed by local position in each world's initial hand
+    # Since initial hands vary per world, we compute trick_plays per world
+    # But oracle expects a single trick_plays list, so we use the first world's indexing
+    # (All worlds have same current_player hand, so trick_plays for current_player are consistent)
+
+    first_world_trick_plays = None
 
     for world_idx, remaining_hands in enumerate(remaining_worlds):
-        # For current player: use actual initial_deal to build bitmask
-        for local_idx, domino_id in enumerate(initial_deal[current_player]):
-            if domino_id not in game.played:
-                remaining[world_idx, current_player] |= 1 << local_idx
+        # Reconstruct initial hands: initial[p] = remaining[p] + played_by[p]
+        initial_hands = []
+        for p in range(4):
+            initial = list(remaining_hands[p]) + list(played_by[p])
+            initial.sort()  # Sort for consistent ordering
+            initial_hands.append(initial)
 
-        # For opponents: build bitmask from their remaining dominoes
-        for player_idx in range(4):
-            if player_idx == current_player:
-                continue
+        hypothetical_deals.append(initial_hands)
 
-            # Get opponent's remaining dominoes from sampled world
-            for domino_id in remaining_hands[player_idx]:
-                # Find where this domino was in their initial hand
-                initial_player, local_idx = domino_to_initial_pos[domino_id]
-                # Sanity check - should match player_idx
-                if initial_player == player_idx:
-                    remaining[world_idx, player_idx] |= 1 << local_idx
+        # Build domino -> local_idx lookup for this world
+        domino_to_local: dict[int, int] = {}
+        for p in range(4):
+            for local_idx, domino in enumerate(initial_hands[p]):
+                domino_to_local[(p, domino)] = local_idx
 
-    return {
+        # Build remaining bitmask for this world
+        for p in range(4):
+            for local_idx, domino in enumerate(initial_hands[p]):
+                if domino not in game.played:
+                    remaining_bitmasks[world_idx, p] |= 1 << local_idx
+
+        # Build trick_plays for this world (use first world's as representative)
+        if first_world_trick_plays is None:
+            first_world_trick_plays = []
+            for play_player, domino_id in game.current_trick:
+                local_idx = domino_to_local.get((play_player, domino_id))
+                if local_idx is not None:
+                    first_world_trick_plays.append((play_player, local_idx))
+
+    game_state_info = {
         "decl_id": game.decl_id,
         "leader": game.leader,
-        "trick_plays": trick_plays,
-        "remaining": remaining,
+        "trick_plays": first_world_trick_plays or [],
+        "remaining": remaining_bitmasks,
     }
+
+    return hypothetical_deals, game_state_info
 
 
 def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor:

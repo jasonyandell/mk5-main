@@ -68,24 +68,28 @@ def domino_str(high: int, low: int) -> str:
 
 
 def domino_id_to_pips(domino_id: int) -> tuple[int, int]:
-    """Convert domino ID (0-27) to (high, low) pips."""
-    # Standard ordering: 0-0, 0-1, 0-2, ..., 1-1, 1-2, ..., 6-6
-    high = 0
-    idx = 0
-    while idx + (7 - high) <= domino_id:
-        idx += 7 - high
-        high += 1
-    low = high + (domino_id - idx)
-    return high, low
+    """Convert domino ID (0-27) to (high, low) pips.
+
+    Uses triangular encoding to match oracle tables:
+    ID = hi*(hi+1)/2 + lo where hi >= lo
+    """
+    # Find hi such that hi*(hi+1)/2 <= domino_id < (hi+1)*(hi+2)/2
+    hi = 0
+    while (hi + 1) * (hi + 2) // 2 <= domino_id:
+        hi += 1
+    lo = domino_id - hi * (hi + 1) // 2
+    return hi, lo
 
 
 def pips_to_domino_id(high: int, low: int) -> int:
-    """Convert (high, low) pips to domino ID."""
-    if high > low:
-        high, low = low, high
-    # Count dominoes before this high value
-    idx = sum(7 - h for h in range(high))
-    return idx + (low - high)
+    """Convert (high, low) pips to domino ID.
+
+    Uses triangular encoding to match oracle tables:
+    ID = hi*(hi+1)/2 + lo where hi >= lo
+    """
+    hi = max(high, low)
+    lo = min(high, low)
+    return hi * (hi + 1) // 2 + lo
 
 
 def player_name(rel_player: int) -> str:
@@ -381,7 +385,7 @@ def compute_debug_data(
     e_logits: Tensor,
     legal_mask: Tensor,
     action_taken: int,
-    n_samples: int = 5,
+    n_samples: int = 20,
 ) -> dict:
     """Compute debug data: oracle comparison and world breakdown.
 
@@ -747,9 +751,10 @@ def render_debug_mode(
     selected_count = pref_counts.get(action_taken, 0)
     total_valid = sum(pref_counts.values())
 
-    # Show sample of worlds
-    lines.append(f"World Breakdown (5 of {n_worlds}):".ljust(50) + f"Worlds preferring {domino_str(*hand[action_taken])}:")
-    sample_worlds = list(range(min(5, n_worlds)))
+    # Show sample of worlds (first 10)
+    display_count = min(10, n_worlds)
+    lines.append(f"World Breakdown ({display_count} of {n_worlds}):".ljust(50) + f"Worlds preferring {domino_str(*hand[action_taken])}:")
+    sample_worlds = list(range(display_count))
 
     for wi in sample_worlds:
         if wi >= len(world_logits) or world_logits[wi] is None:
