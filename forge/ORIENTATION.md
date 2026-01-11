@@ -575,6 +575,95 @@ The **base_seed** in the filename determines train/val/test split (via `seed % 1
 
 ---
 
+## E[Q] Training Pipeline (Stage 2)
+
+### The Problem
+
+Stage 1 (the oracle) sees all 4 hands - it "cheats." In real play, you only see your own hand and the play history. We need a model that makes decisions from **imperfect information** but plays as well as if it could see everything.
+
+### The Solution: Two-Stage Distillation
+
+```
+Stage 1 Oracle (sees all hands, trained)
+        ↓
+   Sample 100 possible opponent hands
+        ↓
+   Query oracle for each → Average logits → E[Q]
+        ↓
+Stage 2 Model (sees transcript only, learns to predict E[Q])
+        ↓
+   At runtime: single forward pass, no sampling
+```
+
+Stage 2 **distills** the expensive sampling process into a fast neural net.
+
+### Directory Structure
+
+```
+forge/eq/
+├── voids.py               # Infer void suits from play history
+├── sampling.py            # Backtracking sampler (guaranteed valid hands)
+├── oracle.py              # Stage1Oracle wrapper for batch queries
+├── game.py                # GameState for simulation
+├── generate.py            # Generate single game with 28 decisions
+├── generate_dataset.py    # Batch generation with train/val split
+├── transcript_tokenize.py # Stage 2 tokenizer (public info only)
+├── viewer.py              # Interactive debug viewer
+├── stage2.py              # Stage 2 model (TODO)
+└── train_stage2.py        # Training loop (TODO)
+```
+
+### Data Format
+
+Each training example is one **decision point**:
+
+| Field | Shape | Description |
+|-------|-------|-------------|
+| `transcript_tokens` | (36, 8) | Padded sequence: [decl, hand..., plays...] |
+| `transcript_lengths` | scalar | Actual sequence length |
+| `e_logits` | (7,) | Target: averaged Q-values across sampled worlds |
+| `legal_mask` | (7,) | Which actions were legal |
+| `action_taken` | scalar | Which slot the E[Q] policy chose |
+
+### Key Commands
+
+```bash
+# Generate training data (1000 games, ~8 min on 3050 Ti)
+PYTHONPATH=. python -m forge.eq.generate_dataset \
+    --n-games 1000 \
+    --output forge/data/eq_dataset.pt
+
+# Interactive viewer for human evaluation
+PYTHONPATH=. python -m forge.eq.viewer forge/data/eq_dataset.pt
+
+# Jump to specific game
+PYTHONPATH=. python -m forge.eq.viewer forge/data/eq_dataset.pt --game 42
+```
+
+### Viewer Controls
+
+- `←` / `→` - Navigate decisions
+- `j` - Jump to example number
+- `q` - Quit
+
+### Data Storage
+
+- `forge/data/eq_dataset.pt` - Generated training data (gitignored, ~66 MB for 1000 games)
+- `scratch/eq_test.pt` - Small test datasets
+
+### The Backtracking Sampler
+
+Unlike rejection sampling (which fails with tight void constraints), the backtracking sampler uses **MRV heuristic** (Minimum Remaining Values) to guarantee finding valid opponent hand distributions:
+
+1. Build candidate sets per opponent (dominoes respecting void constraints)
+2. Always assign to player with minimum slack first
+3. Early pruning: if slack < 0, backtrack immediately
+4. Guaranteed to find solution if one exists (the real game state is always valid)
+
+Ported from `src/game/ai/hand-sampler.ts`.
+
+---
+
 ## Debugging Tips
 
 | Issue | Where to Look |
