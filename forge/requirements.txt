@@ -8,3 +8,4 @@ wandb>=0.16
 numpy>=1.26
 pandas>=2.0
 rich  # Pretty progress bars
+modal  # Cloud GPU training

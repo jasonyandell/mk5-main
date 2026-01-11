@@ -444,15 +444,20 @@ def train_stage2(
 ```
 forge/eq/
 ├── __init__.py
-├── voids.py          # infer_voids()
-├── sampling.py       # sample_consistent_worlds()
-├── oracle.py         # Stage1Oracle wrapper
-├── generate.py       # generate_eq_game()
-├── stage2.py         # Stage2Model
-├── train_stage2.py   # Training loop
-├── tokenize.py       # Transcript → tokens
-└── evaluate.py       # Move agreement metrics
+├── voids.py               # infer_voids()
+├── sampling.py            # sample_consistent_worlds()
+├── oracle.py              # Stage1Oracle (uses forge/ml/tokenize.py)
+├── game.py                # GameState tracker
+├── generate.py            # generate_eq_game()
+├── transcript_tokenize.py # Stage 2 tokenizer (NEW format, public info only)
+├── stage2.py              # Stage2Model (different architecture from Stage 1)
+├── train_stage2.py        # Training loop
+└── evaluate.py            # Move agreement metrics
 ```
+
+**Note on tokenizers:**
+- **Stage 1** (oracle.py): Uses existing `forge/ml/tokenize.py` — sees all 4 hands
+- **Stage 2** (transcript_tokenize.py): New format — sees only public transcript with relative player IDs
 
 ---
 
