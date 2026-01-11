@@ -1,6 +1,6 @@
 ---
 name: modal
-description: Modal serverless GPU cloud - activates for GPU workloads, ML inference, batch processing, or cloud compute tasks. Use when deploying functions to cloud GPUs, running parallel starmap jobs, managing Modal volumes, optimizing GPU utilization, or estimating cloud costs. Covers authentication, GPU selection, concurrency patterns, persistent storage, cost estimation, job monitoring, and common pitfalls.
+description: Modal serverless GPU cloud - activates for GPU workloads, ML inference, batch processing, web endpoints, scheduled jobs, or cloud compute tasks. Use when deploying functions to cloud GPUs, serving inference APIs, running parallel starmap jobs, managing Modal volumes, or estimating cloud costs. Covers authentication, GPU selection, concurrency, volumes, secrets, web endpoints, scheduled jobs, and common pitfalls.
 ---
 
 # Modal GPU Infrastructure
@@ -14,8 +14,14 @@ Serverless cloud platform for running Python on GPUs. Pay per second, scale to t
 pip install modal
 modal token new        # Opens browser for auth
 
-# Run a job
+# Development (hot-reload)
+modal serve app.py     # Web endpoints with auto-reload
+
+# Run batch job
 modal run app.py::main
+
+# Deploy to production
+modal deploy app.py
 
 # Check status
 modal app list         # Running apps
@@ -48,6 +54,116 @@ def main():
     # Parallel execution across GPU pool
     tasks = [(i,) for i in range(100)]
     results = list(gpu_task.starmap(tasks))
+```
+
+## Classes (Stateful Services)
+
+Load model once, reuse across requests:
+
+```python
+@app.cls(gpu="A10G", image=image)
+class Inference:
+    @modal.enter()  # Runs once on container start
+    def load_model(self):
+        import torch
+        self.model = torch.load("/data/model.pt")
+        self.model.eval()
+
+    @modal.method()
+    def predict(self, x: list[float]) -> list[float]:
+        return self.model(x).tolist()
+
+    @modal.exit()  # Cleanup on container shutdown
+    def cleanup(self):
+        del self.model
+
+# Usage
+inference = Inference()
+result = inference.predict.remote([1.0, 2.0, 3.0])
+```
+
+## Web Endpoints
+
+Deploy inference APIs with automatic HTTPS:
+
+```python
+@app.function(gpu="A10G", image=image)
+@modal.web_endpoint(method="POST")
+def predict(request: dict) -> dict:
+    result = model.predict(request["input"])
+    return {"prediction": result}
+
+# Returns URL like: https://your-app--predict.modal.run
+```
+
+For FastAPI apps:
+
+```python
+from fastapi import FastAPI
+web_app = FastAPI()
+
+@web_app.post("/predict")
+def predict(request: dict):
+    return {"result": model(request["input"])}
+
+@app.function(gpu="A10G", image=image)
+@modal.asgi_app()
+def fastapi_app():
+    return web_app
+```
+
+See [references/web-endpoints.md](references/web-endpoints.md) for deployment patterns.
+
+## Scheduled Jobs
+
+```python
+# Run every hour
+@app.function(schedule=modal.Period(hours=1))
+def hourly_sync():
+    sync_data()
+
+# Cron syntax (9am UTC daily)
+@app.function(schedule=modal.Cron("0 9 * * *"))
+def daily_report():
+    generate_report()
+```
+
+## Secrets
+
+```python
+# Create secret via CLI
+# modal secret create my-api-key API_KEY=sk-xxx
+
+@app.function(secrets=[modal.Secret.from_name("my-api-key")])
+def call_api():
+    import os
+    key = os.environ["API_KEY"]  # Injected from secret
+    return requests.get(url, headers={"Authorization": f"Bearer {key}"})
+```
+
+## Image Building
+
+```python
+# Basic pip install
+image = modal.Image.debian_slim().pip_install("torch", "numpy")
+
+# System packages + pip
+image = (modal.Image.debian_slim()
+    .apt_install("git", "ffmpeg")
+    .pip_install("torch", "transformers"))
+
+# From requirements.txt
+image = modal.Image.debian_slim().pip_install_from_requirements("requirements.txt")
+
+# Run shell commands
+image = (modal.Image.debian_slim()
+    .run_commands("git clone https://github.com/...", "cd repo && pip install -e ."))
+
+# From Dockerfile
+image = modal.Image.from_dockerfile("./Dockerfile")
+
+# Include local code
+image = modal.Image.debian_slim().add_local_dir("./src", "/app/src")
 ```
 
 ## GPU Selection
@@ -223,4 +339,5 @@ def find_missing():
 - [references/gpu-selection.md](references/gpu-selection.md) - GPU types, pricing, availability, memory specs
 - [references/volumes.md](references/volumes.md) - Persistent storage patterns, commits, concurrent access
 - [references/concurrency.md](references/concurrency.md) - Parallel execution, starmap, concurrent inputs
+- [references/web-endpoints.md](references/web-endpoints.md) - Web APIs, FastAPI, deployment, scaling
 - [references/troubleshooting.md](references/troubleshooting.md) - Common errors and solutions
