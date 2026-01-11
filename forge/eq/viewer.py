@@ -167,29 +167,53 @@ def render_decision(
         lines.append("Leading trick...")
     lines.append("")
 
-    # E[Q] logits as bar chart
-    probs = torch.softmax(e_logits, dim=0)
-    lines.append("E[Q] (softmax):")
+    # Split into legal and illegal indices
+    legal_indices = [i for i in range(len(hand)) if legal_mask[i]]
+    illegal_indices = [i for i in range(len(hand)) if not legal_mask[i]]
 
-    # Sort by probability for display, but only show hand slots
-    sorted_indices = torch.argsort(probs, descending=True)
-    max_prob = probs[:len(hand)].max().item() if hand else 0.01
+    # Legal moves (softmaxed among legal only)
+    if legal_indices:
+        legal_logits = e_logits[legal_indices]
+        legal_probs = torch.softmax(legal_logits, dim=0)
+        max_legal_prob = legal_probs.max().item()
 
-    for i in sorted_indices:
-        i = i.item()
-        if i >= len(hand):
-            continue  # Skip empty slots (played dominoes)
+        # Sort by probability
+        sorted_legal = sorted(
+            zip(legal_indices, legal_probs.tolist()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
 
-        h, l = hand[i]
-        dom = domino_str(h, l)
+        lines.append("Legal moves (softmax):")
+        for i, prob in sorted_legal:
+            h, l = hand[i]
+            dom = domino_str(h, l)
+            bar_len = int(20 * prob / max_legal_prob) if max_legal_prob > 0 else 0
+            bar = "█" * bar_len
+            marker = " ← SELECTED" if i == action_taken else ""
+            lines.append(f"  {dom:>7}  {prob:.2f} {bar}{marker}")
 
-        prob = probs[i].item()
-        bar_len = int(20 * prob / max_prob) if max_prob > 0 else 0
-        bar = "█" * bar_len
+    # Illegal moves (softmaxed among illegal only)
+    if illegal_indices:
+        illegal_logits = e_logits[illegal_indices]
+        illegal_probs = torch.softmax(illegal_logits, dim=0)
+        max_illegal_prob = illegal_probs.max().item()
 
-        marker = " ← SELECTED" if i == action_taken else ""
-        legal = "" if legal_mask[i] else " (illegal)"
-        lines.append(f"  {dom:>7}  {prob:.2f} {bar}{marker}{legal}")
+        # Sort by probability
+        sorted_illegal = sorted(
+            zip(illegal_indices, illegal_probs.tolist()),
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+        lines.append("")
+        lines.append("Illegal moves (softmax, for reference):")
+        for i, prob in sorted_illegal:
+            h, l = hand[i]
+            dom = domino_str(h, l)
+            bar_len = int(20 * prob / max_illegal_prob) if max_illegal_prob > 0 else 0
+            bar = "█" * bar_len
+            lines.append(f"  {dom:>7}  {prob:.2f} {bar}")
 
     lines.append("")
     lines.append("[←] Prev  [→] Next  [j] Jump  [q] Quit")
