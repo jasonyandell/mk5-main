@@ -381,56 +381,58 @@ def compute_debug_data(
     e_logits: Tensor,
     legal_mask: Tensor,
     action_taken: int,
-    n_samples: int = 100,
+    n_samples: int = 5,
 ) -> dict:
     """Compute debug data: oracle comparison and world breakdown.
 
     This is expensive - only computed when entering debug mode.
+
+    Key insight: sample_consistent_worlds returns REMAINING hands.
+    To query oracle, we need INITIAL 7-domino hands.
+    Reconstruct: initial[p] = remaining[p] + played_by[p]
     """
-    from forge.eq.game import GameState
     from forge.eq.sampling import sample_consistent_worlds
     from forge.eq.voids import infer_voids
 
     # Decode transcript to reconstruct game state
     decoded = decode_transcript(tokens, length)
     decl_id = decoded["decl_id"]
-    hand = decoded["hand"]  # List of (high, low) tuples
+    hand = decoded["hand"]  # List of (high, low) tuples - MY remaining hand
     plays = decoded["plays"]  # List of (rel_player, high, low)
 
     # Convert hand to domino IDs
     my_hand_ids = [pips_to_domino_id(h, l) for h, l in hand]
 
-    # Reconstruct played dominoes
+    # Track played dominoes AND which player played each
     played_ids = set()
-    play_history = []  # For void inference
+    played_by: dict[int, list[int]] = {0: [], 1: [], 2: [], 3: []}  # player -> [domino_ids]
+    play_history = []  # For void inference: (player, domino, lead_domino)
+
     for rel_player, h, l in plays:
         domino_id = pips_to_domino_id(h, l)
         played_ids.add(domino_id)
+        played_by[rel_player].append(domino_id)
 
         # Determine lead domino for this play
         trick_pos = len(play_history) % 4
         if trick_pos == 0:
             lead_domino_id = domino_id
         else:
-            # Find lead domino of current trick
             trick_start = len(play_history) - trick_pos
             lead_domino_id = play_history[trick_start][1]
 
         play_history.append((rel_player, domino_id, lead_domino_id))
 
-    # Infer voids
+    # Infer voids from play history
     voids = infer_voids(play_history, decl_id)
 
     # Hand sizes (7 - plays per player)
-    plays_per_player = [0, 0, 0, 0]
-    for p, _, _ in plays:
-        plays_per_player[p] += 1
-    hand_sizes = [7 - plays_per_player[p] for p in range(4)]
+    hand_sizes = [7 - len(played_by[p]) for p in range(4)]
 
-    # Sample consistent worlds
-    rng = np.random.default_rng(42)  # Deterministic for reproducibility
+    # Sample consistent REMAINING hands
+    rng = np.random.default_rng(42)
     try:
-        worlds = sample_consistent_worlds(
+        sampled_remaining = sample_consistent_worlds(
             my_player=0,  # ME is always player 0 in relative coords
             my_hand=my_hand_ids,
             played=played_ids,
@@ -441,47 +443,89 @@ def compute_debug_data(
             rng=rng,
         )
     except RuntimeError as e:
-        return {"error": str(e), "worlds": [], "world_logits": []}
+        return {"error": str(e), "worlds": [], "world_logits": [], "initial_hands": []}
 
-    # Query oracle for each world
-    # We need to build proper initial deals for oracle
-    # For simplicity, use worlds as initial hands (pretending no plays yet)
-    # This is a simplification - real implementation would need full game reconstruction
-
-    # Build game state info for oracle query
-    # Current trick from plays
-    trick_pos = len(plays) % 4
-    current_trick_plays = plays[-trick_pos:] if trick_pos > 0 else []
-
-    # For oracle, we need (player, local_idx) tuples
-    # This is tricky since we don't have the original deal
-    # For now, use a simplified approach: query with world as initial deal
-
+    # For each sampled world, reconstruct initial hands and query oracle
     world_logits = []
-    world_prefs = []  # Which action each world prefers
+    world_prefs = []
+    initial_hands_list = []  # Store reconstructed initial hands for display
 
-    for world in worlds:
-        # Build remaining bitmask (all dominoes in hand are remaining for this query)
+    # Current trick info for oracle query
+    trick_pos = len(plays) % 4
+    current_trick_plays_raw = plays[-trick_pos:] if trick_pos > 0 else []
+
+    # Determine current trick leader
+    # Leader is whoever started the current trick (or last trick winner if starting new)
+    if trick_pos == 0:
+        # Starting a new trick - need to find who won last trick
+        # For simplicity, assume leader is player 0 at start, track through history
+        leader = 0
+        for t_start in range(0, len(plays) - trick_pos, 4):
+            trick = plays[t_start : t_start + 4]
+            if len(trick) == 4:
+                lead_h, lead_l = trick[0][1], trick[0][2]
+                lead_domino = pips_to_domino_id(lead_h, lead_l)
+                led_suit = led_suit_for_lead_domino(lead_domino, decl_id)
+                best_idx = 0
+                best_rank = trick_rank(lead_domino, led_suit, decl_id)
+                for i in range(1, 4):
+                    d = pips_to_domino_id(trick[i][1], trick[i][2])
+                    r = trick_rank(d, led_suit, decl_id)
+                    if r > best_rank:
+                        best_idx = i
+                        best_rank = r
+                leader = trick[best_idx][0]
+    else:
+        # Mid-trick - leader is first player in current trick
+        leader = current_trick_plays_raw[0][0]
+
+    for remaining_world in sampled_remaining:
+        # Reconstruct initial 7-domino hands: initial = remaining + played_by
+        initial_hands = []
+        for p in range(4):
+            initial = list(remaining_world[p]) + played_by[p]
+            # Sort for consistent ordering (oracle expects sorted initial hands)
+            initial.sort()
+            initial_hands.append(initial)
+
+        initial_hands_list.append(initial_hands)
+
+        # Build domino -> (player, local_idx) lookup for this world
+        domino_to_pos: dict[int, tuple[int, int]] = {}
+        for p in range(4):
+            for local_idx, domino in enumerate(initial_hands[p]):
+                domino_to_pos[domino] = (p, local_idx)
+
+        # Build remaining bitmask: bit i set if initial_hands[p][i] not yet played
         remaining = np.zeros((1, 4), dtype=np.int32)
-        for player_idx in range(4):
-            for local_idx in range(len(world[player_idx])):
-                remaining[0, player_idx] |= 1 << local_idx
+        for p in range(4):
+            for local_idx, domino in enumerate(initial_hands[p]):
+                if domino not in played_ids:
+                    remaining[0, p] |= (1 << local_idx)
+
+        # Build trick_plays as (player, local_idx) tuples
+        trick_plays = []
+        for rel_player, h, l in current_trick_plays_raw:
+            domino = pips_to_domino_id(h, l)
+            if domino in domino_to_pos:
+                _, local_idx = domino_to_pos[domino]
+                trick_plays.append((rel_player, local_idx))
 
         game_state_info = {
             "decl_id": decl_id,
-            "leader": 0,  # Simplified
-            "trick_plays": [],  # Simplified - no current trick context
+            "leader": leader,
+            "trick_plays": trick_plays,
             "remaining": remaining,
         }
 
         try:
-            logits = oracle.query_batch([world], game_state_info, current_player=0)
+            logits = oracle.query_batch([initial_hands], game_state_info, current_player=0)
             logits = logits[0]  # (7,)
             world_logits.append(logits.cpu())
 
             # Which legal action does this world prefer?
             masked = logits.clone()
-            for i in range(len(my_hand_ids)):
+            for i in range(7):
                 if i >= len(legal_mask) or not legal_mask[i]:
                     masked[i] = float("-inf")
             pref = masked.argmax().item()
@@ -497,10 +541,6 @@ def compute_debug_data(
     else:
         oracle_avg = torch.zeros(7)
 
-    # Compute agreement stats
-    e_probs = torch.softmax(e_logits[: len(my_hand_ids)], dim=0)
-    oracle_probs = torch.softmax(oracle_avg, dim=0)
-
     # Rank oracle's preferences
     oracle_ranking = torch.argsort(oracle_avg, descending=True).tolist()
 
@@ -508,13 +548,15 @@ def compute_debug_data(
     flagged = [i for i, pref in enumerate(world_prefs) if pref != action_taken and pref >= 0]
 
     # Count worlds preferring each action
-    pref_counts = {}
+    pref_counts: dict[int, int] = {}
     for pref in world_prefs:
         if pref >= 0:
             pref_counts[pref] = pref_counts.get(pref, 0) + 1
 
     return {
-        "worlds": worlds,
+        "worlds": sampled_remaining,  # Remaining hands
+        "initial_hands": initial_hands_list,  # Reconstructed initial 7-domino hands
+        "played_by": played_by,  # Which dominoes each player has played
         "world_logits": world_logits,
         "world_prefs": world_prefs,
         "oracle_avg": oracle_avg,
@@ -524,6 +566,7 @@ def compute_debug_data(
         "hand": hand,
         "my_hand_ids": my_hand_ids,
         "decl_id": decl_id,
+        "voids": voids,
     }
 
 
