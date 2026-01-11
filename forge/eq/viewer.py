@@ -250,8 +250,8 @@ class ViewState:
     current_idx: int = 0
     mode: str = "default"  # "default", "debug", "world"
     debug_data: dict | None = None  # Cached debug computation
-    world_idx: int = 0  # Which flagged world we're viewing
-    flagged_worlds: list[int] | None = None  # Indices of worlds preferring different action
+    world_idx: int = 0  # Which world we're viewing (0 to n_worlds-1)
+    n_worlds: int = 0  # Total number of sampled worlds
 
 
 # =============================================================================
@@ -783,7 +783,7 @@ def render_debug_mode(
     lines.append(f"".ljust(50) + f"  {selected_count}/{total_valid}{warning}")
 
     lines.append("─" * 80)
-    lines.append("[←/→] Nav  [j] Jump  [w] Inspect flagged world  [d] Exit debug  [q] Quit")
+    lines.append("[←/→] Nav  [j] Jump  [w] Inspect worlds  [d] Exit debug  [q] Quit")
 
     return "\n".join(lines)
 
@@ -806,7 +806,7 @@ def render_world_mode(
     debug_data: dict,
     world_idx: int,
 ) -> str:
-    """Render world inspection mode."""
+    """Render world inspection mode - browse all sampled worlds."""
     lines = []
 
     decoded = decode_transcript(tokens, length)
@@ -818,28 +818,30 @@ def render_world_mode(
     world_logits = debug_data.get("world_logits", [])
     world_prefs = debug_data.get("world_prefs", [])
 
-    if not flagged:
-        lines.append("No flagged worlds to inspect.")
+    if not worlds:
+        lines.append("No worlds to inspect.")
         lines.append("")
         lines.append("[d] Back to debug  [q] Quit")
         return "\n".join(lines)
 
-    # Get the actual world index from flagged list
-    if world_idx >= len(flagged):
+    # Navigate through ALL worlds, not just flagged
+    if world_idx >= len(worlds):
         world_idx = 0
-    actual_wi = flagged[world_idx]
+    actual_wi = world_idx
 
     pref = world_prefs[actual_wi] if actual_wi < len(world_prefs) else -1
-    pref_str = f"prefers {domino_str(*hand[pref])}" if 0 <= pref < len(hand) else "unknown preference"
+    is_flagged = actual_wi in flagged
+    flag_marker = " ⚠️ DISAGREES" if is_flagged else ""
+    pref_str = f"prefers {domino_str(*hand[pref])}{flag_marker}" if 0 <= pref < len(hand) else "unknown preference"
 
     # Header
     lines.append(
         f"Example {idx + 1}/{total}  |  Game {game_idx}  |  Decision {decision_idx + 1}/28".ljust(50)
-        + f"[WORLD {world_idx + 1}/{len(flagged)} INSPECTION]"
+        + f"[WORLD {world_idx + 1}/{len(worlds)} INSPECTION]"
     )
     lines.append("═" * 80)
 
-    lines.append(f"Sampled World {actual_wi + 1} of {len(worlds)} (flagged: {pref_str})")
+    lines.append(f"World {actual_wi + 1} of {len(worlds)} ({pref_str})")
     lines.append("─" * 80)
 
     # Get this world's hands
@@ -964,7 +966,7 @@ def render_world_mode(
             lines.append(f"  ✓ {player_name(player)} not void in any revealed suit")
 
     lines.append("─" * 80)
-    lines.append("[←/→] Prev/Next flagged world  [d] Back to debug  [q] Quit")
+    lines.append(f"[←/→] Prev/Next world  [d] Back to debug  [q] Quit   ({len(flagged)} flagged)")
 
     return "\n".join(lines)
 
@@ -1038,7 +1040,7 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                             oracle, cur_tokens, cur_length, cur_e_logits,
                             cur_legal_mask, cur_action,
                         )
-                        state.flagged_worlds = state.debug_data.get("flagged_worlds", [])
+                        state.n_worlds = len(state.debug_data.get("worlds", []))
                         state.world_idx = 0
 
                     text = render_debug_mode(
@@ -1071,16 +1073,16 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                     break
 
                 elif key == curses.KEY_LEFT:
-                    if state.mode == "world" and state.flagged_worlds:
-                        # Navigate flagged worlds
-                        state.world_idx = (state.world_idx - 1) % len(state.flagged_worlds)
+                    if state.mode == "world" and state.n_worlds > 0:
+                        # Navigate all worlds
+                        state.world_idx = (state.world_idx - 1) % state.n_worlds
                     elif state.current_idx > 0:
                         state.current_idx -= 1
                         state.debug_data = None  # Clear cache
 
                 elif key == curses.KEY_RIGHT:
-                    if state.mode == "world" and state.flagged_worlds:
-                        state.world_idx = (state.world_idx + 1) % len(state.flagged_worlds)
+                    if state.mode == "world" and state.n_worlds > 0:
+                        state.world_idx = (state.world_idx + 1) % state.n_worlds
                     elif state.current_idx < total - 1:
                         state.current_idx += 1
                         state.debug_data = None
@@ -1111,7 +1113,7 @@ def run_viewer(dataset_path: str, start_example: int = 0):
 
                 elif key == ord("w"):
                     # Enter world inspection (only from debug mode)
-                    if state.mode == "debug" and state.flagged_worlds:
+                    if state.mode == "debug" and state.n_worlds > 0:
                         state.mode = "world"
                         state.world_idx = 0
 

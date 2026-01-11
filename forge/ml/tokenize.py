@@ -429,6 +429,103 @@ def find_parquet_files(input_dir: Path, max_files: int | None = None) -> list[Pa
     return files
 
 
+def _flush_batch(
+    split_data: dict[str, dict[str, list]],
+    output_dir: Path,
+    batch_counts: dict[str, int],
+    log: Callable[[str], None],
+) -> dict[str, int]:
+    """Flush accumulated data to batch files and clear memory.
+
+    Returns updated batch_counts.
+    """
+    for split_name in ['train', 'val', 'test']:
+        data = split_data[split_name]
+        if not data['tokens']:
+            continue
+
+        # Concatenate this batch
+        tokens = np.concatenate(data['tokens'], axis=0)
+        masks = np.concatenate(data['masks'], axis=0)
+        targets = np.concatenate(data['targets'], axis=0)
+        legal = np.concatenate(data['legal'], axis=0)
+        qvals = np.concatenate(data['qvals'], axis=0)
+        teams = np.concatenate(data['teams'], axis=0)
+        players = np.concatenate(data['players'], axis=0)
+        values = np.concatenate(data['values'], axis=0)
+
+        # Save to batch file
+        batch_dir = output_dir / split_name / "batches"
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        batch_idx = batch_counts[split_name]
+
+        np.save(batch_dir / f"tokens_{batch_idx:04d}.npy", tokens)
+        np.save(batch_dir / f"masks_{batch_idx:04d}.npy", masks)
+        np.save(batch_dir / f"targets_{batch_idx:04d}.npy", targets)
+        np.save(batch_dir / f"legal_{batch_idx:04d}.npy", legal)
+        np.save(batch_dir / f"qvals_{batch_idx:04d}.npy", qvals)
+        np.save(batch_dir / f"teams_{batch_idx:04d}.npy", teams)
+        np.save(batch_dir / f"players_{batch_idx:04d}.npy", players)
+        np.save(batch_dir / f"values_{batch_idx:04d}.npy", values)
+
+        log(f"  Flushed batch {batch_idx} for {split_name}: {len(targets):,} samples")
+        batch_counts[split_name] += 1
+
+        # Clear lists
+        for key in data:
+            data[key].clear()
+
+        # Free memory
+        del tokens, masks, targets, legal, qvals, teams, players, values
+
+    gc.collect()
+    return batch_counts
+
+
+def _merge_batches(
+    output_dir: Path,
+    split_name: str,
+    log: Callable[[str], None],
+) -> int:
+    """Merge batch files into final arrays. Returns sample count."""
+    batch_dir = output_dir / split_name / "batches"
+    if not batch_dir.exists():
+        return 0
+
+    # Find all batch files
+    batch_files = sorted(batch_dir.glob("tokens_*.npy"))
+    if not batch_files:
+        return 0
+
+    arrays = {
+        'tokens': [], 'masks': [], 'targets': [], 'legal': [],
+        'qvals': [], 'teams': [], 'players': [], 'values': []
+    }
+
+    for bf in batch_files:
+        batch_idx = bf.stem.split('_')[1]
+        for key in arrays:
+            arr = np.load(batch_dir / f"{key}_{batch_idx}.npy")
+            arrays[key].append(arr)
+
+    # Concatenate all batches
+    split_dir = output_dir / split_name
+    n_samples = 0
+    for key, arr_list in arrays.items():
+        merged = np.concatenate(arr_list, axis=0)
+        np.save(split_dir / f"{key}.npy", merged)
+        if key == 'targets':
+            n_samples = len(merged)
+        del merged
+
+    # Clean up batch files
+    import shutil
+    shutil.rmtree(batch_dir)
+
+    gc.collect()
+    return n_samples
+
+
 def tokenize_shards(
     input_dir: Path,
     output_dir: Path,
@@ -438,6 +535,7 @@ def tokenize_shards(
     verbose: bool = True,
     progress_callback: Callable[[ShardProgress], None] | None = None,
     force: bool = False,
+    batch_size: int = 100,
 ) -> TokenizationManifest:
     """Tokenize all shards in input_dir to output_dir.
 
@@ -452,6 +550,7 @@ def tokenize_shards(
         verbose: Print progress
         progress_callback: Optional callback for per-shard progress (for wandb logging)
         force: Force re-tokenization even if output exists
+        batch_size: Number of files to process before flushing to disk (default: 100)
 
     Returns:
         TokenizationManifest with statistics
@@ -490,13 +589,17 @@ def tokenize_shards(
     if not files:
         raise ValueError(f"No parquet files found in {input_dir}")
 
-    # Collect by split
+    # Create output directory early for batch files
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Collect by split (cleared after each batch)
     split_data: dict[str, dict[str, list]] = {
         'train': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
         'val': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
         'test': {'tokens': [], 'masks': [], 'targets': [], 'legal': [], 'qvals': [], 'teams': [], 'players': [], 'values': []},
     }
     split_file_counts = {'train': 0, 'val': 0, 'test': 0}
+    batch_counts = {'train': 0, 'val': 0, 'test': 0}
 
     # Track cumulative samples for progress callback
     cumulative_samples = {'train': 0, 'val': 0, 'test': 0}
@@ -537,11 +640,14 @@ def tokenize_shards(
                 ))
 
         if verbose and ((i + 1) % 50 == 0 or i == len(files) - 1):
-            totals = {s: sum(len(t) for t in split_data[s]['targets']) for s in split_data}
-            log(f"  [{i+1}/{len(files)}] train={totals['train']:,} val={totals['val']:,} test={totals['test']:,}")
+            log(f"  [{i+1}/{len(files)}] train={cumulative_samples['train']:,} val={cumulative_samples['val']:,} test={cumulative_samples['test']:,}")
 
-    # Create output directory
-    output_dir.mkdir(parents=True, exist_ok=True)
+        # Flush to disk every batch_size files
+        if (i + 1) % batch_size == 0:
+            batch_counts = _flush_batch(split_data, output_dir, batch_counts, log)
+
+    # Flush any remaining data
+    batch_counts = _flush_batch(split_data, output_dir, batch_counts, log)
 
     # Build manifest
     manifest = TokenizationManifest(
@@ -552,53 +658,22 @@ def tokenize_shards(
         max_samples_per_shard=max_samples_per_shard,
     )
 
-    # Save each split
+    # Merge batches for each split
     for split_name in ['train', 'val', 'test']:
-        data = split_data[split_name]
+        log(f"\nMerging batches for {split_name}...")
+        n_samples = _merge_batches(output_dir, split_name, log)
 
-        if not data['tokens']:
+        if n_samples == 0:
             log(f"WARNING: No data for {split_name} split!")
             continue
 
-        # Concatenate
-        tokens = np.concatenate(data['tokens'], axis=0)
-        masks = np.concatenate(data['masks'], axis=0)
-        targets = np.concatenate(data['targets'], axis=0)
-        legal = np.concatenate(data['legal'], axis=0)
-        qvals = np.concatenate(data['qvals'], axis=0)
-        teams = np.concatenate(data['teams'], axis=0)
-        players = np.concatenate(data['players'], axis=0)
-        values = np.concatenate(data['values'], axis=0)
-
-        n_samples = len(targets)
-        log(f"\n{split_name}: {n_samples:,} samples from {split_file_counts[split_name]} files")
-
-        # Save to split directory
-        split_dir = output_dir / split_name
-        split_dir.mkdir(parents=True, exist_ok=True)
-
-        np.save(split_dir / "tokens.npy", tokens)
-        np.save(split_dir / "masks.npy", masks)
-        np.save(split_dir / "targets.npy", targets)
-        np.save(split_dir / "legal.npy", legal)
-        np.save(split_dir / "qvals.npy", qvals)
-        np.save(split_dir / "teams.npy", teams)
-        np.save(split_dir / "players.npy", players)
-        np.save(split_dir / "values.npy", values)
+        log(f"  {split_name}: {n_samples:,} samples from {split_file_counts[split_name]} files")
 
         # Update manifest
         manifest.splits[split_name] = {
             'samples': int(n_samples),
             'files': split_file_counts[split_name],
         }
-
-        # Size report
-        total_mb = sum(arr.nbytes for arr in [tokens, masks, targets, legal, qvals, teams, players, values]) / 1024 / 1024
-        log(f"  Total size: {total_mb:.1f} MB")
-
-        # Free memory
-        del tokens, masks, targets, legal, qvals, teams, players, values
-        gc.collect()
 
     # Save manifest
     manifest_path = output_dir / "manifest.yaml"

@@ -145,6 +145,7 @@ class DominoLightningModule(L.LightningModule):
         temperature: float = 3.0,
         soft_weight: float = 0.7,
         value_weight: float = 0.5,
+        loss_mode: str = 'policy',
     ):
         """
         Initialize the Lightning module.
@@ -160,8 +161,11 @@ class DominoLightningModule(L.LightningModule):
             temperature: Temperature for soft target distribution
             soft_weight: Weight for soft loss (1 - soft_weight = hard loss weight)
             value_weight: Weight for value head loss
+            loss_mode: 'policy' (cross-entropy) or 'qvalue' (MSE on Q-values)
         """
         super().__init__()
+        if loss_mode not in ('policy', 'qvalue'):
+            raise ValueError(f"loss_mode must be 'policy' or 'qvalue', got {loss_mode}")
         self.save_hyperparameters()  # Auto-save all args
         self.model = DominoTransformer(embed_dim, n_heads, n_layers, ff_dim, dropout)
 
@@ -181,6 +185,29 @@ class DominoLightningModule(L.LightningModule):
     ) -> Tuple[Tensor, Tensor, Tensor]:
         """
         Compute combined action + value loss.
+
+        Dispatches to policy loss (cross-entropy) or Q-value loss (MSE) based on loss_mode.
+
+        Returns:
+            Tuple of (total_loss, action_loss, value_loss) for logging
+        """
+        if self.hparams.loss_mode == 'qvalue':
+            return self._compute_qvalue_loss(logits, value, legal, qvals, teams, oracle_values)
+        else:
+            return self._compute_policy_loss(logits, value, targets, legal, qvals, teams, oracle_values)
+
+    def _compute_policy_loss(
+        self,
+        logits: Tensor,
+        value: Tensor,
+        targets: Tensor,
+        legal: Tensor,
+        qvals: Tensor,
+        teams: Tensor,
+        oracle_values: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Policy loss: cross-entropy + soft distillation.
 
         Action loss: hard (cross-entropy) + soft (distillation from Q-values)
         Value loss: MSE between predicted and oracle state value
@@ -222,6 +249,54 @@ class DominoLightningModule(L.LightningModule):
         # Total loss
         total_loss = action_loss + self.hparams.value_weight * value_loss
         return total_loss, action_loss, value_loss
+
+    def _compute_qvalue_loss(
+        self,
+        predicted_q: Tensor,
+        value: Tensor,
+        legal: Tensor,
+        qvals: Tensor,
+        teams: Tensor,
+        oracle_values: Tensor,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Q-value loss: MSE between predicted and oracle Q-values.
+
+        Model outputs are interpreted as Q-values (expected points), not logits.
+        Loss is computed only on legal actions.
+
+        Returns:
+            Tuple of (total_loss, q_loss, value_loss) for logging
+        """
+        # Flip Q-values for current player's perspective
+        # Oracle qvals are from team 0's perspective
+        team_sign = torch.where(teams == 0, 1.0, -1.0).unsqueeze(1)
+        target_q = qvals * team_sign
+
+        # Normalize to [-1, 1] for stable training (divide by 42)
+        target_q_norm = target_q / 42.0
+        predicted_q_norm = predicted_q / 42.0
+
+        # Mask for legal actions only
+        legal_mask = legal > 0
+
+        # MSE loss on legal actions only
+        if legal_mask.any():
+            q_loss = F.mse_loss(
+                predicted_q_norm[legal_mask],
+                target_q_norm[legal_mask]
+            )
+        else:
+            q_loss = torch.tensor(0.0, device=predicted_q.device)
+
+        # Value loss: same as policy mode
+        team_sign_value = torch.where(teams == 0, 1.0, -1.0)
+        target_value = (oracle_values * team_sign_value) / 42.0
+        value_loss = F.mse_loss(value, target_value)
+
+        # Total loss
+        total_loss = q_loss + self.hparams.value_weight * value_loss
+        return total_loss, q_loss, value_loss
 
     def training_step(self, batch: Tuple, batch_idx: int) -> Tensor:
         """Training step."""
@@ -267,6 +342,26 @@ class DominoLightningModule(L.LightningModule):
         self.log('val/accuracy', acc, sync_dist=True, prog_bar=True)
         self.log('val/q_gap', q_gap, sync_dist=True, prog_bar=True)
         self.log('val/blunder_rate', blunder_rate, sync_dist=True)
+
+        # Q-value calibration metrics (for qvalue loss mode)
+        if self.hparams.loss_mode == 'qvalue':
+            team_sign = torch.where(teams == 0, 1.0, -1.0).unsqueeze(1)
+            target_q = qvals * team_sign
+            legal_mask = legal > 0
+
+            # MAE between predicted and actual Q-values (in points)
+            if legal_mask.any():
+                q_mae = (logits[legal_mask] - target_q[legal_mask]).abs().mean()
+                # Calibration: mean predicted vs mean actual
+                mean_pred_q = logits[legal_mask].mean()
+                mean_actual_q = target_q[legal_mask].mean()
+                q_calibration_error = (mean_pred_q - mean_actual_q).abs()
+            else:
+                q_mae = torch.tensor(0.0, device=logits.device)
+                q_calibration_error = torch.tensor(0.0, device=logits.device)
+
+            self.log('val/q_mae', q_mae, sync_dist=True, prog_bar=True)
+            self.log('val/q_calibration_error', q_calibration_error, sync_dist=True)
 
     def test_step(self, batch: Tuple, batch_idx: int) -> None:
         """Test step - same as validation."""

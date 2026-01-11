@@ -37,6 +37,8 @@ def main():
     parser.add_argument('--n-layers', type=int, default=2, help='Number of transformer layers')
     parser.add_argument('--ff-dim', type=int, default=128, help='Feed-forward dimension')
     parser.add_argument('--value-weight', type=float, default=0.5, help='Weight for value head loss')
+    parser.add_argument('--loss-mode', type=str, default='policy', choices=['policy', 'qvalue'],
+                        help='Loss mode: policy (cross-entropy) or qvalue (MSE on Q-values)')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--num-workers', type=int, default=None, help='Dataloader workers (default: auto-detect)')
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
@@ -77,6 +79,7 @@ def main():
         ff_dim=args.ff_dim,
         lr=args.lr,
         value_weight=args.value_weight,
+        loss_mode=args.loss_mode,
     )
 
     # Load pretrained weights if resuming
@@ -112,11 +115,14 @@ def main():
     # Loggers
     loggers = [CSVLogger(args.run_dir, name='domino')]
     if args.wandb:
-        # Build run name with model size and architecture
-        run_name = f"train-{model_size}-{args.n_layers}L-{args.n_heads}H-d{args.embed_dim}"
+        # Build run name with loss mode prefix, timestamp, and architecture
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d%H%M")
+        prefix = "qval" if args.loss_mode == "qvalue" else "train"
+        run_name = f"{prefix}-{timestamp}-{model_size}-{args.n_layers}L-{args.n_heads}H-d{args.embed_dim}"
 
         # Build tags
-        tags = ["train", model_size]
+        tags = [prefix, model_size, args.loss_mode]
         if args.wandb_group:
             group_root = args.wandb_group.split("/")[0]
             tags.append(group_root)
@@ -139,6 +145,7 @@ def main():
                 "lr": args.lr,
                 "precision": args.precision,
                 "value_weight": args.value_weight,
+                "loss_mode": args.loss_mode,
             },
         ))
 

@@ -160,6 +160,12 @@ Examples:
         action="store_true",
         help="Preview file counts and estimated output size without processing",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=100,
+        help="Files to process before flushing to disk (default: 100, lower if OOM)",
+    )
 
     args = parser.parse_args()
 
@@ -244,6 +250,7 @@ Examples:
             verbose=not args.quiet,
             progress_callback=progress_callback if use_wandb else None,
             force=args.force,
+            batch_size=args.batch_size,
         )
 
         # Log final summary to wandb
