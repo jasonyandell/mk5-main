@@ -787,34 +787,19 @@ def _compute_weights_for_window(
             window_k_used=0,
         )
 
-    n_invalid = 0
-    n_illegal = 0  # Mapping integrity violations (in-hand but illegal)
-    total_logp = 0.0
-    n_scored_steps = 0
+    # Score ALL steps in a single batched call (K×N samples → 1 GPU call)
+    logw, n_invalid, n_illegal = _score_all_steps_batched(
+        oracle=oracle,
+        hypothetical_deals=hypothetical_deals,
+        play_history=play_history,
+        window_plays=window_plays,
+        window_start=window_start,
+        decl_id=decl_id,
+        config=config,
+    )
 
-    # Score each step in the window
-    for step_offset, (actor, observed_domino, lead_domino) in enumerate(window_plays):
-        step_idx = window_start + step_offset
-
-        # Reconstruct game state at this step for each world
-        # We need: actor's remaining hand, leader, current trick at step_idx
-        step_logp, step_invalid, step_illegal = _score_step_likelihood(
-            oracle=oracle,
-            hypothetical_deals=hypothetical_deals,
-            play_history=play_history,
-            step_idx=step_idx,
-            actor=actor,
-            observed_domino=observed_domino,
-            lead_domino=lead_domino,
-            decl_id=decl_id,
-            config=config,
-        )
-
-        logw += step_logp
-        n_invalid = max(n_invalid, step_invalid)
-        n_illegal += step_illegal  # Accumulate across steps
-        total_logp += step_logp.mean().item()
-        n_scored_steps += 1
+    total_logp = logw.mean().item()
+    n_scored_steps = len(window_plays)
 
     # Stabilize weights: subtract max, clip to max-delta
     max_logw = logw.max()
@@ -1112,6 +1097,213 @@ def _get_legal_local_indices(
 
     # If can follow, must follow; otherwise can play anything
     return followers if followers else remaining_local
+
+
+# =============================================================================
+# Batched posterior scoring (optimization for GPU efficiency)
+# =============================================================================
+
+
+def _score_all_steps_batched(
+    oracle: Stage1Oracle,
+    hypothetical_deals: list[list[list[int]]],
+    play_history: list[tuple[int, int, int]],
+    window_plays: list[tuple[int, int, int]],
+    window_start: int,
+    decl_id: int,
+    config: PosteriorConfig,
+) -> tuple[Tensor, int, int]:
+    """Score all K window steps in a SINGLE batched oracle call.
+
+    Instead of K separate oracle calls (one per step), this batches all K×N
+    queries into one call, dramatically reducing GPU synchronization overhead.
+
+    Args:
+        oracle: Stage 1 oracle
+        hypothetical_deals: N initial deals
+        play_history: Full play history
+        window_plays: The K plays to score (subset of play_history)
+        window_start: Index of first window play in play_history
+        decl_id: Declaration ID
+        config: Posterior config
+
+    Returns:
+        Tuple of (log_probs_sum, n_invalid, n_illegal) where:
+        - log_probs_sum: (N,) tensor of summed log P(observed | world) across all K steps
+        - n_invalid: Max count of invalid worlds across steps
+        - n_illegal: Total count of illegal occurrences across steps
+    """
+    n_worlds = len(hypothetical_deals)
+    n_steps = len(window_plays)
+    device = oracle.device
+
+    if n_steps == 0:
+        return torch.zeros(n_worlds, device=device), 0, 0
+
+    # =========================================================================
+    # Step 1: Pre-compute game state for each of the K steps
+    # =========================================================================
+    step_infos = []  # List of (actor, observed_domino, lead_domino, played_before, current_trick, leader, is_leading)
+
+    for step_offset, (actor, observed_domino, lead_domino) in enumerate(window_plays):
+        step_idx = window_start + step_offset
+
+        # Compute played_before for this step
+        played_before = set()
+        for i in range(step_idx):
+            _, domino, _ = play_history[i]
+            played_before.add(domino)
+
+        # Find trick start and build current_trick
+        trick_start = step_idx
+        while trick_start > 0:
+            prev_idx = trick_start - 1
+            _, _, prev_lead = play_history[prev_idx]
+            if prev_lead == lead_domino:
+                trick_start = prev_idx
+            else:
+                break
+
+        current_trick = []
+        for i in range(trick_start, step_idx):
+            p, d, _ = play_history[i]
+            current_trick.append((p, d))
+
+        leader = current_trick[0][0] if current_trick else actor
+        is_leading = (step_idx == trick_start)
+
+        step_infos.append({
+            'actor': actor,
+            'observed_domino': observed_domino,
+            'lead_domino': lead_domino,
+            'played_before': played_before,
+            'current_trick': current_trick,
+            'leader': leader,
+            'is_leading': is_leading,
+            'step_idx': step_idx,
+        })
+
+    # =========================================================================
+    # Step 2: Build expanded batch (K×N samples)
+    # =========================================================================
+    total_samples = n_steps * n_worlds
+
+    # Repeat worlds K times
+    expanded_worlds = hypothetical_deals * n_steps
+
+    # Build per-sample arrays
+    actors = np.zeros(total_samples, dtype=np.int32)
+    leaders = np.zeros(total_samples, dtype=np.int32)
+    trick_plays_list = []
+    remaining = np.zeros((total_samples, 4), dtype=np.int32)
+
+    # Track which samples are valid (observed domino in actor's hand)
+    obs_local_idx = np.full((n_steps, n_worlds), -1, dtype=np.int32)
+    step_n_invalid = np.zeros(n_steps, dtype=np.int32)
+    step_n_illegal = np.zeros(n_steps, dtype=np.int32)
+
+    for step_offset, info in enumerate(step_infos):
+        base_idx = step_offset * n_worlds
+        actor = info['actor']
+        played_before = info['played_before']
+        current_trick = info['current_trick']
+        leader = info['leader']
+        observed_domino = info['observed_domino']
+
+        for world_idx, initial_hands in enumerate(hypothetical_deals):
+            sample_idx = base_idx + world_idx
+            actor_hand = initial_hands[actor]
+
+            actors[sample_idx] = actor
+            leaders[sample_idx] = leader
+            trick_plays_list.append(current_trick)
+
+            # Check if observed domino is in actor's hand
+            if observed_domino not in actor_hand:
+                step_n_invalid[step_offset] += 1
+                obs_local_idx[step_offset, world_idx] = -1
+            else:
+                obs_local_idx[step_offset, world_idx] = actor_hand.index(observed_domino)
+
+            # Build remaining bitmask
+            for p in range(4):
+                for local_idx, domino in enumerate(initial_hands[p]):
+                    if domino not in played_before:
+                        remaining[sample_idx, p] |= 1 << local_idx
+
+    # =========================================================================
+    # Step 3: Single batched oracle call
+    # =========================================================================
+    all_q_values = oracle.query_batch_multi_state(
+        worlds=expanded_worlds,
+        decl_id=decl_id,
+        actors=actors,
+        leaders=leaders,
+        trick_plays_list=trick_plays_list,
+        remaining=remaining,
+    )  # Shape: (K×N, 7)
+
+    # =========================================================================
+    # Step 4: Compute log probabilities per step per world
+    # =========================================================================
+    log_probs_sum = torch.zeros(n_worlds, dtype=torch.float32, device=device)
+    total_n_invalid = 0
+    total_n_illegal = 0
+
+    for step_offset, info in enumerate(step_infos):
+        base_idx = step_offset * n_worlds
+        actor = info['actor']
+        played_before = info['played_before']
+        lead_domino = info['lead_domino']
+        is_leading = info['is_leading']
+        observed_domino = info['observed_domino']
+
+        for world_idx, initial_hands in enumerate(hypothetical_deals):
+            local_idx = obs_local_idx[step_offset, world_idx]
+            if local_idx < 0:
+                # Invalid world - log_prob stays at -inf effect (we'll handle below)
+                continue
+
+            sample_idx = base_idx + world_idx
+            q_values = all_q_values[sample_idx]  # (7,)
+            actor_hand = initial_hands[actor]
+
+            # Get legal actions
+            legal_local = _get_legal_local_indices(
+                actor_hand, played_before, lead_domino, decl_id, is_leading
+            )
+
+            if not legal_local:
+                if config.strict_integrity:
+                    raise MappingIntegrityError(
+                        f"No legal actions for actor {actor} at step {info['step_idx']} in world {world_idx}"
+                    )
+                step_n_illegal[step_offset] += 1
+                continue
+
+            if local_idx not in legal_local:
+                if config.strict_integrity:
+                    raise MappingIntegrityError(
+                        f"Observed domino {observed_domino} (local_idx={local_idx}) is in actor {actor}'s "
+                        f"hand but not legal at step {info['step_idx']}. Legal indices: {legal_local}."
+                    )
+                step_n_illegal[step_offset] += 1
+                continue
+
+            # Compute advantage-softmax probability
+            legal_q = q_values[legal_local]
+            advantage = legal_q - legal_q.mean()
+            p_soft = F.softmax(advantage / config.tau, dim=0)
+            n_legal = len(legal_local)
+            p_mixed = (1 - config.beta) * p_soft + config.beta / n_legal
+
+            obs_idx_in_legal = legal_local.index(local_idx)
+            log_probs_sum[world_idx] += torch.log(p_mixed[obs_idx_in_legal] + 1e-30)
+
+        total_n_invalid = max(total_n_invalid, int(step_n_invalid[step_offset]))
+        total_n_illegal += int(step_n_illegal[step_offset])
+
+    return log_probs_sum, total_n_invalid, total_n_illegal
 
 
 # =============================================================================

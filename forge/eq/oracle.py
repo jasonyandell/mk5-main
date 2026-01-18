@@ -298,3 +298,155 @@ class Stage1Oracle:
             masks[:, token_idx] = 1
 
         return tokens, masks
+
+    def query_batch_multi_state(
+        self,
+        worlds: list[list[list[int]]],
+        decl_id: int,
+        actors: np.ndarray,
+        leaders: np.ndarray,
+        trick_plays_list: list[list[tuple[int, int]]],
+        remaining: np.ndarray,
+    ) -> Tensor:
+        """Query N samples with DIFFERENT game states per sample.
+
+        This is optimized for batched posterior scoring where each sample
+        may have a different actor, leader, and trick state.
+
+        Args:
+            worlds: List of N world states (4 hands of 7 dominoes each)
+            decl_id: Declaration ID (same for all samples)
+            actors: (N,) array of current player IDs
+            leaders: (N,) array of leader player IDs
+            trick_plays_list: List of N trick_plays, each is [(player, domino_id), ...]
+            remaining: (N, 4) array of remaining domino bitmasks
+
+        Returns:
+            Tensor of shape (N, 7) with Q-values for each sample
+        """
+        if not worlds:
+            raise ValueError("worlds cannot be empty")
+
+        n_samples = len(worlds)
+
+        # Tokenize with per-sample states
+        tokens, masks = self._tokenize_worlds_multi_state(
+            worlds=worlds,
+            decl_id=decl_id,
+            actors=actors,
+            leaders=leaders,
+            trick_plays_list=trick_plays_list,
+            remaining=remaining,
+        )
+
+        # Move to device and run forward pass
+        tokens = torch.from_numpy(tokens).long().to(self.device)
+        masks = torch.from_numpy(masks).to(self.device)
+        actors_tensor = torch.from_numpy(actors).long().to(self.device)
+
+        with torch.no_grad():
+            q_values, _ = self.model(tokens, masks, actors_tensor)
+
+        return q_values
+
+    def _tokenize_worlds_multi_state(
+        self,
+        worlds: list[list[list[int]]],
+        decl_id: int,
+        actors: np.ndarray,
+        leaders: np.ndarray,
+        trick_plays_list: list[list[tuple[int, int]]],
+        remaining: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Tokenize N samples with per-sample game states.
+
+        Unlike _tokenize_worlds which broadcasts same state to all samples,
+        this handles different actors, leaders, and tricks per sample.
+        """
+        n_samples = len(worlds)
+
+        # Initialize output arrays
+        tokens = np.zeros((n_samples, MAX_TOKENS, N_FEATURES), dtype=np.int8)
+        masks = np.zeros((n_samples, MAX_TOKENS), dtype=np.int8)
+
+        # Precompute domino feature lookup table
+        domino_features = np.zeros((28, 5), dtype=np.int8)
+        for d in range(28):
+            domino_features[d, 0] = DOMINO_HIGH[d]
+            domino_features[d, 1] = DOMINO_LOW[d]
+            domino_features[d, 2] = 1 if DOMINO_IS_DOUBLE[d] else 0
+            domino_features[d, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[d]]
+            domino_features[d, 4] = TRUMP_RANK_TABLE[(d, decl_id)]
+
+        # Convert worlds to numpy array
+        worlds_array = np.array(worlds, dtype=np.int32)
+        flat_ids = worlds_array.reshape(n_samples, 28)
+
+        # Vectorized feature assignment for hand tokens
+        all_features = domino_features[flat_ids]
+        tokens[:, 1:29, 0:5] = all_features
+
+        # Per-sample player normalization
+        # For each sample i, normalize player p as (p - actors[i] + 4) % 4
+        player_ids = np.repeat(np.arange(4), 7)  # Shape: (28,)
+        # Expand for broadcasting: (N, 28)
+        actors_expanded = actors[:, np.newaxis]  # (N, 1)
+        normalized_players = (player_ids - actors_expanded + 4) % 4  # (N, 28)
+
+        tokens[:, 1:29, 5] = normalized_players.astype(np.int8)
+        tokens[:, 1:29, 6] = (normalized_players == 0).astype(np.int8)  # is_current
+        tokens[:, 1:29, 7] = (normalized_players == 2).astype(np.int8)  # is_partner
+
+        # Remaining bits (already per-sample)
+        local_indices = np.tile(np.arange(7), 4)
+        player_for_token = np.repeat(np.arange(4), 7)
+        remaining_bits = (remaining[:, player_for_token] >> local_indices) & 1
+        tokens[:, 1:29, 8] = remaining_bits.astype(np.int8)
+
+        # Token type (same for all)
+        token_types = TOKEN_TYPE_PLAYER0 + player_ids
+        tokens[:, 1:29, 9] = token_types
+
+        # Per-sample decl_id and normalized_leader
+        tokens[:, 1:29, 10] = decl_id
+        # normalized_leader per sample
+        normalized_leaders = (leaders - actors + 4) % 4  # (N,)
+        tokens[:, 1:29, 11] = normalized_leaders[:, np.newaxis]  # Broadcast to 28 cols
+
+        masks[:, 1:29] = 1
+
+        # Context token (per-sample leader)
+        tokens[:, 0, 9] = TOKEN_TYPE_CONTEXT
+        tokens[:, 0, 10] = decl_id
+        tokens[:, 0, 11] = normalized_leaders
+        masks[:, 0] = 1
+
+        # Trick tokens - per-sample (this part must be a loop)
+        for i in range(n_samples):
+            trick_plays = trick_plays_list[i]
+            actor = actors[i]
+            norm_leader = normalized_leaders[i]
+
+            for trick_pos, (play_player, domino_id) in enumerate(trick_plays):
+                if trick_pos >= 3:
+                    break
+
+                token_idx = 29 + trick_pos
+                normalized_pp = (play_player - actor + 4) % 4
+
+                tokens[i, token_idx, 0] = DOMINO_HIGH[domino_id]
+                tokens[i, token_idx, 1] = DOMINO_LOW[domino_id]
+                tokens[i, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[domino_id] else 0
+                tokens[i, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[domino_id]]
+                tokens[i, token_idx, 4] = TRUMP_RANK_TABLE[(domino_id, decl_id)]
+                tokens[i, token_idx, 5] = normalized_pp
+                tokens[i, token_idx, 6] = 1 if normalized_pp == 0 else 0
+                tokens[i, token_idx, 7] = 1 if normalized_pp == 2 else 0
+                tokens[i, token_idx, 8] = 0
+                tokens[i, token_idx, 9] = TOKEN_TYPE_TRICK_P0 + trick_pos
+                tokens[i, token_idx, 10] = decl_id
+                tokens[i, token_idx, 11] = norm_leader
+
+                masks[i, token_idx] = 1
+
+        return tokens, masks
