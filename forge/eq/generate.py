@@ -22,7 +22,7 @@ from forge.eq.game import GameState
 from forge.eq.oracle import Stage1Oracle
 from forge.eq.sampling import sample_consistent_worlds
 from forge.eq.transcript_tokenize import tokenize_transcript
-from forge.oracle.tables import can_follow, led_suit_for_lead_domino
+from forge.oracle.tables import can_follow, led_suit_for_lead_domino, resolve_trick
 
 
 # =============================================================================
@@ -199,12 +199,18 @@ class DecisionRecord:
     The target field `e_q_mean` contains the E[Q] (expected Q-value) in POINTS,
     computed by averaging Q-values across sampled worlds. These are NOT logits -
     do NOT apply softmax. Values are typically in [-42, +42] range.
+
+    The `actual_outcome` field contains the actual margin (my team - opponent team)
+    from this decision point to end of game. This is computed after game completion
+    via backward pass and enables direct validation of E[Q] predictions.
     """
 
     transcript_tokens: Tensor  # Stage 2 input (from tokenize_transcript)
     e_q_mean: Tensor  # (7,) target - E[Q] in points (averaged Q across worlds)
     legal_mask: Tensor  # (7,) which actions were legal
     action_taken: int  # Which action was actually played
+    player: int  # Who made this decision (0-3)
+    actual_outcome: float | None = None  # Actual margin from here to end (filled after game)
 
 
 @dataclass
@@ -218,6 +224,10 @@ class GameRecord:
 @dataclass
 class DecisionRecordV2(DecisionRecord):
     """Extended decision record with posterior diagnostics (t42-64uj.3) and exploration stats.
+
+    Inherits from DecisionRecord:
+    - player: Who made this decision (0-3)
+    - actual_outcome: Actual margin from here to end (filled after game)
 
     Uncertainty fields (t42-64uj.6):
     - e_q_var: Per-move variance σ²(a) = Var_w[Q(a)] in points²
@@ -467,6 +477,7 @@ def generate_eq_game(
                     e_q_mean=padded_e_q_mean,
                     legal_mask=padded_legal_mask,
                     action_taken=action_idx,
+                    player=player,
                     diagnostics=diagnostics,
                     exploration=exploration_stats,
                     e_q_var=padded_e_q_var,
@@ -481,6 +492,7 @@ def generate_eq_game(
                     e_q_mean=padded_e_q_mean,
                     legal_mask=padded_legal_mask,
                     action_taken=action_idx,
+                    player=player,
                 )
             )
 
@@ -490,6 +502,9 @@ def generate_eq_game(
     # Finalize game exploration stats
     if use_exploration and game_exploration_stats.n_decisions > 0:
         game_exploration_stats.mean_action_entropy = total_entropy / game_exploration_stats.n_decisions
+
+    # Compute actual_outcome for each decision via backward pass
+    _fill_actual_outcomes(decisions, game, decl_id)
 
     if use_v2:
         return GameRecordV2(
@@ -579,6 +594,75 @@ def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor
     legal_set = set(legal_actions)
     mask = torch.tensor([domino in legal_set for domino in hand], dtype=torch.bool)
     return mask
+
+
+def _fill_actual_outcomes(
+    decisions: list[DecisionRecord],
+    final_game: GameState,
+    decl_id: int,
+) -> None:
+    """Compute actual_outcome for each decision via backward pass.
+
+    After game completes, walk through play history and compute the actual
+    margin (my team - opponent team) from each decision point to end of game.
+
+    Args:
+        decisions: List of DecisionRecord to fill (modified in place)
+        final_game: Completed game state with full play_history
+        decl_id: Declaration ID for trick resolution
+    """
+    play_history = final_game.play_history
+    if len(play_history) != 28:
+        # Incomplete game - can't compute outcomes
+        return
+
+    # Replay to compute team scores at each decision point
+    team_scores_at_decision = []  # [(team0_score, team1_score), ...]
+    team_scores = [0, 0]
+
+    current_trick_dominoes = []
+    current_trick_players = []
+
+    for i, (player, domino_id, lead_domino_id) in enumerate(play_history):
+        # Record scores BEFORE this play
+        team_scores_at_decision.append(tuple(team_scores))
+
+        # Track trick
+        current_trick_dominoes.append(domino_id)
+        current_trick_players.append(player)
+
+        # Check if trick completed
+        if len(current_trick_dominoes) == 4:
+            outcome = resolve_trick(
+                lead_domino_id,
+                tuple(current_trick_dominoes),
+                decl_id
+            )
+            # Winner is relative to trick leader (first player in trick)
+            trick_leader = current_trick_players[0]
+            winner = (trick_leader + outcome.winner_offset) % 4
+            winner_team = winner % 2
+            team_scores[winner_team] += outcome.points
+
+            current_trick_dominoes = []
+            current_trick_players = []
+
+    # Final scores
+    final_scores = tuple(team_scores)
+
+    # Fill actual_outcome for each decision
+    # actual_outcome = margin from here to end = (my_final - opp_final) - (my_before - opp_before)
+    for i, decision in enumerate(decisions):
+        player = decision.player
+        team = player % 2
+        opp_team = 1 - team
+
+        my_before, opp_before = team_scores_at_decision[i][team], team_scores_at_decision[i][opp_team]
+        my_final, opp_final = final_scores[team], final_scores[opp_team]
+
+        # Margin from here to end
+        actual_margin = (my_final - opp_final) - (my_before - opp_before)
+        decision.actual_outcome = float(actual_margin)
 
 
 # =============================================================================

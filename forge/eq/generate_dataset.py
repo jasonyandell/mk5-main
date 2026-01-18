@@ -82,6 +82,8 @@ def generate_dataset(
             - game_idx: (N,) int tensor (which game each example came from)
             - decision_idx: (N,) int tensor (0-27 within game)
             - train_mask: (N,) bool tensor (True for train, False for val)
+            - player: (N,) int8 tensor (who made this decision, 0-3)
+            - actual_outcome: (N,) float tensor (actual margin from here to end, for validation)
             - u_mean: (N,) float tensor (state-level mean uncertainty in points)
             - u_max: (N,) float tensor (state-level max uncertainty in points)
             - ess: (N,) float tensor (effective sample size)
@@ -93,6 +95,7 @@ def generate_dataset(
         Note:
             Q-values are in POINTS (roughly [-42, +42] range), NOT logits.
             Do NOT apply softmax to e_q_mean - it's already an interpretable point estimate.
+            actual_outcome is the actual margin (my team - opp team) from decision to game end.
     """
     rng = np.random.default_rng(seed)
 
@@ -103,6 +106,8 @@ def generate_dataset(
     all_action_taken = []
     all_game_idx = []
     all_decision_idx = []
+    all_player = []  # Who made this decision (0-3)
+    all_actual_outcome = []  # Actual margin from here to end (for validation)
     # Uncertainty fields (t42-64uj.6)
     all_e_q_var = []  # Var[Q] in points²
     all_u_mean = []
@@ -183,6 +188,8 @@ def generate_dataset(
             all_game_idx.append(game_idx)
             all_decision_idx.append(decision_idx)
             all_is_val.append(game_is_val[game_idx])
+            all_player.append(decision.player)
+            all_actual_outcome.append(decision.actual_outcome if decision.actual_outcome is not None else 0.0)
 
             # Uncertainty fields (t42-64uj.6)
             if isinstance(decision, DecisionRecordV2) and decision.e_q_var is not None:
@@ -269,6 +276,8 @@ def generate_dataset(
     game_idx_tensor = torch.tensor(all_game_idx, dtype=torch.long)
     decision_idx_tensor = torch.tensor(all_decision_idx, dtype=torch.long)
     train_mask = torch.tensor([not v for v in all_is_val], dtype=torch.bool)
+    player = torch.tensor(all_player, dtype=torch.int8)
+    actual_outcome = torch.tensor(all_actual_outcome, dtype=torch.float32)
     # Uncertainty fields (t42-64uj.6)
     e_q_var = torch.stack(all_e_q_var)  # Var[Q] in points²
     u_mean = torch.tensor(all_u_mean, dtype=torch.float32)
@@ -291,9 +300,9 @@ def generate_dataset(
     ess_p10 = ess_sorted[int(n_ess * 0.1)].item() if n_ess > 0 else 0.0
     ess_p50 = ess_sorted[int(n_ess * 0.5)].item() if n_ess > 0 else 0.0
 
-    # Metadata (schema v2.1 with explicit Q-value semantics)
+    # Metadata (schema v2.2 with player + actual_outcome)
     metadata = {
-        "version": "2.1",  # Bumped for schema normalization (t42-d6y1)
+        "version": "2.2",  # Bumped for player + actual_outcome fields (t42-26dl)
         "generated_at": datetime.now().isoformat(),
         "n_games": n_games,
         "n_samples": n_samples,
@@ -369,6 +378,9 @@ def generate_dataset(
         "game_idx": game_idx_tensor,
         "decision_idx": decision_idx_tensor,
         "train_mask": train_mask,
+        # Player and actual outcome (t42-26dl)
+        "player": player,  # Who made this decision (0-3)
+        "actual_outcome": actual_outcome,  # Actual margin from here to end (for validation)
         # Uncertainty fields (t42-64uj.6)
         "u_mean": u_mean,  # State-level mean uncertainty (points)
         "u_max": u_max,  # State-level max uncertainty (points)
