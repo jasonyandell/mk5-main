@@ -1,5 +1,7 @@
 # E[Q] Training MVP
 
+> Status: historical MVP spec (superseded). The canonical Stage 2 training-data spec is `docs/EQ_STAGE2_TRAINING.md`.
+
 **Goal:** Validate that Stage 2 (imperfect-info policy) can learn from E[logits] labels generated using the existing perfect-info model.
 
 **Non-goal:** Production-quality data, optimal hyperparameters, true Q-values.

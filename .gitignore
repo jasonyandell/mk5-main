@@ -103,3 +103,7 @@ data/
 runs/
 lightning_logs/
 *.tar.gz
+
+# bv (beads viewer) local config and caches
+.bv/
+.beads/.bv.lock

@@ -91,12 +91,12 @@ model = DominoLightningModule.load_from_checkpoint(
 )
 model.eval()
 
-# Get Q-value predictions (in normalized [-1, 1] range)
+# Get Q-value predictions (in POINTS; do NOT rescale)
 q_values, value = model(tokens, mask, current_player)
 
-# Convert to points: multiply by 42
-q_points = q_values * 42  # Now in [-42, 42] range
-best_move = q_points.argmax(dim=-1)
+# q_values are already in roughly [-42, 42] range for qvalue-trained checkpoints.
+# (The value head is trained on a normalized target; multiply value by 42 if you need points.)
+best_move = q_values.argmax(dim=-1)
 ```
 
 #### Provenance
@@ -138,7 +138,7 @@ Same architecture as policy models but trained with Q-value loss.
 Q-value models output expected points directly:
 
 ```python
-# Q-value model output (after * 42 denormalization)
+# Q-value model output (in points)
 e_q = [-17.89, -21.05, -21.45, ...]
 # Interpretation: "Action 0 expects -17.89 points (17.89 behind)"
 ```

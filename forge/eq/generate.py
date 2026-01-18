@@ -194,10 +194,15 @@ class GameExplorationStats:
 
 @dataclass
 class DecisionRecord:
-    """One training example for Stage 2."""
+    """One training example for Stage 2.
+
+    The target field `e_q_mean` contains the E[Q] (expected Q-value) in POINTS,
+    computed by averaging Q-values across sampled worlds. These are NOT logits -
+    do NOT apply softmax. Values are typically in [-42, +42] range.
+    """
 
     transcript_tokens: Tensor  # Stage 2 input (from tokenize_transcript)
-    e_logits: Tensor  # (7,) target - averaged logits from oracle
+    e_q_mean: Tensor  # (7,) target - E[Q] in points (averaged Q across worlds)
     legal_mask: Tensor  # (7,) which actions were legal
     action_taken: int  # Which action was actually played
 
@@ -212,10 +217,20 @@ class GameRecord:
 
 @dataclass
 class DecisionRecordV2(DecisionRecord):
-    """Extended decision record with posterior diagnostics (t42-64uj.3) and exploration stats."""
+    """Extended decision record with posterior diagnostics (t42-64uj.3) and exploration stats.
+
+    Uncertainty fields (t42-64uj.6):
+    - e_q_var: Per-move variance σ²(a) = Var_w[Q(a)] in points²
+    - u_mean: State-level uncertainty = mean_{a legal}(σ(a)) in points
+    - u_max: State-level uncertainty = max_{a legal}(σ(a)) in points
+    """
 
     diagnostics: PosteriorDiagnostics | None = None  # Posterior health metrics
     exploration: ExplorationStats | None = None  # Exploration statistics (t42-64uj.5)
+    # Uncertainty fields (t42-64uj.6)
+    e_q_var: Tensor | None = None  # (7,) variance per action in points²
+    u_mean: float = 0.0  # State-level uncertainty (mean σ over legal) in points
+    u_max: float = 0.0  # State-level uncertainty (max σ over legal) in points
 
 
 @dataclass
@@ -338,8 +353,9 @@ def generate_eq_game(
             # Uniform weights
             weights = torch.ones(n_worlds, device=oracle.device) / n_worlds
 
-        # 5. Compute weighted E[Q] by domino ID, then map to remaining-hand order
-        # e_logits[i] = E_w[Q(my_hand[i])] for i in 0..len(my_hand)-1
+        # 5. Compute weighted E[Q] and Var[Q] by domino ID, then map to remaining-hand order
+        # e_q_mean[i] = E_w[Q(my_hand[i])] for i in 0..len(my_hand)-1  (in points)
+        # e_q_var[i] = Var_w[Q(my_hand[i])] = E[Q²] - E[Q]²  (in points²)
         e_q_by_domino: dict[int, list[tuple[float, float]]] = {d: [] for d in my_hand}
         for world_idx in range(n_worlds):
             world_logits = all_logits[world_idx]  # (7,)
@@ -351,18 +367,28 @@ def generate_eq_game(
                     # This domino is still in remaining hand
                     e_q_by_domino[domino_id].append((world_logits[local_idx].item(), w))
 
-        # Weighted average E[Q] by domino ID
-        e_logits = torch.zeros(len(my_hand))
+        # Weighted mean E[Q] and variance Var[Q] by domino ID (t42-64uj.6)
+        e_q_mean = torch.zeros(len(my_hand))
+        e_q_var = torch.zeros(len(my_hand))
         for i, domino_id in enumerate(my_hand):
             if e_q_by_domino[domino_id]:
                 q_w_pairs = e_q_by_domino[domino_id]
                 total_w = sum(w for _, w in q_w_pairs)
                 if total_w > 0:
-                    e_logits[i] = sum(q * w for q, w in q_w_pairs) / total_w
+                    # E[Q] = weighted mean (in points)
+                    mean_q = sum(q * w for q, w in q_w_pairs) / total_w
+                    # E[Q²] = weighted mean of squares
+                    mean_q2 = sum(q * q * w for q, w in q_w_pairs) / total_w
+                    # Var = E[Q²] - E[Q]² (clamp to non-negative for numerical stability)
+                    var_q = max(0.0, mean_q2 - mean_q * mean_q)
+                    e_q_mean[i] = mean_q
+                    e_q_var[i] = var_q
                 else:
-                    e_logits[i] = sum(q for q, _ in q_w_pairs) / len(q_w_pairs)
+                    e_q_mean[i] = sum(q for q, _ in q_w_pairs) / len(q_w_pairs)
+                    e_q_var[i] = 0.0
             else:
-                e_logits[i] = float("-inf")  # Should never happen
+                e_q_mean[i] = float("-inf")  # Should never happen
+                e_q_var[i] = 0.0
 
         # 6. Build transcript tokens for Stage 2 training
         plays_for_transcript = [(p, d) for p, d, _ in game.play_history]
@@ -373,13 +399,13 @@ def generate_eq_game(
         legal_mask = _build_legal_mask(legal_actions, my_hand)  # (len(my_hand),) boolean
 
         # Mask illegal actions for greedy baseline
-        masked_logits = e_logits.clone()
-        masked_logits[~legal_mask] = float("-inf")
-        greedy_idx = masked_logits.argmax().item()
+        masked_q = e_q_mean.clone()
+        masked_q[~legal_mask] = float("-inf")
+        greedy_idx = masked_q.argmax().item()
 
         # Select action using exploration policy
         action_idx, selection_mode, action_entropy = _select_action_with_exploration(
-            e_logits=e_logits,
+            e_q_mean=e_q_mean,
             legal_mask=legal_mask,
             policy=exploration_policy,
             rng=rng,
@@ -389,7 +415,7 @@ def generate_eq_game(
         # Compute exploration stats
         exploration_stats: ExplorationStats | None = None
         if use_exploration:
-            q_gap = (e_logits[greedy_idx] - e_logits[action_idx]).item()
+            q_gap = (e_q_mean[greedy_idx] - e_q_mean[action_idx]).item()
             exploration_stats = ExplorationStats(
                 greedy_action=greedy_idx,
                 action_taken=action_idx,
@@ -412,29 +438,47 @@ def generate_eq_game(
             total_entropy += action_entropy
 
         # 8. Record decision
-        # Note: e_logits and legal_mask are now in remaining-hand order (len = len(my_hand))
+        # Note: e_q_mean and legal_mask are now in remaining-hand order (len = len(my_hand))
         # Pad to 7 for consistent tensor shapes in dataset
-        padded_e_logits = torch.full((7,), float("-inf"))
-        padded_e_logits[:len(my_hand)] = e_logits
+        padded_e_q_mean = torch.full((7,), float("-inf"))
+        padded_e_q_mean[:len(my_hand)] = e_q_mean
         padded_legal_mask = torch.zeros(7, dtype=torch.bool)
         padded_legal_mask[:len(my_hand)] = legal_mask
+
+        # Pad variance and compute state-level uncertainty (t42-64uj.6)
+        padded_e_q_var = torch.zeros(7)
+        padded_e_q_var[:len(my_hand)] = e_q_var
+
+        # State-level uncertainty: U_mean and U_max over legal actions
+        # σ(a) = sqrt(var(a)), then compute mean/max over legal (in points)
+        legal_std = torch.sqrt(e_q_var)
+        legal_std_for_u = legal_std[legal_mask]
+        if len(legal_std_for_u) > 0:
+            u_mean = legal_std_for_u.mean().item()
+            u_max = legal_std_for_u.max().item()
+        else:
+            u_mean = 0.0
+            u_max = 0.0
 
         if use_v2:
             decisions.append(
                 DecisionRecordV2(
                     transcript_tokens=transcript_tokens,
-                    e_logits=padded_e_logits,
+                    e_q_mean=padded_e_q_mean,
                     legal_mask=padded_legal_mask,
                     action_taken=action_idx,
                     diagnostics=diagnostics,
                     exploration=exploration_stats,
+                    e_q_var=padded_e_q_var,
+                    u_mean=u_mean,
+                    u_max=u_max,
                 )
             )
         else:
             decisions.append(
                 DecisionRecord(
                     transcript_tokens=transcript_tokens,
-                    e_logits=padded_e_logits,
+                    e_q_mean=padded_e_q_mean,
                     legal_mask=padded_legal_mask,
                     action_taken=action_idx,
                 )
@@ -543,7 +587,7 @@ def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor
 
 
 def _select_action_with_exploration(
-    e_logits: Tensor,
+    e_q_mean: Tensor,
     legal_mask: Tensor,
     policy: ExplorationPolicy | None,
     rng: np.random.Generator | None,
@@ -551,7 +595,7 @@ def _select_action_with_exploration(
     """Select action using exploration policy.
 
     Args:
-        e_logits: E[Q] values for each action in remaining-hand order
+        e_q_mean: E[Q] values (in points) for each action in remaining-hand order
         legal_mask: Boolean mask of legal actions
         policy: Exploration policy (None = greedy)
         rng: Random number generator for stochastic selection
@@ -560,7 +604,12 @@ def _select_action_with_exploration(
         Tuple of (action_idx, selection_mode, action_entropy) where:
         - action_idx: Selected action index
         - selection_mode: "greedy", "boltzmann", "epsilon", or "blunder"
-        - action_entropy: Entropy of softmax(E[Q]) over legal actions
+        - action_entropy: Entropy of softmax(E[Q]/temp) over legal actions (for diversity measure)
+
+    Note:
+        Although E[Q] values are in points, we compute softmax for Boltzmann sampling
+        and entropy calculation. This converts point differences into selection probabilities.
+        The temperature parameter controls how much point differences affect selection.
     """
     # Get legal action indices and Q-values
     legal_indices = torch.where(legal_mask)[0].tolist()
@@ -573,8 +622,8 @@ def _select_action_with_exploration(
         # Only one legal action - no choice
         return legal_indices[0], "greedy", 0.0
 
-    # Get Q-values for legal actions
-    legal_q = e_logits[legal_mask]
+    # Get Q-values for legal actions (in points)
+    legal_q = e_q_mean[legal_mask]
 
     # Compute softmax probabilities for entropy calculation (and Boltzmann sampling)
     # Use temperature=1.0 for entropy calculation baseline

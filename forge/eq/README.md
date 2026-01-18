@@ -41,6 +41,11 @@ Texas 42 AIs using hand-coded heuristics are **point estimates applied to a dist
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Documentation
+
+- Research spec (semantics, invariants, ML tradeoffs): `docs/EQ_STAGE2_TRAINING.md`
+- Ops manual (how to run/debug generation): `forge/eq/README.md`
+
 ## Quick Start
 
 ```bash
@@ -117,11 +122,12 @@ Wraps the trained perfect-info model for efficient batch queries:
 ```python
 from forge.eq import Stage1Oracle
 
-oracle = Stage1Oracle("forge/models/domino-large-*.ckpt", device="cuda")
+oracle = Stage1Oracle("forge/models/domino-qval-large-*.ckpt", device="cuda")
 
 # Query 100 sampled worlds in a single forward pass
-logits = oracle.query_batch(worlds, game_state_info, current_player)
-# Shape: (100, 7) - logits for each action in each world
+q_values = oracle.query_batch(worlds, game_state_info, current_player)
+# Shape: (100, 7) - Q-values (in POINTS) for each action in each world
+# IMPORTANT: These are point estimates, NOT logits - do NOT apply softmax!
 ```
 
 ### 4. Game State (`game.py`)
@@ -169,9 +175,16 @@ record = generate_eq_game(oracle, hands, decl_id, n_samples=100)
 
 Each `DecisionRecord` contains:
 - `transcript_tokens`: Stage 2 input
-- `e_logits`: Target E[Q] values (7,)
+- `e_q_mean`: Target E[Q] values in POINTS (7,) - **NOT logits, do NOT softmax**
 - `legal_mask`: Which actions were legal (7,)
 - `action_taken`: Index of action played
+
+For `DecisionRecordV2` (with posterior weighting + exploration):
+- All above fields plus:
+- `e_q_var`: Variance of Q across worlds in points² (7,)
+- `u_mean`: State-level uncertainty = mean(σ) over legal actions
+- `u_max`: State-level uncertainty = max(σ) over legal actions
+- `diagnostics`: Posterior health metrics (ESS, max weight, etc.)
 
 ### 7. Continuous Generation (`generate_continuous.py`)
 
@@ -216,12 +229,12 @@ Trick History:
 
 Current Trick: ME [5:2] → L [5:1] → P [5:0] → ME: ?
 
-E[Q] (softmax):
-    [6:4]  0.42 ████████████████████
-    [6:2]  0.31 ███████████████ ← SELECTED
-    [5:3]  0.15 ███████
-    [4:1]  0.08 ████
-    [3:0]  0.04 ██
+E[Q] (points):
+    [6:4]  +3.2 ████████████████████
+    [6:2]  +1.1 ███████████████ ← SELECTED
+    [5:3]  -0.4 ███████
+    [4:1]  -2.0 ████
+    [3:0]  -3.5 ██
 
 [←] Prev  [→] Next  [j] Jump  [q] Quit
 ```
@@ -234,15 +247,22 @@ Output from `generate_dataset.py`:
 {
     "transcript_tokens": Tensor,  # (N, 36, 8) - padded transcripts
     "transcript_lengths": Tensor, # (N,) - actual lengths
-    "e_logits": Tensor,           # (N, 7) - target E[Q] values
+    "e_q_mean": Tensor,           # (N, 7) - E[Q] in POINTS (NOT logits!)
+    "e_q_var": Tensor,            # (N, 7) - Var[Q] in points²
     "legal_mask": Tensor,         # (N, 7) - boolean mask
     "action_taken": Tensor,       # (N,) - action indices
     "game_idx": Tensor,           # (N,) - which game (0-999)
     "decision_idx": Tensor,       # (N,) - position in game (0-27)
     "train_mask": Tensor,         # (N,) - True for train, False for val
-    "metadata": dict,             # Generation info
+    "u_mean": Tensor,             # (N,) - state-level uncertainty (mean σ)
+    "u_max": Tensor,              # (N,) - state-level uncertainty (max σ)
+    "ess": Tensor,                # (N,) - effective sample size
+    "metadata": dict,             # Generation info with schema semantics
 }
 ```
+
+**IMPORTANT**: `e_q_mean` contains Q-values in **POINTS** (roughly [-42, +42]), NOT logits.
+Do NOT apply softmax to these values - they are already interpretable point estimates.
 
 ---
 
@@ -391,8 +411,8 @@ For inference, we only need the model weights. Skipping optimizer state, RNG res
 Logit-based models (trained with soft cross-entropy) output arbitrary-scale values:
 
 ```python
-# Logit model output for a decision
-e_logits = [-0.72, -1.09, -1.87, -1.96, -2.12, -2.22, -1.21]
+# Policy model output for a decision
+policy_logits = [-0.72, -1.09, -1.87, -1.96, -2.12, -2.22, -1.21]
 # Range: [-2.22, -0.72] - arbitrary scale, NOT points!
 ```
 
@@ -443,6 +463,55 @@ python -m pytest forge/eq/test_oracle.py -v
 python -m pytest forge/eq/test_game.py -v
 python -m pytest forge/eq/test_generate.py -v
 ```
+
+## Validation & Debugging
+
+### Validation Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/validate_eq_computation.py` | Verify E[Q] matches fresh oracle queries |
+| `scripts/analyze_eq_predictions.py` | Compare predictions to actual game outcomes |
+
+Run validation on any dataset:
+
+```bash
+# Verify E[Q] computation is correct
+python scripts/validate_eq_computation.py forge/data/eq_v2_*.pt
+
+# Analyze prediction quality vs actual outcomes
+python scripts/analyze_eq_predictions.py forge/data/eq_v2_*.pt
+```
+
+### Key Findings
+
+**E[Q] computation is correct:**
+- Fresh oracle queries match dataset E[Q] within sampling variance (~1-3 pts)
+- Average E[Q] across a game correlates strongly with outcomes (r ≈ +0.76)
+
+**Opening lead uncertainty is genuine:**
+- Opening E[Q] has weak correlation with outcomes (r ≈ +0.16)
+- High variance (σ ≈ 20 pts) reflects true uncertainty about opponents' hands
+- RMSE ≈ 24 pts is expected given the variance
+
+**Oracle behavior at opening:**
+- Stage 1 oracle gives flat Q-values (~0.5 pt spread) for ~65% of random opponent configurations
+- Only ~15% of configurations produce strong discrimination (>10 pt spread)
+- Oracle rates some high trump leads poorly at opening (may be conserving trump strategy)
+
+### Viewer Debug Mode
+
+Press `d` in the interactive viewer to see debug details including:
+- Per-world Q-values from oracle
+- Weight distribution (if posterior weighting enabled)
+- ESS and max weight diagnostics
+
+```bash
+python -m forge.eq.viewer forge/data/eq_v2_*.pt
+# Then press 'd' for debug mode
+```
+
+---
 
 ## Next Steps
 

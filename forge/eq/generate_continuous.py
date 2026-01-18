@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Continuous E[Q] training data generation with monitoring.
+"""Continuous Stage 2 E[Q] training data generation with monitoring.
 
 Runs indefinitely, generating batches of games and appending to dataset.
 Handles Ctrl+C gracefully - saves current state before exit.
@@ -10,8 +10,8 @@ Usage:
     # Custom batch size and target
     python -m forge.eq.generate_continuous --batch-size 100 --target-games 100000
 
-    # Resume from existing dataset
-    python -m forge.eq.generate_continuous  # Automatically resumes if dataset exists
+    # Resume from existing dataset (default output path)
+    python -m forge.eq.generate_continuous
 """
 
 from __future__ import annotations
@@ -27,6 +27,7 @@ import numpy as np
 import torch
 
 from forge.eq import Stage1Oracle, generate_eq_game
+from forge.eq.generate import ExplorationPolicy, PosteriorConfig
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
 from forge.oracle.rng import deal_from_seed
 
@@ -63,15 +64,26 @@ def save_dataset(data: dict, path: Path) -> None:
 def append_batch(
     existing: dict | None,
     batch_tokens: list[torch.Tensor],
-    batch_e_logits: list[torch.Tensor],
+    batch_e_q_mean: list[torch.Tensor],
+    batch_e_q_var: list[torch.Tensor],
     batch_legal_mask: list[torch.Tensor],
     batch_action_taken: list[int],
     batch_game_idx: list[int],
     batch_decision_idx: list[int],
     batch_is_val: list[bool],
     batch_lengths: list[int],
+    batch_u_mean: list[float],
+    batch_u_max: list[float],
+    batch_ess: list[float],
+    batch_max_w: list[float],
+    batch_exploration_mode: list[int],
+    batch_q_gap: list[float],
     games_generated: int,
     n_samples: int,
+    seed: int,
+    checkpoint: str,
+    posterior_config: PosteriorConfig | None,
+    exploration_policy: ExplorationPolicy | None,
     start_time: float,
 ) -> dict:
     """Append new batch to existing dataset (or create new one)."""
@@ -86,31 +98,71 @@ def append_batch(
 
     new_transcript_tokens = torch.stack(padded_transcripts)
     new_transcript_lengths = torch.tensor(batch_lengths, dtype=torch.long)
-    new_e_logits = torch.stack(batch_e_logits)
+    new_e_q_mean = torch.stack(batch_e_q_mean)
+    new_e_q_var = torch.stack(batch_e_q_var)
     new_legal_mask = torch.stack(batch_legal_mask)
     new_action_taken = torch.tensor(batch_action_taken, dtype=torch.long)
     new_game_idx = torch.tensor(batch_game_idx, dtype=torch.long)
     new_decision_idx = torch.tensor(batch_decision_idx, dtype=torch.long)
     new_train_mask = torch.tensor([not v for v in batch_is_val], dtype=torch.bool)
+    new_u_mean = torch.tensor(batch_u_mean, dtype=torch.float32)
+    new_u_max = torch.tensor(batch_u_max, dtype=torch.float32)
+    new_ess = torch.tensor(batch_ess, dtype=torch.float32)
+    new_max_w = torch.tensor(batch_max_w, dtype=torch.float32)
+    new_exploration_mode = torch.tensor(batch_exploration_mode, dtype=torch.int8)
+    new_q_gap = torch.tensor(batch_q_gap, dtype=torch.float32)
 
     if existing is None:
         # Create new dataset
         return {
             "transcript_tokens": new_transcript_tokens,
             "transcript_lengths": new_transcript_lengths,
-            "e_logits": new_e_logits,
+            "e_q_mean": new_e_q_mean,
+            "e_q_var": new_e_q_var,
             "legal_mask": new_legal_mask,
             "action_taken": new_action_taken,
             "game_idx": new_game_idx,
             "decision_idx": new_decision_idx,
             "train_mask": new_train_mask,
+            "u_mean": new_u_mean,
+            "u_max": new_u_max,
+            "ess": new_ess,
+            "max_w": new_max_w,
+            "exploration_mode": new_exploration_mode,
+            "q_gap": new_q_gap,
             "metadata": {
+                "version": "2.1",
                 "n_games": games_generated,
                 "n_samples": n_samples,
                 "n_examples": len(batch_action_taken),
                 "n_train": new_train_mask.sum().item(),
                 "n_val": (~new_train_mask).sum().item(),
-                "seed": 42,
+                "seed": seed,
+                "checkpoint": checkpoint,
+                "schema": {
+                    "q_semantics": "minimax_value_to_go",
+                    "q_units": "points",
+                    "q_normalization": "raw",
+                    "tokenizer_version": "transcript_v1",
+                    "warning": "Do NOT apply softmax to e_q_mean - values are already point estimates",
+                },
+                "posterior": {
+                    "enabled": bool(posterior_config and posterior_config.enabled),
+                    "tau": posterior_config.tau if posterior_config else 10.0,
+                    "beta": posterior_config.beta if posterior_config else 0.10,
+                    "window_k": posterior_config.window_k if posterior_config else 8,
+                    "delta": posterior_config.delta if posterior_config else 30.0,
+                    "adaptive_k_enabled": posterior_config.adaptive_k_enabled if posterior_config else False,
+                    "rejuvenation_enabled": posterior_config.rejuvenation_enabled if posterior_config else False,
+                },
+                "exploration": {
+                    "enabled": exploration_policy is not None,
+                    "temperature": exploration_policy.temperature if exploration_policy else 1.0,
+                    "use_boltzmann": exploration_policy.use_boltzmann if exploration_policy else False,
+                    "epsilon": exploration_policy.epsilon if exploration_policy else 0.0,
+                    "blunder_rate": exploration_policy.blunder_rate if exploration_policy else 0.0,
+                    "blunder_max_regret": exploration_policy.blunder_max_regret if exploration_policy else 5.0,
+                },
                 "total_time_seconds": time.time() - start_time,
                 "avg_game_time": (time.time() - start_time) / games_generated,
                 "generation_started": datetime.now().isoformat(),
@@ -121,19 +173,61 @@ def append_batch(
     return {
         "transcript_tokens": torch.cat([existing["transcript_tokens"], new_transcript_tokens]),
         "transcript_lengths": torch.cat([existing["transcript_lengths"], new_transcript_lengths]),
-        "e_logits": torch.cat([existing["e_logits"], new_e_logits]),
+        "e_q_mean": torch.cat([existing["e_q_mean"], new_e_q_mean]),
+        "e_q_var": torch.cat([existing["e_q_var"], new_e_q_var]),
         "legal_mask": torch.cat([existing["legal_mask"], new_legal_mask]),
         "action_taken": torch.cat([existing["action_taken"], new_action_taken]),
         "game_idx": torch.cat([existing["game_idx"], new_game_idx]),
         "decision_idx": torch.cat([existing["decision_idx"], new_decision_idx]),
         "train_mask": torch.cat([existing["train_mask"], new_train_mask]),
+        "u_mean": torch.cat([existing["u_mean"], new_u_mean]),
+        "u_max": torch.cat([existing["u_max"], new_u_max]),
+        "ess": torch.cat([existing["ess"], new_ess]),
+        "max_w": torch.cat([existing["max_w"], new_max_w]),
+        "exploration_mode": torch.cat([existing["exploration_mode"], new_exploration_mode]),
+        "q_gap": torch.cat([existing["q_gap"], new_q_gap]),
         "metadata": {
             "n_games": existing["metadata"]["n_games"] + games_generated,
             "n_samples": n_samples,
             "n_examples": existing["metadata"]["n_examples"] + len(batch_action_taken),
             "n_train": existing["metadata"]["n_train"] + new_train_mask.sum().item(),
             "n_val": existing["metadata"]["n_val"] + (~new_train_mask).sum().item(),
-            "seed": existing["metadata"].get("seed", 42),
+            "seed": existing["metadata"].get("seed", seed),
+            "checkpoint": existing["metadata"].get("checkpoint", checkpoint),
+            "version": existing["metadata"].get("version", "2.1"),
+            "schema": existing["metadata"].get(
+                "schema",
+                {
+                    "q_semantics": "minimax_value_to_go",
+                    "q_units": "points",
+                    "q_normalization": "raw",
+                    "tokenizer_version": "transcript_v1",
+                    "warning": "Do NOT apply softmax to e_q_mean - values are already point estimates",
+                },
+            ),
+            "posterior": existing["metadata"].get(
+                "posterior",
+                {
+                    "enabled": bool(posterior_config and posterior_config.enabled),
+                    "tau": posterior_config.tau if posterior_config else 10.0,
+                    "beta": posterior_config.beta if posterior_config else 0.10,
+                    "window_k": posterior_config.window_k if posterior_config else 8,
+                    "delta": posterior_config.delta if posterior_config else 30.0,
+                    "adaptive_k_enabled": posterior_config.adaptive_k_enabled if posterior_config else False,
+                    "rejuvenation_enabled": posterior_config.rejuvenation_enabled if posterior_config else False,
+                },
+            ),
+            "exploration": existing["metadata"].get(
+                "exploration",
+                {
+                    "enabled": exploration_policy is not None,
+                    "temperature": exploration_policy.temperature if exploration_policy else 1.0,
+                    "use_boltzmann": exploration_policy.use_boltzmann if exploration_policy else False,
+                    "epsilon": exploration_policy.epsilon if exploration_policy else 0.0,
+                    "blunder_rate": exploration_policy.blunder_rate if exploration_policy else 0.0,
+                    "blunder_max_regret": exploration_policy.blunder_max_regret if exploration_policy else 5.0,
+                },
+            ),
             "total_time_seconds": existing["metadata"]["total_time_seconds"] + (time.time() - start_time),
             "avg_game_time": (
                 existing["metadata"]["total_time_seconds"] + (time.time() - start_time)
@@ -186,8 +280,9 @@ def main():
         "--output",
         type=str,
         default="forge/data/eq_dataset.pt",
-        help="Output path for dataset",
+        help="Output path for dataset (resumes/appends if exists)",
     )
+    parser.add_argument("--seed", type=int, default=42, help="Base random seed")
     parser.add_argument(
         "--val-fraction",
         type=float,
@@ -199,6 +294,73 @@ def main():
         type=str,
         default="cuda",
         help="Device (cuda/cpu)",
+    )
+
+    # Posterior weighting args (matches forge/eq/generate_dataset.py)
+    posterior_group = parser.add_argument_group("Posterior weighting")
+    posterior_group.add_argument(
+        "--posterior",
+        action="store_true",
+        help="Enable posterior-weighted E[Q] marginalization",
+    )
+    posterior_group.add_argument(
+        "--tau", type=float, default=10.0, help="Posterior temperature (default: 10.0)"
+    )
+    posterior_group.add_argument(
+        "--beta", type=float, default=0.10, help="Uniform mix coefficient (default: 0.10)"
+    )
+    posterior_group.add_argument(
+        "--window-k", type=int, default=8, help="Transcript scoring window (default: 8)"
+    )
+    posterior_group.add_argument(
+        "--delta", type=float, default=30.0, help="Log-weight clipping threshold (default: 30.0)"
+    )
+    posterior_group.add_argument(
+        "--adaptive-k",
+        action="store_true",
+        help="Enable adaptive window expansion when ESS low",
+    )
+    posterior_group.add_argument(
+        "--rejuvenation",
+        action="store_true",
+        help="Enable particle rejuvenation when ESS critical",
+    )
+
+    # Exploration policy args (matches forge/eq/generate_dataset.py)
+    explore_group = parser.add_argument_group("Exploration policy")
+    explore_group.add_argument(
+        "--explore",
+        action="store_true",
+        help="Enable exploration policy (mixed by default)",
+    )
+    explore_group.add_argument(
+        "--explore-temp",
+        type=float,
+        default=3.0,
+        help="Boltzmann temperature (default: 3.0)",
+    )
+    explore_group.add_argument(
+        "--explore-eps",
+        type=float,
+        default=0.05,
+        help="Epsilon-random rate (default: 0.05)",
+    )
+    explore_group.add_argument(
+        "--explore-blunder",
+        type=float,
+        default=0.02,
+        help="Blunder rate (default: 0.02)",
+    )
+    explore_group.add_argument(
+        "--explore-blunder-regret",
+        type=float,
+        default=3.0,
+        help="Max blunder regret in points (default: 3.0)",
+    )
+    explore_group.add_argument(
+        "--explore-greedy",
+        action="store_true",
+        help="Use pure greedy exploration (overrides other explore options)",
     )
 
     args = parser.parse_args()
@@ -229,6 +391,11 @@ def main():
     # Load existing dataset
     existing = load_existing_dataset(output_path)
     current_n_games = existing["metadata"]["n_games"] if existing else 0
+    if existing is not None and ("e_q_mean" not in existing or "e_q_var" not in existing):
+        raise ValueError(
+            f"Existing dataset at {output_path} does not match schema v2.1 "
+            f"(expected keys 'e_q_mean'/'e_q_var'). Regenerate into a new file."
+        )
 
     if current_n_games > 0:
         print(f"\nResuming from {current_n_games} games...")
@@ -248,7 +415,34 @@ def main():
 
     # Initialize RNG with deterministic seed based on current game count
     # This ensures different games even when resuming
-    rng = np.random.default_rng(42 + current_n_games)
+    rng = np.random.default_rng(args.seed + current_n_games)
+
+    # Build posterior config
+    posterior_config = None
+    if args.posterior:
+        posterior_config = PosteriorConfig(
+            enabled=True,
+            tau=args.tau,
+            beta=args.beta,
+            window_k=args.window_k,
+            delta=args.delta,
+            adaptive_k_enabled=args.adaptive_k,
+            rejuvenation_enabled=args.rejuvenation,
+        )
+
+    # Build exploration policy
+    exploration_policy = None
+    if args.explore:
+        if args.explore_greedy:
+            exploration_policy = ExplorationPolicy.greedy()
+        else:
+            exploration_policy = ExplorationPolicy.mixed_exploration(
+                temperature=args.explore_temp,
+                epsilon=args.explore_eps,
+                blunder_rate=args.explore_blunder,
+                blunder_max_regret=args.explore_blunder_regret,
+                seed=args.seed,
+            )
 
     # Generation loop
     print("\n" + "─" * 60)
@@ -267,13 +461,22 @@ def main():
 
             # Collect batch
             batch_tokens = []
-            batch_e_logits = []
+            batch_e_q_mean = []
+            batch_e_q_var = []
             batch_legal_mask = []
             batch_action_taken = []
             batch_game_idx = []
             batch_decision_idx = []
             batch_is_val = []
             batch_lengths = []
+            batch_u_mean = []
+            batch_u_max = []
+            batch_ess = []
+            batch_max_w = []
+            batch_exploration_mode = []
+            batch_q_gap = []
+
+            mode_to_int = {"greedy": 0, "boltzmann": 1, "epsilon": 2, "blunder": 3}
 
             for i in range(batch_size):
                 game_idx = current_n_games + i
@@ -282,12 +485,46 @@ def main():
                 decl_id = int(rng.integers(0, 10))
                 is_val = rng.random() < args.val_fraction
 
-                record = generate_eq_game(oracle, hands, decl_id, n_samples=args.n_samples)
+                record = generate_eq_game(
+                    oracle,
+                    hands,
+                    decl_id,
+                    n_samples=args.n_samples,
+                    posterior_config=posterior_config,
+                    exploration_policy=exploration_policy,
+                )
 
                 for decision_idx, decision in enumerate(record.decisions):
                     batch_tokens.append(decision.transcript_tokens)
                     batch_lengths.append(decision.transcript_tokens.shape[0])
-                    batch_e_logits.append(decision.e_logits)
+                    batch_e_q_mean.append(decision.e_q_mean)
+                    # Optional fields (filled with zeros if missing)
+                    if hasattr(decision, "e_q_var") and decision.e_q_var is not None:
+                        batch_e_q_var.append(decision.e_q_var)
+                        batch_u_mean.append(float(getattr(decision, "u_mean", 0.0)))
+                        batch_u_max.append(float(getattr(decision, "u_max", 0.0)))
+                    else:
+                        batch_e_q_var.append(torch.zeros_like(decision.e_q_mean))
+                        batch_u_mean.append(0.0)
+                        batch_u_max.append(0.0)
+
+                    diagnostics = getattr(decision, "diagnostics", None)
+                    if diagnostics is not None:
+                        batch_ess.append(float(diagnostics.ess))
+                        batch_max_w.append(float(diagnostics.max_w))
+                    else:
+                        batch_ess.append(float(args.n_samples))
+                        batch_max_w.append(1.0 / float(args.n_samples))
+
+                    exploration = getattr(decision, "exploration", None)
+                    if exploration is not None:
+                        batch_exploration_mode.append(
+                            mode_to_int.get(getattr(exploration, "selection_mode", "greedy"), 0)
+                        )
+                        batch_q_gap.append(float(getattr(exploration, "q_gap", 0.0)))
+                    else:
+                        batch_exploration_mode.append(0)
+                        batch_q_gap.append(0.0)
                     batch_legal_mask.append(decision.legal_mask)
                     batch_action_taken.append(decision.action_taken)
                     batch_game_idx.append(game_idx)
@@ -298,15 +535,26 @@ def main():
             existing = append_batch(
                 existing,
                 batch_tokens,
-                batch_e_logits,
+                batch_e_q_mean,
+                batch_e_q_var,
                 batch_legal_mask,
                 batch_action_taken,
                 batch_game_idx,
                 batch_decision_idx,
                 batch_is_val,
                 batch_lengths,
+                batch_u_mean,
+                batch_u_max,
+                batch_ess,
+                batch_max_w,
+                batch_exploration_mode,
+                batch_q_gap,
                 batch_size,
                 args.n_samples,
+                args.seed,
+                args.checkpoint,
+                posterior_config,
+                exploration_policy,
                 batch_start,
             )
 

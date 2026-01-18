@@ -264,13 +264,21 @@ def render_default_mode(
     total: int,
     tokens: Tensor,
     length: int,
-    e_logits: Tensor,
+    e_q_mean: Tensor,
     legal_mask: Tensor,
     action_taken: int,
     game_idx: int,
     decision_idx: int,
+    e_q_var: Tensor | None = None,
+    u_mean: float = 0.0,
+    u_max: float = 0.0,
 ) -> str:
-    """Render default (fast) view."""
+    """Render default (fast) view with optional uncertainty display.
+
+    Args:
+        e_q_mean: E[Q] values in POINTS (NOT logits - do not softmax)
+        e_q_var: Var[Q] in points² (optional)
+    """
     lines = []
 
     # Decode transcript
@@ -346,29 +354,47 @@ def render_default_mode(
 
     # E[Q] display (legal actions only) - show raw Q-values (expected points)
     legal_indices = [i for i in range(len(hand)) if legal_mask[i]]
+    has_uncertainty = e_q_var is not None and e_q_var.sum().item() > 0
     if legal_indices:
-        legal_q = e_logits[legal_indices]
+        legal_q = e_q_mean[legal_indices]
         max_q = legal_q.max().item()
         min_q = legal_q.min().item()
         q_range = max_q - min_q if max_q != min_q else 1.0
 
         # Sort by Q-value (descending)
-        sorted_legal = sorted(
-            zip(legal_indices, [e_logits[i].item() for i in legal_indices]),
-            key=lambda x: x[1],
-            reverse=True,
-        )
+        if has_uncertainty and e_q_var is not None:
+            sorted_legal: list[tuple[int, float, float]] = sorted(
+                zip(legal_indices, [e_q_mean[i].item() for i in legal_indices],
+                    [torch.sqrt(e_q_var[i]).item() if e_q_var[i] > 0 else 0.0 for i in legal_indices]),
+                key=lambda x: x[1],
+                reverse=True,
+            )
+        else:
+            sorted_legal = sorted(
+                zip(legal_indices, [e_q_mean[i].item() for i in legal_indices], [0.0] * len(legal_indices)),
+                key=lambda x: x[1],
+                reverse=True,
+            )
 
-        lines.append("E[Q] (expected points, higher = better):")
-        for i, q_val in sorted_legal:
+        header = "E[Q] ± σ (expected points ± uncertainty):" if has_uncertainty else "E[Q] (expected points, higher = better):"
+        lines.append(header)
+        for i, q_val, std_val in sorted_legal:
             h, l = hand[i]
             dom = domino_str(h, l)
             # Bar shows relative Q within legal actions
-            bar_len = int(20 * (q_val - min_q) / q_range) if q_range > 0 else 10
+            bar_len = int(16 * (q_val - min_q) / q_range) if q_range > 0 else 8
             bar = "█" * bar_len
             sign = "+" if q_val >= 0 else ""
             marker = " ← SELECTED" if i == action_taken else ""
-            lines.append(f"    {dom:>7}  {sign}{q_val:5.1f} pts {bar}{marker}")
+            if has_uncertainty and std_val > 0:
+                lines.append(f"    {dom:>7}  {sign}{q_val:5.1f} ± {std_val:4.1f} pts {bar}{marker}")
+            else:
+                lines.append(f"    {dom:>7}  {sign}{q_val:5.1f} pts       {bar}{marker}")
+
+    # State-level uncertainty (t42-64uj.6)
+    if has_uncertainty and (u_mean > 0 or u_max > 0):
+        lines.append("")
+        lines.append(f"State uncertainty: U_mean={u_mean:.2f}, U_max={u_max:.2f}")
 
     lines.append("─" * 80)
     lines.append("[←/→] Nav  [j] Jump  [d] Debug details  [q] Quit")
@@ -385,7 +411,7 @@ def compute_debug_data(
     oracle: Stage1Oracle,
     tokens: Tensor,
     length: int,
-    e_logits: Tensor,
+    e_q_mean: Tensor,
     legal_mask: Tensor,
     action_taken: int,
     n_samples: int = 20,
@@ -401,6 +427,9 @@ def compute_debug_data(
     IMPORTANT: Each world gets its own trick_plays computed from that world's
     initial hands. Oracle outputs are projected from local_idx to domino_id
     before averaging, matching the fix in generate.py.
+
+    Args:
+        e_q_mean: E[Q] values in POINTS (NOT logits)
     """
     from forge.eq.sampling import sample_consistent_worlds
     from forge.eq.voids import infer_voids
@@ -454,11 +483,11 @@ def compute_debug_data(
             rng=rng,
         )
     except RuntimeError as e:
-        return {"error": str(e), "worlds": [], "world_logits": [], "initial_hands": []}
+        return {"error": str(e), "worlds": [], "world_q_values": [], "initial_hands": []}
 
     # For each sampled world, reconstruct initial hands and query oracle
-    world_logits = []  # Raw oracle outputs (7,) per world
-    world_logits_projected = []  # Projected to remaining-hand order (len(hand),)
+    world_q_values = []  # Raw oracle Q-values (7,) per world (initial-hand local slots)
+    world_q_values_projected = []  # Projected to remaining-hand order (len(hand),)
     world_prefs = []
     initial_hands_list = []  # Store reconstructed initial hands for display
 
@@ -532,24 +561,24 @@ def compute_debug_data(
         }
 
         try:
-            logits = oracle.query_batch([initial_hands], game_state_info, current_player=0)
-            logits = logits[0]  # (7,) - indexed by initial-hand local slots
-            world_logits.append(logits.cpu())
+            q_values = oracle.query_batch([initial_hands], game_state_info, current_player=0)
+            q_values = q_values[0]  # (7,) - indexed by initial-hand local slots
+            world_q_values.append(q_values.cpu())
 
             # Project from local_idx to domino_id, accumulate for averaging
             for local_idx, domino_id in enumerate(initial_hands[0]):
                 if domino_id in e_q_by_domino:
-                    e_q_by_domino[domino_id].append(logits[local_idx].item())
+                    e_q_by_domino[domino_id].append(q_values[local_idx].item())
 
             # Project to remaining-hand order for this world's preference
             projected = torch.zeros(len(my_hand_ids))
             for i, domino_id in enumerate(my_hand_ids):
                 local_idx = domino_to_local.get(domino_id)
                 if local_idx is not None:
-                    projected[i] = logits[local_idx]
+                    projected[i] = q_values[local_idx]
                 else:
                     projected[i] = float("-inf")
-            world_logits_projected.append(projected)
+            world_q_values_projected.append(projected)
 
             # Which legal action does this world prefer? (in remaining-hand order)
             masked = projected.clone()
@@ -559,8 +588,8 @@ def compute_debug_data(
             pref = masked.argmax().item()
             world_prefs.append(pref)
         except Exception:
-            world_logits.append(None)
-            world_logits_projected.append(None)
+            world_q_values.append(None)
+            world_q_values_projected.append(None)
             world_prefs.append(-1)
 
     # Compute E[Q] in remaining-hand order (same as generate.py)
@@ -591,8 +620,8 @@ def compute_debug_data(
         "worlds": sampled_remaining,  # Remaining hands
         "initial_hands": initial_hands_list,  # Reconstructed initial 7-domino hands
         "played_by": played_by,  # Which dominoes each player has played
-        "world_logits": world_logits,  # Raw oracle outputs (initial-hand order)
-        "world_logits_projected": world_logits_projected,  # Projected to remaining-hand order
+        "world_q_values": world_q_values,  # Raw oracle outputs (initial-hand order)
+        "world_q_values_projected": world_q_values_projected,  # Projected to remaining-hand order
         "world_prefs": world_prefs,  # Preferences in remaining-hand order
         "oracle_avg": oracle_avg,  # E[Q] padded to 7
         "oracle_avg_by_hand": oracle_avg_by_hand,  # E[Q] in remaining-hand order
@@ -611,14 +640,18 @@ def render_debug_mode(
     total: int,
     tokens: Tensor,
     length: int,
-    e_logits: Tensor,
+    e_q_mean: Tensor,
     legal_mask: Tensor,
     action_taken: int,
     game_idx: int,
     decision_idx: int,
     debug_data: dict,
 ) -> str:
-    """Render debug mode with oracle comparison."""
+    """Render debug mode with oracle comparison.
+
+    Args:
+        e_q_mean: E[Q] values in POINTS (NOT logits)
+    """
     lines = []
 
     decoded = decode_transcript(tokens, length)
@@ -723,7 +756,7 @@ def render_debug_mode(
 
     # Sort by E[Q] value (descending) - raw points, not softmax
     sorted_by_eq = sorted(
-        [(i, e_logits[i].item(), oracle_avg[i].item()) for i in legal_indices],
+        [(i, e_q_mean[i].item(), oracle_avg[i].item()) for i in legal_indices],
         key=lambda x: x[1],
         reverse=True,
     )
@@ -750,7 +783,7 @@ def render_debug_mode(
     lines.append("")
 
     # Agreement status
-    e_best = max(legal_indices, key=lambda i: e_logits[i].item())
+    e_best = max(legal_indices, key=lambda i: e_q_mean[i].item())
     oracle_best = max(legal_indices, key=lambda i: oracle_avg[i].item())
     agreement = "YES" if e_best == oracle_best else "NO"
 
@@ -776,7 +809,7 @@ def render_debug_mode(
     # World breakdown
     flagged = debug_data.get("flagged_worlds", [])
     world_prefs = debug_data.get("world_prefs", [])
-    world_logits = debug_data.get("world_logits", [])
+    world_q_values = debug_data.get("world_q_values", [])
     pref_counts = debug_data.get("pref_counts", {})
 
     # Count worlds preferring selected action
@@ -789,10 +822,10 @@ def render_debug_mode(
     sample_worlds = list(range(display_count))
 
     for wi in sample_worlds:
-        if wi >= len(world_logits) or world_logits[wi] is None:
+        if wi >= len(world_q_values) or world_q_values[wi] is None:
             continue
 
-        wl = world_logits[wi]
+        wl = world_q_values[wi]
         # Top 3 actions for this world (show raw Q-values)
         top3 = torch.argsort(wl[: len(hand)], descending=True)[:3].tolist()
 
@@ -830,7 +863,7 @@ def render_world_mode(
     total: int,
     tokens: Tensor,
     length: int,
-    e_logits: Tensor,
+    e_q_mean: Tensor,
     legal_mask: Tensor,
     action_taken: int,
     game_idx: int,
@@ -838,7 +871,11 @@ def render_world_mode(
     debug_data: dict,
     world_idx: int,
 ) -> str:
-    """Render world inspection mode - browse all sampled worlds."""
+    """Render world inspection mode - browse all sampled worlds.
+
+    Args:
+        e_q_mean: E[Q] values in POINTS (NOT logits)
+    """
     lines = []
 
     decoded = decode_transcript(tokens, length)
@@ -847,7 +884,7 @@ def render_world_mode(
 
     flagged = debug_data.get("flagged_worlds", [])
     worlds = debug_data.get("worlds", [])
-    world_logits = debug_data.get("world_logits", [])
+    world_q_values = debug_data.get("world_q_values", [])
     world_prefs = debug_data.get("world_prefs", [])
 
     if not worlds:
@@ -945,9 +982,9 @@ def render_world_mode(
     lines.append("─" * 80)
 
     # Oracle Q-values for this world (use projected values in remaining-hand order)
-    world_logits_projected = debug_data.get("world_logits_projected", [])
-    if actual_wi < len(world_logits_projected) and world_logits_projected[actual_wi] is not None:
-        wl = world_logits_projected[actual_wi]  # Already in remaining-hand order
+    world_q_values_projected = debug_data.get("world_q_values_projected", [])
+    if actual_wi < len(world_q_values_projected) and world_q_values_projected[actual_wi] is not None:
+        wl = world_q_values_projected[actual_wi]  # Already in remaining-hand order
         legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
         legal_q = wl[legal_indices]
         max_q = legal_q.max().item()
@@ -1021,11 +1058,16 @@ def run_viewer(dataset_path: str, start_example: int = 0):
 
     tokens = data["transcript_tokens"]
     lengths = data["transcript_lengths"]
-    e_logits = data["e_logits"]
+    e_q_mean = data["e_q_mean"]  # E[Q] in points (NOT logits)
     legal_mask = data["legal_mask"]
     action_taken = data["action_taken"]
     game_idx = data["game_idx"]
     decision_idx = data["decision_idx"]
+    # Uncertainty fields (t42-64uj.6)
+    e_q_var = data.get("e_q_var")  # Var[Q] in points²
+    u_mean = data.get("u_mean")
+    u_max = data.get("u_max")
+    has_uncertainty = e_q_var is not None
 
     total = len(tokens)
     state = ViewState(current_idx=start_example)
@@ -1047,17 +1089,22 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                 idx = state.current_idx
                 cur_tokens = tokens[idx]
                 cur_length = lengths[idx].item()
-                cur_e_logits = e_logits[idx]
+                cur_e_q_mean = e_q_mean[idx]
                 cur_legal_mask = legal_mask[idx]
                 cur_action = action_taken[idx].item()
                 cur_game = game_idx[idx].item()
                 cur_decision = decision_idx[idx].item()
+                # Uncertainty data (t42-64uj.6)
+                cur_e_q_var = e_q_var[idx] if has_uncertainty else None
+                cur_u_mean = u_mean[idx].item() if has_uncertainty else 0.0
+                cur_u_max = u_max[idx].item() if has_uncertainty else 0.0
 
                 # Render based on mode
                 if state.mode == "default":
                     text = render_default_mode(
-                        idx, total, cur_tokens, cur_length, cur_e_logits,
+                        idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
+                        e_q_var=cur_e_q_var, u_mean=cur_u_mean, u_max=cur_u_max,
                     )
                 elif state.mode == "debug":
                     if state.debug_data is None:
@@ -1073,20 +1120,20 @@ def run_viewer(dataset_path: str, start_example: int = 0):
 
                         # Compute debug data
                         state.debug_data = compute_debug_data(
-                            oracle, cur_tokens, cur_length, cur_e_logits,
+                            oracle, cur_tokens, cur_length, cur_e_q_mean,
                             cur_legal_mask, cur_action,
                         )
                         state.n_worlds = len(state.debug_data.get("worlds", []))
                         state.world_idx = 0
 
                     text = render_debug_mode(
-                        idx, total, cur_tokens, cur_length, cur_e_logits,
+                        idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
                         state.debug_data,
                     )
                 elif state.mode == "world":
                     text = render_world_mode(
-                        idx, total, cur_tokens, cur_length, cur_e_logits,
+                        idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
                         state.debug_data, state.world_idx,
                     )
@@ -1161,11 +1208,15 @@ def run_viewer(dataset_path: str, start_example: int = 0):
         while True:
             print("\n" * 2)
             idx = state.current_idx
+            cur_e_q_var = e_q_var[idx] if has_uncertainty else None
+            cur_u_mean = u_mean[idx].item() if has_uncertainty else 0.0
+            cur_u_max = u_max[idx].item() if has_uncertainty else 0.0
             print(
                 render_default_mode(
                     idx, total, tokens[idx], lengths[idx].item(),
-                    e_logits[idx], legal_mask[idx], action_taken[idx].item(),
+                    e_q_mean[idx], legal_mask[idx], action_taken[idx].item(),
                     game_idx[idx].item(), decision_idx[idx].item(),
+                    e_q_var=cur_e_q_var, u_mean=cur_u_mean, u_max=cur_u_max,
                 )
             )
 

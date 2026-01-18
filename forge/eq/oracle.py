@@ -37,14 +37,18 @@ class Stage1Oracle:
     - Load checkpoint once on initialization
     - Tokenize N sampled worlds in batch
     - Run single forward pass for efficiency
-    - Return raw logits for caller to process
+    - Return Q-values (expected points) for caller to process
+
+    IMPORTANT: This oracle returns Q-values in POINTS (roughly [-42, +42] range),
+    NOT logits. Do NOT apply softmax to the output - these are already interpretable
+    point estimates of expected game outcome for each action.
 
     Example:
-        oracle = Stage1Oracle("checkpoints/stage1.ckpt")
+        oracle = Stage1Oracle("checkpoints/qval.ckpt")
 
         # Query 100 sampled worlds
         worlds = [sample_world() for _ in range(100)]
-        logits = oracle.query_batch(
+        q_values = oracle.query_batch(
             worlds=worlds,
             game_state_info={
                 'decl_id': 3,
@@ -55,9 +59,9 @@ class Stage1Oracle:
             current_player=0
         )
 
-        # Average Q-values: shape (7,)
-        probs = torch.softmax(logits, dim=-1)  # (N, 7)
-        avg_probs = probs.mean(dim=0)  # (7,)
+        # Average Q-values across worlds: shape (7,)
+        e_q = q_values.mean(dim=0)  # E[Q] in points
+        best_action = e_q.argmax()  # Pick action with highest expected points
     """
 
     def __init__(self, checkpoint_path: str | Path, device: str = "cuda"):
@@ -114,11 +118,12 @@ class Stage1Oracle:
             current_player: Who is deciding (0-3)
 
         Returns:
-            Tensor of shape (N, 7) with logits for each action
+            Tensor of shape (N, 7) with Q-values (expected points) for each action
 
         Notes:
-            - Returns raw logits, NOT probabilities
-            - Caller should apply softmax and handle illegal moves
+            - Returns Q-values in POINTS (roughly [-42, +42] range), NOT logits
+            - Do NOT apply softmax - these are already interpretable point estimates
+            - Caller should mask illegal moves with -inf before argmax
             - All N worlds must have same game state (decl, trick, etc.)
             - trick_plays uses domino_id (public info) for efficient batching
         """
@@ -150,9 +155,9 @@ class Stage1Oracle:
         current_player_tensor = torch.full((n_worlds,), current_player, dtype=torch.long, device=self.device)
 
         with torch.no_grad():
-            logits, _ = self.model(tokens, masks, current_player_tensor)
+            q_values, _ = self.model(tokens, masks, current_player_tensor)
 
-        return logits
+        return q_values
 
     def _tokenize_worlds(
         self,
@@ -175,7 +180,7 @@ class Stage1Oracle:
             worlds: List of N world states (each is 4 hands)
             decl_id: Declaration ID
             leader: Leader player ID
-            trick_plays: List of (player, local_idx) for current trick
+            trick_plays: List of (player, domino_id) for current trick (public ids)
             remaining: (N, 4) array of remaining domino bitmasks
             current_player: Current player ID
 

@@ -73,8 +73,8 @@ def test_decision_record_structure():
     assert decision.transcript_tokens.dim() == 2
     assert decision.transcript_tokens.shape[1] == 8  # N_FEATURES from transcript_tokenize
 
-    # e_logits should be (7,) tensor
-    assert decision.e_logits.shape == (7,)
+    # e_q_mean should be (7,) tensor (E[Q] in points, NOT logits)
+    assert decision.e_q_mean.shape == (7,)
 
     # legal_mask should be (7,) boolean tensor
     assert decision.legal_mask.shape == (7,)
@@ -115,10 +115,10 @@ def test_legal_mask_matches_actions():
         assert decision.legal_mask[decision.action_taken]
 
 
-def test_e_logits_are_averaged():
-    """Verify e_logits are reasonable averages (no NaN in valid positions).
+def test_e_q_mean_are_averaged():
+    """Verify e_q_mean are reasonable averages (no NaN in valid positions).
 
-    After t42-64uj.1 fix, e_logits are padded with -inf for positions beyond
+    After t42-64uj.1 fix, e_q_mean are padded with -inf for positions beyond
     the remaining hand size. We only check that valid positions are finite.
     """
     oracle = MockOracle()
@@ -127,12 +127,12 @@ def test_e_logits_are_averaged():
 
     for decision in record.decisions:
         # Legal positions should be finite
-        legal_logits = decision.e_logits[decision.legal_mask]
-        assert torch.isfinite(legal_logits).all(), f"Non-finite legal logits: {legal_logits}"
-        assert not legal_logits.isnan().any(), f"NaN in legal logits: {legal_logits}"
+        legal_q = decision.e_q_mean[decision.legal_mask]
+        assert torch.isfinite(legal_q).all(), f"Non-finite legal E[Q]: {legal_q}"
+        assert not legal_q.isnan().any(), f"NaN in legal E[Q]: {legal_q}"
 
-        # Legal logits should have reasonable range
-        assert legal_logits.abs().max() < 100  # Reasonable logit range
+        # E[Q] values should have reasonable range (in points)
+        assert legal_q.abs().max() < 100  # Reasonable point range
 
 
 def test_different_declarations():
@@ -283,15 +283,15 @@ def test_index_alignment_regression():
         # If target_domino was played earlier, the test passes (it was selected correctly)
         # If target_domino is still in hand, verify alignment
 
-        # The e_logits should have high value for the target domino position
+        # The e_q_mean should have high value for the target domino position
         # in REMAINING hand order (not initial hand order)
         legal_mask = fifth_decision_by_p0.legal_mask
-        e_logits = fifth_decision_by_p0.e_logits
+        e_q_mean = fifth_decision_by_p0.e_q_mean
 
-        # Check that legal actions have proper logits (no -inf for valid positions)
-        valid_logits = e_logits[legal_mask]
-        assert all(torch.isfinite(v) for v in valid_logits), (
-            f"Some legal logits are non-finite: {e_logits[legal_mask]}"
+        # Check that legal actions have proper E[Q] (no -inf for valid positions)
+        valid_q = e_q_mean[legal_mask]
+        assert all(torch.isfinite(v) for v in valid_q), (
+            f"Some legal E[Q] values are non-finite: {e_q_mean[legal_mask]}"
         )
 
 
@@ -331,10 +331,10 @@ def test_action_taken_is_remaining_hand_index():
         # but the constraint above should still hold)
 
 
-def test_e_logits_finite_for_remaining_hand():
-    """Verify e_logits are finite for remaining hand positions.
+def test_e_q_mean_finite_for_remaining_hand():
+    """Verify e_q_mean are finite for remaining hand positions.
 
-    After the fix, e_logits[i] should be a valid averaged Q-value for
+    After the fix, e_q_mean[i] should be a valid averaged Q-value for
     remaining_hand[i], not -inf (which would indicate alignment issues).
     """
     oracle = MockOracle()
@@ -343,18 +343,18 @@ def test_e_logits_finite_for_remaining_hand():
 
     # Check all decisions
     for i, decision in enumerate(record.decisions):
-        # Count how many valid (non-inf) logits we have
+        # Count how many valid (non-inf) E[Q] values we have
         hand_size = decision.legal_mask.sum().item()  # At least this many valid
 
-        # All logits up to hand_size should be finite (valid Q-values)
-        # Logits beyond hand_size are padded with -inf
-        valid_logits = decision.e_logits[:hand_size + 2]  # Allow some slack
-        finite_count = torch.isfinite(valid_logits).sum().item()
+        # All E[Q] up to hand_size should be finite (valid Q-values in points)
+        # Values beyond hand_size are padded with -inf
+        valid_q = decision.e_q_mean[:hand_size + 2]  # Allow some slack
+        finite_count = torch.isfinite(valid_q).sum().item()
 
         # At least hand_size should be finite
         assert finite_count >= hand_size, (
-            f"Decision {i}: expected at least {hand_size} finite logits, got {finite_count}. "
-            f"e_logits[:10]={decision.e_logits[:10]}"
+            f"Decision {i}: expected at least {hand_size} finite E[Q], got {finite_count}. "
+            f"e_q_mean[:10]={decision.e_q_mean[:10]}"
         )
 
 
@@ -1132,3 +1132,351 @@ def test_mixed_exploration_policy():
 
     # Mean q_gap should be reasonable (bounded by blunder_max_regret)
     assert stats.mean_q_gap < 10.0  # Should be much lower in practice
+
+
+# =============================================================================
+# Uncertainty Tests (t42-64uj.6)
+# =============================================================================
+
+
+def test_uncertainty_fields_exist_in_v2():
+    """Test that DecisionRecordV2 has uncertainty fields."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()  # Triggers V2 record
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        assert isinstance(decision, DecisionRecordV2)
+        # New uncertainty fields should exist
+        assert hasattr(decision, "e_q_var")
+        assert hasattr(decision, "u_mean")
+        assert hasattr(decision, "u_max")
+
+
+def test_uncertainty_variance_computed():
+    """Test that variance is computed and stored in e_q_var."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # e_q_var should be a tensor of shape (7,)
+        assert decision.e_q_var is not None
+        assert decision.e_q_var.shape == (7,)
+
+        # Variance should be non-negative
+        assert (decision.e_q_var >= 0).all(), f"Negative variance found: {decision.e_q_var}"
+
+
+def test_uncertainty_state_level_u():
+    """Test that state-level uncertainty U_mean and U_max are computed."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # U values should be non-negative (they are mean/max of stddev)
+        assert decision.u_mean >= 0, f"u_mean should be >= 0, got {decision.u_mean}"
+        assert decision.u_max >= 0, f"u_max should be >= 0, got {decision.u_max}"
+
+        # U_max >= U_mean (max of a set is always >= mean)
+        assert decision.u_max >= decision.u_mean, (
+            f"u_max ({decision.u_max}) should be >= u_mean ({decision.u_mean})"
+        )
+
+
+def test_uncertainty_variance_is_valid_for_legal_actions():
+    """Test that variance is correctly computed for legal actions."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=10, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # Get legal action indices
+        legal_indices = torch.where(decision.legal_mask)[0]
+
+        # For legal actions, variance should be finite
+        legal_var = decision.e_q_var[decision.legal_mask]
+        assert torch.isfinite(legal_var).all(), f"Non-finite variance in legal actions: {legal_var}"
+
+        # With mock oracle (random Q-values), variance should generally be > 0
+        # (unless all worlds happen to agree, which is unlikely)
+        # We just check it's >= 0 (already done above)
+
+
+class VariableOracle:
+    """Oracle that returns Q-values with known variance pattern for testing."""
+
+    def __init__(self, device: str = "cpu"):
+        self.device = device
+        self.query_count = 0
+
+    def query_batch(
+        self,
+        worlds: list[list[list[int]]],
+        game_state_info: dict,
+        current_player: int,
+    ) -> Tensor:
+        """Return Q-values that vary across worlds in a predictable way.
+
+        World i gets logits = [i, 0, 0, 0, 0, 0, 0] for first slot,
+        creating known variance.
+        """
+        n = len(worlds)
+        self.query_count += 1
+
+        logits = torch.zeros(n, 7, device=self.device)
+        # First action varies linearly across worlds: 0, 1, 2, ..., n-1
+        # E[Q_0] = (n-1)/2, Var[Q_0] = ((n-1)(n+1))/12 for uniform 0..n-1
+        for i in range(n):
+            logits[i, 0] = float(i)
+            logits[i, 1:] = 0.0  # Other actions constant
+
+        return logits
+
+
+def test_uncertainty_variance_formula():
+    """Test that variance is computed correctly using E[Q²] - E[Q]²."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = VariableOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+    n_samples = 10
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=n_samples, exploration_policy=policy
+    )
+
+    # Check first decision
+    decision = record.decisions[0]
+
+    # With VariableOracle, the first action slot gets values 0, 1, ..., n-1
+    # With uniform weights: E[Q] = (n-1)/2 = 4.5, E[Q²] = sum(i²)/n = 285/10 = 28.5
+    # Var = 28.5 - 4.5² = 28.5 - 20.25 = 8.25
+    # Note: this is sample variance, not population variance
+
+    # Get variance for first legal action (if legal)
+    if decision.legal_mask[0]:
+        var_first = decision.e_q_var[0].item()
+        # Expected variance for uniform 0..9 with uniform weights
+        # E[X] = 4.5, E[X²] = (0+1+4+9+16+25+36+49+64+81)/10 = 28.5
+        # Var = 28.5 - 20.25 = 8.25
+        expected_var = 8.25
+        # Allow some tolerance due to potential weight variations
+        assert abs(var_first - expected_var) < 1.0, (
+            f"Expected variance ~{expected_var}, got {var_first}"
+        )
+
+
+def test_uncertainty_u_mean_computed_from_legal():
+    """Test U_mean is mean of stddev over legal actions only."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # Compute U_mean manually from legal actions
+        legal_std = torch.sqrt(decision.e_q_var[decision.legal_mask])
+        expected_u_mean = legal_std.mean().item() if len(legal_std) > 0 else 0.0
+
+        # Should match stored value
+        assert abs(decision.u_mean - expected_u_mean) < 1e-5, (
+            f"u_mean mismatch: stored {decision.u_mean}, expected {expected_u_mean}"
+        )
+
+
+def test_uncertainty_u_max_computed_from_legal():
+    """Test U_max is max of stddev over legal actions only."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # Compute U_max manually from legal actions
+        legal_std = torch.sqrt(decision.e_q_var[decision.legal_mask])
+        expected_u_max = legal_std.max().item() if len(legal_std) > 0 else 0.0
+
+        # Should match stored value
+        assert abs(decision.u_max - expected_u_max) < 1e-5, (
+            f"u_max mismatch: stored {decision.u_max}, expected {expected_u_max}"
+        )
+
+
+def test_uncertainty_with_posterior_weighting():
+    """Test uncertainty is computed correctly with posterior weighting."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    config = PosteriorConfig(enabled=True, tau=10.0, beta=0.10)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=10,
+        posterior_config=config, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # Should have both diagnostics (from posterior) and uncertainty fields
+        assert decision.diagnostics is not None
+        assert decision.e_q_var is not None
+        assert (decision.e_q_var >= 0).all()
+
+
+def test_uncertainty_padded_correctly():
+    """Test that uncertainty is padded to 7 for consistency with e_q_mean."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=5, exploration_policy=policy
+    )
+
+    # Check last decision (only 1 card remaining)
+    last_decision = record.decisions[-1]
+
+    # e_q_var should be shape (7,)
+    assert last_decision.e_q_var.shape == (7,)
+
+    # Positions beyond remaining hand should be 0 (padded)
+    hand_size = last_decision.legal_mask.sum().item()
+    if hand_size < 7:
+        padding = last_decision.e_q_var[int(hand_size):]
+        assert (padding == 0).all(), f"Padding should be 0, got {padding}"
+
+
+# =============================================================================
+# Schema correctness guards (t42-d6y1)
+# =============================================================================
+
+
+def test_e_q_mean_shape_and_type():
+    """Guard test: e_q_mean should be a tensor with correct shape.
+
+    This test guards against basic structural issues with the e_q_mean field.
+    """
+    oracle = MockOracle()
+    hands = deal_from_seed(123)
+    record = generate_eq_game(oracle, hands, decl_id=3, n_samples=5)
+
+    for decision in record.decisions:
+        # e_q_mean should be a tensor of shape (7,)
+        assert decision.e_q_mean.shape == (7,), (
+            f"e_q_mean should have shape (7,), got {decision.e_q_mean.shape}"
+        )
+
+        # Legal positions should have finite values (not NaN)
+        legal_q = decision.e_q_mean[decision.legal_mask]
+        assert torch.isfinite(legal_q).all(), (
+            f"e_q_mean should have finite values for legal actions: {legal_q}"
+        )
+
+        # E[Q] values in legal positions should be in reasonable point range
+        # (MockOracle returns random values, so just check finite and bounded)
+        assert (legal_q.abs() < 100).all(), (
+            f"e_q_mean legal values should be bounded: {legal_q}"
+        )
+
+
+def test_softmax_on_q_values_produces_degenerate_probabilities():
+    """Guard test: applying softmax to E[Q] in points produces degenerate distributions.
+
+    This test demonstrates why you should NOT apply softmax to Q-values.
+    Q-values in points can have large differences (e.g., -10 vs -20),
+    so softmax produces essentially one-hot distributions (exp(-10) >> exp(-20)).
+
+    If your downstream code uses softmax(E[Q]), you're probably doing it wrong.
+    E[Q] is already a point estimate - just use argmax for action selection.
+    """
+    import torch.nn.functional as F
+
+    # Simulate Q-values with realistic point differences (10+ point spread is common)
+    # Best action at -10 pts, worst at -25 pts (15 point spread)
+    q_values = torch.tensor([-10.0, -25.0, -22.0, -20.0, -18.0, -15.0, -12.0])
+
+    # Softmax on point-valued Q produces degenerate distribution
+    probs = F.softmax(q_values, dim=0)
+
+    # The best action dominates exponentially
+    # exp(-10) / (exp(-10) + exp(-12) + ...) ≈ 1.0 / (1.0 + 0.135 + ...) ≈ 0.8+
+    max_prob = probs.max().item()
+    assert max_prob > 0.7, (
+        f"Expected softmax(Q) to produce degenerate distribution, got max_prob={max_prob}. "
+        "This test demonstrates that softmax on point-valued Q concentrates probability."
+    )
+
+    # With 15-point spread, the worst action gets essentially 0 probability
+    min_prob = probs.min().item()
+    assert min_prob < 0.001, (
+        f"Expected worst action to have near-zero probability, got {min_prob}. "
+        "This confirms softmax on point-valued Q is problematic."
+    )
+
+
+def test_decision_record_has_correct_field_names():
+    """Guard test: ensure field names are e_q_mean/e_q_var, not legacy e_logits/e_var.
+
+    This test guards against accidentally using legacy field names.
+    The normalized naming (t42-d6y1) uses:
+    - e_q_mean: E[Q] in points (NOT e_logits)
+    - e_q_var: Var[Q] in points² (NOT e_var)
+    """
+    from forge.eq.generate import DecisionRecord, DecisionRecordV2
+
+    # DecisionRecord should have e_q_mean
+    assert hasattr(DecisionRecord, "__dataclass_fields__")
+    assert "e_q_mean" in DecisionRecord.__dataclass_fields__, (
+        "DecisionRecord should have 'e_q_mean' field, not 'e_logits'"
+    )
+    assert "e_logits" not in DecisionRecord.__dataclass_fields__, (
+        "DecisionRecord should NOT have 'e_logits' field (use e_q_mean)"
+    )
+
+    # DecisionRecordV2 should have e_q_var
+    assert "e_q_var" in DecisionRecordV2.__dataclass_fields__, (
+        "DecisionRecordV2 should have 'e_q_var' field, not 'e_var'"
+    )
+    assert "e_var" not in DecisionRecordV2.__dataclass_fields__, (
+        "DecisionRecordV2 should NOT have 'e_var' field (use e_q_var)"
+    )
