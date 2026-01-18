@@ -394,6 +394,10 @@ def compute_debug_data(
     Key insight: sample_consistent_worlds returns REMAINING hands.
     To query oracle, we need INITIAL 7-domino hands.
     Reconstruct: initial[p] = remaining[p] + played_by[p]
+
+    IMPORTANT: Each world gets its own trick_plays computed from that world's
+    initial hands. Oracle outputs are projected from local_idx to domino_id
+    before averaging, matching the fix in generate.py.
     """
     from forge.eq.sampling import sample_consistent_worlds
     from forge.eq.voids import infer_voids
@@ -450,7 +454,8 @@ def compute_debug_data(
         return {"error": str(e), "worlds": [], "world_logits": [], "initial_hands": []}
 
     # For each sampled world, reconstruct initial hands and query oracle
-    world_logits = []
+    world_logits = []  # Raw oracle outputs (7,) per world
+    world_logits_projected = []  # Projected to remaining-hand order (len(hand),)
     world_prefs = []
     initial_hands_list = []  # Store reconstructed initial hands for display
 
@@ -483,6 +488,9 @@ def compute_debug_data(
         # Mid-trick - leader is first player in current trick
         leader = current_trick_plays_raw[0][0]
 
+    # Accumulate E[Q] by domino ID across worlds
+    e_q_by_domino: dict[int, list[float]] = {d: [] for d in my_hand_ids}
+
     for remaining_world in sampled_remaining:
         # Reconstruct initial 7-domino hands: initial = remaining + played_by
         initial_hands = []
@@ -494,11 +502,10 @@ def compute_debug_data(
 
         initial_hands_list.append(initial_hands)
 
-        # Build domino -> (player, local_idx) lookup for this world
-        domino_to_pos: dict[int, tuple[int, int]] = {}
-        for p in range(4):
-            for local_idx, domino in enumerate(initial_hands[p]):
-                domino_to_pos[domino] = (p, local_idx)
+        # Build domino -> local_idx lookup for THIS world's initial hand (player 0)
+        domino_to_local: dict[int, int] = {}
+        for local_idx, domino in enumerate(initial_hands[0]):
+            domino_to_local[domino] = local_idx
 
         # Build remaining bitmask: bit i set if initial_hands[p][i] not yet played
         remaining = np.zeros((1, 4), dtype=np.int32)
@@ -507,7 +514,13 @@ def compute_debug_data(
                 if domino not in played_ids:
                     remaining[0, p] |= (1 << local_idx)
 
-        # Build trick_plays as (player, local_idx) tuples
+        # Build trick_plays as (player, local_idx) tuples FOR THIS WORLD
+        # Each world has different initial hands, so local_idx varies
+        domino_to_pos: dict[int, tuple[int, int]] = {}
+        for p in range(4):
+            for local_idx, domino in enumerate(initial_hands[p]):
+                domino_to_pos[domino] = (p, local_idx)
+
         trick_plays = []
         for rel_player, h, l in current_trick_plays_raw:
             domino = pips_to_domino_id(h, l)
@@ -524,29 +537,50 @@ def compute_debug_data(
 
         try:
             logits = oracle.query_batch([initial_hands], game_state_info, current_player=0)
-            logits = logits[0]  # (7,)
+            logits = logits[0]  # (7,) - indexed by initial-hand local slots
             world_logits.append(logits.cpu())
 
-            # Which legal action does this world prefer?
-            masked = logits.clone()
-            for i in range(7):
+            # Project from local_idx to domino_id, accumulate for averaging
+            for local_idx, domino_id in enumerate(initial_hands[0]):
+                if domino_id in e_q_by_domino:
+                    e_q_by_domino[domino_id].append(logits[local_idx].item())
+
+            # Project to remaining-hand order for this world's preference
+            projected = torch.zeros(len(my_hand_ids))
+            for i, domino_id in enumerate(my_hand_ids):
+                local_idx = domino_to_local.get(domino_id)
+                if local_idx is not None:
+                    projected[i] = logits[local_idx]
+                else:
+                    projected[i] = float("-inf")
+            world_logits_projected.append(projected)
+
+            # Which legal action does this world prefer? (in remaining-hand order)
+            masked = projected.clone()
+            for i in range(len(my_hand_ids)):
                 if i >= len(legal_mask) or not legal_mask[i]:
                     masked[i] = float("-inf")
             pref = masked.argmax().item()
             world_prefs.append(pref)
-        except Exception as e:
+        except Exception:
             world_logits.append(None)
+            world_logits_projected.append(None)
             world_prefs.append(-1)
 
-    # Average oracle logits
-    valid_logits = [wl for wl in world_logits if wl is not None]
-    if valid_logits:
-        oracle_avg = torch.stack(valid_logits).mean(dim=0)
-    else:
-        oracle_avg = torch.zeros(7)
+    # Compute E[Q] in remaining-hand order (same as generate.py)
+    oracle_avg_by_hand = torch.zeros(len(my_hand_ids))
+    for i, domino_id in enumerate(my_hand_ids):
+        if e_q_by_domino[domino_id]:
+            oracle_avg_by_hand[i] = sum(e_q_by_domino[domino_id]) / len(e_q_by_domino[domino_id])
+        else:
+            oracle_avg_by_hand[i] = float("-inf")
 
-    # Rank oracle's preferences
-    oracle_ranking = torch.argsort(oracle_avg, descending=True).tolist()
+    # Pad to 7 for display compatibility
+    oracle_avg = torch.full((7,), float("-inf"))
+    oracle_avg[:len(my_hand_ids)] = oracle_avg_by_hand
+
+    # Rank oracle's preferences (in remaining-hand order)
+    oracle_ranking = torch.argsort(oracle_avg_by_hand, descending=True).tolist()
 
     # Find flagged worlds (prefer different action than E[Q] selected)
     flagged = [i for i, pref in enumerate(world_prefs) if pref != action_taken and pref >= 0]
@@ -561,10 +595,12 @@ def compute_debug_data(
         "worlds": sampled_remaining,  # Remaining hands
         "initial_hands": initial_hands_list,  # Reconstructed initial 7-domino hands
         "played_by": played_by,  # Which dominoes each player has played
-        "world_logits": world_logits,
-        "world_prefs": world_prefs,
-        "oracle_avg": oracle_avg,
-        "oracle_ranking": oracle_ranking,
+        "world_logits": world_logits,  # Raw oracle outputs (initial-hand order)
+        "world_logits_projected": world_logits_projected,  # Projected to remaining-hand order
+        "world_prefs": world_prefs,  # Preferences in remaining-hand order
+        "oracle_avg": oracle_avg,  # E[Q] padded to 7
+        "oracle_avg_by_hand": oracle_avg_by_hand,  # E[Q] in remaining-hand order
+        "oracle_ranking": oracle_ranking,  # Ranking in remaining-hand order
         "flagged_worlds": flagged,
         "pref_counts": pref_counts,
         "hand": hand,
@@ -912,13 +948,14 @@ def render_world_mode(
     lines.append("")
     lines.append("─" * 80)
 
-    # Oracle logits for this world
-    if actual_wi < len(world_logits) and world_logits[actual_wi] is not None:
-        wl = world_logits[actual_wi]
-        probs = torch.softmax(wl[: len(hand)], dim=0)
+    # Oracle logits for this world (use projected logits in remaining-hand order)
+    world_logits_projected = debug_data.get("world_logits_projected", [])
+    if actual_wi < len(world_logits_projected) and world_logits_projected[actual_wi] is not None:
+        wl = world_logits_projected[actual_wi]  # Already in remaining-hand order
+        probs = torch.softmax(wl, dim=0)
         max_prob = probs.max().item()
 
-        lines.append("Oracle logits for this world:")
+        lines.append("Oracle logits for this world (remaining-hand order):")
 
         legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
         sorted_by_prob = sorted(

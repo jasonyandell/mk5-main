@@ -99,24 +99,48 @@ def generate_eq_game(
             n_samples=n_samples,
         )
 
-        # 3. Reconstruct hypothetical initial hands and query oracle for each world
-        hypothetical_deals, game_state_info = _build_hypothetical_worlds(
+        # 3. Reconstruct hypothetical initial hands (per-world game state)
+        hypothetical_deals, game_state_infos = _build_hypothetical_worlds(
             game, remaining_worlds, played_by, player
         )
-        logits = oracle.query_batch(
-            hypothetical_deals, game_state_info, player
-        )  # (N, 7)
 
-        # 4. Average to get E[Q]
-        e_logits = logits.mean(dim=0)  # (7,)
+        # 4. Query oracle per-world and project outputs to domino IDs
+        # Oracle outputs Q[local_idx] for initial-hand slots; we need Q[domino_id]
+        n_worlds = len(hypothetical_deals)
+        e_q_by_domino: dict[int, list[float]] = {d: [] for d in my_hand}
 
-        # 5. Build transcript tokens for Stage 2 training
+        for world_idx in range(n_worlds):
+            # Query this single world
+            logits = oracle.query_batch(
+                [hypothetical_deals[world_idx]],
+                game_state_infos[world_idx],
+                player
+            )  # (1, 7)
+            world_logits = logits[0]  # (7,)
+
+            # Project from local_idx to domino_id using this world's initial hands
+            initial_hand = hypothetical_deals[world_idx][player]  # Sorted initial hand
+            for local_idx, domino_id in enumerate(initial_hand):
+                if domino_id in e_q_by_domino:
+                    # This domino is still in remaining hand
+                    e_q_by_domino[domino_id].append(world_logits[local_idx].item())
+
+        # 5. Average E[Q] by domino ID, then map to remaining-hand order
+        # e_logits[i] = E[Q(my_hand[i])] for i in 0..len(my_hand)-1
+        e_logits = torch.zeros(len(my_hand))
+        for i, domino_id in enumerate(my_hand):
+            if e_q_by_domino[domino_id]:
+                e_logits[i] = sum(e_q_by_domino[domino_id]) / len(e_q_by_domino[domino_id])
+            else:
+                e_logits[i] = float("-inf")  # Should never happen
+
+        # 6. Build transcript tokens for Stage 2 training
         plays_for_transcript = [(p, d) for p, d, _ in game.play_history]
         transcript_tokens = tokenize_transcript(my_hand, plays_for_transcript, decl_id, player)
 
-        # 6. Determine legal actions and select best
+        # 7. Determine legal actions and select best
         legal_actions = game.legal_actions()
-        legal_mask = _build_legal_mask(legal_actions, my_hand)  # (7,) boolean mask
+        legal_mask = _build_legal_mask(legal_actions, my_hand)  # (len(my_hand),) boolean
 
         # Mask illegal actions and select
         masked_logits = e_logits.clone()
@@ -124,17 +148,24 @@ def generate_eq_game(
         action_idx = masked_logits.argmax().item()
         action_domino = my_hand[action_idx]
 
-        # 7. Record decision
+        # 8. Record decision
+        # Note: e_logits and legal_mask are now in remaining-hand order (len = len(my_hand))
+        # Pad to 7 for consistent tensor shapes in dataset
+        padded_e_logits = torch.full((7,), float("-inf"))
+        padded_e_logits[:len(my_hand)] = e_logits
+        padded_legal_mask = torch.zeros(7, dtype=torch.bool)
+        padded_legal_mask[:len(my_hand)] = legal_mask
+
         decisions.append(
             DecisionRecord(
                 transcript_tokens=transcript_tokens,
-                e_logits=e_logits,
-                legal_mask=legal_mask,
+                e_logits=padded_e_logits,
+                legal_mask=padded_legal_mask,
                 action_taken=action_idx,
             )
         )
 
-        # 8. Apply action
+        # 9. Apply action
         game = game.apply_action(action_domino)
 
     return GameRecord(decisions=decisions)
@@ -145,13 +176,17 @@ def _build_hypothetical_worlds(
     remaining_worlds: list[list[list[int]]],
     played_by: dict[int, list[int]],
     current_player: int,
-) -> tuple[list[list[list[int]]], dict]:
+) -> tuple[list[list[list[int]]], list[dict]]:
     """Reconstruct hypothetical initial hands for each sampled world.
 
     For proper E[Q] marginalization, we need to query the oracle on HYPOTHETICAL
     worlds, not the true game state. Each sampled world gives us remaining hands
     for opponents. We reconstruct initial hands as:
         initial[p] = remaining[p] + played_by[p]
+
+    IMPORTANT: Each world gets its own game_state_info because trick_plays must be
+    computed per-world. Different worlds have different hypothetical initial hands,
+    so the local_idx for a given domino varies across worlds.
 
     Args:
         game: Current game state
@@ -160,20 +195,13 @@ def _build_hypothetical_worlds(
         current_player: Current player making the decision
 
     Returns:
-        Tuple of (hypothetical_deals, game_state_info) where:
+        Tuple of (hypothetical_deals, game_state_infos) where:
         - hypothetical_deals: List of N initial deals, one per world
-        - game_state_info: Dict with decl_id, leader, trick_plays, remaining
+        - game_state_infos: List of N dicts, each with decl_id, leader, trick_plays, remaining
     """
     n_worlds = len(remaining_worlds)
     hypothetical_deals = []
-    remaining_bitmasks = np.zeros((n_worlds, 4), dtype=np.int32)
-
-    # We need trick_plays indexed by local position in each world's initial hand
-    # Since initial hands vary per world, we compute trick_plays per world
-    # But oracle expects a single trick_plays list, so we use the first world's indexing
-    # (All worlds have same current_player hand, so trick_plays for current_player are consistent)
-
-    first_world_trick_plays = None
+    game_state_infos = []
 
     for world_idx, remaining_hands in enumerate(remaining_worlds):
         # Reconstruct initial hands: initial[p] = remaining[p] + played_by[p]
@@ -185,34 +213,34 @@ def _build_hypothetical_worlds(
 
         hypothetical_deals.append(initial_hands)
 
-        # Build domino -> local_idx lookup for this world
+        # Build domino -> local_idx lookup for THIS world
         domino_to_local: dict[int, int] = {}
         for p in range(4):
             for local_idx, domino in enumerate(initial_hands[p]):
                 domino_to_local[(p, domino)] = local_idx
 
         # Build remaining bitmask for this world
+        remaining_bitmask = np.zeros(4, dtype=np.int32)
         for p in range(4):
             for local_idx, domino in enumerate(initial_hands[p]):
                 if domino not in game.played:
-                    remaining_bitmasks[world_idx, p] |= 1 << local_idx
+                    remaining_bitmask[p] |= 1 << local_idx
 
-        # Build trick_plays for this world (use first world's as representative)
-        if first_world_trick_plays is None:
-            first_world_trick_plays = []
-            for play_player, domino_id in game.current_trick:
-                local_idx = domino_to_local.get((play_player, domino_id))
-                if local_idx is not None:
-                    first_world_trick_plays.append((play_player, local_idx))
+        # Build trick_plays for THIS world using THIS world's local indices
+        trick_plays = []
+        for play_player, domino_id in game.current_trick:
+            local_idx = domino_to_local.get((play_player, domino_id))
+            if local_idx is not None:
+                trick_plays.append((play_player, local_idx))
 
-    game_state_info = {
-        "decl_id": game.decl_id,
-        "leader": game.leader,
-        "trick_plays": first_world_trick_plays or [],
-        "remaining": remaining_bitmasks,
-    }
+        game_state_infos.append({
+            "decl_id": game.decl_id,
+            "leader": game.leader,
+            "trick_plays": trick_plays,
+            "remaining": remaining_bitmask[np.newaxis, :],  # (1, 4) for single world
+        })
 
-    return hypothetical_deals, game_state_info
+    return hypothetical_deals, game_state_infos
 
 
 def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor:
@@ -220,15 +248,11 @@ def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor
 
     Args:
         legal_actions: Tuple of legal domino IDs
-        hand: Current hand as list of domino IDs
+        hand: Current hand as list of domino IDs (remaining hand)
 
     Returns:
-        Boolean tensor of shape (7,) where True means legal
+        Boolean tensor of shape (len(hand),) where True means legal
     """
-    # Pad hand to length 7 if needed
-    padded_hand = hand + [-1] * (7 - len(hand))
-
     legal_set = set(legal_actions)
-    mask = torch.tensor([domino in legal_set for domino in padded_hand], dtype=torch.bool)
-
+    mask = torch.tensor([domino in legal_set for domino in hand], dtype=torch.bool)
     return mask
