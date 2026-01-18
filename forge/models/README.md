@@ -4,10 +4,19 @@ Pre-trained models for Texas 42 domino play prediction.
 
 ## Models
 
+### Soft Cross-Entropy Models (Policy)
+
 | Model | File | Params | Val Acc | Val Q-Gap | Date |
 |-------|------|--------|---------|-----------|------|
 | Large v2 (value head) | `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt` | 817K | 97.79% | 0.072 | 2026-01-01 |
 | Large v1 | `domino-large-817k-acc97.1-qgap0.11.ckpt` | 817K | 97.09% | 0.112 | 2025-12-31 |
+
+### Q-Value Models (Value Estimation)
+
+| Model | File | Params | Q-MAE | Val Q-Gap | Date |
+|-------|------|--------|-------|-----------|------|
+| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 | 2026-01-13 |
+| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 1.49 | 0.094 | 2026-01-13 |
 
 ## Current Best: Large v2 (value head)
 
@@ -231,9 +240,156 @@ best_move = probs.argmax(dim=-1)
 
 ---
 
+## Q-Value Models
+
+A new family of models trained directly on Q-value regression instead of soft cross-entropy. These models predict Q-values for each action rather than matching oracle move distributions.
+
+| Model | File | Params | q_gap | q_mae | value_mae | Accuracy | Date |
+|-------|------|--------|-------|-------|-----------|----------|------|
+| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.071 | 0.94 | 1.89 | 79.0% | 2026-01-13 |
+| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 0.094 | 1.49 | 2.39 | 74.7% | 2026-01-13 |
+
+### Current Best: Q-Val Large
+
+**File**: `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt`
+
+#### Architecture
+
+```
+DominoTransformer(
+    embed_dim=256,
+    n_heads=8,
+    n_layers=6,
+    ff_dim=512,
+    dropout=0.1,
+    value_head=Linear(256, 1)
+)
+```
+
+| Component | Value |
+|-----------|-------|
+| Parameters | 3.3M |
+| Layers | 6 |
+| Attention Heads | 8 |
+| Embedding Dim | 256 |
+| Feed-Forward Dim | 512 |
+| Dropout | 0.1 |
+
+#### Training Configuration
+
+| Hyperparameter | Value |
+|----------------|-------|
+| Epochs | 20 |
+| Batch Size | 512 |
+| Learning Rate | 3e-4 |
+| Optimizer | AdamW |
+| Weight Decay | 0.01 |
+| Gradient Clipping | 1.0 (norm) |
+| Precision | 16-mixed AMP |
+| **Loss** | **Q-value MSE** (not soft CE) |
+| Q-value range | [-1, 1] (normalized from 0-42 pts) |
+
+#### Training Data
+
+Same as Large v2: 200 seeds × 1 declaration per seed, ~10M samples.
+
+#### Results
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| q_gap | 0.071 | Mean regret in points vs oracle |
+| q_mae | 0.94 | Mean absolute error on Q-value prediction (points) |
+| value_mae | 1.89 | Mean absolute error on game value prediction (points) |
+| Accuracy | 79.0% | Model's argmax Q matches oracle's best move |
+| Blunder Rate | 0.23% | Moves with Q-gap > 10 points |
+
+#### Loading the Model
+
+```python
+from forge.ml.module import DominoLightningModule
+
+# Load for inference
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
+)
+model.eval()
+
+# Get Q-value predictions
+q_values, value = model(tokens, mask, current_player)
+# q_values: [B, num_actions] in [-1, 1], multiply by 42 for points
+best_move = q_values.argmax(dim=-1)
+```
+
+#### Provenance
+
+- **Bead**: t42-dove (Q-value training experiment), t42-mnaz (model promotion)
+- **Wandb**: qval-202601120501-3.3M-6L-8H-d256
+- **Run dir**: runs/domino/version_38
+
+---
+
+### Q-Val Small
+
+**File**: `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt`
+
+#### Architecture
+
+```
+DominoTransformer(
+    embed_dim=128,
+    n_heads=8,
+    n_layers=4,
+    ff_dim=512,
+    dropout=0.1,
+    value_head=Linear(128, 1)
+)
+```
+
+| Component | Value |
+|-----------|-------|
+| Parameters | 816K |
+| Layers | 4 |
+| Attention Heads | 8 |
+| Embedding Dim | 128 |
+| Feed-Forward Dim | 512 |
+
+#### Results
+
+| Metric | Value |
+|--------|-------|
+| q_gap | 0.094 |
+| q_mae | 1.49 |
+| value_mae | 2.39 |
+| Accuracy | 74.7% |
+| Blunder Rate | 0.28% |
+
+#### Provenance
+
+- **Bead**: t42-dove, t42-mnaz
+- **Wandb**: qval-202601120105-816K-4L-8H-d128
+- **Run dir**: runs/domino/version_37
+
+---
+
+### Q-Value vs Soft Cross-Entropy
+
+| Aspect | Soft CE Models | Q-Value Models |
+|--------|----------------|----------------|
+| Loss | KL divergence from oracle distribution | MSE on Q-values |
+| Output | Logits → softmax probabilities | Direct Q-value estimates |
+| Accuracy metric | 97%+ (matches oracle's top choice) | 74-79% (argmax Q matches) |
+| Use case | Move selection via sampling | Direct value estimation |
+| q_gap | 0.07-0.11 | 0.07-0.09 |
+
+The lower "accuracy" for Q-value models is expected—they're optimizing for accurate Q-values across all actions, not just getting the top action right.
+
+---
+
 ## Metrics Glossary
 
 - **Accuracy**: Fraction of moves where model's argmax matches oracle's best move
 - **Q-Gap**: Expected point loss per move vs oracle (oracle_best_q - oracle_q[model_choice])
+- **Q-MAE**: Mean absolute error of predicted Q-values vs oracle Q-values (in points)
+- **Value-MAE**: Mean absolute error of predicted game value vs oracle value (in points)
 - **Blunder Rate**: Fraction of moves with Q-gap > 10 (catastrophic mistakes)
 - **Oracle**: GPU minimax solver with perfect play (ground truth)

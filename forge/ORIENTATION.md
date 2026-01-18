@@ -302,6 +302,27 @@ q_gap = oracle_best_q - oracle_q[model_prediction]
 - **Q-gap = 5**: Model's choice costs 5 points on average
 - **Blunder**: Q-gap > 10 (catastrophic mistake)
 
+### Training Metrics Reference
+
+**Primary metrics** (all in points, logged to `val/*`):
+
+| Metric | Target | Why |
+|--------|--------|-----|
+| `q_mae` | < 3 pts | Main goal - Q prediction accuracy |
+| `value_mae` | < 3 pts | Game outcome prediction |
+| `q_gap` | < 0.10 pts | Confidence calibration |
+| `blunder_rate` | < 1% | Actually wrong, not just ties |
+
+**Sanity checks**:
+
+| Metric | Expected | If not → |
+|--------|----------|----------|
+| `accuracy` | ~74% | Bug (policy mode expects ~97%) |
+| train/val gap | small | Overfitting |
+| `loss` | decreasing | Learning |
+
+**Note**: Q-value loss mode (`--loss-mode qvalue`) targets Q-value MSE, so accuracy drops from ~97% (policy mode) to ~74%. This is expected - the model now predicts point values, not action probabilities.
+
 ### Lightning as Guardrails
 
 | Component | Responsibility | Lightning Provides |
@@ -431,36 +452,68 @@ Training auto-detects hardware. Use `--precision bf16-mixed` for A100/H100 serve
 
 See [models/README.md](models/README.md) for complete details.
 
+### Soft Cross-Entropy Models (Policy)
+
 | Model | File | Params | Val Acc | Val Q-Gap |
 |-------|------|--------|---------|-----------|
 | Large v2 (value head) | `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt` | 817K | 97.79% | 0.072 |
 | Large v1 | `domino-large-817k-acc97.1-qgap0.11.ckpt` | 817K | 97.09% | 0.112 |
 
-**Current best architecture**:
-```python
-DominoTransformer(
-    embed_dim=128,
-    n_heads=8,
-    n_layers=4,
-    ff_dim=512,
-    dropout=0.1,
-)
-```
+### Q-Value Models (Value Estimation)
+
+| Model | File | Params | Q-MAE | Val Q-Gap |
+|-------|------|--------|-------|-----------|
+| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 |
+| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 1.49 | 0.094 |
 
 **Loading for inference**:
 ```python
 from forge.ml.module import DominoLightningModule
 
+# Policy model (soft CE)
 model = DominoLightningModule.load_from_checkpoint(
     "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
 )
-model.eval()
-
-# Get predictions
 logits, value = model(tokens, mask, current_player)
-probs = torch.softmax(logits, dim=-1)
-best_move = probs.argmax(dim=-1)
+best_move = torch.softmax(logits, dim=-1).argmax(dim=-1)
+
+# Q-value model
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
+)
+q_values, value = model(tokens, mask, current_player)
+best_move = q_values.argmax(dim=-1)  # Direct Q-value comparison
 ```
+
+### Model Promotion Protocol
+
+When training completes and you want to promote a checkpoint to the catalog:
+
+1. **Name the model** following the convention:
+   ```
+   domino-{type}-{size}-{params}-{key-metrics}.ckpt
+
+   # Examples:
+   domino-large-817k-acc97.8-qgap0.07.ckpt      # Policy model
+   domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt  # Q-value model
+   ```
+
+2. **Copy to catalog**:
+   ```bash
+   cp runs/domino/version_XX/checkpoints/epoch=*.ckpt \
+      forge/models/domino-{name}.ckpt
+   ```
+
+3. **Update documentation**:
+   - Add to table in `forge/models/README.md`
+   - Document architecture, training config, results, provenance
+   - Include bead ID and wandb run name
+
+4. **Track with beads**:
+   ```bash
+   bd create --title="Promote {model} to catalog" --type=task
+   bd close {id} --reason="Promoted with documentation"
+   ```
 
 ---
 
