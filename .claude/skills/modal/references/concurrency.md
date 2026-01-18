@@ -25,28 +25,44 @@ handle = my_function.spawn(arg1, arg2)
 result = handle.get()  # Block until done
 ```
 
-## starmap() Pattern
+## `.map()` / `.starmap()` Pattern (Critical for Parallelism!)
 
-The primary pattern for batch GPU workloads:
+**Use `.map()` or `.starmap()` for true parallel execution.** Class instances with `.remote()` may serialize!
+
+```python
+# GOOD - .map() guarantees parallel containers
+@app.function(gpu="T4", timeout=3600)
+def train_config(config: dict) -> dict:
+    # Each call gets its own container
+    data = load_data()  # Load per-container
+    model = train(data, config)
+    return {"config": config, "result": model.metrics}
+
+@app.local_entrypoint()
+def sweep():
+    configs = [{"lr": 1e-4}, {"lr": 3e-4}, {"lr": 1e-3}]
+    results = list(train_config.map(configs))  # 3 parallel containers!
+```
+
+**Warning - class instances serialize:**
+```python
+# BAD - may run sequentially!
+trainers = [Trainer() for _ in range(9)]
+futures = [trainers[i].train.remote(cfg) for i, cfg in enumerate(configs)]
+results = [f.get() for f in futures]  # Often serialized, not parallel
+```
+
+### starmap() for multiple arguments
 
 ```python
 @app.function(gpu="A10G", timeout=600)
 def process_shard(seed: int, config: dict) -> dict:
-    # Process one unit of work
     return {"seed": seed, "status": "done"}
 
 @app.local_entrypoint()
 def batch():
-    # Build task list
-    tasks = [
-        (seed, {"param": value})
-        for seed in range(1000)
-    ]
-
-    # Execute in parallel across GPU pool
-    results = list(process_shard.starmap(tasks))
-
-    # Process results
+    tasks = [(seed, {"param": value}) for seed in range(1000)]
+    results = list(process_shard.starmap(tasks))  # Parallel!
     success = sum(1 for r in results if r["status"] == "done")
     print(f"Completed: {success}/{len(tasks)}")
 ```
@@ -109,21 +125,58 @@ Modal automatically scales containers based on demand:
 @app.function(
     gpu="A10G",
     # Autoscaling hints
-    min_containers=0,     # Scale to zero when idle
-    max_containers=100,   # Cap at 100 GPUs
-    buffer_containers=2,  # Keep 2 warm for latency
+    min_containers=0,      # Scale to zero when idle (default)
+    max_containers=100,    # Cap at 100 GPUs
+    buffer_containers=2,   # Keep 2 warm for latency during active use
+    scaledown_window=300,  # Wait 5 min before shutting down idle containers
 )
 def process(seed: int):
     ...
 ```
+
+### Container Lifecycle Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `min_containers` | 0 | Floor - never scale below this, even when idle |
+| `buffer_containers` | 0 | Extra warm containers during active use |
+| `scaledown_window` | 60s | Seconds to wait before shutting down idle container |
+| `max_containers` | ∞ | Ceiling - never scale above this |
+
+**Note**: `keep_warm` is deprecated - use `min_containers` instead.
+
+### When to Use min_containers
+
+```python
+# For hyperparameter sweeps - keep all workers warm
+@app.cls(
+    gpu="T4",
+    min_containers=9,  # Pre-warm 9 containers for 9-config sweep
+)
+class Trainer:
+    @modal.enter()
+    def load_data(self):
+        # Data loads once per container
+        self.data = load_dataset()
+
+    @modal.method()
+    def train(self, config: dict) -> dict:
+        # Train with pre-loaded data
+        return train_model(self.data, config)
+```
+
+**Cost implication**: `min_containers > 0` means paying for idle GPUs. Use for:
+- Time-sensitive sweeps where cold start is unacceptable
+- Web endpoints needing consistent latency
+- Jobs that will fully utilize the containers
 
 ### Scaling Behavior
 
 1. Initial request → cold start (container spin-up)
 2. Subsequent requests → route to existing containers
 3. Demand exceeds capacity → scale up
-4. Idle timeout → scale down
-5. No requests → scale to zero
+4. Idle timeout (`scaledown_window`) → scale down
+5. No requests → scale to `min_containers` (0 by default)
 
 ## Preventing Duplicate Work
 

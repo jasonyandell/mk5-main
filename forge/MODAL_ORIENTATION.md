@@ -400,6 +400,49 @@ while true; do bash scratch/log-progress.sh; sleep 60; done &
               └─────────────────────────────┘
 ```
 
+## Training Sweeps (Parallel Hyperparameter Search)
+
+### Key Pattern: Use `.map()` for True Parallelism
+
+```python
+# Define training function (NOT a class method)
+@app.function(gpu="T4", memory=32768, timeout=3600, volumes={"/data": volume})
+def train_config(config: dict) -> dict:
+    data = load_data("/data")  # Each container loads its own
+    model = train(data, config)
+    return {"config": config, "metrics": model.best_metrics}
+
+@app.local_entrypoint()
+def sweep():
+    configs = [
+        {"run_id": 1, "lr": 1e-4, "batch_size": 8192},
+        {"run_id": 2, "lr": 3e-4, "batch_size": 8192},
+        # ... 9 configs total
+    ]
+    results = list(train_config.map(configs))  # 9 parallel T4s!
+```
+
+### GPU Saturation Settings (T4)
+
+| Setting | Value | Impact |
+|---------|-------|--------|
+| batch_size | 8192 | Saturates GPU compute |
+| AMP | `torch.amp.autocast('cuda')` | 2x throughput |
+| num_workers | 8 | Feeds data fast enough |
+
+**Result**: 49% → 100% GPU utilization
+
+### Common Pitfall: Class Instances Serialize!
+
+```python
+# BAD - runs sequentially despite 9 instances
+trainers = [Trainer() for _ in range(9)]
+futures = [t.train.remote(cfg) for t, cfg in zip(trainers, configs)]
+
+# GOOD - runs in true parallel
+results = list(train_config.map(configs))
+```
+
 ## Links
 
 - [Modal Docs](https://modal.com/docs)

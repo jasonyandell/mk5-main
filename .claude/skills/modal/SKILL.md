@@ -186,6 +186,85 @@ See [references/gpu-selection.md](references/gpu-selection.md) for detailed guid
 
 ## Performance Optimizations
 
+### Training Performance (GPU Saturation)
+
+For ML training, low GPU utilization usually means data loading bottleneck:
+
+```python
+@app.cls(
+    gpu="T4",
+    memory=32768,
+    min_containers=9,  # Pre-warm all containers for sweep
+)
+class Trainer:
+    @modal.enter()
+    def load_data(self):
+        # Load data ONCE into RAM - critical for GPU saturation
+        self.train_data = torch.load("/data/train.pt")
+
+    @modal.method()
+    def train(self, config: dict) -> dict:
+        # Use large batch size + AMP for GPU saturation
+        train_loader = DataLoader(
+            self.train_data,
+            batch_size=8192,  # 16x default, saturates T4
+            num_workers=8,
+            pin_memory=True,
+        )
+
+        scaler = torch.amp.GradScaler('cuda')
+        for batch in train_loader:
+            with torch.amp.autocast('cuda'):
+                loss = model(batch)
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+```
+
+**Key settings for high GPU utilization:**
+
+| Setting | Low GPU% Fix | Example |
+|---------|--------------|---------|
+| Batch size | Increase 8-16x | 512 → 4096-8192 |
+| AMP | Enable float16 | `torch.amp.autocast('cuda')` |
+| num_workers | Match CPU cores | 8 for Modal containers |
+| Data location | RAM not disk | Load in `@modal.enter()` |
+
+**Measured improvement**: 49% → 100% GPU utilization with batch_size=8192 + AMP on T4.
+
+### True Parallelism with `.map()` (Critical!)
+
+**Problem**: Using `@app.cls` with multiple instances serializes execution:
+
+```python
+# BAD - runs sequentially despite multiple instances!
+trainers = [Trainer() for _ in range(9)]
+for i, cfg in enumerate(configs):
+    futures.append(trainers[i].train.remote(cfg))
+results = [f.get() for f in futures]  # Waits sequentially
+```
+
+**Solution**: Use `@app.function` with `.map()` for true parallelism:
+
+```python
+# GOOD - runs all 9 in parallel!
+@app.function(gpu="T4", ...)
+def train_config(config: dict) -> dict:
+    # Load data, train, return results
+    ...
+
+@app.local_entrypoint()
+def main():
+    configs = [{"run_id": 1, ...}, {"run_id": 2, ...}, ...]
+    results = list(train_config.map(configs))  # TRUE PARALLELISM
+```
+
+**Why it matters**: With class instances, Modal may route all `.remote()` calls to the same container. With `.map()`, Modal spawns separate containers for each input.
+
+**Tradeoff**: `.map()` doesn't support per-input cancellation. You can't selectively kill run 3 of 9 - it's all or nothing. For early stopping, build it into your function logic.
+
+### Batch Processing Optimizations
+
 These optimizations achieved **3.8x speedup** in production:
 
 ### 1. Skip per-write volume commits (1.7x speedup)
@@ -275,6 +354,46 @@ Per-shard `volume.commit()` adds ~1 second overhead each. Let Modal batch commit
 ### High-end GPUs burn money fast
 
 10 GPUs × premium tier × 6 minutes = $5-10. Start with A10 for development.
+
+### Worker preemption loses progress
+
+Modal uses spot-like instances. Workers can be preempted mid-training - you pay for time used but lose progress.
+
+```
+Runner interrupted due to worker preemption. Your Function will be restarted with the same input.
+```
+
+**Solution**: Add checkpoint recovery:
+
+```python
+@app.function(gpu="T4", volumes={"/data": volume})
+def train(config: dict):
+    resume_path = Path(f"/data/checkpoints/run{config['id']}_resume.pt")
+    start_epoch = 0
+
+    # Resume from checkpoint if preempted
+    if resume_path.exists():
+        ckpt = torch.load(resume_path)
+        model.load_state_dict(ckpt["model_state_dict"])
+        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+        start_epoch = ckpt["epoch"] + 1
+        print(f"Resumed at epoch {start_epoch}")
+
+    for epoch in range(start_epoch, epochs):
+        train_epoch(...)
+
+        # Save resume checkpoint after each epoch
+        torch.save({
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "scheduler_state_dict": scheduler.state_dict(),
+            "epoch": epoch,
+        }, resume_path)
+
+    # Clean up on successful completion
+    resume_path.unlink(missing_ok=True)
+```
 
 ## Monitoring
 

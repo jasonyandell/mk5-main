@@ -7,10 +7,71 @@
 modal app list
 
 # How many GPUs?
-modal container list | grep -c "ta-01"
+modal container list --json | jq length
 
-# Shard counts from current jobs
-grep -c 'Root value:' /tmp/claude/tasks/b3716bf.output
+# Container IDs (for exec commands)
+modal container list --json | jq -r '.[]["Container ID"]'
+```
+
+## Training Sweep Monitoring
+
+### Live Progress
+
+```bash
+# Watch training output (replace JOB_ID with background task ID)
+tail -f /tmp/claude/tasks/JOB_ID.output
+
+# Filter for epoch completions
+tail -100 /tmp/claude/tasks/JOB_ID.output | grep "Epoch"
+
+# Watch for all runs
+watch -n 10 'tail -50 /tmp/claude/tasks/JOB_ID.output | grep -E "(Epoch|Run |val_acc)"'
+```
+
+### GPU Utilization Check
+
+```bash
+# Get full container ID first
+CONTAINER=$(modal container list --json | jq -r '.[0]["Container ID"]')
+
+# GPU stats (utilization, memory, temp)
+modal container exec $CONTAINER -- nvidia-smi \
+    --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu \
+    --format=csv
+
+# Expected healthy values for training:
+#   GPU%: 80-100% (low = batch size too small)
+#   Memory: 20-80% of total
+#   Temp: <80°C
+```
+
+### wandb Dashboard
+
+```bash
+# Training runs logged to wandb
+# View at: https://wandb.ai/<username>/<project>
+
+# Common filters:
+#   Group by: stage1-sweep (or your group name)
+#   Sort by: val/accuracy, val/q_gap
+#   Compare: overlay loss curves
+```
+
+### Performance Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| GPU% < 50% | Batch size too small | Increase to 4096-8192 |
+| GPU% ~0% | Data loading bottleneck | Load data in @modal.enter() |
+| Memory > 90% | Batch too large | Reduce batch size or use AMP |
+| OOM errors | Model + batch > VRAM | Enable AMP, reduce batch |
+
+### Key Training Metrics
+
+```bash
+# Parse metrics from output
+grep "Epoch" /tmp/claude/tasks/JOB_ID.output | \
+    awk -F'[=,]' '{print $1, "loss="$3, "acc="$5, "qgap="$7}'
 ```
 
 ## Detailed GPU Monitoring
