@@ -383,6 +383,20 @@ DominoTransformer(
 
 The lower "accuracy" for Q-value models is expected—they're optimizing for accurate Q-values across all actions, not just getting the top action right.
 
+### Best Model for E[Q] Marginalization
+
+For the E[Q] pipeline (`forge/eq/`), **Q-value models are preferred** because they produce directly interpretable marginals:
+
+```python
+# Logit model: arbitrary scale, needs softmax interpretation
+e_logits = [-0.72, -1.09, -1.87, ...]  # What does -0.72 mean?
+
+# Q-value model: expected points, directly interpretable
+e_q = [-17.89, -21.05, -21.45, ...]  # "-17.89 points expected"
+```
+
+When debugging E[Q] decisions, Q-value outputs make it easy to verify values are in valid game range (±42 points) and understand the strategic implications of each choice.
+
 ---
 
 ## Metrics Glossary

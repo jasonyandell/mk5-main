@@ -382,6 +382,39 @@ model.eval()
 
 For inference, we only need the model weights. Skipping optimizer state, RNG restoration, and other training artifacts avoids compatibility issues.
 
+**Note**: The oracle also handles `torch.compile()` checkpoints by stripping the `_orig_mod.` prefix from state dict keys.
+
+### Q-Value Models vs Logit-Based Models for E[Q]
+
+**What Didn't Work: Using Logit Outputs as Point Estimates**
+
+Logit-based models (trained with soft cross-entropy) output arbitrary-scale values:
+
+```python
+# Logit model output for a decision
+e_logits = [-0.72, -1.09, -1.87, -1.96, -2.12, -2.22, -1.21]
+# Range: [-2.22, -0.72] - arbitrary scale, NOT points!
+```
+
+These logits require softmax to become probabilities, which doesn't give point estimates. While `argmax(logits) = argmax(Q)` (ordering is preserved), the magnitudes aren't interpretable.
+
+**What Works: Q-Value Models for Interpretable E[Q]**
+
+Q-value models (trained with `loss_mode='qvalue'`) output expected points directly:
+
+```python
+# Q-value model output for the same decision
+e_q_values = [-17.89, -21.05, -21.45, -21.29, -21.02, -20.79, -18.18]
+# Range: [-21.45, -17.89] - directly interpretable as expected points!
+```
+
+Benefits:
+- **Interpretable**: E[Q] = -17.89 means "expect to be 17.89 points behind"
+- **Meaningful deltas**: The 3.5-point spread between best and worst reflects actual strategic value
+- **Debuggable**: Can verify values are in valid game range (roughly ±42 points)
+
+**Recommendation**: Use Q-value model checkpoints (e.g., `domino-qval-*.ckpt`) for E[Q] marginalization when interpretability matters.
+
 ---
 
 ## Performance

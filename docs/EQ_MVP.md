@@ -480,12 +480,28 @@ python -m forge.eq.evaluate --checkpoint runs/eq-stage2/best.ckpt
 
 | Item | Why Defer |
 |------|-----------|
-| True Q-values | Logits preserve ordering; add Q-head later if needed |
+| ~~True Q-values~~ | ✅ **DONE** - Q-value models now available in catalog |
 | N=1000 samples | N=100 is enough to validate convergence |
 | 100K games | 100-1000 games validates the pipeline |
 | Bidding model | Focus on play first |
 | Optimal architecture | Validate 2-layer works before scaling |
 | Production tokenization | Get it working, then optimize |
+
+### Note: Q-Value Models for Interpretable E[Q]
+
+Q-value models (`domino-qval-*.ckpt`) are now available and produce **directly interpretable** E[Q] marginals:
+
+| Model Type | Output | Range | Interpretability |
+|------------|--------|-------|------------------|
+| Logit-based | Arbitrary logits | ~[-2, 0] | Low (needs softmax) |
+| Q-value | Expected points | ~[-42, +42] | High (direct points) |
+
+For debugging and analysis, Q-value models are preferred because:
+- E[Q] values are in points (e.g., -17.89 = "expect 17.89 pts behind")
+- Meaningful deltas between options
+- Easy to verify values are in valid game range
+
+See `forge/eq/README.md` for details.
 
 ---
 
