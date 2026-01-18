@@ -665,10 +665,9 @@ forge/eq/
 ├── game.py                # GameState for simulation
 ├── generate.py            # Generate single game with 28 decisions
 ├── generate_dataset.py    # Batch generation with train/val split
+├── generate_continuous.py # Continuous generation (append/resume)
 ├── transcript_tokenize.py # Stage 2 tokenizer (public info only)
 ├── viewer.py              # Interactive debug viewer
-├── stage2.py              # Stage 2 model (TODO)
-└── train_stage2.py        # Training loop (TODO)
 ```
 
 ### Data Format
@@ -679,7 +678,7 @@ Each training example is one **decision point**:
 |-------|-------|-------------|
 | `transcript_tokens` | (36, 8) | Padded sequence: [decl, hand..., plays...] |
 | `transcript_lengths` | scalar | Actual sequence length |
-| `e_logits` | (7,) | Target: averaged Q-values across sampled worlds |
+| `e_q_mean` | (7,) | Target: E[Q] in points (averaged across sampled worlds) |
 | `legal_mask` | (7,) | Which actions were legal |
 | `action_taken` | scalar | Which slot the E[Q] policy chose |
 
@@ -867,6 +866,41 @@ python -m forge.cli.train --fast-dev-run --no-wandb
 
 # After bidding changes - quick simulation test
 python -m forge.bidding.evaluate --hand "6-4,5-5,4-2,3-1,2-0,1-1,0-0" --samples 10
+```
+
+---
+
+## Known Issues & Future Optimizations
+
+### PyTorch Nested Tensor Warning (Harmless)
+
+When running the Stage1Oracle, you'll see this warning:
+```
+UserWarning: The PyTorch API of nested tensors is in prototype stage...
+We recommend specifying layout=torch.jagged
+```
+
+**What's happening**: PyTorch has two nested tensor layouts:
+- `torch.strided` (old) - prototype status, what `nn.MultiheadAttention` uses internally
+- `torch.jagged` (new) - production-ready, 6x faster with `torch.compile`
+
+The Stage1 model uses `nn.TransformerEncoder` which internally creates strided nested tensors for padding masks. PyTorch recommends jagged layout, but `nn.MultiheadAttention` [doesn't fully support it yet](https://github.com/pytorch/pytorch/issues/153472) (as of June 2025).
+
+**Impact**: None - the model works correctly. This is just informational noise.
+
+**Future opportunity**: When PyTorch MHA gets proper jagged support, we could get significant speedup by:
+1. Rewriting `DominoTransformer` to use `scaled_dot_product_attention` directly with NJTs
+2. Retraining the model
+
+**References**:
+- [PyTorch Nested Tensors Docs](https://docs.pytorch.org/docs/stable/nested.html)
+- [Transformer Building Blocks Tutorial](https://docs.pytorch.org/tutorials/intermediate/transformer_building_blocks.html) - Shows 6x speedup with NJTs
+- [MHA + Jagged Tensors Issue #153472](https://github.com/pytorch/pytorch/issues/153472) - PR in progress
+
+**Suppressing the warning** (if desired):
+```python
+import warnings
+warnings.filterwarnings("ignore", message=".*nested tensors.*prototype.*")
 ```
 
 ---
