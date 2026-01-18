@@ -27,7 +27,7 @@ from forge.oracle.rng import deal_from_seed
 class MockDominoLightningModule:
     """Mock Lightning module for testing."""
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.eval_called = False
         self.to_called = False
         self.device_arg = None
@@ -40,6 +40,10 @@ class MockDominoLightningModule:
         self.to_called = True
         self.device_arg = device
         return self
+
+    def load_state_dict(self, state_dict, strict=True):
+        """Mock state dict loading."""
+        pass
 
     def __call__(self, tokens, masks, current_player):
         """Return dummy logits and values."""
@@ -54,11 +58,28 @@ class MockDominoLightningModule:
 
 @pytest.fixture
 def mock_checkpoint():
-    """Mock checkpoint loading to avoid filesystem dependency."""
+    """Mock checkpoint loading to avoid filesystem dependency.
+
+    Patches torch.load and DominoLightningModule constructor to avoid
+    needing an actual checkpoint file.
+    """
     mock_module = MockDominoLightningModule()
 
-    with patch('forge.eq.oracle.DominoLightningModule') as mock_class:
-        mock_class.load_from_checkpoint.return_value = mock_module
+    # Mock checkpoint dict with minimal hyperparameters
+    mock_ckpt = {
+        'hyper_parameters': {
+            'embed_dim': 64,
+            'n_heads': 4,
+            'n_layers': 2,
+            'ff_dim': 128,
+            'dropout': 0.1,
+            'lr': 1e-3,
+        },
+        'state_dict': {},  # Empty state dict for testing
+    }
+
+    with patch('forge.eq.oracle.torch.load', return_value=mock_ckpt) as mock_load, \
+         patch('forge.eq.oracle.DominoLightningModule', return_value=mock_module) as mock_class:
         yield mock_class, mock_module
 
 
@@ -72,11 +93,8 @@ def test_oracle_initialization(mock_checkpoint):
 
     oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
 
-    # Verify checkpoint was loaded
-    mock_class.load_from_checkpoint.assert_called_once_with(
-        "fake_checkpoint.ckpt",
-        map_location="cpu"
-    )
+    # Verify DominoLightningModule was constructed
+    mock_class.assert_called_once()
 
     # Verify eval() and to() were called
     assert mock_module.eval_called
@@ -215,7 +233,11 @@ def test_tokenize_hand_tokens():
 
 
 def test_tokenize_trick_tokens():
-    """Test trick tokens are populated correctly."""
+    """Test trick tokens are populated correctly.
+
+    NOTE: After t42-64uj.3 Phase 1, trick_plays uses (player, domino_id) format
+    instead of (player, local_idx) for world-invariant encoding.
+    """
     oracle = Stage1Oracle.__new__(Stage1Oracle)
     oracle.device = "cpu"
 
@@ -228,8 +250,9 @@ def test_tokenize_trick_tokens():
     worlds = [hands]
     remaining = np.ones((1, 4), dtype=np.int64) * 0x7F
 
-    # Leader is player 1, they played domino at local index 2 (global ID 9)
-    trick_plays = [(1, 2)]
+    # Leader is player 1, they played domino_id=9
+    # NEW FORMAT: (player, domino_id) instead of (player, local_idx)
+    trick_plays = [(1, 9)]
 
     tokens, masks = oracle._tokenize_worlds(
         worlds=worlds,
@@ -243,9 +266,7 @@ def test_tokenize_trick_tokens():
     # Trick token should be at index 29
     from forge.ml.tokenize import DOMINO_HIGH, DOMINO_LOW, TOKEN_TYPE_TRICK_P0
 
-    global_id = hands[1][2]  # Should be 9
-    assert global_id == 9
-
+    # domino_id is directly 9 (no longer need to look up from hands)
     assert tokens[0, 29, 0] == DOMINO_HIGH[9]
     assert tokens[0, 29, 1] == DOMINO_LOW[9]
     assert tokens[0, 29, 9] == TOKEN_TYPE_TRICK_P0

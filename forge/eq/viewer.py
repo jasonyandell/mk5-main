@@ -344,28 +344,31 @@ def render_default_mode(
 
     lines.append("─" * 80)
 
-    # E[Q] display (legal actions only)
+    # E[Q] display (legal actions only) - show raw Q-values (expected points)
     legal_indices = [i for i in range(len(hand)) if legal_mask[i]]
     if legal_indices:
-        legal_logits = e_logits[legal_indices]
-        legal_probs = torch.softmax(legal_logits, dim=0)
-        max_prob = legal_probs.max().item()
+        legal_q = e_logits[legal_indices]
+        max_q = legal_q.max().item()
+        min_q = legal_q.min().item()
+        q_range = max_q - min_q if max_q != min_q else 1.0
 
-        # Sort by probability
+        # Sort by Q-value (descending)
         sorted_legal = sorted(
-            zip(legal_indices, legal_probs.tolist()),
+            zip(legal_indices, [e_logits[i].item() for i in legal_indices]),
             key=lambda x: x[1],
             reverse=True,
         )
 
-        lines.append("E[Q] (softmax over legal):")
-        for i, prob in sorted_legal:
+        lines.append("E[Q] (expected points, higher = better):")
+        for i, q_val in sorted_legal:
             h, l = hand[i]
             dom = domino_str(h, l)
-            bar_len = int(20 * prob / max_prob) if max_prob > 0 else 0
+            # Bar shows relative Q within legal actions
+            bar_len = int(20 * (q_val - min_q) / q_range) if q_range > 0 else 10
             bar = "█" * bar_len
+            sign = "+" if q_val >= 0 else ""
             marker = " ← SELECTED" if i == action_taken else ""
-            lines.append(f"    {dom:>7}  {prob:.2f} {bar}{marker}")
+            lines.append(f"    {dom:>7}  {sign}{q_val:5.1f} pts {bar}{marker}")
 
     lines.append("─" * 80)
     lines.append("[←/→] Nav  [j] Jump  [d] Debug details  [q] Quit")
@@ -514,24 +517,17 @@ def compute_debug_data(
                 if domino not in played_ids:
                     remaining[0, p] |= (1 << local_idx)
 
-        # Build trick_plays as (player, local_idx) tuples FOR THIS WORLD
-        # Each world has different initial hands, so local_idx varies
-        domino_to_pos: dict[int, tuple[int, int]] = {}
-        for p in range(4):
-            for local_idx, domino in enumerate(initial_hands[p]):
-                domino_to_pos[domino] = (p, local_idx)
-
+        # Build trick_plays using DOMINO_ID (world-invariant public info)
+        # This matches the batched format in generate.py
         trick_plays = []
         for rel_player, h, l in current_trick_plays_raw:
             domino = pips_to_domino_id(h, l)
-            if domino in domino_to_pos:
-                _, local_idx = domino_to_pos[domino]
-                trick_plays.append((rel_player, local_idx))
+            trick_plays.append((rel_player, domino))
 
         game_state_info = {
             "decl_id": decl_id,
             "leader": leader,
-            "trick_plays": trick_plays,
+            "trick_plays": trick_plays,  # Uses domino_id, not local_idx
             "remaining": remaining,
         }
 
@@ -714,33 +710,29 @@ def render_debug_mode(
 
     lines.append("─" * 80)
 
-    # E[Q] vs Oracle comparison table
+    # E[Q] vs Oracle comparison table (raw Q-values in points)
     oracle_avg = debug_data.get("oracle_avg", torch.zeros(7))
     oracle_ranking = debug_data.get("oracle_ranking", list(range(7)))
 
-    # Header
-    lines.append("                    E[Q]      Oracle     Δ       Rank")
-    lines.append(f"                   (N={n_worlds})   (actual)")
+    # Header - show raw Q-values (expected points)
+    lines.append("                    E[Q]      Oracle      Δ       Rank")
+    lines.append(f"                   (N={n_worlds})    (pts)     (pts)")
 
     # Get legal indices
     legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
 
-    # Compute probabilities
-    e_probs = torch.softmax(e_logits[: len(hand)], dim=0)
-    oracle_probs = torch.softmax(oracle_avg[: len(hand)], dim=0)
-
-    # Sort by E[Q] probability (descending)
+    # Sort by E[Q] value (descending) - raw points, not softmax
     sorted_by_eq = sorted(
-        [(i, e_probs[i].item(), oracle_probs[i].item()) for i in legal_indices],
+        [(i, e_logits[i].item(), oracle_avg[i].item()) for i in legal_indices],
         key=lambda x: x[1],
         reverse=True,
     )
 
-    for i, eq_prob, oracle_prob in sorted_by_eq:
+    for i, eq_val, oracle_val in sorted_by_eq:
         h, l = hand[i]
         dom = domino_str(h, l)
-        delta = eq_prob - oracle_prob
-        delta_str = f"+{delta:.2f}" if delta >= 0 else f"{delta:.2f}"
+        delta = eq_val - oracle_val
+        delta_str = f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
 
         # Find oracle rank
         try:
@@ -748,8 +740,12 @@ def render_debug_mode(
         except ValueError:
             oracle_rank = "?"
 
+        # Format Q-values with sign
+        eq_str = f"+{eq_val:.1f}" if eq_val >= 0 else f"{eq_val:.1f}"
+        oracle_str = f"+{oracle_val:.1f}" if oracle_val >= 0 else f"{oracle_val:.1f}"
+
         marker = " ← SELECTED" if i == action_taken else ""
-        lines.append(f"    {dom:>7}       {eq_prob:.2f}       {oracle_prob:.2f}    {delta_str:>6}       {oracle_rank}{marker}")
+        lines.append(f"    {dom:>7}     {eq_str:>6}     {oracle_str:>6}   {delta_str:>6}       {oracle_rank}{marker}")
 
     lines.append("")
 
@@ -772,7 +768,7 @@ def render_debug_mode(
         q_gap = 0
 
     lines.append(
-        f"Agreement: {agreement} (picked oracle rank {selected_oracle_rank})    Oracle Q-gap: {q_gap:.2f}"
+        f"Agreement: {agreement} (picked oracle rank {selected_oracle_rank})    Oracle Q-gap: {q_gap:.1f} pts"
     )
 
     lines.append("─" * 80)
@@ -797,16 +793,16 @@ def render_debug_mode(
             continue
 
         wl = world_logits[wi]
-        # Top 3 actions for this world
+        # Top 3 actions for this world (show raw Q-values)
         top3 = torch.argsort(wl[: len(hand)], descending=True)[:3].tolist()
-        probs = torch.softmax(wl[: len(hand)], dim=0)
 
         top_strs = []
         for ti in top3:
             if ti < len(hand):
                 h, l = hand[ti]
-                p = probs[ti].item()
-                top_strs.append(f"{h}:{l}={p:.2f}")
+                q = wl[ti].item()
+                sign = "+" if q >= 0 else ""
+                top_strs.append(f"{h}:{l}={sign}{q:.0f}")
 
         pref = world_prefs[wi] if wi < len(world_prefs) else -1
         best_str = domino_str(*hand[pref]) if 0 <= pref < len(hand) else "?"
@@ -948,29 +944,32 @@ def render_world_mode(
     lines.append("")
     lines.append("─" * 80)
 
-    # Oracle logits for this world (use projected logits in remaining-hand order)
+    # Oracle Q-values for this world (use projected values in remaining-hand order)
     world_logits_projected = debug_data.get("world_logits_projected", [])
     if actual_wi < len(world_logits_projected) and world_logits_projected[actual_wi] is not None:
         wl = world_logits_projected[actual_wi]  # Already in remaining-hand order
-        probs = torch.softmax(wl, dim=0)
-        max_prob = probs.max().item()
-
-        lines.append("Oracle logits for this world (remaining-hand order):")
-
         legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
-        sorted_by_prob = sorted(
-            [(i, probs[i].item()) for i in legal_indices],
+        legal_q = wl[legal_indices]
+        max_q = legal_q.max().item()
+        min_q = legal_q.min().item()
+        q_range = max_q - min_q if max_q != min_q else 1.0
+
+        lines.append("Oracle Q-values for this world (expected points):")
+
+        sorted_by_q = sorted(
+            [(i, wl[i].item()) for i in legal_indices],
             key=lambda x: x[1],
             reverse=True,
         )
 
-        for i, prob in sorted_by_prob:
+        for i, q_val in sorted_by_q:
             h, l = hand[i]
             dom = domino_str(h, l)
-            bar_len = int(36 * prob / max_prob) if max_prob > 0 else 0
+            bar_len = int(36 * (q_val - min_q) / q_range) if q_range > 0 else 18
             bar = "█" * bar_len
+            sign = "+" if q_val >= 0 else ""
             marker = " ← best" if i == pref else ""
-            lines.append(f"    {dom:>7}   {prob:.2f} {bar}{marker}")
+            lines.append(f"    {dom:>7}   {sign}{q_val:5.1f} pts {bar}{marker}")
 
         # Why does oracle prefer this?
         if pref != action_taken:
@@ -1069,7 +1068,7 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                         # Load oracle if needed
                         if oracle is None:
                             from forge.eq.oracle import Stage1Oracle
-                            checkpoint = "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
+                            checkpoint = "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
                             oracle = Stage1Oracle(checkpoint, device="cuda")
 
                         # Compute debug data

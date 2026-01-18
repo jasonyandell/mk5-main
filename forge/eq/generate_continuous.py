@@ -179,8 +179,8 @@ def main():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default="forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt",
-        help="Path to Stage 1 checkpoint",
+        default="forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        help="Path to Stage 1 Q-value checkpoint (outputs expected points)",
     )
     parser.add_argument(
         "--output",

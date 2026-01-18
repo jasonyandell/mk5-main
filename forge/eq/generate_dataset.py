@@ -165,8 +165,8 @@ def main():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default="forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt",
-        help="Path to Stage 1 checkpoint",
+        default="forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+        help="Path to Stage 1 Q-value checkpoint (outputs expected points)",
     )
     parser.add_argument(
         "--output",
@@ -232,20 +232,29 @@ def main():
     print(f"Avg time/game: {meta['avg_game_time']:.2f}s")
     print()
 
-    # Validate
+    # Validate (Q-values should be expected points in ~[-42, 42] range)
     print("Validation:")
     print(f"  transcript_tokens shape: {dataset['transcript_tokens'].shape}")
     print(f"  e_logits shape: {dataset['e_logits'].shape}")
-    print(f"  e_logits range: [{dataset['e_logits'].min():.2f}, {dataset['e_logits'].max():.2f}]")
+
+    # Only check legal actions (padded/illegal slots are -inf by design)
+    legal_q = dataset['e_logits'][dataset['legal_mask']]
+    q_min = legal_q.min().item()
+    q_max = legal_q.max().item()
+    print(f"  E[Q] range (legal only): [{q_min:.1f}, {q_max:.1f}] pts")
+    print(f"  E[Q] mean: {legal_q.mean().item():.1f} pts")
     print(f"  legal_mask sum (avg): {dataset['legal_mask'].float().sum(dim=1).mean():.1f} legal/decision")
 
-    # Check for issues
-    if torch.isnan(dataset["e_logits"]).any():
-        print("  WARNING: e_logits contains NaN!")
-    if torch.isinf(dataset["e_logits"]).any():
-        print("  WARNING: e_logits contains Inf!")
-    if (dataset["e_logits"] == 0).all():
-        print("  WARNING: e_logits are all zeros!")
+    # Check for issues in legal actions
+    if torch.isnan(legal_q).any():
+        print("  WARNING: E[Q] contains NaN in legal actions!")
+    if torch.isinf(legal_q).any():
+        print("  WARNING: E[Q] contains Inf in legal actions!")
+    if (legal_q == 0).all():
+        print("  WARNING: E[Q] are all zeros!")
+    # Sanity check for point-valued Q (expected game outcome is roughly -42 to +42)
+    if q_min < -50 or q_max > 50:
+        print(f"  WARNING: E[Q] range [{q_min:.1f}, {q_max:.1f}] outside expected [-50, 50] pts")
 
     # Save
     output_path = Path(args.output)

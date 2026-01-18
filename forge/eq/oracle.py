@@ -108,7 +108,8 @@ class Stage1Oracle:
             game_state_info: Dict with keys:
                 - decl_id: Declaration ID (0-9)
                 - leader: Leader player ID (0-3)
-                - trick_plays: List of (player, local_idx) tuples for current trick
+                - trick_plays: List of (player, domino_id) tuples for current trick
+                  NOTE: Uses domino_id (not local_idx) for world-invariant encoding
                 - remaining: 2D array (N, 4) of remaining domino bitmasks
             current_player: Who is deciding (0-3)
 
@@ -119,6 +120,7 @@ class Stage1Oracle:
             - Returns raw logits, NOT probabilities
             - Caller should apply softmax and handle illegal moves
             - All N worlds must have same game state (decl, trick, etc.)
+            - trick_plays uses domino_id (public info) for efficient batching
         """
         if not worlds:
             raise ValueError("worlds cannot be empty")
@@ -263,31 +265,31 @@ class Stage1Oracle:
         masks[:, 0] = 1
 
         # =====================================================================
-        # Step 8: Trick tokens (still needs per-world loop due to variable structure)
+        # Step 8: Trick tokens (broadcast across all worlds - domino_id is public info)
         # =====================================================================
-        for world_idx, hands in enumerate(worlds):
-            for trick_pos, (play_player, play_local_idx) in enumerate(trick_plays):
-                if trick_pos >= 3:  # Max 3 trick tokens
-                    break
+        # trick_plays is now [(player, domino_id), ...] - world-invariant public info
+        # We can broadcast identical trick tokens to all N worlds
+        for trick_pos, (play_player, domino_id) in enumerate(trick_plays):
+            if trick_pos >= 3:  # Max 3 trick tokens
+                break
 
-                token_idx = 29 + trick_pos
-                global_id = hands[play_player][play_local_idx]
+            token_idx = 29 + trick_pos
+            normalized_pp = (play_player - current_player + 4) % 4
 
-                normalized_pp = (play_player - current_player + 4) % 4
+            # Broadcast to ALL worlds - these are identical (public information)
+            tokens[:, token_idx, 0] = DOMINO_HIGH[domino_id]
+            tokens[:, token_idx, 1] = DOMINO_LOW[domino_id]
+            tokens[:, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[domino_id] else 0
+            tokens[:, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[domino_id]]
+            tokens[:, token_idx, 4] = TRUMP_RANK_TABLE[(domino_id, decl_id)]
+            tokens[:, token_idx, 5] = normalized_pp
+            tokens[:, token_idx, 6] = 1 if normalized_pp == 0 else 0
+            tokens[:, token_idx, 7] = 1 if normalized_pp == 2 else 0
+            tokens[:, token_idx, 8] = 0  # Not in remaining (already played)
+            tokens[:, token_idx, 9] = TOKEN_TYPE_TRICK_P0 + trick_pos
+            tokens[:, token_idx, 10] = decl_id
+            tokens[:, token_idx, 11] = normalized_leader
 
-                tokens[world_idx, token_idx, 0] = DOMINO_HIGH[global_id]
-                tokens[world_idx, token_idx, 1] = DOMINO_LOW[global_id]
-                tokens[world_idx, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[global_id] else 0
-                tokens[world_idx, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[global_id]]
-                tokens[world_idx, token_idx, 4] = TRUMP_RANK_TABLE[(global_id, decl_id)]
-                tokens[world_idx, token_idx, 5] = normalized_pp
-                tokens[world_idx, token_idx, 6] = 1 if normalized_pp == 0 else 0
-                tokens[world_idx, token_idx, 7] = 1 if normalized_pp == 2 else 0
-                tokens[world_idx, token_idx, 8] = 0
-                tokens[world_idx, token_idx, 9] = TOKEN_TYPE_TRICK_P0 + trick_pos
-                tokens[world_idx, token_idx, 10] = decl_id
-                tokens[world_idx, token_idx, 11] = normalized_leader
-
-                masks[world_idx, token_idx] = 1
+            masks[:, token_idx] = 1
 
         return tokens, masks
