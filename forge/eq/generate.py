@@ -87,6 +87,111 @@ class MappingIntegrityError(Exception):
     pass
 
 
+# =============================================================================
+# Exploration policy parameters (t42-64uj.5)
+# =============================================================================
+
+
+@dataclass
+class ExplorationPolicy:
+    """Configuration for exploratory action selection during game generation.
+
+    Supports a mixture of policies to diversify transcripts:
+    - greedy: Always pick argmax(E[Q]) (default, no exploration)
+    - boltzmann: Sample from softmax(E[Q] / temperature)
+    - epsilon: With probability epsilon, pick uniformly random legal action
+    - blunder: Occasionally pick suboptimal action with bounded regret
+
+    The policies are applied in order: first check blunder, then epsilon,
+    then boltzmann vs greedy. This allows combining them.
+    """
+
+    # Boltzmann sampling
+    temperature: float = 1.0  # Temperature for softmax sampling (lower = greedier)
+    use_boltzmann: bool = False  # If False, use greedy argmax
+
+    # Epsilon-greedy
+    epsilon: float = 0.0  # Probability of random action (0 = no random)
+
+    # Bounded blunder (occasional suboptimal pick)
+    blunder_rate: float = 0.0  # Probability of picking non-best action
+    blunder_max_regret: float = 5.0  # Max Q-gap allowed for blunder (in points)
+
+    # Seeding for reproducibility
+    seed: int | None = None  # If set, use deterministic RNG
+
+    @classmethod
+    def greedy(cls) -> "ExplorationPolicy":
+        """Pure greedy policy (no exploration)."""
+        return cls()
+
+    @classmethod
+    def boltzmann(cls, temperature: float = 2.0, seed: int | None = None) -> "ExplorationPolicy":
+        """Boltzmann sampling with given temperature."""
+        return cls(use_boltzmann=True, temperature=temperature, seed=seed)
+
+    @classmethod
+    def epsilon_greedy(cls, epsilon: float = 0.1, seed: int | None = None) -> "ExplorationPolicy":
+        """Epsilon-greedy with given exploration rate."""
+        return cls(epsilon=epsilon, seed=seed)
+
+    @classmethod
+    def mixed_exploration(
+        cls,
+        temperature: float = 3.0,
+        epsilon: float = 0.05,
+        blunder_rate: float = 0.02,
+        blunder_max_regret: float = 3.0,
+        seed: int | None = None,
+    ) -> "ExplorationPolicy":
+        """Recommended mixed policy for diverse transcript generation.
+
+        Combines mild Boltzmann sampling with small epsilon and occasional blunders.
+        Designed to approximate human-like play with bounded suboptimality.
+        """
+        return cls(
+            use_boltzmann=True,
+            temperature=temperature,
+            epsilon=epsilon,
+            blunder_rate=blunder_rate,
+            blunder_max_regret=blunder_max_regret,
+            seed=seed,
+        )
+
+
+@dataclass
+class ExplorationStats:
+    """Per-decision exploration statistics."""
+
+    greedy_action: int  # What greedy would have picked
+    action_taken: int  # What was actually played
+    was_greedy: bool  # True if action_taken == greedy_action
+    selection_mode: str  # "greedy", "boltzmann", "epsilon", "blunder"
+    q_gap: float  # Q(greedy) - Q(action_taken), 0 if greedy
+    action_entropy: float  # Entropy of softmax(E[Q]) over legal actions
+
+
+@dataclass
+class GameExplorationStats:
+    """Aggregate exploration statistics for a full game."""
+
+    n_decisions: int = 0
+    n_greedy: int = 0
+    n_boltzmann: int = 0
+    n_epsilon: int = 0
+    n_blunder: int = 0
+    total_q_gap: float = 0.0  # Sum of regret across all decisions
+    mean_action_entropy: float = 0.0
+
+    @property
+    def greedy_rate(self) -> float:
+        return self.n_greedy / self.n_decisions if self.n_decisions > 0 else 0.0
+
+    @property
+    def mean_q_gap(self) -> float:
+        return self.total_q_gap / self.n_decisions if self.n_decisions > 0 else 0.0
+
+
 @dataclass
 class DecisionRecord:
     """One training example for Stage 2."""
@@ -107,16 +212,19 @@ class GameRecord:
 
 @dataclass
 class DecisionRecordV2(DecisionRecord):
-    """Extended decision record with posterior diagnostics (t42-64uj.3)."""
+    """Extended decision record with posterior diagnostics (t42-64uj.3) and exploration stats."""
 
     diagnostics: PosteriorDiagnostics | None = None  # Posterior health metrics
+    exploration: ExplorationStats | None = None  # Exploration statistics (t42-64uj.5)
 
 
 @dataclass
 class GameRecordV2(GameRecord):
-    """Extended game record with posterior config."""
+    """Extended game record with posterior config and exploration stats."""
 
     posterior_config: PosteriorConfig | None = None
+    exploration_policy: ExplorationPolicy | None = None  # Policy used for action selection
+    exploration_stats: GameExplorationStats | None = None  # Aggregate exploration stats
 
 
 def generate_eq_game(
@@ -125,6 +233,7 @@ def generate_eq_game(
     decl_id: int,
     n_samples: int = 100,
     posterior_config: PosteriorConfig | None = None,
+    exploration_policy: ExplorationPolicy | None = None,
 ) -> GameRecord:
     """Play one game, record all 28 decisions.
 
@@ -136,7 +245,7 @@ def generate_eq_game(
     5. Query oracle for Q-values on each hypothetical world
     6. Compute E[Q] (uniform or posterior-weighted)
     7. Record decision with transcript tokens
-    8. Play the best action (argmax of E[Q] over legal actions)
+    8. Select action using exploration policy (greedy, Boltzmann, epsilon, or blunder)
 
     Args:
         oracle: Stage 1 oracle for querying Q-values
@@ -144,13 +253,29 @@ def generate_eq_game(
         decl_id: Declaration ID (0-9)
         n_samples: Number of worlds to sample per decision (default 100)
         posterior_config: Config for posterior weighting (None = uniform averaging)
+        exploration_policy: Policy for action selection (None = greedy)
 
     Returns:
-        GameRecord (or GameRecordV2 if posterior_config provided) with 28 decisions
+        GameRecord (or GameRecordV2 if posterior/exploration config provided) with 28 decisions
     """
     use_posterior = posterior_config is not None and posterior_config.enabled
+    use_exploration = exploration_policy is not None
+    use_v2 = use_posterior or use_exploration
+
     game = GameState.from_hands(hands, decl_id, leader=0)
     decisions = []
+
+    # Initialize RNG for exploration
+    if use_exploration and exploration_policy.seed is not None:
+        rng = np.random.default_rng(exploration_policy.seed)
+    elif use_exploration:
+        rng = np.random.default_rng()
+    else:
+        rng = None
+
+    # Aggregate exploration stats
+    game_exploration_stats = GameExplorationStats() if use_exploration else None
+    total_entropy = 0.0
 
     # Incremental void tracking
     voids: dict[int, set[int]] = {0: set(), 1: set(), 2: set(), 3: set()}
@@ -243,15 +368,48 @@ def generate_eq_game(
         plays_for_transcript = [(p, d) for p, d, _ in game.play_history]
         transcript_tokens = tokenize_transcript(my_hand, plays_for_transcript, decl_id, player)
 
-        # 7. Determine legal actions and select best
+        # 7. Determine legal actions and select action
         legal_actions = game.legal_actions()
         legal_mask = _build_legal_mask(legal_actions, my_hand)  # (len(my_hand),) boolean
 
-        # Mask illegal actions and select
+        # Mask illegal actions for greedy baseline
         masked_logits = e_logits.clone()
         masked_logits[~legal_mask] = float("-inf")
-        action_idx = masked_logits.argmax().item()
+        greedy_idx = masked_logits.argmax().item()
+
+        # Select action using exploration policy
+        action_idx, selection_mode, action_entropy = _select_action_with_exploration(
+            e_logits=e_logits,
+            legal_mask=legal_mask,
+            policy=exploration_policy,
+            rng=rng,
+        )
         action_domino = my_hand[action_idx]
+
+        # Compute exploration stats
+        exploration_stats: ExplorationStats | None = None
+        if use_exploration:
+            q_gap = (e_logits[greedy_idx] - e_logits[action_idx]).item()
+            exploration_stats = ExplorationStats(
+                greedy_action=greedy_idx,
+                action_taken=action_idx,
+                was_greedy=(action_idx == greedy_idx),
+                selection_mode=selection_mode,
+                q_gap=q_gap,
+                action_entropy=action_entropy,
+            )
+            # Update aggregate stats
+            game_exploration_stats.n_decisions += 1
+            if selection_mode == "greedy":
+                game_exploration_stats.n_greedy += 1
+            elif selection_mode == "boltzmann":
+                game_exploration_stats.n_boltzmann += 1
+            elif selection_mode == "epsilon":
+                game_exploration_stats.n_epsilon += 1
+            elif selection_mode == "blunder":
+                game_exploration_stats.n_blunder += 1
+            game_exploration_stats.total_q_gap += q_gap
+            total_entropy += action_entropy
 
         # 8. Record decision
         # Note: e_logits and legal_mask are now in remaining-hand order (len = len(my_hand))
@@ -261,7 +419,7 @@ def generate_eq_game(
         padded_legal_mask = torch.zeros(7, dtype=torch.bool)
         padded_legal_mask[:len(my_hand)] = legal_mask
 
-        if use_posterior:
+        if use_v2:
             decisions.append(
                 DecisionRecordV2(
                     transcript_tokens=transcript_tokens,
@@ -269,6 +427,7 @@ def generate_eq_game(
                     legal_mask=padded_legal_mask,
                     action_taken=action_idx,
                     diagnostics=diagnostics,
+                    exploration=exploration_stats,
                 )
             )
         else:
@@ -284,8 +443,17 @@ def generate_eq_game(
         # 9. Apply action
         game = game.apply_action(action_domino)
 
-    if use_posterior:
-        return GameRecordV2(decisions=decisions, posterior_config=posterior_config)
+    # Finalize game exploration stats
+    if use_exploration and game_exploration_stats.n_decisions > 0:
+        game_exploration_stats.mean_action_entropy = total_entropy / game_exploration_stats.n_decisions
+
+    if use_v2:
+        return GameRecordV2(
+            decisions=decisions,
+            posterior_config=posterior_config,
+            exploration_policy=exploration_policy,
+            exploration_stats=game_exploration_stats,
+        )
     return GameRecord(decisions=decisions)
 
 
@@ -367,6 +535,92 @@ def _build_legal_mask(legal_actions: tuple[int, ...], hand: list[int]) -> Tensor
     legal_set = set(legal_actions)
     mask = torch.tensor([domino in legal_set for domino in hand], dtype=torch.bool)
     return mask
+
+
+# =============================================================================
+# Exploration policy helpers (t42-64uj.5)
+# =============================================================================
+
+
+def _select_action_with_exploration(
+    e_logits: Tensor,
+    legal_mask: Tensor,
+    policy: ExplorationPolicy | None,
+    rng: np.random.Generator | None,
+) -> tuple[int, str, float]:
+    """Select action using exploration policy.
+
+    Args:
+        e_logits: E[Q] values for each action in remaining-hand order
+        legal_mask: Boolean mask of legal actions
+        policy: Exploration policy (None = greedy)
+        rng: Random number generator for stochastic selection
+
+    Returns:
+        Tuple of (action_idx, selection_mode, action_entropy) where:
+        - action_idx: Selected action index
+        - selection_mode: "greedy", "boltzmann", "epsilon", or "blunder"
+        - action_entropy: Entropy of softmax(E[Q]) over legal actions
+    """
+    # Get legal action indices and Q-values
+    legal_indices = torch.where(legal_mask)[0].tolist()
+    n_legal = len(legal_indices)
+
+    if n_legal == 0:
+        raise ValueError("No legal actions available")
+
+    if n_legal == 1:
+        # Only one legal action - no choice
+        return legal_indices[0], "greedy", 0.0
+
+    # Get Q-values for legal actions
+    legal_q = e_logits[legal_mask]
+
+    # Compute softmax probabilities for entropy calculation (and Boltzmann sampling)
+    # Use temperature=1.0 for entropy calculation baseline
+    probs = F.softmax(legal_q, dim=0)
+    log_probs = torch.log(probs + 1e-30)
+    action_entropy = -(probs * log_probs).sum().item()
+
+    # Greedy action (always compute as baseline)
+    greedy_local = legal_q.argmax().item()
+    greedy_idx = legal_indices[greedy_local]
+    greedy_q = legal_q[greedy_local].item()
+
+    # No policy = greedy
+    if policy is None or rng is None:
+        return greedy_idx, "greedy", action_entropy
+
+    # Check for blunder (occasional suboptimal pick with bounded regret)
+    if policy.blunder_rate > 0 and rng.random() < policy.blunder_rate:
+        # Find actions within bounded regret
+        regret_threshold = greedy_q - policy.blunder_max_regret
+        blunder_candidates = [
+            (i, local_i) for local_i, i in enumerate(legal_indices)
+            if legal_q[local_i].item() >= regret_threshold and i != greedy_idx
+        ]
+        if blunder_candidates:
+            # Pick random from candidates
+            idx, _ = blunder_candidates[rng.integers(len(blunder_candidates))]
+            return idx, "blunder", action_entropy
+
+    # Check for epsilon-random
+    if policy.epsilon > 0 and rng.random() < policy.epsilon:
+        # Pick uniformly random legal action
+        random_idx = legal_indices[rng.integers(n_legal)]
+        return random_idx, "epsilon", action_entropy
+
+    # Boltzmann sampling or greedy
+    if policy.use_boltzmann:
+        # Sample from softmax with temperature
+        boltzmann_probs = F.softmax(legal_q / policy.temperature, dim=0).numpy()
+        sampled_local = rng.choice(n_legal, p=boltzmann_probs)
+        sampled_idx = legal_indices[sampled_local]
+        # If sampled == greedy, still report as boltzmann (it was stochastic)
+        return sampled_idx, "boltzmann", action_entropy
+
+    # Pure greedy
+    return greedy_idx, "greedy", action_entropy
 
 
 # =============================================================================

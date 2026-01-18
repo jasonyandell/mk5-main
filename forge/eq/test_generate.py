@@ -784,3 +784,351 @@ def test_rejuvenation_config_custom_values():
     assert config.rejuvenation_enabled is True
     assert config.rejuvenation_steps == 5
     assert config.rejuvenation_ess_threshold == 3.0
+
+
+# =============================================================================
+# Exploration Policy Tests (t42-64uj.5)
+# =============================================================================
+
+
+def test_exploration_policy_default_is_greedy():
+    """Test that ExplorationPolicy defaults to greedy (no exploration)."""
+    from forge.eq.generate import ExplorationPolicy
+
+    policy = ExplorationPolicy()
+    assert policy.use_boltzmann is False
+    assert policy.epsilon == 0.0
+    assert policy.blunder_rate == 0.0
+    assert policy.temperature == 1.0
+
+
+def test_exploration_policy_factory_methods():
+    """Test factory methods create correct policies."""
+    from forge.eq.generate import ExplorationPolicy
+
+    # Greedy
+    greedy = ExplorationPolicy.greedy()
+    assert greedy.use_boltzmann is False
+    assert greedy.epsilon == 0.0
+
+    # Boltzmann
+    boltz = ExplorationPolicy.boltzmann(temperature=3.0, seed=42)
+    assert boltz.use_boltzmann is True
+    assert boltz.temperature == 3.0
+    assert boltz.seed == 42
+
+    # Epsilon-greedy
+    eps = ExplorationPolicy.epsilon_greedy(epsilon=0.15, seed=123)
+    assert eps.epsilon == 0.15
+    assert eps.seed == 123
+
+    # Mixed exploration
+    mixed = ExplorationPolicy.mixed_exploration(
+        temperature=5.0, epsilon=0.1, blunder_rate=0.05, seed=99
+    )
+    assert mixed.use_boltzmann is True
+    assert mixed.temperature == 5.0
+    assert mixed.epsilon == 0.1
+    assert mixed.blunder_rate == 0.05
+    assert mixed.seed == 99
+
+
+def test_exploration_stats_dataclass():
+    """Test ExplorationStats fields."""
+    from forge.eq.generate import ExplorationStats
+
+    stats = ExplorationStats(
+        greedy_action=0,
+        action_taken=1,
+        was_greedy=False,
+        selection_mode="epsilon",
+        q_gap=2.5,
+        action_entropy=1.2,
+    )
+    assert stats.greedy_action == 0
+    assert stats.action_taken == 1
+    assert stats.was_greedy is False
+    assert stats.selection_mode == "epsilon"
+    assert stats.q_gap == 2.5
+    assert stats.action_entropy == 1.2
+
+
+def test_game_exploration_stats_dataclass():
+    """Test GameExplorationStats fields and computed properties."""
+    from forge.eq.generate import GameExplorationStats
+
+    stats = GameExplorationStats(
+        n_decisions=28,
+        n_greedy=20,
+        n_boltzmann=5,
+        n_epsilon=2,
+        n_blunder=1,
+        total_q_gap=14.0,
+        mean_action_entropy=0.8,
+    )
+
+    assert stats.n_decisions == 28
+    assert stats.n_greedy == 20
+    assert stats.greedy_rate == 20 / 28
+    assert stats.mean_q_gap == 14.0 / 28
+
+
+def test_exploration_disabled_returns_base_record():
+    """Test that no exploration policy returns base GameRecord."""
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    record = generate_eq_game(oracle, hands, decl_id=0, n_samples=2)
+
+    # Should return base GameRecord, not V2
+    assert isinstance(record, GameRecord)
+    assert not isinstance(record, GameRecordV2)
+
+
+def test_exploration_enabled_returns_v2_record():
+    """Test that exploration policy returns GameRecordV2 with stats."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    # Should return GameRecordV2
+    assert isinstance(record, GameRecordV2)
+    assert record.exploration_policy == policy
+    assert record.exploration_stats is not None
+    assert record.exploration_stats.n_decisions == 28
+
+
+def test_exploration_greedy_all_decisions_greedy():
+    """Test pure greedy policy marks all decisions as greedy."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    # All decisions should be greedy
+    assert record.exploration_stats.n_greedy == 28
+    assert record.exploration_stats.n_boltzmann == 0
+    assert record.exploration_stats.n_epsilon == 0
+    assert record.exploration_stats.n_blunder == 0
+    assert record.exploration_stats.greedy_rate == 1.0
+    assert record.exploration_stats.total_q_gap == 0.0
+
+
+def test_exploration_epsilon_produces_some_random():
+    """Test epsilon-greedy policy produces some non-greedy actions."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    # Use high epsilon to ensure some random actions
+    policy = ExplorationPolicy.epsilon_greedy(epsilon=0.5, seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    # Should have some epsilon selections (with high epsilon, very likely)
+    assert record.exploration_stats.n_epsilon > 0
+    # Should also have some greedy
+    assert record.exploration_stats.n_greedy > 0
+
+
+def test_exploration_boltzmann_produces_stochastic():
+    """Test Boltzmann policy produces stochastic selections."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    # High temperature = more random
+    policy = ExplorationPolicy.boltzmann(temperature=10.0, seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    # Most should be marked as boltzmann, but some may be greedy
+    # (when only 1 legal action remains, it's forced/greedy)
+    assert record.exploration_stats.n_boltzmann > 0
+    # Combined should equal 28
+    assert record.exploration_stats.n_boltzmann + record.exploration_stats.n_greedy == 28
+    # No epsilon or blunder since we didn't set those
+    assert record.exploration_stats.n_epsilon == 0
+    assert record.exploration_stats.n_blunder == 0
+
+
+def test_exploration_decisions_have_stats():
+    """Test each decision has exploration stats when policy is set."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.epsilon_greedy(epsilon=0.1, seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    for i, decision in enumerate(record.decisions):
+        assert isinstance(decision, DecisionRecordV2)
+        assert decision.exploration is not None
+        assert decision.exploration.selection_mode in ["greedy", "epsilon"]
+        assert decision.exploration.action_entropy >= 0
+
+
+def test_exploration_deterministic_with_seed():
+    """Test that same seed produces same exploration decisions given same oracle."""
+    from forge.eq.generate import ExplorationPolicy
+
+    # Use a deterministic oracle for this test
+    class DeterministicMockOracle:
+        """Oracle that returns deterministic logits based on player."""
+
+        def __init__(self):
+            self.device = "cpu"
+            self.query_count = 0
+
+        def query_batch(self, worlds, game_state_info, current_player):
+            n = len(worlds)
+            self.query_count += 1
+            # Deterministic: favor action based on current_player
+            logits = torch.zeros(n, 7)
+            for i in range(7):
+                logits[:, i] = (i + current_player) % 7  # Deterministic pattern
+            return logits
+
+    oracle1 = DeterministicMockOracle()
+    oracle2 = DeterministicMockOracle()
+    hands = deal_from_seed(42)
+
+    policy1 = ExplorationPolicy.epsilon_greedy(epsilon=0.3, seed=12345)
+    policy2 = ExplorationPolicy.epsilon_greedy(epsilon=0.3, seed=12345)
+
+    record1 = generate_eq_game(
+        oracle1, hands, decl_id=0, n_samples=2, exploration_policy=policy1
+    )
+    record2 = generate_eq_game(
+        oracle2, hands, decl_id=0, n_samples=2, exploration_policy=policy2
+    )
+
+    # Same seed with same deterministic oracle should produce same decisions
+    for d1, d2 in zip(record1.decisions, record2.decisions):
+        assert d1.action_taken == d2.action_taken
+        assert d1.exploration.selection_mode == d2.exploration.selection_mode
+
+
+def test_exploration_different_seeds_produce_different():
+    """Test that different seeds produce different exploration decisions."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    policy1 = ExplorationPolicy.epsilon_greedy(epsilon=0.5, seed=111)
+    policy2 = ExplorationPolicy.epsilon_greedy(epsilon=0.5, seed=222)
+
+    record1 = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy1
+    )
+    record2 = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy2
+    )
+
+    # With high epsilon and different seeds, at least some decisions should differ
+    n_different = sum(
+        1 for d1, d2 in zip(record1.decisions, record2.decisions)
+        if d1.action_taken != d2.action_taken
+    )
+    assert n_different > 0
+
+
+def test_exploration_q_gap_bounded():
+    """Test that q_gap is non-negative (regret is always >= 0)."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.epsilon_greedy(epsilon=0.5, seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        # Q-gap should be non-negative (greedy is always >= any other action's Q)
+        assert decision.exploration.q_gap >= 0
+
+
+def test_exploration_action_entropy_positive():
+    """Test that action entropy is non-negative."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+    policy = ExplorationPolicy.greedy()
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    for decision in record.decisions:
+        assert decision.exploration.action_entropy >= 0
+
+
+def test_exploration_combined_with_posterior():
+    """Test exploration works alongside posterior weighting."""
+    from forge.eq.generate import ExplorationPolicy, PosteriorConfig
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    posterior_config = PosteriorConfig(enabled=True)
+    exploration_policy = ExplorationPolicy.epsilon_greedy(epsilon=0.1, seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=3,
+        posterior_config=posterior_config,
+        exploration_policy=exploration_policy,
+    )
+
+    # Should be V2 with both diagnostics and exploration
+    assert isinstance(record, GameRecordV2)
+    assert record.posterior_config == posterior_config
+    assert record.exploration_policy == exploration_policy
+    assert record.exploration_stats is not None
+
+    for decision in record.decisions:
+        assert decision.diagnostics is not None  # From posterior
+        assert decision.exploration is not None  # From exploration
+
+
+def test_mixed_exploration_policy():
+    """Test the recommended mixed exploration policy."""
+    from forge.eq.generate import ExplorationPolicy
+
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    policy = ExplorationPolicy.mixed_exploration(seed=42)
+
+    record = generate_eq_game(
+        oracle, hands, decl_id=0, n_samples=2, exploration_policy=policy
+    )
+
+    # Should have a mix of selection modes
+    stats = record.exploration_stats
+    assert stats.n_decisions == 28
+
+    # Mean q_gap should be reasonable (bounded by blunder_max_regret)
+    assert stats.mean_q_gap < 10.0  # Should be much lower in practice
