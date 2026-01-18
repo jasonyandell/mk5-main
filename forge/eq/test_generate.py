@@ -646,3 +646,73 @@ def test_mapping_integrity_diagnostics_field():
 
     diag2 = PosteriorDiagnostics(n_illegal=5)
     assert diag2.n_illegal == 5
+
+
+# =============================================================================
+# Adaptive K Tests (Phase 7)
+# =============================================================================
+
+
+def test_adaptive_k_config_fields():
+    """Test that PosteriorConfig has adaptive K fields."""
+    config = PosteriorConfig()
+
+    # Check all adaptive K fields exist
+    assert hasattr(config, "adaptive_k_enabled")
+    assert hasattr(config, "adaptive_k_max")
+    assert hasattr(config, "adaptive_k_ess_threshold")
+    assert hasattr(config, "adaptive_k_step")
+
+    # Check defaults
+    assert config.adaptive_k_enabled is False
+    assert config.adaptive_k_max == 16
+    assert config.adaptive_k_ess_threshold == 5.0
+    assert config.adaptive_k_step == 4
+
+
+def test_adaptive_k_disabled_uses_base_window():
+    """Test that when adaptive K is disabled, base window_k is used."""
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    # Use very small window
+    config = PosteriorConfig(
+        enabled=True,
+        window_k=2,
+        adaptive_k_enabled=False,  # Explicitly disabled
+    )
+
+    result = generate_eq_game(oracle, hands, decl_id=3, n_samples=3, posterior_config=config)
+
+    # Check that decisions have diagnostics with correct window size
+    for decision in result.decisions:
+        if isinstance(decision, DecisionRecordV2) and decision.diagnostics:
+            # window_k_used should be <= window_k
+            assert decision.diagnostics.window_k_used <= 2
+
+
+def test_diagnostics_has_window_k_used():
+    """Test that diagnostics tracks actual window size used."""
+    diag = PosteriorDiagnostics()
+    assert hasattr(diag, "window_k_used")
+    assert diag.window_k_used == 0
+
+    diag2 = PosteriorDiagnostics(window_k_used=8)
+    assert diag2.window_k_used == 8
+
+
+def test_adaptive_k_config_custom_values():
+    """Test that custom adaptive K values are respected."""
+    config = PosteriorConfig(
+        enabled=True,
+        window_k=4,
+        adaptive_k_enabled=True,
+        adaptive_k_max=20,
+        adaptive_k_ess_threshold=8.0,
+        adaptive_k_step=2,
+    )
+
+    assert config.adaptive_k_enabled is True
+    assert config.adaptive_k_max == 20
+    assert config.adaptive_k_ess_threshold == 8.0
+    assert config.adaptive_k_step == 2

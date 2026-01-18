@@ -48,6 +48,12 @@ class PosteriorConfig:
     mitigation_alpha: float = 0.3    # Uniform mix when ESS < ess_critical
     mitigation_beta_boost: float = 0.15  # Extra beta when ESS < ess_warn
 
+    # Adaptive K parameters (Phase 7)
+    adaptive_k_enabled: bool = False  # Whether to expand window when ESS low
+    adaptive_k_max: int = 16          # Maximum window size
+    adaptive_k_ess_threshold: float = 5.0  # Expand window if ESS < this
+    adaptive_k_step: int = 4          # How much to expand window by
+
     # Mapping integrity (design notes §6)
     strict_integrity: bool = False  # If True, raise on in-hand-but-illegal (dev mode)
     # If False, count and continue (production mode)
@@ -64,6 +70,7 @@ class PosteriorDiagnostics:
     n_invalid: int = 0         # Worlds with -inf log-weight (inconsistent)
     n_illegal: int = 0         # Worlds where observed was in-hand but illegal (bug indicator)
     window_nll: float = 0.0    # Average negative log-likelihood over window
+    window_k_used: int = 0     # Actual window size used (may differ from config if adaptive)
     mitigation: str = ""       # Description of any mitigation applied
 
 
@@ -374,6 +381,9 @@ def compute_posterior_weights(
 
     Uses advantage-softmax with beta mixture for robustness.
 
+    If adaptive_k_enabled is True, the window size will be expanded (up to
+    adaptive_k_max) when ESS falls below adaptive_k_ess_threshold.
+
     Args:
         oracle: Stage 1 oracle for Q-value queries
         hypothetical_deals: List of N initial deals (4 players × 7 dominoes each)
@@ -389,11 +399,71 @@ def compute_posterior_weights(
     n_worlds = len(hypothetical_deals)
     device = oracle.device
 
+    if not play_history:
+        # No history to score - return uniform weights
+        weights = torch.ones(n_worlds, device=device) / n_worlds
+        return weights, PosteriorDiagnostics(
+            ess=float(n_worlds),
+            max_w=1.0 / n_worlds,
+            entropy=np.log(n_worlds),
+            k_eff=float(n_worlds),
+            window_k_used=0,
+        )
+
+    # Adaptive K loop: start with base window_k, expand if ESS too low
+    current_k = min(config.window_k, len(play_history))
+    max_k = min(config.adaptive_k_max, len(play_history)) if config.adaptive_k_enabled else current_k
+
+    while True:
+        # Compute weights for current window size
+        weights, diagnostics = _compute_weights_for_window(
+            oracle=oracle,
+            hypothetical_deals=hypothetical_deals,
+            play_history=play_history,
+            decl_id=decl_id,
+            config=config,
+            window_k=current_k,
+        )
+
+        # Check if we should expand window
+        if not config.adaptive_k_enabled:
+            break
+        if diagnostics.ess >= config.adaptive_k_ess_threshold:
+            break
+        if current_k >= max_k:
+            break
+
+        # Expand window
+        next_k = min(current_k + config.adaptive_k_step, max_k)
+        if next_k == current_k:
+            break
+        current_k = next_k
+
+    return weights, diagnostics
+
+
+def _compute_weights_for_window(
+    oracle: Stage1Oracle,
+    hypothetical_deals: list[list[list[int]]],
+    play_history: list[tuple[int, int, int]],
+    decl_id: int,
+    config: PosteriorConfig,
+    window_k: int,
+) -> tuple[Tensor, PosteriorDiagnostics]:
+    """Compute posterior weights using a specific window size.
+
+    Internal helper for compute_posterior_weights that handles a single
+    window size. The main function calls this repeatedly when adaptive K
+    is enabled.
+    """
+    n_worlds = len(hypothetical_deals)
+    device = oracle.device
+
     # Initialize log-weights in fp32 for numerical stability
     logw = torch.zeros(n_worlds, dtype=torch.float32, device=device)
 
     # Determine window: last K plays (or all if fewer)
-    window_start = max(0, len(play_history) - config.window_k)
+    window_start = max(0, len(play_history) - window_k)
     window_plays = play_history[window_start:]
 
     if not window_plays:
@@ -404,6 +474,7 @@ def compute_posterior_weights(
             max_w=1.0 / n_worlds,
             entropy=np.log(n_worlds),
             k_eff=float(n_worlds),
+            window_k_used=0,
         )
 
     n_invalid = 0
@@ -490,6 +561,7 @@ def compute_posterior_weights(
         n_invalid=n_invalid,
         n_illegal=n_illegal,
         window_nll=window_nll,
+        window_k_used=len(window_plays),
         mitigation=mitigation,
     )
 
