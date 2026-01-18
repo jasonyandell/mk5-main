@@ -2,254 +2,38 @@
 
 Pre-trained models for Texas 42 domino play prediction.
 
-## Models
+## Recommended Models
 
-### Soft Cross-Entropy Models (Policy)
+**For most use cases, use Q-value models.** They output expected points directly, making outputs interpretable and debugging straightforward.
 
-| Model | File | Params | Val Acc | Val Q-Gap | Date |
-|-------|------|--------|---------|-----------|------|
-| Large v2 (value head) | `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt` | 817K | 97.79% | 0.072 | 2026-01-01 |
-| Large v1 | `domino-large-817k-acc97.1-qgap0.11.ckpt` | 817K | 97.09% | 0.112 | 2025-12-31 |
+| Model | File | Params | Q-MAE | Q-Gap | Use Case |
+|-------|------|--------|-------|-------|----------|
+| **Q-Val Large** | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 | Best accuracy |
+| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 1.49 | 0.094 | Faster inference |
 
-### Q-Value Models (Value Estimation)
-
-| Model | File | Params | Q-MAE | Val Q-Gap | Date |
-|-------|------|--------|-------|-----------|------|
-| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 | 2026-01-13 |
-| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 1.49 | 0.094 | 2026-01-13 |
-
-## Current Best: Large v2 (value head)
-
-**File**: `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt`
-
-### Architecture
-
-Same as Large v1, with added value head:
-
-```
-DominoTransformer(
-    embed_dim=128,
-    n_heads=8,
-    n_layers=4,
-    ff_dim=512,
-    dropout=0.1,
-    value_head=Linear(128, 1)  # NEW: predicts game value
-)
-```
-
-### Training Configuration
-
-| Hyperparameter | Value |
-|----------------|-------|
-| Epochs | 20 |
-| Batch Size | 512 |
-| Learning Rate | 3e-4 |
-| Optimizer | AdamW |
-| Weight Decay | 0.01 |
-| Gradient Clipping | 1.0 (norm) |
-| Precision | bfloat16 mixed |
-| Loss | Soft cross-entropy + 0.5 * value MSE |
-| Temperature | 3.0 |
-| Soft Weight | 0.7 |
-| Value Weight | 0.5 |
-
-### Training Data
-
-| Split | Seeds | Declarations | Shards | Samples |
-|-------|-------|--------------|--------|---------|
-| Train | 0-199 | 1 per seed (seed % 10) | 200 | ~10M |
-| Val | 900-904 | All 10 | 50 | ~2.5M |
-| Test | 950-954 | All 10 | 50 | ~2.5M |
-
-**Key change**: 2x more training seeds (200 vs 100). Declaration diversity strategy maintained.
-
-### Results
-
-| Metric | Value | Description |
-|--------|-------|-------------|
-| Val Accuracy | 97.79% | Model's top choice matches oracle's best move |
-| Val Q-Gap | 0.072 | Mean regret in points (lower is better) |
-| Val Value MAE | 7.4 pts | Mean absolute error on game value prediction |
-| Val Blunder Rate | 0.15% | Moves with Q-gap > 10 points |
-
-### Value Head Findings
-
-The value head experiment revealed important insights:
-
-| Finding | Evidence |
-|---------|----------|
-| Value head doesn't hurt policy | 97.8% acc (up from 97.1%) |
-| More data helps | q_gap 0.072 vs 0.112 |
-| Value prediction is hard | 7.4 MAE plateaued after epoch 9 |
-
-**Conclusion**: Value head regression is the wrong approach for bidding. The "cliff" landscape of bid thresholds (30, 31, 32, 36, 42, 84) doesn't suit smooth MSE regression. Simulation-based bidding (System 2) is the path forward.
-
-### Loading the Model
-
-```python
-from forge.ml.module import DominoLightningModule
-
-# Load for inference
-model = DominoLightningModule.load_from_checkpoint(
-    "forge/models/domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
-)
-model.eval()
-
-# Get predictions (policy)
-logits, value = model(tokens, mask, current_player)
-probs = torch.softmax(logits, dim=-1)
-best_move = probs.argmax(dim=-1)
-
-# Value prediction (not recommended for bidding - use simulation instead)
-predicted_value = value * 42  # denormalize to points
-```
-
-### Provenance
-
-- **Bead**: t42-1e1y (value head experiment)
-- **Wandb**: crystal-forge v2-valuehead run
-- **Git commit**: (see git log)
-
----
-
-## Large v1
-
-**File**: `domino-large-817k-acc97.1-qgap0.11.ckpt`
-
-### Architecture
-
-```
-DominoTransformer(
-    embed_dim=128,
-    n_heads=8,
-    n_layers=4,
-    ff_dim=512,
-    dropout=0.1
-)
-```
-
-| Component | Value |
-|-----------|-------|
-| Parameters | 816,775 |
-| Layers | 4 |
-| Attention Heads | 8 |
-| Embedding Dim | 128 |
-| Feed-Forward Dim | 512 |
-| Dropout | 0.1 |
-
-### Training Configuration
-
-| Hyperparameter | Value |
-|----------------|-------|
-| Epochs | 20 |
-| Batch Size | 512 |
-| Learning Rate | 3e-4 |
-| Optimizer | AdamW |
-| Weight Decay | 0.01 |
-| Gradient Clipping | 1.0 (norm) |
-| Precision | bfloat16 mixed |
-| Loss | Soft cross-entropy |
-| Temperature | 3.0 |
-| Soft Weight | 0.7 |
-
-### Training Data
-
-| Split | Seeds | Declarations | Shards | Samples |
-|-------|-------|--------------|--------|---------|
-| Train | 0-99 | 1 per seed (seed % 10) | 100 | 5.0M |
-| Val | 900-909 | All 10 | 100 | 5.0M |
-| Test | 950-959 | All 10 | 100 | 5.0M |
-
-**Key insight**: Declaration diversity (100 seeds × 1 decl) outperformed sample volume (10 seeds × 10 decls). Each declaration has 10 unique seeds for balanced coverage.
-
-### Results
-
-| Metric | Value | Description |
-|--------|-------|-------------|
-| Val Accuracy | 97.09% | Model's top choice matches oracle's best move |
-| Val Q-Gap | 0.112 | Mean regret in points (lower is better) |
-| Val Blunder Rate | 0.33% | Moves with Q-gap > 10 points |
-
-### Hardware
-
-- **GPU**: NVIDIA H100 80GB HBM3 (Lambda Labs)
-- **Training Time**: ~60 minutes
-- **torch.compile**: Disabled (system package conflicts)
-
-### Comparison to Prior Work
-
-| Model | Params | Val Acc | Val Q-Gap | Notes |
-|-------|--------|---------|-----------|-------|
-| Prior best (solver2) | 73K | 94.6% | — | Plateau, limited diversity |
-| Baseline v1 | 73K | 93.6% | 0.367 | Same arch, more diversity |
-| Medium v1 | 275K | 95.8% | 0.198 | |
-| Large v1 | 817K | 97.1% | 0.112 | 100 seeds |
-| **Large v2** | **817K** | **97.8%** | **0.072** | 200 seeds, value head |
-
-### Reproducing This Model
-
-```bash
-# 1. Generate training data
-python -m forge.oracle.generate --seed-range 0:100 --decl all --out data/shards  # train
-python -m forge.oracle.generate --seed-range 900:910 --decl all --out data/shards  # val
-python -m forge.oracle.generate --seed-range 950:960 --decl all --out data/shards  # test
-
-# 2. Tokenize
-python -m forge.cli.tokenize --input data/shards --output data/tokenized
-
-# 3. Train
-python -m forge.cli.train \
-    --epochs 20 \
-    --embed-dim 128 --n-heads 8 --n-layers 4 --ff-dim 512 \
-    --precision bf16-mixed \
-    --no-compile \
-    --wandb
-```
-
-### Loading the Model
-
-```python
-from forge.ml.module import DominoLightningModule
-
-# Load for inference
-model = DominoLightningModule.load_from_checkpoint(
-    "forge/models/domino-large-817k-acc97.1-qgap0.11.ckpt"
-)
-model.eval()
-
-# Get predictions
-logits = model(tokens, mask)  # tokens: [B, 32, 12], mask: [B, 7]
-probs = torch.softmax(logits, dim=-1)
-best_move = probs.argmax(dim=-1)
-```
-
-### File Sizes
-
-| Format | Size | Use Case |
-|--------|------|----------|
-| Checkpoint (.ckpt) | 9.5 MB | Resume training, full reproducibility |
-| Weights only (.pt) | 3.1 MB | PyTorch inference |
-| ONNX (.onnx) | ~3 MB | Browser/mobile inference |
-| ONNX quantized (int8) | ~800 KB | Mobile-optimized |
-
-### Provenance
-
-- **Bead**: t42-ep5j (closed)
-- **Wandb**: https://wandb.ai/jasonyandell-forge42/crystal-forge
-- **Git commit**: (see git log)
+For E[Q] marginalization (`forge/eq/`), Q-value models are strongly preferred—see [Why Q-Value Models?](#why-q-value-models) below.
 
 ---
 
 ## Q-Value Models
 
-A new family of models trained directly on Q-value regression instead of soft cross-entropy. These models predict Q-values for each action rather than matching oracle move distributions.
+Models trained with `loss_mode='qvalue'` that directly predict expected points for each action.
 
-| Model | File | Params | q_gap | q_mae | value_mae | Accuracy | Date |
-|-------|------|--------|-------|-------|-----------|----------|------|
-| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.071 | 0.94 | 1.89 | 79.0% | 2026-01-13 |
-| Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 0.094 | 1.49 | 2.39 | 74.7% | 2026-01-13 |
+### Training Data (Validated)
 
-### Current Best: Q-Val Large
+All Q-value models trained on `data/tokenized-full`:
+
+| Split | Seed Range | Shards | Samples |
+|-------|------------|--------|---------|
+| Train | 0-1223 (excl. 900-999) | 1,124 | 11.24M |
+| Val | 900-949 | 50 | 500K |
+| Test | 950-999 | 50 | 500K |
+
+**Source**: `/mnt/d/shards-standard/` → `data/tokenized-full/manifest.yaml`
+
+Each shard uses 1 declaration per seed (`decl = seed % 10`) for balanced coverage across all 10 declarations.
+
+### Q-Val Large (Recommended)
 
 **File**: `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt`
 
@@ -273,58 +57,54 @@ DominoTransformer(
 | Attention Heads | 8 |
 | Embedding Dim | 256 |
 | Feed-Forward Dim | 512 |
-| Dropout | 0.1 |
 
 #### Training Configuration
 
 | Hyperparameter | Value |
 |----------------|-------|
-| Epochs | 20 |
+| Epochs | 19 (best checkpoint) |
 | Batch Size | 512 |
 | Learning Rate | 3e-4 |
 | Optimizer | AdamW |
 | Weight Decay | 0.01 |
-| Gradient Clipping | 1.0 (norm) |
 | Precision | 16-mixed AMP |
-| **Loss** | **Q-value MSE** (not soft CE) |
-| Q-value range | [-1, 1] (normalized from 0-42 pts) |
-
-#### Training Data
-
-Same as Large v2: 200 seeds × 1 declaration per seed, ~10M samples.
+| **Loss** | Q-value MSE |
+| Value Weight | 0.5 |
 
 #### Results
 
 | Metric | Value | Description |
 |--------|-------|-------------|
-| q_gap | 0.071 | Mean regret in points vs oracle |
-| q_mae | 0.94 | Mean absolute error on Q-value prediction (points) |
-| value_mae | 1.89 | Mean absolute error on game value prediction (points) |
+| Q-Gap | 0.071 | Mean regret in points vs oracle |
+| Q-MAE | 0.94 | Mean absolute error on Q-value prediction (points) |
+| Value-MAE | 1.89 | Mean absolute error on game value prediction (points) |
 | Accuracy | 79.0% | Model's argmax Q matches oracle's best move |
 | Blunder Rate | 0.23% | Moves with Q-gap > 10 points |
 
-#### Loading the Model
+#### Loading
 
 ```python
 from forge.ml.module import DominoLightningModule
 
-# Load for inference
 model = DominoLightningModule.load_from_checkpoint(
     "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt"
 )
 model.eval()
 
-# Get Q-value predictions
+# Get Q-value predictions (in normalized [-1, 1] range)
 q_values, value = model(tokens, mask, current_player)
-# q_values: [B, num_actions] in [-1, 1], multiply by 42 for points
-best_move = q_values.argmax(dim=-1)
+
+# Convert to points: multiply by 42
+q_points = q_values * 42  # Now in [-42, 42] range
+best_move = q_points.argmax(dim=-1)
 ```
 
 #### Provenance
 
-- **Bead**: t42-dove (Q-value training experiment), t42-mnaz (model promotion)
+- **Bead**: t42-dove (Q-value training), t42-mnaz (promotion)
 - **Wandb**: qval-202601120501-3.3M-6L-8H-d256
-- **Run dir**: runs/domino/version_38
+- **Run dir**: `runs/domino/version_38`
+- **Data**: `data/tokenized-full` (1124 seeds, 11.24M samples)
 
 ---
 
@@ -332,78 +112,137 @@ best_move = q_values.argmax(dim=-1)
 
 **File**: `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt`
 
-#### Architecture
-
-```
-DominoTransformer(
-    embed_dim=128,
-    n_heads=8,
-    n_layers=4,
-    ff_dim=512,
-    dropout=0.1,
-    value_head=Linear(128, 1)
-)
-```
+Same architecture as policy models but trained with Q-value loss.
 
 | Component | Value |
 |-----------|-------|
 | Parameters | 816K |
 | Layers | 4 |
-| Attention Heads | 8 |
-| Embedding Dim | 128 |
-| Feed-Forward Dim | 512 |
-
-#### Results
+| Embed Dim | 128 |
 
 | Metric | Value |
 |--------|-------|
-| q_gap | 0.094 |
-| q_mae | 1.49 |
-| value_mae | 2.39 |
+| Q-Gap | 0.094 |
+| Q-MAE | 1.49 |
+| Value-MAE | 2.39 |
 | Accuracy | 74.7% |
-| Blunder Rate | 0.28% |
 
-#### Provenance
-
-- **Bead**: t42-dove, t42-mnaz
-- **Wandb**: qval-202601120105-816K-4L-8H-d128
-- **Run dir**: runs/domino/version_37
+**Provenance**: `runs/domino/version_37`, same training data as Q-Val Large.
 
 ---
 
-### Q-Value vs Soft Cross-Entropy
+## Why Q-Value Models?
 
-| Aspect | Soft CE Models | Q-Value Models |
-|--------|----------------|----------------|
-| Loss | KL divergence from oracle distribution | MSE on Q-values |
-| Output | Logits → softmax probabilities | Direct Q-value estimates |
-| Accuracy metric | 97%+ (matches oracle's top choice) | 74-79% (argmax Q matches) |
-| Use case | Move selection via sampling | Direct value estimation |
-| q_gap | 0.07-0.11 | 0.07-0.09 |
+### Interpretable Outputs
 
-The lower "accuracy" for Q-value models is expected—they're optimizing for accurate Q-values across all actions, not just getting the top action right.
-
-### Best Model for E[Q] Marginalization
-
-For the E[Q] pipeline (`forge/eq/`), **Q-value models are preferred** because they produce directly interpretable marginals:
+Q-value models output expected points directly:
 
 ```python
-# Logit model: arbitrary scale, needs softmax interpretation
-e_logits = [-0.72, -1.09, -1.87, ...]  # What does -0.72 mean?
-
-# Q-value model: expected points, directly interpretable
-e_q = [-17.89, -21.05, -21.45, ...]  # "-17.89 points expected"
+# Q-value model output (after * 42 denormalization)
+e_q = [-17.89, -21.05, -21.45, ...]
+# Interpretation: "Action 0 expects -17.89 points (17.89 behind)"
 ```
 
-When debugging E[Q] decisions, Q-value outputs make it easy to verify values are in valid game range (±42 points) and understand the strategic implications of each choice.
+Policy models output logits that require softmax:
+
+```python
+# Policy model output
+logits = [-0.72, -1.09, -1.87, ...]
+# Interpretation: ??? (arbitrary scale)
+```
+
+### For E[Q] Marginalization
+
+The E[Q] pipeline (`forge/eq/`) samples N consistent worlds and averages model outputs. With Q-value models:
+
+- **E[Q]** is directly in points (range ±42)
+- Values are **verifiable** against game outcome bounds
+- **Debugging** is straightforward (e.g., "why does E[Q] = -30?")
+
+With policy models, E[logits] has no clear interpretation—it's an average of arbitrary-scale values.
+
+**Recommendation**: Always use Q-value models for E[Q] marginalization.
+
+### Trade-offs
+
+| Aspect | Q-Value Models | Policy Models |
+|--------|----------------|---------------|
+| Output | Expected points | Probability-like logits |
+| Accuracy | 74-79% | 97%+ |
+| Q-Gap | 0.07-0.09 | 0.07-0.11 |
+| Interpretability | High | Low |
+| Use case | Value estimation, E[Q] | Move sampling |
+
+The "lower accuracy" for Q-value models is expected—they optimize for accurate Q-values across **all** actions, not just getting the top action right.
+
+---
+
+## Policy Models (Legacy)
+
+These models were trained with soft cross-entropy loss and are kept for reference. For new work, prefer Q-value models.
+
+### Large v2 (Value Head)
+
+**File**: `domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt`
+
+| Metric | Value |
+|--------|-------|
+| Val Accuracy | 97.79% |
+| Val Q-Gap | 0.072 |
+| Val Value MAE | 7.4 pts |
+
+**Training Data** (validated from checkpoint):
+- Dataset: `data/tokenized`
+- Samples: ~500K (10 shards × 50K samples/shard)
+- Note: Smaller dataset than Q-value models
+
+**Architecture**: 817K params (embed=128, heads=8, layers=4, ff=512)
+
+**Loss**: Soft cross-entropy + 0.5 × value MSE
+
+### Large v1
+
+**File**: `domino-large-817k-acc97.1-qgap0.11.ckpt`
+
+Earlier version without value head. Same architecture as v2.
+
+| Metric | Value |
+|--------|-------|
+| Val Accuracy | 97.09% |
+| Val Q-Gap | 0.112 |
 
 ---
 
 ## Metrics Glossary
 
-- **Accuracy**: Fraction of moves where model's argmax matches oracle's best move
-- **Q-Gap**: Expected point loss per move vs oracle (oracle_best_q - oracle_q[model_choice])
-- **Q-MAE**: Mean absolute error of predicted Q-values vs oracle Q-values (in points)
-- **Value-MAE**: Mean absolute error of predicted game value vs oracle value (in points)
-- **Blunder Rate**: Fraction of moves with Q-gap > 10 (catastrophic mistakes)
-- **Oracle**: GPU minimax solver with perfect play (ground truth)
+| Metric | Description |
+|--------|-------------|
+| **Q-Gap** | Expected point loss per move vs oracle: `oracle_best_q - oracle_q[model_choice]` |
+| **Q-MAE** | Mean absolute error of predicted Q-values vs oracle Q-values (in points) |
+| **Value-MAE** | Mean absolute error of predicted game value vs oracle value (in points) |
+| **Accuracy** | Fraction of moves where model's argmax matches oracle's best move |
+| **Blunder Rate** | Fraction of moves with Q-gap > 10 (catastrophic mistakes) |
+| **Oracle** | GPU minimax solver with perfect play (ground truth) |
+
+---
+
+## File Sizes
+
+| Model | Checkpoint | Weights Only |
+|-------|------------|--------------|
+| Q-Val Large (3.3M) | 39 MB | ~13 MB |
+| Q-Val Small (816K) | 9.9 MB | ~3 MB |
+| Policy Large (817K) | 9.5 MB | ~3 MB |
+
+---
+
+## Model Evolution
+
+| Date | Model | Key Change | Q-Gap |
+|------|-------|-----------|-------|
+| 2025-12-31 | Large v1 | 100 seeds, soft CE | 0.112 |
+| 2026-01-01 | Large v2 | Added value head | 0.072 |
+| 2026-01-13 | Q-Val Small | Q-value loss | 0.094 |
+| 2026-01-13 | **Q-Val Large** | 6L, 256 dim, 1124 seeds | **0.071** |
+
+**Key finding**: Q-value loss with more data (1124 vs 10 seeds) and larger architecture achieves best Q-gap while providing interpretable outputs.
