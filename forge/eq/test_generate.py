@@ -716,3 +716,71 @@ def test_adaptive_k_config_custom_values():
     assert config.adaptive_k_max == 20
     assert config.adaptive_k_ess_threshold == 8.0
     assert config.adaptive_k_step == 2
+
+
+# =============================================================================
+# Rejuvenation Kernel Tests (Phase 8)
+# =============================================================================
+
+
+def test_rejuvenation_config_fields():
+    """Test that PosteriorConfig has rejuvenation fields."""
+    config = PosteriorConfig()
+
+    # Check all rejuvenation fields exist
+    assert hasattr(config, "rejuvenation_enabled")
+    assert hasattr(config, "rejuvenation_steps")
+    assert hasattr(config, "rejuvenation_ess_threshold")
+
+    # Check defaults
+    assert config.rejuvenation_enabled is False
+    assert config.rejuvenation_steps == 3
+    assert config.rejuvenation_ess_threshold == 2.0
+
+
+def test_rejuvenation_diagnostics_fields():
+    """Test that PosteriorDiagnostics has rejuvenation tracking fields."""
+    diag = PosteriorDiagnostics()
+
+    assert hasattr(diag, "rejuvenation_applied")
+    assert hasattr(diag, "rejuvenation_accepts")
+
+    assert diag.rejuvenation_applied is False
+    assert diag.rejuvenation_accepts == 0
+
+    diag2 = PosteriorDiagnostics(rejuvenation_applied=True, rejuvenation_accepts=5)
+    assert diag2.rejuvenation_applied is True
+    assert diag2.rejuvenation_accepts == 5
+
+
+def test_rejuvenation_disabled_by_default():
+    """Test that rejuvenation is disabled by default."""
+    oracle = MockOracle()
+    hands = deal_from_seed(42)
+
+    config = PosteriorConfig(
+        enabled=True,
+        rejuvenation_enabled=False,  # Explicitly disabled (default)
+    )
+
+    result = generate_eq_game(oracle, hands, decl_id=3, n_samples=3, posterior_config=config)
+
+    # Check no rejuvenation was applied
+    for decision in result.decisions:
+        if isinstance(decision, DecisionRecordV2) and decision.diagnostics:
+            assert decision.diagnostics.rejuvenation_applied is False
+            assert decision.diagnostics.rejuvenation_accepts == 0
+
+
+def test_rejuvenation_config_custom_values():
+    """Test that custom rejuvenation values are respected."""
+    config = PosteriorConfig(
+        enabled=True,
+        rejuvenation_enabled=True,
+        rejuvenation_steps=5,
+        rejuvenation_ess_threshold=3.0,
+    )
+
+    assert config.rejuvenation_enabled is True
+    assert config.rejuvenation_steps == 5
+    assert config.rejuvenation_ess_threshold == 3.0
