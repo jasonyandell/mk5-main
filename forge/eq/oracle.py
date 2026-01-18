@@ -83,7 +83,13 @@ class Stage1Oracle:
         )
 
         # Load just the model weights (skip optimizer, RNG state, etc.)
-        self.model.load_state_dict(checkpoint['state_dict'])
+        # Handle torch.compile() checkpoints which have "_orig_mod." prefix
+        state_dict = checkpoint['state_dict']
+        if any(k.startswith('model._orig_mod.') for k in state_dict.keys()):
+            state_dict = {
+                k.replace('._orig_mod.', '.'): v for k, v in state_dict.items()
+            }
+        self.model.load_state_dict(state_dict)
         self.model.eval()
         self.model.to(device)
         self.device = device
