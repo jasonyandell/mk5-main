@@ -28,6 +28,27 @@ from forge.ml.tokenize import (
     TOKEN_TYPE_TRICK_P0,
     TRUMP_RANK_TABLE,
 )
+from forge.oracle.declarations import N_DECLS
+
+
+def _build_domino_features_by_decl() -> list[np.ndarray]:
+    """Precompute per-decl domino features for fast vectorized tokenization.
+
+    Shape per decl: (28, 5) columns = [high, low, is_double, count_value, trump_rank]
+    """
+    base = np.zeros((28, 4), dtype=np.int32)
+    base[:, 0] = np.asarray(DOMINO_HIGH, dtype=np.int32)
+    base[:, 1] = np.asarray(DOMINO_LOW, dtype=np.int32)
+    base[:, 2] = np.asarray([1 if v else 0 for v in DOMINO_IS_DOUBLE], dtype=np.int32)
+    base[:, 3] = np.asarray([COUNT_VALUE_MAP[p] for p in DOMINO_COUNT_POINTS], dtype=np.int32)
+
+    by_decl: list[np.ndarray] = []
+    for decl_id in range(N_DECLS):
+        feats = np.zeros((28, 5), dtype=np.int32)
+        feats[:, :4] = base
+        feats[:, 4] = np.asarray([TRUMP_RANK_TABLE[(d, decl_id)] for d in range(28)], dtype=np.int32)
+        by_decl.append(feats)
+    return by_decl
 
 
 class Stage1Oracle:
@@ -64,12 +85,21 @@ class Stage1Oracle:
         best_action = e_q.argmax()  # Pick action with highest expected points
     """
 
-    def __init__(self, checkpoint_path: str | Path, device: str = "cuda"):
+    # Shared lookup tables (allow Stage1Oracle.__new__ usage in tests).
+    _domino_features_by_decl = _build_domino_features_by_decl()
+    _player_ids = np.repeat(np.arange(4, dtype=np.int32), 7)  # (28,)
+    _token_types = (TOKEN_TYPE_PLAYER0 + _player_ids).astype(np.int32)  # (28,)
+    _local_indices = np.tile(np.arange(7, dtype=np.int32), 4)  # (28,)
+    _player_for_token = _player_ids  # (28,)
+
+    def __init__(self, checkpoint_path: str | Path, device: str = "cuda", compile: bool = True):
         """Load model from checkpoint.
 
         Args:
             checkpoint_path: Path to Lightning checkpoint (.ckpt file)
             device: Device to load model on ("cuda", "cpu", "mps")
+            compile: Whether to apply torch.compile optimization (default True).
+                     Only applied on CUDA devices. Disable for testing/debugging.
         """
         # Load checkpoint directly, bypassing Lightning's on_load_checkpoint
         # which has RNG state compatibility issues. For inference we only need weights.
@@ -97,6 +127,25 @@ class Stage1Oracle:
         self.model.eval()
         self.model.to(device)
         self.device = device
+
+        # Apply torch.compile for GPU optimization (CUDA graph + reduced overhead)
+        # Only compile on CUDA devices - CPU/MPS have compatibility issues
+        if compile and device == "cuda":
+            # Use fullgraph=False to handle TransformerEncoder's boolean src_key_padding_mask
+            # which can cause graph breaks with strict fullgraph=True
+            self.model = torch.compile(
+                self.model,
+                mode="reduce-overhead",  # Optimize for repeated calls with CUDA graphs
+                fullgraph=False,  # Allow graph breaks for TransformerEncoder compatibility
+            )
+
+            # Warmup: Run a single forward pass to avoid JIT overhead at first inference
+            # This compiles the execution graph ahead of time
+            dummy_tokens = torch.zeros((1, MAX_TOKENS, N_FEATURES), dtype=torch.int32, device=device)
+            dummy_masks = torch.ones((1, MAX_TOKENS), dtype=torch.int8, device=device)
+            dummy_player = torch.zeros((1,), dtype=torch.long, device=device)
+            with torch.inference_mode():
+                _ = self.model(dummy_tokens, dummy_masks, dummy_player)
 
     def query_batch(
         self,
@@ -148,16 +197,17 @@ class Stage1Oracle:
             current_player=current_player,
         )
 
-        # Move to device and run forward pass
-        # Convert to long for embedding layers (int8 -> int64)
-        tokens = torch.from_numpy(tokens).long().to(self.device)
+        # Move to device and run forward pass.
+        # Keep tokens as int32 (Embedding accepts int32/int64), avoiding per-call dtype expansion on CPU.
+        tokens = torch.from_numpy(tokens).to(self.device)
         masks = torch.from_numpy(masks).to(self.device)
         current_player_tensor = torch.full((n_worlds,), current_player, dtype=torch.long, device=self.device)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             q_values, _ = self.model(tokens, masks, current_player_tensor)
 
-        return q_values
+        # Clone output to avoid CUDA graph tensor reuse issues with mode="reduce-overhead"
+        return q_values.clone()
 
     def _tokenize_worlds(
         self,
@@ -186,7 +236,7 @@ class Stage1Oracle:
 
         Returns:
             Tuple of (tokens, masks):
-                - tokens: (N, 32, 12) int8 array
+                - tokens: (N, 32, 12) int32 array
                 - masks: (N, 32) int8 array
         """
         n_worlds = len(worlds)
@@ -195,19 +245,13 @@ class Stage1Oracle:
         normalized_leader = (leader - current_player + 4) % 4
 
         # Initialize output arrays
-        tokens = np.zeros((n_worlds, MAX_TOKENS, N_FEATURES), dtype=np.int8)
+        tokens = np.zeros((n_worlds, MAX_TOKENS, N_FEATURES), dtype=np.int32)
         masks = np.zeros((n_worlds, MAX_TOKENS), dtype=np.int8)
 
         # =====================================================================
-        # Step 1: Precompute domino feature lookup table (28 dominoes × 5 features)
+        # Step 1: Per-decl domino feature lookup (28 dominoes × 5 features)
         # =====================================================================
-        domino_features = np.zeros((28, 5), dtype=np.int8)
-        for d in range(28):
-            domino_features[d, 0] = DOMINO_HIGH[d]
-            domino_features[d, 1] = DOMINO_LOW[d]
-            domino_features[d, 2] = 1 if DOMINO_IS_DOUBLE[d] else 0
-            domino_features[d, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[d]]
-            domino_features[d, 4] = TRUMP_RANK_TABLE[(d, decl_id)]
+        domino_features = self._domino_features_by_decl[decl_id]
 
         # =====================================================================
         # Step 2: Convert worlds to numpy array for vectorized indexing
@@ -230,31 +274,30 @@ class Stage1Oracle:
         # Step 4: Vectorize player normalization and flags
         # =====================================================================
         # Player indices: [0,0,0,0,0,0,0, 1,1,1,1,1,1,1, 2,2,2,2,2,2,2, 3,3,3,3,3,3,3]
-        player_ids = np.repeat(np.arange(4), 7)  # Shape: (28,)
+        player_ids = self._player_ids  # Shape: (28,)
         normalized_players = (player_ids - current_player + 4) % 4  # Shape: (28,)
 
         # Broadcast to all worlds - same for every world
         tokens[:, 1:29, 5] = normalized_players  # normalized player
-        tokens[:, 1:29, 6] = (normalized_players == 0).astype(np.int8)  # is_current
-        tokens[:, 1:29, 7] = (normalized_players == 2).astype(np.int8)  # is_partner
+        tokens[:, 1:29, 6] = (normalized_players == 0).astype(np.int32)  # is_current
+        tokens[:, 1:29, 7] = (normalized_players == 2).astype(np.int32)  # is_partner
 
         # =====================================================================
         # Step 5: Vectorize remaining bits
         # =====================================================================
         # For each of 28 hand positions, check if corresponding bit is set
-        local_indices = np.tile(np.arange(7), 4)  # [0,1,2,3,4,5,6, 0,1,2,3,4,5,6, ...]
-        player_for_token = np.repeat(np.arange(4), 7)  # [0,0,0,0,0,0,0, 1,1,1,1,1,1,1, ...]
+        local_indices = self._local_indices
+        player_for_token = self._player_for_token
 
         # remaining_bits[world, token] = (remaining[world, player] >> local_idx) & 1
         # Shape: (N, 28)
         remaining_bits = (remaining[:, player_for_token] >> local_indices) & 1
-        tokens[:, 1:29, 8] = remaining_bits.astype(np.int8)
+        tokens[:, 1:29, 8] = remaining_bits.astype(np.int32)
 
         # =====================================================================
         # Step 6: Vectorize token type and context (same for all worlds)
         # =====================================================================
-        token_types = TOKEN_TYPE_PLAYER0 + player_ids  # [1,1,1,1,1,1,1, 2,2,2,2,2,2,2, ...]
-        tokens[:, 1:29, 9] = token_types
+        tokens[:, 1:29, 9] = self._token_types
         tokens[:, 1:29, 10] = decl_id
         tokens[:, 1:29, 11] = normalized_leader
 
@@ -282,11 +325,7 @@ class Stage1Oracle:
             normalized_pp = (play_player - current_player + 4) % 4
 
             # Broadcast to ALL worlds - these are identical (public information)
-            tokens[:, token_idx, 0] = DOMINO_HIGH[domino_id]
-            tokens[:, token_idx, 1] = DOMINO_LOW[domino_id]
-            tokens[:, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[domino_id] else 0
-            tokens[:, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[domino_id]]
-            tokens[:, token_idx, 4] = TRUMP_RANK_TABLE[(domino_id, decl_id)]
+            tokens[:, token_idx, 0:5] = domino_features[domino_id]
             tokens[:, token_idx, 5] = normalized_pp
             tokens[:, token_idx, 6] = 1 if normalized_pp == 0 else 0
             tokens[:, token_idx, 7] = 1 if normalized_pp == 2 else 0
@@ -339,15 +378,16 @@ class Stage1Oracle:
             remaining=remaining,
         )
 
-        # Move to device and run forward pass
-        tokens = torch.from_numpy(tokens).long().to(self.device)
+        # Move to device and run forward pass (keep tokens as int32).
+        tokens = torch.from_numpy(tokens).to(self.device)
         masks = torch.from_numpy(masks).to(self.device)
-        actors_tensor = torch.from_numpy(actors).long().to(self.device)
+        actors_tensor = torch.from_numpy(actors).to(self.device, dtype=torch.long)
 
-        with torch.no_grad():
+        with torch.inference_mode():
             q_values, _ = self.model(tokens, masks, actors_tensor)
 
-        return q_values
+        # Clone output to avoid CUDA graph tensor reuse issues with mode="reduce-overhead"
+        return q_values.clone()
 
     def _tokenize_worlds_multi_state(
         self,
@@ -366,17 +406,10 @@ class Stage1Oracle:
         n_samples = len(worlds)
 
         # Initialize output arrays
-        tokens = np.zeros((n_samples, MAX_TOKENS, N_FEATURES), dtype=np.int8)
+        tokens = np.zeros((n_samples, MAX_TOKENS, N_FEATURES), dtype=np.int32)
         masks = np.zeros((n_samples, MAX_TOKENS), dtype=np.int8)
 
-        # Precompute domino feature lookup table
-        domino_features = np.zeros((28, 5), dtype=np.int8)
-        for d in range(28):
-            domino_features[d, 0] = DOMINO_HIGH[d]
-            domino_features[d, 1] = DOMINO_LOW[d]
-            domino_features[d, 2] = 1 if DOMINO_IS_DOUBLE[d] else 0
-            domino_features[d, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[d]]
-            domino_features[d, 4] = TRUMP_RANK_TABLE[(d, decl_id)]
+        domino_features = self._domino_features_by_decl[decl_id]
 
         # Convert worlds to numpy array
         worlds_array = np.array(worlds, dtype=np.int32)
@@ -388,24 +421,23 @@ class Stage1Oracle:
 
         # Per-sample player normalization
         # For each sample i, normalize player p as (p - actors[i] + 4) % 4
-        player_ids = np.repeat(np.arange(4), 7)  # Shape: (28,)
+        player_ids = self._player_ids  # Shape: (28,)
         # Expand for broadcasting: (N, 28)
         actors_expanded = actors[:, np.newaxis]  # (N, 1)
         normalized_players = (player_ids - actors_expanded + 4) % 4  # (N, 28)
 
-        tokens[:, 1:29, 5] = normalized_players.astype(np.int8)
-        tokens[:, 1:29, 6] = (normalized_players == 0).astype(np.int8)  # is_current
-        tokens[:, 1:29, 7] = (normalized_players == 2).astype(np.int8)  # is_partner
+        tokens[:, 1:29, 5] = normalized_players.astype(np.int32)
+        tokens[:, 1:29, 6] = (normalized_players == 0).astype(np.int32)  # is_current
+        tokens[:, 1:29, 7] = (normalized_players == 2).astype(np.int32)  # is_partner
 
         # Remaining bits (already per-sample)
-        local_indices = np.tile(np.arange(7), 4)
-        player_for_token = np.repeat(np.arange(4), 7)
+        local_indices = self._local_indices
+        player_for_token = self._player_for_token
         remaining_bits = (remaining[:, player_for_token] >> local_indices) & 1
-        tokens[:, 1:29, 8] = remaining_bits.astype(np.int8)
+        tokens[:, 1:29, 8] = remaining_bits.astype(np.int32)
 
         # Token type (same for all)
-        token_types = TOKEN_TYPE_PLAYER0 + player_ids
-        tokens[:, 1:29, 9] = token_types
+        tokens[:, 1:29, 9] = self._token_types
 
         # Per-sample decl_id and normalized_leader
         tokens[:, 1:29, 10] = decl_id
@@ -421,12 +453,26 @@ class Stage1Oracle:
         tokens[:, 0, 11] = normalized_leaders
         masks[:, 0] = 1
 
-        # Trick tokens - per-sample (this part must be a loop)
-        for i in range(n_samples):
-            trick_plays = trick_plays_list[i]
-            actor = actors[i]
-            norm_leader = normalized_leaders[i]
+        # Trick tokens - vectorized by grouping samples with identical trick patterns
+        # Key insight: Many samples share the same trick_plays (especially in batched posterior scoring)
+        # We group by (trick_plays, actor) pattern and broadcast to all matching samples.
 
+        # Step 1: Build pattern keys and group samples
+        # Pattern key: (trick_plays_tuple, actor) - actor affects normalized_pp calculation
+        pattern_to_samples: dict[tuple, list[int]] = {}
+        for i in range(n_samples):
+            # Convert list to tuple for hashability
+            trick_tuple = tuple(trick_plays_list[i])
+            pattern_key = (trick_tuple, actors[i])
+            if pattern_key not in pattern_to_samples:
+                pattern_to_samples[pattern_key] = []
+            pattern_to_samples[pattern_key].append(i)
+
+        # Step 2: For each unique pattern, compute tokens once and broadcast to all samples
+        for (trick_tuple, actor), sample_indices in pattern_to_samples.items():
+            trick_plays = list(trick_tuple)  # Convert back to list
+
+            # Compute trick tokens for this pattern
             for trick_pos, (play_player, domino_id) in enumerate(trick_plays):
                 if trick_pos >= 3:
                     break
@@ -434,19 +480,22 @@ class Stage1Oracle:
                 token_idx = 29 + trick_pos
                 normalized_pp = (play_player - actor + 4) % 4
 
-                tokens[i, token_idx, 0] = DOMINO_HIGH[domino_id]
-                tokens[i, token_idx, 1] = DOMINO_LOW[domino_id]
-                tokens[i, token_idx, 2] = 1 if DOMINO_IS_DOUBLE[domino_id] else 0
-                tokens[i, token_idx, 3] = COUNT_VALUE_MAP[DOMINO_COUNT_POINTS[domino_id]]
-                tokens[i, token_idx, 4] = TRUMP_RANK_TABLE[(domino_id, decl_id)]
-                tokens[i, token_idx, 5] = normalized_pp
-                tokens[i, token_idx, 6] = 1 if normalized_pp == 0 else 0
-                tokens[i, token_idx, 7] = 1 if normalized_pp == 2 else 0
-                tokens[i, token_idx, 8] = 0
-                tokens[i, token_idx, 9] = TOKEN_TYPE_TRICK_P0 + trick_pos
-                tokens[i, token_idx, 10] = decl_id
-                tokens[i, token_idx, 11] = norm_leader
+                # Build the token features once
+                trick_token = np.zeros(N_FEATURES, dtype=np.int32)
+                trick_token[0:5] = domino_features[domino_id]
+                trick_token[5] = normalized_pp
+                trick_token[6] = 1 if normalized_pp == 0 else 0
+                trick_token[7] = 1 if normalized_pp == 2 else 0
+                trick_token[8] = 0
+                trick_token[9] = TOKEN_TYPE_TRICK_P0 + trick_pos
+                trick_token[10] = decl_id
+                # Note: normalized_leader differs per sample, will be set below
 
-                masks[i, token_idx] = 1
+                # Broadcast to all samples with this pattern
+                sample_indices_array = np.array(sample_indices, dtype=np.int32)
+                tokens[sample_indices_array, token_idx, :11] = trick_token[:11]
+                # Set per-sample normalized_leader
+                tokens[sample_indices_array, token_idx, 11] = normalized_leaders[sample_indices_array]
+                masks[sample_indices_array, token_idx] = 1
 
         return tokens, masks

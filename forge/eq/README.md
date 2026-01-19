@@ -2,6 +2,12 @@
 
 Training data generation for Stage 2: an imperfect-information policy that predicts E[Q] (expected quality) from observable game state only.
 
+## 🚨 CUDA/WSL: CPU = FULL STOP 🚨
+
+If you are running in WSL and `torch.cuda.is_available()` is **False** (or you see CUDA init errors like `cudaGetDeviceCount`), this is almost always a **WSL/CUDA/driver** problem and requires **human intervention** (reboot WSL, fix drivers/toolkit, etc.).
+
+Do **not** fall back to CPU when validating performance or throughput. **CPU timings are not a proxy** for GPU performance. If CUDA is broken and you care about perf, treat it as a hard failure: **fix CUDA first**.
+
 ## The Problem
 
 Texas 42 AIs using hand-coded heuristics are **point estimates applied to a distribution**. Rules like "don't pull partner's trump" assume one world state when reality is a probability distribution across many possible opponent hands. Heuristics don't compose, conflict with each other, and fail at edge cases.

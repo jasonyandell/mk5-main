@@ -105,9 +105,16 @@ def test_sample_impossible_constraint():
     voids = {0: set(), 1: {0, 1, 2, 3, 4, 5, 6, 7}, 2: set(), 3: set()}
     decl_id = NOTRUMP
 
-    with pytest.raises(RuntimeError, match="Failed to generate"):
+    with pytest.raises(RuntimeError, match="No valid hand distribution exists"):
         sample_consistent_worlds(
-            my_player, my_hand, played, hand_sizes, voids, decl_id, n_samples=1, max_attempts=10
+            my_player,
+            my_hand,
+            played,
+            hand_sizes,
+            voids,
+            decl_id,
+            n_samples=1,
+            max_attempts_per_sample=10,
         )
 
 

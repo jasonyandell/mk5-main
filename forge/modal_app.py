@@ -576,13 +576,15 @@ class EQGenerator:
         # Compile for kernel fusion
         self.oracle.model = torch.compile(self.oracle.model, mode="default")
 
-        # Warmup with typical batch size (100 samples)
+        # Warmup compiled model for expected batch sizes to avoid runtime recompilation/module loading.
+        # - current decision query: n_samples (typically 100)
+        # - posterior scoring: window_k * n_samples (typically 8 * 100 = 800)
         print("Warming up compiled model...")
         with torch.inference_mode():
-            dummy_tokens = torch.zeros(100, 32, 12, dtype=torch.long, device="cuda")
-            dummy_mask = torch.ones(100, 32, dtype=torch.float16, device="cuda")
-            dummy_player = torch.zeros(100, dtype=torch.long, device="cuda")
-            for _ in range(3):
+            for batch_size in (100, 200, 300, 400, 500, 600, 700, 800):
+                dummy_tokens = torch.zeros(batch_size, 32, 12, dtype=torch.int32, device="cuda")
+                dummy_mask = torch.ones(batch_size, 32, dtype=torch.int8, device="cuda")
+                dummy_player = torch.zeros(batch_size, dtype=torch.long, device="cuda")
                 self.oracle.model(dummy_tokens, dummy_mask, dummy_player)
 
         print(f"Oracle ready in {time.time() - load_start:.2f}s")
@@ -618,22 +620,13 @@ class EQGenerator:
         import io
         import time
 
-        from forge.eq import generate_eq_game
-        from forge.eq.generate import (
-            DecisionRecordV2,
-            ExplorationPolicy,
-            PosteriorConfig,
-        )
-        from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
-        from forge.oracle.rng import deal_from_seed
+        from forge.eq.generate import ExplorationPolicy, PosteriorConfig
+        from forge.eq.generate_dataset import generate_dataset
 
         torch = self.torch
-        np = self.np
 
         print(f"Generating {n_games} games (seed={seed}, posterior={posterior}, explore={explore})")
         start_time = time.time()
-
-        rng = np.random.default_rng(seed)
 
         # Build configs
         posterior_config = None
@@ -656,152 +649,27 @@ class EQGenerator:
                 seed=seed,
             )
 
-        # Collect all decisions
-        all_transcript_tokens = []
-        all_transcript_lengths = []
-        all_e_q_mean = []
-        all_e_q_var = []
-        all_legal_mask = []
-        all_action_taken = []
-        all_game_idx = []
-        all_decision_idx = []
-        all_is_val = []
-        all_u_mean = []
-        all_u_max = []
-        all_ess = []
-        all_max_w = []
-        all_exploration_mode = []
-        all_q_gap = []
+        game_batch_size = min(32, n_games)
+        progress_interval = max(1, n_games // 10)
 
-        mode_to_int = {"greedy": 0, "boltzmann": 1, "epsilon": 2, "blunder": 3}
+        dataset = generate_dataset(
+            oracle=self.oracle,
+            n_games=n_games,
+            n_samples=n_samples,
+            seed=seed,
+            val_fraction=0.1,
+            progress_interval=progress_interval,
+            posterior_config=posterior_config,
+            exploration_policy=exploration_policy,
+            checkpoint_path="/root/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+            game_batch_size=game_batch_size,
+        )
 
-        for game_idx in range(n_games):
-            game_seed = int(rng.integers(0, 2**31))
-            hands = deal_from_seed(game_seed)
-            decl_id = int(rng.integers(0, 10))
-            is_val = rng.random() < 0.1
-
-            # Per-game exploration policy with unique seed
-            game_exploration = None
-            if exploration_policy is not None:
-                game_exploration = ExplorationPolicy(
-                    temperature=exploration_policy.temperature,
-                    use_boltzmann=exploration_policy.use_boltzmann,
-                    epsilon=exploration_policy.epsilon,
-                    blunder_rate=exploration_policy.blunder_rate,
-                    blunder_max_regret=exploration_policy.blunder_max_regret,
-                    seed=game_seed,
-                )
-
-            record = generate_eq_game(
-                self.oracle,
-                hands,
-                decl_id,
-                n_samples=n_samples,
-                posterior_config=posterior_config,
-                exploration_policy=game_exploration,
-            )
-
-            for decision_idx, decision in enumerate(record.decisions):
-                tokens = decision.transcript_tokens
-                all_transcript_tokens.append(tokens)
-                all_transcript_lengths.append(tokens.shape[0])
-                all_e_q_mean.append(decision.e_q_mean)
-                all_legal_mask.append(decision.legal_mask)
-                all_action_taken.append(decision.action_taken)
-                all_game_idx.append(game_idx)
-                all_decision_idx.append(decision_idx)
-                all_is_val.append(is_val)
-
-                # V2 fields
-                if isinstance(decision, DecisionRecordV2) and decision.e_q_var is not None:
-                    all_e_q_var.append(decision.e_q_var)
-                    all_u_mean.append(decision.u_mean)
-                    all_u_max.append(decision.u_max)
-                    if decision.diagnostics is not None:
-                        all_ess.append(decision.diagnostics.ess)
-                        all_max_w.append(decision.diagnostics.max_w)
-                    else:
-                        all_ess.append(float(n_samples))
-                        all_max_w.append(1.0 / n_samples)
-                    if decision.exploration is not None:
-                        all_exploration_mode.append(mode_to_int.get(decision.exploration.selection_mode, 0))
-                        all_q_gap.append(decision.exploration.q_gap)
-                    else:
-                        all_exploration_mode.append(0)
-                        all_q_gap.append(0.0)
-                else:
-                    all_e_q_var.append(torch.zeros(7))
-                    all_u_mean.append(0.0)
-                    all_u_max.append(0.0)
-                    all_ess.append(float(n_samples))
-                    all_max_w.append(1.0 / n_samples)
-                    all_exploration_mode.append(0)
-                    all_q_gap.append(0.0)
-
-            if (game_idx + 1) % max(1, n_games // 10) == 0:
-                elapsed = time.time() - start_time
-                rate = (game_idx + 1) / elapsed
-                print(f"  Game {game_idx + 1}/{n_games} ({rate:.2f} games/s)")
-
-        # Pad and stack transcripts
-        padded_transcripts = []
-        for tokens in all_transcript_tokens:
-            seq_len = tokens.shape[0]
-            if seq_len < MAX_TOKENS:
-                padding = torch.zeros((MAX_TOKENS - seq_len, N_FEATURES), dtype=tokens.dtype)
-                tokens = torch.cat([tokens, padding], dim=0)
-            padded_transcripts.append(tokens)
+        dataset["metadata"]["gpu"] = torch.cuda.get_device_name(0)
+        dataset["metadata"]["games_per_second"] = n_games / dataset["metadata"]["total_time_seconds"]
 
         total_time = time.time() - start_time
-        n_examples = len(all_action_taken)
-
-        # Build dataset dict
-        dataset = {
-            "transcript_tokens": torch.stack(padded_transcripts),
-            "transcript_lengths": torch.tensor(all_transcript_lengths, dtype=torch.long),
-            "e_q_mean": torch.stack(all_e_q_mean),
-            "e_q_var": torch.stack(all_e_q_var),
-            "legal_mask": torch.stack(all_legal_mask),
-            "action_taken": torch.tensor(all_action_taken, dtype=torch.long),
-            "game_idx": torch.tensor(all_game_idx, dtype=torch.long),
-            "decision_idx": torch.tensor(all_decision_idx, dtype=torch.long),
-            "train_mask": torch.tensor([not v for v in all_is_val], dtype=torch.bool),
-            "u_mean": torch.tensor(all_u_mean, dtype=torch.float32),
-            "u_max": torch.tensor(all_u_max, dtype=torch.float32),
-            "ess": torch.tensor(all_ess, dtype=torch.float32),
-            "max_w": torch.tensor(all_max_w, dtype=torch.float32),
-            "exploration_mode": torch.tensor(all_exploration_mode, dtype=torch.int8),
-            "q_gap": torch.tensor(all_q_gap, dtype=torch.float32),
-            "metadata": {
-                "version": "2.1",
-                "n_games": n_games,
-                "n_samples": n_samples,
-                "n_examples": n_examples,
-                "n_train": sum(not v for v in all_is_val),
-                "n_val": sum(all_is_val),
-                "seed": seed,
-                "total_time_seconds": total_time,
-                "games_per_second": n_games / total_time,
-                "gpu": torch.cuda.get_device_name(0),
-                "schema": {
-                    "q_semantics": "minimax_value_to_go",
-                    "q_units": "points",
-                    "q_normalization": "raw",
-                    "tokenizer_version": "transcript_v1",
-                },
-                "posterior": {
-                    "enabled": posterior,
-                    "tau": 10.0 if posterior else None,
-                    "beta": 0.10 if posterior else None,
-                },
-                "exploration": {
-                    "enabled": explore,
-                },
-            },
-        }
-
-        print(f"Generated {n_examples} examples in {total_time:.1f}s ({n_games / total_time:.2f} games/s)")
+        print(f"Generated {dataset['metadata']['n_examples']} examples in {total_time:.1f}s")
 
         # Serialize to bytes
         buffer = io.BytesIO()

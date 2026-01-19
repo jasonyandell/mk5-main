@@ -5,7 +5,7 @@ Stage 2 operates on PUBLIC information only - what's visible during actual play.
 from __future__ import annotations
 
 from .game import GameState
-from .generate import DecisionRecord, GameRecord, generate_eq_game
+from .generate import DecisionRecord, GameRecord, generate_eq_game, generate_eq_games_batched
 from .oracle import Stage1Oracle
 from .sampling import sample_consistent_worlds
 from .transcript_tokenize import tokenize_transcript
@@ -17,6 +17,7 @@ __all__ = [
     "GameState",
     "Stage1Oracle",
     "generate_eq_game",
+    "generate_eq_games_batched",
     "infer_voids",
     "sample_consistent_worlds",
     "tokenize_transcript",

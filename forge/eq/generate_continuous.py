@@ -380,13 +380,15 @@ def main():
     print(f"Press Ctrl+C to stop (saves before exit)")
     print()
 
-    # Check GPU
-    if args.device == "cuda" and torch.cuda.is_available():
+    # Check GPU (WSL note: if CUDA is broken, stop and let the user fix it).
+    if args.device == "cuda":
+        if not torch.cuda.is_available():
+            print("ERROR: CUDA requested but not available.")
+            print("  This is usually a WSL/CUDA/driver issue that requires user intervention.")
+            print("  Do NOT fall back to CPU for anything performance-related; fix CUDA first.")
+            return
         gpu_name = torch.cuda.get_device_name(0)
         print(f"GPU: {gpu_name}")
-    elif args.device == "cuda":
-        print("WARNING: CUDA requested but not available, using CPU")
-        args.device = "cpu"
 
     # Load existing dataset
     existing = load_existing_dataset(output_path)
@@ -481,9 +483,25 @@ def main():
             for i in range(batch_size):
                 game_idx = current_n_games + i
                 game_seed = int(rng.integers(0, 2**31))
+                # Derive independent RNG streams from the base game seed for determinism.
+                seed_seq = np.random.SeedSequence(game_seed)
+                world_ss, explore_ss = seed_seq.spawn(2)
+                world_rng = np.random.default_rng(world_ss)
+                explore_seed = int(explore_ss.generate_state(1)[0])
                 hands = deal_from_seed(game_seed)
                 decl_id = int(rng.integers(0, 10))
                 is_val = rng.random() < args.val_fraction
+
+                game_exploration_policy = exploration_policy
+                if exploration_policy is not None and exploration_policy.seed is not None:
+                    game_exploration_policy = ExplorationPolicy(
+                        temperature=exploration_policy.temperature,
+                        use_boltzmann=exploration_policy.use_boltzmann,
+                        epsilon=exploration_policy.epsilon,
+                        blunder_rate=exploration_policy.blunder_rate,
+                        blunder_max_regret=exploration_policy.blunder_max_regret,
+                        seed=explore_seed,
+                    )
 
                 record = generate_eq_game(
                     oracle,
@@ -491,7 +509,8 @@ def main():
                     decl_id,
                     n_samples=args.n_samples,
                     posterior_config=posterior_config,
-                    exploration_policy=exploration_policy,
+                    exploration_policy=game_exploration_policy,
+                    world_rng=world_rng,
                 )
 
                 for decision_idx, decision in enumerate(record.decisions):

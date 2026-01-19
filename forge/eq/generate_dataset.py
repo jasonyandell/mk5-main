@@ -42,6 +42,7 @@ from forge.eq.generate import (
     ExplorationPolicy,
     GameRecordV2,
     PosteriorConfig,
+    generate_eq_games_batched,
 )
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
 from forge.oracle.rng import deal_from_seed
@@ -57,6 +58,7 @@ def generate_dataset(
     posterior_config: PosteriorConfig | None = None,
     exploration_policy: ExplorationPolicy | None = None,
     checkpoint_path: str = "",
+    game_batch_size: int = 1,
 ) -> dict:
     """Generate E[Q] training dataset.
 
@@ -70,6 +72,7 @@ def generate_dataset(
         posterior_config: Config for posterior-weighted marginalization (None = uniform)
         exploration_policy: Policy for action selection (None = greedy)
         checkpoint_path: Path to checkpoint (for metadata)
+        game_batch_size: Number of games to generate per batched oracle step (default 1)
 
     Returns:
         Dict with keys:
@@ -148,112 +151,148 @@ def generate_dataset(
     # Mode string to int mapping
     mode_to_int = {"greedy": 0, "boltzmann": 1, "epsilon": 2, "blunder": 3}
 
-    for game_idx in range(n_games):
-        # Generate random seed for this game (convert to Python int for Random)
-        game_seed = int(rng.integers(0, 2**31))
-        hands = deal_from_seed(game_seed)
-        decl_id = int(rng.integers(0, 10))  # Random declaration
+    if game_batch_size < 1:
+        raise ValueError(f"game_batch_size must be >= 1, got {game_batch_size}")
 
-        # Create per-game exploration policy with unique seed if exploration enabled
-        game_exploration = None
-        if exploration_policy is not None:
-            # Create a copy with game-specific seed for reproducibility
-            game_exploration = ExplorationPolicy(
-                temperature=exploration_policy.temperature,
-                use_boltzmann=exploration_policy.use_boltzmann,
-                epsilon=exploration_policy.epsilon,
-                blunder_rate=exploration_policy.blunder_rate,
-                blunder_max_regret=exploration_policy.blunder_max_regret,
-                seed=game_seed if exploration_policy.seed is not None else None,
+    game_idx = 0
+    while game_idx < n_games:
+        batch_end = min(n_games, game_idx + game_batch_size)
+        batch_size = batch_end - game_idx
+
+        batch_hands: list[list[list[int]]] = []
+        batch_decl_ids: list[int] = []
+        batch_exploration_policies: list[ExplorationPolicy | None] = []
+        batch_world_rngs: list[np.random.Generator] = []
+        batch_game_indices = list(range(game_idx, batch_end))
+
+        for gi in batch_game_indices:
+            game_seed = int(rng.integers(0, 2**31))
+            # Derive independent RNG streams from the base game seed for determinism.
+            seed_seq = np.random.SeedSequence(game_seed)
+            world_ss, explore_ss = seed_seq.spawn(2)
+            explore_seed = int(explore_ss.generate_state(1)[0])
+            batch_hands.append(deal_from_seed(game_seed))
+            batch_decl_ids.append(int(rng.integers(0, 10)))
+            batch_world_rngs.append(np.random.default_rng(world_ss))
+
+            if exploration_policy is not None:
+                batch_exploration_policies.append(
+                    ExplorationPolicy(
+                        temperature=exploration_policy.temperature,
+                        use_boltzmann=exploration_policy.use_boltzmann,
+                        epsilon=exploration_policy.epsilon,
+                        blunder_rate=exploration_policy.blunder_rate,
+                        blunder_max_regret=exploration_policy.blunder_max_regret,
+                        seed=explore_seed if exploration_policy.seed is not None else None,
+                    )
+                )
+            else:
+                batch_exploration_policies.append(None)
+
+        batch_start_time = time.time()
+        if batch_size == 1:
+            record = generate_eq_game(
+                oracle,
+                batch_hands[0],
+                batch_decl_ids[0],
+                n_samples=n_samples,
+                posterior_config=posterior_config,
+                exploration_policy=batch_exploration_policies[0],
+                world_rng=batch_world_rngs[0],
             )
-
-        game_start = time.time()
-        record = generate_eq_game(
-            oracle,
-            hands,
-            decl_id,
-            n_samples=n_samples,
-            posterior_config=posterior_config,
-            exploration_policy=game_exploration,
-        )
-        game_time = time.time() - game_start
-        game_times.append(game_time)
+            records = [record]
+        else:
+            records = generate_eq_games_batched(
+                oracle,
+                batch_hands,
+                batch_decl_ids,
+                n_samples=n_samples,
+                posterior_config=posterior_config,
+                exploration_policies=batch_exploration_policies,
+                world_rngs=batch_world_rngs,
+            )
+        batch_time = time.time() - batch_start_time
+        for _ in range(batch_size):
+            game_times.append(batch_time / batch_size)
 
         # Collect decisions
-        for decision_idx, decision in enumerate(record.decisions):
-            all_transcript_tokens.append(decision.transcript_tokens)
-            all_e_q_mean.append(decision.e_q_mean)
-            all_legal_mask.append(decision.legal_mask)
-            all_action_taken.append(decision.action_taken)
-            all_game_idx.append(game_idx)
-            all_decision_idx.append(decision_idx)
-            all_is_val.append(game_is_val[game_idx])
-            all_player.append(decision.player)
-            all_actual_outcome.append(decision.actual_outcome if decision.actual_outcome is not None else 0.0)
+        for gi, record in zip(batch_game_indices, records):
+            for decision_idx, decision in enumerate(record.decisions):
+                all_transcript_tokens.append(decision.transcript_tokens)
+                all_e_q_mean.append(decision.e_q_mean)
+                all_legal_mask.append(decision.legal_mask)
+                all_action_taken.append(decision.action_taken)
+                all_game_idx.append(gi)
+                all_decision_idx.append(decision_idx)
+                all_is_val.append(game_is_val[gi])
+                all_player.append(decision.player)
+                all_actual_outcome.append(decision.actual_outcome if decision.actual_outcome is not None else 0.0)
 
-            # Uncertainty fields (t42-64uj.6)
-            if isinstance(decision, DecisionRecordV2) and decision.e_q_var is not None:
-                all_e_q_var.append(decision.e_q_var)
-                all_u_mean.append(decision.u_mean)
-                all_u_max.append(decision.u_max)
-                # Posterior diagnostics
-                if decision.diagnostics is not None:
-                    all_ess.append(decision.diagnostics.ess)
-                    all_max_w.append(decision.diagnostics.max_w)
+                # Uncertainty fields (t42-64uj.6)
+                if isinstance(decision, DecisionRecordV2) and decision.e_q_var is not None:
+                    all_e_q_var.append(decision.e_q_var)
+                    all_u_mean.append(decision.u_mean)
+                    all_u_max.append(decision.u_max)
+                    # Posterior diagnostics
+                    if decision.diagnostics is not None:
+                        all_ess.append(decision.diagnostics.ess)
+                        all_max_w.append(decision.diagnostics.max_w)
+                    else:
+                        all_ess.append(float(n_samples))
+                        all_max_w.append(1.0 / n_samples)
+                    # Exploration stats
+                    if decision.exploration is not None:
+                        mode_int = mode_to_int.get(decision.exploration.selection_mode, 0)
+                        all_exploration_mode.append(mode_int)
+                        all_q_gap.append(decision.exploration.q_gap)
+                        total_entropy += decision.exploration.action_entropy
+                        # Count modes
+                        if decision.exploration.selection_mode == "greedy":
+                            total_greedy += 1
+                        elif decision.exploration.selection_mode == "boltzmann":
+                            total_boltzmann += 1
+                        elif decision.exploration.selection_mode == "epsilon":
+                            total_epsilon += 1
+                        elif decision.exploration.selection_mode == "blunder":
+                            total_blunder += 1
+                        total_q_gap += decision.exploration.q_gap
+                    else:
+                        all_exploration_mode.append(0)  # greedy
+                        all_q_gap.append(0.0)
                 else:
+                    # Fallback for non-V2 records
+                    all_e_q_var.append(torch.zeros(7))
+                    all_u_mean.append(0.0)
+                    all_u_max.append(0.0)
                     all_ess.append(float(n_samples))
                     all_max_w.append(1.0 / n_samples)
-                # Exploration stats
-                if decision.exploration is not None:
-                    mode_int = mode_to_int.get(decision.exploration.selection_mode, 0)
-                    all_exploration_mode.append(mode_int)
-                    all_q_gap.append(decision.exploration.q_gap)
-                    total_entropy += decision.exploration.action_entropy
-                    # Count modes
-                    if decision.exploration.selection_mode == "greedy":
-                        total_greedy += 1
-                    elif decision.exploration.selection_mode == "boltzmann":
-                        total_boltzmann += 1
-                    elif decision.exploration.selection_mode == "epsilon":
-                        total_epsilon += 1
-                    elif decision.exploration.selection_mode == "blunder":
-                        total_blunder += 1
-                    total_q_gap += decision.exploration.q_gap
-                else:
-                    all_exploration_mode.append(0)  # greedy
+                    all_exploration_mode.append(0)
                     all_q_gap.append(0.0)
-            else:
-                # Fallback for non-V2 records
-                all_e_q_var.append(torch.zeros(7))
-                all_u_mean.append(0.0)
-                all_u_max.append(0.0)
-                all_ess.append(float(n_samples))
-                all_max_w.append(1.0 / n_samples)
-                all_exploration_mode.append(0)
-                all_q_gap.append(0.0)
 
-            # Update running stats
-            running_decisions += 1
-            running_ess_sum += all_ess[-1]
-            running_ess_min = min(running_ess_min, all_ess[-1])
-            legal_q = decision.e_q_mean[decision.legal_mask]
-            if len(legal_q) > 0:
-                running_q_min = min(running_q_min, legal_q.min().item())
-                running_q_max = max(running_q_max, legal_q.max().item())
+                # Update running stats
+                running_decisions += 1
+                running_ess_sum += all_ess[-1]
+                running_ess_min = min(running_ess_min, all_ess[-1])
+                legal_q = decision.e_q_mean[decision.legal_mask]
+                if len(legal_q) > 0:
+                    running_q_min = min(running_q_min, legal_q.min().item())
+                    running_q_max = max(running_q_max, legal_q.max().item())
 
         # Progress
-        if (game_idx + 1) % progress_interval == 0:
+        if batch_end % progress_interval == 0:
             elapsed = time.time() - start_time
-            games_per_sec = (game_idx + 1) / elapsed
-            eta = (n_games - game_idx - 1) / games_per_sec
+            games_per_sec = batch_end / elapsed
+            eta = (n_games - batch_end) / games_per_sec if games_per_sec > 0 else 0
             ess_mean = running_ess_sum / running_decisions if running_decisions > 0 else 0
             log(
-                f"Game {game_idx + 1:>5}/{n_games} | "
+                f"Game {batch_end:>5}/{n_games} | "
                 f"{games_per_sec:.2f} g/s | "
                 f"ESS: {ess_mean:.0f} (min {running_ess_min:.0f}) | "
                 f"Q: [{running_q_min:.1f}, {running_q_max:.1f}] | "
                 f"ETA: {eta:.0f}s"
             )
+
+        game_idx = batch_end
 
     total_time = time.time() - start_time
     n_decisions = len(all_action_taken)
@@ -442,6 +481,12 @@ Examples:
     parser.add_argument(
         "--device", type=str, default="cuda", help="Device (cuda/cpu)"
     )
+    parser.add_argument(
+        "--game-batch-size",
+        type=int,
+        default=1,
+        help="Generate games in batches to reduce oracle overhead (default: 1)",
+    )
 
     # Posterior weighting args (t42-64uj.3)
     posterior_group = parser.add_argument_group("Posterior weighting (t42-64uj.3)")
@@ -552,6 +597,7 @@ Examples:
     log("=" * 60)
     log(f"Games: {args.n_games} ({args.n_games * 28} decisions)")
     log(f"Samples/decision: {args.n_samples}")
+    log(f"Game batch size: {args.game_batch_size}")
     log(f"Checkpoint: {args.checkpoint}")
     log(f"Output: {output_path}")
     log(f"Seed: {args.seed}")
@@ -609,6 +655,7 @@ Examples:
         posterior_config=posterior_config,
         exploration_policy=exploration_policy,
         checkpoint_path=args.checkpoint,
+        game_batch_size=args.game_batch_size,
     )
 
     # Print summary

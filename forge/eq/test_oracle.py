@@ -91,7 +91,7 @@ def test_oracle_initialization(mock_checkpoint):
     """Test oracle loads checkpoint and sets eval mode."""
     mock_class, mock_module = mock_checkpoint
 
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     # Verify DominoLightningModule was constructed
     mock_class.assert_called_once()
@@ -106,7 +106,7 @@ def test_oracle_query_batch_shape(mock_checkpoint):
     """Test query_batch returns correct shape."""
     _, _ = mock_checkpoint
 
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     # Create 10 sampled worlds
     worlds = [deal_from_seed(i) for i in range(10)]
@@ -136,7 +136,7 @@ def test_oracle_empty_worlds_raises(mock_checkpoint):
     """Test that empty worlds list raises ValueError."""
     _, _ = mock_checkpoint
 
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     with pytest.raises(ValueError, match="worlds cannot be empty"):
         oracle.query_batch(
@@ -171,7 +171,7 @@ def test_tokenize_worlds_shapes():
     # Verify shapes
     assert tokens.shape == (2, 32, 12), f"Expected (2, 32, 12), got {tokens.shape}"
     assert masks.shape == (2, 32), f"Expected (2, 32), got {masks.shape}"
-    assert tokens.dtype == np.int8
+    assert tokens.dtype == np.int32
     assert masks.dtype == np.int8
 
 
@@ -346,7 +346,7 @@ def test_tokenize_normalized_players():
 def test_oracle_with_real_checkpoint():
     """Integration test with real checkpoint (slower, requires checkpoint file)."""
     checkpoint_path = "checkpoints/stage1-latest.ckpt"
-    oracle = Stage1Oracle(checkpoint_path, device="cpu")
+    oracle = Stage1Oracle(checkpoint_path, device="cpu", compile=False)
 
     # Create sample worlds
     worlds = [deal_from_seed(i) for i in range(5)]
@@ -383,7 +383,7 @@ def test_batch_query_performance(mock_checkpoint):
     import time
 
     _, _ = mock_checkpoint
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     # Create 100 worlds
     worlds = [deal_from_seed(i) for i in range(100)]
@@ -417,7 +417,7 @@ def test_batch_query_performance(mock_checkpoint):
 def test_single_world_query(mock_checkpoint):
     """Test querying a single world works correctly."""
     _, _ = mock_checkpoint
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     worlds = [deal_from_seed(0)]
     remaining = np.ones((1, 4), dtype=np.int64) * 0x7F
@@ -441,7 +441,7 @@ def test_single_world_query(mock_checkpoint):
 def test_different_declarations(mock_checkpoint):
     """Test querying with different declarations."""
     _, _ = mock_checkpoint
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     worlds = [deal_from_seed(0), deal_from_seed(1)]
     remaining = np.ones((2, 4), dtype=np.int64) * 0x7F
@@ -467,7 +467,7 @@ def test_different_declarations(mock_checkpoint):
 def test_mid_trick_state(mock_checkpoint):
     """Test querying in the middle of a trick."""
     _, _ = mock_checkpoint
-    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu")
+    oracle = Stage1Oracle("fake_checkpoint.ckpt", device="cpu", compile=False)
 
     worlds = [deal_from_seed(0)]
     remaining = np.ones((1, 4), dtype=np.int64) * 0x7F
@@ -489,3 +489,209 @@ def test_mid_trick_state(mock_checkpoint):
     )
 
     assert logits.shape == (1, 7)
+
+
+def test_tokenize_multi_state_trick_vectorization():
+    """Test vectorized trick token assignment for multi-state batches.
+
+    This test verifies that the vectorized implementation correctly handles:
+    1. Multiple samples sharing the same trick_plays pattern
+    2. Different actors with same trick pattern
+    3. Different trick patterns in same batch
+    4. Variable-length trick_plays (0-3 plays)
+    """
+    oracle = Stage1Oracle.__new__(Stage1Oracle)
+    oracle.device = "cpu"
+
+    # Create 10 samples with overlapping trick patterns
+    worlds = [deal_from_seed(i) for i in range(10)]
+
+    # Pattern 1: Empty trick (samples 0, 1, 2)
+    # Pattern 2: One play (samples 3, 4, 5) with same actor
+    # Pattern 3: Two plays (samples 6, 7) with same actor
+    # Pattern 4: Three plays (sample 8)
+    # Pattern 5: One play (sample 9) with different actor than pattern 2
+
+    trick_plays_list = [
+        [],                          # 0: empty
+        [],                          # 1: empty
+        [],                          # 2: empty
+        [(0, 5)],                    # 3: one play, actor=0
+        [(0, 5)],                    # 4: one play, actor=0
+        [(0, 5)],                    # 5: one play, actor=0
+        [(1, 7), (2, 10)],          # 6: two plays, actor=1
+        [(1, 7), (2, 10)],          # 7: two plays, actor=1
+        [(0, 3), (1, 8), (2, 12)],  # 8: three plays
+        [(0, 5)],                    # 9: one play, actor=2 (different actor)
+    ]
+
+    actors = np.array([0, 0, 1, 0, 0, 0, 1, 1, 2, 2], dtype=np.int32)
+    leaders = np.array([0, 0, 1, 0, 0, 0, 1, 1, 0, 0], dtype=np.int32)
+    remaining = np.ones((10, 4), dtype=np.int64) * 0x7F
+
+    tokens, masks = oracle._tokenize_worlds_multi_state(
+        worlds=worlds,
+        decl_id=3,
+        actors=actors,
+        leaders=leaders,
+        trick_plays_list=trick_plays_list,
+        remaining=remaining,
+    )
+
+    # Verify shapes
+    assert tokens.shape == (10, 32, 12)
+    assert masks.shape == (10, 32)
+
+    # Verify empty trick patterns (samples 0, 1, 2)
+    for i in [0, 1, 2]:
+        assert np.all(masks[i, 29:32] == 0), f"Sample {i}: trick tokens should be masked out"
+
+    # Verify pattern 2 samples (3, 4, 5) have identical trick tokens
+    # All have same trick_plays [(0, 5)] and same actor (0)
+    for i in [3, 4, 5]:
+        assert masks[i, 29] == 1, f"Sample {i}: first trick token should be present"
+        assert masks[i, 30] == 0, f"Sample {i}: second trick token should be absent"
+        # Check domino features for domino_id=5
+        from forge.ml.tokenize import DOMINO_HIGH, DOMINO_LOW
+        assert tokens[i, 29, 0] == DOMINO_HIGH[5]
+        assert tokens[i, 29, 1] == DOMINO_LOW[5]
+
+    # Verify samples 3, 4, 5 have identical trick tokens (columns 0-10)
+    assert np.array_equal(tokens[3, 29, :11], tokens[4, 29, :11])
+    assert np.array_equal(tokens[3, 29, :11], tokens[5, 29, :11])
+
+    # Verify pattern 3 samples (6, 7) have identical trick tokens
+    for i in [6, 7]:
+        assert masks[i, 29] == 1, f"Sample {i}: first trick token should be present"
+        assert masks[i, 30] == 1, f"Sample {i}: second trick token should be present"
+        assert masks[i, 31] == 0, f"Sample {i}: third trick token should be absent"
+
+    assert np.array_equal(tokens[6, 29:31, :11], tokens[7, 29:31, :11])
+
+    # Verify pattern 4 (sample 8) has three trick tokens
+    assert masks[8, 29] == 1
+    assert masks[8, 30] == 1
+    assert masks[8, 31] == 1
+
+    # Verify pattern 5 (sample 9) differs from pattern 2 in normalized_pp
+    # Both have [(0, 5)] but different actors (0 vs 2)
+    # Pattern 2 (samples 3-5): actor=0, play_player=0 -> normalized_pp=(0-0+4)%4=0
+    # Pattern 5 (sample 9): actor=2, play_player=0 -> normalized_pp=(0-2+4)%4=2
+    assert tokens[3, 29, 5] == 0, "Pattern 2: normalized_pp should be 0"
+    assert tokens[9, 29, 5] == 2, "Pattern 5: normalized_pp should be 2"
+
+    # Verify is_current and is_partner flags follow normalized_pp
+    assert tokens[3, 29, 6] == 1, "Pattern 2: is_current=1"
+    assert tokens[3, 29, 7] == 0, "Pattern 2: is_partner=0"
+    assert tokens[9, 29, 6] == 0, "Pattern 5: is_current=0"
+    assert tokens[9, 29, 7] == 1, "Pattern 5: is_partner=1"
+
+
+def test_tokenize_multi_state_reference_implementation():
+    """Test vectorized implementation matches reference naive loop.
+
+    This test implements the original nested loop logic and verifies
+    the vectorized version produces identical output.
+    """
+    oracle = Stage1Oracle.__new__(Stage1Oracle)
+    oracle.device = "cpu"
+
+    # Create diverse test case
+    n_samples = 20
+    worlds = [deal_from_seed(i) for i in range(n_samples)]
+
+    trick_plays_list = [
+        [],
+        [(0, 5)],
+        [(0, 5), (1, 7)],
+        [(0, 5), (1, 7), (2, 10)],
+        [(1, 3)],
+        [],
+        [(0, 5)],  # Same as sample 1
+        [(2, 15)],
+        [(2, 15), (3, 20)],
+        [(2, 15), (3, 20), (0, 8)],
+        [(3, 27)],
+        [(0, 5)],  # Same as samples 1, 6
+        [(1, 3)],  # Same as sample 4
+        [],
+        [(0, 1), (1, 2)],
+        [(0, 1), (1, 2)],  # Same as sample 14
+        [(0, 5), (1, 7)],  # Same as sample 2
+        [(3, 25), (0, 12), (1, 18)],
+        [],
+        [(2, 15), (3, 20)],  # Same as sample 8
+    ]
+
+    actors = np.array([0, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2], dtype=np.int32)
+    leaders = np.array([0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3], dtype=np.int32)
+    remaining = np.ones((n_samples, 4), dtype=np.int64) * 0x7F
+    decl_id = 5
+
+    # Get vectorized result
+    tokens_vec, masks_vec = oracle._tokenize_worlds_multi_state(
+        worlds=worlds,
+        decl_id=decl_id,
+        actors=actors,
+        leaders=leaders,
+        trick_plays_list=trick_plays_list,
+        remaining=remaining,
+    )
+
+    # Implement reference naive loop (original implementation)
+    from forge.ml.tokenize import TOKEN_TYPE_TRICK_P0
+
+    tokens_ref = tokens_vec.copy()
+    masks_ref = masks_vec.copy()
+
+    # Clear trick tokens to recompute them
+    tokens_ref[:, 29:32, :] = 0
+    masks_ref[:, 29:32] = 0
+
+    domino_features = oracle._domino_features_by_decl[decl_id]
+    normalized_leaders = (leaders - actors + 4) % 4
+
+    # Reference implementation: nested loop
+    for i in range(n_samples):
+        trick_plays = trick_plays_list[i]
+        actor = actors[i]
+        norm_leader = normalized_leaders[i]
+
+        for trick_pos, (play_player, domino_id) in enumerate(trick_plays):
+            if trick_pos >= 3:
+                break
+
+            token_idx = 29 + trick_pos
+            normalized_pp = (play_player - actor + 4) % 4
+
+            tokens_ref[i, token_idx, 0:5] = domino_features[domino_id]
+            tokens_ref[i, token_idx, 5] = normalized_pp
+            tokens_ref[i, token_idx, 6] = 1 if normalized_pp == 0 else 0
+            tokens_ref[i, token_idx, 7] = 1 if normalized_pp == 2 else 0
+            tokens_ref[i, token_idx, 8] = 0
+            tokens_ref[i, token_idx, 9] = TOKEN_TYPE_TRICK_P0 + trick_pos
+            tokens_ref[i, token_idx, 10] = decl_id
+            tokens_ref[i, token_idx, 11] = norm_leader
+
+            masks_ref[i, token_idx] = 1
+
+    # Compare results
+    assert np.array_equal(tokens_vec[:, 29:32, :], tokens_ref[:, 29:32, :]), \
+        "Vectorized tokens do not match reference implementation"
+    assert np.array_equal(masks_vec[:, 29:32], masks_ref[:, 29:32]), \
+        "Vectorized masks do not match reference implementation"
+
+    # Additional verification: check specific samples
+    for i in range(n_samples):
+        trick_len = min(len(trick_plays_list[i]), 3)
+        for trick_pos in range(3):
+            token_idx = 29 + trick_pos
+            if trick_pos < trick_len:
+                assert masks_vec[i, token_idx] == 1, f"Sample {i}, trick {trick_pos}: should be present"
+                # Verify all features match
+                assert np.array_equal(
+                    tokens_vec[i, token_idx, :],
+                    tokens_ref[i, token_idx, :]
+                ), f"Sample {i}, trick {trick_pos}: token mismatch"
+            else:
+                assert masks_vec[i, token_idx] == 0, f"Sample {i}, trick {trick_pos}: should be absent"

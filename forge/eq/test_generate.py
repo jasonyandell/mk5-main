@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numpy as np
 import torch
 from torch import Tensor
 
@@ -14,6 +15,7 @@ from forge.eq.generate import (
     PosteriorConfig,
     PosteriorDiagnostics,
     generate_eq_game,
+    generate_eq_games_batched,
 )
 from forge.oracle.rng import deal_from_seed
 
@@ -40,6 +42,24 @@ class MockOracle:
         logits = torch.randn(n, 7, device=self.device)
         logits[:, 0] += 0.5  # Favor first action slightly
 
+        return logits
+
+    def query_batch_multi_state(
+        self,
+        *,
+        worlds: list[list[list[int]]],
+        decl_id: int,
+        actors,
+        leaders,
+        trick_plays_list,
+        remaining,
+    ) -> Tensor:
+        """Return random logits for posterior scoring tests (batched multi-state)."""
+        n = len(worlds)
+        self.query_count += 1
+
+        logits = torch.randn(n, 7, device=self.device)
+        logits[:, 0] += 0.5
         return logits
 
 
@@ -1452,6 +1472,136 @@ def test_softmax_on_q_values_produces_degenerate_probabilities():
         f"Expected worst action to have near-zero probability, got {min_prob}. "
         "This confirms softmax on point-valued Q is problematic."
     )
+
+
+def test_world_sampling_deterministic_with_seeded_world_rng():
+    """World sampling + gameplay should be deterministic when world_rng is seeded."""
+
+    class WorldSensitiveOracle:
+        def __init__(self):
+            self.device = "cpu"
+
+        def query_batch(self, worlds, game_state_info, current_player):
+            decl_id = int(game_state_info.get("decl_id", 0))
+            out = torch.zeros(len(worlds), 7, dtype=torch.float32)
+            for wi, world in enumerate(worlds):
+                opp_sum = sum(sum(world[p]) for p in range(4) if p != current_player)
+                for local_idx, domino_id in enumerate(world[current_player]):
+                    out[wi, local_idx] = float(domino_id + decl_id) - 0.01 * float(opp_sum)
+            return out
+
+    oracle = WorldSensitiveOracle()
+    hands = deal_from_seed(42)
+
+    record1 = generate_eq_game(
+        oracle,
+        hands,
+        decl_id=0,
+        n_samples=1,
+        world_rng=np.random.default_rng(123),
+    )
+    record2 = generate_eq_game(
+        oracle,
+        hands,
+        decl_id=0,
+        n_samples=1,
+        world_rng=np.random.default_rng(123),
+    )
+
+    assert len(record1.decisions) == len(record2.decisions) == 28
+    for d1, d2 in zip(record1.decisions, record2.decisions):
+        assert d1.player == d2.player
+        assert d1.action_taken == d2.action_taken
+        assert d1.actual_outcome == d2.actual_outcome
+        assert torch.equal(d1.legal_mask, d2.legal_mask)
+        assert torch.equal(d1.transcript_tokens, d2.transcript_tokens)
+        assert torch.allclose(d1.e_q_mean, d2.e_q_mean)
+
+
+def test_generate_eq_games_batched_matches_individual():
+    """Batched generation should match per-game generation given the same RNG streams."""
+
+    class BatchDeterministicOracle:
+        def __init__(self):
+            self.device = "cpu"
+            self.query_count = 0
+            self.multi_query_count = 0
+
+        def _q_for(self, world, actor: int, decl_id: int) -> Tensor:
+            opp_sum = sum(sum(world[p]) for p in range(4) if p != actor)
+            q = torch.zeros(7, dtype=torch.float32)
+            for local_idx, domino_id in enumerate(world[actor]):
+                q[local_idx] = (
+                    float(domino_id + decl_id) - 0.01 * float(opp_sum) + 0.001 * float(actor)
+                )
+            return q
+
+        def query_batch(self, worlds, game_state_info, current_player):
+            self.query_count += 1
+            decl_id = int(game_state_info.get("decl_id", 0))
+            return torch.stack([self._q_for(w, current_player, decl_id) for w in worlds], dim=0)
+
+        def query_batch_multi_state(
+            self,
+            *,
+            worlds,
+            decl_id,
+            actors,
+            leaders,
+            trick_plays_list,
+            remaining,
+        ):
+            self.multi_query_count += 1
+            return torch.stack(
+                [self._q_for(w, int(actors[i]), int(decl_id)) for i, w in enumerate(worlds)],
+                dim=0,
+            )
+
+    hands_list = [deal_from_seed(111), deal_from_seed(222)]
+    decl_ids = [0, 0]  # Same decl_id exercises cross-game batching.
+
+    oracle_individual = BatchDeterministicOracle()
+    records_individual = [
+        generate_eq_game(
+            oracle_individual,
+            hands_list[0],
+            decl_ids[0],
+            n_samples=1,
+            world_rng=np.random.default_rng(1001),
+        ),
+        generate_eq_game(
+            oracle_individual,
+            hands_list[1],
+            decl_ids[1],
+            n_samples=1,
+            world_rng=np.random.default_rng(1002),
+        ),
+    ]
+
+    oracle_batched = BatchDeterministicOracle()
+    records_batched = generate_eq_games_batched(
+        oracle_batched,
+        hands_list,
+        decl_ids,
+        n_samples=1,
+        world_rngs=[np.random.default_rng(1001), np.random.default_rng(1002)],
+    )
+
+    assert oracle_individual.query_count == 56
+    assert oracle_individual.multi_query_count == 0
+    assert oracle_batched.query_count == 0
+    assert oracle_batched.multi_query_count == 28
+
+    assert len(records_batched) == len(records_individual) == 2
+    for rec_b, rec_i in zip(records_batched, records_individual):
+        assert len(rec_b.decisions) == len(rec_i.decisions) == 28
+        for d_b, d_i in zip(rec_b.decisions, rec_i.decisions):
+            assert d_b.player == d_i.player
+            assert d_b.action_taken == d_i.action_taken
+            assert d_b.actual_outcome == d_i.actual_outcome
+            assert torch.equal(d_b.legal_mask, d_i.legal_mask)
+            assert torch.equal(d_b.transcript_tokens, d_i.transcript_tokens)
+            assert torch.allclose(d_b.e_q_mean, d_i.e_q_mean)
 
 
 def test_decision_record_has_correct_field_names():

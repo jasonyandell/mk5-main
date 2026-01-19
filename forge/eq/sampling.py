@@ -49,6 +49,24 @@ def get_candidate_dominoes(
     return candidates
 
 
+def hand_violates_voids(hand: list[int], void_suits: set[int], decl_id: int) -> bool:
+    """Return True if any domino in `hand` violates any void suit constraint."""
+    if not void_suits:
+        return False
+
+    for domino_id in hand:
+        for suit in void_suits:
+            if suit == 7:  # Called suit
+                if is_in_called_suit(domino_id, decl_id):
+                    return True
+            else:  # Pip suit (0-6)
+                if domino_contains_pip(domino_id, suit) and not is_in_called_suit(
+                    domino_id, decl_id
+                ):
+                    return True
+    return False
+
+
 def _backtrack(
     opponents: list[int],
     remaining: dict[int, int],
