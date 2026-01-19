@@ -9,7 +9,6 @@ from .generate import (
     DecisionRecord,
     GameRecord,
     generate_eq_game,
-    generate_eq_game_smc,
     generate_eq_games_batched,
 )
 from .oracle import Stage1Oracle
@@ -23,7 +22,6 @@ __all__ = [
     "GameState",
     "Stage1Oracle",
     "generate_eq_game",
-    "generate_eq_game_smc",
     "generate_eq_games_batched",
     "infer_voids",
     "sample_consistent_worlds",

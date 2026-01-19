@@ -42,7 +42,6 @@ from forge.eq.generate import (
     ExplorationPolicy,
     GameRecordV2,
     PosteriorConfig,
-    generate_eq_game_smc,
     generate_eq_games_batched,
 )
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
@@ -60,7 +59,6 @@ def generate_dataset(
     exploration_policy: ExplorationPolicy | None = None,
     checkpoint_path: str = "",
     game_batch_size: int = 1,
-    use_smc: bool = False,
 ) -> dict:
     """Generate E[Q] training dataset.
 
@@ -75,7 +73,6 @@ def generate_dataset(
         exploration_policy: Policy for action selection (None = greedy)
         checkpoint_path: Path to checkpoint (for metadata)
         game_batch_size: Number of games to generate per batched oracle step (default 1)
-        use_smc: Use SMC belief state to amortize world sampling (uniform only)
 
     Returns:
         Dict with keys:
@@ -204,22 +201,7 @@ def generate_dataset(
                 batch_exploration_policies.append(None)
 
         batch_start_time = time.time()
-        if use_smc:
-            # MVP: per-game SMC generator (keeps interface stable).
-            # If caller passes game_batch_size > 1, we still generate sequentially here.
-            records = [
-                generate_eq_game_smc(
-                    oracle,
-                    batch_hands[i],
-                    batch_decl_ids[i],
-                    n_samples=n_samples,
-                    posterior_config=posterior_config,
-                    exploration_policy=batch_exploration_policies[i],
-                    world_rng=batch_world_rngs[i],
-                )
-                for i in range(batch_size)
-            ]
-        elif batch_size == 1:
+        if batch_size == 1:
             records = [
                 generate_eq_game(
                     oracle,
@@ -593,22 +575,7 @@ Examples:
         help="Use pure greedy exploration (overrides other explore options)",
     )
 
-    # SMC args (experimental)
-    smc_group = parser.add_argument_group("SMC world marginalization (experimental)")
-    smc_group.add_argument(
-        "--smc",
-        action="store_true",
-        help="Use SMC belief state to amortize world sampling (uniform only; incompatible with --posterior)",
-    )
-
     args = parser.parse_args()
-
-    if args.smc and args.posterior:
-        log("ERROR: --smc MVP does not support --posterior (run without posterior weighting).")
-        sys.exit(1)
-    if args.smc and args.game_batch_size != 1:
-        log("SMC MVP runs per-game; overriding --game-batch-size to 1.")
-        args.game_batch_size = 1
 
     # Build output path with versioning
     if args.output is None:
@@ -714,7 +681,6 @@ Examples:
         exploration_policy=exploration_policy,
         checkpoint_path=args.checkpoint,
         game_batch_size=args.game_batch_size,
-        use_smc=args.smc,
     )
 
     # Print summary
