@@ -24,6 +24,7 @@ from forge.eq.types import (  # noqa: F401
 # Public entrypoints
 from forge.eq.generate_batched import generate_eq_games_batched  # noqa: F401
 from forge.eq.generate_game import generate_eq_game  # noqa: F401
+from forge.eq.generate_smc import generate_eq_game_smc  # noqa: F401
 
 # Posterior scoring (used by tests/tools)
 from forge.eq.posterior import (  # noqa: F401
@@ -50,6 +51,7 @@ from forge.eq.worlds import _build_hypothetical_worlds_batched, _build_legal_mas
 __all__ = [
     # Entry points
     "generate_eq_game",
+    "generate_eq_game_smc",
     "generate_eq_games_batched",
     # Types
     "DecisionRecord",
@@ -66,4 +68,3 @@ __all__ = [
     "compute_posterior_weights",
     "compute_posterior_weights_many",
 ]
-

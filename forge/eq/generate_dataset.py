@@ -42,6 +42,7 @@ from forge.eq.generate import (
     ExplorationPolicy,
     GameRecordV2,
     PosteriorConfig,
+    generate_eq_game_smc,
     generate_eq_games_batched,
 )
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
@@ -59,6 +60,7 @@ def generate_dataset(
     exploration_policy: ExplorationPolicy | None = None,
     checkpoint_path: str = "",
     game_batch_size: int = 1,
+    use_smc: bool = False,
 ) -> dict:
     """Generate E[Q] training dataset.
 
@@ -73,6 +75,7 @@ def generate_dataset(
         exploration_policy: Policy for action selection (None = greedy)
         checkpoint_path: Path to checkpoint (for metadata)
         game_batch_size: Number of games to generate per batched oracle step (default 1)
+        use_smc: Use SMC belief state to amortize world sampling (uniform only)
 
     Returns:
         Dict with keys:
@@ -93,6 +96,8 @@ def generate_dataset(
             - max_w: (N,) float tensor (max weight)
             - exploration_mode: (N,) int tensor (0=greedy, 1=boltzmann, 2=epsilon, 3=blunder)
             - q_gap: (N,) float tensor (regret: Q_greedy - Q_taken, in points)
+            - game_seeds: (n_games,) int64 tensor - seed used for deal_from_seed()
+            - game_decl_ids: (n_games,) int8 tensor - declaration ID per game (0-9)
             - metadata: dict with schema + generation details
 
         Note:
@@ -121,6 +126,10 @@ def generate_dataset(
     # Exploration stats (t42-64uj.5)
     all_exploration_mode = []  # 0=greedy, 1=boltzmann, 2=epsilon, 3=blunder
     all_q_gap = []
+
+    # Game metadata for shard self-description (t42-[NEW])
+    all_game_seeds = []
+    all_game_decl_ids = []
 
     # Aggregate exploration stats
     total_greedy = 0
@@ -172,8 +181,13 @@ def generate_dataset(
             world_ss, explore_ss = seed_seq.spawn(2)
             explore_seed = int(explore_ss.generate_state(1)[0])
             batch_hands.append(deal_from_seed(game_seed))
-            batch_decl_ids.append(int(rng.integers(0, 10)))
+            decl_id = int(rng.integers(0, 10))
+            batch_decl_ids.append(decl_id)
             batch_world_rngs.append(np.random.default_rng(world_ss))
+
+            # Track game metadata for shard self-description (t42-[NEW])
+            all_game_seeds.append(game_seed)
+            all_game_decl_ids.append(decl_id)
 
             if exploration_policy is not None:
                 batch_exploration_policies.append(
@@ -190,17 +204,33 @@ def generate_dataset(
                 batch_exploration_policies.append(None)
 
         batch_start_time = time.time()
-        if batch_size == 1:
-            record = generate_eq_game(
-                oracle,
-                batch_hands[0],
-                batch_decl_ids[0],
-                n_samples=n_samples,
-                posterior_config=posterior_config,
-                exploration_policy=batch_exploration_policies[0],
-                world_rng=batch_world_rngs[0],
-            )
-            records = [record]
+        if use_smc:
+            # MVP: per-game SMC generator (keeps interface stable).
+            # If caller passes game_batch_size > 1, we still generate sequentially here.
+            records = [
+                generate_eq_game_smc(
+                    oracle,
+                    batch_hands[i],
+                    batch_decl_ids[i],
+                    n_samples=n_samples,
+                    posterior_config=posterior_config,
+                    exploration_policy=batch_exploration_policies[i],
+                    world_rng=batch_world_rngs[i],
+                )
+                for i in range(batch_size)
+            ]
+        elif batch_size == 1:
+            records = [
+                generate_eq_game(
+                    oracle,
+                    batch_hands[0],
+                    batch_decl_ids[0],
+                    n_samples=n_samples,
+                    posterior_config=posterior_config,
+                    exploration_policy=batch_exploration_policies[0],
+                    world_rng=batch_world_rngs[0],
+                )
+            ]
         else:
             records = generate_eq_games_batched(
                 oracle,
@@ -339,12 +369,13 @@ def generate_dataset(
     ess_p10 = ess_sorted[int(n_ess * 0.1)].item() if n_ess > 0 else 0.0
     ess_p50 = ess_sorted[int(n_ess * 0.5)].item() if n_ess > 0 else 0.0
 
-    # Metadata (schema v2.2 with player + actual_outcome)
+    # Metadata (schema v2.4 with decl_mode)
     metadata = {
-        "version": "2.2",  # Bumped for player + actual_outcome fields (t42-26dl)
+        "version": "2.4",  # Bumped for decl_mode field
         "generated_at": datetime.now().isoformat(),
         "n_games": n_games,
         "n_samples": n_samples,
+        "decl_mode": "random",  # "random" = 1 random decl per deal, "all" = all 10 decls per deal
         "n_examples": n_decisions,
         "n_train": train_mask.sum().item(),
         "n_val": (~train_mask).sum().item(),
@@ -405,6 +436,10 @@ def generate_dataset(
         },
     }
 
+    # Convert game metadata to tensors
+    game_seeds_tensor = torch.tensor(all_game_seeds, dtype=torch.int64)
+    game_decl_ids_tensor = torch.tensor(all_game_decl_ids, dtype=torch.int8)
+
     return {
         "transcript_tokens": transcript_tokens,
         "transcript_lengths": transcript_lengths,
@@ -429,6 +464,9 @@ def generate_dataset(
         # Exploration stats (t42-64uj.5)
         "exploration_mode": exploration_mode,
         "q_gap": q_gap,  # Regret in points
+        # Game metadata for shard self-description (v2.3)
+        "game_seeds": game_seeds_tensor,  # [n_games] - seed used for deal_from_seed()
+        "game_decl_ids": game_decl_ids_tensor,  # [n_games] - declaration ID per game
         "metadata": metadata,
     }
 
@@ -555,7 +593,22 @@ Examples:
         help="Use pure greedy exploration (overrides other explore options)",
     )
 
+    # SMC args (experimental)
+    smc_group = parser.add_argument_group("SMC world marginalization (experimental)")
+    smc_group.add_argument(
+        "--smc",
+        action="store_true",
+        help="Use SMC belief state to amortize world sampling (uniform only; incompatible with --posterior)",
+    )
+
     args = parser.parse_args()
+
+    if args.smc and args.posterior:
+        log("ERROR: --smc MVP does not support --posterior (run without posterior weighting).")
+        sys.exit(1)
+    if args.smc and args.game_batch_size != 1:
+        log("SMC MVP runs per-game; overriding --game-batch-size to 1.")
+        args.game_batch_size = 1
 
     # Build output path with versioning
     if args.output is None:
@@ -625,6 +678,11 @@ Examples:
     else:
         log("Exploration policy: OFF (greedy)")
 
+    if args.smc:
+        log("World marginalization: SMC (uniform, hard constraints)")
+    else:
+        log("World marginalization: per-decision resampling")
+
     # Check GPU - fail fast if CUDA requested but unavailable
     if args.device == "cuda":
         if not torch.cuda.is_available():
@@ -656,6 +714,7 @@ Examples:
         exploration_policy=exploration_policy,
         checkpoint_path=args.checkpoint,
         game_batch_size=args.game_batch_size,
+        use_smc=args.smc,
     )
 
     # Print summary
