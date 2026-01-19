@@ -559,7 +559,7 @@ class Stage1Oracle:
     def query_batch_multi_state(
         self,
         worlds: list[list[list[int]]],
-        decl_id: int,
+        decl_ids: np.ndarray | int,
         actors: np.ndarray,
         leaders: np.ndarray,
         trick_plays_list: list[list[tuple[int, int]]],
@@ -572,7 +572,7 @@ class Stage1Oracle:
 
         Args:
             worlds: List of N world states (4 hands of 7 dominoes each)
-            decl_id: Declaration ID (same for all samples)
+            decl_ids: Declaration IDs - either int (same for all) or (N,) array (per-sample)
             actors: (N,) array of current player IDs
             leaders: (N,) array of leader player IDs
             trick_plays_list: List of N trick_plays, each is [(player, domino_id), ...]
@@ -586,10 +586,16 @@ class Stage1Oracle:
 
         n_samples = len(worlds)
 
+        # Convert scalar decl_id to array for uniform handling
+        if isinstance(decl_ids, int):
+            decl_ids_array = np.full(n_samples, decl_ids, dtype=np.int32)
+        else:
+            decl_ids_array = decl_ids.astype(np.int32)
+
         # Tokenize with per-sample states
         tokens, masks = self._tokenize_worlds_multi_state(
             worlds=worlds,
-            decl_id=decl_id,
+            decl_ids=decl_ids_array,
             actors=actors,
             leaders=leaders,
             trick_plays_list=trick_plays_list,
@@ -671,7 +677,7 @@ class Stage1Oracle:
     def _tokenize_worlds_multi_state(
         self,
         worlds: list[list[list[int]]],
-        decl_id: int,
+        decl_ids: np.ndarray,
         actors: np.ndarray,
         leaders: np.ndarray,
         trick_plays_list: list[list[tuple[int, int]]],
@@ -680,21 +686,27 @@ class Stage1Oracle:
         """Tokenize N samples with per-sample game states.
 
         Unlike _tokenize_worlds which broadcasts same state to all samples,
-        this handles different actors, leaders, and tricks per sample.
+        this handles different actors, leaders, tricks, and decl_ids per sample.
+
+        Args:
+            decl_ids: (N,) array of declaration IDs (per-sample)
         """
         n_samples = len(worlds)
 
         # Get pre-allocated buffers (reused across calls)
         tokens, masks = self._get_buffers(n_samples)
 
-        domino_features = self._domino_features_by_decl[decl_id]
+        # Stack all domino features: (10, 28, 5)
+        all_domino_features = np.stack(self._domino_features_by_decl)
 
         # Convert worlds to numpy array
         worlds_array = np.array(worlds, dtype=np.int32)
         flat_ids = worlds_array.reshape(n_samples, 28)
 
-        # Vectorized feature assignment for hand tokens
-        all_features = domino_features[flat_ids]
+        # Per-sample domino feature lookup: (N, 28, 5)
+        # all_domino_features[decl_ids[:, None], flat_ids] uses advanced indexing
+        # to select features for each sample's decl_id and domino IDs
+        all_features = all_domino_features[decl_ids[:, None], flat_ids]
         tokens[:, 1:29, 0:5] = all_features
 
         # Per-sample player normalization
@@ -718,37 +730,40 @@ class Stage1Oracle:
         tokens[:, 1:29, 9] = self._token_types
 
         # Per-sample decl_id and normalized_leader
-        tokens[:, 1:29, 10] = decl_id
+        tokens[:, 1:29, 10] = decl_ids[:, np.newaxis]  # Broadcast to 28 cols
         # normalized_leader per sample
         normalized_leaders = (leaders - actors + 4) % 4  # (N,)
         tokens[:, 1:29, 11] = normalized_leaders[:, np.newaxis]  # Broadcast to 28 cols
 
         masks[:, 1:29] = 1
 
-        # Context token (per-sample leader)
+        # Context token (per-sample leader and decl_id)
         tokens[:, 0, 9] = TOKEN_TYPE_CONTEXT
-        tokens[:, 0, 10] = decl_id
+        tokens[:, 0, 10] = decl_ids
         tokens[:, 0, 11] = normalized_leaders
         masks[:, 0] = 1
 
         # Trick tokens - vectorized by grouping samples with identical trick patterns
         # Key insight: Many samples share the same trick_plays (especially in batched posterior scoring)
-        # We group by (trick_plays, actor) pattern and broadcast to all matching samples.
+        # We group by (trick_plays, actor, decl_id) pattern and broadcast to all matching samples.
 
         # Step 1: Build pattern keys and group samples
-        # Pattern key: (trick_plays_tuple, actor) - actor affects normalized_pp calculation
+        # Pattern key: (trick_plays_tuple, actor, decl_id) - actor affects normalized_pp, decl_id affects features
         pattern_to_samples: dict[tuple, list[int]] = {}
         for i in range(n_samples):
             # Convert list to tuple for hashability
             trick_tuple = tuple(trick_plays_list[i])
-            pattern_key = (trick_tuple, actors[i])
+            pattern_key = (trick_tuple, actors[i], decl_ids[i])
             if pattern_key not in pattern_to_samples:
                 pattern_to_samples[pattern_key] = []
             pattern_to_samples[pattern_key].append(i)
 
         # Step 2: For each unique pattern, compute tokens once and broadcast to all samples
-        for (trick_tuple, actor), sample_indices in pattern_to_samples.items():
+        for (trick_tuple, actor, decl_id), sample_indices in pattern_to_samples.items():
             trick_plays = list(trick_tuple)  # Convert back to list
+
+            # Get domino features for this decl_id
+            domino_features = self._domino_features_by_decl[decl_id]
 
             # Compute trick tokens for this pattern
             for trick_pos, (play_player, domino_id) in enumerate(trick_plays):

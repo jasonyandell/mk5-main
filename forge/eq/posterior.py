@@ -303,7 +303,7 @@ def compute_posterior_weights_many(
         if hasattr(oracle, "query_batch_multi_state"):
             q_all = oracle.query_batch_multi_state(
                 worlds=worlds_all,
-                decl_id=decl_id,
+                decl_ids=decl_id,  # Accepts int or array
                 actors=actors_all,
                 leaders=leaders_all,
                 trick_plays_list=trick_plays_all,
@@ -631,7 +631,7 @@ def _score_step_likelihood(
     if hasattr(oracle, "query_batch_multi_state"):
         all_q_values = oracle.query_batch_multi_state(
             worlds=hypothetical_deals,
-            decl_id=decl_id,
+            decl_ids=decl_id,  # Accepts int or array
             actors=actors,
             leaders=leaders,
             trick_plays_list=trick_plays_list,
@@ -827,7 +827,7 @@ def _score_all_steps_batched(
     if hasattr(oracle, "query_batch_multi_state"):
         all_q_values = oracle.query_batch_multi_state(
             worlds=expanded_worlds,
-            decl_id=decl_id,
+            decl_ids=decl_id,  # Accepts int or array
             actors=actors,
             leaders=leaders,
             trick_plays_list=trick_plays_list,

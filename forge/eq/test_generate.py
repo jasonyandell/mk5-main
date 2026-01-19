@@ -48,7 +48,7 @@ class MockOracle:
         self,
         *,
         worlds: list[list[list[int]]],
-        decl_id: int,
+        decl_ids,  # int or np.ndarray
         actors,
         leaders,
         trick_plays_list,
@@ -1545,15 +1545,20 @@ def test_generate_eq_games_batched_matches_individual():
             self,
             *,
             worlds,
-            decl_id,
+            decl_ids,
             actors,
             leaders,
             trick_plays_list,
             remaining,
         ):
             self.multi_query_count += 1
+            # Support both scalar and array decl_ids
+            if isinstance(decl_ids, (int, np.integer)):
+                decl_ids_array = [decl_ids] * len(worlds)
+            else:
+                decl_ids_array = decl_ids
             return torch.stack(
-                [self._q_for(w, int(actors[i]), int(decl_id)) for i, w in enumerate(worlds)],
+                [self._q_for(w, int(actors[i]), int(decl_ids_array[i])) for i, w in enumerate(worlds)],
                 dim=0,
             )
 

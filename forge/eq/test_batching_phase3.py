@@ -38,7 +38,7 @@ class InstrumentedOracle:
         self,
         *,
         worlds,
-        decl_id,
+        decl_ids,
         actors,
         leaders,
         trick_plays_list,
@@ -47,9 +47,14 @@ class InstrumentedOracle:
         """Multi-state batched query (Phase 3 optimization)."""
         n_samples = len(worlds)
         n_actors = len(set(actors))
+        # Support both scalar and array decl_ids
+        if isinstance(decl_ids, (int, np.integer)):
+            unique_decls = [decl_ids]
+        else:
+            unique_decls = list(set(decl_ids.tolist() if hasattr(decl_ids, 'tolist') else decl_ids))
         self.multi_state_calls.append({
             "n_worlds": n_samples,
-            "decl_id": decl_id,
+            "decl_ids": unique_decls,
             "n_unique_actors": n_actors,
         })
         self.query_count += 1
@@ -89,21 +94,21 @@ def test_phase3_batching_reduces_oracle_calls():
     assert len(records_batched) == n_games
     assert all(len(r.decisions) == 28 for r in records_batched)
 
-    # Phase 3 should make ~28 × n_unique_decls calls
-    expected_min = 28  # Best case: all same decl_id
-    expected_max = 28 * n_unique_decls  # Worst case: all different decl_ids
+    # After t42-5kvo: unified batching (no grouping by decl_id)
+    # Should make exactly 28 calls (one per decision round across all games)
+    expected_calls = 28
     actual_calls = oracle_batched.query_count
 
-    print(f"\nPhase 3 Batching Results:")
+    print(f"\nPhase 3 Batching Results (t42-5kvo unified batching):")
     print(f"  Games: {n_games}")
     print(f"  Unique decl_ids: {n_unique_decls}")
     print(f"  Oracle calls: {actual_calls}")
-    print(f"  Expected range: [{expected_min}, {expected_max}]")
+    print(f"  Expected: {expected_calls}")
     print(f"  Per-game would be: {n_games * 28}")
     print(f"  Reduction: {(1 - actual_calls / (n_games * 28)) * 100:.1f}%")
 
-    assert expected_min <= actual_calls <= expected_max, (
-        f"Oracle calls {actual_calls} outside expected range [{expected_min}, {expected_max}]"
+    assert actual_calls == expected_calls, (
+        f"Expected {expected_calls} oracle calls (unified batching), got {actual_calls}"
     )
 
     # Verify we're using batched multi-state calls
@@ -230,10 +235,15 @@ def test_phase3_correctness_matches_single_game():
             return torch.stack([self._q_for(w, current_player, decl_id) for w in worlds])
 
         def query_batch_multi_state(
-            self, *, worlds, decl_id, actors, leaders, trick_plays_list, remaining
+            self, *, worlds, decl_ids, actors, leaders, trick_plays_list, remaining
         ):
+            # Support both scalar and array decl_ids
+            if isinstance(decl_ids, (int, np.integer)):
+                decl_ids_array = [decl_ids] * len(worlds)
+            else:
+                decl_ids_array = decl_ids
             return torch.stack(
-                [self._q_for(w, int(actors[i]), int(decl_id)) for i, w in enumerate(worlds)]
+                [self._q_for(w, int(actors[i]), int(decl_ids_array[i])) for i, w in enumerate(worlds)]
             )
 
     # Generate with separate oracles but same deterministic logic
@@ -295,29 +305,25 @@ def test_phase3_handles_different_decl_ids():
 
     assert len(records) == n_games
 
-    # With 2 unique decl_ids, we should make ~28 × 2 = 56 calls
-    expected_calls = 28 * 2
+    # After t42-5kvo: unified batching (no grouping by decl_id)
+    # Should make exactly 28 calls regardless of number of unique decl_ids
+    expected_calls = 28
     assert oracle.query_count == expected_calls, (
-        f"Expected {expected_calls} oracle calls (28 rounds × 2 decl groups), "
+        f"Expected {expected_calls} oracle calls (unified batching), "
         f"got {oracle.query_count}"
     )
 
-    # Verify decl_ids in calls
-    decl_ids_in_calls = set(c["decl_id"] for c in oracle.multi_state_calls)
-    assert decl_ids_in_calls == {0, 5}, (
-        f"Expected calls for decl_ids {{0, 5}}, got {decl_ids_in_calls}"
+    # Verify both decl_ids appear in calls (mixed in same batches)
+    all_decl_ids_in_calls = []
+    for call in oracle.multi_state_calls:
+        all_decl_ids_in_calls.extend(call["decl_ids"])
+    unique_decls_in_calls = set(all_decl_ids_in_calls)
+
+    assert unique_decls_in_calls == {0, 5}, (
+        f"Expected calls with decl_ids {{0, 5}}, got {unique_decls_in_calls}"
     )
 
-    # Count calls per decl_id (should be ~28 each)
-    calls_per_decl = {}
-    for call in oracle.multi_state_calls:
-        decl_id = call["decl_id"]
-        calls_per_decl[decl_id] = calls_per_decl.get(decl_id, 0) + 1
-
-    print(f"\nDecl ID Handling Test:")
+    print(f"\nDecl ID Handling Test (t42-5kvo unified batching):")
     print(f"  Games: {n_games}, Unique decl_ids: 2")
     print(f"  Oracle calls: {oracle.query_count}")
-    print(f"  Calls per decl_id: {calls_per_decl}")
-
-    for decl_id, count in calls_per_decl.items():
-        assert count == 28, f"Expected 28 calls for decl_id {decl_id}, got {count}"
+    print(f"  All decl_ids mixed in unified batches")

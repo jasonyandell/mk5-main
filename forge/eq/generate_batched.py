@@ -98,7 +98,7 @@ def generate_eq_games_batched(
     total_entropy: list[float] = [0.0] * n_games
 
     def _batched_query_current_q_values(ctxs: list[dict]) -> dict[int, Tensor]:
-        """Return per-game (N,7) Q-values for the current decision, batched by decl_id."""
+        """Return per-game (N,7) Q-values for the current decision, batched across all games."""
         if not hasattr(oracle, "query_batch_multi_state"):
             out: dict[int, Tensor] = {}
             for ctx in ctxs:
@@ -107,52 +107,53 @@ def generate_eq_games_batched(
                 )
             return out
 
-        by_decl: dict[int, list[dict]] = defaultdict(list)
+        # Single batch: concatenate all worlds from all games
+        worlds_all: list[list[list[int]]] = []
+        trick_plays_list: list[list[tuple[int, int]]] = []
+
+        actors_chunks: list[np.ndarray] = []
+        leaders_chunks: list[np.ndarray] = []
+        remaining_chunks: list[np.ndarray] = []
+        decl_ids_chunks: list[np.ndarray] = []
+
+        offsets: dict[int, slice] = {}
+        cursor = 0
         for ctx in ctxs:
-            by_decl[ctx["decl_id"]].append(ctx)
+            deals = ctx["hypothetical_deals"]
+            game_state_info = ctx["game_state_info"]
+            n_worlds = len(deals)
+            worlds_all.extend(deals)
 
-        out: dict[int, Tensor] = {}
-        for decl_id, group in by_decl.items():
-            worlds_all: list[list[list[int]]] = []
-            trick_plays_list: list[list[tuple[int, int]]] = []
-
-            actors_chunks: list[np.ndarray] = []
-            leaders_chunks: list[np.ndarray] = []
-            remaining_chunks: list[np.ndarray] = []
-
-            offsets: dict[int, slice] = {}
-            cursor = 0
-            for ctx in group:
-                deals = ctx["hypothetical_deals"]
-                game_state_info = ctx["game_state_info"]
-                n_worlds = len(deals)
-                worlds_all.extend(deals)
-
-                actors_chunks.append(np.full(n_worlds, ctx["player"], dtype=np.int32))
-                leaders_chunks.append(
-                    np.full(n_worlds, game_state_info["leader"], dtype=np.int32)
-                )
-                remaining_chunks.append(game_state_info["remaining"].astype(np.int32))
-                trick_plays_list.extend([game_state_info["trick_plays"]] * n_worlds)
-
-                offsets[ctx["game_idx"]] = slice(cursor, cursor + n_worlds)
-                cursor += n_worlds
-
-            actors = np.concatenate(actors_chunks, axis=0)
-            leaders = np.concatenate(leaders_chunks, axis=0)
-            remaining = np.concatenate(remaining_chunks, axis=0)
-
-            q_all = oracle.query_batch_multi_state(
-                worlds=worlds_all,
-                decl_id=decl_id,
-                actors=actors,
-                leaders=leaders,
-                trick_plays_list=trick_plays_list,
-                remaining=remaining,
+            actors_chunks.append(np.full(n_worlds, ctx["player"], dtype=np.int32))
+            leaders_chunks.append(
+                np.full(n_worlds, game_state_info["leader"], dtype=np.int32)
             )
+            remaining_chunks.append(game_state_info["remaining"].astype(np.int32))
+            decl_ids_chunks.append(np.full(n_worlds, ctx["decl_id"], dtype=np.int32))
+            trick_plays_list.extend([game_state_info["trick_plays"]] * n_worlds)
 
-            for game_idx, sl in offsets.items():
-                out[game_idx] = q_all[sl]
+            offsets[ctx["game_idx"]] = slice(cursor, cursor + n_worlds)
+            cursor += n_worlds
+
+        actors = np.concatenate(actors_chunks, axis=0)
+        leaders = np.concatenate(leaders_chunks, axis=0)
+        remaining = np.concatenate(remaining_chunks, axis=0)
+        decl_ids = np.concatenate(decl_ids_chunks, axis=0)
+
+        # Single unified batch call with per-sample decl_ids
+        q_all = oracle.query_batch_multi_state(
+            worlds=worlds_all,
+            decl_ids=decl_ids,
+            actors=actors,
+            leaders=leaders,
+            trick_plays_list=trick_plays_list,
+            remaining=remaining,
+        )
+
+        # Split results back to per-game
+        out: dict[int, Tensor] = {}
+        for game_idx, sl in offsets.items():
+            out[game_idx] = q_all[sl]
         return out
 
     while not all(game.is_complete() for game in games):

@@ -531,7 +531,7 @@ def test_tokenize_multi_state_trick_vectorization():
 
     tokens, masks = oracle._tokenize_worlds_multi_state(
         worlds=worlds,
-        decl_id=3,
+        decl_ids=np.full(10, 3, dtype=np.int32),
         actors=actors,
         leaders=leaders,
         trick_plays_list=trick_plays_list,
@@ -679,7 +679,7 @@ def test_tokenize_multi_state_reference_implementation():
     # Get vectorized result
     tokens_vec, masks_vec = oracle._tokenize_worlds_multi_state(
         worlds=worlds,
-        decl_id=decl_id,
+        decl_ids=np.full(n_samples, decl_id, dtype=np.int32),
         actors=actors,
         leaders=leaders,
         trick_plays_list=trick_plays_list,
