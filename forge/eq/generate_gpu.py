@@ -876,19 +876,22 @@ def _compute_posterior_weighted_eq(
     else:
         past_tokenizer = tokenizer
 
-    past_tokens, past_masks = past_tokenizer.tokenize_past_steps(
+    past_tokens, past_masks = past_tokenizer.tokenize_past_steps_batched(
         worlds=hypothetical,
         past_states=past_states,
         decl_id=states.decl_ids[0].item(),  # Assume single decl_id for batch
     )
 
     # 5. Query oracle for past steps
-    # past_tokens: [N*M*K, 32, 12], we need to expand current_player info
+    # past_tokens: [N*K*M, 32, 12] with layout g*K*M + k*M + m
     total_batch = n_games * n_samples * K
 
-    # Expand actors to all samples: actors[n, k] -> [n, m, k] -> [n*m*k]
-    actors_expanded = past_states.actors.unsqueeze(1).expand(n_games, n_samples, K)  # [N, M, K]
-    actors_flat = actors_expanded.reshape(total_batch).long()  # [N*M*K]
+    # Expand actors to match tokenizer's [N, K, M] layout: actors[n, k] -> [n, k, m] -> [n*k*m]
+    # Clamp actors to [0, 3] range - invalid entries (-1) will be clamped to 0
+    # Their outputs will be masked out by valid_mask anyway
+    actors_clamped = past_states.actors.clamp(0, 3)
+    actors_expanded = actors_clamped.unsqueeze(-1).expand(n_games, K, n_samples)  # [N, K, M]
+    actors_flat = actors_expanded.reshape(total_batch).long()  # [N*K*M]
 
     # Determine model device
     model_device = next(model.parameters()).device
@@ -910,8 +913,10 @@ def _compute_posterior_weighted_eq(
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
             q_past, _ = model(past_tokens, past_masks, actors_flat)
 
-    # Reshape: [N*M*K, 7] -> [N, M, K, 7]
-    q_past = q_past.view(n_games, n_samples, K, 7)
+    # Reshape: [N*K*M, 7] -> [N, K, M, 7] to match tokenizer layout
+    q_past = q_past.view(n_games, K, n_samples, 7)
+    # Transpose to [N, M, K, 7] for compatibility with posterior weighting
+    q_past = q_past.permute(0, 2, 1, 3).contiguous()
 
     # 6. Compute legal masks for past steps
     legal_masks = compute_legal_masks_gpu(

@@ -401,11 +401,19 @@ class GPUTokenizer:
         # worlds: [batch, 4, 7] -> flat_worlds: [batch, 28]
         flat_worlds = worlds.reshape(batch, 28).long()
 
+        # Handle padding: -1 values indicate empty slots (no domino)
+        # Clamp to valid range [0, 27] for gather - empty slots will be marked as "played"
+        padding_mask = (flat_worlds < 0)  # [batch, 28] where True = padding
+        flat_worlds_clamped = flat_worlds.clamp(0, 27)  # Safe indices for gather
+
         # Use gather to look up played_before[b, worlds[b, p, s]]
         # played_before: [batch, 28] bool
-        # flat_worlds: [batch, 28] (indices)
-        # Result: is_played[b, i] = played_before[b, flat_worlds[b, i]]
-        is_played = torch.gather(played_before, 1, flat_worlds)  # [batch, 28] bool
+        # flat_worlds_clamped: [batch, 28] (indices in [0, 27])
+        # Result: is_played[b, i] = played_before[b, flat_worlds_clamped[b, i]]
+        is_played = torch.gather(played_before, 1, flat_worlds_clamped)  # [batch, 28] bool
+
+        # Mark padding positions as "played" so they won't appear in remaining
+        is_played = is_played | padding_mask
 
         # Step 2: Reshape to [batch, 4, 7]
         is_played = is_played.reshape(batch, 4, 7)
@@ -469,16 +477,20 @@ class GPUTokenizer:
         # worlds: [batch, 4, 7], flatten to [batch, 28]
         flat_ids = worlds.reshape(batch, 28).long()
 
+        # Handle padding: -1 values indicate empty slots (no domino)
+        # Clamp to valid range [0, 27] for gather
+        flat_ids_clamped = flat_ids.clamp(0, 27)
+
         # Get features for all dominoes with per-batch decl_id:
         # self.domino_features: [10, 28, 5]
         # decl_ids: [batch] -> [batch, 1, 1] for indexing
         # First select decl features: [batch, 28, 5]
         decl_features = self.domino_features[decl_ids.long()]  # [batch, 28, 5]
 
-        # Now gather based on flat_ids: for each batch b and position i,
-        # we want decl_features[b, flat_ids[b, i], :]
-        # Expand flat_ids for gather: [batch, 28] -> [batch, 28, 5]
-        flat_ids_expanded = flat_ids.unsqueeze(-1).expand(-1, -1, 5)
+        # Now gather based on flat_ids_clamped: for each batch b and position i,
+        # we want decl_features[b, flat_ids_clamped[b, i], :]
+        # Expand flat_ids_clamped for gather: [batch, 28] -> [batch, 28, 5]
+        flat_ids_expanded = flat_ids_clamped.unsqueeze(-1).expand(-1, -1, 5)
         all_features = torch.gather(decl_features, 1, flat_ids_expanded)  # [batch, 28, 5]
 
         # Assign to hand token features (tokens[:, 1:29, 0:5])
@@ -554,8 +566,9 @@ class GPUTokenizer:
         # Get domino features for trick dominoes
         # Need per-batch decl features for trick dominoes
         # decl_features: [batch, 28, 5] (already computed above)
-        # trick_dominoes: [batch, 3] -> [batch, 3, 5]
-        trick_dominoes_expanded = trick_dominoes.unsqueeze(-1).expand(-1, -1, 5)
+        # Clamp domino indices to valid range (invalid slots have 0, which is still valid)
+        trick_dominoes_clamped = trick_dominoes.clamp(0, 27)  # [batch, 3]
+        trick_dominoes_expanded = trick_dominoes_clamped.unsqueeze(-1).expand(-1, -1, 5)
         trick_domino_features = torch.gather(decl_features, 1, trick_dominoes_expanded)  # [batch, 3, 5]
 
         # Token indices for tricks: 29, 30, 31
