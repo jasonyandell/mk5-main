@@ -478,8 +478,9 @@ class GPUTokenizer:
         flat_ids = worlds.reshape(batch, 28).long()
 
         # Handle padding: -1 values indicate empty slots (no domino)
-        # Clamp to valid range [0, 27] for gather
-        flat_ids_clamped = flat_ids.clamp(0, 27)
+        # For compatibility with tokenize(), -1 should wrap to 27 (last domino)
+        # This matches PyTorch's negative indexing behavior
+        flat_ids_clamped = torch.where(flat_ids < 0, torch.tensor(27, device=device), flat_ids)
 
         # Get features for all dominoes with per-batch decl_id:
         # self.domino_features: [10, 28, 5]

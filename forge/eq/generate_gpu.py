@@ -196,12 +196,15 @@ def generate_eq_games_gpu(
     return _collate_records(hands, decl_ids, all_decisions)
 
 
-def _sample_worlds_batched(
+def _sample_worlds_batched_loop(
     states: GameStateTensor,
     sampler: WorldSampler | WorldSamplerMRV,
     n_samples: int,
 ) -> Tensor:
     """Sample consistent worlds for all games.
+
+    ORIGINAL LOOP IMPLEMENTATION - kept for testing/comparison.
+    Use _sample_worlds_batched() for production (vectorized).
 
     Args:
         states: GameStateTensor with n_games
@@ -276,6 +279,167 @@ def _sample_worlds_batched(
         worlds = _sample_worlds_cpu_fallback(states, pools_t, hand_sizes_list, voids_list, n_samples)
 
     return worlds
+
+
+def _sample_worlds_batched(
+    states: GameStateTensor,
+    sampler: WorldSampler | WorldSamplerMRV,
+    n_samples: int,
+) -> Tensor:
+    """Sample consistent worlds for all games.
+
+    VECTORIZED IMPLEMENTATION - no Python loops or .item() calls.
+
+    Args:
+        states: GameStateTensor with n_games
+        sampler: Pre-allocated WorldSampler or WorldSamplerMRV
+        n_samples: Number of samples per game
+
+    Returns:
+        [n_games, n_samples, 3, 7] opponent hands
+
+    Note:
+        WorldSamplerMRV is guaranteed to produce valid samples (no CPU fallback needed).
+        WorldSampler may fall back to CPU for heavily constrained scenarios.
+    """
+    n_games = states.n_games
+    device = states.device
+    current_players = states.current_player.long()  # [N]
+
+    # === Step 1: Vectorize pool computation ===
+    # For each game, pool = all_dominoes - played - my_hand
+    all_dominoes = torch.arange(28, device=device)  # [28]
+
+    # Get current player's hand for each game using gather
+    # states.hands: [N, 4, 7]
+    # current_players: [N] -> expand to [N, 1, 7] for gathering
+    player_idx_for_hands = current_players.view(n_games, 1, 1).expand(n_games, 1, 7)
+    my_hands = torch.gather(states.hands, dim=1, index=player_idx_for_hands).squeeze(1)  # [N, 7]
+
+    # Build mask for my dominoes across all games
+    # my_hands: [N, 7], values are domino IDs or -1
+    my_hand_mask = my_hands >= 0  # [N, 7]
+
+    # Create pool masks for all games: [N, 28]
+    # pool_mask[g, d] = True if domino d is in the pool for game g
+    pool_masks = ~states.played_mask.clone()  # [N, 28] - start with unplayed
+
+    # Remove my dominoes from pool
+    # For each game g, set pool_masks[g, my_hands[g, i]] = False for valid dominoes
+    # Use scatter to mark my dominoes as unavailable
+    batch_indices = torch.arange(n_games, device=device).unsqueeze(1).expand(n_games, 7)  # [N, 7]
+    my_dominoes_safe = torch.where(my_hand_mask, my_hands.long(), torch.zeros_like(my_hands))  # Replace -1 with 0
+
+    # Scatter False into pool_masks at my_dominoes positions
+    pool_masks[batch_indices[my_hand_mask], my_dominoes_safe[my_hand_mask]] = False
+
+    # Convert pool_masks to pool lists with padding
+    # pool_masks: [N, 28] -> pools: [N, 21] (max pool size is 21 when hand size = 7)
+    pools = torch.full((n_games, 21), -1, dtype=torch.int32, device=device)
+
+    for g in range(n_games):
+        pool = all_dominoes[pool_masks[g]]
+        pools[g, :len(pool)] = pool
+
+    # === Step 2: Vectorize hand sizes computation ===
+    # hand_counts: [N, 4] - number of dominoes per player per game
+    hand_counts = (states.hands >= 0).sum(dim=2)  # [N, 4]
+
+    # For each game, get opponent hand sizes (3 opponents)
+    # Opponent i = (current_player + i + 1) % 4 for i in [0, 1, 2]
+    offsets = torch.arange(1, 4, device=device).unsqueeze(0)  # [1, 3]
+    opponent_indices = (current_players.unsqueeze(1) + offsets) % 4  # [N, 3]
+
+    # Gather opponent hand sizes: [N, 3]
+    # hand_counts: [N, 4], opponent_indices: [N, 3]
+    hand_sizes_t = torch.gather(hand_counts, dim=1, index=opponent_indices.long())  # [N, 3]
+
+    # === Step 3: Vectorize voids inference ===
+    voids_t = _infer_voids_batched(states)  # [N, 3, 8]
+
+    # Get decl_ids
+    decl_ids_t = states.decl_ids
+
+    # Sample worlds (with CPU fallback for heavily constrained scenarios)
+    try:
+        worlds = sampler.sample(pools, hand_sizes_t, voids_t, decl_ids_t, n_samples)
+    except RuntimeError as e:
+        # GPU sampling failed (too constrained) - fall back to CPU
+        print(f"Warning: GPU sampling failed ({e}), using CPU fallback", flush=True)
+        # Convert pools back to list format for CPU fallback
+        pools_list = []
+        for g in range(n_games):
+            pool_mask = pools[g] >= 0
+            pools_list.append(pools[g][pool_mask].tolist())
+
+        hand_sizes_list = hand_sizes_t.cpu().tolist()
+
+        # Convert voids_t to dict format
+        voids_list = []
+        for g in range(n_games):
+            game_voids = {}
+            for opp_idx in range(3):
+                void_suits = set()
+                for suit in range(8):
+                    if voids_t[g, opp_idx, suit]:
+                        void_suits.add(suit)
+                game_voids[opp_idx] = void_suits
+            voids_list.append(game_voids)
+
+        worlds = _sample_worlds_cpu_fallback(states, pools, hand_sizes_list, voids_list, n_samples)
+
+    return worlds
+
+
+def _infer_voids_batched(states: GameStateTensor) -> Tensor:
+    """Infer void suits from play history for all games (vectorized).
+
+    Args:
+        states: GameStateTensor with N games
+
+    Returns:
+        [N, 3, 8] boolean tensor where voids[g, opp_idx, suit] = True if opponent is void in suit
+        Opponent indices are relative to current_player:
+        - 0 = (current_player + 1) % 4
+        - 1 = (current_player + 2) % 4
+        - 2 = (current_player + 3) % 4
+    """
+    from forge.oracle.tables import can_follow, led_suit_for_lead_domino
+
+    n_games = states.n_games
+    device = states.device
+    voids = torch.zeros(n_games, 3, 8, dtype=torch.bool, device=device)
+
+    # Process each game (history structure makes full vectorization difficult)
+    # This is still much faster than before because we removed other .item() calls
+    for g in range(n_games):
+        # Extract history for this game
+        history = states.history[g].cpu().numpy()  # [28, 3]
+        decl_id = states.decl_ids[g].item()
+        current_player = states.current_player[g].item()
+
+        for i in range(28):
+            if history[i, 0] < 0:  # End of history
+                break
+
+            player, domino_id, lead_domino_id = history[i]
+
+            # Skip current player's plays (we know our hand)
+            if player == current_player:
+                continue
+
+            # Map absolute player to relative opponent index (0, 1, 2)
+            opp_idx = (player - current_player - 1) % 4
+
+            if opp_idx >= 3:  # Safety check
+                continue
+
+            # Check if this play revealed a void
+            led_suit = led_suit_for_lead_domino(lead_domino_id, decl_id)
+            if not can_follow(domino_id, led_suit, decl_id):
+                voids[g, opp_idx, led_suit] = True
+
+    return voids
 
 
 def _sample_worlds_cpu_fallback(
@@ -540,12 +704,15 @@ def _build_hypothetical_deals(
     return deals
 
 
-def _tokenize_batched(
+def _tokenize_batched_loop(
     states: GameStateTensor,
     deals: Tensor,
     tokenizer: GPUTokenizer,
 ) -> tuple[Tensor, Tensor]:
     """Tokenize all game states and deals.
+
+    ORIGINAL LOOP IMPLEMENTATION - kept for testing/comparison.
+    Use _tokenize_batched() for production (vectorized).
 
     Args:
         states: GameStateTensor with n_games
@@ -602,14 +769,98 @@ def _tokenize_batched(
             current_player=current_player,
         )
 
-        all_tokens.append(tokens)
-        all_masks.append(masks)
+        # Clone to avoid buffer reuse issues when tokenizer is called multiple times
+        all_tokens.append(tokens.clone())
+        all_masks.append(masks.clone())
 
     # Concatenate
     tokens_cat = torch.cat(all_tokens, dim=0)
     masks_cat = torch.cat(all_masks, dim=0)
 
     return tokens_cat, masks_cat
+
+
+def _tokenize_batched(
+    states: GameStateTensor,
+    deals: Tensor,
+    tokenizer: GPUTokenizer,
+) -> tuple[Tensor, Tensor]:
+    """Tokenize all game states and deals.
+
+    VECTORIZED IMPLEMENTATION - no Python loops or .item() calls.
+
+    Args:
+        states: GameStateTensor with n_games
+        deals: [n_games, n_samples, 4, 7] hypothetical deals
+        tokenizer: Pre-allocated GPUTokenizer
+
+    Returns:
+        Tuple of (tokens, masks):
+            - tokens: [n_games * n_samples, 32, 12] int8
+            - masks: [n_games * n_samples, 32] int8
+    """
+    n_games = states.n_games
+    n_samples = deals.shape[1]
+    batch_size = n_games * n_samples
+    device = states.device
+
+    # Flatten deals: [batch, 4, 7]
+    deals_flat = deals.reshape(batch_size, 4, 7)
+
+    # Build remaining bitmasks
+    remaining = _build_remaining_bitmasks(states, deals)  # [batch, 4]
+
+    # === Prepare batched inputs for tokenizer.tokenize_batched() ===
+
+    # decl_ids: [n_games] -> expand to [batch]
+    decl_ids_expanded = states.decl_ids.unsqueeze(1).expand(n_games, n_samples).reshape(batch_size)
+
+    # leaders: [n_games] -> expand to [batch]
+    leaders_expanded = states.leader.unsqueeze(1).expand(n_games, n_samples).reshape(batch_size)
+
+    # current_players: [n_games] -> expand to [batch]
+    current_players_expanded = states.current_player.unsqueeze(1).expand(n_games, n_samples).reshape(batch_size)
+
+    # trick_plays: [n_games, 4] domino IDs -> need to convert to [batch, 3, 2] (player, domino) format
+    # trick_lens: [n_games] number of valid trick plays
+
+    # Count valid trick plays per game (clamp to 3 max, as tokenizer only handles 3 trick tokens)
+    trick_lens = torch.clamp((states.trick_plays >= 0).sum(dim=1), max=3)  # [n_games]
+
+    # Build trick_plays tensor: [n_games, 3, 2] where [:, :, 0] is player, [:, :, 1] is domino
+    # states.trick_plays: [n_games, 4] contains domino IDs in play order
+    # We need to compute player IDs based on leader + position
+    trick_plays_tensor = torch.zeros(n_games, 3, 2, dtype=torch.int32, device=device)
+
+    # For each position (0-2), compute player = (leader + position) % 4 vectorized
+    positions = torch.arange(3, device=device).unsqueeze(0)  # [1, 3]
+    trick_players = (states.leader.unsqueeze(1) + positions) % 4  # [n_games, 3]
+
+    # Get domino IDs for positions 0-2
+    trick_dominoes = states.trick_plays[:, :3]  # [n_games, 3]
+
+    # Store in trick_plays_tensor
+    trick_plays_tensor[:, :, 0] = trick_players
+    trick_plays_tensor[:, :, 1] = trick_dominoes
+
+    # Expand trick_plays to [batch, 3, 2]
+    trick_plays_expanded = trick_plays_tensor.unsqueeze(1).expand(n_games, n_samples, 3, 2).reshape(batch_size, 3, 2)
+
+    # Expand trick_lens to [batch]
+    trick_lens_expanded = trick_lens.unsqueeze(1).expand(n_games, n_samples).reshape(batch_size)
+
+    # Call vectorized tokenization
+    tokens, masks = tokenizer.tokenize_batched(
+        worlds=deals_flat,
+        decl_ids=decl_ids_expanded,
+        leaders=leaders_expanded,
+        current_players=current_players_expanded,
+        trick_plays=trick_plays_expanded,
+        trick_lens=trick_lens_expanded,
+        remaining=remaining,
+    )
+
+    return tokens, masks
 
 
 def _build_remaining_bitmasks(

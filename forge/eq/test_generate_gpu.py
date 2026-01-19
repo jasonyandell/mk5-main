@@ -737,6 +737,316 @@ def test_build_hypothetical_deals_benchmark(device):
     print(f"Correctness verified: outputs match exactly", flush=True)
 
 
+def test_sample_worlds_vectorized(device):
+    """Verify vectorized _sample_worlds_batched matches original loop version."""
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _sample_worlds_batched, _sample_worlds_batched_loop
+    from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
+
+    # Test with various game configurations
+    test_cases = [
+        # (n_games, n_samples)
+        (1, 10),   # Single game
+        (4, 25),   # Multiple games
+        (8, 50),   # More games
+    ]
+
+    for n_games, n_samples in test_cases:
+        print(f"\nTesting n_games={n_games}, n_samples={n_samples}", flush=True)
+
+        # Create test game states
+        hands = [deal_from_seed(30000 + i) for i in range(n_games)]
+        decl_ids = [i % 10 for i in range(n_games)]
+        states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+        # Create sampler
+        sampler_loop = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+        sampler_vec = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+
+        # Run both implementations with same seed
+        torch.manual_seed(42)
+        if device == 'cuda':
+            torch.cuda.manual_seed(42)
+        result_loop = _sample_worlds_batched_loop(states, sampler_loop, n_samples)
+
+        torch.manual_seed(42)
+        if device == 'cuda':
+            torch.cuda.manual_seed(42)
+        result_vectorized = _sample_worlds_batched(states, sampler_vec, n_samples)
+
+        # Verify shapes match
+        assert result_loop.shape == result_vectorized.shape, \
+            f"Shape mismatch: {result_loop.shape} vs {result_vectorized.shape}"
+
+        print(f"  Shape: {result_loop.shape}", flush=True)
+
+        # Note: Due to randomness in sampling, exact match is not expected
+        # But we verify shapes and value ranges are correct
+        assert result_loop.min() >= -1, "Loop result has invalid min"
+        assert result_loop.max() < 28, "Loop result has invalid max"
+        assert result_vectorized.min() >= -1, "Vectorized result has invalid min"
+        assert result_vectorized.max() < 28, "Vectorized result has invalid max"
+
+        print(f"  Both implementations produce valid domino IDs", flush=True)
+
+    print(f"\nVectorized _sample_worlds_batched produces valid outputs for all {len(test_cases)} test cases", flush=True)
+
+
+def test_sample_worlds_benchmark(device):
+    """Benchmark vectorized vs loop _sample_worlds_batched.
+
+    Must complete in under 60 seconds total.
+    """
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _sample_worlds_batched, _sample_worlds_batched_loop
+    from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
+
+    n_games = 32
+    n_samples = 50
+    n_iterations = 3
+
+    print(f"\n=== _sample_worlds_batched Benchmark ===", flush=True)
+    print(f"Config: N={n_games} games, M={n_samples} samples, {n_iterations} iterations", flush=True)
+    print(f"Device: {device}", flush=True)
+
+    # Create test data
+    hands = [deal_from_seed(40000 + i) for i in range(n_games)]
+    decl_ids = [i % 10 for i in range(n_games)]
+    states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+    # Create samplers
+    sampler_loop = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+    sampler_vec = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+
+    # Warmup
+    _ = _sample_worlds_batched_loop(states, sampler_loop, n_samples)
+    _ = _sample_worlds_batched(states, sampler_vec, n_samples)
+    if device == 'cuda':
+        torch.cuda.synchronize()
+
+    # Benchmark loop version
+    loop_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _sample_worlds_batched_loop(states, sampler_loop, n_samples)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        loop_times.append(elapsed)
+
+    # Benchmark vectorized version
+    vec_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _sample_worlds_batched(states, sampler_vec, n_samples)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        vec_times.append(elapsed)
+
+    loop_mean = sum(loop_times) / n_iterations
+    vec_mean = sum(vec_times) / n_iterations
+    speedup = loop_mean / vec_mean if vec_mean > 0 else float('inf')
+
+    print(f"Loop version:       {loop_mean*1000:.2f}ms mean", flush=True)
+    print(f"Vectorized version: {vec_mean*1000:.2f}ms mean", flush=True)
+    print(f"Speedup: {speedup:.2f}x", flush=True)
+
+    # Verify both produce valid outputs
+    result_loop = _sample_worlds_batched_loop(states, sampler_loop, n_samples)
+    result_vec = _sample_worlds_batched(states, sampler_vec, n_samples)
+
+    assert result_loop.shape == result_vec.shape, "Shape mismatch!"
+    assert result_loop.min() >= -1 and result_loop.max() < 28, "Loop result invalid"
+    assert result_vec.min() >= -1 and result_vec.max() < 28, "Vectorized result invalid"
+
+    print(f"Correctness verified: both produce valid domino IDs", flush=True)
+
+    # Test should complete in under 60 seconds
+    total_time = sum(loop_times) + sum(vec_times)
+    assert total_time < 60, f"Benchmark took too long: {total_time:.2f}s"
+
+
+def test_tokenize_batched_vectorized(device):
+    """Verify vectorized _tokenize_batched matches original loop version."""
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _tokenize_batched, _tokenize_batched_loop, _build_hypothetical_deals
+    from forge.eq.tokenize_gpu import GPUTokenizer
+    from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
+
+    # Test with various game configurations
+    test_cases = [
+        # (n_games, n_samples)
+        (1, 10),   # Single game
+        (4, 25),   # Few games
+        (8, 50),   # Multiple games
+        (16, 32),  # Many games
+    ]
+
+    for n_games, n_samples in test_cases:
+        print(f"\nTesting n_games={n_games}, n_samples={n_samples}", flush=True)
+
+        # Create test game states with some trick plays
+        hands = [deal_from_seed(30000 + i) for i in range(n_games)]
+        decl_ids = [i % 10 for i in range(n_games)]
+        states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+        # Simulate a few plays to create non-empty trick_plays
+        # Apply 2-3 actions to each game
+        for step in range(3):
+            if not states.active_games().any():
+                break
+            legal_mask = states.legal_actions()
+            # Pick first legal action for each game
+            actions = torch.zeros(n_games, dtype=torch.long, device=device)
+            for g in range(n_games):
+                legal_indices = torch.nonzero(legal_mask[g], as_tuple=True)[0]
+                if len(legal_indices) > 0:
+                    actions[g] = legal_indices[0]
+            states = states.apply_actions(actions)
+
+        # Sample worlds
+        sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+        from forge.eq.generate_gpu import _sample_worlds_batched
+        worlds = _sample_worlds_batched(states, sampler, n_samples)
+
+        # Build hypothetical deals
+        deals = _build_hypothetical_deals(states, worlds)
+
+        # Create tokenizer
+        tokenizer = GPUTokenizer(max_batch=n_games * n_samples, device=device)
+
+        # Run both implementations
+        tokens_loop, masks_loop = _tokenize_batched_loop(states, deals, tokenizer)
+        tokens_vec, masks_vec = _tokenize_batched(states, deals, tokenizer)
+
+        # Verify shapes match
+        assert tokens_loop.shape == tokens_vec.shape, \
+            f"Token shape mismatch: {tokens_loop.shape} vs {tokens_vec.shape}"
+        assert masks_loop.shape == masks_vec.shape, \
+            f"Mask shape mismatch: {masks_loop.shape} vs {masks_vec.shape}"
+
+        # Verify values match exactly
+        tokens_match = torch.all(tokens_loop == tokens_vec)
+        masks_match = torch.all(masks_loop == masks_vec)
+
+        if not tokens_match:
+            # Find where they differ for debugging
+            diff_mask = tokens_loop != tokens_vec
+            diff_indices = torch.nonzero(diff_mask)
+            print(f"Token mismatch at indices: {diff_indices[:5]}", flush=True)
+            print(f"Loop values: {tokens_loop[diff_mask][:10]}", flush=True)
+            print(f"Vectorized values: {tokens_vec[diff_mask][:10]}", flush=True)
+
+        if not masks_match:
+            diff_mask = masks_loop != masks_vec
+            diff_indices = torch.nonzero(diff_mask)
+            print(f"Mask mismatch at indices: {diff_indices[:5]}", flush=True)
+            print(f"Loop values: {masks_loop[diff_mask][:10]}", flush=True)
+            print(f"Vectorized values: {masks_vec[diff_mask][:10]}", flush=True)
+
+        assert tokens_match, f"Token mismatch for config (n_games={n_games}, n_samples={n_samples})"
+        assert masks_match, f"Mask mismatch for config (n_games={n_games}, n_samples={n_samples})"
+
+    print(f"\nVectorized _tokenize_batched matches loop version for all {len(test_cases)} test cases", flush=True)
+
+
+def test_tokenize_batched_benchmark(device):
+    """Benchmark vectorized vs loop _tokenize_batched.
+
+    Must complete in under 60 seconds total.
+    """
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _tokenize_batched, _tokenize_batched_loop, _build_hypothetical_deals, _sample_worlds_batched
+    from forge.eq.tokenize_gpu import GPUTokenizer
+    from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
+
+    n_games = 32
+    n_samples = 50
+    n_iterations = 3
+
+    # Create test data
+    hands = [deal_from_seed(40000 + i) for i in range(n_games)]
+    decl_ids = [i % 10 for i in range(n_games)]
+    states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+    # Apply a few actions to create realistic game states with trick plays
+    for step in range(5):
+        if not states.active_games().any():
+            break
+        legal_mask = states.legal_actions()
+        actions = torch.zeros(n_games, dtype=torch.long, device=device)
+        for g in range(n_games):
+            legal_indices = torch.nonzero(legal_mask[g], as_tuple=True)[0]
+            if len(legal_indices) > 0:
+                actions[g] = legal_indices[0]
+        states = states.apply_actions(actions)
+
+    # Sample worlds and build deals
+    sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+    worlds = _sample_worlds_batched(states, sampler, n_samples)
+    deals = _build_hypothetical_deals(states, worlds)
+
+    # Create tokenizer
+    tokenizer = GPUTokenizer(max_batch=n_games * n_samples, device=device)
+
+    # Warmup
+    _ = _tokenize_batched_loop(states, deals, tokenizer)
+    _ = _tokenize_batched(states, deals, tokenizer)
+    if device == 'cuda':
+        torch.cuda.synchronize()
+
+    # Benchmark loop version
+    loop_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _tokenize_batched_loop(states, deals, tokenizer)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        loop_times.append(elapsed)
+
+    # Benchmark vectorized version
+    vec_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _tokenize_batched(states, deals, tokenizer)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        vec_times.append(elapsed)
+
+    loop_mean = sum(loop_times) / n_iterations
+    vec_mean = sum(vec_times) / n_iterations
+    speedup = loop_mean / vec_mean if vec_mean > 0 else float('inf')
+
+    print(f"\n=== _tokenize_batched Benchmark ===", flush=True)
+    print(f"Config: N={n_games} games, M={n_samples} samples, {n_iterations} iterations", flush=True)
+    print(f"Device: {device}", flush=True)
+    print(f"Loop version:       {loop_mean*1000:.2f}ms mean", flush=True)
+    print(f"Vectorized version: {vec_mean*1000:.2f}ms mean", flush=True)
+    print(f"Speedup: {speedup:.2f}x", flush=True)
+
+    # Verify correctness one more time
+    tokens_loop, masks_loop = _tokenize_batched_loop(states, deals, tokenizer)
+    tokens_vec, masks_vec = _tokenize_batched(states, deals, tokenizer)
+    assert torch.all(tokens_loop == tokens_vec), "Token mismatch!"
+    assert torch.all(masks_loop == masks_vec), "Mask mismatch!"
+    print(f"Correctness verified: outputs match exactly", flush=True)
+
+    # Test should complete in under 60 seconds
+    total_time = sum(loop_times) + sum(vec_times)
+    assert total_time < 60, f"Benchmark took too long: {total_time:.2f}s"
+
+
 if __name__ == '__main__':
     # Run tests with verbose output
     pytest.main([__file__, '-v', '-s'])
