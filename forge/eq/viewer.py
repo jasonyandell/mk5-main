@@ -248,10 +248,15 @@ class ViewState:
     """Current viewer state."""
 
     current_idx: int = 0
-    mode: str = "default"  # "default", "debug", "world"
+    mode: str = "default"  # "default", "debug", "world", "diagnostics"
     debug_data: dict | None = None  # Cached debug computation
     world_idx: int = 0  # Which world we're viewing (0 to n_worlds-1)
     n_worlds: int = 0  # Total number of sampled worlds
+    show_uniform: bool = False  # Toggle weighted vs uniform in debug mode (t42-64uj.7)
+
+
+# Exploration mode names (t42-64uj.7)
+EXPLORATION_MODE_NAMES = {0: "greedy", 1: "boltzmann", 2: "epsilon", 3: "blunder"}
 
 
 # =============================================================================
@@ -272,12 +277,22 @@ def render_default_mode(
     e_q_var: Tensor | None = None,
     u_mean: float = 0.0,
     u_max: float = 0.0,
+    # Posterior diagnostics (t42-64uj.7)
+    ess: float | None = None,
+    max_w: float | None = None,
+    # Exploration stats (t42-64uj.7)
+    exploration_mode: int | None = None,
+    q_gap: float | None = None,
 ) -> str:
     """Render default (fast) view with optional uncertainty display.
 
     Args:
         e_q_mean: E[Q] values in POINTS (NOT logits - do not softmax)
         e_q_var: Var[Q] in points² (optional)
+        ess: Effective sample size (optional, v2+ datasets)
+        max_w: Max posterior weight (optional, v2+ datasets)
+        exploration_mode: How this action was chosen (optional)
+        q_gap: Regret vs greedy action (optional)
     """
     lines = []
 
@@ -396,8 +411,216 @@ def render_default_mode(
         lines.append("")
         lines.append(f"State uncertainty: U_mean={u_mean:.2f}, U_max={u_max:.2f}")
 
+    # Posterior health + exploration (t42-64uj.7)
+    has_posterior = ess is not None or max_w is not None
+    has_exploration = exploration_mode is not None
+    if has_posterior or has_exploration:
+        lines.append("")
+        parts = []
+        if ess is not None:
+            # Color-code ESS: green if healthy (>50), yellow if low (10-50), red if critical (<10)
+            ess_str = f"ESS={ess:.1f}"
+            if ess < 10:
+                ess_str += " ⚠️"  # Critical
+            parts.append(ess_str)
+        if max_w is not None:
+            parts.append(f"max_w={max_w:.3f}")
+        if exploration_mode is not None:
+            mode_name = EXPLORATION_MODE_NAMES.get(exploration_mode, f"mode{exploration_mode}")
+            parts.append(f"action={mode_name}")
+        if q_gap is not None and q_gap > 0:
+            parts.append(f"q_gap={q_gap:.1f}pts")
+        lines.append("Posterior: " + " | ".join(parts))
+
     lines.append("─" * 80)
-    lines.append("[←/→] Nav  [j] Jump  [d] Debug details  [q] Quit")
+    lines.append("[←/→] Nav  [j] Jump  [d] Debug  [p] Params  [q] Quit")
+
+    return "\n".join(lines)
+
+
+# =============================================================================
+# Diagnostics mode (t42-64uj.7)
+# =============================================================================
+
+
+def render_diagnostics_mode(
+    idx: int,
+    total: int,
+    tokens: Tensor,
+    length: int,
+    e_q_mean: Tensor,
+    legal_mask: Tensor,
+    action_taken: int,
+    game_idx: int,
+    decision_idx: int,
+    # Uncertainty fields
+    e_q_var: Tensor | None = None,
+    u_mean: float = 0.0,
+    u_max: float = 0.0,
+    # Posterior diagnostics
+    ess: float | None = None,
+    max_w: float | None = None,
+    # Exploration stats
+    exploration_mode: int | None = None,
+    q_gap: float | None = None,
+    # Player/outcome
+    player: int | None = None,
+    actual_outcome: float | None = None,
+    # Dataset metadata
+    metadata: dict | None = None,
+) -> str:
+    """Render diagnostics panel showing posterior params and generation details.
+
+    This mode shows all the metadata that v2 datasets provide for debugging
+    silent failures in E[Q] computation.
+    """
+    lines = []
+
+    # Decode basic info
+    decoded = decode_transcript(tokens, length)
+    decl_id = decoded["decl_id"]
+    hand = decoded["hand"]
+    plays = decoded["plays"]
+    tricks = plays_to_tricks(plays)
+
+    complete_tricks = sum(1 for t in tricks if len(t) == 4)
+    trick_num = complete_tricks + 1
+
+    # Header
+    lines.append(
+        f"Example {idx + 1}/{total}  |  Game {game_idx}  |  Decision {decision_idx + 1}/28".ljust(55)
+        + "[DIAGNOSTICS]"
+    )
+    lines.append("═" * 80)
+
+    decl_name = DECLARATION_NAMES.get(decl_id, f"Decl {decl_id}")
+    lines.append(f"Declaration: {decl_name}".ljust(40) + f"Trick {trick_num} of 7")
+
+    # Hand (compact)
+    hand_strs = []
+    for i, (h, l) in enumerate(hand):
+        dom = domino_str(h, l)
+        if i == action_taken:
+            dom = f">{dom}<"
+        hand_strs.append(dom)
+    lines.append(f"Hand: {' '.join(hand_strs)}")
+    lines.append("─" * 80)
+
+    # === Per-Decision Diagnostics ===
+    lines.append("PER-DECISION DIAGNOSTICS")
+    lines.append("")
+
+    # Player info
+    if player is not None:
+        player_names_abs = ["P0 (Team0)", "P1 (Team1)", "P2 (Team0)", "P3 (Team1)"]
+        lines.append(f"  Decision maker: {player_names_abs[player]}")
+    if actual_outcome is not None:
+        lines.append(f"  Actual outcome: {actual_outcome:+.1f} pts (my_team - opp from here)")
+
+    lines.append("")
+
+    # Posterior health
+    lines.append("  Posterior Health:")
+    if ess is not None:
+        health = "healthy" if ess > 50 else ("low" if ess > 10 else "CRITICAL")
+        lines.append(f"    ESS = {ess:.1f}  ({health})")
+    else:
+        lines.append("    ESS = (not available)")
+    if max_w is not None:
+        # max_w > 0.5 means one world dominates
+        warning = "  ⚠️ one world dominates" if max_w > 0.5 else ""
+        lines.append(f"    max_w = {max_w:.4f}{warning}")
+    else:
+        lines.append("    max_w = (not available)")
+
+    lines.append("")
+
+    # Exploration stats
+    lines.append("  Exploration Stats:")
+    if exploration_mode is not None:
+        mode_name = EXPLORATION_MODE_NAMES.get(exploration_mode, f"unknown({exploration_mode})")
+        lines.append(f"    Selection mode: {mode_name}")
+    else:
+        lines.append("    Selection mode: (not available)")
+    if q_gap is not None:
+        lines.append(f"    Q-gap (regret): {q_gap:.2f} pts")
+    else:
+        lines.append("    Q-gap: (not available)")
+
+    lines.append("")
+
+    # Uncertainty
+    lines.append("  Uncertainty:")
+    if e_q_var is not None:
+        legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
+        if legal_indices:
+            legal_var = e_q_var[legal_indices]
+            var_min = legal_var.min().item()
+            var_max = legal_var.max().item()
+            lines.append(f"    Var[Q] range: [{var_min:.2f}, {var_max:.2f}] pts²")
+        lines.append(f"    U_mean = {u_mean:.2f} pts, U_max = {u_max:.2f} pts")
+    else:
+        lines.append("    (not available)")
+
+    lines.append("─" * 80)
+
+    # === Dataset-Level Params ===
+    lines.append("DATASET CONFIGURATION (from metadata)")
+    lines.append("")
+
+    if metadata:
+        version = metadata.get("version", "unknown")
+        lines.append(f"  Schema version: {version}")
+
+        # Posterior config
+        post_cfg = metadata.get("posterior", {})
+        if post_cfg:
+            lines.append("")
+            lines.append("  Posterior params:")
+            lines.append(f"    enabled: {post_cfg.get('enabled', False)}")
+            lines.append(f"    τ (tau): {post_cfg.get('tau', '?')}")
+            lines.append(f"    β (beta): {post_cfg.get('beta', '?')}")
+            lines.append(f"    K (window): {post_cfg.get('window_k', '?')}")
+            lines.append(f"    Δ (delta): {post_cfg.get('delta', '?')}")
+            lines.append(f"    adaptive_k: {post_cfg.get('adaptive_k_enabled', False)}")
+            lines.append(f"    rejuvenation: {post_cfg.get('rejuvenation_enabled', False)}")
+
+        # Exploration config
+        expl_cfg = metadata.get("exploration", {})
+        if expl_cfg:
+            lines.append("")
+            lines.append("  Exploration params:")
+            lines.append(f"    enabled: {expl_cfg.get('enabled', False)}")
+            lines.append(f"    temperature: {expl_cfg.get('temperature', '?')}")
+            lines.append(f"    use_boltzmann: {expl_cfg.get('use_boltzmann', False)}")
+            lines.append(f"    epsilon: {expl_cfg.get('epsilon', '?')}")
+            lines.append(f"    blunder_rate: {expl_cfg.get('blunder_rate', '?')}")
+            lines.append(f"    blunder_max_regret: {expl_cfg.get('blunder_max_regret', '?')}")
+
+        # Summary stats
+        summary = metadata.get("summary", {})
+        if summary:
+            lines.append("")
+            lines.append("  Dataset summary:")
+            q_range = summary.get("q_range", [None, None])
+            if q_range[0] is not None:
+                lines.append(f"    Q range: [{q_range[0]:.1f}, {q_range[1]:.1f}] pts")
+            ess_dist = summary.get("ess_distribution", {})
+            if ess_dist:
+                lines.append(
+                    f"    ESS: min={ess_dist.get('min', '?'):.1f}, "
+                    f"p50={ess_dist.get('p50', '?'):.1f}, "
+                    f"mean={ess_dist.get('mean', '?'):.1f}"
+                )
+            expl_stats = summary.get("exploration_stats", {})
+            if expl_stats:
+                lines.append(f"    Greedy rate: {expl_stats.get('greedy_rate', 0) * 100:.1f}%")
+                lines.append(f"    Mean q_gap: {expl_stats.get('mean_q_gap', 0):.2f} pts")
+    else:
+        lines.append("  (no metadata available - pre-v2 dataset?)")
+
+    lines.append("─" * 80)
+    lines.append("[←/→] Nav  [j] Jump  [p] Exit params  [d] Debug  [q] Quit")
 
     return "\n".join(lines)
 
@@ -646,11 +869,14 @@ def render_debug_mode(
     game_idx: int,
     decision_idx: int,
     debug_data: dict,
+    show_uniform: bool = False,
 ) -> str:
     """Render debug mode with oracle comparison.
 
     Args:
-        e_q_mean: E[Q] values in POINTS (NOT logits)
+        e_q_mean: E[Q] values in POINTS (NOT logits) - the weighted dataset values
+        debug_data: Contains 'oracle_avg' which is uniform E[Q] from fresh sampling
+        show_uniform: If True, show weighted vs uniform comparison (t42-64uj.7)
     """
     lines = []
 
@@ -744,41 +970,76 @@ def render_debug_mode(
     lines.append("─" * 80)
 
     # E[Q] vs Oracle comparison table (raw Q-values in points)
+    # oracle_avg is UNIFORM E[Q] computed via fresh sampling in debug mode
+    # e_q_mean is WEIGHTED E[Q] from the dataset
     oracle_avg = debug_data.get("oracle_avg", torch.zeros(7))
     oracle_ranking = debug_data.get("oracle_ranking", list(range(7)))
-
-    # Header - show raw Q-values (expected points)
-    lines.append("                    E[Q]      Oracle      Δ       Rank")
-    lines.append(f"                   (N={n_worlds})    (pts)     (pts)")
 
     # Get legal indices
     legal_indices = [i for i in range(len(hand)) if i < len(legal_mask) and legal_mask[i]]
 
-    # Sort by E[Q] value (descending) - raw points, not softmax
-    sorted_by_eq = sorted(
-        [(i, e_q_mean[i].item(), oracle_avg[i].item()) for i in legal_indices],
-        key=lambda x: x[1],
-        reverse=True,
-    )
+    # Header depends on comparison mode (t42-64uj.7)
+    if show_uniform:
+        # Weighted vs Uniform comparison
+        lines.append("             Weighted    Uniform      Δ(W-U)   Rank(U)")
+        lines.append(f"             (dataset)  (N={n_worlds})    (pts)")
 
-    for i, eq_val, oracle_val in sorted_by_eq:
-        h, l = hand[i]
-        dom = domino_str(h, l)
-        delta = eq_val - oracle_val
-        delta_str = f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
+        sorted_by_eq = sorted(
+            [(i, e_q_mean[i].item(), oracle_avg[i].item()) for i in legal_indices],
+            key=lambda x: x[1],
+            reverse=True,
+        )
 
-        # Find oracle rank
-        try:
-            oracle_rank = oracle_ranking.index(i) + 1
-        except ValueError:
-            oracle_rank = "?"
+        for i, weighted_val, uniform_val in sorted_by_eq:
+            h, l = hand[i]
+            dom = domino_str(h, l)
+            delta = weighted_val - uniform_val
+            delta_str = f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
 
-        # Format Q-values with sign
-        eq_str = f"+{eq_val:.1f}" if eq_val >= 0 else f"{eq_val:.1f}"
-        oracle_str = f"+{oracle_val:.1f}" if oracle_val >= 0 else f"{oracle_val:.1f}"
+            try:
+                uniform_rank = oracle_ranking.index(i) + 1
+            except ValueError:
+                uniform_rank = "?"
 
-        marker = " ← SELECTED" if i == action_taken else ""
-        lines.append(f"    {dom:>7}     {eq_str:>6}     {oracle_str:>6}   {delta_str:>6}       {oracle_rank}{marker}")
+            w_str = f"+{weighted_val:.1f}" if weighted_val >= 0 else f"{weighted_val:.1f}"
+            u_str = f"+{uniform_val:.1f}" if uniform_val >= 0 else f"{uniform_val:.1f}"
+
+            marker = " ← SELECTED" if i == action_taken else ""
+            lines.append(f"    {dom:>7}    {w_str:>6}     {u_str:>6}    {delta_str:>6}       {uniform_rank}{marker}")
+
+        # Show if weighted and uniform agree
+        w_best = max(legal_indices, key=lambda i: e_q_mean[i].item())
+        u_best = max(legal_indices, key=lambda i: oracle_avg[i].item())
+        agreement = "YES ✓" if w_best == u_best else "NO ⚠️"
+        lines.append("")
+        lines.append(f"Weighted/Uniform agree on best action: {agreement}")
+    else:
+        # Original: E[Q] vs fresh Oracle comparison
+        lines.append("                    E[Q]      Oracle      Δ       Rank")
+        lines.append(f"                   (N={n_worlds})    (pts)     (pts)")
+
+        sorted_by_eq = sorted(
+            [(i, e_q_mean[i].item(), oracle_avg[i].item()) for i in legal_indices],
+            key=lambda x: x[1],
+            reverse=True,
+        )
+
+        for i, eq_val, oracle_val in sorted_by_eq:
+            h, l = hand[i]
+            dom = domino_str(h, l)
+            delta = eq_val - oracle_val
+            delta_str = f"+{delta:.1f}" if delta >= 0 else f"{delta:.1f}"
+
+            try:
+                oracle_rank = oracle_ranking.index(i) + 1
+            except ValueError:
+                oracle_rank = "?"
+
+            eq_str = f"+{eq_val:.1f}" if eq_val >= 0 else f"{eq_val:.1f}"
+            oracle_str = f"+{oracle_val:.1f}" if oracle_val >= 0 else f"{oracle_val:.1f}"
+
+            marker = " ← SELECTED" if i == action_taken else ""
+            lines.append(f"    {dom:>7}     {eq_str:>6}     {oracle_str:>6}   {delta_str:>6}       {oracle_rank}{marker}")
 
     lines.append("")
 
@@ -848,7 +1109,8 @@ def render_debug_mode(
     lines.append(f"".ljust(50) + f"  {selected_count}/{total_valid}{warning}")
 
     lines.append("─" * 80)
-    lines.append("[←/→] Nav  [j] Jump  [w] Inspect worlds  [d] Exit debug  [q] Quit")
+    uniform_toggle = "[u] Weighted" if show_uniform else "[u] W/U cmp"
+    lines.append(f"[←/→] Nav  [j] Jump  [w] Worlds  {uniform_toggle}  [d] Exit  [q] Quit")
 
     return "\n".join(lines)
 
@@ -1068,6 +1330,19 @@ def run_viewer(dataset_path: str, start_example: int = 0):
     u_mean = data.get("u_mean")
     u_max = data.get("u_max")
     has_uncertainty = e_q_var is not None
+    # Posterior diagnostics (t42-64uj.3 / t42-64uj.7)
+    ess = data.get("ess")  # Effective sample size per decision
+    max_w = data.get("max_w")  # Max posterior weight per decision
+    has_posterior = ess is not None
+    # Exploration stats (t42-64uj.5 / t42-64uj.7)
+    exploration_mode = data.get("exploration_mode")  # 0=greedy, 1=boltzmann, 2=epsilon, 3=blunder
+    q_gap = data.get("q_gap")  # Regret in points
+    has_exploration = exploration_mode is not None
+    # Player and outcome (t42-26dl / t42-64uj.7)
+    player = data.get("player")  # Who made this decision (0-3)
+    actual_outcome = data.get("actual_outcome")  # Actual margin from here to end
+    # Metadata (t42-64uj.7)
+    metadata = data.get("metadata", {})
 
     total = len(tokens)
     state = ViewState(current_idx=start_example)
@@ -1098,6 +1373,15 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                 cur_e_q_var = e_q_var[idx] if has_uncertainty else None
                 cur_u_mean = u_mean[idx].item() if has_uncertainty else 0.0
                 cur_u_max = u_max[idx].item() if has_uncertainty else 0.0
+                # Posterior diagnostics (t42-64uj.7)
+                cur_ess = ess[idx].item() if has_posterior else None
+                cur_max_w = max_w[idx].item() if has_posterior else None
+                # Exploration stats (t42-64uj.7)
+                cur_exploration_mode = exploration_mode[idx].item() if has_exploration else None
+                cur_q_gap = q_gap[idx].item() if has_exploration else None
+                # Player and outcome (t42-64uj.7)
+                cur_player = player[idx].item() if player is not None else None
+                cur_actual_outcome = actual_outcome[idx].item() if actual_outcome is not None else None
 
                 # Render based on mode
                 if state.mode == "default":
@@ -1105,6 +1389,18 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                         idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
                         e_q_var=cur_e_q_var, u_mean=cur_u_mean, u_max=cur_u_max,
+                        ess=cur_ess, max_w=cur_max_w,
+                        exploration_mode=cur_exploration_mode, q_gap=cur_q_gap,
+                    )
+                elif state.mode == "diagnostics":
+                    text = render_diagnostics_mode(
+                        idx, total, cur_tokens, cur_length, cur_e_q_mean,
+                        cur_legal_mask, cur_action, cur_game, cur_decision,
+                        e_q_var=cur_e_q_var, u_mean=cur_u_mean, u_max=cur_u_max,
+                        ess=cur_ess, max_w=cur_max_w,
+                        exploration_mode=cur_exploration_mode, q_gap=cur_q_gap,
+                        player=cur_player, actual_outcome=cur_actual_outcome,
+                        metadata=metadata,
                     )
                 elif state.mode == "debug":
                     if state.debug_data is None:
@@ -1130,8 +1426,11 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                         idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
                         state.debug_data,
+                        show_uniform=state.show_uniform,
                     )
                 elif state.mode == "world":
+                    # debug_data is guaranteed to exist when in world mode
+                    assert state.debug_data is not None
                     text = render_world_mode(
                         idx, total, cur_tokens, cur_length, cur_e_q_mean,
                         cur_legal_mask, cur_action, cur_game, cur_decision,
@@ -1191,8 +1490,20 @@ def run_viewer(dataset_path: str, start_example: int = 0):
                     # Toggle debug mode
                     if state.mode == "default":
                         state.mode = "debug"
-                    elif state.mode in ("debug", "world"):
+                    elif state.mode in ("debug", "world", "diagnostics"):
                         state.mode = "default"
+
+                elif key == ord("p"):
+                    # Toggle diagnostics panel (t42-64uj.7)
+                    if state.mode == "default":
+                        state.mode = "diagnostics"
+                    elif state.mode == "diagnostics":
+                        state.mode = "default"
+
+                elif key == ord("u"):
+                    # Toggle weighted vs uniform display in debug mode (t42-64uj.7)
+                    if state.mode == "debug":
+                        state.show_uniform = not state.show_uniform
 
                 elif key == ord("w"):
                     # Enter world inspection (only from debug mode)
@@ -1211,12 +1522,20 @@ def run_viewer(dataset_path: str, start_example: int = 0):
             cur_e_q_var = e_q_var[idx] if has_uncertainty else None
             cur_u_mean = u_mean[idx].item() if has_uncertainty else 0.0
             cur_u_max = u_max[idx].item() if has_uncertainty else 0.0
+            # Posterior diagnostics (t42-64uj.7)
+            cur_ess = ess[idx].item() if has_posterior else None
+            cur_max_w = max_w[idx].item() if has_posterior else None
+            # Exploration stats (t42-64uj.7)
+            cur_exploration_mode = exploration_mode[idx].item() if has_exploration else None
+            cur_q_gap = q_gap[idx].item() if has_exploration else None
             print(
                 render_default_mode(
                     idx, total, tokens[idx], lengths[idx].item(),
                     e_q_mean[idx], legal_mask[idx], action_taken[idx].item(),
                     game_idx[idx].item(), decision_idx[idx].item(),
                     e_q_var=cur_e_q_var, u_mean=cur_u_mean, u_max=cur_u_max,
+                    ess=cur_ess, max_w=cur_max_w,
+                    exploration_mode=cur_exploration_mode, q_gap=cur_q_gap,
                 )
             )
 
