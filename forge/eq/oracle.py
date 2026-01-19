@@ -92,7 +92,7 @@ class Stage1Oracle:
     _local_indices = np.tile(np.arange(7, dtype=np.int32), 4)  # (28,)
     _player_for_token = _player_ids  # (28,)
 
-    def __init__(self, checkpoint_path: str | Path, device: str = "cuda", compile: bool = True):
+    def __init__(self, checkpoint_path: str | Path, device: str = "cuda", compile: bool = True, use_async: bool = True):
         """Load model from checkpoint.
 
         Args:
@@ -100,6 +100,8 @@ class Stage1Oracle:
             device: Device to load model on ("cuda", "cpu", "mps")
             compile: Whether to apply torch.compile optimization (default True).
                      Only applied on CUDA devices. Disable for testing/debugging.
+            use_async: Whether to use async CUDA streams for overlapped execution (default True).
+                       Only applies to CUDA devices. Requires pin_memory for host tensors.
         """
         # Load checkpoint directly, bypassing Lightning's on_load_checkpoint
         # which has RNG state compatibility issues. For inference we only need weights.
@@ -127,6 +129,36 @@ class Stage1Oracle:
         self.model.eval()
         self.model.to(device)
         self.device = device
+        self.use_async = use_async and device == "cuda"
+
+        # Pre-allocated buffers for tokenization (reused across calls)
+        self._token_buffer: np.ndarray | None = None
+        self._mask_buffer: np.ndarray | None = None
+        self._buffer_size: int = 0
+
+        # CUDA async pipeline (Phase 4: t42-tg2r)
+        # Use separate streams for H2D transfers and inference to overlap work
+        if self.use_async:
+            self.stream_h2d = torch.cuda.Stream()  # Host-to-device transfers
+            self.stream_compute = torch.cuda.Stream()  # Inference computation
+
+            # Double buffering: two sets of GPU tensors, alternate between them
+            # While GPU processes batch N, CPU prepares batch N+1
+            self._gpu_buffers: list[dict[str, Tensor]] = [
+                {
+                    'tokens': torch.empty((1, MAX_TOKENS, N_FEATURES), dtype=torch.int32, device=device),
+                    'masks': torch.empty((1, MAX_TOKENS), dtype=torch.int8, device=device),
+                    'current_player': torch.empty((1,), dtype=torch.long, device=device),
+                }
+                for _ in range(2)
+            ]
+            self._buffer_idx = 0  # Which buffer to use next
+
+            # Pinned host memory for fast H2D transfers
+            # Pre-allocate with reasonable default size (will grow if needed)
+            self._pinned_tokens: Tensor | None = None
+            self._pinned_masks: Tensor | None = None
+            self._pinned_size = 0
 
         # Apply torch.compile for GPU optimization (CUDA graph + reduced overhead)
         # Only compile on CUDA devices - CPU/MPS have compatibility issues
@@ -146,6 +178,77 @@ class Stage1Oracle:
             dummy_player = torch.zeros((1,), dtype=torch.long, device=device)
             with torch.inference_mode():
                 _ = self.model(dummy_tokens, dummy_masks, dummy_player)
+
+    def _get_pinned_buffers(self, n_worlds: int) -> tuple[Tensor, Tensor]:
+        """Get pinned host memory buffers for fast async H2D transfers.
+
+        Args:
+            n_worlds: Number of worlds to transfer
+
+        Returns:
+            Tuple of (pinned_tokens, pinned_masks) views into pinned memory
+
+        Design:
+            - Uses torch pinned memory instead of numpy for async transfers
+            - Allocates with headroom to avoid frequent reallocs
+            - Lazy initialization for compatibility with non-async mode
+        """
+        if not self.use_async:
+            raise RuntimeError("Pinned buffers only available in async mode")
+
+        if n_worlds > self._pinned_size:
+            # Allocate with headroom (2x or min 256) to avoid frequent reallocs
+            new_size = max(n_worlds, self._pinned_size * 2, 256)
+            # pin_memory=True enables fast DMA transfers, bypassing CPU caching
+            self._pinned_tokens = torch.empty(
+                (new_size, MAX_TOKENS, N_FEATURES),
+                dtype=torch.int32,
+                pin_memory=True
+            )
+            self._pinned_masks = torch.empty(
+                (new_size, MAX_TOKENS),
+                dtype=torch.int8,
+                pin_memory=True
+            )
+            self._pinned_size = new_size
+
+        # Return views into the pinned buffers
+        return (
+            self._pinned_tokens[:n_worlds],
+            self._pinned_masks[:n_worlds]
+        )
+
+    def _ensure_gpu_buffer_size(self, n_worlds: int, buffer_idx: int):
+        """Ensure GPU buffer can hold n_worlds.
+
+        Args:
+            n_worlds: Required capacity
+            buffer_idx: Which buffer (0 or 1) to resize
+        """
+        if not self.use_async:
+            raise RuntimeError("GPU buffers only available in async mode")
+
+        buf = self._gpu_buffers[buffer_idx]
+        current_size = buf['tokens'].shape[0]
+
+        if n_worlds > current_size:
+            # Allocate with headroom to avoid frequent reallocs
+            new_size = max(n_worlds, current_size * 2, 256)
+            buf['tokens'] = torch.empty(
+                (new_size, MAX_TOKENS, N_FEATURES),
+                dtype=torch.int32,
+                device=self.device
+            )
+            buf['masks'] = torch.empty(
+                (new_size, MAX_TOKENS),
+                dtype=torch.int8,
+                device=self.device
+            )
+            buf['current_player'] = torch.empty(
+                (new_size,),
+                dtype=torch.long,
+                device=self.device
+            )
 
     def query_batch(
         self,
@@ -175,6 +278,7 @@ class Stage1Oracle:
             - Caller should mask illegal moves with -inf before argmax
             - All N worlds must have same game state (decl, trick, etc.)
             - trick_plays uses domino_id (public info) for efficient batching
+            - With use_async=True, uses CUDA streams for overlapped execution
         """
         if not worlds:
             raise ValueError("worlds cannot be empty")
@@ -187,7 +291,7 @@ class Stage1Oracle:
         trick_plays = game_state_info.get('trick_plays', [])
         remaining = game_state_info['remaining']  # (N, 4) array
 
-        # Tokenize all worlds
+        # Tokenize all worlds (CPU work)
         tokens, masks = self._tokenize_worlds(
             worlds=worlds,
             decl_id=decl_id,
@@ -197,6 +301,11 @@ class Stage1Oracle:
             current_player=current_player,
         )
 
+        # Fast path: async mode with CUDA streams
+        if self.use_async:
+            return self._query_batch_async(tokens, masks, current_player, n_worlds)
+
+        # Fallback: synchronous mode
         # Move to device and run forward pass.
         # Keep tokens as int32 (Embedding accepts int32/int64), avoiding per-call dtype expansion on CPU.
         tokens = torch.from_numpy(tokens).to(self.device)
@@ -208,6 +317,116 @@ class Stage1Oracle:
 
         # Clone output to avoid CUDA graph tensor reuse issues with mode="reduce-overhead"
         return q_values.clone()
+
+    def _query_batch_async(
+        self,
+        tokens_np: np.ndarray,
+        masks_np: np.ndarray,
+        current_player: int,
+        n_worlds: int,
+    ) -> Tensor:
+        """Async variant using CUDA streams for overlapped execution.
+
+        Args:
+            tokens_np: Tokenized input (N, MAX_TOKENS, N_FEATURES) numpy array
+            masks_np: Attention masks (N, MAX_TOKENS) numpy array
+            current_player: Current player ID
+            n_worlds: Number of worlds
+
+        Returns:
+            Q-values tensor (N, 7) on GPU
+
+        Design (Phase 4 async pipeline):
+            1. Copy numpy → pinned host memory (no GPU wait)
+            2. Start async H2D transfer on stream_h2d
+            3. Wait for transfer, then run inference on stream_compute
+            4. Return result (caller decides when to sync)
+
+        Note: Full double-buffering requires pipelining multiple calls,
+        which would need API changes to expose "submit batch" + "wait batch".
+        For now, we get async H2D transfers with non_blocking=True.
+        """
+        # Get pinned host buffers (fast to access from both CPU and GPU)
+        pinned_tokens, pinned_masks = self._get_pinned_buffers(n_worlds)
+
+        # Copy from numpy to pinned memory (CPU-only, no GPU wait)
+        # This is fast because pinned memory is page-locked
+        pinned_tokens.copy_(torch.from_numpy(tokens_np))
+        pinned_masks.copy_(torch.from_numpy(masks_np))
+
+        # Get current GPU buffer (for double buffering in future)
+        buf_idx = self._buffer_idx
+        self._ensure_gpu_buffer_size(n_worlds, buf_idx)
+        buf = self._gpu_buffers[buf_idx]
+
+        # Slice to actual size
+        tokens_gpu = buf['tokens'][:n_worlds]
+        masks_gpu = buf['masks'][:n_worlds]
+        current_player_gpu = buf['current_player'][:n_worlds]
+
+        # Fill current_player (scalar broadcast, very cheap)
+        current_player_gpu.fill_(current_player)
+
+        # Use H2D stream for async transfers
+        with torch.cuda.stream(self.stream_h2d):
+            # non_blocking=True: Don't wait for previous ops to finish
+            # Returns immediately, GPU DMA runs in background
+            tokens_gpu.copy_(pinned_tokens, non_blocking=True)
+            masks_gpu.copy_(pinned_masks, non_blocking=True)
+
+        # Wait for H2D transfer to complete before inference
+        # This is necessary because inference depends on the data
+        self.stream_compute.wait_stream(self.stream_h2d)
+
+        # Run inference on compute stream
+        with torch.cuda.stream(self.stream_compute):
+            with torch.inference_mode():
+                q_values, _ = self.model(tokens_gpu, masks_gpu, current_player_gpu)
+
+        # Swap buffers for next call (enables future pipelining)
+        self._buffer_idx = 1 - self._buffer_idx
+
+        # Clone to avoid CUDA graph tensor reuse issues
+        # This implicitly syncs the compute stream (clone needs the data)
+        return q_values.clone()
+
+    def _get_buffers(self, n_worlds: int) -> tuple[np.ndarray, np.ndarray]:
+        """Get pre-allocated buffers, expanding if needed.
+
+        Args:
+            n_worlds: Number of worlds to tokenize
+
+        Returns:
+            Tuple of (tokens, masks) views into pre-allocated buffers
+
+        Design:
+            - Allocates buffers with headroom to avoid frequent reallocs
+            - Returns views into the buffer for the requested size
+            - Zeros out the portion being used for correctness
+            - Lazy initialization for compatibility with __new__ usage in tests
+        """
+        # Lazy initialization (for __new__ usage in tests)
+        if not hasattr(self, '_buffer_size'):
+            self._token_buffer = None
+            self._mask_buffer = None
+            self._buffer_size = 0
+
+        if n_worlds > self._buffer_size:
+            # Allocate with headroom (2x or min 128) to avoid frequent reallocs
+            new_size = max(n_worlds, self._buffer_size * 2, 128)
+            self._token_buffer = np.zeros((new_size, MAX_TOKENS, N_FEATURES), dtype=np.int32)
+            self._mask_buffer = np.zeros((new_size, MAX_TOKENS), dtype=np.int8)
+            self._buffer_size = new_size
+
+        # Return views into the pre-allocated buffers
+        tokens = self._token_buffer[:n_worlds]
+        masks = self._mask_buffer[:n_worlds]
+
+        # Zero out the portion we're using (critical for correctness)
+        tokens.fill(0)
+        masks.fill(0)
+
+        return tokens, masks
 
     def _tokenize_worlds(
         self,
@@ -244,9 +463,8 @@ class Stage1Oracle:
         # Normalize leader relative to current player
         normalized_leader = (leader - current_player + 4) % 4
 
-        # Initialize output arrays
-        tokens = np.zeros((n_worlds, MAX_TOKENS, N_FEATURES), dtype=np.int32)
-        masks = np.zeros((n_worlds, MAX_TOKENS), dtype=np.int8)
+        # Get pre-allocated buffers (reused across calls)
+        tokens, masks = self._get_buffers(n_worlds)
 
         # =====================================================================
         # Step 1: Per-decl domino feature lookup (28 dominoes × 5 features)
@@ -378,6 +596,11 @@ class Stage1Oracle:
             remaining=remaining,
         )
 
+        # Fast path: async mode with CUDA streams
+        if self.use_async:
+            return self._query_batch_multi_state_async(tokens, masks, actors, n_samples)
+
+        # Fallback: synchronous mode
         # Move to device and run forward pass (keep tokens as int32).
         tokens = torch.from_numpy(tokens).to(self.device)
         masks = torch.from_numpy(masks).to(self.device)
@@ -387,6 +610,62 @@ class Stage1Oracle:
             q_values, _ = self.model(tokens, masks, actors_tensor)
 
         # Clone output to avoid CUDA graph tensor reuse issues with mode="reduce-overhead"
+        return q_values.clone()
+
+    def _query_batch_multi_state_async(
+        self,
+        tokens_np: np.ndarray,
+        masks_np: np.ndarray,
+        actors_np: np.ndarray,
+        n_samples: int,
+    ) -> Tensor:
+        """Async variant of multi-state query using CUDA streams.
+
+        Args:
+            tokens_np: Tokenized input (N, MAX_TOKENS, N_FEATURES) numpy array
+            masks_np: Attention masks (N, MAX_TOKENS) numpy array
+            actors_np: Actor IDs (N,) numpy array
+            n_samples: Number of samples
+
+        Returns:
+            Q-values tensor (N, 7) on GPU
+        """
+        # Get pinned host buffers
+        pinned_tokens, pinned_masks = self._get_pinned_buffers(n_samples)
+
+        # Copy numpy → pinned memory (CPU-only)
+        pinned_tokens.copy_(torch.from_numpy(tokens_np))
+        pinned_masks.copy_(torch.from_numpy(masks_np))
+
+        # Actors need pinned memory too
+        # Create pinned tensor directly from numpy (small array, ok to allocate)
+        pinned_actors = torch.from_numpy(actors_np).pin_memory()
+
+        # Get GPU buffer
+        buf_idx = self._buffer_idx
+        self._ensure_gpu_buffer_size(n_samples, buf_idx)
+        buf = self._gpu_buffers[buf_idx]
+
+        tokens_gpu = buf['tokens'][:n_samples]
+        masks_gpu = buf['masks'][:n_samples]
+        actors_gpu = buf['current_player'][:n_samples]  # Reuse current_player buffer for actors
+
+        # Async H2D transfers
+        with torch.cuda.stream(self.stream_h2d):
+            tokens_gpu.copy_(pinned_tokens, non_blocking=True)
+            masks_gpu.copy_(pinned_masks, non_blocking=True)
+            actors_gpu.copy_(pinned_actors.to(dtype=torch.long), non_blocking=True)
+
+        # Wait for transfers, then compute
+        self.stream_compute.wait_stream(self.stream_h2d)
+
+        with torch.cuda.stream(self.stream_compute):
+            with torch.inference_mode():
+                q_values, _ = self.model(tokens_gpu, masks_gpu, actors_gpu)
+
+        # Swap buffers
+        self._buffer_idx = 1 - self._buffer_idx
+
         return q_values.clone()
 
     def _tokenize_worlds_multi_state(
@@ -405,9 +684,8 @@ class Stage1Oracle:
         """
         n_samples = len(worlds)
 
-        # Initialize output arrays
-        tokens = np.zeros((n_samples, MAX_TOKENS, N_FEATURES), dtype=np.int32)
-        masks = np.zeros((n_samples, MAX_TOKENS), dtype=np.int8)
+        # Get pre-allocated buffers (reused across calls)
+        tokens, masks = self._get_buffers(n_samples)
 
         domino_features = self._domino_features_by_decl[decl_id]
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import torch
 from torch import Tensor
 
@@ -44,33 +43,27 @@ def _reduce_world_q_values(
     if not my_hand:
         return torch.empty((0,), dtype=torch.float32), torch.empty((0,), dtype=torch.float32)
 
-    # Move once to CPU to avoid per-element CUDA synchronization.
-    q_cpu = all_q_values.detach().to(device="cpu", dtype=torch.float32)
-    w_cpu = weights.detach().to(device="cpu", dtype=torch.float32)
+    # KEY INSIGHT: The acting player's initial hand is world-invariant across all N sampled worlds.
+    # All worlds share the same initial hand for the actor, so gather indices are identical.
+    # Compute them ONCE from hypothetical_deals[0][player] instead of building (N, K) index tensor.
+    initial_hand = hypothetical_deals[0][player]  # World-invariant for actor!
 
-    # Build gather indices: for each world, map each remaining-hand domino to its initial local_idx.
-    # Vectorized using numpy: extract player's sorted initial hands (N, 7) and use broadcasting
-    # with searchsorted to find the local index of each domino in my_hand within each world.
-    initial_hands_array = np.array(
-        [[initial_hands[player][i] for i in range(7)] for initial_hands in hypothetical_deals],
-        dtype=np.int32,
-    )  # (N, 7)
-    my_hand_array = np.array(my_hand, dtype=np.int32)  # (len(my_hand),)
+    # Build gather indices: map each domino in my_hand to its position in initial_hand
+    gather_idx = torch.tensor(
+        [initial_hand.index(d) for d in my_hand],
+        device=all_q_values.device,
+        dtype=torch.long,
+    )  # (K,) where K = len(my_hand)
 
-    # Use equality comparison to find indices: for each world, compare initial_hand with my_hand.
-    # Since initial hands are sorted and contain all dominoes in my_hand, argmax on equality gives local_idx.
-    gather_idx = torch.from_numpy(
-        np.argmax(
-            initial_hands_array[:, None, :] == my_hand_array[None, :, None],
-            axis=2,
-        ).astype(np.int64)
-    )  # (N, len(my_hand))
+    # Gather Q-values for remaining hand positions, staying on GPU
+    q_remaining = all_q_values[:, gather_idx]  # (N, K) - GPU tensor
 
-    q_for_my = q_cpu.gather(dim=1, index=gather_idx)  # (N, len(my_hand))
-    w = w_cpu.unsqueeze(1)  # (N, 1)
+    # Weighted reduction on GPU
+    w = weights.unsqueeze(1)  # (N, 1)
+    mean = (w * q_remaining).sum(dim=0)  # (K,) - GPU
+    mean2 = (w * q_remaining ** 2).sum(dim=0)  # (K,) - GPU
+    var = (mean2 - mean * mean).clamp(min=0.0)  # (K,) - GPU
 
-    mean = (w * q_for_my).sum(dim=0)
-    mean2 = (w * (q_for_my * q_for_my)).sum(dim=0)
-    var = (mean2 - mean * mean).clamp(min=0.0)
-    return mean, var
+    # Only transfer final results (K floats, typically ≤7) to CPU
+    return mean.cpu(), var.cpu()
 
