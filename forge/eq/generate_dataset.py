@@ -645,11 +645,6 @@ Examples:
     else:
         log("Exploration policy: OFF (greedy)")
 
-    if args.smc:
-        log("World marginalization: SMC (uniform, hard constraints)")
-    else:
-        log("World marginalization: per-decision resampling")
-
     # Check GPU - fail fast if CUDA requested but unavailable
     if args.device == "cuda":
         if not torch.cuda.is_available():
