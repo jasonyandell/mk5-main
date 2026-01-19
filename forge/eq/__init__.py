@@ -13,13 +13,16 @@ from .generate import (
 )
 from .oracle import Stage1Oracle
 from .sampling import sample_consistent_worlds
+from .tokenize_gpu import GPUTokenizer, PastStatesGPU
 from .transcript_tokenize import tokenize_transcript
 from .voids import infer_voids
 
 __all__ = [
     "DecisionRecord",
+    "GPUTokenizer",
     "GameRecord",
     "GameState",
+    "PastStatesGPU",
     "Stage1Oracle",
     "generate_eq_game",
     "generate_eq_games_batched",

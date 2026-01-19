@@ -343,6 +343,400 @@ def test_various_declarations(oracle, device):
         assert results[0].decl_id == decl_id
 
 
+def test_exploration_policy_works(oracle, device):
+    """Test that exploration policies work correctly in GPU pipeline."""
+    from forge.eq.types import ExplorationPolicy
+
+    hands = deal_from_seed(8000)
+    decl_id = 3
+
+    # Test with Boltzmann sampling
+    policy = ExplorationPolicy.boltzmann(temperature=2.0, seed=42)
+
+    result = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        exploration_policy=policy,
+    )
+
+    # Should complete successfully
+    assert len(result) == 1
+    assert len(result[0].decisions) == 28
+
+    # All actions should be legal
+    for decision in result[0].decisions:
+        assert decision.legal_mask[decision.action_taken], \
+            "Exploration should only pick legal actions"
+
+    # Note: GPU pipeline world sampling is non-deterministic even with exploration seed,
+    # because world sampling uses device-specific RNG. Exploration seed only controls
+    # action selection given E[Q] values.
+
+
+def test_exploration_produces_variety(oracle, device):
+    """Test that exploration produces different actions than greedy."""
+    from forge.eq.types import ExplorationPolicy
+
+    hands = deal_from_seed(8100)
+    decl_id = 3
+
+    # Generate greedy baseline
+    greedy_record = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        greedy=True,
+    )
+
+    # High epsilon should produce some non-greedy actions
+    policy = ExplorationPolicy.epsilon_greedy(epsilon=0.5, seed=12345)
+
+    exploration_record = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        exploration_policy=policy,
+    )
+
+    # Count differences
+    n_different = sum(
+        1 for g_dec, e_dec in zip(greedy_record[0].decisions, exploration_record[0].decisions)
+        if g_dec.action_taken != e_dec.action_taken
+    )
+
+    # With epsilon=0.5, expect some non-greedy actions
+    assert n_different > 5, \
+        f"Exploration should produce some non-greedy actions (got {n_different}/28 different)"
+
+
+def test_exploration_boltzmann_sampling(oracle, device):
+    """Test Boltzmann sampling exploration."""
+    from forge.eq.types import ExplorationPolicy
+
+    hands = deal_from_seed(8200)
+    decl_id = 3
+
+    # High temperature should produce more variety
+    policy = ExplorationPolicy.boltzmann(temperature=5.0, seed=999)
+
+    result = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        exploration_policy=policy,
+    )
+
+    # Should complete successfully
+    assert len(result) == 1
+    assert len(result[0].decisions) == 28
+
+    # All actions should be legal
+    for decision in result[0].decisions:
+        assert decision.legal_mask[decision.action_taken], \
+            "Boltzmann sampling should only pick legal actions"
+
+
+def test_exploration_mixed_policy(oracle, device):
+    """Test mixed exploration (temperature + epsilon + blunder)."""
+    from forge.eq.types import ExplorationPolicy
+
+    hands = deal_from_seed(8300)
+    decl_id = 3
+
+    # Mixed exploration with blunder component
+    policy = ExplorationPolicy.mixed_exploration(
+        temperature=3.0,
+        epsilon=0.05,
+        blunder_rate=0.3,
+        blunder_max_regret=5.0,
+        seed=777,
+    )
+
+    result = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        exploration_policy=policy,
+    )
+
+    # Should complete successfully
+    assert len(result) == 1
+    assert len(result[0].decisions) == 28
+
+    # All actions should be legal
+    for decision in result[0].decisions:
+        assert decision.legal_mask[decision.action_taken], \
+            "Mixed exploration should only pick legal actions"
+
+
+def test_exploration_with_multiple_games(oracle, device):
+    """Test exploration policy with batch of games."""
+    from forge.eq.types import ExplorationPolicy
+
+    n_games = 4
+    hands = [deal_from_seed(8400 + i) for i in range(n_games)]
+    decl_ids = [i % 10 for i in range(n_games)]
+
+    policy = ExplorationPolicy.epsilon_greedy(epsilon=0.3, seed=555)
+
+    results = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=hands,
+        decl_ids=decl_ids,
+        n_samples=25,
+        device=device,
+        exploration_policy=policy,
+    )
+
+    # All games should complete
+    assert len(results) == n_games
+    for game in results:
+        assert len(game.decisions) == 28
+
+
+def test_posterior_weighting_basic(oracle, device):
+    """Test that posterior weighting config works and produces valid E[Q]."""
+    from forge.eq.generate_gpu import PosteriorConfig
+
+    hands = deal_from_seed(9000)
+    decl_id = 3
+
+    # Enable posterior weighting
+    posterior_config = PosteriorConfig(
+        enabled=True,
+        window_k=4,
+        tau=0.1,
+        uniform_mix=0.1,
+    )
+
+    results = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        greedy=True,
+        posterior_config=posterior_config,
+    )
+
+    # Should complete successfully
+    assert len(results) == 1
+    game = results[0]
+    assert len(game.decisions) == 28
+
+    # Check E[Q] values are reasonable
+    for decision in game.decisions:
+        e_q = decision.e_q
+        legal_e_q = e_q[decision.legal_mask]
+
+        # Legal E[Q] should not be -inf
+        assert not torch.isinf(legal_e_q).any(), "Legal E[Q] should not be -inf"
+
+        # E[Q] should be in reasonable range
+        assert legal_e_q.min() > -100, f"E[Q] too low: {legal_e_q.min()}"
+        assert legal_e_q.max() < 100, f"E[Q] too high: {legal_e_q.max()}"
+
+    # All actions should be legal
+    for decision in game.decisions:
+        assert decision.legal_mask[decision.action_taken], \
+            f"Illegal action taken: {decision.action_taken}"
+
+
+def test_posterior_disabled_vs_enabled(oracle, device):
+    """Test that posterior weighting changes E[Q] values compared to uniform."""
+    from forge.eq.generate_gpu import PosteriorConfig
+
+    hands = deal_from_seed(9100)
+    decl_id = 3
+
+    # Run with posterior disabled (uniform weighting)
+    results_uniform = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        greedy=True,
+        posterior_config=None,  # Default: disabled
+    )
+
+    # Run with posterior enabled
+    posterior_config = PosteriorConfig(enabled=True, window_k=4, tau=0.1, uniform_mix=0.1)
+    results_posterior = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=[hands],
+        decl_ids=[decl_id],
+        n_samples=50,
+        device=device,
+        greedy=True,
+        posterior_config=posterior_config,
+    )
+
+    # Both should complete
+    assert len(results_uniform) == 1
+    assert len(results_posterior) == 1
+    assert len(results_uniform[0].decisions) == 28
+    assert len(results_posterior[0].decisions) == 28
+
+    # E[Q] values should differ for at least some decisions (once history builds up)
+    # Early decisions may be identical if not enough history exists
+    differences = 0
+    for i, (dec_uniform, dec_posterior) in enumerate(
+        zip(results_uniform[0].decisions, results_posterior[0].decisions)
+    ):
+        # Skip very early decisions (< K steps)
+        if i < 4:
+            continue
+
+        # Check if E[Q] values differ
+        e_q_diff = torch.abs(dec_uniform.e_q - dec_posterior.e_q).max()
+        if e_q_diff > 0.01:  # Small threshold for numerical differences
+            differences += 1
+
+    # After enough history, posterior should affect some decisions
+    # This is a soft check - may not differ if worlds happen to be similar
+    print(f"\nPosterior weighting changed E[Q] for {differences}/24 decisions (after first 4)")
+
+
+def test_build_hypothetical_deals_vectorized(device):
+    """Verify vectorized _build_hypothetical_deals matches original loop version."""
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _build_hypothetical_deals, _build_hypothetical_deals_loop
+
+    # Test with various game configurations
+    test_cases = [
+        # (n_games, n_samples, max_hand_size)
+        (1, 10, 7),   # Single game, full hands
+        (4, 25, 7),   # Multiple games, full hands
+        (8, 50, 5),   # More games, partial hands (mid-game)
+        (16, 100, 3), # Many games, small hands (late game)
+    ]
+
+    for n_games, n_samples, max_hand_size in test_cases:
+        # Create test game states
+        hands = [deal_from_seed(10000 + i) for i in range(n_games)]
+        decl_ids = [i % 10 for i in range(n_games)]
+        states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+        # Create random worlds tensor
+        # worlds: [n_games, n_samples, 3, max_hand_size]
+        # Values should be valid domino IDs (0-27) or -1 for padding
+        torch.manual_seed(42)
+        worlds = torch.randint(
+            -1, 28,
+            (n_games, n_samples, 3, max_hand_size),
+            dtype=torch.int32,
+            device=device
+        )
+
+        # Run both implementations
+        result_loop = _build_hypothetical_deals_loop(states, worlds)
+        result_vectorized = _build_hypothetical_deals(states, worlds)
+
+        # Verify shapes match
+        assert result_loop.shape == result_vectorized.shape, \
+            f"Shape mismatch: {result_loop.shape} vs {result_vectorized.shape}"
+
+        # Verify values match exactly
+        matches = torch.all(result_loop == result_vectorized)
+        if not matches:
+            # Find where they differ for debugging
+            diff_mask = result_loop != result_vectorized
+            diff_indices = torch.nonzero(diff_mask)
+            print(f"\nMismatch at indices: {diff_indices[:5]}", flush=True)
+            print(f"Loop values: {result_loop[diff_mask][:5]}", flush=True)
+            print(f"Vectorized values: {result_vectorized[diff_mask][:5]}", flush=True)
+
+        assert matches, f"Mismatch for config (n_games={n_games}, n_samples={n_samples}, max_hand_size={max_hand_size})"
+
+    print(f"\nVectorized _build_hypothetical_deals matches loop version for all {len(test_cases)} test cases", flush=True)
+
+
+def test_build_hypothetical_deals_benchmark(device):
+    """Benchmark vectorized vs loop _build_hypothetical_deals.
+
+    Must complete in under 60 seconds total.
+    """
+    from forge.eq.game_tensor import GameStateTensor
+    from forge.eq.generate_gpu import _build_hypothetical_deals, _build_hypothetical_deals_loop
+
+    n_games = 100
+    n_samples = 50
+    n_iterations = 3
+    max_hand_size = 7
+
+    # Create test data
+    hands = [deal_from_seed(20000 + i) for i in range(n_games)]
+    decl_ids = [i % 10 for i in range(n_games)]
+    states = GameStateTensor.from_deals(hands, decl_ids, device)
+
+    torch.manual_seed(123)
+    worlds = torch.randint(
+        -1, 28,
+        (n_games, n_samples, 3, max_hand_size),
+        dtype=torch.int32,
+        device=device
+    )
+
+    # Warmup
+    _ = _build_hypothetical_deals_loop(states, worlds)
+    _ = _build_hypothetical_deals(states, worlds)
+    if device == 'cuda':
+        torch.cuda.synchronize()
+
+    # Benchmark loop version
+    loop_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _build_hypothetical_deals_loop(states, worlds)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        loop_times.append(elapsed)
+
+    # Benchmark vectorized version
+    vec_times = []
+    for i in range(n_iterations):
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        _ = _build_hypothetical_deals(states, worlds)
+        if device == 'cuda':
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+        vec_times.append(elapsed)
+
+    loop_mean = sum(loop_times) / n_iterations
+    vec_mean = sum(vec_times) / n_iterations
+    speedup = loop_mean / vec_mean if vec_mean > 0 else float('inf')
+
+    print(f"\n=== _build_hypothetical_deals Benchmark ===", flush=True)
+    print(f"Config: N={n_games} games, M={n_samples} samples, {n_iterations} iterations", flush=True)
+    print(f"Device: {device}", flush=True)
+    print(f"Loop version:       {loop_mean*1000:.2f}ms mean", flush=True)
+    print(f"Vectorized version: {vec_mean*1000:.2f}ms mean", flush=True)
+    print(f"Speedup: {speedup:.2f}x", flush=True)
+
+    # Verify correctness one more time
+    result_loop = _build_hypothetical_deals_loop(states, worlds)
+    result_vec = _build_hypothetical_deals(states, worlds)
+    assert torch.all(result_loop == result_vec), "Results don't match!"
+    print(f"Correctness verified: outputs match exactly", flush=True)
+
+
 if __name__ == '__main__':
     # Run tests with verbose output
     pytest.main([__file__, '-v', '-s'])

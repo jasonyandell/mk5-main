@@ -29,13 +29,36 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import numpy as np
 import torch
 from torch import Tensor
 
 from forge.eq.game_tensor import GameStateTensor
+from forge.eq.posterior_gpu import (
+    compute_legal_masks_gpu,
+    compute_posterior_weights_gpu,
+    reconstruct_past_states_gpu,
+)
 from forge.eq.sampling_gpu import WorldSampler
 from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
 from forge.eq.tokenize_gpu import GPUTokenizer
+from forge.eq.types import ExplorationPolicy
+
+
+@dataclass
+class PosteriorConfig:
+    """Configuration for posterior weighting in E[Q] computation.
+
+    Args:
+        enabled: Whether to use posterior weighting (default: False)
+        window_k: Number of past steps to use for weighting (default: 4)
+        tau: Temperature for softmax over Q-values (default: 0.1)
+        uniform_mix: Uniform mixture coefficient for robustness (default: 0.1)
+    """
+    enabled: bool = False
+    window_k: int = 4
+    tau: float = 0.1
+    uniform_mix: float = 0.1
 
 
 @dataclass
@@ -67,6 +90,8 @@ def generate_eq_games_gpu(
     device: str = 'cuda',
     greedy: bool = True,
     use_mrv_sampler: bool = True,
+    exploration_policy: ExplorationPolicy | None = None,
+    posterior_config: PosteriorConfig | None = None,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -79,6 +104,10 @@ def generate_eq_games_gpu(
         greedy: If True, always pick argmax(E[Q]). If False, sample from softmax.
         use_mrv_sampler: If True (default), use MRV-based sampler (guaranteed valid).
                         If False, use rejection sampling (faster but may fall back to CPU).
+        exploration_policy: Optional exploration policy for stochastic action selection.
+                          If provided, overrides greedy parameter.
+        posterior_config: Optional config for posterior weighting. If provided and enabled,
+                         uses past K steps to reweight worlds before computing E[Q].
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -95,6 +124,15 @@ def generate_eq_games_gpu(
         device = 'cpu'
 
     n_games = len(hands)
+
+    # Initialize RNG for exploration (if enabled)
+    if exploration_policy is not None:
+        if exploration_policy.seed is not None:
+            rng = np.random.default_rng(exploration_policy.seed)
+        else:
+            rng = np.random.default_rng()
+    else:
+        rng = None
 
     # Initialize GPU state
     states = GameStateTensor.from_deals(hands, decl_ids, device)
@@ -123,15 +161,27 @@ def generate_eq_games_gpu(
         # 4. Model forward pass (single batch)
         q_values = _query_model(model, tokens, masks, states, n_samples, device)
 
-        # 5. Reduce to E[Q] per game
-        e_q = q_values.view(n_games, n_samples, 7).mean(dim=1)  # [n_games, 7]
+        # 5. Reduce to E[Q] per game (with optional posterior weighting)
+        if posterior_config and posterior_config.enabled:
+            e_q = _compute_posterior_weighted_eq(
+                states=states,
+                worlds=worlds,
+                q_values=q_values,
+                n_samples=n_samples,
+                model=model,
+                tokenizer=tokenizer,
+                posterior_config=posterior_config,
+                device=device,
+            )
+        else:
+            e_q = q_values.view(n_games, n_samples, 7).mean(dim=1)  # [n_games, 7]
 
         # Move e_q to states device (in case model is on different device)
         if e_q.device != states.hands.device:
             e_q = e_q.to(states.hands.device)
 
-        # 6. Select actions (greedy or sampled)
-        actions = _select_actions(states, e_q, greedy)
+        # 6. Select actions (greedy, sampled, or exploration)
+        actions = _select_actions(states, e_q, greedy, exploration_policy, rng)
 
         # 7. Record decisions
         _record_decisions(states, e_q, actions, all_decisions)
@@ -359,11 +409,14 @@ def _infer_voids_gpu(states: GameStateTensor, game_idx: int) -> dict[int, set[in
     return voids
 
 
-def _build_hypothetical_deals(
+def _build_hypothetical_deals_loop(
     states: GameStateTensor,
     worlds: Tensor,
 ) -> Tensor:
     """Reconstruct hypothetical full deals from current hands + sampled opponents.
+
+    ORIGINAL LOOP IMPLEMENTATION - kept for testing/comparison.
+    Use _build_hypothetical_deals() for production (vectorized).
 
     Args:
         states: GameStateTensor with n_games
@@ -402,6 +455,87 @@ def _build_hypothetical_deals(
             hand_data = worlds[g, :, opp_idx, :]  # [n_samples, max_hand_size]
             copy_size = min(max_hand_size, 7)
             deals[g, :, opp_player, :copy_size] = hand_data[:, :copy_size]
+
+    return deals
+
+
+def _build_hypothetical_deals(
+    states: GameStateTensor,
+    worlds: Tensor,
+) -> Tensor:
+    """Reconstruct hypothetical full deals from current hands + sampled opponents.
+
+    VECTORIZED IMPLEMENTATION - no Python loops or .item() calls.
+
+    Args:
+        states: GameStateTensor with n_games
+        worlds: [n_games, n_samples, 3, max_hand_size] opponent hands (padded with -1)
+
+    Returns:
+        [n_games, n_samples, 4, 7] full deals
+
+    Note: Reconstructs initial hands by combining:
+        - Current player's actual hand (same across all samples)
+        - Sampled opponent hands (different per sample)
+        - Both may have variable sizes (padded with -1)
+    """
+    n_games = states.n_games
+    n_samples = worlds.shape[1]
+    max_hand_size = worlds.shape[3]
+    device = states.device
+    current_players = states.current_player.long()  # [N]
+
+    # Initialize output
+    deals = torch.full((n_games, n_samples, 4, 7), -1, dtype=torch.int32, device=device)
+
+    # === Step 1: Scatter current player's hand into correct position ===
+    # my_hands[g] = states.hands[g, current_players[g], :]
+    # Use gather to get each game's current player's hand
+    player_idx_for_hands = current_players.view(n_games, 1, 1).expand(n_games, 1, 7)  # [N, 1, 7]
+    my_hands = torch.gather(states.hands, dim=1, index=player_idx_for_hands).squeeze(1)  # [N, 7]
+
+    # Convert to int32 to match output dtype (states.hands is int8)
+    my_hands = my_hands.to(torch.int32)
+
+    # Expand my_hands for all samples: [N, 7] -> [N, M, 7]
+    my_hands_expanded = my_hands.unsqueeze(1).expand(n_games, n_samples, 7)  # [N, M, 7]
+
+    # Scatter my_hands into deals at position current_players[g] for each game
+    # deals[g, :, current_players[g], :] = my_hands_expanded[g, :, :]
+    # Use scatter_ along dim=2 (player dimension)
+    scatter_idx = current_players.view(n_games, 1, 1, 1).expand(n_games, n_samples, 1, 7)  # [N, M, 1, 7]
+    deals.scatter_(dim=2, index=scatter_idx, src=my_hands_expanded.unsqueeze(2))  # scatter at player dim
+
+    # === Step 2: Compute opponent player indices without loops ===
+    # opp_players[g, i] = (current_players[g] + i + 1) % 4 for i in 0,1,2
+    offsets = torch.arange(1, 4, device=device).unsqueeze(0)  # [1, 3]
+    opp_players = (current_players.unsqueeze(1) + offsets) % 4  # [N, 3]
+
+    # === Step 3: Scatter opponent hands into correct positions ===
+    # For each opponent index (0, 1, 2), scatter worlds[:, :, opp_idx, :] to deals[:, :, opp_players[:, opp_idx], :]
+    copy_size = min(max_hand_size, 7)
+
+    # Process all 3 opponents at once using advanced indexing
+    # worlds: [N, M, 3, max_hand_size]
+    # We want: deals[g, s, opp_players[g, opp_idx], :copy_size] = worlds[g, s, opp_idx, :copy_size]
+
+    # For each of the 3 opponents, scatter their hands
+    for opp_idx in range(3):
+        # opp_player_positions: [N] - which player slot for this opponent in each game
+        opp_player_positions = opp_players[:, opp_idx]  # [N]
+
+        # Expand for samples and hand slots: [N] -> [N, M, 1, copy_size]
+        scatter_opp_idx = opp_player_positions.view(n_games, 1, 1, 1).expand(n_games, n_samples, 1, copy_size)
+
+        # Get this opponent's hands: [N, M, copy_size]
+        opp_hands = worlds[:, :, opp_idx, :copy_size]
+
+        # Scatter into deals: [N, M, 1, copy_size] at scatter_opp_idx positions
+        deals[:, :, :, :copy_size].scatter_(
+            dim=2,
+            index=scatter_opp_idx,
+            src=opp_hands.unsqueeze(2)  # [N, M, 1, copy_size]
+        )
 
     return deals
 
@@ -577,6 +711,8 @@ def _select_actions(
     states: GameStateTensor,
     e_q: Tensor,
     greedy: bool,
+    exploration_policy: ExplorationPolicy | None = None,
+    rng: np.random.Generator | None = None,
 ) -> Tensor:
     """Select actions from E[Q] values.
 
@@ -584,16 +720,33 @@ def _select_actions(
         states: GameStateTensor
         e_q: [n_games, 7] E[Q] values
         greedy: If True, argmax. If False, softmax sample.
+        exploration_policy: Optional exploration policy (overrides greedy if provided)
+        rng: NumPy RNG for exploration
 
     Returns:
         [n_games] action indices (0-6)
     """
+    from forge.eq.exploration import _select_action_with_exploration
+
     n_games = states.n_games
 
     # Get legal actions: [n_games, 7]
     legal_mask = states.legal_actions()
 
-    # Mask illegal actions with -inf
+    # If exploration policy provided, use it (per-game selection)
+    if exploration_policy is not None:
+        actions = []
+        for g in range(n_games):
+            action_idx, _, _ = _select_action_with_exploration(
+                e_q_mean=e_q[g].cpu(),  # Move to CPU for numpy conversion
+                legal_mask=legal_mask[g].cpu(),
+                policy=exploration_policy,
+                rng=rng,
+            )
+            actions.append(action_idx)
+        return torch.tensor(actions, dtype=torch.long, device=e_q.device)
+
+    # Otherwise, use greedy or softmax sampling
     masked_e_q = e_q.clone()
     masked_e_q[~legal_mask] = float('-inf')
 
@@ -662,3 +815,131 @@ def _collate_records(
         )
         for g, decisions in enumerate(all_decisions)
     ]
+
+
+def _compute_posterior_weighted_eq(
+    states: GameStateTensor,
+    worlds: Tensor,
+    q_values: Tensor,
+    n_samples: int,
+    model,
+    tokenizer: GPUTokenizer,
+    posterior_config: PosteriorConfig,
+    device: str,
+) -> Tensor:
+    """Compute posterior-weighted E[Q] using past K steps.
+
+    Args:
+        states: Current game states [N games]
+        worlds: Sampled opponent hands [N, M, 3, max_hand_size]
+        q_values: Q-values for current step [N*M, 7]
+        n_samples: Number of samples per game (M)
+        model: Stage 1 oracle model
+        tokenizer: GPUTokenizer instance
+        posterior_config: Posterior weighting configuration
+        device: Device for computation
+
+    Returns:
+        e_q: [N, 7] posterior-weighted E[Q] values
+    """
+    n_games = states.n_games
+
+    # 1. Compute history lengths (count non-empty entries in history)
+    # history: [N, 28, 3] with -1 for unused entries
+    # An entry is valid if player (first field) >= 0
+    history_len = (states.history[:, :, 0] >= 0).sum(dim=1)  # [N]
+
+    # If there's insufficient history (less than K steps for any game), fall back to uniform
+    if (history_len < posterior_config.window_k).any():
+        # Not enough history for posterior weighting, use uniform mean
+        return q_values.view(n_games, n_samples, 7).mean(dim=1)  # [n_games, 7]
+
+    # 2. Reconstruct past states
+    past_states = reconstruct_past_states_gpu(
+        history=states.history,
+        history_len=history_len,
+        window_k=posterior_config.window_k,
+        device=states.device,
+    )
+
+    # 3. Build hypothetical deals from worlds (same format as main pipeline)
+    hypothetical = _build_hypothetical_deals(states, worlds)  # [N, M, 4, 7]
+
+    # 4. Tokenize past steps for all games/samples/steps
+    # Need larger tokenizer for N*M*K batch (past steps tokenization)
+    K = posterior_config.window_k
+    past_batch_size = n_games * n_samples * K
+
+    # Create a separate tokenizer for past steps if needed
+    if past_batch_size > tokenizer.max_batch:
+        past_tokenizer = GPUTokenizer(max_batch=past_batch_size, device=states.device)
+    else:
+        past_tokenizer = tokenizer
+
+    past_tokens, past_masks = past_tokenizer.tokenize_past_steps(
+        worlds=hypothetical,
+        past_states=past_states,
+        decl_id=states.decl_ids[0].item(),  # Assume single decl_id for batch
+    )
+
+    # 5. Query oracle for past steps
+    # past_tokens: [N*M*K, 32, 12], we need to expand current_player info
+    total_batch = n_games * n_samples * K
+
+    # Expand actors to all samples: actors[n, k] -> [n, m, k] -> [n*m*k]
+    actors_expanded = past_states.actors.unsqueeze(1).expand(n_games, n_samples, K)  # [N, M, K]
+    actors_flat = actors_expanded.reshape(total_batch).long()  # [N*M*K]
+
+    # Determine model device
+    model_device = next(model.parameters()).device
+
+    # Move tensors to model device
+    if past_tokens.device != model_device:
+        past_tokens = past_tokens.to(model_device)
+    if past_masks.device != model_device:
+        past_masks = past_masks.to(model_device)
+    if actors_flat.device != model_device:
+        actors_flat = actors_flat.to(model_device)
+
+    # Convert to int32 for model
+    past_tokens = past_tokens.to(torch.int32)
+
+    # Model forward pass
+    with torch.inference_mode():
+        use_amp = (model_device.type == 'cuda')
+        with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
+            q_past, _ = model(past_tokens, past_masks, actors_flat)
+
+    # Reshape: [N*M*K, 7] -> [N, M, K, 7]
+    q_past = q_past.view(n_games, n_samples, K, 7)
+
+    # 6. Compute legal masks for past steps
+    legal_masks = compute_legal_masks_gpu(
+        worlds=hypothetical,
+        past_states=past_states,
+        decl_id=states.decl_ids[0].item(),
+        device=states.device,
+    )
+
+    # 7. Compute posterior weights
+    weights, diagnostics = compute_posterior_weights_gpu(
+        q_past=q_past,
+        legal_masks=legal_masks,
+        observed_actions=past_states.observed_actions,
+        worlds=hypothetical,
+        actors=past_states.actors,
+        tau=posterior_config.tau,
+        uniform_mix=posterior_config.uniform_mix,
+    )
+
+    # 8. Apply weights to current Q-values
+    # q_values: [N*M, 7] -> [N, M, 7]
+    q_values_reshaped = q_values.view(n_games, n_samples, 7)
+
+    # weights: [N, M] -> [N, M, 1] for broadcasting
+    weights_expanded = weights.unsqueeze(-1)  # [N, M, 1]
+
+    # Weighted sum: e_q[n] = sum_m(weights[n, m] * q_values[n, m, :])
+    e_q = (weights_expanded * q_values_reshaped).sum(dim=1)  # [N, 7]
+
+    return e_q

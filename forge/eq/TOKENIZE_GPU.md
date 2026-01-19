@@ -6,9 +6,10 @@ Phase 3 of the GPU-native E[Q] pipeline implements pure tensor tokenization with
 
 ## Files Created
 
-- `forge/eq/tokenize_gpu.py` - GPUTokenizer class
+- `forge/eq/tokenize_gpu.py` - GPUTokenizer class with PastStatesGPU
 - `forge/eq/test_tokenize_gpu.py` - Comprehensive test suite
 - `forge/eq/demo_tokenize_gpu.py` - Usage examples and benchmarks
+- `forge/eq/demo_tokenize_past_steps.py` - Posterior scoring demo (Phase 2 extension)
 - `forge/eq/TOKENIZE_GPU.md` - This document
 
 ## Implementation Details
@@ -88,7 +89,7 @@ Features (12 per token):
 
 ### Test Results
 
-All 9 tests pass:
+All 13 tests pass:
 - ✓ Output shape correctness
 - ✓ Exact match with CPU oracle for random inputs
 - ✓ Trick token encoding
@@ -98,8 +99,14 @@ All 9 tests pass:
 - ✓ Batch size limit enforcement
 - ✓ All player perspectives
 - ✓ Maximum trick plays (3)
+- ✓ **Past steps tokenization shapes (Phase 2 extension)**
+- ✓ **Past steps with varying trick_plays per step**
+- ✓ **Past steps with padding/masking**
+- ✓ **Past steps remaining computation from played_before**
 
 ## Usage Example
+
+### Basic Tokenization (Current State)
 
 ```python
 from forge.eq.tokenize_gpu import GPUTokenizer
@@ -125,6 +132,50 @@ tokens, masks = tokenizer.tokenize(
 # tokens: [100, 32, 12] int8
 # masks: [100, 32] int8
 ```
+
+### Posterior Scoring (Past Steps - Phase 2 Extension)
+
+For posterior weighting, we need to tokenize N games × M sampled worlds × K past steps:
+
+```python
+from forge.eq.tokenize_gpu import GPUTokenizer, PastStatesGPU
+import torch
+
+# Configuration: 2 games, 10 samples per game, 4 past steps
+N, M, K = 2, 10, 4
+tokenizer = GPUTokenizer(max_batch=1000, device='cuda')
+
+# Sampled worlds: [N, M, 4, 7]
+worlds = torch.randint(0, 28, (N, M, 4, 7), dtype=torch.int8, device='cuda')
+
+# Reconstruct past states (from play history)
+past_states = PastStatesGPU(
+    played_before=torch.zeros(N, K, 28, dtype=torch.bool, device='cuda'),
+    trick_plays=torch.zeros(N, K, 3, 2, dtype=torch.int32, device='cuda'),
+    trick_lens=torch.zeros(N, K, dtype=torch.int32, device='cuda'),
+    leaders=torch.zeros(N, K, dtype=torch.int32, device='cuda'),
+    actors=torch.arange(4, device='cuda').repeat(N, K // 4 + 1)[:N, :K],
+    observed_actions=torch.randint(0, 28, (N, K), device='cuda'),
+    step_indices=torch.arange(K, device='cuda').unsqueeze(0).expand(N, -1),
+    valid_mask=torch.ones(N, K, dtype=torch.bool, device='cuda'),
+)
+
+# Tokenize all N×M×K combinations
+tokens, masks = tokenizer.tokenize_past_steps(worlds, past_states, decl_id=3)
+
+# tokens: [N*M*K, 32, 12] int8  (e.g., [80, 32, 12])
+# masks: [N*M*K, 32] int8
+
+# Use for oracle scoring:
+# log_probs = oracle.score_actions(tokens, masks, past_states.observed_actions)
+# posterior_weights = compute_weights_from_log_probs(log_probs, N, M, K)
+```
+
+**Key Points**:
+1. **Same world, multiple steps**: Each sampled world is used for all K past steps
+2. **Varying context per step**: Each step has different `trick_plays`, `leader`, `actor`, `played_before`
+3. **Remaining computation**: For each step, remaining bits computed from `played_before` and world
+4. **Output layout**: `[g0k0m0, g0k0m1, ..., g0k(K-1)m(M-1), g1k0m0, ...]` (game → step → sample)
 
 ## Integration with Pipeline
 
@@ -211,6 +262,88 @@ We use: `features[decl_id, worlds.reshape(-1, 28)]` for all worlds at once
 - Batch size limit enforcement
 - Device compatibility (CPU/GPU)
 - Output shape validation
+
+## Phase 2 Extension: Posterior Scoring (tokenize_past_steps)
+
+### Overview
+
+The `tokenize_past_steps()` method extends GPUTokenizer to support posterior weighting by tokenizing all N×M×K combinations of:
+- **N games**: Multiple games being processed in parallel
+- **M samples**: Sampled world hypotheses per game
+- **K past steps**: Historical steps to score for likelihood weighting
+
+This is essential for posterior inference, where we need to compute `P(observed actions | hypothetical world)` across many past steps.
+
+### PastStatesGPU Structure
+
+```python
+@dataclass
+class PastStatesGPU:
+    """GPU representation of past game states for posterior scoring.
+
+    Attributes:
+        played_before: [N, K, 28] bool - which dominoes played before each step
+        trick_plays: [N, K, 3, 2] int32 - trick plays at each step (player, domino)
+        trick_lens: [N, K] int32 - number of valid trick plays (0-3)
+        leaders: [N, K] int32 - trick leader for each step (0-3)
+        actors: [N, K] int32 - acting player for each step (0-3)
+        observed_actions: [N, K] int32 - observed domino IDs
+        step_indices: [N, K] int32 - global step indices in play history
+        valid_mask: [N, K] bool - which steps are valid (for padding)
+    """
+```
+
+### Method Signature
+
+```python
+def tokenize_past_steps(
+    self,
+    worlds: Tensor,              # [N, M, 4, 7] sampled worlds per game
+    past_states: PastStatesGPU,  # Reconstructed states for K past steps
+    decl_id: int,
+) -> tuple[Tensor, Tensor]:
+    """Tokenize all N×M×K combinations for posterior scoring.
+
+    Returns:
+        tokens: [N*M*K, 32, 12] int8 tokens
+        masks: [N*M*K, 32] int8 attention masks
+    """
+```
+
+### Algorithm
+
+For each game `g`, step `k`, and sample `m`:
+
+1. **Use same world**: `worlds[g, m]` is the hypothetical deal for all K steps
+2. **Compute remaining**: Check which dominoes in `worlds[g, m]` are not in `played_before[g, k]`
+3. **Extract context**: Get `actors[g, k]`, `leaders[g, k]`, `trick_plays[g, k]` for that step
+4. **Call tokenize()**: Use existing method with per-step context
+5. **Store result**: At index `g*M*K + k*M + m` in output tensor
+
+### Implementation Strategy
+
+**Challenge**: Each step has different `trick_plays`, which is a list format.
+
+**Solution**: Loop over games and steps (outer loops), batch over samples (inner).
+- K is small (8-16 steps typical)
+- Batching over M samples (10-100) provides good GPU utilization
+- Simpler than trying to batch variable-length trick_plays
+
+### Testing
+
+Four dedicated tests verify correctness:
+
+1. **Shape test**: Verify output is `[N*M*K, 32, 12]`
+2. **Varying tricks**: Different trick_plays per game/step encoded correctly
+3. **Padding**: Invalid steps (padding) produce zero tokens/masks
+4. **Remaining computation**: `played_before` correctly filters world dominoes
+
+### Performance Considerations
+
+For typical posterior scoring:
+- N=32 games, M=50 samples, K=8 steps → 12,800 tokenizations
+- With max_batch=16,000, this fits in one pre-allocated buffer
+- Processing time: ~50-100ms on RTX 4090 (estimated)
 
 ## Next Steps (Phase 4)
 
