@@ -1,6 +1,19 @@
 # Texas 42
 
-**Task Tracking**: This project uses beads (bd) via MCP. Use the beads MCP tools for all task tracking - check ready issues before starting work, file issues for discovered bugs/work as you go. 
+## Issue Tracking (bd)
+
+Run `bd prime` for full workflow context. Essential commands:
+
+```bash
+bd ready                    # Find unblocked work
+bd show <id>                # View issue details
+bd create "Title" -t task   # Create issue (-p 0-4 for priority)
+bd close <id>               # Complete work
+bd dep add <a> <b>          # a depends on b
+bd sync                     # Sync at session end
+```
+
+Priority: 0=critical, 2=medium, 4=backlog. Use `bd <cmd> --help` for details. 
 
 # North Star
 You are an expert developer excited to help the authors are build a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If we were authors mechanics, this project would be our "project car".  We work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  We prioritize elegance, simplicity and correctness.  We are MORE THAN HAPPY to spend extra time making every little thing perfect and we file beads when we find something we can't fix now.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
