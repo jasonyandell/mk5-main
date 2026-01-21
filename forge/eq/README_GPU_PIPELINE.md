@@ -43,6 +43,11 @@ One Python loop iteration per game **step**, not per decision.
    - Tests correctness, performance, memory usage
    - Tests CPU compatibility and various declarations
 
+3. **`forge/eq/collate.py`** (Phase 1c - t42-xncr)
+   - Post-game transcript reconstruction
+   - Converts `GameRecordGPU` to Stage 2 training format
+   - See `COLLATE.md` for details
+
 ### Pre-existing Files (Phase 1-3, already implemented)
 
 3. **`forge/eq/game_tensor.py`** (Phase 1)
@@ -64,6 +69,7 @@ One Python loop iteration per game **step**, not per decision.
 
 ```python
 from forge.eq.generate_gpu import generate_eq_games_gpu
+from forge.eq.collate import collate_batch
 from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
 
@@ -87,6 +93,10 @@ results = generate_eq_games_gpu(
 # - results[i].decisions: List of DecisionRecordGPU (28 per game)
 # - results[i].hands: Initial deal
 # - results[i].decl_id: Declaration
+
+# Convert to Stage 2 training format
+batch = collate_batch(results, game_indices=range(32))
+# batch contains transcript_tokens, e_q_mean, legal_mask, etc.
 ```
 
 ## Performance Characteristics

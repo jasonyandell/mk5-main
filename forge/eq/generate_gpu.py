@@ -42,7 +42,7 @@ from forge.eq.posterior_gpu import (
 from forge.eq.sampling_gpu import WorldSampler
 from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
 from forge.eq.tokenize_gpu import GPUTokenizer
-from forge.eq.types import ExplorationPolicy
+from forge.eq.types import ExplorationPolicy, PosteriorDiagnostics
 
 
 @dataclass
@@ -65,13 +65,23 @@ class PosteriorConfig:
 class DecisionRecordGPU:
     """Record for one decision in GPU pipeline.
 
-    Minimal record focusing on E[Q] values and actions.
-    For full posterior/exploration features, use CPU pipeline.
+    Extended in Phase 1a (t42-xncr) to include variance and diagnostics.
     """
     player: int  # Which player made the decision (0-3)
-    e_q: Tensor  # [7] E[Q] values (padded, -inf for illegal/empty)
+    e_q: Tensor  # [7] E[Q] mean values (padded, -inf for illegal/empty)
     action_taken: int  # Slot index (0-6) of domino played
     legal_mask: Tensor  # [7] boolean mask of legal actions
+    e_q_var: Tensor | None = None  # [7] E[Q] variance per action
+    # State uncertainty
+    u_mean: float = 0.0  # mean(sqrt(var)) over legal actions
+    u_max: float = 0.0   # max(sqrt(var)) over legal actions
+    # Posterior diagnostics (None if posterior disabled)
+    ess: float | None = None  # Effective sample size
+    max_w: float | None = None  # Maximum weight
+    # Exploration stats (None if exploration disabled)
+    exploration_mode: int | None = None  # 0=greedy, 1=boltzmann, 2=epsilon, 3=blunder
+    q_gap: float | None = None  # Q_greedy - Q_taken
+    greedy_action: int | None = None  # What greedy would have chosen (slot index 0-6)
 
 
 @dataclass
@@ -163,7 +173,7 @@ def generate_eq_games_gpu(
 
         # 5. Reduce to E[Q] per game (with optional posterior weighting)
         if posterior_config and posterior_config.enabled:
-            e_q = _compute_posterior_weighted_eq(
+            e_q, e_q_var, diagnostics = _compute_posterior_weighted_eq(
                 states=states,
                 worlds=worlds,
                 q_values=q_values,
@@ -174,17 +184,23 @@ def generate_eq_games_gpu(
                 device=device,
             )
         else:
-            e_q = q_values.view(n_games, n_samples, 7).mean(dim=1)  # [n_games, 7]
+            # Uniform weighting
+            q_reshaped = q_values.view(n_games, n_samples, 7)
+            e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
+            e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
+            diagnostics = None
 
         # Move e_q to states device (in case model is on different device)
         if e_q.device != states.hands.device:
             e_q = e_q.to(states.hands.device)
+        if e_q_var.device != states.hands.device:
+            e_q_var = e_q_var.to(states.hands.device)
 
         # 6. Select actions (greedy, sampled, or exploration)
-        actions = _select_actions(states, e_q, greedy, exploration_policy, rng)
+        actions, exploration_stats = _select_actions(states, e_q, greedy, exploration_policy, rng)
 
         # 7. Record decisions
-        _record_decisions(states, e_q, actions, all_decisions)
+        _record_decisions(states, e_q, e_q_var, actions, all_decisions, diagnostics, exploration_stats)
 
         # 8. Apply actions and advance state
         # Ensure actions are on same device as states
@@ -964,7 +980,7 @@ def _select_actions(
     greedy: bool,
     exploration_policy: ExplorationPolicy | None = None,
     rng: np.random.Generator | None = None,
-) -> Tensor:
+) -> tuple[Tensor, list | None]:
     """Select actions from E[Q] values.
 
     Args:
@@ -975,7 +991,9 @@ def _select_actions(
         rng: NumPy RNG for exploration
 
     Returns:
-        [n_games] action indices (0-6)
+        Tuple of (actions, exploration_stats):
+            - actions: [n_games] action indices (0-6)
+            - exploration_stats: List of ExplorationStats (one per game), or None if no exploration
     """
     from forge.eq.exploration import _select_action_with_exploration
 
@@ -986,18 +1004,41 @@ def _select_actions(
 
     # If exploration policy provided, use it (per-game selection)
     if exploration_policy is not None:
+        from forge.eq.types import ExplorationStats
+
         actions = []
+        exploration_stats = []
         for g in range(n_games):
-            action_idx, _, _ = _select_action_with_exploration(
+            action_idx, selection_mode, action_entropy = _select_action_with_exploration(
                 e_q_mean=e_q[g].cpu(),  # Move to CPU for numpy conversion
                 legal_mask=legal_mask[g].cpu(),
                 policy=exploration_policy,
                 rng=rng,
             )
             actions.append(action_idx)
-        return torch.tensor(actions, dtype=torch.long, device=e_q.device)
 
-    # Otherwise, use greedy or softmax sampling
+            # Compute greedy action and q_gap
+            legal = legal_mask[g]
+            masked_eq = e_q[g].clone()
+            masked_eq[~legal] = float('-inf')
+            greedy_action = masked_eq.argmax().item()
+
+            q_greedy = e_q[g][greedy_action].item()
+            q_taken = e_q[g][action_idx].item()
+            q_gap = q_greedy - q_taken
+
+            stats = ExplorationStats(
+                greedy_action=greedy_action,
+                action_taken=action_idx,
+                was_greedy=(action_idx == greedy_action),
+                selection_mode=selection_mode,
+                q_gap=q_gap,
+                action_entropy=action_entropy,
+            )
+            exploration_stats.append(stats)
+        return torch.tensor(actions, dtype=torch.long, device=e_q.device), exploration_stats
+
+    # Otherwise, use greedy or softmax sampling (no exploration stats)
     masked_e_q = e_q.clone()
     masked_e_q[~legal_mask] = float('-inf')
 
@@ -1008,37 +1049,74 @@ def _select_actions(
         probs = torch.softmax(masked_e_q, dim=1)
         actions = torch.multinomial(probs, num_samples=1).squeeze(1)
 
-    return actions
+    return actions, None
 
 
 def _record_decisions(
     states: GameStateTensor,
     e_q: Tensor,
+    e_q_var: Tensor,
     actions: Tensor,
     all_decisions: list[list[DecisionRecordGPU]],
+    diagnostics: PosteriorDiagnostics | None = None,
+    exploration_stats: list | None = None,
 ):
     """Record decisions for each game (in-place).
 
     Args:
         states: GameStateTensor
-        e_q: [n_games, 7] E[Q] values
+        e_q: [n_games, 7] E[Q] mean values
+        e_q_var: [n_games, 7] E[Q] variance values
         actions: [n_games] action indices
         all_decisions: List of decision lists (one per game)
+        diagnostics: Optional posterior diagnostics (aggregated across games)
+        exploration_stats: Optional exploration stats (one per game)
     """
     n_games = states.n_games
     legal_mask = states.legal_actions()
     current_players = states.current_player
+
+    # Mode mapping for exploration (CPU pipeline convention)
+    mode_to_int = {"greedy": 0, "boltzmann": 1, "epsilon": 2, "blunder": 3}
 
     for g in range(n_games):
         # Only record if game is active
         if not states.active_games()[g]:
             continue
 
+        # Compute state uncertainty from variance
+        sigma = torch.sqrt(e_q_var[g])  # [7]
+        legal = legal_mask[g]
+        if legal.any():
+            u_mean = sigma[legal].mean().item()
+            u_max = sigma[legal].max().item()
+        else:
+            u_mean = 0.0
+            u_max = 0.0
+
+        # Extract exploration stats if available
+        exploration_mode = None
+        q_gap = None
+        greedy_action = None
+        if exploration_stats is not None and g < len(exploration_stats):
+            stats = exploration_stats[g]
+            exploration_mode = mode_to_int.get(stats.selection_mode, 0)
+            q_gap = stats.q_gap
+            greedy_action = stats.greedy_action
+
         record = DecisionRecordGPU(
             player=current_players[g].item(),
             e_q=e_q[g].cpu(),
             action_taken=actions[g].item(),
             legal_mask=legal_mask[g].cpu(),
+            e_q_var=e_q_var[g].cpu(),
+            u_mean=u_mean,
+            u_max=u_max,
+            ess=diagnostics.ess if diagnostics else None,
+            max_w=diagnostics.max_w if diagnostics else None,
+            exploration_mode=exploration_mode,
+            q_gap=q_gap,
+            greedy_action=greedy_action,
         )
         all_decisions[g].append(record)
 
@@ -1077,7 +1155,7 @@ def _compute_posterior_weighted_eq(
     tokenizer: GPUTokenizer,
     posterior_config: PosteriorConfig,
     device: str,
-) -> Tensor:
+) -> tuple[Tensor, Tensor, PosteriorDiagnostics | None]:
     """Compute posterior-weighted E[Q] using past K steps.
 
     Args:
@@ -1091,7 +1169,10 @@ def _compute_posterior_weighted_eq(
         device: Device for computation
 
     Returns:
-        e_q: [N, 7] posterior-weighted E[Q] values
+        Tuple of (e_q_mean, e_q_var, diagnostics):
+            - e_q_mean: [N, 7] posterior-weighted E[Q] mean values
+            - e_q_var: [N, 7] posterior-weighted E[Q] variance values
+            - diagnostics: PosteriorDiagnostics (aggregated across games, or None if fallback)
     """
     n_games = states.n_games
 
@@ -1102,8 +1183,11 @@ def _compute_posterior_weighted_eq(
 
     # If there's insufficient history (less than K steps for any game), fall back to uniform
     if (history_len < posterior_config.window_k).any():
-        # Not enough history for posterior weighting, use uniform mean
-        return q_values.view(n_games, n_samples, 7).mean(dim=1)  # [n_games, 7]
+        # Not enough history for posterior weighting, use uniform mean and variance
+        q_reshaped = q_values.view(n_games, n_samples, 7)
+        e_q_mean = q_reshaped.mean(dim=1)  # [n_games, 7]
+        e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
+        return e_q_mean, e_q_var, None
 
     # 2. Reconstruct past states
     past_states = reconstruct_past_states_gpu(
@@ -1195,7 +1279,28 @@ def _compute_posterior_weighted_eq(
     # weights: [N, M] -> [N, M, 1] for broadcasting
     weights_expanded = weights.unsqueeze(-1)  # [N, M, 1]
 
-    # Weighted sum: e_q[n] = sum_m(weights[n, m] * q_values[n, m, :])
-    e_q = (weights_expanded * q_values_reshaped).sum(dim=1)  # [N, 7]
+    # Weighted mean: e_q[n] = sum_m(weights[n, m] * q_values[n, m, :])
+    e_q_mean = (weights_expanded * q_values_reshaped).sum(dim=1)  # [N, 7]
 
-    return e_q
+    # Weighted variance: Var = E[X²] - E[X]²
+    e_q_sq = (weights_expanded * q_values_reshaped**2).sum(dim=1)  # [N, 7]
+    e_q_var = e_q_sq - e_q_mean**2  # [N, 7]
+
+    # 9. Aggregate diagnostics across games (average)
+    if diagnostics is not None:
+        # diagnostics is a dict with tensors of shape [N] for each field
+        # We aggregate by taking the mean across games
+        aggregated_diagnostics = PosteriorDiagnostics(
+            ess=diagnostics['ess'].mean().item() if 'ess' in diagnostics else 0.0,
+            max_w=diagnostics['max_w'].mean().item() if 'max_w' in diagnostics else 0.0,
+            entropy=diagnostics['entropy'].mean().item() if 'entropy' in diagnostics else 0.0,
+            k_eff=diagnostics['k_eff'].mean().item() if 'k_eff' in diagnostics else 0.0,
+            n_invalid=0,  # Not provided by compute_posterior_weights_gpu
+            n_illegal=0,  # Not provided by compute_posterior_weights_gpu
+            window_nll=0.0,  # Not provided by compute_posterior_weights_gpu
+            window_k_used=posterior_config.window_k,  # Use config value
+        )
+    else:
+        aggregated_diagnostics = None
+
+    return e_q_mean, e_q_var, aggregated_diagnostics

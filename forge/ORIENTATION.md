@@ -110,6 +110,7 @@ Everything exists to:
 │  - tokenize_data.py             │  Preprocess shards
 │  - flywheel.py                  │  Iterative training
 │  - generate_continuous.py       │  Continuous oracle generation
+│  - generate_eq_continuous.py    │  GPU E[Q] training data generation
 │  - bidding_continuous.py        │  Continuous P(make) evaluation
 └─────────────────────────────────┘
               ↕
@@ -659,14 +660,16 @@ Stage 2 **distills** the expensive sampling process into a fast neural net.
 
 ```
 forge/eq/
+├── oracle.py              # Stage1Oracle wrapper for batch queries
+├── generate.py            # CPU: Generate single game with 28 decisions
+├── generate_dataset.py    # CPU: Batch generation with train/val split
+├── generate_continuous.py # CPU: Continuous generation (append/resume)
+├── generate_gpu.py        # GPU: Batched game generation (~100x faster)
+├── collate.py             # Convert GPU records to training examples
+├── transcript_tokenize.py # Stage 2 tokenizer (public info only)
 ├── voids.py               # Infer void suits from play history
 ├── sampling.py            # Backtracking sampler (guaranteed valid hands)
-├── oracle.py              # Stage1Oracle wrapper for batch queries
 ├── game.py                # GameState for simulation
-├── generate.py            # Generate single game with 28 decisions
-├── generate_dataset.py    # Batch generation with train/val split
-├── generate_continuous.py # Continuous generation (append/resume)
-├── transcript_tokenize.py # Stage 2 tokenizer (public info only)
 ├── viewer.py              # Interactive debug viewer
 ```
 
@@ -682,7 +685,75 @@ Each training example is one **decision point**:
 | `legal_mask` | (7,) | Which actions were legal |
 | `action_taken` | scalar | Which slot the E[Q] policy chose |
 
-### Key Commands
+### GPU Generation (Recommended)
+
+The GPU pipeline is ~100x faster than CPU and produces per-seed files for parallelism and resumability.
+
+```bash
+# Preview what would be generated (no GPU needed)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
+    --dry-run
+
+# Generate training data (default: data/eq-games/)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+# Generate specific range
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
+    --start-seed 1000 \
+    --limit 500
+
+# High-throughput settings (adjust batch-size for your GPU memory)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
+    --batch-size 64 \
+    --n-samples 100
+```
+
+**Output structure** (per-seed files, automatic train/val/test routing):
+```
+data/eq-games/
+├── train/           # seeds where seed % 1000 < 800 (80%)
+│   ├── seed_00000000.pt
+│   ├── seed_00000001.pt
+│   └── ...
+├── val/             # seeds where 800 ≤ seed % 1000 < 900 (10%)
+│   ├── seed_00000800.pt
+│   └── ...
+└── test/            # seeds where seed % 1000 ≥ 900 (10%)
+    ├── seed_00000900.pt
+    └── ...
+```
+
+**Key features:**
+- **Gap-filling**: Automatically skips existing files, resume anytime with Ctrl+C
+- **Atomic writes**: No partial files from crashes (writes to `.tmp` then renames)
+- **Variance tracking**: Each decision includes E[Q] variance and uncertainty metrics
+- **Posterior weighting**: Optional `--posterior` flag for belief-weighted sampling
+
+**Performance** (RTX 3050 Ti, batch=32, samples=50):
+- ~3 games/sec → ~84 decisions/sec → ~300k examples/hour
+
+**Advanced options:**
+```bash
+# With posterior weighting (improves E[Q] estimates mid-game)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --posterior \
+    --posterior-window 4
+
+# With exploration (for diverse training data)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --exploration epsilon_greedy \
+    --epsilon 0.1
+```
+
+### CPU Generation (Legacy)
+
+Slower but useful for debugging or when GPU unavailable.
 
 ```bash
 # Generate training data (1000 games, ~8 min on 3050 Ti)
@@ -909,6 +980,7 @@ warnings.filterwarnings("ignore", message=".*nested tensors.*prototype.*")
 
 | Term | Definition |
 |------|------------|
+| **E[Q]** | Expected Q-value under uncertainty. Stage 2 averages Q across sampled opponent hands |
 | **q0-q6** | Q-values: optimal value-to-go of each action. Parquet columns, saved as qvals.npy |
 | **V** | State value-to-go. V = max(q) for Team 0, min(q) for Team 1. Terminal states = 0 |
 | **seed** | RNG seed for deal generation. Determines train/val/test split via seed % 1000 |
