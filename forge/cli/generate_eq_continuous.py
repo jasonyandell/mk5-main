@@ -43,15 +43,15 @@ def signal_handler(signum, frame):
 def get_split(seed: int) -> str:
     """Determine train/val/test split from seed.
 
-    Uses seed % 1000:
-    - 0-799: train (80%)
-    - 800-899: val (10%)
-    - 900-999: test (10%)
+    Uses seed % 1000 (matches Stage 1 tokenize.py):
+    - 0-899: train (90%)
+    - 900-949: val (5%)
+    - 950-999: test (5%)
     """
     bucket = seed % 1000
-    if bucket < 800:
+    if bucket < 900:
         return "train"
-    elif bucket < 900:
+    elif bucket < 950:
         return "val"
     else:
         return "test"
