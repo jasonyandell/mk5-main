@@ -1,6 +1,8 @@
 # Stage 2 Training: Posterior-Weighted Information-Set E[Q] from a Perfect-Info Q Oracle
 
-This document replaces the MVP framing in `docs/EQ_MVP.md` with the **research-grade Stage 2 training-data spec** implemented in `forge/eq/*` (dataset schema `2.1`). The intended audience is ML researchers working on imperfect-information decision making and value learning.
+> **Quick start**: For essential commands and directory overview, see the [E[Q] section in forge/ORIENTATION.md](../forge/ORIENTATION.md#eq-training-pipeline-stage-2).
+
+This document is the **research-grade Stage 2 training-data spec** for `forge/eq/*` (dataset schema `2.1`). The intended audience is ML researchers working on imperfect-information decision making and value learning.
 
 ## 0. Executive Summary
 
@@ -25,15 +27,17 @@ Important semantic pin (Stage 1 / oracle):
 Critically, we support **posterior-weighted** aggregation: worlds are reweighted by how likely they make the recent transcript under an explicit behavior model (a Boltzmann/advantage policy derived from Stage 1, with always-on uniform mixing for robustness). This upgrades “uniformly average over consistent worlds” into a Bayes-shaped importance sampler over hidden hands.
 
 Primary code:
-- Data generation: `forge/eq/generate.py`, `forge/eq/generate_dataset.py`
-- World sampling: `forge/eq/sampling.py`, `forge/eq/voids.py`
-- Stage 1 oracle wrapper + tokenization: `forge/eq/oracle.py`
-- Stage 2 (public) tokenizer: `forge/eq/transcript_tokenize.py`
+- **GPU generation (recommended)**: `forge/eq/generate_gpu.py`, `forge/eq/generate_pipelined.py`, `forge/cli/generate_eq_continuous.py`
+- **CPU generation (debug/reference)**: `forge/eq/generate.py`, `forge/eq/generate_dataset.py`
+- World sampling: `forge/eq/sampling.py`, `forge/eq/sampling_gpu.py`, `forge/eq/voids.py`
+- Stage 1 oracle wrapper: `forge/eq/oracle.py`
+- Stage 2 (public) tokenizer: `forge/eq/transcript_tokenize.py`, `forge/eq/tokenize_gpu.py`
+- Posterior weighting: `forge/eq/posterior.py`, `forge/eq/posterior_gpu.py`
 - Debugging: `forge/eq/viewer.py`, `scripts/analyze_eq_predictions.py`, `scripts/validate_eq_computation.py`
 
-## 1. Why `docs/EQ_MVP.md` is Outdated
+## 1. Evolution from MVP
 
-`docs/EQ_MVP.md` was intentionally scoped to validate feasibility. The current Stage 2 plan differs in several material ways:
+`docs/EQ_MVP.md` (now a redirect to this document) was the original feasibility validation. This spec differs in several material ways:
 
 1. **Targets are point-valued E[Q], not E[logits].**
    - We now use Q-value models (see `forge/models/README.md`) so outputs are interpretable in points.
@@ -482,10 +486,53 @@ The dataset already emits uncertainty signals that should be useful for deciding
 
 ## 9. Code Map (Quick Reference)
 
-- Stage 2 dataset CLI: `forge/eq/generate_dataset.py`
-- Core game generation + labels: `forge/eq/generate.py`
-- Stage 1 oracle wrapper: `forge/eq/oracle.py`
-- World sampling (void constraints): `forge/eq/sampling.py`, `forge/eq/voids.py`
-- Stage 2 tokenizer: `forge/eq/transcript_tokenize.py`
-- Debug viewer: `forge/eq/viewer.py`
-- Analysis scripts: `scripts/analyze_eq_predictions.py`, `scripts/validate_eq_computation.py`
+```
+forge/eq/
+├── Generation (GPU - recommended, ~100x faster)
+│   ├── generate_gpu.py          # Batched game generation
+│   ├── generate_pipelined.py    # Async pipelined generation
+│   ├── generate_continuous.py   # Gap-filling continuous mode
+│   └── collate.py               # GPU records → training examples
+│
+├── Generation (CPU - debug/reference)
+│   ├── generate.py              # Single-game generation with labels
+│   ├── generate_dataset.py      # Batch dataset CLI
+│   └── generate_game.py         # Game simulation logic
+│
+├── GPU Pipeline
+│   ├── game_tensor.py           # Tensorized game state
+│   ├── sampling_gpu.py          # GPU world sampling
+│   ├── sampling_mrv_gpu.py      # MRV heuristic on GPU
+│   ├── posterior_gpu.py         # GPU posterior weighting
+│   └── tokenize_gpu.py          # GPU transcript tokenization
+│
+├── Sampling & Posterior (CPU)
+│   ├── sampling.py              # Backtracking sampler (MRV heuristic)
+│   ├── posterior.py             # Posterior weighting
+│   ├── voids.py                 # Void inference from play history
+│   └── worlds.py                # World reconstruction utilities
+│
+├── Tokenization & Types
+│   ├── transcript_tokenize.py   # Stage 2 tokenizer (public info only)
+│   ├── types.py                 # Type definitions
+│   ├── exploration.py           # Exploration policy definitions
+│   └── reduction.py             # E[Q] aggregation
+│
+├── Support
+│   ├── oracle.py                # Stage1Oracle wrapper for batch queries
+│   ├── game.py                  # GameState for simulation
+│   ├── outcomes.py              # Game outcome tracking
+│   └── rejuvenation.py          # Particle rejuvenation (experimental)
+│
+└── Analysis & Debugging
+    ├── viewer.py                # Interactive debug viewer
+    ├── analyze_eq_dataset.py    # Dataset statistics
+    └── analyze_eq_v2.py         # Advanced analysis
+
+forge/cli/
+└── generate_eq_continuous.py    # Production CLI entry point
+
+scripts/
+├── analyze_eq_predictions.py    # Outcome correlation analysis
+└── validate_eq_computation.py   # Fresh recomputation spot-check
+```

@@ -1,6 +1,6 @@
 ---
 name: texas-42-forge
-description: Crystal Forge ML pipeline for Texas 42 oracle training. Use when generating oracle shards, tokenizing data, training transformer models, evaluating checkpoints, running Modal GPU jobs, or promoting models to the catalog. Covers the full pipeline from GPU solver to trained model.
+description: Crystal Forge ML pipeline for Texas 42 oracle training. Use when generating oracle shards, tokenizing data, training transformer models, evaluating checkpoints, running Modal GPU jobs, promoting models to the catalog, or generating E[Q] Stage 2 training data. Covers the full pipeline from GPU solver to trained model.
 ---
 
 # Crystal Forge ML Pipeline
@@ -190,6 +190,67 @@ bd create --title="Promote {model} to catalog" --type=task
 bd close {id} --reason="Promoted with documentation"
 ```
 
+### Workflow 5: Generate E[Q] Stage 2 Data
+
+Stage 2 trains on imperfect information - it learns E[Q] by sampling possible opponent hands.
+
+```
+Task Progress:
+- [ ] Step 1: Verify Stage 1 checkpoint exists
+- [ ] Step 2: Run GPU generation (continuous)
+- [ ] Step 3: Monitor output and gaps
+- [ ] Step 4: (Optional) Enable posterior weighting
+```
+
+**Step 1: Verify checkpoint**
+
+```bash
+ls forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+```
+
+**Step 2: Generate**
+
+```bash
+# Preview what would be generated
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
+    --dry-run
+
+# Generate training data (GPU, ~100x faster than CPU)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+# Generate specific seed range
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
+    --start-seed 1000 --limit 500
+```
+
+**Step 3: Monitor**
+
+```bash
+# Count generated files per split (90/5/5 split, same as Stage 1)
+ls data/eq-games/train/*.pt | wc -l
+ls data/eq-games/val/*.pt | wc -l
+ls data/eq-games/test/*.pt | wc -l
+```
+
+**Step 4: Posterior weighting (optional)**
+
+Improves E[Q] estimates mid-game by reweighting worlds based on transcript likelihood:
+
+```bash
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --posterior --posterior-window 4
+```
+
+**Output format**: Per-seed `.pt` files with `e_q_mean`, `e_q_var`, `legal_mask`, `transcript_tokens`, etc.
+
+**Performance**: RTX 3050 Ti, batch=32, samples=50 → ~300k examples/hour
+
+See [docs/EQ_STAGE2_TRAINING.md](docs/EQ_STAGE2_TRAINING.md) for full spec.
+
 ## Key Metrics
 
 | Metric | What it Measures | Good Value |
@@ -259,7 +320,7 @@ Reduce batch size or use `--max-states 500000000` for oracle generation.
 ## Advanced Topics
 
 **Marginalized training**: See [forge/ORIENTATION.md](forge/ORIENTATION.md) § "Marginalized Q-Values"
-**E[Q] pipeline (Stage 2)**: See [forge/ORIENTATION.md](forge/ORIENTATION.md) § "E[Q] Training Pipeline"
+**E[Q] pipeline (Stage 2)**: See [forge/ORIENTATION.md](forge/ORIENTATION.md) § "E[Q] Training Pipeline" and [docs/EQ_STAGE2_TRAINING.md](docs/EQ_STAGE2_TRAINING.md) for full research spec
 **Bidding evaluation**: See [forge/bidding/README.md](forge/bidding/README.md)
 **Modal optimization**: See [forge/MODAL_ORIENTATION.md](forge/MODAL_ORIENTATION.md)
 **Modal monitoring**: See [forge/MODAL_MONITOR.md](forge/MODAL_MONITOR.md)
@@ -268,21 +329,30 @@ Reduce batch size or use `--max-states 500000000` for oracle generation.
 
 ```
 forge/
-├── cli/                    # User commands
-│   ├── train.py           # Training entry point
-│   ├── eval.py            # Checkpoint evaluation
-│   ├── tokenize_data.py   # Shard → tokenized
-│   └── generate_continuous.py  # Oracle generation
-├── ml/                     # Lightning core
-│   ├── module.py          # DominoLightningModule + DominoTransformer
-│   ├── data.py            # DominoDataModule
-│   └── metrics.py         # q_gap, accuracy, blunder
-├── oracle/                 # GPU solver
-│   ├── solve.py           # Backward induction
-│   └── schema.py          # Parquet format
-├── models/                 # Promoted checkpoints
-│   └── README.md          # Model catalog
-└── modal_app.py           # Modal GPU jobs
+├── cli/                         # User commands
+│   ├── train.py                # Training entry point
+│   ├── eval.py                 # Checkpoint evaluation
+│   ├── tokenize_data.py        # Shard → tokenized
+│   ├── generate_continuous.py  # Oracle generation (Stage 1)
+│   └── generate_eq_continuous.py  # E[Q] generation (Stage 2)
+├── ml/                          # Lightning core (Stage 1)
+│   ├── module.py               # DominoLightningModule + DominoTransformer
+│   ├── data.py                 # DominoDataModule
+│   └── metrics.py              # q_gap, accuracy, blunder
+├── eq/                          # E[Q] pipeline (Stage 2)
+│   ├── generate_gpu.py         # GPU generation (~100x faster)
+│   ├── generate_pipelined.py   # Async pipelined generation
+│   ├── sampling_gpu.py         # GPU world sampling
+│   ├── posterior_gpu.py        # GPU posterior weighting
+│   ├── oracle.py               # Stage1Oracle wrapper
+│   ├── transcript_tokenize.py  # Public-info tokenizer
+│   └── viewer.py               # Debug viewer
+├── oracle/                      # GPU solver
+│   ├── solve.py                # Backward induction
+│   └── schema.py               # Parquet format
+├── models/                      # Promoted checkpoints
+│   └── README.md               # Model catalog
+└── modal_app.py                # Modal GPU jobs
 ```
 
 ## Resources

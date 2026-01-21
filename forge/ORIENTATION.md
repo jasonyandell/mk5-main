@@ -13,6 +13,7 @@
 - [forge/models/README.md](models/README.md) - Model catalog, loading, architecture details
 - [forge/bidding/README.md](bidding/README.md) - Bidding evaluation (System 2)
 - [forge/flywheel/RUNBOOK.md](flywheel/RUNBOOK.md) - Iterative training operations
+- [docs/EQ_STAGE2_TRAINING.md](../docs/EQ_STAGE2_TRAINING.md) - Stage 2 (imperfect info) training spec
 
 **Game Context**:
 - [docs/ORIENTATION.md](../docs/ORIENTATION.md) - TypeScript game engine architecture
@@ -383,6 +384,8 @@ Deterministic train/val/test split by seed (see `forge.ml.tokenize.get_split()`)
 | 900-949 | val | 5% |
 | 950-999 | test | 5% - **sacred, never touched during development** |
 
+This split is used consistently across Stage 1 oracle data and Stage 2 E[Q] data.
+
 ---
 
 ## Essential Commands
@@ -636,44 +639,70 @@ The **base_seed** in the filename determines train/val/test split (via `seed % 1
 
 ## E[Q] Training Pipeline (Stage 2)
 
-### The Problem
+> **Full specification**: See [docs/EQ_STAGE2_TRAINING.md](../docs/EQ_STAGE2_TRAINING.md) for the research-grade training data spec including posterior weighting theory, tuning knobs, and validation workflow.
 
-Stage 1 (the oracle) sees all 4 hands - it "cheats." In real play, you only see your own hand and the play history. We need a model that makes decisions from **imperfect information** but plays as well as if it could see everything.
+### Overview
 
-### The Solution: Two-Stage Distillation
+Stage 1 (the oracle) sees all 4 hands - it "cheats." Stage 2 learns to play from **imperfect information** by distilling the oracle's knowledge:
 
 ```
-Stage 1 Oracle (sees all hands, trained)
+Stage 1 Oracle (sees all hands)
         ↓
-   Sample 100 possible opponent hands
+   Sample N worlds (possible opponent hands)
         ↓
-   Query oracle for each → Average logits → E[Q]
+   Query oracle for each → Aggregate → E[Q] targets
         ↓
-Stage 2 Model (sees transcript only, learns to predict E[Q])
+Stage 2 Model (sees transcript only, learns E[Q])
         ↓
    At runtime: single forward pass, no sampling
 ```
-
-Stage 2 **distills** the expensive sampling process into a fast neural net.
 
 ### Directory Structure
 
 ```
 forge/eq/
-├── oracle.py              # Stage1Oracle wrapper for batch queries
-├── generate.py            # CPU: Generate single game with 28 decisions
-├── generate_dataset.py    # CPU: Batch generation with train/val split
-├── generate_continuous.py # CPU: Continuous generation (append/resume)
-├── generate_gpu.py        # GPU: Batched game generation (~100x faster)
-├── collate.py             # Convert GPU records to training examples
-├── transcript_tokenize.py # Stage 2 tokenizer (public info only)
-├── voids.py               # Infer void suits from play history
-├── sampling.py            # Backtracking sampler (guaranteed valid hands)
-├── game.py                # GameState for simulation
-├── viewer.py              # Interactive debug viewer
+├── Generation (GPU - recommended)
+│   ├── generate_gpu.py          # Batched game generation (~100x faster)
+│   ├── generate_pipelined.py    # Async pipelined generation
+│   ├── generate_continuous.py   # Gap-filling continuous mode
+│   └── collate.py               # GPU records → training examples
+│
+├── Generation (CPU - debug/reference)
+│   ├── generate.py              # Single-game generation
+│   ├── generate_dataset.py      # Batch dataset generation
+│   └── generate_game.py         # Game simulation logic
+│
+├── GPU Pipeline
+│   ├── game_tensor.py           # Tensorized game state
+│   ├── sampling_gpu.py          # GPU world sampling
+│   ├── sampling_mrv_gpu.py      # MRV heuristic on GPU
+│   ├── posterior_gpu.py         # GPU posterior weighting
+│   └── tokenize_gpu.py          # GPU transcript tokenization
+│
+├── Sampling & Posterior (CPU)
+│   ├── sampling.py              # Backtracking sampler (MRV heuristic)
+│   ├── posterior.py             # Posterior weighting
+│   ├── voids.py                 # Void inference from play history
+│   └── worlds.py                # World reconstruction utilities
+│
+├── Tokenization & Types
+│   ├── transcript_tokenize.py   # Stage 2 tokenizer (public info only)
+│   ├── types.py                 # Type definitions
+│   ├── exploration.py           # Exploration policy definitions
+│   └── reduction.py             # E[Q] aggregation
+│
+├── Support
+│   ├── oracle.py                # Stage1Oracle wrapper
+│   ├── game.py                  # GameState for simulation
+│   ├── outcomes.py              # Game outcome tracking
+│   └── rejuvenation.py          # Particle rejuvenation (experimental)
+│
+└── Analysis
+    ├── viewer.py                # Interactive debug viewer
+    └── analyze_eq_*.py          # Dataset analysis tools
 ```
 
-### Data Format
+### Data Format (Schema v2.1)
 
 Each training example is one **decision point**:
 
@@ -682,113 +711,54 @@ Each training example is one **decision point**:
 | `transcript_tokens` | (36, 8) | Padded sequence: [decl, hand..., plays...] |
 | `transcript_lengths` | scalar | Actual sequence length |
 | `e_q_mean` | (7,) | Target: E[Q] in points (averaged across sampled worlds) |
+| `e_q_var` | (7,) | Per-action variance (uncertainty signal) |
 | `legal_mask` | (7,) | Which actions were legal |
 | `action_taken` | scalar | Which slot the E[Q] policy chose |
+| `u_mean`, `u_max` | scalar | State-level uncertainty scalars |
+| `ess`, `max_w` | scalar | Posterior diagnostics (effective sample size, max weight) |
 
-### GPU Generation (Recommended)
-
-The GPU pipeline is ~100x faster than CPU and produces per-seed files for parallelism and resumability.
+### Essential Commands
 
 ```bash
-# Preview what would be generated (no GPU needed)
+# Preview what would be generated
 python -m forge.cli.generate_eq_continuous \
     --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
     --dry-run
 
-# Generate training data (default: data/eq-games/)
+# Generate training data (GPU, recommended)
 python -m forge.cli.generate_eq_continuous \
     --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
 
-# Generate specific range
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
-    --start-seed 1000 \
-    --limit 500
-
-# High-throughput settings (adjust batch-size for your GPU memory)
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
-    --batch-size 64 \
-    --n-samples 100
-```
-
-**Output structure** (per-seed files, automatic train/val/test routing):
-```
-data/eq-games/
-├── train/           # seeds where seed % 1000 < 800 (80%)
-│   ├── seed_00000000.pt
-│   ├── seed_00000001.pt
-│   └── ...
-├── val/             # seeds where 800 ≤ seed % 1000 < 900 (10%)
-│   ├── seed_00000800.pt
-│   └── ...
-└── test/            # seeds where seed % 1000 ≥ 900 (10%)
-    ├── seed_00000900.pt
-    └── ...
-```
-
-**Key features:**
-- **Gap-filling**: Automatically skips existing files, resume anytime with Ctrl+C
-- **Atomic writes**: No partial files from crashes (writes to `.tmp` then renames)
-- **Variance tracking**: Each decision includes E[Q] variance and uncertainty metrics
-- **Posterior weighting**: Optional `--posterior` flag for belief-weighted sampling
-
-**Performance** (RTX 3050 Ti, batch=32, samples=50):
-- ~3 games/sec → ~84 decisions/sec → ~300k examples/hour
-
-**Advanced options:**
-```bash
 # With posterior weighting (improves E[Q] estimates mid-game)
 python -m forge.cli.generate_eq_continuous \
     --checkpoint model.ckpt \
-    --posterior \
-    --posterior-window 4
+    --posterior --posterior-window 4
 
-# With exploration (for diverse training data)
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint model.ckpt \
-    --exploration epsilon_greedy \
-    --epsilon 0.1
+# Interactive viewer
+python -m forge.eq.viewer path/to/dataset.pt
 ```
 
-### CPU Generation (Legacy)
+### Train/Val/Test Split
 
-Slower but useful for debugging or when GPU unavailable.
+E[Q] data uses the same **90/5/5** split as Stage 1 oracle data:
 
-```bash
-# Generate training data (1000 games, ~8 min on 3050 Ti)
-PYTHONPATH=. python -m forge.eq.generate_dataset \
-    --n-games 1000 \
-    --output forge/data/eq_dataset.pt
+| Bucket (seed % 1000) | Split | Percentage |
+|---------------------|-------|------------|
+| 0-899 | train | 90% |
+| 900-949 | val | 5% |
+| 950-999 | test | 5% - **sacred, never touched during development** |
 
-# Interactive viewer for human evaluation
-PYTHONPATH=. python -m forge.eq.viewer forge/data/eq_dataset.pt
+This ensures consistent seed routing across both stages.
 
-# Jump to specific game
-PYTHONPATH=. python -m forge.eq.viewer forge/data/eq_dataset.pt --game 42
-```
+### Performance
 
-### Viewer Controls
-
-- `←` / `→` - Navigate decisions
-- `j` - Jump to example number
-- `q` - Quit
+RTX 3050 Ti, batch=32, samples=50: ~3 games/sec → ~84 decisions/sec → ~300k examples/hour
 
 ### Data Storage
 
-- `forge/data/eq_dataset.pt` - Generated training data (gitignored, ~66 MB for 1000 games)
+- `data/eq-games/{train,val,test}/seed_*.pt` - Per-seed files (production)
+- `forge/data/eq_dataset.pt` - Monolithic files (legacy/debug)
 - `scratch/eq_test.pt` - Small test datasets
-
-### The Backtracking Sampler
-
-Unlike rejection sampling (which fails with tight void constraints), the backtracking sampler uses **MRV heuristic** (Minimum Remaining Values) to guarantee finding valid opponent hand distributions:
-
-1. Build candidate sets per opponent (dominoes respecting void constraints)
-2. Always assign to player with minimum slack first
-3. Early pruning: if slack < 0, backtrack immediately
-4. Guaranteed to find solution if one exists (the real game state is always valid)
-
-Ported from `src/game/ai/hand-sampler.ts`.
 
 ---
 
