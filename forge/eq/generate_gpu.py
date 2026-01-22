@@ -1253,6 +1253,16 @@ def _compute_posterior_weighted_eq(
     # Convert to int32 for model
     past_tokens = past_tokens.to(torch.int32)
 
+    # Check if ANY valid steps exist - if all masks are 0, skip model and use uniform weights
+    # This happens early in the game when history_len < window_k for all games
+    has_any_valid = past_masks.any()
+    if not has_any_valid:
+        # No valid history - fall back to uniform weighting
+        q_reshaped = q_values.view(n_games, n_samples, 7)
+        e_q = q_reshaped.mean(dim=1)
+        e_q_var = q_reshaped.var(dim=1, unbiased=False)
+        return e_q, e_q_var, None
+
     # Model forward pass
     with torch.inference_mode():
         use_amp = (model_device.type == 'cuda')
