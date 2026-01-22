@@ -617,23 +617,28 @@ class GPUTokenizer:
         self,
         worlds: Tensor,              # [N, M, 4, 7] sampled worlds per game
         past_states: PastStatesGPU,  # Reconstructed states for K past steps
-        decl_id: int,
+        decl_ids: Tensor | int,      # [N] per-game declaration IDs, or scalar for all games
+        historical_hands: Tensor | None = None,  # [N, M, K, 4, 7] reconstructed historical hands (optional)
     ) -> tuple[Tensor, Tensor]:
         """Fully vectorized tokenization of N×M×K combinations.
 
         VECTORIZED IMPLEMENTATION - no Python loops or .item() calls.
 
         For each game g, sample m, and past step k:
-        - Use worlds[g, m] as the hypothetical deal
+        - Use worlds[g, m] as the hypothetical deal (or historical_hands[g, m, k] if provided)
         - Use past_states for context (trick_plays, leader, actor, remaining)
 
         Output layout: [g0k0m0, g0k0m1, ..., g0k(K-1)m(M-1), g1k0m0, ...]
         i.e., index = g*K*M + k*M + m
 
         Args:
-            worlds: [N, M, 4, 7] hypothetical hands per sample
+            worlds: [N, M, 4, 7] hypothetical hands per sample (used if historical_hands not provided)
             past_states: Reconstructed states for K past steps
-            decl_id: Declaration ID (0-9)
+            decl_ids: [N] per-game declaration IDs (0-9), or scalar int for all games
+            historical_hands: [N, M, K, 4, 7] reconstructed hands at each past step (optional).
+                If provided, uses the correct historical hand for each step k instead of
+                the current hand from worlds. This fixes the bug where played dominoes
+                were missing from the hand used for posterior weight computation.
 
         Returns:
             tokens: [N*K*M, 32, 12] int8 tokens
@@ -651,11 +656,16 @@ class GPUTokenizer:
             )
 
         # =====================================================================
-        # Step 1: Expand worlds to [N, K, M, 4, 7] then flatten to [N*K*M, 4, 7]
-        # Same world is used for all K steps within a game
+        # Step 1: Get worlds for each (game, step, sample) combination
         # =====================================================================
-        # worlds: [N, M, 4, 7] -> [N, 1, M, 4, 7] -> [N, K, M, 4, 7]
-        worlds_expanded = worlds.unsqueeze(1).expand(N, K, M, 4, 7)
+        if historical_hands is not None:
+            # Use historical hands: [N, M, K, 4, 7] -> permute to [N, K, M, 4, 7]
+            worlds_expanded = historical_hands.permute(0, 2, 1, 3, 4)  # [N, K, M, 4, 7]
+        else:
+            # Expand current worlds to [N, K, M, 4, 7]
+            # Same world is used for all K steps within a game
+            # worlds: [N, M, 4, 7] -> [N, 1, M, 4, 7] -> [N, K, M, 4, 7]
+            worlds_expanded = worlds.unsqueeze(1).expand(N, K, M, 4, 7)
         # Flatten to [N*K*M, 4, 7]
         flat_worlds = worlds_expanded.reshape(total_batch, 4, 7)
 
@@ -664,8 +674,13 @@ class GPUTokenizer:
         # =====================================================================
         # For each field with shape [N, K, ...], expand to [N, K, M, ...] then flatten
 
-        # decl_ids: all same value, just broadcast
-        flat_decl_ids = torch.full((total_batch,), decl_id, dtype=torch.int32, device=device)
+        # decl_ids: [N] per-game or scalar -> expand to [N, K, M] -> flatten to [N*K*M]
+        if isinstance(decl_ids, int):
+            # Scalar: broadcast to all
+            flat_decl_ids = torch.full((total_batch,), decl_ids, dtype=torch.int32, device=device)
+        else:
+            # Tensor [N]: expand to [N, K, M] then flatten
+            flat_decl_ids = decl_ids.unsqueeze(1).unsqueeze(2).expand(N, K, M).reshape(total_batch).to(torch.int32)
 
         # leaders: [N, K] -> [N, K, M] -> [N*K*M]
         flat_leaders = past_states.leaders.unsqueeze(-1).expand(N, K, M).reshape(total_batch)

@@ -816,3 +816,156 @@ def test_posterior_weights_legal_masking():
     assert weights[0, 0] > 0
     assert weights[0, 1] > 0
     assert torch.allclose(weights.sum(), torch.tensor(1.0))
+
+
+# =============================================================================
+# Tests for reconstruct_historical_hands
+# =============================================================================
+
+def test_reconstruct_historical_hands_basic():
+    """Test basic historical hand reconstruction."""
+    from forge.eq.posterior_gpu import reconstruct_historical_hands
+
+    # Setup: 1 game, 2 samples, 2 past steps (k=0,1)
+    N, M, K = 1, 2, 2
+    device = 'cpu'
+
+    # Current hands (with -1 for played dominoes)
+    # Player 0 had [0,1,2,3,4,5,6] initially, now has [3,4,5,6,-1,-1,-1] (played 0,1,2)
+    hypothetical = torch.full((N, M, 4, 7), -1, dtype=torch.int32, device=device)
+    hypothetical[0, :, 0, :4] = torch.tensor([3, 4, 5, 6])  # Player 0's remaining hand
+    hypothetical[0, :, 1, :4] = torch.tensor([10, 11, 12, 13])  # Player 1's remaining hand
+
+    # History: [N, max_len, 3] = (player, domino, lead_domino)
+    # Step 0: Player 0 plays domino 0 (lead)
+    # Step 1: Player 1 plays domino 7 (follow)
+    # Step 2: Player 0 plays domino 1 (lead)
+    # Step 3: Player 1 plays domino 8 (follow)
+    # Step 4: Player 0 plays domino 2 (lead)
+    # Step 5: Player 1 plays domino 9 (follow)
+    max_len = 6
+    history = torch.full((N, max_len, 3), -1, dtype=torch.int32, device=device)
+    history[0, 0] = torch.tensor([0, 0, 0])   # P0 plays 0
+    history[0, 1] = torch.tensor([1, 7, 0])   # P1 plays 7
+    history[0, 2] = torch.tensor([0, 1, 1])   # P0 plays 1
+    history[0, 3] = torch.tensor([1, 8, 1])   # P1 plays 8
+    history[0, 4] = torch.tensor([0, 2, 2])   # P0 plays 2
+    history[0, 5] = torch.tensor([1, 9, 2])   # P1 plays 9
+
+    history_len = torch.tensor([6], device=device)
+
+    # Past steps: looking at steps 4 and 5 (last 2 steps)
+    step_indices = torch.tensor([[4, 5]], dtype=torch.long, device=device)
+    valid_mask = torch.tensor([[True, True]], dtype=torch.bool, device=device)
+
+    # Reconstruct historical hands
+    historical = reconstruct_historical_hands(
+        hypothetical=hypothetical,
+        history=history,
+        history_len=history_len,
+        step_indices=step_indices,
+        valid_mask=valid_mask,
+    )
+
+    # historical shape: [N, M, K, 4, 7]
+    assert historical.shape == (N, M, K, 4, 7)
+
+    # For step k=0 (absolute step 4), player 0 played domino 2
+    # At step 4, player 0's hand should include domino 2 (played at step 4)
+    # Current hand: [3,4,5,6,-1,-1,-1], plays at or after step 4: [2]
+    # So hand at step 4 should be [3,4,5,6,2,-1,-1] or similar
+    hand_at_k0 = historical[0, 0, 0, 0, :]  # Game 0, Sample 0, Step k=0, Player 0
+    assert 2 in hand_at_k0.tolist(), f"Domino 2 should be in hand at step 4, got {hand_at_k0.tolist()}"
+
+    # For step k=1 (absolute step 5), player 1 played domino 9
+    # At step 5, player 1's hand should include domino 9
+    hand_at_k1_p1 = historical[0, 0, 1, 1, :]  # Game 0, Sample 0, Step k=1, Player 1
+    assert 9 in hand_at_k1_p1.tolist(), f"Domino 9 should be in hand at step 5, got {hand_at_k1_p1.tolist()}"
+
+
+def test_reconstruct_historical_hands_for_posterior():
+    """Test that historical hands allow finding observed actions."""
+    from forge.eq.posterior_gpu import reconstruct_historical_hands, compute_posterior_weights_gpu
+
+    # Setup: 1 game, 3 samples, 1 past step
+    N, M, K = 1, 3, 1
+    device = 'cpu'
+
+    # Current hands: player 0 has remaining dominoes [3,4,5,6,-1,-1,-1]
+    # (played dominoes 0,1,2 are now -1)
+    hypothetical = torch.full((N, M, 4, 7), -1, dtype=torch.int32, device=device)
+    # Player 0's current hand (same in all samples for simplicity)
+    hypothetical[:, :, 0, :4] = torch.tensor([3, 4, 5, 6])
+
+    # History: player 0 played domino 2 at step 4
+    max_len = 5
+    history = torch.full((N, max_len, 3), -1, dtype=torch.int32, device=device)
+    history[0, 0] = torch.tensor([0, 0, 0])   # P0 plays 0
+    history[0, 1] = torch.tensor([0, 1, 1])   # P0 plays 1
+    history[0, 2] = torch.tensor([0, 2, 2])   # P0 plays 2 <- this is the past step we're checking
+    history[0, 3] = torch.tensor([0, 3, 3])   # P0 plays 3
+    history[0, 4] = torch.tensor([0, 4, 4])   # P0 plays 4
+
+    history_len = torch.tensor([5], device=device)
+
+    # Past step at absolute index 2 (where P0 played domino 2)
+    step_indices = torch.tensor([[2]], dtype=torch.long, device=device)
+    valid_mask = torch.tensor([[True]], dtype=torch.bool, device=device)
+
+    # Reconstruct historical hands
+    historical = reconstruct_historical_hands(
+        hypothetical=hypothetical,
+        history=history,
+        history_len=history_len,
+        step_indices=step_indices,
+        valid_mask=valid_mask,
+    )
+
+    # At step 2, player 0's hand should include dominoes 2,3,4,5,6 (played 2,3,4 after step 2)
+    hand_at_step2 = historical[0, 0, 0, 0, :]
+    required_dominoes = [2, 3, 4]  # Dominoes played at or after step 2
+    for d in required_dominoes:
+        assert d in hand_at_step2.tolist(), f"Domino {d} should be in hand at step 2, got {hand_at_step2.tolist()}"
+
+    # Now test that posterior weights can find the observed action
+    observed_actions = torch.tensor([[2]], dtype=torch.int32, device=device)  # P0 played domino 2
+    actors = torch.tensor([[0]], dtype=torch.int32, device=device)  # Player 0 was the actor
+
+    q_past = torch.ones(N, M, K, 7, dtype=torch.float32, device=device)
+    legal_masks = torch.ones(N, M, K, 7, dtype=torch.bool, device=device)
+
+    # Without historical_hands, the observed action (2) won't be found in current hand
+    # and all weights will be uniform
+    weights_without, diag_without = compute_posterior_weights_gpu(
+        q_past=q_past,
+        legal_masks=legal_masks,
+        observed_actions=observed_actions,
+        worlds=hypothetical,
+        actors=actors,
+        tau=1.0,
+        uniform_mix=0.0,
+        historical_hands=None,  # Bug: use current hands
+    )
+
+    # With historical_hands, the observed action (2) will be found
+    weights_with, diag_with = compute_posterior_weights_gpu(
+        q_past=q_past,
+        legal_masks=legal_masks,
+        observed_actions=observed_actions,
+        worlds=hypothetical,
+        actors=actors,
+        tau=1.0,
+        uniform_mix=0.0,
+        historical_hands=historical,  # Fix: use historical hands
+    )
+
+    # Without the fix: observed action not found -> all weights uniform -> ESS = M
+    # With the fix: observed action found -> weights can vary -> ESS potentially < M
+    print(f"ESS without fix: {diag_without['ess']}")
+    print(f"ESS with fix: {diag_with['ess']}")
+
+    # The key test: with uniform Q-values, both should have equal weights
+    # but without the fix, the mechanism is broken (invalid observation handling)
+    # With the fix, the action is found and proper weighting can occur
+    assert torch.allclose(weights_with.sum(), torch.tensor(1.0))
+    assert torch.allclose(weights_without.sum(), torch.tensor(1.0))

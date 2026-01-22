@@ -431,8 +431,9 @@ CAN_FOLLOW = _build_can_follow_table()  # [28, 8, 10] - can domino follow (domin
 def compute_legal_masks_gpu(
     worlds: Tensor,            # [N, M, 4, 7] hands - domino IDs per slot
     past_states: PastStatesGPU,
-    decl_id: int,
+    decl_ids: Tensor | int,    # [N] per-game declaration IDs, or scalar for all games
     device: torch.device | None = None,
+    historical_hands: Tensor | None = None,  # [N, M, K, 4, 7] reconstructed historical hands
 ) -> Tensor:
     """Compute legal actions for each world at each past step.
 
@@ -441,10 +442,12 @@ def compute_legal_masks_gpu(
     2. If following (not leading), the domino can follow the led suit
 
     Args:
-        worlds: [N, M, 4, 7] domino IDs for each player's hand
+        worlds: [N, M, 4, 7] domino IDs for each player's hand (used if historical_hands not provided)
         past_states: Reconstructed states with played_before, leaders, actors, etc.
-        decl_id: Declaration ID for suit rules
+        decl_ids: [N] per-game declaration IDs (0-9), or scalar int for all games
         device: Device for computation (defaults to worlds.device)
+        historical_hands: [N, M, K, 4, 7] reconstructed hands at each past step (optional).
+            If provided, uses the correct historical hand for each step k.
 
     Returns:
         legal_mask: [N, M, K, 7] bool - is slot i legal for game g, sample m, step k?
@@ -459,16 +462,32 @@ def compute_legal_masks_gpu(
     N, M, _, _ = worlds.shape
     K = past_states.actors.shape[1]
 
+    # Handle scalar vs tensor decl_ids
+    if isinstance(decl_ids, int):
+        # Scalar: expand to [N] tensor
+        decl_ids_t = torch.full((N,), decl_ids, dtype=torch.long, device=device)
+    else:
+        decl_ids_t = decl_ids.long().to(device)
+
+    # Get worlds expanded to [N, M, K, 4, 7]
+    if historical_hands is not None:
+        worlds_expanded = historical_hands  # [N, M, K, 4, 7]
+    else:
+        worlds_expanded = worlds.unsqueeze(2).expand(N, M, K, 4, 7)
+
     # Extract actor's hand for each step: [N, M, K, 7]
     # We need to gather hands based on past_states.actors
     # actors: [N, K] -> expand to [N, M, K] for broadcasting
-    actors_expanded = past_states.actors.long().unsqueeze(1).expand(N, M, K)  # [N, M, K]
+    # Clamp actors to [0, 3] range - invalid steps may have -1, which causes gather errors
+    # Invalid steps will be masked out by valid_mask anyway
+    actors_clamped = past_states.actors.clamp(0, 3).long()
+    actors_expanded = actors_clamped.unsqueeze(1).expand(N, M, K)  # [N, M, K]
 
-    # Gather actor hands: worlds[n, m, actors[n, k], :] -> [N, M, K, 7]
+    # Gather actor hands: worlds_expanded[n, m, k, actors[n, k], :] -> [N, M, K, 7]
     # We need to expand indices for gather operation
     actors_idx = actors_expanded.unsqueeze(-1).expand(N, M, K, 7)  # [N, M, K, 7]
     actor_hands = torch.gather(
-        worlds.unsqueeze(2).expand(N, M, K, 4, 7),  # [N, M, K, 4, 7]
+        worlds_expanded,  # [N, M, K, 4, 7]
         dim=3,
         index=actors_idx.unsqueeze(3)  # [N, M, K, 1, 7]
     ).squeeze(3)  # [N, M, K, 7]
@@ -501,12 +520,16 @@ def compute_legal_masks_gpu(
     # Get led suit for each step
     # observed_actions: [N, K] contains lead domino IDs
     lead_dominoes = past_states.observed_actions  # [N, K]
-    led_suits = led_suit_table[lead_dominoes.long(), decl_id]  # [N, K]
+    # Expand decl_ids [N] -> [N, K] for led_suit lookup
+    decl_ids_2d = decl_ids_t.unsqueeze(1).expand(N, K)  # [N, K]
+    led_suits = led_suit_table[lead_dominoes.long(), decl_ids_2d]  # [N, K]
 
     # Check which dominoes can follow: [N, M, K, 7]
     # can_follow_table[domino_id, led_suit, decl_id] -> bool
     led_suits_expanded = led_suits.unsqueeze(1).unsqueeze(-1).expand(N, M, K, 7)  # [N, M, K, 7]
-    can_follow_mask = can_follow_table[domino_ids.long(), led_suits_expanded.long(), decl_id]  # [N, M, K, 7]
+    # Expand decl_ids [N] -> [N, M, K, 7] for can_follow lookup
+    decl_ids_4d = decl_ids_t.view(N, 1, 1, 1).expand(N, M, K, 7)  # [N, M, K, 7]
+    can_follow_mask = can_follow_table[domino_ids.long(), led_suits_expanded.long(), decl_ids_4d]  # [N, M, K, 7]
 
     # Check if any domino in hand can follow
     # If actor must follow, only followers are legal
@@ -541,6 +564,7 @@ def compute_posterior_weights_gpu(
     actors: Tensor,            # [N, K] who played
     tau: float = 0.1,
     uniform_mix: float = 0.1,
+    historical_hands: Tensor | None = None,  # [N, M, K, 4, 7] reconstructed historical hands
 ) -> tuple[Tensor, dict]:
     """Compute posterior weights per world using GPU tensor operations.
 
@@ -557,10 +581,14 @@ def compute_posterior_weights_gpu(
         q_past: [N, M, K, 7] Q-values at past states
         legal_masks: [N, M, K, 7] legal actions mask
         observed_actions: [N, K] domino IDs played at each step
-        worlds: [N, M, 4, 7] sampled world hands (to map domino IDs to local indices)
+        worlds: [N, M, 4, 7] sampled world hands (used if historical_hands not provided)
         actors: [N, K] who played at each step
         tau: Temperature for advantage-softmax (default: 0.1)
         uniform_mix: Uniform mixture coefficient (beta) for robustness (default: 0.1)
+        historical_hands: [N, M, K, 4, 7] reconstructed hands at each past step (optional).
+            If provided, uses the correct historical hand for each step k to find
+            the observed action. This fixes the bug where played dominoes were
+            missing from the hand and could not be found.
 
     Returns:
         weights: [N, M] normalized weights per world
@@ -573,17 +601,26 @@ def compute_posterior_weights_gpu(
     N, M, K, _ = q_past.shape
     device = q_past.device
 
+    # Get worlds expanded to [N, M, K, 4, 7]
+    if historical_hands is not None:
+        worlds_expanded = historical_hands  # [N, M, K, 4, 7]
+    else:
+        worlds_expanded = worlds.unsqueeze(2).expand(N, M, K, 4, 7)
+
     # =========================================================================
     # Step 1: Map observed_actions domino IDs to local hand indices
     # =========================================================================
-    # For each (n, k), find which slot in worlds[n, m, actors[n, k], :] contains observed_actions[n, k]
+    # For each (n, k), find which slot in worlds_expanded[n, m, k, actors[n, k], :] contains observed_actions[n, k]
     # Result: obs_local_idx[n, m, k] = local index (0-6) or -1 if not found
 
     # Extract actor hands: [N, M, K, 7]
-    actors_expanded = actors.long().unsqueeze(1).expand(N, M, K)  # [N, M, K]
+    # Clamp actors to [0, 3] range - invalid steps may have -1, which causes gather errors
+    # Invalid steps will have all-False legal_masks and contribute 0 to log-weights
+    actors_clamped = actors.clamp(0, 3).long()
+    actors_expanded = actors_clamped.unsqueeze(1).expand(N, M, K)  # [N, M, K]
     actors_idx = actors_expanded.unsqueeze(-1).expand(N, M, K, 7)  # [N, M, K, 7]
     actor_hands = torch.gather(
-        worlds.unsqueeze(2).expand(N, M, K, 4, 7),
+        worlds_expanded,  # [N, M, K, 4, 7]
         dim=3,
         index=actors_idx.unsqueeze(3)
     ).squeeze(3)  # [N, M, K, 7]
@@ -606,7 +643,8 @@ def compute_posterior_weights_gpu(
     # legal_masks: [N, M, K, 7] bool
 
     legal_f = legal_masks.float()  # [N, M, K, 7]
-    legal_count = legal_f.sum(dim=-1, keepdim=True).clamp(min=1.0)  # [N, M, K, 1]
+    legal_count_raw = legal_f.sum(dim=-1, keepdim=True)  # [N, M, K, 1] - before clamping
+    legal_count = legal_count_raw.clamp(min=1.0)  # [N, M, K, 1] - clamped for division
     mean_q_legal = (q_past * legal_f).sum(dim=-1, keepdim=True) / legal_count  # [N, M, K, 1]
 
     advantage = (q_past - mean_q_legal) / tau  # [N, M, K, 7]
@@ -641,9 +679,11 @@ def compute_posterior_weights_gpu(
     # Mark invalid observations with very low log-prob
     log_prob = torch.where(invalid_obs, torch.tensor(-1e9, device=device), log_prob)  # [N, M, K]
 
-    # Check if no legal actions (shouldn't happen with correct legal masks)
-    has_legal = legal_count.squeeze(-1) > 0  # [N, M, K]
-    log_prob = torch.where(has_legal, log_prob, torch.tensor(-1e9, device=device))  # [N, M, K]
+    # Check if no legal actions (e.g., invalid steps with valid_mask=False)
+    # Use raw count before clamping to properly detect zero legal actions
+    # For invalid steps, set log_prob to 0 (not -inf) so they don't influence weights
+    has_legal = legal_count_raw.squeeze(-1) > 0  # [N, M, K]
+    log_prob = torch.where(has_legal, log_prob, torch.tensor(0.0, device=device))  # [N, M, K]
 
     # Sum across steps K
     logw = log_prob.sum(dim=-1)  # [N, M]
@@ -680,3 +720,167 @@ def compute_posterior_weights_gpu(
     }
 
     return weights, diagnostics
+
+
+def reconstruct_historical_hands(
+    hypothetical: Tensor,      # [N, M, 4, 7] current hands (with -1 for played)
+    history: Tensor,           # [N, max_len, 3] (player, domino, lead_domino) per step
+    history_len: Tensor,       # [N] actual history length per game
+    step_indices: Tensor,      # [N, K] absolute step index for each past step
+    valid_mask: Tensor,        # [N, K] bool - is this step valid?
+) -> Tensor:
+    """Reconstruct historical hands at each past step k.
+
+    For past step k, a player's hand at that time = current hand + dominoes they
+    played at or after step k.
+
+    This fixes the bug where we were using CURRENT hands (with played dominoes
+    removed as -1) instead of HISTORICAL hands (with played dominoes present).
+
+    Args:
+        hypothetical: [N, M, 4, 7] current hands where -1 indicates played dominoes
+        history: [N, max_len, 3] play history (player, domino, lead_domino)
+        history_len: [N] actual history length per game
+        step_indices: [N, K] which absolute step each past step k corresponds to
+        valid_mask: [N, K] whether each past step is valid
+
+    Returns:
+        historical_hands: [N, M, K, 4, 7] reconstructed hands at each past step k
+    """
+    N, M = hypothetical.shape[:2]
+    K = step_indices.shape[1]
+    max_len = history.shape[1]
+    device = hypothetical.device
+
+    # Start with hypothetical expanded to [N, M, K, 4, 7]
+    # Each step k starts with the current hand
+    historical = hypothetical.unsqueeze(2).expand(N, M, K, 4, 7).clone()
+
+    # Extract player and domino from history
+    # history: [N, max_len, 3] -> players [N, max_len], dominoes [N, max_len]
+    hist_players = history[:, :, 0]  # [N, max_len]
+    hist_dominoes = history[:, :, 1]  # [N, max_len]
+
+    # For each past step k at step_indices[n, k], we need to add back dominoes
+    # played at steps >= step_indices[n, k]
+
+    # Create a mask for which history entries are >= step_indices[n, k]
+    # step_indices: [N, K] -> [N, K, 1]
+    # history positions: [1, 1, max_len]
+    step_indices_exp = step_indices.unsqueeze(-1)  # [N, K, 1]
+    hist_positions = torch.arange(max_len, device=device).view(1, 1, max_len)  # [1, 1, max_len]
+
+    # at_or_after[n, k, s] = True if step s >= step_indices[n, k]
+    at_or_after = hist_positions >= step_indices_exp  # [N, K, max_len]
+
+    # Also mask out invalid history entries (where player == -1)
+    valid_history = (hist_players >= 0).unsqueeze(1)  # [N, 1, max_len]
+    at_or_after = at_or_after & valid_history  # [N, K, max_len]
+
+    # For each player p (0-3), find dominoes they played at or after step k
+    # We'll iterate over players (small loop, only 4 iterations)
+    for p in range(4):
+        # player_plays[n, k, s] = True if history[n, s, 0] == p AND s >= step_indices[n, k]
+        is_player_p = (hist_players == p).unsqueeze(1)  # [N, 1, max_len]
+        player_plays_mask = at_or_after & is_player_p  # [N, K, max_len]
+
+        # Extract dominoes played by player p at or after each step k
+        # dominoes_by_p[n, k, s] = hist_dominoes[n, s] if player_plays_mask[n, k, s] else -1
+        dominoes_by_p = torch.where(
+            player_plays_mask,
+            hist_dominoes.unsqueeze(1).expand(N, K, max_len),
+            torch.tensor(-1, device=device)
+        )  # [N, K, max_len]
+
+        # Now we need to fill -1 slots in historical[n, m, k, p, :] with dominoes_by_p[n, k, :]
+        # For each (n, k), find -1 slots in historical[n, :, k, p, :] and fill them
+
+        # Find empty slots: [N, M, K, 7] bool
+        empty_slots = (historical[:, :, :, p, :] < 0)  # [N, M, K, 7]
+
+        # For each (n, k), collect non-(-1) dominoes from dominoes_by_p[n, k, :]
+        # and fill them into empty slots
+
+        # Get count of dominoes to fill per (n, k)
+        # dominoes_by_p: [N, K, max_len]
+        fill_dominoes = dominoes_by_p  # [N, K, max_len]
+        fill_valid = (fill_dominoes >= 0)  # [N, K, max_len]
+
+        # We need to "scatter" these dominoes into empty slots
+        # Since the number varies per (n, k), we'll use a loop over the maximum
+
+        # Compute cumulative count of valid fill dominoes
+        fill_cumsum = fill_valid.cumsum(dim=-1)  # [N, K, max_len]
+        fill_count = fill_valid.sum(dim=-1)  # [N, K]
+
+        # Compute cumulative count of empty slots per (n, m, k)
+        empty_cumsum = empty_slots.cumsum(dim=-1)  # [N, M, K, 7]
+
+        # For each empty slot j, its fill index is empty_cumsum[..., j] - 1
+        # We need to find the domino with that index in fill_dominoes
+
+        # Create fill index for each slot: [N, M, K, 7]
+        slot_fill_idx = empty_cumsum - 1  # 0-indexed fill position
+        slot_fill_idx = slot_fill_idx.clamp(min=0)  # Clamp for safety
+
+        # For each fill index, find the corresponding domino in fill_dominoes
+        # We need to find: for fill_idx i, which s has fill_cumsum[n, k, s] == i+1 and fill_valid[n, k, s]?
+
+        # Create a mapping: for each (n, k, fill_idx), what domino?
+        # fill_cumsum: [N, K, max_len]
+        # fill_dominoes: [N, K, max_len]
+
+        # For each fill position (0, 1, 2, ..., max_fills-1), find the domino
+        max_fills = 7  # At most 7 dominoes to fill (can't have more than 7 played)
+
+        # fill_position_to_domino[n, k, fill_pos] = domino at that fill position
+        # We compute this by finding where fill_cumsum == fill_pos + 1 (first occurrence)
+
+        fill_positions = torch.arange(max_fills, device=device).view(1, 1, 1, max_fills)  # [1, 1, 1, max_fills]
+        # fill_cumsum: [N, K, max_len] -> [N, K, max_len, 1]
+        fill_cumsum_exp = fill_cumsum.unsqueeze(-1)  # [N, K, max_len, 1]
+
+        # matches[n, k, s, fill_pos] = True if fill_cumsum[n, k, s] == fill_pos + 1 and fill_valid[n, k, s]
+        matches_fill = (fill_cumsum_exp == fill_positions + 1) & fill_valid.unsqueeze(-1)  # [N, K, max_len, max_fills]
+
+        # First match along s dimension gives us the domino
+        # argmax returns first True
+        first_match_idx = matches_fill.to(torch.int64).argmax(dim=2)  # [N, K, max_fills]
+
+        # Gather dominoes at those indices
+        # fill_dominoes: [N, K, max_len]
+        fill_dominoes_exp = fill_dominoes.unsqueeze(-1).expand(N, K, max_len, max_fills)  # [N, K, max_len, max_fills]
+        first_match_idx_exp = first_match_idx.unsqueeze(2)  # [N, K, 1, max_fills]
+        fill_position_to_domino = fill_dominoes_exp.gather(dim=2, index=first_match_idx_exp).squeeze(2)  # [N, K, max_fills]
+
+        # Now for each empty slot, look up the domino
+        # slot_fill_idx: [N, M, K, 7] (0-indexed fill position for each slot)
+        # fill_position_to_domino: [N, K, max_fills]
+
+        # Expand fill_position_to_domino to [N, 1, K, max_fills] then [N, M, K, max_fills]
+        fill_lookup = fill_position_to_domino.unsqueeze(1).expand(N, M, K, max_fills)  # [N, M, K, max_fills]
+
+        # Clamp slot_fill_idx to valid range and gather
+        slot_fill_idx_clamped = slot_fill_idx.clamp(max=max_fills - 1)  # [N, M, K, 7]
+        fill_domino_for_slot = fill_lookup.gather(dim=-1, index=slot_fill_idx_clamped)  # [N, M, K, 7]
+
+        # Only fill slots that are actually empty AND have a valid fill domino
+        # fill_count: [N, K] -> [N, 1, K, 1]
+        fill_count_exp = fill_count.unsqueeze(1).unsqueeze(-1)  # [N, 1, K, 1]
+        has_fill = slot_fill_idx < fill_count_exp  # [N, M, K, 7]
+        should_fill = empty_slots & has_fill
+
+        # Update historical hands
+        historical[:, :, :, p, :] = torch.where(
+            should_fill,
+            fill_domino_for_slot,
+            historical[:, :, :, p, :]
+        )
+
+    # Apply valid_mask: invalid steps should keep original hypothetical
+    # valid_mask: [N, K] -> [N, 1, K, 1, 1]
+    valid_mask_exp = valid_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)  # [N, 1, K, 1, 1]
+    hypothetical_exp = hypothetical.unsqueeze(2).expand(N, M, K, 4, 7)  # [N, M, K, 4, 7]
+    historical = torch.where(valid_mask_exp, historical, hypothetical_exp)
+
+    return historical

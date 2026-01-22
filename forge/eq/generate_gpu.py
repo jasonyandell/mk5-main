@@ -37,6 +37,7 @@ from forge.eq.game_tensor import GameStateTensor
 from forge.eq.posterior_gpu import (
     compute_legal_masks_gpu,
     compute_posterior_weights_gpu,
+    reconstruct_historical_hands,
     reconstruct_past_states_gpu,
 )
 from forge.eq.sampling_gpu import WorldSampler
@@ -971,7 +972,9 @@ def _query_model(
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
             q_values, _ = model(tokens, masks, current_players)
 
-    return q_values
+    # Clone to prevent CUDA graph buffer reuse when model is called multiple times
+    # (e.g., posterior weighting calls model again for past steps)
+    return q_values.clone()
 
 
 def _select_actions(
@@ -1181,13 +1184,9 @@ def _compute_posterior_weighted_eq(
     # An entry is valid if player (first field) >= 0
     history_len = (states.history[:, :, 0] >= 0).sum(dim=1)  # [N]
 
-    # If there's insufficient history (less than K steps for any game), fall back to uniform
-    if (history_len < posterior_config.window_k).any():
-        # Not enough history for posterior weighting, use uniform mean and variance
-        q_reshaped = q_values.view(n_games, n_samples, 7)
-        e_q_mean = q_reshaped.mean(dim=1)  # [n_games, 7]
-        e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
-        return e_q_mean, e_q_var, None
+    # Note: Games with insufficient history (< window_k) are handled per-game
+    # by the valid_mask in reconstruct_past_states_gpu. Invalid steps get
+    # zero legal actions -> uniform weights for that game only.
 
     # 2. Reconstruct past states
     past_states = reconstruct_past_states_gpu(
@@ -1200,7 +1199,18 @@ def _compute_posterior_weighted_eq(
     # 3. Build hypothetical deals from worlds (same format as main pipeline)
     hypothetical = _build_hypothetical_deals(states, worlds)  # [N, M, 4, 7]
 
-    # 4. Tokenize past steps for all games/samples/steps
+    # 4. Reconstruct historical hands at each past step k
+    # This fixes the bug where we were using CURRENT hands instead of HISTORICAL hands
+    # Historical hands have dominoes that were played AFTER step k added back
+    historical_hands = reconstruct_historical_hands(
+        hypothetical=hypothetical,
+        history=states.history,
+        history_len=history_len,
+        step_indices=past_states.step_indices,
+        valid_mask=past_states.valid_mask,
+    )  # [N, M, K, 4, 7]
+
+    # 5. Tokenize past steps for all games/samples/steps
     # Need larger tokenizer for N*M*K batch (past steps tokenization)
     K = posterior_config.window_k
     past_batch_size = n_games * n_samples * K
@@ -1214,7 +1224,8 @@ def _compute_posterior_weighted_eq(
     past_tokens, past_masks = past_tokenizer.tokenize_past_steps_batched(
         worlds=hypothetical,
         past_states=past_states,
-        decl_id=states.decl_ids[0].item(),  # Assume single decl_id for batch
+        decl_ids=states.decl_ids,  # Per-game declaration IDs
+        historical_hands=historical_hands,  # Reconstructed hands at each past step
     )
 
     # 5. Query oracle for past steps
@@ -1257,8 +1268,9 @@ def _compute_posterior_weighted_eq(
     legal_masks = compute_legal_masks_gpu(
         worlds=hypothetical,
         past_states=past_states,
-        decl_id=states.decl_ids[0].item(),
+        decl_ids=states.decl_ids,  # Per-game declaration IDs
         device=states.device,
+        historical_hands=historical_hands,  # Reconstructed hands at each past step
     )
 
     # 7. Compute posterior weights
@@ -1270,6 +1282,7 @@ def _compute_posterior_weighted_eq(
         actors=past_states.actors,
         tau=posterior_config.tau,
         uniform_mix=posterior_config.uniform_mix,
+        historical_hands=historical_hands,  # Reconstructed hands at each past step
     )
 
     # 8. Apply weights to current Q-values
