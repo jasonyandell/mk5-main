@@ -8,6 +8,47 @@ If you are running in WSL and `torch.cuda.is_available()` is **False** (or you s
 
 Do **not** fall back to CPU when validating performance or throughput. **CPU timings are not a proxy** for GPU performance. If CUDA is broken and you care about perf, treat it as a hard failure: **fix CUDA first**.
 
+## Quick Start: Use the CLI
+
+**PRIMARY INTERFACE - To generate E[Q] training data, use the CLI:**
+
+```bash
+# Basic usage (GPU, gap-filling, per-seed files)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+# Preview what would be generated (dry run)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --dry-run
+
+# With posterior weighting (recommended for better mid-game E[Q])
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --posterior --posterior-window 4
+
+# Custom configuration
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --batch-size 64 \
+    --n-samples 100 \
+    --start-seed 1000 \
+    --limit 500
+```
+
+**Key Features**:
+- **GPU-native**: ~100x faster than CPU pipeline
+- **Per-seed files**: `data/eq-games/{train,val,test}/seed_*.pt`
+- **Gap-filling**: Automatically finds and generates missing seeds
+- **Train/val/test routing**: Same 90/5/5 split as Stage 1 (seed % 1000)
+- **Resumable**: Ctrl+C safe, atomic saves
+- **Monitoring**: Real-time progress with games/sec and batch info
+
+**View generated data**:
+```bash
+python -m forge.eq.viewer data/eq-games/train/seed_00000042.pt
+```
+
 ## The Problem
 
 Texas 42 AIs using hand-coded heuristics are **point estimates applied to a distribution**. Rules like "don't pull partner's trump" assume one world state when reality is a probability distribution across many possible opponent hands. Heuristics don't compose, conflict with each other, and fail at edge cases.
@@ -44,29 +85,50 @@ Texas 42 AIs using hand-coded heuristics are **point estimates applied to a dist
 │  Input:  Transcript only (public information)          │
 │  Output: E[Q] for 7 actions                            │
 │  Role:   Deployed player (single forward pass)         │
-└─────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────┘
 ```
+
+## CLI Reference
+
+### Core Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--checkpoint PATH` | **REQUIRED**: Stage 1 Q-value model checkpoint | - |
+| `--start-seed N` | Start gap-filling from this seed | 0 |
+| `--batch-size N` | GPU batch size (games per batch) | 32 |
+| `--n-samples N` | Worlds sampled per decision | 50 |
+| `--device cuda\|cpu` | Device to use | cuda |
+| `--output-dir PATH` | Output directory | data/eq-games |
+| `--dry-run` | Show missing seeds without generating | - |
+| `--limit N` | Stop after generating N games | None |
+
+### Posterior Weighting (Optional)
+
+Improves E[Q] estimates mid-game by reweighting sampled worlds based on observed play history:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--posterior` | Enable posterior weighting | disabled |
+| `--posterior-window K` | Sliding window size K | 4 |
+| `--posterior-tau T` | Temperature for softmax weighting | 0.1 |
+| `--posterior-mix α` | Uniform mix coefficient | 0.1 |
+
+### Exploration Policies (Optional)
+
+Control how the E[Q] policy explores during data generation:
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--exploration POLICY` | Policy: `greedy`, `epsilon_greedy`, `boltzmann` | greedy |
+| `--epsilon ε` | Epsilon for epsilon_greedy | 0.1 |
+| `--temperature T` | Temperature for boltzmann | 2.0 |
 
 ## Documentation
 
 - Research spec (semantics, invariants, ML tradeoffs): `docs/EQ_STAGE2_TRAINING.md`
-- Ops manual (how to run/debug generation): `forge/eq/README.md`
-
-## Quick Start
-
-```bash
-# Generate training data (1000 games, ~7 minutes on RTX 3050 Ti)
-python -m forge.eq.generate_dataset --n-games 1000 --output forge/data/eq_dataset.pt
-
-# Continuous generation with monitoring (resumes from existing dataset)
-python -m forge.eq.generate_continuous --target-games 100000
-
-# View training examples interactively
-python -m forge.eq.viewer forge/data/eq_dataset.pt
-
-# Jump to specific game
-python -m forge.eq.viewer forge/data/eq_dataset.pt --game 42
-```
+- Module reference (how the pipeline works internally): See "Pipeline Components" below
+- Higher-level overview: `forge/ORIENTATION.md` (E[Q] Training Pipeline section)
 
 ## File Structure
 

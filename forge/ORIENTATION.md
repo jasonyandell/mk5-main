@@ -106,12 +106,12 @@ Everything exists to:
 ```
 ┌─────────────────────────────────┐
 │  forge/cli/                     │  User-facing commands
+│  - generate_eq_continuous.py    │  ★ GPU E[Q] training data (Stage 2)
+│  - generate_continuous.py       │  Continuous oracle generation (Stage 1)
 │  - train.py                     │  Train models with Wandb
 │  - eval.py                      │  Evaluate checkpoints
 │  - tokenize_data.py             │  Preprocess shards
 │  - flywheel.py                  │  Iterative training
-│  - generate_continuous.py       │  Continuous oracle generation
-│  - generate_eq_continuous.py    │  GPU E[Q] training data generation
 │  - bidding_continuous.py        │  Continuous P(make) evaluation
 └─────────────────────────────────┘
               ↕
@@ -189,6 +189,8 @@ Everything exists to:
 
 ## Data Flow
 
+### Stage 1: Perfect-Info Oracle Training
+
 ```
 1. GENERATE (GPU solver - continuous mode recommended)
    python -m forge.cli.generate_continuous              # Standard mode
@@ -208,6 +210,22 @@ Everything exists to:
 
    Output: runs/domino/version_X/
            └── checkpoints/, hparams.yaml, metrics.csv
+```
+
+### Stage 2: Imperfect-Info E[Q] Training Data
+
+```
+1. GENERATE E[Q] (GPU, uses Stage 1 checkpoint)
+   python -m forge.cli.generate_eq_continuous \
+       --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+   Output: data/eq-games/{train,val,test}/
+           └── seed_*.pt files with E[Q] marginalized over sampled worlds
+
+2. TRAIN STAGE 2 (TODO - not yet implemented)
+   python -m forge.cli.train_eq --data data/eq-games --wandb
+
+   Output: Stage 2 imperfect-info policy checkpoint
 ```
 
 Use `--help` on any command for full options.
@@ -390,7 +408,26 @@ This split is used consistently across Stage 1 oracle data and Stage 2 E[Q] data
 
 ## Essential Commands
 
-### Oracle Generation
+### E[Q] Generation (Stage 2 Training Data)
+
+```bash
+# Generate E[Q] training data (GPU, gap-filling, per-seed files)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+# Preview what would be generated
+python -m forge.cli.generate_eq_continuous --checkpoint model.ckpt --dry-run
+
+# With posterior weighting (recommended for mid-game accuracy)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --posterior --posterior-window 4
+
+# View generated data interactively
+python -m forge.eq.viewer data/eq-games/train/seed_00000042.pt
+```
+
+### Oracle Generation (Stage 1 Training Data)
 
 ```bash
 # Continuous generation (recommended)
@@ -657,6 +694,58 @@ Stage 2 Model (sees transcript only, learns E[Q])
    At runtime: single forward pass, no sampling
 ```
 
+### Quick Start: E[Q] CLI (Primary Interface)
+
+**To generate E[Q] training data, use the CLI:**
+
+```bash
+# Generate E[Q] training data (GPU, per-seed files, gap-filling)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+
+# Preview what would be generated (dry run)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --dry-run
+
+# With posterior weighting (improves E[Q] estimates mid-game)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --posterior --posterior-window 4
+
+# Custom batch size and sample count
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --batch-size 64 \
+    --n-samples 100
+
+# Start from specific seed (resume/backfill)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --start-seed 1000
+
+# Limit number of games (for testing)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --limit 100
+```
+
+**Output**: Per-seed `.pt` files in `data/eq-games/{train,val,test}/seed_*.pt`
+
+**Key Features**:
+- **GPU-native**: ~100x faster than CPU pipeline
+- **Per-seed files**: Maximum parallelism and resumability
+- **Gap-filling**: Automatically detects and generates missing seeds
+- **Train/val/test routing**: Same 90/5/5 split as Stage 1 (seed % 1000)
+- **Atomic saves**: Ctrl+C safe, won't corrupt data
+- **Graceful shutdown**: Press Ctrl+C to stop cleanly
+
+**Interactive Viewer**:
+```bash
+# Inspect generated data interactively
+python -m forge.eq.viewer data/eq-games/train/seed_00000042.pt
+```
+
 ### Directory Structure
 
 ```
@@ -717,25 +806,31 @@ Each training example is one **decision point**:
 | `u_mean`, `u_max` | scalar | State-level uncertainty scalars |
 | `ess`, `max_w` | scalar | Posterior diagnostics (effective sample size, max weight) |
 
-### Essential Commands
+### CLI Options Reference
 
 ```bash
-# Preview what would be generated
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt \
-    --dry-run
+python -m forge.cli.generate_eq_continuous --help
 
-# Generate training data (GPU, recommended)
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt
+# Core options:
+  --checkpoint PATH        Stage 1 Q-value model checkpoint (REQUIRED)
+  --start-seed N           Start gap-filling from this seed (default: 0)
+  --batch-size N           GPU batch size in games (default: 32)
+  --n-samples N            Worlds sampled per decision (default: 50)
+  --device cuda|cpu        Device (default: cuda)
+  --output-dir PATH        Output directory (default: data/eq-games)
+  --dry-run                Show missing seeds without generating
+  --limit N                Stop after generating N games
 
-# With posterior weighting (improves E[Q] estimates mid-game)
-python -m forge.cli.generate_eq_continuous \
-    --checkpoint model.ckpt \
-    --posterior --posterior-window 4
+# Posterior weighting (optional, improves mid-game E[Q]):
+  --posterior              Enable posterior weighting
+  --posterior-window K     Window K for posterior (default: 4)
+  --posterior-tau T        Temperature tau (default: 0.1)
+  --posterior-mix α        Uniform mix coefficient (default: 0.1)
 
-# Interactive viewer
-python -m forge.eq.viewer path/to/dataset.pt
+# Exploration policies (optional):
+  --exploration POLICY     Policy: greedy, epsilon_greedy, boltzmann
+  --epsilon ε              Epsilon for epsilon_greedy (default: 0.1)
+  --temperature T          Temperature for boltzmann (default: 2.0)
 ```
 
 ### Train/Val/Test Split
