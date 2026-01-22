@@ -2,73 +2,112 @@
 
 ## Overview
 
-Phase 4 of the 4-phase GPU-native E[Q] pipeline (issue t42-k7ny) is complete:
-
-- ✅ **Phase 1**: `forge/eq/game_tensor.py` - GameStateTensor (GPU game state)
-- ✅ **Phase 2**: `forge/eq/sampling_gpu.py` - WorldSampler (GPU world sampling)
-- ✅ **Phase 3**: `forge/eq/tokenize_gpu.py` - GPUTokenizer (GPU tokenization)
-- ✅ **Phase 4**: `forge/eq/generate_gpu.py` - Full GPU pipeline integration
+The GPU-native E[Q] pipeline generates training data by playing games using a Stage 1 oracle to estimate E[Q] (expected Q-value) for each legal action. The pipeline runs entirely on GPU for both game state management and model inference.
 
 ## Architecture
 
 ```
-GameStateTensor (N games on GPU)
-      ↓
-WorldSampler (N × M samples) → CPU fallback for constrained scenarios
-      ↓
-GPUTokenizer (pure tensor ops)
-      ↓
-Model forward (single batch)
-      ↓
-E[Q] aggregation → best actions
-      ↓
-apply_actions (vectorized)
-      └──→ repeat until games done
+Core Loop (per decision):
+──────────────────────────────────────────────────────────────────────────────
+    GameStateTensor          N games running in parallel
+           ↓
+    WorldSamplerMRV          Sample M opponent hands per game
+           ↓                 (constrained by voids, played dominoes)
+    Build hypothetical       Combine known hand + sampled opponents
+           ↓                 → [N, M, 4, 7] full deals
+    GPUTokenizer             Tokenize current decision
+           ↓                 → [N×M, 32, 12] tokens
+    Model forward            Query oracle for Q-values
+           ↓                 → [N×M, 7] Q per action
+    E[Q] aggregation         Uniform or posterior-weighted (see below)
+           ↓                 → [N, 7] expected Q per action
+    Action selection         Greedy, softmax, or exploration policy
+           ↓
+    apply_actions            Advance game state
+           └──→ repeat until all games complete
 ```
 
 One Python loop iteration per game **step**, not per decision.
 
-## Files Created/Modified
+## Key Features
 
-### New Files
+### Aggregation Modes
 
-1. **`forge/eq/generate_gpu.py`** (Phase 4)
-   - Main entry point: `generate_eq_games_gpu()`
-   - Integrated pipeline processing N games in parallel
-   - CPU fallback for constrained sampling scenarios
-   - Device-aware (works on CUDA, CPU, or mixed setups)
+**1. UNIFORM (default):**
+```python
+generate_eq_games_gpu(model, hands, decl_ids, n_samples=50)
+# E[Q] = mean over M samples. Fast, no extra model calls.
+```
 
-2. **`forge/eq/test_generate_gpu.py`**
-   - Comprehensive test suite
-   - Tests correctness, performance, memory usage
-   - Tests CPU compatibility and various declarations
+**2. POSTERIOR-WEIGHTED:**
+```python
+from forge.eq.generate_gpu import PosteriorConfig
 
-3. **`forge/eq/collate.py`** (Phase 1c - t42-xncr)
-   - Post-game transcript reconstruction
-   - Converts `GameRecordGPU` to Stage 2 training format
-   - See `COLLATE.md` for details
+generate_eq_games_gpu(
+    model, hands, decl_ids,
+    posterior_config=PosteriorConfig(
+        enabled=True,
+        window_k=4,    # Past K steps for weighting
+        tau=0.1,       # Softmax temperature
+        uniform_mix=0.1,  # Robustness mixture
+    )
+)
+```
 
-### Pre-existing Files (Phase 1-3, already implemented)
+Uses Bayesian inference to reweight samples based on past play. Samples consistent with observed opponent actions get higher weight.
 
-3. **`forge/eq/game_tensor.py`** (Phase 1)
-   - GPU-vectorized game state
-   - Pre-computed lookup tables
-   - Batch operations for N games
+Additional steps when posterior enabled:
+- Reconstruct past K states (what board looked like K steps ago)
+- Reconstruct historical hands (undo plays to get hands at step k)
+- Tokenize past steps [N×M×K, 32, 12] (second tokenization)
+- Model forward for past Q-values (second oracle call)
+- Compute legal masks at each past step
+- Bayesian weighting: P(world|observed actions) ∝ P(actions|world)
 
-4. **`forge/eq/sampling_gpu.py`** (Phase 2)
-   - WorldSampler class with pre-allocated buffers
-   - Parallel first-fit algorithm
-   - Void constraint checking on GPU
+Output includes ESS (effective sample size) diagnostics:
+- ESS << M indicates strong filtering (opponent play is informative)
+- ESS ≈ M indicates weak filtering (opponent play doesn't help much)
 
-5. **`forge/eq/tokenize_gpu.py`** (Phase 3)
-   - GPUTokenizer class
-   - Pure tensor operations (no Python loops)
-   - Pre-computed feature tables
+### Exploration Policy
+
+```python
+from forge.eq.types import ExplorationPolicy
+
+generate_eq_games_gpu(
+    model, hands, decl_ids,
+    exploration_policy=ExplorationPolicy(
+        mode="boltzmann",  # or "epsilon", "blunder"
+        temperature=1.0,
+        epsilon=0.1,
+        seed=42,
+    )
+)
+```
+
+When exploration_policy is provided, action selection can deviate from greedy:
+- Boltzmann sampling with temperature
+- Epsilon-greedy with random legal action fallback
+- Deliberate "blunders" for robustness training
+
+Tracks `q_gap` (regret) when exploration causes suboptimal action selection.
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `generate_gpu.py` | Main entry point: `generate_eq_games_gpu()` |
+| `game_tensor.py` | `GameStateTensor` - vectorized game state on GPU |
+| `sampling_mrv_gpu.py` | `WorldSamplerMRV` - MRV constraint solver (guaranteed valid) |
+| `sampling_gpu.py` | `WorldSampler` - rejection sampling (faster, may fail) |
+| `tokenize_gpu.py` | `GPUTokenizer` - pure tensor tokenization |
+| `posterior_gpu.py` | Posterior weight computation, historical reconstruction |
+| `collate.py` | Convert `GameRecordGPU` to Stage 2 training format |
+| `types.py` | `ExplorationPolicy`, `PosteriorDiagnostics` dataclasses |
 
 ## API Usage
 
 ```python
-from forge.eq.generate_gpu import generate_eq_games_gpu
+from forge.eq.generate_gpu import generate_eq_games_gpu, PosteriorConfig
 from forge.eq.collate import collate_batch
 from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
@@ -76,10 +115,11 @@ from forge.oracle.rng import deal_from_seed
 # Load model
 oracle = Stage1Oracle("checkpoints/model.ckpt", device='cuda')
 
-# Generate games
+# Generate deals
 hands = [deal_from_seed(i) for i in range(32)]
 decl_ids = [i % 10 for i in range(32)]
 
+# Basic usage (uniform weighting, greedy action selection)
 results = generate_eq_games_gpu(
     model=oracle.model,
     hands=hands,
@@ -89,79 +129,41 @@ results = generate_eq_games_gpu(
     greedy=True,
 )
 
+# With posterior weighting
+results = generate_eq_games_gpu(
+    model=oracle.model,
+    hands=hands,
+    decl_ids=decl_ids,
+    n_samples=50,
+    device='cuda',
+    posterior_config=PosteriorConfig(enabled=True, window_k=4),
+)
+
 # Each result contains:
 # - results[i].decisions: List of DecisionRecordGPU (28 per game)
+#     - .e_q: [7] E[Q] mean values
+#     - .e_q_var: [7] E[Q] variance
+#     - .ess: Effective sample size (if posterior enabled)
+#     - .q_gap: Regret from exploration (if exploration enabled)
 # - results[i].hands: Initial deal
 # - results[i].decl_id: Declaration
 
 # Convert to Stage 2 training format
 batch = collate_batch(results, game_indices=range(32))
-# batch contains transcript_tokens, e_q_mean, legal_mask, etc.
 ```
 
-## Performance Characteristics
+## Performance
 
-### Target Performance (from plan)
+### Empirical Results
 
-| Hardware | n_games | n_samples | batch_size | Target throughput |
-|----------|---------|-----------|------------|-------------------|
-| RTX 3050 Ti (4GB) | 32 | 50 | 1,600 | 5+ games/s |
-| H100 (80GB) | 1000 | 1024 | 1M | 100+ games/s |
+| Hardware | n_games | n_samples | Mode | Throughput |
+|----------|---------|-----------|------|------------|
+| RTX 3050 Ti (4GB) | 32 | 50 | Uniform | ~5 games/s |
+| RTX 3050 Ti (4GB) | 32 | 50 | Posterior | ~2 games/s |
 
-### Test Results
+Posterior mode is ~2-3x slower due to second model call for past K steps.
 
-All non-performance tests pass:
-- ✅ Single game correctness
-- ✅ Multi-game batch processing
-- ✅ Memory allocation (32 games × 50 samples, no OOM)
-- ✅ CPU compatibility
-- ✅ CPU/GPU baseline comparison (stochastic agreement)
-- ✅ Greedy vs sampled action selection
-- ✅ Various declaration types
-
-## Key Features
-
-### 1. CPU Fallback for Constrained Sampling
-
-The GPU sampler uses a parallel first-fit algorithm which is very fast but can fail for heavily constrained scenarios (late game with many void inferences). When this happens, the pipeline automatically falls back to CPU backtracking:
-
-```python
-try:
-    worlds = sampler.sample(pools, hand_sizes, voids, decl_ids, n_samples)
-except RuntimeError:
-    # GPU failed - use CPU backtracking
-    worlds = _sample_worlds_cpu_fallback(states, ...)
-```
-
-This hybrid approach gives:
-- **Fast path**: GPU for early/mid-game (most samples)
-- **Reliable path**: CPU for late-game constrained scenarios
-
-### 2. Device-Aware Design
-
-The pipeline handles mixed device setups gracefully:
-- GameStateTensor on device A
-- Model on device B (e.g., CUDA when data is on CPU)
-- Automatic device transfers where needed
-- Works on CUDA, CPU, or MPS
-
-### 3. Pre-Allocated Buffers
-
-All GPU components use pre-allocated buffers to avoid per-call overhead:
-- WorldSampler: Permutation and hands buffers
-- GPUTokenizer: Token and mask buffers
-- Amortizes allocation cost across all decisions in all games
-
-### 4. Vectorized Operations
-
-No Python loops over games during generation:
-- All N games advance together each step
-- Single model forward pass for all (N × M) worlds
-- Vectorized E[Q] reduction
-
-## Memory Budget
-
-For 3050 Ti (4GB VRAM) with 32 games × 50 samples:
+### Memory Budget (3050 Ti, 32 games × 50 samples)
 
 | Component | Size |
 |-----------|------|
@@ -173,76 +175,57 @@ For 3050 Ti (4GB VRAM) with 32 games × 50 samples:
 | Activations | ~50MB |
 | **Total** | ~65MB |
 
-Leaves plenty of headroom for GPU operations.
+## Design Details
 
-## Limitations & Future Work
+### CPU Fallback for Constrained Sampling
 
-### Current Limitations
+The GPU sampler (MRV or rejection) can fail for heavily constrained scenarios. The pipeline automatically falls back to CPU:
 
-1. **GPU Sampling Constraints**
-   - Fails for heavily constrained scenarios (2+ voids per opponent, late game)
-   - Falls back to CPU (slower but correct)
-   - Could be improved with better rejection sampling or MCMC
+```python
+try:
+    worlds = sampler.sample(pools, hand_sizes, voids, decl_ids, n_samples)
+except RuntimeError:
+    worlds = _sample_worlds_cpu_fallback(states, ...)
+```
 
-2. **No Posterior Weighting**
-   - Pipeline uses uniform world weights
-   - For posterior features, use CPU pipeline (`generate_eq_game`)
+### Device-Aware Design
 
-3. **No Exploration Policy**
-   - Only greedy or softmax sampling
-   - For epsilon/boltzmann/blunder exploration, use CPU pipeline
+Handles mixed device setups:
+- GameStateTensor on device A
+- Model on device B
+- Automatic device transfers where needed
 
-### Future Improvements
+### Pre-Allocated Buffers
 
-1. **Hybrid Sampling** (Phase 2 enhancement)
-   - Start with GPU, detect constraint violations earlier
-   - Switch to CPU only for problematic games
-   - Could improve GPU sampling success rate to 90%+
+All GPU components use pre-allocated buffers:
+- WorldSampler: Permutation and hands buffers
+- GPUTokenizer: Token and mask buffers
+- Amortizes allocation cost across all decisions
 
-2. **Adaptive Oversampling** (Phase 2 enhancement)
-   - Dynamically adjust oversample factor based on void count
-   - More oversample when constraints are tight
-   - Target: 95%+ GPU sampling success
+### Vectorized Operations
 
-3. **Chunked Inference** (Phase 4 enhancement)
-   - For >1M batch sizes on H100
-   - Split into 100K chunks to avoid OOM
-   - Allows scaling to 10K+ concurrent games
-
-4. **Model Compilation** (Phase 4 enhancement)
-   - Enable `torch.compile()` for model forward pass
-   - CUDA graphs for reduced kernel launch overhead
-   - Could improve throughput by 20-30%
+Minimal Python loops during generation:
+- All N games advance together each step
+- Single model forward pass for all (N × M) worlds
+- Vectorized E[Q] reduction
 
 ## Testing
 
-Run tests with:
-
 ```bash
-# All non-performance tests
-pytest forge/eq/test_generate_gpu.py -k "not performance" -v
+# All tests
+pytest forge/eq/test_generate_gpu.py -v
 
-# Performance test (requires CUDA)
-pytest forge/eq/test_generate_gpu.py::test_performance_32_games -v
+# Skip performance tests
+pytest forge/eq/test_generate_gpu.py -k "not performance" -v
 
 # Memory test
 pytest forge/eq/test_generate_gpu.py::test_memory_no_oom -v
 ```
 
-## Compatibility
-
-The GPU pipeline is designed to coexist with the CPU pipeline:
-- Same semantics (produces valid E[Q] games)
-- Different implementation (GPU-optimized)
-- Use GPU for throughput, CPU for features (posterior, exploration)
-
-Both pipelines will continue to be maintained.
-
 ## References
 
-- Plan: `/home/jason/.claude/plans/precious-doodling-bentley.md`
-- Issue: t42-k7ny
-- Phase 1: `forge/eq/game_tensor.py`
-- Phase 2: `forge/eq/sampling_gpu.py`
-- Phase 3: `forge/eq/tokenize_gpu.py`
-- Phase 4: `forge/eq/generate_gpu.py` (this implementation)
+- Game tensor: `forge/eq/game_tensor.py`
+- World sampling: `forge/eq/sampling_mrv_gpu.py`, `forge/eq/sampling_gpu.py`
+- Tokenization: `forge/eq/tokenize_gpu.py`
+- Posterior weighting: `forge/eq/posterior_gpu.py`
+- Collation: `forge/eq/collate.py` (see `COLLATE.md`)
