@@ -1,28 +1,70 @@
 """GPU-native E[Q] generation pipeline.
 
-Phase 4 of 4-phase GPU pipeline (t42-k7ny):
-- Phase 1: GameStateTensor - GPU game state representation ✓
-- Phase 2: WorldSampler - GPU world sampling ✓
-- Phase 3: GPUTokenizer - GPU tokenization ✓
-- Phase 4: Full GPU pipeline integration (this file)
+Generates training data by playing games using a Stage 1 oracle to estimate
+E[Q] (expected Q-value) for each legal action. The pipeline runs entirely on
+GPU for both game state management and model inference.
 
-Architecture:
-    GameStateTensor (N games on GPU)
-        ↓
-    WorldSampler (N × M samples)
-        ↓
-    GPUTokenizer (pure tensor ops)
-        ↓
-    Model forward (single batch)
-        ↓
-    E[Q] aggregation → best actions
-        ↓
-    apply_actions (vectorized)
-        └──→ repeat until games done
+Core Loop (per decision):
+──────────────────────────────────────────────────────────────────────────────
+    GameStateTensor          N games running in parallel
+           ↓
+    WorldSampler             Sample M opponent hands per game
+           ↓                 (constrained by voids, played dominoes)
+    Build hypothetical       Combine known hand + sampled opponents
+           ↓                 → [N, M, 4, 7] full deals
+    GPUTokenizer             Tokenize current decision
+           ↓                 → [N×M, 32, 12] tokens
+    Model forward            Query oracle for Q-values
+           ↓                 → [N×M, 7] Q per action
+    E[Q] aggregation         See "Aggregation Modes" below
+           ↓                 → [N, 7] expected Q per action
+    Action selection         Greedy, softmax, or exploration policy
+           ↓
+    apply_actions            Advance game state
+           └──→ repeat until all games complete
 
-Performance targets:
-    - 3050 Ti (4GB): 32 games × 50 samples → 5+ games/s
-    - H100 (80GB): 1000 games × 1024 samples → 100+ games/s
+Aggregation Modes:
+──────────────────────────────────────────────────────────────────────────────
+1. UNIFORM (default, posterior_config=None or enabled=False):
+   E[Q] = mean over M samples. Fast, no extra model calls.
+
+2. POSTERIOR-WEIGHTED (posterior_config.enabled=True):
+   Uses Bayesian inference to reweight samples based on past play.
+   Samples consistent with observed opponent actions get higher weight.
+
+   Additional steps when posterior enabled:
+       ├─ Reconstruct past K states      What board looked like K steps ago
+       ├─ Reconstruct historical hands   Undo plays to get hands at step k
+       ├─ Tokenize past steps            [N×M×K, 32, 12] second tokenization
+       ├─ Model forward (past)           Second oracle call for past Q-values
+       ├─ Compute legal masks            What was legal at each past step?
+       └─ Bayesian weighting             P(world|observed actions) ∝ P(actions|world)
+
+   Output: E[Q] = weighted mean, plus ESS (effective sample size) diagnostics.
+   ESS << M indicates strong filtering (good - opponent play is informative).
+   ESS ≈ M indicates weak filtering (opponent play doesn't help much).
+
+Exploration Policy (optional):
+──────────────────────────────────────────────────────────────────────────────
+When exploration_policy is provided, action selection can deviate from greedy:
+- Boltzmann sampling with temperature
+- Epsilon-greedy with random legal action fallback
+- Deliberate "blunders" for robustness training
+
+Tracks q_gap (regret) when exploration causes suboptimal action selection.
+
+Key Components:
+──────────────────────────────────────────────────────────────────────────────
+- GameStateTensor     Vectorized game state (hands, voids, tricks, history)
+- WorldSamplerMRV     MRV-based constraint solver for valid opponent hands
+- GPUTokenizer        Pure tensor tokenization (no Python loops)
+- posterior_gpu       Posterior weight computation and historical reconstruction
+- DecisionRecordGPU   Per-decision output (E[Q], variance, ESS, exploration stats)
+
+Performance (measured on 3050 Ti, 32 games × 50 samples):
+──────────────────────────────────────────────────────────────────────────────
+- Uniform:   6.5 games/s
+- Posterior: 2.4 games/s (2.7x slower due to second model call for K past steps)
 """
 
 from __future__ import annotations
