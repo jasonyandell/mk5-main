@@ -69,6 +69,7 @@ Performance (measured on 3050 Ti, 32 games × 50 samples):
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -1303,7 +1304,18 @@ def _compute_posterior_weighted_eq(
         q_reshaped = q_values.view(n_games, n_samples, 7)
         e_q = q_reshaped.mean(dim=1)
         e_q_var = q_reshaped.var(dim=1, unbiased=False)
-        return e_q, e_q_var, None
+        # Return proper diagnostics: ESS = n_samples (uniform weights)
+        uniform_diagnostics = PosteriorDiagnostics(
+            ess=float(n_samples),  # Uniform weights -> ESS = n_samples
+            max_w=1.0 / n_samples,  # Uniform weight
+            entropy=math.log(n_samples),  # Uniform entropy
+            k_eff=float(n_samples),  # k_eff = exp(entropy) = n_samples
+            n_invalid=0,
+            n_illegal=0,
+            window_nll=0.0,
+            window_k_used=0,  # No history used
+        )
+        return e_q, e_q_var, uniform_diagnostics
 
     # Model forward pass
     with torch.inference_mode():

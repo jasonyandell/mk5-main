@@ -855,6 +855,39 @@ RTX 3050 Ti, batch=32, samples=50: ~3 games/sec → ~84 decisions/sec → ~300k 
 - `forge/data/eq_dataset.pt` - Monolithic files (legacy/debug)
 - `scratch/eq_test.pt` - Small test datasets
 
+### Visualization
+
+Generate animated GIFs showing E[Q] decisions with posterior diagnostics:
+
+```bash
+# Generate P0's 7 decisions as a GIF (one per trick)
+python -m forge.eq.render_visualizations \
+    --dataset scratch/eq_test_fix/train/seed_00000099.pt \
+    --playthrough --game 99 --fps 2 \
+    --output-dir forge/eq/renders
+
+# Show all 28 decisions (all players)
+python -m forge.eq.render_visualizations \
+    --dataset path/to/seed.pt \
+    --playthrough --game 99 --all-players
+
+# Single decision snapshot (data overload view)
+python -m forge.eq.render_visualizations \
+    --dataset path/to/seed.pt \
+    --overload --decision 15
+```
+
+**Output**: `forge/eq/renders/game_*_playthrough.gif`
+
+Each frame shows:
+- Domino hand with fixed positions (ghosts for played dominoes)
+- Violin plots of E[Q] distributions per action
+- ESS gauge (effective sample size - posterior filtering quality)
+- Q-gap gauge (decision difficulty)
+- Current trick, trick history, void inference map
+
+**Verifying posterior is working**: ESS should be < n_samples for most decisions. If ESS = n_samples for all, posterior filtering is broken (see t42-plyj for the historical bug).
+
 ---
 
 ## Debugging Tips
