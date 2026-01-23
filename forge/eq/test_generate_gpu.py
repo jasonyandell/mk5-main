@@ -1046,6 +1046,76 @@ def test_tokenize_batched_benchmark(device):
     assert total_time < 60, f"Benchmark took too long: {total_time:.2f}s"
 
 
+def test_enumeration_basic(oracle, device):
+    """Test that enumeration mode produces valid results."""
+    # Use a late-game scenario where enumeration is effective
+    # Generate a few games
+    n_games = 2
+    hands = [deal_from_seed(42 + i) for i in range(n_games)]
+    decl_ids = [3, 5]  # Different declarations
+
+    # Run with enumeration enabled (use lower threshold to avoid OOM on small GPUs)
+    records = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=hands,
+        decl_ids=decl_ids,
+        n_samples=50,
+        device=device,
+        greedy=True,
+        use_enumeration=True,
+        enumeration_threshold=1_000,  # Small threshold for testing
+    )
+
+    assert len(records) == n_games
+
+    for i, record in enumerate(records):
+        # Should have 28 decisions per game
+        assert len(record.decisions) == 28, f"Game {i}: expected 28 decisions, got {len(record.decisions)}"
+
+        # All E[Q] values should be valid (not all zeros or inf)
+        for j, decision in enumerate(record.decisions):
+            legal = decision.legal_mask
+            e_q_legal = decision.e_q[legal]
+
+            # Should have at least one legal action
+            assert legal.any(), f"Game {i}, decision {j}: no legal actions"
+
+            # E[Q] should be finite
+            assert torch.isfinite(e_q_legal).all(), (
+                f"Game {i}, decision {j}: non-finite E[Q] values"
+            )
+
+
+def test_enumeration_multiple_games(oracle, device):
+    """Test that enumeration mode works with multiple games."""
+    # Test with 4 games to ensure batch processing works
+    n_games = 4
+    hands = [deal_from_seed(200 + i) for i in range(n_games)]
+    decl_ids = [0, 3, 5, 9]  # Various declarations
+
+    # Run with enumeration
+    records = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=hands,
+        decl_ids=decl_ids,
+        n_samples=50,
+        device=device,
+        greedy=True,
+        use_enumeration=True,
+        enumeration_threshold=1_000,  # Small threshold for testing
+    )
+
+    # All games should complete
+    assert len(records) == n_games
+    for i, record in enumerate(records):
+        assert len(record.decisions) == 28, f"Game {i}: expected 28 decisions"
+
+        # All decisions should have valid E[Q] values
+        for j, dec in enumerate(record.decisions):
+            legal_eq = dec.e_q[dec.legal_mask]
+            assert torch.isfinite(legal_eq).all(), f"Game {i}, dec {j}: non-finite E[Q]"
+
+
 if __name__ == '__main__':
     # Run tests with verbose output
     pytest.main([__file__, '-v', '-s'])

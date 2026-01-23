@@ -76,6 +76,11 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from forge.eq.enumeration_gpu import (
+    WorldEnumeratorGPU,
+    extract_played_by,
+    should_enumerate,
+)
 from forge.eq.game_tensor import GameStateTensor
 from forge.eq.posterior_gpu import (
     compute_legal_masks_gpu,
@@ -146,6 +151,8 @@ def generate_eq_games_gpu(
     use_mrv_sampler: bool = True,
     exploration_policy: ExplorationPolicy | None = None,
     posterior_config: PosteriorConfig | None = None,
+    use_enumeration: bool = False,
+    enumeration_threshold: int = 100_000,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -153,7 +160,8 @@ def generate_eq_games_gpu(
         model: Stage 1 oracle model (DominoLightningModule or wrapper)
         hands: List of N initial deals, each is 4 hands of 7 domino IDs
         decl_ids: List of N declaration IDs
-        n_samples: Number of worlds to sample per decision
+        n_samples: Number of worlds to sample per decision (ignored if use_enumeration=True
+                   and world count is below enumeration_threshold)
         device: Device to run on ('cuda' or 'cpu')
         greedy: If True, always pick argmax(E[Q]). If False, sample from softmax.
         use_mrv_sampler: If True (default), use MRV-based sampler (guaranteed valid).
@@ -162,6 +170,11 @@ def generate_eq_games_gpu(
                           If provided, overrides greedy parameter.
         posterior_config: Optional config for posterior weighting. If provided and enabled,
                          uses past K steps to reweight worlds before computing E[Q].
+        use_enumeration: If True, enumerate ALL valid worlds instead of sampling when
+                        the estimated world count is below enumeration_threshold.
+                        This gives exact E[Q] for late-game positions.
+        enumeration_threshold: Maximum worlds to enumerate per game. Above this,
+                              falls back to sampling. Default 100,000.
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -196,6 +209,18 @@ def generate_eq_games_gpu(
         sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
     else:
         sampler = WorldSampler(max_games=n_games, max_samples=n_samples, device=device)
+
+    # Pre-allocate enumerator if enabled
+    enumerator = None
+    if use_enumeration:
+        enumerator = WorldEnumeratorGPU(
+            max_games=n_games,
+            max_worlds=enumeration_threshold,
+            device=device,
+        )
+
+    # Tokenizer batch size: start with n_samples, will recreate if enumeration needs more
+    # Don't pre-allocate for full enumeration_threshold (causes OOM on small GPUs)
     tokenizer = GPUTokenizer(max_batch=n_games * n_samples, device=device)
 
     # Track decisions for each game
@@ -203,17 +228,29 @@ def generate_eq_games_gpu(
 
     # Main generation loop - one iteration per game step
     while states.active_games().any():
-        # 1. Sample consistent worlds for all games
-        worlds = _sample_worlds_batched(states, sampler, n_samples)
+        # 1. Sample or enumerate consistent worlds for all games
+        if use_enumeration:
+            worlds, world_counts, actual_n_samples = _enumerate_or_sample_worlds(
+                states, enumerator, sampler, n_samples, enumeration_threshold
+            )
+        else:
+            worlds = _sample_worlds_batched(states, sampler, n_samples)
+            world_counts = None
+            actual_n_samples = n_samples
 
         # 2. Build hypothetical deals
         hypothetical = _build_hypothetical_deals(states, worlds)
 
-        # 3. Tokenize on GPU
+        # 3. Tokenize on GPU (recreate tokenizer if batch exceeds capacity)
+        # Use worlds.shape[1] (not actual_n_samples) because the tensor may be padded
+        n_worlds_padded = worlds.shape[1]
+        batch_size = n_games * n_worlds_padded
+        if batch_size > tokenizer.max_batch:
+            tokenizer = GPUTokenizer(max_batch=batch_size, device=device)
         tokens, masks = _tokenize_batched(states, hypothetical, tokenizer)
 
         # 4. Model forward pass (single batch)
-        q_values = _query_model(model, tokens, masks, states, n_samples, device)
+        q_values = _query_model(model, tokens, masks, states, n_worlds_padded, device)
 
         # 5. Reduce to E[Q] per game (with optional posterior weighting)
         if posterior_config and posterior_config.enabled:
@@ -221,17 +258,23 @@ def generate_eq_games_gpu(
                 states=states,
                 worlds=worlds,
                 q_values=q_values,
-                n_samples=n_samples,
+                n_samples=n_worlds_padded,
                 model=model,
                 tokenizer=tokenizer,
                 posterior_config=posterior_config,
                 device=device,
             )
         else:
-            # Uniform weighting
-            q_reshaped = q_values.view(n_games, n_samples, 7)
-            e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
-            e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
+            # Uniform weighting (handles variable world counts from enumeration)
+            q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
+
+            if world_counts is not None:
+                # Enumeration: use world_counts for proper averaging
+                e_q, e_q_var = _compute_eq_with_counts(q_reshaped, world_counts)
+            else:
+                # Sampling: all games have same sample count
+                e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
+                e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
             diagnostics = None
 
         # Move e_q to states device (in case model is on different device)
@@ -449,6 +492,186 @@ def _sample_worlds_batched(
         worlds = _sample_worlds_cpu_fallback(states, pools, hand_sizes_list, voids_list, n_samples)
 
     return worlds
+
+
+def _enumerate_or_sample_worlds(
+    states: GameStateTensor,
+    enumerator: WorldEnumeratorGPU,
+    sampler: WorldSampler | WorldSamplerMRV,
+    n_samples: int,
+    threshold: int,
+) -> tuple[Tensor, Tensor | None, int]:
+    """Enumerate or sample worlds based on estimated world count.
+
+    Uses enumeration when the estimated world count is below threshold,
+    otherwise falls back to sampling.
+
+    Args:
+        states: GameStateTensor with N games
+        enumerator: WorldEnumeratorGPU instance
+        sampler: WorldSampler or WorldSamplerMRV for fallback
+        n_samples: Number of samples if sampling
+        threshold: Maximum worlds to enumerate
+
+    Returns:
+        Tuple of (worlds, world_counts, actual_n_samples):
+            - worlds: [N, M, 3, 7] opponent hands where M = max(counts) or n_samples
+            - world_counts: [N] actual counts per game, or None if sampling
+            - actual_n_samples: Number of worlds/samples in dimension 1
+    """
+    n_games = states.n_games
+    device = states.device
+
+    # Compute history length to estimate world counts
+    history_len = (states.history[:, :, 0] >= 0).sum(dim=1)  # [N]
+
+    # Check if any game should enumerate
+    # Use a vectorized check: late games (history_len > 15) usually have < 100K worlds
+    should_try_enum = (history_len >= 15).any().item()
+
+    if not should_try_enum:
+        # All games are early - use sampling
+        worlds = _sample_worlds_batched(states, sampler, n_samples)
+        return worlds, None, n_samples
+
+    # Try enumeration
+    voids = _infer_voids_batched(states)
+
+    # For current hand enumeration, we don't use played_by for constraints
+    # (played dominoes are already out of hands). Voids are the constraint.
+    # Create empty played_by tensor (no known cards in current hands)
+    played_by = torch.full((n_games, 3, 7), -1, dtype=torch.int8, device=device)
+
+    # Get opponent hand sizes (current remaining cards)
+    hand_counts = (states.hands >= 0).sum(dim=2)  # [N, 4]
+    offsets = torch.arange(1, 4, device=device).unsqueeze(0)
+    opp_indices = (states.current_player.unsqueeze(1) + offsets) % 4
+    opp_hand_sizes = torch.gather(hand_counts, 1, opp_indices.long())  # [N, 3]
+
+    # Build pools (unplayed dominoes - my hand = available for assignment)
+    pools, pool_sizes = _build_enum_pools(states, played_by)
+
+    # Enumerate worlds
+    worlds_enum, counts = enumerator.enumerate(
+        pools=pools,
+        hand_sizes=opp_hand_sizes,
+        played_by=played_by,
+        voids=voids,
+        decl_ids=states.decl_ids,
+    )
+
+    # Check if enumeration succeeded for most games
+    max_count = counts.max().item()
+
+    if max_count > threshold:
+        # Some games exceeded threshold - need to sample those
+        # For simplicity, fall back to sampling for all games
+        worlds = _sample_worlds_batched(states, sampler, n_samples)
+        return worlds, None, n_samples
+
+    # Return enumerated worlds
+    return worlds_enum, counts, max_count
+
+
+def _build_enum_pools(
+    states: GameStateTensor,
+    played_by: Tensor,  # [N, 3, 7]
+) -> tuple[Tensor, Tensor]:
+    """Build domino pools for enumeration (unknowns only).
+
+    Args:
+        states: GameStateTensor
+        played_by: [N, 3, 7] dominoes played by each opponent
+
+    Returns:
+        Tuple of (pools, pool_sizes):
+            - pools: [N, 21] domino IDs, -1 padded
+            - pool_sizes: [N] actual pool size
+    """
+    n_games = states.n_games
+    device = states.device
+    all_dominoes = torch.arange(28, device=device)
+
+    # Start with unplayed dominoes
+    pool_masks = ~states.played_mask.clone()  # [N, 28]
+
+    # Remove my hand
+    current_players = states.current_player.long()
+    player_idx = current_players.view(n_games, 1, 1).expand(n_games, 1, 7)
+    my_hands = torch.gather(states.hands, dim=1, index=player_idx.long()).squeeze(1)
+    my_hand_mask = my_hands >= 0
+
+    batch_idx = torch.arange(n_games, device=device).unsqueeze(1).expand(n_games, 7)
+    my_dom_safe = torch.where(my_hand_mask, my_hands.long(), torch.zeros_like(my_hands))
+    pool_masks[batch_idx[my_hand_mask], my_dom_safe[my_hand_mask]] = False
+
+    # Remove known opponent plays (they're assigned, not in unknown pool)
+    for opp in range(3):
+        for slot in range(7):
+            dom_ids = played_by[:, opp, slot]
+            valid = dom_ids >= 0
+            if valid.any():
+                batch_valid = torch.arange(n_games, device=device)[valid]
+                pool_masks[batch_valid, dom_ids[valid].long()] = False
+
+    # Convert to pool tensors
+    pools = torch.full((n_games, 21), -1, dtype=torch.int8, device=device)
+    pool_sizes = torch.zeros(n_games, dtype=torch.int32, device=device)
+
+    for g in range(n_games):
+        pool = all_dominoes[pool_masks[g]]
+        pool_sizes[g] = len(pool)
+        pools[g, :len(pool)] = pool.to(torch.int8)
+
+    return pools, pool_sizes
+
+
+def _compute_eq_with_counts(
+    q_values: Tensor,  # [N, M, 7]
+    world_counts: Tensor,  # [N]
+) -> tuple[Tensor, Tensor]:
+    """Compute E[Q] with variable world counts per game.
+
+    Args:
+        q_values: [N, M, 7] Q-values padded to max world count
+        world_counts: [N] actual world count per game
+
+    Returns:
+        Tuple of (e_q, e_q_var):
+            - e_q: [N, 7] mean Q across valid worlds
+            - e_q_var: [N, 7] variance across valid worlds
+    """
+    n_games, max_worlds, n_actions = q_values.shape
+    device = q_values.device
+
+    # Create mask for valid worlds: [N, M]
+    world_idx = torch.arange(max_worlds, device=device).unsqueeze(0)  # [1, M]
+    valid_mask = world_idx < world_counts.unsqueeze(1)  # [N, M]
+
+    # Expand mask for actions: [N, M, 1]
+    valid_mask_expanded = valid_mask.unsqueeze(2)  # [N, M, 1]
+
+    # Masked Q-values (set invalid to 0 for sum)
+    q_masked = q_values * valid_mask_expanded.float()
+
+    # Sum and count
+    q_sum = q_masked.sum(dim=1)  # [N, 7]
+    counts_expanded = world_counts.unsqueeze(1).float()  # [N, 1]
+    counts_expanded = counts_expanded.clamp(min=1)  # Avoid div by zero
+
+    # Mean
+    e_q = q_sum / counts_expanded  # [N, 7]
+
+    # Variance: Var = E[X²] - E[X]²
+    q_sq_masked = (q_values ** 2) * valid_mask_expanded.float()
+    q_sq_sum = q_sq_masked.sum(dim=1)  # [N, 7]
+    e_q_sq = q_sq_sum / counts_expanded
+    e_q_var = e_q_sq - e_q ** 2  # [N, 7]
+
+    # Clamp variance to avoid numerical issues
+    e_q_var = e_q_var.clamp(min=0)
+
+    return e_q, e_q_var
 
 
 def _infer_voids_batched(states: GameStateTensor) -> Tensor:
