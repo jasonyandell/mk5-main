@@ -1,0 +1,1617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Domino Value Journey - Texas 42</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            overflow: hidden;
+        }
+        #container { width: 100vw; height: 100vh; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            max-width: 280px;
+            z-index: 100;
+        }
+        #info h1 { font-size: 16px; margin-bottom: 8px; color: #58a6ff; }
+        #info p { font-size: 12px; line-height: 1.5; color: #8b949e; }
+        #game-nav {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+            text-align: center;
+        }
+        #game-nav .game-counter {
+            font-size: 24px;
+            font-weight: bold;
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+        #game-nav .hint {
+            font-size: 11px;
+            color: #6e7681;
+        }
+        #player-legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+        }
+        #player-legend h3 {
+            font-size: 12px;
+            color: #8b949e;
+            margin-bottom: 10px;
+        }
+        .player-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .player-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .player-dominoes {
+            color: #6e7681;
+            margin-left: 8px;
+            font-size: 10px;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+        }
+        #controls label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        #controls input[type="range"] {
+            width: 150px;
+            margin-left: 10px;
+            accent-color: #58a6ff;
+        }
+        #controls button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        #controls button:hover { background: #2ea043; }
+        #tooltip {
+            position: absolute;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #58a6ff;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            z-index: 200;
+        }
+        #tooltip .domino { font-size: 16px; font-weight: bold; color: #58a6ff; }
+        #tooltip .player { color: #8b949e; }
+        #tooltip .value { color: #7ee787; font-weight: bold; }
+        #tooltip .hand-row {
+            display: flex;
+            gap: 4px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        #tooltip .mini-domino {
+            width: 28px;
+            height: 48px;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            border: 2px solid transparent;
+            position: relative;
+        }
+        #tooltip .mini-domino.hovered {
+            border-color: #fff;
+            box-shadow: 0 0 8px rgba(255,255,255,0.5);
+        }
+        #tooltip .mini-domino.played::after {
+            content: '✓';
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #238636;
+            color: white;
+            font-size: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #tooltip .mini-domino .pip-top,
+        #tooltip .mini-domino .pip-bottom {
+            font-size: 11px;
+        }
+        #tooltip .mini-divider {
+            width: 80%;
+            height: 1px;
+            background: rgba(255,255,255,0.3);
+        }
+        .active-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #7ee787;
+            border-radius: 50%;
+            margin-left: 6px;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <div id="info">
+        <h1>Domino Value Journey</h1>
+        <p>Watch how each player's dominoes change in value as the game unfolds.</p>
+        <p style="margin-top: 8px; font-size: 11px;">
+            <span style="color: #7ee787;">Bright</span> = active player<br>
+            <span style="color: #6e7681;">Dim</span> = waiting players
+        </p>
+        <p style="margin-top: 8px; font-size: 11px; color: #6e7681;">
+            Drag to rotate • Scroll to zoom<br>
+            <strong>Shift+Scroll</strong> to change game
+        </p>
+    </div>
+
+    <div id="game-nav">
+        <div class="game-counter">
+            <span id="game-num">1</span> / <span id="game-total">250</span>
+        </div>
+        <div class="hint">Shift + Scroll to navigate</div>
+    </div>
+
+    <div id="player-legend">
+        <h3>Players</h3>
+        <div id="legend-content"></div>
+    </div>
+
+    <div id="controls">
+        <label>Height: <input type="range" id="height-scale" min="0.2" max="1.5" step="0.1" value="0.5"></label>
+        <label>Strip Width: <input type="range" id="strip-width" min="0.3" max="1.0" step="0.05" value="0.7"></label>
+        <label>Inactive Opacity: <input type="range" id="inactive-opacity" min="0.1" max="0.5" step="0.05" value="0.25"></label>
+        <button id="reset-camera">Reset View</button>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // === State ===
+        let scene, camera, renderer, controls;
+        let surfaceMeshes = [];
+        let crossConnectors = [];  // Horizontal connectors across active player's dominoes
+        let labelSprites = [];
+        let dominoSprites = [];
+        let playedDominoSprites = [];
+        let trickLines = [];
+        let allGames = [];
+        let currentGameIdx = 0;
+        let gameData = null;
+        let introAnimationActive = false;
+
+        // Player colors (for legend dots, not surface)
+        const PLAYER_COLORS = ['#58a6ff', '#f0883e', '#7ee787', '#a371f7'];
+        const PLAYER_GAP = 1.5;  // Gap between player groups
+
+        // === Create text sprite ===
+        function createTextSprite(text, options = {}) {
+            const {
+                fontSize = 48,
+                fontFamily = 'monospace',
+                color = '#8b949e',
+                backgroundColor = null,
+                padding = 4
+            } = options;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            const metrics = ctx.measureText(text);
+            const textWidth = metrics.width;
+            const textHeight = fontSize;
+
+            canvas.width = textWidth + padding * 2;
+            canvas.height = textHeight + padding * 2;
+
+            if (backgroundColor) {
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+
+            // Scale sprite based on canvas aspect ratio
+            const scale = 0.015;
+            sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+
+            return sprite;
+        }
+
+        // === Create domino face sprite (vertical, for X-axis labels) ===
+        function createDominoSprite(pips, playerColor) {
+            const canvas = document.createElement('canvas');
+            const size = 64;
+            canvas.width = size;
+            canvas.height = size * 1.8;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#1a1f26';
+            ctx.strokeStyle = playerColor;
+            ctx.lineWidth = 3;
+            roundRect(ctx, 2, 2, size - 4, canvas.height - 4, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            // Divider line
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(8, canvas.height / 2);
+            ctx.lineTo(size - 8, canvas.height / 2);
+            ctx.stroke();
+
+            // Parse pips
+            const [high, low] = pips.split('-').map(Number);
+
+            // Draw pips
+            ctx.fillStyle = '#c9d1d9';
+            drawPips(ctx, high, size / 2, canvas.height * 0.25, 18);
+            drawPips(ctx, low, size / 2, canvas.height * 0.75, 18);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(1.2, 2.2, 1);
+
+            return sprite;
+        }
+
+        // === Create horizontal domino (for played dominoes on the floor) ===
+        function createPlayedDominoMesh(pips, playerColor) {
+            const canvas = document.createElement('canvas');
+            const size = 128;
+            canvas.width = size * 2;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = '#1a1f26';
+            ctx.strokeStyle = playerColor;
+            ctx.lineWidth = 4;
+            roundRect(ctx, 2, 2, canvas.width - 4, canvas.height - 4, 12);
+            ctx.fill();
+            ctx.stroke();
+
+            // Divider line (vertical for horizontal domino)
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 12);
+            ctx.lineTo(canvas.width / 2, canvas.height - 12);
+            ctx.stroke();
+
+            // Parse pips
+            const [high, low] = pips.split('-').map(Number);
+
+            // Draw pips (side by side)
+            ctx.fillStyle = '#c9d1d9';
+            drawPips(ctx, high, canvas.width * 0.25, canvas.height / 2, 28);
+            drawPips(ctx, low, canvas.width * 0.75, canvas.height / 2, 28);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+
+            // Create a plane geometry lying flat (facing up)
+            const geometry = new THREE.PlaneGeometry(1.8, 0.9);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Rotate to lie flat (face up)
+            mesh.rotation.x = -Math.PI / 2;
+
+            return mesh;
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function drawPips(ctx, count, cx, cy, size) {
+            const positions = {
+                0: [],
+                1: [[0, 0]],
+                2: [[-0.35, -0.35], [0.35, 0.35]],
+                3: [[-0.35, -0.35], [0, 0], [0.35, 0.35]],
+                4: [[-0.35, -0.35], [0.35, -0.35], [-0.35, 0.35], [0.35, 0.35]],
+                5: [[-0.35, -0.35], [0.35, -0.35], [0, 0], [-0.35, 0.35], [0.35, 0.35]],
+                6: [[-0.35, -0.35], [0.35, -0.35], [-0.35, 0], [0.35, 0], [-0.35, 0.35], [0.35, 0.35]]
+            };
+
+            const pipRadius = 4;
+            (positions[count] || []).forEach(([dx, dy]) => {
+                ctx.beginPath();
+                ctx.arc(cx + dx * size, cy + dy * size, pipRadius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // === Add axis labels ===
+        function addAxisLabels() {
+            // Clear existing labels and lines
+            labelSprites.forEach(s => scene.remove(s));
+            labelSprites = [];
+            trickLines.forEach(l => scene.remove(l));
+            trickLines = [];
+
+            const moveScale = 2.0;
+            const totalWidth = 4 * 7 + 3 * PLAYER_GAP;  // 4 players × 7 dominoes + 3 gaps
+
+            // Trick boundaries (every 4 moves = 1 trick, 7 tricks total)
+            for (let trick = 0; trick <= 7; trick++) {
+                const moveNum = trick * 4;  // Move at start of trick (0, 4, 8, 12, 16, 20, 24, 28)
+                const z = moveNum * moveScale;
+
+                // Draw line across the floor
+                const lineGeom = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(-2, -12, z),
+                    new THREE.Vector3(totalWidth + 2, -12, z)
+                ]);
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: trick === 0 ? 0x58a6ff : 0x30363d,
+                    linewidth: 2
+                });
+                const line = new THREE.Line(lineGeom, lineMat);
+                scene.add(line);
+                trickLines.push(line);
+
+                // Trick label
+                if (trick < 7) {
+                    const sprite = createTextSprite(`Trick ${trick + 1}`, {
+                        fontSize: 32,
+                        color: '#6e7681'
+                    });
+                    sprite.position.set(-4, -12, z + 4 * moveScale / 2);
+                    scene.add(sprite);
+                    labelSprites.push(sprite);
+                }
+            }
+
+            // "Game Start" label
+            const startLabel = createTextSprite('Game Start →', { fontSize: 32, color: '#58a6ff' });
+            startLabel.position.set(-6, -10, 0);
+            scene.add(startLabel);
+            labelSprites.push(startLabel);
+
+            // Player group labels
+            for (let p = 0; p < 4; p++) {
+                const xCenter = p * (7 + PLAYER_GAP) + 3;  // Center of player's 7 dominoes
+                const sprite = createTextSprite(`P${p}`, {
+                    fontSize: 42,
+                    color: PLAYER_COLORS[p]
+                });
+                sprite.position.set(xCenter, -11, -5);
+                scene.add(sprite);
+                labelSprites.push(sprite);
+            }
+        }
+
+        // === Color scale (Saturated RdYlGn) ===
+        function eqToColor(eq, minEq = -8, maxEq = 8) {
+            const t = Math.max(0, Math.min(1, (eq - minEq) / (maxEq - minEq)));
+            let r, g, b;
+            if (t < 0.5) {
+                const t2 = t * 2;
+                r = 0.95;
+                g = 0.15 + t2 * 0.7;
+                b = 0.1;
+            } else {
+                const t2 = (t - 0.5) * 2;
+                r = 0.95 - t2 * 0.75;
+                g = 0.85 - t2 * 0.1;
+                b = 0.1 + t2 * 0.4;
+            }
+            return new THREE.Color(r, g, b);
+        }
+
+        // Desaturate a color for inactive state
+        function desaturate(color, amount = 0.7) {
+            const gray = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+            return new THREE.Color(
+                color.r + (gray - color.r) * amount,
+                color.g + (gray - color.g) * amount,
+                color.b + (gray - color.b) * amount
+            );
+        }
+
+        // === Step-hold interpolation (no smoothing) ===
+        // Carries forward the last known value until we get a new one
+        function stepHoldInterpolate(points, numSamples) {
+            const result = [];
+            const n = points.length;
+
+            // Find first valid value
+            let lastValid = null;
+            for (let i = 0; i < n; i++) {
+                if (points[i] !== null && !isNaN(points[i])) {
+                    lastValid = points[i];
+                    break;
+                }
+            }
+
+            if (lastValid === null) {
+                return new Array(numSamples).fill(null);
+            }
+
+            // For each sample, find the corresponding source index and use step-hold
+            for (let i = 0; i < numSamples; i++) {
+                const t = i / (numSamples - 1) * (n - 1);
+                const idx = Math.floor(t);
+
+                // Find the most recent valid value at or before this index
+                let val = null;
+                for (let j = idx; j >= 0; j--) {
+                    if (points[j] !== null && !isNaN(points[j])) {
+                        val = points[j];
+                        break;
+                    }
+                }
+
+                // If no value found looking back, look forward for first valid
+                if (val === null) {
+                    for (let j = idx + 1; j < n; j++) {
+                        if (points[j] !== null && !isNaN(points[j])) {
+                            val = points[j];
+                            break;
+                        }
+                    }
+                }
+
+                result.push(val);
+            }
+            return result;
+        }
+
+        // === Catmull-Rom spline interpolation (smooth) ===
+        function catmullRomSpline(points, numSamples) {
+            const result = [];
+            const n = points.length;
+
+            // Find valid points (non-null)
+            const validIndices = [];
+            const validValues = [];
+            for (let i = 0; i < n; i++) {
+                if (points[i] !== null && !isNaN(points[i])) {
+                    validIndices.push(i);
+                    validValues.push(points[i]);
+                }
+            }
+
+            if (validValues.length < 2) {
+                // Not enough points - return nulls
+                return new Array(numSamples).fill(null);
+            }
+
+            for (let i = 0; i < numSamples; i++) {
+                const t = i / (numSamples - 1) * (n - 1);
+
+                // Find which segment we're in
+                let segIdx = 0;
+                for (let j = 0; j < validIndices.length - 1; j++) {
+                    if (t >= validIndices[j] && t <= validIndices[j + 1]) {
+                        segIdx = j;
+                        break;
+                    }
+                }
+
+                // Check if we're outside valid range
+                if (t < validIndices[0] || t > validIndices[validIndices.length - 1]) {
+                    result.push(null);
+                    continue;
+                }
+
+                const idx = Math.floor(t);
+                const frac = t - idx;
+
+                // Get 4 control points (clamp at edges of valid range)
+                const p0 = points[Math.max(validIndices[0], idx - 1)] ?? validValues[0];
+                const p1 = points[idx] ?? (frac < 0.5 ? validValues[segIdx] : validValues[Math.min(segIdx + 1, validValues.length - 1)]);
+                const p2 = points[Math.min(validIndices[validIndices.length - 1], idx + 1)] ?? validValues[Math.min(segIdx + 1, validValues.length - 1)];
+                const p3 = points[Math.min(validIndices[validIndices.length - 1], idx + 2)] ?? validValues[Math.min(segIdx + 1, validValues.length - 1)];
+
+                if (p1 === null || p2 === null) {
+                    result.push(null);
+                    continue;
+                }
+
+                // Catmull-Rom interpolation
+                const t2 = frac * frac;
+                const t3 = t2 * frac;
+                const val = 0.5 * (
+                    (2 * p1) +
+                    (-(p0 ?? p1) + p2) * frac +
+                    (2 * (p0 ?? p1) - 5 * p1 + 4 * p2 - (p3 ?? p2)) * t2 +
+                    (-(p0 ?? p1) + 3 * p1 - 3 * p2 + (p3 ?? p2)) * t3
+                );
+                result.push(val);
+            }
+            return result;
+        }
+
+        // === Initialize Three.js ===
+        function init() {
+            const container = document.getElementById('container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d1117);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // Position camera at start of intro animation (will animate to final position)
+            const initCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const initCenterZ = (28 * 2) / 2;
+            camera.position.set(initCenterX + 40, 80, initCenterZ + 80);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            // Target center of visualization
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+            controls.target.set(vizCenterX, 0, vizCenterZ);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            scene.add(directionalLight);
+
+            // Grid - positioned to match the domino × trick plane
+            // X: 4 players × 7 dominoes + 3 gaps × 1.5 = ~32.5 wide
+            // Z: 28 moves × 2 moveScale = 56 deep
+            const totalWidth = 4 * 7 + 3 * PLAYER_GAP;  // ~32.5
+            const totalDepth = 28 * 2;  // 56
+
+            const gridHelper = new THREE.GridHelper(
+                Math.max(totalWidth, totalDepth),  // Size (square)
+                28,  // Divisions (one per move)
+                0x30363d,
+                0x21262d
+            );
+            // Position at center of visualization, on the floor
+            gridHelper.position.set(totalWidth / 2, -15, totalDepth / 2);
+            scene.add(gridHelper);
+
+            // Add axis labels
+            addAxisLabels();
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('wheel', onWheel, { passive: false });
+            document.getElementById('height-scale').addEventListener('input', rebuildSurface);
+            document.getElementById('strip-width').addEventListener('input', rebuildSurface);
+            document.getElementById('inactive-opacity').addEventListener('input', rebuildSurface);
+            document.getElementById('reset-camera').addEventListener('click', resetCamera);
+
+            setupRaycaster();
+            animate();
+        }
+
+        // === Build Surface for Current Game ===
+        function buildSurface(data) {
+            // Clear existing
+            surfaceMeshes.forEach(m => scene.remove(m));
+            surfaceMeshes = [];
+            crossConnectors.forEach(m => scene.remove(m));
+            crossConnectors = [];
+            dominoSprites.forEach(s => scene.remove(s));
+            dominoSprites = [];
+            playedDominoSprites.forEach(s => scene.remove(s));
+            playedDominoSprites = [];
+
+            if (!data) return;
+
+            const heightScale = parseFloat(document.getElementById('height-scale').value);
+            const stripWidth = parseFloat(document.getElementById('strip-width').value);
+            const inactiveOpacity = parseFloat(document.getElementById('inactive-opacity').value);
+
+            const nMoves = 28;
+            const smoothSamples = 28;  // 1:1 with moves - no interpolation
+            const moveScale = 2.0;
+
+            // Build surface for each player's dominoes
+            for (let p = 0; p < 4; p++) {
+                const player = data.players[p];
+                if (!player) continue;
+
+                for (let slot = 0; slot < player.dominoes.length; slot++) {
+                    const domino = player.dominoes[slot];
+                    if (!domino) continue;
+
+                    const globalIdx = p * 7 + slot;
+                    const eqRow = data.eq_matrix[globalIdx];
+
+                    // X position: player group + slot within group
+                    const xCenter = p * (7 + PLAYER_GAP) + slot;
+
+                    // Add domino sprite at the base of the axis
+                    const dominoSprite = createDominoSprite(domino.pips, PLAYER_COLORS[p]);
+                    dominoSprite.position.set(xCenter, -13, -3);
+                    scene.add(dominoSprite);
+                    dominoSprites.push(dominoSprite);
+
+                    // Check if we have any data for this domino
+                    const hasData = eqRow.some(v => v !== null && !isNaN(v));
+                    if (!hasData) continue;
+
+                    // Build stepped geometry with cliff faces
+                    const geometry = new THREE.BufferGeometry();
+                    const vertices = [];
+                    const colors = [];
+                    const indices = [];
+
+                    let prevEq = null;
+                    let prevY = null;
+                    let prevZ = null;
+                    let prevIsActive = false;
+
+                    for (let m = 0; m < nMoves; m++) {
+                        const eq = eqRow[m];
+                        if (eq === null || isNaN(eq)) continue;
+
+                        const y = eq * heightScale;
+                        const z = m * moveScale;
+                        const isActive = data.active_player[m] === p;
+
+                        let color = eqToColor(eq);
+                        let opacity = 1.0;
+                        if (!isActive) {
+                            color = desaturate(color, 0.6);
+                            opacity = inactiveOpacity;
+                        }
+
+                        // If we have a previous point and value changed, create cliff face
+                        if (prevEq !== null && prevY !== y) {
+                            // Add vertices at the cliff location (at current Z, but at OLD height first)
+                            const cliffZ = z;
+
+                            // Use previous color/opacity for the cliff face base
+                            let prevColor = eqToColor(prevEq);
+                            let prevOpacity = 1.0;
+                            if (!prevIsActive) {
+                                prevColor = desaturate(prevColor, 0.6);
+                                prevOpacity = inactiveOpacity;
+                            }
+
+                            // Bottom of cliff (old value) - left and right
+                            const cliffBaseIdx = vertices.length / 3;
+                            vertices.push(xCenter - stripWidth / 2, prevY, cliffZ);
+                            colors.push(prevColor.r, prevColor.g, prevColor.b, prevOpacity);
+                            vertices.push(xCenter + stripWidth / 2, prevY, cliffZ);
+                            colors.push(prevColor.r, prevColor.g, prevColor.b, prevOpacity);
+
+                            // Connect previous row to cliff base
+                            if (vertices.length / 3 >= 4) {
+                                const prev = cliffBaseIdx - 2;
+                                const curr = cliffBaseIdx;
+                                indices.push(prev, prev + 1, curr);
+                                indices.push(prev + 1, curr + 1, curr);
+                            }
+
+                            // Top of cliff (new value) - left and right
+                            const cliffTopIdx = vertices.length / 3;
+                            vertices.push(xCenter - stripWidth / 2, y, cliffZ);
+                            colors.push(color.r, color.g, color.b, opacity);
+                            vertices.push(xCenter + stripWidth / 2, y, cliffZ);
+                            colors.push(color.r, color.g, color.b, opacity);
+
+                            // Cliff face (vertical) connecting base to top
+                            indices.push(cliffBaseIdx, cliffBaseIdx + 1, cliffTopIdx);
+                            indices.push(cliffBaseIdx + 1, cliffTopIdx + 1, cliffTopIdx);
+
+                        } else if (prevEq !== null) {
+                            // No value change - just add continuation point and connect
+                            const currIdx = vertices.length / 3;
+                            vertices.push(xCenter - stripWidth / 2, y, z);
+                            colors.push(color.r, color.g, color.b, opacity);
+                            vertices.push(xCenter + stripWidth / 2, y, z);
+                            colors.push(color.r, color.g, color.b, opacity);
+
+                            // Connect to previous
+                            if (currIdx >= 2) {
+                                const prev = currIdx - 2;
+                                indices.push(prev, prev + 1, currIdx);
+                                indices.push(prev + 1, currIdx + 1, currIdx);
+                            }
+                        } else {
+                            // First point
+                            vertices.push(xCenter - stripWidth / 2, y, z);
+                            colors.push(color.r, color.g, color.b, opacity);
+                            vertices.push(xCenter + stripWidth / 2, y, z);
+                            colors.push(color.r, color.g, color.b, opacity);
+                        }
+
+                        prevEq = eq;
+                        prevY = y;
+                        prevZ = z;
+                        prevIsActive = isActive;
+                    }
+
+                    if (vertices.length < 6) continue;  // Need at least 2 rows
+
+                    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+                    geometry.setIndex(indices);
+                    geometry.computeVertexNormals();
+
+                    const material = new THREE.MeshPhongMaterial({
+                        vertexColors: true,
+                        side: THREE.DoubleSide,
+                        shininess: 50,
+                        transparent: true,
+                        opacity: 1.0,  // Per-vertex opacity via color alpha
+                    });
+
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.userData = { player: p, slot: slot, domino: domino };
+                    scene.add(mesh);
+                    surfaceMeshes.push(mesh);
+
+                    // Add played domino on the floor at z where it was played
+                    const playedRow = data.domino_played[globalIdx];
+                    for (let moveIdx = 0; moveIdx < playedRow.length; moveIdx++) {
+                        if (playedRow[moveIdx]) {
+                            const playedMesh = createPlayedDominoMesh(domino.pips, PLAYER_COLORS[p]);
+                            const z = moveIdx * moveScale;
+                            playedMesh.position.set(xCenter, -11.9, z);
+                            scene.add(playedMesh);
+                            playedDominoSprites.push(playedMesh);
+                            break;  // Each domino played only once
+                        }
+                    }
+                }
+            }
+
+            // Build horizontal connectors across active player's dominoes
+            buildCrossConnectors(data, heightScale);
+
+            // Update legend
+            updateLegend(data);
+        }
+
+        // === Build a single cube (1 domino × 1 trick × 1 E[Q]) ===
+        function buildEqCube(xCenter, yTop, z, width, depth, color, opacity) {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const colors = [];
+            const indices = [];
+
+            const xLeft = xCenter - width / 2;
+            const xRight = xCenter + width / 2;
+            const zFront = z - depth / 2;
+            const zBack = z + depth / 2;
+            const yBottom = yTop - 1;  // 1 E[Q] unit tall
+
+            // 8 vertices of the cube
+            // Bottom face (y = yBottom)
+            vertices.push(xLeft, yBottom, zFront);   // 0: bottom-left-front
+            vertices.push(xRight, yBottom, zFront);  // 1: bottom-right-front
+            vertices.push(xRight, yBottom, zBack);   // 2: bottom-right-back
+            vertices.push(xLeft, yBottom, zBack);    // 3: bottom-left-back
+            // Top face (y = yTop)
+            vertices.push(xLeft, yTop, zFront);      // 4: top-left-front
+            vertices.push(xRight, yTop, zFront);     // 5: top-right-front
+            vertices.push(xRight, yTop, zBack);      // 6: top-right-back
+            vertices.push(xLeft, yTop, zBack);       // 7: top-left-back
+
+            // All vertices same color
+            for (let i = 0; i < 8; i++) {
+                colors.push(color.r, color.g, color.b, opacity);
+            }
+
+            // 6 faces (2 triangles each)
+            // Bottom face
+            indices.push(0, 2, 1, 0, 3, 2);
+            // Top face
+            indices.push(4, 5, 6, 4, 6, 7);
+            // Front face
+            indices.push(0, 1, 5, 0, 5, 4);
+            // Back face
+            indices.push(2, 3, 7, 2, 7, 6);
+            // Left face
+            indices.push(0, 4, 7, 0, 7, 3);
+            // Right face
+            indices.push(1, 2, 6, 1, 6, 5);
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+            geometry.setIndex(indices);
+            geometry.computeVertexNormals();
+
+            return geometry;
+        }
+
+        // === Build horizontal cross-connector for a single move ===
+        // Creates cubes for each domino + connecting strip on top
+        function buildCrossConnectorForMove(data, moveIdx, heightScale, stripWidth) {
+            const meshes = [];
+            const moveScale = 2.0;
+            const cubeDepth = moveScale;  // 1 trick deep
+
+            const activePlayer = data.active_player[moveIdx];
+            const player = data.players[activePlayer];
+            if (!player) return meshes;
+
+            // Collect domino positions and E[Q] values for this player at this move
+            const points = [];
+            for (let slot = 0; slot < player.dominoes.length; slot++) {
+                const domino = player.dominoes[slot];
+                if (!domino) continue;
+
+                const globalIdx = activePlayer * 7 + slot;
+                const eq = data.eq_matrix[globalIdx][moveIdx];
+
+                // Skip if domino was already played
+                const playedBefore = data.domino_played[globalIdx].slice(0, moveIdx).some(v => v);
+                if (playedBefore) continue;
+
+                if (eq !== null && !isNaN(eq)) {
+                    const xCenter = activePlayer * (7 + PLAYER_GAP) + slot;
+                    points.push({
+                        x: xCenter,
+                        xLeft: xCenter - stripWidth / 2,
+                        xRight: xCenter + stripWidth / 2,
+                        y: eq * heightScale,
+                        eq: eq,
+                        slot: slot
+                    });
+                }
+            }
+
+            if (points.length === 0) return meshes;
+
+            // Sort by X position
+            points.sort((a, b) => a.x - b.x);
+
+            const z = moveIdx * moveScale;
+
+            // Build cubes for each domino
+            const cubeGeometries = [];
+            for (const pt of points) {
+                const color = eqToColor(pt.eq);
+                const cubeGeom = buildEqCube(pt.x, pt.y, z, stripWidth, cubeDepth, color, 0.9);
+                cubeGeometries.push(cubeGeom);
+            }
+
+            // Merge cube geometries into one mesh
+            if (cubeGeometries.length > 0) {
+                const mergedGeom = mergeGeometries(cubeGeometries);
+                const cubeMaterial = new THREE.MeshPhongMaterial({
+                    vertexColors: true,
+                    side: THREE.DoubleSide,
+                    shininess: 50,
+                    transparent: true,
+                    opacity: 1.0,
+                });
+                // Find which domino was played at this move
+                let playedDominoSlot = null;
+                for (const pt of points) {
+                    const globalIdx = activePlayer * 7 + pt.slot;
+                    if (data.domino_played[globalIdx][moveIdx]) {
+                        playedDominoSlot = pt.slot;
+                        break;
+                    }
+                }
+
+                const cubeMesh = new THREE.Mesh(mergedGeom, cubeMaterial);
+                cubeMesh.userData = {
+                    moveIdx,
+                    activePlayer,
+                    type: 'cubes',
+                    points: points,  // All dominoes in hand with E[Q]
+                    playedSlot: playedDominoSlot,
+                    player: player
+                };
+                meshes.push(cubeMesh);
+            }
+
+            // Build connecting strip on top of cubes (between adjacent dominoes)
+            if (points.length >= 2) {
+                const connectorGeom = new THREE.BufferGeometry();
+                const vertices = [];
+                const colors = [];
+                const indices = [];
+
+                for (let i = 0; i < points.length - 1; i++) {
+                    const left = points[i];
+                    const right = points[i + 1];
+
+                    // Only connect if they're actually adjacent slots
+                    if (right.slot - left.slot !== 1) continue;
+
+                    const leftColor = eqToColor(left.eq);
+                    const rightColor = eqToColor(right.eq);
+                    const baseIdx = vertices.length / 3;
+
+                    if (Math.abs(left.y - right.y) < 0.01) {
+                        // Same height - flat connector on top of cubes
+                        vertices.push(left.xRight, left.y, z - cubeDepth / 2);
+                        vertices.push(left.xRight, left.y, z + cubeDepth / 2);
+                        vertices.push(right.xLeft, right.y, z - cubeDepth / 2);
+                        vertices.push(right.xLeft, right.y, z + cubeDepth / 2);
+
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+
+                        indices.push(baseIdx, baseIdx + 1, baseIdx + 2);
+                        indices.push(baseIdx + 1, baseIdx + 3, baseIdx + 2);
+                    } else {
+                        // Different heights - stepped connector with cliff
+                        const midX = (left.xRight + right.xLeft) / 2;
+
+                        // Left flat section
+                        vertices.push(left.xRight, left.y, z - cubeDepth / 2);
+                        vertices.push(left.xRight, left.y, z + cubeDepth / 2);
+                        vertices.push(midX, left.y, z - cubeDepth / 2);
+                        vertices.push(midX, left.y, z + cubeDepth / 2);
+
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+
+                        // Cliff face
+                        vertices.push(midX, left.y, z - cubeDepth / 2);
+                        vertices.push(midX, left.y, z + cubeDepth / 2);
+                        vertices.push(midX, right.y, z - cubeDepth / 2);
+                        vertices.push(midX, right.y, z + cubeDepth / 2);
+
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(leftColor.r, leftColor.g, leftColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+
+                        // Right flat section
+                        vertices.push(midX, right.y, z - cubeDepth / 2);
+                        vertices.push(midX, right.y, z + cubeDepth / 2);
+                        vertices.push(right.xLeft, right.y, z - cubeDepth / 2);
+                        vertices.push(right.xLeft, right.y, z + cubeDepth / 2);
+
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+                        colors.push(rightColor.r, rightColor.g, rightColor.b, 0.9);
+
+                        // Faces
+                        indices.push(baseIdx + 0, baseIdx + 1, baseIdx + 2);
+                        indices.push(baseIdx + 1, baseIdx + 3, baseIdx + 2);
+                        indices.push(baseIdx + 4, baseIdx + 5, baseIdx + 6);
+                        indices.push(baseIdx + 5, baseIdx + 7, baseIdx + 6);
+                        indices.push(baseIdx + 8, baseIdx + 9, baseIdx + 10);
+                        indices.push(baseIdx + 9, baseIdx + 11, baseIdx + 10);
+                    }
+                }
+
+                if (vertices.length >= 6) {
+                    connectorGeom.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                    connectorGeom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 4));
+                    connectorGeom.setIndex(indices);
+                    connectorGeom.computeVertexNormals();
+
+                    const connectorMaterial = new THREE.MeshPhongMaterial({
+                        vertexColors: true,
+                        side: THREE.DoubleSide,
+                        shininess: 50,
+                        transparent: true,
+                        opacity: 1.0,
+                    });
+
+                    const connectorMesh = new THREE.Mesh(connectorGeom, connectorMaterial);
+                    connectorMesh.userData = { moveIdx, activePlayer, type: 'connector' };
+                    meshes.push(connectorMesh);
+                }
+            }
+
+            return meshes;
+        }
+
+        // === Merge multiple geometries into one ===
+        function mergeGeometries(geometries) {
+            const mergedVertices = [];
+            const mergedColors = [];
+            const mergedIndices = [];
+            let vertexOffset = 0;
+
+            for (const geom of geometries) {
+                const positions = geom.getAttribute('position').array;
+                const colors = geom.getAttribute('color').array;
+                const indices = geom.getIndex().array;
+
+                for (let i = 0; i < positions.length; i++) {
+                    mergedVertices.push(positions[i]);
+                }
+                for (let i = 0; i < colors.length; i++) {
+                    mergedColors.push(colors[i]);
+                }
+                for (let i = 0; i < indices.length; i++) {
+                    mergedIndices.push(indices[i] + vertexOffset);
+                }
+
+                vertexOffset += positions.length / 3;
+            }
+
+            const merged = new THREE.BufferGeometry();
+            merged.setAttribute('position', new THREE.Float32BufferAttribute(mergedVertices, 3));
+            merged.setAttribute('color', new THREE.Float32BufferAttribute(mergedColors, 4));
+            merged.setIndex(mergedIndices);
+            merged.computeVertexNormals();
+
+            return merged;
+        }
+
+        // === Build all horizontal cross-connectors ===
+        function buildCrossConnectors(data, heightScale) {
+            crossConnectors.forEach(m => scene.remove(m));
+            crossConnectors = [];
+
+            const stripWidth = parseFloat(document.getElementById('strip-width').value);
+
+            for (let moveIdx = 0; moveIdx < 28; moveIdx++) {
+                const meshes = buildCrossConnectorForMove(data, moveIdx, heightScale, stripWidth);
+                meshes.forEach(mesh => {
+                    scene.add(mesh);
+                    crossConnectors.push(mesh);
+                });
+            }
+        }
+
+        function updateLegend(data) {
+            const legendContent = document.getElementById('legend-content');
+            legendContent.innerHTML = '';
+
+            for (let p = 0; p < 4; p++) {
+                const player = data.players[p];
+                if (!player) continue;
+
+                const row = document.createElement('div');
+                row.className = 'player-row';
+
+                const dot = document.createElement('div');
+                dot.className = 'player-dot';
+                dot.style.background = PLAYER_COLORS[p];
+
+                const label = document.createElement('span');
+                label.textContent = `Player ${p}`;
+                label.style.color = PLAYER_COLORS[p];
+
+                const dominoes = document.createElement('span');
+                dominoes.className = 'player-dominoes';
+                dominoes.textContent = player.dominoes
+                    .filter(d => d)
+                    .map(d => d.pips)
+                    .join(' ');
+
+                row.appendChild(dot);
+                row.appendChild(label);
+                row.appendChild(dominoes);
+                legendContent.appendChild(row);
+            }
+        }
+
+        function rebuildSurface() {
+            if (gameData) buildSurface(gameData);
+        }
+
+        function resetCamera() {
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+            // View from (domino 0, trick 0) corner
+            camera.position.set(vizCenterX - 35, 35, vizCenterZ - 45);
+            controls.target.set(vizCenterX, 0, vizCenterZ);
+            controls.update();
+        }
+
+        // === Easing function (ease-out cubic) ===
+        function easeOutCubic(t) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+
+        // === Intro camera swoosh animation ===
+        function playIntroAnimation() {
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+
+            // Start position: high above, looking down from the far end
+            const startPos = {
+                x: vizCenterX + 40,
+                y: 80,
+                z: vizCenterZ + 80
+            };
+            const startTarget = {
+                x: vizCenterX,
+                y: 10,
+                z: vizCenterZ
+            };
+
+            // End position: viewing from (domino 0, trick 0) corner
+            const endPos = {
+                x: vizCenterX - 35,
+                y: 35,
+                z: vizCenterZ - 45
+            };
+            const endTarget = {
+                x: vizCenterX,
+                y: 0,
+                z: vizCenterZ
+            };
+
+            // Set initial position
+            camera.position.set(startPos.x, startPos.y, startPos.z);
+            controls.target.set(startTarget.x, startTarget.y, startTarget.z);
+
+            const duration = 2000;  // 2 seconds
+            const startTime = performance.now();
+            introAnimationActive = true;
+
+            function animateIntro(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeOutCubic(progress);
+
+                // Interpolate position
+                camera.position.x = startPos.x + (endPos.x - startPos.x) * eased;
+                camera.position.y = startPos.y + (endPos.y - startPos.y) * eased;
+                camera.position.z = startPos.z + (endPos.z - startPos.z) * eased;
+
+                // Interpolate target
+                controls.target.x = startTarget.x + (endTarget.x - startTarget.x) * eased;
+                controls.target.y = startTarget.y + (endTarget.y - startTarget.y) * eased;
+                controls.target.z = startTarget.z + (endTarget.z - startTarget.z) * eased;
+
+                controls.update();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateIntro);
+                } else {
+                    introAnimationActive = false;
+                }
+            }
+
+            requestAnimationFrame(animateIntro);
+        }
+
+        // === Find what domino was played at a given move ===
+        function getPlayedDominoAtMove(data, moveIdx) {
+            // Scan all dominoes to find which one was played at this move
+            for (let globalIdx = 0; globalIdx < 28; globalIdx++) {
+                if (data.domino_played[globalIdx][moveIdx]) {
+                    const playerIdx = Math.floor(globalIdx / 7);
+                    const slot = globalIdx % 7;
+                    const player = data.players[playerIdx];
+                    if (player && player.dominoes[slot]) {
+                        return {
+                            pips: player.dominoes[slot].pips,
+                            player: playerIdx,
+                            slot: slot,
+                            globalIdx: globalIdx
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // === Get trick context for a move ===
+        function getTrickContext(data, moveIdx) {
+            const trickNum = Math.floor(moveIdx / 4);  // 0-6
+            const positionInTrick = moveIdx % 4;       // 0 = lead, 1-3 = following
+            const trickStartMove = trickNum * 4;
+
+            const previousPlays = [];
+            for (let i = trickStartMove; i < moveIdx; i++) {
+                const played = getPlayedDominoAtMove(data, i);
+                if (played) {
+                    previousPlays.push({
+                        ...played,
+                        moveIdx: i,
+                        positionInTrick: i - trickStartMove
+                    });
+                }
+            }
+
+            // Get lead suit from the first domino played in this trick
+            let leadSuit = null;
+            if (previousPlays.length > 0) {
+                const leadPips = previousPlays[0].pips;
+                const [high, low] = leadPips.split('-').map(Number);
+                leadSuit = high;  // Lead suit is the high pip of the lead domino
+            }
+
+            return {
+                trickNum: trickNum + 1,  // 1-indexed for display
+                positionInTrick,
+                isLead: positionInTrick === 0,
+                previousPlays,
+                leadSuit
+            };
+        }
+
+        // === Build mini domino glyph for trick context ===
+        function buildTrickDominoGlyph(pips, playerIdx) {
+            const [high, low] = pips.split('-');
+            const playerColor = PLAYER_COLORS[playerIdx];
+            return `
+                <div style="text-align: center;">
+                    <div style="
+                        width: 28px;
+                        height: 48px;
+                        background: #21262d;
+                        border: 2px solid ${playerColor};
+                        border-radius: 4px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: space-around;
+                        font-size: 11px;
+                        font-weight: bold;
+                        color: #c9d1d9;
+                    ">
+                        <span>${high}</span>
+                        <div style="width: 80%; height: 1px; background: ${playerColor}40;"></div>
+                        <span>${low}</span>
+                    </div>
+                    <div style="font-size: 9px; color: ${playerColor}; margin-top: 2px;">
+                        P${playerIdx}
+                    </div>
+                </div>
+            `;
+        }
+
+        // === Build trick context HTML for tooltip ===
+        function buildTrickContextHtml(trickContext) {
+            if (trickContext.isLead) {
+                return `<div style="color: #7ee787; font-size: 11px; margin-bottom: 8px;">
+                    Trick ${trickContext.trickNum} — Leading
+                </div>`;
+            }
+
+            let html = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="color: #f0883e; font-size: 11px;">
+                    Trick ${trickContext.trickNum} — Following
+                </span>`;
+
+            if (trickContext.leadSuit !== null) {
+                html += `<span style="
+                    background: #30363d;
+                    color: #c9d1d9;
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                ">Lead: <strong>${trickContext.leadSuit}s</strong></span>`;
+            }
+            html += '</div>';
+
+            if (trickContext.previousPlays.length > 0) {
+                html += '<div style="display: flex; gap: 6px; margin-bottom: 8px;">';
+                for (const play of trickContext.previousPlays) {
+                    html += buildTrickDominoGlyph(play.pips, play.player);
+                }
+                html += '</div>';
+            }
+
+            return html;
+        }
+
+        // === Convert E[Q] to CSS color string ===
+        function eqToCssColor(eq, minEq = -8, maxEq = 8) {
+            const t = Math.max(0, Math.min(1, (eq - minEq) / (maxEq - minEq)));
+            let r, g, b;
+            if (t < 0.5) {
+                const t2 = t * 2;
+                r = Math.round(0.95 * 255);
+                g = Math.round((0.15 + t2 * 0.7) * 255);
+                b = Math.round(0.1 * 255);
+            } else {
+                const t2 = (t - 0.5) * 2;
+                r = Math.round((0.95 - t2 * 0.75) * 255);
+                g = Math.round((0.85 - t2 * 0.1) * 255);
+                b = Math.round((0.1 + t2 * 0.4) * 255);
+            }
+            return `rgb(${r},${g},${b})`;
+        }
+
+        // === Build mini domino HTML for tooltip ===
+        function buildMiniDominoHtml(pips, eq, isHovered, isPlayed) {
+            const bgColor = eqToCssColor(eq);
+            const classes = ['mini-domino'];
+            if (isHovered) classes.push('hovered');
+            if (isPlayed) classes.push('played');
+
+            const [high, low] = pips.split('-');
+            return `
+                <div class="${classes.join(' ')}" style="background: ${bgColor};">
+                    <span class="pip-top">${high}</span>
+                    <div class="mini-divider"></div>
+                    <span class="pip-bottom">${low}</span>
+                </div>
+            `;
+        }
+
+        // === Raycaster for hover ===
+        function setupRaycaster() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const tooltip = document.getElementById('tooltip');
+            const stripWidth = parseFloat(document.getElementById('strip-width').value);
+
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+
+                // Check cubes first (cross connectors)
+                const cubeIntersects = raycaster.intersectObjects(
+                    crossConnectors.filter(m => m.userData.type === 'cubes')
+                );
+
+                if (cubeIntersects.length > 0) {
+                    const obj = cubeIntersects[0].object;
+                    const point = cubeIntersects[0].point;
+                    const { moveIdx, activePlayer, points, playedSlot, player } = obj.userData;
+
+                    // Find which domino cube was hit based on X position
+                    let hoveredPoint = null;
+                    const stripW = parseFloat(document.getElementById('strip-width').value);
+                    for (const pt of points) {
+                        if (point.x >= pt.xLeft && point.x <= pt.xRight) {
+                            hoveredPoint = pt;
+                            break;
+                        }
+                    }
+
+                    // Get trick context
+                    const trickContext = getTrickContext(gameData, moveIdx);
+                    const trickHtml = buildTrickContextHtml(trickContext);
+
+                    // Build hand visualization
+                    let handHtml = '<div class="hand-row">';
+                    for (const pt of points) {
+                        const domino = player.dominoes[pt.slot];
+                        if (!domino) continue;
+                        const isHovered = hoveredPoint && pt.slot === hoveredPoint.slot;
+                        const isPlayed = pt.slot === playedSlot;
+                        handHtml += buildMiniDominoHtml(domino.pips, pt.eq, isHovered, isPlayed);
+                    }
+                    handHtml += '</div>';
+
+                    const hoveredPips = hoveredPoint
+                        ? player.dominoes[hoveredPoint.slot]?.pips
+                        : null;
+
+                    // Trump display
+                    const trumpHtml = gameData.trump_name
+                        ? `<span style="
+                            background: #238636;
+                            color: white;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-size: 10px;
+                            margin-left: 8px;
+                        ">Trump: ${gameData.trump_name}</span>`
+                        : '';
+
+                    tooltip.innerHTML = `
+                        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                            <span style="color: ${PLAYER_COLORS[activePlayer]}; font-weight: bold;">
+                                Player ${activePlayer}
+                            </span>
+                            ${trumpHtml}
+                        </div>
+                        <div style="color: #8b949e; margin-bottom: 8px;">Move ${moveIdx + 1}</div>
+                        ${trickHtml}
+                        <div style="font-size: 10px; color: #6e7681; margin-bottom: 4px;">Your hand:</div>
+                        ${handHtml}
+                        ${hoveredPoint ? `
+                            <div style="margin-top: 8px; border-top: 1px solid #30363d; padding-top: 8px;">
+                                <span class="domino">${hoveredPips}</span>
+                                <span class="value" style="margin-left: 8px;">E[Q]: ${hoveredPoint.eq.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 15) + 'px';
+                    tooltip.style.top = (event.clientY + 15) + 'px';
+                    return;
+                }
+
+                // Fall back to surface meshes (strips)
+                const stripIntersects = raycaster.intersectObjects(surfaceMeshes);
+
+                if (stripIntersects.length > 0) {
+                    const obj = stripIntersects[0].object;
+                    const point = stripIntersects[0].point;
+                    const { player, slot, domino } = obj.userData;
+
+                    const moveNum = Math.min(28, Math.max(1, Math.round(point.z / 2) + 1));
+                    const globalIdx = player * 7 + slot;
+                    const eq = gameData.eq_matrix[globalIdx][moveNum - 1];
+                    const isActive = gameData.active_player[moveNum - 1] === player;
+
+                    tooltip.innerHTML = `
+                        <div class="domino">${domino.pips}</div>
+                        <div class="player" style="color: ${PLAYER_COLORS[player]}">
+                            Player ${player}${isActive ? '<span class="active-indicator"></span>' : ''}
+                        </div>
+                        <div>Move: ${moveNum}</div>
+                        <div class="value">E[Q]: ${eq?.toFixed(2) ?? 'N/A'}</div>
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 15) + 'px';
+                    tooltip.style.top = (event.clientY + 15) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
+
+        // === Scroll to change games ===
+        function onWheel(event) {
+            if (event.shiftKey) {
+                event.preventDefault();
+
+                const delta = event.deltaY > 0 ? 1 : -1;
+                const newIdx = Math.max(0, Math.min(allGames.length - 1, currentGameIdx + delta));
+
+                if (newIdx !== currentGameIdx) {
+                    currentGameIdx = newIdx;
+                    gameData = allGames[currentGameIdx];
+                    buildSurface(gameData);
+                    updateGameCounter();
+                }
+            }
+        }
+
+        function updateGameCounter() {
+            document.getElementById('game-num').textContent = currentGameIdx + 1;
+            document.getElementById('game-total').textContent = allGames.length;
+        }
+
+        // === Load Data ===
+        async function loadData(url) {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+
+                allGames = lines.map(line => JSON.parse(line));
+
+                gameData = allGames[0];
+                buildSurface(gameData);
+                updateGameCounter();
+
+                // Play intro animation on first load
+                playIntroAnimation();
+
+                console.log(`Loaded ${allGames.length} games`);
+            } catch (err) {
+                console.error('Failed to load data:', err);
+            }
+        }
+
+        // === Animation Loop ===
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // === Start ===
+        init();
+        loadData('../data/27b_eq_per_game.jsonl');
+    </script>
+</body>
+</html>

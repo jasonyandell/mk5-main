@@ -95,9 +95,17 @@
     <div id="container"></div>
 
     <div id="info">
-        <h1>E[Q] 3D Surface</h1>
-        <p>Expected action values for all 28 dominoes across 28 moves.</p>
-        <p style="margin-top: 8px;">Dominoes sorted by average E[Q] (worst→best).</p>
+        <h1>Domino Value Over Time</h1>
+        <p>How much is each domino worth as the game unfolds?</p>
+        <p style="margin-top: 8px; font-size: 12px; color: #8b949e;">
+            X: Dominoes (worst→best avg)<br>
+            Y: Move number (1→28)<br>
+            Z: E[Q] (expected points)
+        </p>
+        <p style="margin-top: 10px; font-size: 11px; color: #7ee787;">
+            Finding: Values stay high even late-game —<br>
+            every remaining domino still matters.
+        </p>
         <p style="margin-top: 8px; font-size: 11px; color: #6e7681;">
             Drag to rotate • Scroll to zoom • Hover for details
         </p>
@@ -109,7 +117,7 @@
 
     <div id="controls">
         <label>Strip Width: <input type="range" id="strip-width" min="0.3" max="1.0" step="0.05" value="0.7"></label>
-        <label>Height Scale: <input type="range" id="height-scale" min="0.5" max="3.0" step="0.1" value="1.0"></label>
+        <label>Height Scale: <input type="range" id="height-scale" min="0.2" max="2.0" step="0.1" value="0.5"></label>
         <label>
             <input type="checkbox" id="show-wireframe"> Show Wireframe
         </label>
@@ -137,23 +145,24 @@
         let gameData = null;
         let allGames = [];
 
-        // === Color scale (RdYlGn) ===
-        function eqToColor(eq, minEq = -20, maxEq = 20) {
+        // === Color scale (Saturated RdYlGn) ===
+        // Tighter range (-8 to +8) for more color contrast
+        function eqToColor(eq, minEq = -8, maxEq = 8) {
             const t = Math.max(0, Math.min(1, (eq - minEq) / (maxEq - minEq)));
-            // Red -> Yellow -> Green
+            // Saturated Red -> Gold -> Emerald
             let r, g, b;
             if (t < 0.5) {
-                // Red to Yellow
+                // Deep red to warm gold
                 const t2 = t * 2;
-                r = 0.9;
-                g = 0.3 + t2 * 0.6;
-                b = 0.2;
+                r = 0.95;
+                g = 0.15 + t2 * 0.7;
+                b = 0.1;
             } else {
-                // Yellow to Green
+                // Warm gold to emerald green
                 const t2 = (t - 0.5) * 2;
-                r = 0.9 - t2 * 0.6;
-                g = 0.9 - t2 * 0.2;
-                b = 0.2 + t2 * 0.3;
+                r = 0.95 - t2 * 0.75;
+                g = 0.85 - t2 * 0.1;
+                b = 0.1 + t2 * 0.4;
             }
             return new THREE.Color(r, g, b);
         }
@@ -238,6 +247,37 @@
             scene.add(zLine);
         }
 
+        // === Catmull-Rom spline interpolation for smooth curves ===
+        function catmullRomSpline(points, numSamples) {
+            // points: array of values, numSamples: output resolution
+            const result = [];
+            const n = points.length;
+
+            for (let i = 0; i < numSamples; i++) {
+                const t = i / (numSamples - 1) * (n - 1);
+                const idx = Math.floor(t);
+                const frac = t - idx;
+
+                // Get 4 control points (clamp at edges)
+                const p0 = points[Math.max(0, idx - 1)];
+                const p1 = points[idx];
+                const p2 = points[Math.min(n - 1, idx + 1)];
+                const p3 = points[Math.min(n - 1, idx + 2)];
+
+                // Catmull-Rom interpolation
+                const t2 = frac * frac;
+                const t3 = t2 * frac;
+                const val = 0.5 * (
+                    (2 * p1) +
+                    (-p0 + p2) * frac +
+                    (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
+                    (-p0 + 3 * p1 - 3 * p2 + p3) * t3
+                );
+                result.push(val);
+            }
+            return result;
+        }
+
         // === Build Surface ===
         function buildSurface(data) {
             // Clear existing
@@ -246,16 +286,19 @@
 
             const stripWidth = parseFloat(document.getElementById('strip-width').value);
             const heightScale = parseFloat(document.getElementById('height-scale').value);
-            const gap = 1.0 - stripWidth;
 
             const nDominoes = 28;
             const nMoves = 28;
             const moveScale = 2.0; // Y axis is 2x longer
+            const smoothSamples = 84; // 3x resolution for flowing curves
 
             // Create one strip per domino
             for (let d = 0; d < nDominoes; d++) {
                 const xCenter = d;
-                const eqRow = data.eq_matrix[d];
+                const eqRow = data.eq_matrix[d].map(v => v ?? 0);
+
+                // Smooth the E[Q] values using Catmull-Rom spline
+                const smoothEq = catmullRomSpline(eqRow, smoothSamples);
 
                 // Build geometry for this strip
                 const geometry = new THREE.BufferGeometry();
@@ -263,11 +306,11 @@
                 const colors = [];
                 const indices = [];
 
-                // Create vertices along the strip (2 edges × nMoves points)
-                for (let m = 0; m < nMoves; m++) {
-                    const eq = eqRow[m] ?? 0;
+                // Create vertices along the strip (2 edges × smoothSamples points)
+                for (let s = 0; s < smoothSamples; s++) {
+                    const eq = smoothEq[s];
                     const y = eq * heightScale;
-                    const z = m * moveScale;
+                    const z = (s / (smoothSamples - 1)) * (nMoves - 1) * moveScale;
 
                     const color = eqToColor(eq);
 
@@ -281,8 +324,8 @@
                 }
 
                 // Create faces (triangles)
-                for (let m = 0; m < nMoves - 1; m++) {
-                    const i = m * 2;
+                for (let s = 0; s < smoothSamples - 1; s++) {
+                    const i = s * 2;
                     // Two triangles per quad
                     indices.push(i, i + 1, i + 2);
                     indices.push(i + 1, i + 3, i + 2);
@@ -296,7 +339,7 @@
                 const material = new THREE.MeshPhongMaterial({
                     vertexColors: true,
                     side: THREE.DoubleSide,
-                    shininess: 30,
+                    shininess: 50,
                 });
 
                 const mesh = new THREE.Mesh(geometry, material);
@@ -341,9 +384,9 @@
                     const point = intersects[0].point;
                     const domino = obj.userData.domino;
 
-                    // Estimate move number from Z position
-                    const moveNum = Math.round(point.z / 2) + 1;
-                    const eq = gameData.eq_matrix[obj.userData.dominoIndex][moveNum - 1];
+                    // Estimate move number from Z position (accounting for 2x scale)
+                    const moveNum = Math.min(28, Math.max(1, Math.round(point.z / 2) + 1));
+                    const eq = gameData.eq_matrix[obj.userData.dominoIndex][moveNum - 1] ?? 0;
 
                     tooltip.innerHTML = `
                         <div class="domino">${domino.pips}</div>
