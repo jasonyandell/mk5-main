@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E[Q] 3D Surface - Texas 42</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            overflow: hidden;
+        }
+        #container { width: 100vw; height: 100vh; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            max-width: 300px;
+            z-index: 100;
+        }
+        #info h1 { font-size: 18px; margin-bottom: 10px; color: #58a6ff; }
+        #info p { font-size: 13px; line-height: 1.5; color: #8b949e; }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+        }
+        #controls label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #8b949e;
+        }
+        #controls input[type="range"] {
+            width: 200px;
+            margin-left: 10px;
+            accent-color: #58a6ff;
+        }
+        #controls button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        #controls button:hover { background: #2ea043; }
+        #tooltip {
+            position: absolute;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #58a6ff;
+            font-size: 13px;
+            pointer-events: none;
+            display: none;
+            z-index: 200;
+        }
+        #tooltip .domino { font-size: 16px; font-weight: bold; color: #58a6ff; }
+        #tooltip .value { color: #7ee787; }
+        #game-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+        }
+        #game-selector select {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <div id="info">
+        <h1>E[Q] 3D Surface</h1>
+        <p>Expected action values for all 28 dominoes across 28 moves.</p>
+        <p style="margin-top: 8px;">Dominoes sorted by average E[Q] (worst→best).</p>
+        <p style="margin-top: 8px; font-size: 11px; color: #6e7681;">
+            Drag to rotate • Scroll to zoom • Hover for details
+        </p>
+    </div>
+
+    <div id="game-selector">
+        <label>Game: <select id="game-select"></select></label>
+    </div>
+
+    <div id="controls">
+        <label>Strip Width: <input type="range" id="strip-width" min="0.3" max="1.0" step="0.05" value="0.7"></label>
+        <label>Height Scale: <input type="range" id="height-scale" min="0.5" max="3.0" step="0.1" value="1.0"></label>
+        <label>
+            <input type="checkbox" id="show-wireframe"> Show Wireframe
+        </label>
+        <button id="reset-camera">Reset Camera</button>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // === State ===
+        let scene, camera, renderer, controls;
+        let surfaceMeshes = [];
+        let gameData = null;
+        let allGames = [];
+
+        // === Color scale (RdYlGn) ===
+        function eqToColor(eq, minEq = -20, maxEq = 20) {
+            const t = Math.max(0, Math.min(1, (eq - minEq) / (maxEq - minEq)));
+            // Red -> Yellow -> Green
+            let r, g, b;
+            if (t < 0.5) {
+                // Red to Yellow
+                const t2 = t * 2;
+                r = 0.9;
+                g = 0.3 + t2 * 0.6;
+                b = 0.2;
+            } else {
+                // Yellow to Green
+                const t2 = (t - 0.5) * 2;
+                r = 0.9 - t2 * 0.6;
+                g = 0.9 - t2 * 0.2;
+                b = 0.2 + t2 * 0.3;
+            }
+            return new THREE.Color(r, g, b);
+        }
+
+        // === Initialize Three.js ===
+        function init() {
+            const container = document.getElementById('container');
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d1117);
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(40, 30, 60);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(14, 0, 28);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            scene.add(directionalLight);
+
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(80, 20, 0x30363d, 0x21262d);
+            gridHelper.position.y = -25;
+            scene.add(gridHelper);
+
+            // Axes
+            addAxes();
+
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('strip-width').addEventListener('input', rebuildSurface);
+            document.getElementById('height-scale').addEventListener('input', rebuildSurface);
+            document.getElementById('show-wireframe').addEventListener('change', toggleWireframe);
+            document.getElementById('reset-camera').addEventListener('click', resetCamera);
+            document.getElementById('game-select').addEventListener('change', onGameSelect);
+
+            // Raycaster for hover
+            setupRaycaster();
+
+            animate();
+        }
+
+        function addAxes() {
+            // X axis label (Domino)
+            const xGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -22, 0),
+                new THREE.Vector3(28, -22, 0)
+            ]);
+            const xLine = new THREE.Line(xGeom, new THREE.LineBasicMaterial({ color: 0x58a6ff }));
+            scene.add(xLine);
+
+            // Y axis label (Move)
+            const yGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -22, 0),
+                new THREE.Vector3(0, -22, 56)
+            ]);
+            const yLine = new THREE.Line(yGeom, new THREE.LineBasicMaterial({ color: 0x58a6ff }));
+            scene.add(yLine);
+
+            // Z axis (E[Q])
+            const zGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -22, 0),
+                new THREE.Vector3(0, 22, 0)
+            ]);
+            const zLine = new THREE.Line(zGeom, new THREE.LineBasicMaterial({ color: 0x7ee787 }));
+            scene.add(zLine);
+        }
+
+        // === Build Surface ===
+        function buildSurface(data) {
+            // Clear existing
+            surfaceMeshes.forEach(m => scene.remove(m));
+            surfaceMeshes = [];
+
+            const stripWidth = parseFloat(document.getElementById('strip-width').value);
+            const heightScale = parseFloat(document.getElementById('height-scale').value);
+            const gap = 1.0 - stripWidth;
+
+            const nDominoes = 28;
+            const nMoves = 28;
+            const moveScale = 2.0; // Y axis is 2x longer
+
+            // Create one strip per domino
+            for (let d = 0; d < nDominoes; d++) {
+                const xCenter = d;
+                const eqRow = data.eq_matrix[d];
+
+                // Build geometry for this strip
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                const colors = [];
+                const indices = [];
+
+                // Create vertices along the strip (2 edges × nMoves points)
+                for (let m = 0; m < nMoves; m++) {
+                    const eq = eqRow[m] ?? 0;
+                    const y = eq * heightScale;
+                    const z = m * moveScale;
+
+                    const color = eqToColor(eq);
+
+                    // Left edge
+                    vertices.push(xCenter - stripWidth / 2, y, z);
+                    colors.push(color.r, color.g, color.b);
+
+                    // Right edge
+                    vertices.push(xCenter + stripWidth / 2, y, z);
+                    colors.push(color.r, color.g, color.b);
+                }
+
+                // Create faces (triangles)
+                for (let m = 0; m < nMoves - 1; m++) {
+                    const i = m * 2;
+                    // Two triangles per quad
+                    indices.push(i, i + 1, i + 2);
+                    indices.push(i + 1, i + 3, i + 2);
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals();
+
+                const material = new THREE.MeshPhongMaterial({
+                    vertexColors: true,
+                    side: THREE.DoubleSide,
+                    shininess: 30,
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.userData = { dominoIndex: d, domino: data.dominoes[d] };
+                scene.add(mesh);
+                surfaceMeshes.push(mesh);
+            }
+        }
+
+        function rebuildSurface() {
+            if (gameData) buildSurface(gameData);
+        }
+
+        function toggleWireframe() {
+            const show = document.getElementById('show-wireframe').checked;
+            surfaceMeshes.forEach(mesh => {
+                mesh.material.wireframe = show;
+            });
+        }
+
+        function resetCamera() {
+            camera.position.set(40, 30, 60);
+            controls.target.set(14, 0, 28);
+            controls.update();
+        }
+
+        // === Raycaster for hover ===
+        function setupRaycaster() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const tooltip = document.getElementById('tooltip');
+
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(surfaceMeshes);
+
+                if (intersects.length > 0) {
+                    const obj = intersects[0].object;
+                    const point = intersects[0].point;
+                    const domino = obj.userData.domino;
+
+                    // Estimate move number from Z position
+                    const moveNum = Math.round(point.z / 2) + 1;
+                    const eq = gameData.eq_matrix[obj.userData.dominoIndex][moveNum - 1];
+
+                    tooltip.innerHTML = `
+                        <div class="domino">${domino.pips}</div>
+                        <div>Move: ${moveNum}</div>
+                        <div class="value">E[Q]: ${eq?.toFixed(2) ?? 'N/A'}</div>
+                        <div style="color: #8b949e; font-size: 11px;">Mean: ${domino.mean_eq.toFixed(2)}</div>
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 15) + 'px';
+                    tooltip.style.top = (event.clientY + 15) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
+
+        // === Load Data ===
+        async function loadData(url) {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+
+                allGames = lines.map(line => JSON.parse(line));
+
+                // Populate game selector
+                const select = document.getElementById('game-select');
+                select.innerHTML = '';
+                allGames.forEach((game, i) => {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = game.game_id || `Game ${i + 1}`;
+                    select.appendChild(option);
+                });
+
+                // Load first game
+                gameData = allGames[0];
+                buildSurface(gameData);
+
+                console.log(`Loaded ${allGames.length} game(s)`);
+            } catch (err) {
+                console.error('Failed to load data:', err);
+                // Use dummy data for testing
+                generateDummyData();
+            }
+        }
+
+        function onGameSelect() {
+            const idx = parseInt(document.getElementById('game-select').value);
+            gameData = allGames[idx];
+            buildSurface(gameData);
+        }
+
+        function generateDummyData() {
+            // Generate test data if file not found
+            const dominoes = [];
+            const eq_matrix = [];
+
+            for (let d = 0; d < 28; d++) {
+                const h = Math.floor((Math.sqrt(1 + 8 * d) - 1) / 2);
+                const l = d - h * (h + 1) / 2;
+                dominoes.push({
+                    id: d,
+                    pips: `${h}-${l}`,
+                    high: h,
+                    low: l,
+                    position: d,
+                    mean_eq: (d - 14) * 0.5 + Math.random() * 2,
+                });
+
+                const row = [];
+                for (let m = 0; m < 28; m++) {
+                    row.push((d - 14) * 0.4 + Math.sin(m * 0.3) * 5 + Math.random() * 3);
+                }
+                eq_matrix.push(row);
+            }
+
+            gameData = { game_id: 'dummy', dominoes, eq_matrix, moves: Array.from({length: 28}, (_, i) => i + 1) };
+            allGames = [gameData];
+
+            const select = document.getElementById('game-select');
+            select.innerHTML = '<option value="0">Dummy Data</option>';
+
+            buildSurface(gameData);
+        }
+
+        // === Animation Loop ===
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // === Start ===
+        init();
+        loadData('../data/27a_eq_surface.jsonl');
+    </script>
+</body>
+</html>
