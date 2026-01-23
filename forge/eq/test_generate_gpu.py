@@ -12,7 +12,6 @@ import pytest
 import torch
 
 from forge.eq.game import GameState
-from forge.eq.generate_game import generate_eq_game
 from forge.eq.generate_gpu import generate_eq_games_gpu
 from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
@@ -225,62 +224,6 @@ def test_cpu_compatibility(oracle):
     assert len(results) == 2
     for game in results:
         assert len(game.decisions) == 28
-
-
-def test_compare_to_cpu_baseline(oracle, device):
-    """Compare GPU pipeline E[Q] to CPU baseline.
-
-    Note: Exact match is impossible due to randomized sampling,
-    but we can verify they're statistically similar.
-    """
-    seed = 5000
-    hands = deal_from_seed(seed)
-    decl_id = 3
-    n_samples = 100  # More samples for better comparison
-
-    # GPU pipeline
-    gpu_results = generate_eq_games_gpu(
-        model=oracle.model,
-        hands=[hands],
-        decl_ids=[decl_id],
-        n_samples=n_samples,
-        device=device,
-        greedy=True,
-    )
-
-    # CPU baseline (use same seed for sampling)
-    import numpy as np
-    rng = np.random.default_rng(seed)
-
-    cpu_result = generate_eq_game(
-        oracle=oracle,
-        hands=hands,
-        decl_id=decl_id,
-        n_samples=n_samples,
-        world_rng=rng,
-    )
-
-    # Compare decisions
-    gpu_decisions = gpu_results[0].decisions
-    cpu_decisions = cpu_result.decisions
-
-    assert len(gpu_decisions) == len(cpu_decisions) == 28
-
-    # Count how many decisions match
-    matches = sum(
-        gpu_dec.action_taken == cpu_dec.action_taken
-        for gpu_dec, cpu_dec in zip(gpu_decisions, cpu_decisions)
-    )
-
-    # Due to sampling variance, we expect high but not perfect agreement
-    match_rate = matches / 28
-    print(f"\nCPU/GPU agreement: {match_rate:.1%} ({matches}/28 decisions)")
-
-    # This is a soft check - different sampling can lead to different choices
-    # We mainly verify the pipeline runs and produces reasonable outputs
-    # Note: Low agreement is expected since sampling is stochastic and different
-    # implementations (GPU vs CPU) use different RNG streams
-    assert match_rate > 0.2, f"Too many mismatches (< 20% agreement): {match_rate:.1%}"
 
 
 def test_greedy_vs_sampled(oracle, device):
@@ -607,6 +550,62 @@ def test_posterior_disabled_vs_enabled(oracle, device):
     # After enough history, posterior should affect some decisions
     # This is a soft check - may not differ if worlds happen to be similar
     print(f"\nPosterior weighting changed E[Q] for {differences}/24 decisions (after first 4)")
+
+
+def test_posterior_with_mixed_decl_ids(oracle, device):
+    """Test posterior weighting works correctly with different decl_ids per game.
+
+    This is a regression test for the bug where tokenize_past_steps_batched and
+    compute_legal_masks_gpu used only decl_ids[0] for all games in a batch.
+
+    The fix: both functions now accept per-game decl_ids tensor.
+    """
+    from forge.eq.generate_gpu import PosteriorConfig
+
+    n_games = 4
+    # Different seeds and DIFFERENT declarations per game
+    hands = [deal_from_seed(50000 + i) for i in range(n_games)]
+    decl_ids = [3, 7, 0, 9]  # Different trumps: 3s, doubles-trump, 0s, no-trump
+
+    posterior_config = PosteriorConfig(enabled=True, window_k=4, tau=0.1, uniform_mix=0.1)
+
+    # This should NOT crash or produce wrong results
+    results = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=hands,
+        decl_ids=decl_ids,
+        n_samples=50,
+        device=device,
+        greedy=True,
+        posterior_config=posterior_config,
+    )
+
+    # All games should complete with 28 decisions each
+    assert len(results) == n_games
+    for i, game in enumerate(results):
+        assert len(game.decisions) == 28, f"Game {i} should have 28 decisions"
+
+        for j, decision in enumerate(game.decisions):
+            # Check E[Q] is valid (not NaN, not all -inf)
+            e_q = decision.e_q
+            legal_e_q = e_q[decision.legal_mask]
+
+            assert not torch.isnan(legal_e_q).any(), \
+                f"Game {i} decision {j}: E[Q] contains NaN"
+            assert not torch.isinf(legal_e_q).all(), \
+                f"Game {i} decision {j}: All legal E[Q] are inf"
+
+            # E[Q] should be in reasonable range
+            assert legal_e_q.min() > -100, \
+                f"Game {i} decision {j}: E[Q] too low: {legal_e_q.min()}"
+            assert legal_e_q.max() < 100, \
+                f"Game {i} decision {j}: E[Q] too high: {legal_e_q.max()}"
+
+            # Action taken should be legal
+            assert decision.legal_mask[decision.action_taken], \
+                f"Game {i} decision {j}: Illegal action taken"
+
+    print(f"\nMixed decl_ids test passed: {n_games} games with decl_ids={decl_ids}")
 
 
 def test_build_hypothetical_deals_vectorized(device):

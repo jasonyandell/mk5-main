@@ -1,3 +1,28 @@
+from __future__ import annotations
+"""
+======================================================================
+DEPRECATED CPU PIPELINE - DO NOT USE
+======================================================================
+This module contains KNOWN BUGS (E[Q] collapse with high sample counts).
+It is kept temporarily for reference only and will be deleted soon.
+
+Use the GPU pipeline instead: forge/eq/generate_gpu.py
+======================================================================
+"""
+import sys as _sys
+if not _sys.flags.interactive:  # Allow interactive inspection
+    raise RuntimeError(
+        "\n" + "=" * 70 + "\n"
+        "DEPRECATED CPU PIPELINE - DO NOT USE\n"
+        + "=" * 70 + "\n"
+        "This module contains KNOWN BUGS (E[Q] collapse with high sample counts).\n"
+        "It is kept temporarily for reference only and will be deleted soon.\n"
+        "\n"
+        "Use the GPU pipeline instead: forge/eq/generate_gpu.py\n"
+        + "=" * 70
+    )
+del _sys
+
 """Benchmark pipelined vs batched E[Q] generation to measure CPU/GPU overlap.
 
 This script measures the throughput improvement from pipelining:
@@ -7,7 +32,6 @@ This script measures the throughput improvement from pipelining:
 Expected: ~1.8x improvement (from 22.2ms → 12.2ms per decision, GPU-bound)
 """
 
-from __future__ import annotations
 
 import time
 

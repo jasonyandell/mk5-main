@@ -1084,7 +1084,7 @@ def test_tokenize_past_steps_batched_with_padding():
     )
 
     tokens_original, masks_original = tokenizer.tokenize_past_steps(worlds, past_states, decl_id=0)
-    tokens_batched, masks_batched = tokenizer.tokenize_past_steps_batched(worlds, past_states, decl_id=0)
+    tokens_batched, masks_batched = tokenizer.tokenize_past_steps_batched(worlds, past_states, decl_ids=0)
 
     # Both should have zeros for invalid entries
     # Game 0, step 3: indices g=0, k=3 -> flat_idx = 0*K*M + 3*M = 15 to 19

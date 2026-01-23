@@ -1,6 +1,30 @@
+from __future__ import annotations
+"""
+======================================================================
+DEPRECATED CPU PIPELINE - DO NOT USE
+======================================================================
+This module contains KNOWN BUGS (E[Q] collapse with high sample counts).
+It is kept temporarily for reference only and will be deleted soon.
+
+Use the GPU pipeline instead: forge/eq/generate_gpu.py
+======================================================================
+"""
+import sys as _sys
+if not _sys.flags.interactive:  # Allow interactive inspection
+    raise RuntimeError(
+        "\n" + "=" * 70 + "\n"
+        "DEPRECATED CPU PIPELINE - DO NOT USE\n"
+        + "=" * 70 + "\n"
+        "This module contains KNOWN BUGS (E[Q] collapse with high sample counts).\n"
+        "It is kept temporarily for reference only and will be deleted soon.\n"
+        "\n"
+        "Use the GPU pipeline instead: forge/eq/generate_gpu.py\n"
+        + "=" * 70
+    )
+del _sys
+
 """Posterior-weighted world marginalization for E[Q] generation (t42-64uj.3)."""
 
-from __future__ import annotations
 
 from collections import defaultdict
 

@@ -1,3 +1,28 @@
+from __future__ import annotations
+"""
+======================================================================
+DEPRECATED CPU PIPELINE - DO NOT USE
+======================================================================
+This module contains KNOWN BUGS (E[Q] collapse with high sample counts).
+It is kept temporarily for reference only and will be deleted soon.
+
+Use the GPU pipeline instead: forge/eq/generate_gpu.py
+======================================================================
+"""
+import sys as _sys
+if not _sys.flags.interactive:  # Allow interactive inspection
+    raise RuntimeError(
+        "\n" + "=" * 70 + "\n"
+        "DEPRECATED CPU PIPELINE - DO NOT USE\n"
+        + "=" * 70 + "\n"
+        "This module contains KNOWN BUGS (E[Q] collapse with high sample counts).\n"
+        "It is kept temporarily for reference only and will be deleted soon.\n"
+        "\n"
+        "Use the GPU pipeline instead: forge/eq/generate_gpu.py\n"
+        + "=" * 70
+    )
+del _sys
+
 """Compatibility shim for E[Q] generation.
 
 Historically, all Stage 2 E[Q] generation lived in this module. It has been
@@ -5,7 +30,6 @@ split into focused submodules to keep files manageable, but we keep this shim
 to avoid churn in downstream imports.
 """
 
-from __future__ import annotations
 
 # Public datatypes/configs
 from forge.eq.types import (  # noqa: F401
