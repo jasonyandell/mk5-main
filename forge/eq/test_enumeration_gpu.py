@@ -14,8 +14,21 @@ from forge.eq.enumeration_gpu import (
     _compute_world_counts,
     _get_combination_count,
     COMBINATION_TABLES,
+    ENUMERATION_CUDA_AVAILABLE,
 )
 from forge.eq.sampling_gpu import CAN_FOLLOW
+
+# Try importing CUDA module for direct testing
+try:
+    from forge.eq.enumeration_cuda import (
+        enumerate_worlds_cuda,
+        _build_can_assign_mask,
+        CUDA_AVAILABLE,
+    )
+except ImportError:
+    enumerate_worlds_cuda = None
+    _build_can_assign_mask = None
+    CUDA_AVAILABLE = False
 
 
 class TestCombinationTables:
@@ -440,3 +453,229 @@ class TestEnumerationGPUDevice:
 
         assert worlds.device.type == 'cuda'
         assert counts.device.type == 'cuda'
+
+
+# =============================================================================
+# CUDA Kernel Tests
+# =============================================================================
+
+@pytest.mark.skipif(not CUDA_AVAILABLE, reason="Numba CUDA not available")
+class TestEnumerationCUDA:
+    """Test CUDA kernel-based enumeration."""
+
+    def test_cuda_matches_cpu_trivial(self):
+        """Test that CUDA output matches CPU reference for trivial case."""
+        # Simple: 3 dominoes, 1 per opponent
+        pool = [0, 1, 2]
+        known = [[], [], []]
+        slots = [1, 1, 1]
+
+        # CPU reference
+        cpu_worlds = enumerate_worlds_cpu(pool, known, slots)
+        assert len(cpu_worlds) == 6  # 3! = 6
+
+        # CUDA
+        pools = torch.tensor([[0, 1, 2, -1, -1, -1, -1]], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([3], dtype=torch.int32, device='cuda')
+        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(1, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([[1, 1, 1]], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
+
+        cuda_worlds, counts = enumerate_worlds_cuda(
+            pools, pool_sizes, known_t, known_counts, slot_sizes,
+            voids, decl_ids, max_worlds=100
+        )
+
+        assert counts[0].item() == 6
+
+        # Verify all CUDA worlds are valid partitions
+        cuda_world_set = set()
+        for w_idx in range(counts[0].item()):
+            world = cuda_worlds[0, w_idx]
+            all_doms = []
+            for opp in range(3):
+                hand = world[opp]
+                valid = hand[hand >= 0].tolist()
+                all_doms.extend(valid)
+
+            assert sorted(all_doms) == pool, f"Invalid partition at world {w_idx}"
+            cuda_world_set.add(tuple(sorted(all_doms)))
+
+    def test_cuda_matches_cpu_larger(self):
+        """Test CUDA matches CPU for larger enumeration."""
+        # 6 dominoes, 2 per opponent -> C(6,2)*C(4,2)*C(2,2) = 90 worlds
+        pool = [0, 1, 2, 3, 4, 5]
+        known = [[], [], []]
+        slots = [2, 2, 2]
+
+        # CPU reference
+        cpu_worlds = enumerate_worlds_cpu(pool, known, slots)
+        assert len(cpu_worlds) == 90
+
+        # CUDA
+        pools = torch.tensor([[0, 1, 2, 3, 4, 5, -1]], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([6], dtype=torch.int32, device='cuda')
+        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(1, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
+
+        cuda_worlds, counts = enumerate_worlds_cuda(
+            pools, pool_sizes, known_t, known_counts, slot_sizes,
+            voids, decl_ids, max_worlds=200
+        )
+
+        assert counts[0].item() == 90
+
+    def test_cuda_with_known_dominoes(self):
+        """Test CUDA correctly includes known dominoes in output."""
+        # 4 unknowns in pool, but each opponent has 1 known already
+        pool = [10, 11, 12, 13]
+        known = [[0], [1], [2]]  # Each has 1 known domino
+        slots = [1, 1, 1]  # Each needs 1 more unknown
+
+        # CPU reference: 4 pool, pick 1+1+1 = 3, so 1 left over
+        # But wait, we need exactly 3 for 3 opponents with 1 slot each
+        # This doesn't work - let's use 3 in pool
+        pool = [10, 11, 12]
+        cpu_worlds = enumerate_worlds_cpu(pool, known, slots)
+        assert len(cpu_worlds) == 6  # 3! = 6
+
+        # CUDA
+        pools = torch.tensor([[10, 11, 12, -1, -1, -1, -1]], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([3], dtype=torch.int32, device='cuda')
+        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_t[0, 0, 0] = 0
+        known_t[0, 1, 0] = 1
+        known_t[0, 2, 0] = 2
+        known_counts = torch.tensor([[1, 1, 1]], dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([[1, 1, 1]], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
+
+        cuda_worlds, counts = enumerate_worlds_cuda(
+            pools, pool_sizes, known_t, known_counts, slot_sizes,
+            voids, decl_ids, max_worlds=100
+        )
+
+        assert counts[0].item() == 6
+
+        # Verify known dominoes are in each hand
+        for w_idx in range(counts[0].item()):
+            world = cuda_worlds[0, w_idx]
+            for opp in range(3):
+                hand = world[opp]
+                valid = hand[hand >= 0].tolist()
+                # Known domino should be first
+                assert known[opp][0] in valid, f"Known domino missing for opp {opp}"
+
+    def test_cuda_void_filtering(self):
+        """Test that CUDA kernel respects void constraints."""
+        from forge.oracle.tables import can_follow
+
+        # Pool with dominoes 0-9
+        pool = list(range(10))
+
+        # Opponent 0 is void in suit 0 (can't have dominoes that follow suit 0)
+        known = [[], [], []]
+        slots = [3, 3, 4]
+        voids_cpu = [{0}, set(), set()]
+
+        # CPU reference
+        cpu_worlds = enumerate_worlds_cpu(pool, known, slots, voids_cpu, decl_id=9)
+
+        # CUDA
+        pools = torch.tensor([pool + [-1] * (21 - len(pool))], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([len(pool)], dtype=torch.int32, device='cuda')
+        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(1, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([slots], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        voids[0, 0, 0] = True  # Opponent 0 void in suit 0
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
+
+        cuda_worlds, counts = enumerate_worlds_cuda(
+            pools, pool_sizes, known_t, known_counts, slot_sizes,
+            voids, decl_ids, max_worlds=10000
+        )
+
+        # Counts should match
+        assert counts[0].item() == len(cpu_worlds), (
+            f"CUDA count {counts[0].item()} != CPU count {len(cpu_worlds)}"
+        )
+
+        # Verify all CUDA worlds respect void constraints
+        for w_idx in range(counts[0].item()):
+            world = cuda_worlds[0, w_idx]
+            opp0_hand = world[0]
+            valid_doms = opp0_hand[opp0_hand >= 0].tolist()
+            for d in valid_doms:
+                assert not can_follow(d, 0, 9), (
+                    f"CUDA world {w_idx}: opp0 has domino {d} which violates void"
+                )
+
+    def test_cuda_multiple_games(self):
+        """Test CUDA with multiple games in batch."""
+        n_games = 4
+
+        # All games: 3 dominoes, 1 per opponent
+        pools = torch.zeros(n_games, 7, dtype=torch.int8, device='cuda')
+        pools[:, :3] = torch.tensor([0, 1, 2], dtype=torch.int8)
+        pools[:, 3:] = -1
+        pool_sizes = torch.full((n_games,), 3, dtype=torch.int32, device='cuda')
+        known = torch.full((n_games, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(n_games, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.ones(n_games, 3, dtype=torch.int32, device='cuda')
+        voids = torch.zeros(n_games, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.full((n_games,), 9, dtype=torch.int8, device='cuda')
+
+        cuda_worlds, counts = enumerate_worlds_cuda(
+            pools, pool_sizes, known, known_counts, slot_sizes,
+            voids, decl_ids, max_worlds=100
+        )
+
+        # Each game should have 6 worlds
+        for g in range(n_games):
+            assert counts[g].item() == 6, f"Game {g} has {counts[g].item()} worlds, expected 6"
+
+
+@pytest.mark.skipif(not CUDA_AVAILABLE, reason="Numba CUDA not available")
+class TestCanAssignMask:
+    """Test the can_assign validity mask computation."""
+
+    def test_no_voids(self):
+        """Test mask with no void constraints."""
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')  # NOTRUMP
+
+        can_assign = _build_can_assign_mask(voids, decl_ids, 'cuda')
+
+        # No voids means all dominoes can be assigned to all opponents
+        assert can_assign.shape == (1, 28, 3)
+        assert can_assign.all()
+
+    def test_single_void(self):
+        """Test mask with single void constraint."""
+        from forge.oracle.tables import can_follow
+
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        voids[0, 0, 0] = True  # Opponent 0 void in suit 0
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')  # NOTRUMP
+
+        can_assign = _build_can_assign_mask(voids, decl_ids, 'cuda')
+
+        # Check each domino for opponent 0
+        for d in range(28):
+            if can_follow(d, 0, 9):
+                # Domino follows suit 0, cannot be assigned to opp 0
+                assert not can_assign[0, d, 0].item(), f"Domino {d} should not be assignable to opp 0"
+            else:
+                # Domino doesn't follow suit 0, can be assigned
+                assert can_assign[0, d, 0].item(), f"Domino {d} should be assignable to opp 0"
+
+        # Opponents 1 and 2 have no voids, all dominoes assignable
+        assert can_assign[0, :, 1].all()
+        assert can_assign[0, :, 2].all()

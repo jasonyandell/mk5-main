@@ -53,6 +53,16 @@ from torch import Tensor
 
 from forge.eq.sampling_mrv_gpu import SUIT_DOMINO_MASK
 
+# Try importing CUDA enumeration (falls back to CPU hybrid if unavailable)
+try:
+    from forge.eq.enumeration_cuda import (
+        enumerate_worlds_cuda,
+        CUDA_AVAILABLE as ENUMERATION_CUDA_AVAILABLE,
+    )
+except ImportError:
+    enumerate_worlds_cuda = None
+    ENUMERATION_CUDA_AVAILABLE = False
+
 
 # =============================================================================
 # Combination Tables
@@ -258,6 +268,10 @@ def enumerate_worlds_gpu(
 ) -> tuple[Tensor, Tensor]:
     """Enumerate valid worlds on GPU.
 
+    When Numba CUDA is available and device is 'cuda', uses a GPU-native
+    kernel for parallel enumeration. Otherwise falls back to CPU hybrid
+    approach (CPU enumeration + GPU copy).
+
     Args:
         pools: [n_games, max_pool_size] available domino IDs, -1 padded
         pool_sizes: [n_games] actual pool size per game
@@ -274,6 +288,20 @@ def enumerate_worlds_gpu(
             - worlds: [n_games, max_worlds, 3, 7] opponent hands, -1 padded
             - counts: [n_games] actual world count per game
     """
+    # Use CUDA kernel when available and device is CUDA
+    if ENUMERATION_CUDA_AVAILABLE and device == 'cuda' and torch.cuda.is_available():
+        return enumerate_worlds_cuda(
+            pools=pools,
+            pool_sizes=pool_sizes,
+            known=known,
+            known_counts=known_counts,
+            slot_sizes=slot_sizes,
+            voids=voids,
+            decl_ids=decl_ids,
+            max_worlds=max_worlds,
+        )
+
+    # Fallback to CPU hybrid approach
     n_games = pools.shape[0]
 
     # Compute expected world counts
