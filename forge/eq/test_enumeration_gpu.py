@@ -208,25 +208,26 @@ class TestEnumerateWorldsCPU:
                     assert kd in hand
 
 
+@pytest.mark.skipif(not CUDA_AVAILABLE, reason="Numba CUDA not available")
 class TestEnumerateWorldsGPU:
-    """Test GPU enumeration."""
+    """Test GPU enumeration (requires CUDA)."""
 
     def test_shape(self):
         """Test output shape."""
         n_games = 2
         max_worlds = 100
 
-        pools = torch.tensor([[0, 1, 2, -1], [5, 6, 7, -1]], dtype=torch.int8)
-        pool_sizes = torch.tensor([3, 3], dtype=torch.int32)
-        known = torch.full((n_games, 3, 7), -1, dtype=torch.int8)
-        known_counts = torch.zeros(n_games, 3, dtype=torch.int32)
-        slot_sizes = torch.tensor([[1, 1, 1], [1, 1, 1]], dtype=torch.int32)
-        voids = torch.zeros(n_games, 3, 8, dtype=torch.bool)
-        decl_ids = torch.tensor([9, 9], dtype=torch.int8)
+        pools = torch.tensor([[0, 1, 2, -1], [5, 6, 7, -1]], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([3, 3], dtype=torch.int32, device='cuda')
+        known = torch.full((n_games, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(n_games, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([[1, 1, 1], [1, 1, 1]], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(n_games, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9, 9], dtype=torch.int8, device='cuda')
 
         worlds, counts = enumerate_worlds_gpu(
             pools, pool_sizes, known, known_counts, slot_sizes,
-            voids, decl_ids, max_worlds, device='cpu'
+            voids, decl_ids, max_worlds, device='cuda'
         )
 
         assert worlds.shape == (n_games, max_worlds, 3, 7)
@@ -244,17 +245,17 @@ class TestEnumerateWorldsGPU:
         cpu_worlds = enumerate_worlds_cpu(pool, known, slots)
 
         # GPU
-        pools = torch.tensor([[0, 1, 2, 3, 4, 5, -1]], dtype=torch.int8)
-        pool_sizes = torch.tensor([6], dtype=torch.int32)
-        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8)
-        known_counts = torch.zeros(1, 3, dtype=torch.int32)
-        slot_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32)
-        voids = torch.zeros(1, 3, 8, dtype=torch.bool)
-        decl_ids = torch.tensor([9], dtype=torch.int8)
+        pools = torch.tensor([[0, 1, 2, 3, 4, 5, -1]], dtype=torch.int8, device='cuda')
+        pool_sizes = torch.tensor([6], dtype=torch.int32, device='cuda')
+        known_t = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        known_counts = torch.zeros(1, 3, dtype=torch.int32, device='cuda')
+        slot_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
 
         gpu_worlds, counts = enumerate_worlds_gpu(
             pools, pool_sizes, known_t, known_counts, slot_sizes,
-            voids, decl_ids, max_worlds=100, device='cpu'
+            voids, decl_ids, max_worlds=100, device='cuda'
         )
 
         # Should have same count
@@ -273,18 +274,19 @@ class TestEnumerateWorldsGPU:
             assert sorted(all_doms) == pool
 
 
+@pytest.mark.skipif(not CUDA_AVAILABLE, reason="Numba CUDA not available")
 class TestWorldEnumeratorGPU:
-    """Test the WorldEnumeratorGPU class."""
+    """Test the WorldEnumeratorGPU class (requires CUDA)."""
 
     def test_basic_usage(self):
         """Test basic enumerator usage."""
-        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cpu')
+        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cuda')
 
-        pools = torch.tensor([[0, 1, 2, 3, 4, 5, -1]], dtype=torch.int8)
-        hand_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32)
-        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8)
-        voids = torch.zeros(1, 3, 8, dtype=torch.bool)
-        decl_ids = torch.tensor([9], dtype=torch.int8)
+        pools = torch.tensor([[0, 1, 2, 3, 4, 5, -1]], dtype=torch.int8, device='cuda')
+        hand_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32, device='cuda')
+        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
 
         worlds, counts = enumerator.enumerate(
             pools, hand_sizes, played_by, voids, decl_ids
@@ -298,20 +300,20 @@ class TestWorldEnumeratorGPU:
 
     def test_with_played_dominoes(self):
         """Test with known played dominoes."""
-        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cpu')
+        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cuda')
 
         # 4 unknowns in pool
-        pools = torch.tensor([[10, 11, 12, 13, -1, -1, -1]], dtype=torch.int8)
+        pools = torch.tensor([[10, 11, 12, 13, -1, -1, -1]], dtype=torch.int8, device='cuda')
         # Each opponent has 3 cards (1 known + 2 to assign from pool)
-        hand_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32)
+        hand_sizes = torch.tensor([[2, 2, 2]], dtype=torch.int32, device='cuda')
         # Opponents have played dominoes 0, 1, 2
-        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8)
+        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
         played_by[0, 0, 0] = 0  # Opp 0 played domino 0
         played_by[0, 1, 0] = 1  # Opp 1 played domino 1
         played_by[0, 2, 0] = 2  # Opp 2 played domino 2
 
-        voids = torch.zeros(1, 3, 8, dtype=torch.bool)
-        decl_ids = torch.tensor([9], dtype=torch.int8)
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
 
         worlds, counts = enumerator.enumerate(
             pools, hand_sizes, played_by, voids, decl_ids
@@ -333,14 +335,14 @@ class TestWorldEnumeratorGPU:
 
     def test_exhaustive_late_game(self):
         """Test exhaustive enumeration in late game position."""
-        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cpu')
+        enumerator = WorldEnumeratorGPU(max_games=4, max_worlds=1000, device='cuda')
 
         # Very late game: each opponent needs 1 domino, 3 in pool
-        pools = torch.tensor([[20, 21, 22, -1, -1, -1, -1]], dtype=torch.int8)
-        hand_sizes = torch.tensor([[1, 1, 1]], dtype=torch.int32)
-        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8)
-        voids = torch.zeros(1, 3, 8, dtype=torch.bool)
-        decl_ids = torch.tensor([9], dtype=torch.int8)
+        pools = torch.tensor([[20, 21, 22, -1, -1, -1, -1]], dtype=torch.int8, device='cuda')
+        hand_sizes = torch.tensor([[1, 1, 1]], dtype=torch.int32, device='cuda')
+        played_by = torch.full((1, 3, 7), -1, dtype=torch.int8, device='cuda')
+        voids = torch.zeros(1, 3, 8, dtype=torch.bool, device='cuda')
+        decl_ids = torch.tensor([9], dtype=torch.int8, device='cuda')
 
         worlds, counts = enumerator.enumerate(
             pools, hand_sizes, played_by, voids, decl_ids

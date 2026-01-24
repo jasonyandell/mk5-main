@@ -36,12 +36,13 @@ from torch import Tensor
 
 # Try importing Numba CUDA - graceful fallback if unavailable
 try:
-    from numba import cuda
+    from numba import cuda, int32 as nb_int32
     import numpy as np
 
     CUDA_AVAILABLE = cuda.is_available()
 except ImportError:
     cuda = None
+    nb_int32 = None
     CUDA_AVAILABLE = False
 
 if TYPE_CHECKING:
@@ -181,15 +182,16 @@ if CUDA_AVAILABLE:
     ):
         """CUDA kernel for world enumeration with early-exit void filtering.
 
-        Thread mapping:
+        Thread mapping (2D grid for large enumeration spaces):
             blockIdx.x = game index
-            threadIdx.x = world index within game
+            blockIdx.y = world batch (each batch = blockDim.x worlds)
+            threadIdx.x = world offset within batch
 
         Each thread attempts to construct one world. If void constraints
         make the world invalid, the thread exits early without writing.
         """
         g = cuda.blockIdx.x       # game index
-        w = cuda.threadIdx.x      # world index
+        w = cuda.blockIdx.y * cuda.blockDim.x + cuda.threadIdx.x  # world index
 
         # Load game parameters
         pool_size = pool_sizes[g]
@@ -220,12 +222,12 @@ if CUDA_AVAILABLE:
         c2_idx = w % stride1
 
         # Local arrays for combination results (max 7 elements each)
-        combo0 = cuda.local.array(7, dtype=cuda.int32)
-        combo1 = cuda.local.array(7, dtype=cuda.int32)
-        combo2 = cuda.local.array(7, dtype=cuda.int32)
+        combo0 = cuda.local.array(7, dtype=nb_int32)
+        combo1 = cuda.local.array(7, dtype=nb_int32)
+        combo2 = cuda.local.array(7, dtype=nb_int32)
 
         # Track excluded indices for subsequent unranking
-        excluded01 = cuda.local.array(14, dtype=cuda.int32)  # combo0 + combo1
+        excluded01 = cuda.local.array(14, dtype=nb_int32)  # combo0 + combo1
 
         # ---------- Unrank combo0 for opponent 0 ----------
         if s0 > 0:
@@ -477,13 +479,16 @@ def enumerate_worlds_cuda(
     d_output = cuda.to_device(np.full((n_games, max_worlds, 3, 7), -1, dtype=np.int32))
     d_counts = cuda.to_device(np.zeros(n_games, dtype=np.int32))
 
-    # Compute max threads needed per block
-    # Each block handles one game, threads handle worlds
-    # Use min(max_worlds, 1024) threads per block (CUDA limit is 1024)
-    threads_per_block = min(max_worlds, 1024)
+    # Compute grid dimensions
+    # Use 2D grid: (n_games, n_world_batches) blocks, threads_per_block threads
+    # This allows handling more than 1024 worlds per game
+    threads_per_block = 1024
+    n_world_batches = (max_worlds + threads_per_block - 1) // threads_per_block
 
-    # Launch kernel: n_games blocks, threads_per_block threads each
-    enumerate_worlds_kernel[n_games, threads_per_block](
+    # Launch kernel with 2D grid
+    grid_dim = (n_games, n_world_batches)
+    block_dim = threads_per_block
+    enumerate_worlds_kernel[grid_dim, block_dim](
         d_pools, d_pool_sizes, d_slots, d_can_assign,
         d_known, d_known_counts, binom_table,
         d_output, d_counts, max_worlds

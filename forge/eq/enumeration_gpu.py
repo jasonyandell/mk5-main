@@ -266,11 +266,7 @@ def enumerate_worlds_gpu(
     max_worlds: int = 100_000,
     device: str = 'cuda',
 ) -> tuple[Tensor, Tensor]:
-    """Enumerate valid worlds on GPU.
-
-    When Numba CUDA is available and device is 'cuda', uses a GPU-native
-    kernel for parallel enumeration. Otherwise falls back to CPU hybrid
-    approach (CPU enumeration + GPU copy).
+    """Enumerate valid worlds on GPU using CUDA kernel.
 
     Args:
         pools: [n_games, max_pool_size] available domino IDs, -1 padded
@@ -281,87 +277,34 @@ def enumerate_worlds_gpu(
         voids: [n_games, 3, 8] bool - void suits
         decl_ids: [n_games] declaration IDs
         max_worlds: Maximum worlds to enumerate per game
-        device: Computation device
+        device: Computation device (must be 'cuda')
 
     Returns:
         Tuple of (worlds, counts):
             - worlds: [n_games, max_worlds, 3, 7] opponent hands, -1 padded
             - counts: [n_games] actual world count per game
+
+    Raises:
+        RuntimeError: If CUDA is not available
     """
-    # Use CUDA kernel when available and device is CUDA
-    if ENUMERATION_CUDA_AVAILABLE and device == 'cuda' and torch.cuda.is_available():
-        return enumerate_worlds_cuda(
-            pools=pools,
-            pool_sizes=pool_sizes,
-            known=known,
-            known_counts=known_counts,
-            slot_sizes=slot_sizes,
-            voids=voids,
-            decl_ids=decl_ids,
-            max_worlds=max_worlds,
+    if not ENUMERATION_CUDA_AVAILABLE:
+        raise RuntimeError(
+            "enumerate_worlds_gpu requires Numba CUDA. "
+            "Install CUDA toolkit: sudo apt-get install cuda-nvcc-12-3 cuda-cudart-dev-12-3"
         )
+    if not torch.cuda.is_available():
+        raise RuntimeError("enumerate_worlds_gpu requires CUDA device")
 
-    # Fallback to CPU hybrid approach
-    n_games = pools.shape[0]
-
-    # Compute expected world counts
-    counts = _compute_world_counts(pool_sizes, slot_sizes)
-
-    # Check if any game exceeds max_worlds
-    if (counts > max_worlds).any():
-        exceeds = (counts > max_worlds).sum().item()
-        # For games that exceed, we'll truncate
-        counts = counts.clamp(max=max_worlds)
-
-    # Allocate output (int32 to match sampling output)
-    worlds = torch.full(
-        (n_games, max_worlds, 3, 7), -1,
-        dtype=torch.int32, device=device
+    return enumerate_worlds_cuda(
+        pools=pools,
+        pool_sizes=pool_sizes,
+        known=known,
+        known_counts=known_counts,
+        slot_sizes=slot_sizes,
+        voids=voids,
+        decl_ids=decl_ids,
+        max_worlds=max_worlds,
     )
-
-    # Process each game (GPU-native Cartesian product would be complex,
-    # so we use a hybrid approach: CPU enumeration + GPU copy)
-    for g in range(n_games):
-        # Extract game data
-        pool_size = pool_sizes[g].item()
-        pool = pools[g, :pool_size].cpu().tolist()
-
-        known_g = []
-        for opp in range(3):
-            kc = known_counts[g, opp].item()
-            known_g.append(known[g, opp, :kc].cpu().tolist())
-
-        slots = slot_sizes[g].cpu().tolist()
-
-        # Extract voids as sets
-        voids_g = []
-        for opp in range(3):
-            void_suits = set()
-            for suit in range(8):
-                if voids[g, opp, suit]:
-                    void_suits.add(suit)
-            voids_g.append(void_suits)
-
-        decl_id = decl_ids[g].item()
-
-        # Enumerate (CPU)
-        game_worlds = enumerate_worlds_cpu(pool, known_g, slots, voids_g, decl_id)
-
-        # Truncate if needed
-        n_worlds = min(len(game_worlds), max_worlds)
-        counts[g] = n_worlds
-
-        # Copy to output tensor (vectorized - avoids O(n_worlds × 21) Python loop)
-        if n_worlds > 0:
-            # Pad hands to length 7 and convert to tensor in one shot
-            worlds_list = [
-                [[hand[i] if i < len(hand) else -1 for i in range(7)] for hand in world]
-                for world in game_worlds[:n_worlds]
-            ]
-            worlds_t = torch.tensor(worlds_list, dtype=torch.int32, device=device)
-            worlds[g, :n_worlds] = worlds_t
-
-    return worlds, counts
 
 
 # =============================================================================
