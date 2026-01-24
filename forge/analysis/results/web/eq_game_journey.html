@@ -634,7 +634,14 @@
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0d1117);
 
-            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            // Orthographic camera - no perspective distortion
+            const frustumSize = 60;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.OrthographicCamera(
+                -frustumSize * aspect / 2, frustumSize * aspect / 2,
+                frustumSize / 2, -frustumSize / 2,
+                0.1, 1000
+            );
             // Position camera at start of intro animation (will animate to final position)
             const initCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
             const initCenterZ = (28 * 2) / 2;
@@ -845,6 +852,7 @@
                         shininess: 50,
                         transparent: true,
                         opacity: 1.0,  // Per-vertex opacity via color alpha
+                        depthWrite: false,  // Allow cubes behind to show through
                     });
 
                     const mesh = new THREE.Mesh(geometry, material);
@@ -1604,7 +1612,12 @@
         }
 
         function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = 60;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -frustumSize * aspect / 2;
+            camera.right = frustumSize * aspect / 2;
+            camera.top = frustumSize / 2;
+            camera.bottom = -frustumSize / 2;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
