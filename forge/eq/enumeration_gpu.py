@@ -323,13 +323,15 @@ def enumerate_worlds_gpu(
         n_worlds = min(len(game_worlds), max_worlds)
         counts[g] = n_worlds
 
-        # Copy to output tensor
-        for w_idx, world in enumerate(game_worlds[:n_worlds]):
-            for opp in range(3):
-                hand = world[opp]
-                for i, d in enumerate(hand):
-                    if i < 7:
-                        worlds[g, w_idx, opp, i] = d
+        # Copy to output tensor (vectorized - avoids O(n_worlds × 21) Python loop)
+        if n_worlds > 0:
+            # Pad hands to length 7 and convert to tensor in one shot
+            worlds_list = [
+                [[hand[i] if i < len(hand) else -1 for i in range(7)] for hand in world]
+                for world in game_worlds[:n_worlds]
+            ]
+            worlds_t = torch.tensor(worlds_list, dtype=torch.int32, device=device)
+            worlds[g, :n_worlds] = worlds_t
 
     return worlds, counts
 
