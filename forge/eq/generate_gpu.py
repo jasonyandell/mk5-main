@@ -115,12 +115,14 @@ class DecisionRecordGPU:
     """Record for one decision in GPU pipeline.
 
     Extended in Phase 1a (t42-xncr) to include variance and diagnostics.
+    Extended in t42-qz7f to include full E[Q] PDF (85 bins per action).
     """
     player: int  # Which player made the decision (0-3)
     e_q: Tensor  # [7] E[Q] mean values (padded, -inf for illegal/empty)
     action_taken: int  # Slot index (0-6) of domino played
     legal_mask: Tensor  # [7] boolean mask of legal actions
     e_q_var: Tensor | None = None  # [7] E[Q] variance per action
+    e_q_pdf: Tensor | None = None  # [7, 85] full PDF: P(Q=q|action) for q ∈ [-42, +42]
     # State uncertainty
     u_mean: float = 0.0  # mean(sqrt(var)) over legal actions
     u_max: float = 0.0   # max(sqrt(var)) over legal actions
@@ -253,8 +255,10 @@ def generate_eq_games_gpu(
         q_values = _query_model(model, tokens, masks, states, n_worlds_padded, device)
 
         # 5. Reduce to E[Q] per game (with optional posterior weighting)
+        q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
+
         if posterior_config and posterior_config.enabled:
-            e_q, e_q_var, diagnostics = _compute_posterior_weighted_eq(
+            e_q, e_q_var, e_q_pdf, diagnostics = _compute_posterior_weighted_eq(
                 states=states,
                 worlds=worlds,
                 q_values=q_values,
@@ -266,28 +270,30 @@ def generate_eq_games_gpu(
             )
         else:
             # Uniform weighting (handles variable world counts from enumeration)
-            q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
-
             if world_counts is not None:
                 # Enumeration: use world_counts for proper averaging
                 e_q, e_q_var = _compute_eq_with_counts(q_reshaped, world_counts)
+                e_q_pdf = _compute_eq_pdf(q_reshaped, weights=None, world_counts=world_counts)
             else:
                 # Sampling: all games have same sample count
                 e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
                 e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
+                e_q_pdf = _compute_eq_pdf(q_reshaped)
             diagnostics = None
 
-        # Move e_q to states device (in case model is on different device)
+        # Move tensors to states device (in case model is on different device)
         if e_q.device != states.hands.device:
             e_q = e_q.to(states.hands.device)
         if e_q_var.device != states.hands.device:
             e_q_var = e_q_var.to(states.hands.device)
+        if e_q_pdf.device != states.hands.device:
+            e_q_pdf = e_q_pdf.to(states.hands.device)
 
         # 6. Select actions (greedy, sampled, or exploration)
         actions, exploration_stats = _select_actions(states, e_q, greedy, exploration_policy, rng)
 
         # 7. Record decisions
-        _record_decisions(states, e_q, e_q_var, actions, all_decisions, diagnostics, exploration_stats)
+        _record_decisions(states, e_q, e_q_var, e_q_pdf, actions, all_decisions, diagnostics, exploration_stats)
 
         # 8. Apply actions and advance state
         # Ensure actions are on same device as states
@@ -672,6 +678,65 @@ def _compute_eq_with_counts(
     e_q_var = e_q_var.clamp(min=0)
 
     return e_q, e_q_var
+
+
+def _compute_eq_pdf(
+    q_values: Tensor,  # [N, M, 7]
+    weights: Tensor | None = None,  # [N, M] optional weights
+    world_counts: Tensor | None = None,  # [N] for enumeration with variable counts
+) -> Tensor:
+    """Compute full PDF of Q-values per action.
+
+    Builds a histogram of Q-values across samples/worlds for each action.
+    Q-values in [-42, +42] map to bins [0, 84] (85 bins total).
+
+    Args:
+        q_values: [N, M, 7] Q-values per game/sample/action
+        weights: [N, M] optional weights (uniform 1/M if None)
+        world_counts: [N] actual world count per game (for enumeration)
+
+    Returns:
+        pdf: [N, 7, 85] P(Q=q|action) where bin i → Q = i - 42
+    """
+    N, M, n_actions = q_values.shape
+    device = q_values.device
+
+    # Bin Q-values: q ∈ [-42, 42] → bin ∈ [0, 84]
+    bins = (q_values + 42).round().clamp(0, 84).long()  # [N, M, 7]
+
+    # Initialize PDF tensor with layout [N, 85, 7] for efficient scatter, then transpose
+    # This avoids the non-contiguous slice issue
+    pdf_transposed = torch.zeros(N, 85, n_actions, device=device, dtype=torch.float32)
+
+    # Determine weights
+    if weights is None:
+        if world_counts is not None:
+            # Variable counts: weight = 1/count for valid, 0 for invalid
+            world_idx = torch.arange(M, device=device).unsqueeze(0)  # [1, M]
+            valid_mask = world_idx < world_counts.unsqueeze(1)  # [N, M]
+            weights = valid_mask.float() / world_counts.unsqueeze(1).clamp(min=1).float()
+        else:
+            # Uniform weights
+            weights = torch.full((N, M), 1.0 / M, device=device)
+
+    # For each game, scatter weights into histogram bins
+    # bins: [N, M, 7], weights: [N, M]
+    # We want pdf_transposed[n, bin, a] += weight for each (n, m, a)
+
+    # Expand weights for all actions: [N, M] -> [N, M, 7]
+    weights_expanded = weights.unsqueeze(-1).expand(N, M, n_actions)
+
+    # For each game, use scatter_add
+    for n in range(N):
+        # bins[n]: [M, 7] - bin indices
+        # weights_expanded[n]: [M, 7] - weights
+        # pdf_transposed[n]: [85, 7]
+        pdf_transposed[n].scatter_add_(0, bins[n], weights_expanded[n])
+
+    # Transpose to [N, 7, 85]
+    pdf = pdf_transposed.permute(0, 2, 1).contiguous()
+
+    return pdf
 
 
 def _infer_voids_batched(states: GameStateTensor) -> Tensor:
@@ -1325,6 +1390,7 @@ def _record_decisions(
     states: GameStateTensor,
     e_q: Tensor,
     e_q_var: Tensor,
+    e_q_pdf: Tensor,
     actions: Tensor,
     all_decisions: list[list[DecisionRecordGPU]],
     diagnostics: PosteriorDiagnostics | None = None,
@@ -1336,6 +1402,7 @@ def _record_decisions(
         states: GameStateTensor
         e_q: [n_games, 7] E[Q] mean values
         e_q_var: [n_games, 7] E[Q] variance values
+        e_q_pdf: [n_games, 7, 85] full PDF P(Q=q|action) for q ∈ [-42, +42]
         actions: [n_games] action indices
         all_decisions: List of decision lists (one per game)
         diagnostics: Optional posterior diagnostics (aggregated across games)
@@ -1379,6 +1446,7 @@ def _record_decisions(
             action_taken=actions[g].item(),
             legal_mask=legal_mask[g].cpu(),
             e_q_var=e_q_var[g].cpu(),
+            e_q_pdf=e_q_pdf[g].cpu(),
             u_mean=u_mean,
             u_max=u_max,
             ess=diagnostics.ess if diagnostics else None,
@@ -1424,7 +1492,7 @@ def _compute_posterior_weighted_eq(
     tokenizer: GPUTokenizer,
     posterior_config: PosteriorConfig,
     device: str,
-) -> tuple[Tensor, Tensor, PosteriorDiagnostics | None]:
+) -> tuple[Tensor, Tensor, Tensor, PosteriorDiagnostics | None]:
     """Compute posterior-weighted E[Q] using past K steps.
 
     Args:
@@ -1438,9 +1506,10 @@ def _compute_posterior_weighted_eq(
         device: Device for computation
 
     Returns:
-        Tuple of (e_q_mean, e_q_var, diagnostics):
+        Tuple of (e_q_mean, e_q_var, e_q_pdf, diagnostics):
             - e_q_mean: [N, 7] posterior-weighted E[Q] mean values
             - e_q_var: [N, 7] posterior-weighted E[Q] variance values
+            - e_q_pdf: [N, 7, 85] posterior-weighted PDF
             - diagnostics: PosteriorDiagnostics (aggregated across games, or None if fallback)
     """
     n_games = states.n_games
@@ -1527,6 +1596,7 @@ def _compute_posterior_weighted_eq(
         q_reshaped = q_values.view(n_games, n_samples, 7)
         e_q = q_reshaped.mean(dim=1)
         e_q_var = q_reshaped.var(dim=1, unbiased=False)
+        e_q_pdf = _compute_eq_pdf(q_reshaped)
         # Return proper diagnostics: ESS = n_samples (uniform weights)
         uniform_diagnostics = PosteriorDiagnostics(
             ess=float(n_samples),  # Uniform weights -> ESS = n_samples
@@ -1538,7 +1608,7 @@ def _compute_posterior_weighted_eq(
             window_nll=0.0,
             window_k_used=0,  # No history used
         )
-        return e_q, e_q_var, uniform_diagnostics
+        return e_q, e_q_var, e_q_pdf, uniform_diagnostics
 
     # Model forward pass
     with torch.inference_mode():
@@ -1586,6 +1656,9 @@ def _compute_posterior_weighted_eq(
     e_q_sq = (weights_expanded * q_values_reshaped**2).sum(dim=1)  # [N, 7]
     e_q_var = e_q_sq - e_q_mean**2  # [N, 7]
 
+    # Weighted PDF
+    e_q_pdf = _compute_eq_pdf(q_values_reshaped, weights=weights)  # [N, 7, 85]
+
     # 9. Aggregate diagnostics across games (average)
     if diagnostics is not None:
         # diagnostics is a dict with tensors of shape [N] for each field
@@ -1603,4 +1676,4 @@ def _compute_posterior_weighted_eq(
     else:
         aggregated_diagnostics = None
 
-    return e_q_mean, e_q_var, aggregated_diagnostics
+    return e_q_mean, e_q_var, e_q_pdf, aggregated_diagnostics
