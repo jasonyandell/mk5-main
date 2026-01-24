@@ -420,6 +420,9 @@ def enumerate_worlds_cuda(
     one CUDA block per game, with threads enumerating potential worlds
     in parallel.
 
+    Uses zero-copy access to PyTorch CUDA tensors via cuda.as_cuda_array()
+    to avoid CPU transfers.
+
     Args:
         pools: [n_games, max_pool] available domino IDs, -1 padded
         pool_sizes: [n_games] actual pool size per game
@@ -441,43 +444,34 @@ def enumerate_worlds_cuda(
     if not CUDA_AVAILABLE:
         raise RuntimeError("CUDA not available for enumeration_cuda")
 
-    import numpy as np
-
     n_games = pools.shape[0]
     device = pools.device
 
-    # Build can_assign mask (vectorized on GPU)
+    # Build can_assign mask (vectorized on GPU, stays on GPU)
     can_assign = _build_can_assign_mask(voids, decl_ids, device)  # [n_games, 28, 3]
 
-    # Get binomial table on device
+    # Get binomial table on device (cached, only copied once at module load)
     binom_table = _get_binom_table_device()
 
-    # Allocate output tensors
+    # Allocate output tensors (PyTorch CUDA tensors)
     worlds = torch.full(
         (n_games, max_worlds, 3, 7), -1,
         dtype=torch.int32, device=device
     )
     counts = torch.zeros(n_games, dtype=torch.int32, device=device)
 
-    # Convert tensors to Numba CUDA arrays
-    # Numba needs contiguous arrays
-    pools_np = pools.cpu().numpy().astype(np.int8)
-    pool_sizes_np = pool_sizes.cpu().numpy().astype(np.int32)
-    slot_sizes_np = slot_sizes.cpu().numpy().astype(np.int32)
-    can_assign_np = can_assign.cpu().numpy()
-    known_np = known.cpu().numpy().astype(np.int8)
-    known_counts_np = known_counts.cpu().numpy().astype(np.int32)
+    # Ensure inputs are contiguous with correct dtypes for zero-copy access
+    # All tensors stay on GPU - no CPU transfers!
+    d_pools = cuda.as_cuda_array(pools.to(torch.int8).contiguous())
+    d_pool_sizes = cuda.as_cuda_array(pool_sizes.to(torch.int32).contiguous())
+    d_slots = cuda.as_cuda_array(slot_sizes.to(torch.int32).contiguous())
+    d_can_assign = cuda.as_cuda_array(can_assign.to(torch.uint8).contiguous())  # bool→uint8
+    d_known = cuda.as_cuda_array(known.to(torch.int8).contiguous())
+    d_known_counts = cuda.as_cuda_array(known_counts.to(torch.int32).contiguous())
 
-    d_pools = cuda.to_device(pools_np)
-    d_pool_sizes = cuda.to_device(pool_sizes_np)
-    d_slots = cuda.to_device(slot_sizes_np)
-    d_can_assign = cuda.to_device(can_assign_np)
-    d_known = cuda.to_device(known_np)
-    d_known_counts = cuda.to_device(known_counts_np)
-
-    # Output arrays (will copy back to torch)
-    d_output = cuda.to_device(np.full((n_games, max_worlds, 3, 7), -1, dtype=np.int32))
-    d_counts = cuda.to_device(np.zeros(n_games, dtype=np.int32))
+    # Output tensors - Numba writes directly to PyTorch memory
+    d_output = cuda.as_cuda_array(worlds)
+    d_counts = cuda.as_cuda_array(counts)
 
     # Compute grid dimensions
     # Use 2D grid: (n_games, n_world_batches) blocks, threads_per_block threads
@@ -494,11 +488,8 @@ def enumerate_worlds_cuda(
         d_output, d_counts, max_worlds
     )
 
-    # Copy results back to torch tensors
-    output_np = d_output.copy_to_host()
-    counts_np = d_counts.copy_to_host()
+    # Synchronize to ensure kernel completion before returning PyTorch tensors
+    cuda.synchronize()
 
-    worlds = torch.from_numpy(output_np).to(device)
-    counts = torch.from_numpy(counts_np).to(device)
-
+    # worlds and counts are already PyTorch CUDA tensors - no copy needed!
     return worlds, counts
