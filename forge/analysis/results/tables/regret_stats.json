@@ -1,0 +1,10 @@
+{
+  "n_samples": 499601,
+  "mean_regret": 0.07165117561817169,
+  "median_regret": 0.0,
+  "p95_regret": 0.0,
+  "p99_regret": 0.0,
+  "max_regret": 65.0,
+  "zero_regret_pct": 99.40132225515961,
+  "near_zero_regret_pct": 99.40132225515961
+}
