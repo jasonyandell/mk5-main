@@ -289,8 +289,8 @@ def generate_eq_games_gpu(
         if e_q_pdf.device != states.hands.device:
             e_q_pdf = e_q_pdf.to(states.hands.device)
 
-        # 6. Select actions (greedy, sampled, or exploration)
-        actions, exploration_stats = _select_actions(states, e_q, greedy, exploration_policy, rng)
+        # 6. Select actions by p_make (greedy, sampled, or exploration)
+        actions, exploration_stats = _select_actions(states, e_q, e_q_pdf, greedy, exploration_policy, rng)
 
         # 7. Record decisions
         _record_decisions(states, e_q, e_q_var, e_q_pdf, actions, all_decisions, diagnostics, exploration_stats)
@@ -1263,8 +1263,9 @@ def _query_model(
     states: GameStateTensor,
     n_samples: int,
     device: str,
+    chunk_size: int | None = None,
 ) -> Tensor:
-    """Run model forward pass.
+    """Run model forward pass with automatic chunking.
 
     Args:
         model: Stage 1 model
@@ -1273,6 +1274,7 @@ def _query_model(
         states: GameStateTensor (for current_player)
         n_samples: Number of samples per game
         device: Device
+        chunk_size: Max batch per forward pass (auto-calibrated if None)
 
     Returns:
         [batch, 7] Q-values
@@ -1297,11 +1299,30 @@ def _query_model(
     # Convert int8 to int32 for model input (Embedding layer)
     tokens = tokens.to(torch.int32)
 
+    # Get optimal chunk size if not provided
+    if chunk_size is None and model_device.type == 'cuda':
+        from forge.eq.calibration import get_optimal_chunk
+        chunk_size = get_optimal_chunk(model, device)
+
     # Model forward with mixed precision (float16 on CUDA for ~2-3x speedup)
     with torch.inference_mode():
         use_amp = (model_device.type == 'cuda')
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=use_amp):
-            q_values, _ = model(tokens, masks, current_players)
+            if chunk_size is None or batch_size <= chunk_size:
+                # Single forward pass
+                q_values, _ = model(tokens, masks, current_players)
+            else:
+                # Chunked forward passes
+                q_chunks = []
+                for i in range(0, batch_size, chunk_size):
+                    end = min(i + chunk_size, batch_size)
+                    q_chunk, _ = model(
+                        tokens[i:end],
+                        masks[i:end],
+                        current_players[i:end],
+                    )
+                    q_chunks.append(q_chunk)
+                q_values = torch.cat(q_chunks, dim=0)
 
     # Clone to prevent CUDA graph buffer reuse when model is called multiple times
     # (e.g., posterior weighting calls model again for past steps)
@@ -1311,15 +1332,26 @@ def _query_model(
 def _select_actions(
     states: GameStateTensor,
     e_q: Tensor,
+    e_q_pdf: Tensor,
     greedy: bool,
     exploration_policy: ExplorationPolicy | None = None,
     rng: np.random.Generator | None = None,
 ) -> tuple[Tensor, list | None]:
-    """Select actions from E[Q] values.
+    """Select actions by probability of making the contract (p_make).
+
+    Texas 42 has a threshold-based payoff: the bidding team (P0/P2) needs ≥30 points
+    to make the contract. E[Q] = 0 is NOT neutral - it's a 21-21 split, which is a
+    LOSS for offense. This function optimizes p_make = P(Q ≥ threshold | action)
+    instead of E[Q], with E[Q] as tie-breaker.
+
+    Win thresholds:
+        - Offense (P0, P2): win when Q ≥ 18 (team scored ≥30) → bin 60+
+        - Defense (P1, P3): win when Q ≥ -17 (bidder scored <30) → bin 25+
 
     Args:
         states: GameStateTensor
-        e_q: [n_games, 7] E[Q] values
+        e_q: [n_games, 7] E[Q] values (for tie-breaking)
+        e_q_pdf: [n_games, 7, 85] P(Q=q|action) for q ∈ [-42, +42], bin i → Q = i - 42
         greedy: If True, argmax. If False, softmax sample.
         exploration_policy: Optional exploration policy (overrides greedy if provided)
         rng: NumPy RNG for exploration
@@ -1336,7 +1368,17 @@ def _select_actions(
     # Get legal actions: [n_games, 7]
     legal_mask = states.legal_actions()
 
+    # Compute p_make from PDF
+    # Offense (P0, P2): need Q >= 18 → bin 60+ (bin = Q + 42)
+    # Defense (P1, P3): need Q > -18, i.e., Q >= -17 → bin 25+
+    is_offense = (states.current_player % 2 == 0).unsqueeze(1)  # [n_games, 1]
+
+    p_make_offense = e_q_pdf[:, :, 60:].sum(dim=2)  # [n_games, 7]
+    p_make_defense = e_q_pdf[:, :, 25:].sum(dim=2)  # [n_games, 7]
+    p_make = torch.where(is_offense, p_make_offense, p_make_defense)  # [n_games, 7]
+
     # If exploration policy provided, use it (per-game selection)
+    # Note: exploration still uses E[Q] for now (separate concern)
     if exploration_policy is not None:
         from forge.eq.types import ExplorationStats
 
@@ -1351,11 +1393,11 @@ def _select_actions(
             )
             actions.append(action_idx)
 
-            # Compute greedy action and q_gap
+            # Compute greedy action (by p_make) and q_gap
             legal = legal_mask[g]
-            masked_eq = e_q[g].clone()
-            masked_eq[~legal] = float('-inf')
-            greedy_action = masked_eq.argmax().item()
+            masked_p_make = p_make[g].clone()
+            masked_p_make[~legal] = float('-inf')
+            greedy_action = masked_p_make.argmax().item()
 
             q_greedy = e_q[g][greedy_action].item()
             q_taken = e_q[g][action_idx].item()
@@ -1372,15 +1414,28 @@ def _select_actions(
             exploration_stats.append(stats)
         return torch.tensor(actions, dtype=torch.long, device=e_q.device), exploration_stats
 
-    # Otherwise, use greedy or softmax sampling (no exploration stats)
-    masked_e_q = e_q.clone()
-    masked_e_q[~legal_mask] = float('-inf')
+    # Mask illegal actions
+    p_make_masked = p_make.clone()
+    p_make_masked[~legal_mask] = float('-inf')
 
     if greedy:
-        actions = masked_e_q.argmax(dim=1)
+        # Tie-break by E[Q]: add tiny normalized E[Q] term
+        # This ensures "lose gracefully" (smaller margin) or "win big" (larger margin)
+        e_q_masked = e_q.clone()
+        e_q_masked[~legal_mask] = float('-inf')
+
+        # Normalize E[Q] to [0, 1], scale to be negligible vs p_make
+        e_q_min = e_q_masked.min(dim=1, keepdim=True).values
+        e_q_max = e_q_masked.max(dim=1, keepdim=True).values
+        e_q_range = (e_q_max - e_q_min).clamp(min=1e-10)
+        e_q_normalized = (e_q_masked - e_q_min) / e_q_range
+
+        # p_make is in [0, 1], tie-break term is negligible (1e-9 scale)
+        score = p_make_masked + 1e-9 * e_q_normalized
+        actions = score.argmax(dim=1)
     else:
-        # Softmax sample
-        probs = torch.softmax(masked_e_q, dim=1)
+        # Softmax sample over p_make
+        probs = torch.softmax(p_make_masked, dim=1)
         actions = torch.multinomial(probs, num_samples=1).squeeze(1)
 
     return actions, None
