@@ -255,13 +255,41 @@ def test_greedy_vs_sampled(oracle, device):
     assert len(greedy_results[0].decisions) == 28
     assert len(sampled_results[0].decisions) == 28
 
-    # Greedy always picks argmax
+    # Greedy picks by p_make (probability of making contract) with E[Q] tie-breaker
+    # With default bidder=0: P0/P2 are offense (threshold bin 60+), P1/P3 are defense (threshold bin 25+)
     for decision in greedy_results[0].decisions:
-        e_q_masked = decision.e_q.clone()
-        e_q_masked[~decision.legal_mask] = float('-inf')
-        expected_action = e_q_masked.argmax().item()
+        legal = decision.legal_mask
+        pdf = decision.e_q_pdf  # [7, 85]
+        e_q = decision.e_q  # [7]
+
+        # Compute p_make based on player's role
+        is_offense = decision.player % 2 == 0
+        if is_offense:
+            p_make = pdf[:, 60:].sum(dim=1)  # P(Q >= 18)
+        else:
+            p_make = pdf[:, 25:].sum(dim=1)  # P(Q >= -17)
+
+        # Mask illegal actions
+        p_make_masked = p_make.clone()
+        p_make_masked[~legal] = float('-inf')
+
+        # Compute tie-breaker (normalized E[Q])
+        e_q_for_norm = e_q.clone()
+        e_q_for_norm[~legal] = float('inf')
+        e_q_min = e_q_for_norm[legal].min() if legal.any() else 0
+        e_q_for_norm = e_q.clone()
+        e_q_for_norm[~legal] = float('-inf')
+        e_q_max = e_q_for_norm[legal].max() if legal.any() else 1
+        e_q_range = max(e_q_max - e_q_min, 1e-10)
+        e_q_normalized = (e_q - e_q_min) / e_q_range
+        e_q_normalized[~legal] = 0.0
+
+        # Score = p_make + tiny E[Q] tie-breaker
+        score = p_make_masked + 1e-6 * e_q_normalized
+        expected_action = score.argmax().item()
+
         assert decision.action_taken == expected_action, \
-            "Greedy should always pick argmax"
+            f"Greedy should pick by p_make (player={decision.player}, is_offense={is_offense})"
 
     # Sampled might differ (stochastic), just verify it completes
     # No specific assertions needed

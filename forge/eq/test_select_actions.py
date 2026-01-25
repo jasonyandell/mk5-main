@@ -8,12 +8,26 @@ import pytest
 from unittest.mock import MagicMock
 
 
-def make_mock_states(current_players: list[int], legal_masks: torch.Tensor) -> MagicMock:
-    """Create a mock GameStateTensor with just the fields _select_actions needs."""
+def make_mock_states(
+    current_players: list[int],
+    legal_masks: torch.Tensor,
+    bidders: list[int] | None = None,
+) -> MagicMock:
+    """Create a mock GameStateTensor with just the fields _select_actions needs.
+
+    Args:
+        current_players: List of current player indices (0-3) for each game
+        legal_masks: [n_games, 7] boolean mask of legal actions
+        bidders: Optional list of bidder player indices (0-3). Defaults to 0 for all games.
+    """
     states = MagicMock()
     states.n_games = len(current_players)
     states.current_player = torch.tensor(current_players, dtype=torch.int32)
     states.legal_actions = MagicMock(return_value=legal_masks)
+    # Default bidder to 0 if not provided
+    if bidders is None:
+        bidders = [0] * len(current_players)
+    states.bidder = torch.tensor(bidders, dtype=torch.int32)
     return states
 
 
@@ -276,6 +290,146 @@ class TestBatchProcessing:
         # Action 1 has higher E[Q] (18 > 17)
         assert actions[1].item() == 1, "P1 (defense) should pick higher E[Q] when p_make tied"
         assert actions[3].item() == 1, "P3 (defense) should pick higher E[Q] when p_make tied"
+
+
+class TestBidderField:
+    """Test that bidder field correctly determines offense/defense roles."""
+
+    def test_bidder_zero_default(self):
+        """With default bidder=0, P0/P2 are offense, P1/P3 are defense."""
+        from forge.eq.generate_gpu import _select_actions
+
+        # P0 plays, bidder=0 (default) -> P0 is offense
+        current_players = [0]
+        legal_masks = torch.ones(1, 7, dtype=torch.bool)
+        states = make_mock_states(current_players, legal_masks)  # bidder defaults to 0
+
+        # Action 0: Q=17 (bin 59) - p_make=0 for offense
+        # Action 1: Q=18 (bin 60) - p_make=1 for offense
+        peak_bins = [[59, 60, 0, 0, 0, 0, 0]]
+        e_q_pdf = make_peaked_pdf(1, 7, peak_bins)
+        e_q = torch.tensor([[17.0, 18.0, -42.0, -42.0, -42.0, -42.0, -42.0]])
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True)
+
+        assert actions[0].item() == 1, "P0 with bidder=0 should be offense, pick Q>=18"
+
+    def test_bidder_one_reverses_roles(self):
+        """With bidder=1, P1/P3 are offense, P0/P2 are defense."""
+        from forge.eq.generate_gpu import _select_actions
+
+        # P0 plays, bidder=1 -> P0 is now DEFENSE
+        current_players = [0]
+        legal_masks = torch.ones(1, 7, dtype=torch.bool)
+        states = make_mock_states(current_players, legal_masks, bidders=[1])
+
+        # For defense, Q >= -17 (bin 25+) is a win
+        # Action 0: Q=-18 (bin 24) - p_make=0 for defense
+        # Action 1: Q=-17 (bin 25) - p_make=1 for defense
+        e_q_pdf = torch.zeros(1, 7, 85)
+        e_q_pdf[0, 0, 24] = 1.0  # Q=-18
+        e_q_pdf[0, 1, 25] = 1.0  # Q=-17
+
+        e_q = torch.tensor([[-18.0, -17.0, -42.0, -42.0, -42.0, -42.0, -42.0]])
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True)
+
+        assert actions[0].item() == 1, "P0 with bidder=1 should be defense, pick Q>=-17"
+
+    def test_bidder_one_p1_is_offense(self):
+        """With bidder=1, P1 is on offense (same team as bidder)."""
+        from forge.eq.generate_gpu import _select_actions
+
+        # P1 plays, bidder=1 -> P1 is offense
+        current_players = [1]
+        legal_masks = torch.ones(1, 7, dtype=torch.bool)
+        states = make_mock_states(current_players, legal_masks, bidders=[1])
+
+        # Action 0: Q=17 (bin 59) - p_make=0 for offense
+        # Action 1: Q=18 (bin 60) - p_make=1 for offense
+        peak_bins = [[59, 60, 0, 0, 0, 0, 0]]
+        e_q_pdf = make_peaked_pdf(1, 7, peak_bins)
+        e_q = torch.tensor([[17.0, 18.0, -42.0, -42.0, -42.0, -42.0, -42.0]])
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True)
+
+        assert actions[0].item() == 1, "P1 with bidder=1 should be offense, pick Q>=18"
+
+    def test_bidder_three_team_assignment(self):
+        """With bidder=3, P1/P3 are offense, P0/P2 are defense."""
+        from forge.eq.generate_gpu import _select_actions
+
+        # 4 games: P0, P1, P2, P3 all play with bidder=3
+        current_players = [0, 1, 2, 3]
+        legal_masks = torch.tensor([
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+        ])
+        states = make_mock_states(current_players, legal_masks, bidders=[3, 3, 3, 3])
+
+        # Action 0: Q=17 (bin 59) - p_make=0 for offense, p_make=1 for defense
+        # Action 1: Q=18 (bin 60) - p_make=1 for offense, p_make=1 for defense
+        e_q_pdf = torch.zeros(4, 7, 85)
+        for g in range(4):
+            e_q_pdf[g, 0, 59] = 1.0  # Q=17
+            e_q_pdf[g, 1, 60] = 1.0  # Q=18
+
+        e_q = torch.full((4, 7), -42.0)
+        e_q[:, 0] = 17.0
+        e_q[:, 1] = 18.0
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True)
+
+        # With bidder=3 (team 1):
+        # P0 (team 0) is defense -> both actions have p_make=1, tie-break by E[Q] -> action 1
+        # P1 (team 1) is offense -> action 1 has p_make=1, action 0 has p_make=0 -> action 1
+        # P2 (team 0) is defense -> both actions have p_make=1, tie-break by E[Q] -> action 1
+        # P3 (team 1) is offense -> action 1 has p_make=1, action 0 has p_make=0 -> action 1
+        for i in range(4):
+            assert actions[i].item() == 1, f"Game {i} should pick action 1"
+
+    def test_mixed_bidders_batch(self):
+        """Test batch where different games have different bidders."""
+        from forge.eq.generate_gpu import _select_actions
+
+        # 4 games: all P0 playing, but alternating bidders (0, 1, 0, 1)
+        # Game 0: P0 plays, bidder=0 -> P0 is offense
+        # Game 1: P0 plays, bidder=1 -> P0 is defense
+        # Game 2: P0 plays, bidder=0 -> P0 is offense
+        # Game 3: P0 plays, bidder=1 -> P0 is defense
+        current_players = [0, 0, 0, 0]
+        # Only actions 0 and 1 are legal (matches PDF setup)
+        legal_masks = torch.tensor([
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+            [True, True, False, False, False, False, False],
+        ])
+        states = make_mock_states(current_players, legal_masks, bidders=[0, 1, 0, 1])
+
+        # Action 0: Q=17 (bin 59) - p_make=0 for offense, p_make=1 for defense
+        # Action 1: Q=18 (bin 60) - p_make=1 for offense, p_make=1 for defense
+        e_q_pdf = torch.zeros(4, 7, 85)
+        for g in range(4):
+            e_q_pdf[g, 0, 59] = 1.0  # Q=17
+            e_q_pdf[g, 1, 60] = 1.0  # Q=18
+
+        e_q = torch.full((4, 7), -42.0)
+        e_q[:, 0] = 17.0
+        e_q[:, 1] = 18.0
+
+        actions, _ = _select_actions(states, e_q, e_q_pdf, greedy=True)
+
+        # Game 0: P0 offense -> needs p_make=1, picks action 1
+        assert actions[0].item() == 1, "Game 0: P0 (offense) should pick Q>=18"
+        # Game 1: P0 defense -> both actions have p_make=1, tie-break by E[Q] -> action 1
+        assert actions[1].item() == 1, "Game 1: P0 (defense) should pick higher E[Q]"
+        # Game 2: P0 offense -> needs p_make=1, picks action 1
+        assert actions[2].item() == 1, "Game 2: P0 (offense) should pick Q>=18"
+        # Game 3: P0 defense -> both actions have p_make=1, tie-break by E[Q] -> action 1
+        assert actions[3].item() == 1, "Game 3: P0 (defense) should pick higher E[Q]"
 
 
 if __name__ == "__main__":

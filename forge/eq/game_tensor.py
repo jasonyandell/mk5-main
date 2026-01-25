@@ -153,6 +153,7 @@ class GameStateTensor:
     - trick_plays: (n_games, 4) int8 - Current trick dominoes, -1 for empty
     - leader: (n_games,) int8 - Current trick leader (0-3)
     - decl_ids: (n_games,) int8 - Declaration ID for each game
+    - bidder: (n_games,) int8 - Player who won the bid (0-3), determines offense team
     - device: Device where tensors reside
     """
 
@@ -165,6 +166,7 @@ class GameStateTensor:
         leader: torch.Tensor,
         decl_ids: torch.Tensor,
         device: str | torch.device,
+        bidder: torch.Tensor | None = None,
     ):
         """Internal constructor. Use from_deals() to create instances."""
         self.hands = hands
@@ -175,6 +177,11 @@ class GameStateTensor:
         self.decl_ids = decl_ids
         self.device = device
         self.n_games = hands.shape[0]
+        # Default bidder to 0 (P0 is bidder) if not provided
+        if bidder is None:
+            self.bidder = torch.zeros(self.n_games, dtype=torch.int8, device=device)
+        else:
+            self.bidder = bidder
 
     @classmethod
     def from_deals(
@@ -182,6 +189,7 @@ class GameStateTensor:
         hands: list[list[list[int]]],
         decl_ids: list[int],
         device: str | torch.device = 'cuda',
+        bidders: list[int] | None = None,
     ) -> GameStateTensor:
         """Initialize N games from dealt hands.
 
@@ -189,6 +197,7 @@ class GameStateTensor:
             hands: List of N games, each with 4 hands of 7 domino IDs
             decl_ids: List of N declaration IDs
             device: Device to place tensors on
+            bidders: Optional list of N bidder player IDs (0-3). Defaults to 0 for all games.
 
         Returns:
             GameStateTensor with N games initialized
@@ -198,6 +207,9 @@ class GameStateTensor:
         # Validate input
         if len(decl_ids) != n_games:
             raise ValueError(f"Expected {n_games} decl_ids, got {len(decl_ids)}")
+
+        if bidders is not None and len(bidders) != n_games:
+            raise ValueError(f"Expected {n_games} bidders, got {len(bidders)}")
 
         for game_idx, game_hands in enumerate(hands):
             if len(game_hands) != 4:
@@ -218,6 +230,12 @@ class GameStateTensor:
         trick_plays = torch.full((n_games, 4), -1, dtype=torch.int8, device=device)
         leader = torch.zeros(n_games, dtype=torch.int8, device=device)
 
+        # Bidder tensor (default 0)
+        if bidders is not None:
+            bidder_t = torch.tensor(bidders, dtype=torch.int8, device=device)
+        else:
+            bidder_t = torch.zeros(n_games, dtype=torch.int8, device=device)
+
         return cls(
             hands=hands_t,
             played_mask=played_mask,
@@ -226,6 +244,7 @@ class GameStateTensor:
             leader=leader,
             decl_ids=decl_ids_t,
             device=device,
+            bidder=bidder_t,
         )
 
     @property
@@ -407,6 +426,7 @@ class GameStateTensor:
             leader=new_leader,
             decl_ids=self.decl_ids,  # Immutable, can reuse
             device=self.device,
+            bidder=self.bidder,  # Immutable, can reuse
         )
 
     def active_games(self) -> torch.Tensor:

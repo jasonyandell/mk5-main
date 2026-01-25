@@ -1369,9 +1369,10 @@ def _select_actions(
     legal_mask = states.legal_actions()
 
     # Compute p_make from PDF
-    # Offense (P0, P2): need Q >= 18 → bin 60+ (bin = Q + 42)
-    # Defense (P1, P3): need Q > -18, i.e., Q >= -17 → bin 25+
-    is_offense = (states.current_player % 2 == 0).unsqueeze(1)  # [n_games, 1]
+    # Offense (bidder's team): need Q >= 18 → bin 60+ (bin = Q + 42)
+    # Defense (opponent team): need Q > -18, i.e., Q >= -17 → bin 25+
+    # Player is offense if they're on the same team as the bidder
+    is_offense = ((states.current_player % 2) == (states.bidder % 2)).unsqueeze(1)  # [n_games, 1]
 
     p_make_offense = e_q_pdf[:, :, 60:].sum(dim=2)  # [n_games, 7]
     p_make_defense = e_q_pdf[:, :, 25:].sum(dim=2)  # [n_games, 7]
