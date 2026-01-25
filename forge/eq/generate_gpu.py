@@ -1421,17 +1421,25 @@ def _select_actions(
     if greedy:
         # Tie-break by E[Q]: add tiny normalized E[Q] term
         # This ensures "lose gracefully" (smaller margin) or "win big" (larger margin)
-        e_q_masked = e_q.clone()
-        e_q_masked[~legal_mask] = float('-inf')
 
-        # Normalize E[Q] to [0, 1], scale to be negligible vs p_make
-        e_q_min = e_q_masked.min(dim=1, keepdim=True).values
-        e_q_max = e_q_masked.max(dim=1, keepdim=True).values
+        # Normalize E[Q] to [0, 1] using only LEGAL action values
+        # Use extreme values for illegal so they don't affect min/max
+        e_q_for_min = e_q.clone()
+        e_q_for_min[~legal_mask] = float('inf')  # Won't be the min
+        e_q_for_max = e_q.clone()
+        e_q_for_max[~legal_mask] = float('-inf')  # Won't be the max
+
+        e_q_min = e_q_for_min.min(dim=1, keepdim=True).values
+        e_q_max = e_q_for_max.max(dim=1, keepdim=True).values
         e_q_range = (e_q_max - e_q_min).clamp(min=1e-10)
-        e_q_normalized = (e_q_masked - e_q_min) / e_q_range
 
-        # p_make is in [0, 1], tie-break term is negligible (1e-9 scale)
-        score = p_make_masked + 1e-9 * e_q_normalized
+        # Normalize E[Q] to [0, 1], zero out illegal actions
+        e_q_normalized = (e_q - e_q_min) / e_q_range
+        e_q_normalized[~legal_mask] = 0.0  # Don't affect score for illegal
+
+        # p_make is in [0, 1], tie-break term is negligible (1e-6 scale)
+        # Note: 1e-9 is too small for float32 precision, gets absorbed
+        score = p_make_masked + 1e-6 * e_q_normalized
         actions = score.argmax(dim=1)
     else:
         # Softmax sample over p_make
