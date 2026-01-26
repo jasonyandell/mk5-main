@@ -1,4 +1,4 @@
-"""Metrics for domino model evaluation: Q-gap, blunder rate, accuracy, regret stats."""
+"""Metrics for domino model evaluation: Q-gap, blunder rate, regret stats."""
 
 from typing import Dict
 
@@ -91,23 +91,6 @@ def compute_blunder_rate(gaps: Tensor, threshold: float = 10.0) -> Tensor:
     return (gaps > threshold).float().mean()
 
 
-def compute_accuracy(logits: Tensor, targets: Tensor, legal: Tensor) -> Tensor:
-    """
-    Fraction of exact matches with oracle best move.
-
-    Args:
-        logits: Model output logits, shape (batch, 7)
-        targets: Oracle target actions, shape (batch,)
-        legal: Legal action mask (1=legal, 0=illegal), shape (batch, 7)
-
-    Returns:
-        Accuracy (scalar tensor)
-    """
-    logits_masked = logits.masked_fill(legal == 0, float('-inf'))
-    preds = logits_masked.argmax(dim=-1)
-    return (preds == targets).float().mean()
-
-
 def compute_regret_stats(gaps: Tensor) -> Dict[str, Tensor]:
     """
     Compute statistics on Q-gap (regret) distribution.
@@ -135,6 +118,9 @@ def compute_per_slot_accuracy(
 ) -> Tensor:
     """
     Compute accuracy stratified by which slot the oracle chose.
+
+    Note: Accuracy is misleading when ties exist (multiple optimal actions).
+    Use per-slot regret for a more meaningful metric.
 
     Args:
         logits: Model output logits, shape (batch, 7)

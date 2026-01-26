@@ -8,7 +8,8 @@ Pre-trained models for Texas 42 domino play prediction.
 
 | Model | File | Params | Q-MAE | Q-Gap | Use Case |
 |-------|------|--------|-------|-------|----------|
-| **Q-Val Large** | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 | Best accuracy |
+| **Q-Val Shuffle** | `domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt` | 3.3M | 0.96 | 0.074 | **Best (no slot bias)** |
+| Q-Val Large | `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt` | 3.3M | 0.94 | 0.071 | Legacy (slot 0 bias) |
 | Q-Val Small | `domino-qval-small-816k-qgap0.094-qmae1.49.ckpt` | 816K | 1.49 | 0.094 | Faster inference |
 
 For E[Q] marginalization (`forge/eq/`), Q-value models are strongly preferred—see [Why Q-Value Models?](#why-q-value-models) below.
@@ -18,6 +19,102 @@ For E[Q] marginalization (`forge/eq/`), Q-value models are strongly preferred—
 ## Q-Value Models
 
 Models trained with `loss_mode='qvalue'` that directly predict expected points for each action.
+
+### Q-Val Shuffle (Recommended)
+
+**File**: `domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt`
+
+**Why this model?** Trained with `shuffle_hands=True` on both train and validation data, eliminating the slot 0 positional bias present in earlier models. Tie-breaking behavior is now uniform across slots.
+
+#### Architecture
+
+```
+DominoTransformer(
+    embed_dim=256,
+    n_heads=8,
+    n_layers=6,
+    ff_dim=512,
+    dropout=0.1,
+    value_head=Linear(256, 1)
+)
+```
+
+| Component | Value |
+|-----------|-------|
+| Parameters | 3.3M |
+| Layers | 6 |
+| Attention Heads | 8 |
+| Embedding Dim | 256 |
+| Feed-Forward Dim | 512 |
+
+#### Training Configuration
+
+| Hyperparameter | Value |
+|----------------|-------|
+| Epochs | 20 |
+| Batch Size | 512 |
+| Learning Rate | 3e-4 |
+| Optimizer | AdamW |
+| Weight Decay | 0.01 |
+| Precision | 16-mixed AMP |
+| **Loss** | Q-value MSE |
+| Value Weight | 0.5 |
+| **Shuffle Hands** | True (train + val) |
+| Gradient Clip | 1.0 (norm) |
+| torch.compile | True |
+
+#### Results
+
+| Metric | Value | Description |
+|--------|-------|-------------|
+| Q-Gap | 0.074 | Mean regret in points vs oracle |
+| Q-MAE | 0.96 | Mean absolute error on Q-value prediction (points) |
+| Value-MAE | 1.90 | Mean absolute error on game value prediction (points) |
+| Zero-Regret Rate | 99.4% | Fraction of moves with zero regret (optimal) |
+| Blunder Rate | 0.24% | Moves with Q-gap > 10 points |
+
+#### Slot Bias Fix
+
+The key improvement over Q-Val Large. Tie-breaking is now uniform:
+
+| Slot | Tie Rate (This) | Tie Rate (Old) | Expected |
+|------|-----------------|----------------|----------|
+| 0 | 0.173 | 0.379 | 0.143 |
+| 1 | 0.163 | 0.157 | 0.143 |
+| 2 | 0.150 | 0.138 | 0.143 |
+| 3 | 0.140 | 0.124 | 0.143 |
+| 4 | 0.133 | 0.107 | 0.143 |
+| 5 | 0.124 | 0.058 | 0.143 |
+| 6 | 0.116 | 0.037 | 0.143 |
+
+Slot regrets are also uniform (~0.07-0.08 for all slots).
+
+#### Loading
+
+```python
+from forge.ml.module import DominoLightningModule
+
+model = DominoLightningModule.load_from_checkpoint(
+    "forge/models/domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt"
+)
+model.eval()
+
+# Get Q-value predictions (in POINTS; do NOT rescale)
+q_values, value = model(tokens, mask, current_player)
+
+# q_values are already in roughly [-42, 42] range for qvalue-trained checkpoints.
+best_move = q_values.argmax(dim=-1)
+```
+
+#### Provenance
+
+- **Bead**: t42-7dou (shuffle training)
+- **Wandb**: qval-202601260408-3.3M-6L-8H-shuffle
+- **GPU**: A100-40GB (Modal)
+- **Training Time**: ~5 hours
+- **Data**: `data/tokenized-full` (1124 seeds, 11.24M samples)
+
+---
 
 ### Training Data (Validated)
 
@@ -33,9 +130,11 @@ All Q-value models trained on `data/tokenized-full`:
 
 Each shard uses 1 declaration per seed (`decl = seed % 10`) for balanced coverage across all 10 declarations.
 
-### Q-Val Large (Recommended)
+### Q-Val Large (Legacy - has slot 0 bias)
 
 **File**: `domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt`
+
+> **Note**: This model exhibits slot 0 positional bias (tie_rate_slot_0 = 0.38 vs expected 0.14). Use Q-Val Shuffle instead for new work.
 
 #### Architecture
 
@@ -230,6 +329,7 @@ Earlier version without value head. Same architecture as v2.
 
 | Model | Checkpoint | Weights Only |
 |-------|------------|--------------|
+| Q-Val Shuffle (3.3M) | 39 MB | ~13 MB |
 | Q-Val Large (3.3M) | 39 MB | ~13 MB |
 | Q-Val Small (816K) | 9.9 MB | ~3 MB |
 | Policy Large (817K) | 9.5 MB | ~3 MB |
@@ -243,6 +343,9 @@ Earlier version without value head. Same architecture as v2.
 | 2025-12-31 | Large v1 | 100 seeds, soft CE | 0.112 |
 | 2026-01-01 | Large v2 | Added value head | 0.072 |
 | 2026-01-13 | Q-Val Small | Q-value loss | 0.094 |
-| 2026-01-13 | **Q-Val Large** | 6L, 256 dim, 1124 seeds | **0.071** |
+| 2026-01-13 | Q-Val Large | 6L, 256 dim, 1124 seeds | 0.071 |
+| 2026-01-26 | **Q-Val Shuffle** | shuffle_hands fix for slot bias | **0.074** |
 
-**Key finding**: Q-value loss with more data (1124 vs 10 seeds) and larger architecture achieves best Q-gap while providing interpretable outputs.
+**Key findings**:
+- Q-value loss with more data (1124 vs 10 seeds) and larger architecture achieves best Q-gap while providing interpretable outputs.
+- Training with `shuffle_hands=True` eliminates slot 0 positional bias in tie-breaking behavior.

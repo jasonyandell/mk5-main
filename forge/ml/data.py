@@ -140,9 +140,9 @@ class DominoDataModule(L.LightningDataModule):
         self,
         data_path: str = 'data/tokenized',  # Canonical location
         batch_size: int = 512,
-        num_workers: int = 8,
+        num_workers: int = 16,
         pin_memory: bool = True,
-        prefetch_factor: int = 4,
+        prefetch_factor: int = 8,
         mmap: bool = False,
         shuffle_hands: bool = True,
     ):
@@ -189,12 +189,13 @@ class DominoDataModule(L.LightningDataModule):
         mmap = self.hparams.mmap
         shuffle_hands = self.hparams.shuffle_hands
         if stage == 'fit' or stage is None:
-            # Only shuffle hands for training (data augmentation)
+            # Shuffle hands for both training and validation
             self.train_dataset = DominoDataset(
                 self.hparams.data_path, 'train', mmap=mmap, shuffle_hands=shuffle_hands
             )
-            # Validation uses fixed ordering for reproducible metrics
-            self.val_dataset = DominoDataset(self.hparams.data_path, 'val', mmap=mmap)
+            self.val_dataset = DominoDataset(
+                self.hparams.data_path, 'val', mmap=mmap, shuffle_hands=shuffle_hands
+            )
 
         if stage == 'validate':
             if self.val_dataset is None:

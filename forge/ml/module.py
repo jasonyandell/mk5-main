@@ -11,7 +11,6 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from .metrics import (
-    compute_accuracy,
     compute_blunder_rate,
     compute_per_declaration_regret,
     compute_per_slot_accuracy,
@@ -314,13 +313,11 @@ class DominoLightningModule(L.LightningModule):
         loss, action_loss, value_loss = self._compute_loss(
             logits, value, targets, legal, qvals, teams, values
         )
-        acc = compute_accuracy(logits, targets, legal)
 
         # Structured logging with prefixes (sync_dist for multi-GPU)
         self.log('train/loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
         self.log('train/action_loss', action_loss, on_step=True, on_epoch=True, sync_dist=True)
         self.log('train/value_loss', value_loss, on_step=True, on_epoch=True, sync_dist=True)
-        self.log('train/acc', acc, on_step=True, on_epoch=True, sync_dist=True)
         return loss
 
     def on_validation_start(self) -> None:
@@ -342,7 +339,6 @@ class DominoLightningModule(L.LightningModule):
         loss, action_loss, value_loss = self._compute_loss(
             logits, value, targets, legal, qvals, teams, values
         )
-        acc = compute_accuracy(logits, targets, legal)
         gaps = compute_qgaps_per_sample(logits, qvals, legal, teams)
         q_gap = gaps.mean()
         blunder_rate = compute_blunder_rate(gaps)
@@ -365,7 +361,6 @@ class DominoLightningModule(L.LightningModule):
         self.log('val/action_loss', action_loss, sync_dist=True)
         self.log('val/value_loss', value_loss, sync_dist=True)
         self.log('val/value_mae', value_mae, sync_dist=True, prog_bar=True)
-        self.log('val/accuracy', acc, sync_dist=True, prog_bar=True)
         self.log('val/q_gap', q_gap, sync_dist=True, prog_bar=True)
         self.log('val/blunder_rate', blunder_rate, sync_dist=True)
 
@@ -381,25 +376,18 @@ class DominoLightningModule(L.LightningModule):
         decl_ids = tokens[:, 0, 10]
         self._val_decl_ids.append(decl_ids.detach())
 
-        # Q-value calibration metrics (for qvalue loss mode)
-        if self.hparams.loss_mode == 'qvalue':
-            team_sign = torch.where(teams == 0, 1.0, -1.0).unsqueeze(1)
-            target_q = qvals * team_sign
-            legal_mask = legal > 0
+        # Q-value calibration metrics (always computed, useful for any loss mode)
+        team_sign = torch.where(teams == 0, 1.0, -1.0).unsqueeze(1)
+        target_q = qvals * team_sign
+        legal_mask = legal > 0
 
-            # MAE between predicted and actual Q-values (in points)
-            if legal_mask.any():
-                q_mae = (logits[legal_mask] - target_q[legal_mask]).abs().mean()
-                # Calibration: mean predicted vs mean actual
-                mean_pred_q = logits[legal_mask].mean()
-                mean_actual_q = target_q[legal_mask].mean()
-                q_calibration_error = (mean_pred_q - mean_actual_q).abs()
-            else:
-                q_mae = torch.tensor(0.0, device=logits.device)
-                q_calibration_error = torch.tensor(0.0, device=logits.device)
+        # MAE between predicted and actual Q-values (in points)
+        if legal_mask.any():
+            q_mae = (logits[legal_mask] - target_q[legal_mask]).abs().mean()
+        else:
+            q_mae = torch.tensor(0.0, device=logits.device)
 
-            self.log('val/q_mae', q_mae, sync_dist=True, prog_bar=True)
-            self.log('val/q_calibration_error', q_calibration_error, sync_dist=True)
+        self.log('val/q_mae', q_mae, sync_dist=True, prog_bar=True)
 
     def on_validation_epoch_end(self) -> None:
         """Compute epoch-level validation metrics."""
@@ -415,7 +403,7 @@ class DominoLightningModule(L.LightningModule):
         legal = torch.cat(self._val_legal)
         teams = torch.cat(self._val_teams)
 
-        # Per-slot accuracy
+        # Per-slot accuracy (note: misleading when ties exist, but useful for slot bias detection)
         slot_accs = compute_per_slot_accuracy(logits, targets, legal)
         for slot in range(7):
             if not torch.isnan(slot_accs[slot]):
@@ -439,12 +427,6 @@ class DominoLightningModule(L.LightningModule):
 
         # Log warnings for potential issues at epoch 1+
         if self.current_epoch >= 1:
-            # Check for slot accuracy imbalance
-            valid_accs = slot_accs[~torch.isnan(slot_accs)]
-            if len(valid_accs) > 0 and valid_accs.min() < 0.9 * valid_accs.max():
-                print(f"Warning: Slot accuracy imbalance detected. "
-                      f"Min: {valid_accs.min():.3f}, Max: {valid_accs.max():.3f}")
-
             # Check for slot 0 tie-breaking bias
             if tie_rates.sum() > 0 and tie_rates[0] > 0.2:  # More than ~20% when uniform would be ~14%
                 print(f"Warning: Possible slot 0 bias in tie-breaking. "
@@ -468,7 +450,6 @@ class DominoLightningModule(L.LightningModule):
         loss, action_loss, value_loss = self._compute_loss(
             logits, value, targets, legal, qvals, teams, values
         )
-        acc = compute_accuracy(logits, targets, legal)
         gaps = compute_qgaps_per_sample(logits, qvals, legal, teams)
         q_gap = gaps.mean()
         blunder_rate = compute_blunder_rate(gaps)
@@ -484,7 +465,6 @@ class DominoLightningModule(L.LightningModule):
         self.log('test/action_loss', action_loss, sync_dist=True)
         self.log('test/value_loss', value_loss, sync_dist=True)
         self.log('test/value_mae', value_mae, sync_dist=True)
-        self.log('test/accuracy', acc, sync_dist=True)
         self.log('test/q_gap', q_gap, sync_dist=True)
         self.log('test/blunder_rate', blunder_rate, sync_dist=True)
 

@@ -541,6 +541,18 @@ EQ_MOUNT_PATH = "/eq_data"
 
 eq_volume = modal.Volume.from_name(EQ_VOLUME_NAME, create_if_missing=True)
 
+# =============================================================================
+# Training Volume Configuration
+# =============================================================================
+#
+# Persistent volume for tokenized training data and checkpoints.
+# Contains: /tokenized/{train,val,test}/*.npy, /checkpoints/
+
+TRAINING_VOLUME_NAME = "stage1-training-data"
+TRAINING_MOUNT_PATH = "/data"
+
+training_volume = modal.Volume.from_name(TRAINING_VOLUME_NAME, create_if_missing=True)
+
 
 @app.cls(
     image=forge_image,
@@ -723,3 +735,288 @@ def eq_generate(
 
     file_size_mb = len(data_bytes) / 1024 / 1024
     console.print(f"\n[green]Saved: {output} ({file_size_mb:.1f} MB)[/green]")
+
+
+# =============================================================================
+# Training Functions
+# =============================================================================
+#
+# Train DominoTransformer models on Modal GPUs using the tokenized dataset.
+# Uses T4 ($0.59/hr) for cost-efficient training.
+#
+# Usage:
+#     modal run forge/modal_app.py::train --epochs 10
+#     modal run forge/modal_app.py::train --epochs 10 --no-shuffle-hands  # Disable slot shuffle
+#     modal run forge/modal_app.py::train_sweep  # Parallel hyperparameter search
+
+
+@app.function(
+    image=forge_image,
+    gpu=GPU_A100_40GB,  # A100-40 test
+    volumes={TRAINING_MOUNT_PATH: training_volume},
+    timeout=14400,  # 4 hours max
+    secrets=[modal.Secret.from_name("wandb-api-key")],
+)
+def train_model(
+    epochs: int = 10,
+    batch_size: int = 32768,  # Large batch for B200 (192GB VRAM)
+    lr: float = 3e-4,
+    embed_dim: int = 64,
+    n_heads: int = 4,
+    n_layers: int = 2,
+    ff_dim: int = 128,
+    value_weight: float = 0.5,
+    loss_mode: str = "policy",
+    shuffle_hands: bool = True,
+    seed: int = 42,
+    wandb_group: str | None = None,
+    run_name: str | None = None,
+    compile: bool = True,
+    limit_train_batches: int | None = None,
+) -> dict:
+    """Train a DominoTransformer model on Modal GPU.
+
+    Args:
+        epochs: Number of training epochs
+        batch_size: Training batch size
+        lr: Learning rate
+        embed_dim: Transformer embedding dimension
+        n_heads: Number of attention heads
+        n_layers: Number of transformer layers
+        ff_dim: Feed-forward dimension
+        value_weight: Weight for value head loss
+        loss_mode: 'policy' (cross-entropy) or 'qvalue' (MSE)
+        shuffle_hands: Shuffle hand slots during training (fixes slot 0 bias)
+        seed: Random seed
+        wandb_group: Optional WandB group name
+        run_name: Optional run name (auto-generated if not provided)
+        compile: Whether to use torch.compile (disable for quick tests)
+        limit_train_batches: Limit training to N batches per epoch (for quick tests)
+
+    Returns:
+        Dict with training results and best checkpoint path
+    """
+    import sys
+    sys.path.insert(0, "/root")
+
+    import os
+    import time
+    from datetime import datetime
+
+    import torch
+    import lightning as L
+    from lightning.pytorch.callbacks import (
+        EarlyStopping,
+        LearningRateMonitor,
+        ModelCheckpoint,
+    )
+    from lightning.pytorch.loggers import CSVLogger, WandbLogger
+
+    from forge.ml.data import DominoDataModule
+    from forge.ml.module import DominoLightningModule
+
+    print(f"[{torch.cuda.get_device_name(0)}] Starting training")
+    print(f"  Epochs: {epochs}, Batch size: {batch_size}, LR: {lr}")
+    print(f"  Architecture: {n_layers}L-{n_heads}H-d{embed_dim}")
+    print(f"  Shuffle hands: {shuffle_hands}, Compile: {compile}")
+    if limit_train_batches:
+        print(f"  Limit batches: {limit_train_batches} (quick perf test)")
+    start_time = time.time()
+
+    # Reproducibility
+    L.seed_everything(seed, workers=True)
+    torch.set_float32_matmul_precision("high")
+    torch.backends.cudnn.benchmark = True
+
+    # Model
+    model = DominoLightningModule(
+        embed_dim=embed_dim,
+        n_heads=n_heads,
+        n_layers=n_layers,
+        ff_dim=ff_dim,
+        lr=lr,
+        value_weight=value_weight,
+        loss_mode=loss_mode,
+    )
+
+    # torch.compile for optimization (skip for quick perf tests)
+    if compile:
+        model.model = torch.compile(model.model)
+
+    # Data - uses volume mount
+    data = DominoDataModule(
+        data_path=f"{TRAINING_MOUNT_PATH}/tokenized",
+        batch_size=batch_size,
+        num_workers=16,
+        prefetch_factor=8,
+        shuffle_hands=shuffle_hands,
+    )
+
+    # Compute model size
+    total_params = sum(p.numel() for p in model.parameters())
+    if total_params >= 1_000_000:
+        model_size = f"{total_params / 1_000_000:.1f}M"
+    else:
+        model_size = f"{total_params // 1000}k"
+
+    # Run name
+    if run_name is None:
+        timestamp = datetime.now().strftime("%Y%m%d%H%M")
+        prefix = "qval" if loss_mode == "qvalue" else "train"
+        shuffle_tag = "-shuffle" if shuffle_hands else ""
+        run_name = f"{prefix}-{timestamp}-{model_size}-{n_layers}L-{n_heads}H{shuffle_tag}"
+
+    # Loggers
+    checkpoint_dir = f"{TRAINING_MOUNT_PATH}/checkpoints/{run_name}"
+    loggers = [CSVLogger(checkpoint_dir, name="logs")]
+
+    # WandB if secret is available
+    if os.environ.get("WANDB_API_KEY"):
+        tags = [loss_mode, model_size]
+        if shuffle_hands:
+            tags.append("shuffle-hands")
+        if wandb_group:
+            tags.append(wandb_group.split("/")[0])
+
+        loggers.append(WandbLogger(
+            project="crystal-forge",
+            name=run_name,
+            group=wandb_group,
+            tags=tags,
+            save_dir=checkpoint_dir,
+            log_model=False,
+            config={
+                "total_params": total_params,
+                "model_size": model_size,
+                "embed_dim": embed_dim,
+                "n_heads": n_heads,
+                "n_layers": n_layers,
+                "ff_dim": ff_dim,
+                "batch_size": batch_size,
+                "lr": lr,
+                "value_weight": value_weight,
+                "loss_mode": loss_mode,
+                "shuffle_hands": shuffle_hands,
+                "seed": seed,
+            },
+        ))
+        print("  WandB: enabled")
+    else:
+        print("  WandB: disabled (no WANDB_API_KEY)")
+
+    # Callbacks
+    callbacks = [
+        ModelCheckpoint(
+            dirpath=checkpoint_dir,
+            monitor="val/q_gap",
+            mode="min",
+            save_top_k=1,
+            save_last=True,
+            filename="{epoch}-{val_q_gap:.3f}",
+        ),
+        EarlyStopping(
+            monitor="val/q_gap",
+            mode="min",
+            patience=5,
+            verbose=True,
+        ),
+        LearningRateMonitor(logging_interval="epoch"),
+    ]
+
+    # Trainer
+    trainer = L.Trainer(
+        max_epochs=epochs,
+        logger=loggers,
+        callbacks=callbacks,
+        default_root_dir=checkpoint_dir,
+        log_every_n_steps=25,
+        gradient_clip_val=1.0,
+        gradient_clip_algorithm="norm",
+        accelerator="gpu",
+        devices=1,
+        precision="16-mixed",
+        limit_train_batches=limit_train_batches,
+    )
+
+    trainer.fit(model, data)
+
+    # Commit checkpoints to volume
+    training_volume.commit()
+
+    total_time = time.time() - start_time
+    best_path = trainer.checkpoint_callback.best_model_path
+    best_q_gap = trainer.checkpoint_callback.best_model_score
+
+    print(f"\nTraining complete in {total_time / 60:.1f} minutes")
+    print(f"Best checkpoint: {best_path}")
+    print(f"Best val/q_gap: {best_q_gap:.4f}")
+
+    return {
+        "run_name": run_name,
+        "epochs_trained": trainer.current_epoch + 1,
+        "best_q_gap": float(best_q_gap) if best_q_gap else None,
+        "best_checkpoint": best_path,
+        "total_time_seconds": total_time,
+        "model_size": model_size,
+        "shuffle_hands": shuffle_hands,
+    }
+
+
+@app.local_entrypoint(name="train")
+def train(
+    epochs: int = 10,
+    batch_size: int = 32768,
+    lr: float = 3e-4,
+    embed_dim: int = 64,
+    n_heads: int = 4,
+    n_layers: int = 2,
+    ff_dim: int = 128,
+    shuffle_hands: bool = True,
+    loss_mode: str = "policy",
+    wandb_group: str | None = None,
+    compile: bool = True,
+    limit_train_batches: int | None = None,
+):
+    """Train a model on Modal GPU.
+
+    Usage:
+        modal run forge/modal_app.py::train --epochs 10
+        modal run forge/modal_app.py::train --epochs 10 --wandb-group slot-bias-fix
+        modal run forge/modal_app.py::train --no-shuffle-hands  # Compare without shuffle
+        modal run forge/modal_app.py::train --no-compile --limit-train-batches 100  # Quick perf test
+    """
+    from rich.console import Console
+    console = Console()
+
+    console.print("[bold]Training on Modal GPU[/bold]")
+    console.print(f"  Epochs: {epochs}")
+    console.print(f"  Batch size: {batch_size}")
+    console.print(f"  Architecture: {n_layers}L-{n_heads}H-d{embed_dim}-ff{ff_dim}")
+    console.print(f"  Shuffle hands: {shuffle_hands}")
+    console.print(f"  Loss mode: {loss_mode}")
+    console.print(f"  Compile: {compile}")
+    if limit_train_batches:
+        console.print(f"  Limit batches: {limit_train_batches}")
+    console.print()
+
+    result = train_model.remote(
+        epochs=epochs,
+        batch_size=batch_size,
+        lr=lr,
+        embed_dim=embed_dim,
+        n_heads=n_heads,
+        n_layers=n_layers,
+        ff_dim=ff_dim,
+        shuffle_hands=shuffle_hands,
+        loss_mode=loss_mode,
+        wandb_group=wandb_group,
+        compile=compile,
+        limit_train_batches=limit_train_batches,
+    )
+
+    console.print(f"\n[green]Training complete![/green]")
+    console.print(f"  Run: {result['run_name']}")
+    console.print(f"  Epochs: {result['epochs_trained']}")
+    console.print(f"  Best Q-gap: {result['best_q_gap']:.4f}")
+    console.print(f"  Time: {result['total_time_seconds'] / 60:.1f} minutes")
+    console.print(f"  Checkpoint: {result['best_checkpoint']}")
