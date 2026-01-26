@@ -10,7 +10,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
-from .metrics import compute_accuracy, compute_blunder_rate, compute_qgaps_per_sample
+from .metrics import (
+    compute_accuracy,
+    compute_blunder_rate,
+    compute_per_declaration_regret,
+    compute_per_slot_accuracy,
+    compute_per_slot_regret,
+    compute_per_slot_tie_rate,
+    compute_qgaps_per_sample,
+    compute_regret_stats,
+)
 
 
 class DominoTransformer(nn.Module):
@@ -314,6 +323,16 @@ class DominoLightningModule(L.LightningModule):
         self.log('train/acc', acc, on_step=True, on_epoch=True, sync_dist=True)
         return loss
 
+    def on_validation_start(self) -> None:
+        """Initialize accumulators for epoch-level metrics."""
+        self._val_gaps = []
+        self._val_targets = []
+        self._val_decl_ids = []
+        self._val_logits = []
+        self._val_qvals = []
+        self._val_legal = []
+        self._val_teams = []
+
     def validation_step(self, batch: Tuple, batch_idx: int) -> None:
         """Validation step with comprehensive metrics."""
         tokens, masks, players, targets, legal, qvals, teams, values = batch
@@ -327,6 +346,13 @@ class DominoLightningModule(L.LightningModule):
         gaps = compute_qgaps_per_sample(logits, qvals, legal, teams)
         q_gap = gaps.mean()
         blunder_rate = compute_blunder_rate(gaps)
+
+        # Regret statistics
+        regret_stats = compute_regret_stats(gaps)
+        self.log('val/regret_mean', regret_stats['mean'], sync_dist=True)
+        self.log('val/regret_p99', regret_stats['p99'], sync_dist=True)
+        self.log('val/regret_max', regret_stats['max'], sync_dist=True)
+        self.log('val/zero_regret_rate', regret_stats['zero_rate'], sync_dist=True)
 
         # Value prediction error (MAE in points)
         # Model predicts normalized [-1,1], multiply by 42 to get points
@@ -342,6 +368,18 @@ class DominoLightningModule(L.LightningModule):
         self.log('val/accuracy', acc, sync_dist=True, prog_bar=True)
         self.log('val/q_gap', q_gap, sync_dist=True, prog_bar=True)
         self.log('val/blunder_rate', blunder_rate, sync_dist=True)
+
+        # Accumulate for epoch-level metrics
+        self._val_gaps.append(gaps.detach())
+        self._val_targets.append(targets.detach())
+        self._val_logits.append(logits.detach())
+        self._val_qvals.append(qvals.detach())
+        self._val_legal.append(legal.detach())
+        self._val_teams.append(teams.detach())
+
+        # Extract declaration ID from context token (position 0, feature 10)
+        decl_ids = tokens[:, 0, 10]
+        self._val_decl_ids.append(decl_ids.detach())
 
         # Q-value calibration metrics (for qvalue loss mode)
         if self.hparams.loss_mode == 'qvalue':
@@ -362,6 +400,64 @@ class DominoLightningModule(L.LightningModule):
 
             self.log('val/q_mae', q_mae, sync_dist=True, prog_bar=True)
             self.log('val/q_calibration_error', q_calibration_error, sync_dist=True)
+
+    def on_validation_epoch_end(self) -> None:
+        """Compute epoch-level validation metrics."""
+        if not self._val_gaps:
+            return
+
+        # Concatenate accumulated tensors
+        gaps = torch.cat(self._val_gaps)
+        targets = torch.cat(self._val_targets)
+        decl_ids = torch.cat(self._val_decl_ids)
+        logits = torch.cat(self._val_logits)
+        qvals = torch.cat(self._val_qvals)
+        legal = torch.cat(self._val_legal)
+        teams = torch.cat(self._val_teams)
+
+        # Per-slot accuracy
+        slot_accs = compute_per_slot_accuracy(logits, targets, legal)
+        for slot in range(7):
+            if not torch.isnan(slot_accs[slot]):
+                self.log(f'val/slot_acc_{slot}', slot_accs[slot], sync_dist=True)
+
+        # Per-slot regret
+        slot_regrets = compute_per_slot_regret(gaps, targets)
+        for slot in range(7):
+            if not torch.isnan(slot_regrets[slot]):
+                self.log(f'val/slot_regret_{slot}', slot_regrets[slot], sync_dist=True)
+
+        # Per-declaration regret
+        decl_regrets = compute_per_declaration_regret(gaps, decl_ids)
+        for key, val in decl_regrets.items():
+            self.log(f'val/regret_{key}', val, sync_dist=True)
+
+        # Per-slot tie rate (for detecting slot bias in tie-breaking)
+        tie_rates = compute_per_slot_tie_rate(logits, qvals, legal, teams)
+        for slot in range(7):
+            self.log(f'val/tie_rate_slot_{slot}', tie_rates[slot], sync_dist=True)
+
+        # Log warnings for potential issues at epoch 1+
+        if self.current_epoch >= 1:
+            # Check for slot accuracy imbalance
+            valid_accs = slot_accs[~torch.isnan(slot_accs)]
+            if len(valid_accs) > 0 and valid_accs.min() < 0.9 * valid_accs.max():
+                print(f"Warning: Slot accuracy imbalance detected. "
+                      f"Min: {valid_accs.min():.3f}, Max: {valid_accs.max():.3f}")
+
+            # Check for slot 0 tie-breaking bias
+            if tie_rates.sum() > 0 and tie_rates[0] > 0.2:  # More than ~20% when uniform would be ~14%
+                print(f"Warning: Possible slot 0 bias in tie-breaking. "
+                      f"Slot 0 tie rate: {tie_rates[0]:.3f} (expected ~0.143)")
+
+        # Clear accumulators
+        self._val_gaps = []
+        self._val_targets = []
+        self._val_decl_ids = []
+        self._val_logits = []
+        self._val_qvals = []
+        self._val_legal = []
+        self._val_teams = []
 
     def test_step(self, batch: Tuple, batch_idx: int) -> None:
         """Test step - same as validation."""

@@ -21,7 +21,7 @@ class DominoDataset(Dataset):
     everything into RAM.
     """
 
-    def __init__(self, data_path: str, split: str, mmap: bool = False):
+    def __init__(self, data_path: str, split: str, mmap: bool = False, shuffle_hands: bool = False):
         """
         Initialize dataset for a specific split.
 
@@ -30,11 +30,16 @@ class DominoDataset(Dataset):
             split: One of 'train', 'val', or 'test'
             mmap: If True, use memory-mapped files (slow random access but low RAM).
                   If False, load fully into RAM (fast but needs ~5GB for full dataset).
+            shuffle_hands: If True, randomly shuffle each player's 7-slot hand during
+                           __getitem__ to provide data augmentation and fix slot 0 bias.
+                           Each epoch sees different permutations.
         """
         split_dir = Path(data_path) / split
 
         if not split_dir.exists():
             raise FileNotFoundError(f"Split directory not found: {split_dir}")
+
+        self.shuffle_hands = shuffle_hands
 
         # Load data - mmap for huge datasets, RAM for speed
         mmap_mode = 'r' if mmap else None
@@ -66,16 +71,51 @@ class DominoDataset(Dataset):
         """
         # Copy from mmap for PyTorch compatibility
         # np.array() forces a copy from memmap, which is needed for PyTorch
-        tokens = torch.from_numpy(np.array(self.tokens[idx], dtype=np.int64))
-        masks = torch.from_numpy(np.array(self.masks[idx], dtype=np.float32))
-        players = torch.tensor(int(self.players[idx]), dtype=torch.long)
-        targets = torch.tensor(int(self.targets[idx]), dtype=torch.long)
-        legal = torch.from_numpy(np.array(self.legal[idx], dtype=np.float32))
-        qvals = torch.from_numpy(np.array(self.qvals[idx], dtype=np.float32))
-        teams = torch.tensor(int(self.teams[idx]), dtype=torch.long)
-        values = torch.tensor(float(self.values[idx]), dtype=torch.float32)
+        tokens = np.array(self.tokens[idx], dtype=np.int64)
+        masks = np.array(self.masks[idx], dtype=np.float32)
+        players = int(self.players[idx])
+        targets = int(self.targets[idx])
+        legal = np.array(self.legal[idx], dtype=np.float32)
+        qvals = np.array(self.qvals[idx], dtype=np.float32)
+        teams = int(self.teams[idx])
+        values = float(self.values[idx])
 
-        return tokens, masks, players, targets, legal, qvals, teams, values
+        if self.shuffle_hands:
+            # Use idx as seed component for reproducibility within epoch.
+            # Different epochs will have different DataLoader shuffle order,
+            # so each sample sees different permutations across epochs.
+            rng = np.random.default_rng(idx)
+
+            # Generate 4 permutations (one per player's 7-slot hand)
+            perms = [rng.permutation(7) for _ in range(4)]
+
+            # Shuffle all 4 hand token blocks
+            # Token layout: position 0 = context, positions 1-7 = player 0's hand,
+            # 8-14 = player 1, 15-21 = player 2, 22-28 = player 3
+            for p in range(4):
+                start = 1 + p * 7
+                tokens[start:start + 7] = tokens[start:start + 7][perms[p]]
+
+            # Apply current player's permutation to qvals and legal
+            cp = players
+            qvals = qvals[perms[cp]]
+            legal = legal[perms[cp]]
+
+            # Map target through inverse permutation
+            # If target was slot i, after shuffling it's at position inv_perm[i]
+            inv_perm = np.argsort(perms[cp])
+            targets = int(inv_perm[targets])
+
+        return (
+            torch.from_numpy(tokens),
+            torch.from_numpy(masks),
+            torch.tensor(players, dtype=torch.long),
+            torch.tensor(targets, dtype=torch.long),
+            torch.from_numpy(legal),
+            torch.from_numpy(qvals),
+            torch.tensor(teams, dtype=torch.long),
+            torch.tensor(values, dtype=torch.float32),
+        )
 
 
 class DominoDataModule(L.LightningDataModule):
@@ -104,6 +144,7 @@ class DominoDataModule(L.LightningDataModule):
         pin_memory: bool = True,
         prefetch_factor: int = 4,
         mmap: bool = False,
+        shuffle_hands: bool = True,
     ):
         """
         Initialize DataModule.
@@ -115,6 +156,8 @@ class DominoDataModule(L.LightningDataModule):
             pin_memory: Whether to pin memory for faster GPU transfer
             prefetch_factor: Number of batches to prefetch per worker
             mmap: If True, use memory-mapped files (low RAM, slow). Default False (load to RAM).
+            shuffle_hands: If True, shuffle hand slots during training (data augmentation).
+                           Fixes slot 0 positional bias. Default True.
         """
         super().__init__()
         self.save_hyperparameters()
@@ -144,8 +187,13 @@ class DominoDataModule(L.LightningDataModule):
             stage: One of 'fit', 'validate', 'test', or None (all)
         """
         mmap = self.hparams.mmap
+        shuffle_hands = self.hparams.shuffle_hands
         if stage == 'fit' or stage is None:
-            self.train_dataset = DominoDataset(self.hparams.data_path, 'train', mmap=mmap)
+            # Only shuffle hands for training (data augmentation)
+            self.train_dataset = DominoDataset(
+                self.hparams.data_path, 'train', mmap=mmap, shuffle_hands=shuffle_hands
+            )
+            # Validation uses fixed ordering for reproducible metrics
             self.val_dataset = DominoDataset(self.hparams.data_path, 'val', mmap=mmap)
 
         if stage == 'validate':
