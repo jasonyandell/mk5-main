@@ -9,7 +9,7 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from forge.eq.generate_gpu import GameRecordGPU, DecisionRecordGPU
+from forge.eq.generate import GameRecordGPU, DecisionRecordGPU
 from forge.eq.transcript_tokenize import tokenize_transcript, MAX_TOKENS, N_FEATURES
 
 
@@ -80,6 +80,10 @@ def collate_game_record(
             'max_w': getattr(decision, 'max_w', None),
             'exploration_mode': getattr(decision, 'exploration_mode', None),
             'q_gap': getattr(decision, 'q_gap', None),
+            'e_q_pdf': getattr(decision, 'e_q_pdf', None),
+            # Adaptive sampling stats
+            'n_samples': getattr(decision, 'n_samples', None),
+            'converged': getattr(decision, 'converged', None),
         }
         examples.append(example)
 
@@ -123,6 +127,8 @@ def collate_batch(
         - max_w: [n_examples]
         - exploration_mode: [n_examples]
         - q_gap: [n_examples]
+        - n_samples: [n_examples] int32 (0 if fixed sampling)
+        - converged: [n_examples] bool (False if fixed sampling or hit max)
     """
     all_examples = []
 
@@ -165,4 +171,8 @@ def collate_batch(
         'max_w': torch.tensor([ex['max_w'] if ex['max_w'] is not None else 0.0 for ex in all_examples], dtype=torch.float32),
         'exploration_mode': torch.tensor([ex['exploration_mode'] if ex['exploration_mode'] is not None else 0 for ex in all_examples], dtype=torch.int8),
         'q_gap': torch.tensor([ex['q_gap'] if ex['q_gap'] is not None else 0.0 for ex in all_examples], dtype=torch.float32),
+        'e_q_pdf': torch.stack([ex['e_q_pdf'] if ex['e_q_pdf'] is not None else torch.zeros(7, 85) for ex in all_examples]),
+        # Adaptive sampling stats
+        'n_samples': torch.tensor([ex['n_samples'] if ex['n_samples'] is not None else 0 for ex in all_examples], dtype=torch.int32),
+        'converged': torch.tensor([ex['converged'] if ex['converged'] is not None else False for ex in all_examples], dtype=torch.bool),
     }

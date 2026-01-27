@@ -6,7 +6,8 @@ GPU-native pipeline only.
 from __future__ import annotations
 
 from .game import GameState
-from .generate_gpu import (
+from .generate import (
+    AdaptiveConfig,
     DecisionRecordGPU,
     GameRecordGPU,
     PosteriorConfig,
@@ -20,6 +21,7 @@ from .types import ExplorationPolicy
 from .voids import infer_voids
 
 __all__ = [
+    "AdaptiveConfig",
     "DecisionRecordGPU",
     "ExplorationPolicy",
     "GPUTokenizer",

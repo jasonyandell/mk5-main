@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from forge.eq.collate import collate_game_record, collate_batch
-from forge.eq.generate_gpu import GameRecordGPU, DecisionRecordGPU
+from forge.eq.generate import GameRecordGPU, DecisionRecordGPU
 from forge.eq.transcript_tokenize import (
     N_FEATURES,
     MAX_TOKENS,

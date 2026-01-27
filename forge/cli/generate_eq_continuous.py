@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import gc
 import signal
 import sys
 import time
@@ -24,7 +25,7 @@ import numpy as np
 import torch
 
 from forge.eq import Stage1Oracle
-from forge.eq.generate_gpu import generate_eq_games_gpu, PosteriorConfig
+from forge.eq.generate import generate_eq_games_gpu, PosteriorConfig, AdaptiveConfig
 from forge.eq.collate import collate_game_record
 from forge.eq.types import ExplorationPolicy
 from forge.eq.transcript_tokenize import MAX_TOKENS, N_FEATURES
@@ -100,6 +101,10 @@ def write_game_pt(examples: list[dict], seed: int, path: Path, metadata: dict) -
         'max_w': torch.tensor([ex.get('max_w') or 0.0 for ex in examples], dtype=torch.float32),
         'exploration_mode': torch.tensor([ex.get('exploration_mode') or 0 for ex in examples], dtype=torch.int8),
         'q_gap': torch.tensor([ex.get('q_gap') or 0.0 for ex in examples], dtype=torch.float32),
+        'e_q_pdf': torch.stack([ex['e_q_pdf'] if ex.get('e_q_pdf') is not None else torch.zeros(7, 85) for ex in examples]),
+        # Adaptive sampling stats
+        'n_samples': torch.tensor([ex.get('n_samples') or 0 for ex in examples], dtype=torch.int32),
+        'converged': torch.tensor([ex.get('converged') or False for ex in examples], dtype=torch.bool),
         'metadata': {
             'seed': seed,
             'decl_id': seed % 10,
@@ -137,6 +142,25 @@ def main():
     explore_group.add_argument("--epsilon", type=float, default=0.1, help="Epsilon for epsilon_greedy")
     explore_group.add_argument("--temperature", type=float, default=2.0, help="Temperature for boltzmann")
 
+    # Enumeration args
+    parser.add_argument("--enumerate", action="store_true",
+                        help="Use exact enumeration for late-game positions (decision 12+)")
+    parser.add_argument("--enum-threshold", type=int, default=100_000,
+                        help="Max world count for enumeration (default: 100000)")
+
+    # Adaptive sampling args
+    adaptive_group = parser.add_argument_group("Adaptive sampling")
+    adaptive_group.add_argument("--adaptive", action="store_true",
+                                help="Use adaptive convergence-based sampling instead of fixed sample count")
+    adaptive_group.add_argument("--min-samples", type=int, default=50,
+                                help="Minimum samples before checking convergence (default: 50)")
+    adaptive_group.add_argument("--max-samples", type=int, default=2000,
+                                help="Maximum samples (hard cap) for adaptive sampling (default: 2000)")
+    adaptive_group.add_argument("--adaptive-batch-size", type=int, default=50,
+                                help="Samples to add per iteration in adaptive mode (default: 50)")
+    adaptive_group.add_argument("--sem-threshold", type=float, default=0.5,
+                                help="SEM threshold for convergence in Q-value points (default: 0.5)")
+
     args = parser.parse_args()
     output_dir = Path(args.output_dir)
 
@@ -154,6 +178,8 @@ def main():
     print(f"Start seed: {args.start_seed}")
     if args.limit:
         print(f"Limit: {args.limit} games")
+    if args.enumerate:
+        print(f"Enumeration: enabled (threshold={args.enum_threshold})")
     print()
 
     # Dry run mode
@@ -176,7 +202,7 @@ def main():
 
     # Load oracle
     print("\nLoading Stage 1 oracle...", end=" ", flush=True)
-    oracle = Stage1Oracle(args.checkpoint, device=args.device)
+    oracle = Stage1Oracle(args.checkpoint, device=args.device, compile=False)
     print("done")
 
     # Build configs
@@ -194,6 +220,19 @@ def main():
         exploration_policy = ExplorationPolicy.epsilon_greedy(epsilon=args.epsilon)
     elif args.exploration == "boltzmann":
         exploration_policy = ExplorationPolicy.boltzmann(temperature=args.temperature)
+
+    # Build adaptive config
+    adaptive_config = None
+    if args.adaptive:
+        adaptive_config = AdaptiveConfig(
+            enabled=True,
+            min_samples=args.min_samples,
+            max_samples=args.max_samples,
+            batch_size=args.adaptive_batch_size,
+            sem_threshold=args.sem_threshold,
+        )
+        print(f"Adaptive sampling: min={args.min_samples}, max={args.max_samples}, "
+              f"batch={args.adaptive_batch_size}, SEM threshold={args.sem_threshold}")
 
     # Generation loop
     print("\n" + "─" * 60)
@@ -238,6 +277,9 @@ def main():
                 device=args.device,
                 exploration_policy=exploration_policy,
                 posterior_config=posterior_config,
+                adaptive_config=adaptive_config,
+                use_enumeration=args.enumerate,
+                enumeration_threshold=args.enum_threshold,
             )
 
             # Collate and save each game
@@ -259,9 +301,25 @@ def main():
                     'exploration': {
                         'policy': args.exploration,
                     },
+                    'adaptive': {
+                        'enabled': args.adaptive,
+                        'min_samples': args.min_samples if args.adaptive else 0,
+                        'max_samples': args.max_samples if args.adaptive else 0,
+                        'batch_size': args.adaptive_batch_size if args.adaptive else 0,
+                        'sem_threshold': args.sem_threshold if args.adaptive else 0.0,
+                    },
+                    'enumeration': {
+                        'enabled': args.enumerate,
+                        'threshold': args.enum_threshold if args.enumerate else 0,
+                    },
                     'generated_at': datetime.now().isoformat(),
                 }
                 write_game_pt(examples, seed, path, metadata)
+
+            # Explicitly free GPU memory between batches
+            del game_records
+            torch.cuda.empty_cache()
+            gc.collect()
 
             games_generated += len(batch_seeds)
             batch_time = time.time() - batch_start

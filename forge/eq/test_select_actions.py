@@ -55,7 +55,7 @@ class TestPMakeThresholds:
 
     def test_offense_uses_bin_60_threshold(self):
         """P0 and P2 (offense) need Q >= 18 → bin 60+."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Two games: P0 (offense) and P2 (offense)
         current_players = [0, 2]
@@ -84,7 +84,7 @@ class TestPMakeThresholds:
 
     def test_defense_uses_bin_25_threshold(self):
         """P1 and P3 (defense) need Q >= -17 → bin 25+."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Two games: P1 (defense) and P3 (defense)
         current_players = [1, 3]
@@ -117,7 +117,7 @@ class TestPMakeBeatsEQ:
 
     def test_higher_pmake_wins_over_higher_eq(self):
         """Action with lower E[Q] but higher p_make should win."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Offense player (P0)
         current_players = [0]
@@ -144,7 +144,7 @@ class TestPMakeBeatsEQ:
 
     def test_certain_loss_vs_chance_to_win(self):
         """The motivating example: certain loss vs 35% win chance."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Offense player (P0)
         current_players = [0]
@@ -176,7 +176,7 @@ class TestEQTieBreak:
 
     def test_equal_pmake_higher_eq_wins(self):
         """When p_make is equal, higher E[Q] should win (win big / lose gracefully)."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Offense player (P0)
         current_players = [0]
@@ -199,7 +199,7 @@ class TestEQTieBreak:
 
     def test_lose_gracefully_when_both_losing(self):
         """When all actions lose (p_make≈0), pick smallest loss margin."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Offense player (P0)
         current_players = [0]
@@ -226,7 +226,7 @@ class TestIllegalActionMasking:
 
     def test_illegal_action_not_selected_even_with_best_pmake(self):
         """Illegal action should not be selected even if it has best p_make."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # Offense player (P0)
         current_players = [0]
@@ -255,7 +255,7 @@ class TestBatchProcessing:
 
     def test_mixed_offense_defense_batch(self):
         """Test batch with mixed offense/defense players."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # 4 games: P0 (offense), P1 (defense), P2 (offense), P3 (defense)
         current_players = [0, 1, 2, 3]
@@ -297,7 +297,7 @@ class TestBidderField:
 
     def test_bidder_zero_default(self):
         """With default bidder=0, P0/P2 are offense, P1/P3 are defense."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # P0 plays, bidder=0 (default) -> P0 is offense
         current_players = [0]
@@ -316,7 +316,7 @@ class TestBidderField:
 
     def test_bidder_one_reverses_roles(self):
         """With bidder=1, P1/P3 are offense, P0/P2 are defense."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # P0 plays, bidder=1 -> P0 is now DEFENSE
         current_players = [0]
@@ -338,7 +338,7 @@ class TestBidderField:
 
     def test_bidder_one_p1_is_offense(self):
         """With bidder=1, P1 is on offense (same team as bidder)."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # P1 plays, bidder=1 -> P1 is offense
         current_players = [1]
@@ -357,7 +357,7 @@ class TestBidderField:
 
     def test_bidder_three_team_assignment(self):
         """With bidder=3, P1/P3 are offense, P0/P2 are defense."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # 4 games: P0, P1, P2, P3 all play with bidder=3
         current_players = [0, 1, 2, 3]
@@ -392,7 +392,7 @@ class TestBidderField:
 
     def test_mixed_bidders_batch(self):
         """Test batch where different games have different bidders."""
-        from forge.eq.generate_gpu import _select_actions
+        from forge.eq.generate import _select_actions
 
         # 4 games: all P0 playing, but alternating bidders (0, 1, 0, 1)
         # Game 0: P0 plays, bidder=0 -> P0 is offense
