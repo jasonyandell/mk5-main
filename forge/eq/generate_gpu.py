@@ -111,6 +111,32 @@ class PosteriorConfig:
 
 
 @dataclass
+class AdaptiveConfig:
+    """Configuration for adaptive convergence-based sampling.
+
+    Instead of using a fixed number of samples, adaptively sample until
+    E[Q] estimates converge. This allows:
+    - Early stopping for low-variance decisions (saves compute)
+    - More samples for high-variance decisions (improves accuracy)
+
+    Convergence criterion: max(SEM) over legal actions < sem_threshold
+    where SEM = Standard Error of Mean = σ / √n
+
+    Args:
+        enabled: Whether to use adaptive sampling (default: False)
+        min_samples: Minimum samples before checking convergence (default: 50)
+        max_samples: Maximum samples (hard cap) (default: 2000)
+        batch_size: Samples to add per iteration (default: 50)
+        sem_threshold: Stop when max(SEM) < this (in Q-value points) (default: 0.5)
+    """
+    enabled: bool = False
+    min_samples: int = 50
+    max_samples: int = 2000
+    batch_size: int = 50
+    sem_threshold: float = 0.5
+
+
+@dataclass
 class DecisionRecordGPU:
     """Record for one decision in GPU pipeline.
 
@@ -133,6 +159,9 @@ class DecisionRecordGPU:
     exploration_mode: int | None = None  # 0=greedy, 1=boltzmann, 2=epsilon, 3=blunder
     q_gap: float | None = None  # Q_greedy - Q_taken
     greedy_action: int | None = None  # What greedy would have chosen (slot index 0-6)
+    # Adaptive sampling stats (None if fixed sampling)
+    n_samples: int | None = None  # Actual samples used (for adaptive: may vary per decision)
+    converged: bool | None = None  # True if SEM < threshold, False if hit max_samples
 
 
 @dataclass
@@ -155,6 +184,7 @@ def generate_eq_games_gpu(
     posterior_config: PosteriorConfig | None = None,
     use_enumeration: bool = False,
     enumeration_threshold: int = 100_000,
+    adaptive_config: AdaptiveConfig | None = None,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -162,8 +192,9 @@ def generate_eq_games_gpu(
         model: Stage 1 oracle model (DominoLightningModule or wrapper)
         hands: List of N initial deals, each is 4 hands of 7 domino IDs
         decl_ids: List of N declaration IDs
-        n_samples: Number of worlds to sample per decision (ignored if use_enumeration=True
-                   and world count is below enumeration_threshold)
+        n_samples: Number of worlds to sample per decision (ignored if adaptive_config
+                   is enabled, or if use_enumeration=True and world count is below
+                   enumeration_threshold)
         device: Device to run on ('cuda' or 'cpu')
         greedy: If True, always pick argmax(E[Q]). If False, sample from softmax.
         use_mrv_sampler: If True (default), use MRV-based sampler (guaranteed valid).
@@ -177,6 +208,9 @@ def generate_eq_games_gpu(
                         This gives exact E[Q] for late-game positions.
         enumeration_threshold: Maximum worlds to enumerate per game. Above this,
                               falls back to sampling. Default 100,000.
+        adaptive_config: Optional config for adaptive convergence-based sampling.
+                        If provided and enabled, samples in batches until E[Q] converges
+                        (max SEM < threshold) or max_samples is reached.
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -206,11 +240,21 @@ def generate_eq_games_gpu(
     # Initialize GPU state
     states = GameStateTensor.from_deals(hands, decl_ids, device)
 
+    # Determine sample allocation for adaptive vs fixed sampling
+    use_adaptive = adaptive_config is not None and adaptive_config.enabled
+    if use_adaptive:
+        # For adaptive: allocate for batch_size (we sample incrementally)
+        sampler_max_samples = adaptive_config.batch_size
+        tokenizer_samples = adaptive_config.batch_size
+    else:
+        sampler_max_samples = n_samples
+        tokenizer_samples = n_samples
+
     # Pre-allocate sampler and tokenizer
     if use_mrv_sampler:
-        sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+        sampler = WorldSamplerMRV(max_games=n_games, max_samples=sampler_max_samples, device=device)
     else:
-        sampler = WorldSampler(max_games=n_games, max_samples=n_samples, device=device)
+        sampler = WorldSampler(max_games=n_games, max_samples=sampler_max_samples, device=device)
 
     # Pre-allocate enumerator if enabled
     enumerator = None
@@ -221,65 +265,82 @@ def generate_eq_games_gpu(
             device=device,
         )
 
-    # Tokenizer batch size: start with n_samples, will recreate if enumeration needs more
+    # Tokenizer batch size: start with batch_size, will recreate if needed
     # Don't pre-allocate for full enumeration_threshold (causes OOM on small GPUs)
-    tokenizer = GPUTokenizer(max_batch=n_games * n_samples, device=device)
+    tokenizer = GPUTokenizer(max_batch=n_games * tokenizer_samples, device=device)
 
     # Track decisions for each game
     all_decisions: list[list[DecisionRecordGPU]] = [[] for _ in range(n_games)]
 
     # Main generation loop - one iteration per game step
     while states.active_games().any():
-        # 1. Sample or enumerate consistent worlds for all games
-        if use_enumeration:
-            worlds, world_counts, actual_n_samples = _enumerate_or_sample_worlds(
-                states, enumerator, sampler, n_samples, enumeration_threshold
-            )
-        else:
-            worlds = _sample_worlds_batched(states, sampler, n_samples)
-            world_counts = None
-            actual_n_samples = n_samples
+        # Track samples used and convergence (for adaptive mode)
+        n_samples_used = None
+        did_converge = None
 
-        # 2. Build hypothetical deals
-        hypothetical = _build_hypothetical_deals(states, worlds)
-
-        # 3. Tokenize on GPU (recreate tokenizer if batch exceeds capacity)
-        # Use worlds.shape[1] (not actual_n_samples) because the tensor may be padded
-        n_worlds_padded = worlds.shape[1]
-        batch_size = n_games * n_worlds_padded
-        if batch_size > tokenizer.max_batch:
-            tokenizer = GPUTokenizer(max_batch=batch_size, device=device)
-        tokens, masks = _tokenize_batched(states, hypothetical, tokenizer)
-
-        # 4. Model forward pass (single batch)
-        q_values = _query_model(model, tokens, masks, states, n_worlds_padded, device)
-
-        # 5. Reduce to E[Q] per game (with optional posterior weighting)
-        q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
-
-        if posterior_config and posterior_config.enabled:
-            e_q, e_q_var, e_q_pdf, diagnostics = _compute_posterior_weighted_eq(
+        # Use adaptive sampling or fixed sampling based on config
+        if use_adaptive and not use_enumeration:
+            # Adaptive convergence-based sampling
+            e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge = _sample_until_convergence(
                 states=states,
-                worlds=worlds,
-                q_values=q_values,
-                n_samples=n_worlds_padded,
-                model=model,
+                sampler=sampler,
                 tokenizer=tokenizer,
-                posterior_config=posterior_config,
+                model=model,
+                adaptive_config=adaptive_config,
                 device=device,
             )
         else:
-            # Uniform weighting (handles variable world counts from enumeration)
-            if world_counts is not None:
-                # Enumeration: use world_counts for proper averaging
-                e_q, e_q_var = _compute_eq_with_counts(q_reshaped, world_counts)
-                e_q_pdf = _compute_eq_pdf(q_reshaped, weights=None, world_counts=world_counts)
+            # Fixed sampling (original behavior)
+            # 1. Sample or enumerate consistent worlds for all games
+            if use_enumeration:
+                worlds, world_counts, actual_n_samples = _enumerate_or_sample_worlds(
+                    states, enumerator, sampler, n_samples, enumeration_threshold
+                )
             else:
-                # Sampling: all games have same sample count
-                e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
-                e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
-                e_q_pdf = _compute_eq_pdf(q_reshaped)
-            diagnostics = None
+                worlds = _sample_worlds_batched(states, sampler, n_samples)
+                world_counts = None
+                actual_n_samples = n_samples
+
+            # 2. Build hypothetical deals
+            hypothetical = _build_hypothetical_deals(states, worlds)
+
+            # 3. Tokenize on GPU (recreate tokenizer if batch exceeds capacity)
+            # Use worlds.shape[1] (not actual_n_samples) because the tensor may be padded
+            n_worlds_padded = worlds.shape[1]
+            batch_size = n_games * n_worlds_padded
+            if batch_size > tokenizer.max_batch:
+                tokenizer = GPUTokenizer(max_batch=batch_size, device=device)
+            tokens, masks = _tokenize_batched(states, hypothetical, tokenizer)
+
+            # 4. Model forward pass (single batch)
+            q_values = _query_model(model, tokens, masks, states, n_worlds_padded, device)
+
+            # 5. Reduce to E[Q] per game (with optional posterior weighting)
+            q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
+
+            if posterior_config and posterior_config.enabled:
+                e_q, e_q_var, e_q_pdf, diagnostics = _compute_posterior_weighted_eq(
+                    states=states,
+                    worlds=worlds,
+                    q_values=q_values,
+                    n_samples=n_worlds_padded,
+                    model=model,
+                    tokenizer=tokenizer,
+                    posterior_config=posterior_config,
+                    device=device,
+                )
+            else:
+                # Uniform weighting (handles variable world counts from enumeration)
+                if world_counts is not None:
+                    # Enumeration: use world_counts for proper averaging
+                    e_q, e_q_var = _compute_eq_with_counts(q_reshaped, world_counts)
+                    e_q_pdf = _compute_eq_pdf(q_reshaped, weights=None, world_counts=world_counts)
+                else:
+                    # Sampling: all games have same sample count
+                    e_q = q_reshaped.mean(dim=1)  # [n_games, 7]
+                    e_q_var = q_reshaped.var(dim=1, unbiased=False)  # [n_games, 7]
+                    e_q_pdf = _compute_eq_pdf(q_reshaped)
+                diagnostics = None
 
         # Move tensors to states device (in case model is on different device)
         if e_q.device != states.hands.device:
@@ -293,7 +354,7 @@ def generate_eq_games_gpu(
         actions, exploration_stats = _select_actions(states, e_q, e_q_pdf, greedy, exploration_policy, rng)
 
         # 7. Record decisions
-        _record_decisions(states, e_q, e_q_var, e_q_pdf, actions, all_decisions, diagnostics, exploration_stats)
+        _record_decisions(states, e_q, e_q_var, e_q_pdf, actions, all_decisions, diagnostics, exploration_stats, n_samples_used, did_converge)
 
         # 8. Apply actions and advance state
         # Ensure actions are on same device as states
@@ -704,10 +765,6 @@ def _compute_eq_pdf(
     # Bin Q-values: q ∈ [-42, 42] → bin ∈ [0, 84]
     bins = (q_values + 42).round().clamp(0, 84).long()  # [N, M, 7]
 
-    # Initialize PDF tensor with layout [N, 85, 7] for efficient scatter, then transpose
-    # This avoids the non-contiguous slice issue
-    pdf_transposed = torch.zeros(N, 85, n_actions, device=device, dtype=torch.float32)
-
     # Determine weights
     if weights is None:
         if world_counts is not None:
@@ -719,24 +776,191 @@ def _compute_eq_pdf(
             # Uniform weights
             weights = torch.full((N, M), 1.0 / M, device=device)
 
-    # For each game, scatter weights into histogram bins
-    # bins: [N, M, 7], weights: [N, M]
-    # We want pdf_transposed[n, bin, a] += weight for each (n, m, a)
+    # Vectorized scatter_add: single kernel instead of N separate calls
+    # Flatten to 1D and compute flat indices: flat_idx = n * (85 * 7) + bin * 7 + action
+    #
+    # Layout: pdf_flat[n * 85 * 7 + bin * 7 + a] for game n, bin b, action a
+    pdf_flat = torch.zeros(N * 85 * n_actions, device=device, dtype=torch.float32)
 
-    # Expand weights for all actions: [N, M] -> [N, M, 7]
-    weights_expanded = weights.unsqueeze(-1).expand(N, M, n_actions)
+    # Compute flat indices for all (n, m, a) combinations
+    # game_offset[n, m, a] = n * 85 * 7
+    game_idx = torch.arange(N, device=device).view(N, 1, 1)  # [N, 1, 1]
+    game_offset = game_idx * (85 * n_actions)  # [N, 1, 1]
 
-    # For each game, use scatter_add
-    for n in range(N):
-        # bins[n]: [M, 7] - bin indices
-        # weights_expanded[n]: [M, 7] - weights
-        # pdf_transposed[n]: [85, 7]
-        pdf_transposed[n].scatter_add_(0, bins[n], weights_expanded[n])
+    # bin_offset[n, m, a] = bins[n, m, a] * 7
+    bin_offset = bins * n_actions  # [N, M, 7]
 
-    # Transpose to [N, 7, 85]
-    pdf = pdf_transposed.permute(0, 2, 1).contiguous()
+    # action_offset[n, m, a] = a
+    action_idx = torch.arange(n_actions, device=device).view(1, 1, n_actions)  # [1, 1, 7]
+
+    # Combined flat index
+    flat_indices = (game_offset + bin_offset + action_idx).view(-1)  # [N * M * 7]
+
+    # Expand weights: [N, M] -> [N, M, 7] -> [N * M * 7]
+    weights_flat = weights.unsqueeze(-1).expand(N, M, n_actions).reshape(-1)
+
+    # Single scatter_add call
+    pdf_flat.scatter_add_(0, flat_indices, weights_flat)
+
+    # Reshape to [N, 85, 7] then transpose to [N, 7, 85]
+    pdf = pdf_flat.view(N, 85, n_actions).permute(0, 2, 1).contiguous()
 
     return pdf
+
+
+def _sample_until_convergence(
+    states: GameStateTensor,
+    sampler: WorldSampler | WorldSamplerMRV,
+    tokenizer: GPUTokenizer,
+    model,
+    adaptive_config: AdaptiveConfig,
+    device: str,
+) -> tuple[Tensor, Tensor, Tensor, None, int, bool]:
+    """Sample worlds until E[Q] estimates converge.
+
+    Uses iterative batch sampling with running statistics to detect convergence.
+    Convergence criterion: max(SEM) over legal actions < sem_threshold
+    where SEM = Standard Error of Mean = σ / √n
+
+    Args:
+        states: GameStateTensor with N games
+        sampler: Pre-allocated world sampler
+        tokenizer: Pre-allocated GPU tokenizer
+        model: Stage 1 oracle model
+        adaptive_config: Adaptive sampling configuration
+        device: Device for computation
+
+    Returns:
+        Tuple of (e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge):
+            - e_q: [N, 7] mean Q-values
+            - e_q_var: [N, 7] variance of Q-values
+            - e_q_pdf: [N, 7, 85] full PDF
+            - diagnostics: None (posterior not supported with adaptive)
+            - n_samples_used: Number of samples actually used
+            - did_converge: True if SEM < threshold, False if hit max_samples
+    """
+    n_games = states.n_games
+    n_actions = 7
+    n_bins = 85
+    batch_size = adaptive_config.batch_size
+    min_samples = adaptive_config.min_samples
+    max_samples = adaptive_config.max_samples
+    sem_threshold = adaptive_config.sem_threshold
+
+    # Get legal actions mask for convergence checking
+    legal_mask = states.legal_actions()  # [N, 7]
+
+    # Running statistics for mean/variance (sum-based for numerical stability)
+    n_total = torch.zeros(n_games, device=device, dtype=torch.int64)
+    q_sum = torch.zeros(n_games, n_actions, device=device, dtype=torch.float32)
+    q_sq_sum = torch.zeros(n_games, n_actions, device=device, dtype=torch.float32)
+
+    # Online PDF accumulation: histogram counts (unnormalized, normalize at end)
+    # Layout: [N * 85 * 7] flat for efficient scatter_add
+    pdf_counts = torch.zeros(n_games * n_bins * n_actions, device=device, dtype=torch.float32)
+
+    # Pre-compute game offset for PDF accumulation (constant across iterations)
+    game_idx = torch.arange(n_games, device=device).view(n_games, 1, 1)  # [N, 1, 1]
+    game_offset = game_idx * (n_bins * n_actions)  # [N, 1, 1]
+    action_idx = torch.arange(n_actions, device=device).view(1, 1, n_actions)  # [1, 1, 7]
+
+    # Per-game convergence tracking
+    converged = torch.zeros(n_games, dtype=torch.bool, device=device)
+
+    iteration = 0
+    while True:
+        # Sample a batch of worlds
+        worlds = _sample_worlds_batched(states, sampler, batch_size)  # [N, batch, 3, 7]
+
+        # Build hypothetical deals
+        hypothetical = _build_hypothetical_deals(states, worlds)  # [N, batch, 4, 7]
+
+        # Tokenize (recreate tokenizer if needed)
+        n_worlds = worlds.shape[1]
+        total_batch = n_games * n_worlds
+        if total_batch > tokenizer.max_batch:
+            tokenizer = GPUTokenizer(max_batch=total_batch, device=device)
+        tokens, masks = _tokenize_batched(states, hypothetical, tokenizer)
+
+        # Query model
+        q_values = _query_model(model, tokens, masks, states, n_worlds, device)  # [N*batch, 7]
+        q_batch = q_values.view(n_games, n_worlds, n_actions)  # [N, batch, 7]
+
+        # Accumulate mean/variance statistics
+        q_sum += q_batch.sum(dim=1)  # [N, 7]
+        q_sq_sum += (q_batch ** 2).sum(dim=1)  # [N, 7]
+        n_total += n_worlds  # All games get same batch
+
+        # Online PDF accumulation: bin Q-values and scatter-add counts
+        # Bin Q-values: q ∈ [-42, 42] → bin ∈ [0, 84]
+        bins = (q_batch + 42).round().clamp(0, n_bins - 1).long()  # [N, batch, 7]
+
+        # Compute flat indices: flat_idx = game_offset + bin * 7 + action
+        bin_offset = bins * n_actions  # [N, batch, 7]
+        flat_indices = (game_offset + bin_offset + action_idx).view(-1)  # [N * batch * 7]
+
+        # Scatter-add 1.0 for each sample (unnormalized counts)
+        ones = torch.ones(n_games * n_worlds * n_actions, device=device, dtype=torch.float32)
+        pdf_counts.scatter_add_(0, flat_indices, ones)
+
+        iteration += 1
+        current_n = n_total[0].item()  # All games have same count
+
+        # Check convergence (only after min_samples)
+        if current_n >= min_samples:
+            # Compute current mean and variance
+            n_float = n_total.unsqueeze(1).float()  # [N, 1]
+            e_q = q_sum / n_float  # [N, 7]
+            e_q_var = (q_sq_sum / n_float) - e_q ** 2  # [N, 7]
+            e_q_var = e_q_var.clamp(min=0)  # Numerical stability
+
+            # Compute SEM = sqrt(var / n)
+            sem = torch.sqrt(e_q_var / n_float)  # [N, 7]
+
+            # Max SEM over legal actions per game
+            # Set illegal actions to 0 so they don't affect max
+            sem_legal = sem.clone()
+            sem_legal[~legal_mask] = 0.0
+            max_sem_per_game = sem_legal.max(dim=1).values  # [N]
+
+            # Check convergence
+            converged = max_sem_per_game < sem_threshold
+
+            if converged.all():
+                did_converge = True
+                break
+
+        # Check max samples limit
+        if current_n >= max_samples:
+            did_converge = False
+            break
+    else:
+        # Loop completed without break (shouldn't happen, but handle it)
+        did_converge = False
+
+    # Final statistics
+    n_float = n_total.unsqueeze(1).float()  # [N, 1]
+    e_q = q_sum / n_float  # [N, 7]
+    e_q_var = (q_sq_sum / n_float) - e_q ** 2  # [N, 7]
+    e_q_var = e_q_var.clamp(min=0)
+
+    # Normalize PDF counts to probabilities
+    # Reshape: [N * 85 * 7] -> [N, 85, 7] -> [N, 7, 85]
+    pdf_unnorm = pdf_counts.view(n_games, n_bins, n_actions)
+    e_q_pdf = (pdf_unnorm / n_total.view(n_games, 1, 1).float()).permute(0, 2, 1).contiguous()
+
+    # Ensure tensors are on correct device
+    if e_q.device != states.hands.device:
+        e_q = e_q.to(states.hands.device)
+    if e_q_var.device != states.hands.device:
+        e_q_var = e_q_var.to(states.hands.device)
+    if e_q_pdf.device != states.hands.device:
+        e_q_pdf = e_q_pdf.to(states.hands.device)
+
+    # Return number of samples used
+    n_samples_used = int(n_total[0].item())  # All games have same count
+
+    return e_q, e_q_var, e_q_pdf, None, n_samples_used, did_converge
 
 
 def _infer_voids_batched(states: GameStateTensor) -> Tensor:
@@ -1459,6 +1683,8 @@ def _record_decisions(
     all_decisions: list[list[DecisionRecordGPU]],
     diagnostics: PosteriorDiagnostics | None = None,
     exploration_stats: list | None = None,
+    n_samples_used: int | None = None,
+    did_converge: bool | None = None,
 ):
     """Record decisions for each game (in-place).
 
@@ -1471,6 +1697,8 @@ def _record_decisions(
         all_decisions: List of decision lists (one per game)
         diagnostics: Optional posterior diagnostics (aggregated across games)
         exploration_stats: Optional exploration stats (one per game)
+        n_samples_used: Optional number of samples used (for adaptive mode)
+        did_converge: Optional convergence status (for adaptive mode)
     """
     n_games = states.n_games
     legal_mask = states.legal_actions()
@@ -1518,6 +1746,8 @@ def _record_decisions(
             exploration_mode=exploration_mode,
             q_gap=q_gap,
             greedy_action=greedy_action,
+            n_samples=n_samples_used,
+            converged=did_converge,
         )
         all_decisions[g].append(record)
 
@@ -1741,3 +1971,263 @@ def _compute_posterior_weighted_eq(
         aggregated_diagnostics = None
 
     return e_q_mean, e_q_var, e_q_pdf, aggregated_diagnostics
+
+
+def main():
+    """CLI for E[Q] generation."""
+    import argparse
+    import time
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(
+        description="Generate E[Q] training data using GPU pipeline",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Generate 5 games starting at seed 1000 with 1000 samples
+  python -m forge.eq.generate_gpu --start-seed 1000 --n-games 5 --samples 1000
+
+  # Generate to specific output file
+  python -m forge.eq.generate_gpu --start-seed 0 --n-games 100 --samples 500 -o data.pt
+
+  # Use exact enumeration for late-game positions
+  python -m forge.eq.generate_gpu --start-seed 0 --n-games 10 --enumerate
+
+  # Enable posterior weighting
+  python -m forge.eq.generate_gpu --start-seed 0 --n-games 10 --posterior
+
+  # Use adaptive convergence-based sampling (samples until SEM < 0.5)
+  python -m forge.eq.generate_gpu --start-seed 0 --n-games 10 --adaptive
+
+  # Adaptive with custom thresholds (tighter convergence)
+  python -m forge.eq.generate_gpu --start-seed 0 --n-games 10 --adaptive \\
+      --min-samples 100 --max-samples 5000 --sem-threshold 0.3
+""",
+    )
+
+    # Required arguments
+    parser.add_argument(
+        "--start-seed", type=int, required=True,
+        help="Starting seed for deal generation"
+    )
+    parser.add_argument(
+        "--n-games", type=int, required=True,
+        help="Number of games to generate"
+    )
+
+    # Quality parameters
+    parser.add_argument(
+        "--samples", type=int, default=1000,
+        help="Number of world samples per decision (default: 1000)"
+    )
+
+    # Output
+    parser.add_argument(
+        "-o", "--output", type=str, default=None,
+        help="Output file path. Default: forge/data/eq_pdf_{start}-{end}_{samples}s.pt"
+    )
+
+    # Model
+    parser.add_argument(
+        "--checkpoint", type=str, default=None,
+        help="Path to model checkpoint. Default: auto-detect best model"
+    )
+
+    # Optional features
+    parser.add_argument(
+        "--enumerate", action="store_true",
+        help="Use exact enumeration for late-game positions (slower but exact)"
+    )
+    parser.add_argument(
+        "--enum-threshold", type=int, default=100_000,
+        help="Max worlds to enumerate before falling back to sampling (default: 100000)"
+    )
+    parser.add_argument(
+        "--posterior", action="store_true",
+        help="Enable posterior weighting using past play history"
+    )
+    parser.add_argument(
+        "--posterior-k", type=int, default=4,
+        help="Window size for posterior weighting (default: 4)"
+    )
+
+    # Exploration
+    parser.add_argument(
+        "--exploration", type=str, choices=["none", "boltzmann", "epsilon"],
+        default="none", help="Exploration policy (default: none = greedy)"
+    )
+    parser.add_argument(
+        "--temperature", type=float, default=1.0,
+        help="Temperature for Boltzmann exploration (default: 1.0)"
+    )
+    parser.add_argument(
+        "--epsilon", type=float, default=0.1,
+        help="Epsilon for epsilon-greedy exploration (default: 0.1)"
+    )
+
+    # Adaptive sampling
+    parser.add_argument(
+        "--adaptive", action="store_true",
+        help="Use adaptive convergence-based sampling instead of fixed sample count"
+    )
+    parser.add_argument(
+        "--min-samples", type=int, default=50,
+        help="Minimum samples before checking convergence (default: 50)"
+    )
+    parser.add_argument(
+        "--max-samples", type=int, default=2000,
+        help="Maximum samples (hard cap) for adaptive sampling (default: 2000)"
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=50,
+        help="Samples to add per iteration in adaptive mode (default: 50)"
+    )
+    parser.add_argument(
+        "--sem-threshold", type=float, default=0.5,
+        help="SEM threshold for convergence in Q-value points (default: 0.5)"
+    )
+
+    # Device
+    parser.add_argument(
+        "--device", type=str, default="cuda",
+        help="Device to run on (default: cuda)"
+    )
+    parser.add_argument(
+        "--cpu", action="store_true",
+        help="Force CPU mode (for debugging)"
+    )
+
+    args = parser.parse_args()
+
+    # Resolve device
+    device = "cpu" if args.cpu else args.device
+    if device == "cuda" and not torch.cuda.is_available():
+        print("CUDA not available, falling back to CPU", flush=True)
+        device = "cpu"
+
+    # Find checkpoint
+    if args.checkpoint:
+        checkpoint_path = args.checkpoint
+    else:
+        # Auto-detect best model
+        model_dir = Path(__file__).parent.parent / "models"
+        candidates = [
+            model_dir / "domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+            model_dir / "domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt",
+            Path("checkpoints/stage1/best.ckpt"),
+        ]
+        checkpoint_path = None
+        for path in candidates:
+            if path.exists():
+                checkpoint_path = str(path)
+                break
+        if checkpoint_path is None:
+            print("Error: No model checkpoint found. Use --checkpoint to specify.", flush=True)
+            return 1
+
+    # Resolve output path
+    if args.output:
+        output_path = args.output
+    else:
+        end_seed = args.start_seed + args.n_games - 1
+        output_path = f"forge/data/eq_pdf_{args.start_seed}-{end_seed}_{args.samples}s.pt"
+
+    # Load model
+    from forge.eq.oracle import Stage1Oracle
+    print(f"Loading model from {checkpoint_path}...", flush=True)
+    oracle = Stage1Oracle(checkpoint_path, device=device, compile=False)
+
+    # Generate deals
+    from forge.oracle.rng import deal_from_seed
+    hands = [deal_from_seed(args.start_seed + i) for i in range(args.n_games)]
+    decl_ids = [i % 10 for i in range(args.n_games)]
+
+    # Configure posterior
+    posterior_config = None
+    if args.posterior:
+        posterior_config = PosteriorConfig(
+            enabled=True,
+            window_k=args.posterior_k,
+            tau=0.1,
+            uniform_mix=0.1,
+        )
+
+    # Configure exploration
+    from forge.eq.types import ExplorationPolicy
+    exploration_policy = None
+    if args.exploration == "boltzmann":
+        exploration_policy = ExplorationPolicy.boltzmann(temperature=args.temperature)
+    elif args.exploration == "epsilon":
+        exploration_policy = ExplorationPolicy.epsilon_greedy(epsilon=args.epsilon)
+
+    # Configure adaptive sampling
+    adaptive_config = None
+    if args.adaptive:
+        adaptive_config = AdaptiveConfig(
+            enabled=True,
+            min_samples=args.min_samples,
+            max_samples=args.max_samples,
+            batch_size=args.batch_size,
+            sem_threshold=args.sem_threshold,
+        )
+
+    # Run generation
+    print(f"Generating {args.n_games} games (seeds {args.start_seed}-{args.start_seed + args.n_games - 1})", flush=True)
+    if args.adaptive:
+        print(f"  Adaptive: enabled (min={args.min_samples}, max={args.max_samples}, "
+              f"batch={args.batch_size}, SEM<{args.sem_threshold})", flush=True)
+    else:
+        print(f"  Samples: {args.samples}", flush=True)
+    print(f"  Device: {device}", flush=True)
+    if args.enumerate:
+        print(f"  Enumeration: enabled (threshold={args.enum_threshold})", flush=True)
+    if args.posterior:
+        print(f"  Posterior: enabled (k={args.posterior_k})", flush=True)
+    if exploration_policy:
+        print(f"  Exploration: {args.exploration}", flush=True)
+
+    t0 = time.perf_counter()
+    results = generate_eq_games_gpu(
+        model=oracle.model,
+        hands=hands,
+        decl_ids=decl_ids,
+        n_samples=args.samples,
+        device=device,
+        greedy=(exploration_policy is None),
+        exploration_policy=exploration_policy,
+        posterior_config=posterior_config,
+        use_enumeration=args.enumerate,
+        enumeration_threshold=args.enum_threshold,
+        adaptive_config=adaptive_config,
+    )
+    elapsed = time.perf_counter() - t0
+
+    print(f"Generated {len(results)} games in {elapsed:.1f}s ({len(results)/elapsed:.2f} games/s)", flush=True)
+
+    # Save results
+    save_dict = {
+        'results': results,
+        'seeds': list(range(args.start_seed, args.start_seed + args.n_games)),
+        'checkpoint': checkpoint_path,
+        'enumerate': args.enumerate,
+        'posterior': args.posterior,
+    }
+    if args.adaptive:
+        save_dict['adaptive'] = True
+        save_dict['adaptive_config'] = {
+            'min_samples': args.min_samples,
+            'max_samples': args.max_samples,
+            'batch_size': args.batch_size,
+            'sem_threshold': args.sem_threshold,
+        }
+    else:
+        save_dict['n_samples'] = args.samples
+    torch.save(save_dict, output_path)
+    print(f"Saved to {output_path}", flush=True)
+
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main() or 0)
