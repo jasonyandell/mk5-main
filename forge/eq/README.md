@@ -103,6 +103,34 @@ Texas 42 AIs using hand-coded heuristics are **point estimates applied to a dist
 | `--dry-run` | Show missing seeds without generating | - |
 | `--limit N` | Stop after generating N games | None |
 
+### Adaptive Sampling (Optional)
+
+Instead of using a fixed sample count, adaptive sampling samples in batches until E[Q] estimates converge (max SEM over legal actions falls below a threshold). This allows early stopping for low-variance decisions and more samples for high-variance ones.
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--adaptive` | Enable adaptive convergence-based sampling | disabled |
+| `--min-samples N` | Minimum samples before checking convergence | 50 |
+| `--max-samples N` | Maximum samples (hard cap) | 2000 |
+| `--batch-size N` | Samples per iteration in adaptive mode | 50 |
+| `--sem-threshold F` | SEM threshold for convergence (Q-value points) | 0.5 |
+
+**How it works**: SEM (Standard Error of Mean) = σ / √n. Sampling continues until max(SEM) over all legal actions < threshold, or hits max_samples.
+
+**Example**:
+```bash
+# Use adaptive sampling (default thresholds)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --adaptive
+
+# With tighter convergence (more samples for high-variance decisions)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --adaptive \
+    --min-samples 100 --max-samples 5000 --sem-threshold 0.3
+```
+
 ### Posterior Weighting (Optional)
 
 Improves E[Q] estimates mid-game by reweighting sampled worlds based on observed play history:
@@ -134,17 +162,31 @@ Control how the E[Q] policy explores during data generation:
 
 ```
 forge/eq/
-├── __init__.py              # Public API: Stage1Oracle, generate_eq_game, tokenize_transcript
-├── voids.py                 # infer_voids() - detect void suits from play history
-├── sampling.py              # sample_consistent_worlds() - backtracking hand sampler
-├── oracle.py                # Stage1Oracle - wraps trained model for batch queries
-├── game.py                  # GameState - immutable game state tracker
-├── transcript_tokenize.py   # Tokenizer for Stage 2 (public info only)
-├── generate.py              # generate_eq_game() - play one game, record decisions
-├── generate_dataset.py      # CLI for batch generation
-├── generate_continuous.py   # Continuous generation with monitoring (Ctrl+C safe)
-├── viewer.py                # Interactive training data inspector
-└── test_*.py                # Unit tests for each module
+├── __init__.py              # Public API exports
+├── generate/                # ★ GPU PIPELINE PACKAGE ★
+│   ├── pipeline.py          # generate_eq_games_gpu() main orchestrator
+│   ├── types.py             # PosteriorConfig, AdaptiveConfig, records
+│   ├── sampling.py          # sample_worlds_batched, infer_voids_batched
+│   ├── tokenization.py      # tokenize_batched
+│   ├── actions.py           # select_actions, record_decisions
+│   ├── posterior.py         # compute_posterior_weighted_eq
+│   ├── adaptive.py          # sample_until_convergence
+│   ├── enumeration.py       # enumerate_or_sample_worlds
+│   ├── eq_compute.py        # compute_eq_with_counts, compute_eq_pdf
+│   ├── model.py             # query_model
+│   ├── deals.py             # build_hypothetical_deals
+│   └── cli.py               # CLI entry point
+├── collate.py               # GPU records → training format
+├── game_tensor.py           # GameStateTensor for GPU
+├── sampling_mrv_gpu.py      # MRV world sampler on GPU
+├── tokenize_gpu.py          # GPUTokenizer
+├── voids.py                 # Void inference from play history
+├── sampling.py              # CPU backtracking sampler
+├── oracle.py                # Stage1Oracle wrapper
+├── game.py                  # GameState tracker
+├── transcript_tokenize.py   # Stage 2 tokenizer
+├── viewer.py                # Interactive inspector
+└── test_*.py                # Unit tests
 ```
 
 ## Pipeline Components
@@ -253,6 +295,10 @@ For `DecisionRecordV2` (with posterior weighting + exploration):
 - `u_mean`: State-level uncertainty = mean(σ) over legal actions
 - `u_max`: State-level uncertainty = max(σ) over legal actions
 - `diagnostics`: Posterior health metrics (ESS, max weight, etc.)
+
+For GPU pipeline with adaptive sampling (`DecisionRecordGPU`):
+- `n_samples`: Actual samples used (may vary per decision in adaptive mode)
+- `converged`: True if SEM < threshold, False if hit max_samples
 
 ### 7. Continuous Generation (`generate_continuous.py`)
 

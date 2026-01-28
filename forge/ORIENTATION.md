@@ -728,12 +728,18 @@ python -m forge.cli.generate_eq_continuous \
 python -m forge.cli.generate_eq_continuous \
     --checkpoint model.ckpt \
     --limit 100
+
+# Adaptive sampling (sample until E[Q] converges, quality-focused)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --adaptive --sem-threshold 0.5 --max-samples 2000
 ```
 
 **Output**: Per-seed `.pt` files in `data/eq-games/{train,val,test}/seed_*.pt`
 
 **Key Features**:
 - **GPU-native**: ~100x faster than CPU pipeline
+- **Adaptive sampling**: Sample until E[Q] converges (SEM < threshold)
 - **Per-seed files**: Maximum parallelism and resumability
 - **Gap-filling**: Automatically detects and generates missing seeds
 - **Train/val/test routing**: Same 90/5/5 split as Stage 1 (seed % 1000)
@@ -750,41 +756,41 @@ python -m forge.eq.viewer data/eq-games/train/seed_00000042.pt
 
 ```
 forge/eq/
-├── Generation (GPU - recommended)
-│   ├── generate_gpu.py          # Batched game generation (~100x faster)
-│   ├── generate_pipelined.py    # Async pipelined generation
-│   ├── generate_continuous.py   # Gap-filling continuous mode
-│   └── collate.py               # GPU records → training examples
+├── generate/                    # ★ GPU PIPELINE PACKAGE ★
+│   ├── pipeline.py              # generate_eq_games_gpu() orchestrator
+│   ├── types.py                 # PosteriorConfig, AdaptiveConfig, records
+│   ├── sampling.py              # sample_worlds_batched, infer_voids_batched
+│   ├── tokenization.py          # tokenize_batched, build_remaining_bitmasks
+│   ├── actions.py               # select_actions, record_decisions
+│   ├── posterior.py             # compute_posterior_weighted_eq
+│   ├── adaptive.py              # sample_until_convergence
+│   ├── enumeration.py           # enumerate_or_sample_worlds
+│   ├── eq_compute.py            # compute_eq_with_counts, compute_eq_pdf
+│   ├── model.py                 # query_model
+│   ├── deals.py                 # build_hypothetical_deals
+│   └── cli.py                   # CLI: python -m forge.eq.generate
 │
-├── Generation (CPU - debug/reference)
-│   ├── generate.py              # Single-game generation
-│   ├── generate_dataset.py      # Batch dataset generation
-│   └── generate_game.py         # Game simulation logic
+├── collate.py                   # GPU records → training examples
 │
-├── GPU Pipeline
+├── GPU Support
 │   ├── game_tensor.py           # Tensorized game state
-│   ├── sampling_gpu.py          # GPU world sampling
 │   ├── sampling_mrv_gpu.py      # MRV heuristic on GPU
-│   ├── posterior_gpu.py         # GPU posterior weighting
 │   └── tokenize_gpu.py          # GPU transcript tokenization
 │
 ├── Sampling & Posterior (CPU)
 │   ├── sampling.py              # Backtracking sampler (MRV heuristic)
-│   ├── posterior.py             # Posterior weighting
 │   ├── voids.py                 # Void inference from play history
 │   └── worlds.py                # World reconstruction utilities
 │
 ├── Tokenization & Types
 │   ├── transcript_tokenize.py   # Stage 2 tokenizer (public info only)
 │   ├── types.py                 # Type definitions
-│   ├── exploration.py           # Exploration policy definitions
-│   └── reduction.py             # E[Q] aggregation
+│   └── exploration.py           # Exploration policy definitions
 │
 ├── Support
 │   ├── oracle.py                # Stage1Oracle wrapper
 │   ├── game.py                  # GameState for simulation
-│   ├── outcomes.py              # Game outcome tracking
-│   └── rejuvenation.py          # Particle rejuvenation (experimental)
+│   └── outcomes.py              # Game outcome tracking
 │
 └── Analysis
     ├── viewer.py                # Interactive debug viewer
@@ -805,6 +811,8 @@ Each training example is one **decision point**:
 | `action_taken` | scalar | Which slot the E[Q] policy chose |
 | `u_mean`, `u_max` | scalar | State-level uncertainty scalars |
 | `ess`, `max_w` | scalar | Posterior diagnostics (effective sample size, max weight) |
+| `n_samples` | scalar | Samples used (adaptive mode: varies per decision) |
+| `converged` | bool | True if SEM < threshold, False if hit max_samples |
 
 ### CLI Options Reference
 
@@ -831,7 +839,19 @@ python -m forge.cli.generate_eq_continuous --help
   --exploration POLICY     Policy: greedy, epsilon_greedy, boltzmann
   --epsilon ε              Epsilon for epsilon_greedy (default: 0.1)
   --temperature T          Temperature for boltzmann (default: 2.0)
+
+# Adaptive convergence-based sampling (optional):
+  --adaptive               Enable adaptive sampling (sample until E[Q] converges)
+  --min-samples N          Minimum samples before checking convergence (default: 50)
+  --max-samples N          Maximum samples hard cap (default: 2000)
+  --batch-size N           Samples per iteration (default: 50)
+  --sem-threshold F        Stop when max(SEM) < F points (default: 0.5)
 ```
+
+**Adaptive sampling** samples in batches until the Standard Error of Mean (SEM = σ/√n)
+for all legal actions falls below the threshold. This ensures quality-consistent E[Q]
+estimates regardless of position variance - low-variance late-game positions converge
+quickly while high-variance early-game positions get more samples automatically.
 
 ### Train/Val/Test Split
 

@@ -41,7 +41,7 @@ generate_eq_games_gpu(model, hands, decl_ids, n_samples=50)
 
 **2. POSTERIOR-WEIGHTED:**
 ```python
-from forge.eq.generate_gpu import PosteriorConfig
+from forge.eq.generate import PosteriorConfig
 
 generate_eq_games_gpu(
     model, hands, decl_ids,
@@ -53,6 +53,35 @@ generate_eq_games_gpu(
     )
 )
 ```
+
+### Adaptive Sampling
+
+Instead of fixed sample count, adaptively sample until E[Q] estimates converge:
+
+```python
+from forge.eq.generate import AdaptiveConfig
+
+generate_eq_games_gpu(
+    model, hands, decl_ids,
+    adaptive_config=AdaptiveConfig(
+        enabled=True,
+        min_samples=50,     # Minimum before checking convergence
+        max_samples=2000,   # Hard cap
+        batch_size=50,      # Samples per iteration
+        sem_threshold=0.5,  # Stop when max(SEM) < this (Q-value points)
+    )
+)
+```
+
+**Convergence criterion**: max(SEM) over legal actions < sem_threshold, where SEM = σ / √n.
+
+**Benefits**:
+- Early stopping for low-variance decisions (saves compute)
+- More samples for high-variance decisions (improves accuracy)
+
+**Output includes**:
+- `n_samples`: Actual samples used (varies per decision)
+- `converged`: True if SEM < threshold, False if hit max_samples
 
 Uses Bayesian inference to reweight samples based on past play. Samples consistent with observed opponent actions get higher weight.
 
@@ -93,21 +122,33 @@ Tracks `q_gap` (regret) when exploration causes suboptimal action selection.
 
 ## Files
 
+The GPU pipeline is organized as a package in `forge/eq/generate/`:
+
 | File | Purpose |
 |------|---------|
-| `generate_gpu.py` | Main entry point: `generate_eq_games_gpu()` |
+| `generate/` | **Package containing GPU pipeline** |
+| `generate/pipeline.py` | Main entry point: `generate_eq_games_gpu()` |
+| `generate/types.py` | `PosteriorConfig`, `AdaptiveConfig`, `DecisionRecordGPU`, `GameRecordGPU` |
+| `generate/sampling.py` | `sample_worlds_batched`, `infer_voids_batched` |
+| `generate/tokenization.py` | `tokenize_batched`, `build_remaining_bitmasks` |
+| `generate/actions.py` | `select_actions`, `record_decisions` |
+| `generate/posterior.py` | `compute_posterior_weighted_eq` |
+| `generate/adaptive.py` | `sample_until_convergence` |
+| `generate/enumeration.py` | `enumerate_or_sample_worlds` |
+| `generate/eq_compute.py` | `compute_eq_with_counts`, `compute_eq_pdf` |
+| `generate/model.py` | `query_model` |
+| `generate/deals.py` | `build_hypothetical_deals` |
+| `generate/cli.py` | CLI entry point for `python -m forge.eq.generate` |
 | `game_tensor.py` | `GameStateTensor` - vectorized game state on GPU |
 | `sampling_mrv_gpu.py` | `WorldSamplerMRV` - MRV constraint solver (guaranteed valid) |
-| `sampling_gpu.py` | `WorldSampler` - rejection sampling (faster, may fail) |
 | `tokenize_gpu.py` | `GPUTokenizer` - pure tensor tokenization |
-| `posterior_gpu.py` | Posterior weight computation, historical reconstruction |
 | `collate.py` | Convert `GameRecordGPU` to Stage 2 training format |
 | `types.py` | `ExplorationPolicy`, `PosteriorDiagnostics` dataclasses |
 
 ## API Usage
 
 ```python
-from forge.eq.generate_gpu import generate_eq_games_gpu, PosteriorConfig
+from forge.eq.generate import generate_eq_games_gpu, PosteriorConfig
 from forge.eq.collate import collate_batch
 from forge.eq.oracle import Stage1Oracle
 from forge.oracle.rng import deal_from_seed
@@ -145,6 +186,8 @@ results = generate_eq_games_gpu(
 #     - .e_q_var: [7] E[Q] variance
 #     - .ess: Effective sample size (if posterior enabled)
 #     - .q_gap: Regret from exploration (if exploration enabled)
+#     - .n_samples: Actual samples used (if adaptive enabled)
+#     - .converged: True if SEM < threshold (if adaptive enabled)
 # - results[i].hands: Initial deal
 # - results[i].decl_id: Declaration
 
@@ -177,16 +220,9 @@ Posterior mode is ~2-3x slower due to second model call for past K steps.
 
 ## Design Details
 
-### CPU Fallback for Constrained Sampling
+### GPU-Only Architecture
 
-The GPU sampler (MRV or rejection) can fail for heavily constrained scenarios. The pipeline automatically falls back to CPU:
-
-```python
-try:
-    worlds = sampler.sample(pools, hand_sizes, voids, decl_ids, n_samples)
-except RuntimeError:
-    worlds = _sample_worlds_cpu_fallback(states, ...)
-```
+The pipeline is GPU-only by design. If CUDA is unavailable, it raises an error rather than silently falling back to CPU. This prevents accidentally running performance-critical workloads on CPU.
 
 ### Device-Aware Design
 
@@ -224,8 +260,8 @@ pytest forge/eq/test_generate_gpu.py::test_memory_no_oom -v
 
 ## References
 
+- Pipeline: `forge/eq/generate/` (package)
 - Game tensor: `forge/eq/game_tensor.py`
-- World sampling: `forge/eq/sampling_mrv_gpu.py`, `forge/eq/sampling_gpu.py`
+- World sampling: `forge/eq/sampling_mrv_gpu.py`
 - Tokenization: `forge/eq/tokenize_gpu.py`
-- Posterior weighting: `forge/eq/posterior_gpu.py`
 - Collation: `forge/eq/collate.py` (see `COLLATE.md`)
