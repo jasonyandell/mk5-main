@@ -16,6 +16,7 @@ def query_model(
     n_samples: int,
     device: str,
     chunk_size: int | None = None,
+    use_cuda_graph: bool = False,
 ) -> Tensor:
     """Run model forward pass with automatic chunking.
 
@@ -27,6 +28,7 @@ def query_model(
         n_samples: Number of samples per game
         device: Device
         chunk_size: Max batch per forward pass (auto-calibrated if None)
+        use_cuda_graph: Reserved for future use (currently ignored due to torch.compile conflicts)
 
     Returns:
         [batch, 7] Q-values
@@ -73,7 +75,9 @@ def query_model(
                         masks[i:end],
                         current_players[i:end],
                     )
-                    q_chunks.append(q_chunk)
+                    # Clone immediately to prevent CUDA graph buffer overwrite
+                    # (model may use torch.compile with CUDA graphs internally)
+                    q_chunks.append(q_chunk.clone())
                 q_values = torch.cat(q_chunks, dim=0)
 
     # Clone to prevent CUDA graph buffer reuse when model is called multiple times

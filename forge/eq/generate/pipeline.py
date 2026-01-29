@@ -65,6 +65,7 @@ def generate_eq_games_gpu(
     enumeration_threshold: int = 100_000,
     adaptive_config: AdaptiveConfig | None = None,
     seeds: list[int] | None = None,
+    use_cuda_graph: bool = False,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -91,6 +92,8 @@ def generate_eq_games_gpu(
         adaptive_config: Optional config for adaptive convergence-based sampling.
                         If provided and enabled, samples in batches until E[Q] converges
                         (max SEM < threshold) or max_samples is reached.
+        use_cuda_graph: Enable CUDA graph optimization for model forward pass (reduces
+                       kernel launch overhead by ~10-20%)
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -183,6 +186,7 @@ def generate_eq_games_gpu(
                     device=device,
                     decision_idx=decision_idx,
                     seeds=seeds,
+                    use_cuda_graph=use_cuda_graph,
                 )
             else:
                 # Adaptive without posterior: simple statistics
@@ -195,6 +199,7 @@ def generate_eq_games_gpu(
                     device=device,
                     decision_idx=decision_idx,
                     seeds=seeds,
+                    use_cuda_graph=use_cuda_graph,
                 )
         else:
             # Fixed sampling (original behavior)
@@ -220,7 +225,7 @@ def generate_eq_games_gpu(
             tokens, masks = tokenize_batched(states, hypothetical, tokenizer)
 
             # 4. Model forward pass (single batch)
-            q_values = query_model(model, tokens, masks, states, n_worlds_padded, device)
+            q_values = query_model(model, tokens, masks, states, n_worlds_padded, device, use_cuda_graph=use_cuda_graph)
 
             # 5. Reduce to E[Q] per game (with optional posterior weighting)
             q_reshaped = q_values.view(n_games, n_worlds_padded, 7)

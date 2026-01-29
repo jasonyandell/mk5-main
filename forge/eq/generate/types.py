@@ -41,12 +41,14 @@ class AdaptiveConfig:
         max_samples: Maximum samples (hard cap) (default: 2000)
         batch_size: Samples to add per iteration (default: 50)
         sem_threshold: Stop when max(SEM) < this (in Q-value points) (default: 0.5)
+        convergence_check_interval: Check convergence every N iterations (default: 4)
     """
     enabled: bool = False
     min_samples: int = 50
     max_samples: int = 2000
     batch_size: int = 50
     sem_threshold: float = 0.5
+    convergence_check_interval: int = 4
 
 
 @dataclass

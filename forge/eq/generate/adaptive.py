@@ -40,6 +40,7 @@ def sample_until_convergence(
     device: str,
     decision_idx: int = 0,
     seeds: list[int] | None = None,
+    use_cuda_graph: bool = False,
 ) -> tuple[Tensor, Tensor, Tensor, None, int, bool]:
     """Sample worlds until E[Q] estimates converge.
 
@@ -54,6 +55,9 @@ def sample_until_convergence(
         model: Stage 1 oracle model
         adaptive_config: Adaptive sampling configuration
         device: Device for computation
+        decision_idx: Current decision index (for logging)
+        seeds: Optional RNG seeds per game
+        use_cuda_graph: Enable CUDA graph optimization for model forward pass
 
     Returns:
         Tuple of (e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge):
@@ -92,6 +96,10 @@ def sample_until_convergence(
     # Per-game convergence tracking
     converged = torch.zeros(n_games, dtype=torch.bool, device=device)
 
+    # Pre-allocate buffer for scatter_add ones (max size = batch_size * n_games * n_actions)
+    max_ones_size = batch_size * n_games * n_actions
+    ones_buffer = torch.ones(max_ones_size, device=device, dtype=torch.float32)
+
     iteration = 0
     while True:
         # Sample a batch of worlds
@@ -108,7 +116,7 @@ def sample_until_convergence(
         tokens, masks = tokenize_batched(states, hypothetical, tokenizer)
 
         # Query model
-        q_values = query_model(model, tokens, masks, states, n_worlds, device)  # [N*batch, 7]
+        q_values = query_model(model, tokens, masks, states, n_worlds, device, use_cuda_graph=use_cuda_graph)  # [N*batch, 7]
         q_batch = q_values.view(n_games, n_worlds, n_actions)  # [N, batch, 7]
 
         # Accumulate mean/variance statistics (convert to float32 for numerical stability)
@@ -126,14 +134,14 @@ def sample_until_convergence(
         flat_indices = (game_offset + bin_offset + action_idx).view(-1)  # [N * batch * 7]
 
         # Scatter-add 1.0 for each sample (unnormalized counts)
-        ones = torch.ones(n_games * n_worlds * n_actions, device=device, dtype=torch.float32)
-        pdf_counts.scatter_add_(0, flat_indices, ones)
+        actual_size = n_games * n_worlds * n_actions
+        pdf_counts.scatter_add_(0, flat_indices, ones_buffer[:actual_size])
 
         iteration += 1
         current_n = n_total[0].item()  # All games have same count
 
-        # Check convergence (only after min_samples)
-        if current_n >= min_samples:
+        # Check convergence (only after min_samples and on interval)
+        if current_n >= min_samples and iteration % adaptive_config.convergence_check_interval == 0:
             # Compute current mean and variance
             n_float = n_total.unsqueeze(1).float()  # [N, 1]
             e_q = q_sum / n_float  # [N, 7]
@@ -215,6 +223,7 @@ def sample_until_convergence_posterior(
     device: str,
     decision_idx: int = 0,
     seeds: list[int] | None = None,
+    use_cuda_graph: bool = False,
 ) -> tuple[Tensor, Tensor, Tensor, PosteriorDiagnostics | None, int, bool]:
     """Sample worlds until posterior-weighted E[Q] estimates converge.
 
@@ -231,6 +240,7 @@ def sample_until_convergence_posterior(
         device: Device for computation
         decision_idx: Current decision index (for logging)
         seeds: Optional seed list (for logging)
+        use_cuda_graph: Enable CUDA graph optimization for model forward pass
 
     Returns:
         Tuple of (e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge)
@@ -262,6 +272,10 @@ def sample_until_convergence_posterior(
     n_total = 0
     last_diagnostics = None
 
+    # Pre-allocate buffer for scatter_add weights (max size = batch_size * n_games * n_actions)
+    max_weights_size = batch_size * n_games * n_actions
+    weights_buffer = torch.zeros(max_weights_size, device=device, dtype=torch.float32)
+
     iteration = 0
     did_converge = False
 
@@ -280,7 +294,7 @@ def sample_until_convergence_posterior(
         tokens, masks = tokenize_batched(states, hypothetical, tokenizer)
 
         # 4. Query model for current step Q-values
-        q_values = query_model(model, tokens, masks, states, n_worlds, device)  # [N*batch, 7]
+        q_values = query_model(model, tokens, masks, states, n_worlds, device, use_cuda_graph=use_cuda_graph)  # [N*batch, 7]
 
         # 5. Compute posterior weights for this batch
         weights, diagnostics = compute_posterior_weights_batch(
@@ -311,13 +325,15 @@ def sample_until_convergence_posterior(
         flat_indices = (game_offset + bin_offset + action_idx).view(-1)
         # Weight each sample's contribution to PDF
         weights_flat = weights.unsqueeze(-1).expand(n_games, n_worlds, n_actions).reshape(-1)
-        pdf_weighted.scatter_add_(0, flat_indices, weights_flat)
+        actual_weights_size = n_games * n_worlds * n_actions
+        weights_buffer[:actual_weights_size].copy_(weights_flat)
+        pdf_weighted.scatter_add_(0, flat_indices, weights_buffer[:actual_weights_size])
 
         n_total += n_worlds
         iteration += 1
 
-        # 8. Check convergence (after min_samples)
-        if n_total >= min_samples:
+        # 8. Check convergence (after min_samples and on interval)
+        if n_total >= min_samples and iteration % adaptive_config.convergence_check_interval == 0:
             # Weighted mean and variance
             # Avoid division by zero
             sum_w_safe = sum_w.clamp(min=1e-10).unsqueeze(1)  # [N, 1]

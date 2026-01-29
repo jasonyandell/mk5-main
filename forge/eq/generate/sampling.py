@@ -95,7 +95,9 @@ def sample_worlds_batched(
 
 
 def infer_voids_batched(states: GameStateTensor) -> Tensor:
-    """Infer void suits from play history for all games (vectorized).
+    """Infer void suits from play history for all games (fully vectorized).
+
+    Uses precomputed lookup tables to eliminate Python loops and CPU roundtrips.
 
     Args:
         states: GameStateTensor with N games
@@ -107,39 +109,69 @@ def infer_voids_batched(states: GameStateTensor) -> Tensor:
         - 1 = (current_player + 2) % 4
         - 2 = (current_player + 3) % 4
     """
-    from forge.oracle.tables import can_follow, led_suit_for_lead_domino
+    from forge.eq.game_tensor import LED_SUIT_TABLE
+    from forge.eq.sampling_gpu import CAN_FOLLOW
 
     n_games = states.n_games
     device = states.device
     voids = torch.zeros(n_games, 3, 8, dtype=torch.bool, device=device)
 
-    # Process each game (history structure makes full vectorization difficult)
-    # This is still much faster than before because we removed other .item() calls
-    for g in range(n_games):
-        # Extract history for this game
-        history = states.history[g].cpu().numpy()  # [28, 3]
-        decl_id = states.decl_ids[g].item()
-        current_player = states.current_player[g].item()
+    # Get lookup tables on correct device
+    led_suit_table = LED_SUIT_TABLE.to(device)  # [28, 10]
+    can_follow_table = CAN_FOLLOW.to(device)  # [28, 8, 10]
 
-        for i in range(28):
-            if history[i, 0] < 0:  # End of history
-                break
+    # history: [N, 28, 3] with columns (player, domino_id, lead_domino_id)
+    history = states.history  # Keep on GPU
+    decl_ids = states.decl_ids  # [N]
+    current_players = states.current_player  # [N]
 
-            player, domino_id, lead_domino_id = history[i]
+    # Find valid history entries (player >= 0)
+    valid_mask = history[:, :, 0] >= 0  # [N, 28]
 
-            # Skip current player's plays (we know our hand)
-            if player == current_player:
-                continue
+    # Extract columns
+    players = history[:, :, 0].long()  # [N, 28]
+    domino_ids = history[:, :, 1].long()  # [N, 28]
+    lead_domino_ids = history[:, :, 2].long()  # [N, 28]
 
-            # Map absolute player to relative opponent index (0, 1, 2)
-            opp_idx = (player - current_player - 1) % 4
+    # Clamp to valid range for indexing (invalid entries will be masked out)
+    domino_ids_safe = domino_ids.clamp(0, 27)
+    lead_domino_ids_safe = lead_domino_ids.clamp(0, 27)
 
-            if opp_idx >= 3:  # Safety check
-                continue
+    # Expand decl_ids for indexing: [N] -> [N, 28]
+    decl_ids_expanded = decl_ids.unsqueeze(1).expand(-1, 28).long()
 
-            # Check if this play revealed a void
-            led_suit = led_suit_for_lead_domino(lead_domino_id, decl_id)
-            if not can_follow(domino_id, led_suit, decl_id):
-                voids[g, opp_idx, led_suit] = True
+    # Look up led suits: led_suit_table[lead_domino_id, decl_id]
+    # Use advanced indexing: [N, 28]
+    led_suits = led_suit_table[lead_domino_ids_safe, decl_ids_expanded]  # [N, 28]
+
+    # Look up can_follow: can_follow_table[domino_id, led_suit, decl_id]
+    can_follow_result = can_follow_table[domino_ids_safe, led_suits.long(), decl_ids_expanded]  # [N, 28]
+
+    # A void is revealed when can_follow == False
+    void_revealed = ~can_follow_result & valid_mask  # [N, 28]
+
+    # Compute relative opponent indices: opp_idx = (player - current_player - 1) % 4
+    # current_players: [N] -> [N, 1] for broadcasting
+    relative_opp = (players - current_players.unsqueeze(1) - 1) % 4  # [N, 28]
+
+    # Filter: only opponents (opp_idx < 3) and not current player
+    is_opponent = (players != current_players.unsqueeze(1)) & (relative_opp < 3)  # [N, 28]
+
+    # Final mask for void revelations from opponents
+    void_mask = void_revealed & is_opponent & valid_mask  # [N, 28]
+
+    # Scatter voids into result tensor
+    # For each (game, history_entry) where void_mask is True:
+    #   voids[game, relative_opp[game, entry], led_suits[game, entry]] = True
+    #
+    # Use scatter with boolean values
+    if void_mask.any():
+        # Get indices where voids are revealed
+        game_idx, entry_idx = torch.where(void_mask)
+        opp_indices = relative_opp[game_idx, entry_idx]
+        suit_indices = led_suits[game_idx, entry_idx].long()
+
+        # Set voids
+        voids[game_idx, opp_indices, suit_indices] = True
 
     return voids
