@@ -245,7 +245,26 @@ python -m forge.cli.generate_eq_continuous \
     --posterior --posterior-window 4
 ```
 
-**Output format**: Per-seed `.pt` files with `e_q_mean`, `e_q_var`, `legal_mask`, `transcript_tokens`, etc.
+**Step 5: Adaptive sampling (optional)**
+
+Use adaptive convergence-based sampling instead of fixed sample count. Samples in batches until max(SEM) over legal actions < threshold:
+
+```bash
+# Enable adaptive sampling (default thresholds)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --adaptive
+
+# Custom thresholds (tighter convergence for high-variance decisions)
+python -m forge.cli.generate_eq_continuous \
+    --checkpoint model.ckpt \
+    --adaptive \
+    --min-samples 100 --max-samples 5000 --sem-threshold 0.3
+```
+
+Benefits: Early stopping for low-variance decisions (saves compute), more samples for high-variance decisions (improves accuracy).
+
+**Output format**: Per-seed `.pt` files with `e_q_mean`, `e_q_var`, `legal_mask`, `transcript_tokens`, `n_samples`, `converged`, etc.
 
 **Performance**: RTX 3050 Ti, batch=32, samples=50 → ~300k examples/hour
 

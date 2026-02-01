@@ -840,18 +840,24 @@ python -m forge.cli.generate_eq_continuous --help
   --epsilon ε              Epsilon for epsilon_greedy (default: 0.1)
   --temperature T          Temperature for boltzmann (default: 2.0)
 
-# Adaptive convergence-based sampling (optional):
+# Adaptive convergence-based sampling (RECOMMENDED for training data):
   --adaptive               Enable adaptive sampling (sample until E[Q] converges)
-  --min-samples N          Minimum samples before checking convergence (default: 50)
-  --max-samples N          Maximum samples hard cap (default: 2000)
-  --batch-size N           Samples per iteration (default: 50)
-  --sem-threshold F        Stop when max(SEM) < F points (default: 0.5)
+  --min-samples N          Minimum samples before checking convergence (default: 5000)
+  --max-samples N          Maximum samples hard cap (default: 2000000)
+  --adaptive-batch-size N  Samples per iteration (default: 1000)
+  --sem-threshold F        Stop when max(SEM) < F points (default: 0.1)
 ```
 
-**Adaptive sampling** samples in batches until the Standard Error of Mean (SEM = σ/√n)
+**Adaptive sampling** (recommended) samples in batches until the Standard Error of Mean (SEM = σ/√n)
 for all legal actions falls below the threshold. This ensures quality-consistent E[Q]
 estimates regardless of position variance - low-variance late-game positions converge
 quickly while high-variance early-game positions get more samples automatically.
+
+**Validation results** (100-game experiment comparing 1k fixed vs 2M adaptive):
+- Adaptive achieves **8.4x better SEM** (0.077 vs 0.649)
+- Game outcomes are NOT the right metric - tiny E[Q] differences cascade into different games
+- What matters for training: confident labels across diverse positions ("drunken master" technique)
+- Convergence patterns: early game ~75-95k samples, mid game ~55-75k, late game ~50k minimum
 
 ### Train/Val/Test Split
 

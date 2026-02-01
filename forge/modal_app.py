@@ -962,6 +962,210 @@ def train_model(
     }
 
 
+# =============================================================================
+# B200 Adaptive E[Q] Generator (t42-nk73)
+# =============================================================================
+#
+# Run adaptive sampling on B200 (192GB VRAM) for massive parallelism.
+# Uses the same adaptive config as local benchmarks but with 100-1000 games.
+
+
+@app.cls(
+    image=forge_image,
+    gpu=GPU_B200,  # B200 - 192GB, let's see what it can do!
+    volumes={EQ_MOUNT_PATH: eq_volume},
+    timeout=3600,  # 1 hour max
+)
+class EQGeneratorB200:
+    """Adaptive E[Q] generator optimized for B200's 192GB VRAM."""
+
+    @modal.enter()
+    def setup(self):
+        """Load and optimize model once per container."""
+        import sys
+        sys.path.insert(0, "/root")
+
+        import time
+        import torch
+
+        from forge.eq import Stage1Oracle
+
+        print(f"[{torch.cuda.get_device_name(0)}] Loading oracle for B200...")
+        load_start = time.time()
+
+        # Load oracle - Stage1Oracle already does torch.compile with reduce-overhead
+        checkpoint_path = "/root/forge/models/domino-qval-3.3M-shuffle-qgap0.074-qmae0.96.ckpt"
+        self.oracle = Stage1Oracle(checkpoint_path, device="cuda", compile=True)
+
+        # Store reference to the actual model for generate_eq_games_gpu
+        self.model = self.oracle.model
+
+        # Warmup for expected batch sizes (Stage1Oracle already does basic warmup)
+        print("Additional warmup for large batches...")
+        with torch.inference_mode():
+            for batch_size in (5000, 10000, 50000):
+                dummy_tokens = torch.zeros(batch_size, 32, 12, dtype=torch.int32, device="cuda")
+                dummy_mask = torch.ones(batch_size, 32, dtype=torch.int8, device="cuda")
+                dummy_player = torch.zeros(batch_size, dtype=torch.long, device="cuda")
+                try:
+                    self.model(dummy_tokens, dummy_mask, dummy_player)
+                    print(f"  Warmup batch={batch_size}: OK")
+                except Exception as e:
+                    print(f"  Warmup batch={batch_size}: {e}")
+                    break
+
+        print(f"Oracle ready in {time.time() - load_start:.2f}s")
+        self.torch = torch
+
+    @modal.method()
+    def generate_adaptive(
+        self,
+        n_games: int = 100,
+        seed_start: int = 50000,
+        min_samples: int = 50000,
+        max_samples: int = 2000000,
+        batch_size: int = 1000,
+        sem_threshold: float = 0.1,
+    ) -> dict:
+        """Generate E[Q] data with adaptive sampling.
+
+        Args:
+            n_games: Number of games to generate
+            seed_start: Starting seed for deals
+            min_samples: Minimum samples before checking convergence
+            max_samples: Maximum samples (hard cap)
+            batch_size: Samples per iteration
+            sem_threshold: Convergence threshold
+
+        Returns:
+            Dict with timing stats and summary
+        """
+        import sys
+        sys.path.insert(0, "/root")
+
+        import time
+        from forge.eq.generate import generate_eq_games_gpu, AdaptiveConfig
+        from forge.oracle.rng import deal_from_seed
+
+        torch = self.torch
+
+        print(f"Generating {n_games} games with adaptive sampling")
+        print(f"  Seeds: {seed_start} to {seed_start + n_games - 1}")
+        print(f"  Config: min={min_samples}, max={max_samples}, batch={batch_size}, sem={sem_threshold}")
+
+        # Build hands from seeds
+        hands = [deal_from_seed(seed_start + i) for i in range(n_games)]
+        decl_ids = [i % 10 for i in range(n_games)]
+
+        config = AdaptiveConfig(
+            enabled=True,
+            min_samples=min_samples,
+            max_samples=max_samples,
+            batch_size=batch_size,
+            sem_threshold=sem_threshold,
+        )
+
+        torch.cuda.synchronize()
+        t0 = time.perf_counter()
+
+        results = generate_eq_games_gpu(
+            model=self.model,
+            hands=hands,
+            decl_ids=decl_ids,
+            n_samples=1000,  # ignored when adaptive
+            device='cuda',
+            adaptive_config=config,
+        )
+
+        torch.cuda.synchronize()
+        elapsed = time.perf_counter() - t0
+
+        # Collect stats
+        samples_per_decision = []
+        n_converged = 0
+        total_decisions = 0
+
+        for game in results:
+            for dec in game.decisions:
+                if dec.n_samples is not None:
+                    samples_per_decision.append(dec.n_samples)
+                if dec.converged:
+                    n_converged += 1
+                total_decisions += 1
+
+        avg_samples = sum(samples_per_decision) / len(samples_per_decision) if samples_per_decision else 0
+
+        stats = {
+            'n_games': n_games,
+            'total_time': elapsed,
+            'sec_per_game': elapsed / n_games,
+            'games_per_sec': n_games / elapsed,
+            'total_decisions': total_decisions,
+            'avg_samples_per_decision': avg_samples,
+            'min_samples_per_decision': min(samples_per_decision) if samples_per_decision else 0,
+            'max_samples_per_decision': max(samples_per_decision) if samples_per_decision else 0,
+            'convergence_rate': n_converged / total_decisions if total_decisions > 0 else 0,
+            'gpu': torch.cuda.get_device_name(0),
+        }
+
+        print(f"\n=== Results ===")
+        print(f"Total time: {elapsed:.1f}s")
+        print(f"Sec/game: {stats['sec_per_game']:.2f}")
+        print(f"Games/sec: {stats['games_per_sec']:.2f}")
+        print(f"Avg samples/decision: {avg_samples:.0f}")
+        print(f"Convergence rate: {stats['convergence_rate']*100:.1f}%")
+
+        return stats
+
+
+@app.local_entrypoint(name="eq_adaptive_b200")
+def eq_adaptive_b200(
+    n_games: int = 500,  # Default to 500 games to saturate H200
+    seed_start: int = 50000,
+    batch_size: int = 2000,  # Larger batch for H200's 150GB
+    sem_threshold: float = 0.1,  # Convergence threshold
+    min_samples: int = 50000,  # Minimum samples before checking convergence
+):
+    """Run adaptive E[Q] generation on H200.
+
+    Usage:
+        modal run forge/modal_app.py::eq_adaptive_b200 --n-games 500
+        modal run forge/modal_app.py::eq_adaptive_b200 --n-games 1000  # Crystal palace mode!
+        modal run forge/modal_app.py::eq_adaptive_b200 --sem-threshold 0.5 --min-samples 10000  # Fast!
+    """
+    from rich.console import Console
+    console = Console()
+
+    console.print("[bold]🔥 H200 Adaptive E[Q] Generation 🔥[/bold]")
+    console.print(f"  Games: {n_games}")
+    console.print(f"  Seeds: {seed_start} to {seed_start + n_games - 1}")
+    console.print(f"  Min samples: {min_samples}, SEM threshold: {sem_threshold}")
+    console.print()
+
+    generator = EQGeneratorB200()
+    stats = generator.generate_adaptive.remote(
+        n_games=n_games,
+        seed_start=seed_start,
+        min_samples=min_samples,
+        max_samples=2000000,
+        batch_size=batch_size,
+        sem_threshold=sem_threshold,
+    )
+
+    console.print(f"\n[bold green]🏰 Crystal Palace Complete! 🏰[/bold green]")
+    console.print(f"  GPU: {stats['gpu']}")
+    console.print(f"  Total time: {stats['total_time']:.1f}s")
+    console.print(f"  Games/sec: {stats['games_per_sec']:.2f}")
+    console.print(f"  Sec/game: {stats['sec_per_game']:.2f}")
+    console.print(f"  Avg samples/decision: {stats['avg_samples_per_decision']:.0f}")
+    console.print(f"  Convergence: {stats['convergence_rate']*100:.1f}%")
+
+    # Compare to laptop
+    laptop_sec_per_game = 102.8
+    speedup = laptop_sec_per_game / stats['sec_per_game']
+    console.print(f"\n  [bold]Speedup vs RTX 3050 Ti: {speedup:.1f}x[/bold]")
+
+
 @app.local_entrypoint(name="train")
 def train(
     epochs: int = 10,

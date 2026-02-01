@@ -54,9 +54,9 @@ generate_eq_games_gpu(
 )
 ```
 
-### Adaptive Sampling
+### Adaptive Sampling (Recommended)
 
-Instead of fixed sample count, adaptively sample until E[Q] estimates converge:
+Adaptively sample until E[Q] estimates converge. This is the **recommended approach** for generating training data.
 
 ```python
 from forge.eq.generate import AdaptiveConfig
@@ -65,19 +65,28 @@ generate_eq_games_gpu(
     model, hands, decl_ids,
     adaptive_config=AdaptiveConfig(
         enabled=True,
-        min_samples=50,     # Minimum before checking convergence
-        max_samples=2000,   # Hard cap
-        batch_size=50,      # Samples per iteration
-        sem_threshold=0.5,  # Stop when max(SEM) < this (Q-value points)
+        min_samples=5000,      # Minimum before checking convergence
+        max_samples=2000000,   # Hard cap (2M)
+        batch_size=1000,       # Samples per iteration
+        sem_threshold=0.1,     # Stop when max(SEM) < this (Q-value points)
     )
 )
 ```
 
 **Convergence criterion**: max(SEM) over legal actions < sem_threshold, where SEM = σ / √n.
 
-**Benefits**:
-- Early stopping for low-variance decisions (saves compute)
-- More samples for high-variance decisions (improves accuracy)
+**Why adaptive is preferred** (validated in 100-game experiment):
+- **8.4x better SEM**: Adaptive achieves 0.077 SEM vs 0.649 for fixed 1k sampling
+- **Label quality**: For training, confident estimates across diverse positions matters more than game outcomes
+- **Head-to-head outcomes are misleading**: Tiny E[Q] differences (<0.002) flip action choices, games cascade apart, so outcomes become uncorrelated with estimate quality
+
+**Convergence patterns discovered**:
+- Early game (decisions 0-4): ~75-95k samples to converge
+- Mid game (decisions 5-14): ~55-75k samples, high variance
+- Late game (decisions 15-27): Converges at 50k minimum
+- 100% convergence rate with SEM threshold 0.1
+
+**Note**: Enumeration was tested but provides no quality benefit and is 29% slower than pure adaptive sampling. Not recommended for training data generation.
 
 **Output includes**:
 - `n_samples`: Actual samples used (varies per decision)

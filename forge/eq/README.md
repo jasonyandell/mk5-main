@@ -103,28 +103,35 @@ Texas 42 AIs using hand-coded heuristics are **point estimates applied to a dist
 | `--dry-run` | Show missing seeds without generating | - |
 | `--limit N` | Stop after generating N games | None |
 
-### Adaptive Sampling (Optional)
+### Adaptive Sampling (Recommended for Training Data)
 
-Instead of using a fixed sample count, adaptive sampling samples in batches until E[Q] estimates converge (max SEM over legal actions falls below a threshold). This allows early stopping for low-variance decisions and more samples for high-variance ones.
+Adaptive sampling samples in batches until E[Q] estimates converge (max SEM over legal actions falls below a threshold). This is the **recommended approach** for generating high-quality training data.
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--adaptive` | Enable adaptive convergence-based sampling | disabled |
-| `--min-samples N` | Minimum samples before checking convergence | 50 |
-| `--max-samples N` | Maximum samples (hard cap) | 2000 |
-| `--batch-size N` | Samples per iteration in adaptive mode | 50 |
-| `--sem-threshold F` | SEM threshold for convergence (Q-value points) | 0.5 |
+| `--min-samples N` | Minimum samples before checking convergence | 5000 |
+| `--max-samples N` | Maximum samples (hard cap) | 2000000 |
+| `--adaptive-batch-size N` | Samples per iteration in adaptive mode | 1000 |
+| `--sem-threshold F` | SEM threshold for convergence (Q-value points) | 0.1 |
 
 **How it works**: SEM (Standard Error of Mean) = σ / √n. Sampling continues until max(SEM) over all legal actions < threshold, or hits max_samples.
 
+**Why adaptive is preferred**: In a 100-game head-to-head comparison between 1k fixed sampling and 2M adaptive sampling, adaptive achieved **8.4x better SEM** (0.077 vs 0.649). While game outcomes weren't significantly different (tiny E[Q] differences cascade into different game trajectories), the quality of labels matters for training:
+
+- **For training data**: High-quality, confident E[Q] estimates across diverse positions ("drunken master" technique) matters more than game outcomes
+- **Convergence quality**: Adaptive ensures every position has converged estimates, not just an arbitrary sample count
+- **Game-phase patterns**: Early game (dec 0-4) needs ~75-95k samples, mid game ~55-75k, late game converges at 50k minimum
+
 **Example**:
 ```bash
-# Use adaptive sampling (default thresholds)
+# Recommended: Adaptive sampling with production settings
 python -m forge.cli.generate_eq_continuous \
     --checkpoint model.ckpt \
-    --adaptive
+    --adaptive --min-samples 5000 --max-samples 2000000 \
+    --adaptive-batch-size 1000 --sem-threshold 0.1
 
-# With tighter convergence (more samples for high-variance decisions)
+# Faster iteration during development
 python -m forge.cli.generate_eq_continuous \
     --checkpoint model.ckpt \
     --adaptive \
