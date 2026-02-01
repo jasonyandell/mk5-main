@@ -58,8 +58,8 @@ TOKEN_TYPE_DECL = 0
 TOKEN_TYPE_HAND = 1
 TOKEN_TYPE_PLAY = 2
 
-# Padding value for empty hand slots
-PAD_VALUE = -1
+# Padding value for empty hand slots (must be 0 for valid embedding indices)
+PAD_VALUE = 0
 
 # Count value mapping
 COUNT_VALUE_MAP = {0: 0, 5: 1, 10: 2}
