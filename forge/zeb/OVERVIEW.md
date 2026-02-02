@@ -220,6 +220,30 @@ python -m forge.zeb.run_mcts_training \
 | `--n-parallel-games` | 16 | Concurrent games for batching |
 | `--cross-game-batch-size` | 512 | Target oracle batch size |
 | `--wandb/--no-wandb` | True | Enable W&B logging |
+| `--resume` | False | Resume from latest checkpoint |
+| `--checkpoint-dir` | `forge/zeb/checkpoints/` | Checkpoint save directory |
+| `--checkpoint-every` | 1 | Save every N epochs |
+| `--keep-checkpoints` | 3 | Keep only last N checkpoints |
+
+### Resuming training
+
+Training automatically saves checkpoints every epoch to `forge/zeb/checkpoints/`. To resume an interrupted run:
+
+```bash
+python -m forge.zeb.run_mcts_training \
+    --resume \
+    --model-size medium \
+    --use-oracle \
+    [... same args as original run ...]
+```
+
+Checkpoints include:
+- Model and optimizer state
+- RNG states (torch, numpy, python, CUDA) for exact reproducibility
+- W&B run ID for seamless logging continuation
+- Training config
+
+Checkpoint naming follows convention: `zeb-{model_size}-epoch{N:04d}.pt`
 
 ---
 

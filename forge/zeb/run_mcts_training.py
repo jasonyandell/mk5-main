@@ -7,10 +7,13 @@ Uses MCTS to generate training targets, trains network to predict:
 This provides much more stable learning than pure REINFORCE.
 """
 import argparse
+import random
 import time
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,6 +24,89 @@ try:
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
+
+
+# Default checkpoint directory
+DEFAULT_CHECKPOINT_DIR = Path(__file__).parent / 'checkpoints'
+
+
+def get_rng_state() -> dict:
+    """Capture all RNG states for exact reproducibility."""
+    state = {
+        'torch': torch.get_rng_state(),
+        'numpy': np.random.get_state(),
+        'python': random.getstate(),
+    }
+    if torch.cuda.is_available():
+        state['cuda'] = torch.cuda.get_rng_state_all()
+    return state
+
+
+def set_rng_state(state: dict) -> None:
+    """Restore all RNG states."""
+    torch.set_rng_state(state['torch'])
+    np.random.set_state(state['numpy'])
+    random.setstate(state['python'])
+    if 'cuda' in state and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(state['cuda'])
+
+
+def save_checkpoint(
+    path: Path,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    config: dict,
+    wandb_run_id: Optional[str] = None,
+) -> None:
+    """Save training checkpoint with full state for resumability."""
+    checkpoint = {
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'rng_state': get_rng_state(),
+        'config': config,
+        'wandb_run_id': wandb_run_id,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(checkpoint, path)
+
+
+def load_checkpoint(path: Path, model: nn.Module, optimizer: torch.optim.Optimizer) -> dict:
+    """Load checkpoint and restore model/optimizer/RNG states.
+
+    Returns:
+        Checkpoint dict with epoch, config, wandb_run_id
+    """
+    checkpoint = torch.load(path, map_location='cpu', weights_only=False)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    set_rng_state(checkpoint['rng_state'])
+    return checkpoint
+
+
+def find_latest_checkpoint(checkpoint_dir: Path, model_size: str) -> Optional[Path]:
+    """Find the most recent checkpoint for the given model size.
+
+    Looks for files matching pattern: zeb-{model_size}-epoch*.pt
+    Returns the one with the highest epoch number.
+    """
+    pattern = f'zeb-{model_size}-epoch*.pt'
+    checkpoints = sorted(checkpoint_dir.glob(pattern))
+    return checkpoints[-1] if checkpoints else None
+
+
+def cleanup_old_checkpoints(checkpoint_dir: Path, model_size: str, keep: int) -> None:
+    """Keep only the most recent N checkpoints for this model size."""
+    pattern = f'zeb-{model_size}-epoch*.pt'
+    checkpoints = sorted(checkpoint_dir.glob(pattern))
+    for old_ckpt in checkpoints[:-keep]:
+        old_ckpt.unlink()
+
+
+def checkpoint_path(checkpoint_dir: Path, model_size: str, epoch: int) -> Path:
+    """Generate checkpoint filename following naming convention."""
+    return checkpoint_dir / f'zeb-{model_size}-epoch{epoch:04d}.pt'
 
 from .mcts_self_play import play_games_with_mcts, mcts_examples_to_zeb_tensors
 from .batched_mcts import play_games_batched
@@ -199,32 +285,70 @@ def main():
                         help='Number of concurrent MCTS games for cross-game batching')
     parser.add_argument('--cross-game-batch-size', type=int, default=512,
                         help='Target batch size for oracle evaluation across games')
+
+    # Checkpoint and resume parameters
+    parser.add_argument('--resume', action='store_true',
+                        help='Resume from latest checkpoint (auto-detects by model size)')
+    parser.add_argument('--checkpoint-dir', type=Path, default=DEFAULT_CHECKPOINT_DIR,
+                        help='Directory for saving/loading checkpoints')
+    parser.add_argument('--checkpoint-every', type=int, default=1,
+                        help='Save checkpoint every N epochs (default: every epoch)')
+    parser.add_argument('--keep-checkpoints', type=int, default=3,
+                        help='Keep only the last N checkpoints (default: 3)')
     args = parser.parse_args()
 
-    # Initialize W&B
+    # Check for resume checkpoint
+    start_epoch = 0
+    resume_checkpoint = None
+    wandb_run_id = None
+
+    if args.resume:
+        resume_checkpoint = find_latest_checkpoint(args.checkpoint_dir, args.model_size)
+        if resume_checkpoint:
+            # Peek at checkpoint to get wandb_run_id before initializing wandb
+            ckpt_data = torch.load(resume_checkpoint, map_location='cpu', weights_only=False)
+            wandb_run_id = ckpt_data.get('wandb_run_id')
+            start_epoch = ckpt_data['epoch'] + 1  # Resume from next epoch
+            print(f"Found checkpoint: {resume_checkpoint}")
+            print(f"  Will resume from epoch {start_epoch}")
+        else:
+            print(f"No checkpoint found for model size '{args.model_size}' in {args.checkpoint_dir}")
+            print("  Starting fresh training")
+
+    # Initialize W&B (with resume if we have a run ID)
     use_wandb = args.wandb and WANDB_AVAILABLE
     if use_wandb:
-        timestamp = datetime.now().strftime("%Y%m%d%H%M")
-        run_name = args.run_name or f"mcts-zeb-{'oracle' if args.use_oracle else 'rollout'}-{args.model_size}-{timestamp}"
-        wandb.init(
-            project=args.wandb_project,
-            name=run_name,
-            tags=['mcts', 'zeb', args.model_size, 'oracle' if args.use_oracle else 'rollout'],
-            config={
-                'epochs': args.epochs,
-                'games_per_epoch': args.games_per_epoch,
-                'n_simulations': args.n_simulations,
-                'batch_size': args.batch_size,
-                'lr': args.lr,
-                'temperature': args.temperature,
-                'model_size': args.model_size,
-                'use_oracle': args.use_oracle,
-                'device': args.device,
-                'n_parallel_games': args.n_parallel_games,
-                'cross_game_batch_size': args.cross_game_batch_size,
-            },
-        )
-        print(f"W&B run: {wandb.run.url}")
+        if wandb_run_id:
+            # Resume existing W&B run
+            wandb.init(
+                project=args.wandb_project,
+                id=wandb_run_id,
+                resume='must',
+            )
+            print(f"W&B run resumed: {wandb.run.url}")
+        else:
+            # New W&B run
+            timestamp = datetime.now().strftime("%Y%m%d%H%M")
+            run_name = args.run_name or f"mcts-zeb-{'oracle' if args.use_oracle else 'rollout'}-{args.model_size}-{timestamp}"
+            wandb.init(
+                project=args.wandb_project,
+                name=run_name,
+                tags=['mcts', 'zeb', args.model_size, 'oracle' if args.use_oracle else 'rollout'],
+                config={
+                    'epochs': args.epochs,
+                    'games_per_epoch': args.games_per_epoch,
+                    'n_simulations': args.n_simulations,
+                    'batch_size': args.batch_size,
+                    'lr': args.lr,
+                    'temperature': args.temperature,
+                    'model_size': args.model_size,
+                    'use_oracle': args.use_oracle,
+                    'device': args.device,
+                    'n_parallel_games': args.n_parallel_games,
+                    'cross_game_batch_size': args.cross_game_batch_size,
+                },
+            )
+            print(f"W&B run: {wandb.run.url}")
 
     print("=== MCTS AlphaZero-style Training (ZebModel) ===")
     print(f"Epochs: {args.epochs}")
@@ -251,6 +375,33 @@ def main():
     model.to(args.device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
 
+    # Build training config for checkpoint saving
+    training_config = {
+        'epochs': args.epochs,
+        'games_per_epoch': args.games_per_epoch,
+        'n_simulations': args.n_simulations,
+        'batch_size': args.batch_size,
+        'lr': args.lr,
+        'temperature': args.temperature,
+        'model_size': args.model_size,
+        'model_config': model_config,
+        'use_oracle': args.use_oracle,
+        'device': args.device,
+        'n_parallel_games': args.n_parallel_games,
+        'cross_game_batch_size': args.cross_game_batch_size,
+    }
+
+    # Load checkpoint if resuming
+    if resume_checkpoint:
+        print(f"Loading checkpoint: {resume_checkpoint}")
+        load_checkpoint(resume_checkpoint, model, optimizer)
+        # Move optimizer state to correct device
+        for state in optimizer.state.values():
+            for k, v in state.items():
+                if isinstance(v, torch.Tensor):
+                    state[k] = v.to(args.device)
+        print(f"  Restored model, optimizer, and RNG states")
+
     total_params = sum(p.numel() for p in model.parameters())
     print(f"ZebModel ({args.model_size}): {total_params:,} parameters")
     print(f"  embed_dim={model_config['embed_dim']}, n_layers={model_config['n_layers']}, n_heads={model_config['n_heads']}")
@@ -263,7 +414,7 @@ def main():
         wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': -1})
 
     # Training loop
-    for epoch in range(args.epochs):
+    for epoch in range(start_epoch, args.epochs):
         t0 = time.time()
 
         # Generate games with MCTS (cross-game batched for GPU efficiency)
@@ -328,6 +479,15 @@ def main():
                 'perf/examples': n_examples,
                 'perf/oracle_queries': oracle_queries,
             })
+
+        # Save checkpoint
+        if (epoch + 1) % args.checkpoint_every == 0:
+            ckpt_path = checkpoint_path(args.checkpoint_dir, args.model_size, epoch)
+            current_wandb_id = wandb.run.id if use_wandb else None
+            save_checkpoint(ckpt_path, model, optimizer, epoch, training_config, current_wandb_id)
+            cleanup_old_checkpoints(args.checkpoint_dir, args.model_size, args.keep_checkpoints)
+            if use_wandb:
+                wandb.log({'checkpoint/saved': 1, 'checkpoint/epoch': epoch})
 
         # Periodic evaluation
         if (epoch + 1) % args.eval_every == 0:
