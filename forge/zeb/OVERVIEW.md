@@ -277,18 +277,23 @@ This provides ~6x speedup over sequential evaluation.
 
 ### Oracle throughput
 
-| Batch Size | Throughput | GPU Util | Notes |
-|------------|-----------|----------|-------|
-| 256 | ~5,200/s | 81% | Smaller batches underutilize GPU |
-| 512 | ~5,800/s | 84% | Default target batch size |
-| 1024+ | ~6,200/s | 86% | Plateau - CPU-bound tokenization limits further improvement |
+| Method | Throughput | GPU Util | Notes |
+|--------|-----------|----------|-------|
+| `batch_evaluate_with_originals()` | ~6,200/s | 92% | GameState objects |
+| `batch_evaluate_gpu()` | ~6,900/s | **96%** | GPU tensors, fully GPU-native |
+| Pure forward pass | ~6,600/s | 98% | Theoretical max |
 
-**GPU utilization ceiling: ~86%**. The remaining ~14% is CPU-bound tokenization inside `query_batch_multi_state`. True 100% would require overlapping tokenization of batch N+1 with GPU inference on batch N.
+**GPU-native path achieves 96% utilization**. The `batch_evaluate_gpu()` method takes pre-built GPU tensors and does all computation on GPU:
+- GPU tokenization (GPUTokenizer)
+- GPU bitmask computation
+- GPU legal mask computation
+- GPU post-processing
 
 Key optimizations:
-1. **Vectorized post-processing**: Legal mask built in batch on CPU, single GPU max() call
-2. **Vectorized bitmask**: Numpy broadcasting for remaining-domino computation
-3. **Async double-buffering**: CUDA streams for data transfer (but tokenization still serial)
+1. **GPU tokenization**: Tokenization moved to GPU (GPUTokenizer in `forge/eq/gpu_tokenizer.py`)
+2. **GPU bitmask**: `compute_remaining_bitmask_gpu()` in `forge/zeb/gpu_preprocess.py`
+3. **GPU legal mask**: `compute_legal_mask_gpu()` for action masking
+4. **Vectorized post-processing**: Batch max() and team sign flip on GPU
 
 ### Training example generation
 

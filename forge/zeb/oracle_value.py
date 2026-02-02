@@ -10,9 +10,11 @@ from typing import Optional
 
 import numpy as np
 import torch
+from torch import Tensor
 
 from forge.eq.game import GameState
 from forge.eq.oracle import Stage1Oracle
+from forge.zeb.gpu_preprocess import compute_remaining_bitmask_gpu, compute_legal_mask_gpu
 
 
 # Default checkpoint path
@@ -343,6 +345,70 @@ class OracleValueFunction:
 
         # Normalize and convert to list
         return (best_q / 42.0).cpu().tolist()
+
+    def batch_evaluate_gpu(
+        self,
+        original_hands: Tensor,  # (N, 4, 7) int32 - original deal
+        current_hands: Tensor,   # (N, 4, 7) int32 - current hands, -1 for played
+        decl_ids: Tensor,        # (N,) int32
+        actors: Tensor,          # (N,) int32 - current player
+        leaders: Tensor,         # (N,) int32 - trick leader
+        trick_players: Tensor,   # (N, 3) int32 - player for each trick play, -1 if none
+        trick_dominoes: Tensor,  # (N, 3) int32 - domino for each trick play, -1 if none
+        players: Tensor,         # (N,) int32 - perspective player for value
+    ) -> Tensor:
+        """Fully GPU-native batch evaluation.
+
+        All inputs are GPU tensors. No CPU work in the hot path.
+
+        Args:
+            original_hands: Original 7-card hands (N, 4, 7)
+            current_hands: Current hands with -1 for played dominoes (N, 4, 7)
+            decl_ids: Declaration ID per sample (N,)
+            actors: Current player per sample (N,)
+            leaders: Trick leader per sample (N,)
+            trick_players: Player who made each trick play (N, 3), -1 if no play
+            trick_dominoes: Domino played in each trick position (N, 3), -1 if no play
+            players: Player perspective for value computation (N,)
+
+        Returns:
+            values: (N,) tensor of values in [-1, 1]
+        """
+        n = original_hands.shape[0]
+        device = original_hands.device
+
+        # Compute remaining bitmask on GPU
+        remaining = compute_remaining_bitmask_gpu(original_hands, current_hands)
+
+        # GPU tokenization
+        tokens, masks = self.oracle.gpu_tokenizer.tokenize(
+            worlds=original_hands,
+            decl_ids=decl_ids,
+            actors=actors,
+            leaders=leaders,
+            remaining=remaining,
+            trick_players=trick_players,
+            trick_dominoes=trick_dominoes,
+        )
+
+        # Forward pass
+        with torch.inference_mode():
+            q_values, _ = self.oracle.model(tokens, masks, actors.long())
+
+        # Compute legal mask on GPU
+        legal_mask = compute_legal_mask_gpu(original_hands, current_hands, actors)
+
+        # Mask illegal actions and get max
+        masked_q = q_values.clone()
+        masked_q[~legal_mask] = float('-inf')
+        best_q = masked_q.max(dim=1).values
+
+        # Flip sign for Team 1 players
+        team1_mask = (players % 2) == 1
+        best_q = torch.where(team1_mask, -best_q, best_q)
+
+        # Normalize to [-1, 1]
+        return best_q / 42.0
 
     def _convert_state(self, state: GameState) -> tuple:
         """Convert GameState to oracle query format.

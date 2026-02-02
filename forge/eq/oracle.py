@@ -14,6 +14,7 @@ import numpy as np
 import torch
 from torch import Tensor
 
+from forge.eq.gpu_tokenizer import GPUTokenizer, convert_trick_plays_to_tensors
 from forge.ml.module import DominoLightningModule
 from forge.ml.tokenize import (
     COUNT_VALUE_MAP,
@@ -92,7 +93,14 @@ class Stage1Oracle:
     _local_indices = np.tile(np.arange(7, dtype=np.int32), 4)  # (28,)
     _player_for_token = _player_ids  # (28,)
 
-    def __init__(self, checkpoint_path: str | Path, device: str = "cuda", compile: bool = True, use_async: bool = True):
+    def __init__(
+        self,
+        checkpoint_path: str | Path,
+        device: str = "cuda",
+        compile: bool = True,
+        use_async: bool = True,
+        use_gpu_tokenizer: bool = True,
+    ):
         """Load model from checkpoint.
 
         Args:
@@ -102,6 +110,8 @@ class Stage1Oracle:
                      Only applied on CUDA devices. Disable for testing/debugging.
             use_async: Whether to use async CUDA streams for overlapped execution (default True).
                        Only applies to CUDA devices. Requires pin_memory for host tensors.
+            use_gpu_tokenizer: Whether to use GPU-accelerated tokenization (default True).
+                               Only applies to CUDA devices. Eliminates CPU tokenization bottleneck.
         """
         # Load checkpoint directly, bypassing Lightning's on_load_checkpoint
         # which has RNG state compatibility issues. For inference we only need weights.
@@ -159,6 +169,11 @@ class Stage1Oracle:
             self._pinned_tokens: Tensor | None = None
             self._pinned_masks: Tensor | None = None
             self._pinned_size = 0
+
+        # GPU tokenizer for eliminating CPU bottleneck
+        self.use_gpu_tokenizer = use_gpu_tokenizer and device == "cuda"
+        if self.use_gpu_tokenizer:
+            self.gpu_tokenizer = GPUTokenizer(device=device)
 
         # Apply torch.compile for GPU optimization (CUDA graph + reduced overhead)
         # Only compile on CUDA devices - CPU/MPS have compatibility issues
@@ -592,7 +607,18 @@ class Stage1Oracle:
         else:
             decl_ids_array = decl_ids.astype(np.int32)
 
-        # Tokenize with per-sample states
+        # GPU tokenization path: everything on GPU, no CPU bottleneck
+        if self.use_gpu_tokenizer:
+            return self._query_batch_multi_state_gpu(
+                worlds=worlds,
+                decl_ids=decl_ids_array,
+                actors=actors,
+                leaders=leaders,
+                trick_plays_list=trick_plays_list,
+                remaining=remaining,
+            )
+
+        # CPU tokenization path (fallback)
         tokens, masks = self._tokenize_worlds_multi_state(
             worlds=worlds,
             decl_ids=decl_ids_array,
@@ -616,6 +642,61 @@ class Stage1Oracle:
             q_values, _ = self.model(tokens, masks, actors_tensor)
 
         # Clone output to avoid CUDA graph tensor reuse issues with mode="reduce-overhead"
+        return q_values.clone()
+
+    def _query_batch_multi_state_gpu(
+        self,
+        worlds: list[list[list[int]]],
+        decl_ids: np.ndarray,
+        actors: np.ndarray,
+        leaders: np.ndarray,
+        trick_plays_list: list[list[tuple[int, int]]],
+        remaining: np.ndarray,
+    ) -> Tensor:
+        """GPU-accelerated multi-state query with on-GPU tokenization.
+
+        Eliminates CPU tokenization bottleneck by doing all work on GPU.
+
+        Args:
+            worlds: List of N world states (4 hands of 7 dominoes each)
+            decl_ids: (N,) array of declaration IDs
+            actors: (N,) array of current player IDs
+            leaders: (N,) array of leader player IDs
+            trick_plays_list: List of N trick_plays, each is [(player, domino_id), ...]
+            remaining: (N, 4) array of remaining domino bitmasks
+
+        Returns:
+            Tensor of shape (N, 7) with Q-values for each sample
+        """
+        n_samples = len(worlds)
+
+        # Convert inputs to GPU tensors
+        worlds_tensor = torch.tensor(worlds, dtype=torch.int32, device=self.device)
+        decl_ids_tensor = torch.from_numpy(decl_ids).to(self.device)
+        actors_tensor = torch.from_numpy(actors.astype(np.int32)).to(self.device)
+        leaders_tensor = torch.from_numpy(leaders.astype(np.int32)).to(self.device)
+        remaining_tensor = torch.from_numpy(remaining).to(self.device)
+
+        # Convert trick plays to tensors
+        trick_players, trick_dominoes = convert_trick_plays_to_tensors(
+            trick_plays_list, device=self.device
+        )
+
+        # GPU tokenization
+        tokens, masks = self.gpu_tokenizer.tokenize(
+            worlds=worlds_tensor,
+            decl_ids=decl_ids_tensor,
+            actors=actors_tensor,
+            leaders=leaders_tensor,
+            remaining=remaining_tensor,
+            trick_players=trick_players,
+            trick_dominoes=trick_dominoes,
+        )
+
+        # Run forward pass
+        with torch.inference_mode():
+            q_values, _ = self.model(tokens, masks, actors_tensor.long())
+
         return q_values.clone()
 
     def _query_batch_multi_state_async(
