@@ -174,51 +174,49 @@ class GPUTokenizer:
         tokens[:, 0, 11] = normalized_leaders
         masks[:, 0] = 1
 
-        # === Trick tokens (positions 29-31) ===
+        # === Trick tokens (positions 29-31) - fully vectorized ===
         if trick_players is not None and trick_dominoes is not None:
-            max_tricks = trick_players.shape[1]
+            # Process all 3 trick positions at once
+            # trick_players: (N, 3), trick_dominoes: (N, 3)
 
-            for trick_pos in range(min(max_tricks, 3)):
-                token_idx = 29 + trick_pos
+            # Valid mask for each position: (N, 3)
+            valid = trick_dominoes >= 0
 
-                # Get player and domino for this trick position
-                play_player = trick_players[:, trick_pos]  # (N,)
-                domino_id = trick_dominoes[:, trick_pos]  # (N,)
+            # Clamp domino IDs for safe indexing
+            safe_domino_ids = trick_dominoes.clamp(min=0)  # (N, 3)
 
-                # Valid mask: where there's actually a play
-                valid = domino_id >= 0  # (N,)
+            # Get features for all trick positions: (N, 3, 5)
+            # Index: domino_features[decl_ids[i], safe_domino_ids[i, j]]
+            # Expand decl_ids: (N,) -> (N, 3)
+            decl_ids_expanded = decl_ids.unsqueeze(1).expand(-1, 3)
+            trick_features = self.domino_features[decl_ids_expanded, safe_domino_ids]  # (N, 3, 5)
 
-                if not valid.any():
-                    continue
+            # Normalized players: (N, 3)
+            normalized_pp = (trick_players - actors.unsqueeze(1) + 4) % 4
 
-                # Get domino features for valid plays
-                # Need to handle -1 domino_ids - clamp to 0 for indexing, mask later
-                safe_domino_id = domino_id.clamp(min=0)
-                trick_features = self.domino_features[decl_ids, safe_domino_id]  # (N, 5)
+            # Token type for each position: TOKEN_TYPE_TRICK_P0 + [0, 1, 2]
+            trick_token_types = torch.tensor(
+                [TOKEN_TYPE_TRICK_P0, TOKEN_TYPE_TRICK_P0 + 1, TOKEN_TYPE_TRICK_P0 + 2],
+                dtype=torch.int32, device=trick_players.device
+            ).unsqueeze(0).expand(n, -1)  # (N, 3)
 
-                # Normalized player
-                normalized_pp = (play_player - actors + 4) % 4
+            # Build trick tokens: (N, 3, 12)
+            trick_tokens = torch.zeros((n, 3, N_FEATURES), dtype=torch.int32, device=trick_players.device)
+            trick_tokens[:, :, 0:5] = trick_features
+            trick_tokens[:, :, 5] = normalized_pp
+            trick_tokens[:, :, 6] = (normalized_pp == 0).int()
+            trick_tokens[:, :, 7] = (normalized_pp == 2).int()
+            trick_tokens[:, :, 8] = 0  # Not in hand
+            trick_tokens[:, :, 9] = trick_token_types
+            trick_tokens[:, :, 10] = decl_ids.unsqueeze(1).expand(-1, 3)
+            trick_tokens[:, :, 11] = normalized_leaders.unsqueeze(1).expand(-1, 3)
 
-                # Set features (only for valid plays)
-                tokens[:, token_idx, 0:5] = torch.where(
-                    valid.unsqueeze(1).expand(-1, 5),
-                    trick_features,
-                    tokens[:, token_idx, 0:5]
-                )
-                tokens[:, token_idx, 5] = torch.where(valid, normalized_pp, tokens[:, token_idx, 5])
-                tokens[:, token_idx, 6] = torch.where(valid, (normalized_pp == 0).int(), tokens[:, token_idx, 6])
-                tokens[:, token_idx, 7] = torch.where(valid, (normalized_pp == 2).int(), tokens[:, token_idx, 7])
-                tokens[:, token_idx, 8] = 0  # Not in hand
-                tokens[:, token_idx, 9] = torch.where(
-                    valid,
-                    torch.full_like(play_player, TOKEN_TYPE_TRICK_P0 + trick_pos),
-                    tokens[:, token_idx, 9]
-                )
-                tokens[:, token_idx, 10] = torch.where(valid, decl_ids, tokens[:, token_idx, 10])
-                tokens[:, token_idx, 11] = torch.where(valid, normalized_leaders, tokens[:, token_idx, 11])
+            # Apply valid mask: only set tokens where there's a play
+            valid_expanded = valid.unsqueeze(-1).expand(-1, -1, N_FEATURES)  # (N, 3, 12)
+            tokens[:, 29:32, :] = torch.where(valid_expanded, trick_tokens, tokens[:, 29:32, :])
 
-                # Set mask for valid plays
-                masks[:, token_idx] = valid.int()
+            # Set masks for valid plays
+            masks[:, 29:32] = valid.int()
 
         return tokens, masks
 

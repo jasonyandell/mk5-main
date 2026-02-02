@@ -280,7 +280,7 @@ This provides ~6x speedup over sequential evaluation.
 | Method | Throughput | GPU Util | Notes |
 |--------|-----------|----------|-------|
 | `batch_evaluate_with_originals()` | ~6,200/s | 92% | GameState objects |
-| `batch_evaluate_gpu()` | ~6,900/s | **96%** | GPU tensors, fully GPU-native |
+| `batch_evaluate_gpu()` | ~7,300/s | **97%** | GPU tensors, fully GPU-native |
 | Pure forward pass | ~6,600/s | 98% | Theoretical max |
 
 **GPU-native path achieves 96% utilization**. The `batch_evaluate_gpu()` method takes pre-built GPU tensors and does all computation on GPU:
