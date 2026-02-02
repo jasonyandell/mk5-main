@@ -99,3 +99,8 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 ## ML Training (Crystal Forge)
 
 See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture, setup, and commands.
+
+**Running overnight jobs**: Always use `python -u` (unbuffered) so logs stream in real-time:
+```bash
+nohup python -u -m forge.zeb.run_mcts_training [args] > scratch/training.log 2>&1 &
+```
