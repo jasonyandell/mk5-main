@@ -23,6 +23,7 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 from .mcts_self_play import play_games_with_mcts, mcts_examples_to_zeb_tensors
+from .batched_mcts import play_games_batched
 from .model import ZebModel, get_model_config
 from .observation import observe, N_HAND_SLOTS
 from .types import ZebGameState, GamePhase, BidState
@@ -193,6 +194,11 @@ def main():
                         help='W&B project name')
     parser.add_argument('--run-name', type=str, default=None,
                         help='W&B run name (auto-generated if not provided)')
+    # Cross-game leaf batching parameters (for future batched oracle implementation)
+    parser.add_argument('--n-parallel-games', type=int, default=16,
+                        help='Number of concurrent MCTS games for cross-game batching')
+    parser.add_argument('--cross-game-batch-size', type=int, default=512,
+                        help='Target batch size for oracle evaluation across games')
     args = parser.parse_args()
 
     # Initialize W&B
@@ -214,6 +220,8 @@ def main():
                 'model_size': args.model_size,
                 'use_oracle': args.use_oracle,
                 'device': args.device,
+                'n_parallel_games': args.n_parallel_games,
+                'cross_game_batch_size': args.cross_game_batch_size,
             },
         )
         print(f"W&B run: {wandb.run.url}")
@@ -258,13 +266,15 @@ def main():
     for epoch in range(args.epochs):
         t0 = time.time()
 
-        # Generate games with MCTS
-        games = play_games_with_mcts(
+        # Generate games with MCTS (cross-game batched for GPU efficiency)
+        games = play_games_batched(
             n_games=args.games_per_epoch,
             n_simulations=args.n_simulations,
             temperature=args.temperature,
             base_seed=epoch * args.games_per_epoch,
             value_fn=value_fn,
+            n_parallel_games=args.n_parallel_games,
+            target_batch_size=args.cross_game_batch_size,
         )
         gen_time = time.time() - t0
 
