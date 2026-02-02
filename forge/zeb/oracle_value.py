@@ -196,33 +196,32 @@ class OracleValueFunction:
             remaining=remaining,
         )
 
-        # Post-process: extract max legal Q-value for each state
-        values = []
+        # Vectorized post-processing: extract max legal Q-value for each state
+        # Build legal mask on CPU with numpy, then transfer once to GPU
+        legal_mask_np = np.zeros((n, 7), dtype=bool)
         for i in range(n):
             original_hand = original_hands_list[i][actors[i]]
             legal_actions = legal_actions_list[i]
-
-            # Build legal mask
-            legal_mask = torch.zeros(7, dtype=torch.bool, device=q_values.device)
             for local_idx, domino_id in enumerate(original_hand):
                 if domino_id in legal_actions:
-                    legal_mask[local_idx] = True
+                    legal_mask_np[i, local_idx] = True
 
-            # Mask illegal actions
-            masked_q = q_values[i].clone()
-            masked_q[~legal_mask] = float('-inf')
+        legal_mask = torch.from_numpy(legal_mask_np).to(q_values.device)
 
-            # Best Q-value (from Team 0's perspective)
-            best_q = masked_q.max().item()
+        # Mask illegal actions with -inf (vectorized)
+        masked_q = q_values.clone()
+        masked_q[~legal_mask] = float('-inf')
 
-            # Flip sign if player is on Team 1
-            if players[i] % 2 == 1:
-                best_q = -best_q
+        # Get best Q-value per state (vectorized)
+        best_q = masked_q.max(dim=1).values  # (n,)
 
-            # Normalize to [-1, 1]
-            values.append(best_q / 42.0)
+        # Flip sign for Team 1 players (vectorized)
+        players_arr = np.array(players)
+        team1_mask = torch.from_numpy(players_arr % 2 == 1).to(q_values.device)
+        best_q[team1_mask] = -best_q[team1_mask]
 
-        return values
+        # Normalize and convert to list
+        return (best_q / 42.0).cpu().tolist()
 
     def batch_evaluate_with_originals(
         self,
@@ -318,33 +317,32 @@ class OracleValueFunction:
             remaining=remaining,
         )
 
-        # Post-process: extract max legal Q-value for each state
-        values = []
+        # Vectorized post-processing: extract max legal Q-value for each state
+        # Build legal mask on CPU with numpy, then transfer once to GPU
+        legal_mask_np = np.zeros((n, 7), dtype=bool)
         for i in range(n):
             original_hand = original_hands_list[i][actors[i]]
             legal_actions = legal_actions_list[i]
-
-            # Build legal mask
-            legal_mask = torch.zeros(7, dtype=torch.bool, device=q_values.device)
             for local_idx, domino_id in enumerate(original_hand):
                 if domino_id in legal_actions:
-                    legal_mask[local_idx] = True
+                    legal_mask_np[i, local_idx] = True
 
-            # Mask illegal actions
-            masked_q = q_values[i].clone()
-            masked_q[~legal_mask] = float('-inf')
+        legal_mask = torch.from_numpy(legal_mask_np).to(q_values.device)
 
-            # Best Q-value (from Team 0's perspective)
-            best_q = masked_q.max().item()
+        # Mask illegal actions with -inf (vectorized)
+        masked_q = q_values.clone()
+        masked_q[~legal_mask] = float('-inf')
 
-            # Flip sign if player is on Team 1
-            if players[i] % 2 == 1:
-                best_q = -best_q
+        # Get best Q-value per state (vectorized)
+        best_q = masked_q.max(dim=1).values  # (n,)
 
-            # Normalize to [-1, 1]
-            values.append(best_q / 42.0)
+        # Flip sign for Team 1 players (vectorized)
+        players_arr = np.array(players)
+        team1_mask = torch.from_numpy(players_arr % 2 == 1).to(q_values.device)
+        best_q[team1_mask] = -best_q[team1_mask]
 
-        return values
+        # Normalize and convert to list
+        return (best_q / 42.0).cpu().tolist()
 
     def _convert_state(self, state: GameState) -> tuple:
         """Convert GameState to oracle query format.

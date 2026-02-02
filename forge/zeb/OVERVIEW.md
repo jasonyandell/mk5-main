@@ -97,11 +97,11 @@ value = value_fn(state, player)  # Returns float in [-1, 1]
 # For batched MCTS (much faster):
 values = value_fn.batch_evaluate(states, players)  # Returns list of floats
 
-# Optimized version when caller has original hands (e.g., from ActiveGame):
+# Alternative when caller has original hands (e.g., from ActiveGame):
 values = value_fn.batch_evaluate_with_originals(states, players, original_hands_list)
 ```
 
-The `batch_evaluate_with_originals()` method skips expensive hand reconstruction when the caller already has access to original hands, providing ~6x speedup.
+Note: `batch_evaluate_with_originals()` accepts pre-computed original hands. Both methods use vectorized post-processing for efficient GPU utilization.
 
 ### `batched_mcts.py` - Cross-Game Batching
 
@@ -279,13 +279,12 @@ This provides ~6x speedup over sequential evaluation.
 
 | Method | States/sec | Notes |
 |--------|-----------|-------|
-| `batch_evaluate()` (original) | ~1,200 | Hand reconstruction bottleneck |
-| `batch_evaluate_with_originals()` | ~7,000+ | Skips reconstruction |
-| GPU-only (`query_batch_multi_state`) | ~6,250 | Theoretical max |
+| `batch_evaluate()` | ~3,500 | With vectorized post-processing |
+| `batch_evaluate_with_originals()` | ~3,500 | Same |
 
 Key optimizations:
-1. **Cached original hands**: `ActiveGame` stores original hands; passed to `batch_evaluate_with_originals()` to skip expensive reconstruction (~6x speedup)
-2. **Vectorized bitmask**: Numpy broadcasting replaces nested Python loops for remaining-domino computation
+1. **Vectorized post-processing**: Legal mask built in batch on CPU, single GPU max() call
+2. **Vectorized bitmask**: Numpy broadcasting for remaining-domino computation
 3. **Async double-buffering**: CUDA streams overlap CPU preprocessing with GPU evaluation
 
 ### Training example generation
