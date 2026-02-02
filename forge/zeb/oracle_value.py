@@ -127,12 +127,10 @@ class OracleValueFunction:
         self.query_count += n
 
         # Prepare batch inputs
-        worlds = []
         decl_ids = np.zeros(n, dtype=np.int32)
         actors = np.zeros(n, dtype=np.int32)
         leaders = np.zeros(n, dtype=np.int32)
         trick_plays_list = []
-        remaining = np.zeros((n, 4), dtype=np.int64)
 
         # Also track original hands and legal actions for post-processing
         original_hands_list = []
@@ -142,7 +140,6 @@ class OracleValueFunction:
             # Reconstruct original hands
             original_hands = self._reconstruct_original_hands(state)
             original_hands_list.append(original_hands)
-            worlds.append(original_hands)
 
             # Game state info
             current_player = state.current_player()
@@ -154,16 +151,162 @@ class OracleValueFunction:
             trick_plays = [(p, d) for p, d in state.current_trick]
             trick_plays_list.append(trick_plays)
 
-            # Remaining bitmask
+            # Legal actions for post-processing
+            legal_actions_list.append(set(state.legal_actions()))
+
+        # Vectorized remaining bitmask computation
+        # Convert original_hands_list to numpy array (n, 4, 7)
+        original_hands_arr = np.array(original_hands_list, dtype=np.int64)
+
+        # Build current hands array with -1 padding for empty slots
+        # Max hand size is 7, but current hands may have fewer dominoes
+        current_hands_arr = np.full((n, 4, 7), -1, dtype=np.int64)
+        for i, state in enumerate(states):
             for p in range(4):
-                original_hand = original_hands[p]
-                current_hand = set(state.hands[p])
-                for local_idx, d in enumerate(original_hand):
-                    if d in current_hand:
-                        remaining[i, p] |= (1 << local_idx)
+                hand = state.hands[p]
+                current_hands_arr[i, p, :len(hand)] = hand
+
+        # For each position in original hand, check if that domino is in current hand
+        # original_hands_arr: (n, 4, 7) - the domino IDs
+        # current_hands_arr: (n, 4, 7) - current dominoes with -1 padding
+        # We need to check if original_hands_arr[i, p, j] is in current_hands_arr[i, p, :]
+
+        # Expand dimensions for broadcasting:
+        # original_hands_arr[:, :, :, np.newaxis] -> (n, 4, 7, 1)
+        # current_hands_arr[:, :, np.newaxis, :] -> (n, 4, 1, 7)
+        # Compare: (n, 4, 7, 7) -> any match along last axis -> (n, 4, 7) bool
+        in_hand = np.any(
+            original_hands_arr[:, :, :, np.newaxis] == current_hands_arr[:, :, np.newaxis, :],
+            axis=3
+        )  # Shape: (n, 4, 7)
+
+        # Convert boolean mask to bitmask
+        # in_hand[i, p, j] is True if original hand position j is still in current hand
+        # We need remaining[i, p] = sum over j of (in_hand[i, p, j] << j)
+        bit_positions = np.array([1 << j for j in range(7)], dtype=np.int64)  # [1, 2, 4, 8, 16, 32, 64]
+        remaining = np.sum(in_hand * bit_positions, axis=2)  # Shape: (n, 4)
+
+        # Query oracle in batch
+        q_values = self.oracle.query_batch_multi_state(
+            worlds=original_hands_list,
+            decl_ids=decl_ids,
+            actors=actors,
+            leaders=leaders,
+            trick_plays_list=trick_plays_list,
+            remaining=remaining,
+        )
+
+        # Post-process: extract max legal Q-value for each state
+        values = []
+        for i in range(n):
+            original_hand = original_hands_list[i][actors[i]]
+            legal_actions = legal_actions_list[i]
+
+            # Build legal mask
+            legal_mask = torch.zeros(7, dtype=torch.bool, device=q_values.device)
+            for local_idx, domino_id in enumerate(original_hand):
+                if domino_id in legal_actions:
+                    legal_mask[local_idx] = True
+
+            # Mask illegal actions
+            masked_q = q_values[i].clone()
+            masked_q[~legal_mask] = float('-inf')
+
+            # Best Q-value (from Team 0's perspective)
+            best_q = masked_q.max().item()
+
+            # Flip sign if player is on Team 1
+            if players[i] % 2 == 1:
+                best_q = -best_q
+
+            # Normalize to [-1, 1]
+            values.append(best_q / 42.0)
+
+        return values
+
+    def batch_evaluate_with_originals(
+        self,
+        states: list[GameState],
+        players: list[int],
+        original_hands_list: list[list[list[int]]],
+    ) -> list[float]:
+        """Batch evaluate multiple states with pre-computed original hands.
+
+        This is an optimized version of batch_evaluate() that accepts original
+        hands as a parameter instead of reconstructing them. Use this when the
+        caller already has access to original hands (e.g., from ActiveGame).
+
+        Args:
+            states: List of game states to evaluate
+            players: List of players whose perspective to evaluate from
+            original_hands_list: List of original hands for each state.
+                Each element is a list of 4 hands (one per player),
+                where each hand is a list of 7 domino IDs.
+
+        Returns:
+            List of values in [-1, 1] range
+        """
+        if not states:
+            return []
+
+        n = len(states)
+        self.query_count += n
+
+        # Prepare batch inputs
+        worlds = original_hands_list  # Already in correct format
+        decl_ids = np.zeros(n, dtype=np.int32)
+        actors = np.zeros(n, dtype=np.int32)
+        leaders = np.zeros(n, dtype=np.int32)
+        trick_plays_list = []
+
+        # Track legal actions for post-processing
+        legal_actions_list = []
+
+        for i, state in enumerate(states):
+            # Game state info
+            current_player = state.current_player()
+            decl_ids[i] = state.decl_id
+            actors[i] = current_player
+            leaders[i] = state.leader
+
+            # Trick plays
+            trick_plays = [(p, d) for p, d in state.current_trick]
+            trick_plays_list.append(trick_plays)
 
             # Legal actions for post-processing
             legal_actions_list.append(set(state.legal_actions()))
+
+        # Vectorized remaining bitmask computation
+        # Convert original_hands_list to numpy array (n, 4, 7)
+        original_hands_arr = np.array(original_hands_list, dtype=np.int64)
+
+        # Build current hands array with -1 padding for empty slots
+        # Max hand size is 7, but current hands may have fewer dominoes
+        current_hands_arr = np.full((n, 4, 7), -1, dtype=np.int64)
+        for i, state in enumerate(states):
+            for p in range(4):
+                hand = state.hands[p]
+                current_hands_arr[i, p, :len(hand)] = hand
+
+        # For each position in original hand, check if that domino is in current hand
+        # original_hands_arr: (n, 4, 7) - the domino IDs
+        # current_hands_arr: (n, 4, 7) - current dominoes with -1 padding
+        # We need to check if original_hands_arr[i, p, j] is in current_hands_arr[i, p, :]
+
+        # Expand dimensions for broadcasting:
+        # original_hands_arr[:, :, :, np.newaxis] -> (n, 4, 7, 1)
+        # current_hands_arr[:, :, np.newaxis, :] -> (n, 4, 1, 7)
+        # Compare: (n, 4, 7, 7) -> any match along last axis -> (n, 4, 7) bool
+        in_hand = np.any(
+            original_hands_arr[:, :, :, np.newaxis] == current_hands_arr[:, :, np.newaxis, :],
+            axis=3
+        )  # Shape: (n, 4, 7)
+
+        # Convert boolean mask to bitmask
+        # in_hand[i, p, j] is True if original hand position j is still in current hand
+        # We need remaining[i, p] = sum over j of (in_hand[i, p, j] << j)
+        bit_positions = np.array([1 << j for j in range(7)], dtype=np.int64)  # [1, 2, 4, 8, 16, 32, 64]
+        remaining = np.sum(in_hand * bit_positions, axis=2)  # Shape: (n, 4)
 
         # Query oracle in batch
         q_values = self.oracle.query_batch_multi_state(
