@@ -277,15 +277,18 @@ This provides ~6x speedup over sequential evaluation.
 
 ### Oracle throughput
 
-| Method | States/sec | Notes |
-|--------|-----------|-------|
-| `batch_evaluate()` | ~3,500 | With vectorized post-processing |
-| `batch_evaluate_with_originals()` | ~3,500 | Same |
+| Batch Size | Throughput | GPU Util | Notes |
+|------------|-----------|----------|-------|
+| 256 | ~5,200/s | 81% | Smaller batches underutilize GPU |
+| 512 | ~5,800/s | 84% | Default target batch size |
+| 1024+ | ~6,200/s | 86% | Plateau - CPU-bound tokenization limits further improvement |
+
+**GPU utilization ceiling: ~86%**. The remaining ~14% is CPU-bound tokenization inside `query_batch_multi_state`. True 100% would require overlapping tokenization of batch N+1 with GPU inference on batch N.
 
 Key optimizations:
 1. **Vectorized post-processing**: Legal mask built in batch on CPU, single GPU max() call
 2. **Vectorized bitmask**: Numpy broadcasting for remaining-domino computation
-3. **Async double-buffering**: CUDA streams overlap CPU preprocessing with GPU evaluation
+3. **Async double-buffering**: CUDA streams for data transfer (but tokenization still serial)
 
 ### Training example generation
 
