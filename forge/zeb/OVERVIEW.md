@@ -223,6 +223,7 @@ python -u -m forge.zeb.run_selfplay_training \
 | `--eval-every` | 5 | Evaluate vs random every N epochs |
 | `--save-every` | 5 | Save checkpoint every N epochs |
 | `--keep-checkpoints` | 0 | Keep only last N checkpoints (0 = keep all) |
+| `--replay-buffer-size` | 50000 | Replay buffer size (0 = no buffer) |
 | `--wandb/--no-wandb` | True | Enable W&B logging |
 | `--run-name` | auto | W&B run name (auto-generates timestamp) |
 
@@ -233,34 +234,36 @@ python -u -m forge.zeb.run_selfplay_training \
 
 | Parameter | Value | Notes |
 |-----------|-------|-------|
-| `--n-simulations` | 100 | Doubled from 50 after plateau |
+| `--n-simulations` | 200 | Increased for better MCTS quality |
 | `--n-parallel-games` | 256 | |
 | `--max-mcts-nodes` | 256 | |
-| `--games-per-epoch` | 128 | |
+| `--games-per-epoch` | 256 | Matched to parallel games for full GPU utilization |
 | `--batch-size` | 64 | |
 | `--lr` | 1e-4 | |
 | `--eval-every` | 1 | |
 | `--save-every` | 1 | |
 | `--keep-checkpoints` | 3 | |
+| `--replay-buffer-size` | 50000 | ~7 epochs of history for stable training |
 
-**Performance**: ~4.5 games/s, ~31s/epoch total
-- Game generation: ~28s
-- Training: ~1s
-- Eval (100 games): <2s (batched, 12x faster than sequential)
+**Performance**: ~3.1 games/s, ~86s/epoch total
+- Game generation: ~80s (200 sims)
+- Training: ~2.5s
+- Eval (100 games): ~2s (batched)
 
-**Progress** (as of epoch 392):
-- Win rate vs random (pair): ~55-70% (varies)
+**Progress** (as of epoch 1620):
+- Win rate vs random (pair): ~65-70%
 - Win rate vs random (solo): ~64%
-- Total games: ~340k+
+- Total games: ~400k+
+- Replay buffer: 50k examples (full)
 - Target: 100,000 epochs (runs indefinitely until stopped)
 
 **Resume command**:
 ```bash
 nohup python -u -m forge.zeb.run_selfplay_training \
-  --checkpoint forge/zeb/checkpoints/selfplay-epoch0391.pt \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch1620.pt \
   --epochs 100000 \
-  --games-per-epoch 128 \
-  --n-simulations 100 \
+  --games-per-epoch 256 \
+  --n-simulations 200 \
   --n-parallel-games 256 \
   --max-mcts-nodes 256 \
   --lr 1e-4 \
@@ -268,6 +271,7 @@ nohup python -u -m forge.zeb.run_selfplay_training \
   --eval-every 1 \
   --save-every 1 \
   --keep-checkpoints 3 \
+  --replay-buffer-size 50000 \
   --wandb \
   >> scratch/selfplay-500ep.log 2>&1 &
 ```
@@ -278,19 +282,25 @@ Self-play saves checkpoints as `selfplay-epoch{N:04d}.pt`. To continue training,
 
 ```bash
 python -u -m forge.zeb.run_selfplay_training \
-    --checkpoint forge/zeb/checkpoints/selfplay-epoch0375.pt \
-    --epochs 500 \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch1620.pt \
+    --epochs 100000 \
     --keep-checkpoints 3 \
+    --replay-buffer-size 50000 \
     [...]
 ```
 
 **W&B auto-resume**: If the checkpoint contains a `wandb_run_id`, the script automatically resumes that W&B run. No manual intervention needed - just pass the checkpoint and training continues with the same graphs and metrics.
 
+**Replay buffer auto-resume**: The replay buffer is saved in checkpoints and restored on resume. Training continues with the full buffer of historical examples.
+
 Checkpoints include:
 - Model and optimizer state
 - Total games played (cumulative across all training runs)
 - W&B run ID for seamless logging continuation
+- Replay buffer (list of recent training examples)
 - Training config (mode, source checkpoint, hyperparameters)
+
+**Note**: Checkpoint size is ~47 MB with a 50k replay buffer (vs ~6.5 MB without).
 
 ---
 
@@ -300,14 +310,24 @@ Checkpoints include:
 
 Training uses true self-play: the model guides MCTS with policy priors and evaluates leaves with its value head, then learns from MCTS visit targets and final outcomes. This keeps the entire loop on GPU and continuously improves checkpoints over time.
 
-### 2. Observation encoding: 36x8 tokens preserving play order
+### 2. Replay buffer for stable training
+
+Instead of training only on current epoch's games, we maintain a rolling buffer of ~50k recent examples (~7 epochs). Benefits:
+- **Decorrelates examples**: Random sampling breaks temporal correlation within games
+- **Smoother gradients**: Training distribution changes gradually, not abruptly each epoch
+- **Data efficiency**: Each example trains the model multiple times before eviction
+- **Stability**: Prevents policy oscillation from training on single-policy batches
+
+The buffer is persisted in checkpoints for seamless resume.
+
+### 3. Observation encoding: 36x8 tokens preserving play order
 
 The encoding preserves the temporal structure of play:
 - Hand slots are fixed (indices 1-7) so the model learns slot-based policies
 - Play history appears in order (indices 8-35) for pattern recognition
 - Relative player IDs (0=me, 1=left, 2=partner, 3=right) for position-invariant learning
 
-### 3. Domino ID to slot mapping
+### 4. Domino ID to slot mapping
 
 MCTS operates on domino IDs (0-27) because `GameState` uses domino IDs for actions. But ZebModel outputs slot logits (0-6) because the observation encoding uses fixed hand slots.
 
@@ -320,7 +340,7 @@ domino_to_slot = {5: 0, 12: 1, 18: 2, 23: 3, 24: 4, 26: 5, 27: 6}
 # Training target: slot 2 gets 40%
 ```
 
-### 4. Batched leaf evaluation
+### 5. Batched leaf evaluation
 
 Single-leaf oracle queries underutilize the GPU. The batched MCTS implementation:
 

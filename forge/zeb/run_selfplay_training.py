@@ -9,9 +9,15 @@ Key difference from oracle training:
 
 The model's value head is now IN the MCTS loop, so it must learn to provide
 useful evaluations for MCTS to work.
+
+Features:
+- Replay buffer: Stores recent examples for more stable training (AlphaZero-style)
+- Checkpointing: Saves model, optimizer, and replay buffer for seamless resume
 """
 import argparse
+import random
 import time
+from collections import deque
 from datetime import datetime
 from pathlib import Path
 
@@ -76,6 +82,7 @@ def load_model_from_checkpoint(
         'training_config': ckpt.get('config', {}),
         'total_games': total_games,
         'wandb_run_id': ckpt.get('wandb_run_id'),
+        'replay_buffer': ckpt.get('replay_buffer', []),  # List of example dicts
     }
 
     return model, metadata
@@ -119,6 +126,10 @@ def main():
                         help='Save checkpoint every N epochs')
     parser.add_argument('--keep-checkpoints', type=int, default=0,
                         help='Keep only last N checkpoints (0 = keep all)')
+
+    # Replay buffer
+    parser.add_argument('--replay-buffer-size', type=int, default=50000,
+                        help='Size of replay buffer (0 = no buffer, train on current epoch only)')
 
     args = parser.parse_args()
 
@@ -183,6 +194,8 @@ def main():
     print(f"Parallel games: {args.n_parallel_games}")
     print(f"Max MCTS nodes: {args.max_mcts_nodes}")
     print(f"Learning rate: {args.lr}")
+    if args.replay_buffer_size > 0:
+        print(f"Replay buffer: {args.replay_buffer_size:,} examples")
     print()
 
     # Create self-play pipeline with the loaded model
@@ -205,6 +218,14 @@ def main():
     # Output directory for self-play checkpoints
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
+    # Replay buffer - stores recent examples for more stable training
+    use_replay_buffer = args.replay_buffer_size > 0
+    if use_replay_buffer:
+        replay_buffer = deque(metadata.get('replay_buffer', []), maxlen=args.replay_buffer_size)
+        print(f"Replay buffer: {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
+    else:
+        replay_buffer = None
+
     # Training loop - continue from checkpoint's epoch
     total_games = metadata['total_games']
 
@@ -220,15 +241,51 @@ def main():
         n_examples = examples.n_examples
         games_per_sec = args.games_per_epoch / gen_time
 
-        # Train on generated examples
+        # Add to replay buffer (convert to CPU for storage)
+        if use_replay_buffer:
+            for i in range(examples.n_examples):
+                replay_buffer.append({
+                    'obs': examples.observations[i].cpu(),
+                    'mask': examples.masks[i].cpu(),
+                    'hand_idx': examples.hand_indices[i].cpu(),
+                    'hand_mask': examples.hand_masks[i].cpu(),
+                    'policy': examples.policy_targets[i].cpu(),
+                    'value': examples.value_targets[i].cpu(),
+                })
+
+        # Train on examples (from replay buffer if enabled, else current epoch)
         t1 = time.time()
         model.train()  # Training mode
-        metrics = pipeline.train_epoch_gpu(
-            model=model,
-            optimizer=optimizer,
-            examples=examples,
-            batch_size=args.batch_size,
-        )
+
+        if use_replay_buffer and len(replay_buffer) >= args.batch_size:
+            # Sample from replay buffer
+            n_train = min(len(replay_buffer), n_examples)  # Train on same amount as generated
+            sampled = random.sample(list(replay_buffer), n_train)
+
+            # Stack into training batch
+            from .gpu_training_pipeline import GPUTrainingExample
+            train_examples = GPUTrainingExample(
+                observations=torch.stack([s['obs'] for s in sampled]).to(args.device),
+                masks=torch.stack([s['mask'] for s in sampled]).to(args.device),
+                hand_indices=torch.stack([s['hand_idx'] for s in sampled]).to(args.device),
+                hand_masks=torch.stack([s['hand_mask'] for s in sampled]).to(args.device),
+                policy_targets=torch.stack([s['policy'] for s in sampled]).to(args.device),
+                value_targets=torch.stack([s['value'] for s in sampled]).to(args.device),
+            )
+            metrics = pipeline.train_epoch_gpu(
+                model=model,
+                optimizer=optimizer,
+                examples=train_examples,
+                batch_size=args.batch_size,
+            )
+        else:
+            # No replay buffer or buffer too small - train on current epoch
+            metrics = pipeline.train_epoch_gpu(
+                model=model,
+                optimizer=optimizer,
+                examples=examples,
+                batch_size=args.batch_size,
+            )
         train_time = time.time() - t1
 
         # Update pipeline's model reference (model improved)
@@ -237,12 +294,13 @@ def main():
         # Epoch summary
         epoch_str = f"Epoch {epoch:3d}: policy_loss={metrics['policy_loss']:.4f}, value_loss={metrics['value_loss']:.4f}"
         epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.2f}s, {games_per_sec:.2f} games/s)"
-        epoch_str += f" [model queries: {pipeline.total_model_queries:,}]"
+        if use_replay_buffer:
+            epoch_str += f" [buffer: {len(replay_buffer):,}]"
         print(epoch_str)
 
         # Log to W&B
         if use_wandb:
-            wandb.log({
+            log_data = {
                 'epoch': epoch,
                 'train/policy_loss': metrics['policy_loss'],
                 'train/value_loss': metrics['value_loss'],
@@ -252,8 +310,10 @@ def main():
                 'perf/games_per_sec': games_per_sec,
                 'perf/examples': n_examples,
                 'stats/total_games': total_games,
-                'stats/total_model_queries': pipeline.total_model_queries,
-            })
+            }
+            if use_replay_buffer:
+                log_data['stats/replay_buffer_size'] = len(replay_buffer)
+            wandb.log(log_data)
 
         # Periodic evaluation
         if (epoch + 1) % args.eval_every == 0:
@@ -266,7 +326,7 @@ def main():
         # Save checkpoint
         if (epoch + 1) % args.save_every == 0:
             ckpt_path = args.output_dir / f"selfplay-epoch{epoch:04d}.pt"
-            torch.save({
+            ckpt_data = {
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
@@ -277,10 +337,15 @@ def main():
                     'games_per_epoch': args.games_per_epoch,
                     'n_simulations': args.n_simulations,
                     'lr': args.lr,
+                    'replay_buffer_size': args.replay_buffer_size,
                 },
                 'total_games': total_games,
                 'wandb_run_id': wandb.run.id if use_wandb else None,
-            }, ckpt_path)
+            }
+            # Save replay buffer (as list for serialization)
+            if use_replay_buffer:
+                ckpt_data['replay_buffer'] = list(replay_buffer)
+            torch.save(ckpt_data, ckpt_path)
             print(f"  Saved checkpoint: {ckpt_path.name}")
 
             # Cleanup old checkpoints if requested (sort by mtime, keep newest)
