@@ -18,6 +18,8 @@ from typing import TYPE_CHECKING
 import torch
 from torch import Tensor
 
+from forge.zeb.cuda_only import require_cuda
+
 if TYPE_CHECKING:
     from forge.eq.game import GameState
 
@@ -493,45 +495,43 @@ def apply_action_gpu(states: GPUGameState, actions: Tensor) -> GPUGameState:
     # Check if trick is complete (4 plays)
     trick_complete = new_trick_len == 4
 
-    # Resolve completed tricks
-    if trick_complete.any():
-        # Get dominoes in completed tricks
-        trick_dominoes = new_current_trick[:, :, 1]  # (N, 4)
+    # Resolve completed tricks (masked; avoids GPU->CPU sync from tensor.any()).
+    # Get dominoes in tricks
+    trick_dominoes = new_current_trick[:, :, 1]  # (N, 4)
 
-        # Compute ranks for all dominoes
-        lead_domino_complete = new_current_trick[:, 0, 1]  # (N,)
-        led_suit = led_suit_for_lead_domino_gpu(lead_domino_complete, states.decl_id, tables)
+    # Compute ranks for all dominoes
+    lead_domino_complete = new_current_trick[:, 0, 1]  # (N,)
+    led_suit = led_suit_for_lead_domino_gpu(lead_domino_complete, states.decl_id, tables)
 
-        # Expand for broadcast: (N, 4)
-        led_suit_exp = led_suit.unsqueeze(1).expand(-1, 4)
-        decl_exp = states.decl_id.unsqueeze(1).expand(-1, 4)
+    # Expand for broadcast: (N, 4)
+    led_suit_exp = led_suit.unsqueeze(1).expand(-1, 4)
+    decl_exp = states.decl_id.unsqueeze(1).expand(-1, 4)
 
-        ranks = trick_rank_gpu(trick_dominoes, led_suit_exp, decl_exp, tables)  # (N, 4)
+    ranks = trick_rank_gpu(trick_dominoes, led_suit_exp, decl_exp, tables)  # (N, 4)
 
-        # Find winner (highest rank)
-        winner_offset = ranks.argmax(dim=1).to(torch.int32)  # (N,)
+    # Find winner (highest rank)
+    winner_offset = ranks.argmax(dim=1).to(torch.int32)  # (N,)
 
-        # New leader is (old leader + winner_offset) % 4
-        winner_player = ((states.leader + winner_offset) % 4).to(torch.int32)
+    # New leader is (old leader + winner_offset) % 4
+    winner_player = ((states.leader + winner_offset) % 4).to(torch.int32)
 
-        # Compute points for this trick
-        points = _score_trick_gpu(trick_dominoes, tables)
+    # Compute points for this trick
+    points = _score_trick_gpu(trick_dominoes, tables)
 
-        # Update scores: team is player % 2
-        winner_team = winner_player % 2
-        team0_points = torch.where(winner_team == 0, points, torch.zeros_like(points))
-        team1_points = torch.where(winner_team == 1, points, torch.zeros_like(points))
+    # Update scores: team is player % 2
+    winner_team = winner_player % 2
+    team0_points = torch.where(winner_team == 0, points, torch.zeros_like(points))
+    team1_points = torch.where(winner_team == 1, points, torch.zeros_like(points))
 
-        # Apply updates only for complete tricks
-        new_leader = torch.where(trick_complete, winner_player, new_leader)
-        new_trick_len = torch.where(trick_complete, torch.zeros_like(new_trick_len), new_trick_len)
-        new_scores[:, 0] = new_scores[:, 0] + torch.where(trick_complete, team0_points, torch.zeros_like(team0_points))
-        new_scores[:, 1] = new_scores[:, 1] + torch.where(trick_complete, team1_points, torch.zeros_like(team1_points))
+    # Apply updates only for complete tricks
+    new_leader = torch.where(trick_complete, winner_player, new_leader)
+    new_trick_len = torch.where(trick_complete, torch.zeros_like(new_trick_len), new_trick_len)
+    new_scores[:, 0] = new_scores[:, 0] + torch.where(trick_complete, team0_points, torch.zeros_like(team0_points))
+    new_scores[:, 1] = new_scores[:, 1] + torch.where(trick_complete, team1_points, torch.zeros_like(team1_points))
 
-        # Clear current trick for completed games
-        # We need to zero out the trick slots for games where trick is complete
-        clear_mask = trick_complete.unsqueeze(1).unsqueeze(2)  # (N, 1, 1)
-        new_current_trick = torch.where(clear_mask, torch.zeros_like(new_current_trick), new_current_trick)
+    # Clear current trick for completed games
+    clear_mask = trick_complete.unsqueeze(1).unsqueeze(2)  # (N, 1, 1)
+    new_current_trick = torch.where(clear_mask, torch.zeros_like(new_current_trick), new_current_trick)
 
     return GPUGameState(
         hands=new_hands,
@@ -572,6 +572,8 @@ def deal_random_gpu(
     Returns:
         GPUGameState with N fresh deals
     """
+    device = require_cuda(device, where="deal_random_gpu")
+
     # Generate random permutations of 28 dominoes for each game
     # torch doesn't have direct batch permutation, so we use argsort of random values
     random_vals = torch.rand(n, 28, device=device)
@@ -638,7 +640,10 @@ def from_python_states(
     Returns:
         GPUGameState with equivalent state
     """
-    n = len(states)
+    raise RuntimeError(
+        "from_python_states() is disabled: GPU-native pipeline must not depend on CPU GameState "
+        "bootstrapping. Use deal_random_gpu() / GPU-native self-play instead."
+    )
 
     # Build hands array (N, 4, 7) with -1 padding
     hands_list = []

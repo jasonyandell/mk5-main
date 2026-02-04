@@ -62,6 +62,10 @@ class ZebModel(nn.Module):
         self.embeddings = ZebEmbeddings(embed_dim)
         self.pos_embed = nn.Embedding(max_tokens, embed_dim)
 
+        # Capture-safe positional indices (avoid per-forward torch.arange).
+        # Non-persistent so checkpoint compatibility is unchanged.
+        self.register_buffer("_pos_idx", torch.arange(max_tokens, dtype=torch.int64), persistent=False)
+
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=embed_dim,
             nhead=n_heads,
@@ -70,7 +74,13 @@ class ZebModel(nn.Module):
             batch_first=True,
             norm_first=True,  # Pre-LN for stability
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+        # Disable nested-tensor path for CUDA-graph capture stability.
+        self.encoder = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=n_layers,
+            enable_nested_tensor=False,
+            mask_check=False,
+        )
 
         # Policy head: projects hand slot tokens to action logits
         self.policy_proj = nn.Linear(embed_dim, 1)
@@ -101,7 +111,7 @@ class ZebModel(nn.Module):
         x = self.embeddings(tokens)  # [batch, seq, embed_dim]
 
         # Add positional embeddings
-        pos = torch.arange(seq_len, device=tokens.device)
+        pos = self._pos_idx[:seq_len]
         x = x + self.pos_embed(pos)
 
         # Transformer with attention mask (True = masked/ignored)

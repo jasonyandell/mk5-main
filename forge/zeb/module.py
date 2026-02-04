@@ -23,11 +23,12 @@ class ZebLightningModule(L.LightningModule):
         dropout: float = 0.1,
         lr: float = 3e-4,
         weight_decay: float = 0.01,
-        entropy_weight: float = 0.01,
+        entropy_weight: float = 0.1,
         value_weight: float = 0.5,
     ):
         super().__init__()
         self.save_hyperparameters()
+        self._logged_initial_entropy = False
 
         self.model = ZebModel(
             embed_dim=embed_dim,
@@ -96,6 +97,20 @@ class ZebLightningModule(L.LightningModule):
         self.log('train/entropy', entropy, sync_dist=True)
         self.log('train/advantage_mean', advantage.mean(), sync_dist=True)
         self.log('train/advantage_std', advantage.std(), sync_dist=True)
+
+        # Log initial entropy to verify healthy starting point
+        if not self._logged_initial_entropy:
+            self._logged_initial_entropy = True
+            initial_entropy_value = entropy.item() if hasattr(entropy, 'item') else float(entropy)
+            self.log('train/initial_entropy', initial_entropy_value, sync_dist=True)
+            print(f"[Zeb] Initial entropy: {initial_entropy_value:.3f} (healthy range: 0.5-1.5)")
+            # Also log to W&B summary for visibility (single-point metrics need this)
+            try:
+                import wandb
+                if wandb.run is not None:
+                    wandb.run.summary['initial_entropy'] = initial_entropy_value
+            except ImportError:
+                pass
 
         return loss
 

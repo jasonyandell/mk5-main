@@ -9,9 +9,23 @@ import torch
 from torch import Tensor
 
 
+_BIT_POSITIONS_CACHE: dict[tuple[str, int | None], Tensor] = {}
+
+
+def _get_bit_positions(device: torch.device) -> Tensor:
+    key = (device.type, device.index)
+    cached = _BIT_POSITIONS_CACHE.get(key)
+    if cached is None or cached.device != device:
+        cached = torch.tensor([1 << j for j in range(7)], dtype=torch.int64, device=device)
+        _BIT_POSITIONS_CACHE[key] = cached
+    return cached
+
+
 def compute_remaining_bitmask_gpu(
     original_hands: Tensor,  # (N, 4, 7) int32 domino IDs
     current_hands: Tensor,   # (N, 4, 7) int32 domino IDs, -1 for played
+    *,
+    bit_positions: Tensor | None = None,  # (7,) int64
 ) -> Tensor:
     """Compute remaining domino bitmasks on GPU.
 
@@ -34,11 +48,8 @@ def compute_remaining_bitmask_gpu(
 
     # Convert to bitmask: sum(in_hand[j] << j for j in range(7))
     # bit_positions: [1, 2, 4, 8, 16, 32, 64]
-    bit_positions = torch.tensor(
-        [1 << j for j in range(7)],
-        dtype=torch.int64,
-        device=original_hands.device
-    )
+    if bit_positions is None:
+        bit_positions = _get_bit_positions(original_hands.device)
 
     # in_hand * bit_positions broadcasts (N, 4, 7) * (7,) -> (N, 4, 7)
     # Sum along last dim -> (N, 4)
@@ -52,6 +63,8 @@ def compute_legal_mask_gpu(
     current_hands: Tensor,   # (N, 4, 7) int32 domino IDs, -1 for played
     actors: Tensor,          # (N,) int32 current player
     lead_suit: Tensor | None = None,  # (N,) int32 lead suit, -1 if no lead
+    *,
+    batch_idx: Tensor | None = None,  # (N,) int64
 ) -> Tensor:
     """Compute legal action mask on GPU.
 
@@ -73,8 +86,10 @@ def compute_legal_mask_gpu(
 
     # Get actor's hands: (N, 7)
     # Use gather: index into dim 1 with actors
-    actor_original = original_hands[torch.arange(n, device=device), actors]  # (N, 7)
-    actor_current = current_hands[torch.arange(n, device=device), actors]    # (N, 7)
+    if batch_idx is None:
+        batch_idx = torch.arange(n, device=device)
+    actor_original = original_hands[batch_idx, actors]  # (N, 7)
+    actor_current = current_hands[batch_idx, actors]    # (N, 7)
 
     # A slot is legal if the original domino is in current hand
     # Compare original to each position in current

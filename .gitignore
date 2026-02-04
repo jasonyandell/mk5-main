@@ -107,3 +107,6 @@ lightning_logs/
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
+
+wandb/
+history/

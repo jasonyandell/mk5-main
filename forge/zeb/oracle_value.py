@@ -35,6 +35,8 @@ class OracleValueFunction:
         checkpoint_path: Optional[str | Path] = None,
         device: str = "cuda",
         compile: bool = True,
+        use_async: bool = True,
+        use_gpu_tokenizer: bool = True,
     ):
         """Initialize oracle.
 
@@ -51,6 +53,8 @@ class OracleValueFunction:
             checkpoint_path=checkpoint_path,
             device=device,
             compile=compile,
+            use_async=use_async,
+            use_gpu_tokenizer=use_gpu_tokenizer,
         )
         self.device = device
 
@@ -377,6 +381,52 @@ class OracleValueFunction:
         n = original_hands.shape[0]
         device = original_hands.device
 
+        # If we're not on CUDA (or Stage1Oracle was created without GPU tokenizer),
+        # fall back to Stage1Oracle.query_batch_multi_state() + GPU-style postprocessing.
+        # This keeps the API usable for CPU tests and non-CUDA environments.
+        if device.type != "cuda" or not hasattr(self.oracle, "gpu_tokenizer"):
+            self.query_count += n
+
+            worlds = original_hands.to("cpu").tolist()
+            decl_ids_np = decl_ids.to("cpu").numpy().astype(np.int32)
+            actors_np = actors.to("cpu").numpy().astype(np.int32)
+            leaders_np = leaders.to("cpu").numpy().astype(np.int32)
+
+            # Remaining bitmask (N, 4) int64
+            remaining = compute_remaining_bitmask_gpu(original_hands, current_hands)
+            remaining_np = remaining.to("cpu").numpy().astype(np.int64)
+
+            # Build trick plays list expected by Stage1Oracle: List[List[(player, domino)]]
+            tp = trick_players.to("cpu").numpy().astype(np.int32)
+            td = trick_dominoes.to("cpu").numpy().astype(np.int32)
+            trick_plays_list: list[list[tuple[int, int]]] = []
+            for i in range(n):
+                plays: list[tuple[int, int]] = []
+                for j in range(3):
+                    p = int(tp[i, j])
+                    if p < 0:
+                        continue
+                    plays.append((p, int(td[i, j])))
+                trick_plays_list.append(plays)
+
+            q_values = self.oracle.query_batch_multi_state(
+                worlds=worlds,
+                decl_ids=decl_ids_np,
+                actors=actors_np,
+                leaders=leaders_np,
+                trick_plays_list=trick_plays_list,
+                remaining=remaining_np,
+            )  # (N, 7) on oracle.device
+
+            legal_mask = compute_legal_mask_gpu(original_hands, current_hands, actors)
+            masked_q = q_values.clone()
+            masked_q[~legal_mask] = float("-inf")
+            best_q = masked_q.max(dim=1).values
+
+            team1_mask = (players % 2) == 1
+            best_q = torch.where(team1_mask, -best_q, best_q)
+            return best_q / 42.0
+
         # Compute remaining bitmask on GPU
         remaining = compute_remaining_bitmask_gpu(original_hands, current_hands)
 
@@ -472,6 +522,8 @@ def create_oracle_value_fn(
     checkpoint_path: Optional[str | Path] = None,
     device: str = "cuda",
     compile: bool = True,
+    use_async: bool = True,
+    use_gpu_tokenizer: bool = True,
 ) -> OracleValueFunction:
     """Factory function to create oracle value function.
 
@@ -487,4 +539,6 @@ def create_oracle_value_fn(
         checkpoint_path=checkpoint_path,
         device=device,
         compile=compile,
+        use_async=use_async,
+        use_gpu_tokenizer=use_gpu_tokenizer,
     )

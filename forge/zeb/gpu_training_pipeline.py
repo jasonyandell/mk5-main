@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+from forge.zeb.cuda_only import require_cuda
 from forge.zeb.gpu_game_state import (
     GPUGameState,
     apply_action_gpu,
@@ -37,13 +38,44 @@ from forge.zeb.gpu_mcts import (
     get_leaf_states,
     get_root_policy_gpu,
     get_terminal_values,
-    prepare_oracle_inputs,
     select_leaves_gpu,
 )
+from forge.zeb.gpu_game_state import current_player_gpu
 
 if TYPE_CHECKING:
     from forge.zeb.oracle_value import OracleValueFunction
     from forge.zeb.model import ZebModel
+
+
+def _index_state_batch(states: GPUGameState, batch_idx: Tensor) -> GPUGameState:
+    """Index a GPUGameState along the batch dimension."""
+    idx = batch_idx.long()
+    return GPUGameState(
+        hands=states.hands.index_select(0, idx),
+        played_mask=states.played_mask.index_select(0, idx),
+        play_history=states.play_history.index_select(0, idx),
+        n_plays=states.n_plays.index_select(0, idx),
+        current_trick=states.current_trick.index_select(0, idx),
+        trick_len=states.trick_len.index_select(0, idx),
+        leader=states.leader.index_select(0, idx),
+        decl_id=states.decl_id.index_select(0, idx),
+        scores=states.scores.index_select(0, idx),
+    )
+
+
+def _concat_state_batches(states_list: list[GPUGameState]) -> GPUGameState:
+    """Concatenate multiple GPUGameState batches along the batch dimension."""
+    return GPUGameState(
+        hands=torch.cat([s.hands for s in states_list], dim=0),
+        played_mask=torch.cat([s.played_mask for s in states_list], dim=0),
+        play_history=torch.cat([s.play_history for s in states_list], dim=0),
+        n_plays=torch.cat([s.n_plays for s in states_list], dim=0),
+        current_trick=torch.cat([s.current_trick for s in states_list], dim=0),
+        trick_len=torch.cat([s.trick_len for s in states_list], dim=0),
+        leader=torch.cat([s.leader for s in states_list], dim=0),
+        decl_id=torch.cat([s.decl_id for s in states_list], dim=0),
+        scores=torch.cat([s.scores for s in states_list], dim=0),
+    )
 
 
 @dataclass
@@ -96,12 +128,14 @@ class GPUObservationTokenizer:
     N_HAND_SLOTS = 7
 
     def __init__(self, device: torch.device):
+        device = require_cuda(device, where="GPUObservationTokenizer.__init__")
         self.device = device
         self.tables = get_domino_tables(device)
 
         # Build count value lookup table
         # Points: 0->0, 5->1, 10->2
         self.count_values = self._build_count_values(device)
+        self._hand_indices_1x7 = torch.arange(1, 8, dtype=torch.int64, device=device).unsqueeze(0)
 
     def _build_count_values(self, device: torch.device) -> Tensor:
         """Build count value lookup (domino_id -> count category)."""
@@ -115,6 +149,84 @@ class GPUObservationTokenizer:
                 else:
                     count_vals.append(0)  # 0 points
         return torch.tensor(count_vals, dtype=torch.int32, device=device)
+
+    def tokenize_batch_into(
+        self,
+        states: GPUGameState,
+        original_hands: Tensor,  # (N, 4, 7)
+        perspective_players: Tensor,  # (N,)
+        *,
+        out_tokens: Tensor,      # (N, 36, 8) int32
+        out_masks: Tensor,       # (N, 36) bool
+        out_hand_masks: Tensor,  # (N, 7) bool
+        batch_idx: Tensor | None = None,  # (N,) int64
+    ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
+        """Allocation-free tokenizer variant (for CUDA graph capture)."""
+        n = states.batch_size
+        device = states.device
+
+        if out_tokens.shape != (n, self.MAX_TOKENS, self.N_FEATURES):
+            raise ValueError(f"out_tokens must have shape {(n, self.MAX_TOKENS, self.N_FEATURES)}")
+        if out_masks.shape != (n, self.MAX_TOKENS):
+            raise ValueError(f"out_masks must have shape {(n, self.MAX_TOKENS)}")
+        if out_hand_masks.shape != (n, 7):
+            raise ValueError("out_hand_masks must have shape (N, 7)")
+
+        if batch_idx is None:
+            batch_idx = torch.arange(n, device=device, dtype=torch.int64)
+
+        out_tokens.zero_()
+        out_masks.zero_()
+
+        players_i64 = perspective_players.to(torch.int64)
+
+        # === Token 0: Declaration ===
+        out_tokens[:, 0, self.FEAT_DECL] = states.decl_id
+        out_tokens[:, 0, self.FEAT_TOKEN_TYPE] = self.TOKEN_TYPE_DECL
+        out_masks[:, 0] = True
+
+        # === Tokens 1-7: Hand slots ===
+        my_hand = original_hands[batch_idx, players_i64]  # (N, 7)
+        played_lookup = states.played_mask[batch_idx.unsqueeze(1), my_hand.long()]  # (N, 7)
+        in_hand = ~played_lookup  # (N, 7) bool
+
+        safe_ids = my_hand.clamp(min=0).long()
+        out_tokens[:, 1:8, self.FEAT_HIGH] = self.tables.high[safe_ids]
+        out_tokens[:, 1:8, self.FEAT_LOW] = self.tables.low[safe_ids]
+        out_tokens[:, 1:8, self.FEAT_IS_DOUBLE] = self.tables.is_double[safe_ids].int()
+        out_tokens[:, 1:8, self.FEAT_COUNT] = self.count_values[safe_ids]
+        out_tokens[:, 1:8, self.FEAT_PLAYER] = 0
+        out_tokens[:, 1:8, self.FEAT_IS_IN_HAND] = in_hand.int()
+        out_tokens[:, 1:8, self.FEAT_DECL] = states.decl_id.unsqueeze(1).expand(-1, 7)
+        out_tokens[:, 1:8, self.FEAT_TOKEN_TYPE] = self.TOKEN_TYPE_HAND
+        out_masks[:, 1:8] = in_hand
+
+        # === Tokens 8-35: Play history ===
+        n_plays = states.n_plays  # (N,)
+        for play_idx in range(28):
+            token_pos = 8 + play_idx
+            has_play = n_plays > play_idx
+
+            play_player = states.play_history[:, play_idx, 0]
+            play_domino = states.play_history[:, play_idx, 1]
+            rel_player = (play_player - perspective_players + 4) % 4
+
+            safe_domino = play_domino.clamp(min=0).long()
+            out_tokens[:, token_pos, self.FEAT_HIGH] = torch.where(has_play, self.tables.high[safe_domino], 0)
+            out_tokens[:, token_pos, self.FEAT_LOW] = torch.where(has_play, self.tables.low[safe_domino], 0)
+            out_tokens[:, token_pos, self.FEAT_IS_DOUBLE] = torch.where(
+                has_play, self.tables.is_double[safe_domino].int(), 0
+            )
+            out_tokens[:, token_pos, self.FEAT_COUNT] = torch.where(has_play, self.count_values[safe_domino], 0)
+            out_tokens[:, token_pos, self.FEAT_PLAYER] = torch.where(has_play, rel_player, 0)
+            out_tokens[:, token_pos, self.FEAT_IS_IN_HAND] = 0
+            out_tokens[:, token_pos, self.FEAT_DECL] = torch.where(has_play, states.decl_id, 0)
+            out_tokens[:, token_pos, self.FEAT_TOKEN_TYPE] = torch.where(has_play, self.TOKEN_TYPE_PLAY, 0)
+            out_masks[:, token_pos] = has_play
+
+        out_hand_masks.copy_(in_hand)
+        hand_indices = self._hand_indices_1x7.expand(n, -1)
+        return out_tokens, out_masks, hand_indices, out_hand_masks
 
     def tokenize_batch(
         self,
@@ -138,98 +250,17 @@ class GPUObservationTokenizer:
         n = states.batch_size
         device = states.device
 
-        # Initialize output tensors
-        tokens = torch.zeros(
-            (n, self.MAX_TOKENS, self.N_FEATURES),
-            dtype=torch.int32,
-            device=device
+        tokens = torch.empty((n, self.MAX_TOKENS, self.N_FEATURES), dtype=torch.int32, device=device)
+        masks = torch.empty((n, self.MAX_TOKENS), dtype=torch.bool, device=device)
+        hand_masks = torch.empty((n, 7), dtype=torch.bool, device=device)
+        return self.tokenize_batch_into(
+            states,
+            original_hands,
+            perspective_players,
+            out_tokens=tokens,
+            out_masks=masks,
+            out_hand_masks=hand_masks,
         )
-        masks = torch.zeros((n, self.MAX_TOKENS), dtype=torch.bool, device=device)
-
-        batch_idx = torch.arange(n, device=device, dtype=torch.int64)
-        players_i64 = perspective_players.to(torch.int64)
-
-        # === Token 0: Declaration ===
-        tokens[:, 0, self.FEAT_DECL] = states.decl_id
-        tokens[:, 0, self.FEAT_TOKEN_TYPE] = self.TOKEN_TYPE_DECL
-        masks[:, 0] = True
-
-        # === Tokens 1-7: Hand slots ===
-        # Get perspective player's hand from original hands
-        my_hand = original_hands[batch_idx, players_i64]  # (N, 7) domino IDs
-
-        # Check which slots still have their domino (not in played)
-        # played_mask is (N, 28) bool - True if domino played
-        # For each hand slot, check if that domino is in played
-        played_lookup = states.played_mask[batch_idx.unsqueeze(1), my_hand.long()]  # (N, 7)
-        in_hand = ~played_lookup  # True if still in hand
-
-        # Encode domino features for hand slots
-        safe_ids = my_hand.clamp(min=0).long()  # Safe for lookup
-        tokens[:, 1:8, self.FEAT_HIGH] = self.tables.high[safe_ids]
-        tokens[:, 1:8, self.FEAT_LOW] = self.tables.low[safe_ids]
-        tokens[:, 1:8, self.FEAT_IS_DOUBLE] = self.tables.is_double[safe_ids].int()
-        tokens[:, 1:8, self.FEAT_COUNT] = self.count_values[safe_ids]
-        tokens[:, 1:8, self.FEAT_PLAYER] = 0  # Always "me" for hand tokens
-        tokens[:, 1:8, self.FEAT_IS_IN_HAND] = in_hand.int()
-        tokens[:, 1:8, self.FEAT_DECL] = states.decl_id.unsqueeze(1).expand(-1, 7)
-        tokens[:, 1:8, self.FEAT_TOKEN_TYPE] = self.TOKEN_TYPE_HAND
-        masks[:, 1:8] = in_hand  # Only valid if domino still in hand
-
-        # === Tokens 8-35: Play history ===
-        # play_history is (N, 28, 3) with (player, domino, lead_domino)
-        n_plays = states.n_plays  # (N,)
-
-        for play_idx in range(28):
-            token_pos = 8 + play_idx
-
-            # Only process games that have this many plays
-            has_play = n_plays > play_idx
-
-            if not has_play.any():
-                break
-
-            # Get play info
-            play_player = states.play_history[:, play_idx, 0]  # (N,)
-            play_domino = states.play_history[:, play_idx, 1]  # (N,)
-
-            # Compute relative player
-            rel_player = (play_player - perspective_players + 4) % 4  # (N,)
-
-            # Encode domino
-            safe_domino = play_domino.clamp(min=0).long()
-            tokens[:, token_pos, self.FEAT_HIGH] = torch.where(
-                has_play, self.tables.high[safe_domino], 0
-            )
-            tokens[:, token_pos, self.FEAT_LOW] = torch.where(
-                has_play, self.tables.low[safe_domino], 0
-            )
-            tokens[:, token_pos, self.FEAT_IS_DOUBLE] = torch.where(
-                has_play, self.tables.is_double[safe_domino].int(), 0
-            )
-            tokens[:, token_pos, self.FEAT_COUNT] = torch.where(
-                has_play, self.count_values[safe_domino], 0
-            )
-            tokens[:, token_pos, self.FEAT_PLAYER] = torch.where(
-                has_play, rel_player, 0
-            )
-            tokens[:, token_pos, self.FEAT_IS_IN_HAND] = 0  # Played dominoes not in hand
-            tokens[:, token_pos, self.FEAT_DECL] = torch.where(
-                has_play, states.decl_id, 0
-            )
-            tokens[:, token_pos, self.FEAT_TOKEN_TYPE] = torch.where(
-                has_play, self.TOKEN_TYPE_PLAY, 0
-            )
-            masks[:, token_pos] = has_play
-
-        # Hand indices always point to positions 1-7
-        hand_indices = torch.arange(1, 8, dtype=torch.int64, device=device)
-        hand_indices = hand_indices.unsqueeze(0).expand(n, -1)  # (N, 7)
-
-        # Hand mask = which slots have unplayed dominoes
-        hand_masks = in_hand  # (N, 7)
-
-        return tokens, masks, hand_indices, hand_masks
 
 
 class GPUTrainingPipeline:
@@ -238,50 +269,80 @@ class GPUTrainingPipeline:
     Generates training examples through MCTS self-play entirely on GPU:
     - Deals random games on GPU
     - Runs MCTS with GPU tree operations
-    - Evaluates leaves with oracle (GPU tensors)
+    - Evaluates leaves with oracle OR model's value head (self-play mode)
     - Collects training examples without CPU transfer
     - Trains model on GPU-native tensors
+
+    Two modes:
+    - Oracle mode: Use perfect oracle for leaf evaluation (distillation)
+    - Self-play mode: Use model's value head for leaf evaluation (true AlphaZero)
     """
 
     def __init__(
         self,
-        oracle: OracleValueFunction,
+        oracle: "OracleValueFunction | None",
         device: torch.device,
         n_parallel_games: int = 16,
         n_simulations: int = 100,
+        wave_size: int = 1,
         max_mcts_nodes: int = 1024,
         c_puct: float = 1.414,
         temperature: float = 1.0,
+        model: "ZebModel | None" = None,
+        use_cudagraph_mcts: bool = True,
+        use_fullstep_eval: bool = True,
     ):
         """Initialize pipeline.
 
         Args:
-            oracle: OracleValueFunction for leaf evaluation (must support batch_evaluate_gpu)
+            oracle: OracleValueFunction for leaf evaluation (oracle mode).
+                    Pass None for self-play mode (requires model).
             device: GPU device
             n_parallel_games: Number of concurrent games per batch
             n_simulations: MCTS simulations per move
+            wave_size: Number of leaf batches to collect before evaluation.
+                       wave_size=1 matches sequential MCTS (evaluate each sim).
             max_mcts_nodes: Maximum nodes per MCTS tree
             c_puct: UCB exploration constant
             temperature: Action sampling temperature (1.0 = proportional to visits)
+            model: ZebModel for self-play mode leaf evaluation.
+                   Pass None for oracle mode (requires oracle).
+
+        Exactly one of oracle/model must be provided.
         """
+        device = require_cuda(device, where="GPUTrainingPipeline.__init__")
+        if oracle is None and model is None:
+            raise ValueError("Must provide either oracle or model")
+        if oracle is not None and model is not None:
+            raise ValueError("Cannot provide both oracle and model - choose one mode")
+
         self.oracle = oracle
+        self.model = model
+        self.self_play_mode = model is not None
         self.device = device
         self.n_parallel_games = n_parallel_games
         self.n_simulations = n_simulations
+        self.wave_size = max(1, int(wave_size))
         self.max_mcts_nodes = max_mcts_nodes
         self.c_puct = c_puct
         self.temperature = temperature
+        self.use_cudagraph_mcts = bool(use_cudagraph_mcts) and device.type == "cuda"
+        self.use_fullstep_eval = bool(use_fullstep_eval)
 
         # Initialize tokenizer
         self.tokenizer = GPUObservationTokenizer(device)
+        self._oracle_position_idx = torch.arange(3, device=device, dtype=torch.int64).unsqueeze(0)  # (1, 3)
 
         # Stats for monitoring
         self.total_games_generated = 0
         self.total_oracle_queries = 0
+        self.total_model_queries = 0  # For self-play mode
 
     def generate_games_gpu(
         self,
         n_games: int,
+        *,
+        max_moves: int = 28,
     ) -> GPUTrainingExample:
         """Generate training examples entirely on GPU.
 
@@ -294,6 +355,12 @@ class GPUTrainingPipeline:
         Returns:
             GPUTrainingExample with all training data on GPU
         """
+        # No gradients needed during game generation - only during training
+        with torch.no_grad():
+            return self._generate_games_gpu_impl(n_games, max_moves=max_moves)
+
+    def _generate_games_gpu_impl(self, n_games: int, *, max_moves: int) -> GPUTrainingExample:
+        """Implementation of generate_games_gpu (called within no_grad context)."""
         all_obs = []
         all_masks = []
         all_hand_indices = []
@@ -314,7 +381,7 @@ class GPUTrainingPipeline:
             original_hands = deals.hands.clone()  # Save for observation encoding
 
             # Play games to completion
-            game_examples = self._play_games_mcts(deals, original_hands)
+            game_examples = self._play_games_mcts(deals, original_hands, max_moves=max_moves)
 
             all_obs.append(game_examples['observations'])
             all_masks.append(game_examples['masks'])
@@ -341,8 +408,10 @@ class GPUTrainingPipeline:
         self,
         initial_states: GPUGameState,
         original_hands: Tensor,
+        *,
+        max_moves: int = 28,
     ) -> dict[str, Tensor]:
-        """Play games to completion using MCTS.
+        """Play games using MCTS (up to max_moves).
 
         Args:
             initial_states: Starting game states
@@ -365,8 +434,24 @@ class GPUTrainingPipeline:
         # Current states (will be modified as games progress)
         states = initial_states
 
-        # Play all 28 moves
-        for move_idx in range(28):
+        # Reuse a single forest across all moves for this batch (enables CUDA graphs).
+        forest = create_forest(
+            n_trees=n,
+            max_nodes=self.max_mcts_nodes,
+            initial_states=states,
+            device=device,
+            c_puct=self.c_puct,
+            original_hands=original_hands,
+        )
+
+        # Graph pool shared across all MCTS CUDA graphs for this forest (reduces allocator pressure
+        # and keeps memory stable when capturing multiple depth variants).
+        graph_pool = getattr(forest, "_mcts_graph_pool", None)
+        if graph_pool is None and self.use_cudagraph_mcts:
+            graph_pool = torch.cuda.graphs.graph_pool_handle()
+            setattr(forest, "_mcts_graph_pool", graph_pool)
+
+        for move_idx in range(int(max_moves)):
             # Check which games are still active (not terminal)
             terminal = is_terminal_gpu(states)
             active = ~terminal
@@ -386,42 +471,221 @@ class GPUTrainingPipeline:
                 states, original_hands, current_players
             )
 
-            # Create MCTS forest
-            # Pass original_hands for oracle queries (states.hands has -1 for played)
-            forest = create_forest(
-                n_trees=n,
-                max_nodes=self.max_mcts_nodes,
-                initial_states=states,
-                device=device,
-                c_puct=self.c_puct,
-                original_hands=original_hands,
-            )
+            # Reset forest in-place for this move (keep allocations stable).
+            from forge.zeb.gpu_mcts import reset_forest_inplace
+            reset_forest_inplace(forest, states, original_hands=original_hands)
 
-            # Run MCTS simulations
-            for _ in range(self.n_simulations):
-                # Select leaves
-                leaf_indices, paths = select_leaves_gpu(forest)
+            # Depth cap: only traverse as deep as there are remaining moves.
+            # This is purely a runtime optimization: deeper traversal would become inactive anyway.
+            remaining_depth = int(max_moves) - int(move_idx)
+            if remaining_depth < 1:
+                remaining_depth = 1
 
-                # Get leaf states
-                leaf_states = get_leaf_states(forest, leaf_indices)
+            if self.wave_size <= 1:
+                if self.use_cudagraph_mcts:
+                    if self.self_play_mode and self.use_fullstep_eval:
+                        # Phase 5: single-graph sim step including self-play model eval.
+                        from forge.zeb.gpu_mcts import MCTSSelfPlayFullStepCUDAGraphRunner
 
-                # Check for terminals
-                terminal_values, is_terminal = get_terminal_values(
-                    forest, leaf_indices, leaf_states
-                )
+                        runner: MCTSSelfPlayFullStepCUDAGraphRunner | None = getattr(
+                            forest, "_mcts_selfplay_fullstep_runner", None
+                        )
+                        if runner is None or getattr(runner, "model", None) is not self.model:
+                            runner = MCTSSelfPlayFullStepCUDAGraphRunner(
+                                forest,
+                                model=self.model,
+                                tokenizer=self.tokenizer,
+                                pool=graph_pool,
+                            )
+                            setattr(forest, "_mcts_selfplay_fullstep_runner", runner)
 
-                # Evaluate non-terminals with oracle
-                if (~is_terminal).any():
-                    oracle_values = self._evaluate_oracle_gpu(forest, leaf_states)
+                        if not runner.captured:
+                            runner.capture()
+                            reset_forest_inplace(forest, states, original_hands=original_hands)
+
+                        for _ in range(self.n_simulations):
+                            runner.step()
+                        self.total_model_queries += n * self.n_simulations
+                    else:
+                        # Prefer Phase 4 full-step capture only when oracle is compatible.
+                        oracle_impl = getattr(self.oracle, "oracle", None)
+                        oracle_capturable = (
+                            (not self.self_play_mode)
+                            and oracle_impl is not None
+                            and hasattr(oracle_impl, "gpu_tokenizer")
+                            and self.use_fullstep_eval
+                        )
+
+                        if oracle_capturable:
+                            # Phase 4: single-graph sim step including oracle eval (fixed-shape).
+                            from forge.zeb.gpu_mcts import MCTSFullStepCUDAGraphRunner
+
+                            capture_depth_max = max(28, int(max_moves))
+                            depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                            depth_variants = sorted(
+                                {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
+                            )
+
+                            runners: dict[int, MCTSFullStepCUDAGraphRunner] | None = getattr(
+                                forest, "_mcts_fullstep_runners", None
+                            )
+                            if runners is None:
+                                runners = {}
+                                setattr(forest, "_mcts_fullstep_runners", runners)
+
+                            if not getattr(forest, "_mcts_fullstep_runners_captured", False):
+                                for d in depth_variants:
+                                    if d not in runners:
+                                        runners[d] = MCTSFullStepCUDAGraphRunner(
+                                            forest, self.oracle, max_depth=d, pool=graph_pool
+                                        )
+                                for d in depth_variants:
+                                    runner_d = runners[d]
+                                    if not runner_d.captured:
+                                        runner_d.capture()
+                                        reset_forest_inplace(forest, states, original_hands=original_hands)
+                                setattr(forest, "_mcts_fullstep_runners_captured", True)
+
+                            # Pick the smallest captured depth that still covers the remaining moves.
+                            runner_depth = capture_depth_max
+                            for d in reversed(depth_variants):
+                                if d >= remaining_depth:
+                                    runner_depth = d
+                                    break
+                            runner = runners[runner_depth]
+                            for _ in range(self.n_simulations):
+                                runner.step()
+                        else:
+                            # Phase 3 runner: model/oracle eval outside graphs (works with mocks too).
+                            from forge.zeb.gpu_mcts import MCTSCUDAGraphRunner
+
+                            capture_depth_max = max(28, int(max_moves))
+                            depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                            depth_variants = sorted(
+                                {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
+                            )
+
+                            runners: dict[int, MCTSCUDAGraphRunner] | None = getattr(
+                                forest, "_mcts_cudagraph_runners", None
+                            )
+                            if runners is None:
+                                runners = {}
+                                setattr(forest, "_mcts_cudagraph_runners", runners)
+
+                            if not getattr(forest, "_mcts_cudagraph_runners_captured", False):
+                                for d in depth_variants:
+                                    if d not in runners:
+                                        runners[d] = MCTSCUDAGraphRunner(
+                                            forest, max_depth=d, pool=graph_pool
+                                        )
+                                for d in depth_variants:
+                                    runner_d = runners[d]
+                                    if not runner_d._captured:
+                                        runner_d.capture()
+                                        reset_forest_inplace(forest, states, original_hands=original_hands)
+                                setattr(forest, "_mcts_cudagraph_runners_captured", True)
+
+                            def _oracle(leaf_states: GPUGameState, leaf_indices: Tensor, tree_indices: Tensor) -> Tensor:
+                                return self._evaluate_leaves_gpu(
+                                    forest,
+                                    leaf_states,
+                                    leaf_indices,
+                                    tree_indices=tree_indices,
+                                )
+
+                            runner_depth = capture_depth_max
+                            for d in reversed(depth_variants):
+                                if d >= remaining_depth:
+                                    runner_depth = d
+                                    break
+                            runner = runners[runner_depth]
+                            for _ in range(self.n_simulations):
+                                runner.step(_oracle)
                 else:
-                    oracle_values = torch.zeros(n, dtype=torch.float32, device=device)
+                    # Sequential MCTS: evaluate every simulation (but avoid tensor.any() sync).
+                    for _ in range(self.n_simulations):
+                        leaf_indices, paths = select_leaves_gpu(forest, max_depth=remaining_depth)
+                        leaf_states = get_leaf_states(forest, leaf_indices)
+                        terminal_values, is_terminal = get_terminal_values(
+                            forest, leaf_indices, leaf_states
+                        )
 
-                # Combine terminal and oracle values
-                values = torch.where(is_terminal, terminal_values, oracle_values)
+                        leaf_values = torch.zeros(n, dtype=torch.float32, device=device)
+                        nonterm_idx = (~is_terminal).nonzero(as_tuple=True)[0]
+                        if nonterm_idx.numel() > 0:
+                            leaf_values_nonterm = self._evaluate_leaves_gpu(
+                                forest,
+                                _index_state_batch(leaf_states, nonterm_idx),
+                                leaf_indices[nonterm_idx],
+                                tree_indices=nonterm_idx,
+                            )
+                            leaf_values[nonterm_idx] = leaf_values_nonterm
 
-                # Expand and backpropagate
-                expand_gpu(forest, leaf_indices)
-                backprop_gpu(forest, leaf_indices, values, paths)
+                        values = torch.where(is_terminal, terminal_values, leaf_values)
+                        expand_gpu(forest, leaf_indices, leaf_states=leaf_states)
+                        backprop_gpu(forest, leaf_indices, values, paths)
+            else:
+                # Wave batching: collect W selections, evaluate a single (W*N) batch,
+                # then backprop W times.
+                sims_remaining = self.n_simulations
+                while sims_remaining > 0:
+                    wave = min(self.wave_size, sims_remaining)
+
+                    leaf_indices_steps: list[Tensor] = []
+                    paths_steps: list[Tensor] = []
+                    leaf_states_steps: list[GPUGameState] = []
+                    terminal_values_steps: list[Tensor] = []
+                    is_terminal_steps: list[Tensor] = []
+
+                    for _ in range(wave):
+                        leaf_indices, paths = select_leaves_gpu(forest, max_depth=remaining_depth)
+                        leaf_states = get_leaf_states(forest, leaf_indices)
+                        terminal_values, is_terminal = get_terminal_values(
+                            forest, leaf_indices, leaf_states
+                        )
+
+                        leaf_indices_steps.append(leaf_indices)
+                        paths_steps.append(paths)
+                        leaf_states_steps.append(leaf_states)
+                        terminal_values_steps.append(terminal_values)
+                        is_terminal_steps.append(is_terminal)
+
+                    # Flatten (wave, N) -> (wave*N)
+                    flat_leaf_states = _concat_state_batches(leaf_states_steps)
+                    flat_leaf_indices = torch.stack(leaf_indices_steps, dim=0).reshape(-1)
+                    flat_is_terminal = torch.stack(is_terminal_steps, dim=0).reshape(-1)
+
+                    tree_idx = torch.arange(n, device=device, dtype=torch.int64).repeat(wave)  # (wave*N,)
+
+                    # Evaluate only non-terminals in one big batch.
+                    flat_leaf_values = torch.zeros(wave * n, dtype=torch.float32, device=device)
+                    nonterm_flat_idx = (~flat_is_terminal).nonzero(as_tuple=True)[0]
+                    if nonterm_flat_idx.numel() > 0:
+                        leaf_values_nonterm = self._evaluate_leaves_gpu(
+                            forest,
+                            _index_state_batch(flat_leaf_states, nonterm_flat_idx),
+                            flat_leaf_indices[nonterm_flat_idx],
+                            tree_indices=tree_idx[nonterm_flat_idx],
+                        )
+                        flat_leaf_values[nonterm_flat_idx] = leaf_values_nonterm
+
+                    # Backprop each step in order (keeping semantics close to sequential MCTS).
+                    for step in range(wave):
+                        start = step * n
+                        end = (step + 1) * n
+
+                        leaf_indices = leaf_indices_steps[step]
+                        paths = paths_steps[step]
+                        terminal_values = terminal_values_steps[step]
+                        is_terminal = is_terminal_steps[step]
+
+                        leaf_values = flat_leaf_values[start:end]
+                        values = torch.where(is_terminal, terminal_values, leaf_values)
+
+                        expand_gpu(forest, leaf_indices)
+                        backprop_gpu(forest, leaf_indices, values, paths)
+
+                    sims_remaining -= wave
 
             # Get visit distributions as policies
             policies = get_root_policy_gpu(forest)  # (N, 7)
@@ -502,27 +766,156 @@ class GPUTrainingPipeline:
             'values': torch.cat(all_values, dim=0),
         }
 
-    def _evaluate_oracle_gpu(
+    def set_model(self, model: "ZebModel") -> None:
+        """Update model reference for self-play.
+
+        Call this to use a newly trained model for game generation.
+        Only valid in self-play mode.
+        """
+        if not self.self_play_mode:
+            raise ValueError("set_model only valid in self-play mode")
+        self.model = model
+
+    def _evaluate_leaves_gpu(
         self,
         forest: GPUMCTSForest,
         leaf_states: GPUGameState,
+        leaf_indices: Tensor,
+        tree_indices: Tensor | None = None,
     ) -> Tensor:
-        """Evaluate leaf states with oracle - all on GPU.
+        """Evaluate leaf states - dispatches to oracle or model.
 
         Args:
             forest: MCTS forest (provides original_hands)
             leaf_states: States to evaluate
+            leaf_indices: (N,) node indices of leaves (needed for storing priors)
 
         Returns:
             values: (N,) float32 values from root player's perspective
         """
-        # Prepare oracle inputs
-        oracle_inputs = prepare_oracle_inputs(forest, leaf_states)
+        if self.self_play_mode:
+            return self._evaluate_model_gpu(forest, leaf_states, leaf_indices, tree_indices=tree_indices)
+        else:
+            return self._evaluate_oracle_gpu(forest, leaf_states, tree_indices=tree_indices)
 
-        # Call oracle's GPU-native method
-        values = self.oracle.batch_evaluate_gpu(**oracle_inputs)
+    def _evaluate_oracle_gpu(
+        self,
+        forest: GPUMCTSForest,
+        leaf_states: GPUGameState,
+        tree_indices: Tensor | None = None,
+    ) -> Tensor:
+        """Evaluate leaf states with oracle - all on GPU."""
+        device = leaf_states.device
+        n = leaf_states.batch_size
 
-        self.total_oracle_queries += forest.n_trees
+        if tree_indices is None:
+            original_hands = forest.original_hands
+            root_players = forest.to_play[:, 0]
+        else:
+            idx = tree_indices.to(device=device, dtype=torch.int64)
+            original_hands = forest.original_hands.index_select(0, idx)
+            root_players = forest.to_play[:, 0].index_select(0, idx)
+
+        actors = current_player_gpu(leaf_states)
+
+        # Extract trick plays from current_trick tensor: (N, 4, 2) -> (N, 3)
+        trick_players = leaf_states.current_trick[:, :3, 0]
+        trick_dominoes = leaf_states.current_trick[:, :3, 1]
+
+        # Mark empty trick positions as -1 based on trick_len
+        trick_len = leaf_states.trick_len.unsqueeze(1)  # (N, 1)
+        empty_mask = self._oracle_position_idx >= trick_len  # (N, 3)
+        trick_players = torch.where(empty_mask, torch.full_like(trick_players, -1), trick_players)
+        trick_dominoes = torch.where(empty_mask, torch.full_like(trick_dominoes, -1), trick_dominoes)
+
+        values = self.oracle.batch_evaluate_gpu(
+            original_hands=original_hands,
+            current_hands=leaf_states.hands,
+            decl_ids=leaf_states.decl_id,
+            actors=actors,
+            leaders=leaf_states.leader,
+            trick_players=trick_players,
+            trick_dominoes=trick_dominoes,
+            players=root_players,
+        )
+
+        self.total_oracle_queries += n
+        return values
+
+    def _evaluate_model_gpu(
+        self,
+        forest: GPUMCTSForest,
+        leaf_states: GPUGameState,
+        leaf_indices: Tensor,
+        tree_indices: Tensor | None = None,
+    ) -> Tensor:
+        """Evaluate leaf states with model's value AND policy heads (self-play mode).
+
+        This is the key AlphaZero component: both policy and value come from the
+        neural network. The policy becomes the prior for MCTS, guiding which
+        actions to explore.
+
+        Args:
+            forest: MCTS forest (provides original_hands for tokenization)
+            leaf_states: States to evaluate
+            leaf_indices: (N,) node indices of leaves being evaluated
+
+        Returns:
+            values: (N,) float32 values from root player's perspective
+
+        Side effect:
+            Updates forest.priors for the leaf nodes with policy probabilities
+        """
+        n = leaf_states.batch_size
+        device = forest.device
+
+        # Get current player at each leaf (for observation perspective)
+        current_players = current_player_gpu(leaf_states)
+
+        # Tokenize states from current player's perspective
+        if tree_indices is None:
+            original_hands = forest.original_hands
+            root_players = forest.to_play[:, 0]
+            batch_tree_indices = None
+        else:
+            idx = tree_indices.to(device=device, dtype=torch.int64)
+            original_hands = forest.original_hands.index_select(0, idx)
+            root_players = forest.to_play[:, 0].index_select(0, idx)
+            batch_tree_indices = idx
+
+        tokens, masks, hand_idx, hand_masks = self.tokenizer.tokenize_batch(
+            leaf_states,
+            original_hands,
+            current_players,
+        )
+
+        # Model forward pass (no gradients during game generation)
+        self.model.eval()
+        with torch.no_grad():
+            policy_logits, values = self.model(tokens.long(), masks, hand_idx, hand_masks)
+
+        # Convert policy logits to probabilities, masking illegal actions
+        policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
+        # Avoid GPU->CPU sync in Python control flow (and avoid NaNs from softmax(-inf)).
+        all_masked = hand_masks.sum(dim=-1) == 0  # (N,)
+        safe_logits = torch.where(all_masked.unsqueeze(1), torch.zeros_like(policy_logits), policy_logits)
+        policy_probs = F.softmax(safe_logits, dim=-1)
+        # If all actions are masked, softmax(zeros) already yields uniform.
+
+        # Store policy as priors for these leaf nodes
+        # This is the key AlphaZero insight: policy guides MCTS exploration
+        from forge.zeb.gpu_mcts import set_node_priors
+        set_node_priors(forest, leaf_indices, policy_probs, tree_indices=batch_tree_indices)
+
+        # Values are from current player's perspective
+        # Need to convert to root player's perspective for MCTS backprop
+        # Check if same team as root
+        same_team = (current_players % 2) == (root_players % 2)
+
+        # Flip value for opponent team
+        values = torch.where(same_team, values, -values)
+
+        self.total_model_queries += n
 
         return values
 
@@ -545,19 +938,22 @@ class GPUTrainingPipeline:
             policies = policies.pow(1.0 / self.temperature)
 
         # Mask and renormalize
-        policies = policies * hand_masks.float()
-        total = policies.sum(dim=1, keepdim=True).clamp(min=1e-8)
-        policies = policies / total
+        masked = policies * hand_masks.float()
+        total = masked.sum(dim=1, keepdim=True)
+        policies = masked / total.clamp(min=1e-8)
 
-        # Handle zero-probability case (fallback to uniform)
-        zero_policy = (total.squeeze(1) < 1e-8)
-        if zero_policy.any():
-            uniform = hand_masks.float() / hand_masks.sum(dim=1, keepdim=True).clamp(min=1)
-            policies = torch.where(
-                zero_policy.unsqueeze(1),
-                uniform,
-                policies
-            )
+        # Handle degenerate cases:
+        # - total==0 (e.g., no child visits yet) -> uniform over hand_masks
+        # - hand_masks sums to 0 (shouldn't happen) -> uniform over all 7
+        zero_policy = total.squeeze(1) <= 0
+        hand_counts = hand_masks.sum(dim=1, keepdim=True)
+        uniform = hand_masks.float() / hand_counts.clamp(min=1)
+        uniform = torch.where(
+            (hand_counts == 0),
+            torch.full_like(uniform, 1.0 / 7.0),
+            uniform,
+        )
+        policies = torch.where(zero_policy.unsqueeze(1), uniform, policies)
 
         # Sample
         actions = torch.multinomial(policies, 1).squeeze(1)
@@ -701,8 +1097,15 @@ def create_gpu_pipeline(
     """
     from forge.zeb.oracle_value import create_oracle_value_fn
 
-    device = torch.device(oracle_device)
-    oracle = create_oracle_value_fn(device=oracle_device, compile=True)
+    device = require_cuda(oracle_device, where="create_gpu_pipeline")
+    # For CUDA-graph MCTS, prefer oracle compile disabled for capture stability.
+    use_cudagraph_mcts = bool(kwargs.get("use_cudagraph_mcts", True))
+    oracle = create_oracle_value_fn(
+        device=oracle_device,
+        compile=not use_cudagraph_mcts,
+        use_async=False,
+        use_gpu_tokenizer=True,
+    )
 
     return GPUTrainingPipeline(
         oracle=oracle,
@@ -710,5 +1113,42 @@ def create_gpu_pipeline(
         n_parallel_games=n_parallel_games,
         n_simulations=n_simulations,
         max_mcts_nodes=max_mcts_nodes,
+        **kwargs,
+    )
+
+
+def create_selfplay_pipeline(
+    model: "ZebModel",
+    device: str = 'cuda',
+    n_parallel_games: int = 16,
+    n_simulations: int = 100,
+    max_mcts_nodes: int = 1024,
+    **kwargs,
+) -> GPUTrainingPipeline:
+    """Factory function to create self-play training pipeline.
+
+    Uses model's value head for MCTS leaf evaluation instead of oracle.
+    This is the true AlphaZero approach - the model bootstraps from itself.
+
+    Args:
+        model: ZebModel to use for leaf evaluation (must be on device)
+        device: Device for pipeline (default 'cuda')
+        n_parallel_games: Concurrent games per batch
+        n_simulations: MCTS simulations per move
+        max_mcts_nodes: Max nodes per MCTS tree
+        **kwargs: Additional args for GPUTrainingPipeline
+
+    Returns:
+        Configured GPUTrainingPipeline in self-play mode
+    """
+    torch_device = require_cuda(device, where="create_selfplay_pipeline")
+
+    return GPUTrainingPipeline(
+        oracle=None,  # No oracle in self-play mode
+        device=torch_device,
+        n_parallel_games=n_parallel_games,
+        n_simulations=n_simulations,
+        max_mcts_nodes=max_mcts_nodes,
+        model=model,
         **kwargs,
     )

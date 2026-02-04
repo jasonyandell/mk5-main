@@ -144,15 +144,117 @@ def _get_current_player(state: ZebGameState) -> int:
 
 
 def evaluate_vs_random(model, n_games: int = 100, device: str = 'cuda') -> dict:
-    """Evaluate model vs random players.
+    """Evaluate model vs random players (batched for GPU efficiency).
+
+    Model plays seats 0, 2 (team 0), random plays seats 1, 3 (team 1).
+    Runs all games in parallel with batched model inference.
+    """
+    return evaluate_vs_random_batched(model, n_games=n_games, device=device)
+
+
+def evaluate_vs_random_batched(
+    model,
+    n_games: int = 100,
+    device: str = 'cuda',
+    temperature: float = 0.1,
+) -> dict:
+    """Batched evaluation - runs N games in parallel with batched inference.
 
     Model plays seats 0, 2 (team 0), random plays seats 1, 3 (team 1).
     """
-    neural = NeuralPlayer(model, device=device)
-    random_player = RandomPlayer()
+    model.eval()
+    model.to(device)
 
-    players = (neural, random_player, neural, random_player)
-    return play_match(players, n_games=n_games)
+    # Initialize all games
+    states = [new_game(seed=i, dealer=i % 4, skip_bidding=True) for i in range(n_games)]
+    active = [True] * n_games  # Track which games are still running
+
+    # Play until all games complete
+    while any(active):
+        # Collect states needing neural network (seats 0, 2)
+        neural_indices = []
+        neural_states = []
+        neural_players = []
+
+        # Collect states needing random action (seats 1, 3)
+        random_indices = []
+
+        for i, (state, is_active) in enumerate(zip(states, active)):
+            if not is_active:
+                continue
+
+            player = _get_current_player(state)
+            if player in (0, 2):  # Neural player's turn
+                neural_indices.append(i)
+                neural_states.append(state)
+                neural_players.append(player)
+            else:  # Random player's turn
+                random_indices.append(i)
+
+        # Batch neural network inference
+        if neural_indices:
+            with torch.no_grad():
+                # Build batched tensors
+                batch_tokens = []
+                batch_masks = []
+                batch_hand_indices = []
+                batch_legal = []
+
+                for state, player in zip(neural_states, neural_players):
+                    tokens, mask, hand_indices = observe(state, player)
+                    legal = get_legal_mask(state, player)
+                    batch_tokens.append(tokens)
+                    batch_masks.append(mask)
+                    batch_hand_indices.append(hand_indices)
+                    batch_legal.append(legal)
+
+                # Stack and move to device
+                batch_tokens = torch.stack(batch_tokens).to(device)
+                batch_masks = torch.stack(batch_masks).to(device)
+                batch_hand_indices = torch.stack(batch_hand_indices).to(device)
+                batch_legal = torch.stack(batch_legal).to(device)
+
+                # Single forward pass for all neural states
+                actions, _, _ = model.get_action(
+                    batch_tokens, batch_masks, batch_hand_indices, batch_legal,
+                    temperature=temperature,
+                )
+
+                # Apply actions
+                for idx, game_idx in enumerate(neural_indices):
+                    action = actions[idx].item()
+                    states[game_idx] = apply_action(states[game_idx], action)
+                    if is_terminal(states[game_idx]):
+                        active[game_idx] = False
+
+        # Handle random player turns
+        for game_idx in random_indices:
+            state = states[game_idx]
+            legal = legal_actions(state)
+            action = random.choice(legal)
+            states[game_idx] = apply_action(state, action)
+            if is_terminal(states[game_idx]):
+                active[game_idx] = False
+
+    # Count results
+    team0_wins = 0
+    team1_wins = 0
+    total_margin = 0
+
+    for state in states:
+        if state.team_points[0] > state.team_points[1]:
+            team0_wins += 1
+        else:
+            team1_wins += 1
+        total_margin += state.team_points[0] - state.team_points[1]
+
+    return {
+        'team0_wins': team0_wins,
+        'team1_wins': team1_wins,
+        'team0_win_rate': team0_wins / n_games,
+        'avg_margin': total_margin / n_games,
+        'n_games': n_games,
+    }
 
 
 def evaluate_vs_heuristic(model, n_games: int = 100, device: str = 'cuda') -> dict:

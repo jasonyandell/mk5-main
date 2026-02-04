@@ -37,8 +37,12 @@ def get_rng_state() -> dict:
         'numpy': np.random.get_state(),
         'python': random.getstate(),
     }
-    if torch.cuda.is_available():
+    # Some environments have a CUDA-enabled PyTorch build but no usable CUDA runtime
+    # (e.g., no driver access). In that case, attempting to touch torch.cuda will raise.
+    try:
         state['cuda'] = torch.cuda.get_rng_state_all()
+    except Exception:
+        state['cuda'] = None
     return state
 
 
@@ -47,8 +51,12 @@ def set_rng_state(state: dict) -> None:
     torch.set_rng_state(state['torch'])
     np.random.set_state(state['numpy'])
     random.setstate(state['python'])
-    if 'cuda' in state and torch.cuda.is_available():
-        torch.cuda.set_rng_state_all(state['cuda'])
+    cuda_state = state.get('cuda')
+    if cuda_state is not None:
+        try:
+            torch.cuda.set_rng_state_all(cuda_state)
+        except Exception:
+            pass
 
 
 def save_checkpoint(
@@ -243,13 +251,8 @@ def evaluate_vs_random(model: ZebModel, n_games: int = 100, device: str = 'cpu')
 
             state = apply_action(state, action_slot)
 
-        # Count points from play history
-        team0_pts = sum(
-            DOMINO_COUNT_POINTS[d] for p, d in state.play_history if p % 2 == 0
-        )
-        team1_pts = sum(
-            DOMINO_COUNT_POINTS[d] for p, d in state.play_history if p % 2 == 1
-        )
+        # Use correct trick-based scoring from game state
+        team0_pts, team1_pts = state.team_points
 
         if team0_pts > team1_pts:
             wins += 1
@@ -258,253 +261,13 @@ def evaluate_vs_random(model: ZebModel, n_games: int = 100, device: str = 'cpu')
 
 
 def main():
-    parser = argparse.ArgumentParser(description='MCTS-based Zeb training')
-    parser.add_argument('--epochs', type=int, default=20)
-    parser.add_argument('--games-per-epoch', type=int, default=100)
-    parser.add_argument('--n-simulations', type=int, default=50)
-    parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--lr', type=float, default=1e-3)
-    parser.add_argument('--temperature', type=float, default=1.0)
-    parser.add_argument('--eval-every', type=int, default=5)
-    parser.add_argument('--device', type=str, default='cpu')
-    parser.add_argument('--model-size', type=str, default='small',
-                        choices=['small', 'medium', 'large'],
-                        help='ZebModel size configuration')
-    parser.add_argument('--use-oracle', action='store_true',
-                        help='Use Stage1Oracle for MCTS leaf evaluation (requires CUDA)')
-    parser.add_argument('--oracle-device', type=str, default='cuda',
-                        help='Device for oracle inference')
-    parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True,
-                        help='Enable W&B logging')
-    parser.add_argument('--wandb-project', type=str, default='zeb-mcts',
-                        help='W&B project name')
-    parser.add_argument('--run-name', type=str, default=None,
-                        help='W&B run name (auto-generated if not provided)')
-    # Cross-game leaf batching parameters (for future batched oracle implementation)
-    parser.add_argument('--n-parallel-games', type=int, default=16,
-                        help='Number of concurrent MCTS games for cross-game batching')
-    parser.add_argument('--cross-game-batch-size', type=int, default=512,
-                        help='Target batch size for oracle evaluation across games')
+    # Training entrypoint: self-play (GPU MCTS).
+    #
+    # Keep the rest of this module intact because other scripts import checkpoint helpers
+    # and evaluation utilities from here.
+    from .run_selfplay_training import main as _selfplay_main
 
-    # Checkpoint and resume parameters
-    parser.add_argument('--resume', action='store_true',
-                        help='Resume from latest checkpoint (auto-detects by model size)')
-    parser.add_argument('--checkpoint-dir', type=Path, default=DEFAULT_CHECKPOINT_DIR,
-                        help='Directory for saving/loading checkpoints')
-    parser.add_argument('--checkpoint-every', type=int, default=1,
-                        help='Save checkpoint every N epochs (default: every epoch)')
-    parser.add_argument('--keep-checkpoints', type=int, default=3,
-                        help='Keep only the last N checkpoints (default: 3)')
-    args = parser.parse_args()
-
-    # Check for resume checkpoint
-    start_epoch = 0
-    resume_checkpoint = None
-    wandb_run_id = None
-
-    if args.resume:
-        resume_checkpoint = find_latest_checkpoint(args.checkpoint_dir, args.model_size)
-        if resume_checkpoint:
-            # Peek at checkpoint to get wandb_run_id before initializing wandb
-            ckpt_data = torch.load(resume_checkpoint, map_location='cpu', weights_only=False)
-            wandb_run_id = ckpt_data.get('wandb_run_id')
-            start_epoch = ckpt_data['epoch'] + 1  # Resume from next epoch
-            print(f"Found checkpoint: {resume_checkpoint}")
-            print(f"  Will resume from epoch {start_epoch}")
-        else:
-            print(f"No checkpoint found for model size '{args.model_size}' in {args.checkpoint_dir}")
-            print("  Starting fresh training")
-
-    # Initialize W&B (with resume if we have a run ID)
-    use_wandb = args.wandb and WANDB_AVAILABLE
-    if use_wandb:
-        if wandb_run_id:
-            # Resume existing W&B run
-            wandb.init(
-                project=args.wandb_project,
-                id=wandb_run_id,
-                resume='must',
-            )
-            print(f"W&B run resumed: {wandb.run.url}")
-        else:
-            # New W&B run
-            timestamp = datetime.now().strftime("%Y%m%d%H%M")
-            run_name = args.run_name or f"mcts-zeb-{'oracle' if args.use_oracle else 'rollout'}-{args.model_size}-{timestamp}"
-            wandb.init(
-                project=args.wandb_project,
-                name=run_name,
-                tags=['mcts', 'zeb', args.model_size, 'oracle' if args.use_oracle else 'rollout'],
-                config={
-                    'epochs': args.epochs,
-                    'games_per_epoch': args.games_per_epoch,
-                    'n_simulations': args.n_simulations,
-                    'batch_size': args.batch_size,
-                    'lr': args.lr,
-                    'temperature': args.temperature,
-                    'model_size': args.model_size,
-                    'use_oracle': args.use_oracle,
-                    'device': args.device,
-                    'n_parallel_games': args.n_parallel_games,
-                    'cross_game_batch_size': args.cross_game_batch_size,
-                },
-            )
-            print(f"W&B run: {wandb.run.url}")
-
-    print("=== MCTS AlphaZero-style Training (ZebModel) ===")
-    print(f"Epochs: {args.epochs}")
-    print(f"Games/epoch: {args.games_per_epoch}")
-    print(f"MCTS simulations: {args.n_simulations}")
-    print(f"Learning rate: {args.lr}")
-    print(f"Model size: {args.model_size}")
-    print(f"Use oracle: {args.use_oracle}")
-    print()
-
-    # Load oracle value function if requested
-    value_fn = None
-    if args.use_oracle:
-        print("Loading Stage1Oracle for leaf evaluation...")
-        from .oracle_value import create_oracle_value_fn
-        t0 = time.time()
-        value_fn = create_oracle_value_fn(device=args.oracle_device, compile=True)
-        print(f"Oracle loaded in {time.time() - t0:.1f}s")
-        print()
-
-    # Model: ZebModel transformer
-    model_config = get_model_config(args.model_size)
-    model = ZebModel(**model_config)
-    model.to(args.device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
-
-    # Build training config for checkpoint saving
-    training_config = {
-        'epochs': args.epochs,
-        'games_per_epoch': args.games_per_epoch,
-        'n_simulations': args.n_simulations,
-        'batch_size': args.batch_size,
-        'lr': args.lr,
-        'temperature': args.temperature,
-        'model_size': args.model_size,
-        'model_config': model_config,
-        'use_oracle': args.use_oracle,
-        'device': args.device,
-        'n_parallel_games': args.n_parallel_games,
-        'cross_game_batch_size': args.cross_game_batch_size,
-    }
-
-    # Load checkpoint if resuming
-    if resume_checkpoint:
-        print(f"Loading checkpoint: {resume_checkpoint}")
-        load_checkpoint(resume_checkpoint, model, optimizer)
-        # Move optimizer state to correct device
-        for state in optimizer.state.values():
-            for k, v in state.items():
-                if isinstance(v, torch.Tensor):
-                    state[k] = v.to(args.device)
-        print(f"  Restored model, optimizer, and RNG states")
-
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"ZebModel ({args.model_size}): {total_params:,} parameters")
-    print(f"  embed_dim={model_config['embed_dim']}, n_layers={model_config['n_layers']}, n_heads={model_config['n_heads']}")
-
-    # Initial evaluation
-    print("\nInitial evaluation...")
-    win_rate = evaluate_vs_random(model, n_games=100, device=args.device)
-    print(f"  vs Random: {win_rate:.1%}")
-    if use_wandb:
-        wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': -1})
-
-    # Training loop
-    for epoch in range(start_epoch, args.epochs):
-        t0 = time.time()
-
-        # Generate games with MCTS (cross-game batched for GPU efficiency)
-        games = play_games_batched(
-            n_games=args.games_per_epoch,
-            n_simulations=args.n_simulations,
-            temperature=args.temperature,
-            base_seed=epoch * args.games_per_epoch,
-            value_fn=value_fn,
-            n_parallel_games=args.n_parallel_games,
-            target_batch_size=args.cross_game_batch_size,
-        )
-        gen_time = time.time() - t0
-
-        # Convert to Zeb tensors (proper observation encoding)
-        tokens, masks, hand_indices, hand_masks, target_policies, target_values = \
-            mcts_examples_to_zeb_tensors(games)
-
-        # Move to device
-        tokens = tokens.to(args.device)
-        masks = masks.to(args.device)
-        hand_indices = hand_indices.to(args.device)
-        hand_masks = hand_masks.to(args.device)
-        target_policies = target_policies.to(args.device)
-        target_values = target_values.to(args.device)
-
-        # Train
-        t1 = time.time()
-        metrics = train_epoch(
-            model, optimizer,
-            tokens, masks, hand_indices, hand_masks,
-            target_policies, target_values,
-            batch_size=args.batch_size,
-        )
-        train_time = time.time() - t1
-
-        # Compute stats
-        n_examples = tokens.shape[0]
-        games_per_sec = args.games_per_epoch / gen_time
-        oracle_queries = 0
-        if value_fn is not None and hasattr(value_fn, 'query_count'):
-            oracle_queries = value_fn.query_count
-            value_fn.query_count = 0  # Reset for next epoch
-
-        # Build epoch summary
-        epoch_str = f"Epoch {epoch:3d}: policy_loss={metrics['policy_loss']:.4f}, value_loss={metrics['value_loss']:.4f}"
-        epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.2f}s, {games_per_sec:.2f} games/s)"
-        if oracle_queries > 0:
-            epoch_str += f" [oracle: {oracle_queries:,}]"
-        print(epoch_str)
-
-        # Log to W&B
-        if use_wandb:
-            wandb.log({
-                'epoch': epoch,
-                'train/policy_loss': metrics['policy_loss'],
-                'train/value_loss': metrics['value_loss'],
-                'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
-                'perf/gen_time_s': gen_time,
-                'perf/train_time_s': train_time,
-                'perf/games_per_sec': games_per_sec,
-                'perf/examples': n_examples,
-                'perf/oracle_queries': oracle_queries,
-            })
-
-        # Save checkpoint
-        if (epoch + 1) % args.checkpoint_every == 0:
-            ckpt_path = checkpoint_path(args.checkpoint_dir, args.model_size, epoch)
-            current_wandb_id = wandb.run.id if use_wandb else None
-            save_checkpoint(ckpt_path, model, optimizer, epoch, training_config, current_wandb_id)
-            cleanup_old_checkpoints(args.checkpoint_dir, args.model_size, args.keep_checkpoints)
-            if use_wandb:
-                wandb.log({'checkpoint/saved': 1, 'checkpoint/epoch': epoch})
-
-        # Periodic evaluation
-        if (epoch + 1) % args.eval_every == 0:
-            win_rate = evaluate_vs_random(model, n_games=100, device=args.device)
-            print(f"         → vs Random: {win_rate:.1%}")
-            if use_wandb:
-                wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': epoch})
-
-    # Final evaluation
-    print("\n=== Final Evaluation ===")
-    win_rate = evaluate_vs_random(model, n_games=200, device=args.device)
-    print(f"vs Random: {win_rate:.1%}")
-
-    if use_wandb:
-        wandb.log({'final/vs_random_win_rate': win_rate})
-        wandb.finish()
-        print("W&B run finished.")
+    _selfplay_main()
 
 
 if __name__ == '__main__':

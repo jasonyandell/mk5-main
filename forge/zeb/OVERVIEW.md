@@ -127,14 +127,21 @@ games = coordinator.play_games(n_games=100)
 The double-buffering pattern overlaps CPU preprocessing with GPU evaluation:
 while GPU evaluates batch N, CPU collects leaves and prepares batch N+1.
 
-### `run_mcts_training.py` - Training Loop
+### `run_selfplay_training.py` - Training Loop (Primary)
 
-Main training script with:
+True AlphaZero self-play training:
 
-- Epoch loop: generate games -> convert to tensors -> train batch
-- W&B logging for policy/value loss, games/sec, oracle queries
-- Periodic evaluation against random opponent
-- Model size configs (small/medium/large)
+- Epoch loop: generate games on GPU via MCTS -> train on MCTS targets
+- Model provides both **policy priors** and **value** for MCTS leaf evaluation
+- Checkpoints saved as `selfplay-epochXXXX.pt`
+- Automatic W&B run resume from checkpoint's `wandb_run_id`
+- `--keep-checkpoints N` to retain only last N checkpoints
+
+This project is **CUDA-only** for training; there is no CPU training path in the default workflow.
+
+### `run_mcts_training.py` - Oracle Training (Alternative)
+
+Oracle-guided distillation (Stage1Oracle evaluates leaves instead of model).
 
 ### `observation.py` - Token Encoding
 
@@ -182,78 +189,116 @@ Model configs:
 
 ## Training Commands
 
-### Basic training (CPU, no oracle)
+### Default: Self-play training (AlphaZero-style)
 
 ```bash
-python -m forge.zeb.run_mcts_training \
-    --epochs 20 \
-    --games-per-epoch 100 \
+python -u -m forge.zeb.run_selfplay_training \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch0375.pt \
+    --epochs 500 \
+    --games-per-epoch 128 \
     --n-simulations 50 \
-    --model-size small \
-    --device cpu
-```
-
-### Oracle-guided training (GPU recommended)
-
-```bash
-python -m forge.zeb.run_mcts_training \
-    --epochs 50 \
-    --games-per-epoch 200 \
-    --n-simulations 100 \
-    --model-size medium \
-    --use-oracle \
-    --oracle-device cuda \
-    --device cuda \
-    --n-parallel-games 16 \
-    --cross-game-batch-size 512
+    --n-parallel-games 128 \
+    --max-mcts-nodes 128 \
+    --batch-size 64 \
+    --lr 1e-4 \
+    --eval-every 1 \
+    --save-every 1 \
+    --keep-checkpoints 3 \
+    --wandb
 ```
 
 ### Key arguments
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--epochs` | 20 | Training epochs |
-| `--games-per-epoch` | 100 | Games generated per epoch |
-| `--n-simulations` | 50 | MCTS simulations per move |
-| `--model-size` | small | small/medium/large |
-| `--use-oracle` | False | Use oracle for leaf evaluation |
-| `--n-parallel-games` | 16 | Concurrent games for batching |
-| `--cross-game-batch-size` | 512 | Target oracle batch size |
+| `--checkpoint` | (required) | Checkpoint to continue from |
+| `--epochs` | 50 | Training epochs |
+| `--games-per-epoch` | 512 | Games generated per epoch |
+| `--n-simulations` | 100 | MCTS simulations per move |
+| `--n-parallel-games` | 512 | Concurrent games per batch |
+| `--max-mcts-nodes` | 256 | Max nodes per MCTS tree |
+| `--batch-size` | 64 | SGD mini-batch size |
+| `--lr` | 1e-4 | Learning rate |
+| `--temperature` | 1.0 | MCTS temperature for exploration |
+| `--eval-every` | 5 | Evaluate vs random every N epochs |
+| `--save-every` | 5 | Save checkpoint every N epochs |
+| `--keep-checkpoints` | 0 | Keep only last N checkpoints (0 = keep all) |
 | `--wandb/--no-wandb` | True | Enable W&B logging |
-| `--resume` | False | Resume from latest checkpoint |
-| `--checkpoint-dir` | `forge/zeb/checkpoints/` | Checkpoint save directory |
-| `--checkpoint-every` | 1 | Save every N epochs |
-| `--keep-checkpoints` | 3 | Keep only last N checkpoints |
+| `--run-name` | auto | W&B run name (auto-generates timestamp) |
 
-### Resuming training
+### Current Training Run
 
-Training automatically saves checkpoints every epoch to `forge/zeb/checkpoints/`. To resume an interrupted run:
+**Run ID**: `selfplay-500ep-from-e99` (W&B: `4jhso0ll`)
+**Started from**: `selfplay-epoch0099.pt` (oracle-trained baseline)
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| `--n-simulations` | 100 | Doubled from 50 after plateau |
+| `--n-parallel-games` | 256 | |
+| `--max-mcts-nodes` | 256 | |
+| `--games-per-epoch` | 128 | |
+| `--batch-size` | 64 | |
+| `--lr` | 1e-4 | |
+| `--eval-every` | 1 | |
+| `--save-every` | 1 | |
+| `--keep-checkpoints` | 3 | |
+
+**Performance**: ~4.5 games/s, ~31s/epoch total
+- Game generation: ~28s
+- Training: ~1s
+- Eval (100 games): <2s (batched, 12x faster than sequential)
+
+**Progress** (as of epoch 392):
+- Win rate vs random (pair): ~55-70% (varies)
+- Win rate vs random (solo): ~64%
+- Total games: ~340k+
+- Target: 100,000 epochs (runs indefinitely until stopped)
+
+**Resume command**:
+```bash
+nohup python -u -m forge.zeb.run_selfplay_training \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch0391.pt \
+  --epochs 100000 \
+  --games-per-epoch 128 \
+  --n-simulations 100 \
+  --n-parallel-games 256 \
+  --max-mcts-nodes 256 \
+  --lr 1e-4 \
+  --batch-size 64 \
+  --eval-every 1 \
+  --save-every 1 \
+  --keep-checkpoints 3 \
+  --wandb \
+  >> scratch/selfplay-500ep.log 2>&1 &
+```
+
+### Continuing training
+
+Self-play saves checkpoints as `selfplay-epoch{N:04d}.pt`. To continue training, pass the most recent checkpoint:
 
 ```bash
-python -m forge.zeb.run_mcts_training \
-    --resume \
-    --model-size medium \
-    --use-oracle \
-    [... same args as original run ...]
+python -u -m forge.zeb.run_selfplay_training \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch0375.pt \
+    --epochs 500 \
+    --keep-checkpoints 3 \
+    [...]
 ```
+
+**W&B auto-resume**: If the checkpoint contains a `wandb_run_id`, the script automatically resumes that W&B run. No manual intervention needed - just pass the checkpoint and training continues with the same graphs and metrics.
 
 Checkpoints include:
 - Model and optimizer state
-- RNG states (torch, numpy, python, CUDA) for exact reproducibility
+- Total games played (cumulative across all training runs)
 - W&B run ID for seamless logging continuation
-- Training config
-
-Checkpoint naming follows convention: `zeb-{model_size}-epoch{N:04d}.pt`
+- Training config (mode, source checkpoint, hyperparameters)
 
 ---
 
 ## Key Design Decisions
 
-### 1. Distillation over feedback loop
+### 1. Self-play bootstrapping (AlphaZero-style)
 
-AlphaZero trains by having the network guide MCTS, then training on MCTS outputs. This creates a feedback loop where early noise can compound.
-
-We instead use a fixed, pre-trained oracle as the teacher. The student network (ZebModel) never influences MCTS leaf evaluation during training. This provides stable, high-quality gradients from epoch 1.
+Training uses true self-play: the model guides MCTS with policy priors and evaluates leaves with its value head, then learns from MCTS visit targets and final outcomes. This keeps the entire loop on GPU and continuously improves checkpoints over time.
 
 ### 2. Observation encoding: 36x8 tokens preserving play order
 
