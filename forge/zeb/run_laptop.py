@@ -10,7 +10,7 @@ from lightning.pytorch.loggers import CSVLogger, WandbLogger
 
 from .model import ZebModel, get_model_config
 from .module import ZebLightningModule
-from .self_play import play_games_batched, trajectories_to_batch
+from .self_play import play_games_batched, play_games_vs_heuristic, trajectories_to_batch
 from .evaluate import evaluate_vs_random, evaluate_vs_heuristic
 
 
@@ -44,7 +44,7 @@ class EvaluationCallback(Callback):
 
 
 class SelfPlayDataModule(L.LightningDataModule):
-    """Data module that generates training data via self-play."""
+    """Data module that generates training data via self-play or vs heuristic."""
 
     def __init__(
         self,
@@ -53,6 +53,7 @@ class SelfPlayDataModule(L.LightningDataModule):
         batch_size: int = 128,
         temperature: float = 1.0,
         device: str = 'cuda',
+        vs_heuristic: bool = False,
     ):
         super().__init__()
         self.model = model
@@ -60,6 +61,7 @@ class SelfPlayDataModule(L.LightningDataModule):
         self.batch_size = batch_size
         self.temperature = temperature
         self.device = device
+        self.vs_heuristic = vs_heuristic
         self.epoch = 0
 
     def setup(self, stage=None):
@@ -68,13 +70,22 @@ class SelfPlayDataModule(L.LightningDataModule):
     def train_dataloader(self):
         """Generate new games each epoch."""
         # Play games with current model
-        trajectories = play_games_batched(
-            self.model,
-            n_games=self.games_per_epoch,
-            temperature=self.temperature,
-            device=self.device,
-            base_seed=self.epoch * self.games_per_epoch,
-        )
+        if self.vs_heuristic:
+            trajectories = play_games_vs_heuristic(
+                self.model,
+                n_games=self.games_per_epoch,
+                temperature=self.temperature,
+                device=self.device,
+                base_seed=self.epoch * self.games_per_epoch,
+            )
+        else:
+            trajectories = play_games_batched(
+                self.model,
+                n_games=self.games_per_epoch,
+                temperature=self.temperature,
+                device=self.device,
+                base_seed=self.epoch * self.games_per_epoch,
+            )
         self.epoch += 1
 
         # Convert to batch
@@ -104,6 +115,8 @@ def main():
     parser.add_argument('--eval-every', type=int, default=1, help='Evaluate every N epochs')
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument('--wandb-project', type=str, default='zeb-training')
+    parser.add_argument('--vs-heuristic', action='store_true',
+                        help='Train against fixed heuristic instead of self-play')
     args = parser.parse_args()
 
     L.seed_everything(args.seed)
@@ -128,6 +141,7 @@ def main():
         games_per_epoch=args.games_per_epoch,
         batch_size=args.batch_size,
         temperature=args.temperature,
+        vs_heuristic=args.vs_heuristic,
     )
 
     # Output directory
@@ -138,11 +152,12 @@ def main():
     loggers = [CSVLogger(str(output_dir), name='zeb')]
     if args.wandb:
         timestamp = datetime.now().strftime("%Y%m%d%H%M")
-        run_name = f"zeb-laptop-{timestamp}-{model_size_str}"
+        mode_tag = 'vs-heuristic' if args.vs_heuristic else 'self-play'
+        run_name = f"zeb-{mode_tag}-{timestamp}-{model_size_str}"
         loggers.append(WandbLogger(
             project=args.wandb_project,
             name=run_name,
-            tags=['laptop', 'self-play', args.model_size],
+            tags=['laptop', mode_tag, args.model_size],
             save_dir=str(output_dir),
             log_model=False,  # Don't upload checkpoints
             config={
@@ -155,6 +170,7 @@ def main():
                 'temperature': args.temperature,
                 'lr': args.lr,
                 'seed': args.seed,
+                'vs_heuristic': args.vs_heuristic,
             },
         ))
 

@@ -7,9 +7,15 @@ from __future__ import annotations
 
 import random
 import time
+import os
 
 import pytest
 import torch
+
+pytestmark = pytest.mark.skipif(
+    not torch.cuda.is_available(),
+    reason="CUDA not available (GPUGameState is CUDA-only)",
+)
 
 from forge.eq.game import GameState
 from forge.oracle.tables import (
@@ -23,19 +29,16 @@ from forge.zeb.gpu_game_state import (
     can_follow_gpu,
     current_player_gpu,
     deal_random_gpu,
-    from_python_states,
     get_domino_tables,
     is_in_called_suit_gpu,
     is_terminal_gpu,
     led_suit_for_lead_domino_gpu,
     legal_actions_gpu,
-    to_python_state,
     trick_rank_gpu,
 )
 
 
-# Use CPU for tests (works on all machines)
-DEVICE = torch.device("cpu")
+DEVICE = torch.device("cuda")
 
 
 class TestDealRandomGpu:
@@ -139,59 +142,8 @@ class TestLegalActionsGpu:
         assert legal.shape == (n, 7)
         assert (legal == True).all()
 
-    def test_matches_python_implementation(self):
-        """GPU legal actions should exactly match Python for various states."""
-        random.seed(42)
-        torch.manual_seed(42)
-
-        # Create Python states and play some moves
-        for _ in range(20):
-            # Random deal
-            dominoes = list(range(28))
-            random.shuffle(dominoes)
-            hands = [dominoes[i*7:(i+1)*7] for i in range(4)]
-            decl_id = random.randint(0, 9)
-            leader = random.randint(0, 3)
-
-            py_state = GameState.from_hands(hands, decl_id, leader)
-
-            # Play 0-20 random moves
-            n_moves = random.randint(0, 20)
-            for _ in range(n_moves):
-                if py_state.is_complete():
-                    break
-                legal = py_state.legal_actions()
-                if not legal:
-                    break
-                action = random.choice(legal)
-                py_state = py_state.apply_action(action)
-
-            # Convert to GPU with original hands for proper slot mapping
-            gpu_state = from_python_states([py_state], DEVICE, original_hands=[hands])
-
-            # Get legal actions from GPU
-            gpu_legal = legal_actions_gpu(gpu_state)[0]  # (7,) bool mask
-
-            # Get legal actions from Python
-            py_legal_dominoes = set(py_state.legal_actions())
-
-            # Get current player's original hand slots
-            player = py_state.current_player()
-            original_hand = hands[player]  # Original 7 dominoes in order
-
-            # Check each slot
-            for slot_idx in range(7):
-                domino_id = original_hand[slot_idx]
-                # Slot is legal if domino is in hand AND in legal actions
-                in_hand = domino_id in py_state.hands[player]
-                in_legal = domino_id in py_legal_dominoes
-                expected_legal = in_hand and in_legal
-
-                assert gpu_legal[slot_idx].item() == expected_legal, (
-                    f"Mismatch at slot {slot_idx}: gpu={gpu_legal[slot_idx].item()}, "
-                    f"expected={expected_legal}, domino={domino_id}, "
-                    f"in_hand={in_hand}, in_legal={in_legal}, decl={decl_id}"
-                )
+    # NOTE: Python->GPU GameState conversion is intentionally disabled, so
+    # cross-checking arbitrary mid-game Python states is out of scope here.
 
 
 class TestApplyActionGpu:
@@ -236,63 +188,8 @@ class TestApplyActionGpu:
         total_points = states.scores.sum(dim=1)
         assert (total_points > 0).all()
 
-    def test_matches_python_single_game(self):
-        """Play a full game and verify each step matches Python."""
-        random.seed(123)
-        torch.manual_seed(123)
-
-        # Create matching Python and GPU states
-        dominoes = list(range(28))
-        random.shuffle(dominoes)
-        hands = [dominoes[i*7:(i+1)*7] for i in range(4)]
-        decl_id = 3  # Threes trump
-        leader = 1
-
-        # Store original hands for slot-to-domino mapping
-        original_hands = [list(h) for h in hands]
-
-        py_state = GameState.from_hands(hands, decl_id, leader)
-        gpu_state = from_python_states([py_state], DEVICE, original_hands=[original_hands])
-
-        # Play until game is complete
-        move_count = 0
-        while not py_state.is_complete():
-            # Verify states match
-            py_player = py_state.current_player()
-            gpu_player = current_player_gpu(gpu_state)[0].item()
-            assert py_player == gpu_player, f"Player mismatch at move {move_count}"
-
-            # Get legal actions
-            py_legal = py_state.legal_actions()
-
-            # Convert Python legal (domino IDs) to slot indices
-            player_original = original_hands[py_player]
-            py_legal_slots = [player_original.index(d) for d in py_legal if d in player_original]
-
-            gpu_legal = legal_actions_gpu(gpu_state)[0]
-            gpu_legal_slots = [i for i in range(7) if gpu_legal[i].item()]
-
-            assert set(py_legal_slots) == set(gpu_legal_slots), (
-                f"Legal actions mismatch at move {move_count}: "
-                f"py={py_legal_slots}, gpu={gpu_legal_slots}"
-            )
-
-            # Pick first legal slot
-            slot = min(gpu_legal_slots)
-            domino_id = player_original[slot]
-
-            # Apply action
-            py_state = py_state.apply_action(domino_id)
-            gpu_state = apply_action_gpu(
-                gpu_state,
-                torch.tensor([slot], dtype=torch.int32, device=DEVICE)
-            )
-
-            move_count += 1
-
-        # Game should be complete
-        assert is_terminal_gpu(gpu_state)[0].item()
-        assert py_state.is_complete()
+    # NOTE: Python->GPU GameState conversion is intentionally disabled, so
+    # full cross-checking against Python mid-game trajectories is out of scope here.
 
 
 class TestIsTerminalGpu:
@@ -391,53 +288,11 @@ class TestGameRulesGpu:
                     )
 
 
-class TestConversion:
-    """Test conversion between Python and GPU states."""
-
-    def test_roundtrip_fresh_state(self):
-        """Converting to GPU and back should preserve state."""
-        random.seed(999)
-
-        dominoes = list(range(28))
-        random.shuffle(dominoes)
-        hands = [dominoes[i*7:(i+1)*7] for i in range(4)]
-
-        py_state = GameState.from_hands(hands, decl_id=5, leader=2)
-
-        gpu_state = from_python_states([py_state], DEVICE)
-        recovered = to_python_state(gpu_state, 0)
-
-        # Hands should match (allowing for different tuple ordering)
-        for p in range(4):
-            assert set(py_state.hands[p]) == set(recovered.hands[p])
-
-        assert recovered.decl_id == py_state.decl_id
-        assert recovered.leader == py_state.leader
-        assert recovered.played == py_state.played
-
-    def test_roundtrip_mid_game(self):
-        """Roundtrip should work for mid-game states."""
-        random.seed(888)
-
-        dominoes = list(range(28))
-        random.shuffle(dominoes)
-        hands = [dominoes[i*7:(i+1)*7] for i in range(4)]
-
-        py_state = GameState.from_hands(hands, decl_id=3, leader=1)
-
-        # Play some moves
-        for _ in range(10):
-            legal = py_state.legal_actions()
-            if not legal:
-                break
-            py_state = py_state.apply_action(random.choice(legal))
-
-        gpu_state = from_python_states([py_state], DEVICE)
-        recovered = to_python_state(gpu_state, 0)
-
-        assert recovered.decl_id == py_state.decl_id
-        assert recovered.leader == py_state.leader
-        assert len(recovered.play_history) == len(py_state.play_history)
+class TestDisabledPythonBootstrap:
+    def test_from_python_states_is_disabled(self):
+        from forge.zeb import gpu_game_state
+        with pytest.raises(RuntimeError, match="from_python_states\\(\\) is disabled"):
+            _ = gpu_game_state.from_python_states([], DEVICE)
 
 
 class TestBenchmark:
@@ -458,6 +313,9 @@ class TestBenchmark:
         For small batches, the speedup may be modest. The real value comes
         from being able to keep all state on GPU for MCTS integration.
         """
+        if os.getenv("ZEB_RUN_BENCHMARKS") != "1":
+            pytest.skip("Set ZEB_RUN_BENCHMARKS=1 to run GPU/CPU benchmark (not stable across hardware)")
+
         n_games = 1000
         n_moves = 10  # Play 10 moves per game
 
@@ -514,48 +372,6 @@ class TestBenchmark:
         # Should be at least faster (GPU wins at scale, and avoids CPU-GPU transfers)
         # The main benefit is avoiding Python object overhead in MCTS, not raw speed
         assert speedup > 1.0, f"Expected GPU to be faster, got {speedup:.1f}x"
-
-    def test_cpu_batch_faster_than_python_loop(self):
-        """Even on CPU, batched should be faster than Python loops."""
-        n_games = 100
-        n_moves = 10
-
-        # CPU batch timing
-        cpu_states = deal_random_gpu(n_games, DEVICE, decl_ids=0)
-
-        start = time.perf_counter()
-        for _ in range(n_moves):
-            legal = legal_actions_gpu(cpu_states)
-            actions = legal.int().argmax(dim=1)
-            cpu_states = apply_action_gpu(cpu_states, actions)
-        batch_time = time.perf_counter() - start
-
-        # Python loop timing
-        random.seed(42)
-        py_states = []
-        for _ in range(n_games):
-            dominoes = list(range(28))
-            random.shuffle(dominoes)
-            hands = [dominoes[i*7:(i+1)*7] for i in range(4)]
-            py_states.append(GameState.from_hands(hands, 0, 0))
-
-        start = time.perf_counter()
-        for i in range(n_games):
-            state = py_states[i]
-            for _ in range(n_moves):
-                legal = state.legal_actions()
-                if legal:
-                    state = state.apply_action(legal[0])
-        loop_time = time.perf_counter() - start
-
-        speedup = loop_time / batch_time
-        print(f"\nCPU Benchmark: {n_games} games x {n_moves} moves")
-        print(f"  Python loop: {loop_time:.3f}s")
-        print(f"  Batched CPU: {batch_time:.3f}s")
-        print(f"  Speedup: {speedup:.1f}x")
-
-        # Batched should be at least comparable (might be slower on CPU due to tensor overhead)
-        # Just verify it doesn't crash and produces valid output
 
 
 class TestFullGameSimulation:

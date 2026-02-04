@@ -102,5 +102,16 @@ See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architectur
 
 **Running overnight jobs**: Always use `python -u` (unbuffered) so logs stream in real-time:
 ```bash
-nohup python -u -m forge.zeb.run_mcts_training [args] > scratch/training.log 2>&1 &
+nohup python -u -m forge.zeb.run_mcts_training \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch0349.pt \
+  --epochs 500 \
+  --games-per-epoch 128 \
+  --n-simulations 50 \
+  --n-parallel-games 128 \
+  --max-mcts-nodes 128 \
+  --batch-size 64 \
+  --lr 1e-4 \
+  --device cuda \
+  --no-wandb \
+  > scratch/training.log 2>&1 &
 ```

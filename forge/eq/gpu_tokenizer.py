@@ -76,10 +76,18 @@ class GPUTokenizer:
         )
         self.token_types = token_types  # (28,)
 
+        # Trick token type constants (positions 29-31).
+        self.trick_token_types = torch.tensor(
+            [TOKEN_TYPE_TRICK_P0, TOKEN_TYPE_TRICK_P0 + 1, TOKEN_TYPE_TRICK_P0 + 2],
+            dtype=torch.int32,
+            device=device,
+        ).unsqueeze(0)  # (1, 3)
+
         # Pre-allocate output buffers (will resize if needed)
         self._max_batch = 0
         self._tokens_buf = None
         self._masks_buf = None
+        self._trick_tokens_buf = None
 
     def _ensure_buffers(self, n: int):
         """Ensure output buffers are large enough."""
@@ -92,6 +100,11 @@ class GPUTokenizer:
             self._masks_buf = torch.zeros(
                 (self._max_batch, MAX_TOKENS),
                 dtype=torch.int32, device=self.device
+            )
+            self._trick_tokens_buf = torch.zeros(
+                (self._max_batch, 3, N_FEATURES),
+                dtype=torch.int32,
+                device=self.device,
             )
 
     def tokenize(
@@ -194,14 +207,11 @@ class GPUTokenizer:
             # Normalized players: (N, 3)
             normalized_pp = (trick_players - actors.unsqueeze(1) + 4) % 4
 
-            # Token type for each position: TOKEN_TYPE_TRICK_P0 + [0, 1, 2]
-            trick_token_types = torch.tensor(
-                [TOKEN_TYPE_TRICK_P0, TOKEN_TYPE_TRICK_P0 + 1, TOKEN_TYPE_TRICK_P0 + 2],
-                dtype=torch.int32, device=trick_players.device
-            ).unsqueeze(0).expand(n, -1)  # (N, 3)
+            trick_token_types = self.trick_token_types.expand(n, -1)  # (N, 3)
 
-            # Build trick tokens: (N, 3, 12)
-            trick_tokens = torch.zeros((n, 3, N_FEATURES), dtype=torch.int32, device=trick_players.device)
+            # Build trick tokens into preallocated buffer: (N, 3, N_FEATURES)
+            trick_tokens = self._trick_tokens_buf[:n]
+            trick_tokens.zero_()
             trick_tokens[:, :, 0:5] = trick_features
             trick_tokens[:, :, 5] = normalized_pp
             trick_tokens[:, :, 6] = (normalized_pp == 0).int()

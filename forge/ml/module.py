@@ -63,9 +63,19 @@ class DominoTransformer(nn.Module):
             dropout=dropout,
             batch_first=True,
         )
-        self.transformer = nn.TransformerEncoder(encoder_layer, num_layers=n_layers)
+        # Disable nested tensor fast-paths for CUDA graph capture stability.
+        self.transformer = nn.TransformerEncoder(
+            encoder_layer,
+            num_layers=n_layers,
+            enable_nested_tensor=False,
+            mask_check=False,
+        )
         self.output_proj = nn.Linear(embed_dim, 1)  # Action logits
         self.value_head = nn.Linear(embed_dim, 1)   # State value prediction
+
+        # Constant offsets [0..6] for gathering the current player's hand tokens.
+        # Non-persistent so it does not affect checkpoint compatibility.
+        self.register_buffer("_hand_offsets", torch.arange(7, dtype=torch.int64), persistent=False)
 
     def _calc_input_dim(self) -> int:
         """Calculate total dimension of concatenated embeddings."""
@@ -118,8 +128,7 @@ class DominoTransformer(nn.Module):
         # Extract hand representations for current player
         # Player's 7 dominoes start at index 1 + player_id * 7
         start_indices = 1 + current_player * 7
-        offsets = torch.arange(7, device=device)
-        gather_indices = start_indices.unsqueeze(1) + offsets.unsqueeze(0)
+        gather_indices = start_indices.unsqueeze(1) + self._hand_offsets.unsqueeze(0)
         gather_indices = gather_indices.unsqueeze(-1).expand(-1, -1, self.embed_dim)
 
         hand_repr = torch.gather(x, dim=1, index=gather_indices)
