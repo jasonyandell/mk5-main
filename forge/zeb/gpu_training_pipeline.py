@@ -100,6 +100,174 @@ class GPUTrainingExample:
         return self.observations.shape[0]
 
 
+class GPUReplayBuffer:
+    """Fixed-capacity replay buffer stored entirely on GPU.
+
+    Eliminates CPU<->GPU transfers during training by keeping all data on GPU.
+    Uses circular buffer semantics for O(1) add operations.
+
+    Memory usage for 50k examples: ~65 MB
+    """
+
+    MAX_TOKENS = 36
+    N_FEATURES = 8
+    N_HAND_SLOTS = 7
+
+    def __init__(self, capacity: int, device: torch.device):
+        self.capacity = capacity
+        self.device = device
+        self.size = 0
+        self.write_idx = 0
+
+        # Pre-allocate GPU tensors
+        self.observations = torch.zeros(
+            (capacity, self.MAX_TOKENS, self.N_FEATURES),
+            dtype=torch.int32, device=device
+        )
+        self.masks = torch.zeros(
+            (capacity, self.MAX_TOKENS),
+            dtype=torch.bool, device=device
+        )
+        self.hand_indices = torch.zeros(
+            (capacity, self.N_HAND_SLOTS),
+            dtype=torch.int64, device=device
+        )
+        self.hand_masks = torch.zeros(
+            (capacity, self.N_HAND_SLOTS),
+            dtype=torch.bool, device=device
+        )
+        self.policy_targets = torch.zeros(
+            (capacity, self.N_HAND_SLOTS),
+            dtype=torch.float32, device=device
+        )
+        self.value_targets = torch.zeros(
+            capacity,
+            dtype=torch.float32, device=device
+        )
+
+    def __len__(self) -> int:
+        return self.size
+
+    def add_batch(self, examples: GPUTrainingExample) -> None:
+        """Add batch of examples (already on GPU). O(1) amortized."""
+        n = examples.n_examples
+        if n > self.capacity:
+            # If batch larger than capacity, only keep last `capacity` examples
+            examples = GPUTrainingExample(
+                observations=examples.observations[-self.capacity:],
+                masks=examples.masks[-self.capacity:],
+                hand_indices=examples.hand_indices[-self.capacity:],
+                hand_masks=examples.hand_masks[-self.capacity:],
+                policy_targets=examples.policy_targets[-self.capacity:],
+                value_targets=examples.value_targets[-self.capacity:],
+            )
+            n = self.capacity
+
+        end_idx = self.write_idx + n
+
+        if end_idx <= self.capacity:
+            # Simple case: no wraparound
+            self.observations[self.write_idx:end_idx] = examples.observations
+            self.masks[self.write_idx:end_idx] = examples.masks
+            self.hand_indices[self.write_idx:end_idx] = examples.hand_indices
+            self.hand_masks[self.write_idx:end_idx] = examples.hand_masks
+            self.policy_targets[self.write_idx:end_idx] = examples.policy_targets
+            self.value_targets[self.write_idx:end_idx] = examples.value_targets
+        else:
+            # Wraparound: split into two copies
+            first_part = self.capacity - self.write_idx
+            second_part = n - first_part
+
+            self.observations[self.write_idx:] = examples.observations[:first_part]
+            self.observations[:second_part] = examples.observations[first_part:]
+
+            self.masks[self.write_idx:] = examples.masks[:first_part]
+            self.masks[:second_part] = examples.masks[first_part:]
+
+            self.hand_indices[self.write_idx:] = examples.hand_indices[:first_part]
+            self.hand_indices[:second_part] = examples.hand_indices[first_part:]
+
+            self.hand_masks[self.write_idx:] = examples.hand_masks[:first_part]
+            self.hand_masks[:second_part] = examples.hand_masks[first_part:]
+
+            self.policy_targets[self.write_idx:] = examples.policy_targets[:first_part]
+            self.policy_targets[:second_part] = examples.policy_targets[first_part:]
+
+            self.value_targets[self.write_idx:] = examples.value_targets[:first_part]
+            self.value_targets[:second_part] = examples.value_targets[first_part:]
+
+        self.write_idx = end_idx % self.capacity
+        self.size = min(self.size + n, self.capacity)
+
+    def sample(self, batch_size: int) -> GPUTrainingExample:
+        """Sample random batch entirely on GPU. No CPU involvement."""
+        if batch_size > self.size:
+            raise ValueError(f"batch_size {batch_size} > buffer size {self.size}")
+
+        # Generate random indices on GPU
+        indices = torch.randint(0, self.size, (batch_size,), device=self.device)
+
+        return GPUTrainingExample(
+            observations=self.observations[indices],
+            masks=self.masks[indices],
+            hand_indices=self.hand_indices[indices],
+            hand_masks=self.hand_masks[indices],
+            policy_targets=self.policy_targets[indices],
+            value_targets=self.value_targets[indices],
+        )
+
+    def to_list(self) -> list[dict]:
+        """Convert to CPU list of dicts for checkpoint serialization.
+
+        Optimized: 6 bulk GPU→CPU transfers instead of 300k individual ones.
+        """
+        # Bulk transfer to CPU (6 operations instead of 50k × 6)
+        obs_cpu = self.observations[:self.size].cpu()
+        masks_cpu = self.masks[:self.size].cpu()
+        hand_idx_cpu = self.hand_indices[:self.size].cpu()
+        hand_masks_cpu = self.hand_masks[:self.size].cpu()
+        policy_cpu = self.policy_targets[:self.size].cpu()
+        value_cpu = self.value_targets[:self.size].cpu()
+
+        # Build list from CPU tensors (no GPU involvement)
+        result = []
+        for i in range(self.size):
+            result.append({
+                'obs': obs_cpu[i],
+                'mask': masks_cpu[i],
+                'hand_idx': hand_idx_cpu[i],
+                'hand_mask': hand_masks_cpu[i],
+                'policy': policy_cpu[i],
+                'value': value_cpu[i],
+            })
+        return result
+
+    @classmethod
+    def from_list(
+        cls,
+        data: list[dict],
+        capacity: int,
+        device: torch.device,
+    ) -> "GPUReplayBuffer":
+        """Restore from checkpoint list."""
+        buffer = cls(capacity, device)
+        if not data:
+            return buffer
+
+        # Stack all data and add as single batch
+        n = len(data)
+        examples = GPUTrainingExample(
+            observations=torch.stack([d['obs'] for d in data]).to(device),
+            masks=torch.stack([d['mask'] for d in data]).to(device),
+            hand_indices=torch.stack([d['hand_idx'] for d in data]).to(device),
+            hand_masks=torch.stack([d['hand_mask'] for d in data]).to(device),
+            policy_targets=torch.stack([d['policy'] for d in data]).to(device),
+            value_targets=torch.stack([d['value'] for d in data]).to(device),
+        )
+        buffer.add_batch(examples)
+        return buffer
+
+
 class GPUObservationTokenizer:
     """GPU-native observation tokenizer for Zeb training.
 
@@ -1020,6 +1188,89 @@ class GPUTrainingPipeline:
         return {
             'policy_loss': policy_loss.item(),
             'value_loss': value_loss.item(),
+        }
+
+    def train_n_steps_from_buffer(
+        self,
+        model: ZebModel,
+        optimizer: torch.optim.Optimizer,
+        replay_buffer: GPUReplayBuffer,
+        n_steps: int,
+        batch_size: int = 64,
+    ) -> dict[str, float]:
+        """Train N steps sampling from GPU replay buffer - fused loop.
+
+        Minimizes Python overhead by keeping everything in a tight loop with
+        direct tensor indexing. No intermediate GPUTrainingExample objects.
+
+        Args:
+            model: ZebModel to train
+            optimizer: Optimizer
+            replay_buffer: GPUReplayBuffer with training data
+            n_steps: Number of gradient steps
+            batch_size: Samples per step
+
+        Returns:
+            Dict with average policy_loss and value_loss
+        """
+        model.train()
+        device = replay_buffer.device
+        buffer_size = len(replay_buffer)
+
+        # Accumulate losses as GPU tensors (avoid .item() sync per step)
+        total_policy_loss = torch.tensor(0.0, device=device)
+        total_value_loss = torch.tensor(0.0, device=device)
+
+        # Pre-fetch buffer tensors (avoid attribute lookup in loop)
+        buf_obs = replay_buffer.observations
+        buf_masks = replay_buffer.masks
+        buf_hand_idx = replay_buffer.hand_indices
+        buf_hand_masks = replay_buffer.hand_masks
+        buf_policy = replay_buffer.policy_targets
+        buf_value = replay_buffer.value_targets
+
+        for _ in range(n_steps):
+            # Sample indices on GPU
+            indices = torch.randint(0, buffer_size, (batch_size,), device=device)
+
+            # Index directly into buffer tensors (fast GPU ops)
+            obs = buf_obs[indices]
+            masks = buf_masks[indices]
+            hand_idx = buf_hand_idx[indices]
+            hand_masks = buf_hand_masks[indices]
+            policy_targets = buf_policy[indices]
+            value_targets = buf_value[indices]
+
+            # Forward pass
+            policy_logits, value = model(obs.long(), masks, hand_idx, hand_masks)
+
+            # Mask illegal actions
+            policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
+            log_policy = F.log_softmax(policy_logits, dim=-1)
+
+            # Policy loss: cross-entropy with soft targets
+            log_policy_safe = log_policy.clamp(min=-100)
+            policy_loss = -(policy_targets * log_policy_safe).sum(dim=-1).mean()
+
+            # Value loss: MSE
+            value_loss = F.mse_loss(value, value_targets)
+
+            # Combined loss
+            loss = policy_loss + value_loss
+
+            # Backward pass
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Accumulate on GPU (no sync)
+            total_policy_loss = total_policy_loss + policy_loss.detach()
+            total_value_loss = total_value_loss + value_loss.detach()
+
+        # Single sync at end
+        return {
+            'policy_loss': (total_policy_loss / n_steps).item(),
+            'value_loss': (total_value_loss / n_steps).item(),
         }
 
     def train_epoch_gpu(

@@ -15,9 +15,7 @@ Features:
 - Checkpointing: Saves model, optimizer, and replay buffer for seamless resume
 """
 import argparse
-import random
 import time
-from collections import deque
 from datetime import datetime
 from pathlib import Path
 
@@ -30,7 +28,7 @@ try:
 except ImportError:
     WANDB_AVAILABLE = False
 
-from .gpu_training_pipeline import create_selfplay_pipeline, GPUTrainingPipeline
+from .gpu_training_pipeline import create_selfplay_pipeline, GPUTrainingPipeline, GPUReplayBuffer, GPUTrainingExample
 from .model import ZebModel, get_model_config
 from .run_mcts_training import (
     evaluate_vs_random,
@@ -130,6 +128,8 @@ def main():
     # Replay buffer
     parser.add_argument('--replay-buffer-size', type=int, default=50000,
                         help='Size of replay buffer (0 = no buffer, train on current epoch only)')
+    parser.add_argument('--training-steps', type=int, default=0,
+                        help='Training steps per epoch (0 = one pass over generated examples, AlphaZero-style)')
 
     args = parser.parse_args()
 
@@ -196,6 +196,8 @@ def main():
     print(f"Learning rate: {args.lr}")
     if args.replay_buffer_size > 0:
         print(f"Replay buffer: {args.replay_buffer_size:,} examples")
+    if args.training_steps > 0:
+        print(f"Training steps/epoch: {args.training_steps} (AlphaZero-style)")
     print()
 
     # Create self-play pipeline with the loaded model
@@ -218,11 +220,16 @@ def main():
     # Output directory for self-play checkpoints
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Replay buffer - stores recent examples for more stable training
+    # Replay buffer - stores recent examples for more stable training (GPU-resident)
     use_replay_buffer = args.replay_buffer_size > 0
     if use_replay_buffer:
-        replay_buffer = deque(metadata.get('replay_buffer', []), maxlen=args.replay_buffer_size)
-        print(f"Replay buffer: {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
+        saved_buffer = metadata.get('replay_buffer', [])
+        replay_buffer = GPUReplayBuffer.from_list(
+            saved_buffer,
+            capacity=args.replay_buffer_size,
+            device=torch.device(args.device),
+        )
+        print(f"Replay buffer (GPU): {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
     else:
         replay_buffer = None
 
@@ -241,43 +248,36 @@ def main():
         n_examples = examples.n_examples
         games_per_sec = args.games_per_epoch / gen_time
 
-        # Add to replay buffer (convert to CPU for storage)
+        # Add to GPU replay buffer (fast GPU->GPU copy)
         if use_replay_buffer:
-            for i in range(examples.n_examples):
-                replay_buffer.append({
-                    'obs': examples.observations[i].cpu(),
-                    'mask': examples.masks[i].cpu(),
-                    'hand_idx': examples.hand_indices[i].cpu(),
-                    'hand_mask': examples.hand_masks[i].cpu(),
-                    'policy': examples.policy_targets[i].cpu(),
-                    'value': examples.value_targets[i].cpu(),
-                })
+            replay_buffer.add_batch(examples)
 
-        # Train on examples (from replay buffer if enabled, else current epoch)
+        # Train on examples (from GPU replay buffer if enabled, else current epoch)
         t1 = time.time()
         model.train()  # Training mode
 
-        if use_replay_buffer and len(replay_buffer) >= args.batch_size:
-            # Sample from replay buffer
-            n_train = min(len(replay_buffer), n_examples)  # Train on same amount as generated
-            sampled = random.sample(list(replay_buffer), n_train)
-
-            # Stack into training batch
-            from .gpu_training_pipeline import GPUTrainingExample
-            train_examples = GPUTrainingExample(
-                observations=torch.stack([s['obs'] for s in sampled]).to(args.device),
-                masks=torch.stack([s['mask'] for s in sampled]).to(args.device),
-                hand_indices=torch.stack([s['hand_idx'] for s in sampled]).to(args.device),
-                hand_masks=torch.stack([s['hand_mask'] for s in sampled]).to(args.device),
-                policy_targets=torch.stack([s['policy'] for s in sampled]).to(args.device),
-                value_targets=torch.stack([s['value'] for s in sampled]).to(args.device),
+        if args.training_steps > 0 and use_replay_buffer and len(replay_buffer) >= args.batch_size:
+            # AlphaZero-style: fused training loop (no Python overhead between steps)
+            metrics = pipeline.train_n_steps_from_buffer(
+                model=model,
+                optimizer=optimizer,
+                replay_buffer=replay_buffer,
+                n_steps=args.training_steps,
+                batch_size=args.batch_size,
             )
+            training_steps_done = args.training_steps
+
+        elif use_replay_buffer and len(replay_buffer) >= args.batch_size:
+            # Sample from GPU replay buffer (original behavior - one pass)
+            n_train = min(len(replay_buffer), n_examples)
+            train_examples = replay_buffer.sample(n_train)
             metrics = pipeline.train_epoch_gpu(
                 model=model,
                 optimizer=optimizer,
                 examples=train_examples,
                 batch_size=args.batch_size,
             )
+            training_steps_done = n_train // args.batch_size
         else:
             # No replay buffer or buffer too small - train on current epoch
             metrics = pipeline.train_epoch_gpu(
@@ -286,6 +286,7 @@ def main():
                 examples=examples,
                 batch_size=args.batch_size,
             )
+            training_steps_done = n_examples // args.batch_size
         train_time = time.time() - t1
 
         # Update pipeline's model reference (model improved)
@@ -342,9 +343,9 @@ def main():
                 'total_games': total_games,
                 'wandb_run_id': wandb.run.id if use_wandb else None,
             }
-            # Save replay buffer (as list for serialization)
+            # Save replay buffer (convert from GPU to CPU list for serialization)
             if use_replay_buffer:
-                ckpt_data['replay_buffer'] = list(replay_buffer)
+                ckpt_data['replay_buffer'] = replay_buffer.to_list()
             torch.save(ckpt_data, ckpt_path)
             print(f"  Saved checkpoint: {ckpt_path.name}")
 
