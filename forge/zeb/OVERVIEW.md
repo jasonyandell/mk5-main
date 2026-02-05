@@ -396,6 +396,79 @@ ZebModel (medium) on CPU: ~10,000 states/second
 
 ---
 
+## Modal B200 Training
+
+Self-play training can run on Modal's B200 GPUs via `forge/modal_app.py::zeb_train`.
+
+### Basic usage
+
+```bash
+# Standard training run
+modal run forge/modal_app.py::zeb_train \
+    --checkpoint forge/zeb/selfplay-epoch1845.pt \
+    --epochs 100
+
+# Profiling mode: adds deliberate gaps between phases
+modal run forge/modal_app.py::zeb_train \
+    --checkpoint forge/zeb/selfplay-epoch1845.pt \
+    --epochs 3 \
+    --profile-mode
+```
+
+### B200 vs 3050 Ti Performance (Feb 2026)
+
+| Metric | B200 | 3050 Ti | Speedup |
+|--------|------|---------|---------|
+| **Avg epoch** | 43.7s | 98s | **2.2x** |
+| Gen time | 35.2s | 82s | 2.3x |
+| Train time | 8.3s | 15-17s | 1.9x |
+| Games/sec | 7.3 | 3.1 | 2.3x |
+
+**Observation**: Only 2.2x speedup (not the expected 10-20x from B200's raw compute advantage).
+
+### GPU Utilization Mystery: Sawtooth During Generation
+
+Profiling revealed a **sawtooth GPU utilization pattern during the GEN phase**:
+- GPU util oscillates between ~100% and near-0%
+- Pattern shows 3-4 distinct dips during each ~35s generation phase
+- Roughly one dip every 9-12 seconds (every ~8 moves)
+
+**Timeline per epoch (profile mode):**
+```
+0:00-0:36  [GEN]     ← sawtooth pattern HERE (3-4 dips to near-zero)
+0:36-1:00  [WAIT]    ← deliberate gap (flat at 0%)
+1:00-1:08  [TRAIN]   ← solid high GPU util
+1:08-1:11  [EVAL]    ← sequential inference (lower util)
+1:11-2:00  [WAIT]    ← deliberate gap
+```
+
+**What we've ruled out:**
+- ❌ Between-phase overhead (gaps prove phases themselves are clean)
+- ❌ Python loop overhead per simulation (5600 tiny dips would be invisible, not 3-4 big ones)
+- ❌ Per-move `active.any()` sync (28 syncs too frequent to match pattern)
+- ❌ CUDA graph replay overhead (graph step is fast, ~6ms)
+
+**Likely candidates:**
+1. **PyTorch CUDA memory cleanup** - periodic cudaFree from caching allocator
+2. **Python garbage collection** - GC cycle every N allocations
+3. **Something in MCTS forest operations** - tree ops accumulating until threshold
+4. **W&B background sync** - log flushing (less likely given pattern is inside gen)
+
+**Next steps to investigate:**
+- Add per-move timestamps inside `generate_games_gpu()` to correlate with GPU util
+- Try `PYTORCH_NO_CUDA_MEMORY_CACHING=1` to isolate allocator
+- Profile with `nsys` for detailed kernel timeline
+
+### Profile Mode
+
+The `--profile-mode` flag adds deliberate 30s gaps between phases:
+- Creates clear visual separation on GPU utilization graphs
+- Logs phase start/end timestamps to W&B (`profile/phase`, `profile/elapsed_s`)
+- Uses fresh W&B run named `b200-profiling-{timestamp}`
+- Useful for diagnosing performance issues
+
+---
+
 ## See Also
 
 - `ML_OVERVIEW.md` - Background on RL concepts, REINFORCE, hyperparameters
