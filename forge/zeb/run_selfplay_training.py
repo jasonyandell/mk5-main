@@ -104,6 +104,8 @@ def main():
                         help='Learning rate (lower for fine-tuning)')
     parser.add_argument('--temperature', type=float, default=1.0)
     parser.add_argument('--eval-every', type=int, default=5)
+    parser.add_argument('--eval-games', type=int, default=2000,
+                        help='Number of games for periodic evaluation')
     parser.add_argument('--device', type=str, default='cuda')
 
     # GPU MCTS parameters
@@ -319,7 +321,7 @@ def main():
         # Periodic evaluation
         if (epoch + 1) % args.eval_every == 0:
             model.eval()
-            win_rate = evaluate_vs_random(model, n_games=100, device=args.device)
+            win_rate = evaluate_vs_random(model, n_games=args.eval_games, device=args.device)
             print(f"         -> vs Random: {win_rate:.1%}")
             if use_wandb:
                 wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': epoch})
