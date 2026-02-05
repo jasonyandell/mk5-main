@@ -30,10 +30,8 @@ except ImportError:
 
 from .gpu_training_pipeline import create_selfplay_pipeline, GPUTrainingPipeline, GPUReplayBuffer, GPUTrainingExample
 from .model import ZebModel, get_model_config
-from .run_mcts_training import (
-    evaluate_vs_random,
-    DEFAULT_CHECKPOINT_DIR,
-)
+from .evaluate import evaluate_vs_random
+from .run_mcts_training import DEFAULT_CHECKPOINT_DIR
 
 
 def load_model_from_checkpoint(
@@ -148,7 +146,7 @@ def main():
 
     # Initial evaluation
     print("\nInitial evaluation...")
-    initial_win_rate = evaluate_vs_random(model, n_games=100, device=args.device)
+    initial_win_rate = evaluate_vs_random(model, n_games=100, device=args.device)['team0_win_rate']
     print(f"  vs Random: {initial_win_rate:.1%}")
 
     # Initialize W&B (resume if checkpoint has run ID)
@@ -321,7 +319,7 @@ def main():
         # Periodic evaluation
         if (epoch + 1) % args.eval_every == 0:
             model.eval()
-            win_rate = evaluate_vs_random(model, n_games=args.eval_games, device=args.device)
+            win_rate = evaluate_vs_random(model, n_games=args.eval_games, device=args.device)['team0_win_rate']
             print(f"         -> vs Random: {win_rate:.1%}")
             if use_wandb:
                 wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': epoch})
@@ -365,7 +363,7 @@ def main():
     # Final evaluation
     print("\n=== Final Evaluation ===")
     model.eval()
-    win_rate = evaluate_vs_random(model, n_games=200, device=args.device)
+    win_rate = evaluate_vs_random(model, n_games=200, device=args.device)['team0_win_rate']
     print(f"vs Random: {win_rate:.1%}")
     print(f"Improvement: {initial_win_rate:.1%} -> {win_rate:.1%} ({win_rate - initial_win_rate:+.1%})")
 
