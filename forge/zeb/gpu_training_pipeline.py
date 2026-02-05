@@ -305,6 +305,9 @@ class GPUObservationTokenizer:
         self.count_values = self._build_count_values(device)
         self._hand_indices_1x7 = torch.arange(1, 8, dtype=torch.int64, device=device).unsqueeze(0)
 
+        # Cached range for vectorized play history tokenization
+        self._play_range = torch.arange(28, device=device, dtype=torch.int32)  # (28,)
+
     def _build_count_values(self, device: torch.device) -> Tensor:
         """Build count value lookup (domino_id -> count category)."""
         count_vals = []
@@ -369,28 +372,37 @@ class GPUObservationTokenizer:
         out_tokens[:, 1:8, self.FEAT_TOKEN_TYPE] = self.TOKEN_TYPE_HAND
         out_masks[:, 1:8] = in_hand
 
-        # === Tokens 8-35: Play history ===
+        # === Tokens 8-35: Play history (vectorized) ===
         n_plays = states.n_plays  # (N,)
-        for play_idx in range(28):
-            token_pos = 8 + play_idx
-            has_play = n_plays > play_idx
+        # has_play: (N, 28) - which play slots are valid
+        has_play = self._play_range.unsqueeze(0) < n_plays.unsqueeze(1)  # broadcast (1,28) < (N,1)
 
-            play_player = states.play_history[:, play_idx, 0]
-            play_domino = states.play_history[:, play_idx, 1]
-            rel_player = (play_player - perspective_players + 4) % 4
+        # Gather all play data at once: (N, 28)
+        play_players = states.play_history[:, :, 0]  # (N, 28)
+        play_dominoes = states.play_history[:, :, 1]  # (N, 28)
+        rel_players = (play_players - perspective_players.unsqueeze(1) + 4) % 4  # (N, 28)
 
-            safe_domino = play_domino.clamp(min=0).long()
-            out_tokens[:, token_pos, self.FEAT_HIGH] = torch.where(has_play, self.tables.high[safe_domino], 0)
-            out_tokens[:, token_pos, self.FEAT_LOW] = torch.where(has_play, self.tables.low[safe_domino], 0)
-            out_tokens[:, token_pos, self.FEAT_IS_DOUBLE] = torch.where(
-                has_play, self.tables.is_double[safe_domino].int(), 0
-            )
-            out_tokens[:, token_pos, self.FEAT_COUNT] = torch.where(has_play, self.count_values[safe_domino], 0)
-            out_tokens[:, token_pos, self.FEAT_PLAYER] = torch.where(has_play, rel_player, 0)
-            out_tokens[:, token_pos, self.FEAT_IS_IN_HAND] = 0
-            out_tokens[:, token_pos, self.FEAT_DECL] = torch.where(has_play, states.decl_id, 0)
-            out_tokens[:, token_pos, self.FEAT_TOKEN_TYPE] = torch.where(has_play, self.TOKEN_TYPE_PLAY, 0)
-            out_masks[:, token_pos] = has_play
+        safe_dominoes = play_dominoes.clamp(min=0).long()  # (N, 28)
+
+        # Batch-gather domino features for all 28 positions at once
+        high_vals = self.tables.high[safe_dominoes]       # (N, 28)
+        low_vals = self.tables.low[safe_dominoes]          # (N, 28)
+        is_double_vals = self.tables.is_double[safe_dominoes].int()  # (N, 28)
+        count_vals = self.count_values[safe_dominoes]      # (N, 28)
+
+        # Apply has_play mask: zero out invalid positions
+        zero = torch.zeros_like(high_vals)
+        out_tokens[:, 8:36, self.FEAT_HIGH] = torch.where(has_play, high_vals, zero)
+        out_tokens[:, 8:36, self.FEAT_LOW] = torch.where(has_play, low_vals, zero)
+        out_tokens[:, 8:36, self.FEAT_IS_DOUBLE] = torch.where(has_play, is_double_vals, zero)
+        out_tokens[:, 8:36, self.FEAT_COUNT] = torch.where(has_play, count_vals, zero)
+        out_tokens[:, 8:36, self.FEAT_PLAYER] = torch.where(has_play, rel_players, zero)
+        # FEAT_IS_IN_HAND is already zeroed by out_tokens.zero_()
+        decl_expanded = states.decl_id.unsqueeze(1).expand(-1, 28)  # (N, 28)
+        out_tokens[:, 8:36, self.FEAT_DECL] = torch.where(has_play, decl_expanded, zero)
+        play_type = torch.full_like(high_vals, self.TOKEN_TYPE_PLAY)
+        out_tokens[:, 8:36, self.FEAT_TOKEN_TYPE] = torch.where(has_play, play_type, zero)
+        out_masks[:, 8:36] = has_play
 
         out_hand_masks.copy_(in_hand)
         hand_indices = self._hand_indices_1x7.expand(n, -1)
@@ -652,26 +664,67 @@ class GPUTrainingPipeline:
             if self.wave_size <= 1:
                 if self.use_cudagraph_mcts:
                     if self.self_play_mode and self.use_fullstep_eval:
-                        # Phase 5: single-graph sim step including self-play model eval.
+                        # Phase 5: multi-step CUDA graph with depth variants.
+                        # Each replay() executes K simulation steps, reducing Python dispatch K×.
                         from forge.zeb.gpu_mcts import MCTSSelfPlayFullStepCUDAGraphRunner
 
-                        runner: MCTSSelfPlayFullStepCUDAGraphRunner | None = getattr(
-                            forest, "_mcts_selfplay_fullstep_runner", None
+                        capture_depth_max = max(28, int(max_moves))
+                        depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                        depth_variants = sorted(
+                            {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
                         )
-                        if runner is None or getattr(runner, "model", None) is not self.model:
-                            runner = MCTSSelfPlayFullStepCUDAGraphRunner(
-                                forest,
-                                model=self.model,
-                                tokenizer=self.tokenizer,
-                                pool=graph_pool,
-                            )
-                            setattr(forest, "_mcts_selfplay_fullstep_runner", runner)
 
-                        if not runner.captured:
-                            runner.capture()
-                            reset_forest_inplace(forest, states, original_hands=original_hands)
+                        # Compute steps_per_replay: largest factor of n_simulations up to 10.
+                        steps_per_replay = 1
+                        for k in range(min(10, self.n_simulations), 0, -1):
+                            if self.n_simulations % k == 0:
+                                steps_per_replay = k
+                                break
 
-                        for _ in range(self.n_simulations):
+                        runners: dict[int, MCTSSelfPlayFullStepCUDAGraphRunner] | None = getattr(
+                            forest, "_mcts_selfplay_fullstep_runners", None
+                        )
+                        model_changed = (
+                            runners is not None
+                            and any(getattr(r, "model", None) is not self.model for r in runners.values())
+                        )
+                        spr_changed = (
+                            runners is not None
+                            and any(getattr(r, "steps_per_replay", 1) != steps_per_replay for r in runners.values())
+                        )
+                        if runners is None or model_changed or spr_changed:
+                            runners = {}
+                            setattr(forest, "_mcts_selfplay_fullstep_runners", runners)
+                            setattr(forest, "_mcts_selfplay_fullstep_runners_captured", False)
+
+                        if not getattr(forest, "_mcts_selfplay_fullstep_runners_captured", False):
+                            for d in depth_variants:
+                                if d not in runners:
+                                    runners[d] = MCTSSelfPlayFullStepCUDAGraphRunner(
+                                        forest,
+                                        model=self.model,
+                                        tokenizer=self.tokenizer,
+                                        max_depth=d,
+                                        steps_per_replay=steps_per_replay,
+                                        pool=graph_pool,
+                                    )
+                            for d in depth_variants:
+                                runner_d = runners[d]
+                                if not runner_d.captured:
+                                    runner_d.capture()
+                                    reset_forest_inplace(forest, states, original_hands=original_hands)
+                            setattr(forest, "_mcts_selfplay_fullstep_runners_captured", True)
+
+                        # Pick the smallest captured depth that still covers remaining moves.
+                        runner_depth = capture_depth_max
+                        for d in reversed(depth_variants):
+                            if d >= remaining_depth:
+                                runner_depth = d
+                                break
+                        runner = runners[runner_depth]
+
+                        n_replays = self.n_simulations // runner.steps_per_replay
+                        for _ in range(n_replays):
                             runner.step()
                         self.total_model_queries += n * self.n_simulations
                     else:

@@ -1141,18 +1141,32 @@ class MCTSFullStepCUDAGraphRunner:
 
 
 class MCTSSelfPlayFullStepCUDAGraphRunner:
-    """Single CUDA-graph runner for one full MCTS simulation step in self-play mode.
+    """CUDA-graph runner for K simulation steps in self-play mode.
 
-    Captures: select + tokenize + ZebModel forward (policy+value) + set priors +
-    expand + backprop. Uses fixed batch size N (n_trees) and evaluates the model
-    for all leaves, overriding terminal leaves with terminal values.
+    Captures K iterations of: select + tokenize + ZebModel forward (policy+value) +
+    set priors + expand + backprop into a single CUDA graph. One replay() executes
+    K simulation steps, reducing Python dispatch overhead by K×.
+
+    The forest's preallocated tensors have fixed GPU addresses, so inter-step
+    dependencies (step i's backprop updates the tree that step i+1's select reads)
+    are naturally kernel-ordered within the graph.
     """
 
-    def __init__(self, forest: GPUMCTSForest, model, tokenizer, *, max_depth: int = 28, pool=None):
+    def __init__(
+        self,
+        forest: GPUMCTSForest,
+        model,
+        tokenizer,
+        *,
+        max_depth: int = 28,
+        steps_per_replay: int = 1,
+        pool=None,
+    ):
         self.forest = forest
         self.model = model
         self.tokenizer = tokenizer
         self.max_depth = max_depth
+        self.steps_per_replay = max(1, int(steps_per_replay))
         require_cuda(forest.device, where="MCTSSelfPlayFullStepCUDAGraphRunner.__init__")
 
         if not hasattr(tokenizer, "tokenize_batch_into"):
@@ -1186,75 +1200,73 @@ class MCTSSelfPlayFullStepCUDAGraphRunner:
     def captured(self) -> bool:
         return self._captured
 
+    def _run_one_sim_step(self) -> tuple[Tensor, Tensor, GPUGameState, Tensor, Tensor, Tensor]:
+        """Execute one full simulation step (select → eval → expand → backprop).
+
+        Returns the last step's tensors (for stashing after capture).
+        """
+        leaf_indices, paths = select_leaves_gpu(self.forest, max_depth=self.max_depth)
+        leaf_states = get_leaf_states(self.forest, leaf_indices)
+        terminal_values, is_terminal = get_terminal_values(self.forest, leaf_indices, leaf_states)
+
+        actors = current_player_gpu(leaf_states)
+        _ = self.tokenizer.tokenize_batch_into(
+            leaf_states,
+            self.forest.original_hands,
+            actors,
+            out_tokens=self._tokens_i32,
+            out_masks=self._masks,
+            out_hand_masks=self._hand_masks,
+            batch_idx=self.forest.tree_idx,
+        )
+
+        policy_logits, values = self.model(
+            self._tokens_i32.long(),
+            self._masks,
+            self._hand_indices,
+            self._hand_masks,
+        )
+
+        # Policy -> priors for this node.
+        policy_logits = policy_logits.masked_fill(~self._hand_masks, float("-inf"))
+        all_masked = self._hand_masks.sum(dim=-1) == 0
+        safe_logits = torch.where(all_masked.unsqueeze(1), torch.zeros_like(policy_logits), policy_logits)
+        policy_probs = torch.softmax(safe_logits, dim=-1)
+        set_node_priors(self.forest, leaf_indices, policy_probs)
+
+        # Values are from current player's perspective; convert to root.
+        root_players = self.forest.to_play[:, 0]
+        same_team = (actors % 2) == (root_players % 2)
+        values = torch.where(same_team, values, -values)
+        values = torch.where(is_terminal, terminal_values, values)
+
+        expand_gpu(self.forest, leaf_indices, leaf_states=leaf_states)
+        backprop_gpu(self.forest, leaf_indices, values, paths)
+
+        return leaf_indices, paths, leaf_states, terminal_values, is_terminal, values
+
     def capture(self) -> None:
         if self._captured:
             return
 
         self.model.eval()
+        K = self.steps_per_replay
 
-        # Warm up one step to stabilize capture (and ensure tokenizer outputs are resident).
+        # Warm up K steps to stabilize capture.
         with torch.inference_mode():
-            leaf_indices, paths = select_leaves_gpu(self.forest, max_depth=self.max_depth)
-            leaf_states = get_leaf_states(self.forest, leaf_indices)
-            terminal_values, is_terminal = get_terminal_values(self.forest, leaf_indices, leaf_states)
-            actors = current_player_gpu(leaf_states)
-            _ = self.tokenizer.tokenize_batch_into(
-                leaf_states,
-                self.forest.original_hands,
-                actors,
-                out_tokens=self._tokens_i32,
-                out_masks=self._masks,
-                out_hand_masks=self._hand_masks,
-                batch_idx=self.forest.tree_idx,
-            )
-            policy_logits, values = self.model(self._tokens_i32.long(), self._masks, self._hand_indices, self._hand_masks)
-            _ = policy_logits + values.unsqueeze(1)
-            values = torch.where(is_terminal, terminal_values, values)
-            expand_gpu(self.forest, leaf_indices, leaf_states=leaf_states)
-            backprop_gpu(self.forest, leaf_indices, values, paths)
+            for _ in range(K):
+                self._run_one_sim_step()
 
         torch.cuda.synchronize()
 
         with torch.inference_mode():
             with torch.cuda.graph(self._graph, pool=self._pool):
-                leaf_indices, paths = select_leaves_gpu(self.forest, max_depth=self.max_depth)
-                leaf_states = get_leaf_states(self.forest, leaf_indices)
-                terminal_values, is_terminal = get_terminal_values(self.forest, leaf_indices, leaf_states)
+                for _ in range(K):
+                    leaf_indices, paths, leaf_states, terminal_values, is_terminal, values = (
+                        self._run_one_sim_step()
+                    )
 
-                actors = current_player_gpu(leaf_states)
-                _ = self.tokenizer.tokenize_batch_into(
-                    leaf_states,
-                    self.forest.original_hands,
-                    actors,
-                    out_tokens=self._tokens_i32,
-                    out_masks=self._masks,
-                    out_hand_masks=self._hand_masks,
-                    batch_idx=self.forest.tree_idx,
-                )
-
-                policy_logits, values = self.model(
-                    self._tokens_i32.long(),
-                    self._masks,
-                    self._hand_indices,
-                    self._hand_masks,
-                )
-
-                # Policy -> priors for this node.
-                policy_logits = policy_logits.masked_fill(~self._hand_masks, float("-inf"))
-                all_masked = self._hand_masks.sum(dim=-1) == 0
-                safe_logits = torch.where(all_masked.unsqueeze(1), torch.zeros_like(policy_logits), policy_logits)
-                policy_probs = torch.softmax(safe_logits, dim=-1)
-                set_node_priors(self.forest, leaf_indices, policy_probs)
-
-                # Values are from current player's perspective; convert to root.
-                root_players = self.forest.to_play[:, 0]
-                same_team = (actors % 2) == (root_players % 2)
-                values = torch.where(same_team, values, -values)
-                values = torch.where(is_terminal, terminal_values, values)
-
-                expand_gpu(self.forest, leaf_indices, leaf_states=leaf_states)
-                backprop_gpu(self.forest, leaf_indices, values, paths)
-
+        # Stash last step's outputs.
         self.leaf_indices = leaf_indices
         self.paths = paths
         self.leaf_states = leaf_states
@@ -1264,6 +1276,7 @@ class MCTSSelfPlayFullStepCUDAGraphRunner:
         self._captured = True
 
     def step(self) -> None:
+        """Execute steps_per_replay simulation steps with a single graph replay."""
         if not self._captured:
             self.capture()
         with torch.inference_mode():
@@ -1276,7 +1289,7 @@ def backprop_gpu(
     values: Tensor,
     paths: Tensor,
 ) -> None:
-    """Backpropagate values along paths.
+    """Backpropagate values along paths (vectorized).
 
     Note: visit_counts were already incremented during selection (virtual loss).
     This function only updates value_sums.
@@ -1295,35 +1308,37 @@ def backprop_gpu(
     # Player to act at root (cached)
     root_players = forest.to_play[:, 0]  # (N,)
 
-    # Backpropagate along each path
-    for depth in range(max_depth):
-        node_indices = paths[:, depth]  # (N,)
+    # Flatten paths: (N, D) -> (N*D,) for batch processing
+    flat_paths = paths.reshape(-1)  # (N*D,)
+    valid = flat_paths >= 0  # (N*D,)
+    safe_node_indices = flat_paths.clamp(min=0)  # (N*D,)
 
-        # Skip invalid path entries
-        valid = node_indices >= 0  # (N,)
-        safe_node_indices = node_indices.clamp(min=0)
-        # CUDA-only: do not add CPU-only early-exit fallbacks here.
+    # Expand batch_idx and root_players to match flattened shape
+    batch_idx_exp = batch_idx.unsqueeze(1).expand(-1, max_depth).reshape(-1)  # (N*D,)
+    root_players_exp = root_players.unsqueeze(1).expand(-1, max_depth).reshape(-1)  # (N*D,)
 
-        # Get the parent state to determine whose perspective this value is from
-        # For root nodes (parent == -1), use root player's perspective
-        parents = forest.parents[batch_idx, safe_node_indices]  # (N,) int64
-        is_root = parents < 0
+    # Gather parent indices for all path nodes at once
+    parents = forest.parents[batch_idx_exp, safe_node_indices]  # (N*D,)
+    is_root = parents < 0
 
-        # Get parent player-to-act for perspective calculation (cached)
-        parent_node_indices = torch.where(is_root, torch.zeros_like(parents), parents).clamp(min=0)
-        parent_players = forest.to_play[batch_idx, parent_node_indices]  # (N,)
+    # Get parent player-to-act
+    parent_node_indices = torch.where(is_root, torch.zeros_like(parents), parents).clamp(min=0)
+    parent_players = forest.to_play[batch_idx_exp, parent_node_indices]  # (N*D,)
+    parent_players = torch.where(is_root, root_players_exp, parent_players)
 
-        # Use root player for root nodes
-        parent_players = torch.where(is_root, root_players, parent_players)
+    # Determine sign: same team as root -> +values, opponent -> -values
+    same_team = (parent_players % 2) == (root_players_exp % 2)  # (N*D,)
+    values_exp = values.unsqueeze(1).expand(-1, max_depth).reshape(-1)  # (N*D,)
+    node_values = torch.where(same_team, values_exp, -values_exp)
 
-        # Determine if same team as root player
-        same_team = (parent_players % 2) == (root_players % 2)  # (N,)
+    # Zero invalid entries
+    node_values = node_values * valid  # (N*D,)
 
-        # Flip value for opponent's perspective
-        node_values = torch.where(same_team, values, -values)
-
-        # Update value_sums (masked; safe for invalid path entries)
-        forest.value_sums[batch_idx, safe_node_indices] += node_values * valid
+    # Scatter-add into value_sums using flat (N, M) -> (N*M,) indexing
+    # flat_target = batch_idx * M + node_idx
+    M = forest.max_nodes
+    flat_target = batch_idx_exp * M + safe_node_indices  # (N*D,)
+    forest.value_sums.view(-1).scatter_add_(0, flat_target, node_values)
 
 
 def get_root_policy_gpu(forest: GPUMCTSForest) -> Tensor:
