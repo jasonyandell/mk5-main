@@ -669,7 +669,7 @@ class GPUTrainingPipeline:
                         from forge.zeb.gpu_mcts import MCTSSelfPlayFullStepCUDAGraphRunner
 
                         capture_depth_max = max(28, int(max_moves))
-                        depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                        depth_variants = [capture_depth_max, 8, 1]
                         depth_variants = sorted(
                             {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
                         )
@@ -742,7 +742,7 @@ class GPUTrainingPipeline:
                             from forge.zeb.gpu_mcts import MCTSFullStepCUDAGraphRunner
 
                             capture_depth_max = max(28, int(max_moves))
-                            depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                            depth_variants = [capture_depth_max, 8, 1]
                             depth_variants = sorted(
                                 {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
                             )
@@ -781,7 +781,7 @@ class GPUTrainingPipeline:
                             from forge.zeb.gpu_mcts import MCTSCUDAGraphRunner
 
                             capture_depth_max = max(28, int(max_moves))
-                            depth_variants = [capture_depth_max, 16, 8, 4, 2, 1]
+                            depth_variants = [capture_depth_max, 8, 1]
                             depth_variants = sorted(
                                 {d for d in depth_variants if d >= 1 and d <= capture_depth_max}, reverse=True
                             )

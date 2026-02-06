@@ -236,7 +236,7 @@ python -u -m forge.zeb.run_selfplay_training \
 |-----------|-------|-------|
 | `--n-simulations` | 200 | Increased for better MCTS quality |
 | `--n-parallel-games` | 256 | |
-| `--max-mcts-nodes` | 256 | |
+| `--max-mcts-nodes` | 512 | Increased for deeper search trees |
 | `--games-per-epoch` | 256 | Matched to parallel games for full GPU utilization |
 | `--batch-size` | 64 | |
 | `--lr` | 1e-4 | |
@@ -245,35 +245,38 @@ python -u -m forge.zeb.run_selfplay_training \
 | `--keep-checkpoints` | 3 | |
 | `--replay-buffer-size` | 50000 | ~7 epochs of history for stable training |
 
-**Performance**: ~3.1 games/s, ~86s/epoch total
-- Game generation: ~80s (200 sims)
+**Performance** (after kernel reduction optimizations):
+- Game generation: ~69s (200 sims, ~3.7 games/s)
 - Training: ~2.5s
 - Eval (100 games): ~2s (batched)
+- Total epoch: ~75s without eval
 
-**Progress** (as of epoch 1620):
+**Progress** (as of epoch 2499):
 - Win rate vs random (pair): ~65-70%
 - Win rate vs random (solo): ~64%
-- Total games: ~400k+
+- Total games: ~640k+
 - Replay buffer: 50k examples (full)
 - Target: 100,000 epochs (runs indefinitely until stopped)
 
 **Resume command**:
 ```bash
 nohup python -u -m forge.zeb.run_selfplay_training \
-  --checkpoint forge/zeb/checkpoints/selfplay-epoch1620.pt \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch2499.pt \
   --epochs 100000 \
   --games-per-epoch 256 \
   --n-simulations 200 \
   --n-parallel-games 256 \
-  --max-mcts-nodes 256 \
+  --max-mcts-nodes 512 \
   --lr 1e-4 \
   --batch-size 64 \
-  --eval-every 1 \
-  --save-every 1 \
+  --eval-every 10 \
+  --save-every 10 \
   --keep-checkpoints 3 \
   --replay-buffer-size 50000 \
+  --training-steps 1000 \
+  --eval-games 2000 \
   --wandb \
-  >> scratch/selfplay-500ep.log 2>&1 &
+  >> scratch/selfplay.log 2>&1 &
 ```
 
 ### Continuing training
@@ -282,7 +285,7 @@ Self-play saves checkpoints as `selfplay-epoch{N:04d}.pt`. To continue training,
 
 ```bash
 python -u -m forge.zeb.run_selfplay_training \
-    --checkpoint forge/zeb/checkpoints/selfplay-epoch1620.pt \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch2499.pt \
     --epochs 100000 \
     --keep-checkpoints 3 \
     --replay-buffer-size 50000 \
@@ -426,38 +429,27 @@ modal run forge/modal_app.py::zeb_train \
 
 **Observation**: Only 2.2x speedup (not the expected 10-20x from B200's raw compute advantage).
 
-### GPU Utilization Mystery: Sawtooth During Generation
+**Root cause**: Kernel launch overhead. Each CUDA graph replay contained ~980 tiny kernels
+from unrolled Python loops. With thousands of replays per game batch, both GPUs spent similar
+time on dispatch — the B200's wider SM array was starved.
 
-Profiling revealed a **sawtooth GPU utilization pattern during the GEN phase**:
-- GPU util oscillates between ~100% and near-0%
-- Pattern shows 3-4 distinct dips during each ~35s generation phase
-- Roughly one dip every 9-12 seconds (every ~8 moves)
+### Kernel Reduction Optimizations (Feb 2026)
 
-**Timeline per epoch (profile mode):**
-```
-0:00-0:36  [GEN]     ← sawtooth pattern HERE (3-4 dips to near-zero)
-0:36-1:00  [WAIT]    ← deliberate gap (flat at 0%)
-1:00-1:08  [TRAIN]   ← solid high GPU util
-1:08-1:11  [EVAL]    ← sequential inference (lower util)
-1:11-2:00  [WAIT]    ← deliberate gap
-```
+Four optimizations to reduce kernel count and Python dispatch overhead:
 
-**What we've ruled out:**
-- ❌ Between-phase overhead (gaps prove phases themselves are clean)
-- ❌ Python loop overhead per simulation (5600 tiny dips would be invisible, not 3-4 big ones)
-- ❌ Per-move `active.any()` sync (28 syncs too frequent to match pattern)
-- ❌ CUDA graph replay overhead (graph step is fast, ~6ms)
+1. **Vectorize tokenizer play history loop**: Replaced `for play_idx in range(28)` (~252 kernels)
+   with batched gather/where (~12 kernels) in `gpu_training_pipeline.py`
+2. **Vectorize backprop depth loop**: Replaced `for depth in range(max_depth)` (~224 kernels)
+   with flat gather + `scatter_add_` (~10 kernels) in `gpu_mcts.py`
+3. **Depth-variant CUDA graphs**: Capture at depths [28, 8, 1], select smallest sufficient per
+   move. Average ~40% reduction in select+backprop kernels across 28 moves.
+4. **Multi-step CUDA graph capture**: Capture K=10 simulation steps per graph, replay N/K times.
+   Reduces 50 Python `graph.replay()` calls to 5.
 
-**Likely candidates:**
-1. **PyTorch CUDA memory cleanup** - periodic cudaFree from caching allocator
-2. **Python garbage collection** - GC cycle every N allocations
-3. **Something in MCTS forest operations** - tree ops accumulating until threshold
-4. **W&B background sync** - log flushing (less likely given pattern is inside gen)
-
-**Next steps to investigate:**
-- Add per-move timestamps inside `generate_games_gpu()` to correlate with GPU util
-- Try `PYTORCH_NO_CUDA_MEMORY_CACHING=1` to isolate allocator
-- Profile with `nsys` for detailed kernel timeline
+**Measured impact** (3050 Ti, n_sims=50, N=128):
+- Gen time: 40.4s → 16.3s (**2.4x speedup**)
+- At production settings (n_sims=200, N=256, max_nodes=512): ~10-12% wall-clock improvement,
+  dramatically higher GPU utilization (kernels now large enough that real compute dominates)
 
 ### Profile Mode
 
