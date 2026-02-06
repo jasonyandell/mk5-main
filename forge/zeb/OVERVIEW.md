@@ -143,6 +143,18 @@ This project is **CUDA-only** for training; there is no CPU training path in the
 
 Oracle-guided distillation (Stage1Oracle evaluates leaves instead of model).
 
+### `export_model.py` - Model Snapshot Export
+
+Strips optimizer state, replay buffer, and training metadata from a checkpoint,
+producing a slim model-only snapshot suitable for git.
+
+```bash
+python -m forge.zeb.export_model \
+    forge/zeb/checkpoints/selfplay-epoch2839.pt \
+    forge/zeb/models/zeb-e2839.pt
+# 92 MB -> 2.2 MB (keeps model_state_dict + model_config + provenance)
+```
+
 ### `observation.py` - Token Encoding
 
 Encodes game state as 36 tokens x 8 features:
@@ -303,7 +315,26 @@ Checkpoints include:
 - Replay buffer (list of recent training examples)
 - Training config (mode, source checkpoint, hyperparameters)
 
-**Note**: Checkpoint size is ~47 MB with a 50k replay buffer (vs ~6.5 MB without).
+**Note**: Checkpoint size is ~92 MB with a 50k replay buffer. Model-only snapshots
+(via `export_model.py`) are ~2 MB.
+
+### Checkpoints vs model snapshots
+
+```
+forge/zeb/
+├── checkpoints/       # Training checkpoints (~92 MB, gitignored)
+│   └── selfplay-epoch{N}.pt
+└── models/            # Committed model snapshots (~2 MB)
+    └── zeb-e{N}.pt
+```
+
+Training checkpoints in `checkpoints/` contain everything needed to resume training
+(optimizer state, replay buffer, W&B run ID). They are gitignored due to size.
+
+Model snapshots in `models/` contain only `model_state_dict`, `model_config`, `epoch`,
+and `total_games` — just enough to load and run the model. These are small enough to
+commit to git and serve as versioned milestones. Both formats load with
+`load_model_from_checkpoint()`.
 
 ---
 
@@ -548,6 +579,42 @@ that 50 sampled worlds per decision is sufficient for evaluation purposes.
 - `eq_player.py` — `EQPlayer` class, `zeb_states_to_game_state_tensor()` bridge,
   `evaluate_eq_vs_random()`, `evaluate_eq_vs_zeb()`
 - `eval_eq.py` — CLI: `python -u -m forge.zeb.eval_eq`
+
+---
+
+## MCTS Visit Distribution Entropy
+
+Entropy of the MCTS visit distributions (H = -sum(p log p)) measures how "spread out"
+the search is across legal moves. Lower entropy means MCTS concentrates visits on fewer
+actions — the model is more confident.
+
+Logged per epoch in `run_selfplay_training.py` as `mcts/entropy_mean` (W&B) and printed
+to console.
+
+### Measurements
+
+| Epoch | Mean H | Std | Median | Normalized (H/log k) | Notes |
+|-------|--------|-----|--------|-----------------------|-------|
+| ~1830 | 0.415 | — | — | — | First measurement |
+| 3179 | 0.313 | 0.419 | 0.096 | 0.221 | 256 games, 200 sims |
+
+**Entropy by number of legal actions (epoch 3179):**
+
+| Legal moves (k) | Mean H | Max possible (log k) | Count |
+|------------------|--------|----------------------|-------|
+| 1 | 0.000 | 0.000 | 1024 |
+| 2 | 0.176 | 0.693 | 1024 |
+| 3 | 0.294 | 1.099 | 1024 |
+| 4 | 0.370 | 1.386 | 1024 |
+| 5 | 0.413 | 1.609 | 1024 |
+| 6 | 0.462 | 1.792 | 1024 |
+| 7 | 0.473 | 1.946 | 1024 |
+
+**Interpretation:** Mean entropy dropped 25% from epoch ~1830 to 3179 (0.415 → 0.313),
+indicating increasing policy confidence. The median (0.096) is much lower than the mean,
+showing a skewed distribution — most moves have very concentrated visits with a long tail
+of uncertain positions. Normalized entropy of 0.22 means MCTS uses only ~22% of the
+available uncertainty on average.
 
 ---
 

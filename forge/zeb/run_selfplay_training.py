@@ -248,6 +248,16 @@ def main():
         n_examples = examples.n_examples
         games_per_sec = args.games_per_epoch / gen_time
 
+        # Compute visit distribution entropy: H = -sum(p * log(p))
+        p = examples.policy_targets  # (N, 7) float32
+        entropy_per_example = -torch.where(
+            p > 0, p * torch.log(p), torch.zeros_like(p)
+        ).sum(dim=-1)
+        entropy_mean = entropy_per_example.mean().item()
+        entropy_std = entropy_per_example.std().item()
+        entropy_min = entropy_per_example.min().item()
+        entropy_max = entropy_per_example.max().item()
+
         # Add to GPU replay buffer (fast GPU->GPU copy)
         if use_replay_buffer:
             replay_buffer.add_batch(examples)
@@ -294,6 +304,7 @@ def main():
 
         # Epoch summary
         epoch_str = f"Epoch {epoch:3d}: policy_loss={metrics['policy_loss']:.4f}, value_loss={metrics['value_loss']:.4f}"
+        epoch_str += f" entropy={entropy_mean:.3f}"
         epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.2f}s, {games_per_sec:.2f} games/s)"
         if use_replay_buffer:
             epoch_str += f" [buffer: {len(replay_buffer):,}]"
@@ -306,6 +317,10 @@ def main():
                 'train/policy_loss': metrics['policy_loss'],
                 'train/value_loss': metrics['value_loss'],
                 'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+                'mcts/entropy_mean': entropy_mean,
+                'mcts/entropy_std': entropy_std,
+                'mcts/entropy_min': entropy_min,
+                'mcts/entropy_max': entropy_max,
                 'perf/gen_time_s': gen_time,
                 'perf/train_time_s': train_time,
                 'perf/games_per_sec': games_per_sec,
