@@ -104,6 +104,9 @@ runs/
 lightning_logs/
 *.tar.gz
 
+# Zeb training checkpoints (large, use export_model.py for git-friendly snapshots)
+forge/zeb/checkpoints/
+
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
