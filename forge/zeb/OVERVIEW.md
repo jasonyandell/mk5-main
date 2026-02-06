@@ -193,9 +193,9 @@ class ZebModel(nn.Module):
 Model configs:
 | Size | embed_dim | n_layers | n_heads | ff_dim | Params |
 |------|-----------|----------|---------|--------|--------|
-| small | 64 | 2 | 2 | 128 | ~25K |
-| medium | 128 | 4 | 4 | 256 | ~150K |
-| large | 256 | 6 | 8 | 512 | ~600K |
+| small | 64 | 2 | 2 | 128 | ~75K |
+| medium | 128 | 4 | 4 | 256 | ~557K |
+| large | 256 | 6 | 8 | 512 | ~3.3M |
 
 ---
 
