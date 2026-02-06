@@ -81,6 +81,7 @@ def main():
     )
     parser.add_argument('--n-games', type=int, default=1000, help='Total games')
     parser.add_argument('--n-samples', type=int, default=100, help='Worlds per E[Q] decision')
+    parser.add_argument('--batch-size', type=int, default=0, help='Max games per GPU batch (0=all at once)')
     parser.add_argument('--device', default='cuda', help='Device')
     args = parser.parse_args()
 
@@ -106,6 +107,7 @@ def main():
             n_games=args.n_games,
             n_samples=args.n_samples,
             device=args.device,
+            batch_size=args.batch_size,
         )
         elapsed = time.time() - t0
 

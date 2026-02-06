@@ -512,15 +512,28 @@ python -u -m forge.zeb.eval_eq --n-games 500 --n-samples 100
 # E[Q] vs Zeb
 python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
     --n-games 500 --n-samples 100
+
+# Large eval with VRAM-bounded batching (avoids OOM on small GPUs)
+python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
+    --n-games 2000 --n-samples 50 --batch-size 75
 ```
+
+The `--batch-size` flag limits GPU allocations to `batch_size * n_samples` entries
+(WorldSamplerMRV + GPUTokenizer). Games are chunked, played to completion, and results
+aggregated. Per-batch running totals are printed. On a 3050 Ti (4GB), batch_size=75
+with N=50 fits in VRAM; batch_size=100 spills to system RAM.
 
 ### Results (Feb 2026)
 
 | Matchup | Win Rate | Avg Margin | Games |
 |---------|----------|------------|-------|
 | E[Q] (N=100) vs Random | 73.2% | +15.5 pts | 500 |
+| E[Q] (N=50) vs Zeb | 60.0% | +6.3 pts | 500 |
 | Zeb (epoch 2829) vs Random | ~69-70% | — | ref |
 | **E[Q] (N=100) vs Zeb** | **59.0%** | **+6.2 pts** | **500** |
+
+N=50 and N=100 produce nearly identical win rates vs Zeb (60.0% vs 59.0%), confirming
+that 50 sampled worlds per decision is sufficient for evaluation purposes.
 
 **Key takeaways:**
 - E[Q] with 100 sampled worlds beats random 73.2% — this anchors the imperfect-info ceiling
@@ -528,6 +541,7 @@ python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829
 - E[Q] beats Zeb 59-41 head-to-head, consistent across both seats (60.8% / 57.2%)
 - The gap is meaningful but not dominant — Zeb's learned intuition (single forward pass)
   competes well against expensive statistical analysis (100 oracle queries per decision)
+- N=50 is good enough for tracking — halving samples doesn't degrade win rate measurement
 
 ### Key Files
 

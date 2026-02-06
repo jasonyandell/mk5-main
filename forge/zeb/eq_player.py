@@ -290,6 +290,22 @@ def _run_eq_vs_random_batched(
     }
 
 
+def _merge_results(results: list[dict]) -> dict:
+    """Merge multiple batch results into one aggregate result."""
+    eq_wins = sum(r['eq_wins'] for r in results)
+    opp_wins = sum(r['opp_wins'] for r in results)
+    n_games = sum(r['n_games'] for r in results)
+    total_margin = sum(r['avg_margin'] * r['n_games'] for r in results)
+    return {
+        'eq_wins': eq_wins,
+        'opp_wins': opp_wins,
+        'eq_win_rate': eq_wins / n_games,
+        'avg_margin': total_margin / n_games,
+        'n_games': n_games,
+        'eq_team': results[0]['eq_team'],
+    }
+
+
 def evaluate_eq_vs_zeb(
     oracle_model,
     zeb_model,
@@ -297,6 +313,7 @@ def evaluate_eq_vs_zeb(
     n_samples: int = 100,
     device: str = 'cuda',
     zeb_temperature: float = 0.1,
+    batch_size: int = 0,
     verbose: bool = True,
 ) -> dict:
     """Evaluate E[Q] player vs Zeb (batched GPU).
@@ -310,6 +327,8 @@ def evaluate_eq_vs_zeb(
         n_samples: Worlds sampled per E[Q] decision
         device: CUDA device
         zeb_temperature: Softmax temperature for Zeb (lower = more greedy)
+        batch_size: Max games per GPU batch (0 = all at once). Limits VRAM
+            usage to batch_size * n_samples allocations.
         verbose: Print progress
 
     Returns:
@@ -317,25 +336,41 @@ def evaluate_eq_vs_zeb(
     """
     half = n_games // 2
 
+    def _run_chunked(n: int, eq_team: int, seed_offset: int) -> dict:
+        chunk = batch_size if batch_size > 0 else n
+        results = []
+        seed = seed_offset
+        remaining = n
+        batch_num = 0
+        while remaining > 0:
+            this_batch = min(chunk, remaining)
+            r = _run_eq_vs_zeb_batched(
+                oracle_model, zeb_model, n_games=this_batch,
+                n_samples=n_samples, eq_team=eq_team, base_seed=seed,
+                device=device, zeb_temperature=zeb_temperature,
+            )
+            results.append(r)
+            batch_num += 1
+            done = n - remaining + this_batch
+            agg = _merge_results(results)
+            if verbose:
+                print(f"    batch {batch_num}: {done}/{n} games, "
+                      f"E[Q] {agg['eq_win_rate']:.1%}")
+            seed += this_batch
+            remaining -= this_batch
+        return agg if len(results) > 1 else results[0]
+
     if verbose:
         print(f"  E[Q] as team 0 vs Zeb ({half} games)...")
     t0 = time.time()
-    r0 = _run_eq_vs_zeb_batched(
-        oracle_model, zeb_model, n_games=half, n_samples=n_samples,
-        eq_team=0, base_seed=0, device=device,
-        zeb_temperature=zeb_temperature,
-    )
+    r0 = _run_chunked(half, eq_team=0, seed_offset=0)
     if verbose:
         print(f"    E[Q] {r0['eq_win_rate']:.1%}, {time.time()-t0:.1f}s")
 
     if verbose:
         print(f"  E[Q] as team 1 vs Zeb ({half} games)...")
     t1 = time.time()
-    r1 = _run_eq_vs_zeb_batched(
-        oracle_model, zeb_model, n_games=half, n_samples=n_samples,
-        eq_team=1, base_seed=half, device=device,
-        zeb_temperature=zeb_temperature,
-    )
+    r1 = _run_chunked(half, eq_team=1, seed_offset=half)
     if verbose:
         print(f"    E[Q] {r1['eq_win_rate']:.1%}, {time.time()-t1:.1f}s")
 
