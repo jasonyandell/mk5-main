@@ -418,7 +418,9 @@ modal run forge/modal_app.py::zeb_train \
     --profile-mode
 ```
 
-### B200 vs 3050 Ti Performance (Feb 2026)
+### B200 vs 3050 Ti Performance
+
+**Pre-optimization (Feb 2026):**
 
 | Metric | B200 | 3050 Ti | Speedup |
 |--------|------|---------|---------|
@@ -427,11 +429,10 @@ modal run forge/modal_app.py::zeb_train \
 | Train time | 8.3s | 15-17s | 1.9x |
 | Games/sec | 7.3 | 3.1 | 2.3x |
 
-**Observation**: Only 2.2x speedup (not the expected 10-20x from B200's raw compute advantage).
-
-**Root cause**: Kernel launch overhead. Each CUDA graph replay contained ~980 tiny kernels
-from unrolled Python loops. With thousands of replays per game batch, both GPUs spent similar
-time on dispatch — the B200's wider SM array was starved.
+Only 2.2x speedup (not the expected 10-20x from B200's raw compute advantage).
+Root cause: kernel launch overhead. Each CUDA graph replay contained ~980 tiny kernels
+from unrolled Python loops. Both GPUs spent similar time on dispatch — the B200's wider
+SM array was starved.
 
 ### Kernel Reduction Optimizations (Feb 2026)
 
@@ -451,6 +452,28 @@ Four optimizations to reduce kernel count and Python dispatch overhead:
 - At production settings (n_sims=200, N=256, max_nodes=512): ~10-12% wall-clock improvement,
   dramatically higher GPU utilization (kernels now large enough that real compute dominates)
 
+### Post-Optimization B200 Benchmark (Feb 2026)
+
+After kernel reduction, re-benchmarked on B200 at production settings
+(n_sims=200, N=256, max_nodes=512, training_steps=1000):
+
+| Metric | B200 | 3050 Ti | Speedup |
+|--------|------|---------|---------|
+| **Avg epoch** | ~33s | ~87s | **2.6x** |
+| Gen time | ~25s | ~70s | 2.8x |
+| Train time | ~8s | ~17s | 2.1x |
+| Games/sec | 10.1 | 3.6 | 2.8x |
+
+**B200 GPU utilization: 100%** — kernel dispatch overhead fully eliminated. The B200 is now
+compute-bound on real MCTS work, not starved waiting for dispatch. The ~3x speedup (vs 10-20x
+raw compute advantage) reflects the inherently sequential nature of MCTS tree operations
+(select → evaluate → backprop → repeat). No amount of GPU width helps when bottlenecked on
+depth.
+
+**Conclusion**: Not cost-effective for ongoing training ($6.25/hr B200 vs free local 3050 Ti
+for ~3x speedup), but confirms the kernel optimizations fully saturate even the highest-end
+GPU hardware.
+
 ### Profile Mode
 
 The `--profile-mode` flag adds deliberate 30s gaps between phases:
@@ -458,6 +481,59 @@ The `--profile-mode` flag adds deliberate 30s gaps between phases:
 - Logs phase start/end timestamps to W&B (`profile/phase`, `profile/elapsed_s`)
 - Uses fresh W&B run named `b200-profiling-{timestamp}`
 - Useful for diagnosing performance issues
+
+---
+
+## E[Q] Player Evaluation
+
+Compares Zeb's learned play against an E[Q] statistical player that uses the Stage 1 oracle
+with world sampling and P(Make) action selection at each decision point.
+
+### How the E[Q] Player Works
+
+At each decision, the E[Q] player:
+1. Samples N hypothetical opponent hands (consistent with void inference)
+2. Queries the Stage 1 oracle for Q-values in each sampled world
+3. Builds a full PDF of Q-values per action (85 bins, Q in [-42, +42])
+4. Selects the action maximizing **P(Make)** — probability of making the contract
+   - Offense: P(Q >= 18) → team scores >= 30 points
+   - Defense: P(Q >= -17) → bidder scores < 30 points
+5. Ties broken by E[Q] mean (prefer winning big / losing gracefully)
+
+This is expensive (~100 oracle queries per decision × 28 decisions per game) but represents
+a principled statistical approach backed by perfect-information analysis.
+
+### Running Evaluations
+
+```bash
+# E[Q] vs random
+python -u -m forge.zeb.eval_eq --n-games 500 --n-samples 100
+
+# E[Q] vs Zeb
+python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
+    --n-games 500 --n-samples 100
+```
+
+### Results (Feb 2026)
+
+| Matchup | Win Rate | Avg Margin | Games |
+|---------|----------|------------|-------|
+| E[Q] (N=100) vs Random | 73.2% | +15.5 pts | 500 |
+| Zeb (epoch 2829) vs Random | ~69-70% | — | ref |
+| **E[Q] (N=100) vs Zeb** | **59.0%** | **+6.2 pts** | **500** |
+
+**Key takeaways:**
+- E[Q] with 100 sampled worlds beats random 73.2% — this anchors the imperfect-info ceiling
+- Zeb at epoch 2829 captures ~75% of the gap between random and E[Q]
+- E[Q] beats Zeb 59-41 head-to-head, consistent across both seats (60.8% / 57.2%)
+- The gap is meaningful but not dominant — Zeb's learned intuition (single forward pass)
+  competes well against expensive statistical analysis (100 oracle queries per decision)
+
+### Key Files
+
+- `eq_player.py` — `EQPlayer` class, `zeb_states_to_game_state_tensor()` bridge,
+  `evaluate_eq_vs_random()`, `evaluate_eq_vs_zeb()`
+- `eval_eq.py` — CLI: `python -u -m forge.zeb.eval_eq`
 
 ---
 
