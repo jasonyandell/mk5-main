@@ -226,8 +226,8 @@ def main() -> None:
         help="Pull new weights every N batches",
     )
     parser.add_argument(
-        "--upload-interval", type=int, default=60,
-        help="Seconds between HF folder uploads (default 60)",
+        "--upload-interval", type=int, default=180,
+        help="Seconds between HF folder uploads (default 180; 128 commits/hr limit shared across workers)",
     )
 
     # Model
