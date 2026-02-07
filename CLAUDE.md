@@ -50,20 +50,6 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
   - These won't run with `npm run test:e2e` (production tests only)
   - Run scratch tests explicitly: `npx playwright test --config=playwright.scratch.config.ts`
 
-## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
-  User provides localhost URL with a bug report? Follow this workflow:
-
-  1. **Generate test automatically**: `node scripts/replay-from-url.js "<url>" --generate-test`
-      - Creates test file in scratch/test-{timestamp}.js
-      - Test includes all replay logic and state logging
-
-  2. **Debug with focused options**:
-      - `--action-range 87 92` - Show only actions 87-92 (no grep needed!)
-      - `--hand 4` - Focus on just hand 4
-      - `--show-tricks` - Display trick winners and points
-      - `--compact` - One line per action with score changes
-      - `--stop-at N` - Stop replay at action N
-
 ## Testing Strategy
 
 ### Unit Tests (Vitest)
@@ -71,13 +57,6 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 - Test core functions in isolation
 - Uses `environment: 'node'` (not jsdom) - tests are pure logic, no DOM needed
 
-### E2E Tests (Playwright)
-
-**Architecture Principles:**
-- **Clean separation**: Tests interact with UI, not game internals
-- **Minimal window API**: Prefer DOM inspection over `window.getGameState()`
-- **Use game-helper.ts**: All DOM interactions through PlaywrightGameHelper
-- **No setTimeout()**: BANNED - use proper waits instead
 
 **No legacy** - CRITICAL. This is a greenfield project. Everything should be unified, even if it takes significant extra work.
 - An architecture test (`src/tests/architecture/no-backwards-compat.test.ts`) enforces this by detecting:
@@ -100,18 +79,4 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 
 See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture, setup, and commands.
 
-**Running overnight jobs**: Always use `python -u` (unbuffered) so logs stream in real-time:
-```bash
-nohup python -u -m forge.zeb.run_mcts_training \
-  --checkpoint forge/zeb/checkpoints/selfplay-epoch0349.pt \
-  --epochs 500 \
-  --games-per-epoch 128 \
-  --n-simulations 50 \
-  --n-parallel-games 128 \
-  --max-mcts-nodes 128 \
-  --batch-size 64 \
-  --lr 1e-4 \
-  --device cuda \
-  --no-wandb \
-  > scratch/training.log 2>&1 &
-```
+Always use `python -u` (unbuffered) so logs stream in real-time

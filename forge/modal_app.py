@@ -1167,11 +1167,17 @@ def eq_adaptive_b200(
 
 
 # =============================================================================
-# Zeb Self-Play Training (t42-gxo5)
+# Zeb Self-Play Training (AlphaZero-style MCTS)
 # =============================================================================
 #
-# Train Zeb policy network via REINFORCE on Modal GPUs.
-# Uses B200 for fast inference during game generation.
+# True self-play training: model's value head evaluates MCTS leaves.
+# Uses B200 for fast parallel MCTS game generation.
+#
+# Key features:
+# - GPU-native MCTS with model evaluation (not oracle)
+# - GPU replay buffer for stable training
+# - Checkpoint resume support
+# - W&B logging
 
 ZEB_VOLUME_NAME = "zeb-training-runs"
 ZEB_MOUNT_PATH = "/zeb_runs"
@@ -1183,269 +1189,527 @@ zeb_volume = modal.Volume.from_name(ZEB_VOLUME_NAME, create_if_missing=True)
     image=forge_image,
     gpu=GPU_B200,
     volumes={ZEB_MOUNT_PATH: zeb_volume},
-    timeout=7200,  # 2 hours max
+    timeout=14400,  # 4 hours max
     secrets=[modal.Secret.from_name("wandb-api-key")],
 )
 def train_zeb(
-    epochs: int = 100,
-    games_per_epoch: int = 2000,
-    batch_size: int = 256,
-    lr: float = 3e-4,
+    checkpoint_bytes: bytes,
+    epochs: int = 10,
+    games_per_epoch: int = 256,
+    n_simulations: int = 200,
+    n_parallel_games: int = 256,
+    max_mcts_nodes: int = 256,
+    batch_size: int = 64,
+    lr: float = 1e-4,
     temperature: float = 1.0,
-    entropy_weight: float = 0.1,
-    model_size: str = "small",
-    vs_heuristic: bool = True,
+    replay_buffer_size: int = 50000,
+    training_steps: int = 1000,
+    eval_every: int = 1,
+    save_every: int = 10,
     seed: int = 42,
     run_name: str | None = None,
+    wandb_enabled: bool = True,
+    profile_mode: bool = False,
 ) -> dict:
-    """Train Zeb policy network on Modal B200.
+    """Train Zeb via true self-play MCTS on Modal B200.
+
+    AlphaZero-style training where the model's value head evaluates MCTS leaves.
+    This enables bootstrap improvement through self-play.
 
     Args:
+        checkpoint_bytes: Serialized checkpoint to resume from
         epochs: Number of training epochs
         games_per_epoch: Games to generate per epoch
+        n_simulations: MCTS simulations per move
+        n_parallel_games: Concurrent MCTS games
+        max_mcts_nodes: Max nodes per MCTS tree
         batch_size: Training batch size
         lr: Learning rate
-        temperature: Exploration temperature during play
-        entropy_weight: Entropy regularization weight
-        model_size: 'small' or 'medium'
-        vs_heuristic: Train against heuristic (True) or self-play (False)
+        temperature: Action sampling temperature
+        replay_buffer_size: GPU replay buffer capacity
+        training_steps: Training steps per epoch (0 = one pass over examples)
+        eval_every: Evaluate vs random every N epochs
+        save_every: Save checkpoint every N epochs
         seed: Random seed
-        run_name: Optional run name
+        run_name: Run name for W&B and checkpoints
+        wandb_enabled: Whether to log to W&B
+        profile_mode: Add deliberate gaps between phases for GPU profiling
 
     Returns:
-        Dict with training results
+        Dict with training results and final checkpoint bytes
     """
     import sys
     sys.path.insert(0, "/root")
 
+    import io
     import os
+    import random
     import time
     from datetime import datetime
     from pathlib import Path
 
+    import numpy as np
     import torch
-    import lightning as L
-    from lightning.pytorch.callbacks import ModelCheckpoint, Callback
-    from lightning.pytorch.loggers import CSVLogger, WandbLogger
 
-    from forge.zeb.model import ZebModel, get_model_config
-    from forge.zeb.module import ZebLightningModule
-    from forge.zeb.self_play import play_games_batched, play_games_vs_heuristic, trajectories_to_batch
-    from forge.zeb.evaluate import evaluate_vs_random, evaluate_vs_heuristic
-
-    print(f"[{torch.cuda.get_device_name(0)}] Starting Zeb training")
-    print(f"  Epochs: {epochs}, Games/epoch: {games_per_epoch}")
-    print(f"  Mode: {'vs_heuristic' if vs_heuristic else 'self_play'}")
-    print(f"  Entropy weight: {entropy_weight}")
-    start_time = time.time()
-
-    L.seed_everything(seed)
+    # Set seeds
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     torch.set_float32_matmul_precision("high")
+    torch.backends.cudnn.benchmark = True
 
-    # Model
-    config = get_model_config(model_size)
-    module = ZebLightningModule(
-        **config,
-        lr=lr,
-        entropy_weight=entropy_weight,
-    )
+    from forge.zeb.gpu_training_pipeline import create_selfplay_pipeline, GPUReplayBuffer
+    from forge.zeb.model import ZebModel
+    from forge.zeb.run_mcts_training import evaluate_vs_random
 
-    total_params = sum(p.numel() for p in module.parameters())
+    device = "cuda"
+    gpu_name = torch.cuda.get_device_name(0)
+    print(f"[{gpu_name}] Starting Zeb self-play training")
+
+    # Load checkpoint
+    print("Loading checkpoint...")
+    buffer = io.BytesIO(checkpoint_bytes)
+    ckpt = torch.load(buffer, map_location='cpu', weights_only=False)
+
+    model_config = ckpt['model_config']
+    model = ZebModel(**model_config)
+    model.load_state_dict(ckpt['model_state_dict'])
+    model.to(device)
+
+    start_epoch = ckpt.get('epoch', 0) + 1
+    total_games_prior = ckpt.get('total_games', 0)
+    wandb_run_id = ckpt.get('wandb_run_id')
+
+    total_params = sum(p.numel() for p in model.parameters())
     model_size_str = f"{total_params / 1_000_000:.1f}M" if total_params >= 1_000_000 else f"{total_params // 1000}k"
 
-    # Data module with Modal GPU
-    class ModalSelfPlayDataModule(L.LightningDataModule):
-        def __init__(self, model, games_per_epoch, batch_size, temperature, vs_heuristic):
-            super().__init__()
-            self.model = model
-            self.games_per_epoch = games_per_epoch
-            self.batch_size = batch_size
-            self.temperature = temperature
-            self.vs_heuristic = vs_heuristic
-            self.epoch = 0
+    print(f"  Model: {model_size_str} ({total_params:,} params)")
+    print(f"  Config: {model_config}")
+    print(f"  From epoch: {start_epoch - 1}, prior games: {total_games_prior:,}")
 
-        def setup(self, stage=None):
-            pass
+    # Initial evaluation
+    print("\nInitial evaluation...")
+    initial_win_rate = evaluate_vs_random(model, n_games=100, device=device)
+    print(f"  vs Random: {initial_win_rate:.1%}")
 
-        def train_dataloader(self):
-            if self.vs_heuristic:
-                trajectories = play_games_vs_heuristic(
-                    self.model, self.games_per_epoch, self.temperature,
-                    'cuda', self.epoch * self.games_per_epoch,
-                )
+    # W&B setup
+    use_wandb = wandb_enabled and os.environ.get("WANDB_API_KEY")
+    if use_wandb:
+        import wandb
+        # Profile mode: always fresh run, never resume
+        if profile_mode or not wandb_run_id:
+            timestamp = datetime.now().strftime("%Y%m%d%H%M")
+            if profile_mode:
+                actual_run_name = f"b200-profiling-{timestamp}"
+                tags = ["profiling", "b200", "phase-timing"]
             else:
-                trajectories = play_games_batched(
-                    self.model, self.games_per_epoch, self.temperature,
-                    'cuda', self.epoch * self.games_per_epoch,
-                )
-            self.epoch += 1
-            batch_data = trajectories_to_batch(trajectories)
-            dataset = torch.utils.data.TensorDataset(*batch_data)
-            return torch.utils.data.DataLoader(
-                dataset, batch_size=self.batch_size, shuffle=True, drop_last=True,
+                actual_run_name = run_name or f"selfplay-b200-{timestamp}"
+                tags = ["selfplay", "alphazero", "modal", "b200"]
+            wandb.init(
+                project="zeb-mcts",
+                name=actual_run_name,
+                tags=tags,
+                config={
+                    'mode': 'profiling' if profile_mode else 'selfplay',
+                    'profile_mode': profile_mode,
+                    'initial_win_rate': initial_win_rate,
+                    'start_epoch': start_epoch,
+                    'epochs': epochs,
+                    'games_per_epoch': games_per_epoch,
+                    'n_simulations': n_simulations,
+                    'n_parallel_games': n_parallel_games,
+                    'max_mcts_nodes': max_mcts_nodes,
+                    'batch_size': batch_size,
+                    'lr': lr,
+                    'temperature': temperature,
+                    'replay_buffer_size': replay_buffer_size,
+                    'training_steps': training_steps,
+                    'model_config': model_config,
+                    'total_params': total_params,
+                    'gpu': gpu_name,
+                },
             )
+            print(f"W&B run: {wandb.run.url}")
+        else:
+            wandb.init(project="zeb-mcts", id=wandb_run_id, resume="must")
+            print(f"W&B run resumed: {wandb.run.url}")
 
-    data = ModalSelfPlayDataModule(
-        module.model, games_per_epoch, batch_size, temperature, vs_heuristic,
+    print(f"\n=== Self-Play Training ===")
+    print(f"Epochs: {start_epoch} to {start_epoch + epochs - 1}")
+    print(f"Games/epoch: {games_per_epoch}, MCTS sims: {n_simulations}")
+    print(f"Parallel games: {n_parallel_games}, Max nodes: {max_mcts_nodes}")
+    print(f"Replay buffer: {replay_buffer_size:,}, Training steps: {training_steps}")
+    print()
+
+    # Create self-play pipeline
+    print("Creating self-play pipeline...")
+    t0 = time.time()
+    pipeline = create_selfplay_pipeline(
+        model=model,
+        device=device,
+        n_parallel_games=n_parallel_games,
+        n_simulations=n_simulations,
+        max_mcts_nodes=max_mcts_nodes,
+        temperature=temperature,
     )
+    print(f"Pipeline created in {time.time() - t0:.1f}s")
 
-    # Evaluation callback
-    class EvalCallback(Callback):
-        def __init__(self, eval_every=5, n_games=100):
-            self.eval_every = eval_every
-            self.n_games = n_games
+    # Optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.01)
 
-        def on_train_epoch_end(self, trainer, pl_module):
-            if trainer.current_epoch % self.eval_every != 0:
-                return
-            model = pl_module.model
-            model.eval()
-            vs_random = evaluate_vs_random(model, self.n_games, 'cuda')
-            vs_heur = evaluate_vs_heuristic(model, self.n_games, 'cuda')
-            pl_module.log('eval/vs_random_win_rate', vs_random['team0_win_rate'], prog_bar=True)
-            pl_module.log('eval/vs_heuristic_win_rate', vs_heur['team0_win_rate'], prog_bar=True)
-            print(f"[Epoch {trainer.current_epoch}] vs Random: {vs_random['team0_win_rate']:.1%}, "
-                  f"vs Heuristic: {vs_heur['team0_win_rate']:.1%}")
+    # Load replay buffer from checkpoint if present
+    saved_buffer = ckpt.get('replay_buffer', [])
+    replay_buffer = GPUReplayBuffer.from_list(
+        saved_buffer,
+        capacity=replay_buffer_size,
+        device=torch.device(device),
+    )
+    print(f"Replay buffer: {len(replay_buffer):,}/{replay_buffer_size:,} examples")
 
-    # Run name
-    if run_name is None:
-        timestamp = datetime.now().strftime("%Y%m%d%H%M")
-        mode_tag = 'heur' if vs_heuristic else 'self'
-        run_name = f"zeb-{mode_tag}-{timestamp}-{model_size_str}-{epochs}ep"
-
-    # Output paths
-    output_dir = Path(ZEB_MOUNT_PATH) / run_name
+    # Output dir for checkpoints
+    output_dir = Path(ZEB_MOUNT_PATH) / (run_name or "selfplay-run")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Loggers
-    loggers = [CSVLogger(str(output_dir), name='logs')]
-    if os.environ.get("WANDB_API_KEY"):
-        loggers.append(WandbLogger(
-            project="zeb-training",
-            name=run_name,
-            tags=['modal', 'b200', 'vs-heuristic' if vs_heuristic else 'self-play', model_size],
-            save_dir=str(output_dir),
-            log_model=False,
-            config={
-                'epochs': epochs,
-                'games_per_epoch': games_per_epoch,
-                'batch_size': batch_size,
-                'lr': lr,
-                'temperature': temperature,
-                'entropy_weight': entropy_weight,
-                'model_size': model_size,
-                'vs_heuristic': vs_heuristic,
-                'total_params': total_params,
-            },
-        ))
-        print("  WandB: enabled")
+    # Training loop
+    start_time = time.time()
+    total_games = total_games_prior
+    best_win_rate = initial_win_rate
+    final_epoch = start_epoch
 
-    # Callbacks
-    callbacks = [
-        ModelCheckpoint(
-            dirpath=str(output_dir / 'checkpoints'),
-            save_top_k=3,
-            monitor='train/loss',
-            mode='min',
-            save_last=True,
-        ),
-        EvalCallback(eval_every=5, n_games=100),
-    ]
+    epoch_times = []
 
-    # Trainer
-    trainer = L.Trainer(
-        max_epochs=epochs,
-        callbacks=callbacks,
-        logger=loggers,
-        default_root_dir=str(output_dir),
-        accelerator='gpu',
-        devices=1,
-        precision='16-mixed',
-        gradient_clip_val=1.0,
-        log_every_n_steps=10,
-    )
+    # Profile mode: helper to wait until next time boundary
+    def wait_until_boundary(boundary_seconds: float, label: str):
+        """Wait until elapsed time hits the next boundary (e.g., 60s, 90s)."""
+        elapsed = time.time() - start_time
+        next_boundary = ((elapsed // boundary_seconds) + 1) * boundary_seconds
+        wait_time = next_boundary - elapsed
+        if wait_time > 0:
+            print(f"  [PROFILE] {label}: waiting {wait_time:.1f}s until t={next_boundary:.0f}s")
+            if use_wandb:
+                wandb.log({'profile/waiting': 1, 'profile/wait_until': next_boundary})
+            time.sleep(wait_time)
+            if use_wandb:
+                wandb.log({'profile/waiting': 0})
 
-    trainer.fit(module, data)
+    for epoch in range(start_epoch, start_epoch + epochs):
+        epoch_start = time.time()
+        final_epoch = epoch
+
+        # === GENERATION PHASE ===
+        if profile_mode and use_wandb:
+            elapsed = time.time() - start_time
+            wandb.log({'profile/phase': 1, 'profile/phase_name': 'gen_start', 'profile/elapsed_s': elapsed})
+            print(f"  [PROFILE] GEN START at t={elapsed:.1f}s")
+
+        model.eval()
+        t0 = time.time()
+        examples = pipeline.generate_games_gpu(n_games=games_per_epoch)
+        gen_time = time.time() - t0
+
+        if profile_mode and use_wandb:
+            elapsed = time.time() - start_time
+            wandb.log({'profile/phase': 2, 'profile/phase_name': 'gen_end', 'profile/elapsed_s': elapsed})
+            print(f"  [PROFILE] GEN END at t={elapsed:.1f}s (took {gen_time:.1f}s)")
+
+        total_games += games_per_epoch
+        n_examples = examples.n_examples
+        games_per_sec = games_per_epoch / gen_time
+
+        # Add to GPU replay buffer
+        replay_buffer.add_batch(examples)
+
+        # Profile mode: wait until 60s boundary before training
+        if profile_mode:
+            wait_until_boundary(60.0, "pre-train")
+
+        # === TRAINING PHASE ===
+        if profile_mode and use_wandb:
+            elapsed = time.time() - start_time
+            wandb.log({'profile/phase': 3, 'profile/phase_name': 'train_start', 'profile/elapsed_s': elapsed})
+            print(f"  [PROFILE] TRAIN START at t={elapsed:.1f}s")
+
+        model.train()
+        t1 = time.time()
+
+        if training_steps > 0 and len(replay_buffer) >= batch_size:
+            # AlphaZero-style: fixed number of training steps from buffer
+            metrics = pipeline.train_n_steps_from_buffer(
+                model=model,
+                optimizer=optimizer,
+                replay_buffer=replay_buffer,
+                n_steps=training_steps,
+                batch_size=batch_size,
+            )
+        else:
+            # Single pass over current examples
+            metrics = pipeline.train_epoch_gpu(
+                model=model,
+                optimizer=optimizer,
+                examples=examples,
+                batch_size=batch_size,
+            )
+        train_time = time.time() - t1
+
+        if profile_mode and use_wandb:
+            elapsed = time.time() - start_time
+            wandb.log({'profile/phase': 4, 'profile/phase_name': 'train_end', 'profile/elapsed_s': elapsed})
+            print(f"  [PROFILE] TRAIN END at t={elapsed:.1f}s (took {train_time:.1f}s)")
+
+        # Update pipeline's model reference
+        pipeline.set_model(model)
+
+        epoch_time = time.time() - epoch_start
+        epoch_times.append(epoch_time)
+
+        # Log
+        epoch_str = f"Epoch {epoch:4d}: policy={metrics['policy_loss']:.4f}, value={metrics['value_loss']:.4f}"
+        epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.1f}s, {games_per_sec:.1f} g/s)"
+        epoch_str += f" [buffer: {len(replay_buffer):,}]"
+        print(epoch_str)
+
+        if use_wandb:
+            wandb.log({
+                'epoch': epoch,
+                'train/policy_loss': metrics['policy_loss'],
+                'train/value_loss': metrics['value_loss'],
+                'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+                'perf/gen_time_s': gen_time,
+                'perf/train_time_s': train_time,
+                'perf/epoch_time_s': epoch_time,
+                'perf/games_per_sec': games_per_sec,
+                'perf/examples': n_examples,
+                'stats/total_games': total_games,
+                'stats/replay_buffer_size': len(replay_buffer),
+            })
+
+        # === EVALUATION PHASE ===
+        if (epoch + 1) % eval_every == 0:
+            if profile_mode and use_wandb:
+                elapsed = time.time() - start_time
+                wandb.log({'profile/phase': 5, 'profile/phase_name': 'eval_start', 'profile/elapsed_s': elapsed})
+                print(f"  [PROFILE] EVAL START at t={elapsed:.1f}s")
+
+            model.eval()
+            win_rate = evaluate_vs_random(model, n_games=100, device=device)
+
+            if profile_mode and use_wandb:
+                elapsed = time.time() - start_time
+                wandb.log({'profile/phase': 6, 'profile/phase_name': 'eval_end', 'profile/elapsed_s': elapsed})
+                print(f"  [PROFILE] EVAL END at t={elapsed:.1f}s")
+
+            print(f"         -> vs Random: {win_rate:.1%}")
+            if use_wandb:
+                wandb.log({'eval/vs_random_win_rate': win_rate, 'epoch': epoch})
+            if win_rate > best_win_rate:
+                best_win_rate = win_rate
+
+        # Profile mode: wait until 90s boundary (halfway to next epoch's gen at 120s)
+        if profile_mode:
+            wait_until_boundary(60.0, "post-eval")
+
+        # Save checkpoint to volume
+        if (epoch + 1) % save_every == 0:
+            ckpt_path = output_dir / f"selfplay-epoch{epoch:04d}.pt"
+            ckpt_data = {
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'model_config': model_config,
+                'training_config': {
+                    'mode': 'selfplay',
+                    'games_per_epoch': games_per_epoch,
+                    'n_simulations': n_simulations,
+                    'lr': lr,
+                    'replay_buffer_size': replay_buffer_size,
+                    'training_steps': training_steps,
+                },
+                'total_games': total_games,
+                'wandb_run_id': wandb.run.id if use_wandb else None,
+                'replay_buffer': replay_buffer.to_list(),
+            }
+            torch.save(ckpt_data, ckpt_path)
+            print(f"  Saved checkpoint: {ckpt_path.name}")
+            zeb_volume.commit()
 
     # Final evaluation
     print("\n=== Final Evaluation ===")
-    vs_random = evaluate_vs_random(module.model, 200, 'cuda')
-    vs_heur = evaluate_vs_heuristic(module.model, 200, 'cuda')
-    print(f"vs Random: {vs_random['team0_win_rate']:.1%}")
-    print(f"vs Heuristic: {vs_heur['team0_win_rate']:.1%}")
+    model.eval()
+    final_win_rate = evaluate_vs_random(model, n_games=200, device=device)
+    print(f"vs Random: {final_win_rate:.1%}")
+    print(f"Improvement: {initial_win_rate:.1%} -> {final_win_rate:.1%} ({final_win_rate - initial_win_rate:+.1%})")
 
-    # Log final to W&B
-    if os.environ.get("WANDB_API_KEY"):
-        import wandb
+    total_time = time.time() - start_time
+    avg_epoch_time = sum(epoch_times) / len(epoch_times) if epoch_times else 0
+
+    print(f"\n=== Performance Summary ===")
+    print(f"Total time: {total_time:.1f}s ({total_time/60:.1f} min)")
+    print(f"Avg epoch time: {avg_epoch_time:.1f}s")
+    print(f"Total games: {total_games:,}")
+    print(f"Model queries: {pipeline.total_model_queries:,}")
+
+    if use_wandb:
         wandb.log({
-            'final/vs_random_win_rate': vs_random['team0_win_rate'],
-            'final/vs_heuristic_win_rate': vs_heur['team0_win_rate'],
+            'final/vs_random_win_rate': final_win_rate,
+            'final/improvement': final_win_rate - initial_win_rate,
+            'final/total_time_s': total_time,
+            'final/avg_epoch_time_s': avg_epoch_time,
         })
         wandb.finish()
 
+    # Serialize final checkpoint to return
+    final_ckpt = {
+        'epoch': final_epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'model_config': model_config,
+        'training_config': {
+            'mode': 'selfplay',
+            'games_per_epoch': games_per_epoch,
+            'n_simulations': n_simulations,
+            'lr': lr,
+            'replay_buffer_size': replay_buffer_size,
+            'training_steps': training_steps,
+        },
+        'total_games': total_games,
+        'replay_buffer': replay_buffer.to_list(),
+    }
+    out_buffer = io.BytesIO()
+    torch.save(final_ckpt, out_buffer)
+    final_checkpoint_bytes = out_buffer.getvalue()
+
     zeb_volume.commit()
 
-    total_time = time.time() - start_time
     return {
-        'run_name': run_name,
-        'epochs': epochs,
-        'total_games': epochs * games_per_epoch,
-        'final_vs_random': vs_random['team0_win_rate'],
-        'final_vs_heuristic': vs_heur['team0_win_rate'],
+        'run_name': run_name or "selfplay-run",
+        'start_epoch': start_epoch,
+        'final_epoch': final_epoch,
+        'epochs_trained': epochs,
+        'total_games': total_games,
+        'initial_win_rate': initial_win_rate,
+        'final_win_rate': final_win_rate,
+        'best_win_rate': best_win_rate,
         'total_time_seconds': total_time,
         'total_time_minutes': total_time / 60,
+        'avg_epoch_time_s': avg_epoch_time,
+        'avg_games_per_sec': (epochs * games_per_epoch) / total_time if total_time > 0 else 0,
+        'model_queries': pipeline.total_model_queries,
+        'gpu': gpu_name,
+        'final_checkpoint_bytes': final_checkpoint_bytes,
     }
 
 
 @app.local_entrypoint(name="zeb_train")
 def zeb_train(
-    epochs: int = 100,
-    games_per_epoch: int = 2000,
-    batch_size: int = 256,
-    lr: float = 3e-4,
-    temperature: float = 1.0,
-    entropy_weight: float = 0.1,
-    model_size: str = "small",
-    self_play: bool = False,
+    checkpoint: str,
+    epochs: int = 10,
+    games_per_epoch: int = 256,
+    n_simulations: int = 200,
+    n_parallel_games: int = 256,
+    max_mcts_nodes: int = 256,
+    batch_size: int = 64,
+    lr: float = 1e-4,
+    replay_buffer_size: int = 50000,
+    training_steps: int = 1000,
+    eval_every: int = 1,
+    save_every: int = 10,
+    run_name: str | None = None,
+    no_wandb: bool = False,
+    save_checkpoint: str | None = None,
+    profile_mode: bool = False,
 ):
-    """Train Zeb on Modal B200.
+    """Train Zeb via self-play MCTS on Modal B200.
 
     Usage:
-        modal run forge/modal_app.py::zeb_train --epochs 100 --games-per-epoch 2000
-        modal run forge/modal_app.py::zeb_train --epochs 500 --games-per-epoch 5000  # Big run!
-        modal run forge/modal_app.py::zeb_train --self-play  # Use self-play instead of heuristic
+        # Benchmark 10 epochs (bead t42-19vw)
+        modal run forge/modal_app.py::zeb_train \\
+            --checkpoint forge/zeb/checkpoints/selfplay-epoch1847.pt \\
+            --epochs 10 \\
+            --run-name "b200-benchmark"
+
+        # Profile mode: adds deliberate gaps between phases for GPU profiling
+        modal run forge/modal_app.py::zeb_train \\
+            --checkpoint forge/zeb/checkpoints/selfplay-epoch1845.pt \\
+            --epochs 3 \\
+            --profile-mode
+
+        # Production run
+        modal run forge/modal_app.py::zeb_train \\
+            --checkpoint forge/zeb/checkpoints/selfplay-epoch1847.pt \\
+            --epochs 100 \\
+            --games-per-epoch 512 \\
+            --save-checkpoint forge/zeb/checkpoints/selfplay-b200.pt
     """
+    from pathlib import Path
     from rich.console import Console
     console = Console()
 
-    vs_heuristic = not self_play
-    total_games = epochs * games_per_epoch
+    # Load checkpoint
+    ckpt_path = Path(checkpoint)
+    if not ckpt_path.exists():
+        console.print(f"[red]Checkpoint not found: {checkpoint}[/red]")
+        return
 
-    console.print("[bold]🎮 Zeb Training on Modal B200 🎮[/bold]")
+    if profile_mode:
+        console.print(f"[bold yellow]Zeb PROFILING MODE on Modal B200[/bold yellow]")
+    else:
+        console.print(f"[bold]Zeb Self-Play Training on Modal B200[/bold]")
+    console.print(f"  Checkpoint: {checkpoint}")
     console.print(f"  Epochs: {epochs}")
     console.print(f"  Games/epoch: {games_per_epoch}")
-    console.print(f"  Total games: {total_games:,}")
-    console.print(f"  Mode: {'vs heuristic' if vs_heuristic else 'self-play'}")
-    console.print(f"  Entropy weight: {entropy_weight}")
+    console.print(f"  MCTS sims: {n_simulations}")
+    console.print(f"  Parallel games: {n_parallel_games}")
+    console.print(f"  Replay buffer: {replay_buffer_size:,}")
+    console.print(f"  Training steps/epoch: {training_steps}")
+    console.print(f"  W&B: {'disabled' if no_wandb else 'enabled'}")
+    if profile_mode:
+        console.print(f"  [yellow]Profile mode: deliberate gaps between phases[/yellow]")
     console.print()
 
+    # Read checkpoint bytes
+    checkpoint_bytes = ckpt_path.read_bytes()
+    ckpt_size_mb = len(checkpoint_bytes) / 1024 / 1024
+    console.print(f"Uploading checkpoint ({ckpt_size_mb:.1f} MB)...")
+
     result = train_zeb.remote(
+        checkpoint_bytes=checkpoint_bytes,
         epochs=epochs,
         games_per_epoch=games_per_epoch,
+        n_simulations=n_simulations,
+        n_parallel_games=n_parallel_games,
+        max_mcts_nodes=max_mcts_nodes,
         batch_size=batch_size,
         lr=lr,
-        temperature=temperature,
-        entropy_weight=entropy_weight,
-        model_size=model_size,
-        vs_heuristic=vs_heuristic,
+        replay_buffer_size=replay_buffer_size,
+        training_steps=training_steps,
+        eval_every=eval_every,
+        save_every=save_every,
+        run_name=run_name,
+        wandb_enabled=not no_wandb,
+        profile_mode=profile_mode,
     )
 
-    console.print(f"\n[bold green]🏆 Training Complete! 🏆[/bold green]")
-    console.print(f"  Run: {result['run_name']}")
+    console.print(f"\n[bold green]Training Complete![/bold green]")
+    console.print(f"  GPU: {result['gpu']}")
+    console.print(f"  Epochs: {result['start_epoch']} -> {result['final_epoch']}")
     console.print(f"  Total games: {result['total_games']:,}")
-    console.print(f"  Time: {result['total_time_minutes']:.1f} minutes")
-    console.print(f"  Final vs Random: {result['final_vs_random']:.1%}")
-    console.print(f"  Final vs Heuristic: {result['final_vs_heuristic']:.1%}")
+    console.print(f"  Time: {result['total_time_minutes']:.1f} min")
+    console.print(f"  Avg epoch: {result['avg_epoch_time_s']:.1f}s")
+    console.print(f"  Games/sec: {result['avg_games_per_sec']:.1f}")
+    console.print(f"  Win rate: {result['initial_win_rate']:.1%} -> {result['final_win_rate']:.1%}")
+
+    # Compare to 3050 Ti baseline
+    baseline_epoch_time = 98.0  # seconds
+    speedup = baseline_epoch_time / result['avg_epoch_time_s'] if result['avg_epoch_time_s'] > 0 else 0
+    console.print(f"\n  [bold]Speedup vs 3050 Ti: {speedup:.1f}x[/bold]")
+
+    # Save final checkpoint if requested
+    if save_checkpoint and 'final_checkpoint_bytes' in result:
+        out_path = Path(save_checkpoint)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_bytes(result['final_checkpoint_bytes'])
+        console.print(f"\n  Saved: {save_checkpoint}")
 
 
 # =============================================================================
