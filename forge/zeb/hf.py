@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import time
 from pathlib import Path
 
 import torch
@@ -26,6 +27,21 @@ except ImportError:
 def _require_hf():
     if HfApi is None:
         raise ImportError("pip install huggingface_hub")
+
+
+def _retry(fn, max_retries=3, base_delay=5):
+    """Retry a function on transient network errors with exponential backoff."""
+    for attempt in range(max_retries + 1):
+        try:
+            return fn()
+        except Exception as e:
+            is_transient = 'timeout' in str(e).lower() or 'connection' in str(e).lower()
+            if not is_transient or attempt == max_retries:
+                raise
+            delay = base_delay * (2 ** attempt)
+            print(f"  HF transient error (attempt {attempt + 1}/{max_retries + 1}): {e}")
+            print(f"  Retrying in {delay}s...")
+            time.sleep(delay)
 
 
 def init_repo(repo_id: str, model_config: dict) -> str:
@@ -72,11 +88,11 @@ def push_weights(
             state.update(extra_metadata)
         (tmp_dir / 'training_state.json').write_text(json.dumps(state))
 
-        api.upload_folder(
+        _retry(lambda: api.upload_folder(
             folder_path=tmp,
             repo_id=repo_id,
             commit_message=f"step {step}, {total_games} games",
-        )
+        ))
 
 
 def pull_weights(repo_id: str, device: str = 'cpu', weights_name: str = 'model.pt') -> tuple[dict, dict]:
@@ -85,8 +101,8 @@ def pull_weights(repo_id: str, device: str = 'cpu', weights_name: str = 'model.p
     Uses HF cache -- only downloads if changed.
     """
     _require_hf()
-    config_path = hf_hub_download(repo_id, 'config.json')
-    weights_path = hf_hub_download(repo_id, weights_name)
+    config_path = _retry(lambda: hf_hub_download(repo_id, 'config.json'))
+    weights_path = _retry(lambda: hf_hub_download(repo_id, weights_name))
 
     with open(config_path) as f:
         model_config = json.load(f)
@@ -112,7 +128,7 @@ def get_remote_training_state(repo_id: str) -> dict | None:
     """
     _require_hf()
     try:
-        state_path = hf_hub_download(repo_id, 'training_state.json')
+        state_path = _retry(lambda: hf_hub_download(repo_id, 'training_state.json'))
     except Exception:
         return None
 
@@ -131,7 +147,7 @@ def pull_weights_if_new(
     Returns (state_dict, model_config, new_step) or None if up-to-date.
     """
     _require_hf()
-    state_path = hf_hub_download(repo_id, 'training_state.json')
+    state_path = _retry(lambda: hf_hub_download(repo_id, 'training_state.json'))
     with open(state_path) as f:
         state = json.load(f)
 
@@ -158,12 +174,12 @@ def upload_examples(repo_id: str, local_path: str | Path, remote_name: str) -> N
     """Upload an example batch .pt file to the examples repo."""
     _require_hf()
     api = HfApi()
-    api.upload_file(
+    _retry(lambda: api.upload_file(
         path_or_fileobj=str(local_path),
         path_in_repo=remote_name,
         repo_id=repo_id,
         commit_message=f"examples: {remote_name}",
-    )
+    ))
 
 
 def upload_examples_folder(repo_id: str, folder_path: str | Path, n_files: int = 0) -> None:
@@ -171,18 +187,18 @@ def upload_examples_folder(repo_id: str, folder_path: str | Path, n_files: int =
     _require_hf()
     api = HfApi()
     msg = f"examples: {n_files} batches" if n_files else "examples batch"
-    api.upload_folder(
+    _retry(lambda: api.upload_folder(
         folder_path=str(folder_path),
         repo_id=repo_id,
         commit_message=msg,
-    )
+    ))
 
 
 def list_remote_examples(repo_id: str) -> list[str]:
     """List pending .pt example files in the examples repo."""
     _require_hf()
     api = HfApi()
-    all_files = api.list_repo_files(repo_id)
+    all_files = _retry(lambda: api.list_repo_files(repo_id))
     return sorted(f for f in all_files if f.endswith('.pt'))
 
 
@@ -192,7 +208,7 @@ def download_example(repo_id: str, remote_name: str) -> Path:
     Uses HF cache — unique filenames mean no staleness issues.
     """
     _require_hf()
-    path = hf_hub_download(repo_id, remote_name)
+    path = _retry(lambda: hf_hub_download(repo_id, remote_name))
     return Path(path)
 
 
@@ -221,9 +237,9 @@ def prune_remote_examples(repo_id: str, keep: int) -> list[str]:
     _require_hf()
     api = HfApi()
     operations = [CommitOperationDelete(path_in_repo=f) for f in to_delete]
-    api.create_commit(
+    _retry(lambda: api.create_commit(
         repo_id=repo_id,
         operations=operations,
         commit_message=f"prune: removed {len(to_delete)} old batches, keeping {keep}",
-    )
+    ))
     return to_delete
