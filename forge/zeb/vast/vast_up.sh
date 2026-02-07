@@ -58,18 +58,21 @@ if [ "$N_WORKERS" -eq 0 ]; then
 fi
 
 # Onstart script: install deps, clone repo, start worker
-# Kept minimal — git clone + pip install huggingface_hub + run
+# All output goes to stdout (visible via `vastai logs`) AND to log files.
 ONSTART='#!/bin/bash
 set -e
-exec >> /root/setup.log 2>&1
+
 echo "=== Setup started at $(date) ==="
 
 # Install git and clone
 apt-get update -qq && apt-get install -y -qq git > /dev/null
+echo "git installed"
 git clone --depth 1 --branch '"$GIT_BRANCH"' '"$GIT_REPO"' /root/code
+echo "repo cloned"
 
 # Minimal deps (torch already in image)
 pip install -q huggingface_hub
+echo "deps installed"
 
 # Auth
 huggingface-cli login --token $HF_TOKEN --add-to-git-credential 2>/dev/null || true
@@ -77,9 +80,10 @@ huggingface-cli login --token $HF_TOKEN --add-to-git-credential 2>/dev/null || t
 # GPU smoke test
 python -c "import torch; assert torch.cuda.is_available(), \"No CUDA\"; print(f\"GPU OK: {torch.cuda.get_device_name()}\")"
 
-# Start worker
+# Start worker — exec replaces this shell so worker output IS container output
+echo "=== Starting worker $WORKER_ID at $(date) ==="
 cd /root/code
-nohup python -u -m forge.zeb.worker.run \
+exec python -u -m forge.zeb.worker.run \
     --repo-id '"$REPO_ID"' \
     --examples-repo-id '"$EXAMPLES_REPO_ID"' \
     --worker-id $WORKER_ID \
@@ -88,10 +92,7 @@ nohup python -u -m forge.zeb.worker.run \
     --n-simulations 200 \
     --max-mcts-nodes 512 \
     --games-per-batch 256 \
-    --weight-sync-interval 2 \
-    >> /root/worker.log 2>&1 &
-
-echo "=== Worker $WORKER_ID started at $(date) ==="
+    --weight-sync-interval 2
 '
 
 echo ""
@@ -119,6 +120,7 @@ echo ""
 echo "Fleet launched. Workers will take 3-5 min to start generating."
 echo ""
 echo "Monitor:"
-echo "  vastai show instances                        # instance status"
-echo "  ./vast_status.sh                             # filtered view"
-echo "  ssh -p PORT root@HOST tail -f /root/worker.log   # live logs"
+echo "  vastai show instances                   # instance status"
+echo "  ./vast_status.sh                        # filtered view"
+echo "  vastai logs INSTANCE_ID --tail 50       # worker output"
+echo "  ssh -p PORT root@HOST                   # full shell access"
