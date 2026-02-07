@@ -4,6 +4,22 @@ Oracle-guided MCTS distillation for training ZebModel to play Texas 42.
 
 ---
 
+## Milestone: 1M Games (Feb 6, 2026)
+
+**5 days from first commit to 1M self-play games.**
+
+| Metric | Value |
+|--------|-------|
+| Model | `zeb-557k-1m.pt` (557K params) |
+| Games | 1,010,176 |
+| Win rate vs random | 70.9% |
+| Policy loss | 0.35 |
+| MCTS entropy | 0.25 |
+
+First commit: Jan 31, 2026 (`feat(zeb): implement AlphaZero-style self-play learning`)
+
+---
+
 ## Architecture Overview
 
 This pipeline trains a small transformer (ZebModel) by distilling knowledge from a pre-trained oracle through MCTS-guided self-play. The key insight is that MCTS with oracle leaf evaluation produces high-quality policy targets (visit distributions) that are far less noisy than REINFORCE.
@@ -252,28 +268,29 @@ python -u -m forge.zeb.run_selfplay_training \
 | `--games-per-epoch` | 256 | Matched to parallel games for full GPU utilization |
 | `--batch-size` | 64 | |
 | `--lr` | 1e-4 | |
-| `--eval-every` | 1 | |
-| `--save-every` | 1 | |
+| `--training-steps` | 1000 | AlphaZero-style: fixed training steps per epoch |
+| `--eval-every` | 10 | |
+| `--save-every` | 10 | |
 | `--keep-checkpoints` | 3 | |
 | `--replay-buffer-size` | 50000 | ~7 epochs of history for stable training |
+| `--eval-games` | 2000 | Batched eval for reliable win rate measurement |
 
 **Performance** (after kernel reduction optimizations):
-- Game generation: ~69s (200 sims, ~3.7 games/s)
-- Training: ~2.5s
-- Eval (100 games): ~2s (batched)
-- Total epoch: ~75s without eval
+- Game generation: ~70s (200 sims, ~3.6 games/s)
+- Training: ~17s (1000 steps)
+- Eval (2000 games): ~23s (batched)
+- Total epoch: ~87s without eval, ~110s with eval
 
-**Progress** (as of epoch 2499):
-- Win rate vs random (pair): ~65-70%
-- Win rate vs random (solo): ~64%
-- Total games: ~640k+
+**Progress** (as of epoch 3289):
+- Win rate vs random (pair): ~70-76%
+- Total games: ~930k
 - Replay buffer: 50k examples (full)
-- Target: 100,000 epochs (runs indefinitely until stopped)
+- Target: 1M games (~370 epochs remaining)
 
 **Resume command**:
 ```bash
 nohup python -u -m forge.zeb.run_selfplay_training \
-  --checkpoint forge/zeb/checkpoints/selfplay-epoch2499.pt \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch3289.pt \
   --epochs 100000 \
   --games-per-epoch 256 \
   --n-simulations 200 \
@@ -297,7 +314,7 @@ Self-play saves checkpoints as `selfplay-epoch{N:04d}.pt`. To continue training,
 
 ```bash
 python -u -m forge.zeb.run_selfplay_training \
-    --checkpoint forge/zeb/checkpoints/selfplay-epoch2499.pt \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3289.pt \
     --epochs 100000 \
     --keep-checkpoints 3 \
     --replay-buffer-size 50000 \
@@ -664,14 +681,14 @@ The learner must start first — it pushes the initial weights that workers pull
 python -u -m forge.zeb.learner.run \
     --repo-id jasonyandell/zeb-42 \
     --input-dir /tmp/zeb-examples \
-    --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3289.pt \
     --lr 1e-4 \
     --batch-size 64 \
     --replay-buffer-size 50000 \
-    --training-steps-per-cycle 100 \
+    --training-steps-per-cycle 1000 \
     --push-every 10 \
-    --save-every 50 \
-    --eval-every 50 \
+    --save-every 10 \
+    --eval-every 10 \
     --eval-games 2000 \
     --keep-checkpoints 3 \
     --wandb
@@ -698,7 +715,7 @@ Once the learner has pushed initial weights, start one or more workers:
 python -u -m forge.zeb.worker.run \
     --repo-id jasonyandell/zeb-42 \
     --output-dir /tmp/zeb-examples \
-    --n-parallel-games 128 \
+    --n-parallel-games 256 \
     --n-simulations 200 \
     --max-mcts-nodes 512 \
     --temperature 1.0 \
