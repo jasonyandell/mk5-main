@@ -820,6 +820,21 @@ buffer in checkpoints (larger checkpoints, ~92MB).
 
 ---
 
+## Vast.ai Worker Fleet
+
+Workers can run on cheap Vast.ai GPU instances while the learner runs locally.
+See [`vast/README.md`](vast/README.md) for setup and usage.
+
+```bash
+cd forge/zeb/vast
+./vast_up.sh 4          # launch 4 workers on cheapest 3000-series GPUs
+./vast_status.sh        # check instance status and costs
+./vast_replenish.sh 4   # replace any dead workers
+./vast_down.sh          # tear everything down
+```
+
+---
+
 ## See Also
 
 - `ML_OVERVIEW.md` - Background on RL concepts, REINFORCE, hyperparameters
