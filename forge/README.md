@@ -130,7 +130,9 @@ Three layers of CUDA graph optimization deliver a **2.4x speedup**:
 
 **Distributed architecture:** The learner runs locally on a 3050 Ti. Workers run on Vast.ai (RTX 3060s at $0.05/hr). HuggingFace Hub is the sole communication broker — no shared filesystem needed. Workers generate self-play games and upload batches every 240s; the learner polls for new examples, trains on a 200K-example GPU ring buffer, and pushes updated weights.
 
-**Milestone: 1,010,176 self-play games in 5 days at ~$2.88 per 8-hour session.**
+**Milestone: 1.5M self-play games, from first commit to 70% win rate in 5 days.** An 8-hour distributed session with 4 Vast.ai workers costs ~$2.88.
+
+A $30K B200 datacenter GPU achieves 10.1 games/sec — only 2.8x faster than a $250 3050 Ti at 3.6 games/sec. MCTS is inherently depth-sequential; no amount of GPU width helps beyond eliminating kernel dispatch overhead. At $6.25/hr, the B200 produces ~5,800 games/$/hr. A fleet of RTX 3060s at $0.05/hr produces ~288,000 games/$/hr — **50x more cost-effective**.
 
 ```bash
 # Launch 4 Vast.ai workers
