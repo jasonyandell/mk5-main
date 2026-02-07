@@ -37,7 +37,7 @@ from forge.zeb.hf import (
     init_examples_repo,
     pull_weights,
     pull_weights_if_new,
-    upload_examples,
+    upload_examples_folder,
 )
 
 
@@ -109,11 +109,19 @@ def run_worker(args: argparse.Namespace) -> None:
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
 
+    # For HF uploads: accumulate batches locally, flush every ~60s in one commit
+    staging_dir = Path(tempfile.mkdtemp(prefix='zeb-staging-')) if use_hf_examples else None
+    last_upload_time = time.time()
+    staged_count = 0
+    upload_interval_sec = args.upload_interval
+
     batch_count = 0
     total_games = 0
     dest = args.examples_repo_id if use_hf_examples else str(output_dir)
     print(f"\nWorker {args.worker_id} starting (output: {dest})")
     print(f"  games_per_batch={args.games_per_batch}, weight_sync_interval={args.weight_sync_interval}")
+    if use_hf_examples:
+        print(f"  upload_interval={upload_interval_sec}s (folder upload)")
 
     while True:
         t0 = time.time()
@@ -125,7 +133,7 @@ def run_worker(args: argparse.Namespace) -> None:
         gen_time = time.time() - t0
         total_games += args.games_per_batch
 
-        # Convert to CPU batch and save/upload
+        # Convert to CPU batch and save
         batch = gpu_examples_to_batch(
             examples, args.worker_id, current_step, n_games=args.games_per_batch,
             source='selfplay-mcts',
@@ -137,9 +145,8 @@ def run_worker(args: argparse.Namespace) -> None:
             },
         )
         if use_hf_examples:
-            with tempfile.TemporaryDirectory() as tmp:
-                local_path = save_examples(batch, Path(tmp), args.worker_id)
-                upload_examples(args.examples_repo_id, local_path, local_path.name)
+            save_examples(batch, staging_dir, args.worker_id)
+            staged_count += 1
         else:
             save_examples(batch, output_dir, args.worker_id)
         batch_count += 1
@@ -152,6 +159,17 @@ def run_worker(args: argparse.Namespace) -> None:
             f"step={current_step}, "
             f"total_games={total_games}"
         )
+
+        # Flush staged examples to HF (~every upload_interval seconds)
+        if use_hf_examples and (time.time() - last_upload_time) >= upload_interval_sec:
+            print(f"[{args.worker_id}] Uploading {staged_count} batches to HF...")
+            upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count)
+            # Clear staging dir
+            for f in staging_dir.iterdir():
+                f.unlink()
+            print(f"[{args.worker_id}] Upload complete ({staged_count} batches)")
+            staged_count = 0
+            last_upload_time = time.time()
 
         # Periodic weight sync
         if batch_count % args.weight_sync_interval == 0:
@@ -206,6 +224,10 @@ def main() -> None:
     parser.add_argument(
         "--weight-sync-interval", type=int, default=10,
         help="Pull new weights every N batches",
+    )
+    parser.add_argument(
+        "--upload-interval", type=int, default=60,
+        help="Seconds between HF folder uploads (default 60)",
     )
 
     # Model

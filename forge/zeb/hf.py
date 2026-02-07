@@ -166,6 +166,18 @@ def upload_examples(repo_id: str, local_path: str | Path, remote_name: str) -> N
     )
 
 
+def upload_examples_folder(repo_id: str, folder_path: str | Path, n_files: int = 0) -> None:
+    """Upload all .pt files in a folder to the examples repo in a single commit."""
+    _require_hf()
+    api = HfApi()
+    msg = f"examples: {n_files} batches" if n_files else "examples batch"
+    api.upload_folder(
+        folder_path=str(folder_path),
+        repo_id=repo_id,
+        commit_message=msg,
+    )
+
+
 def list_remote_examples(repo_id: str) -> list[str]:
     """List pending .pt example files in the examples repo."""
     _require_hf()
