@@ -75,9 +75,11 @@ Total: 4 instances, $0.382/hr ($9.17/day)
 ### Quick check (most common)
 ```bash
 # Get instance IDs first
-vastai show instances --raw | python3 -c "
-import sys, json
-for i in json.load(sys.stdin):
+# NOTE: pipe vastai --raw to a file, not directly to python (broken pipe bug)
+vastai show instances --raw > /tmp/vast.json 2>/dev/null
+python3 -c "
+import json
+for i in json.load(open('/tmp/vast.json')):
     if (i.get('label') or '').startswith('zeb-'):
         print(f\"  {i['id']}  {i.get('label', '?'):<24} {i.get('actual_status', '?')}\")
 "
@@ -210,16 +212,66 @@ Use `./vast_down.sh --force` to skip the prompt.
 # Go to: https://cloud.vast.ai/billing/
 ```
 
-**Budget rules of thumb:**
+**Budget rules of thumb (Feb 2026 pricing):**
 | Workers | Typical GPU | $/hr | $/day | $/week |
 |---------|------------|------|-------|--------|
-| 2 | RTX 3060 | $0.18 | $4.30 | $30 |
-| 4 | RTX 3060 | $0.36 | $8.60 | $60 |
-| 4 | RTX 3080 | $0.60 | $14.40 | $101 |
+| 4 | RTX 3060 mix | $0.25 | $6.00 | $42 |
+| 4 | RTX 3070 mix | $0.30 | $7.20 | $50 |
+| 4 | RTX 3060 Ti | $0.22 | $5.28 | $37 |
 
 ---
 
-## 8. Daily Operations Checklist
+## 8. Claude Code Fleet Management Team
+
+For hands-off fleet management, ask Claude Code to spawn a monitoring team.
+This sets up background agents that replace dead workers and track stats.
+
+**Prompt:**
+> Launch 4 vast workers and set up a team to monitor them. Keep 4 healthy
+> workers running, max $0.08/hr per card. Check every 10 minutes and replace
+> duds. Track performance stats by GPU type.
+
+**What gets created:**
+
+| Agent | Role | Duration |
+|-------|------|----------|
+| fleet-fixer | Destroys bad instances, launches replacements | One-shot, shuts down after |
+| fleet-monitor | Checks health every ~10 min, replaces duds | 3 cycles (~30 min) |
+| stats-tracker | Collects games/s and $/hr by GPU type | 3 cycles (~30 min) |
+
+**How it works:**
+1. Team lead creates a task list with sequential monitoring cycles
+2. `fleet-fixer` handles any immediate replacements
+3. `fleet-monitor` runs `vast_status.sh` + `vastai logs` each cycle, destroys stuck instances (>10 min loading), launches replacements via `vast_up.sh 1`
+4. `stats-tracker` parses log lines for `games/s` and builds efficiency tables
+
+**Key parameters to specify:**
+- Number of workers (e.g., 4)
+- Max $/hr per card (e.g., $0.08)
+- Check interval (e.g., 10 min)
+- Number of monitoring cycles (e.g., 3)
+
+**Known issues the team handles automatically:**
+- Dud hosts stuck in "loading" or "No such container" >10 min
+- SSH port forwarding errors (host-side problem, need a new instance)
+- Crashed/exited workers
+
+**GPU performance reference (Feb 2026 pricing):**
+
+| GPU | Avg games/s | Avg $/hr | Games/$/hr | Notes |
+|-----|-------------|----------|------------|-------|
+| RTX 3060 | 3.8 | $0.055-0.08 | ~193 | Cheapest, most available |
+| RTX 3060 Ti | 4.2 | $0.055 | ~275 | Best value when available |
+| RTX 3070 | 4.5 | $0.076 | ~205 | 18% faster than 3060 |
+
+**HuggingFace rate limit (128 commits/hr):**
+Workers batch examples locally and upload as a folder every 180 seconds.
+With 4 workers that's ~80 commits/hr — safely under the limit.
+Do NOT reduce `--upload-interval` below 120s with 4+ workers.
+
+---
+
+## 9. Daily Operations Checklist
 
 **Morning:**
 1. `./vast_status.sh` — all workers running?
