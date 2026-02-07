@@ -260,24 +260,27 @@ def run_learner(args: argparse.Namespace) -> None:
         n_new_files = 0
 
         if use_hf_examples:
-            all_remote = list_remote_examples(args.examples_repo_id)
-            new_remote = [f for f in all_remote if f not in seen_files]
-            for remote_name in new_remote:
-                local_path = download_example(args.examples_repo_id, remote_name)
-                batch = load_examples(local_path)
-                gpu_batch = GPUTrainingExample(
-                    observations=batch.observations.to(device),
-                    masks=batch.masks.to(device),
-                    hand_indices=batch.hand_indices.to(device),
-                    hand_masks=batch.hand_masks.to(device),
-                    policy_targets=batch.policy_targets.to(device),
-                    value_targets=batch.value_targets.to(device),
-                )
-                replay_buffer.add_batch(gpu_batch)
-                total_games += batch.metadata.get('n_games', 0)
-                ingested += gpu_batch.n_examples
-                seen_files.add(remote_name)
-            n_new_files += len(new_remote)
+            try:
+                all_remote = list_remote_examples(args.examples_repo_id)
+                new_remote = [f for f in all_remote if f not in seen_files]
+                for remote_name in new_remote:
+                    local_path = download_example(args.examples_repo_id, remote_name)
+                    batch = load_examples(local_path)
+                    gpu_batch = GPUTrainingExample(
+                        observations=batch.observations.to(device),
+                        masks=batch.masks.to(device),
+                        hand_indices=batch.hand_indices.to(device),
+                        hand_masks=batch.hand_masks.to(device),
+                        policy_targets=batch.policy_targets.to(device),
+                        value_targets=batch.value_targets.to(device),
+                    )
+                    replay_buffer.add_batch(gpu_batch)
+                    total_games += batch.metadata.get('n_games', 0)
+                    ingested += gpu_batch.n_examples
+                    seen_files.add(remote_name)
+                n_new_files += len(new_remote)
+            except Exception as e:
+                print(f"  HF ingest error (skipping): {type(e).__name__}: {e}")
 
         if args.input_dir:
             for f in scan_pending(args.input_dir):
@@ -345,16 +348,19 @@ def run_learner(args: argparse.Namespace) -> None:
 
         # 5. Push weights to HF periodically
         if cycle % args.push_every == 0:
-            push_weights(model, args.repo_id, step=cycle, total_games=total_games, weights_name=weights_name)
-            print(f"  Pushed weights (cycle {cycle})")
+            try:
+                push_weights(model, args.repo_id, step=cycle, total_games=total_games, weights_name=weights_name)
+                print(f"  Pushed weights (cycle {cycle})")
 
-            if use_hf_examples:
-                pruned = prune_remote_examples(
-                    args.examples_repo_id, args.keep_example_files,
-                )
-                if pruned:
-                    seen_files -= set(pruned)
-                    print(f"  Pruned {len(pruned)} old files from HF")
+                if use_hf_examples:
+                    pruned = prune_remote_examples(
+                        args.examples_repo_id, args.keep_example_files,
+                    )
+                    if pruned:
+                        seen_files -= set(pruned)
+                        print(f"  Pruned {len(pruned)} old files from HF")
+            except Exception as e:
+                print(f"  HF push error (will retry next cycle): {type(e).__name__}: {e}")
 
         # 6. Evaluate vs random periodically
         if cycle % args.eval_every == 0:

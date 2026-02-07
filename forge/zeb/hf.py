@@ -29,17 +29,28 @@ def _require_hf():
         raise ImportError("pip install huggingface_hub")
 
 
+def _is_transient(e: Exception) -> bool:
+    """Check if an exception is a transient network error worth retrying."""
+    # Check exception class names up the MRO
+    type_names = ' '.join(type(e).__mro__.__class__.__name__ if hasattr(type(e).__mro__, '__class__') else
+                          cls.__name__ for cls in type(e).__mro__)
+    err_str = f"{type(e).__name__}: {e}"
+    for keyword in ('timeout', 'connection', 'reset', 'broken', '502', '503', '429'):
+        if keyword in err_str.lower() or keyword in type_names.lower():
+            return True
+    return False
+
+
 def _retry(fn, max_retries=3, base_delay=5):
     """Retry a function on transient network errors with exponential backoff."""
     for attempt in range(max_retries + 1):
         try:
             return fn()
         except Exception as e:
-            is_transient = 'timeout' in str(e).lower() or 'connection' in str(e).lower()
-            if not is_transient or attempt == max_retries:
+            if not _is_transient(e) or attempt == max_retries:
                 raise
             delay = base_delay * (2 ** attempt)
-            print(f"  HF transient error (attempt {attempt + 1}/{max_retries + 1}): {e}")
+            print(f"  HF transient error (attempt {attempt + 1}/{max_retries + 1}): {type(e).__name__}: {e}")
             print(f"  Retrying in {delay}s...")
             time.sleep(delay)
 
