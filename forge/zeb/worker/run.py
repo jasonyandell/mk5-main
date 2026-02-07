@@ -163,12 +163,16 @@ def run_worker(args: argparse.Namespace) -> None:
         # Flush staged examples to HF (~every upload_interval seconds)
         if use_hf_examples and (time.time() - last_upload_time) >= upload_interval_sec:
             print(f"[{args.worker_id}] Uploading {staged_count} batches to HF...")
-            upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count)
-            # Clear staging dir
-            for f in staging_dir.iterdir():
-                f.unlink()
-            print(f"[{args.worker_id}] Upload complete ({staged_count} batches)")
-            staged_count = 0
+            try:
+                upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count)
+                # Clear staging dir only on success
+                for f in staging_dir.iterdir():
+                    f.unlink()
+                print(f"[{args.worker_id}] Upload complete ({staged_count} batches)")
+                staged_count = 0
+            except Exception as e:
+                # 412 Precondition Failed = concurrent commit conflict, retry next cycle
+                print(f"[{args.worker_id}] Upload failed ({e}), will retry next cycle")
             last_upload_time = time.time()
 
         # Periodic weight sync
