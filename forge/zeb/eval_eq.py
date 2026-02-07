@@ -2,7 +2,8 @@
 
 Usage:
     python -u -m forge.zeb.eval_eq                          # E[Q] vs random
-    python -u -m forge.zeb.eval_eq --vs-zeb PATH            # E[Q] vs Zeb
+    python -u -m forge.zeb.eval_eq --vs-zeb                 # E[Q] vs Zeb (latest from HF)
+    python -u -m forge.zeb.eval_eq --vs-zeb path/to/ckpt.pt # E[Q] vs Zeb (local checkpoint)
     python -u -m forge.zeb.eval_eq --n-games 500 --n-samples 50
 """
 
@@ -42,11 +43,24 @@ def _load_oracle(checkpoint_path: str, device: str):
     return model
 
 
-def _load_zeb(checkpoint_path: str, device: str):
-    """Load ZebModel from self-play checkpoint."""
+def _load_zeb(source: str, device: str):
+    """Load ZebModel from a local checkpoint or HuggingFace Hub.
+
+    Args:
+        source: Local .pt path, or 'hf' / HF repo ID (e.g. 'jasonyandell/zeb-42').
+    """
+    from .hf import DEFAULT_REPO, load_zeb_from_hf
+
+    # HuggingFace path: 'hf', or contains '/' but isn't a local file
+    if source == 'hf' or (not source.endswith('.pt') and '/' in source):
+        repo_id = DEFAULT_REPO if source == 'hf' else source
+        print(f'  Loading Zeb from HF: {repo_id}')
+        return load_zeb_from_hf(repo_id, device=device)
+
+    # Local checkpoint
     from .model import ZebModel
 
-    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    ckpt = torch.load(source, map_location='cpu', weights_only=False)
 
     if 'model_config' in ckpt:
         model_config = ckpt['model_config']
@@ -76,8 +90,9 @@ def main():
         help='Stage 1 oracle checkpoint for E[Q]',
     )
     parser.add_argument(
-        '--vs-zeb', default=None, metavar='PATH',
-        help='Zeb checkpoint to play against (omit for vs random)',
+        '--vs-zeb', default=None, nargs='?', const='hf', metavar='PATH',
+        help='Zeb model: "hf" (default) for latest from HuggingFace, '
+             'or local .pt path. Omit entirely for E[Q] vs random.',
     )
     parser.add_argument('--n-games', type=int, default=1000, help='Total games')
     parser.add_argument('--n-samples', type=int, default=100, help='Worlds per E[Q] decision')

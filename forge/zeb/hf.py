@@ -24,6 +24,9 @@ except ImportError:
     hf_hub_download = None
 
 
+DEFAULT_REPO = 'jasonyandell/zeb-42'
+
+
 def _require_hf():
     if HfApi is None:
         raise ImportError("pip install huggingface_hub")
@@ -120,6 +123,23 @@ def pull_weights(repo_id: str, device: str = 'cpu', weights_name: str = 'model.p
 
     state_dict = torch.load(weights_path, map_location=device, weights_only=True)
     return state_dict, model_config
+
+
+def load_zeb_from_hf(
+    repo_id: str = DEFAULT_REPO,
+    device: str = 'cuda',
+    weights_name: str = 'model.pt',
+) -> ZebModel:
+    """Load a ZebModel from HuggingFace Hub, ready for inference.
+
+    Downloads config.json + weights (cached by HF Hub).
+    """
+    state_dict, config = pull_weights(repo_id, device, weights_name)
+    model = ZebModel(**config)
+    model.load_state_dict(state_dict)
+    model.eval()
+    model.to(device)
+    return model
 
 
 def get_remote_step(repo_id: str) -> int:
