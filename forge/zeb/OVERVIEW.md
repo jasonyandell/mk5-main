@@ -618,6 +618,154 @@ available uncertainty on average.
 
 ---
 
+## Distributed Training (Worker / Learner)
+
+Decouples self-play game generation from training into separate processes,
+connected via a shared filesystem and HuggingFace Hub for weight distribution.
+
+```
+                     HuggingFace Hub
+                    ┌──────────────────────┐
+          push      │  jasonyandell/zeb-42 │      pull
+         weights ──>│  model.pt            │<── weights
+                    │  config.json         │
+                    │  training_state.json │
+                    └──────────────────────┘
+
+  ┌──────────────┐                    ┌──────────────┐
+  │   Learner    │  <── .pt files ──  │   Worker(s)  │
+  │   (1× GPU)   │     (examples)     │   (GPU)      │
+  └──────────────┘                    └──────────────┘
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `worker/run.py` | Self-play worker: MCTS games → ExampleBatch → disk |
+| `learner/run.py` | Training learner: disk → replay buffer → train → push weights |
+| `hf.py` | HuggingFace Hub: `init_repo`, `push_weights`, `pull_weights`, `get_remote_step` |
+| `example_store.py` | `ExampleBatch` dataclass + atomic save/load/scan |
+
+### Prerequisites
+
+```bash
+pip install huggingface_hub
+python -c "from huggingface_hub import login; login()"   # one-time, saves token to ~/.cache/huggingface/token
+```
+
+HuggingFace repo: https://huggingface.co/jasonyandell/zeb-42
+
+### Starting the Learner
+
+The learner must start first — it pushes the initial weights that workers pull.
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --input-dir /tmp/zeb-examples \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt \
+    --lr 1e-4 \
+    --batch-size 64 \
+    --replay-buffer-size 50000 \
+    --training-steps-per-cycle 100 \
+    --push-every 10 \
+    --save-every 50 \
+    --eval-every 50 \
+    --eval-games 2000 \
+    --keep-checkpoints 3 \
+    --wandb
+```
+
+The learner:
+1. Loads model + optimizer + replay buffer from checkpoint
+2. Pushes initial weights to HuggingFace
+3. Watches `--input-dir` for `.pt` files written by workers
+4. Ingests examples into GPU replay buffer, deletes files after
+5. Trains `--training-steps-per-cycle` gradient steps per cycle
+6. Pushes updated weights to HF every `--push-every` cycles
+7. Evaluates vs random every `--eval-every` cycles
+8. Saves local checkpoints to `--output-dir` (default: `forge/zeb/checkpoints/`)
+
+Checkpoints are named `learner-cycle{N:06d}.pt` and include model, optimizer,
+replay buffer, W&B run ID, and total games — everything needed to resume.
+
+### Starting a Worker
+
+Once the learner has pushed initial weights, start one or more workers:
+
+```bash
+python -u -m forge.zeb.worker.run \
+    --repo-id jasonyandell/zeb-42 \
+    --output-dir /tmp/zeb-examples \
+    --n-parallel-games 128 \
+    --n-simulations 200 \
+    --max-mcts-nodes 512 \
+    --temperature 1.0 \
+    --games-per-batch 256 \
+    --weight-sync-interval 10 \
+    --device cuda \
+    --worker-id worker-0
+```
+
+The worker:
+1. Pulls model weights from HuggingFace
+2. Creates GPU self-play pipeline (CUDA graphs, batched MCTS)
+3. Generates `--games-per-batch` games per iteration via MCTS
+4. Converts GPU tensors to CPU `ExampleBatch`, saves atomically to `--output-dir`
+5. Every `--weight-sync-interval` batches, checks HF for newer weights
+6. Weight updates are in-place (`load_state_dict`), CUDA graphs stay valid
+
+Multiple workers use different `--worker-id` values and write to the same `--output-dir`.
+
+### Data Flow
+
+**Training examples** flow through the shared filesystem:
+```
+{output-dir}/
+├── worker-0_1707123456_a1b2c3d4.pt    # Worker writes atomically (.tmp → .pt)
+├── worker-0_1707123520_e5f6a7b8.pt
+└── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
+```
+
+Each `.pt` file contains an `ExampleBatch`:
+- `observations`: [N, 36, 8] int32
+- `masks`: [N, 36] bool
+- `hand_indices`: [N, 7] int64
+- `hand_masks`: [N, 7] bool
+- `policy_targets`: [N, 7] float32 (MCTS visit distributions)
+- `value_targets`: [N] float32 (game outcomes in [-1, 1])
+- `metadata`: {worker_id, model_step, n_games, timestamp}
+
+**Model weights** flow through HuggingFace Hub:
+```
+jasonyandell/zeb-42/
+├── config.json              # Model architecture (embed_dim, n_heads, etc.)
+├── model.pt                 # Latest model state_dict
+└── training_state.json      # {"step": 1234, "total_games": 500000}
+```
+
+Workers check `training_state.json` first (tiny download) and skip pulling
+`model.pt` if the step hasn't changed. HF's ETag caching makes polling free.
+
+### Single-Machine Setup
+
+```bash
+# Terminal 1: Learner (GPU)
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --input-dir /tmp/zeb-examples \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt
+
+# Terminal 2: Worker (same or different GPU)
+python -u -m forge.zeb.worker.run \
+    --repo-id jasonyandell/zeb-42 \
+    --output-dir /tmp/zeb-examples \
+    --device cuda
+```
+
+---
+
 ## See Also
 
 - `ML_OVERVIEW.md` - Background on RL concepts, REINFORCE, hyperparameters
