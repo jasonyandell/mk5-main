@@ -24,7 +24,7 @@ IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
 DISK_GB=15
 
 # Git repo URL — change if using a different repo/branch
-GIT_REPO="https://github.com/jasonyandell/v2.git"
+GIT_REPO="https://github.com/jasonyandell/mk5-main.git"
 GIT_BRANCH="forge"
 
 if [ -z "${HF_TOKEN:-}" ]; then
@@ -35,9 +35,9 @@ fi
 
 # Build GPU filter: accept any 3000-series by default
 if [ -z "$GPU_FILTER" ]; then
-    QUERY='gpu_name in [RTX_3060,RTX_3060_Ti,RTX_3070,RTX_3070_Ti,RTX_3080,RTX_3080_Ti,RTX_3090] reliability>0.95 rentable=true num_gpus=1 gpu_ram>=8000'
+    QUERY='gpu_name in [RTX_3060,RTX_3060_Ti,RTX_3070,RTX_3070_Ti,RTX_3080,RTX_3080_Ti,RTX_3090] num_gpus=1'
 else
-    QUERY="gpu_name=${GPU_FILTER} reliability>0.95 rentable=true num_gpus=1"
+    QUERY="gpu_name=${GPU_FILTER} num_gpus=1"
 fi
 
 echo "Searching for ${N_WORKERS} cheapest offers..."
