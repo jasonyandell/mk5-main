@@ -39,7 +39,14 @@ except ImportError:
 
 from forge.zeb.example_store import load_examples, scan_pending
 from forge.zeb.gpu_training_pipeline import GPUReplayBuffer, GPUTrainingExample
-from forge.zeb.hf import init_repo, push_weights
+from forge.zeb.hf import (
+    download_example,
+    init_examples_repo,
+    init_repo,
+    list_remote_examples,
+    prune_remote_examples,
+    push_weights,
+)
 from forge.zeb.evaluate import evaluate_vs_random
 from forge.zeb.run_selfplay_training import load_model_from_checkpoint
 from forge.zeb.run_mcts_training import DEFAULT_CHECKPOINT_DIR
@@ -131,19 +138,50 @@ def run_learner(args: argparse.Namespace) -> None:
     else:
         start_cycle = 0
 
-    # --- Replay buffer ---
-    saved_buffer = metadata.get('replay_buffer', [])
-    replay_buffer = GPUReplayBuffer.from_list(
-        saved_buffer,
-        capacity=args.replay_buffer_size,
-        device=torch.device(device),
-    )
-    print(f"Replay buffer (GPU): {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
+    use_hf_examples = bool(args.examples_repo_id)
 
-    # --- HuggingFace repo ---
+    # --- HuggingFace repos ---
     init_repo(args.repo_id, model_config)
     push_weights(model, args.repo_id, step=start_cycle, total_games=metadata['total_games'])
     print(f"Initial weights pushed to {args.repo_id}")
+
+    # --- Replay buffer ---
+    if use_hf_examples:
+        # HF mode: the examples repo IS the replay buffer — rebuild from HF
+        init_examples_repo(args.examples_repo_id)
+        replay_buffer = GPUReplayBuffer(
+            capacity=args.replay_buffer_size,
+            device=torch.device(device),
+        )
+        remote_files = list_remote_examples(args.examples_repo_id)
+        seen_files: set[str] = set()
+        rebuilt = 0
+        for remote_name in remote_files:
+            local_path = download_example(args.examples_repo_id, remote_name)
+            batch = load_examples(local_path)
+            gpu_batch = GPUTrainingExample(
+                observations=batch.observations.to(device),
+                masks=batch.masks.to(device),
+                hand_indices=batch.hand_indices.to(device),
+                hand_masks=batch.hand_masks.to(device),
+                policy_targets=batch.policy_targets.to(device),
+                value_targets=batch.value_targets.to(device),
+            )
+            replay_buffer.add_batch(gpu_batch)
+            rebuilt += gpu_batch.n_examples
+            seen_files.add(remote_name)
+        print(f"Replay buffer (HF): {len(replay_buffer):,}/{args.replay_buffer_size:,} "
+              f"examples from {len(remote_files)} files")
+    else:
+        # Local mode: restore from checkpoint
+        saved_buffer = metadata.get('replay_buffer', [])
+        replay_buffer = GPUReplayBuffer.from_list(
+            saved_buffer,
+            capacity=args.replay_buffer_size,
+            device=torch.device(device),
+        )
+        seen_files = set()
+        print(f"Replay buffer (GPU): {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
 
     # --- W&B ---
     use_wandb = args.wandb and WANDB_AVAILABLE
@@ -183,7 +221,8 @@ def run_learner(args: argparse.Namespace) -> None:
     cycle = start_cycle
 
     print(f"\n=== Distributed Learner ===")
-    print(f"Input dir: {args.input_dir}")
+    example_src = args.examples_repo_id if use_hf_examples else str(args.input_dir)
+    print(f"Examples: {example_src}")
     print(f"Repo: {args.repo_id}")
     print(f"LR: {args.lr}, batch: {args.batch_size}, steps/cycle: {args.training_steps_per_cycle}")
     print(f"Min buffer: {args.min_buffer_size:,}, buffer capacity: {args.replay_buffer_size:,}")
@@ -191,25 +230,50 @@ def run_learner(args: argparse.Namespace) -> None:
 
     while True:
         # 1. Ingest new example files from workers
-        new_files = scan_pending(args.input_dir)
         ingested = 0
-        for f in new_files:
-            batch = load_examples(f)
-            gpu_batch = GPUTrainingExample(
-                observations=batch.observations.to(device),
-                masks=batch.masks.to(device),
-                hand_indices=batch.hand_indices.to(device),
-                hand_masks=batch.hand_masks.to(device),
-                policy_targets=batch.policy_targets.to(device),
-                value_targets=batch.value_targets.to(device),
-            )
-            replay_buffer.add_batch(gpu_batch)
-            total_games += batch.metadata.get('n_games', 0)
-            ingested += gpu_batch.n_examples
-            f.unlink()
+        n_new_files = 0
+
+        # Ingest from HF Hub (new files only)
+        if use_hf_examples:
+            all_remote = list_remote_examples(args.examples_repo_id)
+            new_remote = [f for f in all_remote if f not in seen_files]
+            for remote_name in new_remote:
+                local_path = download_example(args.examples_repo_id, remote_name)
+                batch = load_examples(local_path)
+                gpu_batch = GPUTrainingExample(
+                    observations=batch.observations.to(device),
+                    masks=batch.masks.to(device),
+                    hand_indices=batch.hand_indices.to(device),
+                    hand_masks=batch.hand_masks.to(device),
+                    policy_targets=batch.policy_targets.to(device),
+                    value_targets=batch.value_targets.to(device),
+                )
+                replay_buffer.add_batch(gpu_batch)
+                total_games += batch.metadata.get('n_games', 0)
+                ingested += gpu_batch.n_examples
+                seen_files.add(remote_name)
+            n_new_files += len(new_remote)
+
+        # Ingest from local disk
+        if args.input_dir:
+            for f in scan_pending(args.input_dir):
+                batch = load_examples(f)
+                gpu_batch = GPUTrainingExample(
+                    observations=batch.observations.to(device),
+                    masks=batch.masks.to(device),
+                    hand_indices=batch.hand_indices.to(device),
+                    hand_masks=batch.hand_masks.to(device),
+                    policy_targets=batch.policy_targets.to(device),
+                    value_targets=batch.value_targets.to(device),
+                )
+                replay_buffer.add_batch(gpu_batch)
+                total_games += batch.metadata.get('n_games', 0)
+                ingested += gpu_batch.n_examples
+                n_new_files += 1
+                f.unlink()
 
         if ingested > 0:
-            print(f"Ingested {ingested:,} examples from {len(new_files)} files "
+            print(f"Ingested {ingested:,} examples from {n_new_files} files "
                   f"[buffer: {len(replay_buffer):,}]")
 
         # 2. Wait if buffer too small
@@ -252,6 +316,15 @@ def run_learner(args: argparse.Namespace) -> None:
             push_weights(model, args.repo_id, step=cycle, total_games=total_games)
             print(f"  Pushed weights (cycle {cycle})")
 
+            # Prune old example files from HF
+            if use_hf_examples:
+                pruned = prune_remote_examples(
+                    args.examples_repo_id, args.keep_example_files,
+                )
+                if pruned:
+                    seen_files -= set(pruned)
+                    print(f"  Pruned {len(pruned)} old files from HF")
+
         # 6. Evaluate vs random periodically
         if cycle % args.eval_every == 0:
             model.eval()
@@ -279,8 +352,11 @@ def run_learner(args: argparse.Namespace) -> None:
                 },
                 'total_games': total_games,
                 'wandb_run_id': wandb.run.id if use_wandb else None,
-                'replay_buffer': replay_buffer.to_list(),
             }
+            # HF mode: replay buffer lives on HF, no need to save in checkpoint
+            # Local mode: save buffer for crash recovery
+            if not use_hf_examples:
+                ckpt_data['replay_buffer'] = replay_buffer.to_list()
             torch.save(ckpt_data, ckpt_path)
             print(f"  Saved checkpoint: {ckpt_path.name}")
 
@@ -302,10 +378,16 @@ def main():
     # Required
     parser.add_argument('--repo-id', type=str, required=True,
                         help='HuggingFace repo for weight distribution')
-    parser.add_argument('--input-dir', type=Path, required=True,
-                        help='Directory where workers write example files')
     parser.add_argument('--checkpoint', type=Path, required=True,
                         help='Starting checkpoint')
+
+    # Example input (one or both)
+    parser.add_argument('--examples-repo-id', type=str, default=None,
+                        help='HF repo for example exchange (e.g. username/zeb-42-examples)')
+    parser.add_argument('--input-dir', type=Path, default=None,
+                        help='Local directory where workers write example files')
+    parser.add_argument('--keep-example-files', type=int, default=15,
+                        help='Max example files to retain on HF (oldest pruned)')
 
     # Training
     parser.add_argument('--lr', type=float, default=1e-4)
@@ -336,6 +418,8 @@ def main():
     parser.add_argument('--run-name', type=str, default=None)
 
     args = parser.parse_args()
+    if not args.examples_repo_id and not args.input_dir:
+        parser.error("Either --examples-repo-id or --input-dir is required")
     run_learner(args)
 
 

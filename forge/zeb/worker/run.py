@@ -1,9 +1,17 @@
 """Self-play worker for distributed training.
 
-Generates training examples via MCTS self-play and writes them to a shared
-directory. Periodically pulls fresh model weights from HuggingFace.
+Generates training examples via MCTS self-play and uploads them to
+HuggingFace Hub (or writes to a shared directory for local mode).
+Periodically pulls fresh model weights from HuggingFace.
 
 Usage:
+    # Remote (HF Hub for examples):
+    python -u -m forge.zeb.worker.run \
+        --repo-id username/zeb-42 \
+        --examples-repo-id username/zeb-42-examples \
+        --device cuda
+
+    # Local (shared filesystem):
     python -u -m forge.zeb.worker.run \
         --repo-id username/zeb-42 \
         --output-dir /shared/examples \
@@ -12,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import tempfile
 import time
 from pathlib import Path
 
@@ -23,7 +32,13 @@ from forge.zeb.gpu_training_pipeline import (
 )
 from forge.zeb.model import ZebModel
 from forge.zeb.example_store import ExampleBatch, save_examples
-from forge.zeb.hf import get_remote_step, pull_weights, pull_weights_if_new
+from forge.zeb.hf import (
+    get_remote_step,
+    init_examples_repo,
+    pull_weights,
+    pull_weights_if_new,
+    upload_examples,
+)
 
 
 def gpu_examples_to_batch(
@@ -52,6 +67,7 @@ def gpu_examples_to_batch(
 def run_worker(args: argparse.Namespace) -> None:
     """Main worker loop: generate games, save examples, sync weights."""
     device = torch.device(args.device)
+    use_hf_examples = bool(args.examples_repo_id)
 
     # 1. Pull initial model from HuggingFace
     print(f"Pulling initial weights from {args.repo_id}...")
@@ -62,7 +78,12 @@ def run_worker(args: argparse.Namespace) -> None:
     current_step = get_remote_step(args.repo_id)
     print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params")
 
-    # 2. Create GPU self-play pipeline
+    # 2. Init examples repo (if using HF for examples)
+    if use_hf_examples:
+        init_examples_repo(args.examples_repo_id)
+        print(f"  Examples repo: {args.examples_repo_id}")
+
+    # 3. Create GPU self-play pipeline
     print("Creating self-play pipeline...")
     t0 = time.time()
     pipeline = create_selfplay_pipeline(
@@ -75,13 +96,15 @@ def run_worker(args: argparse.Namespace) -> None:
     )
     print(f"Pipeline created in {time.time() - t0:.1f}s")
 
-    # 3. Main loop
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # 4. Main loop
+    output_dir = Path(args.output_dir) if args.output_dir else None
+    if output_dir:
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     batch_count = 0
     total_games = 0
-    print(f"\nWorker {args.worker_id} starting (output: {output_dir})")
+    dest = args.examples_repo_id if use_hf_examples else str(output_dir)
+    print(f"\nWorker {args.worker_id} starting (output: {dest})")
     print(f"  games_per_batch={args.games_per_batch}, weight_sync_interval={args.weight_sync_interval}")
 
     while True:
@@ -94,11 +117,16 @@ def run_worker(args: argparse.Namespace) -> None:
         gen_time = time.time() - t0
         total_games += args.games_per_batch
 
-        # Convert to CPU batch and save
+        # Convert to CPU batch and save/upload
         batch = gpu_examples_to_batch(
             examples, args.worker_id, current_step, n_games=args.games_per_batch,
         )
-        save_examples(batch, output_dir, args.worker_id)
+        if use_hf_examples:
+            with tempfile.TemporaryDirectory() as tmp:
+                local_path = save_examples(batch, Path(tmp), args.worker_id)
+                upload_examples(args.examples_repo_id, local_path, local_path.name)
+        else:
+            save_examples(batch, output_dir, args.worker_id)
         batch_count += 1
 
         games_per_sec = args.games_per_batch / gen_time
@@ -132,9 +160,15 @@ def main() -> None:
         "--repo-id", type=str, required=True,
         help="HuggingFace repo for weight sync (e.g. username/zeb-42)",
     )
+
+    # Example output (one or both)
     parser.add_argument(
-        "--output-dir", type=str, required=True,
-        help="Shared directory for writing example batches",
+        "--examples-repo-id", type=str, default=None,
+        help="HF repo for example exchange (e.g. username/zeb-42-examples)",
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default=None,
+        help="Local directory for writing example batches (fallback if no --examples-repo-id)",
     )
 
     # Worker identity
@@ -163,6 +197,8 @@ def main() -> None:
     parser.add_argument("--device", type=str, default="cuda")
 
     args = parser.parse_args()
+    if not args.examples_repo_id and not args.output_dir:
+        parser.error("Either --examples-repo-id or --output-dir is required")
     run_worker(args)
 
 
