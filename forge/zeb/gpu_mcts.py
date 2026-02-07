@@ -996,8 +996,9 @@ class MCTSFullStepCUDAGraphRunner:
         self.max_depth = max_depth
         require_cuda(forest.device, where="MCTSFullStepCUDAGraphRunner.__init__")
 
+        from forge.eq.oracle import Stage1Oracle
         stage1 = getattr(oracle_value_fn, "oracle", None)
-        if stage1 is None or not hasattr(stage1, "gpu_tokenizer"):
+        if not isinstance(stage1, Stage1Oracle) or not hasattr(stage1, "gpu_tokenizer"):
             raise ValueError("oracle_value_fn must wrap a Stage1Oracle with gpu_tokenizer for Phase 4 capture")
         self.stage1_oracle = stage1
 

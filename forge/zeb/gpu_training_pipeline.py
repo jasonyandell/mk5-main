@@ -729,10 +729,11 @@ class GPUTrainingPipeline:
                         self.total_model_queries += n * self.n_simulations
                     else:
                         # Prefer Phase 4 full-step capture only when oracle is compatible.
+                        from forge.eq.oracle import Stage1Oracle
                         oracle_impl = getattr(self.oracle, "oracle", None)
                         oracle_capturable = (
                             (not self.self_play_mode)
-                            and oracle_impl is not None
+                            and isinstance(oracle_impl, Stage1Oracle)
                             and hasattr(oracle_impl, "gpu_tokenizer")
                             and self.use_fullstep_eval
                         )
