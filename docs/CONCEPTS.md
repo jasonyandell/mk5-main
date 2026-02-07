@@ -638,21 +638,19 @@ getVisibleStateForSession(state: GameState, session: PlayerSession): FilteredGam
 
 **Key Properties**:
 - `gameId: string` - Unique game identifier
-- `state: GameState` - Core game state
-- `sessions: Map<string, PlayerSession>` - Active player sessions
-- `lastActionAt: number` - Timestamp of last action
-- `actionTransformerConfig: ActionTransformerConfig[]` - Active action transformers
+- `coreState: GameState` - Pure game state (unfiltered)
+- `players: readonly PlayerSession[]` - Immutable player sessions
 
 **Used By**: Room (stores MultiplayerGameState, not GameState)
 
-**Related**: GameState, PlayerSession, ActionTransformerConfig
+**Related**: GameState, PlayerSession
 
 ---
 
 ## 4. Server Architecture
 
 ### Room
-**Definition**: Game orchestrator that owns state, composes layers/action transformers, manages sessions, and delegates to pure helpers.
+**Definition**: Game orchestrator that owns state, composes layers, manages sessions, and delegates to pure helpers.
 
 **Location**: `src/server/Room.ts`
 
@@ -1244,21 +1242,6 @@ colorOverrides: Record<string, string>  // CSS variables
 
 ---
 
-### ActionTransformerConfig
-**Definition**: Configuration for enabled action transformer.
-
-**Location**: `src/game/types/config.ts`
-
-**Structure**:
-```typescript
-{
-  type: 'tournament' | 'oneHand' | 'hints' | 'speed';
-  config?: Record<string, any>  // ActionTransformer-specific options
-}
-```
-
-**Related**: GameConfig, ActionTransformer
-
 ---
 
 ## 11. Event Sourcing & Replay
@@ -1617,7 +1600,7 @@ colorOverrides: Record<string, string>  // CSS variables
    - Never identity checks (playerId comparison)
 
 4. **Single Composition Point**
-   - Room constructor ONLY place layers/action transformers compose
+   - Room constructor ONLY place layers compose
    - ExecutionContext created once, used everywhere
 
 5. **Zero Coupling**
@@ -1651,11 +1634,11 @@ colorOverrides: Record<string, string>  // CSS variables
 
 **Room executes** (via executeKernelAction):
 1. Find PlayerSession by player ID
-2. Get valid actions via composed state machine (with rulesets and action transformers)
+2. Get valid actions via composed state machine (with layers)
 3. Filter actions by session capabilities (observe-hands, act-as-player, etc.)
 4. Validate requested action against filtered set
 5. Execute action via executor (which delegates to rules methods)
-6. Process any auto-execute actions (speed action transformer, oneHand action transformer, etc.)
+6. Process any auto-execute actions (speed layer, oneHand layer, etc.)
 
 **Room notifies** (via buildKernelView): For each subscriber with their perspective:
 1. Filter state by capabilities (which hands are visible)
@@ -1678,13 +1661,13 @@ colorOverrides: Record<string, string>  // CSS variables
 
 3. **Create base state machine**: Build action generator using composed rules
 
-4. **Apply action transformers to actions**: Function composition wraps the base state machine. Tournament filters, OneHand scripts, Hints annotates.
+4. **Compose action generation from layers**: Each layer's `getValidActions` wraps the previous. Tournament filters, OneHand scripts, Hints annotates.
 
-5. **Bundle ExecutionContext**: Group rulesets, rules, and action generator into immutable container
+5. **Bundle ExecutionContext**: Group layers, rules, and action generator into immutable container
 
-6. **Use everywhere**: Pure helpers receive context and call rule methods - they never inspect state or know about specific action transformers
+6. **Use everywhere**: Pure helpers receive context and call rule methods - they never inspect state or know about specific layers
 
-**Result**: Same pure helper code works for all action transformer combinations with zero conditional logic.
+**Result**: Same pure helper code works for all layer combinations with zero conditional logic.
 
 ### State Transformation Pipeline
 
