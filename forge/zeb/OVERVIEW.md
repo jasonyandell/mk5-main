@@ -576,17 +576,21 @@ with N=50 fits in VRAM; batch_size=100 spills to system RAM.
 | Matchup | Win Rate | Avg Margin | Games |
 |---------|----------|------------|-------|
 | E[Q] (N=100) vs Random | 73.2% | +15.5 pts | 500 |
-| E[Q] (N=50) vs Zeb | 60.0% | +6.3 pts | 500 |
-| Zeb (epoch 2829) vs Random | ~69-70% | — | ref |
-| **E[Q] (N=100) vs Zeb** | **59.0%** | **+6.2 pts** | **500** |
+| E[Q] (N=50) vs Zeb (epoch 2829) | 60.0% | +6.3 pts | 500 |
+| E[Q] (N=100) vs Zeb (epoch 2829) | 59.0% | +6.2 pts | 500 |
+| E[Q] (N=50) vs Zeb (epoch 3599) | 60.2% | +5.7 pts | 500 |
+| Zeb (epoch 3599) vs Random | ~70% | — | 2000 |
 
 N=50 and N=100 produce nearly identical win rates vs Zeb (60.0% vs 59.0%), confirming
 that 50 sampled worlds per decision is sufficient for evaluation purposes.
 
+Zeb's performance against E[Q] is stable across 770 epochs of self-play (2829→3599):
+60.0% → 60.2%, well within noise. The model holds ~70% vs random throughout.
+
 **Key takeaways:**
 - E[Q] with 100 sampled worlds beats random 73.2% — this anchors the imperfect-info ceiling
-- Zeb at epoch 2829 captures ~75% of the gap between random and E[Q]
-- E[Q] beats Zeb 59-41 head-to-head, consistent across both seats (60.8% / 57.2%)
+- Zeb captures ~75% of the gap between random and E[Q]
+- E[Q] beats Zeb 60-40 head-to-head, stable across epochs and seat assignments
 - The gap is meaningful but not dominant — Zeb's learned intuition (single forward pass)
   competes well against expensive statistical analysis (100 oracle queries per decision)
 - N=50 is good enough for tracking — halving samples doesn't degrade win rate measurement

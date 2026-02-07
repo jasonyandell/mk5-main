@@ -152,6 +152,12 @@ Worker worker-vast-0 starting (output: jasonyandell/zeb-42-examples)
 - Instance is still in `loading` state. Wait for `running`.
 - Or the instance has no SSH port mapped. Check `./vast_status.sh` for the SSH column.
 
+**HF "412 Precondition Failed" or "httpx.ReadTimeout":**
+- Concurrent commit conflict or network timeout during folder upload.
+- Workers deployed after commit `f37a0b6` handle this automatically (retry next cycle).
+- If running older code, the worker process crashes. Destroy and replace — the
+  replacement will clone fresh code with the fix.
+
 ---
 
 ## 4. SSH Into an Instance
@@ -256,17 +262,22 @@ This sets up background agents that replace dead workers and track stats.
 - SSH port forwarding errors (host-side problem, need a new instance)
 - Crashed/exited workers
 
-**GPU performance reference (Feb 2026 pricing):**
+**GPU performance reference (Feb 2026, 264 observations over 8h run):**
 
-| GPU | Avg games/s | Avg $/hr | Games/$/hr | Notes |
-|-----|-------------|----------|------------|-------|
-| RTX 3060 | 3.8 | $0.055-0.08 | ~193 | Cheapest, most available |
-| RTX 3060 Ti | 4.2 | $0.055 | ~275 | Best value when available |
-| RTX 3070 | 4.5 | $0.076 | ~205 | 18% faster than 3060 |
+| GPU | Avg games/s | Typical $/hr | Games/$/hr | Notes |
+|-----|-------------|--------------|------------|-------|
+| RTX 3060 | 3.8-4.0 | $0.052-0.058 | ~214K | Cheapest, most available, best value |
+| RTX 3060 Ti | 4.2 | $0.055 | ~275K | Best bang for buck when available |
+| RTX 3070 Ti | 5.1 | $0.098 | ~187K | Fastest practical option |
+| RTX 3080 | 5.1 | $0.107 | ~171K | Same speed as 3070 Ti, 9% more expensive |
+| Expensive 3060 | 3.9 | $0.083 | ~169K | Worst value — avoid paying >$0.06 for a 3060 |
+
+**Session benchmark (Feb 2026):**
+8h run, 4 workers, ~500K games generated, ~$2.88 total cost, step 0→11000.
 
 **HuggingFace rate limit (128 commits/hr):**
-Workers batch examples locally and upload as a folder every 180 seconds.
-With 4 workers that's ~80 commits/hr — safely under the limit.
+Workers batch examples locally and upload as a folder every 240 seconds.
+With 4 workers that's ~60 commits/hr. With 6 workers, ~90 commits/hr.
 Do NOT reduce `--upload-interval` below 120s with 4+ workers.
 
 ---
