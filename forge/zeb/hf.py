@@ -54,6 +54,7 @@ def push_weights(
     step: int,
     total_games: int,
     extra_metadata: dict | None = None,
+    weights_name: str = 'model.pt',
 ):
     """Push model state_dict + config.json + training_state.json to HF Hub."""
     _require_hf()
@@ -63,7 +64,7 @@ def push_weights(
         tmp_dir = Path(tmp)
 
         # Model weights
-        torch.save(model.state_dict(), tmp_dir / 'model.pt')
+        torch.save(model.state_dict(), tmp_dir / weights_name)
 
         # Training state (tiny JSON, checked first by pull_weights_if_new)
         state = {'step': step, 'total_games': total_games}
@@ -78,14 +79,14 @@ def push_weights(
         )
 
 
-def pull_weights(repo_id: str, device: str = 'cpu') -> tuple[dict, dict]:
+def pull_weights(repo_id: str, device: str = 'cpu', weights_name: str = 'model.pt') -> tuple[dict, dict]:
     """Pull latest weights from HF. Returns (state_dict, model_config).
 
     Uses HF cache -- only downloads if changed.
     """
     _require_hf()
     config_path = hf_hub_download(repo_id, 'config.json')
-    weights_path = hf_hub_download(repo_id, 'model.pt')
+    weights_path = hf_hub_download(repo_id, weights_name)
 
     with open(config_path) as f:
         model_config = json.load(f)
@@ -96,17 +97,34 @@ def pull_weights(repo_id: str, device: str = 'cpu') -> tuple[dict, dict]:
 
 def get_remote_step(repo_id: str) -> int:
     """Read the current training step from HuggingFace."""
+    state = get_remote_training_state(repo_id)
+    if state is None:
+        return 0
+    return int(state.get('step', 0))
+
+
+def get_remote_training_state(repo_id: str) -> dict | None:
+    """Read training_state.json from HuggingFace.
+
+    Returns:
+        Parsed dict if present, else None (e.g., first-run bootstrap before
+        training_state.json exists).
+    """
     _require_hf()
-    state_path = hf_hub_download(repo_id, 'training_state.json')
+    try:
+        state_path = hf_hub_download(repo_id, 'training_state.json')
+    except Exception:
+        return None
+
     with open(state_path) as f:
-        state = json.load(f)
-    return state.get('step', 0)
+        return json.load(f)
 
 
 def pull_weights_if_new(
     repo_id: str,
     current_step: int,
     device: str = 'cpu',
+    weights_name: str = 'model.pt',
 ) -> tuple[dict, dict, int] | None:
     """Pull only if remote step > current_step.
 
@@ -121,7 +139,7 @@ def pull_weights_if_new(
     if remote_step <= current_step:
         return None
 
-    state_dict, model_config = pull_weights(repo_id, device)
+    state_dict, model_config = pull_weights(repo_id, device, weights_name)
     return state_dict, model_config, remote_step
 
 

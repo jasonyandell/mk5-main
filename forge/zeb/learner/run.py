@@ -4,29 +4,27 @@ Consumes training examples written by workers, trains the model on batches
 from a GPU replay buffer, pushes updated weights to HuggingFace, and logs
 to W&B.
 
-This is the training loop from run_selfplay_training.py, decoupled from
-game generation: workers produce examples on disk, the learner ingests them.
+HuggingFace is the single source of truth for model weights. On startup the
+learner pulls the latest weights from HF. The --checkpoint flag is only used
+to bootstrap a brand-new HF repo.
 
 Usage:
     python -u -m forge.zeb.learner.run \
         --repo-id username/zeb-42 \
-        --input-dir /shared/examples \
-        --checkpoint forge/zeb/checkpoints/selfplay-epoch2499.pt \
+        --examples-repo-id username/zeb-42-examples \
+        --checkpoint forge/zeb/models/zeb-557k-1m.pt \
         --lr 1e-4 \
         --batch-size 64 \
-        --replay-buffer-size 50000 \
+        --replay-buffer-size 200000 \
         --training-steps-per-cycle 100 \
-        --push-every 10 \
-        --save-every 50 \
+        --push-every 25 \
         --eval-every 50 \
-        --keep-checkpoints 3 \
-        --wandb
+        --wandb --run-name zeb-557k-1m
 """
 from __future__ import annotations
 
 import argparse
 import time
-from datetime import datetime
 from pathlib import Path
 
 import torch
@@ -40,16 +38,17 @@ except ImportError:
 from forge.zeb.example_store import load_examples, scan_pending
 from forge.zeb.gpu_training_pipeline import GPUReplayBuffer, GPUTrainingExample
 from forge.zeb.hf import (
+    get_remote_training_state,
     download_example,
     init_examples_repo,
     init_repo,
     list_remote_examples,
+    pull_weights,
     prune_remote_examples,
     push_weights,
 )
 from forge.zeb.evaluate import evaluate_vs_random
 from forge.zeb.run_selfplay_training import load_model_from_checkpoint
-from forge.zeb.run_mcts_training import DEFAULT_CHECKPOINT_DIR
 
 
 def train_n_steps_from_buffer(
@@ -59,19 +58,26 @@ def train_n_steps_from_buffer(
     n_steps: int,
     batch_size: int,
 ) -> dict[str, float]:
-    """Train N gradient steps sampling from GPU replay buffer.
-
-    Mirrors GPUTrainingPipeline.train_n_steps_from_buffer but without
-    requiring a full pipeline instance.
-    """
+    """Train N gradient steps sampling from GPU replay buffer."""
     import torch.nn.functional as F
 
     model.train()
     device = replay_buffer.device
     buffer_size = len(replay_buffer)
 
-    total_policy_loss = torch.tensor(0.0, device=device)
-    total_value_loss = torch.tensor(0.0, device=device)
+    zero = torch.tensor(0.0, device=device)
+    total_policy_loss = zero.clone()
+    total_value_loss = zero.clone()
+    total_entropy = zero.clone()
+    total_grad_norm = zero.clone()
+    total_grad_norm_vhead = zero.clone()
+    total_top1_acc = zero.clone()
+    total_kl_div = zero.clone()
+    total_value_mean = zero.clone()
+    total_value_std = zero.clone()
+    total_value_target_mean = zero.clone()
+
+    value_head_params = [p for p in model.value_head.parameters() if p.requires_grad]
 
     buf_obs = replay_buffer.observations
     buf_masks = replay_buffer.masks
@@ -102,52 +108,91 @@ def train_n_steps_from_buffer(
         loss = policy_loss + value_loss
         optimizer.zero_grad()
         loss.backward()
+
+        # Gradient norms (after backward, before step)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), float('inf'))
+        vhead_grads = [p.grad for p in value_head_params if p.grad is not None]
+        grad_norm_vhead = torch.stack([g.norm() for g in vhead_grads]).norm() if vhead_grads else zero
+
         optimizer.step()
 
         total_policy_loss = total_policy_loss + policy_loss.detach()
         total_value_loss = total_value_loss + value_loss.detach()
+        total_grad_norm = total_grad_norm + grad_norm.detach()
+        total_grad_norm_vhead = total_grad_norm_vhead + grad_norm_vhead.detach()
 
+        # Policy entropy: -sum(p * log p) over valid actions
+        policy_probs = log_policy_safe.exp()
+        entropy = -(policy_probs * log_policy_safe).sum(dim=-1).mean()
+        total_entropy = total_entropy + entropy.detach()
+
+        # Policy top-1 accuracy: does model argmax match MCTS argmax?
+        top1_acc = (policy_probs.argmax(dim=-1) == policy_targets.argmax(dim=-1)).float().mean()
+        total_top1_acc = total_top1_acc + top1_acc.detach()
+
+        # KL divergence: KL(MCTS_target || model)
+        log_targets = (policy_targets + 1e-8).log()
+        kl = (policy_targets * (log_targets - log_policy_safe)).sum(dim=-1).mean()
+        total_kl_div = total_kl_div + kl.detach()
+
+        # Value diagnostics
+        total_value_mean = total_value_mean + value.detach().mean()
+        total_value_std = total_value_std + value.detach().std()
+        total_value_target_mean = total_value_target_mean + value_targets.mean()
+
+    n = n_steps
     return {
-        'policy_loss': (total_policy_loss / n_steps).item(),
-        'value_loss': (total_value_loss / n_steps).item(),
+        'policy_loss': (total_policy_loss / n).item(),
+        'value_loss': (total_value_loss / n).item(),
+        'policy_entropy': (total_entropy / n).item(),
+        'grad_norm': (total_grad_norm / n).item(),
+        'grad_norm_value_head': (total_grad_norm_vhead / n).item(),
+        'policy_top1_accuracy': (total_top1_acc / n).item(),
+        'policy_kl_divergence': (total_kl_div / n).item(),
+        'value_mean': (total_value_mean / n).item(),
+        'value_std': (total_value_std / n).item(),
+        'value_target_mean': (total_value_target_mean / n).item(),
     }
 
 
 def run_learner(args: argparse.Namespace) -> None:
     device = args.device
+    weights_name = f"{args.run_name}.pt" if args.run_name else 'model.pt'
 
-    # --- Load model from checkpoint (or fail) ---
-    print(f"Loading checkpoint: {args.checkpoint}")
+    # --- Bootstrap: load from checkpoint to get model config ---
+    print(f"Loading bootstrap checkpoint: {args.checkpoint}")
     model, metadata = load_model_from_checkpoint(args.checkpoint, device)
     model_config = metadata['model_config']
 
     total_params = sum(p.numel() for p in model.parameters())
     print(f"  Model: {total_params:,} parameters")
-    print(f"  Prior games: {metadata['total_games']:,}")
+
+    # --- HF is the single source of truth ---
+    init_repo(args.repo_id, model_config)
+    remote_state = get_remote_training_state(args.repo_id)
+
+    if remote_state is not None:
+        remote_step = int(remote_state.get('step', 0))
+        total_games = int(remote_state.get('total_games', 0))
+        print(f"Pulling weights from HF: {weights_name} (step {remote_step}, {total_games:,} games)")
+        remote_state_dict, remote_config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
+        if remote_config != model_config:
+            raise ValueError("Remote model config differs from bootstrap checkpoint config")
+        model.load_state_dict(remote_state_dict)
+        cycle = remote_step
+    else:
+        # First time: push bootstrap weights to HF
+        total_games = metadata['total_games']
+        cycle = 0
+        push_weights(model, args.repo_id, step=0, total_games=total_games, weights_name=weights_name)
+        print(f"Bootstrapped HF repo with {total_games:,} games")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
 
-    # Restore optimizer if checkpoint has it
-    if args.checkpoint.exists():
-        ckpt = torch.load(args.checkpoint, map_location='cpu', weights_only=False)
-        if 'optimizer_state_dict' in ckpt:
-            optimizer.load_state_dict(ckpt['optimizer_state_dict'])
-            print("  Restored optimizer state")
-        start_cycle = ckpt.get('cycle', 0)
-        del ckpt
-    else:
-        start_cycle = 0
-
+    # --- Replay buffer from HF examples ---
     use_hf_examples = bool(args.examples_repo_id)
 
-    # --- HuggingFace repos ---
-    init_repo(args.repo_id, model_config)
-    push_weights(model, args.repo_id, step=start_cycle, total_games=metadata['total_games'])
-    print(f"Initial weights pushed to {args.repo_id}")
-
-    # --- Replay buffer ---
     if use_hf_examples:
-        # HF mode: the examples repo IS the replay buffer — rebuild from HF
         init_examples_repo(args.examples_repo_id)
         replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
@@ -155,7 +200,6 @@ def run_learner(args: argparse.Namespace) -> None:
         )
         remote_files = list_remote_examples(args.examples_repo_id)
         seen_files: set[str] = set()
-        rebuilt = 0
         for remote_name in remote_files:
             local_path = download_example(args.examples_repo_id, remote_name)
             batch = load_examples(local_path)
@@ -168,62 +212,44 @@ def run_learner(args: argparse.Namespace) -> None:
                 value_targets=batch.value_targets.to(device),
             )
             replay_buffer.add_batch(gpu_batch)
-            rebuilt += gpu_batch.n_examples
             seen_files.add(remote_name)
         print(f"Replay buffer (HF): {len(replay_buffer):,}/{args.replay_buffer_size:,} "
               f"examples from {len(remote_files)} files")
     else:
-        # Local mode: restore from checkpoint
-        saved_buffer = metadata.get('replay_buffer', [])
-        replay_buffer = GPUReplayBuffer.from_list(
-            saved_buffer,
+        replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
             device=torch.device(device),
         )
         seen_files = set()
-        print(f"Replay buffer (GPU): {len(replay_buffer):,}/{args.replay_buffer_size:,} examples")
+        print(f"Replay buffer (empty): 0/{args.replay_buffer_size:,}")
 
     # --- W&B ---
     use_wandb = args.wandb and WANDB_AVAILABLE
-    wandb_run_id = metadata.get('wandb_run_id')
     if use_wandb:
-        if wandb_run_id:
-            wandb.init(
-                project=args.wandb_project,
-                id=wandb_run_id,
-                resume='must',
-            )
-            print(f"W&B run resumed: {wandb.run.url}")
-        else:
-            timestamp = datetime.now().strftime("%Y%m%d%H%M")
-            run_name = args.run_name or f"learner-{timestamp}"
-            wandb.init(
-                project=args.wandb_project,
-                name=run_name,
-                tags=['learner', 'distributed', 'selfplay', 'zeb'],
-                config={
-                    'mode': 'distributed-learner',
-                    'source_checkpoint': str(args.checkpoint),
-                    'lr': args.lr,
-                    'batch_size': args.batch_size,
-                    'replay_buffer_size': args.replay_buffer_size,
-                    'training_steps_per_cycle': args.training_steps_per_cycle,
-                    'model_config': model_config,
-                },
-            )
-            print(f"W&B run: {wandb.run.url}")
-
-    # --- Output directory ---
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+        from datetime import datetime
+        run_name = args.run_name or f"learner-{datetime.now().strftime('%Y%m%d%H%M')}"
+        wandb.init(
+            project=args.wandb_project,
+            name=run_name,
+            tags=['learner', 'distributed', 'selfplay', 'zeb'],
+            config={
+                'mode': 'distributed-learner',
+                'bootstrap_checkpoint': str(args.checkpoint),
+                'lr': args.lr,
+                'batch_size': args.batch_size,
+                'replay_buffer_size': args.replay_buffer_size,
+                'training_steps_per_cycle': args.training_steps_per_cycle,
+                'model_config': model_config,
+            },
+        )
+        print(f"W&B run: {wandb.run.url}")
 
     # --- Main loop ---
-    total_games = metadata['total_games']
-    cycle = start_cycle
-
     print(f"\n=== Distributed Learner ===")
     example_src = args.examples_repo_id if use_hf_examples else str(args.input_dir)
     print(f"Examples: {example_src}")
     print(f"Repo: {args.repo_id}")
+    print(f"Starting from cycle {cycle}")
     print(f"LR: {args.lr}, batch: {args.batch_size}, steps/cycle: {args.training_steps_per_cycle}")
     print(f"Min buffer: {args.min_buffer_size:,}, buffer capacity: {args.replay_buffer_size:,}")
     print()
@@ -233,7 +259,6 @@ def run_learner(args: argparse.Namespace) -> None:
         ingested = 0
         n_new_files = 0
 
-        # Ingest from HF Hub (new files only)
         if use_hf_examples:
             all_remote = list_remote_examples(args.examples_repo_id)
             new_remote = [f for f in all_remote if f not in seen_files]
@@ -254,7 +279,6 @@ def run_learner(args: argparse.Namespace) -> None:
                 seen_files.add(remote_name)
             n_new_files += len(new_remote)
 
-        # Ingest from local disk
         if args.input_dir:
             for f in scan_pending(args.input_dir):
                 batch = load_examples(f)
@@ -299,24 +323,31 @@ def run_learner(args: argparse.Namespace) -> None:
               f"(train={train_time:.2f}s) "
               f"[buffer: {len(replay_buffer):,}, games: {total_games:,}]")
 
-        # 4. W&B logging
-        if use_wandb:
-            wandb.log({
-                'cycle': cycle,
-                'train/policy_loss': metrics['policy_loss'],
-                'train/value_loss': metrics['value_loss'],
-                'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
-                'perf/train_time_s': train_time,
-                'stats/total_games': total_games,
-                'stats/replay_buffer_size': len(replay_buffer),
-            })
+        # 4. Build W&B log dict (logged once at end of cycle)
+        log_dict = {
+            'cycle': cycle,
+            'train/policy_loss': metrics['policy_loss'],
+            'train/value_loss': metrics['value_loss'],
+            'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+            'train/policy_entropy': metrics['policy_entropy'],
+            'train/policy_top1_accuracy': metrics['policy_top1_accuracy'],
+            'train/policy_kl_divergence': metrics['policy_kl_divergence'],
+            'train/grad_norm': metrics['grad_norm'],
+            'train/grad_norm_value_head': metrics['grad_norm_value_head'],
+            'train/value_mean': metrics['value_mean'],
+            'train/value_std': metrics['value_std'],
+            'train/value_target_mean': metrics['value_target_mean'],
+            'train/lr': optimizer.param_groups[0]['lr'],
+            'perf/train_time_s': train_time,
+            'stats/total_games': total_games,
+            'stats/replay_buffer_size': len(replay_buffer),
+        }
 
         # 5. Push weights to HF periodically
         if cycle % args.push_every == 0:
-            push_weights(model, args.repo_id, step=cycle, total_games=total_games)
+            push_weights(model, args.repo_id, step=cycle, total_games=total_games, weights_name=weights_name)
             print(f"  Pushed weights (cycle {cycle})")
 
-            # Prune old example files from HF
             if use_hf_examples:
                 pruned = prune_remote_examples(
                     args.examples_repo_id, args.keep_example_files,
@@ -332,44 +363,11 @@ def run_learner(args: argparse.Namespace) -> None:
                 model, n_games=args.eval_games, device=device,
             )['team0_win_rate']
             print(f"  Eval vs Random: {win_rate:.1%}")
-            if use_wandb:
-                wandb.log({'eval/vs_random_win_rate': win_rate, 'cycle': cycle})
+            log_dict['eval/vs_random_win_rate'] = win_rate
 
-        # 7. Local checkpoint periodically
-        if cycle % args.save_every == 0:
-            ckpt_path = args.output_dir / f"learner-cycle{cycle:06d}.pt"
-            ckpt_data = {
-                'cycle': cycle,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'model_config': model_config,
-                'training_config': {
-                    'mode': 'distributed-learner',
-                    'source_checkpoint': str(args.checkpoint),
-                    'lr': args.lr,
-                    'replay_buffer_size': args.replay_buffer_size,
-                    'training_steps_per_cycle': args.training_steps_per_cycle,
-                },
-                'total_games': total_games,
-                'wandb_run_id': wandb.run.id if use_wandb else None,
-            }
-            # HF mode: replay buffer lives on HF, no need to save in checkpoint
-            # Local mode: save buffer for crash recovery
-            if not use_hf_examples:
-                ckpt_data['replay_buffer'] = replay_buffer.to_list()
-            torch.save(ckpt_data, ckpt_path)
-            print(f"  Saved checkpoint: {ckpt_path.name}")
-
-            # Cleanup old checkpoints
-            if args.keep_checkpoints > 0:
-                all_ckpts = sorted(
-                    args.output_dir.glob("learner-cycle*.pt"),
-                    key=lambda p: p.stat().st_mtime,
-                )
-                if len(all_ckpts) > args.keep_checkpoints:
-                    for old_ckpt in all_ckpts[:-args.keep_checkpoints]:
-                        old_ckpt.unlink()
-                        print(f"  Removed old checkpoint: {old_ckpt.name}")
+        # 7. Log all metrics for this cycle in a single call
+        if use_wandb:
+            wandb.log(log_dict)
 
 
 def main():
@@ -377,11 +375,11 @@ def main():
 
     # Required
     parser.add_argument('--repo-id', type=str, required=True,
-                        help='HuggingFace repo for weight distribution')
+                        help='HuggingFace repo for weight distribution (single source of truth)')
     parser.add_argument('--checkpoint', type=Path, required=True,
-                        help='Starting checkpoint')
+                        help='Bootstrap checkpoint (only used if HF repo has no weights yet)')
 
-    # Example input (one or both)
+    # Example input
     parser.add_argument('--examples-repo-id', type=str, default=None,
                         help='HF repo for example exchange (e.g. username/zeb-42-examples)')
     parser.add_argument('--input-dir', type=Path, default=None,
@@ -392,25 +390,18 @@ def main():
     # Training
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch-size', type=int, default=64)
-    parser.add_argument('--replay-buffer-size', type=int, default=50000)
+    parser.add_argument('--replay-buffer-size', type=int, default=200000)
     parser.add_argument('--training-steps-per-cycle', type=int, default=100)
     parser.add_argument('--min-buffer-size', type=int, default=5000,
                         help='Minimum examples before training starts')
     parser.add_argument('--device', type=str, default='cuda')
 
     # Periodic actions
-    parser.add_argument('--push-every', type=int, default=10,
+    parser.add_argument('--push-every', type=int, default=25,
                         help='Push weights to HF every N cycles')
-    parser.add_argument('--save-every', type=int, default=50,
-                        help='Save local checkpoint every N cycles')
     parser.add_argument('--eval-every', type=int, default=50,
                         help='Evaluate vs random every N cycles')
     parser.add_argument('--eval-games', type=int, default=2000)
-
-    # Output
-    parser.add_argument('--output-dir', type=Path, default=DEFAULT_CHECKPOINT_DIR)
-    parser.add_argument('--keep-checkpoints', type=int, default=3,
-                        help='Keep only last N checkpoints (0 = keep all)')
 
     # W&B
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)

@@ -20,6 +20,7 @@ N_WORKERS="${1:-4}"
 GPU_FILTER="${2:-}"
 REPO_ID="jasonyandell/zeb-42"
 EXAMPLES_REPO_ID="jasonyandell/zeb-42-examples"
+WEIGHTS_NAME="zeb-557k-1m"
 IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
 DISK_GB=15
 
@@ -92,6 +93,7 @@ exec python -u -m forge.zeb.worker.run \
     --n-simulations 200 \
     --max-mcts-nodes 512 \
     --games-per-batch 256 \
+    --weights-name '"$WEIGHTS_NAME"' \
     --weight-sync-interval 2
 '
 

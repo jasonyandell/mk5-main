@@ -46,6 +46,10 @@ def gpu_examples_to_batch(
     worker_id: str,
     model_step: int,
     n_games: int,
+    *,
+    source: str = 'selfplay-mcts',
+    model_checkpoint: str | None = None,
+    mcts_config: dict | None = None,
 ) -> ExampleBatch:
     """Convert GPU training examples to a CPU ExampleBatch for serialization."""
     return ExampleBatch(
@@ -60,6 +64,9 @@ def gpu_examples_to_batch(
             'model_step': model_step,
             'n_games': n_games,
             'timestamp': time.time(),
+            'source': source,
+            'model_checkpoint': model_checkpoint,
+            'mcts_config': mcts_config,
         },
     )
 
@@ -70,8 +77,9 @@ def run_worker(args: argparse.Namespace) -> None:
     use_hf_examples = bool(args.examples_repo_id)
 
     # 1. Pull initial model from HuggingFace
-    print(f"Pulling initial weights from {args.repo_id}...")
-    state_dict, config = pull_weights(args.repo_id, device=device)
+    weights_name = f"{args.weights_name}.pt" if args.weights_name else 'model.pt'
+    print(f"Pulling initial weights from {args.repo_id}/{weights_name}...")
+    state_dict, config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
     model = ZebModel(**config).to(device)
     model.load_state_dict(state_dict)
     model.eval()
@@ -120,6 +128,13 @@ def run_worker(args: argparse.Namespace) -> None:
         # Convert to CPU batch and save/upload
         batch = gpu_examples_to_batch(
             examples, args.worker_id, current_step, n_games=args.games_per_batch,
+            source='selfplay-mcts',
+            model_checkpoint=str(args.repo_id),
+            mcts_config={
+                'n_simulations': args.n_simulations,
+                'temperature': args.temperature,
+                'max_mcts_nodes': args.max_mcts_nodes,
+            },
         )
         if use_hf_examples:
             with tempfile.TemporaryDirectory() as tmp:
@@ -140,7 +155,7 @@ def run_worker(args: argparse.Namespace) -> None:
 
         # Periodic weight sync
         if batch_count % args.weight_sync_interval == 0:
-            result = pull_weights_if_new(args.repo_id, current_step, device=device)
+            result = pull_weights_if_new(args.repo_id, current_step, device=device, weights_name=weights_name)
             if result is not None:
                 state_dict, _, new_step = result
                 model.load_state_dict(state_dict)
@@ -191,6 +206,12 @@ def main() -> None:
     parser.add_argument(
         "--weight-sync-interval", type=int, default=10,
         help="Pull new weights every N batches",
+    )
+
+    # Model
+    parser.add_argument(
+        "--weights-name", type=str, default=None,
+        help="Weights filename stem on HF (e.g. zeb-557k-1m → zeb-557k-1m.pt)",
     )
 
     # Device
