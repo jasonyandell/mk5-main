@@ -1,54 +1,83 @@
 import type { GameState, GameAction, TrumpSelection, Bid, Play, Trick, LedSuit } from '../types';
+import type { GameRules } from '../layers/types';
+import { composeRules, baseLayer } from '../layers';
 import { EMPTY_BID, NO_BIDDER, NO_LEAD_SUIT } from '../types';
 import { BID_TYPES, GAME_CONSTANTS } from '../constants';
-import { isValidBid, getValidPlays, getBidComparisonValue, isValidTrump } from './rules';
-import { dealDominoesWithSeed, getLedSuit } from './dominoes';
-import { calculateTrickWinner, calculateTrickPoints, calculateRoundScore, isGameComplete } from './scoring';
-import { checkHandOutcome } from './handOutcome';
+import { dealDominoesWithSeed } from './dominoes';
+import { calculateTrickPoints, isGameComplete } from './scoring';
 import { getNextDealer, getPlayerLeftOfDealer, getNextPlayer } from './players';
-import { analyzeSuits } from './suit-analysis';
+import { analyzeBiddingCompletion } from './bidding';
+import { getBidLabel, getTrumpActionLabel, SUIT_IDENTIFIERS } from '../game-terms';
+
+// Default rules (base layer only, no special contracts)
+const defaultRules = composeRules([baseLayer]);
+
+/**
+ * Options for executeAction
+ */
+export interface ExecuteActionOptions {
+  /** Skip recording action in history (use for simulation/rollouts) */
+  skipHistory?: boolean;
+}
 
 /**
  * Pure function that executes an action on a game state.
- * Never throws errors - invalid actions return unchanged state.
- * Always appends to actionHistory for complete audit trail.
+ * Throws errors on invalid actions.
+ * Appends to actionHistory unless skipHistory is set.
+ *
+ * @param state - Current game state
+ * @param action - Action to execute
+ * @param rules - Game rules (defaults to base rule set if not provided)
+ * @param options - Optional settings (e.g., skipHistory for simulations)
  */
-export function executeAction(state: GameState, action: GameAction): GameState {
-  // Always record the action in history (even if invalid)
-  const newState: GameState = {
-    ...state,
-    actionHistory: [...state.actionHistory, action]
-  };
+export function executeAction(
+  state: GameState,
+  action: GameAction,
+  rules: GameRules = defaultRules,
+  options?: ExecuteActionOptions
+): GameState {
+  // Record action in history unless skipped (simulation mode)
+  const newState: GameState = options?.skipHistory
+    ? { ...state }
+    : {
+        ...state,
+        actionHistory: [...state.actionHistory, action]
+      };
 
   // Process the action based on type
   switch (action.type) {
     case 'bid':
-      return executeBid(newState, action.player, action.bid, action.value);
-    
+      return executeBid(newState, action.player, action.bid, action.value, rules);
+
     case 'pass':
-      return executePass(newState, action.player);
-    
+      return executePass(newState, action.player, rules);
+
     case 'select-trump':
-      return executeTrumpSelection(newState, action.player, action.trump);
-    
+      return executeTrumpSelection(newState, action.player, action.trump, rules);
+
     case 'play':
-      return executePlay(newState, action.player, action.dominoId);
-    
-    case 'agree-complete-trick':
-      return executeAgreement(newState, action.player, 'completeTrick');
-    
-    case 'agree-score-hand':
-      return executeAgreement(newState, action.player, 'scoreHand');
-    
+      return executePlay(newState, action.player, action.dominoId, rules);
+
     case 'complete-trick':
-      return executeCompleteTrick(newState);
-    
+      return executeCompleteTrick(newState, rules);
+
     case 'score-hand':
-      return executeScoreHand(newState);
-    
+      return executeScoreHand(newState, rules);
+
+    case 'agree-trick':
+    case 'agree-score':
+      // No-op: action recorded in history, consensus layer derives state
+      return newState;
+
     case 'redeal':
       return executeRedeal(newState);
-    
+
+    case 'retry-one-hand':
+      return executeRetryOneHand(newState);
+
+    case 'new-one-hand':
+      return executeNewOneHand(newState);
+
     default:
       // Unknown action type - return state with action recorded
       return newState;
@@ -56,52 +85,28 @@ export function executeAction(state: GameState, action: GameAction): GameState {
 }
 
 /**
- * Records a player's agreement for consensus actions
- */
-function executeAgreement(state: GameState, player: number, type: 'completeTrick' | 'scoreHand'): GameState {
-  // Validate player
-  if (player < 0 || player >= 4) {
-    return state; // Invalid player, no-op
-  }
-
-  // Check if already agreed
-  if (state.consensus[type].has(player)) {
-    return state; // Already agreed, no-op
-  }
-
-  // Record agreement
-  return {
-    ...state,
-    consensus: {
-      ...state.consensus,
-      [type]: new Set([...state.consensus[type], player])
-    }
-  };
-}
-
-/**
  * Executes a bid action
  */
-function executeBid(state: GameState, player: number, bidType: Bid['type'], value?: number): GameState {
+function executeBid(state: GameState, player: number, bidType: Bid['type'], value: number | undefined, rules: GameRules): GameState {
   // Validate phase
   if (state.phase !== 'bidding') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for bidding');
   }
 
   // Validate player
   const playerData = state.players[player];
   if (!playerData) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
   }
 
   // Create bid object
-  const bid: Bid = value !== undefined 
+  const bid: Bid = value !== undefined
     ? { type: bidType, value, player }
     : { type: bidType, player };
 
   // Validate bid legality
-  if (!isValidBid(state, bid, playerData.hand)) {
-    return state; // Invalid bid, no-op
+  if (!rules.isValidBid(state, bid, playerData.hand)) {
+    throw new Error('Invalid bid');
   }
 
   // Apply bid
@@ -112,22 +117,12 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
   let newCurrentBid = bid;
 
   // Check if bidding is complete
-  if (newBids.length === 4) {
-    const nonPassBids = newBids.filter(b => b.type !== BID_TYPES.PASS);
-    
-    if (nonPassBids.length > 0) {
-      // Find winning bidder
-      const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = getBidComparisonValue(highest);
-        const currentValue = getBidComparisonValue(current);
-        return currentValue > highestValue ? current : highest;
-      });
-      
-      newPhase = 'trump_selection';
-      newWinningBidder = winningBid.player;
-      newCurrentPlayer = winningBid.player;
-      newCurrentBid = winningBid;
-    }
+  const biddingResult = analyzeBiddingCompletion(newBids, state, rules);
+  if (biddingResult) {
+    newPhase = biddingResult.phase;
+    newWinningBidder = biddingResult.winningBidder;
+    newCurrentPlayer = biddingResult.currentPlayer;
+    newCurrentBid = biddingResult.currentBid;
   }
 
   return {
@@ -143,23 +138,23 @@ function executeBid(state: GameState, player: number, bidType: Bid['type'], valu
 /**
  * Executes a pass action
  */
-function executePass(state: GameState, player: number): GameState {
+function executePass(state: GameState, player: number, rules: GameRules): GameState {
   // Validate phase
   if (state.phase !== 'bidding') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for passing');
   }
 
   // Validate player
   const playerData = state.players[player];
   if (!playerData) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
   }
 
   const passBid: Bid = { type: BID_TYPES.PASS, player };
 
   // Validate pass legality
-  if (!isValidBid(state, passBid, playerData.hand)) {
-    return state; // Invalid pass, no-op
+  if (!rules.isValidBid(state, passBid, playerData.hand)) {
+    throw new Error('Invalid pass');
   }
 
   // Apply pass
@@ -170,24 +165,14 @@ function executePass(state: GameState, player: number): GameState {
   let newCurrentBid = state.currentBid;
 
   // Check if bidding is complete
-  if (newBids.length === 4) {
-    const nonPassBids = newBids.filter(b => b.type !== BID_TYPES.PASS);
-    
-    if (nonPassBids.length > 0) {
-      // Find winning bidder
-      const winningBid = nonPassBids.reduce((highest, current) => {
-        const highestValue = getBidComparisonValue(highest);
-        const currentValue = getBidComparisonValue(current);
-        return currentValue > highestValue ? current : highest;
-      });
-      
-      newPhase = 'trump_selection';
-      newWinningBidder = winningBid.player;
-      newCurrentPlayer = winningBid.player;
-      newCurrentBid = winningBid;
-    }
-    // All pass case handled by redeal action
+  const biddingResult = analyzeBiddingCompletion(newBids, state, rules);
+  if (biddingResult) {
+    newPhase = biddingResult.phase;
+    newWinningBidder = biddingResult.winningBidder;
+    newCurrentPlayer = biddingResult.currentPlayer;
+    newCurrentBid = biddingResult.currentBid;
   }
+  // All pass case handled by redeal action
 
   return {
     ...state,
@@ -202,78 +187,70 @@ function executePass(state: GameState, player: number): GameState {
 /**
  * Executes trump selection
  */
-function executeTrumpSelection(state: GameState, player: number, selection: TrumpSelection): GameState {
+function executeTrumpSelection(state: GameState, player: number, selection: TrumpSelection, rules: GameRules): GameState {
   // Validate phase
   if (state.phase !== 'trump_selection') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for trump selection');
   }
 
-  // Validate player is winning bidder
-  if (player !== state.winningBidder) {
-    return state; // Not winning bidder, no-op
+  // Validate player is winning bidder (or trump selector with action transformers)
+  if (player !== state.currentPlayer) {
+    throw new Error('Only trump selector can select trump');
   }
 
   // Validate trump selection
-  if (!isValidTrump(selection)) {
-    return state; // Invalid trump, no-op
+  if (!rules.isValidTrump(selection)) {
+    throw new Error('Invalid trump selection');
   }
 
-  // Update suit analysis for all players
-  const newPlayers = state.players.map(p => ({
-    ...p,
-    suitAnalysis: analyzeSuits(p.hand, selection)
-  }));
+  // Use rules to determine who leads first trick
+  const firstLeader = rules.getFirstLeader(state, player, selection);
 
   return {
     ...state,
     phase: 'playing',
     trump: selection,
-    currentPlayer: player,
-    players: newPlayers
+    currentPlayer: firstLeader
   };
 }
 
 /**
  * Executes a domino play
  */
-function executePlay(state: GameState, player: number, dominoId: string): GameState {
+function executePlay(state: GameState, player: number, dominoId: string, rules: GameRules): GameState {
   // Validate phase
   if (state.phase !== 'playing') {
-    return state; // Invalid phase, no-op
+    throw new Error('Invalid phase for domino play');
   }
 
   // Validate player
   const playerIndex = state.players.findIndex(p => p.id === player);
   if (playerIndex === -1) {
-    return state; // Invalid player, no-op
+    throw new Error(`Invalid player ID: ${player}`);
   }
 
   const playerState = state.players[playerIndex];
   if (!playerState) {
-    return state; // Invalid player state, no-op
+    throw new Error(`Invalid player state for player ID: ${player}`);
   }
   const domino = playerState.hand.find(d => d.id === dominoId);
 
   if (!domino) {
-    return state; // Player doesn't have domino, no-op
+    throw new Error(`Player ${player} does not have domino ${dominoId}`);
   }
 
   // Validate play legality
-  const validPlays = getValidPlays(state, player);
+  const validPlays = rules.getValidPlays(state, player);
   const isValid = validPlays.some(d => d.id === dominoId);
 
   if (!isValid) {
-    return state; // Invalid play, no-op
+    throw new Error(`Invalid play: ${dominoId} by player ${player}`);
   }
 
   // Create new player with domino removed
   const newPlayer: typeof playerState = {
     ...playerState,
-    hand: playerState.hand.filter(d => d.id !== dominoId),
-    suitAnalysis: analyzeSuits(
-      playerState.hand.filter(d => d.id !== dominoId),
-      state.trump
-    )
+    hand: playerState.hand.filter(d => d.id !== dominoId)
   };
 
   // Update players array
@@ -283,42 +260,41 @@ function executePlay(state: GameState, player: number, dominoId: string): GameSt
   // Add to current trick
   const newCurrentTrick: Play[] = [...state.currentTrick, { player, domino }];
 
-  // Set current suit if first play
-  const newCurrentSuit = state.currentTrick.length === 0 
-    ? getLedSuit(domino, state.trump)
+  // Set current suit if first play (use rules to determine led suit)
+  const newCurrentSuit = state.currentTrick.length === 0
+    ? rules.getLedSuit(state, domino)
     : state.currentSuit;
+
+  // Use rules to determine next player
+  const nextPlayer = rules.getNextPlayer(state, player);
 
   return {
     ...state,
     players: newPlayers,
     currentTrick: newCurrentTrick,
     currentSuit: newCurrentSuit,
-    currentPlayer: getNextPlayer(player)
+    currentPlayer: nextPlayer
   };
 }
 
 /**
  * Executes trick completion
  */
-function executeCompleteTrick(state: GameState): GameState {
-  // Validate trick is complete
-  if (state.currentTrick.length !== 4) {
-    return state; // Trick not complete, no-op
+function executeCompleteTrick(state: GameState, rules: GameRules): GameState {
+  // Validate trick is complete (use rules)
+  if (!rules.isTrickComplete(state)) {
+    throw new Error('Trick not complete');
   }
 
-  // Check consensus (all 4 players must agree)
-  if (state.consensus.completeTrick.size !== 4) {
-    return state; // Not all agreed, no-op
-  }
-
-  // Calculate trick outcome
-  const winner = calculateTrickWinner(state.currentTrick, state.trump, state.currentSuit);
+  // Calculate trick outcome (use rules)
+  const winner = rules.calculateTrickWinner(state, state.currentTrick);
   const points = calculateTrickPoints(state.currentTrick);
 
   // Get winner's team
   const winnerPlayer = state.players.find(p => p.id === winner);
   if (!winnerPlayer) {
-    return state; // Invalid winner, no-op
+
+    throw new Error(`Invalid winner player index: ${winner}`);
   }
 
   // Update team scores
@@ -331,28 +307,33 @@ function executeCompleteTrick(state: GameState): GameState {
     winner,
     points: points + 1,  // Include the 1 point for winning the trick
   };
-  
+
   // Only add ledSuit if it's a valid suit (not -1)
   if (state.currentSuit >= 0 && state.currentSuit <= 7) {
     completedTrick.ledSuit = state.currentSuit as LedSuit;
   }
-  
+
   const newTricks = [...state.tricks, completedTrick];
+
+  // Create temporary state to check hand outcome
+  const tempState: GameState = {
+    ...state,
+    tricks: newTricks,
+    teamScores: newTeamScores
+  };
 
   // Determine next phase
   let newPhase = state.phase;
   if (newTricks.length === GAME_CONSTANTS.TRICKS_PER_HAND) {
     newPhase = 'scoring';
   } else {
-    // Check if hand outcome is determined
-    const tempState = { ...state, tricks: newTricks, teamScores: newTeamScores };
-    const outcome = checkHandOutcome(tempState);
+    // Check if hand outcome is determined (use rules)
+    const outcome = rules.checkHandOutcome(tempState);
     if (outcome.isDetermined) {
       newPhase = 'scoring';
     }
   }
 
-  // Clear consensus for next trick
   return {
     ...state,
     tricks: newTricks,
@@ -360,37 +341,25 @@ function executeCompleteTrick(state: GameState): GameState {
     currentSuit: NO_LEAD_SUIT,
     teamScores: newTeamScores,
     currentPlayer: winner,
-    phase: newPhase,
-    consensus: {
-      ...state.consensus,
-      completeTrick: new Set()  // Clear consensus
-    }
+    phase: newPhase
   };
 }
 
 /**
  * Executes hand scoring
  */
-function executeScoreHand(state: GameState): GameState {
+function executeScoreHand(state: GameState, rules: GameRules = defaultRules): GameState {
   // Validate phase
   if (state.phase !== 'scoring') {
-    return state; // Invalid phase, no-op
-  }
-
-  // Check consensus (all 4 players must agree)
-  if (state.consensus.scoreHand.size !== 4) {
-    return state; // Not all agreed, no-op
+    throw new Error('Invalid phase for scoring');
   }
 
   // Calculate round score
-  const newMarks = calculateRoundScore(state);
+  const newMarks = rules.calculateScore(state);
 
   // Check if game is complete
   if (isGameComplete(newMarks, state.gameTarget)) {
-    // Game over
-    const winner = newMarks[0] >= state.gameTarget ? 0 : 1;
-    
-    // Clear hands
+    // Game over - clear hands
     const newPlayers = state.players.map(p => ({
       ...p,
       hand: []
@@ -400,44 +369,48 @@ function executeScoreHand(state: GameState): GameState {
       ...state,
       phase: 'game_end',
       teamMarks: newMarks,
-      isComplete: true,
-      winner,
-      players: newPlayers,
-      consensus: {
-        completeTrick: new Set(),
-        scoreHand: new Set()  // Clear consensus
-      }
+      players: newPlayers
     };
   }
+
+  // Use rule to determine next phase (allows oneHand to override)
+  const nextPhase = rules.getPhaseAfterHandComplete(state);
 
   // Start new hand
   const newDealer = getNextDealer(state.dealer);
   const newCurrentPlayer = getPlayerLeftOfDealer(newDealer);
   const newShuffleSeed = state.shuffleSeed + 1000000;
 
-  // Deal new hands
-  const hands = dealDominoesWithSeed(newShuffleSeed);
-  const newPlayers = state.players.map((player, i) => {
-    const hand = hands[i];
-    if (!hand) {
-      // If deal fails, return unchanged state
-      return player;
-    }
-    return {
-      ...player,
-      hand,
-      suitAnalysis: analyzeSuits(hand) // No trump yet
-    };
-  });
+  // Only deal new hands if transitioning to bidding
+  const shouldDealNewHand = nextPhase === 'bidding';
+  const newPlayers = shouldDealNewHand
+    ? (() => {
+        const hands = dealDominoesWithSeed(newShuffleSeed);
+        return state.players.map((player, i) => {
+          const hand = hands[i];
+          if (!hand) {
+            // If deal fails, return unchanged state
+            return player;
+          }
+          return {
+            ...player,
+            hand
+          };
+        });
+      })()
+    : state.players.map(p => ({
+        ...p,
+        hand: []  // Clear hands for terminal states
+      }));
 
-  // Validate all hands were dealt
-  if (newPlayers.some(p => p.hand.length === 0 && state.phase !== 'game_end')) {
-    return state; // Deal failed, no-op
+  // Validate all hands were dealt (if we're dealing)
+  if (shouldDealNewHand && newPlayers.some(p => p.hand.length === 0)) {
+    throw new Error('Deal failed');
   }
 
   return {
     ...state,
-    phase: 'bidding',
+    phase: nextPhase,
     dealer: newDealer,
     currentPlayer: newCurrentPlayer,
     shuffleSeed: newShuffleSeed,
@@ -450,11 +423,7 @@ function executeScoreHand(state: GameState): GameState {
     currentTrick: [],
     currentSuit: NO_LEAD_SUIT,
     teamScores: [0, 0],
-    teamMarks: newMarks,
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()  // Clear consensus
-    }
+    teamMarks: newMarks
   };
 }
 
@@ -465,7 +434,7 @@ function executeRedeal(state: GameState): GameState {
   // Validate all passed
   const nonPassBids = state.bids.filter(b => b.type !== BID_TYPES.PASS);
   if (nonPassBids.length > 0) {
-    return state; // Not all passed, no-op
+    throw new Error('Not all players passed');
   }
 
   // New dealer and shuffle
@@ -482,14 +451,13 @@ function executeRedeal(state: GameState): GameState {
     }
     return {
       ...player,
-      hand,
-      suitAnalysis: analyzeSuits(hand) // No trump yet
+      hand
     };
   });
 
   // Validate all hands were dealt
   if (newPlayers.some(p => p.hand.length === 0)) {
-    return state; // Deal failed, no-op
+    throw new Error('Deal failed');
   }
 
   return {
@@ -501,4 +469,148 @@ function executeRedeal(state: GameState): GameState {
     bids: [],
     currentBid: EMPTY_BID
   };
+}
+
+/**
+ * Executes retry-one-hand (restart with same seed)
+ */
+function executeRetryOneHand(state: GameState): GameState {
+  // Validate phase
+  if (state.phase !== 'one-hand-complete') {
+    throw new Error('Can only retry in one-hand-complete phase');
+  }
+
+  // Use same shuffle seed
+  const sameSeed = state.shuffleSeed;
+
+  // Reset to bidding phase with same seed
+  return resetToNewHand(state, sameSeed);
+}
+
+/**
+ * Executes new-one-hand (restart with different seed)
+ */
+function executeNewOneHand(state: GameState): GameState {
+  // Validate phase
+  if (state.phase !== 'one-hand-complete') {
+    throw new Error('Can only start new hand in one-hand-complete phase');
+  }
+
+  // Generate new shuffle seed
+  const newSeed = state.shuffleSeed + 1000000;
+
+  // Reset to bidding phase with new seed
+  return resetToNewHand(state, newSeed);
+}
+
+/**
+ * Helper: Reset game state for new one-hand game
+ * Used by retry-one-hand and new-one-hand actions
+ */
+function resetToNewHand(state: GameState, shuffleSeed: number): GameState {
+  // Deal new hands
+  const hands = dealDominoesWithSeed(shuffleSeed);
+  const newPlayers = state.players.map((player, i) => {
+    const hand = hands[i];
+    if (!hand) {
+      throw new Error('Deal failed');
+    }
+    return {
+      ...player,
+      hand
+    };
+  });
+
+  // Validate all hands were dealt
+  if (newPlayers.some(p => p.hand.length === 0)) {
+    throw new Error('Deal failed');
+  }
+
+  // Reset to bidding phase
+  // Keep: dealer, teamMarks (preserved across retries)
+  // Reset: phase, bids, trump, tricks, scores, consensus
+  return {
+    ...state,
+    phase: 'bidding',
+    shuffleSeed,
+    players: newPlayers,
+    bids: [],
+    currentBid: EMPTY_BID,
+    winningBidder: NO_BIDDER,
+    trump: { type: 'not-selected' },
+    tricks: [],
+    currentTrick: [],
+    currentSuit: NO_LEAD_SUIT,
+    teamScores: [0, 0],
+    currentPlayer: getPlayerLeftOfDealer(state.dealer)
+  };
+}
+
+/**
+ * Converts an action to a transition ID for compatibility
+ */
+export function actionToId(action: GameAction): string {
+  switch (action.type) {
+    case 'bid':
+      if (action.bid === BID_TYPES.POINTS) {
+        return `bid-${action.value}`;
+      } else if (action.bid === BID_TYPES.MARKS) {
+        return `bid-${action.value}-marks`;
+      }
+      return `${action.bid}-${action.value}`;
+    case 'pass':
+      return 'pass';
+    case 'select-trump':
+      if (action.trump.type === 'suit') {
+        return `trump-${SUIT_IDENTIFIERS[action.trump.suit!]}`;
+      } else if (action.trump.type === 'doubles') {
+        return 'trump-doubles';
+      } else if (action.trump.type === 'no-trump') {
+        return 'trump-no-trump';
+      }
+      return 'trump-none';
+    case 'play':
+      return `play-${action.dominoId}`;
+    case 'complete-trick':
+      return 'complete-trick';
+    case 'score-hand':
+      return 'score-hand';
+    case 'agree-trick':
+      return `agree-trick-p${action.player}`;
+    case 'agree-score':
+      return `agree-score-p${action.player}`;
+    case 'redeal':
+      return 'redeal';
+    default:
+      return 'unknown';
+  }
+}
+
+/**
+ * Converts an action to a human-readable label
+ */
+export function actionToLabel(action: GameAction): string {
+  switch (action.type) {
+    case 'bid':
+      return getBidLabel({ type: action.bid, value: action.value });
+    case 'pass':
+      return 'Pass';
+    case 'select-trump':
+      return getTrumpActionLabel(action.trump, { includeVerb: true, numeric: true });
+    case 'play':
+      // Would need domino lookup for proper label
+      return `Play domino ${action.dominoId}`;
+    case 'complete-trick':
+      return 'Complete trick';
+    case 'score-hand':
+      return 'Next hand';
+    case 'agree-trick':
+      return `Player ${action.player} agrees`;
+    case 'agree-score':
+      return `Player ${action.player} agrees`;
+    case 'redeal':
+      return 'All passed - Redeal';
+    default:
+      return 'Unknown action';
+  }
 }

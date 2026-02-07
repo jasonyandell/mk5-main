@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameActions, viewProjection, controllerManager, availableActions } from '../../stores/gameStore';
+  import { game, viewProjection } from '../../stores/gameStore';
   import Domino from './Domino.svelte';
   import GameInfoBar from './GameInfoBar.svelte';
   import TrickHistoryDrawer from './TrickHistoryDrawer.svelte';
@@ -7,19 +7,39 @@
   import type { Domino as DominoType } from '../../game/types';
   import { slide } from 'svelte/transition';
   import { createEventDispatcher } from 'svelte';
-  
+
   const dispatch = createEventDispatcher();
 
   // Handle domino click
   function handleDominoClick(event: CustomEvent<DominoType>) {
+    if (!$viewProjection.canAct) return;
+
     const domino = event.detail;
-    const playAction = $availableActions.find(
-      action => action.id === `play-${domino.high}-${domino.low}` ||
-                action.id === `play-${domino.low}-${domino.high}`
-    );
-    
-    if (playAction) {
-      gameActions.executeAction(playAction);
+    const playAction = $viewProjection.actions.proceed;
+    const perspectiveIndex = $viewProjection.perspectiveIndex;
+
+    // Check if there's a play action for this domino
+    const dominoId1 = `play-${domino.high}-${domino.low}`;
+    const dominoId2 = `play-${domino.low}-${domino.high}`;
+
+    if (playAction && (playAction.id === dominoId1 || playAction.id === dominoId2)) {
+      game.executeAction(playAction.action);
+    } else {
+      // Look through all available actions (from hand metadata)
+      const handDomino = $viewProjection.hand.find(
+        hd => (hd.domino.high === domino.high && hd.domino.low === domino.low) ||
+              (hd.domino.high === domino.low && hd.domino.low === domino.high)
+      );
+
+      if (handDomino?.isPlayable) {
+        // Construct the play action - pass action directly
+        const action = {
+          type: 'play' as const,
+          player: perspectiveIndex,
+          dominoId: `${domino.high}-${domino.low}`
+        };
+        game.executeAction(action);
+      }
     }
   }
 
@@ -59,36 +79,28 @@
   
   // Handle action execution
   function handleProceedAction() {
+    if (!$viewProjection.canAct) return;
     const proceedAction = $viewProjection.actions.proceed;
     if (!proceedAction || actionPending) return;
-    
+
     // Set debounce flag
     actionPending = true;
-    
-    // Find which human controller should handle this
-    const playerId = 'player' in proceedAction.action ? proceedAction.action.player : 0;
-    const humanController = controllerManager.getHumanController(playerId);
-    if (humanController) {
-      humanController.handleUserAction(proceedAction);
-    } else {
-      // Fallback to direct execution
-      gameActions.executeAction(proceedAction);
-    }
-    
-    // Panel switching is handled by reactive statement above
-    
-    // Clear debounce flag synchronously
-    actionPending = false;
+
+    // Execute the action (fire-and-forget in new architecture)
+    game.executeAction(proceedAction.action);
+
+    // Clear debounce flag after a short delay
+    setTimeout(() => {
+      actionPending = false;
+    }, 100);
   }
-  
-  // Handle table click to skip AI delays
+
+  // Handle table click
   function handleTableClick() {
+    if (!$viewProjection.canAct) return;
     // If there's a proceed action, handle it
     if ($viewProjection.actions.proceed) {
       handleProceedAction();
-    } else {
-      // Otherwise, skip AI delays
-      gameActions.skipAIDelays();
     }
   }
 
@@ -111,7 +123,7 @@
     />
   </div>
   
-  {#if showTrickHistory && ($viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring')}
+  {#if showTrickHistory && ($viewProjection.phase === 'playing' || $viewProjection.phase === 'scoring' || $viewProjection.phase === 'one-hand-complete')}
     <div class="bg-base-100 rounded-xl mx-4 p-3 shadow-md border border-base-300" transition:slide={{ duration: 200 }}>
       <!-- Player headers -->
       <div class="flex items-center gap-3 px-3 pb-3 mb-3 border-b-2 border-base-300">
@@ -186,7 +198,7 @@
           {@const bid = status.bid}
           {@const isCurrentTurn = status.isCurrentTurn}
           {@const isAI = status.isThinking}
-          {@const isYou = playerId === 0}
+          {@const isYou = playerId === $viewProjection.perspectiveIndex}
           
           <div class="flex justify-between px-3 py-2 rounded-md bg-base-200 transition-all {isCurrentTurn ? 'bg-info/20 ring-1 ring-info' : ''} {isYou ? 'font-semibold bg-primary/10' : ''}">
             <span class="flex items-center gap-1">
@@ -298,7 +310,7 @@
               <div class="relative w-[50px] h-[80px] flex items-center justify-center pointer-events-none">
                 <div class="absolute inset-0 border-[3px] border-dashed border-base-100/30 rounded-xl motion-safe:animate-spin-slow"></div>
                 <span class="text-xs opacity-70 mr-0.5">
-                  <Icon name={controllerManager.isAIControlled(position) ? 'cpuChip' : 'user'} size="sm" className="inline-block" />
+                  <Icon name="user" size="sm" className="inline-block" />
                 </span>
                 <span class="text-sm font-bold text-base-100/60">P{position}</span>
               </div>

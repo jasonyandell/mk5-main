@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
-import { isValidBid, createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { composeRules, baseLayer } from '../../../game/layers';
+
+const rules = composeRules([baseLayer]);
 
 describe('Feature: Standard Bidding - Valid Point Bids', () => {
   describe('Scenario: Valid Point Bids', () => {
@@ -31,7 +34,7 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
         };
         
         // Verify bid is valid
-        const isValid = isValidBid(gameState, bid);
+        const isValid = rules.isValidBid(gameState, bid);
         expect(isValid).toBe(true);
         expect(bid.value).toBeGreaterThanOrEqual(GAME_CONSTANTS.MIN_BID);
         expect(bid.value).toBeLessThanOrEqual(GAME_CONSTANTS.MAX_BID);
@@ -63,7 +66,7 @@ describe('Feature: Standard Bidding - Valid Point Bids', () => {
           player: 0
         };
         
-        const isValid = isValidBid(gameState, bid);
+        const isValid = rules.isValidBid(gameState, bid);
         expect(isValid).toBe(false);
       });
     });

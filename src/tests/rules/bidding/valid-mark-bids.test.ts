@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { Bid } from '../../../game/types';
-import { isValidBid, createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { createInitialState, GAME_CONSTANTS, dealDominoesWithSeed } from '../../../game';
+import { composeRules, baseLayer } from '../../../game/layers';
+
+const rules = composeRules([baseLayer]);
 
 describe('Feature: Standard Bidding - Valid Mark Bids', () => {
   describe('Scenario: Valid Mark Bids', () => {
@@ -24,7 +27,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
         player: 0
       };
       
-      const isValid = isValidBid(gameState, bid);
+      const isValid = rules.isValidBid(gameState, bid);
       expect(isValid).toBe(true);
       
       // 1 mark equals 42 points
@@ -51,7 +54,7 @@ describe('Feature: Standard Bidding - Valid Mark Bids', () => {
         player: 0
       };
       
-      const isValid = isValidBid(gameState, bid);
+      const isValid = rules.isValidBid(gameState, bid);
       expect(isValid).toBe(true);
       
       // 2 marks equals 84 points

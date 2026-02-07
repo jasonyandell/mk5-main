@@ -1,0 +1,10 @@
+metric,value
+Total paths analyzed,28
+Unique paths,28
+Unique basins,19
+H(path) [bits],4.807
+H(basin) [bits],3.968
+H(path|basin) [bits],0.840
+I(path; basin) [bits],3.968
+H(path|deal) [bits],0.000
+I(early_8; late_8) [bits],4.807

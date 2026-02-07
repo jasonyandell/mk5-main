@@ -1,0 +1,7 @@
+metric,value
+seeds_analyzed,28.0
+total_observations,28.0
+unique_basins_observed,13.0
+pca_components_95pct,5.0
+basin_entropy_bits,3.0641893734973245
+effective_outcomes,21.41709368477843

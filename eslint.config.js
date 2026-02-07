@@ -16,6 +16,7 @@ export default [js.configs.recommended, {
       window: 'readonly',
       setTimeout: 'readonly',
       clearTimeout: 'readonly',
+      queueMicrotask: 'readonly',
       CSSStyleRule: 'readonly',
       URLSearchParams: 'readonly',
       URL: 'readonly',
@@ -25,7 +26,9 @@ export default [js.configs.recommended, {
       Element: 'readonly',
       HTMLElement: 'readonly',
       requestAnimationFrame: 'readonly',
-      cancelAnimationFrame: 'readonly'
+      cancelAnimationFrame: 'readonly',
+      navigator: 'readonly',
+      ShareData: 'readonly'
     }
   },
   plugins: {
@@ -36,7 +39,27 @@ export default [js.configs.recommended, {
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'error',
     'no-redeclare': 'error',
-    'no-case-declarations': 'error'
+    'no-case-declarations': 'error',
+    'no-restricted-imports': ['error', {
+      paths: [{
+        name: '../game/types/execution',
+        importNames: ['createExecutionContext'],
+        message: 'createExecutionContext is restricted. Use Room or HeadlessRoom for composition. Only allowed in: Room.ts, HeadlessRoom.ts, test helpers (src/tests/helpers/), and test files (*.test.ts, *.spec.ts).'
+      }, {
+        name: '../../game/types/execution',
+        importNames: ['createExecutionContext'],
+        message: 'createExecutionContext is restricted. Use Room or HeadlessRoom for composition. Only allowed in: Room.ts, HeadlessRoom.ts, test helpers (src/tests/helpers/), and test files (*.test.ts, *.spec.ts).'
+      }, {
+        name: '../../../game/types/execution',
+        importNames: ['createExecutionContext'],
+        message: 'createExecutionContext is restricted. Use Room or HeadlessRoom for composition. Only allowed in: Room.ts, HeadlessRoom.ts, test helpers (src/tests/helpers/), and test files (*.test.ts, *.spec.ts).'
+      }],
+      patterns: [{
+        group: ['@/game/types/execution'],
+        importNames: ['createExecutionContext'],
+        message: 'createExecutionContext is restricted. Use Room or HeadlessRoom for composition. Only allowed in: Room.ts, HeadlessRoom.ts, test helpers (src/tests/helpers/), and test files (*.test.ts, *.spec.ts).'
+      }]
+    }]
   }
 }, {
   files: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
@@ -58,6 +81,18 @@ export default [js.configs.recommended, {
       Element: 'readonly',
       HTMLElement: 'readonly'
     }
+  }
+}, {
+  // Allow createExecutionContext in specific files
+  files: [
+    'src/server/Room.ts',
+    'src/server/HeadlessRoom.ts',
+    'src/tests/helpers/**/*.ts',
+    '**/*.test.ts',
+    '**/*.spec.ts'
+  ],
+  rules: {
+    'no-restricted-imports': 'off'
   }
 }, {
   files: ['**/*.svelte'],

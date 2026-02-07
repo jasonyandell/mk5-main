@@ -7,6 +7,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('Given a team has failed to make their bid', () => {
       // Test-only mock implementation
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -27,15 +33,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [35, 7], // Team 0 scored 35 points, Team 1 scored 7 points
         teamMarks: [0, 0], // Before scoring
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -48,6 +47,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('When awarding marks', () => {
       // Test-only mock implementation
       const initialState: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -68,15 +73,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [35, 7],
         teamMarks: [0, 0],
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -113,6 +111,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('Then the opponents receive marks equal to what was bid', () => {
       // Test-only mock implementation
       const initialState: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -133,15 +137,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [35, 7], // Team 0 failed to make 84 points
         teamMarks: [3, 2], // Initial marks before scoring this hand
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -180,6 +177,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('handles failed point bids correctly', () => {
       // Test-only mock implementation
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -200,15 +203,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [28, 14], // Team 1 only got 14 points
         teamMarks: [0, 0],
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -244,6 +240,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('handles failed 1 mark bid correctly', () => {
       // Test-only mock implementation
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -264,15 +266,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [40, 2], // Team 0 got 40 points, failed to make 42
         teamMarks: [1, 1],
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };
@@ -309,6 +304,12 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
     it('handles failed plunge bid correctly', () => {
       // Test-only mock implementation
       const state: GameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 0,
+        theme: 'business',
+        colorOverrides: {}
+      },
         phase: 'scoring' as GamePhase,
         playerTypes: ['human', 'ai', 'ai', 'ai'],
         players: [
@@ -329,15 +330,8 @@ describe('Feature: Mark System Scoring - Failed Bids', () => {
         teamScores: [7, 35], // Team 1 failed to win all tricks
         teamMarks: [0, 0],
         gameTarget: 7,
-        tournamentMode: true,
         shuffleSeed: 12345,
-        consensus: {
-          completeTrick: new Set(),
-          scoreHand: new Set()
-        },
         actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {},
       };

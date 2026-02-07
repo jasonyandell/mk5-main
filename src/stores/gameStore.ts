@@ -1,773 +1,562 @@
-/* global HTMLStyleElement, getComputedStyle */
-import { writable, derived, get } from 'svelte/store';
-import { converter } from 'culori';
-import type { GameState, StateTransition } from '../game/types';
-import { createInitialState, getNextStates } from '../game';
-import { ControllerManager } from '../game/controllers';
-import { 
-  encodeGameUrl,
-  decodeGameUrl
-} from '../game/core/url-compression';
-import { tickGame, skipAIDelays as skipAIDelaysPure, resetAISchedule } from '../game/core/ai-scheduler';
+import { writable, derived, get, type Readable } from 'svelte/store';
+import type { GameAction, FilteredGameState } from '../game/types';
+import type { GameConfig } from '../game/types/config';
 import { createViewProjection, type ViewProjection } from '../game/view-projection';
+import { createSetupState } from '../game/core/state';
+import type { GameView, PlayerInfo } from '../multiplayer/types';
+import { decodeGameUrl, stateToUrl } from '../game/core/url-compression';
+import { createLocalGame, type LocalGame } from '../multiplayer/local';
+import { GameClient } from '../multiplayer/GameClient';
+import type { Room } from '../server/Room';
+import { resolveActionIds } from '../game/core/action-resolution';
 
-// Helper to deep clone an object preserving Sets
-function deepClone<T>(obj: T): T {
-  if (obj === null || obj === undefined) return obj;
-  if (obj instanceof Set) return new Set(obj) as T;
-  if (obj instanceof Date) return new Date(obj.getTime()) as T;
-  if (obj instanceof Array) return obj.map(item => deepClone(item)) as T;
-  if (typeof obj === 'object') {
-    const cloned = {} as T;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        cloned[key] = deepClone(obj[key]);
-      }
-    }
-    return cloned;
-  }
-  return obj;
-}
+/**
+ * GameStore - Clean facade over the simplified Room/Socket/GameClient architecture.
+ *
+ * Philosophy:
+ * - Uses createLocalGame() for all game wiring
+ * - Fire-and-forget actions, updates via subscription
+ * - Client is dumb - server handles ALL game logic
+ */
 
-// Helper to deep compare two objects
-function deepCompare(obj1: unknown, obj2: unknown, path: string = ''): string[] {
-  const differences: string[] = [];
-  
-  if (obj1 === obj2) return differences;
-  
-  if (obj1 === null || obj2 === null || obj1 === undefined || obj2 === undefined) {
-    differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
-    return differences;
-  }
-  
-  if (typeof obj1 !== typeof obj2) {
-    differences.push(`${path}: type mismatch - ${typeof obj1} !== ${typeof obj2}`);
-    return differences;
-  }
-  
-  if (typeof obj1 !== 'object') {
-    if (obj1 !== obj2) {
-      differences.push(`${path}: ${JSON.stringify(obj1)} !== ${JSON.stringify(obj2)}`);
-    }
-    return differences;
-  }
-  
-  if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-    differences.push(`${path}: array mismatch - one is array, other is not`);
-    return differences;
-  }
-  
-  if (Array.isArray(obj1)) {
-    if (Array.isArray(obj2)) {
-      if (obj1.length !== obj2.length) {
-        differences.push(`${path}: array length mismatch - ${obj1.length} !== ${obj2.length}`);
-      }
-      const maxLen = Math.max(obj1.length, obj2.length);
-      for (let i = 0; i < maxLen; i++) {
-        differences.push(...deepCompare(obj1[i], obj2[i], `${path}[${i}]`));
-      }
-    }
-  } else {
-    const keys1 = Object.keys(obj1 as Record<string, unknown>).sort();
-    const keys2 = Object.keys(obj2 as Record<string, unknown>).sort();
-    
-    // Check for missing/extra keys
-    const allKeys = new Set([...keys1, ...keys2]);
-    for (const key of allKeys) {
-      if (!keys1.includes(key)) {
-        differences.push(`${path}.${key}: missing in first object`);
-      } else if (!keys2.includes(key)) {
-        differences.push(`${path}.${key}: missing in second object`);
-      } else {
-        differences.push(...deepCompare((obj1 as Record<string, unknown>)[key], (obj2 as Record<string, unknown>)[key], path ? `${path}.${key}` : key));
-      }
-    }
-  }
-  
-  return differences;
-}
-
-// Helper function to update URL with initial state and actions
-function updateURLWithState(initialState: GameState, actions: StateTransition[], usePushState = false) {
-  if (typeof window !== 'undefined') {
-    // Filter color overrides to only include values that differ from the base theme defaults
-    let filteredOverrides = initialState.colorOverrides || {};
-    try {
-      const currentThemeAttr = document.documentElement.getAttribute('data-theme');
-      if (currentThemeAttr === initialState.theme && filteredOverrides && Object.keys(filteredOverrides).length > 0) {
-        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
-        const prevDisabled = styleEl ? styleEl.disabled : undefined;
-        if (styleEl) styleEl.disabled = true;
-        const styles = getComputedStyle(document.documentElement);
-        const minimal: Record<string, string> = {};
-        // Compare defaults vs overrides in OKLCH space with tolerance to avoid formatting/precision issues
-        const toOklch = converter('oklch');
-        const approxEqual = (a: string, b: string): boolean => {
-          const parse = (val: string): [number, number, number] | null => {
-            const v = val.trim();
-            if (!v) return null;
-            const parts = v.split(/\s+/);
-            if (parts.length !== 3) return null;
-            // OKLCH if first part has '%'
-            if (parts[0] && parts[0].includes('%')) {
-              const l = parseFloat(parts[0].replace('%', ''));
-              const c = parseFloat(parts[1] || '0');
-              const h = parseFloat(parts[2] || '0');
-              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
-              return null;
-            }
-            // HSL (legacy) otherwise
-            const h = parseFloat(parts[0] || '0');
-            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
-            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
-            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
-            const ok = toOklch({ mode: 'hsl', h, s, l });
-            if (!ok) return null;
-            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
-          };
-          const A = parse(a);
-          const B = parse(b);
-          if (!A || !B) return false;
-          const [l1, c1, h1] = A;
-          const [l2, c2, h2] = B;
-          const el = Math.abs(l1 - l2);
-          const ec = Math.abs(c1 - c2);
-          const eh = Math.abs(h1 - h2);
-          return el < 0.02 && ec < 0.0005 && eh < 0.1;
-        };
-        for (const [varName, value] of Object.entries(filteredOverrides)) {
-          const defaultVal = styles.getPropertyValue(varName).trim();
-          const overrideVal = String(value).trim();
-          if (!defaultVal || !approxEqual(defaultVal, overrideVal)) {
-            minimal[varName] = value;
-          }
-        }
-        filteredOverrides = minimal;
-        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
-      }
-    } catch {
-      // If anything goes wrong, fall back to using provided overrides
-    }
-    // Use v2 compressed format with theme as first-class citizen
-    // Always encode URL properly, even with no actions (preserves theme)
-    const newURL = window.location.pathname + encodeGameUrl(
-      initialState.shuffleSeed,
-      actions.map(a => a.id),
-      initialState.playerTypes,
-      initialState.dealer,
-      initialState.tournamentMode,
-      initialState.theme,
-      filteredOverrides
-    );
-    
-    // Store state in history for easy access
-    const historyState = { initialState, actions: actions.map(a => a.id), timestamp: Date.now() };
-    
-    if (usePushState) {
-      window.history.pushState(historyState, '', newURL);
-    } else {
-      window.history.replaceState(historyState, '', newURL);
-    }
-  }
-}
-
-// Create the initial state once
-const urlParams = typeof window !== 'undefined' ? 
+// Detect test mode
+const urlParams = typeof window !== 'undefined' ?
   new URLSearchParams(window.location.search) : null;
 const testMode = urlParams?.get('testMode') === 'true';
-const firstInitialState = createInitialState({
-  playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-});
 
-// Core game state store
-export const gameState = writable<GameState>(firstInitialState);
+// Player types configuration
+const playerTypes = testMode ?
+  ['human', 'human', 'human', 'human'] as ('human' | 'ai')[] :
+  ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[];
 
-// Store the initial state (snapshot) - deep clone to prevent mutations
-export const initialState = writable<GameState>(deepClone(firstInitialState));
+const DEFAULT_SESSION_ID = 'player-0';
 
-// Store all actions taken from initial state
-export const actionHistory = writable<StateTransition[]>([]);
+// ============================================================================
+// PRIVATE IMPLEMENTATION
+// ============================================================================
 
-// Store for validation errors
-export const stateValidationError = writable<string | null>(null);
+function createPendingView(): GameView {
+  const placeholderState = createSetupState({ playerTypes });
 
-// Track which players are controlled by humans on this client
-export const humanControlledPlayers = writable<Set<number>>(new Set([0]));
+  const players: PlayerInfo[] = playerTypes.map((type, index) => ({
+    playerId: index,
+    controlType: type,
+    sessionId: `${type === 'human' ? 'player' : 'ai'}-${index}`,
+    connected: true,
+    name: `Player ${index + 1}`,
+    capabilities: []
+  }));
 
-// Current player ID for primary view (can be changed for spectating)
-export const currentPlayerId = writable<number>(0);
+  const filteredState: FilteredGameState = {
+    ...placeholderState,
+    players: placeholderState.players.map(player => ({
+      ...player,
+      hand: [...player.hand],
+      handCount: player.hand.length
+    }))
+  };
 
-// Available actions store - filtered for privacy
-export const availableActions = derived(
-  [gameState, currentPlayerId],
-  ([$gameState, _$playerId]) => {
-    const allActions = getNextStates($gameState);
-    
-    // In test mode, show all actions for current player in game state
-    if (testMode) {
-      return allActions;
+  return {
+    state: filteredState,
+    validActions: [],
+    transitions: [],
+    players,
+    metadata: {
+      gameId: 'initializing'
+    },
+    derived: {
+      currentTrickWinner: -1,
+      handDominoMeta: [],
+      currentHandPoints: [0, 0] as [number, number]
     }
-    
-    // In normal mode, only show actions for player 0
-    // Filter to only actions that player 0 can take
-    return allActions.filter(action => {
-      // Actions without a player field are neutral (like complete-trick, score-hand)
-      if (!('player' in action.action)) {
-        return true;
-      }
-      // Only show actions for player 0
-      return action.action.player === 0;
-    });
-  }
-);
-
-// Unified view projection for all UI rendering needs
-export const viewProjection = derived<
-  [typeof gameState, typeof availableActions],
-  ViewProjection
->(
-  [gameState, availableActions],
-  ([$gameState, $availableActions]) => {
-    const urlParams = typeof window !== 'undefined' ? 
-      new URLSearchParams(window.location.search) : null;
-    const testMode = urlParams?.get('testMode') === 'true' || false;
-    
-    return createViewProjection(
-      $gameState,
-      $availableActions,
-      testMode,
-      (player: number) => controllerManager.isAIControlled(player)
-    );
-  }
-);
-
-// Recompute state from initial + actions and validate
-function validateState() {
-  const initial = get(initialState);
-  const actions = get(actionHistory);
-  const currentState = get(gameState);
-  
-  // Recompute state from scratch
-  let computedState = initial;
-  
-  for (const action of actions) {
-    const availableTransitions = getNextStates(computedState);
-    const matchingTransition = availableTransitions.find(t => t.id === action.id);
-    
-    if (!matchingTransition) {
-      stateValidationError.set(
-        `ERROR: Invalid action sequence at "${action.label}" (${action.id})\n` +
-        `Available actions were: ${availableTransitions.map(t => t.id).join(', ')}\n` +
-        `This indicates a bug in the game logic.`
-      );
-      return;
-    }
-    
-    computedState = matchingTransition.newState;
-  }
-  
-  // Deep compare computed vs actual state
-  const differences = deepCompare(computedState, currentState);
-  
-  if (differences.length > 0) {
-    const errorMessage = 
-      `ERROR: State mismatch detected!\n` +
-      `After ${actions.length} actions, the computed state differs from actual state:\n\n` +
-      differences.join('\n') +
-      `\n\nThis indicates a bug in the state management.`;
-    stateValidationError.set(errorMessage);
-  } else {
-    stateValidationError.set(null);
-  }
+  };
 }
 
-// Forward declaration for circular reference
-let controllerManager: ControllerManager;
+/**
+ * Private GameStore implementation - encapsulates all complexity.
+ */
+class GameStoreImpl {
+  // Internal state - new simplified architecture
+  private localGame?: LocalGame;
+  private unsubscribe?: (() => void) | undefined;
 
-// Helper function to execute AI moves immediately (for tests/replay)
-// Returns the new state and the AI actions taken
-function executeAllAIImmediate(state: GameState): { state: GameState; aiActions: StateTransition[] } {
-  let currentState = state;
-  const aiActions: StateTransition[] = [];
-  
-  // Keep executing AI until no AI player needs to move
-  while (currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-    const availableTransitions = getNextStates(currentState);
-    
-    // Find the best AI action (using existing AI logic)
-    let aiTransition: StateTransition | undefined;
-    
-    // Try to find a play action first
-    aiTransition = availableTransitions.find(t => 
-      t.action.type === 'play' && 
-      'player' in t.action && 
-      t.action.player === currentState.currentPlayer
+  // Internal stores
+  private clientView = writable<GameView>(createPendingView());
+  private currentSessionIdStore = writable<string>(DEFAULT_SESSION_ID);
+  private findingSeedStore = writable<boolean>(false);
+
+  // Public reactive stores
+  public readonly gameState: Readable<FilteredGameState>;
+  public readonly viewProjection: Readable<ViewProjection>;
+  public readonly currentPerspective: Readable<string>;
+  public readonly availablePerspectives: Readable<Array<{ id: string; label: string }>>;
+
+  constructor() {
+    // Derived: game state from view
+    this.gameState = derived(this.clientView, $view => $view.state);
+
+    // Derived: available perspectives
+    this.availablePerspectives = derived(this.clientView, ($view) =>
+      $view.players.map((player) => ({
+        // PlayerInfo.sessionId is protocol-defined as optional to support different
+        // session identification schemes. Fall back to player index for perspectives.
+        id: player.sessionId ?? `player-${player.playerId}`,
+        label: player.name ? `${player.name}` : `P${player.playerId}`
+      }))
     );
-    
-    // If no play action, try bid/pass
-    if (!aiTransition) {
-      aiTransition = availableTransitions.find(t => 
-        (t.action.type === 'bid' || t.action.type === 'pass') && 
-        'player' in t.action && 
-        t.action.player === currentState.currentPlayer
-      );
-    }
-    
-    // If no player action, try trump selection
-    if (!aiTransition) {
-      aiTransition = availableTransitions.find(t => 
-        t.action.type === 'select-trump' && 
-        currentState.winningBidder === currentState.currentPlayer
-      );
-    }
-    
-    // If no action found, break
-    if (!aiTransition) {
-      break;
-    }
-    
-    currentState = aiTransition.newState;
-    aiActions.push(aiTransition);
-  }
-  
-  return { state: currentState, aiActions };
-}
 
-// Game actions
-export const gameActions = {
-  executeAction: (transition: StateTransition) => {
-    const actions = get(actionHistory);
-    
-    // Add action to history
-    let finalActions = [...actions, transition];
-    actionHistory.set(finalActions);
-    
-    // Update to new state
-    let newState = transition.newState;
-    
-    // In test mode, execute AI immediately after human actions
-    // This ensures deterministic behavior for tests
-    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
-      const result = executeAllAIImmediate(newState);
-      newState = result.state;
-      // Add AI actions to history
-      if (result.aiActions.length > 0) {
-        finalActions = [...finalActions, ...result.aiActions];
-        actionHistory.set(finalActions);
-      }
-    }
-    
-    gameState.set(newState);
-    
-    // Validate state matches computed state
-    validateState();
-    
-    // Update URL with initial state and actions (including any AI actions)
-    // Pure approach: every action always updates the URL
-    updateURLWithState(get(initialState), finalActions, true);
-    
-    // Notify all controllers of state change
-    controllerManager.onStateChange(newState);
-  },
-  
-  skipAIDelays: () => {
-    // Use pure function to skip AI delays
-    const currentState = get(gameState);
-    const newState = skipAIDelaysPure(currentState);
-    if (newState !== currentState) {
-      gameState.set(newState);
-    }
-  },
-  
-  resetGame: () => {
-    const oldActionCount = get(actionHistory).length;
-    const currentState = get(gameState);
-    
-    // Preserve theme settings when resetting
-    const newInitialState = createInitialState({
-      playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai'],
-      theme: currentState.theme,
-      colorOverrides: currentState.colorOverrides
-    });
-    // Deep clone to prevent mutations
-    initialState.set(deepClone(newInitialState));
-    gameState.set(newInitialState);
-    actionHistory.set([]);
-    stateValidationError.set(null);
-    updateURLWithState(newInitialState, [], true);
-    
-    // Notify controllers of reset
-    controllerManager.onStateChange(newInitialState);
-    
-    // Debug logging
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      const newActionCount = get(actionHistory).length;
-      console.log('[GameStore] Game reset - action history cleared from', oldActionCount, 'to', newActionCount);
-    }
-  },
-  
-  loadState: (state: GameState) => {
-    // When loading a state directly, make it the new initial state
-    // Deep clone to prevent mutations
-    initialState.set(deepClone(state));
-    gameState.set(state);
-    actionHistory.set([]);
-    stateValidationError.set(null);
-    updateURLWithState(state, [], true);
-    
-    // Notify controllers of new state
-    controllerManager.onStateChange(state);
-  },
-  
-  loadFromURL: () => {
-    if (typeof window !== 'undefined') {
-      try {
-        const { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides } = decodeGameUrl(window.location.search);
-        
-        // If no seed, there's no game to load
-        if (!seed) {
-          return;
-        }
-        
-        // Theme will be applied reactively by App.svelte $effect
-        
-        // Use the player types from the URL
-        const finalPlayerTypes = playerTypes;
-        
-        // Create initial state with ALL properties including theme
-        const newInitialState = createInitialState({
-          shuffleSeed: seed,
-          playerTypes: finalPlayerTypes,
-          dealer,
-          tournamentMode,
-          theme,
-          colorOverrides
-        });
-        initialState.set(deepClone(newInitialState));
-        
-        // CRITICAL: Must deep clone here to avoid mutating the stored initial state
-        let currentState = deepClone(newInitialState);
-        const validActions: StateTransition[] = [];
-        
-        // Replay actions
-        let invalidActionFound = false;
-        for (const actionId of actions) {
-          const availableTransitions = getNextStates(currentState);
-          const matchingTransition = availableTransitions.find(t => t.id === actionId);
-          
-          if (matchingTransition) {
-            validActions.push(matchingTransition);
-            currentState = matchingTransition.newState;
-          } else {
-            // Log warning but continue loading what we can
-            const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-            console.warn(`Invalid action in URL: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
-            console.warn('Stopping replay at this point - game will continue from here');
-            invalidActionFound = true;
-            break; // Stop processing further actions
-          }
-        }
-        
-        // After replaying all actions, if in test mode and current player is AI, execute AI
-        if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-          const result = executeAllAIImmediate(currentState);
-          currentState = result.state;
-          // Add AI actions to the valid actions list
-          validActions.push(...result.aiActions);
-        }
-        
-        // Reset AI scheduling for clean state
-        currentState = resetAISchedule(currentState);
-        
-        gameState.set(currentState);
-        actionHistory.set(validActions);
-        
-        // If we had invalid actions, update the URL to reflect the valid state
-        if (invalidActionFound) {
-          updateURLWithState(get(initialState), validActions, false);
-        }
-        
-        validateState();
-        
-        // Notify controllers of the state change so AI can take action
-        controllerManager.onStateChange(currentState);
-        return;
-      } catch (e: unknown) {
-        const error = e as Error;
-        if (error.message && error.message.includes('outdated format')) {
-          window.alert(error.message);
-          return;
-        }
-        if (error.message && (error.message.includes('Invalid URL') || error.message.includes('Missing version'))) {
-          // Not an error - just no game to load
-          return;
-        }
-        console.error('Failed to load URL:', e);
-        console.warn('Starting fresh game instead');
-        // Ensure we have a clean fresh game state
-        const freshState = createInitialState({
-          playerTypes: testMode ? ['human', 'human', 'human', 'human'] : ['human', 'ai', 'ai', 'ai']
-        });
-        initialState.set(deepClone(freshState));
-        gameState.set(freshState);
-        actionHistory.set([]);
-        stateValidationError.set(null);
-        // Don't update URL - leave the invalid param there but game starts fresh
-        // Notify controllers of the fresh state
-        controllerManager.onStateChange(freshState);
-        return; // Important: return here to avoid fallthrough
-      }
-    }
-  },
-  
-  undo: () => {
-    const actions = get(actionHistory);
-    if (actions.length > 0) {
-      // Remove last action
-      const newActions = actions.slice(0, -1);
-      actionHistory.set(newActions);
-      
-      // Recompute state from initial + remaining actions
-      let currentState = get(initialState);
-      
-      for (const action of newActions) {
-        const availableTransitions = getNextStates(currentState);
-        const matchingTransition = availableTransitions.find(t => t.id === action.id);
-        
-        if (matchingTransition) {
-          currentState = matchingTransition.newState;
-        }
-      }
-      
-      gameState.set(currentState);
-      validateState();
-      updateURLWithState(get(initialState), newActions, true);
-    }
-  },
-  
-  enableAI: () => {
-    const state = get(gameState);
-    const newState = { ...state, playerTypes: ['human', 'ai', 'ai', 'ai'] as ('human' | 'ai')[] };
-    
-    // Update state first
-    gameState.set(newState);
-    
-    // If current player is now AI, execute immediately in test mode
-    if (testMode && newState.playerTypes[newState.currentPlayer] === 'ai') {
-      const result = executeAllAIImmediate(newState);
-      gameState.set(result.state);
-      // Add AI actions to history
-      const currentHistory = get(actionHistory);
-      const newHistory = [...currentHistory, ...result.aiActions];
-      actionHistory.set(newHistory);
-      // Update URL with new actions - use pushState for pure approach
-      updateURLWithState(get(initialState), newHistory, true);
-    }
-    
-    // Notify controllers of state change
-    controllerManager.onStateChange(get(gameState));
-  },
-  
-  updateTheme: (theme: string, colorOverrides: Record<string, string> = {}) => {
-    const currentState = get(gameState);
-    // Minimize overrides to only changed-from-default values
-    let minimalOverrides = colorOverrides;
-    try {
-      if (typeof window !== 'undefined') {
-        const styleEl = document.getElementById('theme-overrides') as HTMLStyleElement | null;
-        const prevDisabled = styleEl ? styleEl.disabled : undefined;
-        if (styleEl) styleEl.disabled = true;
-        const styles = getComputedStyle(document.documentElement);
-        const toOklch = converter('oklch');
-        const approxEqual = (a: string, b: string): boolean => {
-          const parse = (val: string): [number, number, number] | null => {
-            const v = val.trim();
-            if (!v) return null;
-            const parts = v.split(/\s+/);
-            if (parts.length !== 3) return null;
-            if (parts[0] && parts[0].includes('%')) {
-              const l = parseFloat(parts[0].replace('%', ''));
-              const c = parseFloat(parts[1] || '0');
-              const h = parseFloat(parts[2] || '0');
-              if (Number.isFinite(l) && Number.isFinite(c) && Number.isFinite(h)) return [l, c, h];
-              return null;
-            }
-            const h = parseFloat(parts[0] || '0');
-            const s = parseFloat((parts[1] || '0').replace('%', '')) / 100;
-            const l = parseFloat((parts[2] || '0').replace('%', '')) / 100;
-            if (!Number.isFinite(h) || !Number.isFinite(s) || !Number.isFinite(l)) return null;
-            const ok = toOklch({ mode: 'hsl', h, s, l });
-            if (!ok) return null;
-            return [ (ok.l || 0) * 100, ok.c || 0, ok.h || 0 ];
-          };
-          const A = parse(a);
-          const B = parse(b);
-          if (!A || !B) return false;
-          const [l1, c1, h1] = A;
-          const [l2, c2, h2] = B;
-          return Math.abs(l1 - l2) < 0.02 && Math.abs(c1 - c2) < 0.0005 && Math.abs(h1 - h2) < 0.1;
+    // Derived: current perspective ID
+    this.currentPerspective = derived(this.currentSessionIdStore, (value) => value);
+
+    // Derived: viewProjection (UI-ready projection)
+    // Uses transitions and derived fields from GameView (server-computed, dumb client pattern)
+    this.viewProjection = derived(
+      [this.clientView, this.currentSessionIdStore],
+      ([$view, $sessionId]) => {
+        const playerInfo = $view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === $sessionId);
+        const canAct = !!(playerInfo && playerInfo.capabilities?.some(cap => cap.type === 'act-as-player'));
+
+        // Convert ViewTransitions to StateTransitions for createViewProjection
+        const stateTransitions = $view.transitions.map(t => ({
+          id: t.id,
+          label: t.label,
+          action: t.action,
+          newState: $view.state  // Placeholder - not used by createViewProjection
+        }));
+
+        const viewProjectionOptions = {
+          isTestMode: testMode,
+          canAct,
+          isAIControlled: (player: number) => {
+            const pInfo = $view.players.find(p => p.playerId === player);
+            return pInfo?.controlType === 'ai';
+          },
+          // Pass server-computed derived fields (dumb client pattern)
+          derived: $view.derived,
+          ...(playerInfo ? { viewingPlayerIndex: playerInfo.playerId } : {})
         };
-        const out: Record<string, string> = {};
-        for (const [varName, value] of Object.entries(colorOverrides)) {
-          const base = styles.getPropertyValue(varName).trim();
-          if (!base || !approxEqual(base, String(value).trim())) {
-            out[varName] = value;
-          }
-        }
-        minimalOverrides = out;
-        if (styleEl && prevDisabled !== undefined) styleEl.disabled = prevDisabled;
+
+        return createViewProjection($view.state, stateTransitions, viewProjectionOptions);
       }
-    } catch {
-      // Ignore; keep provided overrides
-    }
-    const newState = {
-      ...currentState,
-      theme,
-      colorOverrides: minimalOverrides
-    };
-    
-    // Theme will be applied reactively by App.svelte $effect
-    
-    // Update state
-    gameState.set(newState);
-    
-    // Update initial state too (so it persists through resets)
-    const currentInitial = get(initialState);
-    initialState.set({
-      ...currentInitial,
-      theme,
-      colorOverrides: minimalOverrides
+    );
+
+    // Auto-correct perspective if current becomes invalid
+    this.clientView.subscribe(($view) => {
+      if ($view.players.length === 0) return;
+
+      const current = get(this.currentSessionIdStore);
+      const firstPlayer = $view.players[0];
+      const firstSessionId = firstPlayer?.sessionId ?? `player-${firstPlayer?.playerId}`;
+      if (!$view.players.some(p => (p.sessionId ?? `player-${p.playerId}`) === current) && firstPlayer) {
+        void this.setPerspective(firstSessionId);
+      }
     });
-    
-    // Update URL on next frame so App.svelte can apply data-theme first
-    if (typeof window !== 'undefined') {
-      requestAnimationFrame(() => {
-        updateURLWithState(get(initialState), get(actionHistory), false);
+
+    // Reactive URL sync: keep browser URL in sync with game state
+    // Uses replaceState to avoid polluting browser history
+    this.clientView.subscribe(($view) => {
+      if (typeof window === 'undefined') return;
+      if ($view.metadata.gameId === 'initializing') return;
+
+      // Generate URL from current state
+      const url = stateToUrl($view.state);
+      const fullUrl = window.location.pathname + url;
+
+      // Update browser URL without adding history entry
+      window.history.replaceState(
+        { timestamp: Date.now() },
+        '',
+        fullUrl
+      );
+    });
+
+    // Initialize from URL or with default config
+    void this.initializeFromURL();
+  }
+
+  /**
+   * Initialize game from URL parameters or create new game
+   */
+  private async initializeFromURL(): Promise<void> {
+    try {
+      // Check if we have URL parameters to load from
+      if (typeof window === 'undefined') {
+        // SSR - initialize with default config
+        this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasSeed = urlParams.has('s');
+      const hasInitialHands = urlParams.has('i');
+
+      if (hasSeed || hasInitialHands) {
+        // URL has game state - decode and initialize
+        const urlData = decodeGameUrl(window.location.search);
+
+        // Build config from URL data
+        // initialHands and seed are mutually exclusive
+        const config: GameConfig = {
+          playerTypes: urlData.playerTypes,
+          ...(urlData.initialHands
+            ? { dealOverrides: { initialHands: urlData.initialHands } }
+            : { shuffleSeed: urlData.seed || Math.floor(Math.random() * 1000000) }),
+          ...(urlData.dealer !== undefined && urlData.dealer !== 3 ? { dealer: urlData.dealer } : {}),
+          ...(urlData.theme ? { theme: urlData.theme } : {}),
+          ...(urlData.colorOverrides && Object.keys(urlData.colorOverrides).length > 0
+            ? { colorOverrides: urlData.colorOverrides }
+            : {}),
+          ...(urlData.layers ? { layers: urlData.layers } : {})
+        };
+
+        // Initialize game with URL config and replay actions if present
+        this.wireUpGame(config, urlData.actions.length > 0 ? urlData.actions : undefined);
+      } else {
+        // No URL state - initialize with default config
+        this.wireUpGame({
+          playerTypes,
+          shuffleSeed: Math.floor(Math.random() * 1000000)
+        });
+      }
+    } catch (error) {
+      console.error('Failed to initialize from URL:', error);
+      // Fallback to default initialization
+      this.wireUpGame({
+        playerTypes,
+        shuffleSeed: Math.floor(Math.random() * 1000000)
       });
-    } else {
-      updateURLWithState(get(initialState), get(actionHistory), false);
     }
-  },
-  
-  loadFromHistoryState: (historyState: { initialState: GameState; actions: string[] }) => {
-    if (historyState && historyState.initialState && historyState.actions) {
-      // Deep clone to prevent mutations
-      initialState.set(deepClone(historyState.initialState));
-      
-      // CRITICAL: Must deep clone here to avoid mutating the stored initial state
-      let currentState = deepClone(historyState.initialState);
-      const validActions: StateTransition[] = [];
-      
-      for (const actionId of historyState.actions) {
-        const availableTransitions = getNextStates(currentState);
-        const matchingTransition = availableTransitions.find(t => t.id === actionId);
-        
-        if (matchingTransition) {
-          validActions.push(matchingTransition);
-          currentState = matchingTransition.newState;
-        } else {
-          const availableActionIds = availableTransitions.map(t => t.id).join(', ');
-          throw new Error(`Invalid action in history: "${actionId}". Available actions: [${availableActionIds}]. Current phase: ${currentState.phase}`);
+  }
+
+  /**
+   * Core method: Create game using new simplified architecture.
+   * Uses createLocalGame() which handles Room + Socket wiring.
+   * @param config - Game configuration
+   * @param actionIds - Optional action IDs to replay after Room creation
+   */
+  private wireUpGame(config: GameConfig, actionIds?: string[]): void {
+    // Clean up old game
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+    if (this.localGame) {
+      this.localGame.client.disconnect();
+    }
+
+    // Determine AI configuration based on test mode
+    // In test mode, all players are human (no AI)
+    const configPlayerTypes = config.playerTypes ?? playerTypes;
+    const aiPlayerIndexes = configPlayerTypes
+      .map((type, index) => type === 'ai' ? index : -1)
+      .filter(index => index >= 0);
+
+    // Create new game using simplified architecture
+    // If replaying actions, skip AI behavior until after replay completes
+    const hasActionsToReplay = actionIds !== undefined && actionIds.length > 0;
+    this.localGame = createLocalGame(config, {
+      aiPlayerIndexes,
+      skipAIBehavior: hasActionsToReplay
+    });
+
+    // Replay actions if provided (before subscribing to avoid intermediate updates)
+    if (hasActionsToReplay) {
+      this.replayActionsInRoom(this.localGame.room, actionIds, config);
+      // Now attach AI behavior so they see the post-replay state
+      this.localGame.attachAI();
+    }
+
+    // Subscribe to view updates
+    this.installClient(this.localGame.client);
+
+    // Send JOIN to associate with player-0
+    this.localGame.client.send({ type: 'JOIN', playerIndex: 0, name: 'Player 1' });
+  }
+
+  /**
+   * Install a GameClient and set up subscriptions.
+   */
+  private installClient(client: GameClient): void {
+    // Unsubscribe from old client
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = undefined;
+    }
+
+    // Subscribe to updates
+    this.unsubscribe = client.subscribe((view: GameView) => {
+      this.clientView.set(view);
+    });
+
+    // Set initial view if available
+    if (client.view) {
+      this.clientView.set(client.view);
+    }
+  }
+
+  /**
+   * Replay actions directly in the Room (before client connection).
+   * Uses the same approach as HeadlessRoom replay for deterministic state restoration.
+   */
+  private replayActionsInRoom(room: Room, actionIds: string[], config: GameConfig): void {
+    try {
+      const seed = config.shuffleSeed;
+      if (!seed) {
+        console.error('[gameStore] Cannot replay actions: no shuffle seed in config');
+        return;
+      }
+
+      // Resolve action IDs to GameActions (uses HeadlessRoom internally)
+      const actions = resolveActionIds(actionIds, config, seed);
+
+      // Execute each action directly in the Room
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        if (!action) {
+          console.error('[gameStore] Action is undefined at index', i);
+          break;
+        }
+
+        // Determine which player should execute this action
+        const playerIndex = this.getPlayerIndexForAction(action);
+        const playerId = `player-${playerIndex}`;
+
+        // Execute the action in the Room
+        const result = room.executeAction(playerId, action);
+
+        if (!result.success) {
+          console.error('[gameStore] Action replay failed:', result.error);
+          break;
         }
       }
-      
-      // After replaying all actions, if in test mode and current player is AI, execute AI
-      if (testMode && currentState.playerTypes[currentState.currentPlayer] === 'ai') {
-        const result = executeAllAIImmediate(currentState);
-        currentState = result.state;
-        // Add AI actions to the valid actions list
-        validActions.push(...result.aiActions);
-      }
-      
-      // Reset AI scheduling for clean navigation
-      currentState = resetAISchedule(currentState);
-      
-      gameState.set(currentState);
-      actionHistory.set(validActions);
-      validateState();
-      
-      // Notify controllers of the state change so AI can take action
-      controllerManager.onStateChange(currentState);
+    } catch (error) {
+      console.error('[gameStore] Failed to replay actions:', error);
     }
   }
+
+  /**
+   * Get the player index that should execute a given action.
+   */
+  private getPlayerIndexForAction(action: GameAction): number {
+    // Actions with explicit player field
+    if ('player' in action && typeof action.player === 'number') {
+      return action.player;
+    }
+
+    // Consensus actions can be executed by any player
+    // For URL replay, we use player 0
+    if (action.type === 'complete-trick' ||
+        action.type === 'score-hand' ||
+        action.type === 'redeal') {
+      return 0;
+    }
+
+    // Default to player 0
+    return 0;
+  }
+
+  // ========================================================================
+  // PUBLIC API
+  // ========================================================================
+
+  /**
+   * Execute a game action. Fire-and-forget - result comes via subscription.
+   */
+  executeAction(action: GameAction): void {
+    if (!this.localGame) throw new Error('Game not initialized');
+
+    const view = get(this.clientView);
+    const sessionId = get(this.currentPerspective);
+    const currentPlayer = view.players.find(p => (p.sessionId ?? `player-${p.playerId}`) === sessionId);
+
+    if (!currentPlayer || !currentPlayer.capabilities?.some(cap => cap.type === 'act-as-player')) {
+      throw new Error('Current perspective cannot execute actions');
+    }
+
+    const preparedAction = { ...action } as GameAction;
+    if ('player' in preparedAction) {
+      preparedAction.player = currentPlayer.playerId;
+    }
+
+    // Fire-and-forget - result comes via subscription
+    this.localGame.client.send({ type: 'EXECUTE_ACTION', action: preparedAction });
+  }
+
+  /**
+   * Create a new game with optional config.
+   */
+  createGame(config?: GameConfig): void {
+    const finalConfig = config ?? {
+      playerTypes,
+      shuffleSeed: Math.floor(Math.random() * 1000000)
+    };
+    this.wireUpGame(finalConfig);
+  }
+
+  /**
+   * Reset the game with default config.
+   */
+  resetGame(): void {
+    this.createGame();
+  }
+
+  /**
+   * Change the current viewing perspective.
+   * Sends JOIN message to Room to switch player association.
+   */
+  setPerspective(playerId: string): void {
+    const current = get(this.currentSessionIdStore);
+    if (current !== playerId) {
+      this.currentSessionIdStore.set(playerId);
+    }
+
+    if (!this.localGame) {
+      throw new Error('Game client not yet initialized');
+    }
+
+    // Extract player index from playerId (e.g., "player-2" -> 2)
+    const match = playerId.match(/player-(\d+)/);
+    if (match && match[1]) {
+      const playerIndex = parseInt(match[1], 10);
+      this.localGame.client.send({ type: 'JOIN', playerIndex, name: `Player ${playerIndex + 1}` });
+    }
+  }
+
+  /**
+   * Change a player's control type (human/AI).
+   */
+  setPlayerControl(playerIndex: number, type: 'human' | 'ai'): void {
+    if (!this.localGame) throw new Error('Game not initialized');
+    this.localGame.client.send({ type: 'SET_CONTROL', playerIndex, controlType: type });
+  }
+
+  /**
+   * Start one-hand mode with optional seed.
+   */
+  startOneHand(seed?: number): void {
+    // oneHand layer handles bidding automation, terminal phase, and action generation
+    const config: GameConfig = {
+      playerTypes,
+      layers: ['oneHand'],
+      shuffleSeed: seed ?? Math.floor(Math.random() * 1000000)
+    };
+
+    this.findingSeedStore.set(false);
+    this.wireUpGame(config);
+  }
+
+  /**
+   * Retry one-hand mode with the same seed.
+   */
+  retryOneHand(): void {
+    const view = get(this.clientView);
+    if (!view.state.shuffleSeed) {
+      throw new Error('No seed available to retry');
+    }
+    this.startOneHand(view.state.shuffleSeed);
+  }
+
+  /**
+   * Exit one-hand mode and return to normal game.
+   */
+  exitOneHand(): void {
+    this.resetGame();
+  }
+
+  // One-hand state (derived)
+  get oneHandState() {
+    return derived(this.gameState, ($gameState) => {
+      // Check for one-hand-complete phase (terminal state set by oneHandLayer)
+      const isComplete = $gameState.phase === 'one-hand-complete';
+      const attempts = 1; // Could track this if needed
+
+      return {
+        complete: isComplete,
+        seed: $gameState.shuffleSeed,
+        attempts,
+        scores: isComplete ? {
+          us: $gameState.teamScores[0],
+          them: $gameState.teamScores[1],
+          won: $gameState.teamScores[0] > $gameState.teamScores[1]
+        } : null
+      };
+    });
+  }
+
+  get findingSeed() {
+    return this.findingSeedStore;
+  }
+
+  // Internal accessor for testing
+  get client(): GameClient | undefined {
+    return this.localGame?.client;
+  }
+}
+
+// ============================================================================
+// SINGLETON INSTANCE
+// ============================================================================
+
+const store = new GameStoreImpl();
+
+// ============================================================================
+// PUBLIC EXPORTS (9 items total)
+// ============================================================================
+
+// Reactive state (5 stores)
+export const gameState = store.gameState;
+export const viewProjection = store.viewProjection;
+export const currentPerspective = store.currentPerspective;
+export const availablePerspectives = store.availablePerspectives;
+export const oneHandState = store.oneHandState;
+
+// Commands (1 object)
+export const game = {
+  executeAction: (action: GameAction) => store.executeAction(action),
+  createGame: (config?: GameConfig) => store.createGame(config),
+  resetGame: () => store.resetGame(),
+  setPerspective: (playerId: string) => store.setPerspective(playerId),
+  setPlayerControl: (playerIndex: number, type: 'human' | 'ai') => store.setPlayerControl(playerIndex, type)
 };
 
-// Initialize controller manager after gameActions is defined
-controllerManager = new ControllerManager((transition) => {
-  // Mark this as coming from a controller (AI or human controller)
-  gameActions.executeAction(transition);
-});
-
-// Initialize controllers with default configuration
-if (typeof window !== 'undefined') {
-  if (testMode) {
-    // In test mode, all players are human-controlled for deterministic testing
-    controllerManager.setupLocalGame([
-      { type: 'human' },
-      { type: 'human' },
-      { type: 'human' },
-      { type: 'human' }
-    ]);
-  } else {
-    // Normal game: default configuration
-    controllerManager.setupLocalGame();
-  }
-}
-
-// Export controller manager
-export { controllerManager };
-
-// Pure game loop - advances game ticks and executes AI decisions
-let animationFrame: number | null = null;
-let gameLoopRunning = false;
-
-const runGameLoop = () => {
-  const currentState = get(gameState);
-  
-  // Use pure tick function to advance game state
-  const result = tickGame(currentState);
-  
-  // Update tick state if it changed
-  if (result.state.currentTick !== currentState.currentTick || 
-      result.state.aiSchedule !== currentState.aiSchedule) {
-    gameState.set(result.state);
-  }
-  
-  // Execute any AI action through the proper channel
-  if (result.action) {
-    // Execute through gameActions to ensure it's recorded in history
-    gameActions.executeAction(result.action);
-  }
-  
-  // Schedule next frame if still running
-  if (gameLoopRunning) {
-    animationFrame = requestAnimationFrame(runGameLoop);
+// Special modes (1 object)
+export const modes = {
+  oneHand: {
+    start: (seed?: number) => store.startOneHand(seed),
+    retry: () => store.retryOneHand(),
+    exit: () => store.exitOneHand()
   }
 };
 
-// Export function to start game loop on demand
-export function startGameLoop(): void {
-  // Don't start in test mode or if already running
-  if (testMode || gameLoopRunning) {
-    return;
-  }
-  
-  gameLoopRunning = true;
-  animationFrame = requestAnimationFrame(runGameLoop);
+// Utility (2 exports)
+export const findingSeed = store.findingSeed;
+
+/**
+ * Internal client accessor for window API development/testing tools only.
+ * DO NOT use in application code - use the `game` commands instead.
+ * @internal
+ */
+export function getInternalClient() {
+  return store.client;
 }
 
-// Export function to stop game loop
-export function stopGameLoop(): void {
-  gameLoopRunning = false;
-  if (animationFrame !== null) {
-    cancelAnimationFrame(animationFrame);
-    animationFrame = null;
-  }
-}
+/**
+ * Get current game view for E2E testing.
+ * Returns the ViewProjection with additional state information.
+ * @internal
+ */
+export function getGameView() {
+  const view = get(store['clientView']);
+  const projection = get(store.viewProjection);
 
-// Clean up on page unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    stopGameLoop();
-  });
+  return {
+    ...projection,
+    state: view.state,
+    isProcessing: projection.ui.isAIThinking,
+    validActions: view.validActions,
+    players: view.players
+  };
 }

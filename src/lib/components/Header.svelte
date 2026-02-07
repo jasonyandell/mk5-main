@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { viewProjection, gameActions } from '../../stores/gameStore';
-  import { quickplayState, quickplayActions } from '../../stores/quickplayStore';
+  import { viewProjection, game, modes, availablePerspectives, currentPerspective } from '../../stores/gameStore';
   import { GAME_PHASES } from '../../game';
   import { createEventDispatcher } from 'svelte';
   import Icon from '../icons/Icon.svelte';
@@ -14,7 +13,8 @@
     [GAME_PHASES.TRUMP_SELECTION]: 'badge-secondary',
     [GAME_PHASES.PLAYING]: 'badge-success',
     [GAME_PHASES.SCORING]: 'badge-warning',
-    [GAME_PHASES.GAME_END]: 'badge-error'
+    [GAME_PHASES.GAME_END]: 'badge-error',
+    [GAME_PHASES.ONE_HAND_COMPLETE]: 'badge-success'
   };
 
   // Phase display names - shorter for mobile
@@ -24,12 +24,9 @@
     [GAME_PHASES.TRUMP_SELECTION]: 'Trump',
     [GAME_PHASES.PLAYING]: 'Playing',
     [GAME_PHASES.SCORING]: 'Scoring',
-    [GAME_PHASES.GAME_END]: 'Game End'
+    [GAME_PHASES.GAME_END]: 'Game End',
+    [GAME_PHASES.ONE_HAND_COMPLETE]: 'Complete'
   };
-
-  function toggleQuickPlay() {
-    quickplayActions.toggle();
-  }
 
   // Track phase changes for animation
   let previousPhase = $state($viewProjection.phase);
@@ -43,6 +40,16 @@
 
   // Dropdown menu state
   let menuOpen = $state(false);
+  let selectedPerspective = $state($currentPerspective);
+  $effect(() => {
+    selectedPerspective = $currentPerspective;
+  });
+
+  async function handlePerspectiveChange(event: Event) {
+    const target = event.currentTarget as HTMLSelectElement;
+    const sessionId = target.value;
+    await game.setPerspective(sessionId);
+  }
   
   function closeMenu() {
     menuOpen = false;
@@ -83,17 +90,46 @@
           class="dropdown-content menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-base-300 z-50"
           onmouseleave={closeMenu}
         >
+          <li class="px-2 py-1 text-xs uppercase opacity-60">View As</li>
+          <li class="px-2 pb-2">
+            <select
+              class="select select-ghost select-xs w-full"
+              bind:value={selectedPerspective}
+              onchange={async (event) => {
+                await handlePerspectiveChange(event);
+                closeMenu();
+              }}
+            >
+              {#each $availablePerspectives as option}
+                <option value={option.id}>{option.label}</option>
+              {/each}
+            </select>
+          </li>
           <li>
             <button
               class="new-game-btn flex items-center justify-between"
               onclick={() => {
-                gameActions.resetGame();
+                game.resetGame();
                 closeMenu();
               }}
             >
               <span class="flex items-center gap-2">
                 <Icon name="dice" size="sm" />
                 New Game
+              </span>
+            </button>
+          </li>
+          <li>
+            <button
+              class="one-hand-btn flex items-center justify-between"
+              onclick={() => {
+                modes.oneHand.start();
+                closeMenu();
+              }}
+            >
+              <span class="flex items-center gap-2">
+                <Icon name="handRaised" size="sm" />
+                Play One Hand
               </span>
             </button>
           </li>
@@ -109,28 +145,6 @@
                 <Icon name="paintBrush" size="sm" />
                 Colors
               </span>
-            </button>
-          </li>
-          <li>
-            <button
-              class="flex items-center justify-between"
-              onclick={() => {
-                toggleQuickPlay();
-                closeMenu();
-              }}
-            >
-              <span class="flex items-center gap-2">
-                {#if $quickplayState.enabled}
-                  <Icon name="handRaised" size="sm" />
-                  Manual Play
-                {:else}
-                  <Icon name="cpuChip" size="sm" />
-                  Auto Play
-                {/if}
-              </span>
-              {#if $quickplayState.enabled}
-                <span class="badge badge-success badge-xs animate-pulse">AUTO</span>
-              {/if}
             </button>
           </li>
           <li class="text-base-content/50 text-xs mt-2">

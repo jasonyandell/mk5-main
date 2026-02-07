@@ -1,0 +1,14 @@
+metric,value
+n_endgame_states,171376.0
+max_depth,4.0
+pct_forced,100.0
+pct_unique_optimal,100.0
+mean_q_spread,0.0
+pct_forced_depth_1,100.0
+n_states_depth_1,42844.0
+pct_forced_depth_2,100.0
+n_states_depth_2,42844.0
+pct_forced_depth_3,100.0
+n_states_depth_3,42844.0
+pct_forced_depth_4,100.0
+n_states_depth_4,42844.0

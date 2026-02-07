@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E[Q] Real PDF - Stacked Discs - Texas 42</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
+            overflow: hidden;
+        }
+        #container { width: 100vw; height: 100vh; }
+        /* Game State Panel (main, top-left) */
+        #game-state {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 280px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+        }
+        #game-state h2 {
+            font-size: 14px;
+            color: #58a6ff;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 8px;
+        }
+        #game-state .state-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        #game-state .state-label { color: #8b949e; }
+        #game-state .state-value { color: #c9d1d9; font-weight: bold; }
+        #game-state .section-title {
+            font-size: 11px;
+            color: #6e7681;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        #game-state .hand-row {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+        #game-state .trick-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        #game-state .trick-num {
+            font-size: 10px;
+            color: #6e7681;
+            width: 16px;
+        }
+        #game-state .trick-winner {
+            font-size: 10px;
+            margin-left: auto;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 320px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            max-width: 280px;
+            z-index: 100;
+        }
+        #info h1 { font-size: 14px; margin-bottom: 8px; color: #58a6ff; }
+        #info p { font-size: 11px; line-height: 1.4; color: #8b949e; }
+        #game-nav {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+            text-align: center;
+        }
+        #game-nav .game-counter {
+            font-size: 24px;
+            font-weight: bold;
+            color: #58a6ff;
+            margin-bottom: 8px;
+        }
+        #game-nav .hint {
+            font-size: 11px;
+            color: #6e7681;
+        }
+        #reset-camera-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            z-index: 100;
+        }
+        #reset-camera-btn:hover { background: #2ea043; }
+
+        /* Move Explorer Panel */
+        #move-explorer {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 320px;
+            background: rgba(13, 17, 23, 0.95);
+            border-radius: 8px;
+            border: 1px solid #30363d;
+            z-index: 100;
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+        #move-explorer .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            border-bottom: 1px solid #30363d;
+            position: sticky;
+            top: 0;
+            background: rgba(13, 17, 23, 0.98);
+        }
+        #move-explorer .nav-btn {
+            background: #30363d;
+            color: #c9d1d9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #move-explorer .nav-btn:hover { background: #484f58; }
+        #move-explorer .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #move-explorer .move-label {
+            font-size: 14px;
+            color: #c9d1d9;
+        }
+        #move-explorer .move-num {
+            font-weight: bold;
+            color: #58a6ff;
+        }
+        #move-explorer .trick-info {
+            font-size: 11px;
+            color: #6e7681;
+        }
+        #move-explorer .score-display {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 6px;
+            font-size: 12px;
+        }
+        #move-explorer .score-team {
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        #move-explorer .score-team.offense {
+            background: rgba(126, 231, 135, 0.15);
+            border: 1px solid rgba(126, 231, 135, 0.3);
+        }
+        #move-explorer .score-team.defense {
+            background: rgba(240, 136, 62, 0.15);
+            border: 1px solid rgba(240, 136, 62, 0.3);
+        }
+        #move-explorer .score-value {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        #move-explorer .hand-container {
+            padding: 10px 15px;
+        }
+        #move-explorer .player-header {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #move-explorer .domino-row {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+        #move-explorer .domino-label {
+            width: 36px;
+            height: 20px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #move-explorer .domino-label.played {
+            opacity: 0.4;
+        }
+        #move-explorer .domino-label.played svg {
+            filter: saturate(0);
+        }
+        #move-explorer .pdf-chart {
+            flex: 1;
+            height: 30px;
+            background: #161b22;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        #move-explorer .pdf-chart canvas {
+            width: 100%;
+            height: 100%;
+        }
+        #move-explorer .grid-label {
+            position: absolute;
+            font-size: 8px;
+            color: #484f58;
+            bottom: 1px;
+        }
+        #move-explorer .stats-indicator {
+            font-size: 10px;
+            width: 70px;
+            text-align: right;
+            flex-shrink: 0;
+            line-height: 1.3;
+        }
+        #move-explorer .win-prob {
+            font-weight: bold;
+        }
+        #move-explorer .eq-mean {
+            color: #8b949e;
+            font-size: 9px;
+        }
+        #tooltip {
+            position: absolute;
+            background: rgba(13, 17, 23, 0.95);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #58a6ff;
+            font-size: 12px;
+            pointer-events: none;
+            display: none;
+            z-index: 200;
+            max-width: 280px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <div id="game-state">
+        <h2>Game State</h2>
+        <div class="state-row">
+            <span class="state-label">Trump:</span>
+            <span class="state-value" id="gs-trump">-</span>
+        </div>
+        <div class="state-row">
+            <span class="state-label">Bidder:</span>
+            <span class="state-value">P0 (Team 0)</span>
+        </div>
+        <div class="state-row">
+            <span class="state-label">Active:</span>
+            <span class="state-value" id="gs-active">P0</span>
+        </div>
+        <div class="state-row">
+            <span class="state-label">Score:</span>
+            <span class="state-value">
+                <span id="gs-t0" style="color: #7ee787;">0</span> -
+                <span id="gs-t1" style="color: #f0883e;">0</span>
+            </span>
+        </div>
+
+        <div class="section-title">Active Player's Hand</div>
+        <div class="hand-row" id="gs-hand"></div>
+
+        <div class="section-title">Current Trick</div>
+        <div class="hand-row" id="gs-trick"></div>
+
+        <div class="section-title">Trick History</div>
+        <div id="gs-history"></div>
+    </div>
+
+    <div id="info">
+        <h1>E[Q] Uncertainty</h1>
+        <p>
+            <span style="color: #7ee787;">Wide discs</span> = likely values<br>
+            <span style="color: #6e7681;">Narrow discs</span> = unlikely values
+        </p>
+        <p style="margin-top: 8px;">
+            Drag to rotate • Scroll to zoom<br>
+            <strong>Shift+Scroll</strong> to change game<br>
+            <strong>Click disc</strong> to select move
+        </p>
+    </div>
+
+    <div id="move-explorer">
+        <div class="header">
+            <button class="nav-btn" id="prev-move">◀</button>
+            <div style="text-align: center;">
+                <div class="move-label">Move <span class="move-num" id="current-move">1</span> / 28</div>
+                <div class="trick-info" id="trick-info">Trick 1 • Player 0</div>
+                <div class="score-display">
+                    <div class="score-team offense">
+                        <span style="color: #7ee787;">T0:</span>
+                        <span class="score-value" id="score-t0" style="color: #7ee787;">0</span>
+                    </div>
+                    <div class="score-team defense">
+                        <span style="color: #f0883e;">T1:</span>
+                        <span class="score-value" id="score-t1" style="color: #f0883e;">0</span>
+                    </div>
+                </div>
+                <div style="font-size: 10px; color: #6e7681; margin-top: 4px;">
+                    Game <span id="game-num">1</span>/<span id="game-total">5</span>
+                </div>
+                <div style="font-size: 9px; color: #484f58; margin-top: 2px;">
+                    ←/→ moves • Shift+Scroll games
+                </div>
+            </div>
+            <button class="nav-btn" id="next-move">▶</button>
+        </div>
+        <div class="hand-container" id="hand-container">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+
+    <button id="reset-camera-btn">Reset View</button>
+
+    <div id="tooltip"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // === State ===
+        let scene, camera, renderer, controls;
+        let discMeshes = [];
+        let labelSprites = [];
+        let trickLines = [];
+        let allGames = [];
+        let currentGameIdx = 0;
+        let currentMoveIdx = 0;
+        let gameData = null;
+        let pdfLookup = {};  // Shared lookup for PDF data
+        let currentInstances = [];  // Store instances for highlight updates
+        let minimapMesh = null;  // 3D minimap plane
+        let minimapCanvas = null;  // Canvas for minimap rendering
+        let minimapTexture = null;  // Texture from canvas
+
+        // Player colors
+        const PLAYER_COLORS = ['#58a6ff', '#f0883e', '#7ee787', '#a371f7'];
+        const PLAYER_GAP = 1.5;  // Gap between player groups
+
+        // E[Q] range for coloring
+        const EQ_MIN = -42;
+        const EQ_MAX = 42;
+        const N_BINS = 85;  // -42 to +42 inclusive
+
+        // === Create text sprite ===
+        function createTextSprite(text, options = {}) {
+            const {
+                fontSize = 48,
+                fontFamily = 'monospace',
+                color = '#8b949e',
+                backgroundColor = null,
+                padding = 4
+            } = options;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            const metrics = ctx.measureText(text);
+            const textWidth = metrics.width;
+            const textHeight = fontSize;
+
+            canvas.width = textWidth + padding * 2;
+            canvas.height = textHeight + padding * 2;
+
+            if (backgroundColor) {
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+
+            ctx.font = `bold ${fontSize}px ${fontFamily}`;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.minFilter = THREE.LinearFilter;
+
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+
+            const scale = 0.015;
+            sprite.scale.set(canvas.width * scale, canvas.height * scale, 1);
+
+            return sprite;
+        }
+
+        // === Add axis labels ===
+        function addAxisLabels() {
+            labelSprites.forEach(s => scene.remove(s));
+            labelSprites = [];
+            trickLines.forEach(l => scene.remove(l));
+            trickLines = [];
+
+            const moveScale = 2.0;
+            const totalWidth = 4 * 7 + 3 * PLAYER_GAP;
+
+            // Trick boundaries
+            for (let trick = 0; trick <= 7; trick++) {
+                const moveNum = trick * 4;
+                const z = moveNum * moveScale;
+
+                const lineGeom = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(-2, -25, z),
+                    new THREE.Vector3(totalWidth + 2, -25, z)
+                ]);
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: trick === 0 ? 0x58a6ff : 0x30363d,
+                    linewidth: 2
+                });
+                const line = new THREE.Line(lineGeom, lineMat);
+                scene.add(line);
+                trickLines.push(line);
+
+                if (trick < 7) {
+                    const sprite = createTextSprite(`Trick ${trick + 1}`, {
+                        fontSize: 32,
+                        color: '#6e7681'
+                    });
+                    sprite.position.set(-4, -25, z + 4 * moveScale / 2);
+                    scene.add(sprite);
+                    labelSprites.push(sprite);
+                }
+            }
+
+            // Player group labels
+            for (let p = 0; p < 4; p++) {
+                const xCenter = p * (7 + PLAYER_GAP) + 3;
+                const sprite = createTextSprite(`P${p}`, {
+                    fontSize: 42,
+                    color: PLAYER_COLORS[p]
+                });
+                sprite.position.set(xCenter, -24, -5);
+                scene.add(sprite);
+                labelSprites.push(sprite);
+            }
+        }
+
+        // === Color scale (player-aware) ===
+        // Offense (P0/P2): need E[Q] >= 18 to win (team score >= 30)
+        // Defense (P1/P3): need E[Q] > -18 to win (bidder score < 30)
+        function eqToColor(eq, player = 0) {
+            const isOffense = (player === 0 || player === 2);
+            const neutral = isOffense ? 18 : -18;
+
+            // Map eq to [0,1] with neutral at 0.5
+            let t;
+            if (eq <= neutral) {
+                // Red zone (losing)
+                t = 0.5 * (eq - EQ_MIN) / (neutral - EQ_MIN);
+            } else {
+                // Green zone (winning)
+                t = 0.5 + 0.5 * (eq - neutral) / (EQ_MAX - neutral);
+            }
+            t = Math.max(0, Math.min(1, t));
+
+            let r, g, b;
+            if (t < 0.5) {
+                const t2 = t * 2;
+                r = 0.95;
+                g = 0.15 + t2 * 0.7;
+                b = 0.1;
+            } else {
+                const t2 = (t - 0.5) * 2;
+                r = 0.95 - t2 * 0.75;
+                g = 0.85 - t2 * 0.1;
+                b = 0.1 + t2 * 0.4;
+            }
+            return new THREE.Color(r, g, b);
+        }
+
+        // === Initialize Three.js ===
+        function init() {
+            const container = document.getElementById('container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0d1117);
+
+            // Orthographic camera
+            const frustumSize = 80;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.OrthographicCamera(
+                -frustumSize * aspect / 2, frustumSize * aspect / 2,
+                frustumSize / 2, -frustumSize / 2,
+                0.1, 1000
+            );
+
+            const initCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const initCenterZ = (28 * 2) / 2;
+            camera.position.set(initCenterX + 40, 60, initCenterZ + 60);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+            controls.target.set(vizCenterX, 0, vizCenterZ);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(50, 50, 50);
+            scene.add(directionalLight);
+
+            // Grid
+            const totalWidth = 4 * 7 + 3 * PLAYER_GAP;
+            const totalDepth = 28 * 2;
+            const gridHelper = new THREE.GridHelper(
+                Math.max(totalWidth, totalDepth),
+                28,
+                0x30363d,
+                0x21262d
+            );
+            gridHelper.position.set(totalWidth / 2, -25, totalDepth / 2);
+            scene.add(gridHelper);
+
+            addAxisLabels();
+
+            // Events
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('wheel', onWheel, { passive: false });
+            document.getElementById('reset-camera-btn').addEventListener('click', resetCamera);
+
+            setupRaycaster();
+            animate();
+        }
+
+        // === Build Surface for Current Game (using InstancedMesh + real PDF bins) ===
+        function buildSurface(data) {
+            // Clear existing
+            discMeshes.forEach(m => scene.remove(m));
+            discMeshes = [];
+
+            if (!data) return;
+
+            // Fixed visualization parameters
+            const discScale = 1.5;      // Maximum disc scale
+            const heightScale = 0.3;    // 20% of max (1.5 * 0.2 = 0.3)
+            const pdfThreshold = 0.01;  // Minimum threshold
+
+            const moveScale = 2.0;
+
+            // Build lookup: (domino_idx, move_idx) -> pdf_entry (shared state)
+            pdfLookup = {};
+            if (data.pdf_data) {
+                for (const entry of data.pdf_data) {
+                    const key = `${entry.d}_${entry.m}`;
+                    pdfLookup[key] = entry;
+                }
+            }
+
+            // First pass: collect all disc instances
+            const instances = [];
+
+            for (let p = 0; p < 4; p++) {
+                const player = data.players[p];
+                if (!player) continue;
+
+                for (let slot = 0; slot < player.dominoes.length; slot++) {
+                    const domino = player.dominoes[slot];
+                    if (!domino) continue;
+
+                    const globalIdx = p * 7 + slot;
+                    const xCenter = p * (7 + PLAYER_GAP) + slot;
+
+                    for (let moveIdx = 0; moveIdx < 28; moveIdx++) {
+                        // ONLY render active player's decisions
+                        if (data.active_player[moveIdx] !== p) continue;
+
+                        // Look up PDF data for this (domino, move)
+                        const key = `${globalIdx}_${moveIdx}`;
+                        const pdfEntry = pdfLookup[key];
+
+                        if (!pdfEntry) continue;
+
+                        const pdf = pdfEntry.pdf;  // 85-element array
+                        const mean = pdfEntry.mean;
+                        const winProb = pdfEntry.win !== undefined ? pdfEntry.win : 0;
+                        const z = moveIdx * moveScale;
+
+                        // Find max PDF for normalization
+                        let maxPdf = 0;
+                        for (let bin = 0; bin < N_BINS; bin++) {
+                            maxPdf = Math.max(maxPdf, pdf[bin]);
+                        }
+                        if (maxPdf === 0) continue;
+
+                        // Create disc instances for each bin with non-trivial probability
+                        for (let bin = 0; bin < N_BINS; bin++) {
+                            const prob = pdf[bin];
+                            const normalizedPdf = prob / maxPdf;
+
+                            if (normalizedPdf < pdfThreshold) continue;
+
+                            const eqValue = bin + EQ_MIN;  // bin 0 = -42, bin 84 = +42
+                            const radius = discScale * 0.4 * Math.sqrt(normalizedPdf);
+
+                            instances.push({
+                                x: xCenter,
+                                y: eqValue * heightScale,
+                                z: z,
+                                radius: radius,
+                                height: heightScale,
+                                color: eqToColor(eqValue, p),
+                                // For raycasting userData
+                                player: p,
+                                slot: slot,
+                                domino: domino,
+                                moveIdx: moveIdx,
+                                mean: mean,
+                                eqValue: eqValue,
+                                prob: prob,
+                                winProb: winProb,
+                                // Rich metrics from new format
+                                std: pdfEntry.std || 0,
+                                samples: pdfEntry.samples || 0,
+                                converged: pdfEntry.converged !== false
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (instances.length === 0) {
+                updateGameStatePanel();
+                updateMoveExplorer();
+                updateMinimap();
+                return;
+            }
+
+            // Create InstancedMesh
+            const geometry = new THREE.CylinderGeometry(1, 1, 1, 12);
+            const material = new THREE.MeshPhongMaterial({
+                shininess: 50,
+                transparent: true,
+                opacity: 0.9,
+            });
+
+            const instancedMesh = new THREE.InstancedMesh(geometry, material, instances.length);
+            instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+            const dummy = new THREE.Object3D();
+
+            for (let i = 0; i < instances.length; i++) {
+                const inst = instances[i];
+
+                dummy.position.set(inst.x, inst.y, inst.z);
+                dummy.scale.set(inst.radius, inst.height, inst.radius);
+                dummy.updateMatrix();
+
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+                instancedMesh.setColorAt(i, inst.color);
+            }
+
+            instancedMesh.instanceMatrix.needsUpdate = true;
+            instancedMesh.instanceColor.needsUpdate = true;
+
+            // Store instance data for raycasting and highlighting
+            instancedMesh.userData.instances = instances;
+            currentInstances = instances;
+
+            scene.add(instancedMesh);
+            discMeshes.push(instancedMesh);
+
+            updateGameStatePanel();
+            updateMoveExplorer();
+            updateMinimap();
+            highlightCurrentMove();
+        }
+
+        // === Highlight selected move ===
+        function highlightCurrentMove() {
+            if (discMeshes.length === 0 || currentInstances.length === 0) return;
+
+            const mesh = discMeshes[0];
+            const dimFactor = 0.15;  // Dim non-selected moves significantly
+            const boostFactor = 1.4;  // Boost selected move brightness
+
+            for (let i = 0; i < currentInstances.length; i++) {
+                const inst = currentInstances[i];
+                const isSelected = inst.moveIdx === currentMoveIdx;
+
+                if (isSelected) {
+                    // Boosted brightness for selected move
+                    const boosted = inst.color.clone();
+                    boosted.r = Math.min(1, boosted.r * boostFactor);
+                    boosted.g = Math.min(1, boosted.g * boostFactor);
+                    boosted.b = Math.min(1, boosted.b * boostFactor);
+                    mesh.setColorAt(i, boosted);
+                } else {
+                    // Heavily dimmed for non-selected moves
+                    const dimmed = inst.color.clone();
+                    dimmed.r *= dimFactor;
+                    dimmed.g *= dimFactor;
+                    dimmed.b *= dimFactor;
+                    mesh.setColorAt(i, dimmed);
+                }
+            }
+
+            mesh.instanceColor.needsUpdate = true;
+        }
+
+        // === Game State Panel (HTML) ===
+        function updateGameStatePanel() {
+            if (!gameData) return;
+
+            const moveIdx = currentMoveIdx;
+            const activePlayer = gameData.active_player[moveIdx];
+            const isOffense = activePlayer === 0 || activePlayer === 2;
+            const trick = Math.floor(moveIdx / 4) + 1;
+            const playInTrick = moveIdx % 4;
+
+            // Trump
+            document.getElementById('gs-trump').textContent = gameData.trump_name || '-';
+
+            // Active player
+            const activeEl = document.getElementById('gs-active');
+            activeEl.textContent = `P${activePlayer} (${isOffense ? 'Offense' : 'Defense'})`;
+            activeEl.style.color = isOffense ? '#7ee787' : '#f0883e';
+
+            // Score
+            if (gameData.score_history && gameData.score_history[moveIdx]) {
+                const [t0, t1] = gameData.score_history[moveIdx];
+                document.getElementById('gs-t0').textContent = t0;
+                document.getElementById('gs-t1').textContent = t1;
+            }
+
+            // Active player's hand
+            const handContainer = document.getElementById('gs-hand');
+            handContainer.innerHTML = '';
+            const player = gameData.players[activePlayer];
+            if (player) {
+                for (let slot = 0; slot < player.dominoes.length; slot++) {
+                    const domino = player.dominoes[slot];
+                    const globalIdx = activePlayer * 7 + slot;
+                    const playedBefore = gameData.domino_played[globalIdx].slice(0, moveIdx).some(v => v);
+                    const playedNow = gameData.domino_played[globalIdx][moveIdx];
+
+                    if (!playedBefore) {
+                        const glyph = createDominoGlyph(domino.pips, {
+                            width: 30, height: 16,
+                            highlight: playedNow
+                        });
+                        handContainer.appendChild(glyph);
+                    }
+                }
+            }
+
+            // Current trick
+            const trickContainer = document.getElementById('gs-trick');
+            trickContainer.innerHTML = '';
+            const trickStartMove = (trick - 1) * 4;
+            for (let i = 0; i <= playInTrick; i++) {
+                const thisMoveIdx = trickStartMove + i;
+                const thisPlayer = gameData.active_player[thisMoveIdx];
+
+                for (let slot = 0; slot < 7; slot++) {
+                    const globalIdx = thisPlayer * 7 + slot;
+                    if (gameData.domino_played[globalIdx][thisMoveIdx]) {
+                        const domino = gameData.players[thisPlayer].dominoes[slot];
+
+                        // Player dot
+                        const dot = document.createElement('span');
+                        dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${PLAYER_COLORS[thisPlayer]};margin-right:2px;`;
+                        trickContainer.appendChild(dot);
+
+                        const glyph = createDominoGlyph(domino.pips, {
+                            width: 30, height: 16,
+                            highlight: thisMoveIdx === moveIdx
+                        });
+                        trickContainer.appendChild(glyph);
+                        break;
+                    }
+                }
+            }
+
+            // Trick history
+            const historyContainer = document.getElementById('gs-history');
+            historyContainer.innerHTML = '';
+            const completedTricks = Math.floor(moveIdx / 4);
+
+            for (let t = 0; t < completedTricks && t < 7; t++) {
+                const winner = gameData.trick_winners[t];
+                const winnerTeam = (winner === 0 || winner === 2) ? 'T0' : 'T1';
+                const winColor = winnerTeam === 'T0' ? '#7ee787' : '#f0883e';
+
+                const row = document.createElement('div');
+                row.className = 'trick-row';
+
+                // Trick number
+                const numSpan = document.createElement('span');
+                numSpan.className = 'trick-num';
+                numSpan.textContent = `${t + 1}:`;
+                row.appendChild(numSpan);
+
+                // Dominoes in this trick
+                const trickStart = t * 4;
+                for (let playIdx = 0; playIdx < 4; playIdx++) {
+                    const thisMoveIdx = trickStart + playIdx;
+                    const thisPlayer = gameData.active_player[thisMoveIdx];
+
+                    for (let slot = 0; slot < 7; slot++) {
+                        const globalIdx = thisPlayer * 7 + slot;
+                        if (gameData.domino_played[globalIdx][thisMoveIdx]) {
+                            const domino = gameData.players[thisPlayer].dominoes[slot];
+                            const isWinner = thisPlayer === winner;
+
+                            const glyph = createDominoGlyph(domino.pips, {
+                                width: 24, height: 13,
+                                highlight: isWinner
+                            });
+                            row.appendChild(glyph);
+                            break;
+                        }
+                    }
+                }
+
+                // Winner indicator
+                const winSpan = document.createElement('span');
+                winSpan.className = 'trick-winner';
+                winSpan.style.color = winColor;
+                winSpan.textContent = `→P${winner}`;
+                row.appendChild(winSpan);
+
+                historyContainer.appendChild(row);
+            }
+        }
+
+        function resetCamera() {
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+            camera.position.set(vizCenterX - 35, 35, vizCenterZ - 45);
+            controls.target.set(vizCenterX, 0, vizCenterZ);
+            controls.update();
+        }
+
+        // === Raycaster for hover and click ===
+        function setupRaycaster() {
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            const tooltip = document.getElementById('tooltip');
+
+            // Click to select move
+            renderer.domElement.addEventListener('click', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+
+                const intersects = raycaster.intersectObjects(discMeshes);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    const obj = hit.object;
+
+                    const instanceId = hit.instanceId;
+                    const instances = obj.userData.instances;
+
+                    if (instanceId !== undefined && instances) {
+                        const inst = instances[instanceId];
+                        if (inst.moveIdx !== currentMoveIdx) {
+                            currentMoveIdx = inst.moveIdx;
+                            updateGameStatePanel();
+                            updateMoveExplorer();
+                            updateMinimap();
+                            highlightCurrentMove();
+                        }
+                    }
+                }
+            });
+
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                raycaster.setFromCamera(mouse, camera);
+
+                const intersects = raycaster.intersectObjects(discMeshes);
+
+                if (intersects.length > 0) {
+                    const hit = intersects[0];
+                    const obj = hit.object;
+
+                    // Get instance data from InstancedMesh
+                    const instanceId = hit.instanceId;
+                    const instances = obj.userData.instances;
+
+                    if (instanceId === undefined || !instances) {
+                        tooltip.style.display = 'none';
+                        return;
+                    }
+
+                    const inst = instances[instanceId];
+                    const { player, domino, moveIdx, mean, eqValue, prob, winProb, std, samples, converged } = inst;
+
+                    const isOffense = (player === 0 || player === 2);
+                    const teamLabel = isOffense ? 'Offense' : 'Defense';
+                    const winThreshold = isOffense ? '≥18' : '>−18';
+                    const winColor = winProb >= 0.5 ? '#7ee787' : '#f85149';
+
+                    const trumpHtml = gameData.trump_name
+                        ? `<span style="
+                            background: #238636;
+                            color: white;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-size: 10px;
+                            margin-left: 8px;
+                        ">Trump: ${gameData.trump_name}</span>`
+                        : '';
+
+                    tooltip.innerHTML = `
+                        <div style="display: flex; align-items: center; margin-bottom: 4px;">
+                            <span style="color: ${PLAYER_COLORS[player]}; font-weight: bold;">
+                                Player ${player}
+                            </span>
+                            <span style="color: #8b949e; margin-left: 6px; font-size: 11px;">(${teamLabel})</span>
+                            ${trumpHtml}
+                        </div>
+                        <div style="color: #58a6ff; font-size: 14px; font-weight: bold; margin-bottom: 4px;">
+                            ${domino.pips}
+                        </div>
+                        <div style="color: #8b949e; margin-bottom: 8px;">
+                            Move ${moveIdx + 1} <span style="color: #7ee787;">(active)</span>
+                        </div>
+                        <div style="border-top: 1px solid #30363d; padding-top: 8px;">
+                            <div style="color: ${winColor}; font-size: 14px; font-weight: bold;">
+                                P(win): ${(winProb * 100).toFixed(1)}%
+                            </div>
+                            <div style="color: #8b949e; font-size: 11px; margin-top: 2px;">
+                                Win threshold: E[Q] ${winThreshold}
+                            </div>
+                            <div style="color: #8b949e; margin-top: 6px;">E[Q] Mean: <strong>${mean.toFixed(1)}</strong> ± ${std.toFixed(1)}</div>
+                            <div style="color: #6e7681;">This bin (${eqValue}): ${(prob * 100).toFixed(1)}%</div>
+                            ${samples > 0 ? `<div style="color: #484f58; margin-top: 4px; font-size: 10px;">${(samples/1000).toFixed(0)}K samples ${converged ? '✓' : '⋯'}</div>` : ''}
+                        </div>
+                    `;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = (event.clientX + 15) + 'px';
+                    tooltip.style.top = (event.clientY + 15) + 'px';
+                } else {
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
+
+        // === Scroll to change games ===
+        function onWheel(event) {
+            if (event.shiftKey) {
+                event.preventDefault();
+
+                const delta = event.deltaY > 0 ? 1 : -1;
+                const newIdx = Math.max(0, Math.min(allGames.length - 1, currentGameIdx + delta));
+
+                if (newIdx !== currentGameIdx) {
+                    currentGameIdx = newIdx;
+                    currentMoveIdx = 0;  // Reset to move 0
+                    gameData = allGames[currentGameIdx];
+                    buildSurface(gameData);
+                    updateGameCounter();
+                }
+            }
+        }
+
+        function updateGameCounter() {
+            document.getElementById('game-num').textContent = currentGameIdx + 1;
+            document.getElementById('game-total').textContent = allGames.length;
+        }
+
+        // === Load Data ===
+        async function loadData(url) {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                const lines = text.trim().split('\n');
+
+                allGames = lines.map(line => JSON.parse(line));
+
+                gameData = allGames[0];
+                buildSurface(gameData);
+                updateGameCounter();
+
+                // Intro animation
+                playIntroAnimation();
+
+                console.log(`Loaded ${allGames.length} games`);
+            } catch (err) {
+                console.error('Failed to load data:', err);
+            }
+        }
+
+        // === Intro camera animation ===
+        function playIntroAnimation() {
+            const vizCenterX = (4 * 7 + 3 * PLAYER_GAP) / 2;
+            const vizCenterZ = (28 * 2) / 2;
+
+            const startPos = { x: vizCenterX + 50, y: 80, z: vizCenterZ + 80 };
+            const endPos = { x: vizCenterX - 35, y: 35, z: vizCenterZ - 45 };
+
+            camera.position.set(startPos.x, startPos.y, startPos.z);
+
+            const duration = 2000;
+            const startTime = performance.now();
+
+            function animateIntro(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+
+                camera.position.x = startPos.x + (endPos.x - startPos.x) * eased;
+                camera.position.y = startPos.y + (endPos.y - startPos.y) * eased;
+                camera.position.z = startPos.z + (endPos.z - startPos.z) * eased;
+
+                controls.update();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateIntro);
+                }
+            }
+
+            requestAnimationFrame(animateIntro);
+        }
+
+        // === Animation Loop ===
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            const frustumSize = 80;
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -frustumSize * aspect / 2;
+            camera.right = frustumSize * aspect / 2;
+            camera.top = frustumSize / 2;
+            camera.bottom = -frustumSize / 2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // === Move Explorer ===
+        function updateMoveExplorer() {
+            if (!gameData) return;
+
+            const moveIdx = currentMoveIdx;
+            const activePlayer = gameData.active_player[moveIdx];
+            const trick = Math.floor(moveIdx / 4) + 1;
+
+            // Update header
+            document.getElementById('current-move').textContent = moveIdx + 1;
+
+            // Trick info with winner if trick just completed
+            const playInTrick = moveIdx % 4;  // 0-3
+            let trickInfo = `Trick ${trick} • Player ${activePlayer}`;
+            if (playInTrick === 3 && gameData.trick_winners) {
+                // Just completed a trick
+                const winner = gameData.trick_winners[trick - 1];
+                const winnerTeam = (winner === 0 || winner === 2) ? 'T0' : 'T1';
+                trickInfo += ` • P${winner} won (${winnerTeam})`;
+            }
+            document.getElementById('trick-info').textContent = trickInfo;
+
+            // Update score (score_history[moveIdx] is score AFTER that move)
+            if (gameData.score_history && gameData.score_history[moveIdx]) {
+                const [t0, t1] = gameData.score_history[moveIdx];
+                document.getElementById('score-t0').textContent = t0;
+                document.getElementById('score-t1').textContent = t1;
+            } else {
+                document.getElementById('score-t0').textContent = '0';
+                document.getElementById('score-t1').textContent = '0';
+            }
+
+            // Update nav buttons
+            document.getElementById('prev-move').disabled = moveIdx === 0;
+            document.getElementById('next-move').disabled = moveIdx === 27;
+
+            // Build hand display
+            const container = document.getElementById('hand-container');
+            container.innerHTML = '';
+
+            const player = gameData.players[activePlayer];
+            if (!player) return;
+
+            // Player header (show offense/defense status)
+            const isOffense = (activePlayer === 0 || activePlayer === 2);
+            const teamLabel = isOffense ? 'Offense' : 'Defense';
+            const teamColor = isOffense ? '#7ee787' : '#f0883e';
+            const winCondition = isOffense ? 'win ≥18' : 'win >−18';
+
+            const header = document.createElement('div');
+            header.className = 'player-header';
+            header.innerHTML = `
+                <span style="color: ${PLAYER_COLORS[activePlayer]};">Player ${activePlayer}'s Hand</span>
+                <span style="background: ${teamColor}22; color: ${teamColor}; padding: 2px 6px; border-radius: 3px; font-size: 10px; border: 1px solid ${teamColor}44;">${teamLabel} (${winCondition})</span>
+                ${gameData.trump_name ? `<span style="background: #238636; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px;">Trump: ${gameData.trump_name}</span>` : ''}
+            `;
+            container.appendChild(header);
+
+            // Each domino in the hand
+            for (let slot = 0; slot < player.dominoes.length; slot++) {
+                const domino = player.dominoes[slot];
+                if (!domino) continue;
+
+                const globalIdx = activePlayer * 7 + slot;
+                const key = `${globalIdx}_${moveIdx}`;
+                const pdfEntry = pdfLookup[key];
+
+                // Check if domino was played before this move
+                const playedBefore = gameData.domino_played[globalIdx].slice(0, moveIdx).some(v => v);
+                const playedNow = gameData.domino_played[globalIdx][moveIdx];
+
+                const row = document.createElement('div');
+                row.className = 'domino-row';
+
+                // Domino label (visual glyph)
+                const label = document.createElement('div');
+                label.className = 'domino-label' + (playedBefore ? ' played' : '');
+                const dominoSvg = createDominoGlyph(domino.pips, {
+                    highlight: playedNow
+                });
+                label.appendChild(dominoSvg);
+                row.appendChild(label);
+
+                // PDF chart
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'pdf-chart';
+
+                if (pdfEntry && !playedBefore) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 240;
+                    canvas.height = 30;
+                    chartContainer.appendChild(canvas);
+                    drawPdfChart(canvas, pdfEntry.pdf, pdfEntry.mean, activePlayer);
+
+                    // Grid labels (player-aware neutral point)
+                    const isOffense = (activePlayer === 0 || activePlayer === 2);
+                    const neutral = isOffense ? 18 : -18;
+                    const gridPositions = [
+                        { eq: -42, label: '-42' },
+                        { eq: neutral, label: `${neutral}`, highlight: true },
+                        { eq: 42, label: '42' }
+                    ];
+                    gridPositions.forEach(({ eq, label, highlight }) => {
+                        const labelEl = document.createElement('div');
+                        labelEl.className = 'grid-label';
+                        labelEl.style.left = `${((eq + 42) / 84) * 100}%`;
+                        labelEl.textContent = label;
+                        if (highlight) {
+                            labelEl.style.color = '#58a6ff';
+                            labelEl.style.fontWeight = 'bold';
+                        }
+                        chartContainer.appendChild(labelEl);
+                    });
+
+                    // Stats indicator (win prob + mean)
+                    const winProb = pdfEntry.win !== undefined ? pdfEntry.win : null;
+                    const statsEl = document.createElement('div');
+                    statsEl.className = 'stats-indicator';
+
+                    if (winProb !== null) {
+                        const winColor = winProb >= 0.5 ? '#7ee787' : '#f85149';
+                        const stdStr = pdfEntry.std ? `±${pdfEntry.std.toFixed(0)}` : '';
+                        statsEl.innerHTML = `
+                            <div class="win-prob" style="color: ${winColor};">${(winProb * 100).toFixed(0)}%</div>
+                            <div class="eq-mean">μ=${pdfEntry.mean.toFixed(0)}${stdStr}</div>
+                        `;
+                    } else {
+                        const stdStr = pdfEntry.std ? `±${pdfEntry.std.toFixed(0)}` : '';
+                        statsEl.innerHTML = `<div class="eq-mean">μ=${pdfEntry.mean.toFixed(0)}${stdStr}</div>`;
+                    }
+
+                    row.appendChild(chartContainer);
+                    row.appendChild(statsEl);
+                } else if (playedBefore) {
+                    chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #484f58; font-size: 11px;">Already played</div>';
+                    row.appendChild(chartContainer);
+                    row.appendChild(document.createElement('div')); // Spacer
+                } else {
+                    chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #484f58; font-size: 11px;">No data</div>';
+                    row.appendChild(chartContainer);
+                    row.appendChild(document.createElement('div')); // Spacer
+                }
+
+                container.appendChild(row);
+            }
+        }
+
+        function drawPdfChart(canvas, pdf, mean, player) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear
+            ctx.fillStyle = '#161b22';
+            ctx.fillRect(0, 0, width, height);
+
+            // Neutral point depends on team
+            const isOffense = (player === 0 || player === 2);
+            const neutral = isOffense ? 18 : -18;
+
+            // Draw grid lines (include neutral point)
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 1;
+            const gridEqs = [-42, neutral, 42];
+            gridEqs.forEach(eq => {
+                const x = ((eq + 42) / 84) * width;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            });
+
+            // Draw neutral line thicker/brighter
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 1.5;
+            const neutralX = ((neutral + 42) / 84) * width;
+            ctx.beginPath();
+            ctx.moveTo(neutralX, 0);
+            ctx.lineTo(neutralX, height);
+            ctx.stroke();
+
+            // Find max for normalization
+            let maxProb = 0;
+            for (let i = 0; i < 85; i++) {
+                maxProb = Math.max(maxProb, pdf[i]);
+            }
+            if (maxProb === 0) return;
+
+            // Draw bars
+            const barWidth = width / 85;
+            for (let bin = 0; bin < 85; bin++) {
+                const prob = pdf[bin];
+                if (prob < 0.001) continue;
+
+                const eqValue = bin - 42;
+                const barHeight = (prob / maxProb) * (height - 4);
+                const x = bin * barWidth;
+                const y = height - barHeight - 2;
+
+                // Color based on E[Q] value (player-aware)
+                const color = eqToCssColor(eqValue, player);
+                ctx.fillStyle = color;
+                ctx.fillRect(x, y, barWidth - 0.5, barHeight);
+            }
+
+            // Draw mean line
+            const meanX = ((mean + 42) / 84) * width;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(meanX, 0);
+            ctx.lineTo(meanX, height);
+            ctx.stroke();
+        }
+
+        function eqToCssColor(eq, player = 0) {
+            const isOffense = (player === 0 || player === 2);
+            const neutral = isOffense ? 18 : -18;
+
+            // Map eq to [0,1] with neutral at 0.5
+            let t;
+            if (eq <= neutral) {
+                // Red zone (losing)
+                t = 0.5 * (eq - EQ_MIN) / (neutral - EQ_MIN);
+            } else {
+                // Green zone (winning)
+                t = 0.5 + 0.5 * (eq - neutral) / (EQ_MAX - neutral);
+            }
+            t = Math.max(0, Math.min(1, t));
+
+            let r, g, b;
+            if (t < 0.5) {
+                const t2 = t * 2;
+                r = Math.round(0.95 * 255);
+                g = Math.round((0.15 + t2 * 0.7) * 255);
+                b = Math.round(0.1 * 255);
+            } else {
+                const t2 = (t - 0.5) * 2;
+                r = Math.round((0.95 - t2 * 0.75) * 255);
+                g = Math.round((0.85 - t2 * 0.1) * 255);
+                b = Math.round((0.1 + t2 * 0.4) * 255);
+            }
+            return `rgb(${r},${g},${b})`;
+        }
+
+        // === Domino Glyph Rendering ===
+        // Pip positions for each value (0-6) in normalized coordinates [0,1]
+        // Standard domino pip layout patterns
+        const PIP_POSITIONS = {
+            0: [],
+            1: [[0.5, 0.5]],
+            2: [[0.25, 0.25], [0.75, 0.75]],
+            3: [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]],
+            4: [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]],
+            5: [[0.25, 0.25], [0.75, 0.25], [0.5, 0.5], [0.25, 0.75], [0.75, 0.75]],
+            6: [[0.25, 0.2], [0.75, 0.2], [0.25, 0.5], [0.75, 0.5], [0.25, 0.8], [0.75, 0.8]]
+        };
+
+        /**
+         * Create an SVG domino glyph element
+         * @param {string} pips - Domino pips string like "3-2" or "6-4"
+         * @param {Object} options - Styling options
+         * @returns {SVGElement} - SVG element showing the domino
+         */
+        function createDominoGlyph(pips, options = {}) {
+            const {
+                width = 34,           // Total width in pixels
+                height = 18,          // Total height in pixels
+                pipColor = '#c9d1d9', // Light pips for dark theme
+                bgColor = '#161b22',  // Dark background
+                borderColor = '#30363d',
+                dividerColor = '#484f58',
+                highlight = false,    // Highlight played domino
+                highlightColor = '#7ee787'
+            } = options;
+
+            // Parse pips string "high-low" format
+            const [high, low] = pips.split('-').map(Number);
+
+            // Create SVG namespace
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const svg = document.createElementNS(svgNS, 'svg');
+            svg.setAttribute('width', width);
+            svg.setAttribute('height', height);
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+            // Background rectangle with rounded corners
+            const bg = document.createElementNS(svgNS, 'rect');
+            bg.setAttribute('x', 0.5);
+            bg.setAttribute('y', 0.5);
+            bg.setAttribute('width', width - 1);
+            bg.setAttribute('height', height - 1);
+            bg.setAttribute('rx', 2);
+            bg.setAttribute('ry', 2);
+            bg.setAttribute('fill', bgColor);
+            bg.setAttribute('stroke', highlight ? highlightColor : borderColor);
+            bg.setAttribute('stroke-width', highlight ? 1.5 : 1);
+            svg.appendChild(bg);
+
+            // Center divider line
+            const divider = document.createElementNS(svgNS, 'line');
+            divider.setAttribute('x1', width / 2);
+            divider.setAttribute('y1', 2);
+            divider.setAttribute('x2', width / 2);
+            divider.setAttribute('y2', height - 2);
+            divider.setAttribute('stroke', dividerColor);
+            divider.setAttribute('stroke-width', 1);
+            svg.appendChild(divider);
+
+            // Draw pips for left half (high value)
+            const halfWidth = (width - 2) / 2;  // Each half width (minus borders)
+            const pipRadius = Math.min(halfWidth, height) * 0.1;  // Pip radius scales with size
+
+            // Left half: high value
+            const leftPips = PIP_POSITIONS[high];
+            for (const [px, py] of leftPips) {
+                const pip = document.createElementNS(svgNS, 'circle');
+                const cx = 1 + px * (halfWidth - 2);  // Scale to left half
+                const cy = 1 + py * (height - 2);
+                pip.setAttribute('cx', cx);
+                pip.setAttribute('cy', cy);
+                pip.setAttribute('r', pipRadius);
+                pip.setAttribute('fill', highlight ? highlightColor : pipColor);
+                svg.appendChild(pip);
+            }
+
+            // Right half: low value
+            const rightPips = PIP_POSITIONS[low];
+            for (const [px, py] of rightPips) {
+                const pip = document.createElementNS(svgNS, 'circle');
+                const cx = width / 2 + 1 + px * (halfWidth - 2);  // Scale to right half
+                const cy = 1 + py * (height - 2);
+                pip.setAttribute('cx', cx);
+                pip.setAttribute('cy', cy);
+                pip.setAttribute('r', pipRadius);
+                pip.setAttribute('fill', highlight ? highlightColor : pipColor);
+                svg.appendChild(pip);
+            }
+
+            return svg;
+        }
+
+        // === Minimap Rendering ===
+        const MINIMAP_WIDTH = 256;   // Canvas pixels
+        const MINIMAP_HEIGHT = 512;  // Canvas pixels (taller for content)
+        const MINIMAP_WORLD_WIDTH = 10;  // World units (along -X)
+        const MINIMAP_WORLD_HEIGHT = 42; // World units (half height)
+
+        function initMinimap() {
+            // Create offscreen canvas
+            minimapCanvas = document.createElement('canvas');
+            minimapCanvas.width = MINIMAP_WIDTH;
+            minimapCanvas.height = MINIMAP_HEIGHT;
+
+            // Create texture from canvas
+            minimapTexture = new THREE.CanvasTexture(minimapCanvas);
+            minimapTexture.minFilter = THREE.LinearFilter;
+            minimapTexture.magFilter = THREE.LinearFilter;
+
+            // Create plane geometry
+            const geometry = new THREE.PlaneGeometry(MINIMAP_WORLD_WIDTH, MINIMAP_WORLD_HEIGHT);
+
+            // Create material with canvas texture
+            const material = new THREE.MeshBasicMaterial({
+                map: minimapTexture,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.95
+            });
+
+            minimapMesh = new THREE.Mesh(geometry, material);
+
+            // Position: left of domino axis, centered vertically at Y=0
+            // X position: -10 is the right edge, so center is at -10 - width/2
+            minimapMesh.position.set(-10 - MINIMAP_WORLD_WIDTH / 2, 0, 0);
+
+            // Rotate 180 degrees around Y axis to fix mirroring
+            minimapMesh.rotation.y = Math.PI;
+
+            scene.add(minimapMesh);
+        }
+
+        function drawDominoToCanvas(ctx, pips, x, y, width, height, options = {}) {
+            const { highlight = false, dimmed = false, vertical = false } = options;
+
+            const [high, low] = pips.split('-').map(Number);
+
+            // Colors
+            const bgColor = '#161b22';
+            const borderColor = highlight ? '#7ee787' : '#30363d';
+            const pipColor = dimmed ? '#484f58' : (highlight ? '#7ee787' : '#c9d1d9');
+
+            // Background (with fallback for older browsers)
+            ctx.fillStyle = bgColor;
+            ctx.strokeStyle = borderColor;
+            ctx.lineWidth = highlight ? 2 : 1;
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x, y, width, height, 2);
+            } else {
+                ctx.rect(x, y, width, height);
+            }
+            ctx.fill();
+            ctx.stroke();
+
+            if (vertical) {
+                // Vertical orientation: top half = high, bottom half = low
+                const halfHeight = height / 2;
+                const pipRadius = Math.min(width, halfHeight) * 0.12;
+
+                // Horizontal divider
+                ctx.strokeStyle = '#484f58';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x + 2, y + halfHeight);
+                ctx.lineTo(x + width - 2, y + halfHeight);
+                ctx.stroke();
+
+                ctx.fillStyle = pipColor;
+
+                // Top half (high)
+                for (const [px, py] of PIP_POSITIONS[high] || []) {
+                    ctx.beginPath();
+                    ctx.arc(x + px * width, y + py * halfHeight, pipRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Bottom half (low)
+                for (const [px, py] of PIP_POSITIONS[low] || []) {
+                    ctx.beginPath();
+                    ctx.arc(x + px * width, y + halfHeight + py * halfHeight, pipRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else {
+                // Horizontal orientation: left half = high, right half = low
+                const halfWidth = width / 2;
+                const pipRadius = Math.min(halfWidth, height) * 0.08;
+
+                // Vertical divider
+                ctx.strokeStyle = '#484f58';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x + halfWidth, y + 2);
+                ctx.lineTo(x + halfWidth, y + height - 2);
+                ctx.stroke();
+
+                ctx.fillStyle = pipColor;
+
+                // Left half (high)
+                for (const [px, py] of PIP_POSITIONS[high] || []) {
+                    ctx.beginPath();
+                    ctx.arc(x + px * halfWidth, y + py * height, pipRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Right half (low)
+                for (const [px, py] of PIP_POSITIONS[low] || []) {
+                    ctx.beginPath();
+                    ctx.arc(x + halfWidth + px * halfWidth, y + py * height, pipRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function updateMinimap() {
+            if (!minimapCanvas || !gameData || !minimapMesh) return;
+
+            const ctx = minimapCanvas.getContext('2d');
+            const W = MINIMAP_WIDTH;
+            const H = MINIMAP_HEIGHT;
+
+            // Clear
+            ctx.fillStyle = 'rgba(13, 17, 23, 0.9)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Border
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(1, 1, W - 2, H - 2);
+
+            const moveIdx = currentMoveIdx;
+            const activePlayer = gameData.active_player[moveIdx];
+            const trick = Math.floor(moveIdx / 4) + 1;
+            const playInTrick = moveIdx % 4;
+            const isOffense = activePlayer === 0 || activePlayer === 2;
+
+            // === Header: Trump & Bidder ===
+            let yPos = 15;
+            ctx.font = 'bold 14px monospace';
+            ctx.fillStyle = '#58a6ff';
+            ctx.fillText(`Move ${moveIdx + 1} • Trick ${trick}`, 10, yPos);
+
+            yPos += 20;
+            ctx.font = '12px monospace';
+            ctx.fillStyle = '#8b949e';
+            ctx.fillText(`Trump: ${gameData.trump_name}`, 10, yPos);
+
+            yPos += 16;
+            ctx.fillText(`Bidder: P0 (Team 0)`, 10, yPos);
+
+            yPos += 16;
+            const teamColor = isOffense ? '#7ee787' : '#f0883e';
+            ctx.fillStyle = teamColor;
+            ctx.fillText(`Active: P${activePlayer} (${isOffense ? 'Offense' : 'Defense'})`, 10, yPos);
+
+            // === Score ===
+            yPos += 25;
+            ctx.font = 'bold 14px monospace';
+            if (gameData.score_history && gameData.score_history[moveIdx]) {
+                const [t0, t1] = gameData.score_history[moveIdx];
+                ctx.fillStyle = '#7ee787';
+                ctx.fillText(`T0: ${t0}`, 10, yPos);
+                ctx.fillStyle = '#f0883e';
+                ctx.fillText(`T1: ${t1}`, 80, yPos);
+            }
+
+            // === Active Player's Hand ===
+            yPos += 30;
+            ctx.font = 'bold 12px monospace';
+            ctx.fillStyle = PLAYER_COLORS[activePlayer];
+            ctx.fillText(`P${activePlayer}'s Hand:`, 10, yPos);
+
+            yPos += 8;
+            const player = gameData.players[activePlayer];
+            const domWidth = 30;
+            const domHeight = 16;
+            const domGap = 4;
+            let xPos = 10;
+
+            for (let slot = 0; slot < player.dominoes.length; slot++) {
+                const domino = player.dominoes[slot];
+                const globalIdx = activePlayer * 7 + slot;
+
+                // Check if already played
+                const playedBefore = gameData.domino_played[globalIdx].slice(0, moveIdx).some(v => v);
+                const playedNow = gameData.domino_played[globalIdx][moveIdx];
+
+                if (!playedBefore) {
+                    drawDominoToCanvas(ctx, domino.pips, xPos, yPos, domWidth, domHeight, {
+                        highlight: playedNow,
+                        dimmed: false
+                    });
+                    xPos += domWidth + domGap;
+                }
+            }
+
+            // === Current Trick ===
+            yPos += domHeight + 25;
+            ctx.font = 'bold 12px monospace';
+            ctx.fillStyle = '#c9d1d9';
+            ctx.fillText(`Current Trick:`, 10, yPos);
+
+            yPos += 8;
+            xPos = 10;
+
+            // Find plays in current trick (up to current move)
+            const trickStartMove = (trick - 1) * 4;
+            for (let i = 0; i <= playInTrick; i++) {
+                const thisMoveIdx = trickStartMove + i;
+                const thisPlayer = gameData.active_player[thisMoveIdx];
+
+                // Find which domino was played
+                for (let slot = 0; slot < 7; slot++) {
+                    const globalIdx = thisPlayer * 7 + slot;
+                    if (gameData.domino_played[globalIdx][thisMoveIdx]) {
+                        const domino = gameData.players[thisPlayer].dominoes[slot];
+
+                        // Player label
+                        ctx.font = '10px monospace';
+                        ctx.fillStyle = PLAYER_COLORS[thisPlayer];
+                        ctx.fillText(`P${thisPlayer}`, xPos + 8, yPos);
+
+                        // Domino
+                        drawDominoToCanvas(ctx, domino.pips, xPos, yPos + 4, domWidth, domHeight, {
+                            highlight: thisMoveIdx === moveIdx
+                        });
+                        xPos += domWidth + domGap + 10;
+                        break;
+                    }
+                }
+            }
+
+            // === Trick History (with vertical domino glyphs) ===
+            yPos += domHeight + 20;
+            ctx.font = 'bold 11px monospace';
+            ctx.fillStyle = '#c9d1d9';
+            ctx.fillText(`History:`, 10, yPos);
+
+            yPos += 8;
+            const completedTricks = Math.floor(moveIdx / 4);
+
+            // Calculate sizes to fill available space
+            const availableHeight = H - yPos - 10;  // Leave 10px margin at bottom
+            const maxTricks = 7;
+            const rowHeight = Math.min(50, availableHeight / maxTricks);  // Max 50px per row
+            const vDomHeight = Math.floor(rowHeight - 10);  // Leave room for player dots
+            const vDomWidth = Math.floor(vDomHeight / 2);   // 2:1 aspect ratio
+            const vDomGap = 6;
+
+            for (let t = 0; t < completedTricks && t < 7; t++) {
+                const rowY = yPos + t * rowHeight;
+                const winner = gameData.trick_winners[t];
+                const winnerTeam = (winner === 0 || winner === 2) ? 'T0' : 'T1';
+                const winColor = winnerTeam === 'T0' ? '#7ee787' : '#f0883e';
+
+                // Trick number
+                ctx.font = 'bold 12px monospace';
+                ctx.fillStyle = '#6e7681';
+                ctx.fillText(`${t + 1}`, 8, rowY + vDomHeight / 2 + 4);
+
+                // Find and draw the 4 dominoes played in this trick
+                const trickStartMove = t * 4;
+                let trickXPos = 28;
+
+                for (let playIdx = 0; playIdx < 4; playIdx++) {
+                    const thisMoveIdx = trickStartMove + playIdx;
+                    const thisPlayer = gameData.active_player[thisMoveIdx];
+
+                    // Find which domino was played
+                    for (let slot = 0; slot < 7; slot++) {
+                        const globalIdx = thisPlayer * 7 + slot;
+                        if (gameData.domino_played[globalIdx][thisMoveIdx]) {
+                            const domino = gameData.players[thisPlayer].dominoes[slot];
+                            const isWinner = thisPlayer === winner;
+
+                            drawDominoToCanvas(ctx, domino.pips, trickXPos, rowY + 8, vDomWidth, vDomHeight, {
+                                highlight: isWinner,
+                                vertical: true
+                            });
+
+                            // Player indicator dot above domino
+                            ctx.fillStyle = PLAYER_COLORS[thisPlayer];
+                            ctx.beginPath();
+                            ctx.arc(trickXPos + vDomWidth / 2, rowY + 4, 3, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            trickXPos += vDomWidth + vDomGap;
+                            break;
+                        }
+                    }
+                }
+
+                // Winner arrow
+                ctx.fillStyle = winColor;
+                ctx.font = 'bold 14px monospace';
+                ctx.fillText(`→`, trickXPos + 2, rowY + vDomHeight / 2 + 12);
+            }
+
+            // Update texture
+            minimapTexture.needsUpdate = true;
+
+            // Update position to align with current move
+            const moveScale = 2.0;
+            minimapMesh.position.z = moveIdx * moveScale;
+        }
+
+        function setupMoveExplorer() {
+            document.getElementById('prev-move').addEventListener('click', () => {
+                if (currentMoveIdx > 0) {
+                    currentMoveIdx--;
+                    updateGameStatePanel();
+                    updateMoveExplorer();
+                    updateMinimap();
+                    highlightCurrentMove();
+                }
+            });
+            document.getElementById('next-move').addEventListener('click', () => {
+                if (currentMoveIdx < 27) {
+                    currentMoveIdx++;
+                    updateGameStatePanel();
+                    updateMoveExplorer();
+                    updateMinimap();
+                    highlightCurrentMove();
+                }
+            });
+
+            // Keyboard navigation
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft' && currentMoveIdx > 0) {
+                    currentMoveIdx--;
+                    updateGameStatePanel();
+                    updateMoveExplorer();
+                    updateMinimap();
+                    highlightCurrentMove();
+                } else if (e.key === 'ArrowRight' && currentMoveIdx < 27) {
+                    currentMoveIdx++;
+                    updateGameStatePanel();
+                    updateMoveExplorer();
+                    updateMinimap();
+                    highlightCurrentMove();
+                }
+            });
+        }
+
+        // === Start ===
+        init();
+        initMinimap();
+        setupMoveExplorer();
+        loadData('../data/eq_pdf_v3_sample.jsonl');
+    </script>
+</body>
+</html>

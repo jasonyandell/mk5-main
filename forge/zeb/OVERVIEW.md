@@ -1,0 +1,846 @@
+# Zeb MCTS Training Pipeline
+
+Oracle-guided MCTS distillation for training ZebModel to play Texas 42.
+
+---
+
+## Milestone: 1M Games (Feb 6, 2026)
+
+**5 days from first commit to 1M self-play games.**
+
+| Metric | Value |
+|--------|-------|
+| Model | `zeb-557k-1m.pt` (557K params) |
+| Games | 1,010,176 |
+| Win rate vs random | 70.9% |
+| Policy loss | 0.35 |
+| MCTS entropy | 0.25 |
+
+First commit: Jan 31, 2026 (`feat(zeb): implement AlphaZero-style self-play learning`)
+
+---
+
+## Architecture Overview
+
+This pipeline trains a small transformer (ZebModel) by distilling knowledge from a pre-trained oracle through MCTS-guided self-play. The key insight is that MCTS with oracle leaf evaluation produces high-quality policy targets (visit distributions) that are far less noisy than REINFORCE.
+
+```
+                            +-----------------+
+                            |   Oracle        |
+                            |  (Stage1Oracle) |
+                            |  3.3M params    |
+                            +-----------------+
+                                    |
+                                    | leaf evaluation
+                                    v
+     +------------+          +-----------+          +-------------+
+     | Deal hands | -------> |   MCTS    | -------> | Visit counts|
+     +------------+          | (batched) |          | (policy     |
+                             +-----------+          |  targets)   |
+                                    |               +-------------+
+                                    |                      |
+                                    v                      v
+                             +-----------+          +-------------+
+                             | Game      |          | ZebModel    |
+                             | outcome   |          | learns to   |
+                             | (value    |          | predict     |
+                             |  target)  |          | both        |
+                             +-----------+          +-------------+
+```
+
+**Why distillation instead of AlphaZero?**
+
+The classic AlphaZero feedback loop (network guides MCTS, MCTS trains network) requires the network itself to provide useful value estimates from day one. For imperfect information games like Texas 42, bootstrapping from random is extremely slow.
+
+Instead, we use a pre-trained oracle (Stage1Oracle, trained on perfect information game trees) as a fixed "teacher" for leaf evaluation. The student (ZebModel) learns to predict the MCTS visit distributions and game outcomes. This provides stable, high-quality training signal from the start.
+
+---
+
+## Key Files
+
+### `mcts.py` - Core MCTS Engine
+
+Implements determinized UCT (Upper Confidence bounds for Trees) with:
+
+- **UCB selection**: Balances exploration vs exploitation with configurable `c_puct`
+- **Virtual loss**: Allows parallel leaf collection without visiting same nodes
+- **Batched search**: Collects wave of leaves, batch evaluates, then backpropagates (6x speedup)
+- **Random rollout fallback**: Works without oracle for testing
+
+Key classes:
+- `MCTSNode`: Tree node with visit count, value sum, children
+- `MCTS`: Single-game MCTS with `search()` returning visit counts
+- `DeterminizedMCTS`: Root sampling for imperfect information (samples opponent hands)
+
+```python
+# Basic usage
+mcts = MCTS(n_simulations=100, value_fn=oracle_fn)
+visits = mcts.search(state, player=0)  # Returns {domino_id: visit_count}
+```
+
+### `mcts_self_play.py` - Game Generation
+
+Plays full games using MCTS, converts to training examples:
+
+- `play_game_with_mcts()`: Single game with MCTS decisions
+- `MCTSTrainingExample`: State + action_probs + outcome
+- `mcts_examples_to_zeb_tensors()`: Converts to model-ready format
+
+**Critical transformation**: Domino ID to hand slot mapping:
+```python
+# Oracle works with domino IDs (0-27)
+# ZebModel works with hand slots (0-6)
+# This function maps MCTS visit counts (by domino ID) to slot probabilities
+
+domino_to_slot = {d: slot for slot, d in enumerate(original_hand)}
+slot_probs[slot] = action_probs[domino_id]
+```
+
+### `oracle_value.py` - Oracle Wrapper
+
+Wraps Stage1Oracle for MCTS leaf evaluation:
+
+- Converts `GameState` to oracle query format
+- Returns max(Q-values) normalized to [-1, 1]
+- Supports single evaluation and batch evaluation
+- Handles team perspective (flips sign for Team 1)
+- Vectorized bitmask computation using numpy broadcasting
+
+```python
+value_fn = create_oracle_value_fn(device='cuda', compile=True)
+value = value_fn(state, player)  # Returns float in [-1, 1]
+
+# For batched MCTS (much faster):
+values = value_fn.batch_evaluate(states, players)  # Returns list of floats
+
+# Alternative when caller has original hands (e.g., from ActiveGame):
+values = value_fn.batch_evaluate_with_originals(states, players, original_hands_list)
+```
+
+Note: `batch_evaluate_with_originals()` accepts pre-computed original hands. Both methods use vectorized post-processing for efficient GPU utilization.
+
+### `batched_mcts.py` - Cross-Game Batching
+
+Maintains multiple concurrent MCTS searches to maximize GPU utilization:
+
+- **Before**: 32 leaves/batch from 1 game -> 40% GPU utilization
+- **After**: 500+ leaves/batch from 16 games -> 90%+ GPU utilization
+
+Features:
+- Cross-game leaf batching for larger GPU batches
+- Async double-buffering using CUDA streams (overlaps CPU/GPU work)
+- Passes pre-computed `original_hands` to oracle for fast preprocessing
+
+```python
+coordinator = BatchedMCTSCoordinator(
+    n_parallel_games=16,
+    target_batch_size=512,
+    value_fn=oracle_fn,
+)
+games = coordinator.play_games(n_games=100)
+```
+
+The double-buffering pattern overlaps CPU preprocessing with GPU evaluation:
+while GPU evaluates batch N, CPU collects leaves and prepares batch N+1.
+
+### `run_selfplay_training.py` - Training Loop (Primary)
+
+True AlphaZero self-play training:
+
+- Epoch loop: generate games on GPU via MCTS -> train on MCTS targets
+- Model provides both **policy priors** and **value** for MCTS leaf evaluation
+- Checkpoints saved as `selfplay-epochXXXX.pt`
+- Automatic W&B run resume from checkpoint's `wandb_run_id`
+- `--keep-checkpoints N` to retain only last N checkpoints
+
+This project is **CUDA-only** for training; there is no CPU training path in the default workflow.
+
+### `run_mcts_training.py` - Oracle Training (Alternative)
+
+Oracle-guided distillation (Stage1Oracle evaluates leaves instead of model).
+
+### `export_model.py` - Model Snapshot Export
+
+Strips optimizer state, replay buffer, and training metadata from a checkpoint,
+producing a slim model-only snapshot suitable for git.
+
+```bash
+python -m forge.zeb.export_model \
+    forge/zeb/checkpoints/selfplay-epoch2839.pt \
+    forge/zeb/models/zeb-e2839.pt
+# 92 MB -> 2.2 MB (keeps model_state_dict + model_config + provenance)
+```
+
+### `observation.py` - Token Encoding
+
+Encodes game state as 36 tokens x 8 features:
+
+```
+Token 0:      Declaration (decl_id, token_type=0)
+Tokens 1-7:   Player's hand (7 fixed slots, masked if played)
+Tokens 8-35:  Play history (up to 28 plays)
+```
+
+8 features per token:
+| Feature | Range | Description |
+|---------|-------|-------------|
+| FEAT_HIGH | 0-6 | High pip value |
+| FEAT_LOW | 0-6 | Low pip value |
+| FEAT_IS_DOUBLE | 0-1 | Is double domino |
+| FEAT_COUNT | 0-2 | Point value (0/5/10) |
+| FEAT_PLAYER | 0-3 | Relative player (0=me) |
+| FEAT_IS_IN_HAND | 0-1 | Still in hand vs played |
+| FEAT_DECL | 0-9 | Declaration ID |
+| FEAT_TOKEN_TYPE | 0-2 | Decl/Hand/Play |
+
+### `model.py` - ZebModel Architecture
+
+Transformer with policy + value heads:
+
+```python
+class ZebModel(nn.Module):
+    embeddings: ZebEmbeddings      # 8-feature -> embed_dim
+    pos_embed: nn.Embedding        # Position embeddings
+    encoder: TransformerEncoder    # Pre-LN transformer
+    policy_proj: nn.Linear         # [embed] -> [1] per hand slot
+    value_head: nn.Sequential      # Mean pool -> tanh scalar
+```
+
+Model configs:
+| Size | embed_dim | n_layers | n_heads | ff_dim | Params |
+|------|-----------|----------|---------|--------|--------|
+| small | 64 | 2 | 2 | 128 | ~75K |
+| medium | 128 | 4 | 4 | 256 | ~557K |
+| large | 256 | 6 | 8 | 512 | ~3.3M |
+
+---
+
+## Training Commands
+
+### Default: Self-play training (AlphaZero-style)
+
+```bash
+python -u -m forge.zeb.run_selfplay_training \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch0375.pt \
+    --epochs 500 \
+    --games-per-epoch 128 \
+    --n-simulations 50 \
+    --n-parallel-games 128 \
+    --max-mcts-nodes 128 \
+    --batch-size 64 \
+    --lr 1e-4 \
+    --eval-every 1 \
+    --save-every 1 \
+    --keep-checkpoints 3 \
+    --wandb
+```
+
+### Key arguments
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--checkpoint` | (required) | Checkpoint to continue from |
+| `--epochs` | 50 | Training epochs |
+| `--games-per-epoch` | 512 | Games generated per epoch |
+| `--n-simulations` | 100 | MCTS simulations per move |
+| `--n-parallel-games` | 512 | Concurrent games per batch |
+| `--max-mcts-nodes` | 256 | Max nodes per MCTS tree |
+| `--batch-size` | 64 | SGD mini-batch size |
+| `--lr` | 1e-4 | Learning rate |
+| `--temperature` | 1.0 | MCTS temperature for exploration |
+| `--eval-every` | 5 | Evaluate vs random every N epochs |
+| `--save-every` | 5 | Save checkpoint every N epochs |
+| `--keep-checkpoints` | 0 | Keep only last N checkpoints (0 = keep all) |
+| `--replay-buffer-size` | 50000 | Replay buffer size (0 = no buffer) |
+| `--wandb/--no-wandb` | True | Enable W&B logging |
+| `--run-name` | auto | W&B run name (auto-generates timestamp) |
+
+### Current Training Run
+
+**Run ID**: `selfplay-500ep-from-e99` (W&B: `4jhso0ll`)
+**Started from**: `selfplay-epoch0099.pt` (oracle-trained baseline)
+
+| Parameter | Value | Notes |
+|-----------|-------|-------|
+| `--n-simulations` | 200 | Increased for better MCTS quality |
+| `--n-parallel-games` | 256 | |
+| `--max-mcts-nodes` | 512 | Increased for deeper search trees |
+| `--games-per-epoch` | 256 | Matched to parallel games for full GPU utilization |
+| `--batch-size` | 64 | |
+| `--lr` | 1e-4 | |
+| `--training-steps` | 1000 | AlphaZero-style: fixed training steps per epoch |
+| `--eval-every` | 10 | |
+| `--save-every` | 10 | |
+| `--keep-checkpoints` | 3 | |
+| `--replay-buffer-size` | 50000 | ~7 epochs of history for stable training |
+| `--eval-games` | 2000 | Batched eval for reliable win rate measurement |
+
+**Performance** (after kernel reduction optimizations):
+- Game generation: ~70s (200 sims, ~3.6 games/s)
+- Training: ~17s (1000 steps)
+- Eval (2000 games): ~23s (batched)
+- Total epoch: ~87s without eval, ~110s with eval
+
+**Progress** (as of epoch 3289):
+- Win rate vs random (pair): ~70-76%
+- Total games: ~930k
+- Replay buffer: 50k examples (full)
+- Target: 1M games (~370 epochs remaining)
+
+**Resume command**:
+```bash
+nohup python -u -m forge.zeb.run_selfplay_training \
+  --checkpoint forge/zeb/checkpoints/selfplay-epoch3289.pt \
+  --epochs 100000 \
+  --games-per-epoch 256 \
+  --n-simulations 200 \
+  --n-parallel-games 256 \
+  --max-mcts-nodes 512 \
+  --lr 1e-4 \
+  --batch-size 64 \
+  --eval-every 10 \
+  --save-every 10 \
+  --keep-checkpoints 3 \
+  --replay-buffer-size 50000 \
+  --training-steps 1000 \
+  --eval-games 2000 \
+  --wandb \
+  >> scratch/selfplay.log 2>&1 &
+```
+
+### Continuing training
+
+Self-play saves checkpoints as `selfplay-epoch{N:04d}.pt`. To continue training, pass the most recent checkpoint:
+
+```bash
+python -u -m forge.zeb.run_selfplay_training \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3289.pt \
+    --epochs 100000 \
+    --keep-checkpoints 3 \
+    --replay-buffer-size 50000 \
+    [...]
+```
+
+**W&B auto-resume**: If the checkpoint contains a `wandb_run_id`, the script automatically resumes that W&B run. No manual intervention needed - just pass the checkpoint and training continues with the same graphs and metrics.
+
+**Replay buffer auto-resume**: The replay buffer is saved in checkpoints and restored on resume. Training continues with the full buffer of historical examples.
+
+Checkpoints include:
+- Model and optimizer state
+- Total games played (cumulative across all training runs)
+- W&B run ID for seamless logging continuation
+- Replay buffer (list of recent training examples)
+- Training config (mode, source checkpoint, hyperparameters)
+
+**Note**: Checkpoint size is ~92 MB with a 50k replay buffer. Model-only snapshots
+(via `export_model.py`) are ~2 MB.
+
+### Checkpoints vs model snapshots
+
+```
+forge/zeb/
+├── checkpoints/       # Training checkpoints (~92 MB, gitignored)
+│   └── selfplay-epoch{N}.pt
+└── models/            # Committed model snapshots (~2 MB)
+    └── zeb-e{N}.pt
+```
+
+Training checkpoints in `checkpoints/` contain everything needed to resume training
+(optimizer state, replay buffer, W&B run ID). They are gitignored due to size.
+
+Model snapshots in `models/` contain only `model_state_dict`, `model_config`, `epoch`,
+and `total_games` — just enough to load and run the model. These are small enough to
+commit to git and serve as versioned milestones. Both formats load with
+`load_model_from_checkpoint()`.
+
+---
+
+## Key Design Decisions
+
+### 1. Self-play bootstrapping (AlphaZero-style)
+
+Training uses true self-play: the model guides MCTS with policy priors and evaluates leaves with its value head, then learns from MCTS visit targets and final outcomes. This keeps the entire loop on GPU and continuously improves checkpoints over time.
+
+### 2. Replay buffer for stable training
+
+Instead of training only on current epoch's games, we maintain a rolling buffer of ~50k recent examples (~7 epochs). Benefits:
+- **Decorrelates examples**: Random sampling breaks temporal correlation within games
+- **Smoother gradients**: Training distribution changes gradually, not abruptly each epoch
+- **Data efficiency**: Each example trains the model multiple times before eviction
+- **Stability**: Prevents policy oscillation from training on single-policy batches
+
+The buffer is persisted in checkpoints for seamless resume.
+
+### 3. Observation encoding: 36x8 tokens preserving play order
+
+The encoding preserves the temporal structure of play:
+- Hand slots are fixed (indices 1-7) so the model learns slot-based policies
+- Play history appears in order (indices 8-35) for pattern recognition
+- Relative player IDs (0=me, 1=left, 2=partner, 3=right) for position-invariant learning
+
+### 4. Domino ID to slot mapping
+
+MCTS operates on domino IDs (0-27) because `GameState` uses domino IDs for actions. But ZebModel outputs slot logits (0-6) because the observation encoding uses fixed hand slots.
+
+The `mcts_examples_to_zeb_tensors()` function performs this mapping:
+```python
+original_hand = (5, 12, 18, 23, 24, 26, 27)  # Fixed at deal time
+domino_to_slot = {5: 0, 12: 1, 18: 2, 23: 3, 24: 4, 26: 5, 27: 6}
+
+# MCTS says: play domino 18 with 40% probability
+# Training target: slot 2 gets 40%
+```
+
+### 5. Batched leaf evaluation
+
+Single-leaf oracle queries underutilize the GPU. The batched MCTS implementation:
+
+1. Collects `wave_size` leaves per game using virtual loss
+2. Runs multiple games in parallel (`n_parallel_games`)
+3. Batches all non-terminal leaves across all games
+4. Single GPU forward pass for 500+ states
+
+This provides ~6x speedup over sequential evaluation.
+
+---
+
+## Performance
+
+### Game generation speed
+
+| Configuration | Games/sec | Notes |
+|---------------|-----------|-------|
+| Random rollout (CPU) | ~50 | No oracle, 50 sims |
+| Oracle sequential (GPU) | ~0.5 | One leaf at a time |
+| Oracle batched (GPU) | ~1-2 | 16 games, 512 batch |
+| Oracle batched + optimized | ~3-5 | With preprocessing optimizations |
+
+### Oracle throughput
+
+| Method | Throughput | GPU Util | Notes |
+|--------|-----------|----------|-------|
+| `batch_evaluate_with_originals()` | ~6,200/s | 92% | GameState objects |
+| `batch_evaluate_gpu()` | ~7,300/s | **97%** | GPU tensors, fully GPU-native |
+| Pure forward pass | ~6,600/s | 98% | Theoretical max |
+
+**GPU-native path achieves 96% utilization**. The `batch_evaluate_gpu()` method takes pre-built GPU tensors and does all computation on GPU:
+- GPU tokenization (GPUTokenizer)
+- GPU bitmask computation
+- GPU legal mask computation
+- GPU post-processing
+
+Key optimizations:
+1. **GPU tokenization**: Tokenization moved to GPU (GPUTokenizer in `forge/eq/gpu_tokenizer.py`)
+2. **GPU bitmask**: `compute_remaining_bitmask_gpu()` in `forge/zeb/gpu_preprocess.py`
+3. **GPU legal mask**: `compute_legal_mask_gpu()` for action masking
+4. **Vectorized post-processing**: Batch max() and team sign flip on GPU
+
+### Training example generation
+
+Each game produces 28 training examples (one per move). With 200 games/epoch:
+- 5,600 examples per epoch
+- ~60 examples/second with batched oracle
+
+### Model inference speed
+
+ZebModel (medium) on CPU: ~10,000 states/second
+
+---
+
+## Modal B200 Training
+
+Self-play training can run on Modal's B200 GPUs via `forge/modal_app.py::zeb_train`.
+
+### Basic usage
+
+```bash
+# Standard training run
+modal run forge/modal_app.py::zeb_train \
+    --checkpoint forge/zeb/selfplay-epoch1845.pt \
+    --epochs 100
+
+# Profiling mode: adds deliberate gaps between phases
+modal run forge/modal_app.py::zeb_train \
+    --checkpoint forge/zeb/selfplay-epoch1845.pt \
+    --epochs 3 \
+    --profile-mode
+```
+
+### B200 vs 3050 Ti Performance
+
+**Pre-optimization (Feb 2026):**
+
+| Metric | B200 | 3050 Ti | Speedup |
+|--------|------|---------|---------|
+| **Avg epoch** | 43.7s | 98s | **2.2x** |
+| Gen time | 35.2s | 82s | 2.3x |
+| Train time | 8.3s | 15-17s | 1.9x |
+| Games/sec | 7.3 | 3.1 | 2.3x |
+
+Only 2.2x speedup (not the expected 10-20x from B200's raw compute advantage).
+Root cause: kernel launch overhead. Each CUDA graph replay contained ~980 tiny kernels
+from unrolled Python loops. Both GPUs spent similar time on dispatch — the B200's wider
+SM array was starved.
+
+### Kernel Reduction Optimizations (Feb 2026)
+
+Four optimizations to reduce kernel count and Python dispatch overhead:
+
+1. **Vectorize tokenizer play history loop**: Replaced `for play_idx in range(28)` (~252 kernels)
+   with batched gather/where (~12 kernels) in `gpu_training_pipeline.py`
+2. **Vectorize backprop depth loop**: Replaced `for depth in range(max_depth)` (~224 kernels)
+   with flat gather + `scatter_add_` (~10 kernels) in `gpu_mcts.py`
+3. **Depth-variant CUDA graphs**: Capture at depths [28, 8, 1], select smallest sufficient per
+   move. Average ~40% reduction in select+backprop kernels across 28 moves.
+4. **Multi-step CUDA graph capture**: Capture K=10 simulation steps per graph, replay N/K times.
+   Reduces 50 Python `graph.replay()` calls to 5.
+
+**Measured impact** (3050 Ti, n_sims=50, N=128):
+- Gen time: 40.4s → 16.3s (**2.4x speedup**)
+- At production settings (n_sims=200, N=256, max_nodes=512): ~10-12% wall-clock improvement,
+  dramatically higher GPU utilization (kernels now large enough that real compute dominates)
+
+### Post-Optimization B200 Benchmark (Feb 2026)
+
+After kernel reduction, re-benchmarked on B200 at production settings
+(n_sims=200, N=256, max_nodes=512, training_steps=1000):
+
+| Metric | B200 | 3050 Ti | Speedup |
+|--------|------|---------|---------|
+| **Avg epoch** | ~33s | ~87s | **2.6x** |
+| Gen time | ~25s | ~70s | 2.8x |
+| Train time | ~8s | ~17s | 2.1x |
+| Games/sec | 10.1 | 3.6 | 2.8x |
+
+**B200 GPU utilization: 100%** — kernel dispatch overhead fully eliminated. The B200 is now
+compute-bound on real MCTS work, not starved waiting for dispatch. The ~3x speedup (vs 10-20x
+raw compute advantage) reflects the inherently sequential nature of MCTS tree operations
+(select → evaluate → backprop → repeat). No amount of GPU width helps when bottlenecked on
+depth.
+
+**Conclusion**: Not cost-effective for ongoing training ($6.25/hr B200 vs free local 3050 Ti
+for ~3x speedup), but confirms the kernel optimizations fully saturate even the highest-end
+GPU hardware.
+
+### Profile Mode
+
+The `--profile-mode` flag adds deliberate 30s gaps between phases:
+- Creates clear visual separation on GPU utilization graphs
+- Logs phase start/end timestamps to W&B (`profile/phase`, `profile/elapsed_s`)
+- Uses fresh W&B run named `b200-profiling-{timestamp}`
+- Useful for diagnosing performance issues
+
+---
+
+## E[Q] Player Evaluation
+
+Compares Zeb's learned play against an E[Q] statistical player that uses the Stage 1 oracle
+with world sampling and P(Make) action selection at each decision point.
+
+### How the E[Q] Player Works
+
+At each decision, the E[Q] player:
+1. Samples N hypothetical opponent hands (consistent with void inference)
+2. Queries the Stage 1 oracle for Q-values in each sampled world
+3. Builds a full PDF of Q-values per action (85 bins, Q in [-42, +42])
+4. Selects the action maximizing **P(Make)** — probability of making the contract
+   - Offense: P(Q >= 18) → team scores >= 30 points
+   - Defense: P(Q >= -17) → bidder scores < 30 points
+5. Ties broken by E[Q] mean (prefer winning big / losing gracefully)
+
+This is expensive (~100 oracle queries per decision × 28 decisions per game) but represents
+a principled statistical approach backed by perfect-information analysis.
+
+### Running Evaluations
+
+```bash
+# E[Q] vs random
+python -u -m forge.zeb.eval_eq --n-games 500 --n-samples 100
+
+# E[Q] vs Zeb
+python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
+    --n-games 500 --n-samples 100
+
+# Large eval with VRAM-bounded batching (avoids OOM on small GPUs)
+python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
+    --n-games 2000 --n-samples 50 --batch-size 75
+```
+
+The `--batch-size` flag limits GPU allocations to `batch_size * n_samples` entries
+(WorldSamplerMRV + GPUTokenizer). Games are chunked, played to completion, and results
+aggregated. Per-batch running totals are printed. On a 3050 Ti (4GB), batch_size=75
+with N=50 fits in VRAM; batch_size=100 spills to system RAM.
+
+### Results (Feb 2026)
+
+| Matchup | Win Rate | Avg Margin | Games |
+|---------|----------|------------|-------|
+| E[Q] (N=100) vs Random | 73.2% | +15.5 pts | 500 |
+| E[Q] (N=50) vs Zeb (epoch 2829) | 60.0% | +6.3 pts | 500 |
+| E[Q] (N=100) vs Zeb (epoch 2829) | 59.0% | +6.2 pts | 500 |
+| E[Q] (N=50) vs Zeb (epoch 3599) | 60.2% | +5.7 pts | 500 |
+| Zeb (epoch 3599) vs Random | ~70% | — | 2000 |
+
+N=50 and N=100 produce nearly identical win rates vs Zeb (60.0% vs 59.0%), confirming
+that 50 sampled worlds per decision is sufficient for evaluation purposes.
+
+Zeb's performance against E[Q] is stable across 770 epochs of self-play (2829→3599):
+60.0% → 60.2%, well within noise. The model holds ~70% vs random throughout.
+
+**Key takeaways:**
+- E[Q] with 100 sampled worlds beats random 73.2% — this anchors the imperfect-info ceiling
+- Zeb captures ~75% of the gap between random and E[Q]
+- E[Q] beats Zeb 60-40 head-to-head, stable across epochs and seat assignments
+- The gap is meaningful but not dominant — Zeb's learned intuition (single forward pass)
+  competes well against expensive statistical analysis (100 oracle queries per decision)
+- N=50 is good enough for tracking — halving samples doesn't degrade win rate measurement
+
+### Key Files
+
+- `eq_player.py` — `EQPlayer` class, `zeb_states_to_game_state_tensor()` bridge,
+  `evaluate_eq_vs_random()`, `evaluate_eq_vs_zeb()`
+- `eval_eq.py` — CLI: `python -u -m forge.zeb.eval_eq`
+
+---
+
+## MCTS Visit Distribution Entropy
+
+Entropy of the MCTS visit distributions (H = -sum(p log p)) measures how "spread out"
+the search is across legal moves. Lower entropy means MCTS concentrates visits on fewer
+actions — the model is more confident.
+
+Logged per epoch in `run_selfplay_training.py` as `mcts/entropy_mean` (W&B) and printed
+to console.
+
+### Measurements
+
+| Epoch | Mean H | Std | Median | Normalized (H/log k) | Notes |
+|-------|--------|-----|--------|-----------------------|-------|
+| ~1830 | 0.415 | — | — | — | First measurement |
+| 3179 | 0.313 | 0.419 | 0.096 | 0.221 | 256 games, 200 sims |
+
+**Entropy by number of legal actions (epoch 3179):**
+
+| Legal moves (k) | Mean H | Max possible (log k) | Count |
+|------------------|--------|----------------------|-------|
+| 1 | 0.000 | 0.000 | 1024 |
+| 2 | 0.176 | 0.693 | 1024 |
+| 3 | 0.294 | 1.099 | 1024 |
+| 4 | 0.370 | 1.386 | 1024 |
+| 5 | 0.413 | 1.609 | 1024 |
+| 6 | 0.462 | 1.792 | 1024 |
+| 7 | 0.473 | 1.946 | 1024 |
+
+**Interpretation:** Mean entropy dropped 25% from epoch ~1830 to 3179 (0.415 → 0.313),
+indicating increasing policy confidence. The median (0.096) is much lower than the mean,
+showing a skewed distribution — most moves have very concentrated visits with a long tail
+of uncertain positions. Normalized entropy of 0.22 means MCTS uses only ~22% of the
+available uncertainty on average.
+
+---
+
+## Distributed Training (Worker / Learner)
+
+Decouples self-play game generation from training into separate processes,
+connected entirely through HuggingFace Hub — no shared filesystem needed.
+
+```
+                     HuggingFace Hub
+   ┌────────────────────────────────────────────────┐
+   │  jasonyandell/zeb-42          (weights)        │
+   │  ├── model.pt                                  │
+   │  ├── config.json                               │
+   │  └── training_state.json                       │
+   │                                                │
+   │  jasonyandell/zeb-42-examples (training data)  │
+   │  ├── worker-0_1707123456_a1b2c3d4.pt           │
+   │  ├── worker-0_1707123520_e5f6a7b8.pt           │
+   │  └── worker-1_1707123489_c9d0e1f2.pt           │
+   └────────────────────────────────────────────────┘
+          ↑ push weights    ↑ upload       ↓ pull weights
+          ↓ download        │ examples     ↓ download examples
+   ┌──────────────┐         │        ┌──────────────┐
+   │   Learner    │─────────┘        │   Worker(s)  │
+   │   (1× GPU)   │                  │   (any GPU)  │
+   └──────────────┘                  └──────────────┘
+```
+
+**Key design**: The examples repo IS the replay buffer. No replay buffer is saved
+in checkpoints. On restart, the learner re-downloads from HF and rebuilds the
+buffer. Checkpoints are tiny (~2MB: model + optimizer only).
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `worker/run.py` | Self-play worker: MCTS games → ExampleBatch → HF Hub |
+| `learner/run.py` | Training learner: HF Hub → replay buffer → train → push weights |
+| `hf.py` | HuggingFace Hub: weights + example upload/download/prune |
+| `example_store.py` | `ExampleBatch` dataclass + atomic save/load/scan |
+
+### Prerequisites
+
+```bash
+pip install huggingface_hub
+python -c "from huggingface_hub import login; login()"   # one-time, saves token to ~/.cache/huggingface/token
+```
+
+HuggingFace repos:
+- Weights: https://huggingface.co/jasonyandell/zeb-42
+- Examples: https://huggingface.co/jasonyandell/zeb-42-examples
+
+### Starting the Learner
+
+The learner must start first — it pushes the initial weights that workers pull.
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt \
+    --lr 1e-4 \
+    --batch-size 64 \
+    --replay-buffer-size 500000 \
+    --training-steps-per-cycle 1000 \
+    --push-every 10 \
+    --save-every 10 \
+    --eval-every 10 \
+    --eval-games 2000 \
+    --keep-checkpoints 3 \
+    --keep-example-files 15 \
+    --wandb
+```
+
+The learner:
+1. Loads model + optimizer from checkpoint
+2. Pushes initial weights to HuggingFace
+3. Rebuilds GPU replay buffer from example files on HF (crash recovery)
+4. Polls HF for new `.pt` files uploaded by workers
+5. Ingests new examples into GPU replay buffer (ring buffer, oldest evicted)
+6. Trains `--training-steps-per-cycle` gradient steps per cycle
+7. Pushes updated weights to HF every `--push-every` cycles
+8. Prunes old example files on HF (keeps `--keep-example-files`, default 15)
+9. Evaluates vs random every `--eval-every` cycles
+10. Saves local checkpoints (model + optimizer only, ~2MB)
+
+Checkpoints are named `learner-cycle{N:06d}.pt`. No replay buffer is saved —
+the HF examples repo is the durable store.
+
+### Starting a Worker
+
+Once the learner has pushed initial weights, start one or more workers:
+
+```bash
+python -u -m forge.zeb.worker.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --n-parallel-games 256 \
+    --n-simulations 200 \
+    --max-mcts-nodes 512 \
+    --temperature 1.0 \
+    --games-per-batch 1280 \
+    --weight-sync-interval 2 \
+    --device cuda \
+    --worker-id worker-0
+```
+
+The worker:
+1. Pulls model weights from HuggingFace
+2. Creates GPU self-play pipeline (CUDA graphs, batched MCTS)
+3. Generates `--games-per-batch` games per iteration via MCTS
+4. Converts GPU tensors to CPU `ExampleBatch`, uploads to HF examples repo
+5. Every `--weight-sync-interval` batches, checks HF for newer weights
+6. Weight updates are in-place (`load_state_dict`), CUDA graphs stay valid
+
+Multiple workers use different `--worker-id` values. No shared filesystem needed.
+
+### Data Flow
+
+**Training examples** flow through HuggingFace Hub:
+```
+jasonyandell/zeb-42-examples/
+├── worker-0_1707123456_a1b2c3d4.pt    # Worker uploads atomically
+├── worker-0_1707123520_e5f6a7b8.pt
+└── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
+```
+
+Each `.pt` file contains an `ExampleBatch`:
+- `observations`: [N, 36, 8] int32
+- `masks`: [N, 36] bool
+- `hand_indices`: [N, 7] int64
+- `hand_masks`: [N, 7] bool
+- `policy_targets`: [N, 7] float32 (MCTS visit distributions)
+- `value_targets`: [N] float32 (game outcomes in [-1, 1])
+- `metadata`: {worker_id, model_step, n_games, timestamp}
+
+With `--games-per-batch 1280`: each file contains ~35k examples (~42MB).
+The learner tracks seen filenames and only downloads new files.
+
+**Model weights** flow through HuggingFace Hub:
+```
+jasonyandell/zeb-42/
+├── config.json              # Model architecture (embed_dim, n_heads, etc.)
+├── model.pt                 # Latest model state_dict
+└── training_state.json      # {"step": 1234, "total_games": 500000}
+```
+
+Workers check `training_state.json` first (tiny download) and skip pulling
+`model.pt` if the step hasn't changed. HF's ETag caching makes polling free.
+
+### Replay Buffer Sizing
+
+The GPU replay buffer (default 500k) should be large enough that each example
+gets trained on ~8-10 times before eviction (following AlphaZero's pattern).
+
+| Workers | Examples/min | Buffer turnover | Passes/example |
+|---------|-------------|-----------------|----------------|
+| 1       | ~6k         | ~83 min         | ~80            |
+| 5       | ~30k        | ~17 min         | ~16            |
+| 10      | ~60k        | ~8 min          | ~8             |
+
+Formula: passes ≈ `(buffer_size / inflow_per_cycle) × (steps × batch / buffer_size)`
+
+### Local-Only Mode
+
+Both worker and learner also support local filesystem mode for same-machine
+setups. Use `--output-dir`/`--input-dir` instead of `--examples-repo-id`:
+
+```bash
+# Terminal 1: Learner (GPU)
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --input-dir /tmp/zeb-examples \
+    --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt
+
+# Terminal 2: Worker (same GPU)
+python -u -m forge.zeb.worker.run \
+    --repo-id jasonyandell/zeb-42 \
+    --output-dir /tmp/zeb-examples \
+    --device cuda
+```
+
+In local mode, the learner deletes files after ingestion and saves the replay
+buffer in checkpoints (larger checkpoints, ~92MB).
+
+---
+
+## Vast.ai Worker Fleet
+
+Workers can run on cheap Vast.ai GPU instances while the learner runs locally.
+See [`vast/README.md`](vast/README.md) for setup and usage.
+
+```bash
+cd forge/zeb/vast
+./vast_up.sh 4          # launch 4 workers on cheapest 3000-series GPUs
+./vast_status.sh        # check instance status and costs
+./vast_replenish.sh 4   # replace any dead workers
+./vast_down.sh          # tear everything down
+```
+
+---
+
+## See Also
+
+- `ML_OVERVIEW.md` - Background on RL concepts, REINFORCE, hyperparameters
+- `forge/eq/oracle.py` - Stage1Oracle implementation
+- `forge/ORIENTATION.md` - Overall ML pipeline architecture

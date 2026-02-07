@@ -8,25 +8,15 @@ import { writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { Domino, TrumpSelection, GameState, LedSuitOrNone } from '../src/game/types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP, PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../src/game/types';
-import { analyzeDominoAsSuit, getPlayableSuits } from '../src/game/ai/domino-strength';
-import { isTrump } from '../src/game/core/dominoes';
+import { PLAYED_AS_TRUMP, NO_BIDDER, NO_LEAD_SUIT } from '../src/game/types';
+import { analyzeDominoAsSuit } from '../src/game/ai/domino-strength';
+import { suitsWithTrumpBase } from '../src/game/layers/compose';
+import { isTrumpBase } from '../src/game/layers/rules-base';
+import { getLedSuitName, SUIT_IDENTIFIERS } from '../src/game/game-terms';
 
-// Const lookup for suit names - no runtime conversion needed
-const SUIT_TO_LED_NAME = {
-  [PLAYED_AS_TRUMP]: 'played-as-trump',
-  [BLANKS]: 'led-blanks',
-  [ACES]: 'led-aces',
-  [DEUCES]: 'led-deuces',
-  [TRES]: 'led-tres',
-  [FOURS]: 'led-fours',
-  [FIVES]: 'led-fives',
-  [SIXES]: 'led-sixes',
-  [DOUBLES_AS_TRUMP]: 'led-doubles'
-} as const;
-
+// Use centralized LED_SUIT_NAMES from game-terms.ts
 function numberToSuitName(n: number): string {
-  return SUIT_TO_LED_NAME[n as keyof typeof SUIT_TO_LED_NAME] ?? `led-suit-${n}`;
+  return getLedSuitName(n as LedSuitOrNone);
 }
 
 // Generate all 28 dominoes
@@ -44,17 +34,6 @@ function generateAllDominoes(): Domino[] {
   return dominoes;
 }
 
-// Map trump suits to names for consistency
-const TRUMP_SUIT_NAMES = {
-  0: 'blanks',
-  1: 'aces',
-  2: 'deuces',
-  3: 'tres',
-  4: 'fours',
-  5: 'fives',
-  6: 'sixes'
-} as const;
-
 // Get all trump configurations (8 unique scenarios)
 function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }> {
   const configs: Array<{ key: string; trump: TrumpSelection }> = [];
@@ -65,16 +44,16 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
     trump: { type: 'no-trump' }
   });
   
-  // Doubles as trump
+  // Called (doubles) as trump
   configs.push({
-    key: 'trump-doubles',
+    key: 'trump-called',
     trump: { type: 'doubles' }
   });
   
   // Each suit as trump (0-6)
   for (let suit = 0; suit <= 6; suit++) {
     configs.push({
-      key: `trump-${TRUMP_SUIT_NAMES[suit as keyof typeof TRUMP_SUIT_NAMES]}`,
+      key: `trump-${SUIT_IDENTIFIERS[suit as keyof typeof SUIT_IDENTIFIERS]}`,
       trump: { type: 'suit', suit: suit as any }
     });
   }
@@ -85,6 +64,12 @@ function getTrumpConfigurations(): Array<{ key: string; trump: TrumpSelection }>
 // Create a minimal game state for analysis
 function createMinimalState(): GameState {
   return {
+    initialConfig: {
+      playerTypes: ['ai', 'ai', 'ai', 'ai'],
+      shuffleSeed: 0,
+      theme: 'business',
+      colorOverrides: {}
+    },
     phase: 'playing',
     players: [
       { id: 0, name: 'P0', hand: [], teamId: 0, marks: 0 },
@@ -104,17 +89,12 @@ function createMinimalState(): GameState {
     teamScores: [0, 0],
     teamMarks: [0, 0],
     gameTarget: 7,
-    tournamentMode: false,
     shuffleSeed: 0,
     playerTypes: ['ai', 'ai', 'ai', 'ai'],
-    consensus: {
-      completeTrick: new Set(),
-      scoreHand: new Set()
-    },
     actionHistory: [],
-    aiSchedule: {},
-    currentTick: 0
-  } as GameState;
+    theme: 'business',
+    colorOverrides: {}
+  };
 }
 
 interface StrengthEntry {
@@ -164,8 +144,8 @@ function generateTable(): void {
       state.trump = trump;
       
       // Get valid playable suits for this domino
-      const playableSuits = getPlayableSuits(domino, trump);
-      const dominoIsTrump = isTrump(domino, trump);
+      const playableSuits = suitsWithTrumpBase(state, domino);
+      const dominoIsTrump = isTrumpBase(state, domino);
       
       // Generate entry for playing as trump (PLAYED_AS_TRUMP) if applicable
       if (dominoIsTrump) {
@@ -189,34 +169,7 @@ function generateTable(): void {
           cannotFollow: analysis.cannotFollow.map(d => d.id.toString())
         };
         entryCount++;
-      }
-      
-      // Also generate entries for "invalid" plays that the runtime allows
-      // (e.g., playing a trump domino as a non-trump suit)
-      if (dominoIsTrump) {
-        // For trump dominoes, also generate entries for all suits they contain
-        // This handles edge cases where the runtime allows analyzing invalid plays
-        const allSuits = new Set<number>();
-        if (domino.high !== domino.low) {
-          allSuits.add(domino.high);
-          allSuits.add(domino.low);
-        } else {
-          allSuits.add(domino.high);
-        }
-        
-        for (const suit of allSuits) {
-          if (!playableSuits.includes(suit)) {
-            const analysis = analyzeDominoAsSuit(domino, suit, trump, state, 0);
-            const key = `${domino.id}|${trumpKey}|${numberToSuitName(suit)}`;
-            table[key] = {
-              beatenBy: analysis.beatenBy.map(d => d.id.toString()),
-              beats: analysis.beats.map(d => d.id.toString()),
-              cannotFollow: analysis.cannotFollow.map(d => d.id.toString())
-            };
-            entryCount++;
-          }
-        }
-      }
+      }      
     }
   }
   
@@ -226,12 +179,13 @@ function generateTable(): void {
   const output = `/**
  * Auto-generated domino strength lookup table
  * DO NOT EDIT - This file is generated by scripts/generate-strength-table.ts
- * 
+ *
  * Use getDominoStrength() to lookup precomputed strength analysis for any domino.
  * This module contains optimized lookups for all possible domino/trump/suit combinations.
  */
 
 import type { Domino, TrumpSelection, LedSuitOrNone } from '../types';
+import { getLedSuitName, SUIT_IDENTIFIERS } from '../game-terms';
 
 export interface StrengthEntry {
   beatenBy: string[];      // Domino IDs that can follow AND beat this
@@ -252,8 +206,8 @@ export function getDominoStrength(
   playedAsSuit: LedSuitOrNone
 ): StrengthEntry | undefined {
   const trumpKey = getTrumpKey(trump);
-  const suitName = SUIT_TO_LED_NAME[playedAsSuit as keyof typeof SUIT_TO_LED_NAME] ?? \`led-suit-\${playedAsSuit}\`;
-  
+  const suitName = getLedSuitName(playedAsSuit);
+
   const key = \`\${domino.id}|\${trumpKey}|\${suitName}\`;
   return STRENGTH_TABLE[key];
 }
@@ -265,38 +219,14 @@ function getTrumpKey(trump: TrumpSelection): string {
   if (trump.type === 'not-selected' || trump.type === 'no-trump') {
     return 'trump-no-trump';
   } else if (trump.type === 'doubles') {
-    return 'trump-doubles';
+    return 'trump-called';
   } else if (trump.type === 'suit') {
-    const suitName = TRUMP_SUIT_NAMES[trump.suit as keyof typeof TRUMP_SUIT_NAMES];
+    const suitName = SUIT_IDENTIFIERS[trump.suit as keyof typeof SUIT_IDENTIFIERS];
     return \`trump-\${suitName}\`;
   } else {
     return 'trump-no-trump';
   }
 }
-
-// Const lookup for trump suit names
-const TRUMP_SUIT_NAMES = {
-  0: 'blanks',
-  1: 'aces',
-  2: 'deuces',
-  3: 'tres',
-  4: 'fours',
-  5: 'fives',
-  6: 'sixes'
-} as const;
-
-// Const lookup for suit names - no runtime conversion needed
-const SUIT_TO_LED_NAME = {
-  [-1]: 'played-as-trump',
-  [0]: 'led-blanks',
-  [1]: 'led-aces',
-  [2]: 'led-deuces',
-  [3]: 'led-tres',
-  [4]: 'led-fours',
-  [5]: 'led-fives',
-  [6]: 'led-sixes',
-  [7]: 'led-doubles'
-} as const;
 
 // Export metadata for debugging
 export const TABLE_METADATA = {

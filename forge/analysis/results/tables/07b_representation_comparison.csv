@@ -1,0 +1,7 @@
+representation,n_features,features,mean_r2,std_r2,efficiency
+depth_only,1,['depth'],0.1565886099727374,0.0025764555321181274,0.1565886099727374
+depth_balance,2,"['depth', 'hand_balance']",0.1591364293327258,0.002616354590425267,0.0795682146663629
+depth_counts,2,"['depth', 'counts_remaining']",0.3723767632843666,0.007477430960272084,0.1861883816421833
+depth_team_counts,3,"['depth', 'team0_counts', 'team1_counts']",0.3724574954236433,0.007396594036568796,0.12415249847454778
+all_features,5,"['depth', 'hand_balance', 'counts_remaining', 'team0_counts', 'team1_counts']",0.37475782050082235,0.007383506149783231,0.07495156410016447
+count_features,3,"['counts_remaining', 'team0_counts', 'team1_counts']",0.35415466460235,0.008309174201763931,0.11805155486745

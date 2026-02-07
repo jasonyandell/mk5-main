@@ -1,0 +1,8 @@
+metric,value
+Total paths analyzed,28
+Unique basins,14
+Depth for 90% basin prediction,N/A
+Final prediction accuracy,N/A
+Mean continuation entropy [bits],1.18
+Mean Q-gap,2.9
+Mean % forced moves,80.9%

@@ -1,0 +1,9 @@
+cluster,mean_depth,mean_trick_pos,team0_lead_rate,mean_imbalance,mean_q_spread,mean_V,mode_action,name
+0,10.57,1.7,1.0,1.0,0.24,12.07,3,Mid-game Responding (Routine)
+1,5.56,2.38,0.0,1.0,1.44,7.3,0,Endgame Following (Routine)
+2,10.02,0.0,0.56,0.0,4.9,10.68,0,Mid-game Leading (Important)
+3,10.26,2.15,0.0,1.0,0.2,13.84,6,Mid-game Following (Routine)
+4,9.92,2.51,0.0,1.0,3.96,14.34,0,Mid-game Following (Routine)
+5,6.94,2.79,1.0,1.0,0.61,7.91,0,Endgame Following (Routine)
+6,10.35,2.41,1.0,1.0,2.41,14.39,1,Mid-game Following (Routine)
+7,9.03,2.48,0.5,1.0,24.11,8.76,0,Mid-game Following (Critical)

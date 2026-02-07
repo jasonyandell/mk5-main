@@ -1,0 +1,7 @@
+metric,value
+Total states analyzed (branching),15000
+Mean legal moves per state,2.00
+% branch points (multi-move),61.8%
+Mean diversity ratio,0.5490
+β₀ (connected components),0
+β₁ (loops),0

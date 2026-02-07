@@ -16,6 +16,12 @@ describe('Hand Victory - Bidding Team Wins', () => {
     ];
     
     gameState = {
+      initialConfig: {
+        playerTypes: ['human', 'ai', 'ai', 'ai'],
+        shuffleSeed: 12345,
+        theme: 'coffee',
+        colorOverrides: {}
+      },
       phase: 'scoring',
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       players,
@@ -31,15 +37,8 @@ describe('Hand Victory - Bidding Team Wins', () => {
       teamScores: [0, 0],
       teamMarks: [0, 0],
       gameTarget: GAME_CONSTANTS.DEFAULT_GAME_TARGET,
-      tournamentMode: true,
       shuffleSeed: 12345,
-      consensus: {
-        completeTrick: new Set(),
-        scoreHand: new Set()
-      },
       actionHistory: [],
-      aiSchedule: {},
-      currentTick: 0,
       theme: 'coffee',
       colorOverrides: {}
     };

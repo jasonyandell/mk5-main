@@ -1,0 +1,10 @@
+metric,value
+Total deals analyzed,4
+Mean unique basins per deal,16.25
+Median unique basins per deal,16.0
+Max unique basins,21
+% single-outcome deals,0.0%
+% ≤2 outcome deals,0.0%
+% ≤4 outcome deals,0.0%
+Mean divergence depth (multi-basin),26.0
+Entropy convergence depth (H < 0.1),28

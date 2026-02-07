@@ -1,21 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { createTestState, GameTestHelper } from '../helpers/gameTestHelper';
-import { isValidBid } from '../../game/core/rules';
+import { StateBuilder } from '../helpers';
+import { composeRules, baseLayer } from '../../game/layers';
 import { BID_TYPES } from '../../game/constants';
 import { isGameComplete } from '../../game/core/scoring';
 import { getNextPlayer } from '../../game/core/players';
 import type { Bid, TrumpSelection } from '../../game/types';
-import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP } from '../../game/types';
+import { BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED } from '../../game/types';
+
+const rules = composeRules([baseLayer]);
 
 describe('Tournament Standards (N42PA Rules)', () => {
   describe('Game Format Requirements', () => {
     it('uses straight 42 rules only (no special contracts)', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Test that special contract bids are invalid
       const specialBids = [
@@ -25,7 +26,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       specialBids.forEach(bid => {
-        expect(isValidBid(state, bid as Bid)).toBe(false);
+        expect(rules.isValidBid(state, bid as Bid)).toBe(false);
       });
 
       // Valid standard bids should work
@@ -36,17 +37,16 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       validBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       });
     });
 
     it('enforces maximum 2 marks for opening bid in tournament play', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Valid opening mark bids (1-2 marks)
       const validMarkBids = [
@@ -55,7 +55,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       validMarkBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       });
       
       // Invalid opening mark bids (3+ marks)
@@ -65,22 +65,21 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       invalidMarkBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(false);
+        expect(rules.isValidBid(state, bid)).toBe(false);
       });
     });
 
     it('requires minimum bid of 30 points', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Valid point bids (30-41)
       for (let points = 30; points <= 41; points++) {
         const bid = { type: BID_TYPES.POINTS, value: points, player: 1 };
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
       }
       
       // Invalid point bids (below 30)
@@ -91,22 +90,20 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
       
       invalidBids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(false);
+        expect(rules.isValidBid(state, bid)).toBe(false);
       });
     });
 
     it('enforces 7 marks to win game', () => {
-      const helper = new GameTestHelper();
-      
       // Game should not be complete with 6 marks
-      let state = helper.createGameWithMarks(6, 0);
-      expect(state.isComplete).toBe(false);
-      
+      let state = StateBuilder.inBiddingPhase().with({ teamMarks: [6, 0] }).build();
+      expect(state.phase).not.toBe('game_end');
+
       // Game should be complete with 7 marks
-      state = helper.createGameWithMarks(7, 0);
-      expect(state.isComplete).toBe(true);
-      expect(state.winner).toBe(0); // team 0 wins
-      
+      state = StateBuilder.gameEnded(0).build();
+      expect(state.phase).toBe('game_end');
+      expect(state.teamMarks[0]).toBeGreaterThanOrEqual(state.gameTarget); // team 0 wins
+
       // Test with isGameComplete function directly
       expect(isGameComplete(6, 0)).toBe(false);
       expect(isGameComplete(7, 0)).toBe(true);
@@ -116,27 +113,25 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
   describe('Bidding Sequence Rules', () => {
     it('proceeds clockwise from dealer left', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 2, // dealer is player 2
-        currentPlayer: 3, // first bidder should be player 3 (left of dealer)
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(2)
+        .withCurrentPlayer(3)
+        .withBids([])
+        .build();
 
       expect(state.currentPlayer).toBe(3);
 
       // After player 3 bids, should advance to player 0
       const passBid: Bid = { type: BID_TYPES.PASS, player: 3 };
-      expect(isValidBid(state, passBid)).toBe(true);
+      expect(rules.isValidBid(state, passBid)).toBe(true);
     });
 
     it('each player gets exactly one bid opportunity per round', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: []
-      });
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([])
+        .build();
 
       // Simulate complete bidding round
       const bids: Bid[] = [
@@ -147,7 +142,7 @@ describe('Tournament Standards (N42PA Rules)', () => {
       ];
 
       bids.forEach(bid => {
-        expect(isValidBid(state, bid)).toBe(true);
+        expect(rules.isValidBid(state, bid)).toBe(true);
         state.bids.push(bid);
         state.currentPlayer = getNextPlayer(state.currentPlayer); // Advance to next player
       });
@@ -163,17 +158,16 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
 
     it('requires redeal when all players pass', () => {
-      const state = createTestState({
-        phase: 'bidding',
-        dealer: 0,
-        currentPlayer: 1,
-        bids: [
+      const state = StateBuilder
+        .inBiddingPhase(0)
+        .withCurrentPlayer(1)
+        .withBids([
           { type: BID_TYPES.PASS, player: 1 },
           { type: BID_TYPES.PASS, player: 2 },
           { type: BID_TYPES.PASS, player: 3 },
           { type: BID_TYPES.PASS, player: 0 }
-        ]
-      });
+        ])
+        .build();
 
       // All pass scenario should trigger redeal
       const allPassed = state.bids.every(bid => bid.type === BID_TYPES.PASS);
@@ -184,29 +178,21 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
   describe('Trump Declaration Rules', () => {
     it('bid winner must declare trump suit', () => {
-      const state = createTestState({
-        phase: 'trump_selection',
-        bidWinner: 1,
-        currentPlayer: 1,
-        bids: [
-          { type: BID_TYPES.POINTS, value: 30, player: 1 },
-          { type: BID_TYPES.PASS, player: 2 },
-          { type: BID_TYPES.PASS, player: 3 },
-          { type: BID_TYPES.PASS, player: 0 }
-        ]
-      });
+      const state = StateBuilder
+        .inTrumpSelection(1, 30)
+        .build();
 
-      expect(state.bidWinner).toBe(1);
+      expect(state.winningBidder).toBe(1);
       expect(state.currentPlayer).toBe(1);
       expect(state.phase).toBe('trump_selection');
     });
 
     it('allows all valid trump options', () => {
-      const validTrumpSuits = [BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, DOUBLES_AS_TRUMP]; // 0-6 for suits plus doubles (7)
+      const validTrumpSuits = [BLANKS, ACES, DEUCES, TRES, FOURS, FIVES, SIXES, CALLED]; // 0-6 for suits plus doubles (7)
 
       validTrumpSuits.forEach(trump => {
         const numberToTrumpSelection = (trump: number): TrumpSelection => {
-          if (trump === DOUBLES_AS_TRUMP) {
+          if (trump === CALLED) {
             return { type: 'doubles' };
           } else if (trump === 8) {
             return { type: 'no-trump' };
@@ -217,10 +203,9 @@ describe('Tournament Standards (N42PA Rules)', () => {
           }
         };
 
-        const state = createTestState({
-          phase: 'playing',
-          trump: numberToTrumpSelection(trump)
-        });
+        const state = StateBuilder
+          .inPlayingPhase(numberToTrumpSelection(trump))
+          .build();
         expect(state.trump).toEqual(numberToTrumpSelection(trump));
       });
 
@@ -230,29 +215,26 @@ describe('Tournament Standards (N42PA Rules)', () => {
 
   describe('Gameplay Rules', () => {
     it('bid winner leads first trick', () => {
-      const state = createTestState({
-        phase: 'playing',
-        bidWinner: 2,
-        currentPlayer: 2,
-        trump: { type: 'suit', suit: ACES },
-        currentTrick: []
-      });
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES })
+        .withWinningBid(2, { type: BID_TYPES.POINTS, value: 30, player: 2 })
+        .withCurrentPlayer(2)
+        .build();
 
       expect(state.currentPlayer).toBe(2);
       expect(state.currentTrick).toHaveLength(0);
     });
 
     it('trick winner leads next trick', () => {
-      const state = createTestState({
-        phase: 'playing',
-        trump: { type: 'suit', suit: ACES },
-        currentTrick: [
+      const state = StateBuilder
+        .inPlayingPhase({ type: 'suit', suit: ACES })
+        .withCurrentTrick([
           { player: 0, domino: { id: 'test1', high: 2, low: 3 } },
           { player: 1, domino: { id: 'test2', high: 1, low: 1 } }, // trump wins
           { player: 2, domino: { id: 'test3', high: 2, low: 4 } },
           { player: 3, domino: { id: 'test4', high: 2, low: 5 } }
-        ]
-      });
+        ])
+        .build();
 
       // Player 1 played trump (1-1) and should win trick
       // Implementation would need trick winner calculation
@@ -282,9 +264,9 @@ describe('Tournament Standards (N42PA Rules)', () => {
     it('enforces no table talk or signals', () => {
       // This would be enforced at the UI level
       // Test that game state contains no communication mechanisms
-      const state = createTestState({
-        phase: 'playing'
-      });
+      const state = StateBuilder
+        .inPlayingPhase()
+        .build();
 
       // Game state should not have chat, signals, or communication fields
       expect(state).not.toHaveProperty('chat');
@@ -294,3 +276,6 @@ describe('Tournament Standards (N42PA Rules)', () => {
     });
   });
 });
+
+// Note: Tournament rules (baseLayer) do not support special contracts (Nello, Splash, Plunge)
+// Those require their respective layers to be added to the composition

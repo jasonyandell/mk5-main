@@ -1,0 +1,12 @@
+metric,value
+n_seeds,5.0
+n_comparisons,10791.0
+mean_info_value,36.56649059401353
+median_info_value,113.0
+max_info_value,127.0
+pct_actions_differ,96.52488184598276
+peak_info_depth,9.0
+peak_info_value,54.12412028150992
+mean_info_depth_1,20.939393939393938
+mean_info_depth_5,33.77627528583993
+mean_info_depth_9,54.12412028150992

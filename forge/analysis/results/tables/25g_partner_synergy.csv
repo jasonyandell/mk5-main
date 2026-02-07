@@ -1,0 +1,13 @@
+metric,value
+n_hands,200.0
+main_effects_r2,0.15848672742212588
+interaction_r2,0.1596736125339323
+delta_r2,0.0011868851118064239
+p0_doubles_main_effect,6.958044265618636
+p2_doubles_main_effect,0.7979099153387579
+interaction_coef,-0.590201845918312
+interaction_pval,0.5993798397025767
+interaction_sig,0.0
+p0_effect_p2_0,7.972993440865174
+p0_effect_p2_2,6.792589749028551
+synergy_effect,-1.1804036918366236

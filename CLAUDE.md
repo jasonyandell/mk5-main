@@ -1,15 +1,42 @@
 # Texas 42
 
+## Issue Tracking (bd)
+
+Run `bd prime` for full workflow context. Essential commands:
+
+```bash
+bd ready                    # Find unblocked work
+bd show <id>                # View issue details
+bd create "Title" -t task   # Create issue (-p 0-4 for priority)
+bd close <id>               # Complete work
+bd dep add <a> <b>          # a depends on b
+bd sync                     # Sync at session end
+bd update <id> --description "..."` # Update
+bd comments add <id> "..."` # Add comments 
+```
+
+Priority: 0=critical, 2=medium, 4=backlog. Use `bd <cmd> --help` for details.
+
+**Important**: Beads are stored externally. Never try to read/write bead files directly - always use `bd` commands.
+
+# North Star
+You are an expert developer excited to help the authors are build a crystal palace in the sky with this project.  We want this to be beautiful and correct above all. If we were authors mechanics, this project would be our "project car".  We work on it on weekends and free time for the love of the building and with no external time pressure, only pride in a job well done and the enjoyment of the process itself.  We prioritize elegance, simplicity and correctness.  We are MORE THAN HAPPY to spend extra time making every little thing perfect and we file beads when we find something we can't fix now.  We are on the 8th major overhaul and if we get to 100 major overhaul, that just means we had fun.
+
+## Quick Start
+
+**New to the codebase?** Read [docs/ORIENTATION.md](docs/ORIENTATION.md) first for architecture overview.
+
+**Detailed references:**
+- [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) - Multiplayer architecture (simple Socket/GameClient/Room pattern)
+- [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - Layer system deep-dive (historical)
+- [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
+
 ## Overview
-Web implementation of Texas 42 dominoes game
-- Complete rule enforcement and scoring
-- Svelte/TypeScript/Vite/Tailwind CSS SPA with real-time gameplay
-  - GameState type: src/game/types.ts:93-133 — Single source of truth
-  - GameAction type: src/game/types.ts:143-151 — Event sourcing primitives
-  - State store: src/stores/gameStore.ts:136 — Reactive state container
-  - Action handlers: src/stores/gameStore.ts:373-476 — Pure state transitions
-  - UI root: src/App.svelte — View layer entry point
-Official rules are in docs/rules.md
+Web implementation of Texas 42 dominoes game with pure functional architecture:
+- Event sourcing: `state = replayActions(config, history)`
+- Unified Layer system with two surfaces (execution rules + action generation)
+- Capability-based multiplayer with filtered views
+- Zero coupling between core engine and layers/multiplayer
 
 ## Philosophy
 - Immutable state transitions
@@ -23,27 +50,33 @@ Official rules are in docs/rules.md
   - These won't run with `npm run test:e2e` (production tests only)
   - Run scratch tests explicitly: `npx playwright test --config=playwright.scratch.config.ts`
 
-## CRITICAL: URL HANDLING - AUTOMATED TEST GENERATION
-  User provides localhost URL with a bug report? Follow this workflow:
+## Testing Strategy
 
-  1. **Generate test automatically**: `node scripts/replay-from-url.js "<url>" --generate-test`
-      - Creates test file in scratch/test-{timestamp}.js
-      - Test includes all replay logic and state logging
+### Unit Tests (Vitest)
+- For pure game logic and pasted URLs
+- Test core functions in isolation
+- Uses `environment: 'node'` (not jsdom) - tests are pure logic, no DOM needed
 
-  2. **Debug with focused options**:
-      - `--action-range 87 92` - Show only actions 87-92 (no grep needed!)
-      - `--hand 4` - Focus on just hand 4
-      - `--show-tricks` - Display trick winners and points
-      - `--compact` - One line per action with score changes
-      - `--stop-at N` - Stop replay at action N
 
-** Unit Tests ** - for pure game logic and pasted URLs.
+**No legacy** - CRITICAL. This is a greenfield project. Everything should be unified, even if it takes significant extra work.
+- An architecture test (`src/tests/architecture/no-backwards-compat.test.ts`) enforces this by detecting:
+  - `@deprecated` annotations
+  - "legacy compatibility" / "backward compatibility" comments
+  - `_legacy`, `_old`, `_deprecated` suffixes
+- Delete deprecated code instead of marking it deprecated. There are no external users.
 
-** Playwright ** - 
-Use src/tests/e2e/helpers/game-helper.ts for all interactions
-Locators go in game-helper.ts, NOT in tests
-CRITICAL: setTimeout() is BANNED and can NEVER be used in playwright tests
+**No skipped tests** - This is a greenfield project. All tests should pass and be valuable, even if it takes significant extra work.
 
-** No legacy ** - CRITICAL. this is a greenfield project.  everything should be unified, even if it takes significant extra work
+## Running TypeScript scripts
+- This project uses `"type": "module"` in package.json - ES modules only!
+- When creating test scripts:
+  - Use `.ts` extension for TypeScript files
+  - Use ES module imports: `import { thing } from './path'`
+  - NOT CommonJS: ~~`const { thing } = require('./path')`~~
+- Common pitfall: npm run build outputs to dist/ which may not exist yet
 
-** No skipped tests ** - this is a greenfield project.  all tests should pass and be valuable, even if it takes significant extra work
+## ML Training (Crystal Forge)
+
+See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture, setup, and commands.
+
+Always use `python -u` (unbuffered) so logs stream in real-time

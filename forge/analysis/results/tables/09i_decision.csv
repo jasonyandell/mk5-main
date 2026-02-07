@@ -1,0 +1,9 @@
+metric,value
+Total states analyzed,10979
+Mean Q-gap,2.93
+Median Q-gap,0.00
+% Forced (1 legal action),38.9%
+% Multi-action,61.1%
+Mean n_actions (when multi),2.65
+% with Q-gap > 5,16.3%
+Mean mistake cost (2nd-best),4.80

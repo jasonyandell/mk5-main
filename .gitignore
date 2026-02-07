@@ -82,3 +82,34 @@ pnpm-lock.yaml
 
 # Vitest
 coverage.*/
+
+# Generated data files (regenerate with: npm run generate:perfects)
+# Now covered by data/ ignore above
+
+# MCCFR training artifacts (large files, keep in scratch/ or gitignored)
+# Final compressed models go in models/ and ARE checked in
+trained-strategy*.json
+trained-strategy*.json.gz
+*.zip
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# ML data and training outputs (large files)
+data/
+runs/
+lightning_logs/
+*.tar.gz
+
+# Zeb training checkpoints (large, use export_model.py for git-friendly snapshots)
+forge/zeb/checkpoints/
+
+# bv (beads viewer) local config and caches
+.bv/
+.beads/.bv.lock
+
+wandb/
+history/

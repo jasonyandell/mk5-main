@@ -1,0 +1,8 @@
+metric,value
+Total V-trajectories,48
+Mean trajectory length,25.9
+Hurst (roughness scaling),0.267
+Hurst (DFA mean),1.259
+Hurst (DFA std),0.397
+Exponential growth rate,0.592
+Effective branching factor,1.81

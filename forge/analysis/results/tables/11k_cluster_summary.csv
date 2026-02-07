@@ -1,0 +1,4 @@
+cluster_name,V_mean_mean,V_mean_std,V_mean_min,V_mean_max,V_std_mean,V_std_std,n_unique_basins_mean,V_spread_mean,n_doubles_mean,trump_count_mean,has_trump_double_mean,count_points_mean,base_seed_count
+STRONG,33.66,8.28,2.67,42.0,4.43,3.19,1.0,10.0,2.14,1.66,0.23,10.43,35
+VOLATILE,16.93,13.68,-28.0,34.0,11.85,5.57,2.02,26.84,1.83,1.4,0.22,10.0,81
+WEAK,2.7,12.38,-29.33,21.33,22.68,6.92,2.68,53.26,1.46,1.11,0.1,7.92,84

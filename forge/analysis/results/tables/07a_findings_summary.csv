@@ -1,0 +1,8 @@
+Phase,Analysis,Key Metric,Value,Interpretation
+01,Baseline,V range,"[-42, +42]",Full score range observed
+02,Information,Compression,~0.4,Significant structure exists
+03,Counts,R²,0.76,Counts explain most variance
+04,Symmetry,Compression,1.0x,No benefit from symmetry
+04,Clustering,Var reduction,35.7%,Approximate methods work
+05,Topology,Fragmentation,High,Complex level set structure
+06,Scaling,DFA alpha,~0.7-1.0,Non-random temporal structure

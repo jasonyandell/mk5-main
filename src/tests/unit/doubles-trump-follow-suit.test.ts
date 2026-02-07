@@ -1,9 +1,12 @@
 import { describe, test, expect } from 'vitest';
-import { isValidPlay, getValidPlays } from '../../game/core/rules';
+import { composeRules } from '../../game/layers/compose';
+import { baseLayer } from '../../game/layers';
 import { createInitialState } from '../../game/core/state';
-import { analyzeSuits } from '../../game/core/suit-analysis';
 import type { Domino, GameState, TrumpSelection } from '../../game/types';
-import { DOUBLES_AS_TRUMP } from '../../game/types';
+import { CALLED } from '../../game/types';
+
+// Use threaded rules system
+const rules = composeRules([baseLayer]);
 
 describe('Doubles Trump Follow Suit Rules', () => {
   const trump: TrumpSelection = { type: 'doubles' }; // Doubles are trump
@@ -18,11 +21,10 @@ describe('Doubles Trump Follow Suit Rules', () => {
         domino: { high: 6, low: 6, id: "6-6" } // P0 led double-six
       }
     ];
-    state.currentSuit = DOUBLES_AS_TRUMP; // Doubles were led (doubles are trump)
+    state.currentSuit = CALLED; // Doubles were led (doubles are trump)
     state.currentPlayer = 1;
     if (state.players[1]) {
       state.players[1].hand = playerHand;
-      state.players[1].suitAnalysis = analyzeSuits(playerHand, trump);
     }
     return state;
   }
@@ -40,7 +42,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
   test('Player must follow suit with doubles when doubles are trump', () => {
     // P1 has double-five and must play it when double-six was led
     const state = createTestState(p1Hand);
-    const validPlays = getValidPlays(state, 1);
+    const validPlays = rules.getValidPlays(state, 1);
     
     expect(validPlays).toHaveLength(1);
     expect(validPlays[0]?.id).toBe("5-5");
@@ -51,8 +53,8 @@ describe('Doubles Trump Follow Suit Rules', () => {
     const doubleFive = { high: 5, low: 5, id: "5-5" };
     const nonDouble = { high: 4, low: 0, id: "4-0" };
     
-    expect(isValidPlay(state, doubleFive, 1)).toBe(true);
-    expect(isValidPlay(state, nonDouble, 1)).toBe(false);
+    expect(rules.isValidPlay(state, doubleFive, 1)).toBe(true);
+    expect(rules.isValidPlay(state, nonDouble, 1)).toBe(false);
   });
 
   test('All doubles can follow when doubles trump is led', () => {
@@ -66,7 +68,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
     ];
     
     const state = createTestState(testHand);
-    const validPlays = getValidPlays(state, 1);
+    const validPlays = rules.getValidPlays(state, 1);
     
     // Should only return the doubles
     expect(validPlays).toHaveLength(5);
@@ -81,7 +83,7 @@ describe('Doubles Trump Follow Suit Rules', () => {
     ];
     
     const state = createTestState(handWithoutDoubles);
-    const validPlays = getValidPlays(state, 1);
+    const validPlays = rules.getValidPlays(state, 1);
     
     // All plays should be valid when can't follow suit
     expect(validPlays).toHaveLength(3);
@@ -102,16 +104,16 @@ describe('Doubles Trump Follow Suit Rules', () => {
     const state = createTestState(bugReportHand);
     
     // Test each domino individually
-    expect(isValidPlay(state, { high: 4, low: 0, id: "4-0" }, 1)).toBe(false);
-    expect(isValidPlay(state, { high: 5, low: 5, id: "5-5" }, 1)).toBe(true);
-    expect(isValidPlay(state, { high: 1, low: 0, id: "1-0" }, 1)).toBe(false);
-    expect(isValidPlay(state, { high: 6, low: 4, id: "6-4" }, 1)).toBe(false);
-    expect(isValidPlay(state, { high: 2, low: 1, id: "2-1" }, 1)).toBe(false);
-    expect(isValidPlay(state, { high: 4, low: 3, id: "4-3" }, 1)).toBe(false);
-    expect(isValidPlay(state, { high: 5, low: 0, id: "5-0" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 4, low: 0, id: "4-0" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 5, low: 5, id: "5-5" }, 1)).toBe(true);
+    expect(rules.isValidPlay(state, { high: 1, low: 0, id: "1-0" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 6, low: 4, id: "6-4" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 2, low: 1, id: "2-1" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 4, low: 3, id: "4-3" }, 1)).toBe(false);
+    expect(rules.isValidPlay(state, { high: 5, low: 0, id: "5-0" }, 1)).toBe(false);
     
     // Get valid plays - should only be 5-5
-    const validPlays = getValidPlays(state, 1);
+    const validPlays = rules.getValidPlays(state, 1);
     expect(validPlays).toHaveLength(1);
     expect(validPlays[0]?.id).toBe("5-5");
   });

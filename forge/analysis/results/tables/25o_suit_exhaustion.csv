@@ -1,0 +1,9 @@
+metric,value
+n_seeds,10.0
+n_observations,1000000.0
+pct_opponent_void,100.0
+mean_q_spread_no_void,
+mean_q_spread_void,2.75701
+q_spread_difference,
+std_q_spread_no_void,
+std_q_spread_void,6.724170214559197

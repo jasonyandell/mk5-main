@@ -1,0 +1,6 @@
+cluster_name,V_mean_mean,V_mean_std,V_mean_min,V_mean_max,V_mean_count,V_std_mean,n_doubles_mean,trump_count_mean,count_points_mean
+Cluster-4,13.2,14.99,-10.0,42.0,41,14.1,1.63,1.07,7.44
+Count-Rich/Six-Heavy,13.05,10.59,-7.33,37.33,37,18.19,1.38,1.54,16.76
+Few-Double/Count-Poor,5.76,18.2,-29.33,36.67,55,16.96,1.04,1.24,3.73
+Multi-Double/Trump-Heavy,22.75,13.9,-4.67,42.0,34,13.19,2.21,2.38,10.59
+Multi-Double/Trump-Light,20.06,17.74,-29.33,42.0,33,11.74,2.91,0.42,10.61

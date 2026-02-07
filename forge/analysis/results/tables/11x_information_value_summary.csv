@@ -1,0 +1,2 @@
+n_seeds,n_states,mean_info_gain,median_info_gain,max_info_gain,pct_benefit_any,pct_benefit_significant,pct_benefit_large,action_agreement_rate
+49,31654,0.5396790340273211,0.0,18.66666603088379,26.773867441713527,14.453149680925002,4.271182157073356,73.73581011351908

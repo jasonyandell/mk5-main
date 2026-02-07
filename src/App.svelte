@@ -4,15 +4,16 @@
   import PlayingArea from './lib/components/PlayingArea.svelte';
   import ActionPanel from './lib/components/ActionPanel.svelte';
   import SettingsPanel from './lib/components/SettingsPanel.svelte';
-  import QuickplayError from './lib/components/QuickplayError.svelte';
   import ThemeColorEditor from './lib/components/ThemeColorEditor.svelte';
-  import { gameActions, gameState, startGameLoop, viewProjection } from './stores/gameStore';
+  import SeedFinderModal from './lib/components/SeedFinderModal.svelte';
+  import OneHandCompleteModal from './lib/components/OneHandCompleteModal.svelte';
+  import { gameState, viewProjection, modes } from './stores/gameStore';
   import { fly, fade } from 'svelte/transition';
 
   let showSettingsPanel = $state(false);
   let showThemeEditor = $state(false);
   let activeView = $state<'game' | 'actions'>('game');
-  let settingsInitialTab = $state<'state' | 'history' | 'theme'>('state');
+  let settingsInitialTab = $state<'state' | 'theme'>('state');
 
   // Handle keyboard shortcuts
   function handleKeydown(e: KeyboardEvent) {
@@ -25,22 +26,25 @@
       } else if (showSettingsPanel) {
         showSettingsPanel = false;
       }
-    } else if (e.ctrlKey && e.key === 'z' && !showSettingsPanel) {
-      e.preventDefault();
-      gameActions.undo();
     }
   }
 
   onMount(() => {
-    // Try to load from URL on mount (theme will be applied reactively)
-    gameActions.loadFromURL();
-    
-    // Start the game loop for interactive play (not in test mode)
+    // Check for one-hand URL parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const testMode = urlParams.get('testMode') === 'true';
-    if (!testMode) {
-      startGameLoop();
+    const oneHandParam = urlParams.get('onehand');
+
+    if (oneHandParam === 'auto') {
+      // Start with competitive seed (server finds one)
+      modes.oneHand.start();
+    } else if (oneHandParam) {
+      // Start with specific seed
+      const seed = parseInt(oneHandParam, 10);
+      if (!isNaN(seed)) {
+        modes.oneHand.start(seed);
+      }
     }
+    // Note: loadFromURL is deprecated - server handles all state
   });
   
   // Smart panel switching based on game phase
@@ -127,11 +131,12 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div 
+<div
   class="app-container flex flex-col h-screen bg-base-100 text-base-content font-sans overflow-hidden"
   style="height: 100dvh;"
-  role="application" 
+  role="application"
   data-phase={$gameState.phase}
+  data-processing={$viewProjection.ui.isAIThinking}
 >
   <Header 
     on:openSettings={() => {
@@ -173,4 +178,5 @@
   }}
 />
 
-<QuickplayError />
+<SeedFinderModal />
+<OneHandCompleteModal />

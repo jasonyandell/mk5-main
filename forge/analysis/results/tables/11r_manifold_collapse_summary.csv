@@ -1,0 +1,2 @@
+n_hands,mean_total_var,mean_config_dim_ratio,mean_depth_dim_ratio,mean_collapse_score,mean_participation_ratio,mean_trajectory_corr,corr_collapse_vs_ev,corr_configdim_vs_ev,pct_highly_collapsed,pct_not_collapsed
+100,162.01733682647614,0.36706557868952233,0.3712940701957878,0.6329344213104777,1.365177275878185,0.250061244125707,0.36885418218350763,-0.36885418218350763,27.0,40.0

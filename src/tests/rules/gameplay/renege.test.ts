@@ -30,7 +30,6 @@ describe('Feature: Doubles Treatment', () => {
           { player: 0, domino: { high: 6, low: 3, id: '6-3' } } // 6 led
         ],
         tricks: [],
-        tournamentMode: true,
       };
       
       const firstPlay = mockState.currentTrick![0];
@@ -66,7 +65,6 @@ describe('Feature: Doubles Treatment', () => {
           { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         teamMarks: [2, 3], // Current marks
-        tournamentMode: true,
         winningBidder: 0, // Team 0 bid
         currentBid: { type: 'marks', value: 2, player: 0 }, // Bid 2 marks
       };
@@ -108,7 +106,6 @@ describe('Feature: Doubles Treatment', () => {
           { id: 3, name: 'Player 4', hand: [], teamId: 1 as const, marks: 0 },
         ],
         teamMarks: [2, 3], // Current marks
-        tournamentMode: false, // Casual play
         winningBidder: 0, // Team 0 bid
         currentBid: { type: 'marks', value: 1, player: 0 }, // Bid 1 mark
       };

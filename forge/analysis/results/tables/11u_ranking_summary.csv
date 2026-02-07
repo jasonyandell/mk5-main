@@ -1,0 +1,2 @@
+n_hands,n_dominated,n_pareto_optimal,pct_bid_lambda_0,pct_bid_lambda_1,pct_bid_lambda_2,rank_corr_0_vs_1,rank_corr_0_vs_2,mean_ev,mean_sigma
+200,197,3,29.5,13.5,7.000000000000001,0.9229979958031432,0.8217206725482171,13.88,15.099856963824507

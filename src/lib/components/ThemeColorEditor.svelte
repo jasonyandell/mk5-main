@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
   import { formatHex, parse, converter } from 'culori';
-  import { gameState, gameActions } from '../../stores/gameStore';
+  // No need to re-encode full URL for sharing; preserve current URL and patch theme if needed
   import ColorPicker from 'svelte-awesome-color-picker';
   import Icon from '../icons/Icon.svelte';
+  import { shareContent, canNativeShare } from '../utils/share';
   
   const dispatch = createEventDispatcher();
   
@@ -67,8 +68,8 @@
   
   // Store current colors (HSL format)
   let currentColors = $state<Record<string, string>>({});
-  // Custom colors now come from gameState
-  let customColors = $derived($gameState.colorOverrides || {});
+  // Custom colors are not persisted in the new architecture
+  let customColors = $state<Record<string, string>>({});
   // No direct style injection here; App.svelte handles overrides centrally
   // Keep a reference only to clean up any legacy element from older builds
   let legacyStyleElement: HTMLStyleElement | null = null;
@@ -177,7 +178,7 @@
     const baseVal = styles.getPropertyValue(varName).trim();
     if (baseVal && approxEqualOklch(baseVal, colorValue)) return;
     // If an override exists and equals requested, ignore
-    const existing = ($gameState.colorOverrides || {})[varName];
+    const existing = customColors[varName];
     if (existing && approxEqualOklch(existing, colorValue)) return;
 
     // Accumulate this change
@@ -191,11 +192,23 @@
     
     // Set new timer to update after delay
     updateTimer = setTimeout(() => {
-      const newColors = {
-        ...$gameState.colorOverrides,
-        ...pendingUpdates
-      };
-      gameActions.updateTheme($gameState.theme, newColors);
+      // Apply custom colors locally
+      customColors = { ...customColors, ...pendingUpdates };
+
+      // Apply to DOM
+      const style = document.createElement('style');
+      style.id = 'custom-colors';
+      const existing = document.getElementById('custom-colors');
+      if (existing) existing.remove();
+
+      let css = ':root {\n';
+      Object.entries(customColors).forEach(([varName, value]) => {
+        css += `  ${varName}: ${value} !important;\n`;
+      });
+      css += '}\n';
+      style.textContent = css;
+      document.head.appendChild(style);
+
       pendingUpdates = {};
       updateTimer = null;
     }, 100);
@@ -210,8 +223,10 @@
     }
     pendingUpdates = {};
     
-    // Clear colors through gameActions (keeps theme)
-    gameActions.updateTheme($gameState.theme, {});
+    // Clear any custom color overrides
+    customColors = {};
+    const style = document.getElementById('custom-colors');
+    if (style) style.remove();
     
     // Remove any legacy style overrides (from older approach)
     if (legacyStyleElement) {
@@ -226,29 +241,25 @@
     }, 10);
   }
   
-  // Share colors via URL
+  // Share colors via URL (simplified for new architecture)
   function shareColorsViaURL() {
-    // The URL already has everything since theme is first-class state!
+    // In new architecture, just share current URL with theme info
     shareURL = window.location.href;
     showShareDialog = true;
-    
-    navigator.clipboard.writeText(shareURL).catch(e => {
-      console.error('Could not copy to clipboard:', e);
-    });
   }
   
   // Export as CSS
   function exportCSS(): string {
-    // Use theme from gameState (first-class citizen)
-    const currentTheme = $gameState.theme || 'coffee';
+    // Get current theme from DOM
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'coffee';
     let css = `/* Custom theme colors for ${currentTheme} */\n`;
     css += `[data-theme="${currentTheme}"] {\n`;
-    
-    // Export color overrides from gameState
-    Object.entries($gameState.colorOverrides || {}).forEach(([varName, colorValue]) => {
+
+    // Export custom colors
+    Object.entries(customColors).forEach(([varName, colorValue]) => {
       css += `  ${varName}: ${colorValue};\n`;
     });
-    
+
     css += '}\n';
     return css;
   }
@@ -437,20 +448,24 @@
           <div class="flex flex-col gap-2">
             <button
               class="btn btn-sm flex-1 {copySuccess === 'link' ? 'btn-success' : 'btn-primary'}"
-              onclick={() => {
-                navigator.clipboard.writeText(shareURL).then(() => {
+              onclick={async () => {
+                const theme = document.documentElement.getAttribute('data-theme') || 'coffee';
+                const success = await shareContent({
+                  title: `Texas 42 - ${theme} Theme`,
+                  text: `Check out my custom ${theme} theme!`,
+                  url: shareURL
+                });
+                if (success) {
                   copySuccess = 'link';
                   setTimeout(() => copySuccess = null, 2000);
-                }).catch(e => {
-                  console.error('Failed to copy:', e);
-                });
+                }
               }}
               type="button"
             >
               {#if copySuccess === 'link'}
-                <Icon name="check" size="sm" /> Link
+                <Icon name="check" size="sm" /> {canNativeShare() ? 'Shared' : 'Link'}
               {:else}
-                <Icon name="clipboard" size="sm" /> Link
+                <Icon name={canNativeShare() ? 'share' : 'clipboard'} size="sm" /> {canNativeShare() ? 'Share' : 'Link'}
               {/if}
             </button>
             <button

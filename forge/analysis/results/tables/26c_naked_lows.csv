@@ -1,0 +1,11 @@
+metric,value
+n_hands,200.0
+mean_naked_lows,0.86
+r_with_sigma_V,-0.11977851493985453
+p_bivariate,0.09114397137237808
+regression_coef,-1.989939451229629
+regression_ci_low,-3.8663398418290154
+regression_ci_high,-0.11353906063024244
+regression_pval,0.037775363752534895
+r_with_E_V,0.07446494741307644
+confirmed,0.0

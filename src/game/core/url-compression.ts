@@ -1,13 +1,20 @@
 /**
  * URL Compression System
- * Uses base66 encoding: 1 character = 1 event
- * Reduces URLs by ~96% (8KB -> 350 chars)
- * Seeds use base36 encoding for additional compression
- * 
- * IMPORTANT: Completeness comes first - the URL must capture the complete game state
- * to enable proper replay and sharing. After ensuring completeness, we optimize for
- * minimal URL length.
+ *
+ * Pure isomorphism: URL ↔ Game State
+ * - stateToUrl(state) generates shareable URL from any game state
+ * - decodeGameUrl(url) + replay reconstructs identical state
+ *
+ * Encoding:
+ * - Actions: base66 (1 char = 1 event)
+ * - Seeds: base36
+ * - Initial hands: bit-packed base64url (28 dominoes × 5 bits = 24 chars)
+ *
+ * URL params: s (seed) XOR i (initialHands), p, d, l, t, v, a
  */
+
+import type { Domino, FilteredGameState, GameState } from '../types';
+import { actionToId } from './actions';
 
 // Primary tier: 65 most common events (1 char each)
 const EVENT_TO_CHAR: Record<string, string> = {
@@ -32,10 +39,12 @@ const EVENT_TO_CHAR: Record<string, string> = {
   'bid-3-marks': 'R',
   
   // Trump (S-a, 9 events)
+  // NOTE: Changed from 'ones/twos/threes' to 'aces/deuces/tres' for consistency
+  // with game-terms.ts naming convention (2025-01-20).
   'trump-blanks': 'S',
-  'trump-ones': 'T',
-  'trump-twos': 'U',
-  'trump-threes': 'V',
+  'trump-aces': 'T',
+  'trump-deuces': 'U',
+  'trump-tres': 'V',
   'trump-fours': 'W',
   'trump-fives': 'X',
   'trump-sixes': 'Y',
@@ -72,17 +81,17 @@ const EVENT_TO_CHAR: Record<string, string> = {
   'play-6-5': '1',
   'play-6-6': '2',
   
-  // Consensus (3-., 10 events)
+  // Consensus (3-9, -, _, 11 events)
   'complete-trick': '3',
   'score-hand': '4',
-  'agree-complete-trick-0': '5',
-  'agree-complete-trick-1': '6',
-  'agree-complete-trick-2': '7',
-  'agree-complete-trick-3': '8',
-  'agree-score-hand-0': '9',
-  'agree-score-hand-1': '-',
-  'agree-score-hand-2': '_',
-  'agree-score-hand-3': '.',
+  'agree-trick-p0': '5',
+  'agree-trick-p1': '6',
+  'agree-trick-p2': '7',
+  'agree-trick-p3': '8',
+  'agree-score-p0': '9',
+  'agree-score-p1': '-',
+  'agree-score-p2': '_',
+  'agree-score-p3': '.'
 };
 
 // Reverse mapping for decompression
@@ -94,9 +103,9 @@ const CHAR_TO_EVENT: Record<string, string> = Object.fromEntries(
 const ESCAPED_EVENT_TO_CHAR: Record<string, string> = {
   'bid-plunge': 'A',
   'bid-splash': 'B',
-  'bid-nello': 'C',
+  // 'bid-nello': 'C', // BROKEN: Nello is not a bid type, it's a trump selection (marks bid + nello trump). Fix planned for URL system refactor.
   'bid-84-honors': 'D',
-  'bid-sevens': 'E',
+  'bid-sevens': 'E', // BROKEN: Sevens is not a bid type, it's a trump selection (marks bid + sevens trump). Fix planned for URL system refactor.
   'timeout-p0': 'F',
   'timeout-p1': 'G',
   'timeout-p2': 'H',
@@ -108,6 +117,104 @@ const ESCAPED_EVENT_TO_CHAR: Record<string, string> = {
 const ESCAPED_CHAR_TO_EVENT: Record<string, string> = Object.fromEntries(
   Object.entries(ESCAPED_EVENT_TO_CHAR).map(([k, v]) => [v, k])
 );
+
+// ============================================================================
+// Initial Hands Encoding (bit-packed base64url)
+// ============================================================================
+
+/**
+ * Convert domino to canonical index (0-27) using triangular numbers.
+ * Matches createDominoes() order: 0-0, 1-0, 1-1, 2-0, 2-1, 2-2, ...
+ */
+function dominoToIndex(d: Domino): number {
+  return d.high * (d.high + 1) / 2 + d.low;
+}
+
+/**
+ * Convert canonical index (0-27) back to Domino.
+ * Inverse of dominoToIndex using triangular number formula.
+ */
+function indexToDomino(idx: number): Domino {
+  // high = floor((sqrt(8*idx + 1) - 1) / 2)
+  const high = Math.floor((Math.sqrt(8 * idx + 1) - 1) / 2);
+  const low = idx - high * (high + 1) / 2;
+  return { high, low, id: `${high}-${low}` };
+}
+
+/**
+ * Encode 4 hands (28 dominoes) to compact base64url string (~24 chars).
+ * Each domino index (0-27) uses 5 bits. 28 × 5 = 140 bits → 18 bytes.
+ */
+function encodeInitialHands(hands: Domino[][]): string {
+  const indices = hands.flat().map(dominoToIndex);
+  if (indices.length !== 28) {
+    throw new Error(`Expected 28 dominoes, got ${indices.length}`);
+  }
+
+  // Pack 28 5-bit values into 18 bytes
+  const bytes = new Uint8Array(18);
+  let bitPos = 0;
+  for (const idx of indices) {
+    const byteIdx = Math.floor(bitPos / 8);
+    const bitOffset = bitPos % 8;
+    bytes[byteIdx]! |= (idx << bitOffset) & 0xFF;
+    if (bitOffset > 3 && byteIdx + 1 < bytes.length) {
+      bytes[byteIdx + 1]! |= idx >> (8 - bitOffset);
+    }
+    bitPos += 5;
+  }
+
+  // Base64url encode (no padding)
+  const binary = String.fromCharCode(...bytes);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+/**
+ * Decode base64url string back to 4 hands (28 dominoes).
+ * Inverse of encodeInitialHands.
+ */
+function decodeInitialHands(encoded: string): Domino[][] {
+  // Base64url decode
+  const b64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+  const binary = atob(b64);
+  const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+  if (bytes.length !== 18) {
+    throw new Error(`Invalid initialHands encoding: expected 18 bytes, got ${bytes.length}`);
+  }
+
+  // Unpack 28 5-bit values
+  const indices: number[] = [];
+  let bitPos = 0;
+  for (let i = 0; i < 28; i++) {
+    const byteIdx = Math.floor(bitPos / 8);
+    const bitOffset = bitPos % 8;
+    let value = (bytes[byteIdx]! >> bitOffset) & 0x1F;
+    if (bitOffset > 3 && byteIdx + 1 < bytes.length) {
+      value |= ((bytes[byteIdx + 1]! << (8 - bitOffset)) & 0x1F);
+    }
+    if (value < 0 || value > 27) {
+      throw new Error(`Invalid domino index ${value} at position ${i}`);
+    }
+    indices.push(value);
+    bitPos += 5;
+  }
+
+  // Validate uniqueness
+  const uniqueIndices = new Set(indices);
+  if (uniqueIndices.size !== 28) {
+    throw new Error(`Duplicate dominoes in URL: expected 28 unique, got ${uniqueIndices.size}`);
+  }
+
+  // Convert to Domino[][] (4 players × 7 dominoes)
+  const dominoes = indices.map(indexToDomino);
+  return [
+    dominoes.slice(0, 7),
+    dominoes.slice(7, 14),
+    dominoes.slice(14, 21),
+    dominoes.slice(21, 28)
+  ];
+}
 
 /**
  * Compress an array of event IDs to a compact string
@@ -159,25 +266,51 @@ export function decompressEvents(compressed: string): string[] {
 }
 
 /**
- * Encode a complete game state to a URL
+ * Encode a complete game state to a URL.
+ *
+ * seed and initialHands are mutually exclusive:
+ * - If initialHands provided, uses `i=` param (omits `s=`)
+ * - Otherwise uses `s=` param for seed-based games
  */
 export function encodeGameUrl(
-  seed: number,
+  seed: number | undefined,
   actions: string[],
   playerTypes?: ('human' | 'ai')[],
   dealer?: number,
-  tournamentMode?: boolean,
   theme?: string,
-  colorOverrides?: Record<string, string>
+  colorOverrides?: Record<string, string>,
+  sectionName?: string,
+  layers?: string[],
+  initialHands?: Domino[][]
 ): string {
   const params = new URLSearchParams();
-  
-  // Theme parameters FIRST (so they survive truncation)
-  // Only include theme if not default ('coffee')
-  if (theme && theme !== 'coffee') {
+
+  // Seed XOR initialHands (mutually exclusive)
+  if (initialHands) {
+    params.set('i', encodeInitialHands(initialHands));
+  } else if (seed !== undefined) {
+    params.set('s', seed.toString(36));
+  }
+
+  // Only include player types if not default
+  if (playerTypes) {
+    const playerStr = playerTypes.map(t => t[0]).join('');
+    if (playerStr !== 'haaa') {
+      params.set('p', playerStr);
+    }
+  }
+
+  // Only include dealer if not default (3)
+  if (dealer !== undefined && dealer !== 3) {
+    params.set('d', dealer.toString());
+  }
+
+  // Theme parameters
+  // Only include theme if not default ('business')
+  if (theme && theme !== 'business') {
     params.set('t', theme);
   }
-  
+
   // Only include color overrides if present
   if (colorOverrides && Object.keys(colorOverrides).length > 0) {
     // Convert color overrides to compact format
@@ -186,11 +319,11 @@ export function encodeGameUrl(
       // Convert "--p" to "p", "--pc" to "pc", etc.
       const key = varName.replace('--', '');
       const v = colorValue.trim();
-      
+
       // Detect format using robust regex
       const isOKLCH = /^(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)$/.test(v);
       const isHSL = /^(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)%\s+(\d+(?:\.\d+)?)%$/.test(v);
-      
+
       let encoded: string;
       if (isOKLCH) {
         // Parse OKLCH values
@@ -222,56 +355,44 @@ export function encodeGameUrl(
     });
     params.set('v', colorPairs.join(';'));
   }
-  
-  // Seed as base36 for compression
-  params.set('s', seed.toString(36));
-  
-  // Only include player types if not default
-  if (playerTypes) {
-    const playerStr = playerTypes.map(t => t[0]).join('');
-    if (playerStr !== 'haaa') {
-      params.set('p', playerStr);
+
+  // Section identifier (human-readable) e.g., one_hand, one_trick
+  if (sectionName && sectionName.trim()) {
+    params.set('h', sectionName);
+  }
+
+  // Enabled layers (short codes, comma-separated)
+  if (layers && layers.length > 0) {
+    const codes = layers
+      .map(rs => LAYER_CODES[rs])
+      .filter(code => code !== undefined)
+      .join(',');
+    if (codes) {
+      params.set('l', codes);
     }
   }
-  
-  // Only include dealer if not default (3)
-  if (dealer !== undefined && dealer !== 3) {
-    params.set('d', dealer.toString());
-  }
-  
-  // Only include tournament mode if not default (true)
-  if (tournamentMode !== undefined && tournamentMode !== true) {
-    params.set('tm', '0');
-  }
-  
-  // Compressed actions - always last since it's the longest
+
+  // Compressed actions - ALWAYS LAST since it changes most frequently
   params.set('a', compressEvents(actions));
-  
+
   return '?' + params.toString();
 }
 
 /**
- * Decode a URL to extract game state
+ * Decode a URL to extract game state.
+ *
+ * seed and initialHands are mutually exclusive:
+ * - URLs with `i=` have initialHands, seed will be 0
+ * - URLs with `s=` have seed, initialHands will be undefined
  */
-export function decodeGameUrl(urlString: string): {
-  seed: number;
-  actions: string[];
-  playerTypes: ('human' | 'ai')[];
-  dealer: number;
-  tournamentMode: boolean;
-  theme: string;
-  colorOverrides: Record<string, string>;
-} {
+export function decodeGameUrl(urlString: string): URLData {
   // Handle both full URLs and just query strings
-  const queryString = urlString.includes('?') 
-    ? urlString.split('?')[1] 
+  const queryString = urlString.includes('?')
+    ? urlString.split('?')[1]
     : urlString;
-    
+
   const params = new URLSearchParams(queryString);
-  
-  // Check version for backward compatibility
-  const version = params.get('v');
-  
+
   // Empty URL is ok - no game to load
   if (!params.toString()) {
     return {
@@ -279,24 +400,27 @@ export function decodeGameUrl(urlString: string): {
       actions: [],
       playerTypes: ['human', 'ai', 'ai', 'ai'],
       dealer: 3,
-      tournamentMode: true,
-      theme: 'coffee',
-      colorOverrides: {}
+      theme: 'business',
+      colorOverrides: {},
+      scenario: ''
     };
   }
-  
-  // Parse theme (default 'coffee')
-  const theme = params.get('t') || 'coffee';
-  
-  // Parse color overrides (new compact format)
+
+  // Parse theme (default 'business')
+  const theme = params.get('t') || 'business';
+
+  // Parse section/scenario identifier (optional)
+  const scenario = params.get('h') || '';
+
+  // Parse color overrides (compact format)
   const colorOverrides: Record<string, string> = {};
   const colorStr = params.get('v');
   if (colorStr) {
     const entries = colorStr.split(';');
     entries.forEach(entry => {
-      // New compact format: o{var}{L},{C},{H} or h{var}{H},{S},{L}
+      // Compact format: o{var}{L},{C},{H} or h{var}{H},{S},{L}
       // Examples: "op73.54,21,181" or "hpc240,60,50"
-      
+
       // Check if it starts with 'o' (OKLCH) or 'h' (HSL)
       if (entry.startsWith('o')) {
         // OKLCH format
@@ -304,10 +428,10 @@ export function decodeGameUrl(urlString: string): {
         // Find where the variable name ends and values begin
         const firstNumberIndex = content.search(/\d/);
         if (firstNumberIndex === -1) return;
-        
+
         const varName = '--' + content.substring(0, firstNumberIndex);
         const values = content.substring(firstNumberIndex).split(',');
-        
+
         if (values.length === 3 && values[0] && values[1] && values[2]) {
           const l = parseFloat(values[0]); // L is already with decimals
           const c = parseFloat(values[1]) / 100; // C was multiplied by 100
@@ -320,10 +444,10 @@ export function decodeGameUrl(urlString: string): {
         // Find where the variable name ends and values begin
         const firstNumberIndex = content.search(/\d/);
         if (firstNumberIndex === -1) return;
-        
+
         const varName = '--' + content.substring(0, firstNumberIndex);
         const values = content.substring(firstNumberIndex).split(',');
-        
+
         if (values.length === 3 && values[0] && values[1] && values[2]) {
           const h = parseFloat(values[0]); // H is integer
           const s = parseFloat(values[1]); // S is integer percentage
@@ -336,55 +460,94 @@ export function decodeGameUrl(urlString: string): {
       }
     });
   }
-  
-  // Parse seed
+
+  // Parse initialHands XOR seed (mutually exclusive)
+  const initialHandsStr = params.get('i');
   const seedStr = params.get('s');
-  if (!seedStr) {
-    throw new Error('Invalid URL: missing seed parameter');
-  }
-  
-  // Handle both old decimal format (v2) and new base36 format
-  let seed: number;
-  if (version === '2') {
-    // Old format: decimal
-    seed = parseInt(seedStr, 10);
-  } else {
-    // New format: base36
+
+  let seed = 0;
+  let initialHands: Domino[][] | undefined;
+
+  if (initialHandsStr) {
+    // initialHands takes priority
+    initialHands = decodeInitialHands(initialHandsStr);
+  } else if (seedStr) {
     seed = parseInt(seedStr, 36);
+    if (isNaN(seed)) {
+      throw new Error('Invalid URL: seed must be a valid number');
+    }
   }
-  
-  if (isNaN(seed)) {
-    throw new Error('Invalid URL: seed must be a valid number');
-  }
-  
+
   // Parse actions
   const actionsStr = params.get('a') || '';
   const actions = actionsStr ? decompressEvents(actionsStr) : [];
-  
+
   // Parse player types
   const playerStr = params.get('p') || 'haaa';
-  const playerTypes = playerStr.split('').map(c => 
+  const playerTypes = playerStr.split('').map(c =>
     c === 'h' ? 'human' : 'ai'
   ) as ('human' | 'ai')[];
-  
+
   // Validate player count
   if (playerTypes.length !== 4) {
     throw new Error('Invalid URL: must have exactly 4 players');
   }
-  
+
   // Parse dealer (default 3)
   const dealerStr = params.get('d');
   const dealer = dealerStr ? parseInt(dealerStr, 10) : 3;
   if (isNaN(dealer) || dealer < 0 || dealer > 3) {
     throw new Error('Invalid URL: dealer must be 0-3');
   }
-  
-  // Parse tournament mode (default true) - now 'tm' since 't' is theme
-  const tournamentStr = params.get('tm');
-  const tournamentMode = tournamentStr !== '0';
-  
-  return { seed, actions, playerTypes, dealer, tournamentMode, theme, colorOverrides };
+
+  // Parse enabled layers (short codes)
+  const layersStr = params.get('l');
+  const layers = layersStr
+    ? layersStr.split(',')
+        .map(code => LAYER_CODE_TO_NAME[code])
+        .filter((name): name is string => name !== undefined)
+    : undefined;
+
+  const result: URLData = {
+    seed,
+    actions,
+    playerTypes,
+    dealer,
+    theme,
+    colorOverrides,
+    scenario
+  };
+
+  if (layers && layers.length > 0) {
+    result.layers = layers;
+  }
+
+  if (initialHands) {
+    result.initialHands = initialHands;
+  }
+
+  return result;
 }
+
+// Layer short codes (for URL encoding)
+// All layers use the same unified encoding via the `l=` URL parameter
+const LAYER_CODES: Record<string, string> = {
+  // Game variant layers
+  'nello': 'n',
+  'plunge': 'p',
+  'splash': 'S',  // Changed from 's' to avoid collision with speed
+  'sevens': 'v',
+  'tournament': 't',
+  // Behavior layers
+  'oneHand': 'o',
+  'speed': 's',
+  'hints': 'h'
+};
+
+// Reverse mapping for decoding
+const LAYER_CODE_TO_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(LAYER_CODES).map(([k, v]) => [v, k])
+);
 
 // Export types for use in other modules
 export interface URLData {
@@ -392,7 +555,51 @@ export interface URLData {
   actions: string[];
   playerTypes: ('human' | 'ai')[];
   dealer: number;
-  tournamentMode: boolean;
   theme: string;
   colorOverrides: Record<string, string>;
+  scenario: string;
+  layers?: string[];
+  initialHands?: Domino[][];  // Mutually exclusive with seed
+}
+
+// ============================================================================
+// State → URL (the missing piece!)
+// ============================================================================
+
+/**
+ * Generate a shareable URL from game state.
+ *
+ * This is the key function for the URL ↔ State isomorphism.
+ * Any game state (GameState or FilteredGameState) can be serialized to a URL
+ * that, when replayed, produces identical state.
+ */
+export function stateToUrl(state: GameState | FilteredGameState): string {
+  const config = state.initialConfig;
+  const actionIds = state.actionHistory.map(actionToId);
+
+  // Mutual exclusion: initialHands OR seed
+  if (config.dealOverrides?.initialHands) {
+    return encodeGameUrl(
+      undefined,  // no seed when using initialHands
+      actionIds,
+      config.playerTypes,
+      state.dealer,
+      config.theme,
+      config.colorOverrides,
+      undefined,  // sectionName
+      config.layers,
+      config.dealOverrides.initialHands
+    );
+  }
+
+  return encodeGameUrl(
+    state.shuffleSeed,
+    actionIds,
+    config.playerTypes,
+    state.dealer,
+    config.theme,
+    config.colorOverrides,
+    undefined,  // sectionName
+    config.layers
+  );
 }

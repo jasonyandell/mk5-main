@@ -1,0 +1,2 @@
+n_hands,n_observations,grand_mean_v,total_variance,pct_hand_component,pct_opponent_component,r2_features_to_ev,r2_features_to_sigma,true_skill_pct,pure_luck_pct,skill_luck_ratio,ev_sigma_correlation
+200,600,13.88,586.1758931552588,46.96352450251295,53.03647549748705,0.24643719302781475,0.07263305811720389,11.573559153092292,49.18427409034641,0.19048669999011414,-0.3808813410944755

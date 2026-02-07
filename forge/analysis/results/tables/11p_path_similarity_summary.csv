@@ -1,0 +1,2 @@
+n_hands,mean_dtw,median_dtw,mean_corr,median_corr,high_stability_pct,med_stability_pct,low_stability_pct,mean_root_v_spread,mean_terminal_v_spread
+200,5.080827049596308,4.698320953770921,0.31632446204111875,0.2719182519278882,9.0,13.0,78.0,34.99,2.6808413086007703

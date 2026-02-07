@@ -12,9 +12,7 @@ export type {
   GameAction,
   GameHistory,
   GamePhase,
-  GameConstants,
-  PlayerView,
-  PublicPlayer
+  GameConstants
 } from './types';
 
 
@@ -44,58 +42,66 @@ export {
   getPlayerLeftOfDealer
 } from './core/players';
 
-// Game actions and transitions are now exported from gameEngine
+// Game actions and transitions
+// Note: GameEngine class has been removed - use ExecutionContext pattern instead
 
-// Action-based game engine
-export { 
-  GameEngine, 
-  getValidActions, 
-  actionToId, 
-  actionToLabel,
-  getNextStates 
-} from './core/gameEngine';
+// Pure action generation functions
+export {
+  generateStructuralActions  // Low-level: generates structural actions only (use ctx.getValidActions instead)
+} from './layers/base';
+
+// Action utilities
+export {
+  actionToId,
+  actionToLabel
+} from './core/actions';
+
+// State transitions
+export {
+  getNextStates  // Requires ExecutionContext parameter
+} from './core/state';
 
 // Pure action execution
 export { executeAction } from './core/actions';
 
-// Player view system
-export { getPlayerView } from './core/playerView';
-
-// Controller system
-export { ControllerManager } from './controllers';
-
+// Event sourcing / replay
 // Rule validation
-export { 
-  isValidBid, 
-  isValidOpeningBid,
-  isValidPlay, 
-  getValidPlays, 
-  canFollowSuit, 
-  getBidComparisonValue,
+// NOTE: For rule validation (isValidPlay, getValidPlays, isValidBid, etc.), use the threaded rules system:
+// import { composeRules, baseLayer } from './layers';
+// const rules = composeRules([baseLayer]);
+// rules.isValidPlay(state, domino, playerId)
+// rules.getValidPlays(state, playerId)
+// rules.isValidBid(state, bid, playerHand)
+// rules.getBidComparisonValue(bid)
+// rules.isValidTrump(trump)
+// rules.getLedSuit(state, domino)
+// rules.isTrump(state, domino)
+// rules.rankInTrick(state, led, domino)
+// rules.calculateTrickWinner(state, trick)
+export {
   getTrickWinner,
   getTrickPoints,
   determineTrickWinner,
-  isValidTrump,
   getTrumpValue
 } from './core/rules';
 
 // Domino utilities
-export { 
-  createDominoes, 
+// NOTE: For rule-aware functions (led suit, trump checks, rankings), use rules.* methods:
+// rules.getLedSuit(state, domino), rules.isTrump(state, domino), rules.rankInTrick(state, led, domino)
+export {
+  createDominoes,
   shuffleDominoesWithSeed,
   dealDominoesWithSeed,
-  getDominoSuit, 
-  getDominoValue, 
-  getDominoPoints, 
-  isDouble, 
-  countDoubles 
+  getDominoPoints,
+  isDouble,
+  countDoubles
 } from './core/dominoes';
 
 // Scoring
-export { 
-  calculateTrickWinner, 
-  calculateTrickPoints, 
-  calculateRoundScore, 
+// NOTE: For trick winner calculation, use rules.calculateTrickWinner(state, trick) instead
+export {
+  calculateTrickPoints,
+  calculateRoundScore,
   calculateGameSummary,
   calculateGameScore,
   getWinningTeam as getWinningTeamFromMarks
@@ -107,5 +113,6 @@ export {
   decompressEvents,
   encodeGameUrl,
   decodeGameUrl,
+  stateToUrl,
   type URLData
 } from './core/url-compression';

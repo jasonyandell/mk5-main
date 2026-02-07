@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState, Bid } from '../../../game/types';
 import { createInitialState, getNextStates, getPlayerLeftOfDealer } from '../../../game';
+import { createTestContext } from '../../helpers/executionContext';
 
 describe('Feature: Special Bids', () => {
+  const ctx = createTestContext();
   describe('Scenario: Three Mark Bidding', () => {
     function createStateWithBids(bids: Bid[]): GameState {
       const state = createInitialState({ shuffleSeed: 12345 });
@@ -13,7 +15,7 @@ describe('Feature: Special Bids', () => {
       
       // Apply each bid using the game engine
       for (const bid of bids) {
-        const transitions = getNextStates(state);
+        const transitions = getNextStates(state, ctx);
         const transition = transitions.find(t => {
           if (bid.type === 'pass') return t.id === 'pass';
           if (bid.type === 'points') return t.id === `bid-${bid.value}`;
@@ -30,7 +32,7 @@ describe('Feature: Special Bids', () => {
     }
 
     function canBidThreeMarks(state: GameState): boolean {
-      const transitions = getNextStates(state);
+      const transitions = getNextStates(state, ctx);
       return transitions.some(t => t.id === 'bid-3-marks');
     }
 
@@ -124,7 +126,7 @@ describe('Feature: Special Bids', () => {
       expect(canBidThreeMarks(emptyState)).toBe(false);
       
       // Check opening bid validity through game engine transitions
-      const transitions = getNextStates(emptyState);
+      const transitions = getNextStates(emptyState, ctx);
       const validOpeningBids = transitions.map(t => t.id);
       
       expect(validOpeningBids).not.toContain('bid-3-marks');
@@ -161,13 +163,13 @@ describe('Feature: Special Bids', () => {
         expect(hasTwoMarks).toBe(false); // Confirms no 2 mark bid exists
       });
 
-      it('should handle 3 marks in tournament mode correctly', () => {
+      it('should handle 3 marks correctly', () => {
         const tournamentState = createStateWithBids([
           { type: 'points', value: 30, player: 0 },
           { type: 'marks', value: 2, player: 1 }
         ]);
 
-        expect(tournamentState.tournamentMode).toBe(true);
+        // REMOVED: expect(tournamentState.tournamentMode).toBe(true);
         expect(canBidThreeMarks(tournamentState)).toBe(true);
 
         // After 3 marks is bid, only 4 marks is allowed (one increment)

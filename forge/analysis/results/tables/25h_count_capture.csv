@@ -1,0 +1,6 @@
+metric,value
+n_seeds,3.0
+n_state_samples,30000.0
+mean_q_spread_early,7.142857142857143
+mean_q_spread_mid,4.1923574263164936
+mean_q_spread_late,2.621510781849451

@@ -1,5 +1,19 @@
 {
   "permissions": {
     "defaultMode": "bypassPermissions"
-  }
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "(Write|Edit|MultiEdit|NotebookEdit).*\\.(ts|svelte)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/file-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {}
 }
