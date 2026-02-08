@@ -1,43 +1,40 @@
 """Zeb neural network architecture for self-play."""
 
+from __future__ import annotations
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+from forge.zeb.tokenizer_registry import TokenizerSpec, get_tokenizer_spec
+
 
 class ZebEmbeddings(nn.Module):
-    """Embeddings for 8-feature token representation."""
+    """Spec-driven embeddings for token representation."""
 
-    def __init__(self, embed_dim: int = 128):
+    def __init__(self, embed_dim: int = 128, spec: TokenizerSpec | None = None):
         super().__init__()
-        # Compute per-feature embedding dims (should sum to embed_dim)
-        base = embed_dim // 8
+        if spec is None:
+            spec = get_tokenizer_spec('v1')
 
-        self.high_pip_embed = nn.Embedding(7, base)       # 0-6
-        self.low_pip_embed = nn.Embedding(7, base)        # 0-6
-        self.is_double_embed = nn.Embedding(2, base // 2)  # 0-1
-        self.count_embed = nn.Embedding(3, base // 2)     # 0-2
-        self.player_embed = nn.Embedding(4, base)         # 0-3 relative
-        self.is_in_hand_embed = nn.Embedding(2, base // 2)  # 0-1
-        self.decl_embed = nn.Embedding(10, base)          # 0-9
-        self.token_type_embed = nn.Embedding(3, base)     # 0-2
+        base = embed_dim // spec.n_features
 
-        # Project concatenated embeddings to embed_dim
-        total_dim = base * 5 + (base // 2) * 3
+        self._feature_names: list[str] = []
+        total_dim = 0
+        for feat in spec.features:
+            dim = base if feat.size == 'large' else base // 2
+            setattr(self, f"{feat.name}_embed", nn.Embedding(feat.cardinality, dim))
+            self._feature_names.append(feat.name)
+            total_dim += dim
+
         self.proj = nn.Linear(total_dim, embed_dim)
 
     def forward(self, tokens: Tensor) -> Tensor:
-        """tokens: [batch, seq_len, 8] -> [batch, seq_len, embed_dim]"""
+        """tokens: [batch, seq_len, n_features] -> [batch, seq_len, embed_dim]"""
         embeds = [
-            self.high_pip_embed(tokens[:, :, 0]),
-            self.low_pip_embed(tokens[:, :, 1]),
-            self.is_double_embed(tokens[:, :, 2]),
-            self.count_embed(tokens[:, :, 3]),
-            self.player_embed(tokens[:, :, 4]),
-            self.is_in_hand_embed(tokens[:, :, 5]),
-            self.decl_embed(tokens[:, :, 6]),
-            self.token_type_embed(tokens[:, :, 7]),
+            getattr(self, f"{name}_embed")(tokens[:, :, i])
+            for i, name in enumerate(self._feature_names)
         ]
         x = torch.cat(embeds, dim=-1)
         return self.proj(x)
@@ -54,12 +51,14 @@ class ZebModel(nn.Module):
         ff_dim: int = 256,
         dropout: float = 0.1,
         max_tokens: int = 36,
+        tokenizer: str = 'v1',
     ):
         super().__init__()
         self.embed_dim = embed_dim
         self.max_tokens = max_tokens
 
-        self.embeddings = ZebEmbeddings(embed_dim)
+        spec = get_tokenizer_spec(tokenizer)
+        self.embeddings = ZebEmbeddings(embed_dim, spec=spec)
         self.pos_embed = nn.Embedding(max_tokens, embed_dim)
 
         # Capture-safe positional indices (avoid per-forward torch.arange).
@@ -162,11 +161,11 @@ class ZebModel(nn.Module):
         return action, log_prob, value
 
 
-def get_model_config(size: str = 'small') -> dict:
+def get_model_config(size: str = 'small', tokenizer: str = 'v1') -> dict:
     """Get model hyperparameters by size."""
     configs = {
-        'small': dict(embed_dim=64, n_heads=2, n_layers=2, ff_dim=128),
-        'medium': dict(embed_dim=128, n_heads=4, n_layers=4, ff_dim=256),
-        'large': dict(embed_dim=256, n_heads=8, n_layers=6, ff_dim=512),
+        'small': dict(embed_dim=64, n_heads=2, n_layers=2, ff_dim=128, tokenizer=tokenizer),
+        'medium': dict(embed_dim=128, n_heads=4, n_layers=4, ff_dim=256, tokenizer=tokenizer),
+        'large': dict(embed_dim=256, n_heads=8, n_layers=6, ff_dim=512, tokenizer=tokenizer),
     }
     return configs[size]

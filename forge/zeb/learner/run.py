@@ -37,6 +37,7 @@ except ImportError:
 
 from forge.zeb.example_store import load_examples, scan_pending
 from forge.zeb.gpu_training_pipeline import GPUReplayBuffer, GPUTrainingExample
+from forge.zeb.tokenizer_registry import get_tokenizer_spec
 from forge.zeb.hf import (
     get_remote_training_state,
     download_example,
@@ -168,7 +169,9 @@ def run_learner(args: argparse.Namespace) -> None:
     model_config = metadata['model_config']
 
     total_params = sum(p.numel() for p in model.parameters())
-    print(f"  Model: {total_params:,} parameters")
+    tokenizer_name = model_config.get('tokenizer', 'v1')
+    spec = get_tokenizer_spec(tokenizer_name)
+    print(f"  Model: {total_params:,} parameters, tokenizer={tokenizer_name}")
 
     # --- HF is the single source of truth ---
     init_repo(args.repo_id, model_config, weights_name=weights_name)
@@ -200,6 +203,9 @@ def run_learner(args: argparse.Namespace) -> None:
         replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
             device=torch.device(device),
+            max_tokens=spec.max_tokens,
+            n_features=spec.n_features,
+            n_hand_slots=spec.n_hand_slots,
         )
         remote_files = list_remote_examples(args.examples_repo_id, namespace)
         seen_files: set[str] = set()
@@ -222,6 +228,9 @@ def run_learner(args: argparse.Namespace) -> None:
         replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
             device=torch.device(device),
+            max_tokens=spec.max_tokens,
+            n_features=spec.n_features,
+            n_hand_slots=spec.n_hand_slots,
         )
         seen_files = set()
         print(f"Replay buffer (empty): 0/{args.replay_buffer_size:,}")

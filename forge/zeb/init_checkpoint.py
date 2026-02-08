@@ -3,6 +3,7 @@
 Usage:
     python -m forge.zeb.init_checkpoint --size large -o forge/zeb/checkpoints/large-init.pt
     python -m forge.zeb.init_checkpoint --size medium -o forge/zeb/checkpoints/medium-init.pt
+    python -m forge.zeb.init_checkpoint --size large --tokenizer v1 -o forge/zeb/checkpoints/large-init.pt
 """
 from __future__ import annotations
 
@@ -14,8 +15,8 @@ import torch
 from forge.zeb.model import ZebModel, get_model_config
 
 
-def create_checkpoint(size: str, output_path: Path) -> None:
-    config = get_model_config(size)
+def create_checkpoint(size: str, output_path: Path, tokenizer: str = 'v1') -> None:
+    config = get_model_config(size, tokenizer=tokenizer)
     model = ZebModel(**config)
 
     checkpoint = {
@@ -39,10 +40,12 @@ def main():
     parser.add_argument('--size', type=str, default='large',
                         choices=['small', 'medium', 'large'],
                         help='Model size (default: large)')
+    parser.add_argument('--tokenizer', type=str, default='v1',
+                        help='Tokenizer name (default: v1)')
     parser.add_argument('-o', '--output', type=Path, required=True,
                         help='Output checkpoint path')
     args = parser.parse_args()
-    create_checkpoint(args.size, args.output)
+    create_checkpoint(args.size, args.output, tokenizer=args.tokenizer)
 
 
 if __name__ == '__main__':

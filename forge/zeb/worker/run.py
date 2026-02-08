@@ -88,7 +88,8 @@ def run_worker(args: argparse.Namespace) -> None:
     model.load_state_dict(state_dict)
     model.eval()
     current_step = get_remote_step(args.repo_id, weights_name=weights_name)
-    print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params")
+    tokenizer_name = config.get('tokenizer', 'v1')
+    print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params, tokenizer={tokenizer_name}")
 
     # 2. Init examples repo (if using HF for examples)
     if use_hf_examples:
@@ -105,6 +106,7 @@ def run_worker(args: argparse.Namespace) -> None:
         n_simulations=args.n_simulations,
         max_mcts_nodes=args.max_mcts_nodes,
         temperature=args.temperature,
+        tokenizer_name=tokenizer_name,
     )
     print(f"Pipeline created in {time.time() - t0:.1f}s")
 

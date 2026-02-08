@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from forge.zeb.cuda_only import require_cuda
+from forge.zeb.tokenizer_registry import V1_SPEC, get_gpu_tokenizer, register_gpu_tokenizer
 from forge.zeb.gpu_game_state import (
     GPUGameState,
     apply_action_gpu,
@@ -109,35 +110,42 @@ class GPUReplayBuffer:
     Memory usage for 50k examples: ~65 MB
     """
 
-    MAX_TOKENS = 36
-    N_FEATURES = 8
-    N_HAND_SLOTS = 7
-
-    def __init__(self, capacity: int, device: torch.device):
+    def __init__(
+        self,
+        capacity: int,
+        device: torch.device,
+        *,
+        max_tokens: int = 36,
+        n_features: int = 8,
+        n_hand_slots: int = 7,
+    ):
         self.capacity = capacity
         self.device = device
+        self.MAX_TOKENS = max_tokens
+        self.N_FEATURES = n_features
+        self.N_HAND_SLOTS = n_hand_slots
         self.size = 0
         self.write_idx = 0
 
         # Pre-allocate GPU tensors
         self.observations = torch.zeros(
-            (capacity, self.MAX_TOKENS, self.N_FEATURES),
+            (capacity, max_tokens, n_features),
             dtype=torch.int32, device=device
         )
         self.masks = torch.zeros(
-            (capacity, self.MAX_TOKENS),
+            (capacity, max_tokens),
             dtype=torch.bool, device=device
         )
         self.hand_indices = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.int64, device=device
         )
         self.hand_masks = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.bool, device=device
         )
         self.policy_targets = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.float32, device=device
         )
         self.value_targets = torch.zeros(
@@ -248,9 +256,16 @@ class GPUReplayBuffer:
         data: list[dict],
         capacity: int,
         device: torch.device,
+        *,
+        max_tokens: int = 36,
+        n_features: int = 8,
+        n_hand_slots: int = 7,
     ) -> "GPUReplayBuffer":
         """Restore from checkpoint list."""
-        buffer = cls(capacity, device)
+        buffer = cls(
+            capacity, device,
+            max_tokens=max_tokens, n_features=n_features, n_hand_slots=n_hand_slots,
+        )
         if not data:
             return buffer
 
@@ -275,7 +290,9 @@ class GPUObservationTokenizer:
     Matches the format expected by ZebModel (36 tokens x 8 features).
     """
 
-    # Feature indices (match observation.py)
+    SPEC = V1_SPEC
+
+    # Feature indices (v1-specific, private to this implementation)
     FEAT_HIGH = 0
     FEAT_LOW = 1
     FEAT_IS_DOUBLE = 2
@@ -290,10 +307,10 @@ class GPUObservationTokenizer:
     TOKEN_TYPE_HAND = 1
     TOKEN_TYPE_PLAY = 2
 
-    # Layout constants
-    N_FEATURES = 8
-    MAX_TOKENS = 36  # 1 decl + 7 hand + 28 plays
-    N_HAND_SLOTS = 7
+    # Layout constants derived from spec
+    N_FEATURES = V1_SPEC.n_features
+    MAX_TOKENS = V1_SPEC.max_tokens
+    N_HAND_SLOTS = V1_SPEC.n_hand_slots
 
     def __init__(self, device: torch.device):
         device = require_cuda(device, where="GPUObservationTokenizer.__init__")
@@ -471,6 +488,7 @@ class GPUTrainingPipeline:
         model: "ZebModel | None" = None,
         use_cudagraph_mcts: bool = True,
         use_fullstep_eval: bool = True,
+        tokenizer_name: str = 'v1',
     ):
         """Initialize pipeline.
 
@@ -487,6 +505,7 @@ class GPUTrainingPipeline:
             temperature: Action sampling temperature (1.0 = proportional to visits)
             model: ZebModel for self-play mode leaf evaluation.
                    Pass None for oracle mode (requires oracle).
+            tokenizer_name: Registered tokenizer name (default 'v1').
 
         Exactly one of oracle/model must be provided.
         """
@@ -509,8 +528,8 @@ class GPUTrainingPipeline:
         self.use_cudagraph_mcts = bool(use_cudagraph_mcts) and device.type == "cuda"
         self.use_fullstep_eval = bool(use_fullstep_eval)
 
-        # Initialize tokenizer
-        self.tokenizer = GPUObservationTokenizer(device)
+        # Initialize tokenizer via registry
+        self.tokenizer = get_gpu_tokenizer(tokenizer_name, device)
         self._oracle_position_idx = torch.arange(3, device=device, dtype=torch.int64).unsqueeze(0)  # (1, 3)
 
         # Stats for monitoring
@@ -1428,6 +1447,7 @@ def create_selfplay_pipeline(
     n_parallel_games: int = 16,
     n_simulations: int = 100,
     max_mcts_nodes: int = 1024,
+    tokenizer_name: str = 'v1',
     **kwargs,
 ) -> GPUTrainingPipeline:
     """Factory function to create self-play training pipeline.
@@ -1441,6 +1461,7 @@ def create_selfplay_pipeline(
         n_parallel_games: Concurrent games per batch
         n_simulations: MCTS simulations per move
         max_mcts_nodes: Max nodes per MCTS tree
+        tokenizer_name: Registered tokenizer name (default 'v1')
         **kwargs: Additional args for GPUTrainingPipeline
 
     Returns:
@@ -1455,5 +1476,10 @@ def create_selfplay_pipeline(
         n_simulations=n_simulations,
         max_mcts_nodes=max_mcts_nodes,
         model=model,
+        tokenizer_name=tokenizer_name,
         **kwargs,
     )
+
+
+# Register v1 GPU tokenizer
+register_gpu_tokenizer('v1', GPUObservationTokenizer)
