@@ -140,10 +140,14 @@ except Exception as e:
 get_fleet() {
     vastai show instances --raw > /tmp/_vast_fleet.json 2>/dev/null
     python3 -c "
-import json, time
+import json, time, sys
 now = time.time()
 fleet = '$FLEET'
-for i in json.load(open('/tmp/_vast_fleet.json')):
+try:
+    data = json.load(open('/tmp/_vast_fleet.json'))
+except (json.JSONDecodeError, FileNotFoundError):
+    sys.exit(0)
+for i in data:
     label = i.get('label') or ''
     if not label.startswith(fleet + '-worker-vast-'): continue
     iid = i.get('id', '?')
@@ -386,7 +390,8 @@ echo "  GPUs:     $GPUS"
 echo "  Upload:   every ${UPLOAD_INTERVAL}s (~${COMMITS_PER_HR} commits/hr, limit 128)"
 if [ -f "$BLACKLIST_FILE" ]; then
     N_STRIKES=$(wc -l < "$BLACKLIST_FILE")
-    N_BLOCKED=$(load_blacklist | tr ',' '\n' | grep -c . 2>/dev/null || echo 0)
+    _bl=$(load_blacklist)
+    N_BLOCKED=$([ -n "$_bl" ] && echo "$_bl" | tr ',' '\n' | wc -l || echo 0)
     if [ "$N_STRIKES" -gt 0 ]; then
         echo "  Blacklist: $N_BLOCKED blocked, $N_STRIKES strikes total ($BLACKLIST_STRIKES to block)"
     fi
@@ -414,6 +419,32 @@ while true; do
     elapsed=$(( $(date +%s) - START_TIME ))
 
     fleet_data=$(get_fleet)
+
+    # Dedup: if two instances share a worker label, kill the older one
+    if [ -n "$fleet_data" ]; then
+        dupes=$(echo "$fleet_data" | python3 -c "
+import sys
+from collections import defaultdict
+by_label = defaultdict(list)
+for line in sys.stdin:
+    parts = line.strip().split('\t')
+    if len(parts) >= 6:
+        iid, label, gpu, st, dph, age = parts[0], parts[1], parts[2], parts[3], parts[4], int(parts[5])
+        by_label[label].append((age, iid))
+for label, instances in by_label.items():
+    if len(instances) > 1:
+        instances.sort(reverse=True)  # oldest first
+        for age, iid in instances[1:]:  # keep newest, kill rest
+            print(f'{iid}\t{label}')
+")
+        if [ -n "$dupes" ]; then
+            while IFS=$'\t' read -r dup_id dup_label; do
+                log "${YELLOW}DEDUP: killing extra $dup_label ($dup_id)${RESET}"
+                [ -z "$DRY_RUN" ] && vastai destroy instance "$dup_id" 2>/dev/null
+            done <<< "$dupes"
+            fleet_data=$(get_fleet)
+        fi
+    fi
 
     if [ -z "$fleet_data" ]; then
         log "CHECK #$TOTAL_CHECKS: ${YELLOW}NO INSTANCES — spawning fleet${RESET}"
