@@ -326,7 +326,7 @@ This creates a background monitor that:
 
 2. **HF timeouts are frequent.** All API calls retry 3x with backoff. If retries exhaust, the learner skips that operation and continues training. It won't crash.
 
-3. **W&B runs are disposable.** Each restart creates a new run with the same display name. Don't try to resume W&B runs — it causes conflicts if the run was deleted or if wandb's init hangs.
+3. **W&B runs resume across restarts.** The learner persists `wandb_run_id` in the HF state JSON and uses `resume="allow"` on init. Restarts continue the same W&B run with a continuous x-axis (explicit `step=cycle`).
 
 4. **Replay buffer rebuilds from HF examples repo on startup.** The examples repo is pruned to `--keep-example-files` (default 15) files. With ~7k examples per file and 200k buffer, ~28 files fill the buffer. After pruning, startup typically gets ~100-170k examples.
 

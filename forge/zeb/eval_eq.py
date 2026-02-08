@@ -43,7 +43,7 @@ def _load_oracle(checkpoint_path: str, device: str):
     return model
 
 
-def _load_zeb(source: str, device: str):
+def _load_zeb(source: str, device: str, **kwargs):
     """Load ZebModel from a local checkpoint or HuggingFace Hub.
 
     Args:
@@ -54,8 +54,10 @@ def _load_zeb(source: str, device: str):
     # HuggingFace path: 'hf', or contains '/' but isn't a local file
     if source == 'hf' or (not source.endswith('.pt') and '/' in source):
         repo_id = DEFAULT_REPO if source == 'hf' else source
-        print(f'  Loading Zeb from HF: {repo_id}')
-        return load_zeb_from_hf(repo_id, device=device)
+        weights_name = kwargs.get('weights_name') or 'model.pt'
+        label = f'{repo_id} ({weights_name})' if weights_name != 'model.pt' else repo_id
+        print(f'  Loading Zeb from HF: {label}')
+        return load_zeb_from_hf(repo_id, device=device, weights_name=weights_name)
 
     # Local checkpoint
     from .model import ZebModel
@@ -94,6 +96,10 @@ def main():
         help='Zeb model: "hf" (default) for latest from HuggingFace, '
              'or local .pt path. Omit entirely for E[Q] vs random.',
     )
+    parser.add_argument(
+        '--weights-name', default=None,
+        help='HF weights namespace (e.g. "large" for large.pt). Only used with --vs-zeb hf.',
+    )
     parser.add_argument('--n-games', type=int, default=1000, help='Total games')
     parser.add_argument('--n-samples', type=int, default=100, help='Worlds per E[Q] decision')
     parser.add_argument('--batch-size', type=int, default=0, help='Max games per GPU batch (0=all at once)')
@@ -108,7 +114,7 @@ def main():
     if args.vs_zeb:
         # E[Q] vs Zeb
         print(f'Loading Zeb: {args.vs_zeb}')
-        zeb = _load_zeb(args.vs_zeb, args.device)
+        zeb = _load_zeb(args.vs_zeb, args.device, weights_name=args.weights_name)
 
         print(f'\nE[Q] vs Zeb Evaluation')
         print(f'  E[Q] samples per decision: {args.n_samples}')
