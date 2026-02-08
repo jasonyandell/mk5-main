@@ -70,8 +70,8 @@ Environment variables for `vast_up.sh`: `ZEB_REPO_ID`, `ZEB_EXAMPLES_REPO_ID`, `
        --lr 1e-4 --batch-size 64 \
        --replay-buffer-size 500000 \
        --training-steps-per-cycle 1000 \
-       --push-every 10 --save-every 10 --eval-every 10 \
-       --eval-games 2000 --keep-checkpoints 3 \
+       --push-every 10 --eval-every 10 \
+       --eval-games 2000 \
        --keep-example-files 15 --wandb
    ```
 

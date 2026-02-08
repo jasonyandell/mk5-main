@@ -38,7 +38,13 @@ WEIGHTS_NAME="${ZEB_WEIGHTS_NAME:-zeb-557k-1m}"
 REPO_ID="${ZEB_REPO_ID:-jasonyandell/zeb-42}"
 EXAMPLES_REPO_ID="${ZEB_EXAMPLES_REPO_ID:-jasonyandell/zeb-42-examples}"
 MAX_DPH="${ZEB_MAX_DPH:-0.09}"
-GPUS="${ZEB_GPUS:-RTX_3060 RTX_3060_Ti RTX_3070 RTX_3070_Ti RTX_3080 RTX_3080_Ti RTX_3090}"
+GPUS="${ZEB_GPUS:-RTX_3060 RTX_3060_Ti RTX_3070 RTX_3070_Ti RTX_3080 RTX_3080_Ti RTX_3090 RTX_4060 RTX_4060_Ti RTX_4070 RTX_4070_Ti}"
+# HF free tier: 128 commits/hr. Formula: N_WORKERS * (3600 / interval) < 128
+# Default auto-calculates from TARGET_WORKERS to stay under 100 commits/hr
+UPLOAD_INTERVAL="${ZEB_UPLOAD_INTERVAL:-auto}"
+
+# Bad host blacklist — machine_ids that consistently fail/stall
+BLACKLIST_FILE="${ZEB_BLACKLIST:-$HOME/.config/zeb/bad-hosts.txt}"
 
 IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
 GIT_REPO="https://github.com/jasonyandell/mk5-main.git"
@@ -130,20 +136,23 @@ except Exception as e:
 }
 
 # ─── Fleet query ───
+# Uses a temp file instead of pipe to avoid vastai broken-pipe bug
 get_fleet() {
-    vastai show instances --raw 2>/dev/null | python3 -c "
-import json, sys, time
+    vastai show instances --raw > /tmp/_vast_fleet.json 2>/dev/null
+    python3 -c "
+import json, time
 now = time.time()
 fleet = '$FLEET'
-for i in json.load(sys.stdin):
+for i in json.load(open('/tmp/_vast_fleet.json')):
     label = i.get('label') or ''
-    if not label.startswith(fleet + '-'): continue
+    if not label.startswith(fleet + '-worker-vast-'): continue
     iid = i.get('id', '?')
     gpu = i.get('gpu_name', '?')
     st = i.get('actual_status', '?')
     dph = i.get('dph_total', 0)
     age = int(now - i['start_date']) if i.get('start_date') else 0
-    print(f'{iid}\t{label}\t{gpu}\t{st}\t{dph:.3f}\t{age}')
+    mid = i.get('machine_id', '?')
+    print(f'{iid}\t{label}\t{gpu}\t{st}\t{dph:.3f}\t{age}\t{mid}')
 "
 }
 
@@ -151,7 +160,7 @@ for i in json.load(sys.stdin):
 check_worker() {
     local iid="$1"
     local raw
-    raw=$(vastai logs "$iid" --tail 20 2>/dev/null) || { echo "ERR:no_logs"; return; }
+    raw=$(vastai logs "$iid" --tail 50 2>/dev/null) || { echo "ERR:no_logs"; return; }
 
     # Fatal errors (skip "No such container" during boot — that's normal)
     local fatal
@@ -166,6 +175,12 @@ check_worker() {
     batch_line=$(echo "$raw" | grep -oE 'batch [0-9]+:.*games/s' | tail -1)
     if [ -n "$batch_line" ]; then
         echo "OK:$batch_line"
+        return
+    fi
+
+    # Uploading to HF? Worker is alive, just busy uploading
+    if echo "$raw" | grep -qE '(Upload complete|Uploading .* batches|New Data Upload)' 2>/dev/null; then
+        echo "OK:uploading"
         return
     fi
 
@@ -187,27 +202,32 @@ check_worker() {
 # ─── Find cheapest offer across GPU types ───
 # Queries each GPU individually to avoid vastai 'in' operator bugs
 find_cheapest_offer() {
+    local blacklist
+    blacklist=$(load_blacklist)
     python3 -c "
 import subprocess, json, sys
 
 gpus = '$GPUS'.split()
 max_dph = $MAX_DPH
+blacklist = set('$blacklist'.split(',')) - {''}
 best = None
 
 for gpu in gpus:
     try:
         r = subprocess.run(
             ['vastai', 'search', 'offers', f'gpu_name={gpu} num_gpus=1',
-             '-o', 'dph_total', '--raw', '--limit', '1'],
+             '-o', 'dph_total', '--raw', '--limit', '5'],
             capture_output=True, text=True, timeout=15
         )
         if r.returncode != 0: continue
         offers = json.loads(r.stdout)
-        if not offers: continue
-        o = offers[0]
-        if o['dph_total'] <= max_dph:
+        for o in offers:
+            mid = str(o.get('machine_id', ''))
+            if mid in blacklist: continue
+            if o['dph_total'] > max_dph: break
             if best is None or o['dph_total'] < best['dph_total']:
                 best = o
+            break
     except Exception:
         pass
 
@@ -261,7 +281,8 @@ exec python -u -m forge.zeb.worker.run \
     --max-mcts-nodes 512 \
     --games-per-batch 256 \
     --weights-name '"$WEIGHTS_NAME"' \
-    --weight-sync-interval 2'
+    --weight-sync-interval 2 \
+    --upload-interval '"$UPLOAD_INTERVAL"''
 
     vastai create instance "$offer_id" \
         --image "$IMAGE" --disk 15 \
@@ -270,17 +291,49 @@ exec python -u -m forge.zeb.worker.run \
         --onstart-cmd "$ONSTART" 2>&1 | head -1
 }
 
+# ─── Blacklist helpers ───
+# File stores one machine_id per strike. 3 strikes = blocked from offers.
+BLACKLIST_STRIKES=3
+
+blacklist_host() {
+    local machine_id="$1" reason="$2"
+    [ "$machine_id" = "?" ] && return
+    mkdir -p "$(dirname "$BLACKLIST_FILE")"
+    echo "$machine_id" >> "$BLACKLIST_FILE"
+    local count
+    count=$(grep -cx "$machine_id" "$BLACKLIST_FILE" 2>/dev/null || echo 0)
+    if [ "$count" -ge "$BLACKLIST_STRIKES" ]; then
+        log "${RED}BLACKLIST: machine $machine_id — strike $count/$BLACKLIST_STRIKES, now blocked ($reason)${RESET}"
+    else
+        log "${YELLOW}STRIKE: machine $machine_id — $count/$BLACKLIST_STRIKES ($reason)${RESET}"
+    fi
+}
+
+# Returns comma-separated machine_ids with >= BLACKLIST_STRIKES strikes
+load_blacklist() {
+    if [ -f "$BLACKLIST_FILE" ]; then
+        python3 -c "
+from collections import Counter
+ids = open('$BLACKLIST_FILE').read().split()
+blocked = [mid for mid, n in Counter(ids).items() if n >= $BLACKLIST_STRIKES]
+print(','.join(blocked))
+" 2>/dev/null
+    fi
+}
+
 # ─── Replace a dead/stuck worker ───
 replace_worker() {
     local dead_id="$1"
     local dead_label="$2"
+    local machine_id="${3:-?}"
 
     if [ -n "$DRY_RUN" ]; then
-        log "${YELLOW}DRY-RUN: would replace $dead_label ($dead_id)${RESET}"
+        log "${YELLOW}DRY-RUN: would replace $dead_label ($dead_id, machine $machine_id)${RESET}"
         return 0
     fi
 
-    log "${RED}REPLACE: destroying $dead_id ($dead_label)${RESET}"
+    log "${RED}REPLACE: destroying $dead_id ($dead_label, machine $machine_id)${RESET}"
+    blacklist_host "$machine_id" "$dead_label"
     vastai destroy instance "$dead_id" 2>/dev/null
     local wid
     wid=$(echo "$dead_label" | grep -oE 'worker-vast-[0-9]+')
@@ -292,13 +345,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 shutdown() {
     echo ""
-    log "${BOLD}Shutting down fleet...${RESET}"
-    if [ -n "$DRY_RUN" ]; then
-        log "${YELLOW}DRY-RUN: would run vast_down.sh $FLEET --force${RESET}"
-    else
-        "${SCRIPT_DIR}/vast_down.sh" "$FLEET" --force
-    fi
-    log "Monitor stopped."
+    log "${BOLD}Monitor stopped.${RESET} Fleet is still running."
+    log "  Tear down: ${SCRIPT_DIR}/vast_down.sh $FLEET --force"
     exit 0
 }
 
@@ -317,6 +365,14 @@ print_summary() {
     echo ""
 }
 
+# ─── Compute upload interval ───
+# HF free tier: 128 commits/hr. Target <100 commits/hr for safety.
+if [ "$UPLOAD_INTERVAL" = "auto" ]; then
+    # ceil(N_WORKERS * 3600 / 100) — ensures N * (3600/interval) < 100
+    UPLOAD_INTERVAL=$(python3 -c "import math; print(max(240, math.ceil($TARGET_WORKERS * 3600 / 100)))")
+fi
+COMMITS_PER_HR=$(python3 -c "print(f'{$TARGET_WORKERS * 3600 / $UPLOAD_INTERVAL:.0f}')")
+
 # ─── Startup ───
 echo "${BOLD}vast_monitor.sh — Autonomous fleet manager${RESET}"
 echo ""
@@ -327,6 +383,14 @@ echo "  Repo:     $REPO_ID"
 echo "  Examples: $EXAMPLES_REPO_ID"
 echo "  Max $/hr: $MAX_DPH"
 echo "  GPUs:     $GPUS"
+echo "  Upload:   every ${UPLOAD_INTERVAL}s (~${COMMITS_PER_HR} commits/hr, limit 128)"
+if [ -f "$BLACKLIST_FILE" ]; then
+    N_STRIKES=$(wc -l < "$BLACKLIST_FILE")
+    N_BLOCKED=$(load_blacklist | tr ',' '\n' | grep -c . 2>/dev/null || echo 0)
+    if [ "$N_STRIKES" -gt 0 ]; then
+        echo "  Blacklist: $N_BLOCKED blocked, $N_STRIKES strikes total ($BLACKLIST_STRIKES to block)"
+    fi
+fi
 if [ -n "$DRY_RUN" ]; then
     echo "  Mode:     ${YELLOW}DRY-RUN (no instances created/destroyed)${RESET}"
 fi
@@ -350,20 +414,22 @@ while true; do
     elapsed=$(( $(date +%s) - START_TIME ))
 
     fleet_data=$(get_fleet)
-    n_instances=$(echo "$fleet_data" | grep -c . 2>/dev/null || echo 0)
 
-    if [ "$n_instances" -eq 0 ]; then
+    if [ -z "$fleet_data" ]; then
         log "CHECK #$TOTAL_CHECKS: ${YELLOW}NO INSTANCES — spawning fleet${RESET}"
     else
         total_dph=0
+        total_gps=0
+        n_ok=0
+        n_up=$(echo "$fleet_data" | wc -l)
         perfline=""
-        while IFS=$'\t' read -r iid label gpu status dph age; do
+        while IFS=$'\t' read -r iid label gpu status dph age mid; do
             total_dph=$(python3 -c "print(f'{$total_dph + $dph:.3f}')")
 
             # Cost guard
             if python3 -c "exit(0 if $dph > $MAX_DPH else 1)"; then
                 log "$(color_tag ERR "COST: $label ($gpu) @ \$$dph > \$$MAX_DPH — replacing")"
-                replace_worker "$iid" "$label"
+                replace_worker "$iid" "$label" "$mid"
                 TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                 perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(\$$dph)")"
                 continue
@@ -376,13 +442,16 @@ while true; do
             case "$tag" in
                 OK)
                     gps=$(echo "$detail" | grep -oE '[0-9]+\.[0-9]+ games/s' | head -1)
+                    gps_num=$(echo "$gps" | grep -oE '[0-9]+\.[0-9]+')
+                    total_gps=$(python3 -c "print(f'{$total_gps + ${gps_num:-0}:.1f}')")
+                    n_ok=$((n_ok + 1))
                     batch=$(echo "$detail" | grep -oE 'batch [0-9]+' | head -1)
                     perfline+=" ${label##*-}=$(color_tag OK "${gpu}/\$$dph/${gps}/${batch}/$(fmt_duration "$age")")"
                     ;;
                 ERR)
                     log "$(color_tag ERR "ERROR: $label ($iid): $detail")"
                     if [ "$age" -gt 300 ]; then
-                        replace_worker "$iid" "$label"
+                        replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                         perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(err)")"
                     else
@@ -393,7 +462,7 @@ while true; do
                     perfline+=" ${label##*-}=$(color_tag SETUP "SETUP/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
                         log "$(color_tag ERR "STALE: $label stuck in setup $(fmt_duration "$age") — replacing")"
-                        replace_worker "$iid" "$label"
+                        replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
                     ;;
@@ -401,7 +470,7 @@ while true; do
                     perfline+=" ${label##*-}=$(color_tag BOOT "BOOT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
                         log "$(color_tag ERR "STALE: $label no container after $(fmt_duration "$age") — replacing")"
-                        replace_worker "$iid" "$label"
+                        replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
                     ;;
@@ -409,20 +478,21 @@ while true; do
                     perfline+=" ${label##*-}=$(color_tag WAIT "WAIT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 900 ]; then
                         log "$(color_tag ERR "STALE: $label waiting $(fmt_duration "$age") with no progress — replacing")"
-                        replace_worker "$iid" "$label"
+                        replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
                     ;;
             esac
         done <<< "$fleet_data"
 
-        log "CHECK #$TOTAL_CHECKS [$(fmt_duration "$elapsed")] \$$total_dph/hr |$perfline"
+        log "CHECK #$TOTAL_CHECKS [$(fmt_duration "$elapsed")] ${n_ok}/${n_up}up ${total_gps} games/s \$$total_dph/hr |$perfline"
     fi
 
     # Replenish: spawn missing workers up to target
-    live_count=$(get_fleet | grep -c . 2>/dev/null || echo 0)
+    live_data=$(get_fleet)
+    live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
     if [ "$live_count" -lt "$TARGET_WORKERS" ]; then
-        live_labels=$(get_fleet | cut -f2)
+        live_labels=$(echo "$live_data" | cut -f2)
         for idx in $(seq 0 $((TARGET_WORKERS - 1))); do
             wid="worker-vast-${idx}"
             if ! echo "$live_labels" | grep -q "$wid"; then
