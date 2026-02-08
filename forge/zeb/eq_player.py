@@ -306,6 +306,197 @@ def _merge_results(results: list[dict]) -> dict:
     }
 
 
+def evaluate_eq_vs_eq(
+    model,
+    n_games: int = 1000,
+    n_samples_a: int = 100,
+    n_samples_b: int = 100,
+    device: str = 'cuda',
+    batch_size: int = 0,
+    verbose: bool = True,
+) -> dict:
+    """Evaluate E[Q](n_samples_a) vs E[Q](n_samples_b) (batched GPU).
+
+    Both sides share the same oracle model but may differ in sample count.
+    Team A uses n_samples_a, Team B uses n_samples_b.
+    Runs both team assignments to eliminate seat advantage.
+
+    Returns:
+        Dict with win rates, margins, per-team breakdowns (from A's perspective).
+    """
+    half = n_games // 2
+
+    def _run_chunked(n: int, a_team: int, seed_offset: int) -> dict:
+        chunk = batch_size if batch_size > 0 else n
+        results = []
+        seed = seed_offset
+        remaining = n
+        batch_num = 0
+        while remaining > 0:
+            this_batch = min(chunk, remaining)
+            r = _run_eq_vs_eq_batched(
+                model, n_games=this_batch,
+                n_samples_a=n_samples_a, n_samples_b=n_samples_b,
+                a_team=a_team, base_seed=seed, device=device,
+            )
+            results.append(r)
+            batch_num += 1
+            done = n - remaining + this_batch
+            agg = _merge_results(results)
+            if verbose:
+                print(f"    batch {batch_num}: {done}/{n} games, "
+                      f"A {agg['eq_win_rate']:.1%}")
+            seed += this_batch
+            remaining -= this_batch
+        return agg if len(results) > 1 else results[0]
+
+    if verbose:
+        print(f"  A(n={n_samples_a}) as team 0 ({half} games)...")
+    t0 = time.time()
+    r0 = _run_chunked(half, a_team=0, seed_offset=0)
+    if verbose:
+        print(f"    A {r0['eq_win_rate']:.1%}, {time.time()-t0:.1f}s")
+
+    if verbose:
+        print(f"  A(n={n_samples_a}) as team 1 ({half} games)...")
+    t1 = time.time()
+    r1 = _run_chunked(half, a_team=1, seed_offset=half)
+    if verbose:
+        print(f"    A {r1['eq_win_rate']:.1%}, {time.time()-t1:.1f}s")
+
+    a_wins = r0['eq_wins'] + r1['eq_wins']
+    total = r0['n_games'] + r1['n_games']
+
+    return {
+        'eq_win_rate': a_wins / total,
+        'eq_wins': a_wins,
+        'total_games': total,
+        'as_team0': r0,
+        'as_team1': r1,
+    }
+
+
+def _run_eq_vs_eq_batched(
+    model,
+    n_games: int,
+    n_samples_a: int,
+    n_samples_b: int,
+    a_team: int,
+    base_seed: int,
+    device: str,
+) -> dict:
+    """Run E[Q](A) vs E[Q](B) batched. A plays as a_team (0 or 1)."""
+    states = [
+        new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True)
+        for i in range(n_games)
+    ]
+    active = [True] * n_games
+
+    # Separate GPU resources for each side (different n_samples)
+    sampler_a = WorldSamplerMRV(max_games=n_games, max_samples=n_samples_a, device=device)
+    tokenizer_a = GPUTokenizer(max_batch=n_games * n_samples_a, device=device)
+    sampler_b = WorldSamplerMRV(max_games=n_games, max_samples=n_samples_b, device=device)
+    tokenizer_b = GPUTokenizer(max_batch=n_games * n_samples_b, device=device)
+
+    model.eval()
+
+    while any(active):
+        a_indices = []
+        a_game_states = []
+        b_indices = []
+        b_game_states = []
+
+        for i, (state, is_active) in enumerate(zip(states, active)):
+            if not is_active:
+                continue
+            player = _get_current_player(state)
+            if player % 2 == a_team:
+                a_indices.append(i)
+                a_game_states.append(state)
+            else:
+                b_indices.append(i)
+                b_game_states.append(state)
+
+        # Batched E[Q] decisions for team A
+        if a_indices:
+            _apply_eq_actions(
+                model, a_indices, a_game_states,
+                n_samples_a, sampler_a, tokenizer_a,
+                states, active, device,
+            )
+
+        # Batched E[Q] decisions for team B
+        if b_indices:
+            _apply_eq_actions(
+                model, b_indices, b_game_states,
+                n_samples_b, sampler_b, tokenizer_b,
+                states, active, device,
+            )
+
+    # Score from A's perspective
+    a_wins = 0
+    opp_wins = 0
+    total_margin = 0
+
+    for state in states:
+        team0_pts, team1_pts = state.team_points
+        a_pts = team0_pts if a_team == 0 else team1_pts
+        b_pts = team1_pts if a_team == 0 else team0_pts
+
+        if a_pts > b_pts:
+            a_wins += 1
+        else:
+            opp_wins += 1
+        total_margin += a_pts - b_pts
+
+    return {
+        'eq_wins': a_wins,
+        'opp_wins': opp_wins,
+        'eq_win_rate': a_wins / n_games,
+        'avg_margin': total_margin / n_games,
+        'n_games': n_games,
+        'eq_team': a_team,
+    }
+
+
+def _apply_eq_actions(
+    model,
+    indices: list[int],
+    game_states: list[ZebGameState],
+    n_samples: int,
+    sampler: WorldSamplerMRV,
+    tokenizer: GPUTokenizer,
+    states: list[ZebGameState],
+    active: list[bool],
+    device: str,
+) -> None:
+    """Batched E[Q] inference + action application. Mutates states/active."""
+    n_eq = len(indices)
+    gst = zeb_states_to_game_state_tensor(game_states, device)
+
+    with torch.no_grad():
+        worlds = sample_worlds_batched(gst, sampler, n_samples)
+        deals = build_hypothetical_deals(gst, worlds)
+
+        batch_needed = n_eq * n_samples
+        if batch_needed > tokenizer.max_batch:
+            tokenizer = GPUTokenizer(max_batch=batch_needed, device=device)
+
+        tokens, masks = tokenize_batched(gst, deals, tokenizer)
+        q_values = query_model(model, tokens, masks, gst, n_samples, device)
+
+        q_reshaped = q_values.view(n_eq, n_samples, 7)
+        e_q = q_reshaped.mean(dim=1)
+        e_q_pdf = compute_eq_pdf(q_reshaped)
+        actions, _ = select_actions(gst, e_q, e_q_pdf, greedy=True)
+
+    for idx, game_idx in enumerate(indices):
+        action = actions[idx].item()
+        states[game_idx] = apply_action(states[game_idx], action)
+        if is_terminal(states[game_idx]):
+            active[game_idx] = False
+
+
 def evaluate_eq_vs_zeb(
     oracle_model,
     zeb_model,
