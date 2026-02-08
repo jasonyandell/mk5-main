@@ -5,7 +5,10 @@
 ```bash
 export HF_TOKEN=hf_...              # set before any vast_up
 
-# Default fleet (existing model)
+# Autonomous (recommended) — one command, self-healing
+./vast_monitor.sh 4                 # maintain 4 workers, Ctrl-C to stop
+
+# Manual workflow
 ./vast_up.sh 4                      # launch 4 workers
 ./vast_status.sh                    # see what's running
 vastai logs INSTANCE_ID --tail 50   # check worker output
@@ -356,7 +359,59 @@ jasonyandell/zeb-42-examples/
 
 ---
 
-## 10. Daily Operations Checklist
+## 10. Autonomous Monitor
+
+`vast_monitor.sh` is a long-running process that replaces the manual up → status → replenish → down workflow. It maintains a target fleet size, auto-replaces stuck/dead/expensive workers, and tears down cleanly on Ctrl-C.
+
+### Quick start
+
+```bash
+export HF_TOKEN=$(cat ~/.cache/huggingface/token)
+./vast_monitor.sh 4            # maintain 4 workers, Ctrl-C to stop
+```
+
+### How it works
+
+1. **Bootstrap check** — verifies weights exist on HF before launching anything
+2. **Phase 1 (first 30 min)** — checks every 60s for fast ramp-up
+3. **Phase 2 (after 30 min)** — checks every 600s for steady-state
+4. **Each check**: queries fleet status, inspects logs, replaces failures, replenishes missing workers
+5. **Ctrl-C** — runs `vast_down.sh` to tear down the fleet, then exits
+
+### Configuration
+
+Uses the same `ZEB_*` env vars as `vast_up.sh`, plus:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ZEB_MAX_DPH` | `0.09` | Max cost per worker $/hr — workers above this get replaced |
+| `ZEB_GPUS` | `RTX_3060 ... RTX_3090` | Space-separated GPU types to consider |
+
+### Dry run
+
+```bash
+./vast_monitor.sh 4 --dry-run   # verify config, bootstrap check, then exit
+```
+
+### Worker replacement triggers
+
+| Condition | Timeout | Action |
+|-----------|---------|--------|
+| Fatal error (Exception, OOM, etc.) | 5 min grace period | Destroy + respawn |
+| Stuck in SETUP (git/pip phase) | 10 min | Destroy + respawn |
+| Stuck in BOOT (Docker pull) | 10 min | Destroy + respawn |
+| No progress (WAIT state) | 15 min | Destroy + respawn |
+| Over cost limit (`ZEB_MAX_DPH`) | Immediate | Destroy + respawn |
+
+### Multi-model fleets
+
+```bash
+ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_monitor.sh 4
+```
+
+---
+
+## 11. Daily Operations Checklist
 
 **Morning:**
 1. `./vast_status.sh` — all workers running?

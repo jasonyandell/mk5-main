@@ -4,7 +4,7 @@ Shell scripts for running zeb workers on Vast.ai GPU marketplace.
 
 **Philosophy**: The learner runs locally (free 3050 Ti, no preemption risk).
 Workers are stateless and go on cheap interruptible Vast.ai instances.
-If one dies, `vast_replenish.sh` replaces it. The human is the control plane.
+`vast_monitor.sh` keeps the fleet healthy automatically, or use the manual scripts for finer control.
 
 ## Prerequisites
 
@@ -15,6 +15,18 @@ export HF_TOKEN=hf_...                   # fine-grained token, write access to z
 ```
 
 ## Usage
+
+### Autonomous monitor (recommended)
+
+```bash
+# Self-healing fleet — launches, monitors, replaces failures, Ctrl-C to stop
+./vast_monitor.sh 4
+
+# Dry run — verify config without creating instances
+./vast_monitor.sh 4 --dry-run
+```
+
+### Manual workflow
 
 ```bash
 # Launch 4 workers on cheapest 3000-series GPUs
