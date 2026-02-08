@@ -238,14 +238,15 @@ def run_learner(args: argparse.Namespace) -> None:
     # --- W&B ---
     use_wandb = args.wandb and WANDB_AVAILABLE
     if use_wandb:
-        from datetime import datetime
+        wandb_run_id = remote_state.get('wandb_run_id') if remote_state else None
         run_name = args.run_name or (
-            f"learner-{stem}-{datetime.now().strftime('%Y%m%d%H%M')}" if namespace
-            else f"learner-{datetime.now().strftime('%Y%m%d%H%M')}"
+            f"learner-{stem}" if namespace else "learner"
         )
         wandb.init(
             project=args.wandb_project,
             name=run_name,
+            id=wandb_run_id,
+            resume="allow",
             tags=['learner', 'distributed', 'selfplay', 'zeb'],
             config={
                 'mode': 'distributed-learner',
@@ -257,6 +258,9 @@ def run_learner(args: argparse.Namespace) -> None:
                 'model_config': model_config,
             },
         )
+        # Persist the run ID so restarts resume the same W&B run
+        if wandb.run.id != wandb_run_id:
+            wandb_run_id = wandb.run.id
         print(f"W&B run: {wandb.run.url}")
 
     # --- Main loop ---
@@ -364,7 +368,9 @@ def run_learner(args: argparse.Namespace) -> None:
         # 5. Push weights to HF periodically
         if cycle % args.push_every == 0:
             try:
-                push_weights(model, args.repo_id, step=cycle, total_games=total_games, weights_name=weights_name)
+                extra = {'wandb_run_id': wandb.run.id} if use_wandb else None
+                push_weights(model, args.repo_id, step=cycle, total_games=total_games,
+                             extra_metadata=extra, weights_name=weights_name)
                 print(f"  Pushed weights (cycle {cycle})")
 
                 if use_hf_examples:
@@ -389,7 +395,7 @@ def run_learner(args: argparse.Namespace) -> None:
 
         # 7. Log all metrics for this cycle in a single call
         if use_wandb:
-            wandb.log(log_dict)
+            wandb.log(log_dict, step=cycle)
 
 
 def main():
