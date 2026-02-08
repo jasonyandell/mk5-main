@@ -5,10 +5,16 @@
 ```bash
 export HF_TOKEN=hf_...              # set before any vast_up
 
+# Default fleet (existing model)
 ./vast_up.sh 4                      # launch 4 workers
 ./vast_status.sh                    # see what's running
 vastai logs INSTANCE_ID --tail 50   # check worker output
 ./vast_down.sh                      # destroy everything
+
+# Multi-model fleet (new model alongside existing)
+ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
+./vast_status.sh zeb-large          # only zeb-large-* instances
+./vast_down.sh zeb-large            # tear down just the large fleet
 ```
 
 ---
@@ -192,19 +198,20 @@ vastai destroy instance 87654321
 
 Or use replenish to auto-detect and replace:
 ```bash
-./vast_replenish.sh 4    # ensures 4 workers exist, creates any missing
+./vast_replenish.sh 4              # ensures 4 default-fleet workers exist
+./vast_replenish.sh 4 zeb-large    # ensures 4 zeb-large workers exist
 ```
 
 ---
 
-## 6. Tear Down Everything
+## 6. Tear Down
 
 ```bash
-./vast_down.sh
+./vast_down.sh                      # all zeb-* instances (confirmation prompt)
+./vast_down.sh zeb-large            # only zeb-large-* instances
+./vast_down.sh --force              # skip confirmation
+./vast_down.sh zeb-large --force    # specific fleet, no confirmation
 ```
-
-Shows instances and asks for confirmation before destroying.
-Use `./vast_down.sh --force` to skip the prompt.
 
 ---
 
@@ -282,7 +289,74 @@ Do NOT reduce `--upload-interval` below 120s with 4+ workers.
 
 ---
 
-## 9. Daily Operations Checklist
+## 9. Multi-Model Fleets
+
+Multiple models can share the same HF repos, isolated by namespace. Each model gets its own fleet label prefix.
+
+### Launch a new model alongside the existing one
+
+```bash
+# 1. Create a fresh checkpoint
+python -m forge.zeb.init_checkpoint --size large -o forge/zeb/checkpoints/large-init.pt
+
+# 2. Start learner locally
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --weights-name large \
+    --checkpoint forge/zeb/checkpoints/large-init.pt \
+    --lr 1e-4 --batch-size 64 --replay-buffer-size 50000 \
+    --training-steps-per-cycle 1000 --wandb
+
+# 3. Launch workers for the new model
+ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
+```
+
+### Fleet management with prefixes
+
+All shell scripts accept an optional fleet prefix:
+
+```bash
+./vast_status.sh                    # all zeb-* instances (both fleets)
+./vast_status.sh zeb-large          # only zeb-large-* instances
+./vast_down.sh zeb-large            # tear down just the large fleet
+./vast_down.sh zeb-large --force    # skip confirmation
+./vast_replenish.sh 4 zeb-large     # ensure 4 zeb-large workers
+```
+
+### Environment variables for `vast_up.sh`
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `ZEB_REPO_ID` | `jasonyandell/zeb-42` | HF weights repo |
+| `ZEB_EXAMPLES_REPO_ID` | `jasonyandell/zeb-42-examples` | HF examples repo |
+| `ZEB_WEIGHTS_NAME` | `zeb-557k-1m` | Weights filename stem |
+| `ZEB_FLEET` | `zeb` | Instance label prefix |
+
+### HF repo layout with multiple models
+
+```
+jasonyandell/zeb-42/
+├── config.json                      # default model config (backward compat)
+├── model.pt                         # default weights (if using default namespace)
+├── training_state.json              # default step/games
+├── zeb-557k-1m.pt                   # existing medium model
+├── zeb-557k-1m-config.json
+├── zeb-557k-1m-state.json
+├── large.pt                         # new large model
+├── large-config.json
+└── large-state.json
+
+jasonyandell/zeb-42-examples/
+├── worker-vast-0_170712_abc.pt      # existing model examples (root)
+└── large/
+    ├── worker-vast-0_170799_def.pt  # large model examples (subdirectory)
+    └── worker-vast-1_170799_ghi.pt
+```
+
+---
+
+## 10. Daily Operations Checklist
 
 **Morning:**
 1. `./vast_status.sh` — all workers running?

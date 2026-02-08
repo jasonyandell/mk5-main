@@ -2,12 +2,15 @@
 # vast_status.sh — Show running zeb instances
 #
 # Usage:
-#   ./vast_status.sh          # show all zeb instances
-#   ./vast_status.sh --raw    # raw JSON output
+#   ./vast_status.sh              # show all zeb-* instances
+#   ./vast_status.sh zeb-large    # only zeb-large-* instances
+#   ./vast_status.sh --raw        # raw JSON output
 
 set -euo pipefail
 
-if [ "${1:-}" = "--raw" ]; then
+FLEET="${1:-zeb}"
+
+if [ "$FLEET" = "--raw" ]; then
     vastai show instances --raw | python3 -c "
 import sys, json
 instances = json.load(sys.stdin)
@@ -19,11 +22,12 @@ else
     vastai show instances --raw | python3 -c "
 import sys, json, time
 
+fleet = '$FLEET'
 instances = json.load(sys.stdin)
-zeb = [i for i in instances if (i.get('label') or '').startswith('zeb-')]
+zeb = [i for i in instances if (i.get('label') or '').startswith(fleet + '-')]
 
 if not zeb:
-    print('No zeb instances running.')
+    print(f'No {fleet}-* instances running.')
     sys.exit(0)
 
 now = time.time()

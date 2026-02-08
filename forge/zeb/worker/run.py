@@ -78,12 +78,16 @@ def run_worker(args: argparse.Namespace) -> None:
 
     # 1. Pull initial model from HuggingFace
     weights_name = f"{args.weights_name}.pt" if args.weights_name else 'model.pt'
+    # Derive examples namespace: "model" → None (root), anything else → subdirectory
+    stem = weights_name.removesuffix('.pt')
+    namespace = None if stem == 'model' else stem
+
     print(f"Pulling initial weights from {args.repo_id}/{weights_name}...")
     state_dict, config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
     model = ZebModel(**config).to(device)
     model.load_state_dict(state_dict)
     model.eval()
-    current_step = get_remote_step(args.repo_id)
+    current_step = get_remote_step(args.repo_id, weights_name=weights_name)
     print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params")
 
     # 2. Init examples repo (if using HF for examples)
@@ -118,7 +122,8 @@ def run_worker(args: argparse.Namespace) -> None:
     batch_count = 0
     total_games = 0
     dest = args.examples_repo_id if use_hf_examples else str(output_dir)
-    print(f"\nWorker {args.worker_id} starting (output: {dest})")
+    ns_label = f" (namespace: {namespace})" if namespace else ""
+    print(f"\nWorker {args.worker_id} starting (output: {dest}{ns_label})")
     print(f"  games_per_batch={args.games_per_batch}, weight_sync_interval={args.weight_sync_interval}")
     if use_hf_examples:
         print(f"  upload_interval={upload_interval_sec}s (folder upload)")
@@ -164,7 +169,7 @@ def run_worker(args: argparse.Namespace) -> None:
         if use_hf_examples and (time.time() - last_upload_time) >= upload_interval_sec:
             print(f"[{args.worker_id}] Uploading {staged_count} batches to HF...")
             try:
-                upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count)
+                upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count, namespace=namespace)
                 # Clear staging dir only on success
                 for f in staging_dir.iterdir():
                     f.unlink()

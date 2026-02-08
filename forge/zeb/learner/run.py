@@ -157,7 +157,10 @@ def train_n_steps_from_buffer(
 
 def run_learner(args: argparse.Namespace) -> None:
     device = args.device
-    weights_name = f"{args.run_name}.pt" if args.run_name else 'model.pt'
+    weights_name = f"{args.weights_name}.pt" if args.weights_name else 'model.pt'
+    # Derive examples namespace: "model" → None (root), anything else → subdirectory
+    stem = weights_name.removesuffix('.pt')
+    namespace = None if stem == 'model' else stem
 
     # --- Bootstrap: load from checkpoint to get model config ---
     print(f"Loading bootstrap checkpoint: {args.checkpoint}")
@@ -168,8 +171,8 @@ def run_learner(args: argparse.Namespace) -> None:
     print(f"  Model: {total_params:,} parameters")
 
     # --- HF is the single source of truth ---
-    init_repo(args.repo_id, model_config)
-    remote_state = get_remote_training_state(args.repo_id)
+    init_repo(args.repo_id, model_config, weights_name=weights_name)
+    remote_state = get_remote_training_state(args.repo_id, weights_name=weights_name)
 
     if remote_state is not None:
         remote_step = int(remote_state.get('step', 0))
@@ -198,7 +201,7 @@ def run_learner(args: argparse.Namespace) -> None:
             capacity=args.replay_buffer_size,
             device=torch.device(device),
         )
-        remote_files = list_remote_examples(args.examples_repo_id)
+        remote_files = list_remote_examples(args.examples_repo_id, namespace)
         seen_files: set[str] = set()
         for remote_name in remote_files:
             local_path = download_example(args.examples_repo_id, remote_name)
@@ -227,7 +230,10 @@ def run_learner(args: argparse.Namespace) -> None:
     use_wandb = args.wandb and WANDB_AVAILABLE
     if use_wandb:
         from datetime import datetime
-        run_name = args.run_name or f"learner-{datetime.now().strftime('%Y%m%d%H%M')}"
+        run_name = args.run_name or (
+            f"learner-{stem}-{datetime.now().strftime('%Y%m%d%H%M')}" if namespace
+            else f"learner-{datetime.now().strftime('%Y%m%d%H%M')}"
+        )
         wandb.init(
             project=args.wandb_project,
             name=run_name,
@@ -261,7 +267,7 @@ def run_learner(args: argparse.Namespace) -> None:
 
         if use_hf_examples:
             try:
-                all_remote = list_remote_examples(args.examples_repo_id)
+                all_remote = list_remote_examples(args.examples_repo_id, namespace)
                 new_remote = [f for f in all_remote if f not in seen_files]
                 for remote_name in new_remote:
                     local_path = download_example(args.examples_repo_id, remote_name)
@@ -355,6 +361,7 @@ def run_learner(args: argparse.Namespace) -> None:
                 if use_hf_examples:
                     pruned = prune_remote_examples(
                         args.examples_repo_id, args.keep_example_files,
+                        namespace=namespace,
                     )
                     if pruned:
                         seen_files -= set(pruned)
@@ -408,6 +415,10 @@ def main():
     parser.add_argument('--eval-every', type=int, default=50,
                         help='Evaluate vs random every N cycles')
     parser.add_argument('--eval-games', type=int, default=2000)
+
+    # Model namespace
+    parser.add_argument('--weights-name', type=str, default=None,
+                        help='Weights filename stem on HF (e.g. large → large.pt, large-config.json)')
 
     # W&B
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)

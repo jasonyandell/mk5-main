@@ -784,8 +784,13 @@ jasonyandell/zeb-42/
 └── training_state.json      # {"step": 1234, "total_games": 500000}
 ```
 
-Workers check `training_state.json` first (tiny download) and skip pulling
-`model.pt` if the step hasn't changed. HF's ETag caching makes polling free.
+Workers check the training state file first (tiny download) and skip pulling
+weights if the step hasn't changed. HF's ETag caching makes polling free.
+
+**Multi-model namespacing**: The `--weights-name` parameter controls file naming.
+For `--weights-name large`, files become `large.pt`, `large-config.json`,
+`large-state.json`, and examples go under `large/` in the examples repo. Multiple
+models share the same repos without collision. See `forge/zeb/learner/RUNBOOK.md`.
 
 ### Replay Buffer Sizing
 
