@@ -36,7 +36,7 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 from forge.zeb.example_store import load_examples, scan_pending
-from forge.zeb.gpu_training_pipeline import GPUReplayBuffer, GPUTrainingExample
+from forge.zeb.gpu_training_pipeline import GPUReplayBuffer
 from forge.zeb.tokenizer_registry import get_tokenizer_spec
 from forge.zeb.hf import (
     get_remote_training_state,
@@ -212,15 +212,7 @@ def run_learner(args: argparse.Namespace) -> None:
         for remote_name in remote_files:
             local_path = download_example(args.examples_repo_id, remote_name)
             batch = load_examples(local_path)
-            gpu_batch = GPUTrainingExample(
-                observations=batch.observations.to(device),
-                masks=batch.masks.to(device),
-                hand_indices=batch.hand_indices.to(device),
-                hand_masks=batch.hand_masks.to(device),
-                policy_targets=batch.policy_targets.to(device),
-                value_targets=batch.value_targets.to(device),
-            )
-            replay_buffer.add_batch(gpu_batch)
+            replay_buffer.add_batch(batch.to(device))
             seen_files.add(remote_name)
         print(f"Replay buffer (HF): {len(replay_buffer):,}/{args.replay_buffer_size:,} "
               f"examples from {len(remote_files)} files")
@@ -285,17 +277,9 @@ def run_learner(args: argparse.Namespace) -> None:
                 for remote_name in new_remote:
                     local_path = download_example(args.examples_repo_id, remote_name)
                     batch = load_examples(local_path)
-                    gpu_batch = GPUTrainingExample(
-                        observations=batch.observations.to(device),
-                        masks=batch.masks.to(device),
-                        hand_indices=batch.hand_indices.to(device),
-                        hand_masks=batch.hand_masks.to(device),
-                        policy_targets=batch.policy_targets.to(device),
-                        value_targets=batch.value_targets.to(device),
-                    )
-                    replay_buffer.add_batch(gpu_batch)
-                    total_games += batch.metadata.get('n_games', 0)
-                    ingested += gpu_batch.n_examples
+                    replay_buffer.add_batch(batch.to(device))
+                    total_games += (batch.metadata or {}).get('n_games', 0)
+                    ingested += batch.n_examples
                     seen_files.add(remote_name)
                 n_new_files += len(new_remote)
             except Exception as e:
@@ -304,17 +288,9 @@ def run_learner(args: argparse.Namespace) -> None:
         if args.input_dir:
             for f in scan_pending(args.input_dir):
                 batch = load_examples(f)
-                gpu_batch = GPUTrainingExample(
-                    observations=batch.observations.to(device),
-                    masks=batch.masks.to(device),
-                    hand_indices=batch.hand_indices.to(device),
-                    hand_masks=batch.hand_masks.to(device),
-                    policy_targets=batch.policy_targets.to(device),
-                    value_targets=batch.value_targets.to(device),
-                )
-                replay_buffer.add_batch(gpu_batch)
-                total_games += batch.metadata.get('n_games', 0)
-                ingested += gpu_batch.n_examples
+                replay_buffer.add_batch(batch.to(device))
+                total_games += (batch.metadata or {}).get('n_games', 0)
+                ingested += batch.n_examples
                 n_new_files += 1
                 f.unlink()
 

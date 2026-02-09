@@ -80,10 +80,10 @@ def _concat_state_batches(states_list: list[GPUGameState]) -> GPUGameState:
 
 
 @dataclass
-class GPUTrainingExample:
-    """Training examples stored entirely on GPU.
+class TrainingExamples:
+    """Training examples on any device.
 
-    All tensors are on the same device (GPU).
+    Works on both CPU (for serialization) and GPU (for training).
     """
     observations: Tensor    # (N, MAX_TOKENS, N_FEATURES) int32
     masks: Tensor          # (N, MAX_TOKENS) bool
@@ -91,6 +91,7 @@ class GPUTrainingExample:
     hand_masks: Tensor     # (N, 7) bool - which slots have unplayed dominoes
     policy_targets: Tensor # (N, 7) float32 - visit distributions
     value_targets: Tensor  # (N,) float32 - game outcomes
+    metadata: dict | None = None  # {worker_id, model_step, n_games, timestamp, ...}
 
     @property
     def device(self) -> torch.device:
@@ -99,6 +100,22 @@ class GPUTrainingExample:
     @property
     def n_examples(self) -> int:
         return self.observations.shape[0]
+
+    def to(self, device: torch.device | str) -> "TrainingExamples":
+        """Move all tensors to device, preserving metadata."""
+        return TrainingExamples(
+            observations=self.observations.to(device),
+            masks=self.masks.to(device),
+            hand_indices=self.hand_indices.to(device),
+            hand_masks=self.hand_masks.to(device),
+            policy_targets=self.policy_targets.to(device),
+            value_targets=self.value_targets.to(device),
+            metadata=self.metadata,
+        )
+
+    def cpu(self) -> "TrainingExamples":
+        """Move all tensors to CPU, preserving metadata."""
+        return self.to("cpu")
 
 
 class GPUReplayBuffer:
@@ -156,12 +173,12 @@ class GPUReplayBuffer:
     def __len__(self) -> int:
         return self.size
 
-    def add_batch(self, examples: GPUTrainingExample) -> None:
+    def add_batch(self, examples: TrainingExamples) -> None:
         """Add batch of examples (already on GPU). O(1) amortized."""
         n = examples.n_examples
         if n > self.capacity:
             # If batch larger than capacity, only keep last `capacity` examples
-            examples = GPUTrainingExample(
+            examples = TrainingExamples(
                 observations=examples.observations[-self.capacity:],
                 masks=examples.masks[-self.capacity:],
                 hand_indices=examples.hand_indices[-self.capacity:],
@@ -207,7 +224,7 @@ class GPUReplayBuffer:
         self.write_idx = end_idx % self.capacity
         self.size = min(self.size + n, self.capacity)
 
-    def sample(self, batch_size: int) -> GPUTrainingExample:
+    def sample(self, batch_size: int) -> TrainingExamples:
         """Sample random batch entirely on GPU. No CPU involvement."""
         if batch_size > self.size:
             raise ValueError(f"batch_size {batch_size} > buffer size {self.size}")
@@ -215,7 +232,7 @@ class GPUReplayBuffer:
         # Generate random indices on GPU
         indices = torch.randint(0, self.size, (batch_size,), device=self.device)
 
-        return GPUTrainingExample(
+        return TrainingExamples(
             observations=self.observations[indices],
             masks=self.masks[indices],
             hand_indices=self.hand_indices[indices],
@@ -271,7 +288,7 @@ class GPUReplayBuffer:
 
         # Stack all data and add as single batch
         n = len(data)
-        examples = GPUTrainingExample(
+        examples = TrainingExamples(
             observations=torch.stack([d['obs'] for d in data]).to(device),
             masks=torch.stack([d['mask'] for d in data]).to(device),
             hand_indices=torch.stack([d['hand_idx'] for d in data]).to(device),
@@ -542,7 +559,7 @@ class GPUTrainingPipeline:
         n_games: int,
         *,
         max_moves: int = 28,
-    ) -> GPUTrainingExample:
+    ) -> TrainingExamples:
         """Generate training examples entirely on GPU.
 
         Plays n_games of self-play using MCTS, collecting training examples
@@ -552,13 +569,13 @@ class GPUTrainingPipeline:
             n_games: Number of games to generate
 
         Returns:
-            GPUTrainingExample with all training data on GPU
+            TrainingExamples with all training data on GPU
         """
         # No gradients needed during game generation - only during training
         with torch.no_grad():
             return self._generate_games_gpu_impl(n_games, max_moves=max_moves)
 
-    def _generate_games_gpu_impl(self, n_games: int, *, max_moves: int) -> GPUTrainingExample:
+    def _generate_games_gpu_impl(self, n_games: int, *, max_moves: int) -> TrainingExamples:
         """Implementation of generate_games_gpu (called within no_grad context)."""
         all_obs = []
         all_masks = []
@@ -594,7 +611,7 @@ class GPUTrainingPipeline:
             self.total_games_generated += batch_games
 
         # Concatenate all examples
-        return GPUTrainingExample(
+        return TrainingExamples(
             observations=torch.cat(all_obs, dim=0),
             masks=torch.cat(all_masks, dim=0),
             hand_indices=torch.cat(all_hand_indices, dim=0),
@@ -1274,7 +1291,7 @@ class GPUTrainingPipeline:
         """Train N steps sampling from GPU replay buffer - fused loop.
 
         Minimizes Python overhead by keeping everything in a tight loop with
-        direct tensor indexing. No intermediate GPUTrainingExample objects.
+        direct tensor indexing. No intermediate TrainingExamples objects.
 
         Args:
             model: ZebModel to train
@@ -1350,7 +1367,7 @@ class GPUTrainingPipeline:
         self,
         model: ZebModel,
         optimizer: torch.optim.Optimizer,
-        examples: GPUTrainingExample,
+        examples: TrainingExamples,
         batch_size: int = 128,
     ) -> dict[str, float]:
         """Train one epoch on GPU-native examples.
@@ -1360,7 +1377,7 @@ class GPUTrainingPipeline:
         Args:
             model: ZebModel to train
             optimizer: Optimizer
-            examples: GPUTrainingExample with all data
+            examples: TrainingExamples with all data
             batch_size: Mini-batch size
 
         Returns:

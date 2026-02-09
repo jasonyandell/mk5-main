@@ -134,7 +134,7 @@ class TestTrainingScriptImports:
         from forge.zeb.gpu_training_pipeline import (
             GPUTrainingPipeline,
             GPUObservationTokenizer,
-            GPUTrainingExample,
+            TrainingExamples,
         )
         from forge.zeb.gpu_game_state import deal_random_gpu
         from forge.zeb.gpu_mcts import create_forest

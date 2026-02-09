@@ -4,8 +4,8 @@ import time
 from forge.eq.game import GameState
 from forge.oracle.rng import deal_from_seed
 
-from .mcts import MCTS, select_action_mcts
-from .mcts_self_play import play_game_with_mcts, play_games_with_mcts
+from forge.zeb.mcts import MCTS, select_action_mcts
+from forge.zeb.mcts_self_play import play_game_with_mcts, play_games_with_mcts
 
 
 def test_basic_mcts():
@@ -108,7 +108,7 @@ def test_oracle_value_fn():
         print("CUDA not available, skipping oracle test")
         return
 
-    from .oracle_value import create_oracle_value_fn
+    from forge.zeb.oracle_value import create_oracle_value_fn
 
     # Create oracle value function
     print("Loading oracle...")
@@ -160,7 +160,7 @@ def test_mcts_oracle_vs_random():
         print("CUDA not available, skipping")
         return
 
-    from .oracle_value import create_oracle_value_fn
+    from forge.zeb.oracle_value import create_oracle_value_fn
 
     # Load oracle
     value_fn = create_oracle_value_fn(device="cuda", compile=True)
@@ -207,7 +207,7 @@ def test_batched_mcts():
         print("CUDA not available, skipping")
         return
 
-    from .oracle_value import create_oracle_value_fn
+    from forge.zeb.oracle_value import create_oracle_value_fn
 
     # Load oracle
     print("Loading oracle...")
@@ -241,7 +241,7 @@ def test_batched_vs_sequential_benchmark():
         print("CUDA not available, skipping")
         return
 
-    from .oracle_value import create_oracle_value_fn
+    from forge.zeb.oracle_value import create_oracle_value_fn
 
     # Load oracle
     value_fn_batched = create_oracle_value_fn(device="cuda", compile=True)

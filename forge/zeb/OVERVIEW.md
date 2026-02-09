@@ -710,10 +710,10 @@ buffer. Checkpoints are tiny (~2MB: model + optimizer only).
 
 | File | Purpose |
 |------|---------|
-| `worker/run.py` | Self-play worker: MCTS games → ExampleBatch → HF Hub |
+| `worker/run.py` | Self-play worker: MCTS games → TrainingExamples → HF Hub |
 | `learner/run.py` | Training learner: HF Hub → replay buffer → train → push weights |
 | `hf.py` | HuggingFace Hub: weights + example upload/download/prune |
-| `example_store.py` | `ExampleBatch` dataclass + atomic save/load/scan |
+| `example_store.py` | `TrainingExamples` dataclass + atomic save/load/scan |
 
 ### Prerequisites
 
@@ -785,7 +785,7 @@ The worker:
 1. Pulls model weights from HuggingFace
 2. Creates GPU self-play pipeline (CUDA graphs, batched MCTS)
 3. Generates `--games-per-batch` games per iteration via MCTS
-4. Converts GPU tensors to CPU `ExampleBatch`, uploads to HF examples repo
+4. Converts GPU tensors to CPU `TrainingExamples`, uploads to HF examples repo
 5. Every `--weight-sync-interval` batches, checks HF for newer weights
 6. Weight updates are in-place (`load_state_dict`), CUDA graphs stay valid
 
@@ -801,7 +801,7 @@ jasonyandell/zeb-42-examples/
 └── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
 ```
 
-Each `.pt` file contains an `ExampleBatch`:
+Each `.pt` file contains an `TrainingExamples`:
 - `observations`: [N, 36, 8] int32
 - `masks`: [N, 36] bool
 - `hand_indices`: [N, 7] int64

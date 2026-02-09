@@ -26,12 +26,9 @@ from pathlib import Path
 
 import torch
 
-from forge.zeb.gpu_training_pipeline import (
-    GPUTrainingExample,
-    create_selfplay_pipeline,
-)
+from forge.zeb.gpu_training_pipeline import create_selfplay_pipeline
 from forge.zeb.model import ZebModel
-from forge.zeb.example_store import ExampleBatch, save_examples
+from forge.zeb.example_store import save_examples
 from forge.zeb.hf import (
     get_remote_step,
     init_examples_repo,
@@ -39,36 +36,6 @@ from forge.zeb.hf import (
     pull_weights_if_new,
     upload_examples_folder,
 )
-
-
-def gpu_examples_to_batch(
-    examples: GPUTrainingExample,
-    worker_id: str,
-    model_step: int,
-    n_games: int,
-    *,
-    source: str = 'selfplay-mcts',
-    model_checkpoint: str | None = None,
-    mcts_config: dict | None = None,
-) -> ExampleBatch:
-    """Convert GPU training examples to a CPU ExampleBatch for serialization."""
-    return ExampleBatch(
-        observations=examples.observations.cpu(),
-        masks=examples.masks.cpu(),
-        hand_indices=examples.hand_indices.cpu(),
-        hand_masks=examples.hand_masks.cpu(),
-        policy_targets=examples.policy_targets.cpu(),
-        value_targets=examples.value_targets.cpu(),
-        metadata={
-            'worker_id': worker_id,
-            'model_step': model_step,
-            'n_games': n_games,
-            'timestamp': time.time(),
-            'source': source,
-            'model_checkpoint': model_checkpoint,
-            'mcts_config': mcts_config,
-        },
-    )
 
 
 def run_worker(args: argparse.Namespace) -> None:
@@ -141,16 +108,20 @@ def run_worker(args: argparse.Namespace) -> None:
         total_games += args.games_per_batch
 
         # Convert to CPU batch and save
-        batch = gpu_examples_to_batch(
-            examples, args.worker_id, current_step, n_games=args.games_per_batch,
-            source='selfplay-mcts',
-            model_checkpoint=str(args.repo_id),
-            mcts_config={
+        batch = examples.cpu()
+        batch.metadata = {
+            'worker_id': args.worker_id,
+            'model_step': current_step,
+            'n_games': args.games_per_batch,
+            'timestamp': time.time(),
+            'source': 'selfplay-mcts',
+            'model_checkpoint': str(args.repo_id),
+            'mcts_config': {
                 'n_simulations': args.n_simulations,
                 'temperature': args.temperature,
                 'max_mcts_nodes': args.max_mcts_nodes,
             },
-        )
+        }
         if use_hf_examples:
             save_examples(batch, staging_dir, args.worker_id)
             staged_count += 1
