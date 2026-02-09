@@ -571,7 +571,7 @@ for label, instances in by_label.items():
                 if ! echo "$live_labels" | grep -q "$wid"; then
                     log "${GREEN}REPLENISH: $wid missing ($live_count/$TARGET_WORKERS alive)${RESET}"
                     spawn_worker "$wid"
-                    local spawn_rc=$?
+                    spawn_rc=$?
                     if [ "$spawn_rc" -eq 2 ]; then
                         NO_CREDIT=1
                         log "${RED}${BOLD}NO CREDIT — pausing fleet operations. Will probe every $(( CREDIT_WAIT_INTERVAL / 60 ))min.${RESET}"
