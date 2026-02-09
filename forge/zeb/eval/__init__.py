@@ -2,7 +2,7 @@
 
 from .engine import MatchConfig, run_match
 from .players import PlayerSpec, parse_player_spec
-from .results import HalfResult, MatchResult
+from .results import HalfResult, MatchResult, compute_elo_ratings, format_elo
 
 __all__ = [
     'MatchConfig',
@@ -11,4 +11,6 @@ __all__ = [
     'parse_player_spec',
     'HalfResult',
     'MatchResult',
+    'compute_elo_ratings',
+    'format_elo',
 ]

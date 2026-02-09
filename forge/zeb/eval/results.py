@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -120,4 +123,67 @@ def format_matrix(results: list[list[MatchResult | None]], names: list[str],
                 row += f'{"":>{col_w}}'
         lines.append(row)
 
+    return '\n'.join(lines)
+
+
+def compute_elo_ratings(
+    names: list[str],
+    wins: list[list[int]],
+    *,
+    anchor: str | None = None,
+    anchor_elo: float = 1600.0,
+) -> dict[str, float]:
+    """Fit Bradley-Terry MLE ratings from pairwise win counts.
+
+    Args:
+        names: Player names (length n).
+        wins: wins[i][j] = number of times player i beat player j.
+        anchor: Name of player to anchor at anchor_elo. Defaults to first.
+        anchor_elo: Elo rating for the anchor player.
+
+    Returns:
+        Dict mapping player name to Elo rating.
+    """
+    from scipy.optimize import minimize
+
+    n = len(names)
+    if n < 2:
+        return {names[0]: anchor_elo} if n == 1 else {}
+
+    w = np.array(wins, dtype=np.float64)
+
+    def neg_log_likelihood(r: np.ndarray) -> float:
+        """Negative log-likelihood of Bradley-Terry model."""
+        nll = 0.0
+        for i in range(n):
+            for j in range(i + 1, n):
+                total = w[i, j] + w[j, i]
+                if total == 0:
+                    continue
+                log_denom = np.logaddexp(r[i], r[j])
+                nll -= w[i, j] * (r[i] - log_denom)
+                nll -= w[j, i] * (r[j] - log_denom)
+        return nll
+
+    r0 = np.zeros(n)
+    result = minimize(neg_log_likelihood, r0, method='Nelder-Mead',
+                      options={'xatol': 1e-8, 'fatol': 1e-10, 'maxiter': 10000})
+    r = result.x
+
+    anchor_name = anchor if anchor and anchor in names else names[0]
+    anchor_idx = names.index(anchor_name)
+    scale = 400.0 / math.log(10)
+    ratings = {
+        name: anchor_elo + scale * (r[i] - r[anchor_idx])
+        for i, name in enumerate(names)
+    }
+    return ratings
+
+
+def format_elo(ratings: dict[str, float]) -> str:
+    """Pretty-print Elo ratings, sorted descending."""
+    sorted_ratings = sorted(ratings.items(), key=lambda x: -x[1])
+    lines = ["Elo Ratings:"]
+    for name, elo in sorted_ratings:
+        lines.append(f"  {name:>30s}  {elo:7.1f}")
     return '\n'.join(lines)
