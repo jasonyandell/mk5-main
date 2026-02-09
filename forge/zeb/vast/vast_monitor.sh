@@ -49,7 +49,7 @@ BLACKLIST_FILE="${ZEB_BLACKLIST:-$HOME/.config/zeb/bad-hosts.txt}"
 # Preferred hosts — auto-learned from observed worker performance
 PREFERRED_FILE="${ZEB_PREFERRED:-$HOME/.config/zeb/preferred-hosts.txt}"
 
-IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
+IMAGE="jasonyandell/zeb-worker:latest"
 GIT_REPO="https://github.com/jasonyandell/mk5-main.git"
 GIT_BRANCH="forge"
 
@@ -303,16 +303,12 @@ spawn_worker() {
     local ONSTART='#!/bin/bash
 set -e
 echo "=== Setup started at $(date) ==="
-apt-get update -qq && apt-get install -y -qq git > /dev/null
-echo "git installed"
-git clone --depth 1 --branch '"$GIT_BRANCH"' '"$GIT_REPO"' /root/code
-echo "repo cloned"
-pip install -q huggingface_hub
-echo "deps installed"
+cd /root/code
+git pull --ff-only 2>/dev/null || true
+echo "code updated"
 huggingface-cli login --token $HF_TOKEN --add-to-git-credential 2>/dev/null || true
 python -c "import torch; assert torch.cuda.is_available(), \"No CUDA\"; print(f\"GPU OK: {torch.cuda.get_device_name()}\")"
 echo "=== Starting worker $WORKER_ID at $(date) ==="
-cd /root/code
 exec python -u -m forge.zeb.worker.run \
     --repo-id '"$REPO_ID"' \
     --examples-repo-id '"$EXAMPLES_REPO_ID"' \
