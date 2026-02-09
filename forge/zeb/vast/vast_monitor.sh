@@ -479,10 +479,13 @@ declare -A PREFERRED_GPS  # machine_id -> observed games/s (auto-learned)
 # File format: EPOCH TAG:DETAIL
 # Requires TWO consecutive non-OK polls to downgrade from OK status.
 # This prevents a single vastai log timeout from killing a healthy worker.
+# Detects stalled workers: if batch number unchanged for 3+ polls, reports STALL.
 worker_checker() {
     local iid="$1"
     local sfile="$STATUS_DIR/$iid"
     local was_ok=0
+    local last_batch=""
+    local same_batch_count=0
     # Initialize status file
     echo "$(date +%s) UNKNOWN" > "$sfile" 2>/dev/null
     while true; do
@@ -490,6 +493,22 @@ worker_checker() {
         local tag="${result%%:*}"
         if [ "$tag" = "OK" ]; then
             was_ok=1
+            # Track batch number for stall detection
+            local batch_num
+            batch_num=$(echo "$result" | grep -oE 'batch [0-9]+' | grep -oE '[0-9]+')
+            if [ -n "$batch_num" ]; then
+                if [ "$batch_num" = "$last_batch" ]; then
+                    same_batch_count=$((same_batch_count + 1))
+                    if [ "$same_batch_count" -ge 3 ]; then
+                        # Same batch for 3+ polls (~2min) — process likely dead
+                        result="STALL:batch $batch_num stuck (${same_batch_count} polls)"
+                        was_ok=0
+                    fi
+                else
+                    last_batch="$batch_num"
+                    same_batch_count=0
+                fi
+            fi
         elif [ "$was_ok" -eq 1 ] && [ "$tag" = "BOOT" ]; then
             # Single timeout after OK — give it one more chance
             was_ok=0
@@ -734,6 +753,14 @@ for label, instances in by_label.items():
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                         n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
                     fi
+                    ;;
+                STALL)
+                    log "$(color_tag ERR "STALL: $label ($gpu) — $detail — removing")"
+                    stop_checker "$iid"
+                    remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
+                    TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
+                    n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
+                    perfline+=" ${label##*-}=$(color_tag ERR "STALL")"
                     ;;
                 WAIT)
                     perfline+=" ${label##*-}=$(color_tag WAIT "WAIT/$(fmt_duration "$age")")"
