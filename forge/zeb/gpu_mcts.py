@@ -1217,7 +1217,7 @@ class MCTSSelfPlayFullStepCUDAGraphRunner:
             batch_idx=self.forest.tree_idx,
         )
 
-        policy_logits, values = self.model(
+        policy_logits, values, _belief = self.model(
             self._tokens_i32.long(),
             self._masks,
             self._hand_indices,

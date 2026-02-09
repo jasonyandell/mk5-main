@@ -155,7 +155,7 @@ def test_forward_pass() -> dict:
     print(f"  legal: {legal.shape}")
 
     with torch.no_grad():
-        policy, value = model(tokens, mask, hand_indices, legal)
+        policy, value, _belief = model(tokens, mask, hand_indices, legal)
         action, log_prob, value2 = model.get_action(tokens, mask, hand_indices, legal)
 
     print(f"\nOutputs:")

@@ -145,7 +145,7 @@ def __getattr__(name: str):
 
 # Keys that identify model architecture (used for legacy config fallback).
 _MODEL_CONFIG_KEYS = frozenset(
-    ('embed_dim', 'n_heads', 'n_layers', 'ff_dim', 'dropout', 'max_tokens')
+    ('embed_dim', 'n_heads', 'n_layers', 'ff_dim', 'dropout', 'max_tokens', 'belief_head')
 )
 
 
@@ -195,7 +195,15 @@ def load_model(
     # Lazy-import ZebModel to keep the package lightweight at import time
     _ZebModel = __getattr__('ZebModel')
     model = _ZebModel(**model_config)
-    model.load_state_dict(ckpt['model_state_dict'])
+
+    # Old checkpoints lack belief_head weights — load with strict=False and warn
+    if model_config.get('belief_head', False):
+        missing, unexpected = model.load_state_dict(ckpt['model_state_dict'], strict=False)
+        if missing:
+            import warnings
+            warnings.warn(f"Initializing missing belief head weights: {missing}")
+    else:
+        model.load_state_dict(ckpt['model_state_dict'])
     if eval_mode:
         model.eval()
     model.to(device)

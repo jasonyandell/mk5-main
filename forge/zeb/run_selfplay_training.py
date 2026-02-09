@@ -321,6 +321,8 @@ def main():
 
         # Epoch summary
         epoch_str = f"Epoch {epoch:3d}: policy_loss={metrics['policy_loss']:.4f}, value_loss={metrics['value_loss']:.4f}"
+        if 'belief_loss' in metrics:
+            epoch_str += f", belief_loss={metrics['belief_loss']:.4f}"
         if args.freeze_data:
             epoch_str += f" (train={train_time:.2f}s) [FROZEN]"
         else:
@@ -332,11 +334,14 @@ def main():
 
         # Log to W&B
         if use_wandb:
+            total_loss = metrics['policy_loss'] + metrics['value_loss']
+            if 'belief_loss' in metrics:
+                total_loss += 0.5 * metrics['belief_loss']
             log_data = {
                 'epoch': epoch,
                 'train/policy_loss': metrics['policy_loss'],
                 'train/value_loss': metrics['value_loss'],
-                'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+                'train/total_loss': total_loss,
                 'mcts/entropy_mean': entropy_mean,
                 'mcts/entropy_std': entropy_std,
                 'mcts/entropy_min': entropy_min,
@@ -347,6 +352,8 @@ def main():
                 'perf/examples': n_examples,
                 'stats/total_games': total_games,
             }
+            if 'belief_loss' in metrics:
+                log_data['train/belief_loss'] = metrics['belief_loss']
             if use_replay_buffer:
                 log_data['stats/replay_buffer_size'] = len(replay_buffer)
             wandb.log(log_data)

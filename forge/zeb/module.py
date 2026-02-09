@@ -60,7 +60,7 @@ class ZebLightningModule(L.LightningModule):
         tokens, mask, hand_indices, hand_mask, actions, outcomes = batch
 
         # Forward pass
-        policy, value = self(tokens, mask, hand_indices, hand_mask)
+        policy, value, _belief = self(tokens, mask, hand_indices, hand_mask)
 
         # Mask illegal actions
         policy = policy.masked_fill(~hand_mask, float('-inf'))
@@ -117,7 +117,7 @@ class ZebLightningModule(L.LightningModule):
         """Validation metrics."""
         tokens, mask, hand_indices, hand_mask, actions, outcomes = batch
 
-        policy, value = self(tokens, mask, hand_indices, hand_mask)
+        policy, value, _belief = self(tokens, mask, hand_indices, hand_mask)
         policy = policy.masked_fill(~hand_mask, float('-inf'))
 
         # Value prediction error

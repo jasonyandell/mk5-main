@@ -23,7 +23,7 @@ def save_examples(batch: TrainingExamples, dir: Path, worker_id: str) -> Path:
     name = f"{worker_id}_{ts}_{short_id}"
     tmp_path = dir / f"{name}.tmp"
     final_path = dir / f"{name}.pt"
-    torch.save({
+    d = {
         'observations': batch.observations,
         'masks': batch.masks,
         'hand_indices': batch.hand_indices,
@@ -31,7 +31,11 @@ def save_examples(batch: TrainingExamples, dir: Path, worker_id: str) -> Path:
         'policy_targets': batch.policy_targets,
         'value_targets': batch.value_targets,
         'metadata': batch.metadata,
-    }, tmp_path)
+    }
+    if batch.belief_targets is not None:
+        d['belief_targets'] = batch.belief_targets
+        d['belief_mask'] = batch.belief_mask
+    torch.save(d, tmp_path)
     os.rename(tmp_path, final_path)
     return final_path
 
@@ -46,6 +50,8 @@ def load_examples(path: Path) -> TrainingExamples:
         hand_masks=data['hand_masks'],
         policy_targets=data['policy_targets'],
         value_targets=data['value_targets'],
+        belief_targets=data.get('belief_targets'),
+        belief_mask=data.get('belief_mask'),
         metadata=data.get('metadata'),
     )
 

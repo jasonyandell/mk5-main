@@ -52,10 +52,12 @@ class ZebModel(nn.Module):
         dropout: float = 0.1,
         max_tokens: int = 36,
         tokenizer: str = 'v1',
+        belief_head: bool = False,
     ):
         super().__init__()
         self.embed_dim = embed_dim
         self.max_tokens = max_tokens
+        self.has_belief_head = belief_head
 
         spec = get_tokenizer_spec(tokenizer)
         self.embeddings = ZebEmbeddings(embed_dim, spec=spec)
@@ -92,17 +94,26 @@ class ZebModel(nn.Module):
             nn.Tanh(),  # Output in [-1, 1]
         )
 
+        # Belief head: predicts which of 3 opponents holds each of 28 dominoes
+        if belief_head:
+            self.belief_proj = nn.Sequential(
+                nn.Linear(embed_dim, embed_dim),
+                nn.GELU(),
+                nn.Linear(embed_dim, 28 * 3),
+            )
+
     def forward(
         self,
         tokens: Tensor,       # [batch, seq_len, 8]
         mask: Tensor,         # [batch, seq_len] bool, True = valid
         hand_indices: Tensor,  # [batch, 7] indices of hand slots in sequence
         hand_mask: Tensor,    # [batch, 7] bool, True = valid hand slot
-    ) -> tuple[Tensor, Tensor]:
+    ) -> tuple[Tensor, Tensor, Tensor | None]:
         """
         Returns:
             policy: [batch, 7] unnormalized logits for each hand slot
             value: [batch] scalar value predictions
+            belief_logits: [batch, 28, 3] opponent ownership logits, or None
         """
         batch_size, seq_len, _ = tokens.shape
 
@@ -130,7 +141,12 @@ class ZebModel(nn.Module):
         pooled = x_masked.sum(dim=1) / mask.sum(dim=1, keepdim=True).clamp(min=1)
         value = self.value_head(pooled).squeeze(-1)  # [batch]
 
-        return policy, value
+        # Belief: predict opponent ownership from same pooled representation
+        belief_logits = None
+        if self.has_belief_head:
+            belief_logits = self.belief_proj(pooled).view(batch_size, 28, 3)
+
+        return policy, value, belief_logits
 
     def get_action(
         self,
@@ -147,7 +163,7 @@ class ZebModel(nn.Module):
             log_prob: [batch] log probability of sampled action
             value: [batch] value estimates
         """
-        policy, value = self(tokens, mask, hand_indices, hand_mask)
+        policy, value, _belief = self(tokens, mask, hand_indices, hand_mask)
 
         # Mask illegal actions
         policy = policy.masked_fill(~hand_mask, float('-inf'))
@@ -161,11 +177,11 @@ class ZebModel(nn.Module):
         return action, log_prob, value
 
 
-def get_model_config(size: str = 'small', tokenizer: str = 'v1') -> dict:
+def get_model_config(size: str = 'small', tokenizer: str = 'v1', belief_head: bool = False) -> dict:
     """Get model hyperparameters by size."""
     configs = {
-        'small': dict(embed_dim=64, n_heads=2, n_layers=2, ff_dim=128, tokenizer=tokenizer),
-        'medium': dict(embed_dim=128, n_heads=4, n_layers=4, ff_dim=256, tokenizer=tokenizer),
-        'large': dict(embed_dim=256, n_heads=8, n_layers=6, ff_dim=512, tokenizer=tokenizer),
+        'small': dict(embed_dim=64, n_heads=2, n_layers=2, ff_dim=128, tokenizer=tokenizer, belief_head=belief_head),
+        'medium': dict(embed_dim=128, n_heads=4, n_layers=4, ff_dim=256, tokenizer=tokenizer, belief_head=belief_head),
+        'large': dict(embed_dim=256, n_heads=8, n_layers=6, ff_dim=512, tokenizer=tokenizer, belief_head=belief_head),
     }
     return configs[size]

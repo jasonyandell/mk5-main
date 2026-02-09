@@ -65,10 +65,13 @@ def train_n_steps_from_buffer(
     model.train()
     device = replay_buffer.device
     buffer_size = len(replay_buffer)
+    has_belief = replay_buffer.has_belief and getattr(model, 'has_belief_head', False)
 
     zero = torch.tensor(0.0, device=device)
     total_policy_loss = zero.clone()
     total_value_loss = zero.clone()
+    total_belief_loss = zero.clone()
+    total_belief_acc = zero.clone()
     total_entropy = zero.clone()
     total_grad_norm = zero.clone()
     total_grad_norm_vhead = zero.clone()
@@ -86,6 +89,8 @@ def train_n_steps_from_buffer(
     buf_hand_masks = replay_buffer.hand_masks
     buf_policy = replay_buffer.policy_targets
     buf_value = replay_buffer.value_targets
+    buf_belief = replay_buffer.belief_targets if has_belief else None
+    buf_bmask = replay_buffer.belief_mask if has_belief else None
 
     for _ in range(n_steps):
         indices = torch.randint(0, buffer_size, (batch_size,), device=device)
@@ -97,7 +102,7 @@ def train_n_steps_from_buffer(
         policy_targets = buf_policy[indices]
         value_targets = buf_value[indices]
 
-        policy_logits, value = model(obs.long(), masks, hand_idx, hand_masks)
+        policy_logits, value, belief_logits = model(obs.long(), masks, hand_idx, hand_masks)
 
         policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
         log_policy = F.log_softmax(policy_logits, dim=-1)
@@ -107,6 +112,24 @@ def train_n_steps_from_buffer(
         value_loss = F.mse_loss(value, value_targets)
 
         loss = policy_loss + value_loss
+
+        # Belief loss
+        if has_belief and belief_logits is not None:
+            b_targets = buf_belief[indices]
+            b_mask = buf_bmask[indices]
+            ce = F.cross_entropy(
+                belief_logits.permute(0, 2, 1), b_targets, reduction='none',
+            )
+            belief_loss = (ce * b_mask.float()).sum() / b_mask.float().sum().clamp(min=1)
+            loss = loss + 0.5 * belief_loss
+            total_belief_loss = total_belief_loss + belief_loss.detach()
+
+            # Belief accuracy on masked positions
+            preds = belief_logits.argmax(dim=-1)  # (B, 28)
+            correct = (preds == b_targets) & b_mask
+            acc = correct.float().sum() / b_mask.float().sum().clamp(min=1)
+            total_belief_acc = total_belief_acc + acc.detach()
+
         optimizer.zero_grad()
         loss.backward()
 
@@ -142,7 +165,7 @@ def train_n_steps_from_buffer(
         total_value_target_mean = total_value_target_mean + value_targets.mean()
 
     n = n_steps
-    return {
+    result = {
         'policy_loss': (total_policy_loss / n).item(),
         'value_loss': (total_value_loss / n).item(),
         'policy_entropy': (total_entropy / n).item(),
@@ -154,6 +177,10 @@ def train_n_steps_from_buffer(
         'value_std': (total_value_std / n).item(),
         'value_target_mean': (total_value_target_mean / n).item(),
     }
+    if has_belief:
+        result['belief_loss'] = (total_belief_loss / n).item()
+        result['belief_accuracy'] = (total_belief_acc / n).item()
+    return result
 
 
 def run_learner(args: argparse.Namespace) -> None:
@@ -170,8 +197,10 @@ def run_learner(args: argparse.Namespace) -> None:
 
     total_params = sum(p.numel() for p in model.parameters())
     tokenizer_name = model_config.get('tokenizer', 'v1')
+    has_belief = model_config.get('belief_head', False)
     spec = get_tokenizer_spec(tokenizer_name)
-    print(f"  Model: {total_params:,} parameters, tokenizer={tokenizer_name}")
+    print(f"  Model: {total_params:,} parameters, tokenizer={tokenizer_name}"
+          + (", belief_head=True" if has_belief else ""))
 
     # --- HF is the single source of truth ---
     init_repo(args.repo_id, model_config, weights_name=weights_name)
@@ -184,7 +213,12 @@ def run_learner(args: argparse.Namespace) -> None:
         remote_state_dict, remote_config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
         if remote_config != model_config:
             raise ValueError("Remote model config differs from bootstrap checkpoint config")
-        model.load_state_dict(remote_state_dict)
+        if has_belief:
+            missing, _ = model.load_state_dict(remote_state_dict, strict=False)
+            if missing:
+                print(f"  Initializing missing belief head weights: {missing}")
+        else:
+            model.load_state_dict(remote_state_dict)
         cycle = remote_step
     else:
         # First time: push bootstrap weights to HF
@@ -206,6 +240,7 @@ def run_learner(args: argparse.Namespace) -> None:
             max_tokens=spec.max_tokens,
             n_features=spec.n_features,
             n_hand_slots=spec.n_hand_slots,
+            belief=has_belief,
         )
         remote_files = list_remote_examples(args.examples_repo_id, namespace)
         seen_files: set[str] = set()
@@ -223,6 +258,7 @@ def run_learner(args: argparse.Namespace) -> None:
             max_tokens=spec.max_tokens,
             n_features=spec.n_features,
             n_hand_slots=spec.n_hand_slots,
+            belief=has_belief,
         )
         seen_files = set()
         print(f"Replay buffer (empty): 0/{args.replay_buffer_size:,}")
@@ -316,17 +352,24 @@ def run_learner(args: argparse.Namespace) -> None:
         train_time = time.time() - t0
         cycle += 1
 
-        print(f"Cycle {cycle:4d}: policy_loss={metrics['policy_loss']:.4f}, "
-              f"value_loss={metrics['value_loss']:.4f} "
-              f"(train={train_time:.2f}s) "
-              f"[buffer: {len(replay_buffer):,}, games: {total_games:,}]")
+        cycle_str = (f"Cycle {cycle:4d}: policy_loss={metrics['policy_loss']:.4f}, "
+                     f"value_loss={metrics['value_loss']:.4f}")
+        if 'belief_loss' in metrics:
+            cycle_str += f", belief_loss={metrics['belief_loss']:.4f}"
+            cycle_str += f", belief_acc={metrics['belief_accuracy']:.3f}"
+        cycle_str += (f" (train={train_time:.2f}s) "
+                      f"[buffer: {len(replay_buffer):,}, games: {total_games:,}]")
+        print(cycle_str)
 
         # 4. Build W&B log dict (logged once at end of cycle)
+        total_loss = metrics['policy_loss'] + metrics['value_loss']
+        if 'belief_loss' in metrics:
+            total_loss += 0.5 * metrics['belief_loss']
         log_dict = {
             'cycle': cycle,
             'train/policy_loss': metrics['policy_loss'],
             'train/value_loss': metrics['value_loss'],
-            'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+            'train/total_loss': total_loss,
             'train/policy_entropy': metrics['policy_entropy'],
             'train/policy_top1_accuracy': metrics['policy_top1_accuracy'],
             'train/policy_kl_divergence': metrics['policy_kl_divergence'],
@@ -340,6 +383,9 @@ def run_learner(args: argparse.Namespace) -> None:
             'stats/total_games': total_games,
             'stats/replay_buffer_size': len(replay_buffer),
         }
+        if 'belief_loss' in metrics:
+            log_dict['train/belief_loss'] = metrics['belief_loss']
+            log_dict['train/belief_accuracy'] = metrics['belief_accuracy']
 
         # 5. Push weights to HF periodically
         if cycle % args.push_every == 0:

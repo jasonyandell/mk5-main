@@ -150,7 +150,7 @@ class TestZebModelTokenizer:
         mask = torch.ones(2, 36, dtype=torch.bool)
         hand_idx = torch.arange(1, 8).unsqueeze(0).expand(2, -1)
         hand_mask = torch.ones(2, 7, dtype=torch.bool)
-        policy, value = model(tokens, mask, hand_idx, hand_mask)
+        policy, value, _belief = model(tokens, mask, hand_idx, hand_mask)
         assert policy.shape == (2, 7)
         assert value.shape == (2,)
 
