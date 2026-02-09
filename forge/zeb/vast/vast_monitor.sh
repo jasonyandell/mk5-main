@@ -53,6 +53,7 @@ GIT_BRANCH="forge"
 PHASE1_INTERVAL=60
 PHASE2_INTERVAL=600
 PHASE1_DURATION=1800  # 30 min
+CREDIT_WAIT_INTERVAL=300  # 5 min between credit probes
 
 # ─── Colors ───
 if [ -t 1 ]; then
@@ -203,8 +204,11 @@ check_worker() {
     echo "WAIT"
 }
 
-# ─── Find cheapest offer across GPU types ───
-# Queries each GPU individually to avoid vastai 'in' operator bugs
+# ─── Find best-value offer across GPU types ───
+# Picks by lowest $/game (dph / expected_gps) rather than lowest $/hr.
+# Expected games/s from 13.9hrs of observations (Feb 2026):
+#   RTX 3070 Ti: 2.6, RTX 3070: 2.4, RTX 3060 Ti: 2.1, RTX 3060: 1.8
+# GPUs without data default to 1.8 (conservative).
 find_cheapest_offer() {
     local blacklist
     blacklist=$(load_blacklist)
@@ -214,7 +218,18 @@ import subprocess, json, sys
 gpus = '$GPUS'.split()
 max_dph = $MAX_DPH
 blacklist = set('$blacklist'.split(',')) - {''}
+
+# Expected games/s per GPU — used to rank by value, not raw price
+expected_gps = {
+    'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
+    'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
+    'RTX 3080': 2.6, 'RTX 3080 Ti': 2.6, 'RTX 3090': 2.6,
+    'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
+    'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
+}
+
 best = None
+best_value = float('inf')  # lower = better ($/game/s)
 
 for gpu in gpus:
     try:
@@ -228,14 +243,19 @@ for gpu in gpus:
         for o in offers:
             mid = str(o.get('machine_id', ''))
             if mid in blacklist: continue
-            if o['dph_total'] > max_dph: break
-            if best is None or o['dph_total'] < best['dph_total']:
+            dph = o['dph_total']
+            if dph > max_dph: break
+            gps = expected_gps.get(o['gpu_name'], 1.8)
+            value = dph / gps  # $/hr per game/s — lower is better
+            if value < best_value:
                 best = o
-            break
+                best_value = value
+            break  # only check cheapest offer per GPU type
     except Exception:
         pass
 
 if best:
+    gps = expected_gps.get(best['gpu_name'], 1.8)
     print(f\"{best['id']}\t{best['gpu_name']}\t{best['dph_total']:.3f}\")
     sys.exit(0)
 else:
@@ -288,11 +308,18 @@ exec python -u -m forge.zeb.worker.run \
     --weight-sync-interval 2 \
     --upload-interval '"$UPLOAD_INTERVAL"''
 
-    vastai create instance "$offer_id" \
+    local result
+    result=$(vastai create instance "$offer_id" \
         --image "$IMAGE" --disk 15 \
         --label "${FLEET}-${wid}" \
         --env "-e HF_TOKEN=${HF_TOKEN} -e WORKER_ID=${wid}" \
-        --onstart-cmd "$ONSTART" 2>&1 | head -1
+        --onstart-cmd "$ONSTART" 2>&1 | head -1)
+    echo "$result"
+
+    # Detect credit exhaustion
+    if echo "$result" | grep -qi 'lacks credit'; then
+        return 2
+    fi
 }
 
 # ─── Blacklist helpers ───
@@ -339,9 +366,22 @@ replace_worker() {
     log "${RED}REPLACE: destroying $dead_id ($dead_label, machine $machine_id)${RESET}"
     blacklist_host "$machine_id" "$dead_label"
     vastai destroy instance "$dead_id" 2>/dev/null
+
+    # Skip spawning replacement if we know credit is exhausted
+    if [ -n "$NO_CREDIT" ]; then
+        log "${YELLOW}Skipping replacement spawn (no credit)${RESET}"
+        return 1
+    fi
+
     local wid
     wid=$(echo "$dead_label" | grep -oE 'worker-vast-[0-9]+')
     spawn_worker "$wid"
+    local rc=$?
+    if [ "$rc" -eq 2 ]; then
+        NO_CREDIT=1
+        log "${RED}${BOLD}NO CREDIT — pausing fleet operations. Will probe every $(( CREDIT_WAIT_INTERVAL / 60 ))min.${RESET}"
+    fi
+    return "$rc"
 }
 
 # ─── Graceful shutdown ───
@@ -360,6 +400,7 @@ trap shutdown SIGINT SIGTERM
 TOTAL_GAMES_SEEN=0
 TOTAL_CHECKS=0
 TOTAL_REPLACEMENTS=0
+NO_CREDIT=""  # set to 1 when Vast.ai reports credit exhaustion
 
 print_summary() {
     local elapsed="$1"
@@ -520,23 +561,62 @@ for label, instances in by_label.items():
     fi
 
     # Replenish: spawn missing workers up to target
-    live_data=$(get_fleet)
-    live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
-    if [ "$live_count" -lt "$TARGET_WORKERS" ]; then
-        live_labels=$(echo "$live_data" | cut -f2)
-        for idx in $(seq 0 $((TARGET_WORKERS - 1))); do
-            wid="worker-vast-${idx}"
-            if ! echo "$live_labels" | grep -q "$wid"; then
-                log "${GREEN}REPLENISH: $wid missing ($live_count/$TARGET_WORKERS alive)${RESET}"
-                spawn_worker "$wid"
-                live_count=$((live_count + 1))
-            fi
-        done
+    if [ -z "$NO_CREDIT" ]; then
+        live_data=$(get_fleet)
+        live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
+        if [ "$live_count" -lt "$TARGET_WORKERS" ]; then
+            live_labels=$(echo "$live_data" | cut -f2)
+            for idx in $(seq 0 $((TARGET_WORKERS - 1))); do
+                wid="worker-vast-${idx}"
+                if ! echo "$live_labels" | grep -q "$wid"; then
+                    log "${GREEN}REPLENISH: $wid missing ($live_count/$TARGET_WORKERS alive)${RESET}"
+                    spawn_worker "$wid"
+                    local spawn_rc=$?
+                    if [ "$spawn_rc" -eq 2 ]; then
+                        NO_CREDIT=1
+                        log "${RED}${BOLD}NO CREDIT — pausing fleet operations. Will probe every $(( CREDIT_WAIT_INTERVAL / 60 ))min.${RESET}"
+                        break
+                    fi
+                    live_count=$((live_count + 1))
+                fi
+            done
+        fi
     fi
 
     # Print summary every 10 checks
     if [ $((TOTAL_CHECKS % 10)) -eq 0 ]; then
         print_summary "$elapsed"
+    fi
+
+    # Credit-wait mode: probe with one launch, resume if it works
+    if [ -n "$NO_CREDIT" ]; then
+        sleep "$CREDIT_WAIT_INTERVAL"
+        # Find first missing worker to use as probe
+        live_data=$(get_fleet)
+        live_labels=$([ -n "$live_data" ] && echo "$live_data" | cut -f2 || echo "")
+        probe_wid=""
+        for idx in $(seq 0 $((TARGET_WORKERS - 1))); do
+            wid="worker-vast-${idx}"
+            if ! echo "$live_labels" | grep -q "$wid"; then
+                probe_wid="$wid"
+                break
+            fi
+        done
+        if [ -n "$probe_wid" ]; then
+            log "${YELLOW}CREDIT PROBE: trying $probe_wid...${RESET}"
+            spawn_worker "$probe_wid"
+            if [ $? -ne 2 ]; then
+                NO_CREDIT=""
+                log "${GREEN}${BOLD}CREDIT RESTORED — resuming fleet operations${RESET}"
+            else
+                log "${YELLOW}Still no credit. Next probe in $(( CREDIT_WAIT_INTERVAL / 60 ))min.${RESET}"
+            fi
+        else
+            # All workers alive — credit issue resolved itself
+            NO_CREDIT=""
+            log "${GREEN}${BOLD}Fleet is full — resuming normal monitoring${RESET}"
+        fi
+        continue  # skip normal sleep, we already waited
     fi
 
     # Adaptive polling: fast ramp-up, slow steady-state
