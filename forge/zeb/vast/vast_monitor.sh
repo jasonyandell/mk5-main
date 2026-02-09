@@ -178,6 +178,21 @@ check_worker() {
         return
     fi
 
+    # Broken launch detection: Vast's /.launch stuck in a loop (e.g. "ssh: command not found")
+    # Signal: 10+ identical error lines, zero of our progress markers → machine is broken
+    local err_count
+    err_count=$(echo "$raw" | grep -cE '(command not found|No such file or directory|Permission denied|cannot execute)' 2>/dev/null || true)
+    if [ "$err_count" -ge 10 ]; then
+        local has_progress
+        has_progress=$(echo "$raw" | grep -cE '(batch [0-9]+|Setup started|cloning|installed|GPU OK|games/s)' 2>/dev/null || true)
+        if [ "$has_progress" -eq 0 ]; then
+            local err_sample
+            err_sample=$(echo "$raw" | grep -E '(command not found|No such file)' | tail -1 | cut -c1-60)
+            echo "ERR:launch-broken($err_sample)"
+            return
+        fi
+    fi
+
     # Batch progress: "batch N: XXXX examples, X.X games/s"
     local batch_line
     batch_line=$(echo "$raw" | grep -oE 'batch [0-9]+:.*games/s' | tail -1)
