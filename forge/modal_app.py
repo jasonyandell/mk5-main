@@ -67,6 +67,26 @@ forge_image = (
     )
 )
 
+# Eval image: adds huggingface_hub for downloading Zeb models from HF.
+# pip_install must come before add_local_dir, so we rebuild from scratch.
+eval_image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install(
+        "torch>=2.0",
+        "lightning>=2.0",
+        "pyarrow>=14.0",
+        "numpy>=1.26,<2",
+        "pandas>=2.0",
+        "rich",
+        "huggingface_hub",
+    )
+    .add_local_dir(
+        local_path="forge",
+        remote_path="/root/forge",
+        ignore=["__pycache__", "*.pyc", "venv", "*.egg-info"],
+    )
+)
+
 # =============================================================================
 # Volume Configuration
 # =============================================================================
@@ -2211,3 +2231,84 @@ def train(
     console.print(f"  Best Q-gap: {result['best_q_gap']:.4f}")
     console.print(f"  Time: {result['total_time_seconds'] / 60:.1f} minutes")
     console.print(f"  Checkpoint: {result['best_checkpoint']}")
+
+
+# =============================================================================
+# Eval Matrix (pairwise model comparison on T4)
+# =============================================================================
+#
+# Run a full pairwise eval matrix between any combination of E[Q] and Zeb
+# players on a cheap T4 GPU. Results returned as a formatted table + JSON.
+#
+# Usage:
+#     modal run forge/modal_app.py::eval-matrix \
+#         --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \
+#         --n-games 1000 --batch-size 50
+
+
+@app.function(image=eval_image, gpu="T4", timeout=3600)
+def eval_matrix_remote(players: list[str], n_games: int, batch_size: int) -> dict:
+    """Run pairwise eval matrix on GPU. Returns formatted table and JSON."""
+    import sys
+    sys.path.insert(0, "/root")
+    import os
+    os.chdir("/root")
+
+    from forge.zeb.eval.players import parse_player_spec
+    from forge.zeb.eval.engine import MatchConfig, run_match
+    from forge.zeb.eval.results import format_matrix
+
+    specs = [parse_player_spec(p) for p in players]
+    names = [s.display_name for s in specs]
+    n = len(specs)
+    model_cache: dict = {}
+
+    print(f"Eval matrix: {n} players, {n_games} games per matchup")
+    for i, name in enumerate(names):
+        print(f"  [{i}] {name}")
+
+    # Run all-pairs (results[i][j] = MatchResult for player i vs player j)
+    results = [[None] * n for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if i == j:
+                continue
+            print(f"\n--- {names[i]} vs {names[j]} ---")
+            config = MatchConfig(
+                spec_a=specs[i],
+                spec_b=specs[j],
+                n_games=n_games,
+                batch_size=batch_size,
+                model_cache=model_cache,
+                quiet=False,
+            )
+            results[i][j] = run_match(config)
+            wr = results[i][j].team_a_win_rate
+            print(f"  -> {names[i]} win rate: {wr:.1%}")
+
+    matrix_text = format_matrix(results, names)
+    matrix_json = format_matrix(results, names, json_mode=True)
+
+    return {"matrix_text": matrix_text, "json": matrix_json}
+
+
+@app.local_entrypoint(name="eval-matrix")
+def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
+    """Run pairwise eval matrix on Modal T4.
+
+    Usage:
+        modal run forge/modal_app.py::eval-matrix \\
+            --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \\
+            --n-games 1000 --batch-size 50
+    """
+    player_list = [p.strip() for p in players.split(";") if p.strip()]
+
+    print(f"Eval matrix: {len(player_list)} players, {n_games} games/matchup")
+    for i, p in enumerate(player_list):
+        print(f"  [{i}] {p}")
+    print()
+
+    result = eval_matrix_remote.remote(player_list, n_games, batch_size)
+
+    print("\n" + result["matrix_text"])
+    print("\n" + result["json"])

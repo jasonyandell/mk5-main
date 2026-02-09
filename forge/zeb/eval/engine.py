@@ -88,11 +88,11 @@ def _log(config: MatchConfig, msg: str):
         print(msg)
 
 
-def _get_cached_model(config: MatchConfig, spec: PlayerSpec, loader, *args):
+def _get_cached_model(config: MatchConfig, spec: PlayerSpec, loader, *args, **kwargs):
     """Load or retrieve a cached model."""
     key = (spec.kind, tuple(sorted(spec.params.items())))
     if key not in config.model_cache:
-        config.model_cache[key] = loader(*args)
+        config.model_cache[key] = loader(*args, **kwargs)
     return config.model_cache[key]
 
 
