@@ -39,9 +39,11 @@ from forge.oracle.tables import (
 from .types import ZebGameState
 from .game import legal_actions as game_legal_actions, current_player
 
-# Re-export feature constants from transcript_tokenize for consistency
-N_FEATURES = 8
-MAX_TOKENS = 36  # 1 decl + 7 hand + 28 plays
+from .tokenizer_registry import V1_SPEC
+
+# Derived from the v1 tokenizer spec (single source of truth)
+N_FEATURES = V1_SPEC.n_features
+MAX_TOKENS = V1_SPEC.max_tokens
 
 # Feature indices (match Stage 2)
 FEAT_HIGH = 0

@@ -25,12 +25,14 @@ The double-six set contains exactly 28 dominoes:
 
 ## Point Values
 
-Only five dominoes have point values (totaling 42 points):
-- **6-6 (Big Six)**: 42 points
+Five dominoes have point values (totaling 35 counting points):
 - **5-5**: 10 points
 - **6-4**: 10 points
 - **5-0**: 5 points
-- **6-5**: 5 points
+- **4-1**: 5 points
+- **3-2**: 5 points
+
+Each trick won is worth 1 point (7 tricks = 7 points). Hand total: 35 + 7 = 42 points.
 
 All other dominoes have zero point value.
 
@@ -185,7 +187,7 @@ While tournament play uses Straight 42 only, casual games may include:
 
 ### Constant Verification
 - Total dominoes: 28 (verified)
-- Total points: 42 (verified: 42+10+10+5+5 = 72 total pip value in counting dominoes)
+- Total points: 42 (verified: 10+10+5+5+5 = 35 counting + 7 tricks = 42)
 - Tricks per hand: 7 (verified: 28÷4 = 7)
 - Maximum game length: Limited by mark progression rules
 

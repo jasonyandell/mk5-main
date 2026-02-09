@@ -4,7 +4,7 @@ Shell scripts for running zeb workers on Vast.ai GPU marketplace.
 
 **Philosophy**: The learner runs locally (free 3050 Ti, no preemption risk).
 Workers are stateless and go on cheap interruptible Vast.ai instances.
-If one dies, `vast_replenish.sh` replaces it. The human is the control plane.
+`vast_monitor.sh` keeps the fleet healthy automatically, or use the manual scripts for finer control.
 
 ## Prerequisites
 
@@ -15,6 +15,18 @@ export HF_TOKEN=hf_...                   # fine-grained token, write access to z
 ```
 
 ## Usage
+
+### Autonomous monitor (recommended)
+
+```bash
+# Self-healing fleet — launches, monitors, replaces failures, Ctrl-C to stop
+./vast_monitor.sh 4
+
+# Dry run — verify config without creating instances
+./vast_monitor.sh 4 --dry-run
+```
+
+### Manual workflow
 
 ```bash
 # Launch 4 workers on cheapest 3000-series GPUs
@@ -30,6 +42,22 @@ export HF_TOKEN=hf_...                   # fine-grained token, write access to z
 ./vast_down.sh
 ```
 
+### Multi-model fleets
+
+Multiple models can run concurrently using the same HF repos, isolated by namespace:
+
+```bash
+# Launch a second model fleet alongside the existing one
+ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
+
+# Monitor / manage just that fleet
+./vast_status.sh zeb-large
+./vast_replenish.sh 4 zeb-large
+./vast_down.sh zeb-large
+```
+
+Environment variables for `vast_up.sh`: `ZEB_REPO_ID`, `ZEB_EXAMPLES_REPO_ID`, `ZEB_WEIGHTS_NAME`, `ZEB_FLEET`.
+
 ## Workflow
 
 1. Start the learner locally:
@@ -38,11 +66,12 @@ export HF_TOKEN=hf_...                   # fine-grained token, write access to z
        --repo-id jasonyandell/zeb-42 \
        --examples-repo-id jasonyandell/zeb-42-examples \
        --checkpoint forge/zeb/checkpoints/selfplay-epoch3599.pt \
+       --weights-name zeb-557k-1m \
        --lr 1e-4 --batch-size 64 \
        --replay-buffer-size 500000 \
        --training-steps-per-cycle 1000 \
-       --push-every 10 --save-every 10 --eval-every 10 \
-       --eval-games 2000 --keep-checkpoints 3 \
+       --push-every 10 --eval-every 10 \
+       --eval-games 2000 \
        --keep-example-files 15 --wandb
    ```
 

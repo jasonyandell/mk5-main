@@ -27,6 +27,18 @@ except ImportError:
 DEFAULT_REPO = 'jasonyandell/zeb-42'
 
 
+def _namespace(weights_name: str) -> tuple[str, str]:
+    """Derive config/state filenames from weights_name.
+
+    'model.pt' → ('config.json', 'training_state.json')  # backward compat
+    'large.pt' → ('large-config.json', 'large-state.json')
+    """
+    stem = weights_name.removesuffix('.pt')
+    if stem == 'model':
+        return 'config.json', 'training_state.json'
+    return f'{stem}-config.json', f'{stem}-state.json'
+
+
 def _require_hf():
     if HfApi is None:
         raise ImportError("pip install huggingface_hub")
@@ -58,22 +70,23 @@ def _retry(fn, max_retries=3, base_delay=5):
             time.sleep(delay)
 
 
-def init_repo(repo_id: str, model_config: dict) -> str:
-    """Create HF repo if it doesn't exist. Upload initial config.json.
+def init_repo(repo_id: str, model_config: dict, weights_name: str = 'model.pt') -> str:
+    """Create HF repo if it doesn't exist. Upload initial config.
 
     Returns the repo URL.
     """
     _require_hf()
     api = HfApi()
     url = api.create_repo(repo_id, exist_ok=True)
+    config_file, _ = _namespace(weights_name)
     with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False) as f:
         json.dump(model_config, f)
         f.flush()
         api.upload_file(
             path_or_fileobj=f.name,
-            path_in_repo='config.json',
+            path_in_repo=config_file,
             repo_id=repo_id,
-            commit_message='initial config',
+            commit_message=f'initial config ({config_file})',
         )
     return str(url)
 
@@ -86,9 +99,10 @@ def push_weights(
     extra_metadata: dict | None = None,
     weights_name: str = 'model.pt',
 ):
-    """Push model state_dict + config.json + training_state.json to HF Hub."""
+    """Push model state_dict + config + training state to HF Hub."""
     _require_hf()
     api = HfApi()
+    _, state_file = _namespace(weights_name)
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
@@ -100,7 +114,7 @@ def push_weights(
         state = {'step': step, 'total_games': total_games}
         if extra_metadata:
             state.update(extra_metadata)
-        (tmp_dir / 'training_state.json').write_text(json.dumps(state))
+        (tmp_dir / state_file).write_text(json.dumps(state))
 
         _retry(lambda: api.upload_folder(
             folder_path=tmp,
@@ -115,7 +129,8 @@ def pull_weights(repo_id: str, device: str = 'cpu', weights_name: str = 'model.p
     Uses HF cache -- only downloads if changed.
     """
     _require_hf()
-    config_path = _retry(lambda: hf_hub_download(repo_id, 'config.json'))
+    config_file, _ = _namespace(weights_name)
+    config_path = _retry(lambda: hf_hub_download(repo_id, config_file))
     weights_path = _retry(lambda: hf_hub_download(repo_id, weights_name))
 
     with open(config_path) as f:
@@ -142,24 +157,25 @@ def load_zeb_from_hf(
     return model
 
 
-def get_remote_step(repo_id: str) -> int:
+def get_remote_step(repo_id: str, weights_name: str = 'model.pt') -> int:
     """Read the current training step from HuggingFace."""
-    state = get_remote_training_state(repo_id)
+    state = get_remote_training_state(repo_id, weights_name)
     if state is None:
         return 0
     return int(state.get('step', 0))
 
 
-def get_remote_training_state(repo_id: str) -> dict | None:
-    """Read training_state.json from HuggingFace.
+def get_remote_training_state(repo_id: str, weights_name: str = 'model.pt') -> dict | None:
+    """Read training state JSON from HuggingFace.
 
     Returns:
         Parsed dict if present, else None (e.g., first-run bootstrap before
-        training_state.json exists).
+        the state file exists).
     """
     _require_hf()
+    _, state_file = _namespace(weights_name)
     try:
-        state_path = _retry(lambda: hf_hub_download(repo_id, 'training_state.json'))
+        state_path = _retry(lambda: hf_hub_download(repo_id, state_file))
     except Exception:
         return None
 
@@ -178,7 +194,8 @@ def pull_weights_if_new(
     Returns (state_dict, model_config, new_step) or None if up-to-date.
     """
     _require_hf()
-    state_path = _retry(lambda: hf_hub_download(repo_id, 'training_state.json'))
+    _, state_file = _namespace(weights_name)
+    state_path = _retry(lambda: hf_hub_download(repo_id, state_file))
     with open(state_path) as f:
         state = json.load(f)
 
@@ -201,36 +218,57 @@ def init_examples_repo(repo_id: str) -> str:
     return str(url)
 
 
-def upload_examples(repo_id: str, local_path: str | Path, remote_name: str) -> None:
+def upload_examples(
+    repo_id: str,
+    local_path: str | Path,
+    remote_name: str,
+    namespace: str | None = None,
+) -> None:
     """Upload an example batch .pt file to the examples repo."""
     _require_hf()
     api = HfApi()
+    path_in_repo = f"{namespace}/{remote_name}" if namespace else remote_name
     _retry(lambda: api.upload_file(
         path_or_fileobj=str(local_path),
-        path_in_repo=remote_name,
+        path_in_repo=path_in_repo,
         repo_id=repo_id,
-        commit_message=f"examples: {remote_name}",
+        commit_message=f"examples: {path_in_repo}",
     ))
 
 
-def upload_examples_folder(repo_id: str, folder_path: str | Path, n_files: int = 0) -> None:
+def upload_examples_folder(
+    repo_id: str,
+    folder_path: str | Path,
+    n_files: int = 0,
+    namespace: str | None = None,
+) -> None:
     """Upload all .pt files in a folder to the examples repo in a single commit."""
     _require_hf()
     api = HfApi()
-    msg = f"examples: {n_files} batches" if n_files else "examples batch"
+    prefix = f"{namespace}/" if namespace else ""
+    msg = f"examples: {prefix}{n_files} batches" if n_files else f"examples: {prefix}batch"
     _retry(lambda: api.upload_folder(
         folder_path=str(folder_path),
         repo_id=repo_id,
+        path_in_repo=namespace or "",
         commit_message=msg,
     ))
 
 
-def list_remote_examples(repo_id: str) -> list[str]:
-    """List pending .pt example files in the examples repo."""
+def list_remote_examples(repo_id: str, namespace: str | None = None) -> list[str]:
+    """List pending .pt example files in the examples repo.
+
+    If namespace is given, only returns files under that subdirectory.
+    If namespace is None, only returns root-level .pt files (no subdirectory).
+    """
     _require_hf()
     api = HfApi()
     all_files = _retry(lambda: api.list_repo_files(repo_id))
-    return sorted(f for f in all_files if f.endswith('.pt'))
+    if namespace:
+        prefix = f"{namespace}/"
+        return sorted(f for f in all_files if f.endswith('.pt') and f.startswith(prefix))
+    # Root-level only: exclude files in subdirectories
+    return sorted(f for f in all_files if f.endswith('.pt') and '/' not in f)
 
 
 def download_example(repo_id: str, remote_name: str) -> Path:
@@ -253,12 +291,12 @@ def _example_timestamp(filename: str) -> int:
         return 0
 
 
-def prune_remote_examples(repo_id: str, keep: int) -> list[str]:
+def prune_remote_examples(repo_id: str, keep: int, namespace: str | None = None) -> list[str]:
     """Delete oldest example files, keeping only the most recent `keep`.
 
     Returns list of deleted filenames.
     """
-    files = list_remote_examples(repo_id)
+    files = list_remote_examples(repo_id, namespace)
     if len(files) <= keep:
         return []
 

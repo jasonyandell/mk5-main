@@ -3,21 +3,26 @@
 ## Quick Reference
 
 ```bash
-# Start learner
+# Start learner (existing model)
 python -u -m forge.zeb.learner.run \
     --repo-id jasonyandell/zeb-42 \
     --examples-repo-id jasonyandell/zeb-42-examples \
     --checkpoint forge/zeb/models/zeb-557k-1m.pt \
-    --run-name zeb-557k-1m
+    --weights-name zeb-557k-1m
 
-# Check output
-tail -20 LEARNER_OUTPUT_FILE
+# Start learner (new model)
+python -m forge.zeb.init_checkpoint --size large -o forge/zeb/checkpoints/large-init.pt
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/checkpoints/large-init.pt \
+    --weights-name large
 
-# Check HF state
+# Check HF state (adjust filename for namespace)
 python -c "
 from huggingface_hub import hf_hub_download
 import json
-path = hf_hub_download('jasonyandell/zeb-42', 'training_state.json', force_download=True)
+path = hf_hub_download('jasonyandell/zeb-42', 'zeb-557k-1m-state.json', force_download=True)
 with open(path) as f: print(json.load(f))
 "
 ```
@@ -56,7 +61,7 @@ python -u -m forge.zeb.learner.run \
     --repo-id jasonyandell/zeb-42 \
     --examples-repo-id jasonyandell/zeb-42-examples \
     --checkpoint forge/zeb/models/zeb-557k-1m.pt \
-    --run-name zeb-557k-1m \
+    --weights-name zeb-557k-1m \
     --lr 1e-4 \
     --batch-size 64 \
     --replay-buffer-size 200000 \
@@ -75,7 +80,8 @@ python -u -m forge.zeb.learner.run \
 | `--eval-every` | 50 | Eval vs random every N cycles |
 | `--training-steps-per-cycle` | 100 | Gradient steps per cycle |
 | `--batch-size` | 64 | Training batch size |
-| `--run-name` | auto | Used as W&B display name AND HF weights filename (`{name}.pt`) |
+| `--weights-name` | none | HF weights filename stem (e.g. `large` → `large.pt`, `large-config.json`) |
+| `--run-name` | auto | W&B display name |
 | `--min-buffer-size` | 5000 | Won't train until buffer has this many examples |
 
 ### What Healthy Startup Looks Like
@@ -142,13 +148,23 @@ Cycle 9926: policy_loss=0.3226, value_loss=0.2622 (train=3.40s) [buffer: 179,200
 
 ---
 
-## HF Weights File Naming
+## HF Weights File Naming (Namespaces)
 
-The weights filename on HF is derived from `--run-name`:
-- `--run-name zeb-557k-1m` → HF file is `zeb-557k-1m.pt`
-- Workers must use `--weights-name zeb-557k-1m` to match
+The `--weights-name` parameter controls which files the learner reads/writes on HF:
 
-**Both learner and workers must agree on the weights name.** The worker flag is `--weights-name` (without `.pt`), set in `vast_up.sh` via `WEIGHTS_NAME`.
+| `--weights-name` | Weights file | Config file | State file |
+|-------------------|-------------|-------------|------------|
+| *(not set)* | `model.pt` | `config.json` | `training_state.json` |
+| `large` | `large.pt` | `large-config.json` | `large-state.json` |
+| `zeb-557k-1m` | `zeb-557k-1m.pt` | `zeb-557k-1m-config.json` | `zeb-557k-1m-state.json` |
+
+**Both learner and workers must agree on the weights name.** The worker flag is also `--weights-name` (without `.pt`), set in `vast_up.sh` via `ZEB_WEIGHTS_NAME`.
+
+Examples are also namespaced by subdirectory:
+- Default (`model`): examples at repo root
+- `--weights-name large`: examples under `large/` subdirectory
+
+This means multiple models can share the same HF repos without collision.
 
 ---
 
@@ -184,8 +200,8 @@ The learner will keep training on the existing buffer — it won't crash or stal
 
 | Scenario | What happens |
 |----------|-------------|
-| Fresh HF repo (no `training_state.json`) | Pushes bootstrap checkpoint weights as step 0 |
-| HF has weights | Pulls HF weights, ignores bootstrap checkpoint |
+| Fresh HF repo (no state file for this namespace) | Pushes bootstrap checkpoint weights as step 0 |
+| HF has weights for this namespace | Pulls HF weights, ignores bootstrap checkpoint |
 | HF timeout on startup | **Crashes** — startup pulls are not wrapped in try/except |
 
 If the learner crashes on startup due to HF timeout, just restart it.
@@ -205,15 +221,15 @@ commits = api.list_repo_commits('jasonyandell/zeb-42')
 for c in commits:
     print(f'{c.commit_id[:10]}  {c.created_at}  {c.title}')
 
-# 2. Download weights from a specific commit
+# 2. Download weights from a specific commit (adjust filenames for your namespace)
 revision = 'COMMIT_HASH'
 model_path = hf_hub_download('jasonyandell/zeb-42', 'zeb-557k-1m.pt', revision=revision)
-state_path = hf_hub_download('jasonyandell/zeb-42', 'training_state.json', revision=revision)
+state_path = hf_hub_download('jasonyandell/zeb-42', 'zeb-557k-1m-state.json', revision=revision)
 
 # 3. Re-upload to HEAD
 api.upload_file(path_or_fileobj=model_path, path_in_repo='zeb-557k-1m.pt',
                 repo_id='jasonyandell/zeb-42', commit_message='revert to earlier model')
-api.upload_file(path_or_fileobj=state_path, path_in_repo='training_state.json',
+api.upload_file(path_or_fileobj=state_path, path_in_repo='zeb-557k-1m-state.json',
                 repo_id='jasonyandell/zeb-42', commit_message='revert training state')
 ```
 
@@ -225,20 +241,45 @@ Then restart the learner — it will pull the reverted weights.
 
 To train a different model architecture or from a different checkpoint:
 
-1. Create a new bootstrap checkpoint (or use an existing one)
-2. Choose a new `--run-name` (e.g. `zeb-1m-2m`)
-3. The HF repo will store the new weights as `zeb-1m-2m.pt` alongside the old ones
-4. Update `WEIGHTS_NAME` in `vast_up.sh` for workers
-5. Restart workers so they pull the new model
+1. Create a fresh bootstrap checkpoint:
+   ```bash
+   python -m forge.zeb.init_checkpoint --size large -o forge/zeb/checkpoints/large-init.pt
+   ```
 
-```bash
-# Learner
-python -u -m forge.zeb.learner.run \
-    --repo-id jasonyandell/zeb-42 \
-    --examples-repo-id jasonyandell/zeb-42-examples \
-    --checkpoint forge/zeb/models/NEW_CHECKPOINT.pt \
-    --run-name zeb-1m-2m \
-    ...
+2. Start the learner with a new `--weights-name`:
+   ```bash
+   python -u -m forge.zeb.learner.run \
+       --repo-id jasonyandell/zeb-42 \
+       --examples-repo-id jasonyandell/zeb-42-examples \
+       --checkpoint forge/zeb/checkpoints/large-init.pt \
+       --weights-name large \
+       --lr 1e-4 --batch-size 64 --replay-buffer-size 50000 \
+       --training-steps-per-cycle 1000 \
+       --wandb
+   ```
+
+3. Launch workers for the new model:
+   ```bash
+   ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./forge/zeb/vast/vast_up.sh 4
+   ```
+
+The new model gets its own namespace on HF (`large.pt`, `large-config.json`, `large-state.json`) and examples go under `large/` in the examples repo. The existing model is completely untouched.
+
+**Running both concurrently**: Just start both learners and both fleets. They use the same HF repos but different namespaces, so there's no collision:
+
+```
+jasonyandell/zeb-42/
+├── zeb-557k-1m.pt                    # existing model
+├── zeb-557k-1m-config.json
+├── zeb-557k-1m-state.json
+├── large.pt                          # new model
+├── large-config.json
+└── large-state.json
+
+jasonyandell/zeb-42-examples/
+├── worker-vast-0_170712_abc.pt       # existing model examples (root)
+└── large/
+    └── worker-vast-0_170799_def.pt   # new model examples (subdirectory)
 ```
 
 ---
@@ -248,23 +289,20 @@ python -u -m forge.zeb.learner.run \
 ### Manual Spot Check
 
 ```bash
-# Learner output
-tail -20 LEARNER_OUTPUT_FILE
-
-# HF state
+# HF state (adjust filename for namespace: training_state.json, large-state.json, etc.)
 python -c "
 from huggingface_hub import hf_hub_download
 import json
-path = hf_hub_download('jasonyandell/zeb-42', 'training_state.json', force_download=True)
+path = hf_hub_download('jasonyandell/zeb-42', 'zeb-557k-1m-state.json', force_download=True)
 with open(path) as f: print(json.load(f))
 "
 
-# HF examples count
+# HF examples count (root = default namespace, 'large/' = large namespace)
 python -c "
 from huggingface_hub import HfApi
 api = HfApi()
-files = [f for f in api.list_repo_files('jasonyandell/zeb-42-examples') if f.endswith('.pt')]
-print(f'{len(files)} example files')
+files = [f for f in api.list_repo_files('jasonyandell/zeb-42-examples') if f.endswith('.pt') and '/' not in f]
+print(f'{len(files)} root example files')
 "
 ```
 
@@ -288,13 +326,13 @@ This creates a background monitor that:
 
 2. **HF timeouts are frequent.** All API calls retry 3x with backoff. If retries exhaust, the learner skips that operation and continues training. It won't crash.
 
-3. **W&B runs are disposable.** Each restart creates a new run with the same display name. Don't try to resume W&B runs — it causes conflicts if the run was deleted or if wandb's init hangs.
+3. **W&B runs resume across restarts.** The learner persists `wandb_run_id` in the HF state JSON and uses `resume="allow"` on init. Restarts continue the same W&B run with a continuous x-axis (explicit `step=cycle`).
 
 4. **Replay buffer rebuilds from HF examples repo on startup.** The examples repo is pruned to `--keep-example-files` (default 15) files. With ~7k examples per file and 200k buffer, ~28 files fill the buffer. After pruning, startup typically gets ~100-170k examples.
 
 5. **Push frequency tradeoff.** `--push-every 25` means workers get updated weights roughly every minute. Lower values mean more HF API calls (rate limit risk on free tier). Higher values mean more stale worker data and more training lost on crash.
 
-6. **Workers and learner must agree on weights filename.** Learner uses `--run-name` → `{name}.pt`. Workers use `--weights-name` (set via `WEIGHTS_NAME` in `vast_up.sh`).
+6. **Workers and learner must agree on weights filename.** Both use `--weights-name`. Workers get it from `ZEB_WEIGHTS_NAME` env var (set in `vast_up.sh`).
 
 7. **Vast.ai workers are unreliable.** Hosts die, get preempted, or are duds. Plan for attrition and monitor regularly. The learner doesn't care — it just trains slower when workers die.
 

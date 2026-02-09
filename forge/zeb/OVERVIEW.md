@@ -553,17 +553,40 @@ a principled statistical approach backed by perfect-information analysis.
 
 ### Running Evaluations
 
+The unified eval CLI (`forge.zeb.eval`) supports any player matchup with consistent
+methodology, team-symmetric evaluation (n/2 games per seat assignment), and normalized results.
+
 ```bash
-# E[Q] vs random
-python -u -m forge.zeb.eval_eq --n-games 500 --n-samples 100
+# Single matchup
+python -u -m forge.zeb.eval random vs heuristic --n-games 1000
+python -u -m forge.zeb.eval "eq:n=100" vs "zeb:source=hf" --n-games 500 --json
+python -u -m forge.zeb.eval random vs "eq:n=50" --n-games 500
 
-# E[Q] vs Zeb
-python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
-    --n-games 500 --n-samples 100
+# All-pairs matrix
+python -u -m forge.zeb.eval --matrix random heuristic zeb "eq:n=50" --n-games 200
 
-# Large eval with VRAM-bounded batching (avoids OOM on small GPUs)
-python -u -m forge.zeb.eval_eq --vs-zeb forge/zeb/checkpoints/selfplay-epoch2829.pt \
-    --n-games 2000 --n-samples 50 --batch-size 75
+# E[Q] N-value sweep (batched eq-vs-eq path)
+python -u -m forge.zeb.eval --matrix "eq:n=10" "eq:n=50" "eq:n=100" --n-games 200
+```
+
+**Player spec format**: `KIND[:KEY=VAL,...]` — kinds are `random`, `heuristic`, `zeb`, `eq`.
+Examples: `random`, `eq:n=50`, `zeb:source=hf,weights_name=large`.
+
+**Dispatch**: The engine automatically selects the optimal batched GPU path for each pair
+(eq-vs-random, eq-vs-zeb, eq-vs-eq, zeb-vs-random) and falls back to the generic
+sequential `play_match()` path for other combinations.
+
+**Programmatic API**:
+```python
+from forge.zeb.eval import run_match, MatchConfig, parse_player_spec
+
+config = MatchConfig(
+    spec_a=parse_player_spec('eq:n=50'),
+    spec_b=parse_player_spec('zeb'),
+    n_games=500, device='cuda',
+)
+result = run_match(config)
+print(f'{result.team_a_name} win rate: {result.team_a_win_rate:.1%}')
 ```
 
 The `--batch-size` flag limits GPU allocations to `batch_size * n_samples` entries
@@ -573,33 +596,47 @@ with N=50 fits in VRAM; batch_size=100 spills to system RAM.
 
 ### Results (Feb 2026)
 
-| Matchup | Win Rate | Avg Margin | Games |
-|---------|----------|------------|-------|
-| E[Q] (N=100) vs Random | 73.2% | +15.5 pts | 500 |
-| E[Q] (N=50) vs Zeb (epoch 2829) | 60.0% | +6.3 pts | 500 |
-| E[Q] (N=100) vs Zeb (epoch 2829) | 59.0% | +6.2 pts | 500 |
-| E[Q] (N=50) vs Zeb (epoch 3599) | 60.2% | +5.7 pts | 500 |
-| Zeb (epoch 3599) vs Random | ~70% | — | 2000 |
+**Head-to-head matrix** (1000 games each, win rate of row player):
 
-N=50 and N=100 produce nearly identical win rates vs Zeb (60.0% vs 59.0%), confirming
-that 50 sampled worlds per decision is sufficient for evaluation purposes.
+| | Random | Heuristic | Zeb-557K | Zeb-Large | E[Q] N=100 |
+|--|:--:|:--:|:--:|:--:|:--:|
+| **Heuristic** | 53.2% | — | ~39.2% | ~35.9% | 26.8% |
+| **Zeb-557K** | 69.1% | 60.8% | — | 43.1% | 41.3% |
+| **Zeb-Large** | 72.6% | 64.1% | 56.9% | — | 44.3% |
+| **E[Q] N=100** | 78.2% | 73.2% | 58.7% | 55.7% | — |
 
-Zeb's performance against E[Q] is stable across 770 epochs of self-play (2829→3599):
-60.0% → 60.2%, well within noise. The model holds ~70% vs random throughout.
+**E[Q] N-value sweep vs Zeb-Large** (1000 games each):
+
+| N | Win Rate | Speed |
+|:--:|:--:|:--:|
+| 10 | 55.3% | 12.6 games/s |
+| 50 | 58.3% | 8.9 games/s |
+| 100 | 55.7% | 7.7 games/s |
+
+N=50 produces the highest win rate vs Zeb-Large (58.3% > 55.7% at N=100),
+suggesting diminishing or slightly negative returns from additional samples.
+Even N=10 is competitive at 55.3%. This is consistent across seat assignments.
 
 **Key takeaways:**
-- E[Q] with 100 sampled worlds beats random 73.2% — this anchors the imperfect-info ceiling
-- Zeb captures ~75% of the gap between random and E[Q]
-- E[Q] beats Zeb 60-40 head-to-head, stable across epochs and seat assignments
-- The gap is meaningful but not dominant — Zeb's learned intuition (single forward pass)
-  competes well against expensive statistical analysis (100 oracle queries per decision)
-- N=50 is good enough for tracking — halving samples doesn't degrade win rate measurement
+- Clear ranking: E[Q] > Zeb-Large > Zeb-557K > Heuristic > Random
+- E[Q] with 100 sampled worlds beats random 78.2% — anchors the imperfect-info ceiling
+- Zeb-Large captures ~75% of the gap between random and E[Q]
+- E[Q] beats Zeb-Large 55-57% head-to-head — meaningful but not dominant
+- Zeb's learned intuition (single forward pass) competes well against expensive
+  statistical analysis (100 oracle queries per decision)
+- N=50 is the sweet spot for E[Q] evaluation — best accuracy and still fast
 
 ### Key Files
 
+- `eval/` — Unified eval package: CLI, engine, player specs, result types
+  - `eval/__main__.py` — CLI: `python -u -m forge.zeb.eval`
+  - `eval/engine.py` — Dispatch to optimal batched path per player pair
+  - `eval/players.py` — `PlayerSpec` parsing and `build_player()` construction
+  - `eval/results.py` — `MatchResult`/`HalfResult` data types, formatting
+  - `eval/loading.py` — Shared model loading (oracle + Zeb)
 - `eq_player.py` — `EQPlayer` class, `zeb_states_to_game_state_tensor()` bridge,
-  `evaluate_eq_vs_random()`, `evaluate_eq_vs_zeb()`
-- `eval_eq.py` — CLI: `python -u -m forge.zeb.eval_eq`
+  batched eval functions (`evaluate_eq_vs_random`, `evaluate_eq_vs_zeb`, `evaluate_eq_vs_eq`)
+- `eval_eq.py` — Original CLI (imports loading from `eval/`): `python -u -m forge.zeb.eval_eq`
 
 ---
 
@@ -673,10 +710,10 @@ buffer. Checkpoints are tiny (~2MB: model + optimizer only).
 
 | File | Purpose |
 |------|---------|
-| `worker/run.py` | Self-play worker: MCTS games → ExampleBatch → HF Hub |
+| `worker/run.py` | Self-play worker: MCTS games → TrainingExamples → HF Hub |
 | `learner/run.py` | Training learner: HF Hub → replay buffer → train → push weights |
 | `hf.py` | HuggingFace Hub: weights + example upload/download/prune |
-| `example_store.py` | `ExampleBatch` dataclass + atomic save/load/scan |
+| `example_store.py` | `TrainingExamples` dataclass + atomic save/load/scan |
 
 ### Prerequisites
 
@@ -748,7 +785,7 @@ The worker:
 1. Pulls model weights from HuggingFace
 2. Creates GPU self-play pipeline (CUDA graphs, batched MCTS)
 3. Generates `--games-per-batch` games per iteration via MCTS
-4. Converts GPU tensors to CPU `ExampleBatch`, uploads to HF examples repo
+4. Converts GPU tensors to CPU `TrainingExamples`, uploads to HF examples repo
 5. Every `--weight-sync-interval` batches, checks HF for newer weights
 6. Weight updates are in-place (`load_state_dict`), CUDA graphs stay valid
 
@@ -764,7 +801,7 @@ jasonyandell/zeb-42-examples/
 └── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
 ```
 
-Each `.pt` file contains an `ExampleBatch`:
+Each `.pt` file contains an `TrainingExamples`:
 - `observations`: [N, 36, 8] int32
 - `masks`: [N, 36] bool
 - `hand_indices`: [N, 7] int64
@@ -784,8 +821,13 @@ jasonyandell/zeb-42/
 └── training_state.json      # {"step": 1234, "total_games": 500000}
 ```
 
-Workers check `training_state.json` first (tiny download) and skip pulling
-`model.pt` if the step hasn't changed. HF's ETag caching makes polling free.
+Workers check the training state file first (tiny download) and skip pulling
+weights if the step hasn't changed. HF's ETag caching makes polling free.
+
+**Multi-model namespacing**: The `--weights-name` parameter controls file naming.
+For `--weights-name large`, files become `large.pt`, `large-config.json`,
+`large-state.json`, and examples go under `large/` in the examples repo. Multiple
+models share the same repos without collision. See `forge/zeb/learner/RUNBOOK.md`.
 
 ### Replay Buffer Sizing
 

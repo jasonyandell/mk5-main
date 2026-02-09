@@ -98,10 +98,10 @@ AI assistants often create planning and design documents during development:
 **Best Practice: Use a dedicated directory for these ephemeral files**
 
 **Recommended approach:**
-- Create a `history/` directory in the project root
-- Store ALL AI-generated planning/design docs in `history/`
+- Create a `scratch/` directory in the project root
+- Store ALL AI-generated planning/design docs in `scratch/`
 - Keep the repository root clean and focused on permanent project files
-- Only access `history/` when explicitly asked to review past planning
+- Only access `scratch/` when explicitly asked to review past planning
 
 **Example .gitignore entry (optional):**
 ```
@@ -127,5 +127,16 @@ history/
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT clutter repo root with planning documents
+
+## Forge Compute Policy (GPU-Only)
+
+Forge/Zeb is a **GPU-first and GPU-only** project. CPU support in Forge training/self-play
+paths is intentionally not desired and is considered counterproductive to performance work.
+
+- ✅ Build and optimize Forge ML paths for CUDA/GPU execution
+- ✅ Fail fast with clear errors when required GPU resources are unavailable
+- ❌ Do NOT add or preserve CPU fallback paths for Forge worker/learner/MCTS/training
+- ❌ Do NOT accept "CPU compatibility" changes in Forge unless explicitly requested for a
+  narrowly scoped experiment
 
 For more details, see README.md and QUICKSTART.md.

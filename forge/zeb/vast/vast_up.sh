@@ -6,6 +6,15 @@
 #   ./vast_up.sh 8                  # 8 workers
 #   ./vast_up.sh 4 RTX_3090         # 4 workers on 3090s
 #
+# Multi-model (env var overrides):
+#   ZEB_WEIGHTS_NAME=large ZEB_FLEET=zeb-large ./vast_up.sh 4
+#
+# Environment variables:
+#   ZEB_REPO_ID         HF weights repo (default: jasonyandell/zeb-42)
+#   ZEB_EXAMPLES_REPO_ID  HF examples repo (default: jasonyandell/zeb-42-examples)
+#   ZEB_WEIGHTS_NAME    Weights filename stem (default: zeb-557k-1m)
+#   ZEB_FLEET           Instance label prefix (default: zeb)
+#
 # Prerequisites:
 #   pip install vastai
 #   vastai set api-key YOUR_KEY
@@ -18,9 +27,10 @@ set -euo pipefail
 
 N_WORKERS="${1:-4}"
 GPU_FILTER="${2:-}"
-REPO_ID="jasonyandell/zeb-42"
-EXAMPLES_REPO_ID="jasonyandell/zeb-42-examples"
-WEIGHTS_NAME="zeb-557k-1m"
+REPO_ID="${ZEB_REPO_ID:-jasonyandell/zeb-42}"
+EXAMPLES_REPO_ID="${ZEB_EXAMPLES_REPO_ID:-jasonyandell/zeb-42-examples}"
+WEIGHTS_NAME="${ZEB_WEIGHTS_NAME:-zeb-557k-1m}"
+FLEET="${ZEB_FLEET:-zeb}"
 IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
 DISK_GB=15
 
@@ -112,7 +122,7 @@ for i in $(seq 0 $((N_WORKERS - 1))); do
     vastai create instance "$OFFER_ID" \
         --image "$IMAGE" \
         --disk "$DISK_GB" \
-        --label "zeb-${WORKER_ID}" \
+        --label "${FLEET}-${WORKER_ID}" \
         --env "-e HF_TOKEN=${HF_TOKEN} -e WORKER_ID=${WORKER_ID}" \
         --onstart-cmd "$ONSTART" \
         2>&1 | sed 's/^/    /'

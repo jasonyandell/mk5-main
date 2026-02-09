@@ -28,7 +28,8 @@ try:
 except ImportError:
     WANDB_AVAILABLE = False
 
-from .gpu_training_pipeline import create_selfplay_pipeline, GPUTrainingPipeline, GPUReplayBuffer, GPUTrainingExample
+from . import extract_model_config
+from .gpu_training_pipeline import create_selfplay_pipeline, GPUTrainingPipeline, GPUReplayBuffer
 from .model import ZebModel, get_model_config
 from .evaluate import evaluate_vs_random
 from .run_mcts_training import DEFAULT_CHECKPOINT_DIR
@@ -41,29 +42,13 @@ def load_model_from_checkpoint(
     """Load model from checkpoint.
 
     Returns:
-        model: Loaded ZebModel
+        model: Loaded ZebModel (in train mode, not eval)
         metadata: Checkpoint metadata (epoch, config, etc.)
     """
-    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    from . import load_model as _load_model
 
-    # Get model config - handle different checkpoint formats
-    if 'model_config' in ckpt:
-        model_config = ckpt['model_config']
-    elif 'config' in ckpt and 'model_config' in ckpt['config']:
-        # Nested format from run_mcts_training
-        model_config = ckpt['config']['model_config']
-    elif 'config' in ckpt:
-        # Try to extract model-specific keys
-        config = ckpt['config']
-        model_config = {k: v for k, v in config.items()
-                       if k in ('embed_dim', 'n_heads', 'n_layers', 'ff_dim', 'dropout', 'max_tokens')}
-    else:
-        raise ValueError("Checkpoint missing model config")
-
-    # Create and load model
-    model = ZebModel(**model_config)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model.to(device)
+    model, ckpt = _load_model(str(checkpoint_path), device=device, eval_mode=False)
+    model_config = extract_model_config(ckpt)
 
     # Compute total games from epoch and games_per_epoch if not stored
     total_games = ckpt.get('total_games', 0)
@@ -116,6 +101,8 @@ def main():
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument('--wandb-project', type=str, default='zeb-mcts')
     parser.add_argument('--run-name', type=str, default=None)
+    parser.add_argument('--new-wandb-run', action='store_true',
+                        help='Start fresh W&B run instead of resuming from checkpoint')
 
     # Output
     parser.add_argument('--output-dir', type=Path, default=DEFAULT_CHECKPOINT_DIR,
@@ -130,6 +117,10 @@ def main():
                         help='Size of replay buffer (0 = no buffer, train on current epoch only)')
     parser.add_argument('--training-steps', type=int, default=0,
                         help='Training steps per epoch (0 = one pass over generated examples, AlphaZero-style)')
+    parser.add_argument('--freeze-data', action='store_true',
+                        help='Skip game generation, train only on existing replay buffer (memorization experiment)')
+    parser.add_argument('--model-size', type=str, choices=['small', 'medium', 'large'], default=None,
+                        help='Override model size with fresh random weights (keeps replay buffer from checkpoint)')
 
     args = parser.parse_args()
 
@@ -138,10 +129,22 @@ def main():
     model, metadata = load_model_from_checkpoint(args.checkpoint, args.device)
     model_config = metadata['model_config']
 
+    # Override model with fresh random weights if --model-size specified
+    if args.model_size:
+        print(f"  Creating fresh {args.model_size} model (random weights)...")
+        model_config = get_model_config(args.model_size)
+        model = ZebModel(**model_config)
+        model.to(args.device)
+        start_epoch = 0  # Fresh model starts at epoch 0
+    else:
+        start_epoch = metadata['epoch'] + 1  # Continue from checkpoint
+
     total_params = sum(p.numel() for p in model.parameters())
-    start_epoch = metadata['epoch'] + 1  # Continue from next epoch
     print(f"  Model: {total_params:,} parameters")
-    print(f"  From epoch: {metadata['epoch']} (will start at {start_epoch})")
+    if args.model_size:
+        print(f"  Fresh {args.model_size} model (starting at epoch 0)")
+    else:
+        print(f"  From epoch: {metadata['epoch']} (will start at {start_epoch})")
     print(f"  Prior games: {metadata['total_games']:,}")
 
     # Initial evaluation
@@ -149,11 +152,11 @@ def main():
     initial_win_rate = evaluate_vs_random(model, n_games=100, device=args.device)['team0_win_rate']
     print(f"  vs Random: {initial_win_rate:.1%}")
 
-    # Initialize W&B (resume if checkpoint has run ID)
+    # Initialize W&B (resume if checkpoint has run ID, unless --new-wandb-run)
     use_wandb = args.wandb and WANDB_AVAILABLE
     wandb_run_id = metadata.get('wandb_run_id')
     if use_wandb:
-        if wandb_run_id:
+        if wandb_run_id and not args.new_wandb_run:
             # Resume existing W&B run
             wandb.init(
                 project=args.wandb_project,
@@ -170,7 +173,8 @@ def main():
                 name=run_name,
                 tags=['selfplay', 'alphazero', 'zeb'],
                 config={
-                    'mode': 'selfplay',
+                    'mode': 'memorization' if args.freeze_data else 'selfplay',
+                    'freeze_data': args.freeze_data,
                     'source_checkpoint': str(args.checkpoint),
                     'source_epoch': metadata['epoch'],
                     'initial_win_rate': initial_win_rate,
@@ -187,10 +191,14 @@ def main():
             )
             print(f"W&B run: {wandb.run.url}")
 
-    print("\n=== Self-Play AlphaZero Training ===")
+    if args.freeze_data:
+        print("\n=== MEMORIZATION EXPERIMENT (frozen data) ===")
+    else:
+        print("\n=== Self-Play AlphaZero Training ===")
     print(f"Epochs: {start_epoch} to {start_epoch + args.epochs - 1} ({args.epochs} total)")
-    print(f"Games/epoch: {args.games_per_epoch}")
-    print(f"MCTS simulations: {args.n_simulations}")
+    if not args.freeze_data:
+        print(f"Games/epoch: {args.games_per_epoch}")
+        print(f"MCTS simulations: {args.n_simulations}")
     print(f"Parallel games: {args.n_parallel_games}")
     print(f"Max MCTS nodes: {args.max_mcts_nodes}")
     print(f"Learning rate: {args.lr}")
@@ -222,6 +230,8 @@ def main():
 
     # Replay buffer - stores recent examples for more stable training (GPU-resident)
     use_replay_buffer = args.replay_buffer_size > 0
+    if args.freeze_data and not use_replay_buffer:
+        raise ValueError("--freeze-data requires --replay-buffer-size > 0")
     if use_replay_buffer:
         saved_buffer = metadata.get('replay_buffer', [])
         replay_buffer = GPUReplayBuffer.from_list(
@@ -239,28 +249,35 @@ def main():
     for epoch in range(start_epoch, start_epoch + args.epochs):
         t0 = time.time()
 
-        # Generate games with current model evaluating leaves
-        model.eval()  # Eval mode for game generation
-        examples = pipeline.generate_games_gpu(n_games=args.games_per_epoch)
-        gen_time = time.time() - t0
+        if args.freeze_data:
+            # Memorization experiment: skip generation, train on frozen buffer
+            gen_time = 0.0
+            games_per_sec = 0.0
+            n_examples = len(replay_buffer) if use_replay_buffer else 0
+            entropy_mean = entropy_std = entropy_min = entropy_max = 0.0
+        else:
+            # Generate games with current model evaluating leaves
+            model.eval()  # Eval mode for game generation
+            examples = pipeline.generate_games_gpu(n_games=args.games_per_epoch)
+            gen_time = time.time() - t0
 
-        total_games += args.games_per_epoch
-        n_examples = examples.n_examples
-        games_per_sec = args.games_per_epoch / gen_time
+            total_games += args.games_per_epoch
+            n_examples = examples.n_examples
+            games_per_sec = args.games_per_epoch / gen_time
 
-        # Compute visit distribution entropy: H = -sum(p * log(p))
-        p = examples.policy_targets  # (N, 7) float32
-        entropy_per_example = -torch.where(
-            p > 0, p * torch.log(p), torch.zeros_like(p)
-        ).sum(dim=-1)
-        entropy_mean = entropy_per_example.mean().item()
-        entropy_std = entropy_per_example.std().item()
-        entropy_min = entropy_per_example.min().item()
-        entropy_max = entropy_per_example.max().item()
+            # Compute visit distribution entropy: H = -sum(p * log(p))
+            p = examples.policy_targets  # (N, 7) float32
+            entropy_per_example = -torch.where(
+                p > 0, p * torch.log(p), torch.zeros_like(p)
+            ).sum(dim=-1)
+            entropy_mean = entropy_per_example.mean().item()
+            entropy_std = entropy_per_example.std().item()
+            entropy_min = entropy_per_example.min().item()
+            entropy_max = entropy_per_example.max().item()
 
-        # Add to GPU replay buffer (fast GPU->GPU copy)
-        if use_replay_buffer:
-            replay_buffer.add_batch(examples)
+            # Add to GPU replay buffer (fast GPU->GPU copy)
+            if use_replay_buffer:
+                replay_buffer.add_batch(examples)
 
         # Train on examples (from GPU replay buffer if enabled, else current epoch)
         t1 = time.time()
@@ -304,19 +321,27 @@ def main():
 
         # Epoch summary
         epoch_str = f"Epoch {epoch:3d}: policy_loss={metrics['policy_loss']:.4f}, value_loss={metrics['value_loss']:.4f}"
-        epoch_str += f" entropy={entropy_mean:.3f}"
-        epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.2f}s, {games_per_sec:.2f} games/s)"
-        if use_replay_buffer:
-            epoch_str += f" [buffer: {len(replay_buffer):,}]"
+        if 'belief_loss' in metrics:
+            epoch_str += f", belief_loss={metrics['belief_loss']:.4f}"
+        if args.freeze_data:
+            epoch_str += f" (train={train_time:.2f}s) [FROZEN]"
+        else:
+            epoch_str += f" entropy={entropy_mean:.3f}"
+            epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.2f}s, {games_per_sec:.2f} games/s)"
+            if use_replay_buffer:
+                epoch_str += f" [buffer: {len(replay_buffer):,}]"
         print(epoch_str)
 
         # Log to W&B
         if use_wandb:
+            total_loss = metrics['policy_loss'] + metrics['value_loss']
+            if 'belief_loss' in metrics:
+                total_loss += 0.5 * metrics['belief_loss']
             log_data = {
                 'epoch': epoch,
                 'train/policy_loss': metrics['policy_loss'],
                 'train/value_loss': metrics['value_loss'],
-                'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+                'train/total_loss': total_loss,
                 'mcts/entropy_mean': entropy_mean,
                 'mcts/entropy_std': entropy_std,
                 'mcts/entropy_min': entropy_min,
@@ -327,6 +352,8 @@ def main():
                 'perf/examples': n_examples,
                 'stats/total_games': total_games,
             }
+            if 'belief_loss' in metrics:
+                log_data['train/belief_loss'] = metrics['belief_loss']
             if use_replay_buffer:
                 log_data['stats/replay_buffer_size'] = len(replay_buffer)
             wandb.log(log_data)

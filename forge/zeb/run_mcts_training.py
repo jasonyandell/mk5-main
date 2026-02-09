@@ -169,8 +169,8 @@ def train_epoch(
         batch_target_policy = target_policies[idx]
         batch_target_value = target_values[idx]
 
-        # Forward: ZebModel returns (policy_logits, value)
-        policy_logits, value = model(
+        # Forward: ZebModel returns (policy_logits, value, belief_logits)
+        policy_logits, value, _belief = model(
             batch_tokens, batch_masks, batch_hand_indices, batch_hand_masks
         )
 
@@ -242,7 +242,7 @@ def evaluate_vs_random(model: ZebModel, n_games: int = 100, device: str = 'cpu')
                     hand_indices = hand_indices.unsqueeze(0).to(device)
                     hand_mask = hand_mask.unsqueeze(0).to(device)
 
-                    policy_logits, _ = model(tokens, mask, hand_indices, hand_mask)
+                    policy_logits, _, _belief = model(tokens, mask, hand_indices, hand_mask)
                     policy_logits = policy_logits.masked_fill(~hand_mask, float('-inf'))
                     action_slot = policy_logits[0].argmax().item()
             else:

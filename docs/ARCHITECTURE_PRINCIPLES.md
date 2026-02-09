@@ -1,5 +1,7 @@
 # Texas 42 Architecture: Principles & Philosophy
 
+**Note**: The primary architecture guide is [ORIENTATION.md](ORIENTATION.md). This document captures supplementary principles and philosophy that inform the design.
+
 **Purpose**: High-level architectural principles, design philosophy, and mental models for the Texas 42 codebase. Focuses on WHY we designed the system this way and WHAT patterns we use.
 
 **Audience**: Architects, senior developers, product managers, and anyone seeking to understand the design philosophy.
@@ -350,7 +352,7 @@ One authoritative location for each piece of state. Everything else derives from
 When adding new behavior, use this decision tree to determine the right approach:
 
 **Question 1: Does this change what actions are possible?**
-- YES → Use ActionTransformer (filter, annotate, script, replace)
+- YES → Use Layer's `getValidActions` (filter, annotate, script, replace)
 - NO → Continue to Question 2
 
 **Question 2: Does this change execution semantics?**
@@ -366,14 +368,14 @@ When adding new behavior, use this decision tree to determine the right approach
 - Universal → Update base implementation
 
 **Examples**:
-- "AI hints for actions" → ActionTransformer (annotate)
+- "AI hints for actions" → Layer action generation (annotate)
 - "3-player tricks in nello" → GameRules.isTrickComplete (execution semantic)
 - "Hand strength calculation" → Pure utility (no execution impact)
 - "Nello ends when bidder wins trick" → GameRules.checkHandOutcome (terminal state)
-- "Remove special bids in tournament" → ActionTransformer (filter)
+- "Remove special bids in tournament" → Layer action generation (filter)
 - "One-hand needs different terminal state" → GameRules.getPhaseAfterHandComplete (execution semantic)
 
-**Key Principle**: If an executor would need to know about it, it's a GameRules method. If only action generation needs it, it's an ActionTransformer or utility.
+**Key Principle**: If an executor would need to know about it, it's a GameRules method. If only action generation needs it, it's a Layer's `getValidActions` or a utility.
 
 ---
 
@@ -389,7 +391,7 @@ Transport → Client → UI Update
 ### Composition Flow
 ```
 RuleSets define rules → Rules compose via reduce →
-Base state machine uses rules → ActionTransformers wrap state machine →
+Base state machine uses rules → Layers compose action generation →
 ExecutionContext bundles all → Executors use context
 ```
 
@@ -418,7 +420,7 @@ Filtering → FilteredGameState → ViewProjection → UI State
 
 ### Extensibility
 - **Composition**: New features via composition, not modification
-- **Orthogonality**: RuleSets and ActionTransformers combine independently
+- **Orthogonality**: Layers' execution rules and action generation combine independently
 - **Zero coupling**: Core engine unchanged as system grows
 - **Parametric polymorphism**: Same code works for all rulesets
 
@@ -466,7 +468,7 @@ Filtering → FilteredGameState → ViewProjection → UI State
 **Trade-off**: More parameter passing (mitigated by ExecutionContext bundling).
 
 ### Single Composition Point
-**Decision**: RuleSets and ActionTransformers compose only in Room constructor.
+**Decision**: Layers compose only in Room constructor.
 
 **Rationale**: Ensures consistency, prevents drift, enables parametric polymorphism.
 

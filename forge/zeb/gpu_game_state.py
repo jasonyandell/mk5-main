@@ -645,67 +645,6 @@ def from_python_states(
         "bootstrapping. Use deal_random_gpu() / GPU-native self-play instead."
     )
 
-    # Build hands array (N, 4, 7) with -1 padding
-    hands_list = []
-    for i, state in enumerate(states):
-        game_hands = []
-        for p, hand in enumerate(state.hands):
-            if original_hands is not None:
-                # Use original slot positions, mark played as -1
-                orig = original_hands[i][p]
-                current_set = set(hand)
-                padded = [d if d in current_set else -1 for d in orig]
-            else:
-                # Pack remaining dominoes to the left, pad with -1
-                padded = list(hand) + [-1] * (7 - len(hand))
-            game_hands.append(padded)
-        hands_list.append(game_hands)
-
-    hands = torch.tensor(hands_list, dtype=torch.int32, device=device)
-
-    # Build played mask (N, 28)
-    played_mask_list = []
-    for state in states:
-        mask = [d in state.played for d in range(28)]
-        played_mask_list.append(mask)
-    played_mask = torch.tensor(played_mask_list, dtype=torch.bool, device=device)
-
-    # Build play history (N, 28, 3)
-    play_history = torch.zeros(n, 28, 3, dtype=torch.int32, device=device)
-    for i, state in enumerate(states):
-        for j, (player, domino, lead) in enumerate(state.play_history):
-            play_history[i, j, 0] = player
-            play_history[i, j, 1] = domino
-            play_history[i, j, 2] = lead
-
-    n_plays = torch.tensor([len(s.play_history) for s in states], dtype=torch.int32, device=device)
-
-    # Build current trick (N, 4, 2)
-    current_trick = torch.zeros(n, 4, 2, dtype=torch.int32, device=device)
-    for i, state in enumerate(states):
-        for j, (player, domino) in enumerate(state.current_trick):
-            current_trick[i, j, 0] = player
-            current_trick[i, j, 1] = domino
-
-    trick_len = torch.tensor([len(s.current_trick) for s in states], dtype=torch.int32, device=device)
-    leader = torch.tensor([s.leader for s in states], dtype=torch.int32, device=device)
-    decl_id = torch.tensor([s.decl_id for s in states], dtype=torch.int32, device=device)
-
-    # Scores not tracked in Python GameState, initialize to 0
-    scores = torch.zeros(n, 2, dtype=torch.int32, device=device)
-
-    return GPUGameState(
-        hands=hands,
-        played_mask=played_mask,
-        play_history=play_history,
-        n_plays=n_plays,
-        current_trick=current_trick,
-        trick_len=trick_len,
-        leader=leader,
-        decl_id=decl_id,
-        scores=scores,
-    )
-
 
 def to_python_state(gpu_state: GPUGameState, idx: int) -> GameState:
     """Convert a single game from GPUGameState to Python GameState.

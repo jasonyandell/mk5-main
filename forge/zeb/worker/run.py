@@ -26,12 +26,9 @@ from pathlib import Path
 
 import torch
 
-from forge.zeb.gpu_training_pipeline import (
-    GPUTrainingExample,
-    create_selfplay_pipeline,
-)
+from forge.zeb.gpu_training_pipeline import create_selfplay_pipeline
 from forge.zeb.model import ZebModel
-from forge.zeb.example_store import ExampleBatch, save_examples
+from forge.zeb.example_store import save_examples
 from forge.zeb.hf import (
     get_remote_step,
     init_examples_repo,
@@ -41,36 +38,6 @@ from forge.zeb.hf import (
 )
 
 
-def gpu_examples_to_batch(
-    examples: GPUTrainingExample,
-    worker_id: str,
-    model_step: int,
-    n_games: int,
-    *,
-    source: str = 'selfplay-mcts',
-    model_checkpoint: str | None = None,
-    mcts_config: dict | None = None,
-) -> ExampleBatch:
-    """Convert GPU training examples to a CPU ExampleBatch for serialization."""
-    return ExampleBatch(
-        observations=examples.observations.cpu(),
-        masks=examples.masks.cpu(),
-        hand_indices=examples.hand_indices.cpu(),
-        hand_masks=examples.hand_masks.cpu(),
-        policy_targets=examples.policy_targets.cpu(),
-        value_targets=examples.value_targets.cpu(),
-        metadata={
-            'worker_id': worker_id,
-            'model_step': model_step,
-            'n_games': n_games,
-            'timestamp': time.time(),
-            'source': source,
-            'model_checkpoint': model_checkpoint,
-            'mcts_config': mcts_config,
-        },
-    )
-
-
 def run_worker(args: argparse.Namespace) -> None:
     """Main worker loop: generate games, save examples, sync weights."""
     device = torch.device(args.device)
@@ -78,13 +45,18 @@ def run_worker(args: argparse.Namespace) -> None:
 
     # 1. Pull initial model from HuggingFace
     weights_name = f"{args.weights_name}.pt" if args.weights_name else 'model.pt'
+    # Derive examples namespace: "model" → None (root), anything else → subdirectory
+    stem = weights_name.removesuffix('.pt')
+    namespace = None if stem == 'model' else stem
+
     print(f"Pulling initial weights from {args.repo_id}/{weights_name}...")
     state_dict, config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
     model = ZebModel(**config).to(device)
     model.load_state_dict(state_dict)
     model.eval()
-    current_step = get_remote_step(args.repo_id)
-    print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params")
+    current_step = get_remote_step(args.repo_id, weights_name=weights_name)
+    tokenizer_name = config.get('tokenizer', 'v1')
+    print(f"  Model loaded (step {current_step}), {sum(p.numel() for p in model.parameters()):,} params, tokenizer={tokenizer_name}")
 
     # 2. Init examples repo (if using HF for examples)
     if use_hf_examples:
@@ -101,6 +73,7 @@ def run_worker(args: argparse.Namespace) -> None:
         n_simulations=args.n_simulations,
         max_mcts_nodes=args.max_mcts_nodes,
         temperature=args.temperature,
+        tokenizer_name=tokenizer_name,
     )
     print(f"Pipeline created in {time.time() - t0:.1f}s")
 
@@ -118,7 +91,8 @@ def run_worker(args: argparse.Namespace) -> None:
     batch_count = 0
     total_games = 0
     dest = args.examples_repo_id if use_hf_examples else str(output_dir)
-    print(f"\nWorker {args.worker_id} starting (output: {dest})")
+    ns_label = f" (namespace: {namespace})" if namespace else ""
+    print(f"\nWorker {args.worker_id} starting (output: {dest}{ns_label})")
     print(f"  games_per_batch={args.games_per_batch}, weight_sync_interval={args.weight_sync_interval}")
     if use_hf_examples:
         print(f"  upload_interval={upload_interval_sec}s (folder upload)")
@@ -134,16 +108,20 @@ def run_worker(args: argparse.Namespace) -> None:
         total_games += args.games_per_batch
 
         # Convert to CPU batch and save
-        batch = gpu_examples_to_batch(
-            examples, args.worker_id, current_step, n_games=args.games_per_batch,
-            source='selfplay-mcts',
-            model_checkpoint=str(args.repo_id),
-            mcts_config={
+        batch = examples.cpu()
+        batch.metadata = {
+            'worker_id': args.worker_id,
+            'model_step': current_step,
+            'n_games': args.games_per_batch,
+            'timestamp': time.time(),
+            'source': 'selfplay-mcts',
+            'model_checkpoint': str(args.repo_id),
+            'mcts_config': {
                 'n_simulations': args.n_simulations,
                 'temperature': args.temperature,
                 'max_mcts_nodes': args.max_mcts_nodes,
             },
-        )
+        }
         if use_hf_examples:
             save_examples(batch, staging_dir, args.worker_id)
             staged_count += 1
@@ -164,7 +142,7 @@ def run_worker(args: argparse.Namespace) -> None:
         if use_hf_examples and (time.time() - last_upload_time) >= upload_interval_sec:
             print(f"[{args.worker_id}] Uploading {staged_count} batches to HF...")
             try:
-                upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count)
+                upload_examples_folder(args.examples_repo_id, staging_dir, n_files=staged_count, namespace=namespace)
                 # Clear staging dir only on success
                 for f in staging_dir.iterdir():
                     f.unlink()

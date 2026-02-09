@@ -157,10 +157,12 @@ def evaluate_vs_random_batched(
     n_games: int = 100,
     device: str = 'cuda',
     temperature: float = 0.1,
+    neural_team: int = 0,
 ) -> dict:
     """Batched evaluation - runs N games in parallel with batched inference.
 
-    Model plays seats 0, 2 (team 0), random plays seats 1, 3 (team 1).
+    Args:
+        neural_team: Which team the model plays (0 or 1). Default 0 = seats 0,2.
     """
     model.eval()
     model.to(device)
@@ -184,7 +186,7 @@ def evaluate_vs_random_batched(
                 continue
 
             player = _get_current_player(state)
-            if player in (0, 2):  # Neural player's turn
+            if player % 2 == neural_team:  # Neural player's turn
                 neural_indices.append(i)
                 neural_states.append(state)
                 neural_players.append(player)

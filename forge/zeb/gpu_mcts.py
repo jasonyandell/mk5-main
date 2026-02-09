@@ -56,7 +56,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import inspect
-from typing import TYPE_CHECKING
 
 import torch
 from torch import Tensor
@@ -73,9 +72,6 @@ from forge.zeb.gpu_game_state import (
     trick_rank_gpu,
 )
 from forge.zeb.gpu_preprocess import compute_legal_mask_gpu, compute_remaining_bitmask_gpu
-
-if TYPE_CHECKING:
-    pass
 
 
 @dataclass
@@ -1221,7 +1217,7 @@ class MCTSSelfPlayFullStepCUDAGraphRunner:
             batch_idx=self.forest.tree_idx,
         )
 
-        policy_logits, values = self.model(
+        policy_logits, values, _belief = self.model(
             self._tokens_i32.long(),
             self._masks,
             self._hand_indices,

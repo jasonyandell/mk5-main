@@ -36,7 +36,8 @@ except ImportError:
     WANDB_AVAILABLE = False
 
 from forge.zeb.example_store import load_examples, scan_pending
-from forge.zeb.gpu_training_pipeline import GPUReplayBuffer, GPUTrainingExample
+from forge.zeb.gpu_training_pipeline import GPUReplayBuffer
+from forge.zeb.tokenizer_registry import get_tokenizer_spec
 from forge.zeb.hf import (
     get_remote_training_state,
     download_example,
@@ -64,10 +65,13 @@ def train_n_steps_from_buffer(
     model.train()
     device = replay_buffer.device
     buffer_size = len(replay_buffer)
+    has_belief = replay_buffer.has_belief and getattr(model, 'has_belief_head', False)
 
     zero = torch.tensor(0.0, device=device)
     total_policy_loss = zero.clone()
     total_value_loss = zero.clone()
+    total_belief_loss = zero.clone()
+    total_belief_acc = zero.clone()
     total_entropy = zero.clone()
     total_grad_norm = zero.clone()
     total_grad_norm_vhead = zero.clone()
@@ -85,6 +89,8 @@ def train_n_steps_from_buffer(
     buf_hand_masks = replay_buffer.hand_masks
     buf_policy = replay_buffer.policy_targets
     buf_value = replay_buffer.value_targets
+    buf_belief = replay_buffer.belief_targets if has_belief else None
+    buf_bmask = replay_buffer.belief_mask if has_belief else None
 
     for _ in range(n_steps):
         indices = torch.randint(0, buffer_size, (batch_size,), device=device)
@@ -96,7 +102,7 @@ def train_n_steps_from_buffer(
         policy_targets = buf_policy[indices]
         value_targets = buf_value[indices]
 
-        policy_logits, value = model(obs.long(), masks, hand_idx, hand_masks)
+        policy_logits, value, belief_logits = model(obs.long(), masks, hand_idx, hand_masks)
 
         policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
         log_policy = F.log_softmax(policy_logits, dim=-1)
@@ -106,6 +112,24 @@ def train_n_steps_from_buffer(
         value_loss = F.mse_loss(value, value_targets)
 
         loss = policy_loss + value_loss
+
+        # Belief loss
+        if has_belief and belief_logits is not None:
+            b_targets = buf_belief[indices]
+            b_mask = buf_bmask[indices]
+            ce = F.cross_entropy(
+                belief_logits.permute(0, 2, 1), b_targets, reduction='none',
+            )
+            belief_loss = (ce * b_mask.float()).sum() / b_mask.float().sum().clamp(min=1)
+            loss = loss + 0.5 * belief_loss
+            total_belief_loss = total_belief_loss + belief_loss.detach()
+
+            # Belief accuracy on masked positions
+            preds = belief_logits.argmax(dim=-1)  # (B, 28)
+            correct = (preds == b_targets) & b_mask
+            acc = correct.float().sum() / b_mask.float().sum().clamp(min=1)
+            total_belief_acc = total_belief_acc + acc.detach()
+
         optimizer.zero_grad()
         loss.backward()
 
@@ -141,7 +165,7 @@ def train_n_steps_from_buffer(
         total_value_target_mean = total_value_target_mean + value_targets.mean()
 
     n = n_steps
-    return {
+    result = {
         'policy_loss': (total_policy_loss / n).item(),
         'value_loss': (total_value_loss / n).item(),
         'policy_entropy': (total_entropy / n).item(),
@@ -153,11 +177,18 @@ def train_n_steps_from_buffer(
         'value_std': (total_value_std / n).item(),
         'value_target_mean': (total_value_target_mean / n).item(),
     }
+    if has_belief:
+        result['belief_loss'] = (total_belief_loss / n).item()
+        result['belief_accuracy'] = (total_belief_acc / n).item()
+    return result
 
 
 def run_learner(args: argparse.Namespace) -> None:
     device = args.device
-    weights_name = f"{args.run_name}.pt" if args.run_name else 'model.pt'
+    weights_name = f"{args.weights_name}.pt" if args.weights_name else 'model.pt'
+    # Derive examples namespace: "model" → None (root), anything else → subdirectory
+    stem = weights_name.removesuffix('.pt')
+    namespace = None if stem == 'model' else stem
 
     # --- Bootstrap: load from checkpoint to get model config ---
     print(f"Loading bootstrap checkpoint: {args.checkpoint}")
@@ -165,11 +196,15 @@ def run_learner(args: argparse.Namespace) -> None:
     model_config = metadata['model_config']
 
     total_params = sum(p.numel() for p in model.parameters())
-    print(f"  Model: {total_params:,} parameters")
+    tokenizer_name = model_config.get('tokenizer', 'v1')
+    has_belief = model_config.get('belief_head', False)
+    spec = get_tokenizer_spec(tokenizer_name)
+    print(f"  Model: {total_params:,} parameters, tokenizer={tokenizer_name}"
+          + (", belief_head=True" if has_belief else ""))
 
     # --- HF is the single source of truth ---
-    init_repo(args.repo_id, model_config)
-    remote_state = get_remote_training_state(args.repo_id)
+    init_repo(args.repo_id, model_config, weights_name=weights_name)
+    remote_state = get_remote_training_state(args.repo_id, weights_name=weights_name)
 
     if remote_state is not None:
         remote_step = int(remote_state.get('step', 0))
@@ -178,7 +213,12 @@ def run_learner(args: argparse.Namespace) -> None:
         remote_state_dict, remote_config = pull_weights(args.repo_id, device=device, weights_name=weights_name)
         if remote_config != model_config:
             raise ValueError("Remote model config differs from bootstrap checkpoint config")
-        model.load_state_dict(remote_state_dict)
+        if has_belief:
+            missing, _ = model.load_state_dict(remote_state_dict, strict=False)
+            if missing:
+                print(f"  Initializing missing belief head weights: {missing}")
+        else:
+            model.load_state_dict(remote_state_dict)
         cycle = remote_step
     else:
         # First time: push bootstrap weights to HF
@@ -197,21 +237,17 @@ def run_learner(args: argparse.Namespace) -> None:
         replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
             device=torch.device(device),
+            max_tokens=spec.max_tokens,
+            n_features=spec.n_features,
+            n_hand_slots=spec.n_hand_slots,
+            belief=has_belief,
         )
-        remote_files = list_remote_examples(args.examples_repo_id)
+        remote_files = list_remote_examples(args.examples_repo_id, namespace)
         seen_files: set[str] = set()
         for remote_name in remote_files:
             local_path = download_example(args.examples_repo_id, remote_name)
             batch = load_examples(local_path)
-            gpu_batch = GPUTrainingExample(
-                observations=batch.observations.to(device),
-                masks=batch.masks.to(device),
-                hand_indices=batch.hand_indices.to(device),
-                hand_masks=batch.hand_masks.to(device),
-                policy_targets=batch.policy_targets.to(device),
-                value_targets=batch.value_targets.to(device),
-            )
-            replay_buffer.add_batch(gpu_batch)
+            replay_buffer.add_batch(batch.to(device))
             seen_files.add(remote_name)
         print(f"Replay buffer (HF): {len(replay_buffer):,}/{args.replay_buffer_size:,} "
               f"examples from {len(remote_files)} files")
@@ -219,6 +255,10 @@ def run_learner(args: argparse.Namespace) -> None:
         replay_buffer = GPUReplayBuffer(
             capacity=args.replay_buffer_size,
             device=torch.device(device),
+            max_tokens=spec.max_tokens,
+            n_features=spec.n_features,
+            n_hand_slots=spec.n_hand_slots,
+            belief=has_belief,
         )
         seen_files = set()
         print(f"Replay buffer (empty): 0/{args.replay_buffer_size:,}")
@@ -226,11 +266,15 @@ def run_learner(args: argparse.Namespace) -> None:
     # --- W&B ---
     use_wandb = args.wandb and WANDB_AVAILABLE
     if use_wandb:
-        from datetime import datetime
-        run_name = args.run_name or f"learner-{datetime.now().strftime('%Y%m%d%H%M')}"
+        wandb_run_id = remote_state.get('wandb_run_id') if remote_state else None
+        run_name = args.run_name or (
+            f"learner-{stem}" if namespace else "learner"
+        )
         wandb.init(
             project=args.wandb_project,
             name=run_name,
+            id=wandb_run_id,
+            resume="allow",
             tags=['learner', 'distributed', 'selfplay', 'zeb'],
             config={
                 'mode': 'distributed-learner',
@@ -242,6 +286,9 @@ def run_learner(args: argparse.Namespace) -> None:
                 'model_config': model_config,
             },
         )
+        # Persist the run ID so restarts resume the same W&B run
+        if wandb.run.id != wandb_run_id:
+            wandb_run_id = wandb.run.id
         print(f"W&B run: {wandb.run.url}")
 
     # --- Main loop ---
@@ -261,22 +308,14 @@ def run_learner(args: argparse.Namespace) -> None:
 
         if use_hf_examples:
             try:
-                all_remote = list_remote_examples(args.examples_repo_id)
+                all_remote = list_remote_examples(args.examples_repo_id, namespace)
                 new_remote = [f for f in all_remote if f not in seen_files]
                 for remote_name in new_remote:
                     local_path = download_example(args.examples_repo_id, remote_name)
                     batch = load_examples(local_path)
-                    gpu_batch = GPUTrainingExample(
-                        observations=batch.observations.to(device),
-                        masks=batch.masks.to(device),
-                        hand_indices=batch.hand_indices.to(device),
-                        hand_masks=batch.hand_masks.to(device),
-                        policy_targets=batch.policy_targets.to(device),
-                        value_targets=batch.value_targets.to(device),
-                    )
-                    replay_buffer.add_batch(gpu_batch)
-                    total_games += batch.metadata.get('n_games', 0)
-                    ingested += gpu_batch.n_examples
+                    replay_buffer.add_batch(batch.to(device))
+                    total_games += (batch.metadata or {}).get('n_games', 0)
+                    ingested += batch.n_examples
                     seen_files.add(remote_name)
                 n_new_files += len(new_remote)
             except Exception as e:
@@ -285,17 +324,9 @@ def run_learner(args: argparse.Namespace) -> None:
         if args.input_dir:
             for f in scan_pending(args.input_dir):
                 batch = load_examples(f)
-                gpu_batch = GPUTrainingExample(
-                    observations=batch.observations.to(device),
-                    masks=batch.masks.to(device),
-                    hand_indices=batch.hand_indices.to(device),
-                    hand_masks=batch.hand_masks.to(device),
-                    policy_targets=batch.policy_targets.to(device),
-                    value_targets=batch.value_targets.to(device),
-                )
-                replay_buffer.add_batch(gpu_batch)
-                total_games += batch.metadata.get('n_games', 0)
-                ingested += gpu_batch.n_examples
+                replay_buffer.add_batch(batch.to(device))
+                total_games += (batch.metadata or {}).get('n_games', 0)
+                ingested += batch.n_examples
                 n_new_files += 1
                 f.unlink()
 
@@ -321,17 +352,24 @@ def run_learner(args: argparse.Namespace) -> None:
         train_time = time.time() - t0
         cycle += 1
 
-        print(f"Cycle {cycle:4d}: policy_loss={metrics['policy_loss']:.4f}, "
-              f"value_loss={metrics['value_loss']:.4f} "
-              f"(train={train_time:.2f}s) "
-              f"[buffer: {len(replay_buffer):,}, games: {total_games:,}]")
+        cycle_str = (f"Cycle {cycle:4d}: policy_loss={metrics['policy_loss']:.4f}, "
+                     f"value_loss={metrics['value_loss']:.4f}")
+        if 'belief_loss' in metrics:
+            cycle_str += f", belief_loss={metrics['belief_loss']:.4f}"
+            cycle_str += f", belief_acc={metrics['belief_accuracy']:.3f}"
+        cycle_str += (f" (train={train_time:.2f}s) "
+                      f"[buffer: {len(replay_buffer):,}, games: {total_games:,}]")
+        print(cycle_str)
 
         # 4. Build W&B log dict (logged once at end of cycle)
+        total_loss = metrics['policy_loss'] + metrics['value_loss']
+        if 'belief_loss' in metrics:
+            total_loss += 0.5 * metrics['belief_loss']
         log_dict = {
             'cycle': cycle,
             'train/policy_loss': metrics['policy_loss'],
             'train/value_loss': metrics['value_loss'],
-            'train/total_loss': metrics['policy_loss'] + metrics['value_loss'],
+            'train/total_loss': total_loss,
             'train/policy_entropy': metrics['policy_entropy'],
             'train/policy_top1_accuracy': metrics['policy_top1_accuracy'],
             'train/policy_kl_divergence': metrics['policy_kl_divergence'],
@@ -345,16 +383,22 @@ def run_learner(args: argparse.Namespace) -> None:
             'stats/total_games': total_games,
             'stats/replay_buffer_size': len(replay_buffer),
         }
+        if 'belief_loss' in metrics:
+            log_dict['train/belief_loss'] = metrics['belief_loss']
+            log_dict['train/belief_accuracy'] = metrics['belief_accuracy']
 
         # 5. Push weights to HF periodically
         if cycle % args.push_every == 0:
             try:
-                push_weights(model, args.repo_id, step=cycle, total_games=total_games, weights_name=weights_name)
+                extra = {'wandb_run_id': wandb.run.id} if use_wandb else None
+                push_weights(model, args.repo_id, step=cycle, total_games=total_games,
+                             extra_metadata=extra, weights_name=weights_name)
                 print(f"  Pushed weights (cycle {cycle})")
 
                 if use_hf_examples:
                     pruned = prune_remote_examples(
                         args.examples_repo_id, args.keep_example_files,
+                        namespace=namespace,
                     )
                     if pruned:
                         seen_files -= set(pruned)
@@ -373,7 +417,7 @@ def run_learner(args: argparse.Namespace) -> None:
 
         # 7. Log all metrics for this cycle in a single call
         if use_wandb:
-            wandb.log(log_dict)
+            wandb.log(log_dict, step=cycle)
 
 
 def main():
@@ -408,6 +452,10 @@ def main():
     parser.add_argument('--eval-every', type=int, default=50,
                         help='Evaluate vs random every N cycles')
     parser.add_argument('--eval-games', type=int, default=2000)
+
+    # Model namespace
+    parser.add_argument('--weights-name', type=str, default=None,
+                        help='Weights filename stem on HF (e.g. large → large.pt, large-config.json)')
 
     # W&B
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)

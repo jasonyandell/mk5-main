@@ -1210,6 +1210,8 @@ def train_zeb(
     run_name: str | None = None,
     wandb_enabled: bool = True,
     profile_mode: bool = False,
+    freeze_data: bool = False,
+    model_size: str | None = None,
 ) -> dict:
     """Train Zeb via true self-play MCTS on Modal B200.
 
@@ -1234,6 +1236,8 @@ def train_zeb(
         run_name: Run name for W&B and checkpoints
         wandb_enabled: Whether to log to W&B
         profile_mode: Add deliberate gaps between phases for GPU profiling
+        freeze_data: Skip game generation, train on frozen replay buffer
+        model_size: Override model with fresh random weights ('small', 'medium', 'large')
 
     Returns:
         Dict with training results and final checkpoint bytes
@@ -1260,37 +1264,50 @@ def train_zeb(
     torch.backends.cudnn.benchmark = True
 
     from forge.zeb.gpu_training_pipeline import create_selfplay_pipeline, GPUReplayBuffer
-    from forge.zeb.model import ZebModel
-    from forge.zeb.run_mcts_training import evaluate_vs_random
+    from forge.zeb.model import ZebModel, get_model_config
+    from forge.zeb.evaluate import evaluate_vs_random
 
     device = "cuda"
     gpu_name = torch.cuda.get_device_name(0)
-    print(f"[{gpu_name}] Starting Zeb self-play training")
+
+    mode_str = "MEMORIZATION (frozen data)" if freeze_data else "self-play training"
+    print(f"[{gpu_name}] Starting Zeb {mode_str}")
 
     # Load checkpoint
     print("Loading checkpoint...")
     buffer = io.BytesIO(checkpoint_bytes)
     ckpt = torch.load(buffer, map_location='cpu', weights_only=False)
 
-    model_config = ckpt['model_config']
-    model = ZebModel(**model_config)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model.to(device)
+    # Override model with fresh random weights if model_size specified
+    if model_size:
+        print(f"  Creating fresh {model_size} model (random weights)...")
+        model_config = get_model_config(model_size)
+        model = ZebModel(**model_config)
+        model.to(device)
+        start_epoch = 0  # Fresh model starts at epoch 0
+        wandb_run_id = None  # Force new W&B run
+    else:
+        model_config = ckpt['model_config']
+        model = ZebModel(**model_config)
+        model.load_state_dict(ckpt['model_state_dict'])
+        model.to(device)
+        start_epoch = ckpt.get('epoch', 0) + 1
+        wandb_run_id = ckpt.get('wandb_run_id')
 
-    start_epoch = ckpt.get('epoch', 0) + 1
     total_games_prior = ckpt.get('total_games', 0)
-    wandb_run_id = ckpt.get('wandb_run_id')
 
     total_params = sum(p.numel() for p in model.parameters())
     model_size_str = f"{total_params / 1_000_000:.1f}M" if total_params >= 1_000_000 else f"{total_params // 1000}k"
 
     print(f"  Model: {model_size_str} ({total_params:,} params)")
-    print(f"  Config: {model_config}")
-    print(f"  From epoch: {start_epoch - 1}, prior games: {total_games_prior:,}")
+    if model_size:
+        print(f"  Fresh {model_size} model (starting at epoch 0)")
+    else:
+        print(f"  From epoch: {start_epoch - 1}, prior games: {total_games_prior:,}")
 
     # Initial evaluation
     print("\nInitial evaluation...")
-    initial_win_rate = evaluate_vs_random(model, n_games=100, device=device)
+    initial_win_rate = evaluate_vs_random(model, n_games=100, device=device)['team0_win_rate']
     print(f"  vs Random: {initial_win_rate:.1%}")
 
     # W&B setup
@@ -1335,10 +1352,14 @@ def train_zeb(
             wandb.init(project="zeb-mcts", id=wandb_run_id, resume="must")
             print(f"W&B run resumed: {wandb.run.url}")
 
-    print(f"\n=== Self-Play Training ===")
+    if freeze_data:
+        print(f"\n=== MEMORIZATION EXPERIMENT (frozen data) ===")
+    else:
+        print(f"\n=== Self-Play Training ===")
     print(f"Epochs: {start_epoch} to {start_epoch + epochs - 1}")
-    print(f"Games/epoch: {games_per_epoch}, MCTS sims: {n_simulations}")
-    print(f"Parallel games: {n_parallel_games}, Max nodes: {max_mcts_nodes}")
+    if not freeze_data:
+        print(f"Games/epoch: {games_per_epoch}, MCTS sims: {n_simulations}")
+        print(f"Parallel games: {n_parallel_games}, Max nodes: {max_mcts_nodes}")
     print(f"Replay buffer: {replay_buffer_size:,}, Training steps: {training_steps}")
     print()
 
@@ -1398,27 +1419,34 @@ def train_zeb(
         final_epoch = epoch
 
         # === GENERATION PHASE ===
-        if profile_mode and use_wandb:
-            elapsed = time.time() - start_time
-            wandb.log({'profile/phase': 1, 'profile/phase_name': 'gen_start', 'profile/elapsed_s': elapsed})
-            print(f"  [PROFILE] GEN START at t={elapsed:.1f}s")
+        if freeze_data:
+            # Skip generation for memorization experiment
+            gen_time = 0.0
+            n_examples = len(replay_buffer)
+            games_per_sec = 0.0
+        else:
+            if profile_mode and use_wandb:
+                elapsed = time.time() - start_time
+                wandb.log({'profile/phase': 1, 'profile/phase_name': 'gen_start', 'profile/elapsed_s': elapsed})
+                print(f"  [PROFILE] GEN START at t={elapsed:.1f}s")
 
-        model.eval()
-        t0 = time.time()
-        examples = pipeline.generate_games_gpu(n_games=games_per_epoch)
-        gen_time = time.time() - t0
+            model.eval()
+            t0 = time.time()
+            examples = pipeline.generate_games_gpu(n_games=games_per_epoch)
+            gen_time = time.time() - t0
 
-        if profile_mode and use_wandb:
-            elapsed = time.time() - start_time
-            wandb.log({'profile/phase': 2, 'profile/phase_name': 'gen_end', 'profile/elapsed_s': elapsed})
-            print(f"  [PROFILE] GEN END at t={elapsed:.1f}s (took {gen_time:.1f}s)")
+            if profile_mode and use_wandb:
+                elapsed = time.time() - start_time
+                wandb.log({'profile/phase': 2, 'profile/phase_name': 'gen_end', 'profile/elapsed_s': elapsed})
+                print(f"  [PROFILE] GEN END at t={elapsed:.1f}s (took {gen_time:.1f}s)")
 
-        total_games += games_per_epoch
-        n_examples = examples.n_examples
-        games_per_sec = games_per_epoch / gen_time
+            total_games += games_per_epoch
+            n_examples = examples.n_examples
+            games_per_sec = games_per_epoch / gen_time
 
-        # Add to GPU replay buffer
-        replay_buffer.add_batch(examples)
+        # Add to GPU replay buffer (skip if frozen)
+        if not freeze_data:
+            replay_buffer.add_batch(examples)
 
         # Profile mode: wait until 60s boundary before training
         if profile_mode:
@@ -1465,8 +1493,11 @@ def train_zeb(
 
         # Log
         epoch_str = f"Epoch {epoch:4d}: policy={metrics['policy_loss']:.4f}, value={metrics['value_loss']:.4f}"
-        epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.1f}s, {games_per_sec:.1f} g/s)"
-        epoch_str += f" [buffer: {len(replay_buffer):,}]"
+        if freeze_data:
+            epoch_str += f" (train={train_time:.1f}s) [FROZEN]"
+        else:
+            epoch_str += f" (gen={gen_time:.1f}s, train={train_time:.1f}s, {games_per_sec:.1f} g/s)"
+            epoch_str += f" [buffer: {len(replay_buffer):,}]"
         print(epoch_str)
 
         if use_wandb:
@@ -1492,7 +1523,7 @@ def train_zeb(
                 print(f"  [PROFILE] EVAL START at t={elapsed:.1f}s")
 
             model.eval()
-            win_rate = evaluate_vs_random(model, n_games=100, device=device)
+            win_rate = evaluate_vs_random(model, n_games=100, device=device)['team0_win_rate']
 
             if profile_mode and use_wandb:
                 elapsed = time.time() - start_time
@@ -1536,7 +1567,7 @@ def train_zeb(
     # Final evaluation
     print("\n=== Final Evaluation ===")
     model.eval()
-    final_win_rate = evaluate_vs_random(model, n_games=200, device=device)
+    final_win_rate = evaluate_vs_random(model, n_games=200, device=device)['team0_win_rate']
     print(f"vs Random: {final_win_rate:.1%}")
     print(f"Improvement: {initial_win_rate:.1%} -> {final_win_rate:.1%} ({final_win_rate - initial_win_rate:+.1%})")
 
@@ -1618,6 +1649,8 @@ def zeb_train(
     no_wandb: bool = False,
     save_checkpoint: str | None = None,
     profile_mode: bool = False,
+    freeze_data: bool = False,
+    model_size: str | None = None,
 ):
     """Train Zeb via self-play MCTS on Modal B200.
 
@@ -1653,18 +1686,25 @@ def zeb_train(
 
     if profile_mode:
         console.print(f"[bold yellow]Zeb PROFILING MODE on Modal B200[/bold yellow]")
+    elif freeze_data:
+        console.print(f"[bold yellow]MEMORIZATION EXPERIMENT on Modal B200[/bold yellow]")
     else:
         console.print(f"[bold]Zeb Self-Play Training on Modal B200[/bold]")
     console.print(f"  Checkpoint: {checkpoint}")
+    if model_size:
+        console.print(f"  [yellow]Model: {model_size} (fresh random weights)[/yellow]")
     console.print(f"  Epochs: {epochs}")
-    console.print(f"  Games/epoch: {games_per_epoch}")
-    console.print(f"  MCTS sims: {n_simulations}")
-    console.print(f"  Parallel games: {n_parallel_games}")
+    if not freeze_data:
+        console.print(f"  Games/epoch: {games_per_epoch}")
+        console.print(f"  MCTS sims: {n_simulations}")
+        console.print(f"  Parallel games: {n_parallel_games}")
     console.print(f"  Replay buffer: {replay_buffer_size:,}")
     console.print(f"  Training steps/epoch: {training_steps}")
     console.print(f"  W&B: {'disabled' if no_wandb else 'enabled'}")
     if profile_mode:
         console.print(f"  [yellow]Profile mode: deliberate gaps between phases[/yellow]")
+    if freeze_data:
+        console.print(f"  [yellow]Frozen data: training on replay buffer only[/yellow]")
     console.print()
 
     # Read checkpoint bytes
@@ -1688,6 +1728,8 @@ def zeb_train(
         run_name=run_name,
         wandb_enabled=not no_wandb,
         profile_mode=profile_mode,
+        freeze_data=freeze_data,
+        model_size=model_size,
     )
 
     console.print(f"\n[bold green]Training Complete![/bold green]")

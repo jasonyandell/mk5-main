@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from torch import Tensor
 
 from forge.zeb.cuda_only import require_cuda
+from forge.zeb.tokenizer_registry import V1_SPEC, get_gpu_tokenizer, register_gpu_tokenizer
 from forge.zeb.gpu_game_state import (
     GPUGameState,
     apply_action_gpu,
@@ -79,10 +80,10 @@ def _concat_state_batches(states_list: list[GPUGameState]) -> GPUGameState:
 
 
 @dataclass
-class GPUTrainingExample:
-    """Training examples stored entirely on GPU.
+class TrainingExamples:
+    """Training examples on any device.
 
-    All tensors are on the same device (GPU).
+    Works on both CPU (for serialization) and GPU (for training).
     """
     observations: Tensor    # (N, MAX_TOKENS, N_FEATURES) int32
     masks: Tensor          # (N, MAX_TOKENS) bool
@@ -90,6 +91,9 @@ class GPUTrainingExample:
     hand_masks: Tensor     # (N, 7) bool - which slots have unplayed dominoes
     policy_targets: Tensor # (N, 7) float32 - visit distributions
     value_targets: Tensor  # (N,) float32 - game outcomes
+    belief_targets: Tensor | None = None  # (N, 28) int64 — class 0/1/2 per domino
+    belief_mask: Tensor | None = None     # (N, 28) bool — True for hidden dominoes
+    metadata: dict | None = None  # {worker_id, model_step, n_games, timestamp, ...}
 
     @property
     def device(self) -> torch.device:
@@ -98,6 +102,24 @@ class GPUTrainingExample:
     @property
     def n_examples(self) -> int:
         return self.observations.shape[0]
+
+    def to(self, device: torch.device | str) -> "TrainingExamples":
+        """Move all tensors to device, preserving metadata."""
+        return TrainingExamples(
+            observations=self.observations.to(device),
+            masks=self.masks.to(device),
+            hand_indices=self.hand_indices.to(device),
+            hand_masks=self.hand_masks.to(device),
+            policy_targets=self.policy_targets.to(device),
+            value_targets=self.value_targets.to(device),
+            belief_targets=self.belief_targets.to(device) if self.belief_targets is not None else None,
+            belief_mask=self.belief_mask.to(device) if self.belief_mask is not None else None,
+            metadata=self.metadata,
+        )
+
+    def cpu(self) -> "TrainingExamples":
+        """Move all tensors to CPU, preserving metadata."""
+        return self.to("cpu")
 
 
 class GPUReplayBuffer:
@@ -109,61 +131,84 @@ class GPUReplayBuffer:
     Memory usage for 50k examples: ~65 MB
     """
 
-    MAX_TOKENS = 36
-    N_FEATURES = 8
-    N_HAND_SLOTS = 7
-
-    def __init__(self, capacity: int, device: torch.device):
+    def __init__(
+        self,
+        capacity: int,
+        device: torch.device,
+        *,
+        max_tokens: int = 36,
+        n_features: int = 8,
+        n_hand_slots: int = 7,
+        belief: bool = False,
+    ):
         self.capacity = capacity
         self.device = device
+        self.MAX_TOKENS = max_tokens
+        self.N_FEATURES = n_features
+        self.N_HAND_SLOTS = n_hand_slots
+        self.has_belief = belief
         self.size = 0
         self.write_idx = 0
 
         # Pre-allocate GPU tensors
         self.observations = torch.zeros(
-            (capacity, self.MAX_TOKENS, self.N_FEATURES),
+            (capacity, max_tokens, n_features),
             dtype=torch.int32, device=device
         )
         self.masks = torch.zeros(
-            (capacity, self.MAX_TOKENS),
+            (capacity, max_tokens),
             dtype=torch.bool, device=device
         )
         self.hand_indices = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.int64, device=device
         )
         self.hand_masks = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.bool, device=device
         )
         self.policy_targets = torch.zeros(
-            (capacity, self.N_HAND_SLOTS),
+            (capacity, n_hand_slots),
             dtype=torch.float32, device=device
         )
         self.value_targets = torch.zeros(
             capacity,
             dtype=torch.float32, device=device
         )
+        if belief:
+            self.belief_targets = torch.zeros(
+                (capacity, 28), dtype=torch.int64, device=device
+            )
+            self.belief_mask = torch.zeros(
+                (capacity, 28), dtype=torch.bool, device=device
+            )
+        else:
+            self.belief_targets = None
+            self.belief_mask = None
 
     def __len__(self) -> int:
         return self.size
 
-    def add_batch(self, examples: GPUTrainingExample) -> None:
+    def add_batch(self, examples: TrainingExamples) -> None:
         """Add batch of examples (already on GPU). O(1) amortized."""
         n = examples.n_examples
         if n > self.capacity:
             # If batch larger than capacity, only keep last `capacity` examples
-            examples = GPUTrainingExample(
-                observations=examples.observations[-self.capacity:],
-                masks=examples.masks[-self.capacity:],
-                hand_indices=examples.hand_indices[-self.capacity:],
-                hand_masks=examples.hand_masks[-self.capacity:],
-                policy_targets=examples.policy_targets[-self.capacity:],
-                value_targets=examples.value_targets[-self.capacity:],
+            s = slice(-self.capacity, None)
+            examples = TrainingExamples(
+                observations=examples.observations[s],
+                masks=examples.masks[s],
+                hand_indices=examples.hand_indices[s],
+                hand_masks=examples.hand_masks[s],
+                policy_targets=examples.policy_targets[s],
+                value_targets=examples.value_targets[s],
+                belief_targets=examples.belief_targets[s] if examples.belief_targets is not None else None,
+                belief_mask=examples.belief_mask[s] if examples.belief_mask is not None else None,
             )
             n = self.capacity
 
         end_idx = self.write_idx + n
+        has_belief = self.has_belief and examples.belief_targets is not None
 
         if end_idx <= self.capacity:
             # Simple case: no wraparound
@@ -173,6 +218,9 @@ class GPUReplayBuffer:
             self.hand_masks[self.write_idx:end_idx] = examples.hand_masks
             self.policy_targets[self.write_idx:end_idx] = examples.policy_targets
             self.value_targets[self.write_idx:end_idx] = examples.value_targets
+            if has_belief:
+                self.belief_targets[self.write_idx:end_idx] = examples.belief_targets
+                self.belief_mask[self.write_idx:end_idx] = examples.belief_mask
         else:
             # Wraparound: split into two copies
             first_part = self.capacity - self.write_idx
@@ -196,10 +244,16 @@ class GPUReplayBuffer:
             self.value_targets[self.write_idx:] = examples.value_targets[:first_part]
             self.value_targets[:second_part] = examples.value_targets[first_part:]
 
+            if has_belief:
+                self.belief_targets[self.write_idx:] = examples.belief_targets[:first_part]
+                self.belief_targets[:second_part] = examples.belief_targets[first_part:]
+                self.belief_mask[self.write_idx:] = examples.belief_mask[:first_part]
+                self.belief_mask[:second_part] = examples.belief_mask[first_part:]
+
         self.write_idx = end_idx % self.capacity
         self.size = min(self.size + n, self.capacity)
 
-    def sample(self, batch_size: int) -> GPUTrainingExample:
+    def sample(self, batch_size: int) -> TrainingExamples:
         """Sample random batch entirely on GPU. No CPU involvement."""
         if batch_size > self.size:
             raise ValueError(f"batch_size {batch_size} > buffer size {self.size}")
@@ -207,39 +261,45 @@ class GPUReplayBuffer:
         # Generate random indices on GPU
         indices = torch.randint(0, self.size, (batch_size,), device=self.device)
 
-        return GPUTrainingExample(
+        return TrainingExamples(
             observations=self.observations[indices],
             masks=self.masks[indices],
             hand_indices=self.hand_indices[indices],
             hand_masks=self.hand_masks[indices],
             policy_targets=self.policy_targets[indices],
             value_targets=self.value_targets[indices],
+            belief_targets=self.belief_targets[indices] if self.has_belief else None,
+            belief_mask=self.belief_mask[indices] if self.has_belief else None,
         )
 
     def to_list(self) -> list[dict]:
         """Convert to CPU list of dicts for checkpoint serialization.
 
-        Optimized: 6 bulk GPU→CPU transfers instead of 300k individual ones.
+        Optimized: bulk GPU→CPU transfers instead of individual ones.
         """
-        # Bulk transfer to CPU (6 operations instead of 50k × 6)
         obs_cpu = self.observations[:self.size].cpu()
         masks_cpu = self.masks[:self.size].cpu()
         hand_idx_cpu = self.hand_indices[:self.size].cpu()
         hand_masks_cpu = self.hand_masks[:self.size].cpu()
         policy_cpu = self.policy_targets[:self.size].cpu()
         value_cpu = self.value_targets[:self.size].cpu()
+        belief_cpu = self.belief_targets[:self.size].cpu() if self.has_belief else None
+        bmask_cpu = self.belief_mask[:self.size].cpu() if self.has_belief else None
 
-        # Build list from CPU tensors (no GPU involvement)
         result = []
         for i in range(self.size):
-            result.append({
+            d = {
                 'obs': obs_cpu[i],
                 'mask': masks_cpu[i],
                 'hand_idx': hand_idx_cpu[i],
                 'hand_mask': hand_masks_cpu[i],
                 'policy': policy_cpu[i],
                 'value': value_cpu[i],
-            })
+            }
+            if belief_cpu is not None:
+                d['belief_targets'] = belief_cpu[i]
+                d['belief_mask'] = bmask_cpu[i]
+            result.append(d)
         return result
 
     @classmethod
@@ -248,21 +308,31 @@ class GPUReplayBuffer:
         data: list[dict],
         capacity: int,
         device: torch.device,
+        *,
+        max_tokens: int = 36,
+        n_features: int = 8,
+        n_hand_slots: int = 7,
+        belief: bool = False,
     ) -> "GPUReplayBuffer":
         """Restore from checkpoint list."""
-        buffer = cls(capacity, device)
+        buffer = cls(
+            capacity, device,
+            max_tokens=max_tokens, n_features=n_features, n_hand_slots=n_hand_slots,
+            belief=belief,
+        )
         if not data:
             return buffer
 
-        # Stack all data and add as single batch
-        n = len(data)
-        examples = GPUTrainingExample(
+        has_belief = belief and 'belief_targets' in data[0]
+        examples = TrainingExamples(
             observations=torch.stack([d['obs'] for d in data]).to(device),
             masks=torch.stack([d['mask'] for d in data]).to(device),
             hand_indices=torch.stack([d['hand_idx'] for d in data]).to(device),
             hand_masks=torch.stack([d['hand_mask'] for d in data]).to(device),
             policy_targets=torch.stack([d['policy'] for d in data]).to(device),
             value_targets=torch.stack([d['value'] for d in data]).to(device),
+            belief_targets=torch.stack([d['belief_targets'] for d in data]).to(device) if has_belief else None,
+            belief_mask=torch.stack([d['belief_mask'] for d in data]).to(device) if has_belief else None,
         )
         buffer.add_batch(examples)
         return buffer
@@ -275,7 +345,9 @@ class GPUObservationTokenizer:
     Matches the format expected by ZebModel (36 tokens x 8 features).
     """
 
-    # Feature indices (match observation.py)
+    SPEC = V1_SPEC
+
+    # Feature indices (v1-specific, private to this implementation)
     FEAT_HIGH = 0
     FEAT_LOW = 1
     FEAT_IS_DOUBLE = 2
@@ -290,10 +362,10 @@ class GPUObservationTokenizer:
     TOKEN_TYPE_HAND = 1
     TOKEN_TYPE_PLAY = 2
 
-    # Layout constants
-    N_FEATURES = 8
-    MAX_TOKENS = 36  # 1 decl + 7 hand + 28 plays
-    N_HAND_SLOTS = 7
+    # Layout constants derived from spec
+    N_FEATURES = V1_SPEC.n_features
+    MAX_TOKENS = V1_SPEC.max_tokens
+    N_HAND_SLOTS = V1_SPEC.n_hand_slots
 
     def __init__(self, device: torch.device):
         device = require_cuda(device, where="GPUObservationTokenizer.__init__")
@@ -471,6 +543,7 @@ class GPUTrainingPipeline:
         model: "ZebModel | None" = None,
         use_cudagraph_mcts: bool = True,
         use_fullstep_eval: bool = True,
+        tokenizer_name: str = 'v1',
     ):
         """Initialize pipeline.
 
@@ -487,6 +560,7 @@ class GPUTrainingPipeline:
             temperature: Action sampling temperature (1.0 = proportional to visits)
             model: ZebModel for self-play mode leaf evaluation.
                    Pass None for oracle mode (requires oracle).
+            tokenizer_name: Registered tokenizer name (default 'v1').
 
         Exactly one of oracle/model must be provided.
         """
@@ -509,8 +583,8 @@ class GPUTrainingPipeline:
         self.use_cudagraph_mcts = bool(use_cudagraph_mcts) and device.type == "cuda"
         self.use_fullstep_eval = bool(use_fullstep_eval)
 
-        # Initialize tokenizer
-        self.tokenizer = GPUObservationTokenizer(device)
+        # Initialize tokenizer via registry
+        self.tokenizer = get_gpu_tokenizer(tokenizer_name, device)
         self._oracle_position_idx = torch.arange(3, device=device, dtype=torch.int64).unsqueeze(0)  # (1, 3)
 
         # Stats for monitoring
@@ -523,7 +597,7 @@ class GPUTrainingPipeline:
         n_games: int,
         *,
         max_moves: int = 28,
-    ) -> GPUTrainingExample:
+    ) -> TrainingExamples:
         """Generate training examples entirely on GPU.
 
         Plays n_games of self-play using MCTS, collecting training examples
@@ -533,13 +607,13 @@ class GPUTrainingPipeline:
             n_games: Number of games to generate
 
         Returns:
-            GPUTrainingExample with all training data on GPU
+            TrainingExamples with all training data on GPU
         """
         # No gradients needed during game generation - only during training
         with torch.no_grad():
             return self._generate_games_gpu_impl(n_games, max_moves=max_moves)
 
-    def _generate_games_gpu_impl(self, n_games: int, *, max_moves: int) -> GPUTrainingExample:
+    def _generate_games_gpu_impl(self, n_games: int, *, max_moves: int) -> TrainingExamples:
         """Implementation of generate_games_gpu (called within no_grad context)."""
         all_obs = []
         all_masks = []
@@ -548,6 +622,11 @@ class GPUTrainingPipeline:
         all_policies = []
         all_values = []
         all_players = []  # Track which player for outcome assignment
+        all_belief_targets = []
+        all_belief_masks = []
+
+        # Generate belief targets when model has belief head
+        generate_belief = self.self_play_mode and self.model is not None and getattr(self.model, 'has_belief_head', False)
 
         games_completed = 0
         batch_idx = 0
@@ -561,7 +640,10 @@ class GPUTrainingPipeline:
             original_hands = deals.hands.clone()  # Save for observation encoding
 
             # Play games to completion
-            game_examples = self._play_games_mcts(deals, original_hands, max_moves=max_moves)
+            game_examples = self._play_games_mcts(
+                deals, original_hands, max_moves=max_moves,
+                generate_belief=generate_belief,
+            )
 
             all_obs.append(game_examples['observations'])
             all_masks.append(game_examples['masks'])
@@ -569,19 +651,24 @@ class GPUTrainingPipeline:
             all_hand_masks.append(game_examples['hand_masks'])
             all_policies.append(game_examples['policies'])
             all_values.append(game_examples['values'])
+            if generate_belief:
+                all_belief_targets.append(game_examples['belief_targets'])
+                all_belief_masks.append(game_examples['belief_masks'])
 
             games_completed += batch_games
             batch_idx += 1
             self.total_games_generated += batch_games
 
         # Concatenate all examples
-        return GPUTrainingExample(
+        return TrainingExamples(
             observations=torch.cat(all_obs, dim=0),
             masks=torch.cat(all_masks, dim=0),
             hand_indices=torch.cat(all_hand_indices, dim=0),
             hand_masks=torch.cat(all_hand_masks, dim=0),
             policy_targets=torch.cat(all_policies, dim=0),
             value_targets=torch.cat(all_values, dim=0),
+            belief_targets=torch.cat(all_belief_targets, dim=0) if generate_belief else None,
+            belief_mask=torch.cat(all_belief_masks, dim=0) if generate_belief else None,
         )
 
     def _play_games_mcts(
@@ -590,12 +677,14 @@ class GPUTrainingPipeline:
         original_hands: Tensor,
         *,
         max_moves: int = 28,
+        generate_belief: bool = False,
     ) -> dict[str, Tensor]:
         """Play games using MCTS (up to max_moves).
 
         Args:
             initial_states: Starting game states
             original_hands: Original hands for observation encoding (N, 4, 7)
+            generate_belief: Whether to generate belief targets from ground truth
 
         Returns:
             Dict with training tensors
@@ -650,6 +739,19 @@ class GPUTrainingPipeline:
             obs, masks, hand_idx, hand_masks = self.tokenizer.tokenize_batch(
                 states, original_hands, current_players
             )
+
+            # Compute belief targets from ground truth: which opponent holds each domino?
+            if generate_belief:
+                # Build domino_owner: (N, 28) — which player originally held each domino
+                domino_owner = torch.zeros(n, 28, dtype=torch.long, device=device)
+                for p in range(4):
+                    domino_owner.scatter_(1, original_hands[:, p, :].long(), p)
+                # Relative owner: 0=self, 1/2/3=opponents (relative to current player)
+                rel_owner = (domino_owner - current_players.unsqueeze(1) + 4) % 4
+                # Mask: True for hidden dominoes (not our own hand = rel_owner != 0)
+                b_mask = rel_owner != 0  # (N, 28) — 21 True per row
+                # Targets: map rel_owner 1->0, 2->1, 3->2 (3 opponent classes)
+                b_targets = (rel_owner - 1).clamp(min=0)  # (N, 28) int64
 
             # Reset forest in-place for this move (keep allocations stable).
             from forge.zeb.gpu_mcts import reset_forest_inplace
@@ -913,14 +1015,18 @@ class GPUTrainingPipeline:
             policies = get_root_policy_gpu(forest)  # (N, 7)
 
             # Store examples for active games only
-            move_examples.append({
+            ex = {
                 'obs': obs[active_idx],
                 'masks': masks[active_idx],
                 'hand_idx': hand_idx[active_idx],
                 'hand_masks': hand_masks[active_idx],
                 'policies': policies[active_idx],
                 'players': current_players[active_idx],
-            })
+            }
+            if generate_belief:
+                ex['belief_targets'] = b_targets[active_idx]
+                ex['belief_mask'] = b_mask[active_idx]
+            move_examples.append(ex)
 
             # Sample actions from policy
             actions = self._sample_actions_gpu(policies, hand_masks)
@@ -954,6 +1060,8 @@ class GPUTrainingPipeline:
         all_hand_masks = []
         all_policies = []
         all_values = []
+        all_belief_targets = []
+        all_belief_masks = []
 
         for move_idx, (game_indices, examples) in enumerate(
             zip(game_indices_per_move, move_examples)
@@ -963,6 +1071,9 @@ class GPUTrainingPipeline:
             all_hand_idx.append(examples['hand_idx'])
             all_hand_masks.append(examples['hand_masks'])
             all_policies.append(examples['policies'])
+            if generate_belief:
+                all_belief_targets.append(examples['belief_targets'])
+                all_belief_masks.append(examples['belief_mask'])
 
             # Compute values for each example
             players = examples['players']  # (n_active,)
@@ -979,7 +1090,7 @@ class GPUTrainingPipeline:
             )
             all_values.append(values)
 
-        return {
+        result = {
             'observations': torch.cat(all_obs, dim=0),
             'masks': torch.cat(all_masks, dim=0),
             'hand_indices': torch.cat(all_hand_idx, dim=0),
@@ -987,6 +1098,10 @@ class GPUTrainingPipeline:
             'policies': torch.cat(all_policies, dim=0),
             'values': torch.cat(all_values, dim=0),
         }
+        if generate_belief:
+            result['belief_targets'] = torch.cat(all_belief_targets, dim=0)
+            result['belief_masks'] = torch.cat(all_belief_masks, dim=0)
+        return result
 
     def set_model(self, model: "ZebModel") -> None:
         """Update model reference for self-play.
@@ -1114,7 +1229,7 @@ class GPUTrainingPipeline:
         # Model forward pass (no gradients during game generation)
         self.model.eval()
         with torch.no_grad():
-            policy_logits, values = self.model(tokens.long(), masks, hand_idx, hand_masks)
+            policy_logits, values, _belief = self.model(tokens.long(), masks, hand_idx, hand_masks)
 
         # Convert policy logits to probabilities, masking illegal actions
         policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
@@ -1192,6 +1307,8 @@ class GPUTrainingPipeline:
         hand_masks: Tensor,
         policy_targets: Tensor,
         value_targets: Tensor,
+        belief_targets: Tensor | None = None,
+        belief_mask: Tensor | None = None,
     ) -> dict[str, float]:
         """Train on GPU tensors directly.
 
@@ -1206,14 +1323,16 @@ class GPUTrainingPipeline:
             hand_masks: (batch, 7) bool legal action masks
             policy_targets: (batch, 7) float32 MCTS visit distributions
             value_targets: (batch,) float32 game outcomes
+            belief_targets: (batch, 28) int64 opponent ownership classes (optional)
+            belief_mask: (batch, 28) bool hidden domino mask (optional)
 
         Returns:
-            Dict with policy_loss and value_loss
+            Dict with policy_loss, value_loss, and optionally belief_loss
         """
         model.train()
 
         # Forward pass
-        policy_logits, value = model(
+        policy_logits, value, belief_logits = model(
             observations.long(),  # ZebModel expects long
             masks,
             hand_indices,
@@ -1234,15 +1353,27 @@ class GPUTrainingPipeline:
         # Combined loss
         loss = policy_loss + value_loss
 
+        # Belief loss: cross-entropy on hidden dominoes
+        result = {
+            'policy_loss': policy_loss.item(),
+            'value_loss': value_loss.item(),
+        }
+        if belief_logits is not None and belief_targets is not None and belief_mask is not None:
+            ce = F.cross_entropy(
+                belief_logits.permute(0, 2, 1),  # (B, 3, 28) for class dim
+                belief_targets,                    # (B, 28) int64
+                reduction='none',                  # (B, 28)
+            )
+            belief_loss = (ce * belief_mask.float()).sum() / belief_mask.float().sum().clamp(min=1)
+            loss = loss + 0.5 * belief_loss
+            result['belief_loss'] = belief_loss.item()
+
         # Backward pass
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        return {
-            'policy_loss': policy_loss.item(),
-            'value_loss': value_loss.item(),
-        }
+        return result
 
     def train_n_steps_from_buffer(
         self,
@@ -1255,7 +1386,7 @@ class GPUTrainingPipeline:
         """Train N steps sampling from GPU replay buffer - fused loop.
 
         Minimizes Python overhead by keeping everything in a tight loop with
-        direct tensor indexing. No intermediate GPUTrainingExample objects.
+        direct tensor indexing. No intermediate TrainingExamples objects.
 
         Args:
             model: ZebModel to train
@@ -1265,15 +1396,17 @@ class GPUTrainingPipeline:
             batch_size: Samples per step
 
         Returns:
-            Dict with average policy_loss and value_loss
+            Dict with average policy_loss, value_loss, and optionally belief_loss
         """
         model.train()
         device = replay_buffer.device
         buffer_size = len(replay_buffer)
+        has_belief = replay_buffer.has_belief and getattr(model, 'has_belief_head', False)
 
         # Accumulate losses as GPU tensors (avoid .item() sync per step)
         total_policy_loss = torch.tensor(0.0, device=device)
         total_value_loss = torch.tensor(0.0, device=device)
+        total_belief_loss = torch.tensor(0.0, device=device)
 
         # Pre-fetch buffer tensors (avoid attribute lookup in loop)
         buf_obs = replay_buffer.observations
@@ -1282,6 +1415,8 @@ class GPUTrainingPipeline:
         buf_hand_masks = replay_buffer.hand_masks
         buf_policy = replay_buffer.policy_targets
         buf_value = replay_buffer.value_targets
+        buf_belief = replay_buffer.belief_targets if has_belief else None
+        buf_bmask = replay_buffer.belief_mask if has_belief else None
 
         for _ in range(n_steps):
             # Sample indices on GPU
@@ -1296,7 +1431,7 @@ class GPUTrainingPipeline:
             value_targets = buf_value[indices]
 
             # Forward pass
-            policy_logits, value = model(obs.long(), masks, hand_idx, hand_masks)
+            policy_logits, value, belief_logits = model(obs.long(), masks, hand_idx, hand_masks)
 
             # Mask illegal actions
             policy_logits = policy_logits.masked_fill(~hand_masks, float('-inf'))
@@ -1312,6 +1447,17 @@ class GPUTrainingPipeline:
             # Combined loss
             loss = policy_loss + value_loss
 
+            # Belief loss
+            if has_belief and belief_logits is not None:
+                b_targets = buf_belief[indices]
+                b_mask = buf_bmask[indices]
+                ce = F.cross_entropy(
+                    belief_logits.permute(0, 2, 1), b_targets, reduction='none',
+                )
+                belief_loss = (ce * b_mask.float()).sum() / b_mask.float().sum().clamp(min=1)
+                loss = loss + 0.5 * belief_loss
+                total_belief_loss = total_belief_loss + belief_loss.detach()
+
             # Backward pass
             optimizer.zero_grad()
             loss.backward()
@@ -1322,16 +1468,19 @@ class GPUTrainingPipeline:
             total_value_loss = total_value_loss + value_loss.detach()
 
         # Single sync at end
-        return {
+        result = {
             'policy_loss': (total_policy_loss / n_steps).item(),
             'value_loss': (total_value_loss / n_steps).item(),
         }
+        if has_belief:
+            result['belief_loss'] = (total_belief_loss / n_steps).item()
+        return result
 
     def train_epoch_gpu(
         self,
         model: ZebModel,
         optimizer: torch.optim.Optimizer,
-        examples: GPUTrainingExample,
+        examples: TrainingExamples,
         batch_size: int = 128,
     ) -> dict[str, float]:
         """Train one epoch on GPU-native examples.
@@ -1341,7 +1490,7 @@ class GPUTrainingPipeline:
         Args:
             model: ZebModel to train
             optimizer: Optimizer
-            examples: GPUTrainingExample with all data
+            examples: TrainingExamples with all data
             batch_size: Mini-batch size
 
         Returns:
@@ -1355,6 +1504,7 @@ class GPUTrainingPipeline:
 
         total_policy_loss = 0.0
         total_value_loss = 0.0
+        total_belief_loss = 0.0
         n_batches = 0
 
         for start in range(0, n_samples - batch_size + 1, batch_size):
@@ -1369,16 +1519,22 @@ class GPUTrainingPipeline:
                 hand_masks=examples.hand_masks[idx],
                 policy_targets=examples.policy_targets[idx],
                 value_targets=examples.value_targets[idx],
+                belief_targets=examples.belief_targets[idx] if examples.belief_targets is not None else None,
+                belief_mask=examples.belief_mask[idx] if examples.belief_mask is not None else None,
             )
 
             total_policy_loss += losses['policy_loss']
             total_value_loss += losses['value_loss']
+            total_belief_loss += losses.get('belief_loss', 0.0)
             n_batches += 1
 
-        return {
+        result = {
             'policy_loss': total_policy_loss / max(n_batches, 1),
             'value_loss': total_value_loss / max(n_batches, 1),
         }
+        if examples.belief_targets is not None:
+            result['belief_loss'] = total_belief_loss / max(n_batches, 1)
+        return result
 
 
 def create_gpu_pipeline(
@@ -1428,6 +1584,7 @@ def create_selfplay_pipeline(
     n_parallel_games: int = 16,
     n_simulations: int = 100,
     max_mcts_nodes: int = 1024,
+    tokenizer_name: str = 'v1',
     **kwargs,
 ) -> GPUTrainingPipeline:
     """Factory function to create self-play training pipeline.
@@ -1441,6 +1598,7 @@ def create_selfplay_pipeline(
         n_parallel_games: Concurrent games per batch
         n_simulations: MCTS simulations per move
         max_mcts_nodes: Max nodes per MCTS tree
+        tokenizer_name: Registered tokenizer name (default 'v1')
         **kwargs: Additional args for GPUTrainingPipeline
 
     Returns:
@@ -1455,5 +1613,10 @@ def create_selfplay_pipeline(
         n_simulations=n_simulations,
         max_mcts_nodes=max_mcts_nodes,
         model=model,
+        tokenizer_name=tokenizer_name,
         **kwargs,
     )
+
+
+# Register v1 GPU tokenizer
+register_gpu_tokenizer('v1', GPUObservationTokenizer)
