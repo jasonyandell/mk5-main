@@ -46,6 +46,9 @@ UPLOAD_INTERVAL="${ZEB_UPLOAD_INTERVAL:-auto}"
 # Bad host blacklist — machine_ids that consistently fail/stall
 BLACKLIST_FILE="${ZEB_BLACKLIST:-$HOME/.config/zeb/bad-hosts.txt}"
 
+# Preferred hosts — auto-learned from observed worker performance
+PREFERRED_FILE="${ZEB_PREFERRED:-$HOME/.config/zeb/preferred-hosts.txt}"
+
 IMAGE="pytorch/pytorch:2.6.0-cuda12.6-cudnn9-runtime"
 GIT_REPO="https://github.com/jasonyandell/mk5-main.git"
 GIT_BRANCH="forge"
@@ -210,8 +213,9 @@ check_worker() {
 #   RTX 3070 Ti: 2.6, RTX 3070: 2.4, RTX 3060 Ti: 2.1, RTX 3060: 1.8
 # GPUs without data default to 1.8 (conservative).
 find_cheapest_offer() {
-    local blacklist
+    local blacklist preferred_str
     blacklist=$(load_blacklist)
+    preferred_str=$(preferred_for_python)
     python3 -c "
 import subprocess, json, sys
 
@@ -228,6 +232,14 @@ expected_gps = {
     'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
 }
 
+# Preferred machines: observed performance gets 10% value bonus
+preferred = {}
+for entry in '$preferred_str'.split(','):
+    if ':' in entry:
+        mid, gps_str = entry.split(':', 1)
+        try: preferred[mid] = float(gps_str)
+        except: pass
+
 best = None
 best_value = float('inf')  # lower = better ($/game/s)
 
@@ -235,7 +247,7 @@ for gpu in gpus:
     try:
         r = subprocess.run(
             ['vastai', 'search', 'offers', f'gpu_name={gpu} num_gpus=1',
-             '-o', 'dph_total', '--raw', '--limit', '5'],
+             '-o', 'dph_total', '--raw', '--limit', '10'],
             capture_output=True, text=True, timeout=15
         )
         if r.returncode != 0: continue
@@ -244,19 +256,22 @@ for gpu in gpus:
             mid = str(o.get('machine_id', ''))
             if mid in blacklist: continue
             dph = o['dph_total']
-            if dph > max_dph: break
-            gps = expected_gps.get(o['gpu_name'], 1.8)
+            if dph > max_dph: break  # sorted by price, rest are over budget
+            if mid in preferred:
+                gps = preferred[mid] * 1.1  # 10% bonus for known-good machines
+            else:
+                gps = expected_gps.get(o['gpu_name'], 1.8)
             value = dph / gps  # $/hr per game/s — lower is better
             if value < best_value:
                 best = o
                 best_value = value
-            break  # only check cheapest offer per GPU type
     except Exception:
         pass
 
 if best:
-    gps = expected_gps.get(best['gpu_name'], 1.8)
-    print(f\"{best['id']}\t{best['gpu_name']}\t{best['dph_total']:.3f}\")
+    mid = str(best.get('machine_id', ''))
+    pref = 'preferred' if mid in preferred else ''
+    print(f\"{best['id']}\t{best['gpu_name']}\t{best['dph_total']:.3f}\t{pref}\")
     sys.exit(0)
 else:
     sys.exit(1)
@@ -275,12 +290,15 @@ spawn_worker() {
     local offer
     offer=$(find_cheapest_offer) || { log "${RED}WARN: no offers under \$$MAX_DPH/hr${RESET}"; return 1; }
 
-    local offer_id gpu price
+    local offer_id gpu price pref pref_tag
     offer_id=$(echo "$offer" | cut -f1)
     gpu=$(echo "$offer" | cut -f2)
     price=$(echo "$offer" | cut -f3)
+    pref=$(echo "$offer" | cut -f4)
+    pref_tag=""
+    [ "$pref" = "preferred" ] && pref_tag=" ${GREEN}★ preferred${RESET}"
 
-    log "${GREEN}LAUNCH: $gpu @ \$$price/hr -> $wid (offer $offer_id)${RESET}"
+    log "${GREEN}LAUNCH: $gpu @ \$$price/hr -> $wid (offer $offer_id)${pref_tag}${RESET}"
 
     local ONSTART='#!/bin/bash
 set -e
@@ -352,20 +370,62 @@ print(','.join(blocked))
     fi
 }
 
-# ─── Replace a dead/stuck worker ───
-replace_worker() {
+# ─── Preferred hosts: auto-learned from observed performance ───
+# When a worker produces games, we record its machine_id and games/s.
+# On spawn, preferred machines get a 10% value bonus in offer ranking.
+# Persisted across sessions in PREFERRED_FILE.
+
+load_preferred() {
+    PREFERRED_GPS=()
+    if [ -f "$PREFERRED_FILE" ]; then
+        while IFS=$'\t' read -r mid gps; do
+            [ -n "$mid" ] && PREFERRED_GPS["$mid"]="$gps"
+        done < "$PREFERRED_FILE"
+    fi
+}
+
+save_preferred() {
+    [ "${#PREFERRED_GPS[@]}" -eq 0 ] && return
+    mkdir -p "$(dirname "$PREFERRED_FILE")"
+    : > "$PREFERRED_FILE"
+    for mid in "${!PREFERRED_GPS[@]}"; do
+        printf '%s\t%s\n' "$mid" "${PREFERRED_GPS[$mid]}"
+    done >> "$PREFERRED_FILE"
+}
+
+# Format for Python: "mid1:gps1,mid2:gps2,..."
+preferred_for_python() {
+    local out=""
+    for mid in "${!PREFERRED_GPS[@]}"; do
+        [ -n "$out" ] && out+=","
+        out+="${mid}:${PREFERRED_GPS[$mid]}"
+    done
+    echo "$out"
+}
+
+# ─── Remove a dead/stuck worker ───
+# When over target, just destroy (natural attrition toward target count).
+# When at/under target, destroy and spawn a replacement.
+remove_or_replace_worker() {
     local dead_id="$1"
     local dead_label="$2"
     local machine_id="${3:-?}"
+    local skip_replace="${4:-0}"  # 1 = destroy only (over target)
 
     if [ -n "$DRY_RUN" ]; then
-        log "${YELLOW}DRY-RUN: would replace $dead_label ($dead_id, machine $machine_id)${RESET}"
+        log "${YELLOW}DRY-RUN: would remove $dead_label ($dead_id, machine $machine_id)${RESET}"
         return 0
     fi
 
-    log "${RED}REPLACE: destroying $dead_id ($dead_label, machine $machine_id)${RESET}"
     blacklist_host "$machine_id" "$dead_label"
     vastai destroy instance "$dead_id" 2>/dev/null
+
+    if [ "$skip_replace" -eq 1 ]; then
+        log "${RED}DESTROY: $dead_id ($dead_label, machine $machine_id) — over target, no replacement${RESET}"
+        return 0
+    fi
+
+    log "${RED}REPLACE: $dead_id ($dead_label, machine $machine_id) — spawning replacement${RESET}"
 
     # Skip spawning replacement if we know credit is exhausted
     if [ -n "$NO_CREDIT" ]; then
@@ -390,11 +450,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 shutdown() {
     echo ""
     log "${BOLD}Monitor stopped.${RESET} Cleaning up checkers..."
+    save_preferred
+    [ "${#PREFERRED_GPS[@]}" -gt 0 ] && log "  Saved ${#PREFERRED_GPS[@]} preferred machines to $PREFERRED_FILE"
     for pid in "${CHECKER_PIDS[@]}"; do
         kill "$pid" 2>/dev/null
     done
     wait 2>/dev/null
-    rm -rf "$STATUS_DIR"
+    # Don't rm -rf STATUS_DIR — a new monitor may have already created it (race condition)
+    rm -f "$STATUS_DIR"/* 2>/dev/null
     log "  Fleet is still running. Tear down: ${SCRIPT_DIR}/vast_down.sh $FLEET --force"
     exit 0
 }
@@ -406,21 +469,40 @@ TOTAL_GAMES_SEEN=0
 TOTAL_CHECKS=0
 TOTAL_REPLACEMENTS=0
 NO_CREDIT=""  # set to 1 when Vast.ai reports credit exhaustion
+UPGRADE_IID=""  # instance ID of trial worker being tested for deal upgrade
+UPGRADE_STARTED=0  # epoch when upgrade trial started
+UPGRADE_COOLDOWN=0  # epoch — skip upgrade checks until this time
 
 # ─── CQRS: per-worker background checkers write status files ───
 STATUS_DIR="/tmp/zeb-monitor-${FLEET}"
 mkdir -p "$STATUS_DIR"
 declare -A CHECKER_PIDS  # iid -> PID of background checker
+declare -A PREFERRED_GPS  # machine_id -> observed games/s (auto-learned)
 
 # Background loop: polls one worker's logs every 45s, writes to status file
 # File format: EPOCH TAG:DETAIL
+# Requires TWO consecutive non-OK polls to downgrade from OK status.
+# This prevents a single vastai log timeout from killing a healthy worker.
 worker_checker() {
     local iid="$1"
     local sfile="$STATUS_DIR/$iid"
+    local was_ok=0
     # Initialize status file
     echo "$(date +%s) UNKNOWN" > "$sfile" 2>/dev/null
     while true; do
         result=$(check_worker "$iid" 2>/dev/null) || result="BOOT"
+        local tag="${result%%:*}"
+        if [ "$tag" = "OK" ]; then
+            was_ok=1
+        elif [ "$was_ok" -eq 1 ] && [ "$tag" = "BOOT" ]; then
+            # Single timeout after OK — give it one more chance
+            was_ok=0
+            echo "$(date +%s) OK:poll-timeout" > "$sfile" 2>/dev/null
+            sleep 45
+            continue
+        else
+            was_ok=0
+        fi
         echo "$(date +%s) $result" > "$sfile" 2>/dev/null
         sleep 45
     done
@@ -499,6 +581,10 @@ if [ -f "$BLACKLIST_FILE" ]; then
     if [ "$N_STRIKES" -gt 0 ]; then
         echo "  Blacklist: $N_BLOCKED blocked, $N_STRIKES strikes total ($BLACKLIST_STRIKES to block)"
     fi
+fi
+load_preferred
+if [ "${#PREFERRED_GPS[@]}" -gt 0 ]; then
+    echo "  Preferred: ${#PREFERRED_GPS[@]} machines with observed performance"
 fi
 if [ -n "$DRY_RUN" ]; then
     echo "  Mode:     ${YELLOW}DRY-RUN (no instances created/destroyed)${RESET}"
@@ -581,17 +667,26 @@ for label, instances in by_label.items():
         total_gps=0
         n_ok=0
         n_up=$(echo "$fleet_data" | wc -l)
+        over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
         perfline=""
         while IFS=$'\t' read -r iid label gpu status dph age mid; do
             total_dph=$(python3 -c "print(f'{$total_dph + $dph:.3f}')")
 
+            # Skip upgrade trial worker — managed exclusively by upgrade section
+            if [ "$iid" = "$UPGRADE_IID" ]; then
+                wstate=$(read_status "$iid")
+                perfline+=" upgrade=$(color_tag BOOT "${wstate%%:*}/$(fmt_duration "$age")")"
+                continue
+            fi
+
             # Cost guard
             if python3 -c "exit(0 if $dph > $MAX_DPH else 1)"; then
-                log "$(color_tag ERR "COST: $label ($gpu) @ \$$dph > \$$MAX_DPH — replacing")"
+                log "$(color_tag ERR "COST: $label ($gpu) @ \$$dph > \$$MAX_DPH — removing")"
                 stop_checker "$iid"
-                replace_worker "$iid" "$label" "$mid"
+                remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
                 TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
-                perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(\$$dph)")"
+                n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
+                perfline+=" ${label##*-}=$(color_tag ERR "REMOVED(\$$dph)")"
                 continue
             fi
 
@@ -606,15 +701,20 @@ for label, instances in by_label.items():
                     total_gps=$(python3 -c "print(f'{$total_gps + ${gps_num:-0}:.1f}')")
                     n_ok=$((n_ok + 1))
                     batch=$(echo "$detail" | grep -oE 'batch [0-9]+' | head -1)
-                    perfline+=" ${label##*-}=$(color_tag OK "${gpu}/\$$dph/${gps}/${batch}/$(fmt_duration "$age")")"
+                    # Record observation for preferred hosts
+                    [ -n "${gps_num:-}" ] && [ "$mid" != "?" ] && PREFERRED_GPS["$mid"]="${gps_num}"
+                    pref_star=""
+                    [ -n "${PREFERRED_GPS[$mid]:-}" ] && pref_star="★"
+                    perfline+=" ${label##*-}=$(color_tag OK "${gpu}/\$$dph/${gps}/${batch}/$(fmt_duration "$age")${pref_star}")"
                     ;;
                 ERR)
                     log "$(color_tag ERR "ERROR: $label ($iid): $detail")"
                     if [ "$age" -gt 300 ]; then
                         stop_checker "$iid"
-                        replace_worker "$iid" "$label" "$mid"
+                        remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
-                        perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(err)")"
+                        n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
+                        perfline+=" ${label##*-}=$(color_tag ERR "REMOVED(err)")"
                     else
                         perfline+=" ${label##*-}=$(color_tag ERR "ERR($(fmt_duration "$age"))")"
                     fi
@@ -622,28 +722,31 @@ for label, instances in by_label.items():
                 SETUP)
                     perfline+=" ${label##*-}=$(color_tag SETUP "SETUP/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
-                        log "$(color_tag ERR "STALE: $label stuck in setup $(fmt_duration "$age") — replacing")"
+                        log "$(color_tag ERR "STALE: $label stuck in setup $(fmt_duration "$age") — removing")"
                         stop_checker "$iid"
-                        replace_worker "$iid" "$label" "$mid"
+                        remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
+                        n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
                     fi
                     ;;
                 BOOT)
                     perfline+=" ${label##*-}=$(color_tag BOOT "BOOT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
-                        log "$(color_tag ERR "STALE: $label no container after $(fmt_duration "$age") — replacing")"
+                        log "$(color_tag ERR "STALE: $label no container after $(fmt_duration "$age") — removing")"
                         stop_checker "$iid"
-                        replace_worker "$iid" "$label" "$mid"
+                        remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
+                        n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
                     fi
                     ;;
                 WAIT)
                     perfline+=" ${label##*-}=$(color_tag WAIT "WAIT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 900 ]; then
-                        log "$(color_tag ERR "STALE: $label waiting $(fmt_duration "$age") with no progress — replacing")"
+                        log "$(color_tag ERR "STALE: $label waiting $(fmt_duration "$age") with no progress — removing")"
                         stop_checker "$iid"
-                        replace_worker "$iid" "$label" "$mid"
+                        remove_or_replace_worker "$iid" "$label" "$mid" "$over_target"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
+                        n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
                     fi
                     ;;
                 UNKNOWN)
@@ -744,9 +847,127 @@ for tier, neg_val, iid, label, gpu, dph in workers:
         fi
     fi
 
+    # ─── Deal upgrade: trial a cheaper worker, swap out the worst ───
+    if [ -z "$NO_CREDIT" ]; then
+        if [ -n "$UPGRADE_IID" ]; then
+            # Trial in progress — check if it's producing
+            upgrade_status=$(read_status "$UPGRADE_IID")
+            upgrade_tag="${upgrade_status%%:*}"
+            upgrade_age=$(( $(date +%s) - UPGRADE_STARTED ))
+            if [ "$upgrade_tag" = "OK" ]; then
+                # Trial worker is producing — find and kill worst-value existing worker
+                live_data=$(get_fleet)
+                worst=$(echo "$live_data" | python3 -c "
+import sys
+expected_gps = {
+    'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
+    'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
+    'RTX 3080': 2.6, 'RTX 3080 Ti': 2.6, 'RTX 3090': 2.6,
+    'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
+    'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
+}
+upgrade_iid = '$UPGRADE_IID'
+worst_val, worst_line = -1, None
+for line in sys.stdin:
+    parts = line.strip().split('\t')
+    if len(parts) < 7: continue
+    iid, label, gpu, st, dph, age, mid = parts[0], parts[1], parts[2], parts[3], float(parts[4]), int(parts[5]), parts[6]
+    if iid == upgrade_iid: continue  # don't kill the trial worker
+    gps = expected_gps.get(gpu, 1.8)
+    value = dph / gps
+    if value > worst_val:
+        worst_val = value
+        worst_line = f'{iid}\t{label}\t{gpu}\t{dph}\t{mid}\t{value:.4f}'
+if worst_line:
+    print(worst_line)
+" 2>/dev/null)
+                if [ -n "$worst" ]; then
+                    IFS=$'\t' read -r w_iid w_label w_gpu w_dph w_mid w_value <<< "$worst"
+                    log "${GREEN}${BOLD}UPGRADE: trial $UPGRADE_IID producing — swapping out $w_label ($w_gpu @ \$$w_dph/hr, value=$w_value)${RESET}"
+                    stop_checker "$w_iid"
+                    vastai destroy instance "$w_iid" 2>/dev/null
+                fi
+                UPGRADE_IID=""
+                UPGRADE_STARTED=0
+            elif [ "$upgrade_age" -gt 900 ]; then
+                # Trial took >15min — give up and cooldown before next attempt
+                log "${YELLOW}UPGRADE: trial $UPGRADE_IID failed to produce after $(fmt_duration "$upgrade_age") — aborting (30min cooldown)${RESET}"
+                stop_checker "$UPGRADE_IID"
+                vastai destroy instance "$UPGRADE_IID" 2>/dev/null
+                blacklist_host "$(echo "$fleet_data" | grep "$UPGRADE_IID" | cut -f7)" "upgrade-trial"
+                UPGRADE_IID=""
+                UPGRADE_STARTED=0
+                UPGRADE_COOLDOWN=$(( $(date +%s) + 1800 ))  # 30min cooldown
+            fi
+        elif [ "$n_ok" -eq "$n_up" ] && [ "$n_up" -ge "$TARGET_WORKERS" ] && [ "$(date +%s)" -gt "$UPGRADE_COOLDOWN" ]; then
+            # Fleet is full and all healthy — look for a better deal
+            # Find worst-value current worker
+            worst_current=$(echo "$fleet_data" | python3 -c "
+import sys
+expected_gps = {
+    'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
+    'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
+    'RTX 3080': 2.6, 'RTX 3080 Ti': 2.6, 'RTX 3090': 2.6,
+    'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
+    'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
+}
+worst_val, worst_gpu, worst_dph = -1, '', 0
+for line in sys.stdin:
+    parts = line.strip().split('\t')
+    if len(parts) < 7: continue
+    gpu, dph = parts[2], float(parts[4])
+    gps = expected_gps.get(gpu, 1.8)
+    value = dph / gps
+    if value > worst_val:
+        worst_val = value
+        worst_gpu = gpu
+        worst_dph = dph
+print(f'{worst_val:.4f}\t{worst_gpu}\t{worst_dph}')
+" 2>/dev/null)
+            IFS=$'\t' read -r worst_val worst_gpu worst_dph <<< "$worst_current"
+            # Find best available offer
+            best_offer=$(find_cheapest_offer 2>/dev/null) || best_offer=""
+            if [ -n "$best_offer" ]; then
+                offer_id=$(echo "$best_offer" | cut -f1)
+                offer_gpu=$(echo "$best_offer" | cut -f2)
+                offer_dph=$(echo "$best_offer" | cut -f3)
+                offer_val=$(python3 -c "
+expected_gps = {
+    'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
+    'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
+    'RTX 3080': 2.6, 'RTX 3080 Ti': 2.6, 'RTX 3090': 2.6,
+    'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
+    'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
+}
+gps = expected_gps.get('$offer_gpu', 1.8)
+print(f'{$offer_dph / gps:.4f}')
+" 2>/dev/null)
+                # Is the offer 15%+ better value than our worst worker?
+                is_better=$(python3 -c "print('yes' if $offer_val < $worst_val * 0.85 else 'no')" 2>/dev/null)
+                if [ "$is_better" = "yes" ]; then
+                    log "${GREEN}${BOLD}UPGRADE: found $offer_gpu @ \$$offer_dph/hr (value=$offer_val) vs worst $worst_gpu @ \$$worst_dph/hr (value=$worst_val) — launching trial${RESET}"
+                    wid="worker-vast-upgrade"
+                    spawn_worker "$wid"
+                    if [ $? -eq 0 ]; then
+                        # Find the instance ID of the just-launched worker
+                        sleep 3
+                        live_data=$(get_fleet)
+                        UPGRADE_IID=$(echo "$live_data" | grep "worker-vast-upgrade" | head -1 | cut -f1)
+                        if [ -n "$UPGRADE_IID" ]; then
+                            UPGRADE_STARTED=$(date +%s)
+                            start_checker "$UPGRADE_IID"
+                            log "${GREEN}UPGRADE: trial worker $UPGRADE_IID launched${RESET}"
+                        fi
+                    fi
+                fi
+            fi
+        fi
+    fi
+
     # Print summary every 10 checks
     if [ $((TOTAL_CHECKS % 10)) -eq 0 ]; then
         print_summary "$elapsed"
+        save_preferred
     fi
 
     # Credit-wait mode: probe with one launch, resume if it works
