@@ -1,10 +1,9 @@
 """Zeb PyTorch Lightning module for REINFORCE training."""
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import lightning as L
 from torch import Tensor
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple
 import random
 import numpy as np
 

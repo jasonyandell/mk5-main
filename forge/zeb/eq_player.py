@@ -266,7 +266,7 @@ def _run_eq_vs_random_batched(
 
     # Score results
     eq_wins = 0
-    random_wins = 0
+    opp_wins = 0
     total_margin = 0
 
     for state in states:
@@ -277,12 +277,12 @@ def _run_eq_vs_random_batched(
         if eq_pts > rand_pts:
             eq_wins += 1
         else:
-            random_wins += 1
+            opp_wins += 1
         total_margin += eq_pts - rand_pts
 
     return {
         'eq_wins': eq_wins,
-        'random_wins': random_wins,
+        'opp_wins': opp_wins,
         'eq_win_rate': eq_wins / n_games,
         'avg_margin': total_margin / n_games,
         'n_games': n_games,

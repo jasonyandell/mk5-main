@@ -21,6 +21,7 @@ from pathlib import Path
 
 import torch
 
+from forge.zeb import extract_model_config, load_model
 from forge.zeb.cuda_only import require_cuda
 from forge.zeb.gpu_training_pipeline import create_selfplay_pipeline
 from forge.zeb.model import ZebModel
@@ -42,26 +43,8 @@ class _Cfg:
 
 
 def _load_model(checkpoint: Path, device: torch.device) -> tuple[ZebModel, dict]:
-    ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
-
-    if "model_config" in ckpt:
-        model_config = ckpt["model_config"]
-    elif "config" in ckpt and "model_config" in ckpt["config"]:
-        model_config = ckpt["config"]["model_config"]
-    elif "config" in ckpt:
-        cfg = ckpt["config"]
-        model_config = {
-            k: v
-            for k, v in cfg.items()
-            if k in ("embed_dim", "n_heads", "n_layers", "ff_dim", "dropout", "max_tokens")
-        }
-    else:
-        raise ValueError("Checkpoint missing model config")
-
-    model = ZebModel(**model_config)
-    model.load_state_dict(ckpt["model_state_dict"])
-    model.to(device)
-
+    model, ckpt = load_model(str(checkpoint), device=str(device), eval_mode=False)
+    model_config = extract_model_config(ckpt)
     meta = {
         "epoch": int(ckpt.get("epoch", 0)),
         "model_config": model_config,

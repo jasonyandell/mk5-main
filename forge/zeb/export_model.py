@@ -14,6 +14,8 @@ from pathlib import Path
 
 import torch
 
+from forge.zeb import extract_model_config
+
 
 def export_model(checkpoint_path: Path, output_path: Path) -> dict:
     """Extract model weights + config from a training checkpoint.
@@ -21,14 +23,7 @@ def export_model(checkpoint_path: Path, output_path: Path) -> dict:
     Returns metadata about the exported snapshot.
     """
     ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
-
-    # Extract model config (handle multiple checkpoint formats)
-    if 'model_config' in ckpt:
-        model_config = ckpt['model_config']
-    elif 'config' in ckpt and 'model_config' in ckpt['config']:
-        model_config = ckpt['config']['model_config']
-    else:
-        raise ValueError("Checkpoint missing model config")
+    model_config = extract_model_config(ckpt)
 
     snapshot = {
         'model_state_dict': ckpt['model_state_dict'],

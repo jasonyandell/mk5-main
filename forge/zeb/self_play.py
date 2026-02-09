@@ -317,14 +317,3 @@ def trajectories_to_batch(
         torch.tensor(all_actions, dtype=torch.long),
         torch.tensor(all_outcomes, dtype=torch.float),
     )
-
-
-def create_self_play_dataset(
-    trajectories: List[TrajectoryGame],
-) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
-    """Alias for trajectories_to_batch for clearer API.
-
-    Same as trajectories_to_batch but with a more descriptive name
-    for creating training datasets.
-    """
-    return trajectories_to_batch(trajectories)

@@ -7,6 +7,9 @@ from __future__ import annotations
 
 import torch
 
+# NOTE: This is the *large* oracle (3.3M params, qgap=0.071). The MCTS pipeline
+# in oracle_value.py uses a different default: the non-large 3.3M oracle
+# (qgap=0.074, qmae=0.96). They are distinct models — keep this explicit.
 DEFAULT_ORACLE = 'forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt'
 
 
@@ -52,25 +55,9 @@ def load_zeb(source: str, device: str, **kwargs):
         return load_zeb_from_hf(repo_id, device=device, weights_name=weights_name)
 
     # Local checkpoint
-    from ..model import ZebModel
+    from .. import load_model
 
-    ckpt = torch.load(source, map_location='cpu', weights_only=False)
-
-    if 'model_config' in ckpt:
-        model_config = ckpt['model_config']
-    elif 'config' in ckpt and 'model_config' in ckpt['config']:
-        model_config = ckpt['config']['model_config']
-    elif 'config' in ckpt:
-        config = ckpt['config']
-        model_config = {k: v for k, v in config.items()
-                       if k in ('embed_dim', 'n_heads', 'n_layers', 'ff_dim', 'dropout', 'max_tokens')}
-    else:
-        raise ValueError("Checkpoint missing model config")
-
-    model = ZebModel(**model_config)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model.eval()
-    model.to(device)
+    model, ckpt = load_model(source, device=device, eval_mode=True)
 
     epoch = ckpt.get('epoch', '?')
     print(f"  Zeb epoch: {epoch}")

@@ -125,7 +125,7 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "evaluate_vs_heuristic": (".evaluate", "evaluate_vs_heuristic"),
 }
 
-__all__ = list(_LAZY_IMPORTS.keys())
+__all__ = list(_LAZY_IMPORTS.keys()) + ["extract_model_config", "load_model"]
 
 
 def __getattr__(name: str):
@@ -137,3 +137,66 @@ def __getattr__(name: str):
         globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+# ---------------------------------------------------------------------------
+# Shared checkpoint loading helpers
+# ---------------------------------------------------------------------------
+
+# Keys that identify model architecture (used for legacy config fallback).
+_MODEL_CONFIG_KEYS = frozenset(
+    ('embed_dim', 'n_heads', 'n_layers', 'ff_dim', 'dropout', 'max_tokens')
+)
+
+
+def extract_model_config(ckpt: dict) -> dict:
+    """Extract model_config from a checkpoint dict.
+
+    Supports three checkpoint layouts:
+      1. ``ckpt['model_config']``           -- top-level key (preferred)
+      2. ``ckpt['config']['model_config']`` -- nested under 'config'
+      3. Filter known model keys from ``ckpt['config']`` -- legacy flat format
+
+    Raises ``ValueError`` if no model config can be found.
+    """
+    if 'model_config' in ckpt:
+        return ckpt['model_config']
+    if 'config' in ckpt and 'model_config' in ckpt['config']:
+        return ckpt['config']['model_config']
+    if 'config' in ckpt:
+        config = ckpt['config']
+        model_config = {k: v for k, v in config.items() if k in _MODEL_CONFIG_KEYS}
+        if model_config:
+            return model_config
+    raise ValueError("Checkpoint missing model config")
+
+
+def load_model(
+    path: str,
+    device: str = 'cpu',
+    eval_mode: bool = True,
+) -> tuple:
+    """Load a ZebModel from a checkpoint file.
+
+    Args:
+        path: Path to the ``.pt`` checkpoint.
+        device: Target device (e.g. ``'cpu'``, ``'cuda'``).
+        eval_mode: Call ``model.eval()`` after loading (default ``True``).
+
+    Returns:
+        ``(model, ckpt)`` -- the loaded ZebModel and the raw checkpoint dict
+        so callers can still access epoch, optimizer state, or other metadata.
+    """
+    import torch as _torch  # local to avoid top-level heavy import
+
+    ckpt = _torch.load(path, map_location=device, weights_only=False)
+    model_config = extract_model_config(ckpt)
+
+    # Lazy-import ZebModel to keep the package lightweight at import time
+    _ZebModel = __getattr__('ZebModel')
+    model = _ZebModel(**model_config)
+    model.load_state_dict(ckpt['model_state_dict'])
+    if eval_mode:
+        model.eval()
+    model.to(device)
+    return model, ckpt
