@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# go-belief.sh — Launch the belief-head model fleet (high-throughput)
+# Usage: ./go-belief.sh [N_WORKERS] [--dry-run]
+#
+# 12 workers × 3070 Ti+ GPUs ≈ $0.95/hr ≈ 35 g/s target
+# $25 budget → ~26 hours of runtime
+export ZEB_WEIGHTS_NAME=large-belief
+export ZEB_FLEET=zeb-belief
+export ZEB_MAX_DPH=0.10
+export ZEB_GPUS="RTX_3070_Ti RTX_3080 RTX_3080_Ti RTX_3090 RTX_4070 RTX_4070_Ti"
+exec "$(dirname "$0")/vast_monitor.sh" 12 "$@"

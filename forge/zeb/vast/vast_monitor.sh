@@ -139,7 +139,7 @@ except Exception as e:
 # ─── Fleet query ───
 # Uses a temp file instead of pipe to avoid vastai broken-pipe bug
 get_fleet() {
-    vastai show instances --raw > /tmp/_vast_fleet.json 2>/dev/null
+    timeout 15 vastai show instances --raw > /tmp/_vast_fleet.json 2>/dev/null
     python3 -c "
 import json, time, sys
 now = time.time()
@@ -165,7 +165,7 @@ for i in data:
 check_worker() {
     local iid="$1"
     local raw
-    raw=$(vastai logs "$iid" --tail 50 2>/dev/null) || { echo "ERR:no_logs"; return; }
+    raw=$(timeout 5 vastai logs "$iid" --tail 50 2>/dev/null) || { echo "BOOT"; return; }
 
     # Fatal errors (skip "No such container" during boot — that's normal)
     local fatal
@@ -389,8 +389,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 shutdown() {
     echo ""
-    log "${BOLD}Monitor stopped.${RESET} Fleet is still running."
-    log "  Tear down: ${SCRIPT_DIR}/vast_down.sh $FLEET --force"
+    log "${BOLD}Monitor stopped.${RESET} Cleaning up checkers..."
+    for pid in "${CHECKER_PIDS[@]}"; do
+        kill "$pid" 2>/dev/null
+    done
+    wait 2>/dev/null
+    rm -rf "$STATUS_DIR"
+    log "  Fleet is still running. Tear down: ${SCRIPT_DIR}/vast_down.sh $FLEET --force"
     exit 0
 }
 
@@ -401,6 +406,64 @@ TOTAL_GAMES_SEEN=0
 TOTAL_CHECKS=0
 TOTAL_REPLACEMENTS=0
 NO_CREDIT=""  # set to 1 when Vast.ai reports credit exhaustion
+
+# ─── CQRS: per-worker background checkers write status files ───
+STATUS_DIR="/tmp/zeb-monitor-${FLEET}"
+mkdir -p "$STATUS_DIR"
+declare -A CHECKER_PIDS  # iid -> PID of background checker
+
+# Background loop: polls one worker's logs every 45s, writes to status file
+# File format: EPOCH TAG:DETAIL
+worker_checker() {
+    local iid="$1"
+    local sfile="$STATUS_DIR/$iid"
+    # Initialize status file
+    echo "$(date +%s) UNKNOWN" > "$sfile" 2>/dev/null
+    while true; do
+        result=$(check_worker "$iid" 2>/dev/null) || result="BOOT"
+        echo "$(date +%s) $result" > "$sfile" 2>/dev/null
+        sleep 45
+    done
+}
+
+# Start a checker for an instance (idempotent — kills existing first)
+start_checker() {
+    local iid="$1"
+    stop_checker "$iid"
+    worker_checker "$iid" &
+    CHECKER_PIDS["$iid"]=$!
+}
+
+# Stop a checker for an instance
+stop_checker() {
+    local iid="$1"
+    local pid="${CHECKER_PIDS[$iid]:-}"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+        kill "$pid" 2>/dev/null
+        wait "$pid" 2>/dev/null
+    fi
+    unset "CHECKER_PIDS[$iid]"
+    rm -f "$STATUS_DIR/$iid"
+}
+
+# Read cached status for an instance (returns "TAG:DETAIL" or "UNKNOWN" if no data yet)
+read_status() {
+    local iid="$1"
+    local sfile="$STATUS_DIR/$iid"
+    if [ -f "$sfile" ]; then
+        local epoch tag_detail
+        read -r epoch tag_detail < "$sfile"
+        local age_of_check=$(( $(date +%s) - epoch ))
+        # If status file is older than 2 minutes, checker may have died
+        if [ "$age_of_check" -gt 120 ]; then
+            echo "STALE_CHECK"
+        else
+            echo "$tag_detail"
+        fi
+    else
+        echo "UNKNOWN"
+    fi
+}
 
 print_summary() {
     local elapsed="$1"
@@ -490,6 +553,30 @@ for label, instances in by_label.items():
     if [ -z "$fleet_data" ]; then
         log "CHECK #$TOTAL_CHECKS: ${YELLOW}NO INSTANCES — spawning fleet${RESET}"
     else
+        # Ensure checkers are running for all live instances
+        new_checkers=0
+        live_iids=()
+        while IFS=$'\t' read -r iid _ _ _ _ _ _; do
+            live_iids+=("$iid")
+            if [ -z "${CHECKER_PIDS[$iid]:-}" ] || ! kill -0 "${CHECKER_PIDS[$iid]}" 2>/dev/null; then
+                start_checker "$iid"
+                new_checkers=$((new_checkers + 1))
+            fi
+        done <<< "$fleet_data"
+        # Stop checkers for instances that no longer exist
+        for old_iid in "${!CHECKER_PIDS[@]}"; do
+            found=0
+            for live_iid in "${live_iids[@]}"; do
+                [ "$old_iid" = "$live_iid" ] && found=1 && break
+            done
+            [ "$found" -eq 0 ] && stop_checker "$old_iid"
+        done
+        # On first check or when many new checkers started, wait for them to get data
+        if [ "$new_checkers" -gt 3 ]; then
+            log "${YELLOW}Waiting 10s for $new_checkers checkers to poll...${RESET}"
+            sleep 10
+        fi
+
         total_dph=0
         total_gps=0
         n_ok=0
@@ -501,13 +588,14 @@ for label, instances in by_label.items():
             # Cost guard
             if python3 -c "exit(0 if $dph > $MAX_DPH else 1)"; then
                 log "$(color_tag ERR "COST: $label ($gpu) @ \$$dph > \$$MAX_DPH — replacing")"
+                stop_checker "$iid"
                 replace_worker "$iid" "$label" "$mid"
                 TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                 perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(\$$dph)")"
                 continue
             fi
 
-            wstate=$(check_worker "$iid")
+            wstate=$(read_status "$iid")
             tag="${wstate%%:*}"
             detail="${wstate#*:}"
 
@@ -523,6 +611,7 @@ for label, instances in by_label.items():
                 ERR)
                     log "$(color_tag ERR "ERROR: $label ($iid): $detail")"
                     if [ "$age" -gt 300 ]; then
+                        stop_checker "$iid"
                         replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                         perfline+=" ${label##*-}=$(color_tag ERR "REPLACED(err)")"
@@ -534,6 +623,7 @@ for label, instances in by_label.items():
                     perfline+=" ${label##*-}=$(color_tag SETUP "SETUP/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
                         log "$(color_tag ERR "STALE: $label stuck in setup $(fmt_duration "$age") — replacing")"
+                        stop_checker "$iid"
                         replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
@@ -542,6 +632,7 @@ for label, instances in by_label.items():
                     perfline+=" ${label##*-}=$(color_tag BOOT "BOOT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 600 ]; then
                         log "$(color_tag ERR "STALE: $label no container after $(fmt_duration "$age") — replacing")"
+                        stop_checker "$iid"
                         replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
@@ -550,9 +641,20 @@ for label, instances in by_label.items():
                     perfline+=" ${label##*-}=$(color_tag WAIT "WAIT/$(fmt_duration "$age")")"
                     if [ "$age" -gt 900 ]; then
                         log "$(color_tag ERR "STALE: $label waiting $(fmt_duration "$age") with no progress — replacing")"
+                        stop_checker "$iid"
                         replace_worker "$iid" "$label" "$mid"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                     fi
+                    ;;
+                UNKNOWN)
+                    # Checker just started, no data yet — show as booting
+                    perfline+=" ${label##*-}=$(color_tag BOOT "POLL/$(fmt_duration "$age")")"
+                    ;;
+                STALE_CHECK)
+                    # Checker died or hung — restart it
+                    log "${YELLOW}CHECKER STALE for $label — restarting${RESET}"
+                    start_checker "$iid"
+                    perfline+=" ${label##*-}=$(color_tag BOOT "REPOLL/$(fmt_duration "$age")")"
                     ;;
             esac
         done <<< "$fleet_data"
@@ -560,25 +662,84 @@ for label, instances in by_label.items():
         log "CHECK #$TOTAL_CHECKS [$(fmt_duration "$elapsed")] ${n_ok}/${n_up}up ${total_gps} games/s \$$total_dph/hr |$perfline"
     fi
 
-    # Replenish: spawn missing workers up to target
+    # Downscale: if more workers than target, trim worst-value first
+    if [ -z "$NO_CREDIT" ]; then
+        live_data=$(get_fleet)
+        live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
+        if [ "$live_count" -gt "$TARGET_WORKERS" ]; then
+            excess=$((live_count - TARGET_WORKERS))
+            log "${YELLOW}DOWNSCALE: $live_count alive > $TARGET_WORKERS target — trimming $excess${RESET}"
+            # Rank workers by kill priority: non-running > non-producing > worst $/game/s
+            kill_order=$(echo "$live_data" | python3 -c "
+import sys
+expected_gps = {
+    'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
+    'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
+    'RTX 3080': 2.6, 'RTX 3080 Ti': 2.6, 'RTX 3090': 2.6,
+    'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
+    'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
+}
+workers = []
+for line in sys.stdin:
+    parts = line.strip().split('\t')
+    if len(parts) < 7: continue
+    iid, label, gpu, status, dph, age, mid = parts[0], parts[1], parts[2], parts[3], float(parts[4]), int(parts[5]), parts[6]
+    gps = expected_gps.get(gpu, 1.8)
+    value = dph / gps  # lower = better
+    # Kill priority: 0=non-running, 1=young (<120s), 2=producing — then by worst value
+    if status not in ('running',):
+        tier = 0
+    elif age < 120:
+        tier = 1
+    else:
+        tier = 2
+    workers.append((tier, -value, iid, label, gpu, dph))
+# Sort: lowest tier first (kill first), then most negative value first (worst value)
+workers.sort()
+for tier, neg_val, iid, label, gpu, dph in workers:
+    print(f'{iid}\t{label}\t{gpu}\t{dph}')
+")
+            echo "$kill_order" | head -n "$excess" | while IFS=$'\t' read -r kill_id kill_label kill_gpu kill_dph; do
+                log "${RED}TRIM: $kill_label ($kill_gpu @ \$$kill_dph/hr) — destroying${RESET}"
+                vastai destroy instance "$kill_id" 2>/dev/null
+            done
+        fi
+    fi
+
+    # Replenish: spawn missing workers up to target (parallel, batches of 4)
     if [ -z "$NO_CREDIT" ]; then
         live_data=$(get_fleet)
         live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
         if [ "$live_count" -lt "$TARGET_WORKERS" ]; then
             live_labels=$(echo "$live_data" | cut -f2)
+            missing=()
             for idx in $(seq 0 $((TARGET_WORKERS - 1))); do
                 wid="worker-vast-${idx}"
                 if ! echo "$live_labels" | grep -q "$wid"; then
+                    missing+=("$wid")
+                fi
+            done
+
+            BATCH_SIZE=4
+            for ((i=0; i<${#missing[@]}; i+=BATCH_SIZE)); do
+                batch=("${missing[@]:i:BATCH_SIZE}")
+                pids=()
+                for wid in "${batch[@]}"; do
                     log "${GREEN}REPLENISH: $wid missing ($live_count/$TARGET_WORKERS alive)${RESET}"
-                    spawn_worker "$wid"
-                    spawn_rc=$?
-                    if [ "$spawn_rc" -eq 2 ]; then
+                    spawn_worker "$wid" &
+                    pids+=($!)
+                    live_count=$((live_count + 1))
+                done
+                # Wait for batch and check for credit issues
+                for pid in "${pids[@]}"; do
+                    wait "$pid"
+                    rc=$?
+                    if [ "$rc" -eq 2 ]; then
                         NO_CREDIT=1
                         log "${RED}${BOLD}NO CREDIT — pausing fleet operations. Will probe every $(( CREDIT_WAIT_INTERVAL / 60 ))min.${RESET}"
-                        break
+                        break 2
                     fi
-                    live_count=$((live_count + 1))
-                fi
+                done
             done
         fi
     fi
