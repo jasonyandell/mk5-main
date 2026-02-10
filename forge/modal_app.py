@@ -2237,18 +2237,18 @@ def train(
 # Eval Matrix (pairwise model comparison on T4)
 # =============================================================================
 #
-# Run a full pairwise eval matrix between any combination of E[Q] and Zeb
-# players on a cheap T4 GPU. Results returned as a formatted table + JSON.
+# Parallel pairwise eval matrix: fan out each pair to its own T4 via starmap,
+# then collect results locally for Elo computation and W&B logging.
 #
 # Usage:
 #     modal run forge/modal_app.py::eval-matrix \
 #         --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \
-#         --n-games 1000 --batch-size 50
+#         --n-games 5000 --batch-size 50
 
 
-@app.function(image=eval_image, gpu="T4", timeout=3600)
-def eval_matrix_remote(players: list[str], n_games: int, batch_size: int) -> dict:
-    """Run pairwise eval matrix on GPU. Returns formatted table and JSON."""
+@app.function(image=eval_image, gpu="T4", timeout=7200)
+def eval_matchup_remote(player_a: str, player_b: str, n_games: int, batch_size: int) -> dict:
+    """Run one pair (both directions) on a single T4. Returns both MatchResult dicts."""
     import sys
     sys.path.insert(0, "/root")
     import os
@@ -2256,95 +2256,70 @@ def eval_matrix_remote(players: list[str], n_games: int, batch_size: int) -> dic
 
     from forge.zeb.eval.players import parse_player_spec
     from forge.zeb.eval.engine import MatchConfig, run_match
-    from forge.zeb.eval.results import format_matrix
 
-    specs = [parse_player_spec(p) for p in players]
-    names = [s.display_name for s in specs]
-    n = len(specs)
+    spec_a = parse_player_spec(player_a)
+    spec_b = parse_player_spec(player_b)
+    name_a = spec_a.display_name
+    name_b = spec_b.display_name
     model_cache: dict = {}
 
-    print(f"Eval matrix: {n} players, {n_games} games per matchup")
-    for i, name in enumerate(names):
-        print(f"  [{i}] {name}")
+    # A vs B
+    print(f"\n--- {name_a} vs {name_b} ---")
+    config_ab = MatchConfig(
+        spec_a=spec_a, spec_b=spec_b,
+        n_games=n_games, batch_size=batch_size,
+        model_cache=model_cache, quiet=False,
+    )
+    result_ab = run_match(config_ab)
+    print(f"  -> {name_a} win rate: {result_ab.team_a_win_rate:.1%}")
 
-    # Run all-pairs (results[i][j] = MatchResult for player i vs player j)
-    results = [[None] * n for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                continue
-            print(f"\n--- {names[i]} vs {names[j]} ---")
-            config = MatchConfig(
-                spec_a=specs[i],
-                spec_b=specs[j],
-                n_games=n_games,
-                batch_size=batch_size,
-                model_cache=model_cache,
-                quiet=False,
-            )
-            results[i][j] = run_match(config)
-            wr = results[i][j].team_a_win_rate
-            print(f"  -> {names[i]} win rate: {wr:.1%}")
+    # B vs A
+    print(f"\n--- {name_b} vs {name_a} ---")
+    config_ba = MatchConfig(
+        spec_a=spec_b, spec_b=spec_a,
+        n_games=n_games, batch_size=batch_size,
+        model_cache=model_cache, quiet=False,
+    )
+    result_ba = run_match(config_ba)
+    print(f"  -> {name_b} win rate: {result_ba.team_a_win_rate:.1%}")
 
-    matrix_text = format_matrix(results, names)
-    matrix_json = format_matrix(results, names, json_mode=True)
-
-    return {"matrix_text": matrix_text, "json": matrix_json, "names": names}
+    return {
+        "a_vs_b": result_ab.to_dict(),
+        "b_vs_a": result_ba.to_dict(),
+    }
 
 
 @app.local_entrypoint(name="eval-matrix")
 def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
-    """Run pairwise eval matrix on Modal T4.
+    """Run parallel pairwise eval matrix on Modal T4s.
+
+    Each pair gets its own T4 — C(n,2) pairs run concurrently via starmap.
 
     Usage:
         modal run forge/modal_app.py::eval-matrix \\
             --players "eq:n=100;zeb:source=hf,weights_name=large-belief.pt;zeb:source=hf,weights_name=large.pt;zeb:source=hf" \\
-            --n-games 1000 --batch-size 50
+            --n-games 5000 --batch-size 50
     """
     import json as json_mod
+    from itertools import combinations
     import wandb
     from forge.zeb.eval.players import parse_player_spec
-    from forge.zeb.eval.results import compute_elo_ratings, format_elo
+    from forge.zeb.eval.results import compute_elo_ratings, format_elo, format_matrix
+    from forge.zeb.eval.results import MatchResult, HalfResult
     from forge.zeb.hf import DEFAULT_REPO, get_remote_training_state
 
     player_list = [p.strip() for p in players.split(";") if p.strip()]
     specs = [parse_player_spec(p) for p in player_list]
-
-    print(f"Eval matrix: {len(player_list)} players, {n_games} games/matchup")
-    for i, p in enumerate(player_list):
-        print(f"  [{i}] {p}")
-    print()
-
-    result = eval_matrix_remote.remote(player_list, n_games, batch_size)
-
-    print("\n" + result["matrix_text"])
-    print("\n" + result["json"])
-
-    # --- Parse JSON results into wins matrix ---
-    names = result["names"]
+    names = [s.display_name for s in specs]
     n = len(names)
-    name_to_idx = {name: i for i, name in enumerate(names)}
-    wins = [[0] * n for _ in range(n)]
+    n_pairs = n * (n - 1) // 2
 
-    matchups = json_mod.loads(result["json"])
-    for key, data in matchups.items():
-        a_name, b_name = data["team_a"], data["team_b"]
-        i, j = name_to_idx[a_name], name_to_idx[b_name]
-        wins[i][j] = data["team_a_wins"]
-        wins[j][i] = data["team_b_wins"]
+    print(f"Eval matrix: {n} players, {n_pairs} pairs, {n_games} games/matchup")
+    for i, p in enumerate(player_list):
+        print(f"  [{i}] {names[i]}  ({p})")
+    print(f"\nFanning out {n_pairs} pairs to {n_pairs} T4s via starmap...")
 
-    # --- Compute Elo ratings ---
-    # Anchor on E[Q] player if present, otherwise first player
-    eq_anchor = None
-    for spec, name in zip(specs, names):
-        if spec.kind == 'eq':
-            eq_anchor = name
-            break
-
-    ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
-    print("\n" + format_elo(ratings))
-
-    # --- Fetch HF training state for zeb players ---
+    # --- Fetch HF training state for zeb players (before starmap) ---
     model_steps: dict[str, dict] = {}
     for spec, name in zip(specs, names):
         if spec.kind == 'zeb' and spec.params.get('source') == 'hf':
@@ -2359,29 +2334,93 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
                 print(f"  {name}: step={model_steps[name]['step']}, "
                       f"games={model_steps[name]['total_games']}")
 
-    # Primary model = highest step (actively training)
     training_step = max(
         (info['step'] for info in model_steps.values()), default=0
     )
 
-    # --- W&B logging ---
+    # --- Init W&B early so we can log progressively ---
+    eq_anchor = None
+    for spec, name in zip(specs, names):
+        if spec.kind == 'eq':
+            eq_anchor = name
+            break
+
     wandb.init(
         project="zeb-eval",
         config={
             "players": player_list,
             "n_games": n_games,
             "batch_size": batch_size,
+            "n_pairs": n_pairs,
             "model_steps": model_steps,
         },
     )
     wandb.define_metric("elo/*", step_metric="training_step")
+    wandb.define_metric("pairs_completed", step_metric="training_step")
 
-    log_data: dict = {"training_step": training_step}
-    for name, elo in ratings.items():
-        log_data[f"elo/{name}"] = elo
-    wandb.log(log_data)
+    # Build starmap inputs: one call per pair
+    pair_tasks = []
+    pair_indices = []  # track (i, j) for each task
+    for i, j in combinations(range(n), 2):
+        pair_tasks.append((player_list[i], player_list[j], n_games, batch_size))
+        pair_indices.append((i, j))
 
-    # Pairwise results table
+    # --- Fan out and collect results progressively ---
+    wins = [[0] * n for _ in range(n)]
+    results_matrix = [[None] * n for _ in range(n)]
+
+    def _dict_to_match_result(d: dict) -> MatchResult:
+        """Reconstruct MatchResult from serialized dict."""
+        return MatchResult(
+            team_a_name=d['team_a'], team_b_name=d['team_b'],
+            n_games=d['n_games'],
+            team_a_wins=d['team_a_wins'], team_b_wins=d['team_b_wins'],
+            team_a_win_rate=d['team_a_win_rate'],
+            avg_margin=d['avg_margin'], elapsed_s=d['elapsed_s'],
+            a_as_team0=HalfResult(**d['a_as_team0']),
+            a_as_team1=HalfResult(**d['a_as_team1']),
+        )
+
+    completed = 0
+    for (i, j), pair_result in zip(
+        pair_indices, eval_matchup_remote.starmap(pair_tasks)
+    ):
+        ab = pair_result["a_vs_b"]
+        ba = pair_result["b_vs_a"]
+
+        results_matrix[i][j] = _dict_to_match_result(ab)
+        results_matrix[j][i] = _dict_to_match_result(ba)
+
+        wins[i][j] = ab["team_a_wins"]
+        wins[j][i] = ab["team_b_wins"]
+
+        completed += 1
+        print(f"\n[{completed}/{n_pairs}] {names[i]} vs {names[j]}: "
+              f"{ab['team_a_win_rate']:.1%} / {ba['team_a_win_rate']:.1%}")
+
+        # Progressive Elo + W&B log after each pair
+        ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+        log_data: dict = {
+            "training_step": training_step,
+            "pairs_completed": completed,
+        }
+        for name, elo in ratings.items():
+            log_data[f"elo/{name}"] = elo
+        wandb.log(log_data)
+        print(format_elo(ratings))
+
+    # --- Final matrix table + JSON ---
+    matrix_text = format_matrix(results_matrix, names)
+    matrix_json = format_matrix(results_matrix, names, json_mode=True)
+    print("\n" + matrix_text)
+    print("\n" + matrix_json)
+
+    # Final Elo
+    ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+    print("\n" + format_elo(ratings))
+
+    # Pairwise results table (W&B)
+    matchups = json_mod.loads(matrix_json)
     columns = ["player_a", "player_b", "a_wins", "b_wins", "n_games", "a_win_rate"]
     table = wandb.Table(columns=columns)
     for key, data in matchups.items():
