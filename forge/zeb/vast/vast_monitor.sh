@@ -3,7 +3,8 @@
 #
 # Event-sourced architecture: observe → decide → act each cycle.
 # Single-pass parallel polling replaces background checker processes.
-# Append-only event log enables stall detection and poll resilience.
+# Append-only event log + projections: events are the source of truth,
+# projections (bash associative arrays) are materialized views for decisions.
 #
 # Usage:
 #   ./vast_monitor.sh                # 2 workers (default)
@@ -245,6 +246,28 @@ rotate_log() {
     fi
 }
 
+# ─── Projections: update materialized views from a single event ───
+
+update_projection() {
+    local iid="$1" tag="$2" detail="$3"
+    PROJ_LAST_TAG["$iid"]="$tag"
+    if [ "$tag" = "OK" ]; then
+        local batch_num gps_val
+        batch_num=$(echo "$detail" | grep -oE 'batch [0-9]+' | grep -oE '[0-9]+')
+        gps_val=$(echo "$detail" | grep -oE '[0-9]+\.[0-9]+ games/s' | grep -oE '[0-9]+\.[0-9]+')
+        if [ -n "$batch_num" ]; then
+            PROJ_EVER_PRODUCED["$iid"]=1
+            if [ "${PROJ_LAST_BATCH[$iid]:-}" = "$batch_num" ]; then
+                PROJ_CONSEC_SAME["$iid"]=$(( ${PROJ_CONSEC_SAME[$iid]:-0} + 1 ))
+            else
+                PROJ_CONSEC_SAME["$iid"]=0
+                PROJ_LAST_BATCH["$iid"]="$batch_num"
+            fi
+        fi
+        [ -n "$gps_val" ] && PROJ_GPS["$iid"]="$gps_val"
+    fi
+}
+
 # ─── Classify: apply stall detection + two-poll resilience ───
 
 declare -A CLASSIFIED  # iid -> "TAG:DETAIL"
@@ -260,29 +283,25 @@ classify_all() {
         local detail="${raw#*:}"
 
         if [ "$tag" = "OK" ]; then
-            # Stall detection: same batch in last 2 OK events + this one = 3 consecutive
+            # Stall detection via projections: consecutive same-batch count
             # Skip for young workers (<5min) — first batches take time
             local batch_num
             batch_num=$(echo "$detail" | grep -oE 'batch [0-9]+' | grep -oE '[0-9]+')
             if [ -n "$batch_num" ] && [ "${w_age:-0}" -gt 300 ]; then
-                local prev_all prev_count prev_batches n_unique
-                prev_all=$(grep "	${iid}	OK	batch " "$EVENT_LOG" 2>/dev/null | tail -2 | grep -oE 'batch [0-9]+' | grep -oE '[0-9]+')
-                prev_count=$([ -n "$prev_all" ] && echo "$prev_all" | wc -l || echo 0)
-                if [ "$prev_count" -ge 2 ]; then
-                    prev_batches=$(echo "$prev_all" | sort -u)
-                    n_unique=$(echo "$prev_batches" | wc -l)
-                    if [ "$n_unique" -eq 1 ] && [ "$prev_batches" = "$batch_num" ]; then
-                        CLASSIFIED["$iid"]="STALL:batch $batch_num stuck (3 consecutive)"
-                        continue
-                    fi
+                local consec="${PROJ_CONSEC_SAME[$iid]:-0}"
+                if [ "$consec" -ge 1 ] && [ "${PROJ_LAST_BATCH[$iid]:-}" = "$batch_num" ]; then
+                    CLASSIFIED["$iid"]="STALL:batch $batch_num stuck ($((consec + 2)) consecutive)"
+                    continue
                 fi
             fi
             CLASSIFIED["$iid"]="$raw"
-        elif [ "$tag" = "BOOT" ] || [ "$tag" = "ERR" ]; then
-            # Two-poll resilience: forgive one bad poll after OK
-            local last_tag
-            last_tag=$(grep "	${iid}	" "$EVENT_LOG" 2>/dev/null | tail -1 | cut -f3)
-            if [ "$last_tag" = "OK" ]; then
+        elif [ "$tag" = "BOOT" ] || [ "$tag" = "ERR" ] || [ "$tag" = "WAIT" ]; then
+            # Two-poll resilience via projections
+            if [ "${PROJ_LAST_TAG[$iid]:-}" = "OK" ]; then
+                CLASSIFIED["$iid"]="POLL_TIMEOUT:$raw"
+            # Workers that previously produced can't be in BOOT/WAIT — transient poll issue
+            # (ERR excluded: real errors like OOM should not be masked)
+            elif [ "$tag" != "ERR" ] && [ "${PROJ_EVER_PRODUCED[$iid]:-0}" = "1" ]; then
                 CLASSIFIED["$iid"]="POLL_TIMEOUT:$raw"
             else
                 CLASSIFIED["$iid"]="$raw"
@@ -304,17 +323,13 @@ find_cheapest_offer() {
 }
 
 get_observed_gps() {
-    # Extract last observed gps per IID from event log as "IID:GPS|IID:GPS|..."
-    awk -F'\t' '/\tOK\t.*games\/s/ {
-        iid = $2
-        n = split($4, w, " ")
-        for (i = 1; i <= n; i++) {
-            if (w[i] == "games/s") { gsub(/,/, "", w[i-1]); gps[iid] = w[i-1] }
-        }
-    } END {
-        sep = ""
-        for (iid in gps) { printf "%s%s:%s", sep, iid, gps[iid]; sep = "|" }
-    }' "$EVENT_LOG" 2>/dev/null
+    # Read from PROJ_GPS projection — no event log parsing needed
+    local out="" sep=""
+    for iid in "${!PROJ_GPS[@]}"; do
+        out+="${sep}${iid}:${PROJ_GPS[$iid]}"
+        sep="|"
+    done
+    echo "$out"
 }
 
 find_worst_value() {
@@ -464,7 +479,7 @@ do_replace() {
     fi
 
     local wid
-    wid=$(echo "$label" | grep -oE 'worker-vast-[0-9]+')
+    wid=$(echo "$label" | grep -oE 'worker-vast-[0-9]+' || echo "worker-vast-$(shuf -i 10-99 -n 1)")
     log "${RED}REPLACE: $iid ($label, machine $mid) — spawning replacement${RESET}"
     spawn_worker "$wid"
     local rc=$?
@@ -501,6 +516,13 @@ UPGRADE_IID=""
 UPGRADE_STARTED=0
 UPGRADE_COOLDOWN=0
 declare -A BOOT_STARTED  # iid -> epoch when first seen booting
+
+# ─── Projections (materialized views from events) ───
+declare -A PROJ_LAST_TAG       # iid -> last classified tag
+declare -A PROJ_LAST_BATCH     # iid -> last batch number seen
+declare -A PROJ_GPS            # iid -> last observed gps (string)
+declare -A PROJ_EVER_PRODUCED  # iid -> "1" if any OK batch event
+declare -A PROJ_CONSEC_SAME    # iid -> consecutive same-batch count
 
 STATUS_DIR="/tmp/zeb-monitor-${FLEET}"
 mkdir -p "$STATUS_DIR"
@@ -548,11 +570,28 @@ fi
 
 log "${GREEN}=== Monitor started. Fleet=$FLEET, target=${TARGET_WORKERS}w, max=\$$MAX_DPH/hr ===${RESET}"
 
+# ── Seed projections from existing fleet ──
+# One poll cycle before main loop to establish projection baseline.
+# Without this, running workers have no history and age-based timeouts
+# would kill them on the first non-OK poll after a monitor restart.
+_seed_fleet=$(get_fleet)
+if [ -n "$_seed_fleet" ]; then
+    poll_all_workers "$_seed_fleet"
+    while IFS=$'\t' read -r _iid _rest; do
+        _raw="${POLL_RESULTS[$_iid]:-BOOT}"
+        _tag="${_raw%%:*}"
+        _detail="${_raw#*:}"
+        append_event "$_iid" "$_tag" "$_detail"
+        update_projection "$_iid" "$_tag" "$_detail"
+    done <<< "$_seed_fleet"
+fi
+
 # ═══════════════════════════════════════════════════════════
 # ─── Main loop: observe → decide → act → report ───
 # ═══════════════════════════════════════════════════════════
 
 START_TIME=$(date +%s)
+WARMUP_CYCLES=3  # skip health kills while projections stabilize
 
 while true; do
     TOTAL_CHECKS=$((TOTAL_CHECKS + 1))
@@ -600,6 +639,7 @@ for label, instances in by_label.items():
             local_tag="${CLASSIFIED[$iid]%%:*}"
             local_detail="${CLASSIFIED[$iid]#*:}"
             append_event "$iid" "$local_tag" "$local_detail"
+            update_projection "$iid" "$local_tag" "$local_detail"
             # Track boot start times
             case "$local_tag" in
                 BOOT|SETUP|WAIT)
@@ -663,6 +703,10 @@ for label, instances in by_label.items():
             tag="${wstate%%:*}"
             detail="${wstate#*:}"
 
+            # During warmup, only observe — don't kill workers based on age
+            # (projections need a few cycles to establish baseline)
+            warmup=$(( TOTAL_CHECKS <= WARMUP_CYCLES ? 1 : 0 ))
+
             case "$tag" in
                 OK)
                     gps=$(echo "$detail" | grep -oE '[0-9]+\.[0-9]+ games/s' | head -1)
@@ -677,7 +721,7 @@ for label, instances in by_label.items():
                     ;;
                 ERR)
                     log "$(color_tag ERR "ERROR: $label ($iid): $detail")"
-                    if [ "$age" -gt 300 ]; then
+                    if [ "$age" -gt 300 ] && [ "$warmup" -eq 0 ]; then
                         do_replace "$iid" "$label" "$mid" "$label"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
                         n_up=$((n_up - 1)); over_target=$(( n_up > TARGET_WORKERS ? 1 : 0 ))
@@ -688,7 +732,7 @@ for label, instances in by_label.items():
                     ;;
                 SETUP)
                     perfline+=" ${label##*-}=$(color_tag SETUP "SETUP/$(fmt_duration "$age")")"
-                    if [ "$age" -gt 600 ]; then
+                    if [ "$age" -gt 600 ] && [ "$warmup" -eq 0 ]; then
                         log "$(color_tag ERR "STALE: $label stuck in setup $(fmt_duration "$age") — removing")"
                         do_replace "$iid" "$label" "$mid" "$label"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
@@ -697,7 +741,7 @@ for label, instances in by_label.items():
                     ;;
                 BOOT)
                     perfline+=" ${label##*-}=$(color_tag BOOT "BOOT/$(fmt_duration "$age")")"
-                    if [ "$age" -gt 600 ]; then
+                    if [ "$age" -gt 600 ] && [ "$warmup" -eq 0 ]; then
                         log "$(color_tag ERR "STALE: $label no container after $(fmt_duration "$age") — removing")"
                         do_replace "$iid" "$label" "$mid" "$label"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
@@ -713,7 +757,7 @@ for label, instances in by_label.items():
                     ;;
                 WAIT)
                     perfline+=" ${label##*-}=$(color_tag WAIT "WAIT/$(fmt_duration "$age")")"
-                    if [ "$age" -gt 900 ]; then
+                    if [ "$age" -gt 900 ] && [ "$warmup" -eq 0 ]; then
                         log "$(color_tag ERR "STALE: $label waiting $(fmt_duration "$age") with no progress — removing")"
                         do_replace "$iid" "$label" "$mid" "$label"
                         TOTAL_REPLACEMENTS=$((TOTAL_REPLACEMENTS + 1))
