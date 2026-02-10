@@ -41,11 +41,13 @@ def parse_preferred(s):
     return result
 
 
-def worst_value(fleet_tsv, exclude_iid=""):
+def worst_value(fleet_tsv, exclude_iid="", observed_gps=None):
     """Find the worst-value worker from fleet TSV (iid, label, gpu, status, dph, age, mid).
 
+    Uses observed gps when available (from event log), falls back to EXPECTED_GPS.
     Returns: (value, iid, label, gpu, dph, mid) or None.
     """
+    observed = observed_gps or {}
     worst_val, worst = -1, None
     for line in fleet_tsv.strip().splitlines():
         parts = line.split("\t")
@@ -56,7 +58,7 @@ def worst_value(fleet_tsv, exclude_iid=""):
         )
         if iid == exclude_iid:
             continue
-        gps = EXPECTED_GPS.get(gpu, 1.8)
+        gps = observed.get(iid, EXPECTED_GPS.get(gpu, 1.8))
         value = dph / gps
         if value > worst_val:
             worst_val = value
@@ -73,11 +75,21 @@ def main():
     # --worst-value: read fleet TSV from stdin, print worst-value worker
     parser.add_argument("--worst-value", action="store_true")
     parser.add_argument("--exclude-iid", default="")
+    parser.add_argument("--observed-gps", default="",
+                        help="IID:GPS pairs (pipe-delimited), e.g. '123:3.4|456:2.6'")
     args = parser.parse_args()
 
     if args.worst_value:
         fleet_tsv = sys.stdin.read()
-        result = worst_value(fleet_tsv, args.exclude_iid)
+        observed = {}
+        for pair in args.observed_gps.split("|"):
+            if ":" in pair:
+                iid, gps_str = pair.split(":", 1)
+                try:
+                    observed[iid] = float(gps_str)
+                except ValueError:
+                    pass
+        result = worst_value(fleet_tsv, args.exclude_iid, observed)
         if result:
             val, iid, label, gpu, dph, mid = result
             print(f"{iid}\t{label}\t{gpu}\t{dph:.3f}\t{mid}\t{val:.4f}")

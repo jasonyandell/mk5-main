@@ -303,10 +303,27 @@ find_cheapest_offer() {
         --preferred "$(preferred_for_python)" 2>/dev/null
 }
 
+get_observed_gps() {
+    # Extract last observed gps per IID from event log as "IID:GPS|IID:GPS|..."
+    awk -F'\t' '/\tOK\t.*games\/s/ {
+        iid = $2
+        n = split($4, w, " ")
+        for (i = 1; i <= n; i++) {
+            if (w[i] == "games/s") { gsub(/,/, "", w[i-1]); gps[iid] = w[i-1] }
+        }
+    } END {
+        sep = ""
+        for (iid in gps) { printf "%s%s:%s", sep, iid, gps[iid]; sep = "|" }
+    }' "$EVENT_LOG" 2>/dev/null
+}
+
 find_worst_value() {
     local fleet_data="$1" exclude="${2:-}"
+    local observed
+    observed=$(get_observed_gps)
     echo "$fleet_data" | python3 "${SCRIPT_DIR}/find_offer.py" \
-        --worst-value --exclude-iid "$exclude" 2>/dev/null
+        --worst-value --exclude-iid "$exclude" \
+        --observed-gps "$observed" 2>/dev/null
 }
 
 # ─── Blacklist helpers ───
@@ -688,15 +705,21 @@ for label, instances in by_label.items():
 
     # ── DECIDE + ACT (scaling) ──
 
-    # Downscale: trim worst-value workers if over target
+    # Downscale: trim worst-value workers if over target (exclude active upgrade trial)
     if [ -z "$NO_CREDIT" ]; then
         live_data=$(get_fleet)
+        effective_target="$TARGET_WORKERS"
+        # If upgrade trial is active, allow one extra worker
+        if [ -n "$UPGRADE_IID" ] && echo "$live_data" | grep -q "^${UPGRADE_IID}	"; then
+            effective_target=$((TARGET_WORKERS + 1))
+        fi
         live_count=$([ -n "$live_data" ] && echo "$live_data" | wc -l || echo 0)
-        if [ "$live_count" -gt "$TARGET_WORKERS" ]; then
-            excess=$((live_count - TARGET_WORKERS))
+        if [ "$live_count" -gt "$effective_target" ]; then
+            excess=$((live_count - effective_target))
             log "${YELLOW}DOWNSCALE: $live_count alive > $TARGET_WORKERS target — trimming $excess${RESET}"
-            kill_order=$(echo "$live_data" | python3 -c "
-import sys
+            observed_gps=$(get_observed_gps)
+            kill_order=$(echo "$live_data" | OBSERVED="$observed_gps" python3 -c "
+import sys, os
 expected_gps = {
     'RTX 3060': 1.8, 'RTX 3060 Ti': 2.1,
     'RTX 3070': 2.4, 'RTX 3070 Ti': 2.6,
@@ -704,12 +727,18 @@ expected_gps = {
     'RTX 4060': 1.8, 'RTX 4060 Ti': 2.1,
     'RTX 4070': 2.6, 'RTX 4070 Ti': 2.8,
 }
+observed = {}
+for pair in os.environ.get('OBSERVED', '').split('|'):
+    if ':' in pair:
+        iid, gps = pair.split(':', 1)
+        try: observed[iid] = float(gps)
+        except ValueError: pass
 workers = []
 for line in sys.stdin:
     parts = line.strip().split('\t')
     if len(parts) < 7: continue
     iid, label, gpu, status, dph, age = parts[0], parts[1], parts[2], parts[3], float(parts[4]), int(parts[5])
-    gps = expected_gps.get(gpu, 1.8)
+    gps = observed.get(iid, expected_gps.get(gpu, 1.8))
     value = dph / gps
     tier = 0 if status != 'running' else (1 if age < 120 else 2)
     workers.append((tier, -value, iid, label, gpu, dph))
