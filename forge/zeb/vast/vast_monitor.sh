@@ -500,6 +500,7 @@ NO_CREDIT=""
 UPGRADE_IID=""
 UPGRADE_STARTED=0
 UPGRADE_COOLDOWN=0
+declare -A BOOT_STARTED  # iid -> epoch when first seen booting
 
 STATUS_DIR="/tmp/zeb-monitor-${FLEET}"
 mkdir -p "$STATUS_DIR"
@@ -593,12 +594,42 @@ for label, instances in by_label.items():
         # Classify with stall detection + two-poll resilience
         classify_all "$fleet_data"
 
-        # Append events to log
-        while IFS=$'\t' read -r iid _rest; do
+        # Append events to log + build reputation events
+        rep_events=""
+        while IFS=$'\t' read -r iid _label _gpu _status _dph _age mid; do
             local_tag="${CLASSIFIED[$iid]%%:*}"
             local_detail="${CLASSIFIED[$iid]#*:}"
             append_event "$iid" "$local_tag" "$local_detail"
+            # Track boot start times
+            case "$local_tag" in
+                BOOT|SETUP|WAIT)
+                    if [ -z "${BOOT_STARTED[$iid]:-}" ]; then
+                        BOOT_STARTED["$iid"]=$(date +%s)
+                        rep_events="${rep_events}{\"mid\":\"$mid\",\"gpu\":\"$_gpu\",\"event\":\"boot_start\"}"$'\n'
+                    fi
+                    ;;
+                OK)
+                    gps_val=$(echo "$local_detail" | grep -oE '[0-9]+\.[0-9]+ games/s' | grep -oE '[0-9]+\.[0-9]+')
+                    if [ -n "${BOOT_STARTED[$iid]:-}" ]; then
+                        # First OK after boot — record boot time
+                        boot_time=$(( $(date +%s) - BOOT_STARTED[$iid] ))
+                        rep_events="${rep_events}{\"mid\":\"$mid\",\"gpu\":\"$_gpu\",\"event\":\"boot_success\",\"boot_time\":$boot_time}"$'\n'
+                        unset BOOT_STARTED["$iid"]
+                    fi
+                    [ -n "$gps_val" ] && rep_events="${rep_events}{\"mid\":\"$mid\",\"gpu\":\"$_gpu\",\"event\":\"ok\",\"gps\":$gps_val}"$'\n'
+                    ;;
+                STALL)
+                    rep_events="${rep_events}{\"mid\":\"$mid\",\"gpu\":\"$_gpu\",\"event\":\"stall\"}"$'\n'
+                    unset BOOT_STARTED["$iid"] 2>/dev/null
+                    ;;
+                ERR)
+                    rep_events="${rep_events}{\"mid\":\"$mid\",\"gpu\":\"$_gpu\",\"event\":\"error\"}"$'\n'
+                    unset BOOT_STARTED["$iid"] 2>/dev/null
+                    ;;
+            esac
         done <<< "$fleet_data"
+        # Update reputation scores (non-blocking)
+        [ -n "$rep_events" ] && echo "$rep_events" | python3 "${SCRIPT_DIR}/reputation.py" update 2>/dev/null &
 
         # ── DECIDE + ACT (health) ──
         total_dph=0
