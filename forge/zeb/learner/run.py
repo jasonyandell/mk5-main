@@ -301,6 +301,8 @@ def run_learner(args: argparse.Namespace) -> None:
     print(f"Min buffer: {args.min_buffer_size:,}, buffer capacity: {args.replay_buffer_size:,}")
     print()
 
+    last_ingest_time = time.time()
+
     while True:
         # 1. Ingest new example files from workers
         ingested = 0
@@ -331,10 +333,20 @@ def run_learner(args: argparse.Namespace) -> None:
                 f.unlink()
 
         if ingested > 0:
+            last_ingest_time = time.time()
             print(f"Ingested {ingested:,} examples from {n_new_files} files "
                   f"[buffer: {len(replay_buffer):,}]")
 
-        # 2. Wait if buffer too small
+        # 2. Freshness check: pause if workers have stopped producing
+        if args.max_example_age > 0:
+            stale_seconds = time.time() - last_ingest_time
+            if stale_seconds > args.max_example_age:
+                print(f"No new examples for {stale_seconds:.0f}s "
+                      f"(limit: {args.max_example_age}s) — pausing training")
+                time.sleep(10)
+                continue
+
+        # 3. Wait if buffer too small
         if len(replay_buffer) < args.min_buffer_size:
             if ingested == 0:
                 print(f"Buffer {len(replay_buffer):,}/{args.min_buffer_size:,} — waiting for workers...")
@@ -458,6 +470,9 @@ def main():
                         help='Weights filename stem on HF (e.g. large → large.pt, large-config.json)')
 
     # W&B
+    parser.add_argument('--max-example-age', type=int, default=300,
+                        help='Pause training if no new examples for this many seconds (0=disable)')
+
     parser.add_argument('--wandb', action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument('--wandb-project', type=str, default='zeb-mcts')
     parser.add_argument('--run-name', type=str, default=None)
