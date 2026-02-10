@@ -2359,13 +2359,12 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
     wandb.define_metric("pairs_completed", step_metric="training_step")
 
     # Build starmap inputs: one call per pair
+    name_to_idx = {name: i for i, name in enumerate(names)}
     pair_tasks = []
-    pair_indices = []  # track (i, j) for each task
     for i, j in combinations(range(n), 2):
         pair_tasks.append((player_list[i], player_list[j], n_games, batch_size))
-        pair_indices.append((i, j))
 
-    # --- Fan out and collect results progressively ---
+    # --- Fan out and collect results as they complete ---
     wins = [[0] * n for _ in range(n)]
     results_matrix = [[None] * n for _ in range(n)]
 
@@ -2382,11 +2381,15 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
         )
 
     completed = 0
-    for (i, j), pair_result in zip(
-        pair_indices, eval_matchup_remote.starmap(pair_tasks)
+    for pair_result in eval_matchup_remote.starmap(
+        pair_tasks, order_outputs=False
     ):
         ab = pair_result["a_vs_b"]
         ba = pair_result["b_vs_a"]
+
+        # Identify pair from result data (order_outputs=False)
+        i = name_to_idx[ab["team_a"]]
+        j = name_to_idx[ab["team_b"]]
 
         results_matrix[i][j] = _dict_to_match_result(ab)
         results_matrix[j][i] = _dict_to_match_result(ba)
