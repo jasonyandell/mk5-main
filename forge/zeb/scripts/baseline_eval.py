@@ -13,7 +13,7 @@ import time
 import torch
 from statistics import mean, stdev
 
-from forge.zeb.game import new_game, apply_action, is_terminal, legal_actions, current_player
+from forge.zeb.game import new_game, game_seed, apply_action, is_terminal, legal_actions, current_player
 from forge.zeb.evaluate import RandomPlayer, RuleBasedPlayer, play_match
 from forge.zeb.self_play import play_games_batched, trajectories_to_batch
 from forge.zeb.model import ZebModel, get_model_config
@@ -136,7 +136,7 @@ def test_forward_pass() -> dict:
     print(f"Model size: {n_params:,} parameters ({n_params/1e6:.2f}M)")
 
     # Create a game and get observation
-    state = new_game(seed=42, dealer=0, skip_bidding=True)
+    state = new_game(seed=42)
     player = current_player(state)
 
     tokens, mask, hand_indices = observe(state, player)

@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 
-KNOWN_KINDS = ('random', 'heuristic', 'zeb', 'eq')
+KNOWN_KINDS = ('random', 'heuristic', 'heuristic2', 'zeb', 'eq')
 
 # Default params per kind
 _DEFAULTS: dict[str, dict[str, str]] = {
@@ -72,12 +72,14 @@ def build_player(spec: PlayerSpec, device: str = 'cuda'):
 
     Used for the generic fallback path (play_match with individual Player objects).
     """
-    from ..evaluate import RandomPlayer, RuleBasedPlayer, NeuralPlayer
+    from ..evaluate import RandomPlayer, RuleBasedPlayer, AnalysisHeuristicPlayer, NeuralPlayer
 
     if spec.kind == 'random':
         return RandomPlayer()
     elif spec.kind == 'heuristic':
         return RuleBasedPlayer()
+    elif spec.kind == 'heuristic2':
+        return AnalysisHeuristicPlayer()
     elif spec.kind == 'zeb':
         from .loading import load_zeb
         source = spec.params.get('source', 'hf')

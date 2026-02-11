@@ -212,7 +212,7 @@ def evaluate_vs_random(model: ZebModel, n_games: int = 100, device: str = 'cpu')
     """
     from forge.oracle.rng import deal_from_seed
     from forge.oracle.tables import DOMINO_COUNT_POINTS
-    from .game import new_game, apply_action, is_terminal, current_player, legal_actions
+    from .game import new_game, game_seed, apply_action, is_terminal, current_player, legal_actions
     import random as rand_module
 
     model.eval()
@@ -220,8 +220,7 @@ def evaluate_vs_random(model: ZebModel, n_games: int = 100, device: str = 'cpu')
 
     wins = 0
     for game_idx in range(n_games):
-        seed = 10000 + game_idx
-        state = new_game(seed, dealer=0, skip_bidding=True)
+        state = new_game(game_seed(10000, game_idx))
 
         # Play game: model on team 0, random on team 1
         while not is_terminal(state):

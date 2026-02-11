@@ -2246,7 +2246,7 @@ def train(
 #         --n-games 5000 --batch-size 50
 
 
-@app.function(image=eval_image, gpu="T4", timeout=7200)
+@app.function(image=eval_image, gpu="T4", timeout=21600)
 def eval_matchup_remote(player_a: str, player_b: str, n_games: int, batch_size: int) -> dict:
     """Run one pair (both directions) on a single T4. Returns both MatchResult dicts."""
     import sys
@@ -2356,6 +2356,8 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
         },
     )
     wandb.define_metric("elo/*", step_metric="training_step")
+    wandb.define_metric("elo_off/*", step_metric="training_step")
+    wandb.define_metric("elo_def/*", step_metric="training_step")
     wandb.define_metric("pairs_completed", step_metric="training_step")
 
     # Build starmap inputs: one call per pair
@@ -2366,6 +2368,8 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
 
     # --- Fan out and collect results as they complete ---
     wins = [[0] * n for _ in range(n)]
+    wins_off = [[0] * n for _ in range(n)]  # i beat j when i was team 0
+    wins_def = [[0] * n for _ in range(n)]  # i beat j when i was team 1
     results_matrix = [[None] * n for _ in range(n)]
 
     def _dict_to_match_result(d: dict) -> MatchResult:
@@ -2396,21 +2400,33 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
 
         wins[i][j] = ab["team_a_wins"]
         wins[j][i] = ab["team_b_wins"]
+        wins_off[i][j] = ab["a_as_team0"]["wins"]
+        wins_off[j][i] = ba["a_as_team0"]["wins"]
+        wins_def[i][j] = ab["a_as_team1"]["wins"]
+        wins_def[j][i] = ba["a_as_team1"]["wins"]
 
         completed += 1
         print(f"\n[{completed}/{n_pairs}] {names[i]} vs {names[j]}: "
               f"{ab['team_a_win_rate']:.1%} / {ba['team_a_win_rate']:.1%}")
 
-        # Progressive Elo + W&B log after each pair
+        # Progressive Elo (combined + offensive + defensive) + W&B
         ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+        ratings_off = compute_elo_ratings(names, wins_off, anchor=eq_anchor)
+        ratings_def = compute_elo_ratings(names, wins_def, anchor=eq_anchor)
         log_data: dict = {
             "training_step": training_step,
             "pairs_completed": completed,
         }
         for name, elo in ratings.items():
             log_data[f"elo/{name}"] = elo
+        for name, elo in ratings_off.items():
+            log_data[f"elo_off/{name}"] = elo
+        for name, elo in ratings_def.items():
+            log_data[f"elo_def/{name}"] = elo
         wandb.log(log_data)
         print(format_elo(ratings))
+        print(format_elo(ratings_off, "Offensive Elo"))
+        print(format_elo(ratings_def, "Defensive Elo"))
 
     # --- Final matrix table + JSON ---
     matrix_text = format_matrix(results_matrix, names)
@@ -2418,9 +2434,13 @@ def eval_matrix_entry(players: str, n_games: int = 1000, batch_size: int = 50):
     print("\n" + matrix_text)
     print("\n" + matrix_json)
 
-    # Final Elo
+    # Final Elo (combined + offensive + defensive)
     ratings = compute_elo_ratings(names, wins, anchor=eq_anchor)
+    ratings_off = compute_elo_ratings(names, wins_off, anchor=eq_anchor)
+    ratings_def = compute_elo_ratings(names, wins_def, anchor=eq_anchor)
     print("\n" + format_elo(ratings))
+    print("\n" + format_elo(ratings_off, "Offensive Elo (as team 0 / bidder)"))
+    print("\n" + format_elo(ratings_def, "Defensive Elo (as team 1 / defender)"))
 
     # Pairwise results table (W&B)
     matchups = json_mod.loads(matrix_json)

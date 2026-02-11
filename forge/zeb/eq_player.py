@@ -27,7 +27,8 @@ from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
 from forge.eq.tokenize_gpu import GPUTokenizer
 
 from .evaluate import Player, _get_current_player
-from .game import apply_action, is_terminal, legal_actions, new_game
+from .game import apply_action, game_seed, get_outcome, is_terminal, legal_actions, new_game
+from .gpu_training_pipeline import TrainingExamples
 from .observation import observe, get_legal_mask
 from .types import ZebGameState
 
@@ -199,7 +200,7 @@ def _run_eq_vs_random_batched(
     """Run E[Q] as one team vs random (batched GPU evaluation)."""
     # Initialize games
     states = [
-        new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True)
+        new_game(seed=game_seed(base_seed, i))
         for i in range(n_games)
     ]
     active = [True] * n_games
@@ -387,7 +388,7 @@ def _run_eq_vs_eq_batched(
 ) -> dict:
     """Run E[Q](A) vs E[Q](B) batched. A plays as a_team (0 or 1)."""
     states = [
-        new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True)
+        new_game(seed=game_seed(base_seed, i))
         for i in range(n_games)
     ]
     active = [True] * n_games
@@ -497,6 +498,326 @@ def _apply_eq_actions(
             active[game_idx] = False
 
 
+def _belief_targets_from_owner(owner: Tensor, player: int) -> tuple[Tensor, Tensor]:
+    """Build belief supervision from full-deal ownership for one perspective."""
+    rel_owner = (owner - int(player) + 4) % 4
+    belief_mask = rel_owner != 0
+    belief_targets = (rel_owner - 1).clamp(min=0).to(torch.long)
+    return belief_targets, belief_mask
+
+
+def _owner_tensor_from_state(state: ZebGameState) -> Tensor:
+    owner = torch.empty(28, dtype=torch.long)
+    for p in range(4):
+        for domino in state.hands[p]:
+            owner[int(domino)] = p
+    return owner
+
+
+def _concat_training_examples(examples: list[TrainingExamples]) -> TrainingExamples:
+    if len(examples) == 1:
+        return examples[0]
+    return TrainingExamples(
+        observations=torch.cat([x.observations for x in examples], dim=0),
+        masks=torch.cat([x.masks for x in examples], dim=0),
+        hand_indices=torch.cat([x.hand_indices for x in examples], dim=0),
+        hand_masks=torch.cat([x.hand_masks for x in examples], dim=0),
+        policy_targets=torch.cat([x.policy_targets for x in examples], dim=0),
+        value_targets=torch.cat([x.value_targets for x in examples], dim=0),
+        belief_targets=torch.cat([x.belief_targets for x in examples], dim=0),
+        belief_mask=torch.cat([x.belief_mask for x in examples], dim=0),
+    )
+
+
+def generate_eq_vs_zeb_training_examples(
+    oracle_model,
+    zeb_model,
+    *,
+    n_games: int,
+    n_samples: int,
+    device: str = 'cuda',
+    zeb_temperature: float = 0.1,
+    base_seed: int = 0,
+    batch_size: int = 0,
+    include_eq_pdf_policy: bool = False,
+) -> tuple[TrainingExamples, dict]:
+    """Generate source-compatible TrainingExamples from E[Q] vs Zeb games.
+
+    Returns:
+        (examples, stats) where examples are CPU tensors ready for save_examples.
+    """
+    if n_games <= 0:
+        raise ValueError("n_games must be positive")
+
+    # Balance seat assignment (E[Q] team 0 vs team 1) to avoid seat bias.
+    n_team0 = (n_games + 1) // 2
+    n_team1 = n_games - n_team0
+
+    chunk = batch_size if batch_size > 0 else n_games
+
+    chunks: list[TrainingExamples] = []
+    stats_chunks: list[dict] = []
+
+    def _run_side(total_games: int, *, eq_team: int, seed_offset: int) -> None:
+        remaining = total_games
+        seed = seed_offset
+        while remaining > 0:
+            this_batch = min(chunk, remaining)
+            examples, side_stats = _run_eq_vs_zeb_batched_with_examples(
+                oracle_model=oracle_model,
+                zeb_model=zeb_model,
+                n_games=this_batch,
+                n_samples=n_samples,
+                eq_team=eq_team,
+                base_seed=seed,
+                device=device,
+                zeb_temperature=zeb_temperature,
+                include_eq_pdf_policy=include_eq_pdf_policy,
+            )
+            chunks.append(examples)
+            stats_chunks.append(side_stats)
+            seed += this_batch
+            remaining -= this_batch
+
+    _run_side(n_team0, eq_team=0, seed_offset=base_seed)
+    _run_side(n_team1, eq_team=1, seed_offset=base_seed + n_team0)
+
+    merged_examples = _concat_training_examples(chunks)
+    eq_wins = sum(s['eq_wins'] for s in stats_chunks)
+    total_games_played = sum(s['n_games'] for s in stats_chunks)
+    return merged_examples, {
+        'eq_wins': eq_wins,
+        'total_games': total_games_played,
+        'eq_win_rate': eq_wins / max(total_games_played, 1),
+        'avg_margin': sum(s['avg_margin'] * s['n_games'] for s in stats_chunks) / max(total_games_played, 1),
+    }
+
+
+def _run_eq_vs_zeb_batched_with_examples(
+    oracle_model,
+    zeb_model,
+    *,
+    n_games: int,
+    n_samples: int,
+    eq_team: int,
+    base_seed: int,
+    device: str,
+    zeb_temperature: float,
+    include_eq_pdf_policy: bool,
+) -> tuple[TrainingExamples, dict]:
+    """Run batched E[Q] vs Zeb and return per-move training examples."""
+    states = [
+        new_game(seed=game_seed(base_seed, i))
+        for i in range(n_games)
+    ]
+    active = [True] * n_games
+    zeb_step = 0
+
+    owners = [_owner_tensor_from_state(s) for s in states]
+    per_game_records: list[list[dict]] = [[] for _ in range(n_games)]
+
+    sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
+    tokenizer = GPUTokenizer(max_batch=n_games * n_samples, device=device)
+
+    oracle_model.eval()
+    zeb_model.eval()
+    zeb_model.to(device)
+
+    while any(active):
+        eq_indices = []
+        eq_game_states = []
+        zeb_indices = []
+        zeb_game_states = []
+        zeb_players = []
+
+        for i, (state, is_active) in enumerate(zip(states, active)):
+            if not is_active:
+                continue
+            player = _get_current_player(state)
+            if player % 2 == eq_team:
+                eq_indices.append(i)
+                eq_game_states.append(state)
+            else:
+                zeb_indices.append(i)
+                zeb_game_states.append(state)
+                zeb_players.append(player)
+
+        # Batched E[Q] decisions
+        if eq_indices:
+            n_eq = len(eq_indices)
+            gst = zeb_states_to_game_state_tensor(eq_game_states, device)
+
+            with torch.no_grad():
+                worlds = sample_worlds_batched(gst, sampler, n_samples)
+                deals = build_hypothetical_deals(gst, worlds)
+
+                batch_needed = n_eq * n_samples
+                if batch_needed > tokenizer.max_batch:
+                    tokenizer = GPUTokenizer(max_batch=batch_needed, device=device)
+
+                tokens, masks = tokenize_batched(gst, deals, tokenizer)
+                q_values = query_model(
+                    oracle_model, tokens, masks, gst, n_samples, device,
+                )
+
+                q_reshaped = q_values.view(n_eq, n_samples, 7)
+                e_q = q_reshaped.mean(dim=1)
+                e_q_pdf = compute_eq_pdf(q_reshaped)
+                actions, _ = select_actions(gst, e_q, e_q_pdf, greedy=True)
+                e_q_pdf_cpu = e_q_pdf.detach().cpu() if include_eq_pdf_policy else None
+
+            for idx, game_idx in enumerate(eq_indices):
+                state = states[game_idx]
+                player = _get_current_player(state)
+                action = int(actions[idx].item())
+
+                obs, mask, hand_idx = observe(state, player)
+                hand_mask = mask[1:8].clone()
+                belief_targets, belief_mask = _belief_targets_from_owner(owners[game_idx], player)
+
+                policy = torch.zeros(7, dtype=torch.float32)
+                if include_eq_pdf_policy and e_q_pdf_cpu is not None:
+                    policy = e_q_pdf_cpu[idx].to(torch.float32)
+                    policy = torch.where(hand_mask, policy, torch.zeros_like(policy))
+                    norm = policy.sum()
+                    if norm.item() > 0:
+                        policy = policy / norm
+                    else:
+                        policy[action] = 1.0
+                else:
+                    policy[action] = 1.0
+
+                per_game_records[game_idx].append({
+                    'obs': obs.to(torch.int32),
+                    'mask': mask,
+                    'hand_idx': hand_idx,
+                    'hand_mask': hand_mask,
+                    'policy': policy,
+                    'belief_targets': belief_targets,
+                    'belief_mask': belief_mask,
+                    'player': player,
+                })
+
+                states[game_idx] = apply_action(state, action)
+                if is_terminal(states[game_idx]):
+                    active[game_idx] = False
+
+        # Batched Zeb decisions
+        if zeb_indices:
+            with torch.no_grad():
+                batch_tokens = []
+                batch_masks = []
+                batch_hand_indices = []
+                batch_legal = []
+                batch_hand_masks = []
+                batch_cpu_tokens = []
+                batch_cpu_masks = []
+                batch_cpu_hand_idx = []
+
+                for state, player in zip(zeb_game_states, zeb_players):
+                    tokens, mask, hand_indices = observe(state, player)
+                    legal = get_legal_mask(state, player)
+
+                    batch_cpu_tokens.append(tokens.to(torch.int32))
+                    batch_cpu_masks.append(mask)
+                    batch_cpu_hand_idx.append(hand_indices)
+                    batch_hand_masks.append(mask[1:8].clone())
+
+                    batch_tokens.append(tokens.to(device))
+                    batch_masks.append(mask.to(device))
+                    batch_hand_indices.append(hand_indices.to(device))
+                    batch_legal.append(legal.to(device))
+
+                batch_tokens_t = torch.stack(batch_tokens)
+                batch_masks_t = torch.stack(batch_masks)
+                batch_hand_indices_t = torch.stack(batch_hand_indices)
+                batch_legal_t = torch.stack(batch_legal)
+
+                torch.manual_seed(hash((base_seed, zeb_step)) & 0xFFFFFFFF)
+                zeb_step += 1
+                actions, _, _ = zeb_model.get_action(
+                    batch_tokens_t, batch_masks_t, batch_hand_indices_t, batch_legal_t,
+                    temperature=zeb_temperature,
+                )
+
+                for idx, game_idx in enumerate(zeb_indices):
+                    state = states[game_idx]
+                    player = zeb_players[idx]
+                    action = int(actions[idx].item())
+
+                    belief_targets, belief_mask = _belief_targets_from_owner(owners[game_idx], player)
+                    policy = torch.zeros(7, dtype=torch.float32)
+                    policy[action] = 1.0
+
+                    per_game_records[game_idx].append({
+                        'obs': batch_cpu_tokens[idx],
+                        'mask': batch_cpu_masks[idx],
+                        'hand_idx': batch_cpu_hand_idx[idx],
+                        'hand_mask': batch_hand_masks[idx],
+                        'policy': policy,
+                        'belief_targets': belief_targets,
+                        'belief_mask': belief_mask,
+                        'player': player,
+                    })
+
+                    states[game_idx] = apply_action(state, action)
+                    if is_terminal(states[game_idx]):
+                        active[game_idx] = False
+
+    obs_list = []
+    mask_list = []
+    hand_idx_list = []
+    hand_mask_list = []
+    policy_list = []
+    value_list = []
+    belief_targets_list = []
+    belief_mask_list = []
+
+    eq_wins = 0
+    opp_wins = 0
+    total_margin = 0
+
+    for game_idx, final_state in enumerate(states):
+        team0_pts, team1_pts = final_state.team_points
+        eq_pts = team0_pts if eq_team == 0 else team1_pts
+        opp_pts = team1_pts if eq_team == 0 else team0_pts
+        if eq_pts > opp_pts:
+            eq_wins += 1
+        else:
+            opp_wins += 1
+        total_margin += eq_pts - opp_pts
+
+        for rec in per_game_records[game_idx]:
+            obs_list.append(rec['obs'])
+            mask_list.append(rec['mask'])
+            hand_idx_list.append(rec['hand_idx'])
+            hand_mask_list.append(rec['hand_mask'])
+            policy_list.append(rec['policy'])
+            value_list.append(torch.tensor(get_outcome(final_state, rec['player']), dtype=torch.float32))
+            belief_targets_list.append(rec['belief_targets'])
+            belief_mask_list.append(rec['belief_mask'])
+
+    examples = TrainingExamples(
+        observations=torch.stack(obs_list),
+        masks=torch.stack(mask_list),
+        hand_indices=torch.stack(hand_idx_list),
+        hand_masks=torch.stack(hand_mask_list),
+        policy_targets=torch.stack(policy_list),
+        value_targets=torch.stack(value_list),
+        belief_targets=torch.stack(belief_targets_list),
+        belief_mask=torch.stack(belief_mask_list),
+    )
+    stats = {
+        'eq_wins': eq_wins,
+        'opp_wins': opp_wins,
+        'eq_win_rate': eq_wins / n_games,
+        'avg_margin': total_margin / n_games,
+        'n_games': n_games,
+        'eq_team': eq_team,
+    }
+    return examples, stats
+
+
 def evaluate_eq_vs_zeb(
     oracle_model,
     zeb_model,
@@ -589,10 +910,11 @@ def _run_eq_vs_zeb_batched(
 ) -> dict:
     """Run E[Q] as one team vs Zeb (batched GPU evaluation)."""
     states = [
-        new_game(seed=base_seed + i, dealer=i % 4, skip_bidding=True)
+        new_game(seed=game_seed(base_seed, i))
         for i in range(n_games)
     ]
     active = [True] * n_games
+    zeb_step = 0  # For deterministic torch seeding
 
     # Pre-allocate E[Q] GPU resources
     sampler = WorldSamplerMRV(max_games=n_games, max_samples=n_samples, device=device)
@@ -671,6 +993,8 @@ def _run_eq_vs_zeb_batched(
                 batch_hand_indices = torch.stack(batch_hand_indices).to(device)
                 batch_legal = torch.stack(batch_legal).to(device)
 
+                torch.manual_seed(hash((base_seed, zeb_step)) & 0xFFFFFFFF)
+                zeb_step += 1
                 actions, _, _ = zeb_model.get_action(
                     batch_tokens, batch_masks, batch_hand_indices, batch_legal,
                     temperature=zeb_temperature,

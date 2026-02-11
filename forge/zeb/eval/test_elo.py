@@ -75,3 +75,10 @@ def test_format_elo_sorted_descending():
     assert "high" in lines[1]
     assert "mid" in lines[2]
     assert "low" in lines[3]
+
+
+def test_format_elo_custom_label():
+    """format_elo should use custom label."""
+    ratings = {"a": 1600.0}
+    text = format_elo(ratings, "Offensive Elo")
+    assert text.startswith("Offensive Elo:")

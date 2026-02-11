@@ -180,10 +180,10 @@ def compute_elo_ratings(
     return ratings
 
 
-def format_elo(ratings: dict[str, float]) -> str:
+def format_elo(ratings: dict[str, float], label: str = "Elo Ratings") -> str:
     """Pretty-print Elo ratings, sorted descending."""
     sorted_ratings = sorted(ratings.items(), key=lambda x: -x[1])
-    lines = ["Elo Ratings:"]
+    lines = [f"{label}:"]
     for name, elo in sorted_ratings:
         lines.append(f"  {name:>30s}  {elo:7.1f}")
     return '\n'.join(lines)
