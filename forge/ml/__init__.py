@@ -1,22 +1,6 @@
-"""forge.ml - Machine learning module for domino transformer training."""
+"""forge.ml - Machine learning module for domino transformer training.
 
-from .data import DominoDataModule, DominoDataset
-from .metrics import compute_blunder_rate, compute_qgap, compute_qgaps_per_sample
-from .module import DominoLightningModule, DominoTransformer
-from .tokenize import get_split, process_shard, tokenize_shards
-
-__all__ = [
-    # Core classes
-    "DominoTransformer",
-    "DominoLightningModule",
-    "DominoDataModule",
-    "DominoDataset",
-    # Tokenization
-    "tokenize_shards",
-    "process_shard",
-    "get_split",
-    # Metrics
-    "compute_qgap",
-    "compute_qgaps_per_sample",
-    "compute_blunder_rate",
-]
+Import from submodules directly, e.g.:
+    from forge.ml.module import DominoLightningModule
+    from forge.ml.tokenize import tokenize_shards
+"""
