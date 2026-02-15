@@ -14,7 +14,7 @@ from typing import Tuple
 import torch
 from torch import Tensor
 
-from forge.ml.module import DominoTransformer
+from forge.ml.transformer import DominoTransformer
 
 
 DEFAULT_CHECKPOINT = Path(__file__).parent.parent / "models" / "domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt"
