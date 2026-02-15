@@ -8,11 +8,16 @@ Examples: workers upload .pt batches; learner downloads new ones.
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 import time
 from pathlib import Path
 
 import torch
+
+# Suppress HF upload/download progress bars — they spam worker logs with
+# tqdm cursor-movement sequences that bury batch output.
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
 
 from forge.zeb.model import ZebModel
 
