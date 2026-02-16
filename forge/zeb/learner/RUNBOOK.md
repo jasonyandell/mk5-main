@@ -48,8 +48,8 @@ Workers (Vast.ai)                    Learner (local 3050 Ti)
 **On restart, the learner:**
 1. Loads bootstrap checkpoint (just to get model config)
 2. Pulls latest weights from HF → picks up where it left off
-3. Rebuilds replay buffer from HF examples repo
-4. Creates a new W&B run (same display name, new ID)
+3. Restores local replay cache (if available), then ingests only new HF example files
+4. Resumes the prior W&B run when `wandb_run_id` exists in HF state
 5. Continues training
 
 ---
@@ -64,8 +64,22 @@ python -u -m forge.zeb.learner.run \
     --weights-name zeb-557k-1m \
     --lr 1e-4 \
     --batch-size 64 \
-    --replay-buffer-size 200000 \
-    --training-steps-per-cycle 100 \
+    --replay-buffer-size 500000 \
+    --eval-aux-replay-buffer-size 100000 \
+    --eval-aux-enabled \
+    --eval-aux-batch-fraction 0.05 \
+    --eval-aux-policy-weight 0.0 \
+    --eval-aux-value-weight 1.0 \
+    --eval-aux-belief-weight 0.5 \
+    --eval-aux-max-model-lag 400 \
+    --eval-aux-lag-half-life 200 \
+    --eval-aux-min-keep-weight 0.10 \
+    --training-steps-per-cycle 1000 \
+    --keep-example-files 128 \
+    --amp --amp-dtype fp16 \
+    --local-replay-cache-enabled \
+    --local-replay-cache-dir ~/.cache/forge/zeb/replay \
+    --local-replay-cache-save-every 25 \
     --push-every 25 \
     --eval-every 50 \
     --device cuda
@@ -75,14 +89,22 @@ python -u -m forge.zeb.learner.run \
 
 | Flag | Default | Notes |
 |------|---------|-------|
-| `--replay-buffer-size` | 200000 | Larger = more diverse training, more VRAM |
+| `--replay-buffer-size` | 500000 | Larger = more diverse training, more VRAM |
 | `--push-every` | 25 | Push weights to HF every N cycles (~1 push/min) |
 | `--eval-every` | 50 | Eval vs random every N cycles |
-| `--training-steps-per-cycle` | 100 | Gradient steps per cycle |
+| `--training-steps-per-cycle` | 1000 | Gradient steps per cycle |
 | `--batch-size` | 64 | Training batch size |
 | `--weights-name` | none | HF weights filename stem (e.g. `large` → `large.pt`, `large-config.json`) |
 | `--run-name` | auto | W&B display name |
 | `--min-buffer-size` | 5000 | Won't train until buffer has this many examples |
+| `--eval-aux-enabled/--no-eval-aux-enabled` | enabled | Hard kill-switch for eval stream |
+| `--eval-aux-batch-fraction` | 0.05 | Effective source mix ratio target |
+| `--eval-aux-policy-weight` | 0.0 | Keeps eval policy contribution off by default |
+| `--eval-aux-max-model-lag` | 400 | Hard staleness cutoff in model steps |
+| `--eval-aux-lag-half-life` | 200 | Probabilistic downweight half-life |
+| `--keep-example-files` | 128 | HF example file retention window |
+| `--amp/--no-amp` | enabled | Mixed precision on CUDA (fp16 default) |
+| `--local-replay-cache-enabled` | enabled | Warm-restart local replay snapshotting |
 
 ### What Healthy Startup Looks Like
 
@@ -90,18 +112,21 @@ python -u -m forge.zeb.learner.run \
 Loading bootstrap checkpoint: forge/zeb/models/zeb-557k-1m.pt
   Model: 556,970 parameters
 Pulling weights from HF: zeb-557k-1m.pt (step 9925, 1,464,832 games)
-Replay buffer (HF): 172,032/200,000 examples from 24 files
+Replay buffers (HF): selfplay=215,040/500,000, eval_aux=100,000/100,000 from 180 files
 W&B run: https://wandb.ai/jasonyandell-forge42/zeb-mcts/runs/abc123
 
 === Distributed Learner ===
 Examples: jasonyandell/zeb-42-examples
 Repo: jasonyandell/zeb-42
-Starting from cycle 9925
-LR: 0.0001, batch: 64, steps/cycle: 100
-Min buffer: 5,000, buffer capacity: 200,000
+Starting from cycle 1000
+LR: 0.0001, batch: 64, steps/cycle: 1000
+AMP: enabled (dtype=fp16)
+Buffers: selfplay min=5,000/500,000, eval_aux=100,000
+Source routing: selfplay-mcts=policy+value+belief, eval-eq-zeb=policy*0 + value*1 + belief*0.5
+Eval-aux kill-switch: enabled, max_lag=400, half_life=200, min_keep=0.100
+Local replay cache: enabled, dir=/home/jason/.cache/forge/zeb/replay, save_every=25
 
-Ingested 7,168 examples from 1 files [buffer: 179,200]
-Cycle 9926: policy_loss=0.3226, value_loss=0.2622 (train=3.40s) [buffer: 179,200, games: 1,465,088]
+Cycle 1001: policy_loss=0.3913, value_loss=0.3326, belief_loss=0.5183, belief_acc=0.713, eval_aux_examples/step=3.2, mix(self/eval)=0.95/0.05, eval_aux_policy_w=0, value(self/eval)=0.3283/0.4139, belief(self/eval)=0.5184/0.5174 (train=62.72s) [selfplay: 129,024, eval_aux: 100,000, games: 117,376]
 ```
 
 ---
@@ -125,12 +150,26 @@ Cycle 9926: policy_loss=0.3226, value_loss=0.2622 (train=3.40s) [buffer: 179,200
 | `train/lr` | Current learning rate |
 | `eval/vs_random_win_rate` | Win rate against random player (every `--eval-every` cycles) |
 | `stats/total_games` | Cumulative games across all workers |
-| `stats/replay_buffer_size` | Current buffer fill level |
+| `stats/replay_buffer_selfplay` | Self-play replay occupancy |
+| `stats/replay_buffer_eval_aux` | Eval-aux replay occupancy |
+| `stats/selfplay_mix_ratio` | Effective train-step fraction from self-play |
+| `stats/eval_aux_mix_ratio` | Effective train-step fraction from eval-aux |
+| `train/selfplay_policy_loss` | Self-play source policy loss |
+| `train/selfplay_value_loss` | Self-play source value loss |
+| `train/selfplay_belief_loss` | Self-play source belief loss |
+| `train/eval_aux_policy_loss` | Eval-aux source policy loss (diagnostic; default weight is 0) |
+| `train/eval_aux_value_loss` | Eval-aux source value loss |
+| `train/eval_aux_belief_loss` | Eval-aux source belief loss |
+| `ingest/selfplay_examples` | Self-play examples ingested this cycle |
+| `ingest/selfplay_examples_per_s` | Self-play ingest rate this cycle |
+| `ingest/eval_aux_seen_examples` | Eval-aux examples observed before filtering |
+| `ingest/eval_aux_kept_examples` | Eval-aux examples retained after filtering |
+| `ingest/eval_aux_skipped_*` | Eval-aux drops from kill-switch/staleness/downweighting |
 
 ### W&B Run Management
 
-- Each learner restart creates a **new W&B run** with the same display name
-- This is intentional — avoids resume conflicts after run deletion
+- Learner resumes the previous run when `wandb_run_id` exists in the HF state JSON
+- If no run ID exists (fresh namespace), learner creates a new run
 - To delete old/noisy runs:
   ```python
   import wandb
@@ -165,6 +204,117 @@ Examples are also namespaced by subdirectory:
 - `--weights-name large`: examples under `large/` subdirectory
 
 This means multiple models can share the same HF repos without collision.
+
+### Eval-aux Namespace Rule
+
+Use the same `--weights-name` namespace for:
+- learner weights/state files,
+- self-play worker examples,
+- eval-aux worker examples.
+
+Do not mix namespaces across workers. A mismatched namespace silently creates
+parallel training streams that never meet.
+
+---
+
+## Eval-aux Rollout (0 -> 5 -> 10)
+
+Roll out eval-aux in three stages. Keep all other hyperparameters fixed.
+
+### Stage 0: Baseline (0 percent eval-aux)
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/models/zeb-557k-1m.pt \
+    --weights-name zeb-557k-1m \
+    --no-eval-aux-enabled \
+    --eval-aux-batch-fraction 0.0 \
+    --eval-aux-policy-weight 0.0
+```
+
+Run at least 200 cycles to establish baseline variance.
+
+### Stage 1: 5 percent eval-aux
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/models/zeb-557k-1m.pt \
+    --weights-name zeb-557k-1m \
+    --eval-aux-enabled \
+    --eval-aux-batch-fraction 0.05 \
+    --eval-aux-policy-weight 0.0 \
+    --eval-aux-value-weight 1.0 \
+    --eval-aux-belief-weight 0.5 \
+    --eval-aux-max-model-lag 400 \
+    --eval-aux-lag-half-life 200 \
+    --eval-aux-min-keep-weight 0.10
+```
+
+Advance only if all are true for >=200 cycles:
+- `stats/eval_aux_mix_ratio` stays in `[0.03, 0.07]`
+- `ingest/eval_aux_skipped_stale_examples` remains <25% of `ingest/eval_aux_seen_examples`
+- `train/value_loss` and `train/belief_loss` remain within 15% of Stage 0 median
+
+### Stage 2: 10 percent eval-aux
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/models/zeb-557k-1m.pt \
+    --weights-name zeb-557k-1m \
+    --eval-aux-enabled \
+    --eval-aux-batch-fraction 0.10 \
+    --eval-aux-policy-weight 0.0 \
+    --eval-aux-value-weight 1.0 \
+    --eval-aux-belief-weight 0.5 \
+    --eval-aux-max-model-lag 400 \
+    --eval-aux-lag-half-life 200 \
+    --eval-aux-min-keep-weight 0.10
+```
+
+---
+
+## Rollback (Immediate)
+
+If eval-aux destabilizes training, disable it without changing namespace/state:
+
+```bash
+python -u -m forge.zeb.learner.run \
+    --repo-id jasonyandell/zeb-42 \
+    --examples-repo-id jasonyandell/zeb-42-examples \
+    --checkpoint forge/zeb/models/zeb-557k-1m.pt \
+    --weights-name zeb-557k-1m \
+    --no-eval-aux-enabled \
+    --eval-aux-batch-fraction 0.0 \
+    --eval-aux-policy-weight 0.0
+```
+
+This preserves continuity for self-play training and W&B step numbering.
+
+---
+
+## On-call Checklist
+
+Check every 10-15 minutes during rollout:
+- `stats/eval_aux_mix_ratio` vs target stage (0.00, 0.05, 0.10)
+- `ingest/eval_aux_skipped_stale_examples / ingest/eval_aux_seen_examples`
+- `train/eval_aux_value_loss` and `train/eval_aux_belief_loss` trend
+- `stats/replay_buffer_selfplay` not shrinking below `--min-buffer-size`
+
+Immediate mitigation triggers:
+- Mix ratio error >0.03 from target for >20 consecutive cycles.
+- Stale-skip ratio >40% for >20 cycles.
+- `train/value_loss` or `train/belief_loss` jumps >25% above stage baseline median for >50 cycles.
+
+Immediate actions:
+1. Switch to rollback command above (`--no-eval-aux-enabled --eval-aux-batch-fraction 0`).
+2. Confirm `stats/eval_aux_mix_ratio` returns to `0.0` within 5 cycles.
+3. If stale-skip was root cause, lower lag by setting `--eval-aux-max-model-lag 200` before reattempt.
 
 ---
 
@@ -253,8 +403,9 @@ To train a different model architecture or from a different checkpoint:
        --examples-repo-id jasonyandell/zeb-42-examples \
        --checkpoint forge/zeb/checkpoints/large-init.pt \
        --weights-name large \
-       --lr 1e-4 --batch-size 64 --replay-buffer-size 50000 \
+       --lr 1e-4 --batch-size 64 --replay-buffer-size 500000 \
        --training-steps-per-cycle 1000 \
+       --amp --amp-dtype fp16 \
        --wandb
    ```
 
@@ -328,7 +479,7 @@ This creates a background monitor that:
 
 3. **W&B runs resume across restarts.** The learner persists `wandb_run_id` in the HF state JSON and uses `resume="allow"` on init. Restarts continue the same W&B run with a continuous x-axis (explicit `step=cycle`).
 
-4. **Replay buffer rebuilds from HF examples repo on startup.** The examples repo is pruned to `--keep-example-files` (default 15) files. With ~7k examples per file and 200k buffer, ~28 files fill the buffer. After pruning, startup typically gets ~100-170k examples.
+4. **Replay warm restart is local-first, then HF.** On restart, learner restores local replay cache by default (`--local-replay-cache-enabled`), then ingests only new HF example files. HF examples are still pruned to `--keep-example-files` (default 128); with ~7k examples/file and 500k self-play target, ~70 files cover one full self-play buffer.
 
 5. **Push frequency tradeoff.** `--push-every 25` means workers get updated weights roughly every minute. Lower values mean more HF API calls (rate limit risk on free tier). Higher values mean more stale worker data and more training lost on crash.
 

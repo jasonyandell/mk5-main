@@ -882,9 +882,10 @@ Multiple workers use different `--worker-id` values. No shared filesystem needed
 **Training examples** flow through HuggingFace Hub:
 ```
 jasonyandell/zeb-42-examples/
-├── worker-0_1707123456_a1b2c3d4.pt    # Worker uploads atomically
-├── worker-0_1707123520_e5f6a7b8.pt
-└── worker-1_1707123489_c9d0e1f2.pt    # Multiple workers OK
+├── worker-0_1707123456_a1b2c3d4.pt         # self-play worker uploads atomically
+├── worker-1_1707123489_c9d0e1f2.pt
+├── eval-aux-0_1707123520_e5f6a7b8.pt       # eval EQ-vs-Zeb worker uploads
+└── eval-aux-1_1707123599_f1e2d3c4.pt
 ```
 
 Each `.pt` file contains an `TrainingExamples`:
@@ -892,9 +893,13 @@ Each `.pt` file contains an `TrainingExamples`:
 - `masks`: [N, 36] bool
 - `hand_indices`: [N, 7] int64
 - `hand_masks`: [N, 7] bool
-- `policy_targets`: [N, 7] float32 (MCTS visit distributions)
+- `policy_targets`: [N, 7] float32 (self-play MCTS visits; eval-aux may be actor one-hot or EQ PDF)
 - `value_targets`: [N] float32 (game outcomes in [-1, 1])
-- `metadata`: {worker_id, model_step, n_games, timestamp}
+- `metadata`: {worker_id, model_step, n_games, timestamp, source}
+
+Source values:
+- `selfplay-mcts`: default self-play stream (policy+value+belief objectives)
+- `eval-eq-zeb`: eval-aux stream (value+belief by default, policy weight 0)
 
 With `--games-per-batch 1280`: each file contains ~35k examples (~42MB).
 The learner tracks seen filenames and only downloads new files.
@@ -914,6 +919,18 @@ weights if the step hasn't changed. HF's ETag caching makes polling free.
 For `--weights-name large`, files become `large.pt`, `large-config.json`,
 `large-state.json`, and examples go under `large/` in the examples repo. Multiple
 models share the same repos without collision. See `forge/zeb/learner/RUNBOOK.md`.
+
+### Eval-aux Rollout
+
+Eval-aux should be rolled out in stages: 0 percent -> 5 percent -> 10 percent
+effective mix. Use the source-aware learner flags:
+- `--eval-aux-enabled/--no-eval-aux-enabled`
+- `--eval-aux-batch-fraction`
+- `--eval-aux-max-model-lag`
+- `--eval-aux-lag-half-life`
+- `--eval-aux-min-keep-weight`
+
+Use the copy-paste rollout and rollback commands in `forge/zeb/learner/RUNBOOK.md`.
 
 ### Replay Buffer Sizing
 
