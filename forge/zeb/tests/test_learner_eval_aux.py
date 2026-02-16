@@ -160,6 +160,47 @@ def test_selfplay_batch_routes_to_selfplay_buffer():
     assert len(eval_aux_buffer) == 0
 
 
+def test_dual_stream_ingest_tracks_per_source_counts():
+    selfplay_buffer, eval_aux_buffer = _make_buffers()
+    selfplay_batch = _make_batch(source=SOURCE_SELFPLAY, model_step=100, n=16)
+    eval_batch = _make_batch(source=SOURCE_EVAL_AUX, model_step=99, n=12)
+    stats = IngestStats()
+
+    added_self_examples, added_self_games = _route_batch_into_replay(
+        batch=selfplay_batch,
+        cycle=120,
+        args=_make_args(),
+        device='cpu',
+        selfplay_buffer=selfplay_buffer,
+        eval_aux_buffer=eval_aux_buffer,
+        stats=stats,
+    )
+    added_eval_examples, added_eval_games = _route_batch_into_replay(
+        batch=eval_batch,
+        cycle=120,
+        args=_make_args(),
+        device='cpu',
+        selfplay_buffer=selfplay_buffer,
+        eval_aux_buffer=eval_aux_buffer,
+        stats=stats,
+    )
+
+    assert added_self_examples == 16
+    assert added_eval_examples == 12
+    assert added_self_games == 2
+    assert added_eval_games == 2
+    assert len(selfplay_buffer) == 16
+    assert len(eval_aux_buffer) == 12
+    assert stats.ingested_examples == 28
+    assert stats.ingested_files == 2
+    assert stats.selfplay_examples == 16
+    assert stats.selfplay_files == 1
+    assert stats.eval_examples_seen == 12
+    assert stats.eval_examples_kept == 12
+    assert stats.eval_files_seen == 1
+    assert stats.eval_files_kept == 1
+
+
 class _TinyModel(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -199,5 +240,37 @@ def test_source_aware_training_runs_with_eval_aux_policy_zero():
 
     assert metrics['eval_aux_examples_per_step'] > 0
     assert metrics['selfplay_examples_per_step'] > 0
+    assert metrics['selfplay_mix_ratio'] > 0
+    assert metrics['eval_aux_mix_ratio'] > 0
+    assert abs(metrics['selfplay_mix_ratio'] + metrics['eval_aux_mix_ratio'] - 1.0) < 1e-6
+    assert 'selfplay_policy_loss' in metrics
+    assert 'selfplay_value_loss' in metrics
     assert 'eval_aux_value_loss' in metrics
     assert metrics['objective_loss'] >= 0.0
+
+
+def test_source_aware_policy_diag_uses_selfplay_cadence():
+    selfplay_buffer, eval_aux_buffer = _make_buffers()
+    selfplay_buffer.add_batch(_make_batch(source=SOURCE_SELFPLAY, model_step=100, n=128))
+    eval_aux_buffer.add_batch(_make_batch(source=SOURCE_EVAL_AUX, model_step=99, n=128))
+
+    torch.manual_seed(0)
+    model = _TinyModel()
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+    metrics = train_n_steps_source_aware(
+        model,
+        optimizer,
+        selfplay_buffer,
+        eval_aux_buffer,
+        n_steps=10,
+        batch_size=16,
+        eval_aux_batch_fraction=0.1,
+        selfplay_weights=TrainWeights(policy=1.0, value=1.0, belief=0.5),
+        eval_aux_weights=TrainWeights(policy=0.0, value=1.0, belief=0.5),
+        train_diagnostics_every=10,
+    )
+
+    assert metrics['selfplay_mix_ratio'] > 0.0
+    assert metrics['eval_aux_mix_ratio'] > 0.0
+    assert metrics['policy_entropy'] > 0.0
+    assert metrics['policy_kl_divergence'] >= 0.0
