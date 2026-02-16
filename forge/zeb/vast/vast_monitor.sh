@@ -561,7 +561,7 @@ shutdown() {
     # Kill any lingering poll subshells
     kill 0 2>/dev/null
     wait 2>/dev/null
-    rm -f "$STATUS_DIR"/poll.* 2>/dev/null
+    rm -f "$STATUS_DIR"/poll.* "${PIDFILE:-}" 2>/dev/null
     log "  Fleet is still running. Tear down: ${SCRIPT_DIR}/vast_down.sh $FLEET --force"
     exit 0
 }
@@ -587,6 +587,16 @@ declare -A PROJ_CONSEC_SAME    # iid -> consecutive same-batch count
 
 STATUS_DIR="/tmp/zeb-monitor-${FLEET}"
 mkdir -p "$STATUS_DIR"
+PIDFILE="${STATUS_DIR}/monitor.pid"
+if [ -f "$PIDFILE" ]; then
+    old_pid=$(cat "$PIDFILE" 2>/dev/null)
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+        echo "ERROR: Monitor already running for fleet $FLEET (pid=$old_pid, pidfile=$PIDFILE)"
+        echo "Kill it first: kill $old_pid"
+        exit 1
+    fi
+fi
+echo $$ > "$PIDFILE"
 EVENT_LOG="${STATUS_DIR}/events.log"
 # Fresh event log each startup — stale events from previous runs cause false stalls
 : > "$EVENT_LOG"
