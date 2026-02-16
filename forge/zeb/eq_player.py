@@ -664,7 +664,17 @@ def _run_eq_vs_zeb_batched_with_examples(
                 e_q = q_reshaped.mean(dim=1)
                 e_q_pdf = compute_eq_pdf(q_reshaped)
                 actions, _ = select_actions(gst, e_q, e_q_pdf, greedy=True)
-                e_q_pdf_cpu = e_q_pdf.detach().cpu() if include_eq_pdf_policy else None
+
+                # Compute p_make per action for soft policy targets
+                # Offense (bidder's team): need Q >= 18 -> bin 60+
+                # Defense (opponent team): need Q >= -17 -> bin 25+
+                if include_eq_pdf_policy:
+                    is_offense = ((gst.current_player % 2) == (gst.bidder % 2)).unsqueeze(1)
+                    p_make_off = e_q_pdf[:, :, 60:].sum(dim=2)
+                    p_make_def = e_q_pdf[:, :, 25:].sum(dim=2)
+                    p_make_cpu = torch.where(is_offense, p_make_off, p_make_def).detach().cpu()
+                else:
+                    p_make_cpu = None
 
             for idx, game_idx in enumerate(eq_indices):
                 state = states[game_idx]
@@ -676,8 +686,8 @@ def _run_eq_vs_zeb_batched_with_examples(
                 belief_targets, belief_mask = _belief_targets_from_owner(owners[game_idx], player)
 
                 policy = torch.zeros(7, dtype=torch.float32)
-                if include_eq_pdf_policy and e_q_pdf_cpu is not None:
-                    policy = e_q_pdf_cpu[idx].to(torch.float32)
+                if include_eq_pdf_policy and p_make_cpu is not None:
+                    policy = p_make_cpu[idx].to(torch.float32)
                     policy = torch.where(hand_mask, policy, torch.zeros_like(policy))
                     norm = policy.sum()
                     if norm.item() > 0:
