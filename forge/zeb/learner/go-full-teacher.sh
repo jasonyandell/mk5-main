@@ -89,6 +89,7 @@ nohup "$PYTHON_BIN" -u -m forge.zeb.learner.run \
   --local-replay-cache-dir "$LOCAL_REPLAY_CACHE_DIR" \
   --local-replay-cache-save-every "$LOCAL_REPLAY_CACHE_SAVE_EVERY" \
   --push-every "$PUSH_EVERY" \
+  --eval-every "${ZEB_EVAL_EVERY:-10}" \
   --wandb \
   --wandb-project "$WANDB_PROJECT" \
   --run-name "$RUN_NAME" \
