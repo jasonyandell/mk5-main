@@ -48,7 +48,7 @@ train_image = (
 @app.function(
     image=train_image,
     gpu="L4",
-    timeout=3600,
+    timeout=14400,  # 4 hours — 3 epochs at ~17s/step takes ~3h
     secrets=[modal.Secret.from_name("huggingface-secret"),
              modal.Secret.from_name("wandb-api-key")],
     volumes={"/model-cache": modal.Volume.from_name("gemma-e2b-cache", create_if_missing=True)},
@@ -117,6 +117,34 @@ def train(
         print("[dry-run] Data loaded successfully. Exiting.")
         return {"status": "dry_run", "n_train": len(train_ds), "n_val": len(val_ds)}
 
+    # --- Patch Gemma4ClippableLinear for PEFT compatibility ---
+    # Gemma 4's ClippableLinear inherits from nn.Module, but PEFT only targets
+    # nn.Linear. This monkey-patch re-inherits from nn.Linear while preserving
+    # the clamping behavior. Must be applied BEFORE model loading.
+    # See: https://huggingface.co/google/gemma-4-31B/discussions/3
+    from transformers.models.gemma4 import modeling_gemma4
+
+    class PatchedClippableLinear(torch.nn.Linear):
+        def __init__(self, config, in_features, out_features):
+            torch.nn.Linear.__init__(self, in_features, out_features, bias=False)
+            self.use_clipped_linears = getattr(config, "use_clipped_linears", False)
+            if self.use_clipped_linears:
+                self.register_buffer("input_min", torch.tensor(-float("inf")))
+                self.register_buffer("input_max", torch.tensor(float("inf")))
+                self.register_buffer("output_min", torch.tensor(-float("inf")))
+                self.register_buffer("output_max", torch.tensor(float("inf")))
+
+        def forward(self, x):
+            if self.use_clipped_linears:
+                x = torch.clamp(x, self.input_min, self.input_max)
+            out = torch.nn.Linear.forward(self, x)
+            if self.use_clipped_linears:
+                out = torch.clamp(out, self.output_min, self.output_max)
+            return out
+
+    modeling_gemma4.Gemma4ClippableLinear = PatchedClippableLinear
+    print("[patch] Gemma4ClippableLinear patched for PEFT compatibility")
+
     # --- Load model + tokenizer ---
     print(f"[model] Loading {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
@@ -127,14 +155,12 @@ def train(
     )
 
     # --- LoRA config ---
-    # Gemma 4 wraps attention/mlp in Gemma4ClippableLinear which contains a
-    # standard nn.Linear inside as .linear. We target the inner linear modules.
     lora_config = LoraConfig(
         r=lora_rank,
         lora_alpha=lora_alpha,
-        target_modules=["q_proj.linear", "k_proj.linear", "v_proj.linear",
-                         "o_proj.linear", "gate_proj.linear", "up_proj.linear",
-                         "down_proj.linear"],
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj",
+                         "gate_proj", "up_proj", "down_proj"],
+        modules_to_save=None,
         lora_dropout=0.05,
         bias="none",
         task_type=TaskType.CAUSAL_LM,

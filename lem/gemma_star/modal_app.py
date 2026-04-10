@@ -29,6 +29,7 @@ gemma_image = (
         "transformers>=4.52",
         "accelerate>=1.2",
         "huggingface_hub>=0.27",
+        "peft>=0.14",
         "pillow",  # Gemma 4 E2B is multimodal; processor requires PIL even for text-only
     )
 )
@@ -42,8 +43,17 @@ gemma_image = (
     # Cache the model weights across invocations
     volumes={"/model-cache": modal.Volume.from_name("gemma-e2b-cache", create_if_missing=True)},
 )
-def generate(prompt: str, max_tokens: int = 2048, temperature: float = 0.6) -> str:
+def generate(prompt: str, max_tokens: int = 2048, temperature: float = 0.6,
+             adapter_repo: str = "") -> str:
     """Run Gemma 4 E2B inference with thinking mode enabled.
+
+    Args:
+        prompt: The full prompt text.
+        max_tokens: Max new tokens to generate.
+        temperature: Sampling temperature.
+        adapter_repo: HuggingFace repo ID for a LoRA adapter to load on top
+                      of the base model (e.g. "jasonyandell/gemma-4-e2b-texas42-stage0").
+                      Empty string = no adapter (base model only).
 
     Returns the full decoded output including thinking channel tokens.
     """
@@ -58,9 +68,17 @@ def generate(prompt: str, max_tokens: int = 2048, temperature: float = 0.6) -> s
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(
         MODEL_ID,
-        dtype=torch.float16,
+        dtype=torch.bfloat16,
         device_map="cuda",
     )
+
+    if adapter_repo:
+        from peft import PeftModel
+        print(f"[gemma] Loading LoRA adapter from {adapter_repo}...")
+        model = PeftModel.from_pretrained(model, adapter_repo)
+        model = model.merge_and_unload()
+        print("[gemma] Adapter merged.")
+
     model.eval()
     print(f"[gemma] Model loaded on {next(model.parameters()).device}")
 
@@ -97,8 +115,13 @@ def generate(prompt: str, max_tokens: int = 2048, temperature: float = 0.6) -> s
 
 
 @app.local_entrypoint()
-def main(prompt_file: str = "", max_tokens: int = 2048, temperature: float = 0.6):
-    """Read a prompt from file (or stdin if not given) and run Gemma."""
+def main(prompt_file: str = "", max_tokens: int = 2048, temperature: float = 0.6,
+         adapter: str = ""):
+    """Read a prompt from file (or stdin if not given) and run Gemma.
+
+    Args:
+        adapter: HF repo for LoRA adapter (e.g. "jasonyandell/gemma-4-e2b-texas42-stage0").
+    """
     import sys
 
     if prompt_file:
@@ -111,8 +134,10 @@ def main(prompt_file: str = "", max_tokens: int = 2048, temperature: float = 0.6
         print("[error] Empty prompt", file=sys.stderr)
         sys.exit(1)
 
-    print(f"[local] Sending {len(prompt)} chars to Gemma on Modal...", file=sys.stderr)
-    result = generate.remote(prompt, max_tokens=max_tokens, temperature=temperature)
+    label = "base" if not adapter else f"adapter={adapter}"
+    print(f"[local] Sending {len(prompt)} chars to Gemma ({label}) on Modal...", file=sys.stderr)
+    result = generate.remote(prompt, max_tokens=max_tokens, temperature=temperature,
+                             adapter_repo=adapter)
 
     print("=" * 60)
     print("GEMMA 4 E2B RESPONSE")
