@@ -132,8 +132,57 @@ Things we'll decide once we have more information, not now:
    learn trick-4 reasoning" tells us something real about where small-model reasoning
    breaks down on imperfect-information games.
 
-## Next step
+## Progress log
 
-Build `lem/narrate/` — the narration generator. Everything downstream depends on it, and
-eyeballing its output is the fastest way to sanity-check the whole premise before
-committing to bigger pieces.
+### Stage 0 v1 complete (2026-04-10)
+
+**What we built:**
+- Narration generator (`lem/narrate/`) — plays a game via E[Q] N=10, renders second-person
+  prose, truncates at any narrator turn for STaR prompts. Forced-play annotations prevent
+  hallucinated strategy on non-choices. Running score kept (input to reasoning).
+- Rules primer (`lem/rules/primer.md`) — 1549 words, straight tournament 42 only.
+  55/55 committed facts verified against the engine (`lem/rules/verify_primer.py`).
+- Q&A corpus (`lem/rules/generate_qa.py`) — 3500 examples across 7 categories:
+  trump membership, led suit, legal moves, trick winners, count math, hand tracking,
+  void inference. All engine ground truth.
+- Stage 0 LoRA adapter trained on Modal L4, pushed to HuggingFace at
+  `jasonyandell/gemma-4-e2b-texas42-stage0`.
+- Wandb: `jasonyandell-forge42/lem-stage0`.
+
+**Training recipe that works (save yourself the 5 failed attempts):**
+1. Monkey-patch `Gemma4ClippableLinear` to inherit from `nn.Linear` before loading.
+   See `train_stage0.py` or https://huggingface.co/google/gemma-4-31B/discussions/3
+2. Use `bf16` (not fp16 — GradScaler fails with gradient checkpointing).
+3. Use `gradient_checkpointing=True` with `use_reentrant=False` (model is ~20GB in bf16,
+   L4 has 22GB — no room for activations without checkpointing).
+4. Skip eval (`eval_strategy="no"`) — eval forward pass OOMs on L4. Training converges
+   to 100% accuracy by step 50; eval is redundant.
+5. 1 epoch is plenty. Loss goes 32 → 15 → 2.8 → 0.001 in 40 steps.
+
+**First contact vs second contact (same prompt, seed 42, fives trump, trick 6):**
+
+| Dimension | Base Gemma | + Stage 0 adapter |
+|---|---|---|
+| Hand tracking | Confused initial/remaining hand; played 5-5 (already gone) | Correctly read "remaining: 6-2, 6-1" |
+| Final answer | "Play 5-5" — **illegal** | "Sluff 6-2 or 6-1" — **legal, correct** |
+| Trump membership | Called 6-4 a trump under fives | Still calls 4-4, 6-4 trumps (same error) |
+| Reasoning | Good structure, wrong state | Better structure, correct state |
+
+**Key insight:** Trump membership didn't transfer from Q&A format to narration-context
+reasoning. But that's exactly the kind of thing you learn by playing more games and getting
+corrected — which is what Stage 1 (STaR) does. Humans learn trump rules the same way:
+not from flashcards, but from playing hands and getting it wrong until it clicks.
+
+### Next: Stage 1 — STaR on trick-6 decisions
+
+The adapter is good enough to start. STaR's K1 grading ("beat the bot") will naturally
+penalize trump errors when they cause bad plays, and rationalization will teach the model
+why the bot's move was better. The remaining rule gaps will close through practice, not
+drilling.
+
+**Concrete next steps:**
+1. Generate narration dataset in batch mode (all decls × many seeds × 4 perspectives).
+2. Filter to trick-6, |legal| >= 2, non-trivial E[Q] gap. Upload to HuggingFace.
+3. Build STaR harness: inference → grade (K1) → rationalize failures (R1) → LoRA step.
+4. Run first STaR iteration, measure E[Q] delta on held-out seeds.
+5. Obsess over wandb.
