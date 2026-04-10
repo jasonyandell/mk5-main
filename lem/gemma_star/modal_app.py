@@ -64,6 +64,31 @@ def generate(prompt: str, max_tokens: int = 2048, temperature: float = 0.6,
 
     os.environ["HF_HOME"] = "/model-cache"
 
+    # Patch Gemma4ClippableLinear for PEFT compatibility (needed for adapter loading)
+    if adapter_repo:
+        from transformers.models.gemma4 import modeling_gemma4
+
+        class PatchedClippableLinear(torch.nn.Linear):
+            def __init__(self, config, in_features, out_features):
+                torch.nn.Linear.__init__(self, in_features, out_features, bias=False)
+                self.use_clipped_linears = getattr(config, "use_clipped_linears", False)
+                if self.use_clipped_linears:
+                    self.register_buffer("input_min", torch.tensor(-float("inf")))
+                    self.register_buffer("input_max", torch.tensor(float("inf")))
+                    self.register_buffer("output_min", torch.tensor(-float("inf")))
+                    self.register_buffer("output_max", torch.tensor(float("inf")))
+
+            def forward(self, x):
+                if self.use_clipped_linears:
+                    x = torch.clamp(x, self.input_min, self.input_max)
+                out = torch.nn.Linear.forward(self, x)
+                if self.use_clipped_linears:
+                    out = torch.clamp(out, self.output_min, self.output_max)
+                return out
+
+        modeling_gemma4.Gemma4ClippableLinear = PatchedClippableLinear
+        print("[patch] Gemma4ClippableLinear patched for PEFT")
+
     print(f"[gemma] Loading {MODEL_ID}...")
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     model = AutoModelForCausalLM.from_pretrained(

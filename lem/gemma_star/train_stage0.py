@@ -183,8 +183,8 @@ def train(
         lr_scheduler_type="cosine",
         warmup_ratio=0.1,
         logging_steps=10,
-        eval_strategy="epoch",
-        save_strategy="epoch",
+        eval_strategy="no",  # eval OOMs on L4; skip and save directly
+        save_strategy="no",  # save manually at end
         bf16=True,
         gradient_checkpointing=True,
         gradient_checkpointing_kwargs={"use_reentrant": False},
