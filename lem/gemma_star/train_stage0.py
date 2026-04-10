@@ -47,8 +47,8 @@ train_image = (
 
 @app.function(
     image=train_image,
-    gpu="L4",
-    timeout=14400,  # 4 hours — 3 epochs at ~17s/step takes ~3h
+    gpu="A100",  # 40GB — fits model (4GB) + batch_size=8 without grad checkpointing
+    timeout=14400,
     secrets=[modal.Secret.from_name("huggingface-secret"),
              modal.Secret.from_name("wandb-api-key")],
     volumes={"/model-cache": modal.Volume.from_name("gemma-e2b-cache", create_if_missing=True)},

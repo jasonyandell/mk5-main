@@ -96,6 +96,16 @@ lem/
 Each subpackage gets its own README when we build it. No speculative scaffolding — we add
 pieces as the experiment demands them.
 
+## Held-out eval seeds
+
+Seeds 900000–909999 are **permanently reserved for evaluation**. They must never appear
+in any training dataset. All E[Q] delta measurements use this range. This is declared
+here so it's never ambiguous.
+
+Training seeds: 0–899999 (routed by seed % 1000 < 950 for train, >= 950 for val within
+training data). Eval seeds: 900000–909999 (never trained on, never validated on — pure
+held-out).
+
 ## The gaps we're deliberately leaving open
 
 Things we'll decide once we have more information, not now:
