@@ -389,41 +389,67 @@ def run_loop(
               f"({len(responses)/elapsed:.1f} prompts/s)", flush=True)
 
         # =====================================================================
-        # Phase 2: Validate scratchpad + Grade K1
+        # Phase 2: Grade K1 (play legality + beat the bot)
         # =====================================================================
-        print(f"\n[iter {iteration}] Phase 2: Validating scratchpad + grading...", flush=True)
-        stats = {"valid_pass": 0, "valid_fail": 0, "invalid": 0, "illegal": 0, "parse_fail": 0}
+        print(f"\n[iter {iteration}] Phase 2: Grading...", flush=True)
+        stats = {"pass": 0, "fail": 0, "illegal": 0, "parse_fail": 0}
         graded = []
 
         for ex, response in zip(examples, responses):
-            parsed = parse_scratchpad(response)
-            grade = validate_and_grade(parsed, ex)
+            # Extract play from response (try scratchpad PLAY: label first, then fallback)
+            play = None
+            play_match = re.search(r"PLAY\s*:\s*.*?(\d-\d)", response, re.IGNORECASE)
+            if play_match:
+                play = _normalize_dom(play_match.group(1))
+            if play is None:
+                for pat in [r"[Pp]lay[:\s]+(?:the\s+)?(\d-\d)",
+                            r"I (?:would |will |should )?play (?:the )?(\d-\d)",
+                            r"\*\*(\d-\d)\*\*"]:
+                    m = re.search(pat, response)
+                    if m:
+                        play = _normalize_dom(m.group(1))
+                        break
+            if play is None:
+                all_doms = re.findall(r"\b(\d-\d)\b", response)
+                if all_doms:
+                    play = _normalize_dom(all_doms[-1])
+
+            if play is None:
+                grade = {"grade": "parse_fail"}
+            elif play not in ex["legal_actions"]:
+                grade = {"grade": "illegal", "play": play}
+            else:
+                gemma_eq = ex["all_eq"].get(play, float("-inf"))
+                if gemma_eq >= ex["bot_eq"]:
+                    grade = {"grade": "pass", "play": play,
+                             "gemma_eq": gemma_eq, "bot_eq": ex["bot_eq"],
+                             "delta": round(gemma_eq - ex["bot_eq"], 3)}
+                else:
+                    grade = {"grade": "fail", "play": play,
+                             "gemma_eq": gemma_eq, "bot_eq": ex["bot_eq"],
+                             "delta": round(gemma_eq - ex["bot_eq"], 3)}
+
             stats[grade["grade"]] += 1
-            graded.append({"example": ex, "response": response, "parsed": parsed, "grade": grade})
+            graded.append({"example": ex, "response": response, "grade": grade})
 
         total = sum(stats.values())
-        valid_pass_rate = stats["valid_pass"] / total * 100
-        valid_total = stats["valid_pass"] + stats["valid_fail"]
-        fact_accuracy = valid_total / total * 100 if total > 0 else 0
-        print(f"[iter {iteration}] Results: {stats['valid_pass']}/{total} valid+pass ({valid_pass_rate:.0f}%)", flush=True)
-        print(f"  valid_fail={stats['valid_fail']} invalid={stats['invalid']} "
-              f"illegal={stats['illegal']} parse_fail={stats['parse_fail']}", flush=True)
-        print(f"  Fact accuracy: {valid_total}/{total} ({fact_accuracy:.0f}%) — "
-              f"traces with correct hand+counts", flush=True)
+        valid_pass_rate = stats["pass"] / total * 100
+        print(f"[iter {iteration}] Grading: {stats['pass']}/{total} pass ({valid_pass_rate:.0f}%)", flush=True)
+        print(f"  fail={stats['fail']} illegal={stats['illegal']} parse_fail={stats['parse_fail']}", flush=True)
 
         # =====================================================================
-        # Phase 3: Rationalize valid failures (reuse loaded model)
+        # Phase 3: Rationalize legal failures (reuse loaded model)
         # =====================================================================
-        valid_failures = [g for g in graded if g["grade"]["grade"] == "valid_fail"]
-        discarded = [g for g in graded if g["grade"]["grade"] in ("invalid", "illegal", "parse_fail")]
-        print(f"\n[iter {iteration}] Phase 3: Rationalizing {len(valid_failures)} valid failures "
-              f"(discarding {len(discarded)} invalid/illegal/unparseable)...", flush=True)
+        legal_failures = [g for g in graded if g["grade"]["grade"] == "fail"]
+        discarded = [g for g in graded if g["grade"]["grade"] in ("illegal", "parse_fail")]
+        print(f"\n[iter {iteration}] Phase 3: Rationalizing {len(legal_failures)} legal failures "
+              f"(discarding {len(discarded)} illegal/unparseable)...", flush=True)
         t3 = time.time()
 
         rational_responses = []
-        if valid_failures:
+        if legal_failures:
             rat_prompts = []
-            for g in valid_failures:
+            for g in legal_failures:
                 rp = (g["example"]["prompt"].rstrip()
                       + f"\n\nThe correct play here is {g['example']['best_action']}. "
                       f"Explain why {g['example']['best_action']} is the best choice.")
@@ -433,22 +459,8 @@ def run_loop(
                 infer_model, tokenizer, rat_prompts,
                 max_tokens=max_new_tokens, temperature=temperature,
             )
-            # Validate rationalizations too — only keep ones with correct facts
-            valid_rat_count = 0
-            filtered_rat = []
-            filtered_failures = []
-            for g, rr in zip(valid_failures, rational_responses):
-                rr_parsed = parse_scratchpad(rr)
-                rr_grade = validate_and_grade(rr_parsed, g["example"])
-                if rr_grade["grade"] in ("valid_pass", "valid_fail"):
-                    # Facts correct in rationalization — keep it
-                    filtered_rat.append(rr)
-                    filtered_failures.append(g)
-                    valid_rat_count += 1
-            rational_responses = filtered_rat
-            valid_failures = filtered_failures
-            print(f"[iter {iteration}] Phase 3 done: {valid_rat_count} valid rationalizations "
-                  f"(of {len(rat_prompts)} attempted) in {time.time()-t3:.0f}s", flush=True)
+            print(f"[iter {iteration}] Phase 3 done: {len(rational_responses)} rationalizations "
+                  f"in {time.time()-t3:.0f}s", flush=True)
 
         # =====================================================================
         # Free inference model to reclaim GPU for training
@@ -458,12 +470,12 @@ def run_loop(
         torch.cuda.empty_cache()
 
         # =====================================================================
-        # Phase 4: Compile training traces (only factually-verified)
+        # Phase 4: Compile training traces
         # =====================================================================
         traces = []
 
         for g in graded:
-            if g["grade"]["grade"] == "valid_pass":
+            if g["grade"]["grade"] == "pass":
                 traces.append({
                     "messages": [
                         {"role": "user", "content": g["example"]["prompt"]},
@@ -471,7 +483,7 @@ def run_loop(
                     ]
                 })
 
-        for g, rr in zip(valid_failures, rational_responses):
+        for g, rr in zip(legal_failures, rational_responses):
             rp = (g["example"]["prompt"].rstrip()
                   + f"\n\nThe correct play here is {g['example']['best_action']}. "
                   f"Explain why {g['example']['best_action']} is the best choice.")
@@ -483,7 +495,7 @@ def run_loop(
             })
 
         print(f"[iter {iteration}] {len(traces)} training traces "
-              f"({stats['valid_pass']} verified wins + {len(valid_failures)} verified rationalizations, "
+              f"({stats['pass']} wins + {len(legal_failures)} rationalizations, "
               f"{len(discarded)} discarded)", flush=True)
 
         # =====================================================================
@@ -546,20 +558,11 @@ def run_loop(
         tokenizer.push_to_hub(new_adapter_repo, private=True)
 
         illegal_rate = (stats["illegal"] + stats["parse_fail"]) / total * 100
-        invalid_rate = stats["invalid"] / total * 100
-        # Count how many had correct counts (informational)
-        n_counts_ok = sum(1 for g in graded
-                          if g["grade"]["grade"] in ("valid_pass", "valid_fail")
-                          and not any("claimed" in e for e in g["grade"].get("errors", [])))
         wandb.log({
-            "valid_pass_rate": valid_pass_rate,
-            "fact_accuracy": fact_accuracy,
-            "counts_accuracy": n_counts_ok / total * 100 if total > 0 else 0,
+            "pass_rate": valid_pass_rate,
             "illegal_rate": illegal_rate,
-            "invalid_rate": invalid_rate,
-            "n_valid_pass": stats["valid_pass"],
-            "n_valid_fail": stats["valid_fail"],
-            "n_invalid": stats["invalid"],
+            "n_pass": stats["pass"],
+            "n_fail": stats["fail"],
             "n_illegal": stats["illegal"],
             "n_discarded": len(discarded),
             "n_traces": len(traces),
@@ -599,7 +602,7 @@ def run_loop(
 
 @app.local_entrypoint()
 def main(
-    narrations: str = "lem/data/narrations_train_v2.jsonl",
+    narrations: str = "lem/data/narrations_train.jsonl",
     adapter: str = "jasonyandell/gemma-4-e2b-texas42-stage0",
     iterations: int = 3,
     limit: int = 0,
