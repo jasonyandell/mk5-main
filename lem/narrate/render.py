@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from forge.oracle.declarations import NOTRUMP, DOUBLES_SUIT, DOUBLES_TRUMP, has_trump_power
 from forge.oracle.tables import (
+    DOMINO_COUNT_POINTS,
     DOMINO_HIGH,
     DOMINO_LOW,
     can_follow,
@@ -15,6 +16,9 @@ from forge.oracle.tables import (
     led_suit_for_lead_domino,
     resolve_trick,
 )
+
+# The five count dominoes by ID, for state block rendering.
+_COUNT_DOM_IDS = [i for i in range(28) if DOMINO_COUNT_POINTS[i] > 0]
 
 
 # Declaration → human phrase for the bid announcement.
@@ -85,6 +89,43 @@ _FOLLOW_VERBS = {
 }
 
 
+def _render_state_block(
+    played_doms: list[int],
+    count_taken: list[tuple[int, int]],  # (dom_id, winning_team)
+    narrator_remaining: list[int],
+    narrator_team: int,
+) -> str:
+    """Render a public-state summary block after a completed trick.
+
+    All information here is public — visible to every player at the table.
+    """
+    parts = []
+
+    # Played dominoes
+    played_str = ", ".join(_dom(d) for d in played_doms)
+    parts.append(f"  Played so far ({len(played_doms)}/28): {played_str}")
+
+    # Count domino status
+    count_parts = []
+    still_out = []
+    for cid in _COUNT_DOM_IDS:
+        pts = DOMINO_COUNT_POINTS[cid]
+        taken = [(d, t) for d, t in count_taken if d == cid]
+        if taken:
+            team = "you" if taken[0][1] == narrator_team else "them"
+            count_parts.append(f"{_dom(cid)}({pts})→{team}")
+        else:
+            still_out.append(f"{_dom(cid)}({pts})")
+    count_line = ", ".join(count_parts) if count_parts else "none taken"
+    out_line = ", ".join(still_out) if still_out else "none"
+    parts.append(f"  Counts taken: {count_line} | still out: {out_line}")
+
+    # Narrator's remaining hand
+    parts.append(f"  Your hand: {_format_hand(narrator_remaining)}")
+
+    return "\n".join(parts)
+
+
 def render_narration(
     record,
     narrator: int,
@@ -142,6 +183,9 @@ def render_narration(
     lines.append("")
 
     team_points = [0, 0]
+    played_doms: list[int] = []       # all dominoes played so far (in order)
+    count_taken: list[tuple[int, int]] = []  # (dom_id, winning_team) for count dominoes
+    narrator_remaining = list(initial_hands[narrator])  # shrinks as narrator plays
     assert len(decisions) == 28, f"expected 28 decisions, got {len(decisions)}"
 
     def _render_play(pref_line_indent: str, is_leader: bool, player: int, dom_id: int,
@@ -178,21 +222,17 @@ def render_narration(
             lines.append(
                 _render_play("  ", i == 0, player, dom_id, lead_dom, trick_decisions[i])
             )
+            # Track partial-trick plays for the state block
+            if stopping_here:
+                played_doms.append(dom_id)
+                if dom_id in narrator_remaining:
+                    narrator_remaining.remove(dom_id)
 
         if stopping_here:
             # Build the decision block and return.
             lines.append("")
             lines.append("--")
-            # Compute narrator's remaining hand
-            played_by_narrator: set[int] = set()
-            for past in decisions[:stop_at_decision]:
-                if past.player == narrator:
-                    played_by_narrator.add(
-                        initial_hands[narrator][past.action_taken]
-                    )
-            remaining = [
-                d for d in initial_hands[narrator] if d not in played_by_narrator
-            ]
+            remaining = list(narrator_remaining)
 
             lines.append(f"It is your turn on trick {trick_num + 1}.")
             if stop_offset == 0:
@@ -206,16 +246,28 @@ def render_narration(
                 f"Score so far — your team: {team_points[narrator_team]}, "
                 f"theirs: {team_points[1 - narrator_team]}."
             )
+            # State block at decision point (same as after-trick blocks)
+            lines.append(_render_state_block(
+                played_doms, count_taken, remaining, narrator_team,
+            ))
             lines.append("")
             lines.append("What do you play?")
             return "\n".join(lines)
 
-        # Full trick — render the result line and carry score forward.
+        # Full trick — render the result line, update tracking, add state block.
         dominoes = tuple(p[1] for p in plays)
         outcome = resolve_trick(lead_dom, dominoes, decl_id)
         winner_player = plays[outcome.winner_offset][0]
         winner_team = winner_player % 2
         team_points[winner_team] += outcome.points
+
+        # Update played/count/hand tracking
+        for _, dom_id in plays:
+            played_doms.append(dom_id)
+            if DOMINO_COUNT_POINTS[dom_id] > 0:
+                count_taken.append((dom_id, winner_team))
+            if dom_id in narrator_remaining:
+                narrator_remaining.remove(dom_id)
 
         winner_ref = _player_ref(winner_player, narrator, partner, cap=True)
         takes_verb = "take" if winner_player == narrator else "takes"
@@ -224,6 +276,10 @@ def render_narration(
             f"{'s' if outcome.points != 1 else ''}. "
             f"[Your team: {team_points[narrator_team]}, theirs: {team_points[1 - narrator_team]}]"
         )
+        # Public state block after every completed trick
+        lines.append(_render_state_block(
+            played_doms, count_taken, narrator_remaining, narrator_team,
+        ))
         lines.append("")
 
     # Closing
