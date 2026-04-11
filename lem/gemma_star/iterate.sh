@@ -11,7 +11,7 @@ set -e
 N_ITERS=${1:-5}
 START=${2:-0}
 SUBSET=${3:-200}
-DATA="lem/data/narrations_train_v2.jsonl"
+DATA="lem/data/narrations_train.jsonl"
 
 # Adapter chain: stage0 → star-iter0 → star-iter1 → ...
 if [ "$START" -eq 0 ]; then
