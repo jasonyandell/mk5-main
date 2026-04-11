@@ -183,16 +183,64 @@ reasoning. But that's exactly the kind of thing you learn by playing more games 
 corrected — which is what Stage 1 (STaR) does. Humans learn trump rules the same way:
 not from flashcards, but from playing hands and getting it wrong until it clicks.
 
-### Next: Stage 1 — STaR on trick-6 decisions
+### Stage 1 infrastructure complete + first iteration (2026-04-10)
 
-The adapter is good enough to start. STaR's K1 grading ("beat the bot") will naturally
-penalize trump errors when they cause bad plays, and rationalization will teach the model
-why the bot's move was better. The remaining rule gaps will close through practice, not
-drilling.
+**What we built:**
+- Batch narration generator (`lem/narrate/batch.py`) — processes N seeds × 10 decls ×
+  4 perspectives, filters to trick-6 decisions with |legal|>=2 and E[Q] gap. 0.4 seeds/s
+  on 3050 Ti. Generated: 3148 train + 812 eval examples.
+- STaR harness (`lem/gemma_star/star_harness.py`) — Modal function for inference + K1
+  grading + R1 rationalization. Sequential, works on L4/A10G.
+- Single-GPU STaR loop (`lem/gemma_star/star_loop.py`) — all phases in one Modal function
+  on H100. Inference → grade → rationalize → train → push adapter. ~15 min per iteration.
+- STaR training script (`lem/gemma_star/train_star.py`) — standalone LoRA training on
+  STaR traces, Modal A100.
+- Local runner (`lem/gemma_star/local_star.py`) — llama.cpp CPU inference with streaming
+  output for interactive debugging. 11 tok/s.
+- llama.cpp installed locally with GGUF at `scratch/gemma-4-E2B-it-Q4_K_M.gguf` (2.9 GB).
 
-**Concrete next steps:**
-1. Generate narration dataset in batch mode (all decls × many seeds × 4 perspectives).
-2. Filter to trick-6, |legal| >= 2, non-trivial E[Q] gap. Upload to HuggingFace.
-3. Build STaR harness: inference → grade (K1) → rationalize failures (R1) → LoRA step.
-4. Run first STaR iteration, measure E[Q] delta on held-out seeds.
-5. Obsess over wandb.
+**Narration datasets:**
+- `lem/data/narrations_train.jsonl` — 3148 examples from seeds 0-199
+- `lem/data/narrations_eval.jsonl` — 812 examples from seeds 900000-900049
+- Not in git (gitignored) — will go to HuggingFace for distributed access.
+
+**Baseline measurement (base model, no adapter, local llama.cpp, 10 examples):**
+- 60% pass, 30% fail, 10% illegal, 0% parse fail
+
+**First STaR iteration (H100, Stage 0 adapter, 10 examples):**
+- 30% pass (3/10), 30% fail (3/10), 40% illegal (4/10)
+- Illegal traces discarded (not rationalized) per ClaudeAI insight
+- 6 training traces generated (3 wins + 3 rationalizations)
+- LoRA trained in 15s, loss=0.11
+- Adapter pushed: `jasonyandell/gemma-4-e2b-texas42-star-iter0`
+- Wandb: `jasonyandell-forge42/lem-star`
+- Total iteration time: 15 min. Cost: ~$1.
+
+**Key insight from ClaudeAI:** Don't train on illegal traces — they contain reasoning
+about impossible states. Discard them. The illegality rate is a free diagnostic:
+40% illegal in iteration 0 means Stage 0 rules knowledge is still shaky. Track this
+across iterations; it should drop as the model internalizes the rules through practice.
+
+**What didn't work:**
+- vLLM for batch inference: Gemma 4 is too new (1 week old), version conflicts between
+  vLLM's pinned transformers and Gemma 4's tokenizer format. Fell back to sequential HF
+  generate. This will sort itself out as the ecosystem catches up. Filed as future work.
+- Local GPU inference: llama-cpp-python CUDA build failed (GCC 13 vs CUDA 12.3
+  incompatibility on WSL2). CPU inference works at 11 tok/s but too slow for iteration.
+  Using Modal for all GPU work instead.
+
+**Compute setup that works:**
+- Training: Modal A100 ($2.10/hr) — 10 min per run, ~$0.35
+- Inference: Modal H100 ($3.95/hr) — sequential HF generate, ~1 prompt/min
+- Full STaR iteration: Modal H100, all phases, ~15 min, ~$1
+- Local debugging: llama.cpp CPU, 11 tok/s, free
+- Narration generation: local 3050 Ti, 0.4 seeds/s, free
+
+### Next: iterate and measure
+
+The loop works. The next steps are:
+1. Run more STaR iterations (the loop script supports `--iterations N` for back-to-back).
+2. Run eval set through each adapter to measure E[Q] delta progression.
+3. Watch illegality rate drop across iterations (the main diagnostic).
+4. Scale up: more examples per iteration (50-100), more iterations.
+5. When vLLM compatibility catches up: switch to batched inference for ~5x speedup.
