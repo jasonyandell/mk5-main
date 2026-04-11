@@ -43,7 +43,6 @@ loop_image = (
         "trl>=0.15",
         "datasets>=3.0",
         "huggingface_hub>=0.27",
-        "vllm>=0.8",
         "pillow",
         "wandb>=0.19",
     )
@@ -119,7 +118,6 @@ def run_loop(
     from peft import LoraConfig, get_peft_model, PeftModel, TaskType
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from trl import SFTTrainer, SFTConfig
-    from vllm import LLM, SamplingParams
 
     os.environ["HF_HOME"] = "/model-cache"
 
@@ -173,62 +171,50 @@ def run_loop(
         print(f"{'='*60}")
 
         # =====================================================================
-        # Phase 1: vLLM batch inference
+        # Phase 1: Batch inference (HF generate, sequential per prompt)
         # =====================================================================
-        print(f"\n[iter {iteration}] Phase 1: vLLM batch inference...")
+        print(f"\n[iter {iteration}] Phase 1: Batch inference...")
         t1 = time.time()
 
-        # Build the merged model path for vLLM
-        # vLLM can load adapters directly, but merging is simpler and avoids
-        # compatibility issues with the ClippableLinear patch.
-        if current_adapter:
-            patch_clippable_linear()
-            print(f"[iter {iteration}] Merging adapter for vLLM...")
-            merge_model = AutoModelForCausalLM.from_pretrained(
-                MODEL_ID, dtype=torch.bfloat16, device_map="cpu",
-            )
-            merge_model = PeftModel.from_pretrained(merge_model, current_adapter)
-            merge_model = merge_model.merge_and_unload()
-
-            merge_path = f"/tmp/merged_iter{iteration}"
-            merge_model.save_pretrained(merge_path)
-            tokenizer.save_pretrained(merge_path)
-            del merge_model
-            torch.cuda.empty_cache()
-            vllm_model_path = merge_path
-        else:
-            vllm_model_path = MODEL_ID
-
-        # Initialize vLLM
-        llm = LLM(
-            model=vllm_model_path,
-            dtype="bfloat16",
-            max_model_len=8192,
-            gpu_memory_utilization=0.7,  # leave room for training later
+        # Load model with adapter
+        patch_clippable_linear()
+        infer_model = AutoModelForCausalLM.from_pretrained(
+            MODEL_ID, dtype=torch.bfloat16, device_map="cuda",
         )
+        if current_adapter:
+            print(f"[iter {iteration}] Loading adapter: {current_adapter}")
+            infer_model = PeftModel.from_pretrained(infer_model, current_adapter)
+            infer_model = infer_model.merge_and_unload()
+        infer_model.eval()
 
-        # Batch generate
-        prompts = [ex["prompt"] for ex in examples]
-
-        # Format as chat messages for vLLM
-        chat_prompts = []
-        for p in prompts:
-            formatted = tokenizer.apply_chat_template(
-                [{"role": "user", "content": p}],
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=True,
+        def generate_one(prompt_text):
+            inputs = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt_text}],
+                tokenize=True, add_generation_prompt=True,
+                enable_thinking=True, return_tensors="pt", return_dict=True,
             )
-            chat_prompts.append(formatted)
+            input_ids = inputs["input_ids"].to("cuda")
+            attn = inputs["attention_mask"].to("cuda")
+            with torch.no_grad():
+                out = infer_model.generate(
+                    input_ids=input_ids, attention_mask=attn,
+                    max_new_tokens=max_new_tokens, temperature=temperature,
+                    do_sample=True,
+                )
+            return tokenizer.decode(out[0][input_ids.shape[-1]:], skip_special_tokens=False)
 
-        outputs = llm.generate(chat_prompts, sampling_params)
+        responses = []
+        for i, ex in enumerate(examples):
+            resp = generate_one(ex["prompt"])
+            responses.append(resp)
+            if (i + 1) % 5 == 0:
+                elapsed = time.time() - t1
+                rate = (i + 1) / elapsed * 60
+                print(f"  [{i+1}/{len(examples)}] {rate:.0f} prompts/min")
 
-        # Extract responses
-        responses = [out.outputs[0].text for out in outputs]
         print(f"[iter {iteration}] Phase 1 done: {len(responses)} responses in {time.time()-t1:.0f}s")
 
-        # Free vLLM GPU memory
-        del llm
+        del infer_model
         torch.cuda.empty_cache()
 
         # =====================================================================
@@ -263,29 +249,40 @@ def run_loop(
         t3 = time.time()
 
         if legal_failures:
-            # Re-init vLLM for rationalization
-            llm2 = LLM(
-                model=vllm_model_path,
-                dtype="bfloat16",
-                max_model_len=8192,
-                gpu_memory_utilization=0.7,
+            # Reload model for rationalization
+            patch_clippable_linear()
+            rat_model = AutoModelForCausalLM.from_pretrained(
+                MODEL_ID, dtype=torch.bfloat16, device_map="cuda",
             )
+            if current_adapter:
+                rat_model = PeftModel.from_pretrained(rat_model, current_adapter)
+                rat_model = rat_model.merge_and_unload()
+            rat_model.eval()
 
-            rational_prompts = []
+            def rationalize_one(prompt_text):
+                inputs = tokenizer.apply_chat_template(
+                    [{"role": "user", "content": prompt_text}],
+                    tokenize=True, add_generation_prompt=True,
+                    enable_thinking=True, return_tensors="pt", return_dict=True,
+                )
+                input_ids = inputs["input_ids"].to("cuda")
+                attn = inputs["attention_mask"].to("cuda")
+                with torch.no_grad():
+                    out = rat_model.generate(
+                        input_ids=input_ids, attention_mask=attn,
+                        max_new_tokens=max_new_tokens, temperature=temperature,
+                        do_sample=True,
+                    )
+                return tokenizer.decode(out[0][input_ids.shape[-1]:], skip_special_tokens=False)
+
+            rational_responses = []
             for g in legal_failures:
                 rp = (g["example"]["prompt"].rstrip()
                       + f"\n\nThe correct play here is {g['example']['best_action']}. "
                       f"Explain why {g['example']['best_action']} is the best choice.")
-                formatted = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": rp}],
-                    tokenize=False, add_generation_prompt=True, enable_thinking=True,
-                )
-                rational_prompts.append(formatted)
+                rational_responses.append(rationalize_one(rp))
 
-            rational_outputs = llm2.generate(rational_prompts, sampling_params)
-            rational_responses = [out.outputs[0].text for out in rational_outputs]
-
-            del llm2
+            del rat_model
             torch.cuda.empty_cache()
             print(f"[iter {iteration}] Phase 3 done: {len(rational_responses)} rationalizations in {time.time()-t3:.0f}s")
         else:
