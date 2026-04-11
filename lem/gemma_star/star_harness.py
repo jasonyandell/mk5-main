@@ -233,8 +233,12 @@ def run_star_iteration(
                 "delta": grade_result.get("delta"),
             })
 
-        elif grade_result["grade"] in ("fail", "illegal", "parse_fail"):
-            # Phase 3: Rationalization — reveal correct action, ask why
+        elif grade_result["grade"] in ("illegal", "parse_fail"):
+            # Discard — don't train on traces with impossible states.
+            stats["discarded"] = stats.get("discarded", 0) + 1
+
+        elif grade_result["grade"] == "fail":
+            # Phase 3: Rationalization — legal but suboptimal, ask why
             rationalization_prompt = (
                 ex["prompt"].rstrip()
                 + f"\n\nThe correct play here is {ex['best_action']}. "

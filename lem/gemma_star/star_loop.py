@@ -49,8 +49,46 @@ loop_image = (
     )
 )
 
-# Reuse grading logic
-from lem.gemma_star.star_harness import grade_k1, parse_play
+
+# --- Grading logic (inlined to avoid lem module mount issues) ---
+
+import re
+
+
+def parse_play(response_text: str) -> str | None:
+    """Extract the domino the model chose to play from its response."""
+    patterns = [
+        r"[Pp]lay[:\s]+(?:the\s+)?(\d-\d)",
+        r"[Aa]nswer[:\s]+(?:the\s+)?(\d-\d)",
+        r"[Cc]hoice[:\s]+(?:the\s+)?(\d-\d)",
+        r"I (?:would |will |should )?play (?:the )?(\d-\d)",
+        r"\*\*(\d-\d)\*\*",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, response_text)
+        if match:
+            return match.group(1)
+    all_doms = re.findall(r"\b(\d-\d)\b", response_text)
+    if all_doms:
+        return all_doms[-1]
+    return None
+
+
+def grade_k1(gemma_action: str | None, bot_action: str, bot_eq: float,
+             all_eq: dict[str, float], legal_actions: list[str]) -> dict:
+    """Grade K1: did Gemma beat the bot?"""
+    if gemma_action is None:
+        return {"grade": "parse_fail", "gemma_action": None}
+    if gemma_action not in legal_actions:
+        return {"grade": "illegal", "gemma_action": gemma_action}
+    gemma_eq = all_eq.get(gemma_action, float("-inf"))
+    if gemma_eq >= bot_eq:
+        return {"grade": "pass", "gemma_action": gemma_action,
+                "gemma_eq": gemma_eq, "bot_eq": bot_eq,
+                "delta": round(gemma_eq - bot_eq, 3)}
+    return {"grade": "fail", "gemma_action": gemma_action,
+            "gemma_eq": gemma_eq, "bot_eq": bot_eq,
+            "delta": round(gemma_eq - bot_eq, 3)}
 
 
 @app.function(
@@ -191,7 +229,7 @@ def run_loop(
         # Phase 2: Grade K1
         # =====================================================================
         print(f"\n[iter {iteration}] Phase 2: Grading...")
-        stats = {"pass": 0, "fail": 0, "illegal": 0, "parse_fail": 0}
+        stats = {"pass": 0, "fail": 0, "illegal": 0, "parse_fail": 0, "discarded": 0}
         graded = []
 
         for ex, response in zip(examples, responses):
@@ -209,11 +247,16 @@ def run_loop(
         # =====================================================================
         # Phase 3: Rationalize failures
         # =====================================================================
-        failures = [g for g in graded if g["grade"]["grade"] != "pass"]
-        print(f"\n[iter {iteration}] Phase 3: Rationalizing {len(failures)} failures...")
+        # Only rationalize legal-but-wrong plays. Illegal/parse-fail traces
+        # are poison — they contain reasoning about impossible states.
+        # The illegality rate is a diagnostic for rules comprehension.
+        legal_failures = [g for g in graded if g["grade"]["grade"] == "fail"]
+        discarded = [g for g in graded if g["grade"]["grade"] in ("illegal", "parse_fail")]
+        print(f"\n[iter {iteration}] Phase 3: Rationalizing {len(legal_failures)} legal failures "
+              f"(discarding {len(discarded)} illegal/unparseable)...")
         t3 = time.time()
 
-        if failures:
+        if legal_failures:
             # Re-init vLLM for rationalization
             llm2 = LLM(
                 model=vllm_model_path,
@@ -223,7 +266,7 @@ def run_loop(
             )
 
             rational_prompts = []
-            for g in failures:
+            for g in legal_failures:
                 rp = (g["example"]["prompt"].rstrip()
                       + f"\n\nThe correct play here is {g['example']['best_action']}. "
                       f"Explain why {g['example']['best_action']} is the best choice.")
@@ -257,8 +300,8 @@ def run_loop(
                     ]
                 })
 
-        # Rationalizations
-        for g, rr in zip(failures, rational_responses):
+        # Rationalizations (legal failures only — illegal traces discarded)
+        for g, rr in zip(legal_failures, rational_responses):
             rp = (g["example"]["prompt"].rstrip()
                   + f"\n\nThe correct play here is {g['example']['best_action']}. "
                   f"Explain why {g['example']['best_action']} is the best choice.")
@@ -270,7 +313,8 @@ def run_loop(
             })
 
         print(f"[iter {iteration}] {len(traces)} training traces "
-              f"({stats['pass']} wins + {len(failures)} rationalizations)")
+              f"({stats['pass']} wins + {len(legal_failures)} rationalizations, "
+              f"{len(discarded)} discarded)")
 
         # =====================================================================
         # Phase 5: Train LoRA
@@ -330,8 +374,10 @@ def run_loop(
         train_model.push_to_hub(new_adapter_repo, private=True)
         tokenizer.push_to_hub(new_adapter_repo, private=True)
 
-        wandb.log({"pass_rate": pass_rate, "n_pass": stats["pass"],
-                    "n_fail": stats["fail"], "n_illegal": stats["illegal"],
+        illegal_rate = (stats["illegal"] + stats["parse_fail"]) / total * 100
+        wandb.log({"pass_rate": pass_rate, "illegal_rate": illegal_rate,
+                    "n_pass": stats["pass"], "n_fail": stats["fail"],
+                    "n_illegal": stats["illegal"], "n_discarded": len(discarded),
                     "n_traces": len(traces), "train_loss": result.training_loss})
         wandb.finish()
 
@@ -415,3 +461,4 @@ def main(
         print(f"  Iter {r['iteration']}: {r['pass_rate']:.0f}% pass, "
               f"loss={r['train_loss']:.4f}, {r['elapsed_s']}s, "
               f"adapter={r['adapter']}", file=sys.stderr)
+# v2 - inlined grading functions
