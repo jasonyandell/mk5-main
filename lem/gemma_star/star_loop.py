@@ -55,7 +55,7 @@ from lem.gemma_star.star_harness import grade_k1, parse_play
 
 @app.function(
     image=loop_image,
-    gpu=modal.GPU.H100(),
+    gpu="H100",
     timeout=14400,  # 4 hours
     secrets=[modal.Secret.from_name("huggingface-secret"),
              modal.Secret.from_name("wandb-api-key")],
