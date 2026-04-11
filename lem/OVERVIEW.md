@@ -308,11 +308,28 @@ Total cost: ~$15 on B200. Wandb: `jasonyandell-forge42/lem-star`.
 - Scratchpad validation deferred but the code is ready for when we bootstrap
   the format via SFT.
 
+### Iterations 10-14: plateau confirmed (2026-04-11)
+
+5 more iterations on 7409 pool (300/iter): 39%, 41%, 40%, 39%, 38%.
+Model holds at 38-41% but does not improve further. Loss stable at ~10.
+
+Also generated 4263 more narrations (seeds 500-799) → total pool: 11,672.
+Additional data at `lem/data/narrations_train_500_799.jsonl`.
+
+**15 adapters total** on HF (`star-iter0` through `star-iter14`).
+Total cost: ~$25 on B200 across all training.
+
+The plateau at ~40% likely reflects the ceiling of K1 grading without
+fact-verification. The model may be learning wrong game-facts that happen
+to produce correct plays ~40% of the time but can't go further because
+the reasoning is polluted. This was the original concern that motivated
+the scratchpad approach.
+
 ### Next steps
 
 1. **Run held-out eval** on best adapter (iter5 or iter7 at 42%) to get proper
-   E[Q] delta measurement.
+   E[Q] delta measurement vs Stage 0 and vs base model.
 2. **Bootstrap scratchpad format** via SFT — generate correct scratchpad examples
-   from the engine, train the model to fill them in, then resume validated STaR.
-3. **Or: increase data diversity** — generate narrations from seeds 500-999,
-   use 500 per iteration, see if the plateau breaks with more variety.
+   from the engine, train one LoRA pass to teach the model the format, THEN
+   resume validated STaR. This is the approach most likely to break the plateau.
+3. **11,672 narrations available** (seeds 0-799) for larger-subset iterations.
