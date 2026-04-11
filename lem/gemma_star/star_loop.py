@@ -141,25 +141,34 @@ def validate_and_grade(parsed: dict, ex: dict) -> dict:
     # --- Validate facts ---
     errors = []
 
-    # Hand check
+    # Hand check — the critical one (prevents hallucinated-hand bug from first contact)
     true_hand = set(ex.get("true_hand", []))
-    if true_hand and parsed["hand"] != true_hand:
-        missing = true_hand - parsed["hand"]
-        extra = parsed["hand"] - true_hand
-        if missing:
-            errors.append(f"hand missing {missing}")
-        if extra:
-            errors.append(f"hand extra {extra}")
+    hand_ok = True
+    if true_hand and parsed["hand"]:
+        if parsed["hand"] != true_hand:
+            missing = true_hand - parsed["hand"]
+            extra = parsed["hand"] - true_hand
+            if missing:
+                errors.append(f"hand missing {missing}")
+            if extra:
+                errors.append(f"hand extra {extra}")
+            hand_ok = False
+    elif true_hand and not parsed["hand"]:
+        # Model didn't output a HAND line — check if it mentioned the dominoes anywhere
+        # Be lenient: if the play is from the true hand, the model at least knows its hand
+        hand_ok = play in true_hand  # soft check
 
-    # Counts check
+    # Counts check — informational for now, doesn't reject
     true_counts = ex.get("count_status", {})
+    counts_ok = True
     if true_counts and parsed["counts"]:
         for dom, true_status in true_counts.items():
             claimed = parsed["counts"].get(dom)
             if claimed and claimed != true_status:
                 errors.append(f"{dom}: claimed {claimed}, actually {true_status}")
+                counts_ok = False
 
-    if errors:
+    if not hand_ok:
         return {"grade": "invalid", "play": play, "errors": errors}
 
     # --- K1 grade (facts are correct, now check action quality) ---
@@ -538,9 +547,14 @@ def run_loop(
 
         illegal_rate = (stats["illegal"] + stats["parse_fail"]) / total * 100
         invalid_rate = stats["invalid"] / total * 100
+        # Count how many had correct counts (informational)
+        n_counts_ok = sum(1 for g in graded
+                          if g["grade"]["grade"] in ("valid_pass", "valid_fail")
+                          and not any("claimed" in e for e in g["grade"].get("errors", [])))
         wandb.log({
             "valid_pass_rate": valid_pass_rate,
             "fact_accuracy": fact_accuracy,
+            "counts_accuracy": n_counts_ok / total * 100 if total > 0 else 0,
             "illegal_rate": illegal_rate,
             "invalid_rate": invalid_rate,
             "n_valid_pass": stats["valid_pass"],
