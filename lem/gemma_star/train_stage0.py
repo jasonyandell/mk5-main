@@ -24,7 +24,7 @@ from pathlib import Path
 import modal
 
 MODEL_ID = "google/gemma-4-E2B-it"
-ADAPTER_REPO = "jasonyandell/gemma-4-e2b-texas42-stage0-kerry"
+ADAPTER_REPO = "jasonyandell/gemma-4-e2b-texas42-stage0-v3"
 
 app = modal.App("lem-stage0-train")
 
