@@ -11,11 +11,11 @@ set -e
 N_ITERS=${1:-5}
 START=${2:-0}
 SUBSET=${3:-200}
-DATA="lem/data/narrations_train_combined.jsonl"
+DATA="lem/data/narrations_enriched.jsonl"
 
 # Adapter chain: stage0 → star-iter0 → star-iter1 → ...
 if [ "$START" -eq 0 ]; then
-    ADAPTER="jasonyandell/gemma-4-e2b-texas42-stage0"
+    ADAPTER="jasonyandell/gemma-4-e2b-texas42-stage0-kerry"
 else
     PREV=$((START - 1))
     ADAPTER="jasonyandell/gemma-4-e2b-texas42-star-iter${PREV}"
