@@ -268,10 +268,51 @@ a different layer mapping. Needs investigation — adapter may be partially appl
 Image: `nvidia/cuda:12.9.0-devel-ubuntu22.04` with `torch>=2.6`, `transformers==5.5.0`.
 GPU: B200 ($6.25/hr, 192GB). Model is ~10GB in bf16, leaving 180GB+ for KV cache.
 
-### Next: iterate and measure
+### 10 STaR iterations (2026-04-11)
 
-The loop works. The next steps are:
-1. Run more STaR iterations with 50-100 examples (batching will really shine).
-2. Run eval set through each adapter to measure E[Q] delta progression.
-3. Watch illegality rate drop across iterations (the main diagnostic).
-4. Investigate the LoRA adapter key mismatch (layers 15-34 missing).
+**LoRA adapter key mismatch resolved:** Gemma 4 E2B uses KV-sharing for layers
+15-34 — those layers don't have k_proj/v_proj because they reuse KV states from
+layers 0-14. The adapter is complete and correctly covers all trainable layers.
+
+**Scratchpad validation attempted and deferred:** Added structured scratchpad
+(HAND/VOIDS/COUNTS/PLAY) to validate model's game-state claims against engine
+ground truth. Result: 64.5% invalid on first iteration — model hadn't learned
+the format. Reverted to K1-only grading. The scratchpad idea is right but needs
+a format-teaching SFT step first. Code preserved in `validate_scratchpad.py`
+and `enrich_narrations.py` for later.
+
+**10 iterations completed** (chained as separate Modal runs to avoid staleness):
+
+| Iter | Pass | Loss | Examples | Pool | Notes |
+|------|------|------|----------|------|-------|
+| 0 | 30% | 31.6 | 200 | 3148 | Stage 0 baseline |
+| 1 | 34% | 17.5 | 200 | 3148 | |
+| 2 | 33% | 21.2 | 200 | 3148 | |
+| 3 | 36% | 15.5 | 200 | 3148 | |
+| 4 | 35% | 19.7 | 200 | 3148 | |
+| 5 | **42%** | 12.8 | 300 | 7409 | Bigger pool |
+| 6 | 36% | 12.3 | 300 | 7409 | |
+| 7 | **42%** | 12.9 | 300 | 7409 | |
+| 8 | 38% | 11.4 | 300 | 7409 | |
+| 9 | 36% | 11.8 | 300 | 7409 | |
+
+Pass rate: 30% → plateau at 36-42%. Loss: 31.6 → 11.8.
+10 adapters on HF: `star-iter0` through `star-iter9`.
+Total cost: ~$15 on B200. Wandb: `jasonyandell-forge42/lem-star`.
+
+**Key observations:**
+- Model is learning — 30% to 42% is a real improvement.
+- Plateau around 38% average suggests we need a different signal to push further.
+- Bigger data pool (3148 → 7409) with different subsets per iteration helped.
+- Chaining as separate Modal runs (1 iteration each) avoids container staleness.
+- Scratchpad validation deferred but the code is ready for when we bootstrap
+  the format via SFT.
+
+### Next steps
+
+1. **Run held-out eval** on best adapter (iter5 or iter7 at 42%) to get proper
+   E[Q] delta measurement.
+2. **Bootstrap scratchpad format** via SFT — generate correct scratchpad examples
+   from the engine, train the model to fill them in, then resume validated STaR.
+3. **Or: increase data diversity** — generate narrations from seeds 500-999,
+   use 500 per iteration, see if the plateau breaks with more variety.
