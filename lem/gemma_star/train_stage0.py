@@ -24,7 +24,7 @@ from pathlib import Path
 import modal
 
 MODEL_ID = "google/gemma-4-E2B-it"
-ADAPTER_REPO = "jasonyandell/gemma-4-e2b-texas42-stage0"
+ADAPTER_REPO = "jasonyandell/gemma-4-e2b-texas42-stage0-kerry"
 
 app = modal.App("lem-stage0-train")
 
@@ -47,7 +47,7 @@ train_image = (
 
 @app.function(
     image=train_image,
-    gpu="A100",  # 40GB — fits model (4GB) + batch_size=8 without grad checkpointing
+    gpu="B200",  # 192GB — no memory pressure, full batching
     timeout=14400,
     secrets=[modal.Secret.from_name("huggingface-secret"),
              modal.Secret.from_name("wandb-api-key")],
