@@ -57,6 +57,7 @@ def train(
     corpus_jsonl: str,
     primer_text: str,
     epochs: int = 3,
+    max_steps: int = -1,
     lr: float = 2e-4,
     lora_rank: int = 16,
     lora_alpha: int = 32,
@@ -177,6 +178,7 @@ def train(
     training_args = SFTConfig(
         output_dir="/tmp/stage0-output",
         num_train_epochs=epochs,
+        max_steps=max_steps,  # -1 = use epochs
         per_device_train_batch_size=1,
         gradient_accumulation_steps=16,  # effective batch = 16
         learning_rate=lr,
@@ -233,6 +235,7 @@ def main(
     corpus: str = "lem/rules/qa_corpus.jsonl",
     primer: str = "lem/rules/primer.md",
     epochs: int = 3,
+    max_steps: int = -1,
     lr: float = 2e-4,
     lora_rank: int = 16,
     dry_run: bool = False,
@@ -257,12 +260,14 @@ def main(
     n_examples = corpus_text.count("\n")
     print(f"[local] Corpus: {n_examples} examples from {corpus_path}", file=sys.stderr)
     print(f"[local] Primer: {len(primer_text)} chars from {primer_path}", file=sys.stderr)
-    print(f"[local] Config: epochs={epochs}, lr={lr}, rank={lora_rank}", file=sys.stderr)
+    steps_str = f", max_steps={max_steps}" if max_steps > 0 else ""
+    print(f"[local] Config: epochs={epochs}{steps_str}, lr={lr}, rank={lora_rank}", file=sys.stderr)
 
     result = train.remote(
         corpus_jsonl=corpus_text,
         primer_text=primer_text,
         epochs=epochs,
+        max_steps=max_steps,
         lr=lr,
         lora_rank=lora_rank,
         dry_run=dry_run,
