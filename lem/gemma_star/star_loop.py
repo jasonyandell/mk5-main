@@ -1,25 +1,18 @@
-"""Single-GPU STaR loop: vLLM batch inference + LoRA training in one function.
+"""Single-GPU STaR loop: HF generate with flash attention + batching + LoRA.
 
-One GPU, vLLM server for inference. Each iteration:
-  1. vLLM concurrent inference on narration prompts
-  2. Grade K1 (beat the bot) + identify failures (~instant)
-  3. vLLM concurrent rationalization on failures
-  4. Kill vLLM, train LoRA on winning traces + rationalizations (~30s)
-  5. Push adapter to HuggingFace
-  6. Restart vLLM with merged adapter, repeat from 1
+One GPU, model loaded once per iteration. Each iteration:
+  1. Batch inference on all prompts (flash attention + torch.compile)
+  2. Grade K1 (beat the bot)
+  3. Batch rationalization on failures (reuse loaded model)
+  4. Train LoRA on winning traces + rationalizations
+  5. Push adapter to HuggingFace, repeat
 
-Uses the official vLLM Gemma 4 recipe (vllm==0.19.0, transformers==5.5.0).
-vLLM handles flash attention, paged KV cache, and continuous batching automatically.
+B200 with 192GB: model is ~10GB, leaving 180GB+ for KV cache and batches.
+Flash attention + padding-based batching = massive throughput on this tiny model.
 
 Usage:
-    # Run 3 iterations on B200
     modal run lem/gemma_star/star_loop.py --iterations 3
-
-    # Quick test: 1 iteration, 20 examples
-    modal run lem/gemma_star/star_loop.py --iterations 1 --limit 20
-
-    # With H100 fallback (edit GPU_TYPE below)
-    modal run lem/gemma_star/star_loop.py --iterations 3
+    modal run lem/gemma_star/star_loop.py --iterations 1 --limit 5   # smoke test
 """
 
 from __future__ import annotations
@@ -32,8 +25,6 @@ import modal
 MODEL_ID = "google/gemma-4-E2B-it"
 ADAPTER_BASE = "jasonyandell/gemma-4-e2b-texas42"
 GPU_TYPE = "B200"  # B200 ($6.25/hr, 192GB) or "H100" ($3.95/hr, 80GB)
-VLLM_PORT = 8000
-MAX_MODEL_LEN = 8192  # Our prompts are ~2800 tokens, responses ~500-1500
 
 app = modal.App("lem-star-loop")
 
@@ -43,18 +34,15 @@ loop_image = (
     )
     .entrypoint([])
     .pip_install(
-        # vLLM for inference (official Gemma 4 recipe)
-        "vllm==0.19.0",
+        "torch>=2.6",
         "transformers==5.5.0",
-        # Training deps
+        "accelerate>=1.2",
         "peft>=0.14",
         "trl>=0.15",
         "datasets>=3.0",
         "huggingface_hub>=0.27",
         "wandb>=0.19",
-        # HTTP client for vLLM API
-        "aiohttp>=3.9",
-        "openai>=1.0",
+        "pillow",
     )
     .env({"HF_XET_HIGH_PERFORMANCE": "1"})
 )
@@ -101,125 +89,10 @@ def grade_k1(gemma_action: str | None, bot_action: str, bot_eq: float,
             "delta": round(gemma_eq - bot_eq, 3)}
 
 
-# --- vLLM server management ---
-
-def _merge_adapter_to_disk(adapter_repo: str, output_dir: str):
-    """Merge a LoRA adapter into the base model and save to disk for vLLM."""
-    import torch
-    from peft import PeftModel
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    _patch_clippable_linear()
-
-    print(f"[merge] Loading base model + adapter {adapter_repo}...")
-    model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID, dtype=torch.bfloat16, device_map="cpu",
-    )
-    model = PeftModel.from_pretrained(model, adapter_repo)
-    model = model.merge_and_unload()
-
-    print(f"[merge] Saving merged model to {output_dir}...")
-    model.save_pretrained(output_dir)
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    tokenizer.save_pretrained(output_dir)
-    del model
-    print("[merge] Done.")
-
-
-def _start_vllm(model_path: str) -> "subprocess.Popen":
-    """Launch vLLM server as a subprocess, return the process handle."""
-    import subprocess
-
-    cmd = [
-        "vllm", "serve", model_path,
-        "--host", "0.0.0.0",
-        "--port", str(VLLM_PORT),
-        "--max-model-len", str(MAX_MODEL_LEN),
-        "--gpu-memory-utilization", "0.90",
-        "--limit-mm-per-prompt", "image=0,video=0,audio=0",
-        "--async-scheduling",
-        "--kv-cache-dtype", "fp8",
-        "--dtype", "bfloat16",
-        "--uvicorn-log-level", "warning",
-    ]
-    print(f"[vllm] Starting: {' '.join(cmd)}")
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return proc
-
-
-def _wait_for_vllm(timeout: int = 300):
-    """Poll vLLM health endpoint until it's ready."""
-    import time
-    import urllib.request
-    import urllib.error
-
-    url = f"http://localhost:{VLLM_PORT}/health"
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            resp = urllib.request.urlopen(url, timeout=2)
-            if resp.status == 200:
-                elapsed = time.time() - start
-                print(f"[vllm] Server ready in {elapsed:.0f}s")
-                return
-        except (urllib.error.URLError, ConnectionRefusedError, OSError):
-            pass
-        time.sleep(2)
-    raise TimeoutError(f"vLLM failed to start within {timeout}s")
-
-
-def _stop_vllm(proc: "subprocess.Popen"):
-    """Gracefully stop vLLM server."""
-    import signal
-    if proc.poll() is None:
-        proc.send_signal(signal.SIGTERM)
-        try:
-            proc.wait(timeout=15)
-        except Exception:
-            proc.kill()
-    print("[vllm] Server stopped.")
-
-
-async def _batch_generate(prompts: list[str], max_tokens: int = 1024,
-                          temperature: float = 0.6, concurrency: int = 16) -> list[str]:
-    """Send prompts to vLLM concurrently via OpenAI API. Returns responses."""
-    import asyncio
-    from openai import AsyncOpenAI
-
-    client = AsyncOpenAI(
-        base_url=f"http://localhost:{VLLM_PORT}/v1",
-        api_key="EMPTY",
-    )
-
-    semaphore = asyncio.Semaphore(concurrency)
-
-    async def generate_one(prompt: str) -> str:
-        async with semaphore:
-            response = await client.chat.completions.create(
-                model=MODEL_ID,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=max_tokens,
-                temperature=temperature,
-                extra_body={
-                    "chat_template_kwargs": {"enable_thinking": True},
-                },
-            )
-            msg = response.choices[0].message
-            # Combine thinking + content
-            parts = []
-            reasoning = getattr(msg, "reasoning", None) or getattr(msg, "reasoning_content", None)
-            if reasoning:
-                parts.append(f"<think>\n{reasoning}\n</think>")
-            if msg.content:
-                parts.append(msg.content)
-            return "\n".join(parts)
-
-    results = await asyncio.gather(*[generate_one(p) for p in prompts])
-    return list(results)
-
+# --- Model management ---
 
 def _patch_clippable_linear():
-    """Patch Gemma4ClippableLinear for PEFT compatibility."""
+    """Patch Gemma4ClippableLinear for PEFT compatibility (training only)."""
     import torch
     try:
         from transformers.models.gemma4 import modeling_gemma4
@@ -243,9 +116,99 @@ def _patch_clippable_linear():
                 return out
 
         modeling_gemma4.Gemma4ClippableLinear = PatchedClippableLinear
-        print("[patch] ClippableLinear patched")
+        print("[patch] ClippableLinear patched", flush=True)
     except ImportError:
         pass
+
+
+def _load_model(adapter_repo: str | None = None):
+    """Load Gemma 4 E2B with flash attention, optionally with LoRA adapter merged."""
+    import time
+    import torch
+    from transformers import AutoModelForCausalLM
+
+    _patch_clippable_linear()
+
+    print(f"[model] Loading {MODEL_ID} with SDPA...", flush=True)
+    t = time.time()
+    model = AutoModelForCausalLM.from_pretrained(
+        MODEL_ID,
+        dtype=torch.bfloat16,
+        device_map="cuda",
+        attn_implementation="sdpa",  # PyTorch native flash attention, no extra package
+    )
+
+    if adapter_repo:
+        from peft import PeftModel
+        print(f"[model] Loading LoRA adapter: {adapter_repo}...", flush=True)
+        model = PeftModel.from_pretrained(model, adapter_repo)
+        model = model.merge_and_unload()
+        print(f"[model] Adapter merged.", flush=True)
+
+    model.eval()
+    model = torch.compile(model, mode="reduce-overhead")
+
+    elapsed = time.time() - t
+    print(f"[model] Ready in {elapsed:.0f}s (sdpa + torch.compile)", flush=True)
+    return model
+
+
+def _batch_infer(model, tokenizer, prompts: list[str],
+                 max_tokens: int = 1024, temperature: float = 0.6,
+                 batch_size: int = 0) -> list[str]:
+    """Batch inference with left-padding for efficient GPU utilization."""
+    import time
+    import torch
+
+    # Auto batch size: fit everything at once on B200 (192GB, model is 10GB)
+    if batch_size <= 0:
+        batch_size = len(prompts)
+
+    # Format with chat template + thinking mode
+    all_messages = [[{"role": "user", "content": p}] for p in prompts]
+    formatted = [
+        tokenizer.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+            enable_thinking=True,
+        )
+        for msgs in all_messages
+    ]
+
+    # Left-pad for batched generation
+    tokenizer.padding_side = "left"
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    responses = []
+    t = time.time()
+
+    for i in range(0, len(formatted), batch_size):
+        batch = formatted[i:i + batch_size]
+        inputs = tokenizer(batch, return_tensors="pt", padding=True).to("cuda")
+        input_lens = inputs["attention_mask"].sum(dim=1)
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                temperature=temperature,
+                do_sample=True,
+            )
+
+        # Decode only the generated tokens for each sequence
+        for j, (out, in_len) in enumerate(zip(outputs, input_lens)):
+            generated = out[in_len:]
+            text = tokenizer.decode(generated, skip_special_tokens=False)
+            responses.append(text)
+
+        done = min(i + batch_size, len(formatted))
+        elapsed = time.time() - t
+        # Count total generated tokens
+        total_gen_tokens = sum(len(out) - in_len for out, in_len in zip(outputs, input_lens))
+        print(f"  [{done}/{len(formatted)}] {elapsed:.0f}s, "
+              f"~{total_gen_tokens/elapsed:.0f} tok/s this batch", flush=True)
+
+    return responses
 
 
 @app.function(
@@ -266,8 +229,8 @@ def run_loop(
     temperature: float = 0.6,
     start_iteration: int = 0,
 ) -> str:
-    """Run N STaR iterations on a single GPU with vLLM for inference."""
-    import asyncio
+    """Run N STaR iterations on a single GPU."""
+    import gc
     import os
     import time
 
@@ -280,11 +243,9 @@ def run_loop(
 
     os.environ["HF_HOME"] = "/model-cache"
 
-    MERGED_DIR = "/tmp/merged-model"
-
     # --- Load narrations ---
     examples = [json.loads(line) for line in narrations_jsonl.strip().split("\n") if line.strip()]
-    print(f"[data] {len(examples)} narration prompts loaded")
+    print(f"[data] {len(examples)} narration prompts loaded", flush=True)
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
     current_adapter = start_adapter
@@ -292,48 +253,37 @@ def run_loop(
 
     for iteration in range(start_iteration, start_iteration + n_iterations):
         iter_start = time.time()
-        print(f"\n{'='*60}")
-        print(f"  ITERATION {iteration}")
-        print(f"  Adapter: {current_adapter or '(base model)'}")
-        print(f"  GPU: {GPU_TYPE}")
-        print(f"{'='*60}")
+        print(f"\n{'='*60}", flush=True)
+        print(f"  ITERATION {iteration}", flush=True)
+        print(f"  Adapter: {current_adapter or '(base model)'}", flush=True)
+        print(f"  GPU: {GPU_TYPE}", flush=True)
+        print(f"{'='*60}", flush=True)
 
         # =====================================================================
-        # Prepare model for vLLM: merge adapter to disk if needed
+        # Load model (flash attention + adapter + torch.compile)
         # =====================================================================
-        if current_adapter:
-            _merge_adapter_to_disk(current_adapter, MERGED_DIR)
-            model_path = MERGED_DIR
-        else:
-            model_path = MODEL_ID
+        infer_model = _load_model(adapter_repo=current_adapter or None)
 
         # =====================================================================
-        # Start vLLM server
+        # Phase 1: Batch inference
         # =====================================================================
-        print(f"\n[iter {iteration}] Starting vLLM server...")
-        t_vllm = time.time()
-        vllm_proc = _start_vllm(model_path)
-        _wait_for_vllm(timeout=300)
-        print(f"[iter {iteration}] vLLM ready in {time.time()-t_vllm:.0f}s")
-
-        # =====================================================================
-        # Phase 1: Concurrent inference via vLLM
-        # =====================================================================
-        print(f"\n[iter {iteration}] Phase 1: Batch inference ({len(examples)} prompts)...")
+        print(f"\n[iter {iteration}] Phase 1: Batch inference ({len(examples)} prompts)...", flush=True)
         t1 = time.time()
 
         prompts = [ex["prompt"] for ex in examples]
-        responses = asyncio.run(
-            _batch_generate(prompts, max_tokens=max_new_tokens, temperature=temperature)
+        responses = _batch_infer(
+            infer_model, tokenizer, prompts,
+            max_tokens=max_new_tokens, temperature=temperature,
         )
 
-        print(f"[iter {iteration}] Phase 1 done: {len(responses)} responses in {time.time()-t1:.0f}s "
-              f"({len(responses)/(time.time()-t1):.1f} prompts/s)")
+        elapsed = time.time() - t1
+        print(f"[iter {iteration}] Phase 1 done: {len(responses)} responses in {elapsed:.0f}s "
+              f"({len(responses)/elapsed:.1f} prompts/s)", flush=True)
 
         # =====================================================================
         # Phase 2: Grade K1
         # =====================================================================
-        print(f"\n[iter {iteration}] Phase 2: Grading...")
+        print(f"\n[iter {iteration}] Phase 2: Grading...", flush=True)
         stats = {"pass": 0, "fail": 0, "illegal": 0, "parse_fail": 0}
         graded = []
 
@@ -346,18 +296,19 @@ def run_loop(
 
         total = sum(stats.values())
         pass_rate = stats["pass"] / total * 100
-        print(f"[iter {iteration}] Grading: {stats['pass']}/{total} pass ({pass_rate:.0f}%)")
-        print(f"  fail={stats['fail']} illegal={stats['illegal']} parse_fail={stats['parse_fail']}")
+        print(f"[iter {iteration}] Grading: {stats['pass']}/{total} pass ({pass_rate:.0f}%)", flush=True)
+        print(f"  fail={stats['fail']} illegal={stats['illegal']} parse_fail={stats['parse_fail']}", flush=True)
 
         # =====================================================================
-        # Phase 3: Rationalize failures (reuse running vLLM server)
+        # Phase 3: Rationalize failures (reuse loaded model)
         # =====================================================================
         legal_failures = [g for g in graded if g["grade"]["grade"] == "fail"]
         discarded = [g for g in graded if g["grade"]["grade"] in ("illegal", "parse_fail")]
         print(f"\n[iter {iteration}] Phase 3: Rationalizing {len(legal_failures)} legal failures "
-              f"(discarding {len(discarded)} illegal/unparseable)...")
+              f"(discarding {len(discarded)} illegal/unparseable)...", flush=True)
         t3 = time.time()
 
+        rational_responses = []
         if legal_failures:
             rat_prompts = []
             for g in legal_failures:
@@ -366,18 +317,18 @@ def run_loop(
                       f"Explain why {g['example']['best_action']} is the best choice.")
                 rat_prompts.append(rp)
 
-            rational_responses = asyncio.run(
-                _batch_generate(rat_prompts, max_tokens=max_new_tokens, temperature=temperature)
+            rational_responses = _batch_infer(
+                infer_model, tokenizer, rat_prompts,
+                max_tokens=max_new_tokens, temperature=temperature,
             )
             print(f"[iter {iteration}] Phase 3 done: {len(rational_responses)} rationalizations "
-                  f"in {time.time()-t3:.0f}s")
-        else:
-            rational_responses = []
+                  f"in {time.time()-t3:.0f}s", flush=True)
 
         # =====================================================================
-        # Stop vLLM to free GPU for training
+        # Free inference model to reclaim GPU for training
         # =====================================================================
-        _stop_vllm(vllm_proc)
+        del infer_model
+        gc.collect()
         torch.cuda.empty_cache()
 
         # =====================================================================
@@ -407,13 +358,13 @@ def run_loop(
 
         print(f"[iter {iteration}] {len(traces)} training traces "
               f"({stats['pass']} wins + {len(legal_failures)} rationalizations, "
-              f"{len(discarded)} discarded)")
+              f"{len(discarded)} discarded)", flush=True)
 
         # =====================================================================
         # Phase 5: Train LoRA
         # =====================================================================
         _patch_clippable_linear()
-        print(f"\n[iter {iteration}] Phase 5: Training LoRA...")
+        print(f"\n[iter {iteration}] Phase 5: Training LoRA...", flush=True)
         t5 = time.time()
 
         train_model = AutoModelForCausalLM.from_pretrained(
@@ -460,11 +411,11 @@ def run_loop(
             train_dataset=dataset, processing_class=tokenizer,
         )
         result = trainer.train()
-        print(f"[iter {iteration}] Training done: loss={result.training_loss:.4f} in {time.time()-t5:.0f}s")
+        print(f"[iter {iteration}] Training done: loss={result.training_loss:.4f} in {time.time()-t5:.0f}s", flush=True)
 
         # Push adapter
         new_adapter_repo = f"{ADAPTER_BASE}-star-iter{iteration}"
-        print(f"[iter {iteration}] Pushing to {new_adapter_repo}...")
+        print(f"[iter {iteration}] Pushing to {new_adapter_repo}...", flush=True)
         train_model.push_to_hub(new_adapter_repo, private=True)
         tokenizer.push_to_hub(new_adapter_repo, private=True)
 
@@ -475,8 +426,8 @@ def run_loop(
                     "n_traces": len(traces), "train_loss": result.training_loss})
         wandb.finish()
 
-        # Cleanup for next iteration
         del train_model, trainer, dataset
+        gc.collect()
         torch.cuda.empty_cache()
 
         current_adapter = new_adapter_repo
@@ -493,14 +444,14 @@ def run_loop(
         }
         all_results.append(iter_result)
         print(f"\n[iter {iteration}] COMPLETE in {iter_elapsed:.0f}s — "
-              f"pass rate {pass_rate:.0f}%, adapter: {new_adapter_repo}")
+              f"pass rate {pass_rate:.0f}%, adapter: {new_adapter_repo}", flush=True)
 
-    print(f"\n{'='*60}")
-    print("ALL ITERATIONS COMPLETE")
-    print(f"{'='*60}")
+    print(f"\n{'='*60}", flush=True)
+    print("ALL ITERATIONS COMPLETE", flush=True)
+    print(f"{'='*60}", flush=True)
     for r in all_results:
         print(f"  Iter {r['iteration']}: {r['pass_rate']:.0f}% pass, "
-              f"loss={r['train_loss']:.4f}, {r['elapsed_s']}s")
+              f"loss={r['train_loss']:.4f}, {r['elapsed_s']}s", flush=True)
 
     return json.dumps(all_results, indent=2)
 
@@ -514,7 +465,7 @@ def main(
     lr: float = 1e-4,
     start_iteration: int = 0,
 ):
-    """Run the STaR loop on B200 with vLLM inference."""
+    """Run the STaR loop on B200."""
     import sys
 
     narrations_path = Path(narrations)

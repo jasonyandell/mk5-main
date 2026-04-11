@@ -230,41 +230,48 @@ across iterations; it should drop as the model internalizes the rules through pr
   Using Modal for all GPU work instead.
 
 **Compute setup that works:**
-- Training: Modal A100 ($2.10/hr) — 10 min per run, ~$0.35
-- Inference: Modal H100 ($3.95/hr) — sequential HF generate, ~1 prompt/min
-- Full STaR iteration: Modal H100, all phases, ~15 min, ~$1
+- Training: Modal B200 ($6.25/hr) — LoRA step in ~13s
+- Inference: Modal B200 — batch HF generate with SDPA + torch.compile, 120+ tok/s
+- Full STaR iteration (5 examples): ~2.5 min on B200, ~$0.26
 - Local debugging: llama.cpp CPU, 11 tok/s, free
 - Narration generation: local 3050 Ti, 0.4 seeds/s, free
 
-### vLLM migration complete (2026-04-10)
+### Inference optimization (2026-04-10)
 
 **Problem:** Raw HF `generate()` was 71s/prompt (~60 tok/s) on H100. Sequential, no flash
 attention, model loaded twice per iteration (inference + rationalization).
 
-**Solution:** vLLM 0.19.0 + transformers 5.5.0 has Day 0 Gemma 4 support. Rewrote both
-`star_loop.py` and `modal_app.py` to launch vLLM as a subprocess and hit it via OpenAI API.
+**Journey:** Tried vLLM 0.19.0 (Day 0 Gemma 4 support) but hit three blockers:
+1. vLLM's EngineCore subprocess swallows download progress (looks stuck for 5-7 min)
+2. `Gemma4ForConditionalGeneration does not support LoRA yet` in vLLM
+3. Merged model weight layout (`ClippableLinear` `.linear.weight` suffix) incompatible
+   with vLLM's Gemma4 loader
 
-Key changes:
-- vLLM server provides flash attention, paged KV cache, continuous batching for free
-- Concurrent inference via `AsyncOpenAI` with semaphore-controlled concurrency (16 parallel)
-- Single vLLM server handles both Phase 1 (inference) and Phase 3 (rationalization)
-- Server stopped only for Phase 5 (LoRA training) which needs the GPU
-- B200 as primary GPU ($6.25/hr, 192GB, ~8 TB/s bandwidth)
-- `--kv-cache-dtype fp8` halves KV cache for more concurrent requests
-- `--limit-mm-per-prompt image=0,video=0,audio=0` skips multimodal profiling
-- `--async-scheduling` overlaps scheduling with decoding
-- `max_new_tokens` reduced from 2048 to 1024 (responses are 500-1500 tokens)
+**Solution:** Stay with HF `generate()` but add the three fixes that actually matter:
+1. `attn_implementation="sdpa"` — PyTorch native flash attention (built into torch 2.11+,
+   no `flash-attn` package needed — that takes 15-20 min to build from source)
+2. `torch.compile(model, mode="reduce-overhead")` — fused kernels
+3. Left-padded batching — all prompts in one `generate()` call
 
-Config from official vLLM Gemma 4 recipe:
-- https://github.com/vllm-project/recipes/blob/main/Google/Gemma4.md
-- https://github.com/vllm-project/recipes/blob/main/Google/gemma4-modal.py
+Model loaded once per iteration, reused across Phase 1 (inference) and Phase 3
+(rationalization). Freed only for Phase 5 (LoRA training).
 
-Image: `nvidia/cuda:12.9.0-devel-ubuntu22.04` with `vllm==0.19.0`, `transformers==5.5.0`.
+**Results (smoke test, 5 examples on B200):**
+- Model load + adapter merge: 44s (includes first-run download, cached after)
+- Phase 1 batch inference: 120 tok/s (includes torch.compile warmup)
+- Full iteration: 151s
+
+**Known issue:** LoRA adapter trained on Stage 0 has missing keys for layers 15-34
+(`language_model.layers.{15..34}.self_attn.{k,v}_proj`). The adapter was trained with
+a different layer mapping. Needs investigation — adapter may be partially applied.
+
+Image: `nvidia/cuda:12.9.0-devel-ubuntu22.04` with `torch>=2.6`, `transformers==5.5.0`.
+GPU: B200 ($6.25/hr, 192GB). Model is ~10GB in bf16, leaving 180GB+ for KV cache.
 
 ### Next: iterate and measure
 
 The loop works. The next steps are:
-1. Run more STaR iterations (the loop script supports `--iterations N` for back-to-back).
+1. Run more STaR iterations with 50-100 examples (batching will really shine).
 2. Run eval set through each adapter to measure E[Q] delta progression.
 3. Watch illegality rate drop across iterations (the main diagnostic).
-4. Scale up: more examples per iteration (50-100), more iterations.
+4. Investigate the LoRA adapter key mismatch (layers 15-34 missing).

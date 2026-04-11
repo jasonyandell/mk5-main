@@ -397,21 +397,87 @@ def train(config: dict):
 
 ## Monitoring
 
+### Finding and tracking jobs
+
 ```bash
-# List running apps with task counts
+# List running/recent apps — grab the app ID (ap-XXXXX)
 modal app list
 
-# List individual containers
-modal container list
+# Dashboard link (printed on app start):
+# https://modal.com/apps/jasonyandell/main/ap-XXXXX
+```
 
-# GPU stats from container
-modal container exec <container-id> -- nvidia-smi
+### Live log streaming (best for long jobs)
 
-# Compact GPU stats (utilization, VRAM, temp)
+```bash
+# Stream ALL logs in real-time (like tail -f)
+modal app logs <app-id> -f
+
+# Stream with timestamps
+modal app logs <app-id> -f --timestamps
+
+# Stream only stdout (skip system messages)
+modal app logs <app-id> -f -s stdout
+
+# Last N entries (quick status check)
+modal app logs <app-id> -n 50
+
+# Search logs for specific text
+modal app logs <app-id> --search "Phase 1"
+
+# Filter by time range
+modal app logs <app-id> --since 10m
+```
+
+### Container-level monitoring
+
+```bash
+# List containers for a specific app
+modal container list --app-id <app-id>
+
+# Stream a specific container's logs
+modal container logs <container-id> -f
+
+# GPU stats: utilization, VRAM, temperature
 modal container exec <container-id> -- nvidia-smi \
     --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu \
     --format=csv,noheader
+
+# Full nvidia-smi
+modal container exec <container-id> -- nvidia-smi
 ```
+
+### Stopping jobs
+
+```bash
+# Stop a specific app
+modal app stop <app-id>
+
+# Stop all ephemeral (modal run) apps
+modal app list | grep ephemeral | awk '{print $1}' | xargs -I {} modal app stop {}
+```
+
+### Monitoring workflow with /loop
+
+For long-running jobs, combine Modal CLI with Claude Code `/loop`:
+
+```
+# Poll logs every 60s:
+/loop 60s check modal app logs ap-XXXXX -n 5 and report status
+
+# Poll GPU utilization every 60s:
+/loop 60s run nvidia-smi on modal container and report GPU%
+```
+
+### GPU metrics (dashboard + CLI)
+
+Modal exposes four GPU metrics in the web dashboard:
+- **GPU Utilization %** — CUDA kernel execution time (matches nvidia-smi)
+- **GPU Power %** — fraction of max power draw
+- **GPU Temperature** — die temp in Celsius
+- **GPU Memory Used** — allocated VRAM
+
+Also available via Datadog/OpenTelemetry integration.
 
 ## Common Patterns
 
