@@ -15,7 +15,7 @@ DATA="lem/data/narrations_enriched.jsonl"
 
 # Adapter chain: stage0 → star-iter0 → star-iter1 → ...
 if [ "$START" -eq 0 ]; then
-    ADAPTER="jasonyandell/gemma-4-e2b-texas42-stage0-kerry"
+    ADAPTER="jasonyandell/gemma-4-e2b-texas42-stage0-v3"
 else
     PREV=$((START - 1))
     ADAPTER="jasonyandell/gemma-4-e2b-texas42-star-iter${PREV}"
