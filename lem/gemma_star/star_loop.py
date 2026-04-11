@@ -123,28 +123,33 @@ def run_loop(
 
     os.environ["HF_HOME"] = "/model-cache"
 
-    # --- Patch ClippableLinear ---
-    from transformers.models.gemma4 import modeling_gemma4
+    def patch_clippable_linear():
+        """Patch Gemma4ClippableLinear for PEFT compatibility. Only needed for training."""
+        try:
+            from transformers.models.gemma4 import modeling_gemma4
 
-    class PatchedClippableLinear(torch.nn.Linear):
-        def __init__(self, config, in_features, out_features):
-            torch.nn.Linear.__init__(self, in_features, out_features, bias=False)
-            self.use_clipped_linears = getattr(config, "use_clipped_linears", False)
-            if self.use_clipped_linears:
-                self.register_buffer("input_min", torch.tensor(-float("inf")))
-                self.register_buffer("input_max", torch.tensor(float("inf")))
-                self.register_buffer("output_min", torch.tensor(-float("inf")))
-                self.register_buffer("output_max", torch.tensor(float("inf")))
+            class PatchedClippableLinear(torch.nn.Linear):
+                def __init__(self, config, in_features, out_features):
+                    torch.nn.Linear.__init__(self, in_features, out_features, bias=False)
+                    self.use_clipped_linears = getattr(config, "use_clipped_linears", False)
+                    if self.use_clipped_linears:
+                        self.register_buffer("input_min", torch.tensor(-float("inf")))
+                        self.register_buffer("input_max", torch.tensor(float("inf")))
+                        self.register_buffer("output_min", torch.tensor(-float("inf")))
+                        self.register_buffer("output_max", torch.tensor(float("inf")))
 
-        def forward(self, x):
-            if self.use_clipped_linears:
-                x = torch.clamp(x, self.input_min, self.input_max)
-            out = torch.nn.Linear.forward(self, x)
-            if self.use_clipped_linears:
-                out = torch.clamp(out, self.output_min, self.output_max)
-            return out
+                def forward(self, x):
+                    if self.use_clipped_linears:
+                        x = torch.clamp(x, self.input_min, self.input_max)
+                    out = torch.nn.Linear.forward(self, x)
+                    if self.use_clipped_linears:
+                        out = torch.clamp(out, self.output_min, self.output_max)
+                    return out
 
-    modeling_gemma4.Gemma4ClippableLinear = PatchedClippableLinear
+            modeling_gemma4.Gemma4ClippableLinear = PatchedClippableLinear
+            print("[patch] ClippableLinear patched")
+        except ImportError:
+            print("[patch] transformers.models.gemma4 not available (vLLM has its own) — skipping")
 
     # --- Load narrations ---
     examples = [json.loads(line) for line in narrations_jsonl.strip().split("\n") if line.strip()]
@@ -177,6 +182,7 @@ def run_loop(
         # vLLM can load adapters directly, but merging is simpler and avoids
         # compatibility issues with the ClippableLinear patch.
         if current_adapter:
+            patch_clippable_linear()
             print(f"[iter {iteration}] Merging adapter for vLLM...")
             merge_model = AutoModelForCausalLM.from_pretrained(
                 MODEL_ID, dtype=torch.bfloat16, device_map="cpu",
@@ -319,6 +325,7 @@ def run_loop(
         # =====================================================================
         # Phase 5: Train LoRA
         # =====================================================================
+        patch_clippable_linear()
         print(f"\n[iter {iteration}] Phase 5: Training LoRA...")
         t5 = time.time()
 
