@@ -571,7 +571,7 @@ def run_loop(
         }
         all_results.append(iter_result)
         print(f"\n[iter {iteration}] COMPLETE in {iter_elapsed:.0f}s — "
-              f"pass rate {pass_rate:.0f}%, adapter: {new_adapter_repo}", flush=True)
+              f"pass rate {valid_pass_rate:.0f}%, adapter: {new_adapter_repo}", flush=True)
 
     print(f"\n{'='*60}", flush=True)
     print("ALL ITERATIONS COMPLETE", flush=True)
