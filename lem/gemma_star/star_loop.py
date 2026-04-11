@@ -1,7 +1,7 @@
-"""Single-GPU STaR loop: vLLM inference + LoRA training in one function.
+"""Single-GPU STaR loop: HF batch inference + LoRA training in one function.
 
 One GPU, model loaded once. Each iteration:
-  1. vLLM batch inference on narration prompts (~2 min on B200)
+  1. HF batch inference on narration prompts
   2. Grade K1 (beat the bot) + identify failures (~instant)
   3. vLLM batch rationalization on failures (~1 min)
   4. Train LoRA on winning traces + rationalizations (~30s)
@@ -155,10 +155,6 @@ def run_loop(
 
     # --- Tokenizer (shared across phases) ---
     tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
-    sampling_params = SamplingParams(
-        max_tokens=max_new_tokens,
-        temperature=temperature,
-    )
 
     current_adapter = start_adapter
     all_results = []
