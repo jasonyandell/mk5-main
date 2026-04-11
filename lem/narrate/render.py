@@ -207,7 +207,15 @@ def render_narration(
                 f"theirs: {team_points[1 - narrator_team]}."
             )
             lines.append("")
-            lines.append("What do you play?")
+            lines.append(
+                "Before you play, fill in this scratchpad to organize your thinking:\n"
+                "HAND: [list your remaining dominoes]\n"
+                "VOIDS: [list known voids from play history, e.g. \"Player 2: fives\" — "
+                "or \"none observed\" if no voids are known]\n"
+                "COUNTS: [for each count domino (5-5=10pts, 6-4=10pts, 5-0=5pts, "
+                "4-1=5pts, 3-2=5pts), state played or still out]\n"
+                "PLAY: [the domino you choose to play]"
+            )
             return "\n".join(lines)
 
         # Full trick — render the result line and carry score forward.
