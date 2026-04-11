@@ -109,7 +109,7 @@ def grade_k1(gemma_action: str | None, bot_action: str, bot_eq: float,
 
 @app.function(
     image=star_image,
-    gpu="L4",
+    gpu="A10G",  # $1.10/hr — more memory bandwidth than L4 for generation
     timeout=14400,
     secrets=[modal.Secret.from_name("huggingface-secret")],
     volumes={"/model-cache": modal.Volume.from_name("gemma-e2b-cache", create_if_missing=True)},
