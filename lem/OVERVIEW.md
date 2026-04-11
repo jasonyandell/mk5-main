@@ -221,10 +221,10 @@ about impossible states. Discard them. The illegality rate is a free diagnostic:
 40% illegal in iteration 0 means Stage 0 rules knowledge is still shaky. Track this
 across iterations; it should drop as the model internalizes the rules through practice.
 
-**What didn't work:**
-- vLLM for batch inference: Gemma 4 is too new (1 week old), version conflicts between
-  vLLM's pinned transformers and Gemma 4's tokenizer format. Fell back to sequential HF
-  generate. This will sort itself out as the ecosystem catches up. Filed as future work.
+**What didn't work (initially):**
+- vLLM for batch inference: at launch, version conflicts between vLLM's pinned transformers
+  and Gemma 4's tokenizer. **Resolved**: vLLM 0.19.0 + transformers 5.5.0 has Day 0 support.
+  See "vLLM migration complete" section below.
 - Local GPU inference: llama-cpp-python CUDA build failed (GCC 13 vs CUDA 12.3
   incompatibility on WSL2). CPU inference works at 11 tok/s but too slow for iteration.
   Using Modal for all GPU work instead.
@@ -236,6 +236,31 @@ across iterations; it should drop as the model internalizes the rules through pr
 - Local debugging: llama.cpp CPU, 11 tok/s, free
 - Narration generation: local 3050 Ti, 0.4 seeds/s, free
 
+### vLLM migration complete (2026-04-10)
+
+**Problem:** Raw HF `generate()` was 71s/prompt (~60 tok/s) on H100. Sequential, no flash
+attention, model loaded twice per iteration (inference + rationalization).
+
+**Solution:** vLLM 0.19.0 + transformers 5.5.0 has Day 0 Gemma 4 support. Rewrote both
+`star_loop.py` and `modal_app.py` to launch vLLM as a subprocess and hit it via OpenAI API.
+
+Key changes:
+- vLLM server provides flash attention, paged KV cache, continuous batching for free
+- Concurrent inference via `AsyncOpenAI` with semaphore-controlled concurrency (16 parallel)
+- Single vLLM server handles both Phase 1 (inference) and Phase 3 (rationalization)
+- Server stopped only for Phase 5 (LoRA training) which needs the GPU
+- B200 as primary GPU ($6.25/hr, 192GB, ~8 TB/s bandwidth)
+- `--kv-cache-dtype fp8` halves KV cache for more concurrent requests
+- `--limit-mm-per-prompt image=0,video=0,audio=0` skips multimodal profiling
+- `--async-scheduling` overlaps scheduling with decoding
+- `max_new_tokens` reduced from 2048 to 1024 (responses are 500-1500 tokens)
+
+Config from official vLLM Gemma 4 recipe:
+- https://github.com/vllm-project/recipes/blob/main/Google/Gemma4.md
+- https://github.com/vllm-project/recipes/blob/main/Google/gemma4-modal.py
+
+Image: `nvidia/cuda:12.9.0-devel-ubuntu22.04` with `vllm==0.19.0`, `transformers==5.5.0`.
+
 ### Next: iterate and measure
 
 The loop works. The next steps are:
@@ -243,4 +268,3 @@ The loop works. The next steps are:
 2. Run eval set through each adapter to measure E[Q] delta progression.
 3. Watch illegality rate drop across iterations (the main diagnostic).
 4. Scale up: more examples per iteration (50-100), more iterations.
-5. When vLLM compatibility catches up: switch to batched inference for ~5x speedup.
