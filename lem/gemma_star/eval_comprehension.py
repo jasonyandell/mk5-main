@@ -76,20 +76,31 @@ def _extract_play(response: str) -> str | None:
 
 
 def _clean_response(response: str, question: str) -> str:
-    """Strip prompt echo and formatting artifacts from model response.
+    """Strip thinking blocks, prompt echo, and formatting from model response.
 
-    The model sometimes echoes part of the prompt or the question before
-    answering. Find the actual answer by looking for the question text
-    or 'model' marker and taking everything after.
+    Gemma 4 generates <think>...</think> reasoning before the answer.
+    We grade only on what comes after the thinking block.
     """
-    # If response contains the question echoed, take everything after it
+    import re
+
+    # Strip Gemma 4 thinking block: <|channel>thought\n...<channel|>
+    # Take everything AFTER the last <channel|> (end of thinking)
+    eoc = "<channel|>"
+    idx = response.rfind(eoc)
+    if idx >= 0:
+        response = response[idx + len(eoc):]
+    else:
+        # Also try </think> for other model variants
+        idx = response.rfind("</think>")
+        if idx >= 0:
+            response = response[idx + len("</think>"):]
+
+    # Strip prompt echo (if response contains the question, take everything after)
     q_lower = question.lower().strip().rstrip("?")
     resp_lower = response.lower()
     idx = resp_lower.rfind(q_lower)
     if idx >= 0:
-        # Skip past the echoed question
         after = response[idx + len(q_lower):]
-        # Strip leading punctuation/whitespace/newlines
         after = after.lstrip("?\n\r \t")
         if after:
             response = after
@@ -212,7 +223,7 @@ def grade_response(example: dict, response: str) -> dict:
 def run_eval(
     eval_jsonl: str,
     adapter_repo: str = ADAPTER_REPO,
-    max_new_tokens: int = 512,
+    max_new_tokens: int = 2048,
     temperature: float = 0.1,
     batch_size: int = 32,
 ) -> str:
@@ -281,7 +292,10 @@ def run_eval(
         all_messages.append([{"role": "user", "content": user_content}])
 
     formatted = [
-        tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+        tokenizer.apply_chat_template(
+            msgs, tokenize=False, add_generation_prompt=True,
+            enable_thinking=False,
+        )
         for msgs in all_messages
     ]
 
@@ -303,12 +317,27 @@ def run_eval(
 
         for j, out in enumerate(outputs):
             generated = out[prompt_len:]
-            text = tokenizer.decode(generated, skip_special_tokens=True)
+            # Keep special tokens so we can find <think>/<channel> markers
+            text = tokenizer.decode(generated, skip_special_tokens=False)
             responses.append(text)
 
         done = min(i + batch_size, len(formatted))
         elapsed = time.time() - t
         print(f"  [{done}/{len(formatted)}] {elapsed:.0f}s", flush=True)
+
+    # --- Dump raw responses for offline grading ---
+    dump_lines = []
+    for ex, resp in zip(examples, responses):
+        dump_lines.append(json.dumps({
+            "category": ex["category"],
+            "question": ex["question"],
+            "answer": ex["answer"],
+            "response": resp,
+            "seed": ex.get("seed"),
+            "decl_name": ex.get("decl_name"),
+        }))
+    dump_text = "\n".join(dump_lines)
+    print(f"\n[dump] {len(dump_lines)} raw responses saved", flush=True)
 
     # --- Grade ---
     results = {"total": 0, "correct": 0}
@@ -334,7 +363,7 @@ def run_eval(
                     "category": cat,
                     "question": ex["question"],
                     "ground_truth": ex["answer"][:200],
-                    "response": resp[:200],
+                    "response": resp[:500],
                     "details": grade["details"],
                 })
 
@@ -355,7 +384,7 @@ def run_eval(
         for f in failures[:5]:
             print(f"  [{f['category']}] Q: {f['question']}", flush=True)
             print(f"    GT: {f['ground_truth'][:100]}", flush=True)
-            print(f"    Resp: {f['response'][:100]}", flush=True)
+            print(f"    Resp: {f['response'][:300]}", flush=True)
             print(f"    Detail: {f['details']}", flush=True)
 
     return json.dumps({
@@ -365,6 +394,7 @@ def run_eval(
         "total": results["total"],
         "correct": results["correct"],
         "failures": failures,
+        "raw_responses": dump_text,
     }, indent=2)
 
 
@@ -402,3 +432,10 @@ def main(
     print(f"Overall accuracy: {result['overall_accuracy']}%", file=sys.stderr)
     for cat, acc in result["by_category"].items():
         print(f"  {cat}: {acc}%", file=sys.stderr)
+
+    # Save raw responses for offline grading
+    if "raw_responses" in result:
+        dump_path = Path("scratch/eval_responses.jsonl")
+        dump_path.parent.mkdir(parents=True, exist_ok=True)
+        dump_path.write_text(result["raw_responses"])
+        print(f"  Raw responses saved to {dump_path}", file=sys.stderr)

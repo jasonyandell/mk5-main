@@ -171,20 +171,43 @@ def train(
         output_dir="/tmp/comprehension-train",
         num_train_epochs=epochs,
         max_steps=max_steps,
-        per_device_train_batch_size=4,
-        gradient_accumulation_steps=4,  # effective batch = 16
+        per_device_train_batch_size=16,
+        gradient_accumulation_steps=1,  # no accum needed — B200 has 192GB
         learning_rate=lr,
         lr_scheduler_type="cosine",
         warmup_ratio=0.1,
         logging_steps=10,
         eval_strategy="no",
-        save_strategy="no",
+        save_strategy="epoch",
         bf16=True,
-        gradient_checkpointing=True,
-        gradient_checkpointing_kwargs={"use_reentrant": False},
+        gradient_checkpointing=False,  # B200 has 192GB, no need to save memory
         report_to="wandb",
         seed=42,
     )
+
+    # Callback to push adapter to HF after each epoch
+    from transformers import TrainerCallback
+
+    class PushPerEpochCallback(TrainerCallback):
+        def __init__(self, base_name, tokenizer, do_push):
+            self.base_name = base_name
+            self.tokenizer = tokenizer
+            self.do_push = do_push
+
+        def on_save(self, args, state, control, model=None, **kwargs):
+            if not self.do_push or model is None:
+                return
+            epoch = int(state.epoch)
+            repo = f"{self.base_name}-ep{epoch}"
+            print(f"[save] Epoch {epoch} — pushing to {repo}...", flush=True)
+            try:
+                model.push_to_hub(repo, private=True)
+                self.tokenizer.push_to_hub(repo, private=True)
+                print(f"[save] Epoch {epoch} done.", flush=True)
+            except Exception as e:
+                print(f"[save] Epoch {epoch} push failed: {e}", flush=True)
+
+    push_cb = PushPerEpochCallback(adapter_name, tokenizer, push_to_hub)
 
     trainer = SFTTrainer(
         model=model,
@@ -192,15 +215,16 @@ def train(
         train_dataset=train_ds,
         eval_dataset=val_ds,
         processing_class=tokenizer,
+        callbacks=[push_cb],
     )
 
     print("[train] Starting...", flush=True)
     result = trainer.train()
     print(f"[train] Done. Loss: {result.training_loss:.4f}", flush=True)
 
-    # --- Save ---
+    # --- Save final ---
     if push_to_hub:
-        print(f"[save] Pushing to {adapter_name}...", flush=True)
+        print(f"[save] Pushing final to {adapter_name}...", flush=True)
         model.push_to_hub(adapter_name, private=True)
         tokenizer.push_to_hub(adapter_name, private=True)
         print("[save] Done.", flush=True)
