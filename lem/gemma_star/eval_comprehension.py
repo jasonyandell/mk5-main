@@ -290,7 +290,7 @@ def run_eval(
     for i in range(0, len(formatted), batch_size):
         batch = formatted[i:i + batch_size]
         inputs = tokenizer(batch, return_tensors="pt", padding=True).to("cuda")
-        input_lens = inputs["attention_mask"].sum(dim=1)
+        prompt_len = inputs["input_ids"].shape[1]  # includes left-pad
 
         with torch.no_grad():
             outputs = model.generate(
@@ -298,10 +298,11 @@ def run_eval(
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
                 do_sample=True,
+                eos_token_id=[1, 106],  # <eos> + <turn|> (end of model turn)
             )
 
-        for j, (out, in_len) in enumerate(zip(outputs, input_lens)):
-            generated = out[in_len:]
+        for j, out in enumerate(outputs):
+            generated = out[prompt_len:]
             text = tokenizer.decode(generated, skip_special_tokens=True)
             responses.append(text)
 
