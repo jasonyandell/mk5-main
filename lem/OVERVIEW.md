@@ -325,11 +325,86 @@ to produce correct plays ~40% of the time but can't go further because
 the reasoning is polluted. This was the original concern that motivated
 the scratchpad approach.
 
+### Stage 0 v4: Comprehension training (2026-04-12 → 2026-04-13)
+
+**Diagnosis:** The STaR plateau at ~48% pass rate was caused by the model not
+understanding the game. It hallucinated opponent hands, confused trump
+membership, and got right answers for wrong reasons. The 8-10% illegal move
+rate proved it didn't have the rules down. The Stage 0 v3 Q&A flashcards
+(20K examples) reached 100% training accuracy but didn't transfer to
+gameplay context — classic format transfer gap.
+
+**New approach:** Instead of Q&A flashcards, train on game-context comprehension
+questions. Compact trick-history prompt (~170 tokens vs 2400 with the primer)
+with one question per example across five categories:
+
+| Category | Question | Example |
+|---|---|---|
+| where_is | Where is the X-Y? | "The 5-4 was played by P1 on trick 2." |
+| count_status | Status of count domino? | "The 6-4 (10 count) was captured by opponents on trick 4." |
+| is_trump | Is X-Y a trump? | "Yes. Blanks are trump. The 3-0 contains a 0, so it is trump." |
+| what_beats | What can beat X-Y? | "In fives: 5-5, 6-5, 5-4. By trumping: 0-0, 1-0, ..." |
+| legal_moves | What are your legal moves? | "Led suit: sixes. 4-0 is trump, not a six. 5-2 not a six. Legal: 4-0, 5-2." |
+
+All answers engine-verified ground truth. Generator: `lem/rules/generate_comprehension.py`.
+
+**Data:** 31,830 train + 7,725 eval examples from 200 training seeds + 50
+held-out eval seeds. All at trick-6 positions with 2+ legal moves.
+
+**Training:** LoRA rank 16, 3 full epochs on B200. Per-epoch checkpoints pushed
+to HuggingFace. batch_size=16, no gradient checkpointing (B200 has 192GB,
+model is 10GB — no need to save memory). Final: loss 0.06, 97.4% token accuracy.
+
+**Key debugging discoveries:**
+1. **EOS token:** `generate()` must stop on both `<eos>` (token 1) AND `<turn|>`
+   (token 106). Without this, model generates past its answer into prompt echo.
+2. **Left-pad slicing:** With left-padded batches, use `input_ids.shape[1]`
+   (padded length) not `attention_mask.sum()` (real token count) to separate
+   generated tokens from input.
+3. **Thinking mode:** Gemma 4 E2B defaults to thinking mode (`<|channel>thought`).
+   The thinking block can consume all `max_new_tokens` before reaching the answer.
+   For eval, disable thinking (`enable_thinking=False`) or budget 2048+ tokens.
+4. **Format compliance:** The model produces correct answers in free-form text
+   (numbered lists, markdown bold, natural language) — not the exact trained format.
+   Rigid pattern-matching graders miss correct answers. Built a flexible offline
+   grader (`lem/gemma_star/grade_offline.py`) that extracts facts from responses.
+
+**Results (flexible grader, 100 held-out examples):**
+
+| Category | Score | Notes |
+|---|---|---|
+| **is_trump** | **100%** | Perfect. Knows trump membership for all declarations. |
+| **where_is** | **90%** | Tracks dominoes across 5 tricks reliably. |
+| **legal_moves** | **70%** | Identifies legal moves, sometimes misses one of two. |
+| **count_status** | **60%** | Knows counts were played, sometimes wrong team/trick. |
+| **what_beats** | **15%** | Doesn't understand suit-based ranking yet. |
+| **Overall** | **67%** | |
+
+**The model knows Texas 42.** It no longer says "This is a game of Bridge."
+It correctly identifies trump 100% of the time, tracks game state at 90%,
+and identifies legal moves at 70%.
+
+**Adapters on HuggingFace:**
+- `jasonyandell/gemma-4-e2b-texas42-stage0-v4-full3ep` (final)
+- `jasonyandell/gemma-4-e2b-texas42-stage0-v4-full3ep-ep1` through `ep3` (checkpoints)
+
+**Training scripts:**
+- `lem/rules/generate_comprehension.py` — question generator (runs locally on 3050 Ti)
+- `lem/gemma_star/train_comprehension.py` — Modal B200 trainer with per-epoch saves
+- `lem/gemma_star/eval_comprehension.py` — Modal B200 inference + grading
+- `lem/gemma_star/grade_offline.py` — flexible offline grader (no GPU needed)
+
 ### Next steps
 
-1. **Run held-out eval** on best adapter (iter5 or iter7 at 42%) to get proper
-   E[Q] delta measurement vs Stage 0 and vs base model.
-2. **Bootstrap scratchpad format** via SFT — generate correct scratchpad examples
-   from the engine, train one LoRA pass to teach the model the format, THEN
-   resume validated STaR. This is the approach most likely to break the plateau.
-3. **11,672 narrations available** (seeds 0-799) for larger-subset iterations.
+1. **Improve what_beats** — the model doesn't understand domino ranking within
+   suits or trump override. This is the prerequisite for play reasoning. May need
+   ranking-focused training examples or a different question format.
+2. **Improve legal_moves to 100%** — currently 70%, often gets one of two moves.
+   The model understands following suit but sometimes misses the trump
+   reclassification edge case (e.g., 5-4 is trump when fives are trump, not a four).
+3. **Enable thinking mode for STaR** — train with `<|channel>thought...<channel|>`
+   blocks so the model learns when to stop thinking and start answering. The
+   thinking channel is essential for the backwards curriculum.
+4. **Resume STaR with comprehension adapter** — use the v4 adapter as the new
+   Stage 0 baseline, regenerate narrations in compact format with state block,
+   and resume the backwards curriculum from trick 6.
