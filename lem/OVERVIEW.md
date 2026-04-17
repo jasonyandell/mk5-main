@@ -691,8 +691,134 @@ Still on the rationalization-bootstrap path, but with these adjustments:
    parameter budget — worth considering Qwen 3 4B as an upgrade path
    once the curriculum is fully shaped. Same pipeline, 2.3× capacity.
 
-### Final adapter on this arc
+### Stage 0 v10: rationalization SFT bootstrap (2026-04-17)
 
-`jasonyandell/qwen3-1.7b-texas42-stage0-v9` — 14 categories, 3 epochs,
-83% comprehension overall, 68/100 rationalization pass rate. Foundation
-for whatever comes next (rationalization SFT, STaR, or scaling to 4B).
+Tests the bootstrap hypothesis: can we extract the model's own rationalization
+traces and train on them to get reasoning on open-ended prompts?
+
+**Pipeline:**
+1. Scout 500 decisions with v9 + rationalize mode → 500 candidate responses
+2. Filter through `verify_rationalization.py` → 331 clean (66% pass rate)
+3. Format as (prompt, open-ended question, clean rationalization) pairs
+4. Combine with v9 comprehension data (upweight rationalizations 10x)
+5. Train joint from base Qwen 3 1.7B (NOT stacked)
+
+**Bug discovered mid-experiment: rationalize-v1 ≠ v10.** A first attempt
+trained a fresh LoRA on just 331 rationalization examples with no comprehension
+foundation (train script didn't support --start-adapter). Result: model
+rationalized eloquently but lost all domain knowledge (91/100 verifier-clean
+but 97/100 never committed to a "Play X" — it just philosophized).
+
+**Principle captured:** SFT on a new task without inheriting the base task's
+foundation produces a model good at the new skill shape but bad at the
+substance. Always joint-train related skills or explicitly merge the base
+adapter. (Same lesson as v5-chained, different failure mode.)
+
+**v10 joint results** (`jasonyandell/qwen3-1.7b-texas42-stage0-v10`):
+- Training: 31,307 examples (27,997 comprehension + 331 × 10 upweighted
+  rationalizations), 3 epochs, final loss 0.205
+- Comprehension eval: **83% overall — identical to v9**. No regression from
+  adding the rationalization data.
+- **Transition test** (open-ended "what do you play and why?", no bot hint):
+  - **55/100 bot-match** with visible reasoning ← crosses 50% rules+chance
+  - **96/100 legal moves**
+  - **3/100 no-play** (down from rationalize-v1's 97/100)
+  - 58/100 verifier-clean
+  - Length: 11 short / 74 medium / 15 long
+
+**What worked:** The structured rationalization habit transferred from the
+scaffolded "bot chose X" format to open-ended prompts. The model produces
+visible reasoning AND commits to legal plays AND matches E[Q] above chance.
+
+**What didn't (yet):** The reasoning is often muddled ("5-5 is not trump.
+Pick another trump. No trump available. Choose a random play: 5-5.") and
+55% bot-match isn't a commanding strategic signal. But 55% > 50% is genuine.
+
+### Qwen 3 14B capacity experiment (2026-04-17)
+
+Tests the capacity hypothesis: is the 1.7B rationalization ceiling a curriculum
+problem or a model-size problem?
+
+**Setup:** Train Qwen 3 14B (8× the capacity) on the same v9 comprehension
+data (27,997 examples, no upweighted rationalizations), 3 epochs. Written
+as a fork of the 1.7B trainer (`train_comprehension_qwen_14b.py`) with
+`load_in_4bit=False`, `batch_size=16`, `lr=1e-4`. ~83 min on B200, ~$12.
+
+**Adapter:** `jasonyandell/qwen3-14b-texas42-stage0-v9`, final loss 0.125
+(vs 1.7B's 0.205 — significantly better convergence).
+
+**Comprehension:**
+
+| Category | 1.7B v9 | **14B** | Δ |
+|---|---|---|---|
+| is_trump | 98% | 100% | +2 |
+| legal_moves | 100% | 98% | -2 |
+| what_beats | 100% | 100% | — |
+| rank_in_suit | 100% | 100% | — |
+| suit_members | 100% | 100% | — |
+| void_deduction | 100% | 100% | — |
+| conditional_beat | 100% | 100% | — |
+| highest_unseen_in_suit | 100% | 100% | — |
+| where_is | 98% | **100%** | +2 |
+| count_status | 93% | **95%** | +2 |
+| intervention_check | 70% | 70% | — |
+| **partner_response** | **48%** | **75%** | **+27** |
+| **beaters_in_unseen** | **46%** | **61%** | **+15** |
+| **visibility_audit** | **0%** | **0%** | — (truncation) |
+| **Overall** | **83%** | **86%** | **+3** |
+
+Big wins on list-enumeration tasks. `visibility_audit` still 0% confirms the
+long-enumeration truncation is a **structural/format issue, not a capacity
+issue** — more params don't fix a bad training target.
+
+**Rationalization scout (with bot hint):**
+
+| Metric | 1.7B v9 | **14B** |
+|---|---|---|
+| Clean pass rate | 68/100 | **97/100** |
+| Short (<80) | 25 | 20 |
+| Medium | 27 | 29 |
+| Long (200+) | 13 | **48** |
+
+Sample 14B response:
+> "The 3-0 is a good choice because it is a good offensive domino. It
+> contains a 3, so it can win tricks when threes are led (especially if
+> the 3-3 or 3-2 is already gone). It also has the 0, which is in the
+> blanks suit... Overall, it is a versatile domino with offensive and
+> defensive potential. Play 3-0."
+
+That's genuinely lucid multi-factor reasoning — the kind the 1.7B attempts
+but garbles. 14B isn't perfect (still some hallucinations), but the jump
+from 68 to 97/100 clean is the biggest single-move gain in the entire arc.
+
+### Combined findings — the two hypotheses
+
+1. **Bootstrap hypothesis (v10)**: joint training on v9 + rationalizations
+   produces a 1.7B model that reasons on open-ended prompts and commits to
+   legal plays. Cross the 50% threshold. **Confirmed, but ceiling on
+   reasoning quality is modest.**
+2. **Capacity hypothesis (14B)**: more parameters directly lifts
+   rationalization clean-rate from 68 → 97/100 and list-enumeration
+   categories by 15-27pp. **Confirmed, with a decisive margin.**
+
+**Both paths work. 14B wins more decisively.** Combining them (v10-style joint
+training on 14B with upweighted rationalizations) is the likely next step —
+tests whether bootstrap + capacity compound.
+
+**What's still unsolved:**
+- `visibility_audit` at 0% across both 1.7B and 14B. Long-enumeration format
+  needs redesign (split into sub-questions, or drop entirely).
+- Rationalization quality on 14B is high but not perfect (97/100 clean but
+  still some subtle errors, e.g. "4-4 is trump" under doubles-suit).
+- STaR on actual decisions not yet attempted — next logical step now that
+  rationalization is reliable.
+
+### Adapters (Qwen-era, current)
+
+- `jasonyandell/qwen3-1.7b-texas42-stage0-v9` — 14 cats, 83%
+- `jasonyandell/qwen3-1.7b-texas42-rationalize-v1` — broken (SFT without
+  foundation, do not use)
+- `jasonyandell/qwen3-1.7b-texas42-stage0-v10` — joint 14 cats + rationalize,
+  83% comprehension + 55% bot-match on transition test
+- `jasonyandell/qwen3-14b-texas42-stage0-v9` — **14 cats, 86%, 97/100 clean
+  rationalizations** — strongest adapter on all reasoning metrics
