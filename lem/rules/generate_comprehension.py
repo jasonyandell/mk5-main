@@ -560,6 +560,736 @@ def gen_what_beats(pos: GamePosition, rng: random.Random) -> dict | None:
     }
 
 
+def _unseen_doms(pos: GamePosition) -> list[int]:
+    """Dominoes not in narrator's hand and not yet played (visible to narrator)."""
+    played = set()
+    for tr in pos.completed_tricks:
+        for p in tr.plays:
+            played.add(p.dom_id)
+    for p in pos.current_trick_plays:
+        played.add(p.dom_id)
+    hand = set(pos.remaining_hand)
+    return [i for i in range(28) if i not in played and i not in hand]
+
+
+def gen_beaters_in_unseen(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: Which unseen dominoes could beat your X when Y is led?
+
+    Like what_beats but restricted to the unseen pool — forces the model
+    to distinguish visible vs hidden information.
+    """
+    t = _t()
+    unseen = _unseen_doms(pos)
+    if not pos.remaining_hand or not unseen:
+        return None
+
+    # Pick led suit (prefer real ones from this game)
+    led_suits_seen = set()
+    for tr in pos.completed_tricks:
+        led_suits_seen.add(t.led_suit_for_lead_domino(tr.lead_dom, pos.decl_id))
+    if led_suits_seen:
+        suit_id = rng.choice(list(led_suits_seen))
+    else:
+        candidates = [s for s in range(7) if pos.decl_id > 6 or s != pos.decl_id]
+        suit_id = rng.choice(candidates) if candidates else 0
+
+    suit_name = _suit_name(suit_id, pos.decl_id)
+
+    # Pick a domino from hand, preferring one that's actually in the led suit or trump
+    # (so the comparison is interesting)
+    interesting_hand = [d for d in pos.remaining_hand
+                        if int(t.trick_rank(d, suit_id, pos.decl_id)) > 0]
+    my_dom = rng.choice(interesting_hand) if interesting_hand else rng.choice(pos.remaining_hand)
+    my_rank = int(t.trick_rank(my_dom, suit_id, pos.decl_id))
+
+    # Find unseen dominoes that beat my_dom
+    in_suit_beaters = []
+    trump_beaters = []
+    for d in unseen:
+        r = int(t.trick_rank(d, suit_id, pos.decl_id))
+        if r > my_rank:
+            if _is_trump(d, pos.decl_id) and suit_id != 7:
+                trump_beaters.append((d, r))
+            else:
+                in_suit_beaters.append((d, r))
+    in_suit_beaters.sort(key=lambda x: -x[1])
+    trump_beaters.sort(key=lambda x: -x[1])
+
+    lines = [
+        f"Your domino: {_dom(my_dom)}, rank {my_rank} in {suit_name}.",
+        f"Unseen pool: {len(unseen)} dominoes not in your hand and not yet played.",
+    ]
+    if not in_suit_beaters and not trump_beaters:
+        lines.append(f"No unseen domino can beat your {_dom(my_dom)} when {suit_name} is led.")
+        lines.append(f"Answer: nothing.")
+    else:
+        parts = []
+        if in_suit_beaters:
+            parts.append(f"In {suit_name}: " + ", ".join(_dom(d) for d, _ in in_suit_beaters))
+        if trump_beaters:
+            parts.append(f"By trumping: " + ", ".join(_dom(d) for d, _ in trump_beaters))
+        lines.append("Unseen beaters:")
+        for p in parts:
+            lines.append(f"- {p}")
+        all_beaters = [_dom(d) for d, _ in in_suit_beaters + trump_beaters]
+        lines.append(f"Answer: {', '.join(all_beaters)}.")
+
+    return {
+        "category": "beaters_in_unseen",
+        "question": (
+            f"Which unseen dominoes could beat your {_dom(my_dom)} when "
+            f"{suit_name} is led?"
+        ),
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_partner_response(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: Given the current trick state, which unseen dominoes would beat the current high play?
+
+    Teaches: tracking trick state, identifying the current threat, reasoning over unseen.
+    Frames as 'what partner would need to have' to outrank the current best.
+    """
+    t = _t()
+    unseen = _unseen_doms(pos)
+    if not unseen or pos.is_leading:
+        # Not meaningful if narrator is leading (no current plays to beat)
+        return None
+
+    # Identify led suit and current highest play on this trick
+    lead_dom = pos.current_lead_dom
+    if lead_dom is None:
+        return None
+    led_suit = t.led_suit_for_lead_domino(lead_dom, pos.decl_id)
+    suit_name = _suit_name(led_suit, pos.decl_id)
+
+    # Find current high play
+    current_plays = pos.current_trick_plays
+    if not current_plays:
+        return None
+    high_play = max(current_plays,
+                    key=lambda p: int(t.trick_rank(p.dom_id, led_suit, pos.decl_id)))
+    high_rank = int(t.trick_rank(high_play.dom_id, led_suit, pos.decl_id))
+    high_pref = _player_ref(high_play.player, pos.narrator, pos.partner, lower=True)
+
+    # Unseen dominoes with rank > high_rank
+    beaters = [(d, int(t.trick_rank(d, led_suit, pos.decl_id))) for d in unseen]
+    beaters = [(d, r) for d, r in beaters if r > high_rank]
+    beaters.sort(key=lambda x: -x[1])
+
+    lines = [
+        f"Current trick led with {_dom(lead_dom)} ({suit_name}).",
+        f"Highest play so far: {_dom(high_play.dom_id)} by {high_pref}, rank {high_rank}.",
+        f"Unseen pool: {len(unseen)} dominoes.",
+    ]
+    if not beaters:
+        lines.append(
+            f"No unseen domino outranks the current high play. "
+            f"Nothing partner could hold would win this trick outright on rank."
+        )
+        lines.append(f"Answer: nothing.")
+    else:
+        # Split by in-suit vs trump
+        in_suit = [(d, r) for d, r in beaters
+                   if not _is_trump(d, pos.decl_id) or led_suit == 7]
+        trumps = [(d, r) for d, r in beaters
+                  if _is_trump(d, pos.decl_id) and led_suit != 7]
+        parts = []
+        if in_suit:
+            parts.append(f"In {suit_name}: " + ", ".join(_dom(d) for d, _ in in_suit))
+        if trumps:
+            parts.append(f"By trumping: " + ", ".join(_dom(d) for d, _ in trumps))
+        lines.append("Unseen dominoes that outrank the current high play:")
+        for p in parts:
+            lines.append(f"- {p}")
+        all_list = [_dom(d) for d, _ in beaters]
+        lines.append(
+            f"If partner holds any of these and plays it, partner outranks "
+            f"the current high play."
+        )
+        lines.append(f"Answer: {', '.join(all_list)}.")
+
+    return {
+        "category": "partner_response",
+        "question": (
+            f"Given the current trick state, which unseen dominoes would outrank "
+            f"the current high play?"
+        ),
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_intervention_check(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: If opponent X plays Y after you lead Z, can partner intervene?
+
+    Teaches play order: partner can only beat opponent Y if partner plays
+    AFTER Y in the trick sequence. If Y plays after partner, partner can't save.
+
+    Generated only when narrator is leading (simplest case — full sequence
+    is narrator, narrator+1, partner, narrator+3).
+    """
+    t = _t()
+    if not pos.is_leading:
+        return None  # Only well-defined when narrator leads
+
+    unseen = _unseen_doms(pos)
+    if not unseen or not pos.remaining_hand:
+        return None
+
+    # Pick narrator's hypothetical lead
+    my_dom = rng.choice(pos.remaining_hand)
+    led_suit = t.led_suit_for_lead_domino(my_dom, pos.decl_id)
+    suit_name = _suit_name(led_suit, pos.decl_id)
+    my_rank = int(t.trick_rank(my_dom, led_suit, pos.decl_id))
+
+    # Decide which opponent is the threat:
+    # Order after narrator leads: (narrator+1)%4 → partner → (narrator+3)%4
+    # narrator+1 = "right opponent" (plays before partner, partner CAN intervene)
+    # narrator+3 = "left opponent" (plays after partner, partner CANNOT intervene)
+    right_opp = (pos.narrator + 1) % 4
+    left_opp = (pos.narrator + 3) % 4
+
+    threat_opp = rng.choice([right_opp, left_opp])
+    partner_can_intervene_by_order = (threat_opp == right_opp)
+
+    # Pick a threat from unseen that actually beats my lead
+    potential_threats = [d for d in unseen
+                         if int(t.trick_rank(d, led_suit, pos.decl_id)) > my_rank]
+    if not potential_threats:
+        return None  # No valid threat scenario
+    threat_dom = rng.choice(potential_threats)
+    threat_rank = int(t.trick_rank(threat_dom, led_suit, pos.decl_id))
+
+    # Check if partner has any domino that beats the threat
+    partner_hand = pos.all_hands[pos.partner]
+    # partner_remaining = partner's initial hand minus what partner has played
+    played_by_partner = set()
+    for tr in pos.completed_tricks:
+        for p in tr.plays:
+            if p.player == pos.partner:
+                played_by_partner.add(p.dom_id)
+    partner_remaining = [d for d in partner_hand if d not in played_by_partner]
+
+    partner_beaters = [d for d in partner_remaining
+                       if int(t.trick_rank(d, led_suit, pos.decl_id)) > threat_rank]
+    has_partner_beater = len(partner_beaters) > 0
+
+    # Final answer: partner intervenes iff (plays after threat) AND (has beater)
+    partner_saves = partner_can_intervene_by_order and has_partner_beater
+
+    # Build structured answer
+    threat_pref = "P" + str(threat_opp)
+    if threat_opp == right_opp:
+        order_desc = (
+            f"Play order after you lead: {threat_pref} (opponent) → "
+            f"partner → P{left_opp} (opponent). Partner plays AFTER {threat_pref}."
+        )
+        order_verdict = f"Partner plays after the threat, so partner CAN potentially intervene."
+    else:
+        order_desc = (
+            f"Play order after you lead: P{right_opp} (opponent) → "
+            f"partner → {threat_pref} (opponent). Partner plays BEFORE {threat_pref}."
+        )
+        order_verdict = f"Partner plays before the threat, so partner CANNOT intervene; {threat_pref} has the last word."
+
+    lines = [
+        f"Your lead: {_dom(my_dom)}, rank {my_rank} in {suit_name}.",
+        f"Threat: {threat_pref} plays {_dom(threat_dom)}, rank {threat_rank}. Beats your lead.",
+        order_desc,
+        order_verdict,
+    ]
+    if partner_can_intervene_by_order:
+        if has_partner_beater:
+            beater_strs = ", ".join(_dom(d) for d in partner_beaters)
+            lines.append(f"Partner's remaining hand includes dominoes that beat {_dom(threat_dom)}: {beater_strs}.")
+            lines.append(f"Answer: YES, partner can intervene.")
+        else:
+            lines.append(f"Partner's remaining hand does not include a domino that beats {_dom(threat_dom)}.")
+            lines.append(f"Answer: NO, partner cannot intervene (no beater in hand).")
+    else:
+        lines.append(f"Answer: NO, partner cannot intervene (ordering — {threat_pref} plays last).")
+
+    return {
+        "category": "intervention_check",
+        "question": (
+            f"You lead the {_dom(my_dom)}. If {threat_pref} (opponent) plays "
+            f"{_dom(threat_dom)}, could partner intervene to save the trick?"
+        ),
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_visibility_audit(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: What dominoes are visible to you, and what are unseen?
+
+    Teaches the fundamental bookkeeping that all unseen-reasoning categories
+    depend on. Enumerate visible (hand + played) and unseen (complement).
+    """
+    t = _t()
+    hand = sorted(pos.remaining_hand, key=lambda d: -t.trick_rank(d, 7, pos.decl_id)
+                  if _is_trump(d, pos.decl_id) else (t.DOMINO_HIGH[d] * 10 + t.DOMINO_LOW[d]))
+
+    played_by_trick: dict[int, list[tuple[int, int]]] = {}
+    for tr in pos.completed_tricks:
+        played_by_trick.setdefault(tr.trick_num, [])
+        for p in tr.plays:
+            played_by_trick[tr.trick_num].append((p.player, p.dom_id))
+    if pos.current_trick_plays:
+        played_by_trick.setdefault(6, [])
+        for p in pos.current_trick_plays:
+            played_by_trick[6].append((p.player, p.dom_id))
+
+    visible: set[int] = set(pos.remaining_hand)
+    for plays in played_by_trick.values():
+        for _, dom_id in plays:
+            visible.add(dom_id)
+    unseen = sorted(
+        [i for i in range(28) if i not in visible],
+        key=lambda d: (t.DOMINO_HIGH[d], t.DOMINO_LOW[d]),
+    )
+
+    lines = [
+        f"Your hand: {', '.join(_dom(d) for d in hand)}.",
+        "Played dominoes by trick:",
+    ]
+    for trick_num in sorted(played_by_trick):
+        plays = played_by_trick[trick_num]
+        plays_str = ", ".join(_dom(did) for _, did in plays)
+        lines.append(f"  Trick {trick_num}: {plays_str}")
+    total_visible = len(visible)
+    lines.append(f"Total visible: {total_visible} dominoes (hand + played).")
+    lines.append(f"Unseen: 28 - {total_visible} = {len(unseen)} dominoes.")
+    if unseen:
+        lines.append(f"Unseen list: {', '.join(_dom(d) for d in unseen)}.")
+    else:
+        lines.append("Unseen list: none (all dominoes visible).")
+
+    return {
+        "category": "visibility_audit",
+        "question": "What dominoes are visible to you, and what are unseen?",
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_highest_unseen_in_suit(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: What's the highest-ranked unseen domino in suit X?
+
+    Single answer, but the reasoning chain touches every sub-skill of
+    beaters_in_unseen: suit enumeration + ranking + visibility filter + argmax.
+    """
+    t = _t()
+    unseen = _unseen_doms(pos)
+    if not unseen:
+        return None
+
+    # Pick a suit (prefer ones played in this game)
+    candidates = []
+    if t.has_trump_power(pos.decl_id):
+        candidates.append(7)
+    for s in range(7):
+        if pos.decl_id <= 6 and s == pos.decl_id:
+            continue
+        # Suit must have at least one unseen member
+        members_unseen = [d for d in unseen if
+                          (s == 7 and _is_trump(d, pos.decl_id)) or
+                          (s != 7 and t.can_follow(d, s, pos.decl_id))]
+        if members_unseen:
+            candidates.append(s)
+    if not candidates:
+        return None
+
+    led_suits_seen = {t.led_suit_for_lead_domino(tr.lead_dom, pos.decl_id)
+                      for tr in pos.completed_tricks}
+    preferred = [s for s in candidates if s in led_suits_seen]
+    suit_id = rng.choice(preferred) if preferred else rng.choice(candidates)
+    suit_name = _suit_name(suit_id, pos.decl_id)
+
+    # Full suit membership
+    all_in_suit = _suit_members(suit_id, pos.decl_id)
+    in_suit_ranked = sorted(all_in_suit, key=lambda d: -t.trick_rank(d, suit_id, pos.decl_id))
+    in_suit_hand = [d for d in all_in_suit if d in set(pos.remaining_hand)]
+    played_set = set()
+    for tr in pos.completed_tricks:
+        for p in tr.plays:
+            played_set.add(p.dom_id)
+    for p in pos.current_trick_plays:
+        played_set.add(p.dom_id)
+    in_suit_played = [d for d in all_in_suit if d in played_set]
+    in_suit_unseen = [d for d in all_in_suit
+                      if d not in set(pos.remaining_hand) and d not in played_set]
+
+    if not in_suit_unseen:
+        return None
+
+    unseen_ranked = sorted(in_suit_unseen, key=lambda d: -t.trick_rank(d, suit_id, pos.decl_id))
+    highest = unseen_ranked[0]
+    highest_rank = int(t.trick_rank(highest, suit_id, pos.decl_id))
+
+    lines = [
+        f"{suit_name.capitalize()} suit members (highest to lowest): "
+        + ", ".join(f"{_dom(d)} (rank {int(t.trick_rank(d, suit_id, pos.decl_id))})"
+                    for d in in_suit_ranked) + ".",
+    ]
+    if in_suit_hand:
+        lines.append(f"In your hand: {', '.join(_dom(d) for d in in_suit_hand)}.")
+    else:
+        lines.append(f"In your hand: none.")
+    if in_suit_played:
+        lines.append(f"Already played: {', '.join(_dom(d) for d in in_suit_played)}.")
+    else:
+        lines.append(f"Already played: none.")
+    lines.append(f"Unseen {suit_name}: {', '.join(_dom(d) for d in unseen_ranked)}.")
+    lines.append(f"Highest unseen: {_dom(highest)} (rank {highest_rank}).")
+    lines.append(f"Answer: {_dom(highest)}.")
+
+    return {
+        "category": "highest_unseen_in_suit",
+        "question": f"What is the highest-ranked unseen domino in the {suit_name} suit?",
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_conditional_beat(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: If an opponent plays X, does it beat your Y when suit S is led?
+
+    Structured answer: lists the trick_rank of each domino and compares.
+    Forces the model to chain: identify suit membership → look up rank → compare.
+    Engine-verifiable at every step.
+    """
+    t = _t()
+
+    # Collect already-visible dominoes (narrator's hand + already played)
+    hand = set(pos.remaining_hand)
+    played = set()
+    for tr in pos.completed_tricks:
+        for p in tr.plays:
+            played.add(p.dom_id)
+    for p in pos.current_trick_plays:
+        played.add(p.dom_id)
+    unseen = [i for i in range(28) if i not in played and i not in hand]
+
+    if not pos.remaining_hand or not unseen:
+        return None
+
+    # Pick a led suit — prefer ones actually led in this game (more realistic)
+    led_suits_seen = set()
+    for trick in pos.completed_tricks:
+        led_suits_seen.add(t.led_suit_for_lead_domino(trick.lead_dom, pos.decl_id))
+    if led_suits_seen:
+        suit_id = rng.choice(list(led_suits_seen))
+    else:
+        # Fall back to any pip suit 0-6, avoiding the trump pip itself
+        candidates = [s for s in range(7) if pos.decl_id > 6 or s != pos.decl_id]
+        suit_id = rng.choice(candidates) if candidates else 0
+
+    suit_name = _suit_name(suit_id, pos.decl_id)
+
+    # Pick dominoes, biased toward educational comparisons.
+    # "Interesting" = in-suit or trump (trick_rank > 0).
+    def _is_interesting(d: int) -> bool:
+        return int(t.trick_rank(d, suit_id, pos.decl_id)) > 0
+
+    hand_interesting = [d for d in pos.remaining_hand if _is_interesting(d)]
+    unseen_interesting = [d for d in unseen if _is_interesting(d)]
+
+    # Pick at least one interesting domino when possible.
+    # Patterns (in order of preference): both interesting, hand-interesting + any unseen,
+    # any hand + unseen-interesting, any + any (fallback).
+    if hand_interesting and unseen_interesting:
+        my_dom = rng.choice(hand_interesting)
+        opp_dom = rng.choice(unseen_interesting)
+    elif hand_interesting:
+        my_dom = rng.choice(hand_interesting)
+        opp_dom = rng.choice(unseen)
+    elif unseen_interesting:
+        my_dom = rng.choice(pos.remaining_hand)
+        opp_dom = rng.choice(unseen_interesting)
+    else:
+        # Skip entirely — no interesting comparison possible
+        return None
+
+    my_rank = int(t.trick_rank(my_dom, suit_id, pos.decl_id))
+    opp_rank = int(t.trick_rank(opp_dom, suit_id, pos.decl_id))
+
+    def _classify(dom_id: int) -> str:
+        """One-line description of domino's status relative to led suit."""
+        d = _dom(dom_id)
+        if _is_trump(dom_id, pos.decl_id):
+            if suit_id == 7:
+                return f"In the trump suit ({_decl_name(pos.decl_id)} are trump)."
+            return f"Trump ({_decl_name(pos.decl_id)} are trump); overrides the {suit_name}."
+        if suit_id != 7 and t.can_follow(dom_id, suit_id, pos.decl_id):
+            return f"In the {suit_name} suit (contains a {suit_id})."
+        if suit_id == 7:
+            return f"Not trump; cannot win when trump is led (sluff)."
+        return f"Not in {suit_name} and not trump (sluff; cannot win)."
+
+    beats = opp_rank > my_rank
+
+    lines = [
+        f"Your domino: {_dom(my_dom)}",
+        f"- {_classify(my_dom)}",
+        f"- Trick rank: {my_rank}",
+        "",
+        f"Hypothetical: {_dom(opp_dom)}",
+        f"- {_classify(opp_dom)}",
+        f"- Trick rank: {opp_rank}",
+        "",
+        f"Compare ranks. {opp_rank} vs {my_rank}. Higher wins.",
+    ]
+    if beats:
+        lines.append(
+            f"Answer: YES, the {_dom(opp_dom)} beats your {_dom(my_dom)} "
+            f"when {suit_name} is led."
+        )
+    else:
+        lines.append(
+            f"Answer: NO, the {_dom(opp_dom)} does not beat your {_dom(my_dom)} "
+            f"when {suit_name} is led."
+        )
+
+    return {
+        "category": "conditional_beat",
+        "question": (
+            f"If an opponent plays the {_dom(opp_dom)}, does it beat your "
+            f"{_dom(my_dom)} when {suit_name} is led?"
+        ),
+        "answer": "\n".join(lines),
+    }
+
+
+def gen_void_deduction(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: What can you deduce about who has [suit]?
+
+    Requires the model to reason about hidden information:
+    - Proven voids (player sluffed/trumped when suit was led)
+    - Known holdings (player followed suit → had it, may have more)
+    - Self-knowledge (what's in your hand)
+    - Honest uncertainty ("I don't know" for untested players)
+    """
+    t = _t()
+
+    # Collect all suits that were actually led across completed tricks
+    led_suits_seen: dict[int, list[int]] = {}  # suit → [trick_nums]
+    for trick in pos.completed_tricks:
+        led_suit = t.led_suit_for_lead_domino(trick.lead_dom, pos.decl_id)
+        led_suits_seen.setdefault(led_suit, []).append(trick.trick_num)
+
+    if not led_suits_seen:
+        return None
+
+    # Pick a suit that was actually led (so there's something to deduce)
+    suit_id = rng.choice(list(led_suits_seen.keys()))
+    suit_name = _suit_name(suit_id, pos.decl_id)
+
+    # Analyze each non-narrator player's behavior when this suit was led
+    other_players = [p for p in range(4) if p != pos.narrator]
+
+    # Track proven voids and known follows
+    proven_void: dict[int, int] = {}    # player → first trick they showed void
+    known_followed: dict[int, list[int]] = {}  # player → tricks they followed
+
+    for trick in pos.completed_tricks:
+        led_suit = t.led_suit_for_lead_domino(trick.lead_dom, pos.decl_id)
+        if led_suit != suit_id:
+            continue
+
+        for i, play in enumerate(trick.plays):
+            if i == 0:
+                continue  # leader chose to lead this suit, not a follow
+            if play.player == pos.narrator:
+                continue  # we know our own hand
+
+            follows = t.can_follow(play.dom_id, led_suit, pos.decl_id)
+            if follows:
+                known_followed.setdefault(play.player, []).append(trick.trick_num)
+            else:
+                if play.player not in proven_void:
+                    proven_void[play.player] = trick.trick_num
+
+    # What does the narrator hold in this suit?
+    narrator_in_suit = [
+        d for d in pos.remaining_hand
+        if (suit_id == 7 and _is_trump(d, pos.decl_id))
+        or (suit_id != 7 and t.can_follow(d, suit_id, pos.decl_id))
+    ]
+
+    # Build answer
+    parts = []
+
+    # Self-knowledge
+    if narrator_in_suit:
+        dom_strs = ", ".join(_dom(d) for d in narrator_in_suit)
+        parts.append(f"You hold {suit_name}: {dom_strs}.")
+    else:
+        parts.append(f"You have no {suit_name} remaining.")
+
+    # Other players
+    for p in other_players:
+        pref = _player_ref(p, pos.narrator, pos.partner)
+        if p in proven_void:
+            trick_num = proven_void[p]
+            # What did they play instead?
+            trick = next(tr for tr in pos.completed_tricks if tr.trick_num == trick_num)
+            play = next(pl for pl in trick.plays if pl.player == p)
+            played_dom = _dom(play.dom_id)
+            if _is_trump(play.dom_id, pos.decl_id) and suit_id != 7:
+                parts.append(
+                    f"{pref} trumped with {played_dom} when {suit_name} was led on trick {trick_num}. "
+                    f"{pref} is void in {suit_name}."
+                )
+            else:
+                parts.append(
+                    f"{pref} did not follow {suit_name} on trick {trick_num} (played {played_dom}). "
+                    f"{pref} is void in {suit_name}."
+                )
+        elif p in known_followed:
+            tricks = known_followed[p]
+            if len(tricks) == 1:
+                parts.append(
+                    f"{pref} followed {suit_name} on trick {tricks[0]}. "
+                    f"{pref} had at least one {suit_name} but may or may not have more."
+                )
+            else:
+                trick_list = ", ".join(str(tr) for tr in tricks)
+                parts.append(
+                    f"{pref} followed {suit_name} on tricks {trick_list}. "
+                    f"{pref} had {suit_name} but may or may not have more."
+                )
+        else:
+            parts.append(
+                f"{pref} was never tested in {suit_name}. I don't know if {pref.lower()} has any."
+            )
+
+    answer = "\n".join(parts)
+
+    return {
+        "category": "void_deduction",
+        "question": f"What can you deduce about who has {suit_name}?",
+        "answer": answer,
+    }
+
+
+def _suit_members(suit_id: int, decl_id: int) -> list[int]:
+    """Return all domino IDs in the given suit under the given declaration, unsorted."""
+    t = _t()
+    out = []
+    for i in range(28):
+        if suit_id == 7:
+            if _is_trump(i, decl_id):
+                out.append(i)
+        else:
+            if t.can_follow(i, suit_id, decl_id):
+                out.append(i)
+    return out
+
+
+def _pick_teachable_suit(pos: GamePosition, rng: random.Random) -> int | None:
+    """Pick a suit that's worth asking about. Prefer trump + suits that were led."""
+    t = _t()
+    candidates = []
+    if t.has_trump_power(pos.decl_id):
+        candidates.append(7)
+    for s in range(7):
+        if pos.decl_id <= 6 and s == pos.decl_id:
+            continue  # that pip is trump, not its own suit
+        if pos.decl_id == t.DOUBLES_TRUMP or pos.decl_id == t.DOUBLES_SUIT:
+            pass  # doubles don't remove a pip suit
+        members = _suit_members(s, pos.decl_id)
+        if len(members) >= 3:
+            candidates.append(s)
+
+    if not candidates:
+        return None
+
+    led_suits = {t.led_suit_for_lead_domino(tr.lead_dom, pos.decl_id)
+                 for tr in pos.completed_tricks}
+    preferred = [s for s in candidates if s in led_suits]
+    return rng.choice(preferred) if preferred else rng.choice(candidates)
+
+
+def gen_suit_members(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: What dominoes are in the [suit] suit, ranked high to low?
+
+    Teaches the concept of a suit as a closed set of dominoes with internal ranking.
+    """
+    t = _t()
+    suit_id = _pick_teachable_suit(pos, rng)
+    if suit_id is None:
+        return None
+
+    suit_name = _suit_name(suit_id, pos.decl_id)
+    members = _suit_members(suit_id, pos.decl_id)
+    if not members:
+        return None
+    members.sort(key=lambda d: -t.trick_rank(d, suit_id, pos.decl_id))
+
+    double_id = next((d for d in members if t.DOMINO_HIGH[d] == t.DOMINO_LOW[d]), None)
+    dom_strs = ", ".join(_dom(d) for d in members)
+
+    lines = [f"The {suit_name} suit has {len(members)} dominoes, ranked highest to lowest: {dom_strs}."]
+    if double_id is not None:
+        lines.append(f"The {_dom(double_id)} is the double of {suit_name} and ranks highest.")
+    if suit_id != 7 and pos.decl_id <= 6:
+        lines.append(
+            f"Note: any domino containing a {pos.decl_id} is trump ({_decl_name(pos.decl_id)} are trump), "
+            f"so it is not in the {suit_name} suit."
+        )
+    if suit_id != 7:
+        lines.append(
+            f"After the double, {suit_name} rank by the other pip (higher pip beats lower)."
+        )
+
+    return {
+        "category": "suit_members",
+        "question": f"What are the dominoes in the {suit_name} suit, ranked from highest to lowest?",
+        "answer": " ".join(lines),
+    }
+
+
+def gen_rank_in_suit(pos: GamePosition, rng: random.Random) -> dict | None:
+    """Q: Rank these dominoes in the [suit] suit.
+
+    Teaches internal ranking: double highest, then by other pip.
+    """
+    t = _t()
+    suit_id = _pick_teachable_suit(pos, rng)
+    if suit_id is None:
+        return None
+
+    suit_name = _suit_name(suit_id, pos.decl_id)
+    members = _suit_members(suit_id, pos.decl_id)
+    if len(members) < 3:
+        return None
+
+    n = min(rng.randint(3, 5), len(members))
+    picked = rng.sample(members, n)
+    ranked = sorted(picked, key=lambda d: -t.trick_rank(d, suit_id, pos.decl_id))
+
+    picked_str = ", ".join(_dom(d) for d in picked)
+    ranked_str = ", ".join(_dom(d) for d in ranked)
+
+    # Explain why the top one wins
+    top = ranked[0]
+    if t.DOMINO_HIGH[top] == t.DOMINO_LOW[top]:
+        reason = f"The {_dom(top)} is the double of {suit_name}, which always ranks highest in its suit."
+    else:
+        other_pip = t.DOMINO_HIGH[top] if t.DOMINO_LOW[top] in (suit_id,) else t.DOMINO_LOW[top]
+        if suit_id == 7:
+            reason = f"The {_dom(top)} ranks highest among the picked {suit_name}."
+        else:
+            reason = (
+                f"The {_dom(top)} has the highest other pip ({other_pip}) "
+                f"among the picked non-double {suit_name}."
+            )
+
+    return {
+        "category": "rank_in_suit",
+        "question": f"Rank these dominoes in the {suit_name} suit from highest to lowest: {picked_str}.",
+        "answer": f"Ranked highest to lowest: {ranked_str}. {reason}",
+    }
+
+
 def gen_what_do_you_play(pos: GamePosition, rng: random.Random) -> dict | None:
     """Q: What are your legal moves? (derivation showing work)"""
     t = _t()
@@ -643,6 +1373,15 @@ GENERATORS = [
     ("is_trump", gen_is_trump, 1.5),  # weight up — key comprehension skill
     ("legal_moves", gen_what_do_you_play, 2.0),  # weight up — the 0% illegal target
     ("what_beats", gen_what_beats, 1.5),  # weight up — ranking comprehension
+    ("void_deduction", gen_void_deduction, 2.0),  # weight up — hidden info reasoning
+    ("suit_members", gen_suit_members, 1.5),  # teach the suit concept (8% what_beats fix)
+    ("rank_in_suit", gen_rank_in_suit, 1.5),  # teach internal ranking
+    ("conditional_beat", gen_conditional_beat, 2.0),  # counterfactual reasoning with structured answer
+    ("beaters_in_unseen", gen_beaters_in_unseen, 1.5),  # visible vs hidden info
+    ("partner_response", gen_partner_response, 1.5),  # reasoning over unseen + trick state
+    ("intervention_check", gen_intervention_check, 2.0),  # play order matters!
+    ("visibility_audit", gen_visibility_audit, 1.5),  # support: enumerate visible + unseen
+    ("highest_unseen_in_suit", gen_highest_unseen_in_suit, 1.5),  # support: argmax over unseen filtered
 ]
 
 

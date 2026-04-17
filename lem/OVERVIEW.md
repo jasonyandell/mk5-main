@@ -394,17 +394,305 @@ and identifies legal moves at 70%.
 - `lem/gemma_star/eval_comprehension.py` — Modal B200 inference + grading
 - `lem/gemma_star/grade_offline.py` — flexible offline grader (no GPU needed)
 
-### Next steps
+### Stage 0 v5: pivot to Qwen 3 1.7B (2026-04-16)
 
-1. **Improve what_beats** — the model doesn't understand domino ranking within
-   suits or trump override. This is the prerequisite for play reasoning. May need
-   ranking-focused training examples or a different question format.
-2. **Improve legal_moves to 100%** — currently 70%, often gets one of two moves.
-   The model understands following suit but sometimes misses the trump
-   reclassification edge case (e.g., 5-4 is trump when fives are trump, not a four).
-3. **Enable thinking mode for STaR** — train with `<|channel>thought...<channel|>`
-   blocks so the model learns when to stop thinking and start answering. The
-   thinking channel is essential for the backwards curriculum.
-4. **Resume STaR with comprehension adapter** — use the v4 adapter as the new
-   Stage 0 baseline, regenerate narrations in compact format with state block,
-   and resume the backwards curriculum from trick 6.
+**Diagnosis of the Gemma ceiling.** Vanilla optimization of the Gemma 4 E2B
+training pipeline (batch size, SDPA, packing) only gained ~8% — far short of
+the 4x the arithmetic suggested. Root cause: Gemma 4's architecture (per-layer
+embeddings, KV-sharing across layers, no FlashAttention 2 support) leaves stock
+HuggingFace paths running at ~10% of theoretical B200 throughput. Fixing the
+training config was treating a symptom. The real answer was model choice, not
+GPU/kernel tuning. See closed bead `t42-hv08`.
+
+**Qwen 3 1.7B** is dense pure-GQA (no linear-attention layers like Qwen 3.5).
+All standard fast paths work — Unsloth + xformers hit ~36K tokens/sec on B200
+and a full 3-epoch run finishes in ~19 min. The model is also only 1.7B
+parameters — smaller than Gemma's 2.3B — and dramatically stronger on our eval.
+
+**On the same v5 comprehension dataset:**
+- Gemma 4 E2B: 60% overall (flexible grader)
+- Qwen 3 1.7B: **100% overall**
+
+Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v5`. New pipeline:
+- `lem/gemma_star/train_comprehension_qwen.py` — Unsloth-based trainer
+- `lem/gemma_star/eval_comprehension_qwen.py` — inference on Qwen
+
+The old Gemma pipeline is retained but inactive.
+
+### Stage 0 v6: 8-category comprehension — 99% overall (2026-04-16)
+
+Added two new question types to capture the suit concept explicitly:
+- **`suit_members`**: "What are the dominoes in the fives suit, ranked
+  highest to lowest?" → engine-verified enumeration + ranking + trump
+  reclassification note
+- **`rank_in_suit`**: "Rank these dominoes in the fours suit: 4-3, 4-2, 5-4."
+  → ordered list with reason (double highest, then by other pip)
+
+These target the `what_beats` weakness at its root: teach what a *suit* is and
+how its members rank, not just "which domino wins on a specific trick."
+
+**Results on 400 held-out examples, flexible grader:**
+
+| Category | v5 Qwen (6 cats) | v6 Qwen (8 cats) |
+|----------|------------------|------------------|
+| is_trump | 100% | 100% |
+| legal_moves | 100% | 100% |
+| what_beats | 100% | 100% |
+| where_is | 100% | 98% |
+| count_status | 100% | 94% |
+| void_deduction | n/a | 100% |
+| suit_members (new) | n/a | 100% |
+| rank_in_suit (new) | n/a | 100% |
+| **Overall** | 100% | **99%** |
+
+Model spot-checks showed verbatim reproduction of ground-truth answers — the
+model is very close to parroting. That's fine for a comprehension adapter
+(these are facts, not strategy), but the real test is whether this
+crystallized knowledge transfers when the answers aren't memorized.
+
+Adapter: `jasonyandell/qwen3-1.7b-texas42-stage0-v6`.
+
+### Scout: do strategy and reasoning transfer? (2026-04-16)
+
+The comprehension model knows rules. Does it reason about *play*? Built
+`lem/gemma_star/scout_play_qwen.py` to run Qwen v6 on trick-6 decisions
+(filtered `n_legal >= 2`, `eq_gap >= 1.0` — same filters as classical STaR)
+and inspect the output.
+
+**Finding 1 — the model's silent policy is strong.** On 10 filtered
+decisions, when prompted with just "What do you play and why?", the model's
+chosen action matched the E[Q] bot's choice **10/10**. Strategy knowledge is
+in the weights; we just can't see it.
+
+**Finding 2 — the `<think>` channel is structurally closed.** All 10
+responses had empty `<think>...</think>` blocks. Comprehension training,
+which had zero thinking examples, baked in "close the think block
+immediately" as a learned habit. Three prompt-engineering variants (question
+suffix, basic system message, strategic system message) all produced 0/10
+non-empty thinking. **Prompt engineering cannot reopen it.** Stronger
+strategic system messages (`A3`) actually *reduced* bot-agreement (5/10 vs
+10/10 for the minimal A1 nudge) — pushing harder on strategy destabilized
+the implicit policy.
+
+**Finding 3 — rationalization emerges in the answer body.** When prompted
+"a strong player chose X, explain why," the model produces reasoning-shaped
+text in the assistant response (not `<think>`). Content quality is mixed:
+~3/10 are coherent, ~7/10 hallucinate (wrong suits, nonexistent dominoes,
+nonsense like "Doves are trump"). The model *wants* to explain but its
+strategic articulation is weak despite perfect comprehension-fact recall.
+
+### Plan: verifier-filtered rationalization SFT → STaR (next)
+
+The scout identified a concrete bootstrap path:
+
+1. **Write a verifier** (~100 lines): takes a rationalization string, extracts
+   every factual claim (domino references, suit/trump claims, voids), checks
+   each against the engine. Rejects if any claim is wrong. Also rejects if
+   the stated `Play X.` doesn't match the bot's action.
+2. **Generate 500+ rationalization candidates** across many decisions on B200.
+3. **Filter aggressively**. Expect ~150-300 survivors based on 30% coherent
+   rate from the scout.
+4. **Inspect**. If survivors are all shallow ("5-0 is trump, play it"), iterate
+   on the rationalization prompt. If some are deep (reasoning about opponents,
+   count math, void inference), proceed.
+5. **SFT** a new LoRA on the clean rationalizations. Choice: stack on v6
+   (cheap, fast iteration) vs. train jointly from base Qwen with
+   comprehension + rationalizations mixed (more principled, better
+   representation alignment — avoids the "patching on" failure mode we saw
+   with v5-chained). Plan: stacked for the experiment, joint for the final
+   version if the experiment validates.
+6. **Transition test**: drop the "bot chose X" hint. Ask the model to play
+   and explain. Does the rationalization habit transfer to open-ended
+   decisions? If yes, we have a reasoning prior and STaR can begin.
+7. **STaR**: K1 grading on open-ended play traces. Keep winners, rationalize
+   losers (showing the bot's move), train, iterate.
+
+### Principles established during this arc
+
+- **Facts vs strategy** is the key line for when hand-scripted SFT data is
+  safe. Facts (is 5-0 trump?) have canonical answers; SFT works. Strategy
+  (what should I play?) has many valid reasoning paths; hand-scripting
+  imposes a style the small model can't actually execute (the "Wimp Lo"
+  problem — distilled Opus traces make models *look* smarter without making
+  them smarter).
+- **Adapter chaining causes catastrophic forgetting.** v5-chained lost
+  is_trump 100%→24% because new-LoRA gradients fought merged-in old-adapter
+  knowledge. v5-clean (train from base with mixed data) recovered. Joint
+  training beats sequential stacking for integrated representations.
+- **The model's silent policy can be correct even when its articulated
+  reasoning is weak.** Comprehension training made the weights know things
+  that the text channel can't express. Rationalization is the bridge.
+- **Prompt engineering cannot reopen structurally-trained-closed behaviors.**
+  Once a training corpus bakes in "close `<think>` immediately," no system
+  message reopens it. Need weight updates.
+
+### Stage 0 v7: rationalization bootstrap + structured templates (2026-04-16)
+
+**The verifier.** Built `lem/gemma_star/verify_rationalization.py` (~100 lines)
+that extracts domino references, trump claims, and suit-membership claims
+from a response and checks each against the engine. Returns `(valid, errors)`.
+Six checks: domino validity, references-visible, hand claims, trump
+declaration, trump membership, action match.
+
+**First rationalization scout (v6 adapter, 100 candidates):** 68/100 passed
+verification. But the 68 survivors were shallow — 20 "I follow suit: 5-0"
+one-liners, 16 long responses that were fluent-sounding 42-flavored gibberish
+(things like "Doubles oblige", "By nullifying trump"). Structured delivery of
+mostly-correct facts. Not deep enough to train STaR on.
+
+**The fix — `conditional_beat` with structured templates.** Added a new
+category that demands multi-step reasoning with an engine-derivable answer:
+
+```
+Q: If an opponent plays the 3-2, does it beat your 3-3 when threes is led?
+A:
+  Your domino: 3-3
+  - In the threes suit (contains a 3, not trump).
+  - Trick rank: 14
+  Hypothetical: 3-2
+  - In the threes suit.
+  - Trick rank: 5
+  Compare ranks. 5 vs 14. Higher wins.
+  Answer: NO, the 3-2 does not beat your 3-3 when threes is led.
+```
+
+Each line is independently engine-checkable. The conclusion follows from the
+slot values, not from strategic judgment. This is the key design rule —
+answers must be *mechanical derivations*, never "because in competitive
+play..." strategic framing.
+
+**v7 training (full 3 epochs, ~$4).** `jasonyandell/qwen3-1.7b-texas42-stage0-v7`.
+Eval: **448/450 = 100% overall** on 8 original categories; `conditional_beat`
+hit **100%** (43/43). No regression anywhere. The structured template learned
+cleanly.
+
+**v7 rationalization scout:** 65/100 clean — basically the same pass rate as
+v6. But the structured template *propagated into rationalization responses*:
+
+> "Your domino: 3-3
+> - Trump (blanks are trump); overrides the 3-3.
+> - Trick rank: 38
+> - Trick suit: trump
+> - In the trump suit (blanks are trump), rank highest."
+
+Same shape the model was trained to produce for `conditional_beat`, now
+appearing in rationalization context it was never trained on. Real transfer.
+
+**But the model mixed template with hallucination.** One response invented
+opponent hands outright ("Compare to opponents' hands: P0: 4-3, 6-5, 2-2"
+— we don't know that). Structured delivery of false facts — a subtler Wimp
+Lo trap. The verifier catches factual errors but not semantic fabrications
+that look structured.
+
+### Stage 0 v8 / v9: category compounding (2026-04-16/17)
+
+**v8 added three reasoning categories** (max_steps=500 fast iteration,
+`qwen3-1.7b-texas42-stage0-v8-fast`):
+- **`beaters_in_unseen`** — which unseen dominoes could beat your X?
+- **`partner_response`** — which unseen dominoes outrank the current high play?
+- **`intervention_check`** — given an opponent threat after you lead, could
+  partner beat it in the play order? The ordering twist: answer is YES iff
+  partner plays AFTER the threat. If the threat comes from the player after
+  partner, partner CANNOT intervene regardless of hand.
+
+These 3 categories share a reasoning substrate (enumerate unseen, reason
+about play order and teams). Shipped together rather than one-at-a-time
+because iteration is cheap and changes are homogeneous.
+
+**v8-fast results** (at 500 steps, halfway converged):
+
+| Category | Accuracy |
+|---|---|
+| is_trump, legal_moves, what_beats, rank_in_suit | 100% |
+| conditional_beat | 98% |
+| intervention_check | **91%** — ordering concept learned fast |
+| void_deduction | 96% |
+| where_is | 89% |
+| count_status | 82% |
+| beaters_in_unseen | **48%** (struggling) |
+| partner_response | **50%** (struggling) |
+
+**v8 rationalization scout**: 64/100 clean (~same as v7's 65/100 and v6's 68/100).
+But the length distribution changed dramatically:
+
+| Bucket | v6 | v7 | v8-fast |
+|---|---|---|---|
+| short (<80 chars) | 20 | 25 | **0** |
+| medium (80-200) | 32 | 27 | 41 |
+| long (200+) | 16 | 13 | 23 |
+
+**Zero short responses.** The model became verbose-by-default, synthesizing
+concepts across categories — pulling void reasoning + trick rank + per-player
+threat analysis into a single response. Real compounding.
+
+**v9 added two atomic supporting categories** to help the struggling
+list-enumeration tasks:
+- **`visibility_audit`** — "What dominoes are visible, what are unseen?"
+  Long-enumeration answer (~150 tokens of trick-by-trick listing +
+  complement math).
+- **`highest_unseen_in_suit`** — "What's the highest-ranked unseen domino
+  in suit X?" Single-domino answer. Same reasoning chain as
+  `beaters_in_unseen` but collapsed to an argmax.
+
+**v9 full 3-epoch train** (`qwen3-1.7b-texas42-stage0-v9`, ~30 min, ~$4):
+
+| Category | v9 |
+|---|---|
+| **highest_unseen_in_suit (new)** | **100%** ✓ |
+| is_trump, legal_moves, what_beats, rank_in_suit, suit_members, void_deduction, conditional_beat | 98-100% |
+| where_is | 98% |
+| count_status | 93% |
+| **intervention_check** | 70% (dropped from 91% at v8) |
+| **partner_response** | 48% (unchanged) |
+| **beaters_in_unseen** | 46% (unchanged) |
+| **visibility_audit (new)** | **0%** ← see below |
+| **Overall** | **583/700 = 83%** |
+
+**Critical finding — long-enumeration training data fails.** The
+`visibility_audit` responses showed the model copying the trick-by-trick
+prompt structure verbatim, then abbreviating its own Visible/Unseen
+enumeration to 3-4 dominoes (wrong ones) before hitting `<|im_end|>`. The
+GT answers are long (20+ dominoes enumerated); the model learned the
+*shape* but not the *discipline to complete the enumeration*.
+
+Meanwhile `highest_unseen_in_suit` — same reasoning chain but collapsed
+to a single-domino answer — hit 100%.
+
+**New principle**: for supporting categories, prefer short answers. The
+reasoning chain in the response CAN be long (showing work), but the final
+"answer" should collapse to a single claim that the model is trained to
+emit confidently. Long-enumeration answers suffer from autoregressive
+truncation — the model learns to stop prematurely.
+
+**Other v9 observations:**
+- `beaters_in_unseen` and `partner_response` didn't improve despite the
+  supporting categories — the composition doesn't happen automatically.
+  The model learns atomic pieces but doesn't always assemble them at
+  inference time. May need a different compositional training strategy.
+- `intervention_check` dropped from 91% to 70% — noisy signal on a small
+  sample (10 examples), but worth re-checking in later runs.
+
+### Updated plan
+
+Still on the rationalization-bootstrap path, but with these adjustments:
+1. **Stay with single-fact supporting categories.** Long-enumeration
+   training data truncates in autoregressive generation. Keep support
+   categories concise.
+2. **Compositional tasks may need explicit scaffolding.** Adding atomic
+   primitives (suit enumeration, unseen filter) didn't automatically fix
+   compound tasks (beaters_in_unseen). May need training examples that
+   explicitly chain: "First: what are the unseen X-suit dominoes? Then:
+   which of those beat Y?" Force the composition in the answer format.
+3. **Rationalization quality is holding at 64-68/100 clean across v6→v9.**
+   The ceiling isn't the verifier (which works). Content quality and
+   response richness improved dramatically (verbose-by-default, concept
+   synthesis) but the verifier pass rate is stuck. v9 rationalization:
+   68/100 clean (8 short / 45 medium / 15 long). May be the 1.7B
+   parameter budget — worth considering Qwen 3 4B as an upgrade path
+   once the curriculum is fully shaped. Same pipeline, 2.3× capacity.
+
+### Final adapter on this arc
+
+`jasonyandell/qwen3-1.7b-texas42-stage0-v9` — 14 categories, 3 epochs,
+83% comprehension overall, 68/100 rationalization pass rate. Foundation
+for whatever comes next (rationalization SFT, STaR, or scaling to 4B).
