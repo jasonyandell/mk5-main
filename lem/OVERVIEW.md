@@ -895,3 +895,98 @@ offline to 86%).
   Transition test flat at 55% bot-match.**
 - `jasonyandell/qwen3-14b-texas42-stage0-v9` — **14 cats, 86%, 97/100 clean
   rationalizations** — strongest adapter on all reasoning metrics
+
+### Current working vision (2026-04-18)
+
+After the v10-maskfix validation the vision for where LEM goes settles into
+three nested ideas:
+
+1. **Reasoning = exploring the distribution.** The target behavior isn't
+   "pick the right move," it's *describe the shape of the E[Q] landscape
+   from your narrator's seat*. Good reasoning enumerates conditional cases:
+   "if partner has X then Y, assuming opponent holds Z then W, therefore the
+   expected value of P beats Q by ε." Same cognitive move a poker pro makes
+   when articulating a bet — navigate a distribution, don't compute a point
+   estimate.
+
+2. **The curriculum exists so the model can do so.** Stage 0 (comprehension)
+   teaches the atomic facts the reasoning has to reference correctly.
+   Stage 1 (STaR on trick 6) is one ply of lookahead — the simplest space
+   where "explore the distribution" is a non-trivial task. Stage 2+ (trick
+   5, 4, 3) each add one ply. Curriculum difficulty is a *counted quantity*,
+   not hand-wavy "harder." Each stage's space grows exactly one step wider.
+
+3. **Phrase claims as `P(...)` so doubts are mathematically present.**
+   Natural-language hedging ("might", "probably", "likely") is unlabeled
+   data; numbers are labeled. If the model says `P(partner holds ≥1 trump)
+   = 0.43` and the engine can compute the true posterior, we get a
+   calibration loss surface the current stack doesn't have. This is
+   simultaneously (a) a new training signal beyond K1 + factual verification,
+   (b) the native language the oracle uses internally but never articulates,
+   and (c) the scales-with-curriculum thing — probabilistic reasoning at
+   trick 6 is one-step, at trick 3 it's compound multi-step inference.
+
+### Principles that protect this vision
+
+- **We grade decision-quality, not outcome-quality.** E[Q] is expected value
+  over the hidden-info distribution; realized Q is a single noisy sample.
+  We are training *a better bettor, not a luckier player*. Resist any metric
+  drift toward outcome-chasing — over any individual hand, variance dominates.
+  Over thousands, decision quality wins.
+
+- **Two dodges on the distilled-oracle trap, not one.** The risk with the
+  straight-line plan is ending up with a slower chattier copy of the oracle.
+  Probabilistic articulation (vision item 3 above) is one dodge — the LLM
+  says things the oracle can't. Stylized play (bead `t42-8aep`) is the
+  other — a cautious LLM and a gambler LLM are both interesting in ways the
+  oracle is categorically not. These axes compose: a calibrated cautious
+  player and a calibrated gambler are *two* different artifacts, both
+  non-distillations.
+
+- **100% legal moves is the Stage 0 → Stage 1 gate.** Current adapters
+  (1.7B-maskfix, 14B-v9) sit at 92-96% legal on transition-test. The last
+  4-8% is structural (rule-application under generation) and must close
+  before STaR iteration makes sense. Training on illegal traces is compute
+  waste at best, reinforcement of wrong-state reasoning at worst.
+
+- **The `forge/` E[Q] visualizer is the canonical teacher artifact.**
+  It renders per-play outcome distributions — exactly the shape the model
+  should learn to articulate. Ground truth source (engine-computed), eval
+  substrate (model's text vs tool's rendered shape), product demo (teacher
+  mode could use it verbatim). Every future training phase should pass
+  through the visualizer: "does the model's rationalization describe a
+  distribution shape that matches what the tool renders?" is the strictest
+  quality check we have.
+
+### Next three moves, ordered by "most learning per dollar"
+
+1. **Add `probability_claim` comprehension category → v11.** ~$5, ~1 day.
+   Answers the crispest open question: can 1.7B calibrate numeric
+   probabilities at all? If yes, cleanest path to a non-distillation
+   artifact. If no, real evidence that calibration is capacity-bound and
+   3.6-class-as-teacher (distillation) becomes worth pursuing.
+   Bead `t42-0dg6`.
+
+2. **14B + maskfix + joint rationalization (epic `t42-aoga` path A).** ~$18.
+   Answers: do the three categories where mask-fix alone lifted 1.7B compound
+   with capacity? And — critically — does transition bot-match finally move
+   on 14B, or is that ceiling something neither capacity nor gradient
+   allocation fixes? Prerequisite: fold the mask fix into
+   `train_comprehension_qwen_14b.py` (still buggy).
+
+3. **First real STaR iteration on whichever adapter wins (1)+(2).** Has
+   never been run on the post-maskfix stack. 5 iterations, 300 decisions
+   each, track E[Q] delta vs bot. The honest test of whether the curriculum
+   works as designed on the current foundation.
+
+### Parallel work (off the critical path)
+
+- **Stylized teachers** (`t42-8aep`, P3): the other distillation-dodge.
+  Stage 3-4 territory — don't block on it, but the product vision needs it.
+- **Tool-augmented LLM judge with MCP** (`t42-3oj7`, P4): general capability
+  for trace-quality verification beyond regex. Build when K1+regex start to
+  show cracks (model gaming the filter with novel gibberish, or stylized-
+  teacher work needing "is this authentically cautious" judgments).
+- **Remaining trainer mask-fixes**: `train_comprehension`, `train_stage0`,
+  `train_star`, `star_loop`. 14B trainer blocks move 2 above; the others
+  are lower priority, fix as each next runs.
