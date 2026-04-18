@@ -43,7 +43,7 @@ train_image = (
 
 @app.function(
     image=train_image,
-    gpu="H100",
+    gpu="B200",
     timeout=14400,
     secrets=[modal.Secret.from_name("huggingface-secret"),
              modal.Secret.from_name("wandb-api-key")],
@@ -84,11 +84,11 @@ def train(
 
     def format_example(ex):
         user_content = ex["prompt"].rstrip() + "\n\n" + ex["question"]
+        # prompt/completion format → TRL auto-enables completion_only_loss=True,
+        # so loss is computed only on the assistant reply (fixes t42-0ynt).
         return {
-            "messages": [
-                {"role": "user", "content": user_content},
-                {"role": "assistant", "content": ex["answer"]},
-            ]
+            "prompt": [{"role": "user", "content": user_content}],
+            "completion": [{"role": "assistant", "content": ex["answer"]}],
         }
 
     formatted = [format_example(ex) for ex in examples]
@@ -111,16 +111,6 @@ def train(
         load_in_4bit=False,
     )
 
-    # Build text column without datasets.map (Unsloth-patched tokenizer isn't dill-picklable)
-    train_ds = Dataset.from_list([
-        {"text": tokenizer.apply_chat_template(ex["messages"], tokenize=False)}
-        for ex in train_ds
-    ])
-    val_ds = Dataset.from_list([
-        {"text": tokenizer.apply_chat_template(ex["messages"], tokenize=False)}
-        for ex in val_ds
-    ])
-
     # --- LoRA ---
     model = FastLanguageModel.get_peft_model(
         model,
@@ -138,7 +128,7 @@ def train(
     print(f"[model] Trainable: {trainable:,} / {total:,} ({100*trainable/total:.2f}%)", flush=True)
 
     # --- Train ---
-    run_name = f"stage0-v5-qwen3-1.7b-bs{batch_size}-lr{lr}-e{epochs}"
+    run_name = f"stage0-{adapter_name.split('/')[-1]}-bs{batch_size}-lr{lr}-e{epochs}"
     wandb.init(project="lem-stage0", name=run_name)
 
     training_args = SFTConfig(
@@ -155,7 +145,6 @@ def train(
         save_strategy="epoch",
         bf16=True,
         max_length=512,
-        dataset_text_field="text",
         dataset_num_proc=1,  # Unsloth-patched tokenizer isn't dill-picklable
         report_to="wandb",
         seed=42,

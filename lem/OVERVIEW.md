@@ -813,6 +813,76 @@ tests whether bootstrap + capacity compound.
 - STaR on actual decisions not yet attempted — next logical step now that
   rationalization is reliable.
 
+### v10-maskfix: SFT loss mask bug + revalidation (2026-04-17)
+
+While prepping the 14B + joint refit (epic `t42-aoga` path A), we caught a
+bug in all 6 SFT trainers: `SFTConfig` defaults leave TRL's
+`assistant_only_loss=False`, so loss was computed over the **full sequence**
+(user prompt + assistant reply) instead of the assistant reply only. For v10
+specifically there was **no answer leakage** — `build_rationalize_sft.py`
+already swaps the leaky "correct play is X" prompt out for "What do you play
+and why?" before training — but the gradient signal on the ~50 answer tokens
+was diluted ~9× by ~400 template/prompt tokens that the model had trivially
+memorized after a few batches. Bead `t42-0ynt`.
+
+**Fix** (template-agnostic, works around Gemma 4 / Qwen 3 chat templates
+that lack `{% generation %}` markers): switch dataset format from `messages`
+→ `prompt`/`completion`. TRL 1.2+ auto-enables `completion_only_loss=True`.
+Verified with `scratch/verify_sft_mask.py` and `verify_sft_mask_fix.py`
+(default: 64 total / 0 masked; fixed: 64 total / 39 masked).
+
+**Validation experiment.** Retrained v10 on the same 31,307-example corpus
+with the patched trainer. Adapter:
+`jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix`. Same hparams, same
+eval seeds (stratified 50/category from `comprehension_eval_v9.jsonl`,
+seed=42) and same 100 transition-test decisions.
+
+**Comprehension — 3 of the 4 stuck metrics moved decisively:**
+
+| Category | v10 | **v10-maskfix** | Δ | vs 14B v9 |
+|---|---|---|---|---|
+| is_trump, legal_moves, what_beats, rank_in_suit, suit_members, void_deduction, conditional_beat, highest_unseen_in_suit | 100% | 100% | — | = |
+| where_is | 98% | 100% | +2 | = |
+| count_status | 93% | 96% | +3 | +1 |
+| **intervention_check** | **70%** | **88%** | **+18** | **+18** |
+| **partner_response** | **48%** | **58%** | **+10** | -17 |
+| **beaters_in_unseen** | **46%** | **56%** | **+10** | -5 |
+| visibility_audit | 0% | 0% | — | = (structural) |
+| **Overall** | **83%** | **86%** | **+3** | **=** |
+
+**1.7B-maskfix matches 14B v9's 86% overall at $4 vs $12**, and
+`intervention_check` (88%) now *beats* 14B v9 (70%) — that metric was
+bottlenecked on gradient allocation, not capacity.
+
+**Transition test — no move:**
+
+| Metric | v10 | v10-maskfix | Δ |
+|---|---|---|---|
+| bot-match | 55/100 | 55/100 | 0 |
+| legal moves | 96/100 | 92/100 | -4 |
+| no-play | 3/100 | 4/100 | -1 |
+| verifier-clean | 58/100 | 57/100 | -1 |
+
+The 55/55 tie (not noise-around-a-mean — literally the same count) says the
+underlying play policy is unchanged. Mask fix sharpens *articulable comprehension
+facts* but not *open-ended play selection*. The transition-test ceiling is a
+different bottleneck (capacity, rationalization-data quality/quantity, or the
+need for real STaR iteration — not gradient allocation).
+
+**Principle:** the 4 "stuck metrics" decompose into two classes. The 3
+list-enumeration/reasoning-check comprehension metrics were gradient-allocation
+problems → free fix. Open-ended play bot-match is not → needs a different
+intervention (likely capacity + real STaR, hence the 14B + maskfix path).
+
+**Scope of fix applied.** Only `train_comprehension_qwen.py` patched in this
+run (the 1.7B trainer). Remaining trainers (`train_comprehension_qwen_14b.py`,
+`train_comprehension.py`, `train_stage0.py`, `train_star.py`, `star_loop.py`)
+still have the bug. Their priority to fix is ordered by blast radius — 14B
+trainer is next when we run path A. Eval scripts' inline graders were also
+fixed to dispatch through `grade_offline.GRADERS` (was a stub covering only
+5 of 14 categories; why the initial eval misreported 35% before we regraded
+offline to 86%).
+
 ### Adapters (Qwen-era, current)
 
 - `jasonyandell/qwen3-1.7b-texas42-stage0-v9` — 14 cats, 83%
@@ -820,5 +890,8 @@ tests whether bootstrap + capacity compound.
   foundation, do not use)
 - `jasonyandell/qwen3-1.7b-texas42-stage0-v10` — joint 14 cats + rationalize,
   83% comprehension + 55% bot-match on transition test
+- **`jasonyandell/qwen3-1.7b-texas42-stage0-v10-maskfix` — same recipe as
+  v10 with completion-only loss. 86% comprehension (= 14B v9) at 1.7B cost.
+  Transition test flat at 55% bot-match.**
 - `jasonyandell/qwen3-14b-texas42-stage0-v9` — **14 cats, 86%, 97/100 clean
   rationalizations** — strongest adapter on all reasoning metrics

@@ -8,7 +8,6 @@ Usage:
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 import modal
@@ -35,178 +34,27 @@ eval_image = (
 )
 
 
-def _normalize_dom(d: str) -> str:
-    """Normalize domino string to H-L format."""
-    parts = d.split("-")
-    if len(parts) != 2:
-        return d
-    a, b = int(parts[0]), int(parts[1])
-    return f"{max(a,b)}-{min(a,b)}"
-
-
-def _extract_legal_moves(response: str) -> set[str]:
-    """Extract legal moves from a response. Looks for 'Legal moves: X, Y' pattern."""
-    # Try explicit "Legal moves:" or "Legal move:"
-    m = re.search(r"[Ll]egal moves?:\s*(.+?)(?:\.|$)", response)
-    if m:
-        doms = re.findall(r"\b(\d-\d)\b", m.group(1))
-        return {_normalize_dom(d) for d in doms}
-    # Fallback: "Play: X" pattern
-    m = re.search(r"[Pp]lay:\s*(\d-\d)", response)
-    if m:
-        return {_normalize_dom(m.group(1))}
-    return set()
-
-
-def _extract_play(response: str) -> str | None:
-    """Extract a single played domino from response."""
-    # Try "Play: X"
-    m = re.search(r"[Pp]lay:\s*(\d-\d)", response)
-    if m:
-        return _normalize_dom(m.group(1))
-    # Try "Legal moves: X" (single move)
-    moves = _extract_legal_moves(response)
-    if len(moves) == 1:
-        return next(iter(moves))
-    return None
-
-
-def _clean_response(response: str, question: str) -> str:
-    """Strip thinking blocks, prompt echo, and formatting from model response.
-
-    Gemma 4 generates <think>...</think> reasoning before the answer.
-    We grade only on what comes after the thinking block.
-    """
-    import re
-
-    # Strip Gemma 4 thinking block: <|channel>thought\n...<channel|>
-    # Take everything AFTER the last <channel|> (end of thinking)
-    eoc = "<channel|>"
-    idx = response.rfind(eoc)
-    if idx >= 0:
-        response = response[idx + len(eoc):]
-    else:
-        # Also try </think> for other model variants
-        idx = response.rfind("</think>")
-        if idx >= 0:
-            response = response[idx + len("</think>"):]
-
-    # Strip prompt echo (if response contains the question, take everything after)
-    q_lower = question.lower().strip().rstrip("?")
-    resp_lower = response.lower()
-    idx = resp_lower.rfind(q_lower)
-    if idx >= 0:
-        after = response[idx + len(q_lower):]
-        after = after.lstrip("?\n\r \t")
-        if after:
-            response = after
-
-    # Strip "model\n" prefix if present
-    if response.lstrip().lower().startswith("model"):
-        response = response.lstrip()
-        response = response[5:].lstrip("\n\r \t")
-
-    return response.strip()
-
-
-def grade_response(example: dict, response: str) -> dict:
+def grade_response(example: dict, response: str, graders: dict) -> dict:
     """Grade a model response against ground truth.
+
+    Dispatches through ``grade_offline.GRADERS`` so this file has a single
+    source of truth for grading logic. If a new category is added without a
+    corresponding grader, we deliberately return the honest failure mode
+    rather than silently scoring it wrong.
 
     Returns: {correct: bool, details: str, category: str}
     """
     category = example["category"]
-    ground_truth = example["answer"]
-    response = _clean_response(response, example["question"])
+    grader = graders.get(category)
+    if grader is None:
+        return {"correct": False, "details": "unknown category", "category": category}
 
-    if category == "legal_moves":
-        # Extract legal moves from both ground truth and response
-        gt_moves = _extract_legal_moves(ground_truth)
-        resp_moves = _extract_legal_moves(response)
-
-        if not resp_moves:
-            return {"correct": False, "details": "parse_fail: no legal moves found",
-                    "category": category}
-
-        if resp_moves == gt_moves:
-            return {"correct": True, "details": "exact match",
-                    "category": category}
-
-        # Check if response moves are a subset (model might be too conservative)
-        # or superset (model allowing illegal moves)
-        extra = resp_moves - gt_moves
-        missing = gt_moves - resp_moves
-        details = []
-        if extra:
-            details.append(f"illegal_included: {extra}")
-        if missing:
-            details.append(f"legal_missed: {missing}")
-        return {"correct": False, "details": "; ".join(details),
-                "category": category}
-
-    elif category == "is_trump":
-        # Check yes/no matches
-        gt_yes = ground_truth.lower().startswith("yes")
-        resp_yes = response.lower().strip().startswith("yes")
-        correct = gt_yes == resp_yes
-        return {"correct": correct,
-                "details": f"gt={'yes' if gt_yes else 'no'}, resp={'yes' if resp_yes else 'no'}",
-                "category": category}
-
-    elif category == "where_is":
-        # Check key facts: "in your hand", "played by X on trick N", "not been played"
-        gt_lower = ground_truth.lower()
-        resp_lower = response.lower()
-        if "in your hand" in gt_lower:
-            correct = "in your hand" in resp_lower or "your hand" in resp_lower
-        elif "was played by" in gt_lower:
-            # Extract trick number from ground truth
-            m = re.search(r"trick (\d)", gt_lower)
-            gt_trick = m.group(1) if m else None
-            correct = gt_trick is not None and f"trick {gt_trick}" in resp_lower
-        elif "not been played" in gt_lower:
-            correct = ("not" in resp_lower and "played" in resp_lower) or "unknown" in resp_lower
-        else:
-            correct = False
-        return {"correct": correct, "details": "", "category": category}
-
-    elif category == "count_status":
-        gt_lower = ground_truth.lower()
-        resp_lower = response.lower()
-        # Key facts: captured by whom, still out, in your hand
-        if "your team" in gt_lower:
-            correct = "your team" in resp_lower or "you" in resp_lower
-        elif "opponents" in gt_lower:
-            correct = "opponent" in resp_lower
-        elif "in your hand" in gt_lower:
-            correct = "your hand" in resp_lower
-        elif "still out" in gt_lower or "not been played" in gt_lower:
-            correct = "not" in resp_lower or "still" in resp_lower or "out" in resp_lower
-        else:
-            correct = False
-        return {"correct": correct, "details": "", "category": category}
-
-    elif category == "what_beats":
-        # Check if the key dominos mentioned in ground truth appear in response
-        gt_doms = set(re.findall(r"\b(\d-\d)\b", ground_truth))
-        resp_doms = set(re.findall(r"\b(\d-\d)\b", response))
-        # Normalize
-        gt_doms = {_normalize_dom(d) for d in gt_doms}
-        resp_doms = {_normalize_dom(d) for d in resp_doms}
-        # The response should mention the same beaters
-        # Allow some flexibility — check if gt beaters are subset of resp
-        if "nothing can beat" in ground_truth.lower():
-            correct = "nothing" in response.lower() or "no" in response.lower() or "highest" in response.lower()
-        else:
-            # Check overlap — at least 80% of GT dominoes mentioned
-            if gt_doms:
-                overlap = len(gt_doms & resp_doms) / len(gt_doms)
-                correct = overlap >= 0.8
-            else:
-                correct = True
-        return {"correct": correct, "details": f"gt_doms={gt_doms}, resp_doms={resp_doms}",
-                "category": category}
-
-    return {"correct": False, "details": "unknown category", "category": category}
+    result = grader(example["answer"], response)
+    return {
+        "correct": bool(result["correct"]),
+        "details": result.get("detail", ""),
+        "category": category,
+    }
 
 
 @app.function(
@@ -230,6 +78,10 @@ def run_eval(
     import torch
     from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    # Import inside the function so Modal auto-serializes this local module
+    # into the container image (matching the pattern used for torch/transformers).
+    from lem.gemma_star.grade_offline import GRADERS
 
     os.environ["HF_HOME"] = "/model-cache"
 
@@ -317,7 +169,7 @@ def run_eval(
     failures = []
 
     for ex, resp in zip(examples, responses):
-        grade = grade_response(ex, resp)
+        grade = grade_response(ex, resp, GRADERS)
         cat = grade["category"]
 
         results["total"] += 1
