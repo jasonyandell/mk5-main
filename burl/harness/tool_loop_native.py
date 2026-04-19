@@ -278,9 +278,15 @@ class NativeHarness:
         system_content: str,
         user_content: str,
         state_key: str = "",
+        *,
+        extra_user_messages: list[str] | None = None,
     ) -> BurlTrace:
         # decision_prompt is the concatenated view we record for STaR-style
-        # trace analysis — matches what the XML harness writes.
+        # trace analysis — matches what the XML harness writes. Extra user
+        # messages (EQ-gate nudges) are deliberately NOT folded into
+        # decision_prompt: the STaR SFT target is "decision → correction
+        # trace" with the nudge stripped, so the adapter learns the fixed
+        # behavior without inference-time scaffolding.
         trace = BurlTrace(
             game_state_key=state_key,
             decision_prompt=f"[SYSTEM]\n{system_content}\n\n[USER]\n{user_content}",
@@ -290,6 +296,9 @@ class NativeHarness:
             {"role": "system", "content": system_content},
             {"role": "user", "content": user_content},
         ]
+        if extra_user_messages:
+            for extra in extra_user_messages:
+                messages.append({"role": "user", "content": extra})
 
         turn_idx = [0]
 

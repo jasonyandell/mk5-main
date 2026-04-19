@@ -15,6 +15,7 @@ from burl.harness.tool_loop import Harness, ModelCallable, ToolProtocol
 from burl.harness.trace import BurlTrace
 from burl.tools import engine as engine_tools
 from burl.tools import eq_distribution as eq_tools
+from burl.tools import rules as rule_tools
 from burl.tools.eq_distribution import OutcomeDistribution
 from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
 
@@ -97,19 +98,54 @@ def _conditional_outcome_tool(
     return _outcome_to_dict(od)
 
 
+# Rules-as-tools — gated by `enable_rules_tools`. Each wrapper just coerces
+# the domino ids to int; rule_tools already returns JSON primitives.
+
+
+def _count_dominoes_remaining_tool(game_state: Any) -> dict[str, Any]:
+    return rule_tools.count_dominoes_remaining(game_state)
+
+
+def _trick_winner_if_tool(game_state: Any, domino_id: int) -> dict[str, Any]:
+    return rule_tools.trick_winner_if(game_state, int(domino_id))
+
+
+def _what_beats_what_tool(
+    game_state: Any,
+    domino_a: int,
+    domino_b: int,
+    lead_domino: int | None = None,
+) -> dict[str, Any]:
+    lead = int(lead_domino) if lead_domino is not None else None
+    return rule_tools.what_beats_what(
+        game_state, int(domino_a), int(domino_b), lead_domino=lead,
+    )
+
+
+def _contract_progress_tool(game_state: Any) -> dict[str, Any]:
+    return rule_tools.contract_progress(game_state)
+
+
 def build_tool_registry(
     game_state_provider: Callable[[], Any] | None = None,
+    enable_rules_tools: bool = False,
 ) -> dict[str, ToolProtocol]:
-    """Return the 7 allow-list tools as `ToolProtocol` callables.
+    """Return the allow-list tools as `ToolProtocol` callables.
 
     The Harness already threads `game_state` to each tool via the
     `ToolProtocol.__call__(state, **kwargs)` contract, so the registry itself
     holds no state. `game_state_provider` is kept on the signature as the
     obvious seam for callers that want late binding (e.g. the Move 3 grader
     snapshotting state per decision) without changing the tool functions.
+
+    When ``enable_rules_tools`` is True, the four rules-as-tools
+    (``count_dominoes_remaining``, ``trick_winner_if``, ``what_beats_what``,
+    ``contract_progress``) are registered alongside the existing seven. This
+    is the iter-3 lever; iter-2 keeps it False so the verbosity-blend
+    experiment stays single-variable.
     """
     del game_state_provider  # see docstring
-    return {
+    registry: dict[str, ToolProtocol] = {
         "is_legal": _Tool("is_legal", _is_legal_tool),
         "is_trump": _Tool("is_trump", _is_trump_tool),
         "unseen": _Tool("unseen", _unseen_tool),
@@ -118,6 +154,24 @@ def build_tool_registry(
         "eq_outcome_distribution": _Tool("eq_outcome_distribution", _eq_outcome_tool),
         "conditional_outcome": _Tool("conditional_outcome", _conditional_outcome_tool),
     }
+    if enable_rules_tools:
+        registry.update(
+            {
+                "count_dominoes_remaining": _Tool(
+                    "count_dominoes_remaining", _count_dominoes_remaining_tool,
+                ),
+                "trick_winner_if": _Tool(
+                    "trick_winner_if", _trick_winner_if_tool,
+                ),
+                "what_beats_what": _Tool(
+                    "what_beats_what", _what_beats_what_tool,
+                ),
+                "contract_progress": _Tool(
+                    "contract_progress", _contract_progress_tool,
+                ),
+            }
+        )
+    return registry
 
 
 # --------------------------------------------------------------------------- #

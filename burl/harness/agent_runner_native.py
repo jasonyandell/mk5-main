@@ -187,6 +187,106 @@ TOOL_SCHEMAS: list[dict] = [
 
 
 # --------------------------------------------------------------------------- #
+# Rules-as-tools schemas — appended to TOOL_SCHEMAS when the runner is         #
+# constructed with enable_rules_tools=True (iter-3 lever). Shape + field       #
+# style mirror the engine schemas above so Gemma's chat template renders       #
+# them consistently.                                                           #
+# --------------------------------------------------------------------------- #
+
+
+_RULES_TOOL_SCHEMAS: list[dict] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "count_dominoes_remaining",
+            "description": (
+                "Return the live 5-point and 10-point count dominoes plus "
+                "each team's captured totals. Answers 'where are the 35 "
+                "count points' without recalling the scoring table."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "trick_winner_if",
+            "description": (
+                "Simulate playing `domino_id` into the current trick. If "
+                "the play would complete the trick, returns the winner "
+                "seat + points at stake; if partial, returns who's "
+                "currently leading; if leading a fresh trick, returns the "
+                "led suit my lead would set."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domino_id": {"type": "integer", "description": "0..27"},
+                },
+                "required": ["domino_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "what_beats_what",
+            "description": (
+                "Compare dominoes `domino_a` and `domino_b` as trick plays "
+                "under the current declaration. If a trick is in progress, "
+                "uses that trick's lead; otherwise pass `lead_domino`. "
+                "Returns winner in {'a','b','neither'} plus rank, is_trump "
+                "and can_follow for each."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domino_a": {"type": "integer", "description": "0..27"},
+                    "domino_b": {"type": "integer", "description": "0..27"},
+                    "lead_domino": {
+                        "type": "integer",
+                        "description": (
+                            "optional 0..27; defaults to the current "
+                            "trick's lead if one exists"
+                        ),
+                    },
+                },
+                "required": ["domino_a", "domino_b"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "contract_progress",
+            "description": (
+                "Return bid target, bidder team, my_team_role "
+                "(offense/defense/unknown), captured/needed/loose "
+                "arithmetic, and a status tag in "
+                "{contract_in_play, offense_has_made_bid, "
+                "defense_has_set_bid, bidder_unknown}."
+            ),
+            "parameters": {"type": "object", "properties": {}},
+        },
+    },
+]
+
+
+def build_tool_schemas(enable_rules_tools: bool = False) -> list[dict]:
+    """Return the JSON schema list passed to the native chat template.
+
+    Default (``enable_rules_tools=False``) returns the eight-tool surface
+    that iter-0/iter-1/iter-2 trained and evaluated on. Flipping the flag
+    appends the four rules-as-tools schemas. The flag is the single lever
+    iter-3 will flip; iter-2 keeps it False so the verbosity-blend
+    experiment stays single-variable.
+    """
+    if enable_rules_tools:
+        return list(TOOL_SCHEMAS) + list(_RULES_TOOL_SCHEMAS)
+    return list(TOOL_SCHEMAS)
+
+
+# --------------------------------------------------------------------------- #
 # Prompt construction — system + user split, native format.                    #
 # --------------------------------------------------------------------------- #
 
@@ -243,6 +343,35 @@ Three kinds of trump declaration: a pip suit (blanks, ones, twos, threes, fours,
 ## Partners cannot communicate
 
 Decisions rest only on public information (bid, trump, tricks played, lead, and your own hand) plus your partner's plays observed so far."""
+
+
+# Compact preamble used when `enable_rules_tools=True` (iter-3 lever).
+# Replaces `_TRIMMED_PRIMER` entirely. Every rule the trimmed primer
+# surfaced is now answered by a tool call — the preamble just advertises
+# the menu. See scratch/burl_p5_iter2_prep/rules_as_tools_design.md for
+# the primer-to-tool mapping and the 645-byte target rationale.
+_RULES_AS_TOOLS_PREAMBLE = """\
+# Texas 42 — how to ask
+
+You have rule-answering tools. Prefer calling them over recalling rules.
+
+Engine:
+  is_legal(d), is_trump(d), unseen(), void_audit(seat, suit), trump_declared()
+
+Rules:
+  what_beats_what(a, b)        — which domino wins under the current lead
+  trick_winner_if(d)           — simulate playing d into the current trick
+  count_dominoes_remaining()   — live 5-pt and 10-pt dominoes
+  contract_progress()          — captured vs bid; offense/defense; margin
+
+Outcome distributions:
+  eq_outcome_distribution(play, n_samples=10)
+  conditional_outcome(play, assumption, n_samples=10)
+
+Three declaration families exist: pip-suit trump, doubles-trump, notrump.
+When done reasoning, call commit_play(domino_id) with an integer from your
+hand. If the engine rejects as illegal you get another turn with the
+rejection shown and may commit_play again."""
 
 
 _COMMIT_INSTRUCTION = (
@@ -415,8 +544,15 @@ def render_native_messages(
     game_state: Any,
     hand: Iterable[int],
     visible_history: Iterable[tuple[int, ...]],
+    enable_rules_tools: bool = False,
 ) -> tuple[str, str]:
-    """Return (system_content, user_content) for the native chat template."""
+    """Return (system_content, user_content) for the native chat template.
+
+    When ``enable_rules_tools`` is True, the system message uses the compact
+    ``_RULES_AS_TOOLS_PREAMBLE`` (which advertises the 4 rules tools instead
+    of the trimmed primer). The 42-framing block is unchanged either way —
+    iter-1 evidence says it is net positive regardless of the primer mode.
+    """
     decl = engine_tools.trump_declared(game_state)
     leader = getattr(game_state, "trick_leader", None)
     if leader is None:
@@ -442,10 +578,12 @@ def render_native_messages(
     )
     hand_list = list(hand)
 
+    rules_block = _RULES_AS_TOOLS_PREAMBLE if enable_rules_tools else _TRIMMED_PRIMER
+
     system = (
         _SYSTEM_PREAMBLE
         + "\n\n"
-        + _TRIMMED_PRIMER
+        + rules_block
         + "\n\n# Current decision — 42-aware context\n\n"
         + _render_42_framing(game_state, me_abs, hand_list)
     )
@@ -472,25 +610,37 @@ def run_decision_native(
     native_model: NativeModelCallable,
     max_turns: int = 8,
     max_retries: int = 3,
+    enable_rules_tools: bool = False,
 ) -> BurlTrace:
     """Native-format counterpart to ``agent_runner.run_decision``.
 
     ``native_model`` is ``(messages, tools) -> str``; the Modal adapter wraps
     ``GemmaServerNative.generate_native.remote``.
+
+    When ``enable_rules_tools`` is True, the compact rules-as-tools preamble
+    replaces the trimmed primer, the four rules tools are registered, and
+    their JSON schemas are appended to the tool menu Gemma sees.
     """
     me_abs = _current_player(game_state)
     hand_remaining = [d for d in game_state.hands[me_abs] if d not in game_state.played]
     history = _visible_history(game_state)
 
     system_content, user_content = render_native_messages(
-        game_state, hand_remaining, history,
+        game_state,
+        hand_remaining,
+        history,
+        enable_rules_tools=enable_rules_tools,
     )
-    tools = build_tool_registry(game_state_provider=lambda: game_state)
+    tools = build_tool_registry(
+        game_state_provider=lambda: game_state,
+        enable_rules_tools=enable_rules_tools,
+    )
+    tool_schemas = build_tool_schemas(enable_rules_tools=enable_rules_tools)
 
     harness = NativeHarness(
         model_callable=native_model,
         tools=tools,
-        tool_schemas=TOOL_SCHEMAS,
+        tool_schemas=tool_schemas,
         is_legal_fn=lambda s, d: engine_tools.is_legal(s, int(d)),
         commit_instruction=_COMMIT_INSTRUCTION,
         max_turns=max_turns,
