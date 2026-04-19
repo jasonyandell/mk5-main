@@ -922,9 +922,24 @@ three nested ideas:
    = 0.43` and the engine can compute the true posterior, we get a
    calibration loss surface the current stack doesn't have. This is
    simultaneously (a) a new training signal beyond K1 + factual verification,
-   (b) the native language the oracle uses internally but never articulates,
-   and (c) the scales-with-curriculum thing — probabilistic reasoning at
-   trick 6 is one-step, at trick 3 it's compound multi-step inference.
+   (b) the native language the E[Q] framework uses internally but never
+   articulates, and (c) the scales-with-curriculum thing — probabilistic
+   reasoning at trick 6 is one-step, at trick 3 it's compound multi-step
+   inference.
+
+### Vocabulary (matters — be precise)
+
+There are three things we sometimes loosely call "the oracle." They are
+different:
+
+| Term | What it is | Where it lives |
+|---|---|---|
+| **Perfect-information solver** | Takes a fully-specified deal + declaration, enumerates reachable states, solves by backward induction. Deterministic, exact game value under full information. | `forge/oracle/` |
+| **E[Q] framework** | Uses the solver as a subroutine. For an imperfect-info position, averages the solver's value over a prior distribution of possible hidden hands. | `forge/eq/` |
+| **E[Q] bot** | Plays `argmax(E[Q])` over legal moves. This is the player we compare against in K1 grading. | Throughout game + narration code |
+
+Neither LEM nor Burl calls the solver directly. Grading uses the E[Q]
+framework. The comparison target is the E[Q] bot.
 
 ### Principles that protect this vision
 
@@ -934,14 +949,14 @@ three nested ideas:
   drift toward outcome-chasing — over any individual hand, variance dominates.
   Over thousands, decision quality wins.
 
-- **Two dodges on the distilled-oracle trap, not one.** The risk with the
-  straight-line plan is ending up with a slower chattier copy of the oracle.
-  Probabilistic articulation (vision item 3 above) is one dodge — the LLM
-  says things the oracle can't. Stylized play (bead `t42-8aep`) is the
-  other — a cautious LLM and a gambler LLM are both interesting in ways the
-  oracle is categorically not. These axes compose: a calibrated cautious
-  player and a calibrated gambler are *two* different artifacts, both
-  non-distillations.
+- **Two dodges on the "distilled E[Q] bot" trap, not one.** The risk with
+  the straight-line plan is ending up with a slower chattier copy of the
+  E[Q] bot. Probabilistic articulation (vision item 3 above) is one dodge —
+  the LLM says things the E[Q] bot can't. Stylized play (bead `t42-8aep`)
+  is the other — a cautious LLM and a gambler LLM are both interesting in
+  ways the E[Q] bot is categorically not. These axes compose: a calibrated
+  cautious player and a calibrated gambler are *two* different artifacts,
+  both non-distillations.
 
 - **100% legal moves is the Stage 0 → Stage 1 gate.** Current adapters
   (1.7B-maskfix, 14B-v9) sit at 92-96% legal on transition-test. The last
@@ -949,14 +964,17 @@ three nested ideas:
   before STaR iteration makes sense. Training on illegal traces is compute
   waste at best, reinforcement of wrong-state reasoning at worst.
 
-- **The `forge/` E[Q] visualizer is the canonical teacher artifact.**
-  It renders per-play outcome distributions — exactly the shape the model
-  should learn to articulate. Ground truth source (engine-computed), eval
-  substrate (model's text vs tool's rendered shape), product demo (teacher
-  mode could use it verbatim). Every future training phase should pass
-  through the visualizer: "does the model's rationalization describe a
-  distribution shape that matches what the tool renders?" is the strictest
-  quality check we have.
+- **The E[Q] visualizer is the canonical teacher artifact.**
+  Three HTML files in `forge/analysis/results/web/`:
+  `eq_pdf_discs.html` (per-play outcome histograms, the "melted candlewax"
+  discs), `eq_surface_3d.html` (full landscape), `eq_game_journey.html`
+  (playback). They render per-play outcome distributions — exactly the
+  shape the model should learn to articulate. Ground truth source
+  (engine-computed), eval substrate (model's text vs tool's rendered shape),
+  product demo (teacher mode could use it verbatim). Every future training
+  phase should pass through the visualizer: "does the model's
+  rationalization describe a distribution shape that matches what the tool
+  renders?" is the strictest quality check we have.
 
 ### Next three moves, ordered by "most learning per dollar"
 
@@ -990,3 +1008,21 @@ three nested ideas:
 - **Remaining trainer mask-fixes**: `train_comprehension`, `train_stage0`,
   `train_star`, `star_loop`. 14B trainer blocks move 2 above; the others
   are lower priority, fix as each next runs.
+
+### Sibling project: Burl
+
+LEM is not the only artifact being built. **Burl** is a sibling project —
+an agentic tool-using player on Gemma 4 E2B that composes engine facts +
+Zeb beliefs + its own reasoning. See [`burl/OVERVIEW.md`](../burl/OVERVIEW.md).
+
+LEM and Burl solve different problems:
+- LEM: explain positions in English (teacher, companion, "explain mode").
+  Qwen 3 1.7B, comprehension/rationalization-trained.
+- Burl: play positions via tool orchestration (agent, opponent, "play
+  mode"). Gemma 4 E2B, tool-using trajectories as training data.
+
+Shared infrastructure (owned by neither, used by both): the game engine,
+the perfect-info solver, the E[Q] framework, Zeb, and the visualizer.
+
+Bead `t42-14h4` is Burl's founding bead and will be refactored to reference
+`burl/` directly.
