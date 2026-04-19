@@ -1,19 +1,22 @@
 # Burl — Move 3 + Move 4 Spike Log
 
-## TL;DR for returning session (2026-04-19 overnight)
+## TL;DR for returning session (2026-04-19 overnight, updated post-r7-re-eval)
 
-Two full STaR iterations shipped. Cumulative session spend ~$3.22 of ~$40 authorized.
+Two full STaR iterations shipped. iter-1 at `max_retries=7` **matches spike v2 on bot-match AND beats it on mean_eq_delta**. Cumulative session spend ~$3.50 of ~$40 authorized.
 
-**Core result — four baselines on the same N=10 held-out decisions:**
+**Core result — five runs on the same N=10 held-out decisions:**
 
 | run | bot-match | complete | mean_eq_Δ | notes |
 |---|---|---|---|---|
-| **spike v2** (base Gemma, XML→native commit_play fix) | 88.9% | 9/10 | −1.92 | **best**, no training |
-| **Layer 1** (+ rules primer + 42-aware framing) | 70% | 10/10 | −3.00 | Gemma overconfident, skips eq tool |
-| **iter-0** (trained on Layer 1 corpus) | 60% | 10/10 | −3.33 | SFT baked in regression |
-| **iter-1** (trimmed primer, retrained) | 80% on 5/10 completed | 5/10 | −0.76 on completed | best per-commit quality, broke commit discipline |
+| spike v2 (base Gemma, native commit_play) | 88.9% | 9/10 | −1.92 | no training |
+| Layer 1 (+ rules primer + 42-framing) | 70% | 10/10 | −3.00 | overconfident, skips eq |
+| iter-0 (SFT on Layer 1 corpus) | 60% | 10/10 | −3.33 | baked in regression |
+| iter-1 @ `max_retries=3` | 80% on 5/10 | 5/10 | −0.76 on completed | great per-commit but half exhausts |
+| **iter-1 @ `max_retries=7`** | **88.9%** | **9/10** | **−0.16** | **first trained adapter that beats base** |
 
-**Net**: we have two trained adapters on HF (`jasonyandell/gemma-4-e2b-texas42-burl-iter0`, `-iter1`), a clear picture of the design space, and **base-Gemma-with-no-training at 88.9% still beats both trained adapters**. The training loop works end-to-end; the corpus composition is the open problem.
+**Net**: `jasonyandell/gemma-4-e2b-texas42-burl-iter1` **matches base + improves mean_eq_delta 12× tighter** when given room to think (retry cap that matches the 8-turn ceiling). The prior "iter-1 regressed" conclusion was an artifact of `max_retries=3` cutting off iter-1's more thoughtful reasoning style.
+
+**Surprising sub-finding from the iter-1 tool histogram**: iter-1 barely uses `eq_outcome_distribution` (1/9). Instead it reasons structurally via `trump_declared` (9/9) + `is_trump` (7) + `is_legal` (16). SFT taught Gemma a *different* path to good decisions than spike v2's "query the belief tool" approach — trump-and-suit structural reasoning. Philosophy check: same quality, the model's own idiom.
 
 **Sharpest scientific findings**:
 
