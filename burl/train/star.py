@@ -15,6 +15,19 @@ The chat-format corpus already has `<|tool_call>` / `<|tool_response>` /
 `<|channel>` special tokens in assistant content; the Gemma 4 tokenizer
 round-trips these as single tokens, so SFTTrainer's apply_chat_template
 flow preserves them end-to-end.
+
+Thoughts path (``preserve_thoughts=True``): Gemma 4's chat template contains
+a ``strip_thinking()`` macro that erases every ``<|channel>thought ...
+<channel|>`` region on ``role == 'model'`` content before tokenization. The
+iter-0/1/2/3 adapters therefore never saw their own reasoning as a training
+signal. When ``preserve_thoughts=True``, SFTTrainer is given a
+``formatting_func`` that bypasses the chat template: the user turn is still
+rendered via ``apply_chat_template(add_generation_prompt=True)`` (so
+``<bos><|turn>user...`` boundaries stay canonical), but the assistant turn
+is appended verbatim from ``messages[1].content`` plus the Gemma 4 turn
+terminator ``<turn|>\\n``. Thought tokens reach the loss function; labels
+on those positions are NOT masked. This is the iter-4 foundation — see
+``burl/train/test_formatting_func.py`` for the empirical pin.
 """
 
 from __future__ import annotations
@@ -28,6 +41,47 @@ MODEL_ID = "google/gemma-4-E2B-it"
 ADAPTER_REPO = "jasonyandell/gemma-4-e2b-texas42-burl-iter0"
 SMOKE_REPO = "jasonyandell/gemma-4-e2b-texas42-burl-smoke"
 GPU_TYPE = "B200"
+
+# Gemma 4 turn terminator. See test_formatting_func.py::test_turn_boundary_is_atomic
+# for the atomic-token pin. Used by the preserve_thoughts formatting_func path.
+GEMMA4_TURN_TERMINATOR = "<turn|>\n"
+
+
+def build_preserve_thoughts_formatting_func(tokenizer):
+    """Return a formatting_func that bypasses Gemma 4's strip_thinking macro.
+
+    Gemma 4's ``chat_template.jinja`` strips ``<|channel>thought ... <channel|>``
+    regions before tokenization on assistant (``role=='model'``) content.
+    SFTTrainer's ``processing_class=tokenizer`` path therefore never exposes
+    those tokens to the loss — the adapter only learns tool-call chains,
+    never the reasoning that produced them.
+
+    This function returns a callable suitable for ``SFTTrainer(formatting_func=...)``.
+    For each row of ``{"messages": [{role:user,...},{role:assistant,...}]}``:
+
+      1. Render the user turn via ``apply_chat_template(add_generation_prompt=True)``
+         so ``<bos><|turn>user\\n...<turn|>\\n<|turn>model\\n`` stays canonical
+         — this is the user-side prompt Gemma expects at inference time.
+      2. Append the assistant ``content`` verbatim (preserving
+         ``<|channel>thought...<channel|>`` regions).
+      3. Terminate with ``<turn|>\\n`` so the model learns when to stop.
+
+    The resulting string round-trips cleanly through ``tokenizer.encode``
+    (``<|turn>``, ``<turn|>``, ``<|channel>``, ``<channel|>``,
+    ``<|tool_call>``, ``<tool_call|>`` are all single tokens).
+    """
+    def fmt(example):
+        msgs = example["messages"]
+        if len(msgs) != 2 or msgs[0]["role"] != "user" or msgs[1]["role"] != "assistant":
+            raise ValueError(
+                f"preserve_thoughts formatting_func expects [user, assistant]; got "
+                f"roles={[m['role'] for m in msgs]!r}"
+            )
+        user_plus_prefix = tokenizer.apply_chat_template(
+            [msgs[0]], tokenize=False, add_generation_prompt=True
+        )
+        return user_plus_prefix + msgs[1]["content"] + GEMMA4_TURN_TERMINATOR
+    return fmt
 
 app = modal.App("burl-star-train")
 
@@ -108,8 +162,16 @@ def train_iter0(
     lora_rank: int = 16,
     per_device_batch_size: int = 2,
     gradient_accumulation_steps: int = 4,
+    preserve_thoughts: bool = False,
 ) -> dict:
-    """Train a LoRA adapter on the Burl STaR corpus and push to HuggingFace."""
+    """Train a LoRA adapter on the Burl STaR corpus and push to HuggingFace.
+
+    When ``preserve_thoughts=True``, SFTTrainer uses
+    ``build_preserve_thoughts_formatting_func(tokenizer)`` to bypass Gemma 4's
+    ``strip_thinking`` macro, so ``<|channel>thought`` regions reach the
+    loss function. iter-4 foundation — see module docstring and
+    ``test_formatting_func.py``.
+    """
     import gc
     import os
     import time
@@ -194,12 +256,26 @@ def train_iter0(
         seed=42,
     )
 
-    trainer = SFTTrainer(
-        model=train_model,
-        args=training_args,
-        train_dataset=dataset,
-        processing_class=tokenizer,
-    )
+    if preserve_thoughts:
+        print(
+            "[train] preserve_thoughts=True — bypassing chat template via "
+            "formatting_func; <|channel>thought blocks will reach the loss",
+            flush=True,
+        )
+        trainer = SFTTrainer(
+            model=train_model,
+            args=training_args,
+            train_dataset=dataset,
+            processing_class=tokenizer,
+            formatting_func=build_preserve_thoughts_formatting_func(tokenizer),
+        )
+    else:
+        trainer = SFTTrainer(
+            model=train_model,
+            args=training_args,
+            train_dataset=dataset,
+            processing_class=tokenizer,
+        )
 
     t_train = time.time()
     result = trainer.train()
