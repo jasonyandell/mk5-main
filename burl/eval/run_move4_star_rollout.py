@@ -531,7 +531,11 @@ def run_star_rollout(
             continue
         decision = _lookup_decision(dataset, rec["trace"])
         corpus_entries.append(
-            compose_sft_record(decision, rec["trace"], source="rollout_win")
+            compose_sft_record(
+                decision, rec["trace"], source="rollout_win",
+                enable_rules_tools=enable_rules_tools,
+                enable_primer=enable_primer,
+            )
         )
 
     for g in gate_records:
@@ -542,7 +546,11 @@ def run_star_rollout(
             continue
         decision = _lookup_decision(dataset, trace)
         corpus_entries.append(
-            compose_sft_record(decision, trace, source="eq_gate_self_correct")
+            compose_sft_record(
+                decision, trace, source="eq_gate_self_correct",
+                enable_rules_tools=enable_rules_tools,
+                enable_primer=enable_primer,
+            )
         )
 
     with corpus_path.open("w") as f:
@@ -594,6 +602,7 @@ def run_star_rollout(
             "eq_epsilon": eq_epsilon,
         },
         "enable_rules_tools": bool(enable_rules_tools),
+        "enable_primer": bool(enable_primer),
         "n_decisions_attempted": len(records),
         "n_wins": cat_hist.get("win", 0),
         "n_legal_losses": cat_hist.get("legal_loss", 0),
@@ -707,6 +716,14 @@ def _main() -> None:
             "contract_progress alongside the eight default tools."
         ),
     )
+    parser.add_argument(
+        "--no-primer", action="store_true",
+        help=(
+            "iter-3-v2 lever: drop the trimmed Texas-42 primer entirely "
+            "(spike-v2 prompt shape — system = preamble + 42-framing only, "
+            "no rules-as-tools). Mutually exclusive with --enable-rules-tools."
+        ),
+    )
     args = parser.parse_args()
 
     run_star_rollout(
@@ -721,6 +738,7 @@ def _main() -> None:
         max_gate_retries=args.max_gate_retries,
         eq_epsilon=args.eq_epsilon,
         enable_rules_tools=args.enable_rules_tools,
+        enable_primer=not args.no_primer,
     )
 
 
