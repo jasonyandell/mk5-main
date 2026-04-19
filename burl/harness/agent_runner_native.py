@@ -17,6 +17,7 @@ same thing regardless of how the model is asked to call them.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from burl.harness.agent_runner import (
@@ -31,6 +32,8 @@ from burl.harness.agent_runner import (
 from burl.harness.tool_loop_native import NativeHarness, NativeModelCallable
 from burl.harness.trace import BurlTrace
 from burl.tools import engine as engine_tools
+from forge.oracle.declarations import DOUBLES_SUIT, NOTRUMP
+from forge.oracle.tables import DOMINO_COUNT_POINTS, is_in_called_suit
 
 
 # --------------------------------------------------------------------------- #
@@ -189,7 +192,7 @@ TOOL_SCHEMAS: list[dict] = [
 # --------------------------------------------------------------------------- #
 
 
-_SYSTEM_PROMPT = (
+_SYSTEM_PREAMBLE = (
     "You are Burl, a Texas 42 dominoes agent. Pick the next play.\n"
     "You have tools that describe the game state; call them as needed. "
     "The state tools answer WHAT IS the state — they never tell you WHAT TO "
@@ -201,11 +204,177 @@ _SYSTEM_PROMPT = (
 )
 
 
+# Authoritative rules reference — shared with LEM. Loaded once at import.
+_PRIMER_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "lem" / "rules" / "primer.md"
+)
+_PRIMER = _PRIMER_PATH.read_text()
+
+
 _COMMIT_INSTRUCTION = (
     "You have not called a tool or committed. "
     "Call `commit_play` with the integer domino_id from your hand to end the "
     "decision (for example: commit_play(domino_id=21))."
 )
+
+
+def _fmt_domino(d: int) -> str:
+    return f"{d}({_DOMINO_LABELS[d]})"
+
+
+def _fmt_domino_list(dominoes: Iterable[int]) -> str:
+    parts = [_fmt_domino(int(d)) for d in dominoes]
+    return ", ".join(parts) if parts else "(none)"
+
+
+def _trumps_under_declaration(decl_id: int) -> list[int]:
+    """Return the domino ids that are trumps under this declaration.
+
+    Empty for notrump (no trump power) and doubles-suit (doubles are their
+    own suit but do not rank above other suits).
+    """
+    if decl_id in (NOTRUMP, DOUBLES_SUIT):
+        return []
+    return [d for d in range(28) if is_in_called_suit(d, decl_id)]
+
+
+def _count_dominoes_remaining(played: frozenset[int]) -> tuple[list[int], list[int]]:
+    """Return (five_pointers, ten_pointers) count dominoes not yet played.
+
+    The double-six set has three 5-pt dominoes (5-0, 4-1, 3-2) and two 10-pt
+    dominoes (5-5, 6-4) — 35 count points total across the five pieces.
+    """
+    fives: list[int] = []
+    tens: list[int] = []
+    for d in range(28):
+        if d in played:
+            continue
+        pts = DOMINO_COUNT_POINTS[d]
+        if pts == 5:
+            fives.append(d)
+        elif pts == 10:
+            tens.append(d)
+    return fives, tens
+
+
+def _render_42_framing(
+    game_state: Any,
+    me_abs: int,
+    hand: list[int],
+) -> str:
+    """42-specific framing block for the system prompt.
+
+    Surfaces partnership, offensive/defensive role, the bid target, count
+    dominoes still in play, trump membership, and the in-hand capture score.
+    The goal is to prime Gemma to reason in 42 terms ('my partner', 'set
+    the bidders', 'count dominoes loose') rather than generic card-game
+    terms ('draw', 'establish a high card').
+    """
+    partner_abs = (me_abs + 2) % 4
+    left_opp_abs = (me_abs + 1) % 4
+    right_opp_abs = (me_abs + 3) % 4
+    my_team = me_abs % 2
+    opp_team = 1 - my_team
+
+    decl_id = int(game_state.decl_id)
+    decl_name = engine_tools.trump_declared(game_state)
+
+    bidder = getattr(game_state, "bidder", -1)
+    bid_state = getattr(game_state, "bid_state", None)
+    high_bid = getattr(bid_state, "high_bid", 0) if bid_state is not None else 0
+    target = int(high_bid) if high_bid and high_bid >= 30 else 30
+
+    if bidder is not None and bidder >= 0:
+        bidder_team = int(bidder) % 2
+        if bidder_team == my_team:
+            role_line = (
+                f"You are on OFFENSE. Your team (Team {my_team}, seats "
+                f"{me_abs} and {partner_abs}) bid {target} and must capture at "
+                f"least {target} count to make the bid."
+            )
+        else:
+            role_line = (
+                f"You are on DEFENSE. Team {bidder_team} (seats "
+                f"{int(bidder)} and {(int(bidder) + 2) % 4}) bid {target}. "
+                f"Your job is to SET them — keep them below {target} count."
+            )
+        bidder_line = (
+            f"Bidder: seat {int(bidder)} (Team {bidder_team}). Bid: {target} count."
+        )
+    else:
+        role_line = (
+            "Bid information unavailable; assume offense is whichever team "
+            "declared trump."
+        )
+        bidder_line = "Bidder: unknown."
+
+    team_points = getattr(game_state, "team_points", None)
+    if team_points is not None and len(team_points) == 2:
+        my_score = int(team_points[my_team])
+        opp_score = int(team_points[opp_team])
+        score_line = (
+            f"Hand score so far: your team has captured {my_score} count; "
+            f"Team {opp_team} has captured {opp_score} count. "
+            f"Total count in a hand is 42 (35 in dominoes + 7 trick points)."
+        )
+    else:
+        score_line = ""
+
+    fives, tens = _count_dominoes_remaining(game_state.played)
+    remaining_count_pts = 5 * len(fives) + 10 * len(tens)
+    count_line = (
+        f"Count dominoes (still in play): "
+        f"5-pointers {_fmt_domino_list(fives)}; "
+        f"10-pointers {_fmt_domino_list(tens)}. "
+        f"{remaining_count_pts} count points loose; each trick is also worth 1."
+    )
+
+    if decl_id == NOTRUMP:
+        trump_line = (
+            "Declaration is NOTRUMP — no suit has trump power. Each trick is "
+            "won by the highest domino in the led suit; doubles rank highest "
+            "of their pip. Lead strategy centers on forcing sluffs and "
+            "capturing count cleanly."
+        )
+    elif decl_id == DOUBLES_SUIT:
+        trump_line = (
+            "Declaration is DOUBLES-SUIT — the seven doubles form their own "
+            "suit with no trump power. Leading a double pulls doubles; any "
+            "non-double leads its normal pip suit. No suit overpowers another."
+        )
+    else:
+        trumps = _trumps_under_declaration(decl_id)
+        trumps_in_hand = [d for d in trumps if d in hand]
+        trumps_played = [d for d in trumps if d in game_state.played]
+        trumps_unseen = [
+            d for d in trumps
+            if d not in hand and d not in game_state.played
+        ]
+        trump_line = (
+            f"Trumps ({decl_name}) — 7 dominoes total: {_fmt_domino_list(trumps)}. "
+            f"In your hand: {_fmt_domino_list(trumps_in_hand)}. "
+            f"Already played: {_fmt_domino_list(trumps_played)}. "
+            f"Still unseen (with partner or opponents): "
+            f"{_fmt_domino_list(trumps_unseen)}."
+        )
+
+    lines = [
+        "=== Texas 42 framing ===",
+        (
+            f"Teams: seats 0 and 2 are Team 0; seats 1 and 3 are Team 1. "
+            f"You sit at seat {me_abs} on Team {my_team}. Your partner is at "
+            f"seat {partner_abs}. Opponents sit at seats {left_opp_abs} "
+            f"(left, plays after you) and {right_opp_abs} (right, plays "
+            f"before you on your lead). Partner's count is your count — "
+            f"you win and lose as a pair."
+        ),
+        bidder_line,
+        role_line,
+    ]
+    if score_line:
+        lines.append(score_line)
+    lines.extend([count_line, trump_line])
+    return "\n".join(lines)
 
 
 def render_native_messages(
@@ -239,6 +408,14 @@ def render_native_messages(
     )
     hand_list = list(hand)
 
+    system = (
+        _SYSTEM_PREAMBLE
+        + "\n\n# Texas 42 rules reference (authoritative)\n\n"
+        + _PRIMER
+        + "\n# Current decision — 42-aware context\n\n"
+        + _render_42_framing(game_state, me_abs, hand_list)
+    )
+
     user = (
         f"declaration: {decl}\n"
         f"your seat (absolute): {me_abs}\n"
@@ -248,7 +425,7 @@ def render_native_messages(
         f"visible history: {_fmt_history(visible_history)}\n\n"
         "Decide what to play. Use tools as needed, then commit."
     )
-    return _SYSTEM_PROMPT, user
+    return system, user
 
 
 # --------------------------------------------------------------------------- #
@@ -324,6 +501,22 @@ def _selftest(seed: int = 2026) -> None:
     target = legal[0]
     illegal = next(d for d in range(28) if d not in remaining)
 
+    # Prompt-framing sanity: system must carry 42 vocabulary.
+    system_text, user_text = render_native_messages(
+        state, remaining, _visible_history(state),
+    )
+    for token in (
+        "Texas 42 rules reference",
+        "count dominoes",
+        "Texas 42 framing",
+        "Team",
+        "partner",
+        "Bidder",
+        "Count dominoes",
+    ):
+        assert token in system_text, f"missing {token!r} in system prompt"
+    assert "your hand:" in user_text, "user prompt lost hand line"
+
     completions = iter([
         '<|tool_call>{"name":"trump_declared","arguments":{}}<tool_call|>\n'
         '<|tool_call>{"name":"unseen","arguments":{}}<tool_call|>\n'
@@ -352,8 +545,11 @@ def _selftest(seed: int = 2026) -> None:
     print(f"  turns={len(trace.turns)} tool_calls={len(tool_calls)} "
           f"retries={trace.n_retries} final={trace.final_play}")
     print(f"  tool names: {sorted(tool_names)}")
-    print("[agent_runner_native selftest] OK: native schemas threaded through, "
-          "retry + trace round-trip.")
+    print(f"  system prompt ({len(system_text)} chars):")
+    for line in system_text.splitlines():
+        print(f"    {line}")
+    print("[agent_runner_native selftest] OK: 42-framed prompt renders, "
+          "native schemas threaded through, retry + trace round-trip.")
 
 
 if __name__ == "__main__":

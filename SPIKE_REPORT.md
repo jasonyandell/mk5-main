@@ -281,3 +281,164 @@ needs `max_retries` sized for "tools + commit + illegal retries," not just
 config so the tool-call-chain pattern has room to breathe.
 
 Total session cost: ~$0.16 of the $1.00 cap.
+
+---
+
+## Layer 1: 42-aware prompt framing + primer (2026-04-19)
+
+**Headline: reasoning substrate flipped in 42 vocabulary (0 → 5-11 mentions/trace
+across partner/team/count/bid/offense-defense), but bot-match regressed 88.9% →
+70% because the enriched prompt displaced E[Q] distribution tool use.** Modest
+positive on the substrate (the point of the task), soft regression on the
+scoreboard. The right substrate for STaR; not the right artifact for live play.
+
+### What changed
+
+Two enrichments bundled into one experiment:
+
+1. **42-aware framing block** prepended to the system prompt — partnership
+   (teams/partner seat/opp seats), bidder + target bid, offense vs defense
+   role, running `team_points` score, count dominoes still in play (5-pt and
+   10-pt lists with ids + labels), trump-suit membership (all 7 trump ids
+   with in-hand / played / unseen breakdown). Notrump and doubles-suit get
+   explicit "what's special" prose.
+2. **LEM rules primer** prepended verbatim from `lem/rules/primer.md` — 1,549
+   words of engine-verified Texas 42 rules (suits, led-suit rule, follow
+   rules, trick resolution, count dominoes, contract satisfaction).
+
+Both land in the system message; the user message is unchanged.
+
+Only `burl/harness/agent_runner_native.py` was edited. Helpers
+(`_trumps_under_declaration`, `_count_dominoes_remaining`,
+`_render_42_framing`) live in that same file. Primer loaded once at import.
+Self-test extended to verify the prompt renders with the expected vocabulary
+tokens.
+
+### Results — N=10, `--max-retries 7`, cost-cap $0.30
+
+| metric | spike v2 (native + commit_play) | **Layer 1 (framing + primer)** |
+|---|---|---|
+| n_completed | 9/10 | **10/10** |
+| legal_rate | 100% | **100%** |
+| first_legal_rate | 90% | **100%** |
+| bot_match_rate | 88.9% | **70.0%** (−18.9pp) |
+| mean_eq_delta | −1.92 | **−3.00** |
+| p_eq_geq_bot | 88.9% | **70.0%** |
+| empty_tool_rollout_rate | 0% | **20%** (2/10 decisions with zero tool calls) |
+| tool histogram | `{is_legal:20, eq_outcome_distribution:15, trump_declared:9}` | `{is_legal:13, eq_outcome_distribution:2, is_trump:2}` |
+| mean_tokens_in (chars) | 13,564 | 35,323 (2.6× from primer) |
+| mean_tokens_out (chars) | 1,479 | 5,517 (3.7× — longer thoughts) |
+| wall time | 246 s | 683 s (incl. 167 s cold start on decision 1) |
+| Modal spend | $0.055 | $0.152 |
+
+### The reasoning substrate genuinely flipped
+
+42-vocabulary mentions per trace — both runs, same 10 decisions:
+
+| term | spike v2 | Layer 1 |
+|---|---|---|
+| `partner` | 0.0/trace | **5.2/trace** |
+| `team` | 0.0/trace | **11.4/trace** |
+| `offense`/`defense` | 0.0/trace | **2.2/trace** |
+| `count` | 0.0/trace | **8.4/trace** |
+| `bid` | 0.0/trace | **3.0/trace** |
+| `trump` | 5.6/trace | **50.2/trace** |
+| `set them`/`set the` | 0.0/trace | 0.4/trace |
+
+The spike v2 traces never once used "partner", "team", "bid", "offense", or
+"defense". Layer 1 uses them every trace. This is the success criterion the
+task was designed to test, and it passes unambiguously.
+
+### Representative trace excerpts (reasoning depth, not numbers)
+
+**Decision 1, match — 42 framing shows up verbatim in Gemma's thought.**
+(seed=900000 decl=0 narrator=1; burl=21 bot=21 delta=0.0)
+
+> **My Position:** I am at seat 1 (Team 1). My partner is at seat 3 (Team 1).
+> Opponents are at seat 0 (Team 0, plays before me) and seat 2 (Team 0,
+> plays after me).
+> **Role:** I am on DEFENSE. Team 0 (bidder) bid 30 count. I need to SET
+> them (keep them below 30 count).
+
+Note: v2 on this exact decision picked 14 and lost 17.3 points; Layer 1 picks
+21 and matches the bot. Framing may have carried this one.
+
+**Decision 4, loss — partnership + score awareness is visible but no E[Q]
+call.** (seed=900000 decl=2 narrator=0; burl=24 bot=22 delta=−1.4)
+
+> **Role:** I am at seat 0 (Team 0). My partner is at seat 2.
+> **Contract:** Team 0 bid 30 count. We need at least 30 count points.
+> **Score Status:** Team 0 has captured 29 count points; Team 1 has captured
+> 1 count point. We are very close to making the bid (need 1 more count
+> point to make 30).
+
+This is *exactly* the situation `eq_outcome_distribution` was built for — a
+1-point-from-contract offense pick, only 2 legal plays, trump is twos.
+Gemma surfaces the team state correctly, then commits without calling the
+distribution tool. Small regression (−1.4), but the shape is the story.
+
+**Decision 6, large miss — 2 is_legal calls and commit, no distribution
+check.** (seed=900000 decl=2 narrator=3; burl=27 bot=9 delta=**−24.8**)
+
+eq_gap was 24.81 — the bot pick was far ahead of the second-best legal play.
+Burl picked the *worst* of its legal options with two `is_legal` checks and
+zero probability reasoning. In v2 this decision category drove
+`eq_outcome_distribution` calls; in Layer 1 the primer's rule text appears
+to have satisfied Gemma's "do I know enough?" heuristic.
+
+### Interpretation — the trade-off is real and legible
+
+The primer + framing make Gemma confident enough to skip the belief tool.
+v2's tool histogram averaged 4.4 calls per decision with `eq_outcome_distribution`
+on 15/9 completions (1.67/trace). Layer 1 averages 1.7 calls per decision
+with `eq_outcome_distribution` on 2/10 (0.2/trace). The model is reading
+the rules, reading the 42 framing, and deciding it has enough signal.
+
+On decisions with a clear play (matches), this is fine — both runs agree.
+On decisions with a close-call or counterintuitive answer (misses), losing
+the distribution tool costs real bot-match points. The `mean_eq_delta`
+moved from −1.92 to −3.00, and the big-miss decision (6) shows the failure
+mode clearly.
+
+Interestingly, the primer also **eliminated the one retry-exhaustion** v2
+had (decision 4), because Gemma now commits faster instead of chaining
+tools. That's why completion rate went 9/10 → 10/10.
+
+### Verdict — does the prompt upgrade earn its keep?
+
+**For STaR rationalization training: yes.** Rationalizations that reference
+partner, count dominoes, bid target, and offense/defense now occur natively
+— that's the teaching signal the task was set up to improve. v2 traces
+simply had nothing 42-shaped to rationalize.
+
+**For raw bot-match on the spike set: no — STaR is still the lever.** The
+framing substrate isn't enough alone to beat the v2 numbers, and the primer
+crowds out the exact tool that gave v2 its bot-match boost. The 70% number
+is worth sitting with: it's still +10pp over Move 3 XML (60%), so Layer 1
+isn't *regressing relative to pre-spike baseline* — it just gives back the
+tool-use gains the native path unlocked.
+
+**Recommended carry-forward into Move 4:**
+
+1. **Keep the 42-aware framing block** — it's cheap, it worked, and it's the
+   right scaffold for STaR to latch onto.
+2. **Reconsider the primer's placement.** Candidates: (a) drop it to see if
+   framing alone recovers the tool-use, (b) trim the primer to a one-paragraph
+   "trump shapes the deck; count dominoes are (5-5, 6-4, 5-0, 4-1, 3-2); bidder
+   must make the contract" summary instead of the full 1.5 KW, (c) add a
+   one-line nudge after the primer that says "the rules above are reference —
+   still call `eq_outcome_distribution` on close calls."
+3. **The real experiment**: run STaR on *these* traces (even with the 70% bot
+   match — K1 filter keeps the matches, rationalizations now carry 42
+   vocabulary, and the corpus will be cheap).
+
+### Budget
+
+| item | cost |
+|---|---|
+| Failed first kickoff (killed after decision 1) | $0.01 |
+| N=10 full run with primer | $0.15 |
+| **Total** | **~$0.16** |
+
+Well under the $0.30 cap for this task. Cumulative spike spend to date
+(including pre-Layer-1 work): ~$0.32.

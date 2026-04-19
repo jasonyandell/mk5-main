@@ -217,6 +217,156 @@ def trump_declared(game_state: Any) -> str:
     return DECL_ID_TO_NAME[game_state.decl_id]
 
 
+_SUIT_NAMES = (
+    "blanks", "ones", "twos", "threes", "fours", "fives", "sixes", "called",
+)
+
+
+def _domino_label(d: int) -> str:
+    return f"{DOMINO_HIGH[d]}-{DOMINO_LOW[d]}"
+
+
+def _count_value(d: int) -> int:
+    """Point value of domino `d` in 42 counter scoring (0, 5, or 10).
+
+    The only counters in a double-6 set are 5-0 / 4-1 / 3-2 (total 5) and
+    5-5 / 6-4 (total 10). No other pair totals 5 or 10.
+    """
+    total = DOMINO_HIGH[d] + DOMINO_LOW[d]
+    if total == 5:
+        return 5
+    if total == 10:
+        return 10
+    return 0
+
+
+def game_summary(game_state: Any) -> dict:
+    """One-shot consolidated view of the decision context.
+
+    Exists because 20 trace-inspections showed Gemma repeatedly asking for
+    info that's in the prompt but hard to extract from prose ("What's the
+    trump?" "Which plays are in the current trick?" "Who's my partner?"). We
+    give it the answers pre-parsed, in one call, so reasoning can start from
+    facts instead of from re-parsing.
+
+    All returned seats are ABSOLUTE (0..3). All labels are pip-form "H-L".
+    Opponents' voids are keyed by relative seat label for Gemma's convenience.
+
+    The response is deliberately JSON-serializable with primitives only — it
+    needs to round-trip through the harness tool-observation formatter.
+    """
+    _check_decl(game_state.decl_id)
+    decl_id = game_state.decl_id
+    me = _abs_current_player(game_state)
+    partner = (me + 2) % 4
+    left_opp = (me + 1) % 4
+    right_opp = (me + 3) % 4
+
+    ctrick_ids = _current_trick_domino_ids(game_state)
+    leader = getattr(game_state, "trick_leader", None)
+    if leader is None:
+        leader = game_state.leader
+
+    current_trick_plays = [
+        {
+            "seat_absolute": (leader + i) % 4,
+            "seat_role": _seat_role(me, partner, (leader + i) % 4),
+            "domino_id": int(d),
+            "pip_label": _domino_label(d),
+            "is_trump": bool(is_trump(game_state, d)),
+        }
+        for i, d in enumerate(ctrick_ids)
+    ]
+
+    if ctrick_ids:
+        lead_suit_id = led_suit_for_lead_domino(ctrick_ids[0], decl_id)
+        lead_suit_name = _SUIT_NAMES[lead_suit_id]
+        i_am_leading = False
+    else:
+        lead_suit_id = None
+        lead_suit_name = None
+        i_am_leading = True
+
+    my_hand = game_state.hands[me]
+    remaining = [d for d in my_hand if d not in game_state.played]
+    legal_plays = []
+    for d in remaining:
+        ok, _reason = is_legal(game_state, d)
+        if not ok:
+            continue
+        legal_plays.append({
+            "domino_id": int(d),
+            "pip_label": _domino_label(d),
+            "is_trump": bool(is_trump(game_state, d)),
+            "follows_lead_suit": (
+                bool(can_follow(d, lead_suit_id, decl_id))
+                if lead_suit_id is not None else None
+            ),
+            "count_value": _count_value(d),
+        })
+
+    points_in_current_trick = sum(_count_value(d) for d in ctrick_ids)
+
+    opponent_voids = {
+        "left_opponent": [
+            _SUIT_NAMES[s] for s in range(7) if void_audit(game_state, 1, s)
+        ],
+        "partner": [
+            _SUIT_NAMES[s] for s in range(7) if void_audit(game_state, 2, s)
+        ],
+        "right_opponent": [
+            _SUIT_NAMES[s] for s in range(7) if void_audit(game_state, 3, s)
+        ],
+    }
+
+    unseen_ids = unseen(game_state)
+    unseen_counters = [
+        {"domino_id": d, "pip_label": _domino_label(d), "count_value": _count_value(d)}
+        for d in sorted(unseen_ids)
+        if _count_value(d) > 0
+    ]
+    my_counters = [
+        {"domino_id": d, "pip_label": _domino_label(d), "count_value": _count_value(d)}
+        for d in sorted(remaining)
+        if _count_value(d) > 0
+    ]
+
+    tricks_played = len(game_state.play_history) // 4
+    position_in_trick = len(ctrick_ids) + 1
+
+    return {
+        "trump_declaration": trump_declared(game_state),
+        "seats": {
+            "me_absolute": int(me),
+            "partner_absolute": int(partner),
+            "left_opponent_absolute": int(left_opp),
+            "right_opponent_absolute": int(right_opp),
+        },
+        "tricks_completed": int(tricks_played),
+        "position_in_current_trick": int(position_in_trick),
+        "i_am_leading": bool(i_am_leading),
+        "current_trick_plays": current_trick_plays,
+        "lead_suit": lead_suit_name,
+        "points_in_current_trick": int(points_in_current_trick),
+        "my_legal_plays": legal_plays,
+        "my_counter_dominoes_in_hand": my_counters,
+        "unseen_counter_dominoes": unseen_counters,
+        "opponent_voids_inferred": opponent_voids,
+    }
+
+
+def _seat_role(me: int, partner: int, seat: int) -> str:
+    """Return 'me', 'partner', 'left_opponent', or 'right_opponent' for an absolute seat."""
+    if seat == me:
+        return "me"
+    if seat == partner:
+        return "partner"
+    # left = me+1 mod 4, right = me+3 mod 4
+    if seat == (me + 1) % 4:
+        return "left_opponent"
+    return "right_opponent"
+
+
 # --------------------------------------------------------------------------- #
 # Self-test                                                                    #
 # --------------------------------------------------------------------------- #
