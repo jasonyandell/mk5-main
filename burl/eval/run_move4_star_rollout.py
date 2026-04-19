@@ -32,6 +32,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import time
 from collections import Counter
@@ -318,7 +319,7 @@ def _lookup_decision(
     )
 
 
-def run_star_rollout(
+async def run_star_rollout(
     dataset_path: Path,
     out_dir: Path,
     corpus_path: Path,
@@ -332,6 +333,7 @@ def run_star_rollout(
     eq_epsilon: float = 0.25,
     enable_rules_tools: bool = False,
     enable_primer: bool = True,
+    concurrency: int = 1,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     corpus_path.parent.mkdir(parents=True, exist_ok=True)
@@ -345,8 +347,10 @@ def run_star_rollout(
     print(
         f"[star] gate_variant={gate_variant} max_gate_retries={max_gate_retries} "
         f"eq_epsilon={eq_epsilon} enable_rules_tools={enable_rules_tools} "
-        f"enable_primer={enable_primer}"
+        f"enable_primer={enable_primer} concurrency={concurrency}"
     )
+    if concurrency < 1:
+        raise ValueError(f"concurrency must be >= 1, got {concurrency}")
 
     rollout_traces_path = out_dir / "rollout_traces.jsonl"
     gate_traces_path = out_dir / "gate_traces.jsonl"
@@ -365,45 +369,65 @@ def run_star_rollout(
         # ------------------------------------------------------------------ #
         # Phase A: rollout                                                   #
         # ------------------------------------------------------------------ #
+        # Fire up to `concurrency` rollouts in flight at once (Modal vLLM's
+        # max_inputs=4 continuous-batching ceiling). Each decision's work is
+        # CPU+network-blocking sync code (run_decision_native), so we push it
+        # onto a worker thread via asyncio.to_thread; asyncio.gather is the
+        # scheduler. At concurrency=1 this degenerates to the original
+        # sequential loop (bit-identical output ordering).
         with rollout_traces_path.open("w") as trace_out:
-            for i, decision in enumerate(dataset):
-                print(
-                    f"[rollout] ({i+1}/{len(dataset)}) seed={decision.seed} "
-                    f"decl={decision.declaration} seat={decision.narrator_seat} "
-                    f"bot_play={decision.bot_play} eq_gap={decision.eq_gap:.2f}",
-                    flush=True,
-                )
-                t0 = time.time()
-                trace, exhausted = _run_one_rollout(
-                    decision, model_fn, max_turns, max_retries,
-                    enable_rules_tools=enable_rules_tools,
-                    enable_primer=enable_primer,
-                )
-                elapsed = time.time() - t0
-                record = _build_record(decision, trace, exhausted, elapsed)
-                record["category"] = _classify(record)
-                records.append(record)
+            for batch_start in range(0, len(dataset), concurrency):
+                batch = dataset[batch_start : batch_start + concurrency]
+                for k, decision in enumerate(batch):
+                    i = batch_start + k
+                    print(
+                        f"[rollout] ({i+1}/{len(dataset)}) seed={decision.seed} "
+                        f"decl={decision.declaration} seat={decision.narrator_seat} "
+                        f"bot_play={decision.bot_play} eq_gap={decision.eq_gap:.2f}",
+                        flush=True,
+                    )
 
-                trace_out.write(trace.to_json() + "\n")
-                trace_out.flush()
+                async def _do_rollout(dec: BurlDecision) -> tuple[BurlTrace, bool, float]:
+                    t0 = time.time()
+                    trace, exhausted = await asyncio.to_thread(
+                        _run_one_rollout,
+                        dec, model_fn, max_turns, max_retries,
+                        enable_rules_tools,
+                        enable_primer,
+                    )
+                    return trace, exhausted, time.time() - t0
 
-                burl_eq_s = (
-                    f"{record['burl_eq']:.2f}" if record["burl_eq"] is not None else "N/A"
+                batch_results = await asyncio.gather(
+                    *[_do_rollout(d) for d in batch]
                 )
-                print(
-                    f"         final={record['final_play']} legal={record['final_play_legal']} "
-                    f"cat={record['category']} retries={record['n_retries']} "
-                    f"tools={record['n_tool_calls']} burl_eq={burl_eq_s} "
-                    f"bot_eq={record['bot_eq']:.2f} elapsed={elapsed:.1f}s",
-                    flush=True,
-                )
+
+                for k, (trace, exhausted, elapsed) in enumerate(batch_results):
+                    i = batch_start + k
+                    decision = batch[k]
+                    record = _build_record(decision, trace, exhausted, elapsed)
+                    record["category"] = _classify(record)
+                    records.append(record)
+
+                    trace_out.write(trace.to_json() + "\n")
+                    trace_out.flush()
+
+                    burl_eq_s = (
+                        f"{record['burl_eq']:.2f}" if record["burl_eq"] is not None else "N/A"
+                    )
+                    print(
+                        f"         [{i+1}] final={record['final_play']} legal={record['final_play_legal']} "
+                        f"cat={record['category']} retries={record['n_retries']} "
+                        f"tools={record['n_tool_calls']} burl_eq={burl_eq_s} "
+                        f"bot_eq={record['bot_eq']:.2f} elapsed={elapsed:.1f}s",
+                        flush=True,
+                    )
 
                 wall_so_far = time.time() - wall_start
                 est_so_far = wall_so_far / 3600.0 * L4_USD_PER_HOUR
                 if est_so_far > cost_cap_usd:
                     print(
                         f"[STOP] est ${est_so_far:.2f} > cap ${cost_cap_usd:.2f} "
-                        f"after {i+1} rollouts",
+                        f"after {batch_start + len(batch)} rollouts",
                         flush=True,
                     )
                     break
@@ -414,87 +438,92 @@ def run_star_rollout(
         # ------------------------------------------------------------------ #
         # Phase B: EQ-gate the legal losses                                  #
         # ------------------------------------------------------------------ #
+        # Each loss's gate-retry chain (up to max_gate_retries iterations)
+        # is one awaitable work unit; the inter-decision concurrency is
+        # `concurrency` chains running in parallel. At concurrency=1 this
+        # is bit-identical to the original serial loop.
         losses = [r for r in records if r["category"] == "legal_loss"]
-        print(f"[gate] losses_to_consider={len(losses)}")
 
-        with gate_traces_path.open("w") as trace_out:
-            for j, rec in enumerate(losses):
-                decision = _lookup_decision(dataset, rec["trace"])
-
-                gate_decision = check_commit(
-                    committed_play=rec["final_play"],
-                    legal=rec["final_play_legal"],
-                    per_play_eq=decision.per_play_eq,
-                    bot_play=int(decision.bot_play),
-                    bot_eq=float(decision.bot_eq),
-                    eq_epsilon=eq_epsilon,
+        # Pre-filter losses that the gate doesn't fire on; we still want to
+        # log the skip but no work is needed.
+        firing: list[tuple[int, dict, BurlDecision, Any]] = []  # (j, rec, decision, gate_decision)
+        for j, rec in enumerate(losses):
+            decision = _lookup_decision(dataset, rec["trace"])
+            gate_decision = check_commit(
+                committed_play=rec["final_play"],
+                legal=rec["final_play_legal"],
+                per_play_eq=decision.per_play_eq,
+                bot_play=int(decision.bot_play),
+                bot_eq=float(decision.bot_eq),
+                eq_epsilon=eq_epsilon,
+            )
+            if not gate_decision.fire:
+                print(
+                    f"[gate] skip seed={decision.seed}/{decision.declaration}"
+                    f"/{decision.narrator_seat}: {gate_decision.reason} "
+                    f"eq_delta={gate_decision.eq_delta:.2f}",
+                    flush=True,
                 )
-                if not gate_decision.fire:
-                    print(
-                        f"[gate] skip seed={decision.seed}/{decision.declaration}"
-                        f"/{decision.narrator_seat}: {gate_decision.reason} "
-                        f"eq_delta={gate_decision.eq_delta:.2f}",
-                        flush=True,
-                    )
-                    continue
+                continue
+            firing.append((j, rec, decision, gate_decision))
+        print(f"[gate] losses_to_consider={len(losses)} firing={len(firing)}")
 
-                attempts: list[AttemptSummary] = [AttemptSummary(
-                    committed_play=rec["final_play"],
-                    legal=rec["final_play_legal"],
-                    eq=rec["burl_eq"],
-                    retry_exhausted=bool(rec.get("retry_exhausted", False)),
-                )]
-                last_trace: BurlTrace | None = None
-                last_record: dict[str, Any] | None = None
-
-                for gi in range(1, max_gate_retries + 1):
-                    nudge = gate_feedback_prompt(gate_variant, attempt_idx=gi)
-                    print(
-                        f"[gate] ({j+1}/{len(losses)}) seed={decision.seed} "
-                        f"decl={decision.declaration} seat={decision.narrator_seat} "
-                        f"attempt={gi}/{max_gate_retries} variant={gate_variant} "
-                        f"eq_delta={gate_decision.eq_delta:.2f}",
-                        flush=True,
-                    )
-                    t0 = time.time()
-                    g_trace, g_exhausted = _gate_one(
-                        decision, model_fn, nudge, max_turns, max_retries,
-                        enable_rules_tools=enable_rules_tools,
-                        enable_primer=enable_primer,
-                    )
-                    elapsed = time.time() - t0
-                    g_record = _build_record(decision, g_trace, g_exhausted, elapsed)
-                    g_record["category"] = _classify(g_record)
-                    g_record["gate_attempt"] = gi
-                    g_record["gate_variant"] = gate_variant
-                    last_trace = g_trace
-                    last_record = g_record
-
-                    attempts.append(AttemptSummary(
-                        committed_play=g_record["final_play"],
-                        legal=g_record["final_play_legal"],
-                        eq=g_record["burl_eq"],
-                        retry_exhausted=bool(g_record.get("retry_exhausted", False)),
-                    ))
-
-                    trace_out.write(g_trace.to_json() + "\n")
-                    trace_out.flush()
-
-                    print(
-                        f"       final={g_record['final_play']} legal={g_record['final_play_legal']} "
-                        f"retries={g_record['n_retries']} tools={g_record['n_tool_calls']} "
-                        f"elapsed={elapsed:.1f}s",
-                        flush=True,
-                    )
-
-                    if attempts[-1].committed_play == int(decision.bot_play):
-                        break
-                    if attempts[-1].retry_exhausted:
-                        break
-
-                verdict = classify_rationalization(attempts, int(decision.bot_play))
-                print(f"[gate] verdict={verdict}", flush=True)
-                gate_records.append({
+        async def _gate_chain(
+            j: int, rec: dict, decision: BurlDecision, gate_decision: Any,
+        ) -> dict[str, Any]:
+            """Run one loss through up to `max_gate_retries` feedback rounds."""
+            attempts_local: list[AttemptSummary] = [AttemptSummary(
+                committed_play=rec["final_play"],
+                legal=rec["final_play_legal"],
+                eq=rec["burl_eq"],
+                retry_exhausted=bool(rec.get("retry_exhausted", False)),
+            )]
+            last_trace_local: BurlTrace | None = None
+            last_record_local: dict[str, Any] | None = None
+            turn_logs: list[str] = []
+            for gi in range(1, max_gate_retries + 1):
+                nudge = gate_feedback_prompt(gate_variant, attempt_idx=gi)
+                turn_logs.append(
+                    f"[gate] ({j+1}/{len(losses)}) seed={decision.seed} "
+                    f"decl={decision.declaration} seat={decision.narrator_seat} "
+                    f"attempt={gi}/{max_gate_retries} variant={gate_variant} "
+                    f"eq_delta={gate_decision.eq_delta:.2f}"
+                )
+                t0 = time.time()
+                g_trace, g_exhausted = await asyncio.to_thread(
+                    _gate_one,
+                    decision, model_fn, nudge, max_turns, max_retries,
+                    enable_rules_tools,
+                    enable_primer,
+                )
+                elapsed = time.time() - t0
+                g_record = _build_record(decision, g_trace, g_exhausted, elapsed)
+                g_record["category"] = _classify(g_record)
+                g_record["gate_attempt"] = gi
+                g_record["gate_variant"] = gate_variant
+                last_trace_local = g_trace
+                last_record_local = g_record
+                attempts_local.append(AttemptSummary(
+                    committed_play=g_record["final_play"],
+                    legal=g_record["final_play_legal"],
+                    eq=g_record["burl_eq"],
+                    retry_exhausted=bool(g_record.get("retry_exhausted", False)),
+                ))
+                turn_logs.append(
+                    f"       final={g_record['final_play']} legal={g_record['final_play_legal']} "
+                    f"retries={g_record['n_retries']} tools={g_record['n_tool_calls']} "
+                    f"elapsed={elapsed:.1f}s"
+                )
+                if attempts_local[-1].committed_play == int(decision.bot_play):
+                    break
+                if attempts_local[-1].retry_exhausted:
+                    break
+            verdict = classify_rationalization(attempts_local, int(decision.bot_play))
+            turn_logs.append(f"[gate] verdict={verdict}")
+            return {
+                "logs": turn_logs,
+                "trace": last_trace_local,
+                "gate_record": {
                     "decision_meta": {
                         "seed": int(decision.seed),
                         "declaration": int(decision.declaration),
@@ -502,19 +531,34 @@ def run_star_rollout(
                         "bot_play": int(decision.bot_play),
                         "bot_eq": float(decision.bot_eq),
                     },
-                    "attempts": [asdict(a) for a in attempts],
+                    "attempts": [asdict(a) for a in attempts_local],
                     "verdict": verdict,
-                    "trace": last_trace,
-                    "record": last_record,
+                    "trace": last_trace_local,
+                    "record": last_record_local,
                     "eq_delta": gate_decision.eq_delta,
-                })
+                },
+            }
+
+        with gate_traces_path.open("w") as trace_out:
+            for batch_start in range(0, len(firing), concurrency):
+                batch = firing[batch_start : batch_start + concurrency]
+                batch_results = await asyncio.gather(
+                    *[_gate_chain(j, rec, dec, gd) for (j, rec, dec, gd) in batch]
+                )
+                for out in batch_results:
+                    for line in out["logs"]:
+                        print(line, flush=True)
+                    if out["trace"] is not None:
+                        trace_out.write(out["trace"].to_json() + "\n")
+                        trace_out.flush()
+                    gate_records.append(out["gate_record"])
 
                 wall_so_far = time.time() - wall_start
                 est_so_far = wall_so_far / 3600.0 * L4_USD_PER_HOUR
                 if est_so_far > cost_cap_usd:
                     print(
                         f"[STOP] est ${est_so_far:.2f} > cap ${cost_cap_usd:.2f} "
-                        f"after {j+1} gated decisions",
+                        f"after {batch_start + len(batch)} gated decisions",
                         flush=True,
                     )
                     break
@@ -724,9 +768,18 @@ def _main() -> None:
             "no rules-as-tools). Mutually exclusive with --enable-rules-tools."
         ),
     )
+    parser.add_argument(
+        "--concurrency", type=int, default=1,
+        help=(
+            "Max decisions in flight against the endpoint at once. "
+            "Default 1 (sequential, backwards-compatible). Modal's vLLM "
+            "endpoint currently runs with max_inputs=4, so 4 is the useful "
+            "ceiling; above that the scheduler will queue."
+        ),
+    )
     args = parser.parse_args()
 
-    run_star_rollout(
+    asyncio.run(run_star_rollout(
         dataset_path=args.dataset,
         out_dir=args.out_dir,
         corpus_path=args.corpus,
@@ -739,7 +792,8 @@ def _main() -> None:
         eq_epsilon=args.eq_epsilon,
         enable_rules_tools=args.enable_rules_tools,
         enable_primer=not args.no_primer,
-    )
+        concurrency=args.concurrency,
+    ))
 
 
 if __name__ == "__main__":
