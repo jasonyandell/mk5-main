@@ -545,14 +545,31 @@ def render_native_messages(
     hand: Iterable[int],
     visible_history: Iterable[tuple[int, ...]],
     enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> tuple[str, str]:
     """Return (system_content, user_content) for the native chat template.
 
-    When ``enable_rules_tools`` is True, the system message uses the compact
-    ``_RULES_AS_TOOLS_PREAMBLE`` (which advertises the 4 rules tools instead
-    of the trimmed primer). The 42-framing block is unchanged either way —
-    iter-1 evidence says it is net positive regardless of the primer mode.
+    Three prompt shapes are supported:
+
+    - ``enable_primer=True, enable_rules_tools=False`` (default / iter-1
+      shape) — ``_SYSTEM_PREAMBLE`` + ``_TRIMMED_PRIMER`` + 42-framing.
+    - ``enable_primer=True, enable_rules_tools=True`` (iter-3-rules
+      shape) — ``_SYSTEM_PREAMBLE`` + ``_RULES_AS_TOOLS_PREAMBLE`` +
+      42-framing.
+    - ``enable_primer=False, enable_rules_tools=False`` (spike-v2 /
+      iter-3-v2 shape) — ``_SYSTEM_PREAMBLE`` + 42-framing only.
+
+    The combo ``enable_primer=False, enable_rules_tools=True`` is
+    rejected: rules-as-tools is itself a primer, so switching the
+    primer off while turning rules-as-tools on is incoherent. The
+    42-framing block is unchanged across all valid modes — iter-1
+    evidence says it is net positive.
     """
+    if enable_rules_tools and not enable_primer:
+        raise ValueError(
+            "enable_rules_tools=True requires enable_primer=True: "
+            "the rules-as-tools preamble IS a primer."
+        )
     decl = engine_tools.trump_declared(game_state)
     leader = getattr(game_state, "trick_leader", None)
     if leader is None:
@@ -578,15 +595,23 @@ def render_native_messages(
     )
     hand_list = list(hand)
 
-    rules_block = _RULES_AS_TOOLS_PREAMBLE if enable_rules_tools else _TRIMMED_PRIMER
-
-    system = (
-        _SYSTEM_PREAMBLE
-        + "\n\n"
-        + rules_block
-        + "\n\n# Current decision — 42-aware context\n\n"
-        + _render_42_framing(game_state, me_abs, hand_list)
-    )
+    if enable_primer:
+        rules_block = (
+            _RULES_AS_TOOLS_PREAMBLE if enable_rules_tools else _TRIMMED_PRIMER
+        )
+        system = (
+            _SYSTEM_PREAMBLE
+            + "\n\n"
+            + rules_block
+            + "\n\n# Current decision — 42-aware context\n\n"
+            + _render_42_framing(game_state, me_abs, hand_list)
+        )
+    else:
+        system = (
+            _SYSTEM_PREAMBLE
+            + "\n\n# Current decision — 42-aware context\n\n"
+            + _render_42_framing(game_state, me_abs, hand_list)
+        )
 
     user = (
         f"declaration: {decl}\n"
@@ -611,15 +636,17 @@ def run_decision_native(
     max_turns: int = 8,
     max_retries: int = 3,
     enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> BurlTrace:
     """Native-format counterpart to ``agent_runner.run_decision``.
 
     ``native_model`` is ``(messages, tools) -> str``; the Modal adapter wraps
     ``GemmaServerNative.generate_native.remote``.
 
-    When ``enable_rules_tools`` is True, the compact rules-as-tools preamble
-    replaces the trimmed primer, the four rules tools are registered, and
-    their JSON schemas are appended to the tool menu Gemma sees.
+    Three prompt shapes (see ``render_native_messages`` for details):
+    default iter-1, iter-3-rules (``enable_rules_tools=True``), and
+    iter-3-v2 / spike-v2 (``enable_primer=False``). The incoherent combo
+    ``enable_primer=False, enable_rules_tools=True`` raises ValueError.
     """
     me_abs = _current_player(game_state)
     hand_remaining = [d for d in game_state.hands[me_abs] if d not in game_state.played]
@@ -630,6 +657,7 @@ def run_decision_native(
         hand_remaining,
         history,
         enable_rules_tools=enable_rules_tools,
+        enable_primer=enable_primer,
     )
     tools = build_tool_registry(
         game_state_provider=lambda: game_state,

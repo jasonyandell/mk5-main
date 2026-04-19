@@ -216,6 +216,109 @@ def test_preamble_is_compact():
 
 
 # --------------------------------------------------------------------------- #
+# Primer-off mode (spike-v2 / iter-3-v2 shape)                                 #
+# --------------------------------------------------------------------------- #
+
+
+def test_prompt_primer_off_drops_both_primer_and_rules_preamble(decision_state):
+    """enable_primer=False: system message has 42-framing but neither the
+    trimmed primer nor the rules-as-tools preamble."""
+    me = _current_player(decision_state)
+    hand = [d for d in decision_state.hands[me] if d not in decision_state.played]
+    history = _visible_history(decision_state)
+    system, _user = render_native_messages(
+        decision_state, hand, history, enable_primer=False,
+    )
+
+    # Primer / rules preamble markers both absent.
+    assert "How trump works" not in system
+    assert "Following suit" not in system
+    assert "rule-answering tools" not in system
+    assert "what_beats_what" not in system
+    assert _TRIMMED_PRIMER.splitlines()[0] not in system
+    assert _RULES_AS_TOOLS_PREAMBLE.splitlines()[0] not in system
+    # 42-framing still present.
+    assert "Texas 42 framing" in system
+
+
+def test_three_mode_matrix_renders_distinct_system_strings(decision_state):
+    """default / rules-on / primer-off produce three distinct system strings,
+    but share the same 42-framing tail."""
+    me = _current_player(decision_state)
+    hand = [d for d in decision_state.hands[me] if d not in decision_state.played]
+    history = _visible_history(decision_state)
+
+    sys_default, _ = render_native_messages(decision_state, hand, history)
+    sys_rules, _ = render_native_messages(
+        decision_state, hand, history, enable_rules_tools=True,
+    )
+    sys_no_primer, _ = render_native_messages(
+        decision_state, hand, history, enable_primer=False,
+    )
+
+    # Three distinct shapes.
+    assert sys_default != sys_rules
+    assert sys_default != sys_no_primer
+    assert sys_rules != sys_no_primer
+
+    # Ordering of length: no_primer < default, no_primer < rules.
+    assert len(sys_no_primer) < len(sys_default)
+    assert len(sys_no_primer) < len(sys_rules)
+
+    # 42-framing tail is byte-identical across all three.
+    marker = "=== Texas 42 framing ==="
+    tail_default = sys_default.split(marker, 1)[1]
+    tail_rules = sys_rules.split(marker, 1)[1]
+    tail_no_primer = sys_no_primer.split(marker, 1)[1]
+    assert tail_default == tail_rules == tail_no_primer
+
+
+def test_primer_off_with_rules_tools_true_raises(decision_state):
+    """The incoherent combo is rejected loudly rather than silently
+    rendering a shape no-one designed."""
+    me = _current_player(decision_state)
+    hand = [d for d in decision_state.hands[me] if d not in decision_state.played]
+    history = _visible_history(decision_state)
+    with pytest.raises(ValueError, match="enable_primer=True"):
+        render_native_messages(
+            decision_state, hand, history,
+            enable_primer=False, enable_rules_tools=True,
+        )
+
+
+def test_run_decision_native_threads_enable_primer(decision_state):
+    """run_decision_native must propagate enable_primer=False so that the
+    stub model sees a system message with no primer text."""
+    state = new_game(seed=2026, skip_bidding=True)
+    me = _current_player(state)
+    hand = [d for d in state.hands[me] if d not in state.played]
+    target = int(hand[0])
+
+    captured_system: list[str] = []
+    script = iter([
+        f'<|tool_call>{{"name":"commit_play","arguments":{{"domino_id":{target}}}}}<tool_call|>',
+    ])
+
+    def stub(messages: list[dict], tools: list[dict]) -> str:
+        for m in messages:
+            if m.get("role") == "system":
+                captured_system.append(m["content"])
+                break
+        return next(script)
+
+    trace = run_decision_native(
+        state, stub, max_turns=4, max_retries=2, enable_primer=False,
+    )
+
+    assert trace.final_play == target
+    assert captured_system, "stub never saw a system message"
+    system = captured_system[0]
+    assert "How trump works" not in system
+    assert "rule-answering tools" not in system
+    assert "Texas 42 framing" in system
+
+
+# --------------------------------------------------------------------------- #
 # End-to-end: stub model drives a decision with flag=True                      #
 # --------------------------------------------------------------------------- #
 
