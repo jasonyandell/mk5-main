@@ -100,6 +100,7 @@ def _loop(
     max_retries: int,
     cost_cap_usd: float | None,
     enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> list[dict[str, Any]]:
     traces_path = out_dir / "traces.jsonl"
     already_done = _completed_keys(traces_path)
@@ -129,6 +130,7 @@ def _loop(
                     max_turns=max_turns,
                     max_retries=max_retries,
                     enable_rules_tools=enable_rules_tools,
+                    enable_primer=enable_primer,
                 )
             except RetryExhausted as exc:
                 retry_exhausted = True
@@ -196,6 +198,7 @@ def run_move4_spike(
     cost_cap_usd: float | None = 0.50,
     adapter_name: str | None = None,
     enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> Move3Report:
     dataset_path = Path(dataset_path)
     if out_dir is None:
@@ -214,7 +217,7 @@ def run_move4_spike(
     print(f"[move4-spike] out_dir={out_dir}")
     if adapter_name:
         print(f"[move4-spike] adapter_name={adapter_name}")
-    print(f"[move4-spike] enable_rules_tools={enable_rules_tools}")
+    print(f"[move4-spike] enable_rules_tools={enable_rules_tools} enable_primer={enable_primer}")
 
     wall_start = time.time()
     if model_source == "stub":
@@ -222,6 +225,7 @@ def run_move4_spike(
             dataset, model_source, _make_stub_native_model,
             out_dir, max_turns, max_retries, cost_cap_usd=None,
             enable_rules_tools=enable_rules_tools,
+            enable_primer=enable_primer,
         )
     elif model_source == "modal":
         from burl.modal.gemma_serve_native import GemmaServerNative, app as gemma_app
@@ -235,6 +239,7 @@ def run_move4_spike(
                 dataset, model_source, factory,
                 out_dir, max_turns, max_retries, cost_cap_usd=cost_cap_usd,
                 enable_rules_tools=enable_rules_tools,
+                enable_primer=enable_primer,
             )
     else:
         raise ValueError(f"unknown model_source: {model_source!r}")
@@ -318,6 +323,7 @@ def debug_one(
     max_turns: int = 8,
     max_retries: int = 3,
     enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> None:
     dataset_path = Path(dataset_path)
     dataset = load_dataset(dataset_path)
@@ -347,6 +353,7 @@ def debug_one(
                 decision.game_state, model_fn,
                 max_turns=max_turns, max_retries=max_retries,
                 enable_rules_tools=enable_rules_tools,
+                enable_primer=enable_primer,
             )
         except RetryExhausted as exc:
             retry_exhausted = True
@@ -444,6 +451,15 @@ def _main() -> None:
             "match the adapter's training-time prompt shape."
         ),
     )
+    parser.add_argument(
+        "--no-primer", action="store_true",
+        help=(
+            "iter-3-v2 lever: drop the trimmed Texas-42 primer entirely "
+            "(spike-v2 prompt shape — system = preamble + 42-framing only, "
+            "no rules-as-tools). Must match the adapter's training-time "
+            "prompt shape. Mutually exclusive with --enable-rules-tools."
+        ),
+    )
     args = parser.parse_args()
 
     if args.debug_one:
@@ -454,6 +470,7 @@ def _main() -> None:
             max_turns=args.max_turns,
             max_retries=args.max_retries,
             enable_rules_tools=args.enable_rules_tools,
+            enable_primer=not args.no_primer,
         )
         return
 
@@ -468,6 +485,7 @@ def _main() -> None:
         cost_cap_usd=args.cost_cap_usd,
         adapter_name=args.adapter,
         enable_rules_tools=args.enable_rules_tools,
+        enable_primer=not args.no_primer,
     )
 
 
