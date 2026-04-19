@@ -27,6 +27,7 @@ import modal
 
 MODEL_ID = "google/gemma-4-E2B-it"
 MODELS_VOL = "/model-cache"
+ADAPTERS_VOL = "/adapter-cache"
 
 # Distinct app name — safe to run concurrently with `burl-gemma-serve`.
 app = modal.App("burl-gemma-serve-native")
@@ -42,12 +43,13 @@ gemma_image = (
 )
 
 vol = modal.Volume.from_name("gemma-e2b-cache", create_if_missing=True)
+adapter_vol = modal.Volume.from_name("burl-adapter-cache", create_if_missing=True)
 
 
 @app.cls(
     gpu="L4",
     image=gemma_image,
-    volumes={MODELS_VOL: vol},
+    volumes={MODELS_VOL: vol, ADAPTERS_VOL: adapter_vol},
     secrets=[modal.Secret.from_name("huggingface-secret")],
     timeout=1800,
 )
@@ -62,8 +64,13 @@ class GemmaServerNative:
         from vllm import LLM
 
         self._gen_lock = threading.Lock()
+        self._adapters: dict = {}  # name -> LoRARequest
+        self._next_lora_id = 1
         t0 = time.time()
         print(f"[gemma-native] Loading vLLM engine for {MODEL_ID}...")
+        # Override architecture to coerce vLLM into the text-only loader.
+        # vLLM 0.19 refuses LoRA on `Gemma4ForConditionalGeneration` (multimodal),
+        # so we force the text-only Gemma4 class — we don't use vision/audio anyway.
         self.llm = LLM(
             model=MODEL_ID,
             dtype="bfloat16",
@@ -72,9 +79,34 @@ class GemmaServerNative:
             enforce_eager=True,
             trust_remote_code=True,
             limit_mm_per_prompt={"image": 0, "video": 0, "audio": 0},
+            enable_lora=True,
+            max_loras=4,
+            max_lora_rank=16,
+            hf_overrides={"architectures": ["Gemma4ForCausalLM"]},
         )
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
         print(f"[gemma-native] Ready in {time.time() - t0:.1f}s")
+
+    def _resolve_adapter(self, adapter_name: str):
+        """Return a cached LoRARequest, downloading the adapter on first hit."""
+        from huggingface_hub import snapshot_download
+        from vllm.lora.request import LoRARequest
+
+        cached = self._adapters.get(adapter_name)
+        if cached is not None:
+            return cached
+
+        adapter_repo = f"jasonyandell/gemma-4-e2b-texas42-{adapter_name}"
+        local_dir = f"{ADAPTERS_VOL}/{adapter_name}"
+        print(f"[gemma-native] Downloading adapter {adapter_repo} -> {local_dir}")
+        local_path = snapshot_download(adapter_repo, local_dir=local_dir)
+        lora_id = self._next_lora_id
+        self._next_lora_id += 1
+        req = LoRARequest(adapter_name, lora_id, local_path)
+        self._adapters[adapter_name] = req
+        adapter_vol.commit()
+        print(f"[gemma-native] Adapter '{adapter_name}' loaded as lora_id={lora_id}")
+        return req
 
     @modal.method()
     def generate_native(
@@ -85,6 +117,7 @@ class GemmaServerNative:
         temperature: float = 0.6,
         stop: list[str] | None = None,
         enable_thinking: bool = False,
+        adapter_name: str | None = None,
     ) -> dict:
         """Native Gemma 4 tool-use generation.
 
@@ -119,9 +152,15 @@ class GemmaServerNative:
             skip_special_tokens=False,
         )
 
+        lora_request = (
+            self._resolve_adapter(adapter_name) if adapter_name else None
+        )
+
         t0 = time.time()
         with self._gen_lock:
-            outputs = self.llm.generate([formatted], params)
+            outputs = self.llm.generate(
+                [formatted], params, lora_request=lora_request,
+            )
         elapsed = time.time() - t0
 
         out = outputs[0].outputs[0]
@@ -187,6 +226,46 @@ def warmup() -> None:
     print(result["prompt_text"])
     print("-" * 60)
     print(f"[warmup] raw completion ({len(result['text'])} chars):")
+    print("-" * 60)
+    print(result["text"])
+    print("-" * 60)
+
+
+@app.local_entrypoint(name="adapter_smoke")
+def adapter_smoke(adapter: str = "burl-iter0") -> None:
+    """Cold-start verify: load + one generate routed through the LoRA adapter."""
+    import time
+
+    server = GemmaServerNative()
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "trump_declared",
+                "description": "Return the trump suit for this hand.",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        },
+    ]
+    messages = [
+        {
+            "role": "user",
+            "content": (
+                "I'm playing Texas 42. Call trump_declared() so you know what's "
+                "trump. Emit one tool call, then stop."
+            ),
+        }
+    ]
+    t0 = time.time()
+    print(f"[adapter_smoke] dispatching with adapter_name={adapter!r}...")
+    result = server.generate_native.remote(
+        messages, tools=tools, max_tokens=256, adapter_name=adapter,
+    )
+    total = time.time() - t0
+    print("=" * 60)
+    print(f"[adapter_smoke] End-to-end: {total:.1f}s (cold start + adapter pull)")
+    print(f"[adapter_smoke] n_tokens: {result['n_tokens']}")
+    print(f"[adapter_smoke] completion ({len(result['text'])} chars):")
     print("-" * 60)
     print(result["text"])
     print("-" * 60)

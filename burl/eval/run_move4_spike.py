@@ -69,12 +69,17 @@ def _make_stub_native_model(decision: BurlDecision) -> NativeModelCallable:
     return call
 
 
-def _make_modal_native_model(server: Any, max_tokens: int = 2048) -> NativeModelCallable:
+def _make_modal_native_model(
+    server: Any,
+    max_tokens: int = 2048,
+    adapter_name: str | None = None,
+) -> NativeModelCallable:
     """Remote-Gemma native adapter. Caller holds ``server`` inside ``app.run()``."""
     def call(messages: list[dict], tools: list[dict]) -> str:
         result = server.generate_native.remote(
             messages, tools=tools, max_tokens=max_tokens,
             temperature=0.6, enable_thinking=False,
+            adapter_name=adapter_name,
         )
         # The server returns {"text", "prompt_text", "n_tokens"}; we only need text.
         return result["text"]
@@ -187,6 +192,7 @@ def run_move4_spike(
     max_turns: int = 8,
     max_retries: int = 3,
     cost_cap_usd: float | None = 0.50,
+    adapter_name: str | None = None,
 ) -> Move3Report:
     dataset_path = Path(dataset_path)
     if out_dir is None:
@@ -203,6 +209,8 @@ def run_move4_spike(
 
     print(f"[move4-spike] dataset={dataset_path} n={len(dataset)} source={model_source}")
     print(f"[move4-spike] out_dir={out_dir}")
+    if adapter_name:
+        print(f"[move4-spike] adapter_name={adapter_name}")
 
     wall_start = time.time()
     if model_source == "stub":
@@ -215,7 +223,9 @@ def run_move4_spike(
         print("[move4-spike] opening modal app context (ephemeral)...")
         with gemma_app.run():
             server = GemmaServerNative()
-            factory = lambda _dec: _make_modal_native_model(server)  # noqa: E731
+            factory = lambda _dec: _make_modal_native_model(  # noqa: E731
+                server, adapter_name=adapter_name,
+            )
             records = _loop(
                 dataset, model_source, factory,
                 out_dir, max_turns, max_retries, cost_cap_usd=cost_cap_usd,
@@ -410,6 +420,11 @@ def _main() -> None:
     parser.add_argument("--max-turns", type=int, default=8)
     parser.add_argument("--max-retries", type=int, default=3)
     parser.add_argument("--cost-cap-usd", type=float, default=0.50)
+    parser.add_argument(
+        "--adapter", type=str, default=None,
+        help="LoRA adapter alias (e.g. 'burl-iter0'); resolves to "
+             "jasonyandell/gemma-4-e2b-texas42-<adapter>",
+    )
     parser.add_argument("--debug-one", action="store_true")
     args = parser.parse_args()
 
@@ -432,6 +447,7 @@ def _main() -> None:
         max_turns=args.max_turns,
         max_retries=args.max_retries,
         cost_cap_usd=args.cost_cap_usd,
+        adapter_name=args.adapter,
     )
 
 
