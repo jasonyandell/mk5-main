@@ -581,3 +581,210 @@ epochs at a low LR with a short warmup is probably the right ask**
 rather than many epochs, to avoid overfitting to what is effectively a
 hand-curated distillation set. Phase 4 eval should reuse these 50
 held-out seeds so we have an apples-to-apples before/after.
+
+
+## Phase 4: burl-iter0 eval (2026-04-19)
+
+### Numbers
+
+Same N=10 held-out decisions used for spike v2 and Layer 1
+(`burl/eval/data/move3_decisions.jsonl`, first 10 entries). Same
+endpoint shape (`gemma_serve_native.py` on Modal L4), now serving the
+trained LoRA.
+
+| metric | spike v2 | Layer 1 (primer+framing) | burl-iter0 |
+|---|---|---|---|
+| bot_match_rate | 88.9% | 70.0% | **60.0%** |
+| p_eq_geq_bot | 88.9% | 70.0% | **60.0%** |
+| mean_eq_delta | -1.92 | -3.00 | **-3.33** |
+| empty_tool_rollouts | 0.0% | 20.0% | **10.0%** |
+| legal_rate | 100.0% | 100.0% | 100.0% |
+| tool histogram | is_legal:20, eq:15, trump_declared:9 | is_legal:13, eq:2, is_trump:2 | **is_legal:16, eq:2, is_trump:2** |
+| mean tokens in / decision | 13.6 K | 35.3 K | 39.8 K |
+| mean tokens out / decision | 1.5 K | 5.5 K | 5.6 K |
+| wall time | 246 s | 683 s | 1877 s |
+| cost (Modal L4) | $0.05 | $0.15 | $0.42 |
+
+Phase 4 budget: $0.50 cap, $0.43 spent (warmups + eval).
+
+### Verdict — neither recovery nor stasis: a regression
+
+Iter-0 falls below the very baseline whose corpus generated it.
+Bot-match drops 10 points relative to Layer 1 (60% vs 70%); the tool
+vocabulary stays trapped in the `is_legal`-heavy shape rather than
+recovering spike v2's eq-rich pattern (only 2 of 20 non-commit tool
+calls in iter-0 hit `eq_outcome_distribution`); and one
+catastrophic-loss decision tanks `mean_eq_delta` below Layer 1.
+
+Per Phase 4's success criteria, this lands squarely in the **"≥5pp
+regression — stop and diagnose"** bucket.
+
+The empty-tool-rollout rate did improve (20% → 10%), but only because
+that single rollout (decision 7) happened to commit the bot's play
+without any reasoning at all — a 50/50 guess on a 2-legal-play
+position that happened to land. The improvement is illusory.
+
+### What actually changed about Gemma's outputs
+
+The infra path is fine. Both base and adapter emit well-formed
+`<|tool_call>call:NAME{ARGS}<tool_call|>` syntax over vLLM 0.19's
+LoRA path (with `hf_overrides={"architectures":["Gemma4ForCausalLM"]}`
+to coerce the text-only loader, since the multimodal class refuses
+LoRA in 0.19 — the same dead end LEM hit; see `lem/OVERVIEW.md:246`).
+The regression is in **judgment**, not format.
+
+The adapter has clearly absorbed the Layer-1 corpus's reasoning shape:
+
+- **Long, rambly thoughts.** All three sampled traces produce
+  ~3 K-character `<|channel>thought` blocks with extensive game-state
+  re-derivation, even though the same state was already given in the
+  user message. The adapter has learned to reason at length before
+  doing anything.
+- **`is_legal` as security blanket.** 16 of 20 non-commit tool calls
+  are `is_legal`. The model checks legality for both dominoes when
+  there are exactly two legal plays — adding zero information beyond
+  what the prompt's `your hand` line already implies — and then
+  commits one of them. This is a near-perfect mirror of Layer 1's
+  pattern (13/17 = 76%), now baked in.
+- **`eq_outcome_distribution` survived but is muted.** Two calls in
+  ten decisions; spike v2 made 15 in ten. Adapter has *not* recovered
+  the eq-rich reasoning style.
+- **Emergent quirk:** when iter-0 *does* call eq, it asks for
+  `n_samples=1000` (decision 3) instead of the default 10. The
+  rationalization corpus probably contained traces with the larger
+  sample count; the adapter learned that as the convention.
+
+### Three sampled traces
+
+#### Match — decision 3 (decl=ones, seat=3, hand=[15, 23], bot=15)
+
+```
+turn 0  (3 493-char thought + 1 tool call)
+  thought: rederives partnership, role, hand, history; concludes
+           "I will use eq_outcome_distribution to see statistical
+           likelihood of success."
+  tool: eq_outcome_distribution(play=15, n_samples=1000)
+        → mean=-10.02, p_make=0.36, stdev=19.6
+turn 1  (1 tool call)
+  tool: is_legal(15) → legal=True
+turn 2  (commit)
+  tool: commit_play(15)            ✓ bot also plays 15
+```
+
+This is the adapter's "good" pattern: `eq` once, then `is_legal`,
+then commit. The reasoning is verbose but lands correctly. Note the
+`n_samples=1000` — emergent from the rationalization corpus, not the
+default. With only two legal plays the model could have picked either
+and matched the bot 50% of the time, but the eq-call did at least
+constitute *grounding* in the outcome distribution.
+
+#### Miss — decision 6 (decl=twos, seat=3, hand=[9, 27], bot=9)
+
+```
+turn 0  (3 191-char thought)
+  thought: enumerates options. Correctly notes "9 (3-3) is not
+           trump" and "27 (6-6) is not trump" under twos.
+  tool: is_legal(9) → legal=True
+turn 1  (is_legal again)
+  tool: is_legal(27) → legal=True
+turn 2  (2 990-char thought + commit)
+  thought: REVERSES itself mid-trace — "27 is a double, is doubles
+           trump? Since twos are trump, doubles are trump. So 27 is
+           trump." This is a comprehension error — under any pip
+           declaration (twos, fives, etc.) doubles are not their
+           own trump suit; only dominoes containing the called pip
+           are trump.
+  tool: commit_play(27)            ✗ bot plays 9, eq_delta = -24.81
+```
+
+Diagnostic: the **adapter did not fix the comprehension hole** the
+primer was added to address. Worse, it confidently re-asserts an
+incorrect rule mid-trace. Decision 6 alone shifts the run's
+mean_eq_delta from ~-1.0 to -3.33; without it, iter-0 looks much closer
+to Layer 1.
+
+#### Interesting — decision 7 (decl=threes, seat=3, hand=[15, 16], bot=15) — zero tool calls
+
+```
+turn 0  (3 928-char thought + commit)
+  thought: states "I can check if my hand contains any trump using
+           is_trump" — then never calls is_trump. Reasons about what
+           the call would return ("is_trump(15) = False, is_trump(16)
+           = False"). Concludes "Since both are 5-x, they are medium
+           value. I will pick one. Let's pick 15."
+  tool: commit_play(15)            ✓ bot also plays 15 (lucky)
+```
+
+This is the failure mode the empty-tool-rate metric is meant to flag,
+and iter-0 still does it. The adapter has learned to *think about*
+calling tools but commits without actually grounding. The 50/50 luck
+that rescued this trace is the only reason the bot-match number
+isn't 50% instead of 60%.
+
+### Diagnosis (ranked by likelihood)
+
+1. **Corpus shape inherited Layer 1's pathology.** The 50-row STaR
+   corpus in `burl/data/star_iter0_corpus.jsonl` came from rollouts
+   on the primer+framing run, where the base model was already
+   eq-shy and is_legal-heavy. K1-filtered rollouts from a 70%
+   baseline preserve that shape; rationalizations were prompted from
+   the same base model with the same primer. Iter-0 is essentially
+   "Layer 1's pathology, now without the post-train option to
+   prompt-engineer it back." The adapter is a faithful student of a
+   corpus we should have generated from a healthier base.
+
+2. **The primer is too long for a 2 B-class model on a single
+   decision.** mean_tokens_in ≈ 40 K with the primer; spike v2 (no
+   primer, 13.6 K) hit 88.9%. Long-context attention is the most
+   expensive thing Gemma 4 E2B does at inference; the rules text is
+   probably stealing budget from the actual decision.
+
+3. **Adapter capacity / epochs are not the bottleneck.** The adapter
+   *did* learn — token_acc went 3.5% → 29.5% on training data — and
+   the syntax is clean. The traces look like Layer 1, not like a
+   half-trained babble. So this isn't an under-training problem.
+   It's a "we trained on the wrong thing" problem.
+
+### Recommendation for iter-1
+
+Single highest-leverage change first:
+
+- **Drop or aggressively trim the primer.** Spike v2 reached 88.9%
+  with no primer at all. Layer 1 added the full primer and lost
+  ~19 pp. Iter-0 trained on Layer 1's traces and held the loss.
+  Strongest single hypothesis: the primer is a net negative at this
+  scale. Test by re-running both spike v2 prompt shape and a
+  primer-trimmed variant on the same N=10 before any further
+  training.
+
+Then, if and only if a primer-trimmed base recovers ≥85% bot-match:
+
+- **Re-harvest the STaR corpus from the spike v2 prompt shape**, not
+  from Layer 1. K1 traces from a 70% baseline are partly luck; K1
+  traces from an 88% baseline are signal. Expect a higher
+  rationalization-yield per rollout because the base model is
+  reasoning more competently.
+- Optionally wire `game_summary()` (already in `burl/tools/engine.py`)
+  to give the model a single grounded recap call, replacing some of
+  the primer's role at a fraction of the token cost.
+
+Lower priority:
+- Different epoch count / different K filter / different LR — the
+  problem isn't the optimizer, it's the corpus.
+- Wider tool surface (e.g. `conditional_outcome` exemplars) — the
+  current surface isn't being used well; more tools without first
+  fixing usage would only widen the failure modes.
+
+### Artifacts
+
+- Eval results: `burl/eval/results/move4_iter0_eval/{traces.jsonl, summary.json}`
+  (full N=10; `summary.json` rebuilt by `scratch/burl_p4/consolidate_summary.py`
+  because the resume pass had overwritten it with stats from only the 2
+  newly-completed records)
+- Endpoint changes: `burl/modal/gemma_serve_native.py` —
+  `enable_lora=True, max_loras=4, max_lora_rank=16`,
+  `hf_overrides={"architectures": ["Gemma4ForCausalLM"]}`,
+  adapter-cache Modal Volume, `_resolve_adapter()` snapshot_download
+  path, `adapter_smoke` entrypoint
+- Eval runner change: `burl/eval/run_move4_spike.py` — `--adapter` flag
+  threaded through to `_make_modal_native_model`
