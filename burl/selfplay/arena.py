@@ -150,11 +150,17 @@ async def run_arena_game(
     per_decision_budget_usd: float,
     total_budget_usd: float,
     out_dir: Path,
+    tag: str = "",
 ) -> dict[str, Any]:
-    """Run one full 28-turn Texas 42 hand; return a summary dict."""
+    """Run one full 28-turn Texas 42 hand; return a summary dict.
+
+    ``tag`` is appended to the output stems so that multiple runs against
+    the same seed (Haiku baseline vs Opus ceiling, etc.) do not clobber
+    each other. Pass ``""`` (default) for the plain ``seed_{SEED}`` shape.
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
-    jsonl_path = out_dir / f"seed_{seed}.jsonl"
-    md_path = out_dir / f"seed_{seed}.md"
+    jsonl_path = out_dir / f"seed_{seed}{tag}.jsonl"
+    md_path = out_dir / f"seed_{seed}{tag}.md"
 
     state = _zeb_state_from_deal(seed, decl_id, bidder=bidder)
     decl_name = engine_tools.trump_declared(state)
@@ -490,6 +496,12 @@ def _build_argparser() -> argparse.ArgumentParser:
         help="Used only to look up a default declaration for --seed",
     )
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    ap.add_argument(
+        "--tag",
+        type=str,
+        default="",
+        help='Suffix for output stems (e.g. "_opus"). Default "" → seed_{SEED}.jsonl',
+    )
     return ap
 
 
@@ -521,6 +533,7 @@ async def _amain() -> None:
         per_decision_budget_usd=float(args.per_decision_budget_usd),
         total_budget_usd=float(args.total_budget_usd),
         out_dir=Path(args.out_dir),
+        tag=str(args.tag),
     )
 
     print("\n[arena] game complete")
