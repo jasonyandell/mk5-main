@@ -48,8 +48,8 @@ from burl.harness.agent_runner import (
     build_tool_registry,
 )
 from burl.harness.agent_runner_native import (
-    TOOL_SCHEMAS,
     _COMMIT_INSTRUCTION,
+    build_tool_schemas,
     render_native_messages,
     run_decision_native,
 )
@@ -93,6 +93,8 @@ def _run_one_rollout(
     model_fn: NativeModelCallable,
     max_turns: int,
     max_retries: int,
+    enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> tuple[BurlTrace, bool]:
     """Wrap ``run_decision_native`` with the same defensive try/except the
     spike grader uses. Returns ``(trace, retry_exhausted)``."""
@@ -103,6 +105,8 @@ def _run_one_rollout(
             model_fn,
             max_turns=max_turns,
             max_retries=max_retries,
+            enable_rules_tools=enable_rules_tools,
+            enable_primer=enable_primer,
         )
     except RetryExhausted as exc:
         retry_exhausted = True
@@ -142,6 +146,8 @@ def _gate_one(
     nudge: str,
     max_turns: int,
     max_retries: int,
+    enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> tuple[BurlTrace, bool]:
     """Re-run Gemma with an EQ-gate nudge appended as a user message.
 
@@ -155,13 +161,18 @@ def _gate_one(
     history = _visible_history(decision.game_state)
     system_content, user_content = render_native_messages(
         decision.game_state, hand_remaining, history,
+        enable_rules_tools=enable_rules_tools,
+        enable_primer=enable_primer,
     )
 
-    tools = build_tool_registry(game_state_provider=lambda: decision.game_state)
+    tools = build_tool_registry(
+        game_state_provider=lambda: decision.game_state,
+        enable_rules_tools=enable_rules_tools,
+    )
     harness = NativeHarness(
         model_callable=model_fn,
         tools=tools,
-        tool_schemas=TOOL_SCHEMAS,
+        tool_schemas=build_tool_schemas(enable_rules_tools=enable_rules_tools),
         is_legal_fn=lambda s, d: engine_tools.is_legal(s, int(d)),
         commit_instruction=_COMMIT_INSTRUCTION,
         max_turns=max_turns,
@@ -237,8 +248,17 @@ def compose_sft_record(
     decision: BurlDecision,
     trace: BurlTrace,
     source: str,
+    *,
+    enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> dict[str, Any]:
-    """Build an HF-chat-format record plus provenance metadata."""
+    """Build an HF-chat-format record plus provenance metadata.
+
+    The corpus prompt shape MUST match the rollout prompt shape — if the
+    rollout ran with ``enable_primer=False`` (spike-v2 / iter-3-v2), the
+    record's ``user_text`` needs to be regenerated with the same flag so
+    training prompts match inference prompts at eval time.
+    """
     me_abs = _current_player(decision.game_state)
     hand_remaining = [
         d for d in decision.game_state.hands[me_abs] if d not in decision.game_state.played
@@ -246,6 +266,8 @@ def compose_sft_record(
     history = _visible_history(decision.game_state)
     system_content, user_content = render_native_messages(
         decision.game_state, hand_remaining, history,
+        enable_rules_tools=enable_rules_tools,
+        enable_primer=enable_primer,
     )
     user_text = f"[SYSTEM]\n{system_content}\n\n[USER]\n{user_content}"
     assistant_text = compose_assistant_content(trace)
@@ -308,6 +330,8 @@ def run_star_rollout(
     gate_variant: str = "tool-nudge",
     max_gate_retries: int = 1,
     eq_epsilon: float = 0.25,
+    enable_rules_tools: bool = False,
+    enable_primer: bool = True,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     corpus_path.parent.mkdir(parents=True, exist_ok=True)
@@ -320,7 +344,8 @@ def run_star_rollout(
     print(f"[star] corpus={corpus_path}")
     print(
         f"[star] gate_variant={gate_variant} max_gate_retries={max_gate_retries} "
-        f"eq_epsilon={eq_epsilon}"
+        f"eq_epsilon={eq_epsilon} enable_rules_tools={enable_rules_tools} "
+        f"enable_primer={enable_primer}"
     )
 
     rollout_traces_path = out_dir / "rollout_traces.jsonl"
@@ -351,6 +376,8 @@ def run_star_rollout(
                 t0 = time.time()
                 trace, exhausted = _run_one_rollout(
                     decision, model_fn, max_turns, max_retries,
+                    enable_rules_tools=enable_rules_tools,
+                    enable_primer=enable_primer,
                 )
                 elapsed = time.time() - t0
                 record = _build_record(decision, trace, exhausted, elapsed)
@@ -432,6 +459,8 @@ def run_star_rollout(
                     t0 = time.time()
                     g_trace, g_exhausted = _gate_one(
                         decision, model_fn, nudge, max_turns, max_retries,
+                        enable_rules_tools=enable_rules_tools,
+                        enable_primer=enable_primer,
                     )
                     elapsed = time.time() - t0
                     g_record = _build_record(decision, g_trace, g_exhausted, elapsed)
@@ -530,7 +559,29 @@ def run_star_rollout(
             tool_hist[name] += 1
     decl_hist = Counter(r["trace"].metadata["declaration"] for r in records)
 
+    gate_tool_hist: Counter[str] = Counter()
+    for g in gate_records:
+        trace = g.get("trace")
+        if trace is None:
+            continue
+        for turn in trace.turns:
+            for tc in turn.tool_calls:
+                gate_tool_hist[tc.tool_name] += 1
+
     verdict_hist = Counter(g["verdict"] for g in gate_records)
+
+    rules_tool_names = {
+        "count_dominoes_remaining",
+        "trick_winner_if",
+        "what_beats_what",
+        "contract_progress",
+    }
+    rollout_rules_tool_hist = {
+        n: c for n, c in tool_hist.items() if n in rules_tool_names
+    }
+    gate_rules_tool_hist = {
+        n: c for n, c in gate_tool_hist.items() if n in rules_tool_names
+    }
 
     stats = {
         "dataset_path": str(dataset_path),
@@ -542,6 +593,7 @@ def run_star_rollout(
             "max_gate_retries": max_gate_retries,
             "eq_epsilon": eq_epsilon,
         },
+        "enable_rules_tools": bool(enable_rules_tools),
         "n_decisions_attempted": len(records),
         "n_wins": cat_hist.get("win", 0),
         "n_legal_losses": cat_hist.get("legal_loss", 0),
@@ -557,6 +609,9 @@ def run_star_rollout(
             Counter(e["source"] for e in corpus_entries)
         ),
         "tool_histogram_rollouts": dict(tool_hist),
+        "tool_histogram_gate": dict(gate_tool_hist),
+        "rules_tool_histogram_rollouts": rollout_rules_tool_hist,
+        "rules_tool_histogram_gate": gate_rules_tool_hist,
         "declaration_coverage_rollouts": {str(k): v for k, v in sorted(decl_hist.items())},
         "wall_time_seconds": total_wall,
         "estimated_usd": est_cost,
@@ -597,6 +652,10 @@ def run_star_rollout(
     print(f"  wall time                   : {total_wall:.1f}s")
     print(f"  estimated spend             : ${est_cost:.3f}")
     print(f"  tool histogram (rollouts)   : {dict(tool_hist)}")
+    print(f"  tool histogram (gate)       : {dict(gate_tool_hist)}")
+    if enable_rules_tools:
+        print(f"  rules-tool hist (rollouts)  : {rollout_rules_tool_hist}")
+        print(f"  rules-tool hist (gate)      : {gate_rules_tool_hist}")
     print("=" * 68)
 
 
@@ -639,6 +698,15 @@ def _main() -> None:
         "--eq-epsilon", type=float, default=0.25,
         help="Dead-band (E[Q] points) below bot before the gate fires.",
     )
+    parser.add_argument(
+        "--enable-rules-tools", action="store_true",
+        help=(
+            "iter-3-rules lever: swap the trimmed primer for the compact "
+            "rules-as-tools preamble and register/advertise "
+            "count_dominoes_remaining, trick_winner_if, what_beats_what, "
+            "contract_progress alongside the eight default tools."
+        ),
+    )
     args = parser.parse_args()
 
     run_star_rollout(
@@ -652,6 +720,7 @@ def _main() -> None:
         gate_variant=args.gate_variant,
         max_gate_retries=args.max_gate_retries,
         eq_epsilon=args.eq_epsilon,
+        enable_rules_tools=args.enable_rules_tools,
     )
 
 
