@@ -17,7 +17,6 @@ same thing regardless of how the model is asked to call them.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any, Callable, Iterable
 
 from burl.harness.agent_runner import (
@@ -204,11 +203,46 @@ _SYSTEM_PREAMBLE = (
 )
 
 
-# Authoritative rules reference — shared with LEM. Loaded once at import.
-_PRIMER_PATH = (
-    Path(__file__).resolve().parent.parent.parent / "lem" / "rules" / "primer.md"
-)
-_PRIMER = _PRIMER_PATH.read_text()
+# Trimmed primer — behavioral rules only (trump mechanics, following, winning).
+# Inlined to avoid re-reading primer.md per call; ~450 words vs the 1.5 K-word
+# full primer. The encyclopedic sections (equipment, bidding, facts repeat) are
+# dropped; the 42-framing block already surfaces partnership, count dominoes,
+# and trumps-in-hand per decision.
+_TRIMMED_PRIMER = """\
+# Texas 42 — play mechanics
+
+## How trump works
+
+Three kinds of trump declaration: a pip suit (blanks, ones, twos, threes, fours, fives, sixes), doubles-as-trump, or no-trump.
+
+- **Pip-suit trump.** Every domino containing that pip is a trump and is no longer a member of its other pip suit. The double of the trump suit is the highest trump. Example: fours trump → the 7 trumps ranked high to low are 4-4, 6-4, 5-4, 4-3, 4-2, 4-1, 4-0. Under fours-trump, 6-4 is a trump (not a six); leading sixes does not pull the 6-4.
+- **Doubles-as-trump.** Only the 7 doubles are trump: 6-6 (high), 5-5, 4-4, 3-3, 2-2, 1-1, 0-0 (low). Non-doubles keep their pip suits and never contain trump; a double is no longer a member of its pip suit (e.g. 5-5 is trump, not a five).
+- **No-trump.** No suit has trump power. Each trick goes to the highest domino of the led suit.
+
+## Led suit of a trick
+
+- If the led domino is a trump, the led suit is trump.
+- Otherwise, the led suit is the higher pip of the led domino. Examples: twos trump, leading 5-3 leads fives (the higher pip, not threes). Fours trump, leading 4-2 leads trump (because 4-2 is trump).
+
+## Following suit
+
+- If you hold any domino of the led suit, you MUST play one. You may not play off-suit when you could follow.
+- If you are void in the led suit, play any domino, including a trump.
+
+## Winning the trick
+
+- If any trumps were played, the highest trump wins the trick.
+- If no trumps were played, the highest domino of the led suit wins. Dominoes of other pip suits are off-suit and cannot win.
+
+## Count (scoring)
+
+- Five count dominoes total 35 points: 5-5 (10), 6-4 (10), 5-0 (5), 4-1 (5), 3-2 (5). All other 23 dominoes are 0 count.
+- Each of the 7 tricks is also worth 1 trick point. A hand totals 42 points.
+- The bidder's team must take at least their bid or they are "set" — the defending team scores the bid value instead.
+
+## Partners cannot communicate
+
+Decisions rest only on public information (bid, trump, tricks played, lead, and your own hand) plus your partner's plays observed so far."""
 
 
 _COMMIT_INSTRUCTION = (
@@ -410,9 +444,9 @@ def render_native_messages(
 
     system = (
         _SYSTEM_PREAMBLE
-        + "\n\n# Texas 42 rules reference (authoritative)\n\n"
-        + _PRIMER
-        + "\n# Current decision — 42-aware context\n\n"
+        + "\n\n"
+        + _TRIMMED_PRIMER
+        + "\n\n# Current decision — 42-aware context\n\n"
         + _render_42_framing(game_state, me_abs, hand_list)
     )
 
@@ -506,15 +540,19 @@ def _selftest(seed: int = 2026) -> None:
         state, remaining, _visible_history(state),
     )
     for token in (
-        "Texas 42 rules reference",
-        "count dominoes",
         "Texas 42 framing",
         "Team",
         "partner",
         "Bidder",
         "Count dominoes",
+        "play mechanics",   # trimmed primer header
+        "Following suit",   # trimmed primer behavioral section
+        "commit_play",      # commit instruction in preamble
     ):
         assert token in system_text, f"missing {token!r} in system prompt"
+    assert "Facts this primer commits to" not in system_text, (
+        "encyclopedic primer tail should be dropped"
+    )
     assert "your hand:" in user_text, "user prompt lost hand line"
 
     completions = iter([

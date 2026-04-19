@@ -260,6 +260,7 @@ def main(
     smoke: bool = False,
     epochs: int = 3,
     n_examples: int = 0,
+    adapter_suffix: str = "iter0",
 ):
     """Entrypoint: `modal run burl/train/star.py [--smoke] [--epochs N] [--corpus-path ...]`.
 
@@ -315,8 +316,8 @@ def main(
                 f"[local] FULL mode: all {len(lines)} examples",
                 file=sys.stderr,
             )
-        adapter_repo = ADAPTER_REPO
-        run_name = "burl-iter0"
+        adapter_repo = f"jasonyandell/gemma-4-e2b-texas42-burl-{adapter_suffix}"
+        run_name = f"burl-{adapter_suffix}"
         epochs_use = epochs
         max_steps = -1
         per_device_batch_size = 2

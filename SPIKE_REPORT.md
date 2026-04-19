@@ -788,3 +788,213 @@ Lower priority:
   path, `adapter_smoke` entrypoint
 - Eval runner change: `burl/eval/run_move4_spike.py` — `--adapter` flag
   threaded through to `_make_modal_native_model`
+
+
+## iter-1: trimmed primer → re-harvest → retrain → eval (2026-04-19)
+
+**Headline: mixed/partial. The primer *was* partly responsible for iter-0's
+quality regression — when iter-1 completes a decision it lands 80% bot-match
+with `mean_eq_delta −0.76` (vs iter-0's 60% / −3.33), almost back to spike v2
+territory. But the primer was also doing load-bearing work on commit discipline:
+fully dropping it produced 0 wins and 50% retry-exhaustion in a 6-decision
+smoke, and even the trimmed variant leaves 5/10 held-out decisions
+retry-exhausted. Net: primer bloat is a real cause, not the only cause. One
+more corpus iteration is warranted; the recipe now needs to balance trim
+(for quality) against commit-discipline retention.**
+
+### What changed vs iter-0
+
+- **Primer trimmed, not dropped.** `burl/harness/agent_runner_native.py`
+  no longer loads `lem/rules/primer.md` (1,549 words). A `_TRIMMED_PRIMER`
+  constant (~400 words) is inlined in the renderer, keeping the behavioral
+  sections — "How trump works" (3 kinds), "Led suit of a trick",
+  "Following suit", "Winning the trick", "Count (scoring)", "Partners
+  cannot communicate" — and dropping the encyclopedic "facts this primer
+  commits to" preamble and suit-membership tables (already in the 42
+  framing block).
+- **42-aware framing block kept verbatim** — partner/offense/defense,
+  count-dominoes-remaining, trumps-in-hand. The team-lead's substrate is
+  still doing its job.
+- **Corpus N=30, not N=50.** Trimmed-primer smoke ran ~3× slower
+  per-decision than iter-0 (180 s vs 56 s wall), so budget (raised to
+  $4.00) dictated N=30 full cycle. Seeds from `move4_decisions_n50.jsonl`
+  (strictly ≥900000; no held-out leak).
+- **Same training recipe as iter-0** — rank-16 LoRA, 3 epochs,
+  lr 1e-4, batch 2 × grad_accum 4, on B200.
+
+### The pivot that mattered
+
+First rollout pass dropped the primer *entirely* (framing only). Result at
+6 decisions: `{wins: 0, exhausted: 3, legal-but-lost: 3}`. Gemma chained
+`is_legal(N) → True → is_legal(N) → True` for the full turn budget without
+ever calling `commit_play`. The user called it directly: "0 wins / 50%
+exhaustion = garbage corpus. The primer was doing load-bearing work on
+commit discipline, not just adding rules knowledge."
+
+This is evidence we couldn't have gotten any other way. The primer's role
+in iter-0 was *dual*: (a) surface rules knowledge (probably net negative at
+2B scale), (b) signal "you have enough context — commit" (clearly net
+positive). Trimming keeps (b) while cutting (a). Result below says we
+got most of (a) back and only partially preserved (b).
+
+### Phase A — rollout numbers
+
+| stage | iter-0 (full primer, N=50) | iter-1 (trimmed, N=30) |
+|---|---|---|
+| wins (K1 pass) | 27 / 50 (54%) | 13 / 30 (43%) |
+| legal losses rationalized | 23 / 23 (100%) | 17 / 17 (100%) |
+| illegal commits | 0 | 0 |
+| retry-exhausted (rollouts) | 0 | 0 |
+| rollout tool histogram | `{is_legal:72, is_trump:8, eq:8}` | `{is_legal:44, trump_declared:4, is_trump:1, eq:2}` |
+| wall time | ~3099 s | 4067 s |
+| cost | $0.91 | **$0.90** |
+
+K1 rate dipped 54% → 43%. This is within noise for N=30 and is worth
+reporting: trimming the primer did not help *rollout-time* bot-match, only
+*post-SFT* bot-match (which is what iter-0 was for). Tool histogram is
+similar to iter-0's suppressed pattern — the trim did not revive
+`eq_outcome_distribution`.
+
+### Phase B — LoRA training
+
+| item | value |
+|---|---|
+| n_traces | 30 |
+| n_steps | 12 (3 epochs × 4 steps/epoch; batch 2 × grad_accum 4) |
+| loss trajectory | 54.59 → 18.10 |
+| training_loss (HF reported) | 33.36 |
+| train_seconds | 21 s on B200 |
+| adapter | `jasonyandell/gemma-4-e2b-texas42-burl-iter1` (private) |
+
+Loss curve is monotone-enough (some local noise around step 4) and the
+final 18.1 is below iter-0's comparable end-step, so the adapter *did*
+learn the trimmed-primer shape. No under-training.
+
+### Phase C — eval on same N=10 held-out (`move3_decisions.jsonl`, first 10)
+
+| metric | spike v2 | Layer 1 | burl-iter0 | **burl-iter1** |
+|---|---|---|---|---|
+| n_completed | 9/10 | 10/10 | 10/10 | **5/10** |
+| n_retry_exhausted | 1/10 | 0/10 | 0/10 | **5/10** |
+| legal_rate (on completed) | 100.0% | 100.0% | 100.0% | **100.0%** |
+| first_legal_rate | 90.0% | 100.0% | 100.0% | **50.0%** |
+| bot_match_rate (on completed) | 88.9% | 70.0% | 60.0% | **80.0%** |
+| p_eq_geq_bot (on completed) | 88.9% | 70.0% | 60.0% | **80.0%** |
+| mean_eq_delta (on completed) | −1.92 | −3.00 | −3.33 | **−0.76** |
+| empty_tool_rollout_rate | 0.0% | 20.0% | 10.0% | **20.0%** |
+| tool histogram | `{is_legal:20, eq:15, trump_declared:9}` | `{is_legal:13, eq:2, is_trump:2}` | `{is_legal:16, eq:2, is_trump:2}` | `{trump_declared:11, is_legal:9, is_trump:4}` |
+| mean_tokens_in (chars) | 13.6 K | 35.3 K | 39.8 K | **17.1 K** |
+| mean_tokens_out (chars) | 1.5 K | 5.5 K | 5.6 K | **2.9 K** |
+| wall time | 246 s | 683 s | 1877 s | **938 s** |
+| cost (Modal L4) | $0.05 | $0.15 | $0.42 | **$0.21** |
+
+Five decisions retry-exhausted: D2, D3, D4, D6, D7 — all state-hash
+`8fe68851`, most on seat=3. D1, D5, D8, D9, D10 completed. On completed
+decisions the story flips: **4 of 5 matched bot; mean_eq_delta −0.76 is
+closer to spike v2 than iter-0 ever got.**
+
+### Tool histogram inversion is the signal
+
+The adapter shifted from iter-0's `is_legal:16, eq:2` (rules-heavy) to
+`trump_declared:11, is_legal:9, is_trump:4` (structure-heavy).
+`trump_declared` jumping to 11× (from 0 in iter-0, 9 in spike v2) says
+the trimmed primer freed the model to query trump structure before
+committing — Decision 6 in iter-0 famously got doubles-are-trump wrong;
+with the trim, iter-1 actually *calls* `is_trump` and `trump_declared`.
+
+`eq_outcome_distribution` is still suppressed (0 calls) — a bit worse
+than iter-0 (2). The trim improved rules fluency but didn't restore the
+belief-tool reflex; that probably requires either a corpus constructed
+from a base-model run that *does* use `eq` (i.e. the spike v2 prompt
+shape), or an explicit tool-use scaffold.
+
+### Why completion rate collapsed to 50%
+
+All five exhaustions have the same signature: `turns=4 tools=4
+committed=None`. This is the same failure mode the original
+commit_play fix was invented for — Gemma chains tools and runs out of
+`max_retries`. On the 5 completed decisions, the adapter emits a commit
+in ≤3 turns. On the 5 exhausted, it doesn't.
+
+Two likely drivers, not yet disentangled:
+
+1. **Corpus size.** 30 entries is below iter-0's 50. The adapter may
+   simply not have seen enough "and here is where I commit" exemplars
+   to robustly generalize commit-after-exploration across decision
+   shapes. Under-coverage of commit triggers would look exactly like
+   this: clean commits on in-distribution shapes, exhaustion on
+   out-of-distribution ones.
+2. **Trim went too far on the commit-signal text.** The full primer had
+   a "do not endlessly check; commit" nudge; the trimmed version relies
+   on the behavioral sections alone to prompt commit. That subset may
+   not carry the same "terminate" signal for held-out held-out shapes
+   even though it does in the 30 in-distribution ones.
+
+Eval cost (at `--max-retries 3` per runner default) was $0.21; a retry
+with `--max-retries 7` (spike v2 used this) is the cheap next
+experiment to check whether the exhausted decisions would commit given
+more room.
+
+### Four-baseline comparison read
+
+- **iter-1 vs iter-0 (on completed):** +20pp bot-match, +2.57 mean_eq.
+  Primer-trimming *is* the right direction for quality.
+- **iter-1 vs spike v2 (on completed):** −8.9pp bot-match, −1.16 mean_eq.
+  Not at spike v2 parity yet, but closer than any other adapter run.
+- **iter-1 vs iter-0 (overall completion):** −5/10 decisions. Primer-
+  trimming *hurt* commit discipline even though it helped quality.
+- **iter-1 vs spike v2 (overall completion):** −4/10 decisions. Worse
+  than the un-trained base model's completion rate by itself.
+
+### Verdict
+
+**Case (a) from the task plan: primer+baking are both real issues,
+neither alone.** Primer bloat explains the iter-0 quality regression
+(iter-1 recovers most of it on completed decisions). SFT on a
+30-trace corpus built off the trimmed-primer rollout explains the
+commit-discipline regression (a bigger, more diverse corpus — or the
+spike v2 prompt shape at rollout time — would likely fix it).
+
+**Do not ship iter-1 as-is.** The 50% exhaustion rate is a functional
+regression even though the eq-match numbers on completed are encouraging.
+
+**Recommended iter-2** (if the team-lead wants to chase this):
+1. **Keep the trimmed primer.** Its effect on the model that *does*
+   commit is the clearest positive data point we've logged.
+2. **Re-harvest from the spike v2 prompt shape** (no primer at all,
+   just the 42-framing) for the rollout corpus. Rationalizations
+   similarly. That's where `eq_outcome_distribution` was being used at
+   15× density, which is what we want to bake in.
+3. **N=50 or more.** 30 traces is small enough that commit-coverage is
+   fragile; iter-0 held commit-discipline at N=50.
+4. **Re-eval at `--max-retries 7`.** Separates "adapter hit the retry
+   cap" from "adapter genuinely won't commit."
+
+Stop and write up if (1)–(4) don't close the gap on iter-3. We've
+learned what we came to learn for this phase: the primer was part of
+the story and the corpus shape was part of the story; neither alone
+was the whole story.
+
+### Budget accounting for iter-1
+
+| item | cost |
+|---|---|
+| Primer-dropped rollout (killed at 6 decisions) | ~$0.03 |
+| Trimmed-primer smoke (6 decisions) | ~$0.05 |
+| Phase A — rollout N=30 + rationalize 17 | $0.90 |
+| Phase B — LoRA train on B200 (21 s) | ~$0.08 |
+| Phase C — eval N=10 on Modal L4 | $0.21 |
+| Warmups, cold starts, serve restarts | ~$0.10 |
+| **iter-1 total** | **~$1.37 of $4.00 cap** |
+
+Cumulative spike spend (all phases): **~$3.22**.
+
+### Artifacts
+
+- Trimmed prompt: `burl/harness/agent_runner_native.py` (`_TRIMMED_PRIMER`)
+- Corpus: `burl/data/star_iter1_corpus.jsonl` (30 rows)
+- Corpus stats: `burl/data/star_iter1_corpus_stats.json`
+- Rollout records: `burl/eval/results/move4_iter1_star_rollout_v2/{rollout_traces.jsonl, rationalize_traces.jsonl, rollout.log}`
+- Training log: `burl/train/star_iter1.log`
+- Adapter: `jasonyandell/gemma-4-e2b-texas42-burl-iter1` (private)
+- Eval: `burl/eval/results/move4_iter1_eval/{summary.json, traces.jsonl, eval.log}`
