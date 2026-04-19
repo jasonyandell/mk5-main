@@ -1043,3 +1043,418 @@ Cumulative spike spend (all phases): **~$3.22**.
 - Training log: `burl/train/star_iter1.log`
 - Adapter: `jasonyandell/gemma-4-e2b-texas42-burl-iter1` (private)
 - Eval: `burl/eval/results/move4_iter1_eval/{summary.json, traces.jsonl, eval.log}`
+
+
+---
+---
+
+# Session 2026-04-19 (continued) — iter-2 / iter-3 / iter-4 + infrastructure
+
+Cumulative spike spend going into this chapter: ~$3.50. Running team of
+four Claude agents (corpus-chef, eq-gate-engineer, rules-architect,
+haiku-spiker) orchestrated in parallel under team `burl-iter2-prep`.
+
+## TL;DR for returning session (late 2026-04-19)
+
+**iter-3-rules is the new winning adapter.** `trick_winner_if` per-decision usage
+went UP after SFT (1.56 → 1.70). No structural-idiom creep. The "tools replace
+memorization" thesis earned a receipt.
+
+**Five-run comparison on the same N=10 held-out (same seeds, same prompts,
+`--max-retries 7`):**
+
+| run | bot-match | completed | mean_eq_Δ | RE | notes |
+|---|---|---|---|---|---|
+| spike v2 (base) | 88.9% | 9/10 | −1.92 | 1 | no training |
+| iter-1 @ r7 | 88.9% | 9/10 | **−0.16** | 1 | first trained adapter that beat base on eq-delta |
+| iter-2 (blend coverage) | 66.7% | 9/10 | −0.94 | 1 | regression; corpus-quality dilution |
+| iter-3-v2 (no primer) | 87.5% | 8/10 | −2.21 | 2 | **primer is load-bearing for commit discipline** |
+| **iter-3-rules** | **90.0%** | **10/10** | −1.77 | **0** | **winner on robustness** |
+| iter-4-thoughts | 90.0% | 10/10 | −1.766 | 0 | **byte-identical to iter-3-rules** |
+
+Two different idioms on top:
+- **iter-1@r7**: "think structurally, commit" — best eq-delta (−0.16), barely uses `eq_outcome_distribution` (1/9), leans on `trump_declared` + `is_trump` + `is_legal`.
+- **iter-3-rules**: "call the rules tools, commit" — best robustness, `trick_winner_if` 17× across 10 decisions. Zero retry-exhaustion.
+
+Both match or beat base. The choice between "best single-decision quality" (iter-1@r7) and "best full-game robustness" (iter-3-rules) is now a ship criterion, not an open problem.
+
+## Phase 5: iter-2 coverage test (2026-04-19)
+
+**Headline: more rows did not help. iter-2 regressed vs iter-1@r7.** Same
+recipe, 4× more rows via the LS-Mixture blend (118 vs 30), bot-match dropped
+88.9% → 66.7% (−22 pp), mean_eq_delta widened −0.16 → −0.94.
+
+Diagnosis was the first sharp negative finding of the session: the 118-row
+blend was **63% iter-0 pre-trim content** (50 rows) + **37% iter-1 post-trim**
+(29 rows). We trained majority on the corpus that produced the 60% iter-0
+regression in the first place. Plus the `strip_thinking()` schema surprise
+that corpus-chef surfaced during T6 preflight means the synthetic shorts
+were near-duplicates of their longs at the tokenizer — so we got ~237
+row-passes on 79 unique decisions, mostly low-quality. **Quality > size at
+this N.**
+
+### The `strip_thinking()` schema surprise
+
+Pinned during T6 preflight: Gemma 4 E2B's `chat_template.jinja` calls a
+`strip_thinking()` macro that removes every `<|channel>thought ... <channel|>`
+region from assistant messages **before tokenization**. `SFTTrainer`'s
+default pipeline calls `apply_chat_template(messages, tokenize=True)` per
+row, so the trainer never saw the thought prose across iter-0, iter-1, or
+iter-2. Inference-time rambly thoughts are base-model reflex, not trained-in
+behavior. Pinned as a regression test at
+`burl/train/test_iter2_loader.py::test_chat_template_strips_thought_blocks`.
+
+Corroborating: iter-2's `mean_tokens_out` went **up** 15% (4,766 vs 4,134)
+— the adapter talks *more*, not less, despite the "blend reduces verbosity"
+framing. The blend's real value is coverage + data-augmentation
+regularization, not verbosity compression. That framing was re-priced in the
+iter-2 launch doc the same day.
+
+Cost: $0.55 / $0.60 authorized. Writeup:
+[`burl/experiments/iter2_eval_writeup.md`](burl/experiments/iter2_eval_writeup.md).
+
+## Phase 6: iter-3-v2 (spike-v2 prompt shape) (2026-04-19)
+
+**Headline: a genuinely new data point — the primer is load-bearing for
+commit discipline.**
+
+Spike v2's 88.9% base ran with no primer at all (just the 42-framing). We
+predicted that re-harvesting from this shape at N=50 would give a higher-
+quality K1 corpus. Instead:
+
+| rollout outcome | count |
+|---|---|
+| K1 wins | 10 / 50 (20%) — **not** >iter-1's 54%; much worse |
+| retry-exhausted | **16 / 50 (32%)** — 3× iter-1@r7's 10% |
+| legal losses | 24 / 50 |
+| gate fired | 24 → self_corrected: 8 (33%), stubborn: 15, forced_flip: 0 |
+| **corpus** | **18 rows** (10 wins + 8 self_corrected) |
+
+Without the primer at move4 difficulty, Gemma's failure mode flipped from
+"picks wrong play" to "can't produce a legal play at all." The primer wasn't
+just teaching rules — it was telling Gemma, implicitly, "you have enough
+information to commit now." Its removal revealed the scaffolding.
+
+### Eval on N=10 held-out at `--max-retries 7`
+
+| metric | iter-1@r7 | iter-3-v2 |
+|---|---|---|
+| n_completed | 9/10 | **8/10** |
+| bot_match on completed | 88.9% | 87.5% |
+| mean_eq_delta on completed | −0.16 | −2.21 |
+| `eq_outcome_distribution` calls | 1 | **6** (6×) |
+| mean_tokens_out | 4,134 | **2,083** (50% less) |
+
+**Proof of concept that the eq-heavy tool idiom transfers through SFT on
+just 18 rows.** The rollout K1 rate was dismal, but the training signal *in
+those 18 rows* was clean enough that the adapter picked up the spike-v2-
+style eq-reach. The 20% exhaustion at eval time confirms the primer-load-
+bearing finding — eq-idiom is learnable, commit discipline needs scaffolding.
+
+Cost: $0.79 / $1.50 authorized. Writeup:
+[`burl/experiments/iter3_v2_eval_writeup.md`](burl/experiments/iter3_v2_eval_writeup.md).
+
+### The EQ-gate Phase B did what it was designed for
+
+Of the 24 legal losses, 8 self-corrected under the tool-nudge prompt variant
+("your commit was legal but another play looks stronger — use tools to
+compare"). Classifier distribution (27% / 0% / 73% for self_corrected /
+forced_flip / stubborn) sits squarely in the 25-50% sanity band eq-gate-
+engineer designed for. No answer leakage in any of the three feedback
+prompt variants (domino-id and per-play-E[Q] invariants held across the
+full N=24).
+
+Design: [`burl/experiments/eq_gate_design.md`](burl/experiments/eq_gate_design.md).
+
+## Phase 7: iter-3-rules (rules-as-tools) — the winner (2026-04-19)
+
+**Headline: 90% bot-match, 0 retry-exhausted, 100% first-legal. The "tools
+replace memorization" premise earned its first real receipt.**
+
+Rules-as-tools replaced the 1,549-word primer with a 645-byte preamble + 4
+new tools (`count_dominoes_remaining`, `trick_winner_if`, `what_beats_what`,
+`contract_progress`). Rollout numbers told a completely different story
+than iter-3-v2:
+
+| rollout outcome | iter-3-v2 (no primer) | **iter-3-rules** |
+|---|---|---|
+| K1 wins | 10 / 50 (20%) | **23 / 50 (46%)** |
+| retry-exhausted | 16 / 50 (32%) | **1 / 50 (2%)** |
+| legal losses | 24 / 50 | 26 / 50 |
+| corpus | 18 rows | **30 rows** |
+
+Rules-as-tools *preserves* commit discipline because the preamble is doing
+the same "you have enough context — commit" scaffolding the primer did, just
+in a different shape (tool menu + 8-line behavioral sketch vs 1.5 KW of
+prose).
+
+### The scientific headline: tool habit survives SFT
+
+**`trick_winner_if` per-decision usage went UP after training.** Pre-SFT
+rate 1.56/decision → post-SFT 1.56 → **1.70** (9/10 eval decisions called
+it). No structural-idiom creep. SFT *reinforced* the rules-tool reflex
+rather than papering over it with structural reasoning.
+
+Four-way eval on N=10 held-out:
+
+| metric | iter-1@r7 | iter-2 | iter-3-v2 | **iter-3-rules** |
+|---|---|---|---|---|
+| bot_match | 88.9% | 66.7% | 87.5% | **90.0%** |
+| n_completed | 9/10 | 9/10 | 8/10 | **10/10** |
+| retry_exhausted | 1 | 1 | 2 | **0** |
+| first_legal | 90% | 90% | 80% | **100%** |
+| mean_eq_delta | **−0.16** | −0.94 | −2.21 | −1.77 |
+
+**Metric split matters for ship decisions**: iter-1@r7 wins on *eq-delta*
+(11× tighter than iter-3-rules), iter-3-rules wins on *robustness*
+(completion, legality, bot-match). Different strengths — iter-3-rules is
+the cleaner production adapter; iter-1 makes higher-quality picks on the
+decisions it doesn't exhaust.
+
+**Dead tool flagged**: `count_dominoes_remaining` had **0 calls across 86
+total decisions** (50 rollout + 30 gate + 10 eval pre-SFT + post-SFT). Dead
+code bloating the tool menu — candidate to drop in iter-5+.
+
+Adapter: `jasonyandell/gemma-4-e2b-texas42-burl-iter3-rules`.
+Cost: $0.85 / $1.50 authorized. Writeup:
+[`burl/experiments/iter3_rules_eval_writeup.md`](burl/experiments/iter3_rules_eval_writeup.md).
+
+## Phase 8: iter-4-thoughts — the clean negative (2026-04-19)
+
+**Headline: byte-for-byte identical to iter-3-rules on N=10.**
+
+Infrastructure from T17 (corpus-chef) bypasses Gemma 4's `strip_thinking()`
+via a `formatting_func` on SFTTrainer — the first time thought tokens could
+reach the training loss. Empirical delta on a real corpus row:
+
+- `apply_chat_template` path: 1,714 tokens (thoughts stripped)
+- `formatting_func` path: **2,246 tokens** (thoughts preserved)
+- +532 thought tokens per row that will now produce gradient
+
+Same corpus as iter-3-rules (30 rows, rules-as-tools shape). Same recipe
+(rank 16, 3 epochs, lr 1e-4). Only `preserve_thoughts=True` differs.
+
+Eval result, same N=10 held-out:
+
+| metric | iter-3-rules | iter-4-thoughts |
+|---|---|---|
+| bot_match | 90.0% | 90.0% |
+| mean_eq_delta | −1.766 | **−1.766** |
+| tool_histogram | cp:3, il:6, tw:17, eq:2 | **identical** |
+| train loss @ step 12 | 18.24 | 18.17 |
+| **byte-identical turns** | — | **42/42** |
+
+No `SamplingParams(seed=…)`, so this is not RNG coincidence. Both adapters
+emit thought blocks equally (9/10 traces, 12/42 turns, 82% of output chars)
+— confirming that Gemma 4's thinking reflex is base-model-native, not a
+trained behavior. `strip_thinking()` only affected what SFT *saw*, not what
+inference emits.
+
+### Interpretation — the hypothesis needs disambiguation
+
+Two readings of the null result:
+
+**(a) LoRA capacity fall-short.** Rank-16 × 30 rows × 3 epochs can't express
+thought-token gradient contribution distinctly from tool-call contribution.
+Structural tokens dominate; thought-prose gradient averages to near-zero
+direction in the LoRA subspace.
+
+**(b) Thought content doesn't reshape policy the way we hoped.** The
+thinking reflex is a pre-trained behavior Gemma will emit regardless;
+reinforcing "good thoughts" over "bad thoughts" via SFT on K1 winners may
+not retarget the policy because the behavior is already there in the base.
+
+Disambiguation experiment (queued for the M5 Max local setup): iter-5 at
+rank 32 or 64, N≥100 corpus. If byte-identical *again*, (b) is load-bearing;
+bootstrap via thought-gradients is dead at any feasible scale. If the
+adapter diverges, (a) was right and we need to push scale to see the lever
+work.
+
+Cost: $0.37 for training + eval. Writeups:
+[`burl/experiments/iter4_thoughts_design.md`](burl/experiments/iter4_thoughts_design.md),
+[`burl/experiments/iter4_thoughts_eval_writeup.md`](burl/experiments/iter4_thoughts_eval_writeup.md).
+
+## The tool-surface finding — `conditional_outcome` is structurally ignored
+
+Single cleanest observation of the session. Across **every** model class and
+every scale tested:
+
+| probe | decisions | `conditional_outcome` calls |
+|---|---|---|
+| T3 Haiku smoke | 3 | 0 |
+| T8 Haiku N=30 | 30 | 0 |
+| T16 Haiku full-game arena | 28 | 0 |
+| T14 Opus partial (pre-kill) | 6 (3 clean) | 0 |
+| T15 Opus full-game arena | 28 | 0 |
+| iter-1@r7 eval | 10 | 0 |
+| iter-2 eval | 10 | 0 |
+| iter-3-v2 eval | 10 | 0 |
+| iter-3-rules eval | 10 | 0 |
+| iter-4-thoughts eval | 10 | 0 |
+| **total** | **145+** | **0** |
+
+Not a training-corpus gap — Haiku and Opus should be capable of reaching
+for a counterfactual probe zero-shot on close calls, and they don't. **This
+is a tool-surface design issue, not a training issue.** The tool returns
+raw structural arguments (`{"player": 0, "holds": 17}`) and models don't
+spontaneously invent the right question to ask.
+
+Candidate redesigns (queued for next session):
+- Return a bimodality flag on `eq_outcome_distribution` (`{bimodal: true, modes: [+23, -18], candidate_conditionals: [...]}`) that makes the counterfactual invite explicit from the data.
+- Rename `conditional_outcome` to something question-shaped like `eq_assuming(...)` so the tool-as-question framing is legible.
+- Provide a `what_would_change_my_mind(play)` meta-tool that returns candidate assumptions.
+
+All three are environment-shape levers, not demonstration injections. They
+match the bootstrap philosophy (catch the model doing right by making
+"right" accessible) rather than imposing reasoning templates.
+
+## Infrastructure findings that outlasted the experiments
+
+### 1. Lock fix for `claude-agent-sdk` + Opus parallel tool_use
+
+**Bug**: Opus 4.7 emits multiple `tool_use` blocks in a single assistant
+message. The Agent SDK spawns a concurrent handler task per block
+(`claude_agent_sdk._internal.query.Query._handle_sdk_mcp_request`), and
+the MCP low-level server's shared tool cache isn't concurrency-safe. The
+race wedges the CLI↔MCP stdio channel with "Stream closed" errors or
+silently terminates at turn 1.
+
+**Fix**: process-global `asyncio.Lock` around `_handle_sdk_mcp_request`.
+Applied via import-time monkey-patch in `burl/haiku_spike/agent.py`.
+~15 lines. Committed as `2830be0`.
+
+**Status**: necessary, insufficient. A **second MCP failure mode** was
+found in T14 re-run — roughly 50% of lone first-tool-calls stream-close,
+likely a stdio-pipe timeout during Opus's long pre-tool reasoning. Lock
+doesn't cover that path. For a clean Opus N=30 we'd need HTTP MCP
+transport.
+
+### 2. HTTP MCP transport as the real Opus fix
+
+Validated in a worktree-isolated experiment — `FastMCP` Streamable-HTTP
+server on localhost with `claude-agent-sdk`'s `mcp_servers = {..., "type":
+"http", "url": "..."}` config. Opus emitted a clean parallel batch of 2
+`eq_outcome_distribution` calls under HTTP where the same prompt broke
+under in-process stdio.
+
+Non-obvious: the in-process `_DecisionContext` singleton we use to bind
+game state to tool handlers doesn't cross processes. The worktree agent's
+solution was a tiny Starlette side-channel (`/bind` endpoint) that rebuilds
+state server-side from a replay tuple. Any productization of this path
+needs the same pattern.
+
+Artifacts: `scratch/mcp_http_server.py`, `scratch/mcp_http_agent.py`,
+`scratch/mcp_http_repro.py` (worktree-gitignored; reproducible from
+memory).
+
+Status: proof-of-concept validated, ~60 min to productize into
+`burl/haiku_spike/agent_http.py`. Not committed upstream — deferred
+pending a decision on whether iter-5+ needs Opus reference traces.
+
+### 3. Async client-side concurrency for rollouts
+
+Local benchmark: 3.92× speedup at concurrency=4 (theoretical 4.0×
+ceiling) on a mock `_run_one_rollout` with 0.1s/decision. 4 pytest cases
+pinning ordering preservation, speedup assertion, concurrency=1 sequential
+equivalence, and cost-cap interrupt semantics. All 105 prior tests remain
+green.
+
+Committed as `c2aa3a7`. Modal bench deferred until an iter-5 rollout
+needs it. Expected real-world speedup 2.5-3.5× on L4 given vLLM scheduler
++ shared-GPU overhead.
+
+### 4. Three-mode prompt shape flag
+
+`render_native_messages(enable_primer=True, enable_rules_tools=False)`:
+
+- default: trimmed primer + 42-framing (iter-1 winner shape)
+- `enable_rules_tools=True`: rules-as-tools preamble + 42-framing (iter-3-rules shape)
+- `enable_primer=False`: 42-framing only, no primer (spike-v2 shape)
+- `enable_primer=False ∧ enable_rules_tools=True` raises ValueError (incoherent combo)
+
+All three render distinctly, 42-framing is byte-identical across modes.
+Committed as `c698091`. 101/101 tests green post-commit.
+
+### 5. Self-play arena scaffold
+
+Single-process orchestrator (`burl/selfplay/arena.py`) runs a full 28-turn
+Texas 42 hand with four independent Claude Agent SDK sessions, one per
+seat, on a user-supplied seed. CLI takes `--seed`, `--tag`. Reuses
+`agent_runner_native.render_native_messages` for seat-filtered prompts
+and the haiku_spike pattern for per-turn SDK calls. Outputs structured
+JSONL + a human-readable markdown game log.
+
+Validated on two runs (same seed 900010, bad-for-bidder deal):
+
+| model | final | bidder | made_bid | cost | wall |
+|---|---|---|---|---|---|
+| Haiku 4.5 | 0 / 42 | 0 | set | $0.84 | 7m22s |
+| Opus 4.7 | 7 / 35 | 7 | set | $5.58 | 8m50s |
+
+Opus salvages 7 pts where Haiku was shut out. Opening-lead divergence
+tells the story: Haiku led low trump generically; Opus led `2(1|1)`
+after 7 `eq_outcome_distribution` probes. Tool-use efficiency delta is
+the cleanest signal — Haiku re-queried `trump_declared` 24 times across
+28 decisions despite the trump being in every system prompt; Opus
+re-queried once.
+
+Full head-to-head writeup:
+[`burl/experiments/arena_notes.md`](burl/experiments/arena_notes.md).
+
+## Cost and artifact summary — session 2026-04-19
+
+Cumulative spike spend, session-only:
+
+| item | cost |
+|---|---|
+| T3 Haiku 3-decision smoke | $0.086 |
+| T8 Haiku N=30 reference | $0.78 |
+| iter-2 train+eval | $0.55 |
+| iter-3-v2 train+eval | $0.79 |
+| iter-3-rules train+eval | $0.85 |
+| iter-4-thoughts train+eval | $0.37 |
+| T14 Opus partial (killed) | $4.57 |
+| Worktree MCP experiments | ~$2.24 |
+| T15 Opus arena | $5.58 |
+| T16 Haiku arena | $0.84 |
+| warmups, cold starts, retries | ~$0.50 |
+| **session total** | **~$17** |
+
+Adapters pushed this session:
+- `jasonyandell/gemma-4-e2b-texas42-burl-iter2` (coverage regression)
+- `jasonyandell/gemma-4-e2b-texas42-burl-iter3-v2` (no-primer, quality-held)
+- `jasonyandell/gemma-4-e2b-texas42-burl-iter3-rules` **(current winner)**
+- `jasonyandell/gemma-4-e2b-texas42-burl-iter4-thoughts` (byte-identical A/B)
+
+Cumulative spike spend through all sessions: ~$20.50 of ~$40 authorized.
+
+## Open questions carried to iter-5+
+
+See [`burl/ITER4_PLAN.md`](burl/ITER4_PLAN.md) for the forward plan. The
+short version:
+
+1. **Is iter-4-thoughts byte-identical because of LoRA capacity or because
+   thought-content doesn't reshape policy?** Resolvable via rank-64 / N≥100
+   disproof — cheap on the M5 Max local setup.
+2. **Can environment-shape levers (candlewax-aware tool returns, frame-
+   invite prompts, self-correction grading) produce reasoning improvements
+   that the training-target lever couldn't?** All four levers are
+   sketched; (B) richer tool returns is the strongest signal target given
+   the `conditional_outcome=0` convergence.
+3. **Is there a combined iter-5 adapter that gets iter-3-rules' robustness
+   AND iter-1@r7's eq-delta?** Currently they're on different points of
+   a Pareto frontier. A mixed corpus (rules-tools prompt shape with
+   explicit eq_outcome_distribution demonstrations) could in principle
+   land both — but demo-injection contradicts the user's bootstrap
+   philosophy, so the honest path is environment change until we can
+   tell whether the Pareto is an artifact of corpus source or
+   structural.
+4. **How does Opus actually reason at high thinking?** T14 produced only
+   3 clean data points (d00, d01, d04) before the MCP bug bit. The HTTP-
+   transport path would give us a clean N=30; whether it's worth 60 min
+   of productization depends on whether Opus data informs iter-5 corpus
+   design or just satisfies curiosity.
+
+Current winner: **`iter-3-rules`**. Shippable if you want to close the
+spike cleanly; the iter-4+ work is for pushing past the Pareto frontier,
+not patching a regression.

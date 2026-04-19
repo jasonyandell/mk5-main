@@ -188,9 +188,21 @@ No custom adapter registry, no homemade hot-swap. All leverage of vLLM's built-i
 - **Visualizer is the canonical teacher artifact.** `forge/analysis/results/web/eq_pdf_discs.html`, `eq_surface_3d.html`, `eq_game_journey.html`. Shared with LEM. Burl's rationalizations should, when visualized, trace regions of the discs/surface a strong human would.
 - **Go with the model's grain; catch it doing right.** Small models have their own instincts — Gemma reaches for a `play` verb even when our menu doesn't define one, emits thoughts in markdown when asked to reason, and keeps calling `is_legal` before every commit. Rather than fight those tendencies, bend the harness around them. If `play` is what Gemma wants, `play` is what we give it. STaR trains the *model's own best behavior* back into itself — their words, their corrections, their self-checks. We're not imposing a shape; we're amplifying one we noticed.
 
+## Current state — 2026-04-19
+
+**Winning adapter**: `jasonyandell/gemma-4-e2b-texas42-burl-iter3-rules`. 90% bot-match on N=10 held-out, 0 retry-exhausted, 100% first-legal. Trained on 30-row rules-as-tools corpus (rank 16, 3 epochs, lr 1e-4). SFT *reinforced* the `trick_winner_if` habit (per-decision rate 1.56 → 1.70) rather than papering over it with structural reasoning — the "tools replace memorization" thesis earned a real receipt.
+
+**Pareto neighbor**: `jasonyandell/gemma-4-e2b-texas42-burl-iter1` at `--max-retries 7` — same bot-match (88.9%) but mean_eq_delta −0.16 (11× tighter than iter-3-rules). Different idiom (`trump_declared` + `is_trump` + structural reasoning); barely uses `eq_outcome_distribution`. Best single-decision quality; weaker on robustness.
+
+**Known tool-surface gap**: `conditional_outcome` has been called **zero times** across 145+ decisions covering every model tested (Haiku, Opus, every Burl adapter iter-0 through iter-4). Not a training issue — the ceiling models also skip it. Tool's raw-PDF return shape likely doesn't make the bimodality legible enough for models to invent the counterfactual probe zero-shot. Candlewax-aware return-shape redesign is queued as the cheapest environment-shape lever (see [`ITER4_PLAN.md`](ITER4_PLAN.md)).
+
+**Known training-side gap**: LoRA at rank-16 × 30 rows × 3 epochs is at or past a capacity ceiling. iter-4-thoughts (same corpus as iter-3-rules with `preserve_thoughts=True`) produced byte-for-byte identical output. Disambiguation queued: rank-64 on M5 Max to test whether more rank unlocks the thought-gradient signal or whether SFT can't retarget Gemma's pre-trained thinking reflex at all.
+
+See [`SPIKE_REPORT.md`](../SPIKE_REPORT.md) for the full scientific log and [`ITER4_PLAN.md`](ITER4_PLAN.md) for the forward plan.
+
 ## Experimental moves
 
-Ordered by most-learning-per-dollar. Status current as of 2026-04-18.
+Ordered by most-learning-per-dollar. Status current as of 2026-04-18; subsequent iterations under "Current state" above.
 
 ### Move 1 — [parked] Zeb as a callable belief tool
 
@@ -244,6 +256,9 @@ Once bot-match stabilizes, start STaR iterations: roll out on fresh decisions, f
 - **Does tool-mediated reasoning transfer to tool-less reasoning?** If we ablate tools at inference, does Burl reason from what it previously retrieved, or collapse? Matters for product scenarios where tool latency is prohibitive. Measured via ablation eval in Move 3+.
 - **Does `conditional_outcome` leak into E[Q] argmax through the back door?** A Burl that always asks `conditional_outcome(play, {})` (trivially satisfied assumption) is essentially calling `get_eq`. Watch for this pattern in Move 3 traces; if it appears, require non-trivial `assumption` structure at the tool layer.
 - **STaR on Burl traces vs STaR on LEM traces.** Does the tool-call history make the training signal cleaner or just longer? Unknown until we run iterations.
+- **Why does no model zero-shot `conditional_outcome`?** 0/145+ decisions across Haiku, Opus, and every Burl adapter. Hypothesis: raw 85-bin PDF return makes distribution shape illegible. Fix is environment-shape (`{bimodal: true, modes: [...], suggested_counterfactuals: [...]}`), not training-side. Queued as iter-5 E2 in [`ITER4_PLAN.md`](ITER4_PLAN.md).
+- **Is the preserve-thoughts byte-identical result a LoRA-capacity artifact or a base-reflex dominance?** Disambiguate with rank-64 on M5 Max; iter-5 E1 in [`ITER4_PLAN.md`](ITER4_PLAN.md).
+- **Can a single adapter land both iter-1@r7's eq-delta and iter-3-rules's robustness?** Currently Pareto-frontier points; a mixed corpus + scale bump is the natural next try.
 
 ## Directory plan (current + planned)
 
