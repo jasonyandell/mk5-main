@@ -40,6 +40,23 @@ from claude_agent_sdk import (
     tool,
 )
 
+# Opus 4.7 emits parallel tool_use blocks in one assistant message; the Agent
+# SDK spawns a concurrent handler task per block (query.py:196), and the
+# MCP low-level server's shared tool cache isn't concurrency-safe — races
+# wedge the CLI's MCP channel ("Stream closed", or silent termination at
+# turn 1). Serialize in-process MCP dispatch with a process-global lock.
+import asyncio as _asyncio
+from claude_agent_sdk._internal.query import Query as _Query
+
+_MCP_DISPATCH_LOCK = _asyncio.Lock()
+_orig_handle_sdk_mcp = _Query._handle_sdk_mcp_request
+
+async def _locked_handle_sdk_mcp(self, server_name, message):
+    async with _MCP_DISPATCH_LOCK:
+        return await _orig_handle_sdk_mcp(self, server_name, message)
+
+_Query._handle_sdk_mcp_request = _locked_handle_sdk_mcp
+
 from burl.tools import engine as engine_tools
 from burl.tools import eq_distribution as eq_tools
 from burl.tools.eq_distribution import ConditionUnreachable, OutcomeDistribution
@@ -248,8 +265,13 @@ async def run_decision_haiku(
     max_turns: int = 10,
     max_budget_usd: float = 0.10,
     decision_idx: int = 0,
+    thinking_tokens: int | None = None,
 ) -> HaikuRunResult:
-    """Run one Burl decision via Haiku through the Claude Agent SDK.
+    """Run one Burl decision via a Claude model through the Agent SDK.
+
+    ``model`` can be any model string the CLI accepts; default is Haiku 4.5.
+    ``thinking_tokens`` enables Anthropic extended thinking at that budget;
+    None disables thinking (matches the original Haiku spike behavior).
 
     The MCP server is rebuilt per call so there's no lingering state. Events
     are captured in the order the SDK emits them.
@@ -278,6 +300,7 @@ async def run_decision_haiku(
         max_turns=max_turns,
         max_budget_usd=max_budget_usd,
         setting_sources=[],
+        max_thinking_tokens=thinking_tokens,
     )
 
     events: list[dict[str, Any]] = []
