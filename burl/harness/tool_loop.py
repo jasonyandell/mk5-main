@@ -103,7 +103,9 @@ class Harness:
 
         def step_fn(t: BurlTrace, rejection: str | None) -> TurnStep:
             if turn_idx[0] >= self._max_turns:
-                raise RetryExhausted(f"max_turns={self._max_turns} exceeded")
+                raise RetryExhausted(
+                    f"max_turns={self._max_turns} exceeded", trace=t
+                )
             turn_idx[0] += 1
 
             if rejection is not None:

@@ -14,7 +14,16 @@ from burl.harness.trace import BurlTrace, TurnStep
 
 
 class RetryExhausted(RuntimeError):
-    """Model failed to produce a legal play within the retry budget."""
+    """Model failed to produce a legal play within the retry budget.
+
+    The partial `BurlTrace` (with every turn the model actually produced) is
+    attached as `.trace` so callers can still diagnose what went wrong. Re-raising
+    is still the "loud failure" signal — we just hand the evidence up with it.
+    """
+
+    def __init__(self, message: str, trace: "BurlTrace | None" = None):
+        super().__init__(message)
+        self.trace = trace
 
 
 StepFn = Callable[[BurlTrace, str | None], TurnStep]
@@ -54,5 +63,6 @@ def retry_on_illegal(
 
     raise RetryExhausted(
         f"no legal play after {max_retries} retries "
-        f"(state={trace.game_state_key}, turns={len(trace.turns)})"
+        f"(state={trace.game_state_key}, turns={len(trace.turns)})",
+        trace=trace,
     )
