@@ -186,6 +186,7 @@ No custom adapter registry, no homemade hot-swap. All leverage of vLLM's built-i
 - **Reasoning = exploring the distribution.** Burl's tool-call pattern is the expression of this — the E[Q] distribution tool gives distribution shape; engine gives facts; Burl weighs scenarios via counterfactual distributions.
 - **Two distillation dodges.** Probabilistic articulation (tool-mediated via the E[Q] distribution tool) and stylized play (future work, t42-8aep) are the non-distillation axes. Composable.
 - **Visualizer is the canonical teacher artifact.** `forge/analysis/results/web/eq_pdf_discs.html`, `eq_surface_3d.html`, `eq_game_journey.html`. Shared with LEM. Burl's rationalizations should, when visualized, trace regions of the discs/surface a strong human would.
+- **Go with the model's grain; catch it doing right.** Small models have their own instincts — Gemma reaches for a `play` verb even when our menu doesn't define one, emits thoughts in markdown when asked to reason, and keeps calling `is_legal` before every commit. Rather than fight those tendencies, bend the harness around them. If `play` is what Gemma wants, `play` is what we give it. STaR trains the *model's own best behavior* back into itself — their words, their corrections, their self-checks. We're not imposing a shape; we're amplifying one we noticed.
 
 ## Experimental moves
 
