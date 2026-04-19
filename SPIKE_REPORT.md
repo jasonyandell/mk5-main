@@ -1,3 +1,45 @@
+# Burl — Move 3 + Move 4 Spike Log
+
+## TL;DR for returning session (2026-04-19 overnight)
+
+Two full STaR iterations shipped. Cumulative session spend ~$3.22 of ~$40 authorized.
+
+**Core result — four baselines on the same N=10 held-out decisions:**
+
+| run | bot-match | complete | mean_eq_Δ | notes |
+|---|---|---|---|---|
+| **spike v2** (base Gemma, XML→native commit_play fix) | 88.9% | 9/10 | −1.92 | **best**, no training |
+| **Layer 1** (+ rules primer + 42-aware framing) | 70% | 10/10 | −3.00 | Gemma overconfident, skips eq tool |
+| **iter-0** (trained on Layer 1 corpus) | 60% | 10/10 | −3.33 | SFT baked in regression |
+| **iter-1** (trimmed primer, retrained) | 80% on 5/10 completed | 5/10 | −0.76 on completed | best per-commit quality, broke commit discipline |
+
+**Net**: we have two trained adapters on HF (`jasonyandell/gemma-4-e2b-texas42-burl-iter0`, `-iter1`), a clear picture of the design space, and **base-Gemma-with-no-training at 88.9% still beats both trained adapters**. The training loop works end-to-end; the corpus composition is the open problem.
+
+**Sharpest scientific findings**:
+
+1. **Gemma 4 E2B emits `<|tool_call>` native format zero-shot** when you use the native chat template. No format training needed.
+2. **Adding `commit_play(domino_id)` as a native tool** fixed the XML `<commit>` format mismatch that broke spike v1. This is pure philosophy-in-action: we observed Gemma wanted to emit all answers as tool calls, so we named one `commit_play` for it.
+3. **`skip_special_tokens=False` + `hf_overrides={"architectures": ["Gemma4ForCausalLM"]}`** is the vLLM 0.19 incantation that makes LoRA work with Gemma 4. Bypassed LEM's "vLLM LoRA doesn't work on Gemma4ForConditionalGeneration" punt.
+4. **The LEM rules primer is DUAL-USE**: teaches rules *and* teaches commit discipline. Dropping it entirely breaks the second; training on it (iter-0) fossilizes Gemma's overconfidence; trimming it (iter-1) got us better per-commit quality but lost commit discipline in eval.
+5. **The 42-aware framing block** (partner seat, team role, offense/defense, bid, score) is pure positive — adds 42 vocabulary at 1.5 KB prompt cost. Keep for iter-2+.
+6. **Adapter loading on vLLM cold-start adds ~2 min** (snapshot_download + engine init). Amortizes well for N=10+ eval, prohibitive for N<3.
+7. **`game_summary()` tool is written and tested in `burl/tools/engine.py`** but not yet wired into the registry. Available as a Layer 1.5 intervention if iter-2 decides Gemma needs richer pre-parsed state.
+
+**Recommended next iteration (iter-2) — three separable levers**:
+- **Re-harvest STaR corpus from spike v2 prompt shape** (no primer, no framing, ~500 bytes prompt) — we know the base is 88.9% on that. K1 wins from there are high-quality.
+- **Add explicit commit discipline** to the prompt: *"After your reasoning and tool calls, you MUST emit `commit_play(domino_id)` to end your turn. No further thinking."* — the load-bearing scaffold that the primer supplied implicitly.
+- **Bump `max_turns` to 10** at eval time so thoughtful iter-1-style reasoning fits.
+
+All three together might combine iter-1's per-commit quality with spike v2's commit discipline — but it's an iter-2 experiment, not a certainty.
+
+**Open questions for user on return**:
+1. Iter-2: now, or separate session?
+2. Do you want the trimmed primer baked into a system prompt and committed, or go all the way back to the spike v2 shape?
+3. If iter-2: wire in `game_summary()` or keep holding?
+
+---
+---
+
 # R3 Spike — Gemma 4 Native Tool-Use
 
 **Date**: 2026-04-19
