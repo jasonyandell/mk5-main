@@ -107,6 +107,10 @@ lightning_logs/
 # Zeb training checkpoints (large, use export_model.py for git-friendly snapshots)
 forge/zeb/checkpoints/
 
+# Burl LoRA adapters (100 MB each at rank 16, 400+ MB for a sweep)
+# Regenerate via burl/train/star_mlx.py or the star_iter*.py Modal launchers
+burl/adapters/
+
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
