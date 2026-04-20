@@ -15,6 +15,7 @@ from burl.harness.tool_loop import Harness, ModelCallable, ToolProtocol
 from burl.harness.trace import BurlTrace
 from burl.tools import engine as engine_tools
 from burl.tools import eq_distribution as eq_tools
+from burl.tools import meta_tools as meta_tool_mod
 from burl.tools import rules as rule_tools
 from burl.tools.eq_distribution import OutcomeDistribution
 from forge.oracle.tables import DOMINO_HIGH, DOMINO_LOW
@@ -60,6 +61,7 @@ def _outcome_to_dict(od: OutcomeDistribution) -> dict[str, Any]:
         ],
         "gap_between_modes": round(float(od.gap_between_modes), 2),
         "suggested_counterfactuals": list(od.suggested_counterfactuals),
+        "sampling_mode": str(od.sampling_mode),
     }
 
 
@@ -103,6 +105,20 @@ def _conditional_outcome_tool(
         game_state, int(play), assumption, n_samples=int(n_samples),
     )
     return _outcome_to_dict(od)
+
+
+def _what_would_change_my_mind_tool(
+    game_state: Any,
+    play: int,
+    n_samples_per_probe: int = 5,
+    top_k: int = 5,
+) -> dict[str, Any]:
+    return meta_tool_mod.what_would_change_my_mind(
+        game_state,
+        int(play),
+        n_samples_per_probe=int(n_samples_per_probe),
+        top_k=int(top_k),
+    )
 
 
 # Rules-as-tools — gated by `enable_rules_tools`. Each wrapper just coerces
@@ -160,6 +176,9 @@ def build_tool_registry(
         "trump_declared": _Tool("trump_declared", _trump_declared_tool),
         "eq_outcome_distribution": _Tool("eq_outcome_distribution", _eq_outcome_tool),
         "conditional_outcome": _Tool("conditional_outcome", _conditional_outcome_tool),
+        "what_would_change_my_mind": _Tool(
+            "what_would_change_my_mind", _what_would_change_my_mind_tool,
+        ),
     }
     if enable_rules_tools:
         registry.update(
@@ -221,6 +240,10 @@ as an argument. Emit each call as `<tool>{"name":"NAME","args":{...}}</tool>`:
       assumption shapes:
         {"player": abs_seat_int, "holds": domino_id_int}
         {"player": abs_seat_int, "void_in_suit": suit_int}
+  what_would_change_my_mind(play: int, n_samples_per_probe: int = 5, top_k: int = 5)
+      -> {play, unconditional_mean, assumptions: [{player, holds,
+         conditional_mean, shift, rationale}, ...]} — ranks unseen-world
+         assumptions by how much they swing E[Q] of `play`.
 
 Example call: <tool>{"name":"is_legal","args":{"domino_id":21}}</tool>
 
@@ -412,7 +435,7 @@ def _selftest(seed: int = 2026) -> None:
         return next(completions)
 
     registry = build_tool_registry()
-    assert len(registry) == 7, f"expected 7 tools, got {len(registry)}: {list(registry)}"
+    assert len(registry) == 8, f"expected 8 tools, got {len(registry)}: {list(registry)}"
 
     trace = run_decision(state, stub_model, max_turns=8, max_retries=3)
 

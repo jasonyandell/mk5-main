@@ -163,6 +163,29 @@ TOOL_SCHEMAS: list[dict] = [
     {
         "type": "function",
         "function": {
+            "name": "what_would_change_my_mind",
+            "description": (
+                "For a given legal play, rank unseen-world assumptions by how "
+                "much they shift E[Q] of that play. Call BEFORE committing if "
+                "you want to know which hidden facts matter — saves you from "
+                "probing blindly. Returns {play, unconditional_mean, "
+                "assumptions:[{player, holds, conditional_mean, shift, "
+                "rationale}, ...]} sorted by |shift| descending."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "play": {"type": "integer", "description": "domino_id to evaluate"},
+                    "n_samples_per_probe": {"type": "integer", "default": 5},
+                    "top_k": {"type": "integer", "default": 5},
+                },
+                "required": ["play"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "commit_play",
             "description": (
                 "Commit to your final play and end the decision. "
@@ -367,6 +390,7 @@ Rules:
 Outcome distributions:
   eq_outcome_distribution(play, n_samples=10)
   conditional_outcome(play, assumption, n_samples=10)
+  what_would_change_my_mind(play) — ranks unseen facts by E[Q] swing
 
 Three declaration families exist: pip-suit trump, doubles-trump, notrump.
 When done reasoning, call commit_play(domino_id) with an integer from your

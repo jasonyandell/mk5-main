@@ -29,6 +29,7 @@ import numpy as np
 import torch
 from scipy.signal import find_peaks
 
+from forge.eq.enumeration_gpu import enumerate_worlds_cpu
 from forge.eq.game_tensor import GameStateTensor
 from forge.eq.generate.deals import build_hypothetical_deals
 from forge.eq.generate.eq_compute import compute_eq_pdf
@@ -50,6 +51,13 @@ DEFAULT_CHECKPOINT = (
 
 N_BINS = 85  # Q in [-42, +42], bin i -> Q = i - 42
 Q_VALUES = np.arange(N_BINS, dtype=np.float32) - 42.0
+
+# "auto" mode switches from enumeration to sampling when the pool exceeds this
+# many dominoes. Empirical breakeven on M5 Max CPU: pool<=12 -> enumerate beats
+# N=10 sampling; pool>=15 -> sampling wins. See SESSION_NOTES 2026-04-19.
+_AUTO_ENUMERATE_MAX_POOL = 12
+# Hard cap for enumerate=True — refuse to blow up memory/time silently.
+_ENUMERATE_HARD_POOL_CAP = 20
 
 
 class ConditionUnreachable(RuntimeError):
@@ -88,6 +96,9 @@ class OutcomeDistribution:
     gap_between_modes: float = 0.0                            # |center_top1 - center_top2|
     suggested_counterfactuals: list[dict] = field(default_factory=list)
                                                               # [{player, holds, rationale}]
+    sampling_mode: str = "sampled"
+    # "sampled"   — N consistent worlds drawn by WorldSamplerMRV (default)
+    # "enumerated" — all worlds in the pool (exact; used when pool <= auto cutoff)
 
 
 # --------------------------------------------------------------------------- #
@@ -231,6 +242,139 @@ def _slot_for_domino(gst: GameStateTensor, play: int) -> int:
 # --------------------------------------------------------------------------- #
 # Core query: sample worlds, evaluate, aggregate                               #
 # --------------------------------------------------------------------------- #
+
+
+def _pool_size(gst: GameStateTensor) -> int:
+    """Count of dominoes neither in the current player's hand nor played.
+
+    Matches the "pool" concept in ``forge.eq.generate.sampling`` /
+    ``forge.eq.enumeration_gpu``: 28 minus played minus my hand. This is the
+    set from which ``enumerate_worlds_cpu`` partitions unknowns across the
+    three opponents.
+    """
+    me = int(gst.current_player[0].item())
+    played_count = int(gst.played_mask[0].sum().item())
+    my_hand_size = int((gst.hands[0, me] >= 0).sum().item())
+    return 28 - played_count - my_hand_size
+
+
+def _extract_enumeration_inputs(
+    gst: GameStateTensor, game_state: Any,
+) -> tuple[list[int], list[list[int]], list[int], list[set[int]], int]:
+    """Pull ``(pool, known, slots, voids, decl_id)`` out of a game state for
+    ``enumerate_worlds_cpu``.
+
+    All lists are 3-element (one per opponent) using the same "offset from me"
+    convention as ``_world_by_abs_seat``: index k -> absolute seat ``(me + 1 + k) % 4``.
+    """
+    from forge.oracle.tables import can_follow
+
+    me = int(gst.current_player[0].item())
+    decl_id = int(gst.decl_ids[0].item())
+
+    # Pool: unplayed, not in my hand.
+    played: set[int] = set()
+    for d in range(28):
+        if bool(gst.played_mask[0, d].item()):
+            played.add(d)
+    my_hand = {int(d) for d in gst.hands[0, me].tolist() if int(d) >= 0}
+    pool = [d for d in range(28) if d not in played and d not in my_hand]
+
+    # known[opp_idx] = dominoes already played by that opponent (from history).
+    # Voids inferred the same way: look at each play, if player couldn't follow
+    # the led suit, that seat is void in that suit.
+    known: list[list[int]] = [[], [], []]
+    voids: list[set[int]] = [set(), set(), set()]
+
+    history = gst.history[0].tolist()   # [28, 3] of (player, domino, lead)
+    for (p, d, lead) in history:
+        p = int(p); d = int(d); lead = int(lead)
+        if p < 0:
+            continue
+        if p == me:
+            continue
+        opp_idx = (p - me - 1) % 4
+        if opp_idx >= 3:
+            continue
+        known[opp_idx].append(d)
+        if lead < 0:
+            continue
+        # Determine led suit.
+        from forge.eq.game_tensor import LED_SUIT_TABLE
+        led_suit = int(LED_SUIT_TABLE[lead, decl_id].item())
+        if not can_follow(d, led_suit, decl_id):
+            voids[opp_idx].add(led_suit)
+
+    # slot_sizes = current hand size - known count.
+    slots: list[int] = []
+    for opp_idx in range(3):
+        abs_seat = (me + 1 + opp_idx) % 4
+        cur_hand = int((gst.hands[0, abs_seat] >= 0).sum().item())
+        slots.append(cur_hand)
+
+    return pool, known, slots, voids, decl_id
+
+
+def _enumerated_worlds_tensor(
+    gst: GameStateTensor, game_state: Any, device: str,
+) -> tuple[torch.Tensor, list[list[list[int]]]]:
+    """Enumerate all consistent worlds and pack them into the
+    ``[1, n_worlds, 3, 7]`` tensor layout ``build_hypothetical_deals`` expects.
+
+    Returns (worlds_tensor, raw_worlds) so callers that need to filter on the
+    world structure (conditional enumeration) can do so without re-deriving.
+    """
+    pool, known, slots, voids, decl_id = _extract_enumeration_inputs(gst, game_state)
+    raw = enumerate_worlds_cpu(pool, known, slots, voids=voids, decl_id=decl_id)
+    if not raw:
+        return torch.empty(1, 0, 3, 7, dtype=torch.int32, device=device), raw
+
+    n = len(raw)
+    # int32 to match WorldSamplerMRV's output and build_hypothetical_deals'
+    # scatter src dtype (int32).
+    worlds = torch.full((1, n, 3, 7), -1, dtype=torch.int32, device=device)
+    for i, world in enumerate(raw):
+        for opp_idx in range(3):
+            hand = world[opp_idx]
+            for slot, dom in enumerate(hand):
+                if slot >= 7:
+                    break
+                worlds[0, i, opp_idx, slot] = int(dom)
+    return worlds, raw
+
+
+def _q_per_enumerated_worlds(
+    gst: GameStateTensor,
+    oracle: Stage1Oracle,
+    device: str,
+    worlds: torch.Tensor,
+    chunk: int = 256,
+) -> torch.Tensor:
+    """Evaluate the oracle over every enumerated world. Returns ``[n_worlds, 7]``.
+
+    Chunks the forward pass to keep memory bounded: for a pool of 12 the
+    enumerated count can hit ~35k worlds, which we'd rather not push through
+    the tokenizer/model in one shot. For trick-6 sized pools (~90 worlds) the
+    chunk path is a no-op.
+    """
+    n_worlds = worlds.shape[1]
+    if n_worlds == 0:
+        return torch.empty(0, 7)
+
+    tokenizer = GPUTokenizer(max_batch=min(chunk, n_worlds), device=device)
+    q_chunks: list[torch.Tensor] = []
+    with torch.no_grad():
+        for start in range(0, n_worlds, chunk):
+            end = min(start + chunk, n_worlds)
+            sub = worlds[:, start:end]                        # [1, k, 3, 7]
+            k = end - start
+            deals = build_hypothetical_deals(gst, sub)        # [1, k, 4, 7]
+            tokens, masks = tokenize_batched(gst, deals, tokenizer)
+            q_values = query_model(
+                oracle.model, tokens, masks, gst, k, device,
+            )                                                  # [k, 7]
+            q_chunks.append(q_values.view(1, k, 7)[0].float().cpu())
+    return torch.cat(q_chunks, dim=0)
 
 
 def _q_per_world(
@@ -548,6 +692,7 @@ def eq_outcome_distribution(
     oracle: Stage1Oracle | None = None,
     device: str | None = None,
     suggest_counterfactuals: bool = True,
+    enumerate: str | bool = "auto",
 ) -> OutcomeDistribution:
     """Sample N consistent worlds, evaluate ``play`` under Stage 1 in each,
     return the full outcome distribution (85-bin PDF + summary stats).
@@ -555,6 +700,17 @@ def eq_outcome_distribution(
     ``play`` is a domino_id (not a slot). Voids inferred from play history are
     respected. Distribution is from the perspective of the seat currently to
     act; p_make is seat-aware (offense: Q >= 18; defense: Q >= -17).
+
+    ``enumerate`` controls the world source:
+
+    - ``"auto"`` (default) — enumerate all consistent worlds when the
+      unplayed-not-mine pool has ``<= _AUTO_ENUMERATE_MAX_POOL`` dominoes
+      (cheaper AND exact at trick 5-6), otherwise sample.
+    - ``True`` — always enumerate. Raises ``ValueError`` if the pool exceeds
+      ``_ENUMERATE_HARD_POOL_CAP`` (prevents accidental blowups).
+    - ``False`` — always sample (the original N=sampling behaviour).
+
+    The returned ``OutcomeDistribution.sampling_mode`` reports which path ran.
 
     When ``suggest_counterfactuals=True`` and the distribution is bimodal or
     multimodal, the returned ``suggested_counterfactuals`` list surfaces up to
@@ -573,9 +729,36 @@ def eq_outcome_distribution(
     bidder = int(gst.bidder[0].item())
     is_offense = (cur % 2) == (bidder % 2)
 
-    q_all, _ = _q_per_world(gst, oracle, n_samples, device)  # [n, 7]
+    pool = _pool_size(gst)
+    if enumerate is True:
+        if pool > _ENUMERATE_HARD_POOL_CAP:
+            raise ValueError(
+                f"enumerate=True refused: pool_size={pool} > "
+                f"{_ENUMERATE_HARD_POOL_CAP}. Use enumerate='auto' or False."
+            )
+        use_enumerate = True
+    elif enumerate is False:
+        use_enumerate = False
+    elif enumerate == "auto":
+        use_enumerate = pool <= _AUTO_ENUMERATE_MAX_POOL
+    else:
+        raise ValueError(
+            f"enumerate must be True, False, or 'auto'; got {enumerate!r}"
+        )
+
+    if use_enumerate:
+        worlds_tensor, _raw = _enumerated_worlds_tensor(gst, game_state, device)
+        q_all = _q_per_enumerated_worlds(gst, oracle, device, worlds_tensor)
+        n_used = q_all.shape[0]
+        sampling_mode = "enumerated"
+    else:
+        q_all, _ = _q_per_world(gst, oracle, n_samples, device)  # [n, 7]
+        n_used = q_all.shape[0]
+        sampling_mode = "sampled"
+
     q_slot = q_all[:, slot]                                   # [n]
-    dist = _distribution_from_q_slice(q_slot, play, is_offense, n_samples)
+    dist = _distribution_from_q_slice(q_slot, play, is_offense, n_used)
+    dist.sampling_mode = sampling_mode
 
     if suggest_counterfactuals and dist.distribution_shape != "unimodal":
         dist.suggested_counterfactuals = _suggest_counterfactuals(

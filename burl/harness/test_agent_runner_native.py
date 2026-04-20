@@ -45,6 +45,7 @@ _BASELINE_TOOL_NAMES = {
     "trump_declared",
     "eq_outcome_distribution",
     "conditional_outcome",
+    "what_would_change_my_mind",
 }
 
 
