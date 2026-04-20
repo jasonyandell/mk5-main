@@ -254,6 +254,12 @@ def train_iter0(
         gradient_checkpointing_kwargs={"use_reentrant": False},
         report_to="wandb",
         seed=42,
+        # Burl corpus: median ~2054 tok, max ~4210 tok (preserve_thoughts rows are
+        # long). TRL SFTConfig defaults to 1024; leaving it unset silently truncates
+        # thought-heavy rows before the loss sees them — precisely the content
+        # preserve_thoughts aims to train on. The 4096 ceiling covers 25/26 rows of
+        # the iter-3-rules corpus without truncation; bump if future corpora grow.
+        max_seq_length=4096,
     )
 
     if preserve_thoughts:
