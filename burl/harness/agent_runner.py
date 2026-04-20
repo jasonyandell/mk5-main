@@ -53,6 +53,13 @@ def _outcome_to_dict(od: OutcomeDistribution) -> dict[str, Any]:
         "percentiles": {str(k): round(float(v), 1) for k, v in od.percentiles.items()},
         "is_offense": bool(od.is_offense),
         "pdf_bins": [round(float(x), 6) for x in od.pdf_bins.tolist()],
+        "distribution_shape": str(od.distribution_shape),
+        "modes": [
+            {"center": round(float(m["center"]), 2), "mass": round(float(m["mass"]), 4)}
+            for m in od.modes
+        ],
+        "gap_between_modes": round(float(od.gap_between_modes), 2),
+        "suggested_counterfactuals": list(od.suggested_counterfactuals),
     }
 
 

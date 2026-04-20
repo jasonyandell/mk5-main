@@ -20,13 +20,14 @@ Seat / suit / domino_id conventions follow ``burl/tools/engine.py``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable
 
 import numpy as np
 import torch
+from scipy.signal import find_peaks
 
 from forge.eq.game_tensor import GameStateTensor
 from forge.eq.generate.deals import build_hypothetical_deals
@@ -64,6 +65,12 @@ class OutcomeDistribution:
     are precomputed for common Burl reasoning patterns, but the whole point of
     returning the PDF is that Burl can inspect shape (bimodality, tails) that
     the scalars hide.
+
+    Candlewax fields (``distribution_shape``, ``modes``, ``gap_between_modes``,
+    ``suggested_counterfactuals``) are computed from the PDF after bucketing.
+    They make bimodality legible to a zero-shot reader so the counterfactual
+    probe (``conditional_outcome``) is invited rather than hidden behind 85
+    raw bins.
     """
 
     play: int
@@ -76,6 +83,11 @@ class OutcomeDistribution:
     max_q: float
     percentiles: dict[int, float]  # {10, 25, 50, 75, 90}
     is_offense: bool
+    distribution_shape: str = "unimodal"         # "unimodal" | "bimodal" | "multimodal"
+    modes: list[dict] = field(default_factory=list)          # [{center, mass}, ...]
+    gap_between_modes: float = 0.0                            # |center_top1 - center_top2|
+    suggested_counterfactuals: list[dict] = field(default_factory=list)
+                                                              # [{player, holds, rationale}]
 
 
 # --------------------------------------------------------------------------- #
@@ -295,6 +307,184 @@ def _world_by_abs_seat(
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Candlewax: bimodality detection + counterfactual suggestion                  #
+# --------------------------------------------------------------------------- #
+
+# Prominence threshold as a fraction of the PDF's peak; distance in bins.
+_PEAK_PROMINENCE_FRAC = 0.04
+_PEAK_MIN_DISTANCE = 5
+_MODE_WINDOW = 3   # bins on each side of a peak to sum for mode mass
+
+
+def _detect_modes(pdf: np.ndarray) -> tuple[str, list[dict]]:
+    """Detect peaks in a normalized 85-bin PDF.
+
+    Returns (shape_label, modes). ``modes`` is a list of ``{center, mass}``
+    dicts sorted by mass descending, where ``center`` is the Q value at the
+    peak bin and ``mass`` is the PDF sum in a window of ``_MODE_WINDOW`` bins
+    on each side of the peak (clipped to bin bounds).
+    """
+    peak_height = float(pdf.max()) if pdf.size else 0.0
+    if peak_height <= 0.0:
+        return "unimodal", []
+
+    peaks, _ = find_peaks(
+        pdf,
+        prominence=_PEAK_PROMINENCE_FRAC * peak_height,
+        distance=_PEAK_MIN_DISTANCE,
+    )
+
+    if len(peaks) == 0:
+        # find_peaks skips boundary maxima; fall back to argmax so the
+        # single-mode case still reports a sensible mode.
+        argmax = int(np.argmax(pdf))
+        lo = max(0, argmax - _MODE_WINDOW)
+        hi = min(len(pdf), argmax + _MODE_WINDOW + 1)
+        return "unimodal", [{
+            "center": float(Q_VALUES[argmax]),
+            "mass": float(pdf[lo:hi].sum()),
+        }]
+
+    modes: list[dict] = []
+    for p in peaks:
+        lo = max(0, int(p) - _MODE_WINDOW)
+        hi = min(len(pdf), int(p) + _MODE_WINDOW + 1)
+        modes.append({
+            "center": float(Q_VALUES[int(p)]),
+            "mass": float(pdf[lo:hi].sum()),
+        })
+    modes.sort(key=lambda m: m["mass"], reverse=True)
+
+    if len(modes) == 1:
+        shape = "unimodal"
+    elif len(modes) == 2:
+        shape = "bimodal"
+    else:
+        shape = "multimodal"
+    return shape, modes
+
+
+def _rationale_for_mode(
+    mode_center: float,
+    mode_mass: float,
+    is_top_mode: bool,
+) -> str:
+    """Outcome-directional rationale string for one mode of a bimodal PDF.
+
+    The string tells the reader what probing this assumption DOES to the
+    distribution: does it confirm the dominant scenario, collapse the tail,
+    or swing the mean? The spike showed the model quotes this string verbatim
+    before deciding, so it must be crisp and action-shaped.
+    """
+    # "top" here means highest-mass mode; the other is the minority/tail mode.
+    if is_top_mode:
+        if mode_center >= 10.0:
+            return "confirms the winning scenario (top mode, Q>>0)"
+        if mode_center <= -10.0:
+            return "confirms the losing scenario (top mode, Q<<0)"
+        if mode_center > 0:
+            return "confirms the mildly-winning top mode"
+        if mode_center < 0:
+            return "confirms the mildly-losing top mode"
+        return "confirms the near-zero top mode"
+    # Non-top mode: the probe collapses the tail that shifts the mean.
+    if mode_center >= 10.0:
+        return "collapses the right tail — rules out the upside swing"
+    if mode_center <= -10.0:
+        return "collapses the left tail — rules out the disaster swing"
+    if mode_center > 0:
+        return "collapses a mildly-positive tail"
+    if mode_center < 0:
+        return "collapses a mildly-negative tail"
+    return "collapses a near-zero tail"
+
+
+def _seat_label(abs_seat: int, me: int) -> str:
+    """Map an absolute seat to a human label relative to the current player."""
+    offset = (abs_seat - me) % 4
+    return {0: "self", 1: "left_opp", 2: "partner", 3: "right_opp"}[offset]
+
+
+def _suggest_counterfactuals(
+    game_state: Any,
+    play: int,
+    modes: list[dict],
+    shape: str,
+    gst: GameStateTensor,
+    oracle: Stage1Oracle,
+    device: str,
+    unconditional_mean: float,
+    n_samples: int = 5,
+    max_candidates_per_seat: int = 5,
+) -> list[dict]:
+    """Find up to two ``{player, holds, rationale}`` assumptions whose conditional
+    E[Q] most moves the mean toward one of the top-two modes.
+
+    Only runs when ``shape != "unimodal"``. Restricts the search to the top
+    ``max_candidates_per_seat`` unseen dominoes per non-self seat, ranked by
+    trump-first then high-pip to keep cost bounded.
+    """
+    if shape == "unimodal" or len(modes) < 2:
+        return []
+
+    from burl.tools.engine import is_trump
+
+    me = int(gst.current_player[0].item())
+    played = set(int(d) for d in game_state.played)
+    my_hand_set = set(
+        int(d) for d in gst.hands[0, me].tolist() if int(d) >= 0
+    )
+    unseen = [d for d in range(28) if d not in played and d not in my_hand_set]
+
+    def _priority(d: int) -> tuple[int, int]:
+        return (1 if is_trump(game_state, d) else 0, d)
+
+    unseen_sorted = sorted(unseen, key=_priority, reverse=True)
+    candidates = unseen_sorted[:max_candidates_per_seat]
+
+    top_modes = modes[:2]
+    suggestions: list[dict] = []
+    seen: set[tuple[int, int]] = set()
+
+    for mode_idx, mode in enumerate(top_modes):
+        target = mode["center"]
+        is_top = mode_idx == 0
+        best: tuple[float, int, int] | None = None   # (score, seat, dom)
+        for seat_offset in (1, 2, 3):                 # skip self
+            seat = (me + seat_offset) % 4
+            for dom in candidates:
+                if (seat, dom) in seen:
+                    continue
+                try:
+                    cond = conditional_outcome(
+                        game_state, play,
+                        {"player": seat, "holds": dom},
+                        n_samples=n_samples,
+                        max_sampling_tries=20,
+                        oracle=oracle,
+                        device=device,
+                    )
+                except (ConditionUnreachable, ValueError):
+                    continue
+                # Score: closer to target AND farther from unconditional
+                # (i.e. bigger swing in the right direction).
+                toward_target = -abs(cond.mean - target)
+                swing = abs(cond.mean - unconditional_mean)
+                score = toward_target + 0.25 * swing
+                if best is None or score > best[0]:
+                    best = (score, seat, dom)
+        if best is not None:
+            _, seat, dom = best
+            seen.add((seat, dom))
+            suggestions.append({
+                "player": _seat_label(seat, me),
+                "holds": int(dom),
+                "rationale": _rationale_for_mode(target, mode["mass"], is_top),
+            })
+    return suggestions
+
+
 def _distribution_from_q_slice(
     q_slot: torch.Tensor,           # [n_kept] Q-values for the target play
     play: int,
@@ -322,6 +512,12 @@ def _distribution_from_q_slice(
     pcts = {p: float(np.percentile(q_np, p)) if q_np.size else 0.0
             for p in (10, 25, 50, 75, 90)}
 
+    shape, modes = _detect_modes(pdf)
+    if len(modes) >= 2:
+        gap = abs(modes[0]["center"] - modes[1]["center"])
+    else:
+        gap = 0.0
+
     return OutcomeDistribution(
         play=play,
         pdf_bins=pdf,
@@ -333,6 +529,10 @@ def _distribution_from_q_slice(
         max_q=float(q_np.max()) if q_np.size else 0.0,
         percentiles=pcts,
         is_offense=is_offense,
+        distribution_shape=shape,
+        modes=modes,
+        gap_between_modes=float(gap),
+        suggested_counterfactuals=[],
     )
 
 
@@ -347,6 +547,7 @@ def eq_outcome_distribution(
     n_samples: int = 10,
     oracle: Stage1Oracle | None = None,
     device: str | None = None,
+    suggest_counterfactuals: bool = True,
 ) -> OutcomeDistribution:
     """Sample N consistent worlds, evaluate ``play`` under Stage 1 in each,
     return the full outcome distribution (85-bin PDF + summary stats).
@@ -354,6 +555,11 @@ def eq_outcome_distribution(
     ``play`` is a domino_id (not a slot). Voids inferred from play history are
     respected. Distribution is from the perspective of the seat currently to
     act; p_make is seat-aware (offense: Q >= 18; defense: Q >= -17).
+
+    When ``suggest_counterfactuals=True`` and the distribution is bimodal or
+    multimodal, the returned ``suggested_counterfactuals`` list surfaces up to
+    two ``{player, holds, rationale}`` probes that most resolve the ambiguity.
+    Disable (e.g. in ``conditional_outcome``) to avoid recursion.
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -369,7 +575,20 @@ def eq_outcome_distribution(
 
     q_all, _ = _q_per_world(gst, oracle, n_samples, device)  # [n, 7]
     q_slot = q_all[:, slot]                                   # [n]
-    return _distribution_from_q_slice(q_slot, play, is_offense, n_samples)
+    dist = _distribution_from_q_slice(q_slot, play, is_offense, n_samples)
+
+    if suggest_counterfactuals and dist.distribution_shape != "unimodal":
+        dist.suggested_counterfactuals = _suggest_counterfactuals(
+            game_state=game_state,
+            play=play,
+            modes=dist.modes,
+            shape=dist.distribution_shape,
+            gst=gst,
+            oracle=oracle,
+            device=device,
+            unconditional_mean=dist.mean,
+        )
+    return dist
 
 
 Assumption = Callable[[dict[int, set[int]]], bool] | dict[str, Any]
