@@ -1,0 +1,15 @@
+# Burl local inference + training on Apple Silicon (M5 Max)
+# Install: uv pip install -r burl/requirements-mlx.txt
+
+mlx>=0.29
+mlx-lm>=0.29
+huggingface_hub>=0.27
+
+# For decision-dataset regeneration + forge oracle loading (MPS path)
+torch>=2.6
+numpy>=1.26
+pyarrow>=14.0
+lightning>=2.0
+
+# Test harness
+pytest>=8.0

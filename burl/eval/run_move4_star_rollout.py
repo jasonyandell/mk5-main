@@ -334,6 +334,8 @@ async def run_star_rollout(
     enable_rules_tools: bool = False,
     enable_primer: bool = True,
     concurrency: int = 1,
+    local: bool = False,
+    adapter_path: str | None = None,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     corpus_path.parent.mkdir(parents=True, exist_ok=True)
@@ -344,10 +346,19 @@ async def run_star_rollout(
     print(f"[star] dataset={dataset_path} n={len(dataset)}")
     print(f"[star] out_dir={out_dir}")
     print(f"[star] corpus={corpus_path}")
+    # Local path is single-instance MLX-LM; clamp concurrency to 1 and warn.
+    if local and concurrency > 1:
+        print(
+            f"[star] --local: clamping concurrency {concurrency} -> 1 "
+            f"(MLX-LM loads a single in-process model instance)",
+            flush=True,
+        )
+        concurrency = 1
     print(
         f"[star] gate_variant={gate_variant} max_gate_retries={max_gate_retries} "
         f"eq_epsilon={eq_epsilon} enable_rules_tools={enable_rules_tools} "
-        f"enable_primer={enable_primer} concurrency={concurrency}"
+        f"enable_primer={enable_primer} concurrency={concurrency} "
+        f"local={local} adapter_path={adapter_path}"
     )
     if concurrency < 1:
         raise ValueError(f"concurrency must be >= 1, got {concurrency}")
@@ -355,16 +366,40 @@ async def run_star_rollout(
     rollout_traces_path = out_dir / "rollout_traces.jsonl"
     gate_traces_path = out_dir / "gate_traces.jsonl"
 
-    from burl.modal.gemma_serve_native import GemmaServerNative, app as gemma_app
-
     wall_start = time.time()
     records: list[dict[str, Any]] = []
     gate_records: list[dict[str, Any]] = []
 
-    print("[star] opening modal app context (ephemeral)...")
-    with gemma_app.run():
-        server = GemmaServerNative()
-        model_fn = _make_modal_native_model(server)
+    # The Modal path opens an ephemeral ``gemma_app.run()`` context; the
+    # local path runs in-process with MLX-LM and needs no context manager.
+    # We use contextlib.nullcontext() to keep the rest of the orchestrator
+    # (indentation, scope of ``model_fn``) identical across branches.
+    if local:
+        from contextlib import nullcontext
+        from burl.modal.gemma_local import make_local_native_model
+
+        print("[star] loading local MLX-LM Gemma (in-process)...")
+        model_fn = make_local_native_model(
+            max_tokens=2048,
+            adapter_path=adapter_path,
+        )
+        backend_ctx = nullcontext()
+    else:
+        # Modal path — heavy import is deferred so ``--local`` runs don't
+        # require the ``modal`` package to be installed.
+        from burl.modal.gemma_serve_native import GemmaServerNative, app as gemma_app
+
+        print("[star] opening modal app context (ephemeral)...")
+        backend_ctx = gemma_app.run()
+        # ``model_fn`` is bound inside the ``with`` block below so the
+        # Modal stub's ``server`` handle is created after the context opens.
+        model_fn = None  # set inside the context
+
+    with backend_ctx as _backend:
+        if not local:
+            server = GemmaServerNative()
+            model_fn = _make_modal_native_model(server)
+        assert model_fn is not None, "model_fn must be bound before rollout"
 
         # ------------------------------------------------------------------ #
         # Phase A: rollout                                                   #
@@ -774,10 +809,45 @@ def _main() -> None:
             "Max decisions in flight against the endpoint at once. "
             "Default 1 (sequential, backwards-compatible). Modal's vLLM "
             "endpoint currently runs with max_inputs=4, so 4 is the useful "
-            "ceiling; above that the scheduler will queue."
+            "ceiling; above that the scheduler will queue. Ignored (clamped "
+            "to 1) under --local since MLX-LM is single-instance."
         ),
     )
+    parser.add_argument(
+        "--local", action="store_true",
+        help=(
+            "Run the rollout in-process via MLX-LM (burl.modal.gemma_local) "
+            "instead of dispatching to Modal/vLLM. Requires an Apple-silicon "
+            "host with mlx-lm installed. Modal stays the default for large "
+            "batch jobs; --local is for iteration on a laptop."
+        ),
+    )
+    parser.add_argument(
+        "--adapter-path", type=str, default=None,
+        help=(
+            "Filesystem path to a local MLX adapter directory, passed to "
+            "``mlx_lm.load(..., adapter_path=...)``. Only valid with "
+            "--local. Mutually exclusive with --adapter-name."
+        ),
+    )
+    # ``--adapter-name`` is the Modal-path HF repo name. It isn't registered
+    # above today, but if a future patch adds it we still want to reject the
+    # nonsensical ``--local --adapter-name X`` combination. We read it off
+    # parse_args via getattr so this guard is a no-op today.
     args = parser.parse_args()
+
+    adapter_name = getattr(args, "adapter_name", None)
+    if args.local and adapter_name is not None:
+        parser.error(
+            "--local and --adapter-name are mutually exclusive. Use "
+            "--adapter-path (a filesystem path) with --local; use "
+            "--adapter-name (an HF repo) with the Modal path."
+        )
+    if args.adapter_path is not None and not args.local:
+        parser.error(
+            "--adapter-path requires --local. For Modal runs, use "
+            "--adapter-name (HF repo name)."
+        )
 
     asyncio.run(run_star_rollout(
         dataset_path=args.dataset,
@@ -793,6 +863,8 @@ def _main() -> None:
         enable_rules_tools=args.enable_rules_tools,
         enable_primer=not args.no_primer,
         concurrency=args.concurrency,
+        local=args.local,
+        adapter_path=args.adapter_path,
     ))
 
 

@@ -241,6 +241,19 @@ def run_move4_spike(
                 enable_rules_tools=enable_rules_tools,
                 enable_primer=enable_primer,
             )
+    elif model_source == "local":
+        from burl.modal.gemma_local import make_local_native_model
+        print("[move4-spike] loading local MLX-LM Gemma (in-process)...")
+        local_call = make_local_native_model(
+            max_tokens=2048, adapter_path=adapter_name,
+        )
+        factory = lambda _dec: local_call  # noqa: E731
+        records = _loop(
+            dataset, model_source, factory,
+            out_dir, max_turns, max_retries, cost_cap_usd=None,
+            enable_rules_tools=enable_rules_tools,
+            enable_primer=enable_primer,
+        )
     else:
         raise ValueError(f"unknown model_source: {model_source!r}")
     wall_time = time.time() - wall_start
@@ -373,6 +386,11 @@ def debug_one(
         with gemma_app.run():
             server = GemmaServerNative()
             trace, retry_exhausted, err = _run(_make_modal_native_model(server))
+    elif model_source == "local":
+        from burl.modal.gemma_local import make_local_native_model
+        print("[debug-one-native] loading local MLX-LM Gemma (in-process)...")
+        local_call = make_local_native_model(max_tokens=2048)
+        trace, retry_exhausted, err = _run(local_call)
     else:
         raise ValueError(f"unknown model_source: {model_source!r}")
 
@@ -427,7 +445,13 @@ def _main() -> None:
         default=Path("burl/eval/data/move3_decisions.jsonl"),
     )
     parser.add_argument(
-        "--model-source", choices=["stub", "modal"], default="modal",
+        "--model-source", choices=["stub", "modal", "local"], default="modal",
+        help=(
+            "stub: scripted in-process model for plumbing tests. "
+            "modal: remote vLLM endpoint on Modal L4. "
+            "local: in-process MLX-LM Gemma 4 (requires burl/modal/gemma_local.py + the "
+            "mlx-community/gemma-4-e2b-it-bf16 cache). No Modal cost."
+        ),
     )
     parser.add_argument("--out-dir", type=Path, default=None)
     parser.add_argument("--n", type=int, default=None, dest="n_decisions")
@@ -437,8 +461,13 @@ def _main() -> None:
     parser.add_argument("--cost-cap-usd", type=float, default=0.50)
     parser.add_argument(
         "--adapter", type=str, default=None,
-        help="LoRA adapter alias (e.g. 'burl-iter0'); resolves to "
-             "jasonyandell/gemma-4-e2b-texas42-<adapter>",
+        help=(
+            "With --model-source modal: LoRA adapter alias (e.g. 'burl-iter0') "
+            "resolving to jasonyandell/gemma-4-e2b-texas42-<adapter>. "
+            "With --model-source local: filesystem path to an MLX adapter "
+            "directory (e.g. 'burl/adapters/e1-rank16'). "
+            "Omit for base model."
+        ),
     )
     parser.add_argument("--debug-one", action="store_true")
     parser.add_argument(
