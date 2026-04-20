@@ -111,6 +111,7 @@ def _outcome_to_dict(od: OutcomeDistribution) -> dict[str, Any]:
         ],
         "gap_between_modes": round(float(od.gap_between_modes), 2),
         "suggested_counterfactuals": list(od.suggested_counterfactuals),
+        "spike_drivers": list(od.spike_drivers),
     }
 
 

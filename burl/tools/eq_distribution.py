@@ -96,6 +96,15 @@ class OutcomeDistribution:
     gap_between_modes: float = 0.0                            # |center_top1 - center_top2|
     suggested_counterfactuals: list[dict] = field(default_factory=list)
                                                               # [{player, holds, rationale}]
+    spike_drivers: list[dict] = field(default_factory=list)
+    # For multi-modal distributions, surfaces the dominoes empirically driving
+    # each spike: "when this play lands in the disaster mode, which
+    # (seat, domino) assignments are over-represented?" Each entry:
+    #   {mode_center, mode_mass, n_worlds_in_spike, catalysts: [...]}
+    # where each catalyst is
+    #   {seat, domino, freq_in_spike, baseline, lift}.
+    # Populated only when distribution_shape != "unimodal". At small N this
+    # is noisy (n_worlds_in_spike can be ~2-3 at N=10); reliable at N>=50.
     sampling_mode: str = "sampled"
     # "sampled"   — N consistent worlds drawn by WorldSamplerMRV (default)
     # "enumerated" — all worlds in the pool (exact; used when pool <= auto cutoff)
@@ -384,20 +393,23 @@ def _q_per_world(
     device: str,
     world_filter: Callable[[np.ndarray], bool] | None = None,
     max_tries: int = 1,
-) -> tuple[torch.Tensor, int]:
-    """Sample N worlds and return per-world Q-values [n_kept, 7].
+) -> tuple[torch.Tensor, int, list[dict[int, set[int]]]]:
+    """Sample N worlds; return per-world Q-values, eval count, and seat-keyed
+    world dicts.
 
     If ``world_filter`` is provided, keep only worlds satisfying the predicate;
-    re-sample up to ``max_tries`` extra rounds to top up. Returns the kept
-    Q-values and the actual number of samples evaluated. When no filter is
-    active, this is a single pass.
+    re-sample up to ``max_tries`` extra rounds to top up. When no filter is
+    active, this is a single pass. ``worlds_kept[i]`` aligns with the ``i``-th
+    row of the returned Q tensor — spike-driver analysis needs both.
     """
     sampler = WorldSamplerMRV(max_games=1, max_samples=n_samples, device=device)
     tokenizer = GPUTokenizer(max_batch=n_samples, device=device)
 
     kept_q: list[torch.Tensor] = []
+    kept_worlds: list[dict[int, set[int]]] = []
     total_evaluated = 0
     tries = 0
+    cur = int(gst.current_player[0].item())
 
     while True:
         with torch.no_grad():
@@ -410,27 +422,26 @@ def _q_per_world(
             q_reshaped = q_values.view(1, n_samples, 7)[0]             # [n, 7]
 
         total_evaluated += n_samples
-
-        if world_filter is None:
-            kept_q.append(q_reshaped.float().cpu())
-            break
-
-        # Filter in Python — world shape is small. ``worlds[0]`` is [n, 3, 7]
-        # where index k maps to absolute seat (current_player + 1 + k) % 4.
         worlds_cpu = worlds[0].cpu().numpy()  # [n, 3, 7]
-        cur = int(gst.current_player[0].item())
         q_cpu = q_reshaped.float().cpu()
+
+        # Unified loop: convert every sampled world, optionally filter.
+        # Index k in ``worlds_cpu`` maps to absolute seat (cur + 1 + k) % 4.
         for i in range(n_samples):
             world_for_seats = _world_by_abs_seat(worlds_cpu[i], cur, gst)
-            if world_filter(world_for_seats):
-                kept_q.append(q_cpu[i:i+1])
+            if world_filter is not None and not world_filter(world_for_seats):
+                continue
+            kept_q.append(q_cpu[i:i+1])
+            kept_worlds.append(world_for_seats)
 
+        if world_filter is None:
+            break
         tries += 1
-        if sum(t.shape[0] for t in kept_q) >= n_samples or tries >= max_tries:
+        if len(kept_worlds) >= n_samples or tries >= max_tries:
             break
 
     kept = torch.cat(kept_q, dim=0) if kept_q else torch.empty(0, 7)
-    return kept, total_evaluated
+    return kept, total_evaluated, kept_worlds
 
 
 def _world_by_abs_seat(
@@ -629,11 +640,124 @@ def _suggest_counterfactuals(
     return suggestions
 
 
+_SPIKE_MIN_WORLDS = 2
+_SPIKE_MIN_FREQ_IN_SPIKE = 0.5
+_SPIKE_MIN_LIFT = 1.5
+_SPIKE_TOP_K = 3
+
+
+def _compute_spike_drivers(
+    worlds: list[dict[int, set[int]]],
+    q_values: np.ndarray,
+    modes: list[dict],
+    me: int,
+    shape: str,
+) -> list[dict]:
+    """Empirical spike-catalyst analysis.
+
+    For each mode of a non-unimodal distribution, find the (seat, domino)
+    assignments that are over-represented in the worlds whose Q-values landed
+    in that spike. Answers "when this play lands in the disaster branch, who
+    tends to be holding what?" without any hypothetical-counterfactual step.
+
+    Assignment is nearest-center: each world goes to the mode whose center is
+    closest to its Q. ``catalysts`` are ranked by ``lift = freq_in_spike /
+    baseline``, filtered to ``freq_in_spike >= _SPIKE_MIN_FREQ_IN_SPIKE`` and
+    ``lift >= _SPIKE_MIN_LIFT``, top-K per mode. Entries with ``seat == me``
+    are skipped — the model already knows its own hand.
+
+    Returns [] when shape is unimodal, when there are <2 worlds total, or when
+    no mode hits the minimum world count. At small N the freqs are coarse
+    (1/n granularity); reliable at N>=50.
+    """
+    if shape == "unimodal" or len(modes) < 2:
+        return []
+    if len(worlds) < _SPIKE_MIN_WORLDS or q_values.size < _SPIKE_MIN_WORLDS:
+        return []
+
+    centers = np.array([m["center"] for m in modes], dtype=np.float32)
+    # [n_worlds, n_modes] distance matrix; argmin along mode axis.
+    dist = np.abs(q_values[:, None] - centers[None, :])
+    mode_assignment = np.argmin(dist, axis=1)   # [n_worlds] int in [0, len(modes))
+
+    # Baseline: P(domino D in seat S) across all sampled worlds.
+    # (seat, domino) -> count.
+    n_worlds = len(worlds)
+    baseline_counts: dict[tuple[int, int], int] = {}
+    for world in worlds:
+        for seat, hand in world.items():
+            if seat == me:
+                continue
+            for dom in hand:
+                key = (seat, int(dom))
+                baseline_counts[key] = baseline_counts.get(key, 0) + 1
+
+    out: list[dict] = []
+    for mode_idx, mode in enumerate(modes):
+        mask = mode_assignment == mode_idx
+        n_in_spike = int(mask.sum())
+        if n_in_spike < _SPIKE_MIN_WORLDS:
+            continue
+
+        in_spike_counts: dict[tuple[int, int], int] = {}
+        for i, world in enumerate(worlds):
+            if not mask[i]:
+                continue
+            for seat, hand in world.items():
+                if seat == me:
+                    continue
+                for dom in hand:
+                    key = (seat, int(dom))
+                    in_spike_counts[key] = in_spike_counts.get(key, 0) + 1
+
+        catalysts: list[dict] = []
+        for key, in_spike_count in in_spike_counts.items():
+            freq_in_spike = in_spike_count / n_in_spike
+            if freq_in_spike < _SPIKE_MIN_FREQ_IN_SPIKE:
+                continue
+            baseline = baseline_counts.get(key, 0) / n_worlds
+            if baseline <= 0.0:
+                lift = float("inf")
+            else:
+                lift = freq_in_spike / baseline
+            if lift < _SPIKE_MIN_LIFT:
+                continue
+            seat, dom = key
+            catalysts.append({
+                "seat": _seat_label(seat, me),
+                "domino": int(dom),
+                "freq_in_spike": round(float(freq_in_spike), 3),
+                "baseline": round(float(baseline), 3),
+                "lift": round(float(lift), 3) if lift != float("inf") else float("inf"),
+            })
+
+        catalysts.sort(key=lambda r: -r["lift"] if r["lift"] != float("inf") else -1e9)
+        catalysts = catalysts[:_SPIKE_TOP_K]
+
+        if not catalysts:
+            continue
+
+        out.append({
+            "mode_center": float(mode["center"]),
+            "mode_mass": float(mode["mass"]),
+            "n_worlds_in_spike": n_in_spike,
+            "catalysts": catalysts,
+        })
+
+    # Order spike entries by how negative the spike center is (disaster first),
+    # matching the visualizer's read-from-bad-to-good intuition.
+    out.sort(key=lambda s: s["mode_center"])
+    return out
+
+
 def _distribution_from_q_slice(
     q_slot: torch.Tensor,           # [n_kept] Q-values for the target play
     play: int,
     is_offense: bool,
     n_samples: int,
+    worlds: list[dict[int, set[int]]] | None = None,
+    me: int | None = None,
+    include_spike_drivers: bool = True,
 ) -> OutcomeDistribution:
     """Build 85-bin PDF + summary stats from per-world Q-values for one play."""
     # compute_eq_pdf expects [N, M, 7]; we have 1 play so pad to [1, M, 1].
@@ -662,6 +786,16 @@ def _distribution_from_q_slice(
     else:
         gap = 0.0
 
+    spike_drivers: list[dict] = []
+    if include_spike_drivers and worlds is not None and me is not None:
+        spike_drivers = _compute_spike_drivers(
+            worlds=worlds,
+            q_values=q_np,
+            modes=modes,
+            me=me,
+            shape=shape,
+        )
+
     return OutcomeDistribution(
         play=play,
         pdf_bins=pdf,
@@ -677,6 +811,7 @@ def _distribution_from_q_slice(
         modes=modes,
         gap_between_modes=float(gap),
         suggested_counterfactuals=[],
+        spike_drivers=spike_drivers,
     )
 
 
@@ -692,6 +827,7 @@ def eq_outcome_distribution(
     oracle: Stage1Oracle | None = None,
     device: str | None = None,
     suggest_counterfactuals: bool = True,
+    include_spike_drivers: bool = True,
     enumerate: str | bool = "auto",
 ) -> OutcomeDistribution:
     """Sample N consistent worlds, evaluate ``play`` under Stage 1 in each,
@@ -751,13 +887,29 @@ def eq_outcome_distribution(
         q_all = _q_per_enumerated_worlds(gst, oracle, device, worlds_tensor)
         n_used = q_all.shape[0]
         sampling_mode = "enumerated"
+        # Convert enumerated raw worlds to seat-keyed dicts in the same order
+        # as q_all so spike-driver analysis can align Q-values to worlds.
+        cur_me = int(gst.current_player[0].item())
+        my_hand = {int(d) for d in gst.hands[0, cur_me].tolist() if int(d) >= 0}
+        worlds_list: list[dict[int, set[int]]] = []
+        for raw_world in _raw:
+            world_dict: dict[int, set[int]] = {cur_me: set(my_hand)}
+            for k in range(3):
+                abs_seat = (cur_me + 1 + k) % 4
+                world_dict[abs_seat] = {int(d) for d in raw_world[k]}
+            worlds_list.append(world_dict)
     else:
-        q_all, _ = _q_per_world(gst, oracle, n_samples, device)  # [n, 7]
+        q_all, _, worlds_list = _q_per_world(gst, oracle, n_samples, device)  # [n, 7]
         n_used = q_all.shape[0]
         sampling_mode = "sampled"
 
+    me = int(gst.current_player[0].item())
     q_slot = q_all[:, slot]                                   # [n]
-    dist = _distribution_from_q_slice(q_slot, play, is_offense, n_used)
+    dist = _distribution_from_q_slice(
+        q_slot, play, is_offense, n_used,
+        worlds=worlds_list, me=me,
+        include_spike_drivers=include_spike_drivers,
+    )
     dist.sampling_mode = sampling_mode
 
     if suggest_counterfactuals and dist.distribution_shape != "unimodal":
@@ -849,7 +1001,7 @@ def conditional_outcome(
 
     predicate = _build_assumption_predicate(assumption, game_state)
 
-    q_all, _ = _q_per_world(
+    q_all, _, _worlds_kept = _q_per_world(
         gst, oracle, n_samples, device,
         world_filter=predicate, max_tries=max_sampling_tries,
     )
@@ -861,7 +1013,13 @@ def conditional_outcome(
         )
 
     q_slot = q_all[:, slot]
-    return _distribution_from_q_slice(q_slot, play, is_offense, q_slot.shape[0])
+    # Spike-driver analysis is disabled in conditional_outcome: the
+    # distribution is already restricted to an assumption; per-spike catalysts
+    # on that slice would be circular.
+    return _distribution_from_q_slice(
+        q_slot, play, is_offense, q_slot.shape[0],
+        include_spike_drivers=False,
+    )
 
 
 # --------------------------------------------------------------------------- #
