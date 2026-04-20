@@ -1,5 +1,40 @@
 # Burl — Tool-using Texas 42 agent
 
+> **Status update — 2026-04-20: pivoting away from LLM-as-reasoner (for now).**
+>
+> Over several sessions we trained three models through STaR loops on 42 decisions:
+> Gemma 4 E2B, Qwen 3 (1.7B), and Qwen 3.6-35B-A3B (MoE). The candlewax-spike
+> overnight run produced `qwen_adapter_v7` that beats base Qwen3.6 by +15%
+> bot-match on held-out trick-6 decisions, confirming the pipeline works
+> end-to-end (snapshot → rollout → prediction-block + engine fact-check → STaR
+> filter → mlx-vlm LoRA → held-out eval), all local on M5 Max at $0 marginal
+> cost. What we learned:
+>
+> - **Image-as-alignment works**: multimodal candlewax PDFs shortcut models
+>   (Haiku/Opus/Qwen) into the oracle's outcome-distribution frame. Small
+>   models were rescued by the image on decisions they missed plain.
+> - **Engine-as-fact-checker works** (`post_commit_sim.py` + prediction
+>   blocks): no LLM judge needed, catches rules-level errors at $0 per call.
+> - **mlx-vlm LoRA on Qwen3.6-35B-A3B MoE is practical**: 12M trainable params,
+>   21 GB peak, 2 it/s on M5 Max. LR=3e-6 with early stop at loss ~3 trains
+>   without collapsing. LR=1e-5 collapses into repetition loops every time.
+> - **STaR iteration doesn't compound without reasoning-quality verification.**
+>   V8 (iter 2) plateaued vs V7. V9 (broader corpus) regressed. The filter
+>   we have (K1 + winner-prediction-match) is too coarse to distinguish
+>   "coherent-reasoning, unlucky play" from "lucky bot-match on garbage
+>   reasoning." Without that distinction, iterations converge on noise.
+>
+> **The core unsolved problem**: verifying reasoning *coherence* (not just
+> play outcome or discrete fact-check) requires a real reasoning verifier
+> we haven't built. That's a multi-week subproject, not a weekend extension.
+> Moving on from this particular hill. Infrastructure and lessons transfer
+> to future iterations; see `burl/candlewax_spike/` for the complete pipeline
+> and `scratch/candlewax_spike/` for all eval runs + trained adapters.
+>
+> Original Burl plan below remains the long-form reference.
+>
+> ---
+
 Can a small model play 42 through **tool orchestration** — asking the engine for facts, asking the E[Q] framework for outcome distributions, reasoning between calls — instead of memorizing the game in its weights?
 
 The name is a common Texas name from the 1930s. It's not an acronym. Sibling to LEM, not successor.
