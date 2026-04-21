@@ -39,6 +39,11 @@ Examples:
   # Adaptive with custom thresholds (tighter convergence)
   python -m forge.eq.generate --start-seed 0 --n-games 10 --adaptive \\
       --min-samples 100 --max-samples 5000 --sem-threshold 0.3
+
+  # Diverse-seed recipe: 10 declarations per seed (matches oracle training).
+  # 100 games = 10 seeds x 10 decls.
+  python -m forge.eq.generate --start-seed 0 --n-games 100 --n-decl-per-seed 10 \\
+      --samples 500
 """,
     )
 
@@ -49,7 +54,15 @@ Examples:
     )
     parser.add_argument(
         "--n-games", type=int, required=True,
-        help="Number of games to generate"
+        help="Total number of (seed, decl) games to generate. "
+             "With --n-decl-per-seed N, this must be divisible by N; "
+             "the first n_games/N seeds are expanded across the first N decls."
+    )
+    parser.add_argument(
+        "--n-decl-per-seed", type=int, default=1,
+        help="Declarations generated per seed (default: 1, backwards-compat). "
+             "When >1, each seed is expanded across decl_ids 0..N-1. "
+             "n-games must be divisible by this value. Max 10."
     )
 
     # Quality parameters
@@ -140,6 +153,26 @@ Examples:
 
     args = parser.parse_args()
 
+    # Validate decl-per-seed expansion
+    if args.n_decl_per_seed < 1:
+        print(f"Error: --n-decl-per-seed must be >= 1 (got {args.n_decl_per_seed}).", flush=True)
+        return 1
+    if args.n_decl_per_seed > 10:
+        print(
+            f"Error: --n-decl-per-seed must be <= 10 (got {args.n_decl_per_seed}); "
+            f"only 10 distinct declarations exist.",
+            flush=True,
+        )
+        return 1
+    if args.n_games % args.n_decl_per_seed != 0:
+        print(
+            f"Error: --n-games ({args.n_games}) must be divisible by "
+            f"--n-decl-per-seed ({args.n_decl_per_seed}).",
+            flush=True,
+        )
+        return 1
+    n_seeds = args.n_games // args.n_decl_per_seed
+
     # Resolve device
     device = args.device
     if device == "cuda" and not torch.cuda.is_available():
@@ -175,18 +208,49 @@ Examples:
     if args.output:
         output_path = args.output
     else:
-        end_seed = args.start_seed + args.n_games - 1
-        output_path = f"forge/data/eq_pdf_{args.start_seed}-{end_seed}_{args.samples}s.pt"
+        # Default path mirrors seed range actually covered. When expanding
+        # across decls, include the decl-per-seed count in the filename.
+        end_seed = args.start_seed + n_seeds - 1
+        if args.n_decl_per_seed > 1:
+            output_path = (
+                f"forge/data/eq_pdf_s{args.start_seed}-{end_seed}"
+                f"_d{args.n_decl_per_seed}_{args.samples}s.pt"
+            )
+        else:
+            output_path = (
+                f"forge/data/eq_pdf_{args.start_seed}-{end_seed}_{args.samples}s.pt"
+            )
 
     # Load model
     from forge.eq.oracle import Stage1Oracle
     print(f"Loading model from {checkpoint_path}...", flush=True)
     oracle = Stage1Oracle(checkpoint_path, device=device, compile=False)
 
-    # Generate deals
+    # Generate deals.
+    #
+    # Default (n_decl_per_seed=1): one game per seed, decl_ids rotate 0..9.
+    #     hands  = [deal(s0), deal(s0+1), ...]
+    #     decls  = [0, 1, 2, ...]
+    #
+    # Expanded (n_decl_per_seed=N): n_seeds seeds, each expanded across N
+    # declarations 0..N-1. Matches the oracle's training recipe for state
+    # diversity (see gus/PRACTICALITIES.md #8).
+    #     hands  = [deal(s0), deal(s0), ..., deal(s0+1), deal(s0+1), ...]
+    #     decls  = [0, 1, ..., N-1,       0, 1, ..., N-1,       ...]
     from forge.oracle.rng import deal_from_seed
-    hands = [deal_from_seed(args.start_seed + i) for i in range(args.n_games)]
-    decl_ids = [i % 10 for i in range(args.n_games)]
+    if args.n_decl_per_seed == 1:
+        hands = [deal_from_seed(args.start_seed + i) for i in range(args.n_games)]
+        decl_ids = [i % 10 for i in range(args.n_games)]
+    else:
+        hands = []
+        decl_ids = []
+        for seed_offset in range(n_seeds):
+            deal = deal_from_seed(args.start_seed + seed_offset)
+            for decl in range(args.n_decl_per_seed):
+                hands.append(deal)
+                decl_ids.append(decl)
+        assert len(hands) == args.n_games
+        assert len(decl_ids) == args.n_games
 
     # Configure posterior
     posterior_config = None
@@ -217,7 +281,19 @@ Examples:
         )
 
     # Run generation
-    print(f"Generating {args.n_games} games (seeds {args.start_seed}-{args.start_seed + args.n_games - 1})", flush=True)
+    if args.n_decl_per_seed > 1:
+        print(
+            f"Generating {args.n_games} games = "
+            f"{n_seeds} seeds ({args.start_seed}..{args.start_seed + n_seeds - 1}) "
+            f"x {args.n_decl_per_seed} decls (0..{args.n_decl_per_seed - 1})",
+            flush=True,
+        )
+    else:
+        print(
+            f"Generating {args.n_games} games "
+            f"(seeds {args.start_seed}-{args.start_seed + args.n_games - 1})",
+            flush=True,
+        )
     if args.adaptive:
         print(f"  Adaptive: enabled (min={args.min_samples}, max={args.max_samples}, "
               f"batch={args.batch_size}, SEM<{args.sem_threshold})", flush=True)
@@ -252,10 +328,16 @@ Examples:
 
     print(f"Generated {len(results)} games in {elapsed:.1f}s ({len(results)/elapsed:.2f} games/s)", flush=True)
 
-    # Save results
+    # Save results. `seeds` matches `results` 1:1 — when a seed is reused
+    # across decls it appears multiple times, mirroring `hands`/`decl_ids`.
+    per_game_seeds = [args.start_seed + (i // args.n_decl_per_seed) for i in range(args.n_games)]
     save_dict = {
         'results': results,
-        'seeds': list(range(args.start_seed, args.start_seed + args.n_games)),
+        'seeds': per_game_seeds,
+        'decl_ids': decl_ids,
+        'start_seed': args.start_seed,
+        'n_seeds': n_seeds,
+        'n_decl_per_seed': args.n_decl_per_seed,
         'checkpoint': checkpoint_path,
         'enumerate': args.enumerate,
         'posterior': args.posterior,
