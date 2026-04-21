@@ -66,6 +66,7 @@ def generate_eq_games_gpu(
     adaptive_config: AdaptiveConfig | None = None,
     seeds: list[int] | None = None,
     use_cuda_graph: bool = False,
+    save_joint_worlds: bool = False,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -108,6 +109,8 @@ def generate_eq_games_gpu(
     """
     if device == 'cuda' and not torch.cuda.is_available():
         raise RuntimeError("CUDA not available. GPU-only pipeline requires CUDA.")
+    if device == 'mps' and not torch.backends.mps.is_available():
+        raise RuntimeError("MPS requested but not available on this machine.")
 
     n_games = len(hands)
 
@@ -172,10 +175,15 @@ def generate_eq_games_gpu(
 
         use_posterior = posterior_config is not None and posterior_config.enabled
 
+        # Joint-world tensors for this decision (populated per-branch below).
+        jw_hands = None
+        jw_q = None
+
         if use_adaptive and not should_enumerate:
             # Adaptive convergence-based sampling
             if use_posterior:
                 # Adaptive + posterior: use weighted statistics
+                # Note: joint-world save not supported in adaptive+posterior path.
                 e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge = sample_until_convergence_posterior(
                     states=states,
                     sampler=sampler,
@@ -190,7 +198,7 @@ def generate_eq_games_gpu(
                 )
             else:
                 # Adaptive without posterior: simple statistics
-                e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge = sample_until_convergence(
+                e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge, adapt_wh, adapt_qpw = sample_until_convergence(
                     states=states,
                     sampler=sampler,
                     tokenizer=tokenizer,
@@ -200,7 +208,11 @@ def generate_eq_games_gpu(
                     decision_idx=decision_idx,
                     seeds=seeds,
                     use_cuda_graph=use_cuda_graph,
+                    save_joint_worlds=save_joint_worlds,
                 )
+                if save_joint_worlds:
+                    jw_hands = adapt_wh
+                    jw_q = adapt_qpw
         else:
             # Fixed sampling (original behavior)
             # 1. Sample or enumerate consistent worlds for all games
@@ -229,6 +241,11 @@ def generate_eq_games_gpu(
 
             # 5. Reduce to E[Q] per game (with optional posterior weighting)
             q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
+
+            # Joint-world save (fixed-sampling path — raw, not posterior-reweighted)
+            if save_joint_worlds:
+                jw_hands = worlds
+                jw_q = q_reshaped
 
             if posterior_config and posterior_config.enabled:
                 e_q, e_q_var, e_q_pdf, diagnostics = compute_posterior_weighted_eq(
@@ -266,7 +283,13 @@ def generate_eq_games_gpu(
         actions, exploration_stats = select_actions(states, e_q, e_q_pdf, greedy, exploration_policy, rng)
 
         # 7. Record decisions
-        record_decisions(states, e_q, e_q_var, e_q_pdf, actions, all_decisions, diagnostics, exploration_stats, n_samples_used, did_converge)
+        # jw_hands / jw_q populated per-branch above (fixed sampling or adaptive
+        # non-posterior). Adaptive + posterior path still skipped.
+        record_decisions(
+            states, e_q, e_q_var, e_q_pdf, actions, all_decisions,
+            diagnostics, exploration_stats, n_samples_used, did_converge,
+            world_hands=jw_hands, q_per_world=jw_q,
+        )
 
         # 8. Apply actions and advance state
         # Ensure actions are on same device as states

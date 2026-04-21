@@ -1,6 +1,12 @@
 # Gus — Neural policy + belief + value for Texas 42
 
-> **Status — 2026-04-20: kickoff. No code yet. This doc is the hypothesis.**
+> **Status — 2026-04-20: pivoted to joint-world distillation.**
+> Tire-kick validated the per-world `(world_layout, Q_per_world)` tensor
+> as a distillation target (`forge/eq/generate/` now saves this natively
+> on `--save-joint-worlds`, tested end-to-end on MPS in ~10s/game at
+> SEM<0.5 adaptive). Move 0 is now a five-head LAMIR-ready student. See
+> [`BUILD_PLAN.md`](BUILD_PLAN.md) for the concrete architecture +
+> training plan currently underway.
 
 Can a small neural network — policy + belief + value, multi-task trunk, trained
 against the E[Q] oracle — play 42 competently, after LEM and Burl both stalled
@@ -172,22 +178,29 @@ Adds:
 Ordered by most-learning-per-dollar. Each move is also a potential "stop here
 and ship if it's good enough" checkpoint.
 
-### Move 0 — [todo] Behavior-clone E[Q] onto a small transformer
+### Move 0 — [in flight] Joint-world distillation → five-head LAMIR-ready student
 
-The cheapest experiment that gives the most information. Hours on M5 Max.
+**Pivoted 2026-04-20 after tire-kicking the joint-world tensor.** The original
+"BC the E[Q] bot" plan threw away too much structure; the per-world
+`(world_layout, Q_per_world)` tensor from the oracle carries catalyst
+signals that post-hoc tools (`spike_drivers`, `what_would_change_my_mind`)
+were trying to reconstruct. Preserving it natively makes the student
+LAMIR-ready by construction — the Q head can re-weight cached per-world
+values during look-ahead without any oracle calls.
 
-- Tokenize game states (reuse LEM's tokenizer; add belief-feature tokens).
-- Small shared trunk (start at ~10M params — Zeb-class).
-- SFT policy head on `(state, argmax_E[Q])` pairs from existing oracle data.
-- Parallel: SFT belief head on `(observable_state, true_posterior)`.
-- Parallel: SFT value head on `(state, E[Q])` scalar.
-- Measure: bot-match on held-out trick-6 decisions; belief top-1;
-  value MAE vs oracle.
+Five heads on a shared state encoder:
 
-**Decision point.** If bot-match ≥ 90% out of the gate, we've basically
-reconstructed modern Bridge-AI's card-play loop with none of the RL pain.
-Ship. If bot-match sits < 80%, the bottleneck is architectural or
-representational — debug before RL, not during.
+1. **`belief_head`**: state → P(dom ∈ seat). Supervised against truth.
+2. **`V_head`**: state → E[Q]. Supervised against oracle mean.
+3. **`π_me_head`**: state → action softmax. Supervised against oracle argmax.
+4. **`world_encoder + Q_head`**: (state, world) → Q per world. **LAMIR-critical.**
+5. **`π_opp_head`** (v2): (state, opp_seat) → opp action. Deferred — needs
+   opponent-view oracle queries in the corpus.
+
+Corpus: 100 games, adaptive sampling to SEM<0.5, generated on MPS in ~17 min.
+See [`BUILD_PLAN.md`](BUILD_PLAN.md) for concrete architecture, loss shape,
+data schema, training stages (v0 belief-only → v1 full → v2 LAMIR), and
+success bars.
 
 ### Move 1 — [todo] PPO self-play fine-tune
 

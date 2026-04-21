@@ -124,6 +124,14 @@ Examples:
         help="SEM threshold for convergence in Q-value points (default: 0.5)"
     )
 
+    # Joint-world tensor (distillation tire-kick; gus/)
+    parser.add_argument(
+        "--save-joint-worlds", action="store_true",
+        help="Save per-world hand layouts and Q-values on each decision record. "
+             "Enables distillation of the joint (belief, Q) distribution. "
+             "Fixed-sampling path only; skipped in adaptive mode."
+    )
+
     # Device
     parser.add_argument(
         "--device", type=str, default="cuda",
@@ -135,8 +143,13 @@ Examples:
     # Resolve device
     device = args.device
     if device == "cuda" and not torch.cuda.is_available():
-        print("Error: CUDA not available. GPU-only pipeline requires CUDA.", flush=True)
-        return 1
+        # Tire-kick fallback: try MPS (Apple Silicon), else CPU.
+        if torch.backends.mps.is_available():
+            print("Warning: CUDA unavailable; falling back to MPS.", flush=True)
+            device = "mps"
+        else:
+            print("Warning: CUDA unavailable; falling back to CPU (slow).", flush=True)
+            device = "cpu"
 
     # Find checkpoint
     if args.checkpoint:
@@ -217,6 +230,8 @@ Examples:
         print(f"  Posterior: enabled (k={args.posterior_k})", flush=True)
     if exploration_policy:
         print(f"  Exploration: {args.exploration}", flush=True)
+    if args.save_joint_worlds:
+        print(f"  Joint-world tensor: saving per-decision (world_hands, q_per_world)", flush=True)
 
     t0 = time.perf_counter()
     results = generate_eq_games_gpu(
@@ -231,6 +246,7 @@ Examples:
         use_enumeration=args.enumerate,
         enumeration_threshold=args.enum_threshold,
         adaptive_config=adaptive_config,
+        save_joint_worlds=args.save_joint_worlds,
     )
     elapsed = time.perf_counter() - t0
 

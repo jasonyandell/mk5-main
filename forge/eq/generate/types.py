@@ -77,6 +77,11 @@ class DecisionRecordGPU:
     # Adaptive sampling stats (None if fixed sampling)
     n_samples: int | None = None  # Actual samples used (for adaptive: may vary per decision)
     converged: bool | None = None  # True if SEM < threshold, False if hit max_samples
+    # Joint-world tensor (opt-in via --save-joint-worlds; fixed-sampling path only)
+    # Keeps the raw (world_layout, Q_per_world) tensor that compute_eq_pdf collapses.
+    # Enables distillation of the joint belief-Q distribution, not just the marginal PDF.
+    world_hands: Tensor | None = None  # [M, 3, 7] sampled opponent dominoes per world
+    q_per_world: Tensor | None = None  # [M, 7] oracle Q per action per world
 
 
 @dataclass

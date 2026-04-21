@@ -144,6 +144,8 @@ def record_decisions(
     exploration_stats: list | None = None,
     n_samples_used: int | None = None,
     did_converge: bool | None = None,
+    world_hands: Tensor | None = None,
+    q_per_world: Tensor | None = None,
 ):
     """Record decisions for each game (in-place).
 
@@ -158,6 +160,8 @@ def record_decisions(
         exploration_stats: Optional exploration stats (one per game)
         n_samples_used: Optional number of samples used (for adaptive mode)
         did_converge: Optional convergence status (for adaptive mode)
+        world_hands: Optional [n_games, M, 3, 7] sampled opponent hands per world
+        q_per_world: Optional [n_games, M, 7] oracle Q-values per action per world
     """
     n_games = states.n_games
     legal_mask = states.legal_actions()
@@ -207,6 +211,8 @@ def record_decisions(
             greedy_action=greedy_action,
             n_samples=n_samples_used,
             converged=did_converge,
+            world_hands=world_hands[g].cpu() if world_hands is not None else None,
+            q_per_world=q_per_world[g].cpu() if q_per_world is not None else None,
         )
         all_decisions[g].append(record)
 
