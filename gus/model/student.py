@@ -348,6 +348,67 @@ def pi_me_accuracy(pi_logits: Tensor, legal_mask: Tensor, action_taken: Tensor) 
     return int((preds == action_taken).sum().item()), int(action_taken.numel())
 
 
+def v3_consistency_loss(
+    out: dict[str, Tensor],
+    batch: dict[str, Tensor],
+    weights: dict[str, float] | None = None,
+) -> tuple[Tensor, dict[str, float]]:
+    """Joint loss for v3: v1_full_loss + V/π consistency regularizer.
+
+    Adds ``L_consistency = (V_head.detach() - policy_expected_Q)^2`` where
+    ``policy_expected_Q = Σ_legal softmax(pi_me_logits) * e_q``. Penalizes
+    the observed pathology where V_head predicts the oracle's max legal
+    E[Q] correctly but π_me concentrates probability on suboptimal actions
+    (blunder forensics receipt #4). Detaching V keeps the gradient flowing
+    toward π only — don't let consistency pressure corrupt the value head.
+
+    Returns (total_loss, per-head scalar dict).
+    """
+    if weights is None:
+        weights = {"belief": 1.0, "v": 0.5, "pi_me": 0.5, "q": 1.0, "consistency": 0.3}
+
+    # --- Belief loss (masked CE per unseen domino slot) ---
+    L_belief = belief_loss(out["belief_logits"], batch["belief_target"], batch["belief_mask"])
+
+    # --- V loss: MSE against e_q[action_taken] ---
+    B = batch["e_q"].shape[0]
+    e_q_at_action = batch["e_q"][torch.arange(B, device=batch["e_q"].device), batch["action_taken"]]
+    L_v = nn.functional.mse_loss(out["v"], e_q_at_action)
+
+    # --- π_me loss: CE against action_taken, legal-masked ---
+    pi_logits = out["pi_me_logits"].masked_fill(~batch["legal_mask"], -1e9)
+    L_pi = nn.functional.cross_entropy(pi_logits, batch["action_taken"])
+
+    # --- Q loss: MSE against q_per_world on legal actions ---
+    legal_f = batch["legal_mask"].float()
+    sq_err = (out["q"] - batch["q_per_world"]) ** 2 * legal_f
+    n_legal = legal_f.sum().clamp(min=1.0)
+    L_q = sq_err.sum() / n_legal
+
+    # --- Consistency loss: V_head.detach() vs policy-expected Q ---
+    # softmax over legal actions only
+    pi_softmax = torch.softmax(pi_logits, dim=-1)  # [B, 7]
+    policy_expected_q = (pi_softmax * batch["e_q"]).sum(dim=-1)  # [B]
+    L_consistency = nn.functional.mse_loss(policy_expected_q, out["v"].detach())
+
+    total = (
+        weights["belief"] * L_belief
+        + weights["v"] * L_v
+        + weights["pi_me"] * L_pi
+        + weights["q"] * L_q
+        + weights["consistency"] * L_consistency
+    )
+
+    return total, {
+        "L_total": float(total.item()),
+        "L_belief": float(L_belief.item()),
+        "L_v": float(L_v.item()),
+        "L_pi": float(L_pi.item()),
+        "L_q": float(L_q.item()),
+        "L_consistency": float(L_consistency.item()),
+    }
+
+
 # --- v2: voids-aware student --------------------------------------------------
 
 N_VOIDS_FEATURES = 24  # 3 relative opponents × 8 suits
