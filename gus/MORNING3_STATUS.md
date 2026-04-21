@@ -1,4 +1,4 @@
-# Gus — Morning Status 3 (Final) (2026-04-21 02:55 CDT)
+# Gus — Morning Status 3 (Final) (2026-04-21 03:28 CDT)
 
 ## TL;DR
 
@@ -22,6 +22,7 @@ Mean regret on held-out 560 decisions (20 games × 28 decisions). Lower = better
 | v2_voids_big (1000g, d=256/6L, 3.4M) | 62.7% | 2.10 | 70.5% |
 | v2_voids_big (2000g, d=256/6L, 3.4M) | 67.3% | 1.60 | 75.4% |
 | v2_voids_xl (2000g, d=384/6L, 7.4M, 100ep) | 65.7% | 1.65 | 75.2% |
+| v2_voids_big_long (2000g, d=256/6L, 3.4M, 120ep) | 66.8% | 1.64 | 75.0% |
 
 *Bot-match chance ≈ 25% (4 legal moves avg). Q range is [-42, +42].*
 
@@ -93,39 +94,39 @@ The student's highest-regret decisions (0, 4, 8, 11, 12, 16) are **the same deci
 ## Regret breakdown — best adapter
 
 ```
-Adapter: /Users/jason/code/mk5-main/gus/adapters/v2_voids_2000g_xl.pt  device: cpu
+Adapter: /Users/jason/code/mk5-main/gus/adapters/v2_voids_2000g_big_long.pt  device: cpu
 
 === Summary over 560 decisions ===
-  Bot-match rate:           65.714%
-  Mean regret (Q-points):   1.653
-  Decisions with regret<0.5: 421/560 = 75.2% (near-ties)
+  Bot-match rate:           66.786%
+  Mean regret (Q-points):   1.641
+  Decisions with regret<0.5: 420/560 = 75.0% (near-ties)
 
 === Per-decision regret + bot-match ===
 dec     bot    regret  near-tie    n
-  0  55.00%      3.07     60.0%   20
-  1  65.00%      2.78     70.0%   20
-  2  75.00%      0.54     80.0%   20
-  3  90.00%      0.39     90.0%   20
-  4  45.00%      5.91     45.0%   20
-  5  60.00%      2.00     70.0%   20
-  6  60.00%      3.82     65.0%   20
-  7  75.00%      0.94     85.0%   20
-  8  25.00%      4.23     40.0%   20
-  9  45.00%      1.29     70.0%   20
- 10  45.00%      3.33     50.0%   20
- 11  80.00%      2.95     80.0%   20
- 12  25.00%      4.00     30.0%   20
- 13  60.00%      0.81     80.0%   20
- 14  50.00%      2.04     60.0%   20
- 15  60.00%      1.84     70.0%   20
- 16  30.00%      2.60     50.0%   20
- 17  80.00%      0.23     95.0%   20
- 18  55.00%      0.70     70.0%   20
- 19  65.00%      1.46     80.0%   20
- 20  80.00%      0.17     90.0%   20
- 21  85.00%      0.36     90.0%   20
- 22  70.00%      0.40     95.0%   20
- 23  60.00%      0.42     90.0%   20
+  0  50.00%      3.92     55.0%   20
+  1  75.00%      0.89     75.0%   20
+  2  75.00%      0.30     85.0%   20
+  3  80.00%      0.55     80.0%   20
+  4  35.00%      6.16     35.0%   20
+  5  60.00%      2.73     70.0%   20
+  6  65.00%      2.01     75.0%   20
+  7  75.00%      0.47     90.0%   20
+  8  35.00%      3.90     40.0%   20
+  9  50.00%      2.18     65.0%   20
+ 10  65.00%      1.29     70.0%   20
+ 11  80.00%      2.38     80.0%   20
+ 12  55.00%      3.06     55.0%   20
+ 13  70.00%      0.64     90.0%   20
+ 14  45.00%      2.20     50.0%   20
+ 15  70.00%      0.83     80.0%   20
+ 16  30.00%      3.45     50.0%   20
+ 17  70.00%      0.60     90.0%   20
+ 18  60.00%      0.74     70.0%   20
+ 19  65.00%      1.64     70.0%   20
+ 20  55.00%      2.85     75.0%   20
+ 21  60.00%      1.69     75.0%   20
+ 22  75.00%      0.60     90.0%   20
+ 23  70.00%      0.86     85.0%   20
  24  100.00%      0.00    100.0%   20
  25  100.00%      0.00    100.0%   20
  26  100.00%      0.00    100.0%   20
@@ -183,6 +184,7 @@ Final best composite: 0.1974
 ## Commits this session
 
 ```
+5cdec8a docs(gus): MORNING3_STATUS.md — final overnight report
 a50c9ef eval(gus): decision-hardness analyzer
 0472125 docs(gus): MORNING2_STATUS.md — 2000-game scaling, 1.60 Q-pt mean regret
 2a09050 eval(gus): regret-based eval — E[Q] lost vs oracle's best legal
@@ -202,7 +204,6 @@ b0952a2 feat(burl): spike_drivers — empirical mode-catalyst dominoes on eq_out
 ed3cfc3 bench(burl): MLX-LM batch_generate ceiling on M5 Max — 43 → 1334 tok/s
 7321952 feat(burl): enumerate=auto + what_would_change_my_mind — tool-surface levers
 ceca203 docs(burl): iter-5 E1 + E2 writeups — truncation reframe, candlewax null
-1efb9c5 feat(burl): candlewax-aware eq_outcome_distribution return (ITER4_PLAN §2 E2)
 ```
 
 ## Directions left open
