@@ -294,6 +294,47 @@ adapter fallback is even worse (1.55). **Without an oracle budget, the
 detect-and-route architecture is blocked on the Q-head-variance fix**
 (multi-world training regularizer or K=100+ at inference).
 
+## 15. Distribution-target belief calibration — works in isolation, doesn't propagate
+
+Frozen-trunk fine-tune of just the belief head with a **soft** target —
+the empirical marginal `P(domino ∈ seat)` over the M sampled worlds
+already saved in `world_hands`, instead of the one-hot truth. Script
+at `scratch/train_belief_distribution.py`.
+
+Isolated:
+
+| metric                       | before (truth) | after (dist.) |
+|------------------------------|---------------:|--------------:|
+| truth top-1 accuracy         | 38.4%          | 38.3%         |
+| KL vs world-marginal (held-out) | 0.078       | **0.062**     |
+| (uniform-belief baseline KL) | 0.081          | —             |
+
+The calibration is genuinely better — distribution training closes
+about 47% of the gap between uniform-prior and a hypothetical perfect
+belief. Truth-trained belief was optimizing for the mode, not the shape.
+
+Downstream:
+
+| test                   | before | after  |
+|------------------------|-------:|-------:|
+| pimc-belief K=50       | 66.4%  | **65.4%** (regressed) |
+| blunder detector ROC-AUC | 0.792 | 0.793 (flat) |
+| blunder detector PR-AUC  | 0.175 | 0.133 (regressed) |
+
+Better belief did NOT help the student play better. Likely cause: the
+Q_head was co-trained with mode-sharp world samples at training time;
+softening the belief distribution at inference creates distribution
+shift the Q_head wasn't prepared for. Improvements don't stack on top
+of a frozen ecosystem.
+
+**Implication**: the right follow-up is CO-TRAINING {belief, world_encoder,
+Q_head} together with distribution-belief + regular Q loss. Stacking
+calibration fixes on a frozen architecture doesn't work — the integrated
+approach is necessary.
+
+**Not promoted** (agent's call): ablation result, good diagnostic, not a
+ship-able adapter.
+
 ## 14. Router PoC reality-check: oracle fallback works, student fallbacks don't
 
 End-to-end validation of the detect-and-route architecture on 560 held-out
