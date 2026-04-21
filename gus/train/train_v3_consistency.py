@@ -32,7 +32,7 @@ from pathlib import Path
 import torch
 from torch.utils.data import DataLoader
 
-from gus.model.dataset_seq_world import JointWorldFullDataset
+from gus.model.dataset_seq_world import JointWorldFullDataset, JointWorldFullIterable
 from gus.model.student import (
     StudentTransformerFullVoids,
     belief_accuracy,
@@ -148,18 +148,33 @@ def main() -> int:
     parser.add_argument("--out", type=str, default="gus/adapters/v3_consistency.pt")
     parser.add_argument("--device", type=str, default=None)
     parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--lazy", action="store_true",
+                        help="Stream chunks via JointWorldFullIterable (bounded RAM). "
+                             "Required for >3k-game train corpora on the M5 Max.")
+    parser.add_argument("--buffer-size", type=int, default=8192,
+                        help="Shuffle buffer size when --lazy (items, not bytes).")
+    parser.add_argument("--length-cache", type=str, default=None,
+                        help="Path to cache corpus length when --lazy (skips rescan).")
     args = parser.parse_args()
 
     device = args.device or _pick_device()
     print(f"Device: {device}", flush=True)
 
     t0 = time.perf_counter()
-    train_ds = JointWorldFullDataset(args.train)
-    eval_ds = JointWorldFullDataset(args.eval, seed=42)
+    if args.lazy:
+        train_ds = JointWorldFullIterable(
+            args.train, shuffle=True, buffer_size=args.buffer_size,
+            length_cache_path=args.length_cache,
+        )
+        eval_ds = JointWorldFullIterable(args.eval, shuffle=False, seed=42)
+    else:
+        train_ds = JointWorldFullDataset(args.train)
+        eval_ds = JointWorldFullDataset(args.eval, seed=42)
     print(f"Loaded datasets: train={len(train_ds)} decisions, "
           f"eval={len(eval_ds)} decisions (in {time.perf_counter() - t0:.1f}s)", flush=True)
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True,
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size,
+                               shuffle=False if args.lazy else True,
                                num_workers=args.num_workers)
     eval_loader = DataLoader(eval_ds, batch_size=args.batch_size, shuffle=False,
                               num_workers=args.num_workers)
