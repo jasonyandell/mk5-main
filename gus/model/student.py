@@ -188,6 +188,166 @@ class StudentTransformer(nn.Module):
         return {"belief_logits": belief_logits, "z": cls_h, "hidden": h}
 
 
+class WorldEncoder(nn.Module):
+    """Encode a single world's [28, 3] seat-one-hot assignment into a latent."""
+
+    def __init__(self, d_model: int, d_world: int = 64):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(N_DOMINOES * 3, d_world),
+            nn.GELU(),
+            nn.LayerNorm(d_world),
+            nn.Linear(d_world, d_world),
+        )
+        self.d_world = d_world
+
+    def forward(self, world_assignment: Tensor) -> Tensor:
+        """world_assignment: [B, 28, 3] float → [B, d_world] latent."""
+        B = world_assignment.shape[0]
+        flat = world_assignment.reshape(B, -1)
+        return self.net(flat)
+
+
+class QHead(nn.Module):
+    """Q per action given fused (state_emb, world_emb). Output [B, 7]."""
+
+    def __init__(self, state_dim: int, world_dim: int, hidden_dim: int = 256, n_actions: int = 7):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(state_dim + world_dim, hidden_dim),
+            nn.GELU(),
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, n_actions),
+        )
+
+    def forward(self, state_emb: Tensor, world_emb: Tensor) -> Tensor:
+        fused = torch.cat([state_emb, world_emb], dim=-1)
+        return self.net(fused)
+
+
+class StudentTransformerFull(nn.Module):
+    """Five-head LAMIR-ready student (minus π_opp which is deferred to v2).
+
+    Four heads sharing a transformer state encoder:
+      - belief: [B, 28, 3] seat-per-domino logits (supervised against truth)
+      - V:      [B] scalar (supervised against oracle E[Q] for action_taken)
+      - π_me:   [B, 7] action softmax logits (supervised against oracle argmax)
+      - Q:      [B, 7] world-conditioned Q per action (supervised against
+                oracle per-world Q for one sampled world per forward pass)
+    """
+
+    def __init__(
+        self,
+        d_model: int = 128,
+        n_heads: int = 4,
+        n_layers: int = 2,
+        ff_dim: int = 256,
+        dropout: float = 0.1,
+        d_world: int = 64,
+        q_hidden: int = 256,
+    ):
+        super().__init__()
+        self.encoder = TransformerEncoder(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            ff_dim=ff_dim,
+            dropout=dropout,
+        )
+        self.belief = BeliefHead(in_dim=d_model)
+        self.v_head = nn.Linear(d_model, 1)
+        self.pi_me = nn.Linear(d_model, 7)
+        self.world_encoder = WorldEncoder(d_model, d_world=d_world)
+        self.q_head = QHead(state_dim=d_model, world_dim=d_world, hidden_dim=q_hidden)
+
+    def forward(
+        self,
+        tokens: Tensor,
+        attention_mask: Tensor,
+        world_assignment: Tensor,
+    ) -> dict[str, Tensor]:
+        """
+        tokens:            [B, L, 5] long
+        attention_mask:    [B, L] bool
+        world_assignment:  [B, 28, 3] float
+        """
+        h = self.encoder(tokens, attention_mask)  # [B, L, d_model]
+        state_emb = h[:, 0, :]                    # [B, d_model]
+
+        belief_logits = self.belief(state_emb)    # [B, 28, 3]
+        v = self.v_head(state_emb).squeeze(-1)    # [B]
+        pi_me_logits = self.pi_me(state_emb)      # [B, 7]
+
+        world_emb = self.world_encoder(world_assignment)  # [B, d_world]
+        q = self.q_head(state_emb, world_emb)     # [B, 7]
+
+        return {
+            "belief_logits": belief_logits,
+            "v": v,
+            "pi_me_logits": pi_me_logits,
+            "q": q,
+            "state_emb": state_emb,
+            "world_emb": world_emb,
+        }
+
+
+def v1_full_loss(
+    out: dict[str, Tensor],
+    batch: dict[str, Tensor],
+    weights: dict[str, float] | None = None,
+) -> tuple[Tensor, dict[str, float]]:
+    """Joint loss for the full student. Returns (loss_total, per_head_scalars)."""
+    if weights is None:
+        weights = {"belief": 1.0, "v": 0.5, "pi_me": 0.5, "q": 1.0}
+
+    # --- Belief loss (masked CE per unseen domino slot) ---
+    L_belief = belief_loss(out["belief_logits"], batch["belief_target"], batch["belief_mask"])
+
+    # --- V loss: MSE against e_q[action_taken] ---
+    B = batch["e_q"].shape[0]
+    e_q_at_action = batch["e_q"][torch.arange(B, device=batch["e_q"].device), batch["action_taken"]]
+    L_v = nn.functional.mse_loss(out["v"], e_q_at_action)
+
+    # --- π_me loss: CE against action_taken, masked to legal actions ---
+    # Use a large negative (not -inf) so label smoothing and gradients stay finite.
+    pi_logits = out["pi_me_logits"].clone()
+    pi_logits = pi_logits.masked_fill(~batch["legal_mask"], -1e9)
+    L_pi = nn.functional.cross_entropy(pi_logits, batch["action_taken"])
+
+    # --- Q loss: MSE against q_per_world, masked to legal actions ---
+    q_pred = out["q"]
+    q_target = batch["q_per_world"]
+    legal_f = batch["legal_mask"].float()
+    sq_err = (q_pred - q_target) ** 2 * legal_f
+    n_legal = legal_f.sum().clamp(min=1.0)
+    L_q = sq_err.sum() / n_legal
+
+    total = (
+        weights["belief"] * L_belief
+        + weights["v"] * L_v
+        + weights["pi_me"] * L_pi
+        + weights["q"] * L_q
+    )
+
+    return total, {
+        "L_total": float(total.item()),
+        "L_belief": float(L_belief.item()),
+        "L_v": float(L_v.item()),
+        "L_pi": float(L_pi.item()),
+        "L_q": float(L_q.item()),
+    }
+
+
+def pi_me_accuracy(pi_logits: Tensor, legal_mask: Tensor, action_taken: Tensor) -> tuple[int, int]:
+    """Bot-match rate: fraction of legal-argmax(pi_me) == action_taken."""
+    masked = pi_logits.clone()
+    masked[~legal_mask] = float("-inf")
+    preds = masked.argmax(dim=-1)
+    return int((preds == action_taken).sum().item()), int(action_taken.numel())
+
+
 def belief_loss(
     logits: Tensor,    # [B, 28, 3]
     target: Tensor,    # [B, 28] long in {0,1,2}
