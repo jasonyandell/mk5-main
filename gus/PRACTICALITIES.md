@@ -193,9 +193,99 @@ per 100-game chunk of corpus expansion.
 - **Does distillation with the raw PDF help?** We distill on per-world Q
   scalars, not the 85-bin outcome PDF. The PDF is richer; might help Q-head
   calibration if targeted.
-- **Are the 6% blunder decisions identifiable at inference?** If the student
-  could flag them (high belief entropy? high Q variance across sampled
-  worlds?) we could fall back to the oracle or LAMIR just for those.
 - **Is there a fundamental mid-game hardness floor?** Decisions 4, 8, 11, 12,
   16 always have high regret. Is that the oracle's own noise concentrating
   there, or real strategic ambiguity no student can resolve?
+
+## 11. Game-level play costs ~18pp vs the oracle baseline (arena)
+
+Decision-level regret of 1.39 Q-pt sounds small; game-level it compounds
+to real outcomes. Arena at n=150 (15 seeds × 10 decls), student at seat 0
+vs all-E[Q]-bot baseline on the same seeds:
+
+- Student team wins: **78/150 = 52%**
+- All-bot baseline: **105/150 = 70%**
+- Student bidder-made rate: 22% (bot: 39%)
+- Avg bidder points: 20.9 (student) vs 25.7 (bot), Δ −4.8 per hand
+
+1.39 Q-pt regret per decision × 28 decisions = ~39 Q-pt team-level shift,
+which is ~18 pp of team-level win rate. Decision regret compounds about as
+expected.
+
+This is the "so what does this student actually play like" number. It's
+weaker than the oracle but not random — above 50% team-win rate on sharp
+games. Detect-and-route (receipt 13) is the lever to close most of this
+gap without retraining.
+
+## 12. Ensembling by naïve averaging hurts regret (while boosting bot-match)
+
+Tested 4 ensemble strategies over 8 trained adapters at `gus/adapters/`:
+
+| strategy | bot-match | regret | blunders |
+|---|---|---|---|
+| best single (v2_voids_3000g_big) | 67.9% | **1.39** | 34 |
+| majority vote | 69.1% | 1.55 | 40 (worse) |
+| softmax avg | 71.3% | 1.46 | 36 (worse) |
+| v-weighted avg | 71.3% | 1.43 | 35 (worse) |
+| **oracle-per-decision (ceiling)** | **89.6%** | **0.36** | **8** |
+
+Bot-match goes up, regret goes up: ensembles win near-ties (where any
+legal play is ~equivalent) but lose on sharp decisions by diluting the
+confident-right adapter with less-confident ones. The oracle ceiling
+shows massive latent diversity — 58% of decisions have adapter
+disagreement, 24% have 3+ distinct actions picked — but simple voting
+strategies can't exploit it. **The right move is a router, not an
+ensemble.**
+
+## 13. Blunder detect-and-route is the practical ceiling (detector AUC 0.84+)
+
+Small gradient-boosted classifier that predicts "will the student
+blunder at this decision" from state-only features:
+
+- **Oracle-feature detector** (uses oracle E[Q] summary stats): ROC-AUC
+  **0.926**. At 15% flag rate: 80% recall of blunders.
+- **Student-feature detector** (inference-deployable — uses student's π
+  confidence, Q_head stats across K=20 sampled worlds, V_head,
+  belief entropy): ROC-AUC **0.839**. At 20% flag rate: regret drops
+  1.13 → 0.49 (57% reduction).
+
+Top student-feature importances:
+
+1. `pi_peak` (0.19) — student's policy confidence
+2. `pi_entropy` (0.07)
+3. `v_minus_polexpq` (0.07) — V/π consistency gap
+4. `q_mean_std_legal` (0.06) — student's analog of oracle_spread
+5. `v_minus_qmean_chosen` (0.06)
+
+**Finding**: student's Q_head spread is a weaker proxy for oracle
+spread than hoped (0.045 importance vs oracle's 0.390). Q_head was
+trained on one random world per forward pass — spread signal is noisy.
+Two fixes queued for v4-class experiments:
+- Multi-world variance regularization during Q_head training
+- K=50+ worlds at inference (cheap, batched)
+
+**Upshot**: detect-and-route with inference-only features is viable.
+Project regret ~0.5 Q-pt (near teacher-noise floor of 0.5-1) and game-
+level arena should recover ~60% of the −18 pp gap. That's the practical
+ceiling for vanilla distillation; beating it requires multi-step LAMIR
+or a cleaner teacher.
+
+## Emerging architecture: detect → route → fallback
+
+The shape of a deployable Gus v1.0:
+
+```
+   student π_me (fast path, 1.39 regret, ~ms)
+          │
+          ▼
+   blunder_detector (tiny GBM, ms)  ── flags ~20%
+          │                         │
+          │ ok                      │ flag
+          ▼                         ▼
+   commit action             fallback: PIMC with student Q_head
+                             across K=50 worlds, OR oracle argmax
+                             if oracle call budget allows
+```
+
+This gets us ~0.5 Q-pt regret in expectation, which translates to ~7-10 pp
+game-level gap vs the full oracle — a meaningful, playable student.

@@ -1,12 +1,34 @@
 # Gus — Neural policy + belief + value for Texas 42
 
-> **Status — 2026-04-20: pivoted to joint-world distillation.**
-> Tire-kick validated the per-world `(world_layout, Q_per_world)` tensor
-> as a distillation target (`forge/eq/generate/` now saves this natively
-> on `--save-joint-worlds`, tested end-to-end on MPS in ~10s/game at
-> SEM<0.5 adaptive). Move 0 is now a five-head LAMIR-ready student. See
-> [`BUILD_PLAN.md`](BUILD_PLAN.md) for the concrete architecture +
-> training plan currently underway.
+> **Status — 2026-04-21: distillation pipeline working; detect-and-route is
+> the emerging architecture.**
+>
+> Best adapter: `gus/adapters/v2_voids_3000g_big.pt` — **1.39 Q-pt mean
+> regret** on ±42 scale (~1.9% of Q-range lost per decision), **73% of
+> decisions are optimal**, tail is **6.1% blunders**.
+>
+> Game-level arena (150 games): student team wins 52% vs all-oracle 70% —
+> a real but materially weaker player than the teacher it's distilling
+> from.
+>
+> **Detect-and-route** (blunder detector + oracle fallback) is the
+> emerging path to a practically playable student, projecting to ~0.5 Q-pt
+> regret near the teacher-noise floor without retraining. See
+> [`PRACTICALITIES.md`](PRACTICALITIES.md) receipts 11-13 + emerging
+> architecture section.
+>
+> **Next levers**:
+> - More data: 10k corpus generating (seeds 0-9999), ETA late 2026-04-21
+> - Diverse-seed corpus: `--n-decl-per-seed 10` flag landed (matches
+>   oracle's state-diversity recipe); Vast fleet plan in
+>   [`GEN_FLEET.md`](GEN_FLEET.md)
+> - V/π consistency regularizer (v3 architecture) staged to run on 10k
+> - Multi-step LAMIR look-ahead remains the ambitious follow-up (needs
+>   π_opp head + engine plumbing)
+>
+> Original vision doc below.
+>
+> ---
 
 Can a small neural network — policy + belief + value, multi-task trunk, trained
 against the E[Q] oracle — play 42 competently, after LEM and Burl both stalled
