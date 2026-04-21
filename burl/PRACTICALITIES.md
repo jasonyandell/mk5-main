@@ -149,6 +149,120 @@ Three meta-shapes keep recurring:
 
 ---
 
+## 9. Hard-gated HATEOAS works, but the harness was silently dropping every tool response for two days
+
+**Plan assumed** (Practicality 4): the right lever to un-freeze `conditional_outcome` was the **return shape** of `eq_outcome_distribution` — candlewax hints, spike_drivers, `what_would_change_my_mind`. The tool *menu* itself was treated as stable; only the data inside responses would be redesigned.
+
+### First reading (premature, 2026-04-20 morning)
+
+`burl/wax_museum/` hard-gated the tool surface: `initial=[explore_game]` → `after_explore=[+probe_*, +ask_rule]` → `after_probe=[+commit_play]`. Base Gemma 4 E2B N=3 local on M5 Max in 65 s hit **probe rate 3/3** (vs 0/145 historical across Haiku, Opus 4.7, and every Burl adapter). First-glance celebration: menu composition is a new lever. Logged this entry with wrinkles (hallucinated numbers, duplicate calls, thinking-channel leak) noted as "not blockers."
+
+### Second reading (four A/Bs later)
+
+Expanded to N=5 and ran three successive tool-output rendering A/Bs to fix the hallucinated-values wrinkle:
+
+- **JSON** (dense nested `{"result":{"summary":{"mean":-3.85,...},"spikes":[...]}}`): 0 faithful quotes, 6+ hallucinated.
+- **Prose tables** (indented `mean = -3.85 Q` with numbered modes): 0 faithful quotes, 13+ hallucinated.
+- **ASCII chart + if/then + pivot synthesis** (bar chart on Q axis, `IF partner holds 0(0-0): Q → +24 (25% of worlds, wins by 28)`, one-line pivot): 0 faithful quotes, 5 hallucinated. Zero mentions of "bimodal"/"pivot"/"spike" in the model's thoughts. Model kept writing *"I cannot see the results yet"* with the ASCII chart sitting visible above it.
+
+At that point the pattern was unmistakable: **the three renderings were equivalently invisible to the model.** Verdict drafted: "2B Gemma 4 E2B doesn't attend to prior tool output; environment-shape has hit a ceiling." Pivot recommended.
+
+### Third reading (the actual bug)
+
+User asked me to read a single turn carefully. Ran `tokenizer.apply_chat_template()` on a minimal `[system, user, assistant w/ tool_call, tool_response]` fixture and inspected the output. Found that Gemma 4's chat template contains:
+
+```jinja
+{%- for message in loop_messages -%}
+    {%- if message['role'] != 'tool' -%}
+        ... render block ...
+    {%- endif -%}
+{%- endfor -%}
+```
+
+**Every `role="tool"` message in the harness was being silently dropped by the chat template, for every rollout we've ever run in `burl/harness/tool_loop_native.py`.** The model had been hallucinating tool responses because the responses literally never arrived in the prompt. Three A/B runs of "re-render the payload" all produced the same behavior because the payloads were invisible — 0 vs 6 vs 13 vs 5 hallucinated numeric quotes is **within-noise for three invisible rendering strategies.**
+
+The correct Gemma 4 shape (from the template's `format_tool_response_block` macro + the `message.get('tool_responses')` loop) is: tool responses live on the **assistant** message as a sibling field to `tool_calls`:
+
+```python
+{
+    "role": "assistant",
+    "content": thought_text,
+    "tool_calls": [{"type": "function", "function": {"name": "...", "arguments": {...}}}],
+    "tool_responses": [{"name": "...", "response": "<prose string>"}],
+}
+```
+
+Renders as `<|tool_call>call:NAME{args}<tool_call|><|tool_response>response:NAME{value:<|"|>prose<|"|>}<tool_response|>` — the native shape Gemma was post-trained on.
+
+### After the fix
+
+N=1 sanity check, same d0 seed (blanks trump, hand {13(4-3), 21(6-0)}, defense):
+
+- Turn 4 thought quoted the tool response verbatim: *"**Playing 13 (4-3)**: expected outcome (**-20.9**), with p_make=**0.08**. **Playing 21**: Best case (if partner holds 0-0): **Q → +24**. Worst case (if left opp holds 0-0): **Q → -23**. **The pivot is the status of the 0-0 domino.**"*
+- Every bolded value matches the actual tool response. Pivot synthesis got quoted verbatim.
+- 1/1 bot-match, 13.5 s wall.
+
+### Adapted
+
+- Fixed `burl/wax_museum/harness.py` to build one assistant message per turn with structured `tool_calls` + `tool_responses` carrying the prose output. `commit_play`, gate rejections, and illegal-play retries all flow through the same channel.
+- Fixed `burl/wax_museum/run_pilot.py::PilotLogger.live_input` to render the structured fields so `live.log` matches what the chat template actually renders.
+- `burl/harness/tool_loop_native.py` still has the same bug for every other Burl experiment. Every adapter — iter-0, iter-1, iter-3-rules, every corpus the STaR loops trained on — was generated with tool responses invisible to the model. **The adapters' bot-match numbers are real, but the learned behavior was "commit a play that matches the bot based on the prompt framing alone," not "commit a play based on the distribution the tool returned."**
+
+### Meta-lesson
+
+This is Practicality 5 at a higher altitude: *audit before interpreting a null.* Three consecutive A/Bs (JSON → prose → ASCII) looked like a ceiling ("2B model can't reason about distributions"). The ceiling was harness plumbing silently dropping the payload. **Before concluding "the model can't do X," verify the model saw X at the expected fidelity** — not just "the bytes we sent" but "the bytes the chat template emitted after processing our messages."
+
+Concrete rule: when a new experiment depends on a chat template we haven't personally stepped through the Jinja of, render one fixture and grep for the expected content in the serialized output. If the content isn't there, the experiment isn't measuring what we think it's measuring.
+
+### Evidence
+
+- `burl/wax_museum/logs/n5_live/` — JSON rendering A (0 faithful, 6+ hallucinated).
+- `burl/wax_museum/logs/n5_prose/` — prose tables A (0 faithful, 13+ hallucinated).
+- `burl/wax_museum/logs/n5_visual/` — ASCII + if/then + pivot A (0 faithful, 5 hallucinated).
+- `burl/wax_museum/logs/n1_native2/` — after the fix; d0 turn-4 thought in `thoughts/d0_t4.md` quotes real tool values.
+- Chat template diagnosis: `tokenizer.apply_chat_template` on `mlx-community/gemma-4-e2b-it-bf16`; Jinja macros `format_tool_response_block` and the `message.get('tool_responses')` loop in the template source.
+
+---
+
+## 10. Chat-template shapes are model-specific — Qwen wants `role="tool"`, Gemma wants `assistant.tool_responses`
+
+**Plan assumed** (implicit in P9's fix): the native-tool-response rendering we landed for Gemma 4 would port to any other model we tried. One harness, swap the backend.
+
+**Observed** (2026-04-20): porting `burl/wax_museum/` to Qwen3.6-35B-A3B-4bit on M5 Max via mlx-lm needed both a new parser and a different message shape. Qwen's chat template reads tool responses from a separate `role="tool"` message (OpenAI-style `<tool_response>…</tool_response>` block), while Gemma drops `role="tool"` silently and reads from `assistant.tool_responses`. An empirical rendering test (`apply_chat_template` on the minimal fixture, grep for expected content) caught this in under a minute — same diagnostic that unearthed the P9 bug.
+
+Two entirely different tool-call output syntaxes too:
+
+- **Gemma 4**: `<|tool_call>call:NAME{args}<tool_call|>`
+- **Qwen3.6**: `<tool_call>\n<function=NAME>\n<parameter=K>\nV\n</parameter>\n</function>\n</tool_call>` (nested XML), with Hermes JSON as a fallback.
+
+**Adapted**: the wax_museum harness (`burl/wax_museum/harness.py::run_decision_waxed`) now takes two plugin kwargs:
+
+- `parse_completion: Callable[[str], tuple[thought, tool_specs, commit]]` — defaults to the Gemma parser; pass `burl.wax_museum.qwen_parser.parse_qwen_completion` for Qwen.
+- `tool_response_style: Literal["gemma_native", "role_tool"]` — selects whether responses live on the assistant turn (Gemma) or as separate messages (Qwen/OpenAI-style).
+
+Both variants exit through the same `WaxResult` shape so analysis code is model-agnostic. `burl/wax_museum/run_pilot.py` has `--model qwen` routing.
+
+**Meta-lesson**: backend-pluggable does NOT mean chat-template-compatible. Any new model backend requires the three-step audit: (1) render a fixture and grep for the tool response; (2) check the tool-call output syntax the base model emits zero-shot; (3) verify `role` handling. Cheap and catches invisible bugs.
+
+### Early Qwen signal (spot-read of one turn 1, N=5 run interrupted)
+
+Base Qwen3.6-35B-A3B-4bit on the same d0 (defense, hand {13(4-3), 21(6-0)}, blanks trump, 3/4 position) produced a 6k+ token `<think>` block that:
+
+- derived the game state via hypothesis→test→correct ("Wait, that doesn't make sense… let me re-read…" ×~15 beats)
+- correctly applied 42 rules unprompted: led suit = 6, 21(6-0) is both trump AND led suit, must follow suit
+- correctly ranked trumps under blanks-trump (6-0 = highest)
+- noted 27(6-6) is NOT trump (a rule Gemma never got right across 5 N=5 runs)
+- did the strategic math: "Team 1 has 20 count; winning this trick → 21; Team 0 at 0; bid 30; they're set"
+- arrived at the answer then emitted the tool call with: *"So the answer is to play 21(6-0). **But let me use the explore_game tool to confirm, as per the protocol.**"*
+
+Qualitatively different from Gemma: Gemma reasons *toward* the tool; Qwen reasons *from first principles* and treats the tool as a confirmation ritual. For a "must follow suit" decision where there's only one legal play, **Qwen's approach is strictly correct** where Gemma's 5/5 bot-match was semi-lucky.
+
+Open question deferred to the next Qwen run: does the tool surface still do work on decisions where the rulebook alone doesn't force a play (e.g. d2 0(0-0) vs 23(6-2) with a bimodal distribution)? The N=5 run was stopped after turn 1 of d0 because the information density of that single turn was already decisive — trace length is not a cost as long as the thinking is coherent, and this thinking was coherent.
+
+**Evidence**: `burl/wax_museum/logs/n5_qwen/live.log` lines 1–261 (turn 1 only; run killed mid-d0). Rendering audit: `tokenizer.apply_chat_template` test against Qwen3.6's template (template snippet at `_im_start|>user / <tool_response> / </tool_response> / <|im_end|>`).
+
+---
+
 ## Adding to this log
 
-When the next practicality lands, append it as section 9 with the same four-part shape. Link the evidence (commit hashes + writeup paths). Don't edit the earlier entries — if one gets superseded, add a note at its end pointing at the newer entry. This file is the running receipts; the plan it pays back stays in [`OVERVIEW.md`](OVERVIEW.md).
+When the next practicality lands, append it as section 11 with the same four-part shape. Link the evidence (commit hashes + writeup paths). Don't edit the earlier entries — if one gets superseded, add a note at its end pointing at the newer entry. This file is the running receipts; the plan it pays back stays in [`OVERVIEW.md`](OVERVIEW.md).

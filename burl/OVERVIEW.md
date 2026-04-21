@@ -254,7 +254,20 @@ No custom adapter registry, no homemade hot-swap. All leverage of vLLM's built-i
 - **Visualizer is the canonical teacher artifact.** `forge/analysis/results/web/eq_pdf_discs.html`, `eq_surface_3d.html`, `eq_game_journey.html`. Shared with LEM. Burl's rationalizations should, when visualized, trace regions of the discs/surface a strong human would.
 - **Go with the model's grain; catch it doing right.** Small models have their own instincts — Gemma reaches for a `play` verb even when our menu doesn't define one, emits thoughts in markdown when asked to reason, and keeps calling `is_legal` before every commit. Rather than fight those tendencies, bend the harness around them. If `play` is what Gemma wants, `play` is what we give it. STaR trains the *model's own best behavior* back into itself — their words, their corrections, their self-checks. We're not imposing a shape; we're amplifying one we noticed.
 
-## Current state — 2026-04-19
+## Current state — 2026-04-20
+
+### wax_museum resurrected the track
+
+Two days after the "moving on from this particular hill" note above, a hard-gated HATEOAS pilot (`burl/wax_museum/`) cracked the `conditional_outcome = 0/145` frozen tool and exposed a load-bearing bug in the shared tool harness:
+
+- **5/5 bot-match on base Gemma 4 E2B** with no adapter, once the chat template actually delivers tool responses to the model (P9).
+- **The bug**: `burl/harness/tool_loop_native.py` was packing tool responses into `role="tool"` messages for every rollout we've run. Gemma 4's chat template silently drops those — every probe response was `{value:None}` in the actual prompt the model saw. Every Burl adapter (iter-0 through iter-5) was trained on traces where tool outputs were invisible to the model; their bot-match numbers measure prompt-framing + commit-reflex, not distribution reasoning.
+- **The fix**: move tool responses to `assistant.tool_responses=[{name, response}]` — the native Gemma shape. Prose payloads with an ASCII histogram + if/then scenarios + a pivot-synthesis line now get quoted verbatim in Gemma's chain-of-thought.
+- **Qwen port** (P10): Qwen3.6-35B-A3B-4bit via mlx-lm reads `role="tool"` correctly AND produces qualitatively different reasoning — 6k-token `<think>` blocks that derive 42 rules from scratch (correctly ranks trumps, knows 6-6 isn't trump under blanks, does the strategic "set them" math before calling the tool). The harness is now backend-pluggable: `parse_completion` + `tool_response_style` kwargs on `run_decision_waxed`.
+
+### Pareto frontier of shipped adapters (pre-harness-fix; re-eval pending)
+
+
 
 Pareto frontier of two shipped adapters (both on HuggingFace, both at `--max-retries 7`, both N=10 held-out):
 
@@ -267,8 +280,9 @@ iter-3-rules is the robustness winner; iter-1 is the per-commit-quality winner. 
 
 Two structural open items carry forward into iter-5:
 
-- **`conditional_outcome` has been called zero times across 145+ decisions** covering every model tested (Haiku, Opus 4.7, every Burl adapter iter-0 through iter-4). Candlewax + spike_drivers + `what_would_change_my_mind` are the three environment-shape levers queued; mockup spike confirmed the downstream path works. See Practicality 4.
+- **`conditional_outcome` call rate was 0/145 until the harness-plumbing bug got fixed.** Under wax_museum's native-shape harness, probe rate is 5/5 on base Gemma; every previous "conditional is zero-shot invisible" finding was confounded by tool responses never reaching the model. Candlewax + spike_drivers + `what_would_change_my_mind` aren't refuted — they were never tested at fidelity. Re-measuring all three under the fixed harness is queued. See Practicality 4, 9.
 - **LoRA-capacity sweet spot at rank 16** on MLX-LM. Scaling rank further monotonically regresses (rank-64 55.6%, rank-128 collapses at 0%). Next lever is corpus size, not rank. See Practicality 6.
+- **All shipped adapters were trained on traces with invisible tool responses.** iter-3-rules's 90% and iter-1's 88.9% bot-match are real, but the *learned behavior* can't be what we thought it was. Re-evaluating the existing adapters through the fixed harness is a diagnostic for how much of the measured quality survives real tool input. See Practicality 9.
 
 **What we've learned executing the plan — in depth**: [`PRACTICALITIES.md`](PRACTICALITIES.md) is the running receipts log. Read it alongside the "Current state" table above for the full picture of which assumptions survived contact with Gemma 4 and which got replaced.
 
@@ -320,16 +334,18 @@ Five iterations shipped so far (iter-0 through iter-5 E1 rank sweep, plus iter-4
 
 ## What we've learned executing the plan
 
-Eight practicalities (and counting) have been absorbed without changing the vision. The full log with evidence pointers is in [`PRACTICALITIES.md`](PRACTICALITIES.md); quick-reference:
+Ten practicalities (and counting) have been absorbed without changing the vision. The full log with evidence pointers is in [`PRACTICALITIES.md`](PRACTICALITIES.md); quick-reference:
 
 1. Gemma 4 emits its native tool-call format zero-shot — `commit_play` is a tool now.
 2. The rules primer is dual-use — rules-as-tools is the compact substitute.
 3. The model invents its own reasoning idiom — grade by outcome, not tool-mix conformity.
-4. `conditional_outcome` is still zero-shot invisible — candlewax + spike_drivers + `what_would_change_my_mind` are the environment-shape fixes in flight.
+4. `conditional_outcome` was zero-shot invisible in the old harness — confound with P9; re-measure under the fixed harness.
 5. Truncation silently steals training signal — always pin `max_seq_length`.
 6. LoRA-capacity sweet spot at rank 16 on MLX-LM — next lever is corpus size.
 7. Batch generation lifted the corpus-scale ceiling — 43 → 1334 tok/s on M5 Max.
 8. M5 Max is an iteration multiplier, not a Modal replacement.
+9. Chat template was silently dropping every tool response for every Burl rollout. `assistant.tool_responses` is Gemma 4's native shape. Meta-lesson: audit the *rendered prompt*, not the messages dict.
+10. Chat-template shapes are model-specific. Qwen3.6 wants `role="tool"`; the harness is now backend-pluggable via `parse_completion` + `tool_response_style`.
 
 ## Open questions
 

@@ -83,6 +83,7 @@ class GemmaLocalNative:
         stop: list[str] | None = None,  # noqa: ARG002 — accepted for parity; MLX stops on EOS ids
         enable_thinking: bool = False,
         adapter_name: str | None = None,
+        on_chunk: Callable[[str], None] | None = None,
     ) -> dict:
         """Generate one assistant turn.
 
@@ -129,6 +130,8 @@ class GemmaLocalNative:
             text_parts.append(response.text)
             n_tokens = response.generation_tokens
             last_response = response
+            if on_chunk is not None and response.text:
+                on_chunk(response.text)
         elapsed = time.time() - t0
 
         text = "".join(text_parts)
