@@ -39,17 +39,23 @@ class JointWorldFullDataset(Dataset):
     """
 
     def __init__(self, corpus_path: str | Path | list[str | Path], seed: int | None = None):
-        # Accept a single .pt path or a list of chunk paths (auto-glob supported).
-        paths: list[Path]
+        # Accept a single .pt path, a glob, or a list of paths/globs.
+        from glob import glob
+        raw: list[str]
         if isinstance(corpus_path, (list, tuple)):
-            paths = [Path(p) for p in corpus_path]
+            raw = [str(p) for p in corpus_path]
         else:
-            p = Path(corpus_path)
-            if any(ch in str(p) for ch in "*?["):
-                from glob import glob
-                paths = sorted(Path(x) for x in glob(str(p)))
+            raw = [str(corpus_path)]
+
+        paths: list[Path] = []
+        for s in raw:
+            if any(ch in s for ch in "*?["):
+                matches = sorted(glob(s))
+                if not matches:
+                    raise FileNotFoundError(f"glob matched no files: {s}")
+                paths.extend(Path(m) for m in matches)
             else:
-                paths = [p]
+                paths.append(Path(s))
 
         self.games: list = []
         self.seeds: list = []
