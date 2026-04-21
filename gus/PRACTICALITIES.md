@@ -282,10 +282,45 @@ The shape of a deployable Gus v1.0:
           │                         │
           │ ok                      │ flag
           ▼                         ▼
-   commit action             fallback: PIMC with student Q_head
-                             across K=50 worlds, OR oracle argmax
-                             if oracle call budget allows
+   commit action             fallback: oracle argmax (has budget)
+                             OR PIMC-Q-K50 (doesn't work YET,
+                                            needs Q_head variance reg)
 ```
 
-This gets us ~0.5 Q-pt regret in expectation, which translates to ~7-10 pp
-game-level gap vs the full oracle — a meaningful, playable student.
+**Router PoC (receipt 14) confirms**: oracle fallback at 20-25% flag hits
+the projected 0.49-0.56 regret. But PIMC-Q-K50 as fallback HURTS (1.47 vs
+1.39 baseline) because the student's Q_head is too noisy. Next-best-
+adapter fallback is even worse (1.55). **Without an oracle budget, the
+detect-and-route architecture is blocked on the Q-head-variance fix**
+(multi-world training regularizer or K=100+ at inference).
+
+## 14. Router PoC reality-check: oracle fallback works, student fallbacks don't
+
+End-to-end validation of the detect-and-route architecture on 560 held-out
+decisions (`gus/eval/router.py`):
+
+|           flag% | oracle | PIMC-Q-K50 | v1_full_1000g |
+|----------------:|-------:|-----------:|--------------:|
+|            none | 1.39   | 1.39       | 1.39          |
+|              5% | 1.15   | 1.39       | 1.48 (worse)  |
+|             10% | 0.97   | 1.44       | 1.49          |
+|             15% | 0.82   | 1.45       | 1.49          |
+|         **20%** | **0.56** | 1.47 (worse) | 1.55       |
+|             25% | **0.49** | 1.48     | 1.69          |
+
+- **Oracle fallback** hits the projected ~0.5 Q-pt regret at 20-25%
+  flag rate — the architecture works as designed if we can afford
+  oracle calls at inference.
+- **PIMC-Q-K50 fallback is actively worse than no routing**. At 20%
+  flag: catches 23 of 34 blunders via detector, but PIMC-Q only
+  fixes 7 of them and introduces 6 new blunders on non-blunder
+  decisions the detector flagged. Q_head trained on one world per
+  forward is too noisy for belief-sampled averaging to rescue.
+- **Next-best-adapter fallback** (v1_full_1000g) is worst — smaller
+  weaker model is wrong on the same hard decisions.
+
+Implication: to ship a no-oracle-inference student, the prerequisite
+is a Q_head that survives multi-world averaging. Two approaches:
+multi-world variance regularization during training (change train_v2_voids
+loss to query Q_head on K worlds and penalize cross-world variance) OR
+K=100+ at inference (cheap but only 2× improvement over K=50 at best).
