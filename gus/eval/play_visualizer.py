@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 import torch
 from torch import Tensor
 
+from gus.eval.explain import explain_decision
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.features import extract_belief_target, reconstruct_prior_plays
 from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
@@ -296,36 +297,53 @@ def visualize_game(
         tokens = tokens.unsqueeze(0).to(device)
         attn_mask = attn_mask.unsqueeze(0).to(device)
 
-        # Need a world_assignment for the model call. The dataset picks a
-        # random world per epoch; at visualization time we pick world 0 (or
-        # skip if the decision has no world tensor — fall back to zeros).
+        # Build a batch of up to K sampled worlds so we can measure Q spread
+        # across worlds — the risk slot in the rationalization.
+        K_WORLDS = 8
         if dec.world_hands is not None and dec.q_per_world is not None:
-            wh = dec.world_hands[0]  # [3, 7]
-            world_assignment = torch.zeros(28, 3, dtype=torch.float32)
-            for seat in range(3):
-                for d in wh[seat].tolist():
-                    d = int(d)
-                    if 0 <= d < 28:
-                        world_assignment[d, seat] = 1.0
+            M = int(dec.world_hands.shape[0])
+            k = min(K_WORLDS, M)
+            world_assignments = torch.zeros(k, 28, 3, dtype=torch.float32)
+            for wi in range(k):
+                wh = dec.world_hands[wi]  # [3, 7]
+                for seat in range(3):
+                    for d in wh[seat].tolist():
+                        d = int(d)
+                        if 0 <= d < 28:
+                            world_assignments[wi, d, seat] = 1.0
         else:
-            world_assignment = torch.zeros(28, 3, dtype=torch.float32)
-        world_assignment = world_assignment.unsqueeze(0).to(device)
+            world_assignments = torch.zeros(1, 28, 3, dtype=torch.float32)
+        world_assignments = world_assignments.to(device)
+        k = world_assignments.shape[0]
 
+        # Expand tokens/attn to match k-world batch. Voids feature is per
+        # player (same across worlds), so just broadcast.
+        tokens_b = tokens.expand(k, -1, -1)
+        attn_b = attn_mask.expand(k, -1)
         voids = voids_feature_vector(prior_plays, decl_id, current_player).unsqueeze(0).to(device)
+        voids_b = voids.expand(k, -1)
 
         with torch.no_grad():
             if is_voids:
-                out = model(tokens, attn_mask, world_assignment, voids)
+                out = model(tokens_b, attn_b, world_assignments, voids_b)
             else:
-                out = model(tokens, attn_mask, world_assignment)
+                out = model(tokens_b, attn_b, world_assignments)
 
-        # Legal-masked argmax over π_me
+        # Legal-masked argmax over π_me (state-only, identical across worlds)
         legal_mask = dec.legal_mask.bool().to(device)  # [7]
         pi = out["pi_me_logits"][0].masked_fill(~legal_mask, -1e9)
         pi_probs = torch.softmax(pi, dim=-1)
         student_slot = int(pi.argmax().item())
         student_v = float(out["v"][0].item())
         belief_logits = out["belief_logits"][0].cpu()  # [28, 3]
+
+        # Q spread across sampled worlds at the student's chosen slot
+        q_all = out["q"]  # [k, 7]
+        if q_all.shape[0] >= 2:
+            q_at_pick = q_all[:, student_slot]
+            q_std_at_pick: float | None = float(q_at_pick.std().item())
+        else:
+            q_std_at_pick = None
 
         # Oracle data
         e_q = dec.e_q.float().cpu()       # [7]
@@ -362,6 +380,7 @@ def visualize_game(
             "legal_mask": dec.legal_mask.bool().cpu(),
             "belief_logits": belief_logits,
             "belief_mask": belief_mask,
+            "q_std_at_pick": q_std_at_pick,
         })
 
         regrets.append(regret)
@@ -458,6 +477,31 @@ def visualize_game(
             lines.append("- Top-3 belief (unseen→seat):")
             for b in top_beliefs:
                 lines.append(f"    - {b}")
+        lines.append("")
+
+        # Template-based rationalization for this featured decision.
+        student_pick_label = domino_name(slot_to_domino(feature["student_slot"],
+                                                         feature["player"], hands))
+        explain_ctx = {
+            "d_idx": feature["d_idx"],
+            "player": feature["player"],
+            "pi_probs": feature["pi_probs"],
+            "legal_mask": feature["legal_mask"],
+            "legal_slots": legal_slots,
+            "legal_labels": legals_dom,
+            "student_slot": feature["student_slot"],
+            "student_pick_label": student_pick_label,
+            "student_v": feature["student_v"],
+            "student_eq": feature["student_eq"],
+            "oracle_best": feature["oracle_best"],
+            "e_q": feature["e_q"],
+            "belief_logits": feature["belief_logits"],
+            "belief_mask": feature["belief_mask"],
+            "q_std_at_pick": feature.get("q_std_at_pick"),
+            "domino_name_fn": domino_name,
+        }
+        rationalization = explain_decision(explain_ctx)
+        lines.append(f"> **Rationalization.** {rationalization}")
         lines.append("")
         lines.append("---")
         lines.append("")
