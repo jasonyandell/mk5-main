@@ -348,6 +348,95 @@ def pi_me_accuracy(pi_logits: Tensor, legal_mask: Tensor, action_taken: Tensor) 
     return int((preds == action_taken).sum().item()), int(action_taken.numel())
 
 
+# --- v2: voids-aware student --------------------------------------------------
+
+N_VOIDS_FEATURES = 24  # 3 relative opponents × 8 suits
+
+
+class VoidsEncoder(nn.Module):
+    """Small MLP that projects the [24]-dim void indicator vector into d_model.
+
+    The output is added to the pooled state embedding before the heads run —
+    explicit void evidence gets mixed into whatever the transformer has
+    inferred attentionally.
+    """
+
+    def __init__(self, d_model: int, hidden_dim: int = 64):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(N_VOIDS_FEATURES, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, d_model),
+        )
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, voids: Tensor) -> Tensor:
+        return self.norm(self.net(voids))
+
+
+class StudentTransformerFullVoids(nn.Module):
+    """v2: transformer encoder + VoidsEncoder + four heads.
+
+    Identical to StudentTransformerFull except the pooled state_emb is
+    `cls_h + voids_encoder(voids)` before any head runs. The transformer
+    has to learn voids implicitly from play tokens; this lets it ALSO see
+    them explicitly, closing the sparse-signal belief gap.
+    """
+
+    def __init__(
+        self,
+        d_model: int = 128,
+        n_heads: int = 4,
+        n_layers: int = 2,
+        ff_dim: int = 256,
+        dropout: float = 0.1,
+        d_world: int = 64,
+        q_hidden: int = 256,
+        voids_hidden: int = 64,
+    ):
+        super().__init__()
+        self.encoder = TransformerEncoder(
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            ff_dim=ff_dim,
+            dropout=dropout,
+        )
+        self.voids_encoder = VoidsEncoder(d_model, hidden_dim=voids_hidden)
+        self.belief = BeliefHead(in_dim=d_model)
+        self.v_head = nn.Linear(d_model, 1)
+        self.pi_me = nn.Linear(d_model, 7)
+        self.world_encoder = WorldEncoder(d_model, d_world=d_world)
+        self.q_head = QHead(state_dim=d_model, world_dim=d_world, hidden_dim=q_hidden)
+
+    def forward(
+        self,
+        tokens: Tensor,
+        attention_mask: Tensor,
+        world_assignment: Tensor,
+        voids: Tensor,
+    ) -> dict[str, Tensor]:
+        h = self.encoder(tokens, attention_mask)
+        cls_h = h[:, 0, :]
+        state_emb = cls_h + self.voids_encoder(voids)
+
+        belief_logits = self.belief(state_emb)
+        v = self.v_head(state_emb).squeeze(-1)
+        pi_me_logits = self.pi_me(state_emb)
+
+        world_emb = self.world_encoder(world_assignment)
+        q = self.q_head(state_emb, world_emb)
+
+        return {
+            "belief_logits": belief_logits,
+            "v": v,
+            "pi_me_logits": pi_me_logits,
+            "q": q,
+            "state_emb": state_emb,
+            "world_emb": world_emb,
+        }
+
+
 def belief_loss(
     logits: Tensor,    # [B, 28, 3]
     target: Tensor,    # [B, 28] long in {0,1,2}

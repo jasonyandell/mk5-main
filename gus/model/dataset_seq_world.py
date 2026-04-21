@@ -25,6 +25,7 @@ from torch.utils.data import Dataset
 
 from .features import extract_belief_target, reconstruct_prior_plays
 from .tokenize import SEQ_LEN, tokenize_decision
+from .voids import voids_feature_vector
 
 N_DOMINOES = 28
 N_SEATS = 3  # left_opp, partner, right_opp
@@ -131,6 +132,9 @@ class JointWorldFullDataset(Dataset):
         action_taken = int(decision.action_taken)
         legal_mask = decision.legal_mask.bool()  # [7]
 
+        # Engine-computed void features (explicit signal for belief head)
+        voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)  # [24]
+
         return {
             "tokens": tokens,
             "attention_mask": attn_mask,
@@ -143,4 +147,5 @@ class JointWorldFullDataset(Dataset):
             "legal_mask": legal_mask,
             "decision_idx": torch.tensor(d_idx, dtype=torch.long),
             "player": torch.tensor(current_player, dtype=torch.long),
+            "voids": voids,                        # [24]
         }
