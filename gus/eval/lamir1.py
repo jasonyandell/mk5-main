@@ -600,6 +600,9 @@ def lamir1_qleaf_decision(
         extra_a = _FakeDecision(player=P, action_taken=a_slot)
         states = [state_after_a] * M
         extras = [[extra_a] for _ in range(M)]
+        # Bug 6 fix: track domino IDs played by opps per world during rollout.
+        # world_assign at the leaf must exclude these played dominoes.
+        played_dominos: list[list[int]] = [[] for _ in range(M)]
 
         for step in range(n_remaining):
             p_next = (P + 1 + step) % 4
@@ -638,6 +641,10 @@ def lamir1_qleaf_decision(
                 a_next_m = int(pi_m.argmax().item())
                 new_states.append(state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long)))
                 extras[m].append(_FakeDecision(player=p_next, action_taken=a_next_m))
+                # Record which domino was played in this world (for Bug 6 fix)
+                dom_id = int(world_game_hands[m][p_next][a_next_m])
+                if 0 <= dom_id < 28:
+                    played_dominos[m].append(dom_id)
             states = new_states
 
         # Leaf: Q_head from trick-winner's POV instead of V_head from P's POV.
@@ -648,14 +655,12 @@ def lamir1_qleaf_decision(
         # Rotate worlds to leaf_cp's POV and get legal mask (real-deal)
         world_rotated_leaf = reindex_world_rows(world_hands, old_cp=P, new_cp=leaf_cp)
         world_assign_leaf = world_batch_to_assignment_vectorized(world_rotated_leaf)
+        # Bug 6 fix: zero out played dominoes in each world's assignment.
+        for m in range(M):
+            for dom_id in played_dominos[m]:
+                world_assign_leaf[m, dom_id, :] = 0.0
         leaf_legal = states[0].legal_actions()[0].to(device)  # [7] real-deal
 
-        # Build tokens from leaf_cp's POV (per-world, world-correct hands)
-        # Rotate world_game_hands to leaf_cp's frame
-        world_game_hands_leaf = [_world_game_hands(game.hands, world_hands[m], leaf_cp) for m in range(M)]
-        # Re-index world rows: world_game_hands was built relative to P; rebuild for leaf_cp
-        # Actually _world_game_hands takes real_hands + world_hands[m] relative to P.
-        # For leaf_cp we need world hands relative to leaf_cp. Use reindex per world.
         leaf_tok_list, leaf_mask_list, leaf_void_list = [], [], []
         for m in range(M):
             world_hands_leaf_m = world_rotated_leaf[m]  # [3, 7] relative to leaf_cp
@@ -736,6 +741,8 @@ def lamir1_piopp_decision(
         extra_a = _FakeDecision(player=P, action_taken=a_slot)
         states = [state_after_a] * M
         extras = [[extra_a] for _ in range(M)]
+        # Bug 6 fix: track domino IDs played by opps per world during rollout.
+        played_dominos: list[list[int]] = [[] for _ in range(M)]
 
         for step in range(n_remaining):
             p_next = (P + 1 + step) % 4
@@ -791,6 +798,10 @@ def lamir1_piopp_decision(
 
                 new_states.append(state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long)))
                 extras[m].append(_FakeDecision(player=p_next, action_taken=a_next_m))
+                # Record which domino was played in this world (for Bug 6 fix)
+                dom_id = int(world_game_hands[m][p_next][a_next_m])
+                if 0 <= dom_id < 28:
+                    played_dominos[m].append(dom_id)
             states = new_states
 
         # Q_head leaf (same as lamir1_qleaf)
@@ -799,6 +810,10 @@ def lamir1_piopp_decision(
 
         world_rotated_leaf = reindex_world_rows(world_hands, old_cp=P, new_cp=leaf_cp)
         world_assign_leaf = world_batch_to_assignment_vectorized(world_rotated_leaf)
+        # Bug 6 fix: zero out played dominoes in each world's assignment.
+        for m in range(M):
+            for dom_id in played_dominos[m]:
+                world_assign_leaf[m, dom_id, :] = 0.0
         leaf_legal = states[0].legal_actions()[0].to(device)
 
         leaf_tok_list, leaf_mask_list, leaf_void_list = [], [], []
