@@ -1,6 +1,6 @@
 """Dataset yielding (decision, sampled_world) pairs for the full v1 student.
 
-Each item returns:
+Each item returns (Schema v1):
 - tokens, attention_mask        (decision-level state, tokenized play sequence)
 - world_mask                    [28] — for each domino, is it "unseen"?
 - world_assignment              [28, 3] float — one-hot of seat per unseen domino in this world
@@ -10,6 +10,11 @@ Each item returns:
 - e_q                           [7] — marginal E[Q] (V_head target; uses action_taken)
 - action_taken                  int — π_me_head target
 - belief_target, belief_mask    [28] / [28] — belief truth target
+
+Schema v2 adds (if present in the corpus — graceful fallback to None if absent):
+- oracle_softmax_per_seat       [4, 7] — p_make-based softmax per seat (π_opp head target)
+- legal_mask_per_seat           [4, 7] — boolean legal mask per seat
+- voids_per_seat                [4, 3, 8] — void inferences per seat
 
 One random world per item — the Q_head sees different worlds across epochs.
 This is the 3400×-denser supervision signal compared to belief-only.
@@ -143,7 +148,7 @@ class JointWorldFullDataset(Dataset):
         # Engine-computed void features (explicit signal for belief head)
         voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)  # [24]
 
-        return {
+        item = {
             "tokens": tokens,
             "attention_mask": attn_mask,
             "belief_target": belief_target,
@@ -157,6 +162,12 @@ class JointWorldFullDataset(Dataset):
             "player": torch.tensor(current_player, dtype=torch.long),
             "voids": voids,                        # [24]
         }
+        # Schema v2 fields — present only if corpus was generated with --schema v2
+        if decision.oracle_softmax_per_seat is not None:
+            item["oracle_softmax_per_seat"] = decision.oracle_softmax_per_seat.float()   # [4, 7]
+            item["legal_mask_per_seat"] = decision.legal_mask_per_seat.bool()            # [4, 7]
+            item["voids_per_seat"] = decision.voids_per_seat.float().reshape(4, 24)      # [4, 24]
+        return item
 
 
 def _expand_paths(corpus_path: str | Path | list[str | Path]) -> list[Path]:
@@ -208,7 +219,7 @@ def _build_item(game, d_idx: int, rng: torch.Generator) -> dict[str, torch.Tenso
     action_taken = int(decision.action_taken)
     legal_mask = decision.legal_mask.bool()
     voids = voids_feature_vector(prior_plays, int(game.decl_id), current_player)
-    return {
+    item = {
         "tokens": tokens,
         "attention_mask": attn_mask,
         "belief_target": belief_target,
@@ -222,6 +233,12 @@ def _build_item(game, d_idx: int, rng: torch.Generator) -> dict[str, torch.Tenso
         "player": torch.tensor(current_player, dtype=torch.long),
         "voids": voids,
     }
+    # Schema v2 fields — present only if corpus was generated with --schema v2
+    if decision.oracle_softmax_per_seat is not None:
+        item["oracle_softmax_per_seat"] = decision.oracle_softmax_per_seat.float()   # [4, 7]
+        item["legal_mask_per_seat"] = decision.legal_mask_per_seat.bool()            # [4, 7]
+        item["voids_per_seat"] = decision.voids_per_seat.float().reshape(4, 24)      # [4, 24]
+    return item
 
 
 class JointWorldFullIterable(IterableDataset):
