@@ -37,9 +37,9 @@ Mean regret on held-out 560 decisions. Lower = better.
 | v2_voids_big (1000g, 3.4M) | 62.7% | 2.10 | 70.5% |
 | v2_voids_big (2000g, 3.4M) | 67.3% | 1.60 | 75.4% |
 | v2_voids_big (3000g, 3.4M) | 67.9% | 1.39 | 77.3% |
-| **v3_consistency_3000g (3k, 3.4M)** | 66.4% | 1.346 | 77.5% |
+| v3_consistency_3000g (3k, 3.4M) | 66.4% | 1.346 | 77.5% |
+| **v2_voids_10000g_big (10k, 3.4M)** | 73.21% | 0.818 | 81.8% |
 | **v3_consistency_10000g (10k, 3.4M)** | **76.07%** | **0.551** | **85.5%** |
-| v2_voids_10000g_big (10k, 3.4M) | pending | pending | pending |
 
 *Bot-match chance ≈ 25% (4 legal moves avg). Q range is [-42, +42].*
 
@@ -178,17 +178,66 @@ PID 7556 at launch, may have rotated into a new PID for v2-big.
 - Filing beads for the pre-launch fixes. `bd` is currently broken in
   this environment; captured as GEN_FLEET.md sections instead.
 
+## Consistency-loss verdict — v3 clearly wins, and the gap widens with data
+
+Final v3-10k-vs-v2-10k-big head-to-head on 560 held-out decisions:
+
+|              | v2-big-3k | v3-cons-3k | v2-big-10k | **v3-cons-10k** |
+|--------------|----------:|-----------:|-----------:|----------------:|
+| bot-match    |    67.86% |     66.43% |     73.21% |      **76.07%** |
+| mean regret  |    1.391  |      1.346 |     0.818  |       **0.551** |
+| near-ties    |    77.3%  |      77.5% |     81.8%  |       **85.5%** |
+
+**Regret decomposition:**
+- Pure data scaling (v2 3k → 10k): **−41% regret** (1.391 → 0.818)
+- Consistency loss at 10k (v2-10k → v3-10k): **additional −33% regret** (0.818 → 0.551)
+- Stacked: v2-3k → v3-10k = **−60% regret** (1.391 → 0.551)
+
+At 3k games, v3 vs v2 was roughly a wash (1.346 vs 1.391 — could have been
+noise). **At 10k, v3 pulls decisively ahead** (0.551 vs 0.818). The
+consistency regularizer scales BETTER than plain distillation — probably
+because V_head becomes a more trusted anchor as data grows, so the
+"force π to pick actions V thinks are good" loss has a stronger target.
+
+**Decision: consistency loss rides forward** into LAMIR-1 and schema v2.
+
+## Probe findings (tonight's exploration)
+
+Three probes on v3-10k captured in `scratch/probe_*.{py,log}`:
+
+- **Domino embedding similarity** — doubles cluster (+0.047 vs non-double
+  −0.022), counts cluster (+0.037 vs non-count −0.021), high-pip families
+  tighter than low-pip. Structural learning confirmed; relational
+  concepts ("6-6 protects 6-4") are NOT in the raw embedding — they're
+  contextual.
+- **Attention patterns** on game 0 decision 0: CLS attention evolves
+  across layers (DECL-anchored → scan MINE → focus on eventual choice).
+  Final layer concentrates on the chosen action (0.26 on MINE[0] where
+  π_me = 0.91).
+- **Counterfactual hand swaps** (leave-one-out, consistent swap variant):
+  - Swapping any domino → 0-0 (top trump in blanks) jumps V by +11 to
+    +19 — model understands trump structure
+  - Swapping 1-1 → 6-6 (user's intuition-check) DROPS V by −5.3 —
+    suspicious. Investigation: V_head doesn't use world_assignment so
+    the swap is valid input. The model's claim is real. Most likely
+    explanation: **strategy-fusion leakage from PIMC training** —
+    partner-trumps-partner in the oracle's per-seat-independent rollouts
+    over-penalizes non-trump doubles that partner might trump. LAMIR's
+    shared-π fixes this exact bug.
+
+**Implication**: the probes confirm Gus has learned structural game
+features but also inherits the oracle's strategic biases. LAMIR is the
+escape from those biases, not just a performance optimization.
+
 ## Next session
 
-1. Pull v2-10k-big regret result when it lands (~22:00 CDT).
-2. Assess: is consistency loss a net win at 10k, or was it data
-   scaling alone? Three possibilities:
-   - v3 beats v2 by meaningful margin → consistency loss rides forward
-   - v3 matches v2 → drop the regularizer, simpler is better
-   - v2 beats v3 → consistency loss is actively hurting at scale,
-     investigate before v3 goes anywhere else
-3. Based on (2), either pick LAMIR-1 prototype or write a small
-   consistency-loss ablation first.
+1. **Write a PRACTICALITIES receipt on the probes** — the strategy-
+   fusion leakage showing up in counterfactual V is worth preserving.
+2. **LAMIR-1 prototype.** With consistency loss validated as a win,
+   v3_consistency_10000g is the baseline. Use rotation-equivariance to
+   query π_me on rotated views for opp seats (no π_opp head needed).
+   Start with 1-ply look-ahead (roll to end-of-trick), V_head at leaf.
+3. **Schema v2** only after LAMIR-1 shows life. Per-seat softmax,
+   bid_value plumbing, all the fix list in GEN_FLEET.md.
 
-All decisions deferred to tomorrow; no new big runs kicked off tonight
-per user direction.
+All deferred to tomorrow; no new big runs tonight per user direction.
