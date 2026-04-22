@@ -545,10 +545,140 @@ def lamir1_decision(
 
 
 # ---------------------------------------------------------------------------
+# Mode: lamir1-qleaf (same rollout, Q_head at leaf instead of V_head)
+# ---------------------------------------------------------------------------
+
+def lamir1_qleaf_decision(
+    model,
+    is_voids: bool,
+    game,
+    d_idx: int,
+    device: str,
+    world_cap: int = 200,
+) -> tuple[float, int, float]:
+    """1-ply rollout with Q_head leaf evaluator.
+
+    Identical opp simulation to lamir1_decision. At leaf: for each world m,
+    rotate to trick-winner's POV, run Q_head, take max over winner's legal
+    slots (using real-deal legal mask), sign-flip if winner is on opp team.
+
+    Falls back to direct π_me for trick_pos==3.
+    """
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    trick_pos = d_idx % 4
+    n_remaining = 3 - trick_pos
+
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
+
+    world_hands_all = decision.world_hands
+    M = min(world_hands_all.shape[0], world_cap)
+    world_hands = world_hands_all[:M]
+
+    state_at_d = _replay_state(game.hands, int(game.decl_id), game.decisions, d_idx)
+    world_game_hands = [_world_game_hands(game.hands, world_hands[m], P) for m in range(M)]
+
+    action_scores: dict[int, float] = {}
+
+    for a_slot in legal_slots:
+        state_after_a = state_at_d.apply_actions(torch.tensor([a_slot], dtype=torch.long))
+        extra_a = _FakeDecision(player=P, action_taken=a_slot)
+        states = [state_after_a] * M
+        extras = [[extra_a] for _ in range(M)]
+
+        for step in range(n_remaining):
+            p_next = (P + 1 + step) % 4
+            world_rotated = reindex_world_rows(world_hands, old_cp=P, new_cp=p_next)
+            world_assign_pnext = world_batch_to_assignment_vectorized(world_rotated)
+
+            tok_list, mask_list, void_list = [], [], []
+            for m in range(M):
+                t, am, v = _build_tokens_voids(
+                    world_game_hands[m], int(game.decl_id), game.decisions, d_idx,
+                    extras[m], p_next,
+                )
+                tok_list.append(t)
+                mask_list.append(am)
+                void_list.append(v)
+
+            with torch.no_grad():
+                tok_d = torch.stack(tok_list).to(device)
+                msk_d = torch.stack(mask_list).to(device)
+                wa_d = world_assign_pnext.to(device)
+                if is_voids:
+                    out_pnext = model(tok_d, msk_d, wa_d, torch.stack(void_list).to(device))
+                else:
+                    out_pnext = model(tok_d, msk_d, wa_d)
+
+            pi_pnext = out_pnext["pi_me_logits"]
+            new_states = []
+            for m in range(M):
+                state_m = states[m]
+                trick_len_m = int((state_m.trick_plays[0] >= 0).sum().item())
+                if trick_len_m == 0 and step > 0:
+                    new_states.append(state_m)
+                    continue
+                opp_legal_m = state_m.legal_actions()[0].to(device)
+                pi_m = pi_pnext[m].masked_fill(~opp_legal_m, float("-inf"))
+                a_next_m = int(pi_m.argmax().item())
+                new_states.append(state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long)))
+                extras[m].append(_FakeDecision(player=p_next, action_taken=a_next_m))
+            states = new_states
+
+        # Leaf: Q_head from trick-winner's POV instead of V_head from P's POV.
+        # leaf_cp = trick winner = states[0].current_player after trick resolves.
+        leaf_cp = int(states[0].current_player[0].item())
+        sign = 1 if (leaf_cp % 2) == (P % 2) else -1
+
+        # Rotate worlds to leaf_cp's POV and get legal mask (real-deal)
+        world_rotated_leaf = reindex_world_rows(world_hands, old_cp=P, new_cp=leaf_cp)
+        world_assign_leaf = world_batch_to_assignment_vectorized(world_rotated_leaf)
+        leaf_legal = states[0].legal_actions()[0].to(device)  # [7] real-deal
+
+        # Build tokens from leaf_cp's POV (per-world, world-correct hands)
+        # Rotate world_game_hands to leaf_cp's frame
+        world_game_hands_leaf = [_world_game_hands(game.hands, world_hands[m], leaf_cp) for m in range(M)]
+        # Re-index world rows: world_game_hands was built relative to P; rebuild for leaf_cp
+        # Actually _world_game_hands takes real_hands + world_hands[m] relative to P.
+        # For leaf_cp we need world hands relative to leaf_cp. Use reindex per world.
+        leaf_tok_list, leaf_mask_list, leaf_void_list = [], [], []
+        for m in range(M):
+            world_hands_leaf_m = world_rotated_leaf[m]  # [3, 7] relative to leaf_cp
+            wgh_leaf_m = _world_game_hands(game.hands, world_hands_leaf_m, leaf_cp)
+            t, am, v = _build_tokens_voids(
+                wgh_leaf_m, int(game.decl_id), game.decisions, d_idx,
+                extras[m], leaf_cp,
+            )
+            leaf_tok_list.append(t)
+            leaf_mask_list.append(am)
+            leaf_void_list.append(v)
+
+        with torch.no_grad():
+            tok_d = torch.stack(leaf_tok_list).to(device)
+            msk_d = torch.stack(leaf_mask_list).to(device)
+            wa_d = world_assign_leaf.to(device)
+            if is_voids:
+                out_leaf = model(tok_d, msk_d, wa_d, torch.stack(leaf_void_list).to(device))
+            else:
+                out_leaf = model(tok_d, msk_d, wa_d)
+
+        q_leaf = out_leaf["q"]  # [M, 7]
+        q_masked = q_leaf.masked_fill(~leaf_legal.unsqueeze(0), float("-inf"))
+        q_max = q_masked.max(dim=-1).values  # [M]
+        action_scores[a_slot] = sign * float(q_max.mean().item())
+
+    chosen = max(action_scores, key=lambda a: action_scores[a])
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1")
+_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1", "lamir1-qleaf")
 
 
 def main() -> int:
@@ -587,6 +717,9 @@ def main() -> int:
     elif args.mode == "q-bootstrap":
         def run_decision(game, d_idx):
             return q_bootstrap_decision(model, is_voids, game, d_idx, device, args.world_cap)
+    elif args.mode == "lamir1-qleaf":
+        def run_decision(game, d_idx):
+            return lamir1_qleaf_decision(model, is_voids, game, d_idx, device, args.world_cap)
     else:  # lamir1
         def run_decision(game, d_idx):
             return lamir1_decision(model, is_voids, game, d_idx, device, args.world_cap)
