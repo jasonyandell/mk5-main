@@ -719,3 +719,60 @@ Probe scripts and output logs live in `scratch/probe_*` for reference.
 These are candidates for promotion to `gus/eval/` if the atlas or
 threat-boon analysis becomes a recurring tool (e.g., pre-game hand
 evaluator, post-hand "what if" explorer).
+
+## 20. LAMIR-1 attempt: depth-1 look-ahead does not beat direct π_me with distilled heads
+
+We implemented the full LAMIR-1 inference harness (`gus/eval/lamir1.py`):
+sampled opp worlds from the belief head, rolled out 1-3 opp plays using
+rotated π_me (and a trained π_opp head), and evaluated the leaf state with
+the Q_head. Ran the complete bug-hunt-and-fix cycle. Result: every rollout
+mode is worse than direct π_me argmax.
+
+**The ladder (560-decision held-out, mean regret):**
+
+| mode | regret |
+|---|---|
+| direct π_me | **0.551** (baseline) |
+| q-bootstrap (depth-1 Q, no rollout) | 0.685 |
+| lamir1-qleaf (rollout + Q_head leaf) | 2.006 → 2.156 after Bug 6 fix |
+| lamir1-piopp (π_opp rollout + Q_head leaf) | 2.268 → 2.350 after Bug 6 fix |
+
+**Three bugs found and fixed during the attempt:**
+
+- *Bug 5*: opp tokens built from real deal instead of world hypothetical
+  hands. Fix: `_world_game_hands()` substitutes per-world opp hands for
+  every token build in the rollout. (commit `e4e6862`)
+- *Sign-flip*: V_head in leaf player's frame; must negate when leaf player
+  is on opp team relative to P. Fixed pos=2 regret from 1.692 → 0.868
+  in isolation.
+- *Bug 6*: world_assignment at the leaf still included played dominoes.
+  Fix: zero played-domino rows per world before the leaf Q_head call.
+  (commit `2c380a6`) — mechanically correct, but exposed a training
+  distribution mismatch (see below).
+
+**Why it still fails: the Q_head was trained on initial-deal assignments.**
+At training time, `world_assignment [28, 3]` encodes the full opp hands at
+each decision. A leaf Q_head call mid-rollout sees a depleted assignment
+(1-3 dominos fewer per opp). This is OOD from training. Bug 6 fix makes
+the input *correct* but *unfamiliar* — Q_head regresses further.
+
+**The fix path**: either (a) augment Q_head training with random partial-
+depletion world assignments so it learns to evaluate mid-trick states, or
+(b) do end-to-end LAMIR training where rollout states generate the Q_head
+targets directly. (a) is a smaller change; (b) is the paper's actual recipe.
+
+**π_opp head trained as a side product.** `PiOppHead` (1,879 params, 3-way
+seat embedding) achieves **68.6% oracle top-1 accuracy** on v2 eval corpus,
+trained on 1000-game schema v2 corpus. This is genuinely better than rotated
+π_me (~55%), but using it as the opp model doesn't help while the leaf
+evaluator is broken.
+
+**V_head is architecturally world-blind** (confirmed empirically: std=0.000
+across 200 world samples for the same decision). V_head takes only
+`state_emb` with no world_encoder input. Cannot serve as a look-ahead leaf.
+
+**q-bootstrap (depth-1, no full rollout)** at 0.685 is the best look-ahead
+result. It uses the initial-deal world assignment (no depletion issue) and
+avoids the strategy-fusion trap by taking max Q before averaging. It is
+still 24% above baseline, suggesting the Q_head's world-conditional signal
+is real but insufficient without the rollout.
