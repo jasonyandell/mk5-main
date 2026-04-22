@@ -166,3 +166,34 @@ is insufficient.
 | `scratch/lamir1_*.json` | Per-mode eval results |
 | `gus/adapters/q_head_aug.pt` | Augmented Q_head fine-tune (path a, didn't help) |
 | `gus/train/train_q_head_augmented.py` | Depletion-augmentation fine-tune script |
+| `gus/eval/belief_ceiling.py` | Bayes-optimal belief top-1 diagnostic |
+
+---
+
+## Addendum — Belief is at the Bayes ceiling (2026-04-22)
+
+Ran `gus/eval/belief_ceiling.py` on `corpus_eval_20.pt` to compute the
+theoretical best top-1 achievable from the oracle's own sampled worlds:
+
+```
+Bayes-optimal belief top-1:  39.184%
+Gus v3 belief head (§6):     ~38-39%
+```
+
+**Gus is at ceiling.** The "belief is hard" feeling was correct, but the
+reason is that **the signal isn't there** — not that the architecture or
+capacity is wrong. Zeb's 39% wasn't a plateau, it was the information limit.
+
+Per-decision-idx breakdown confirms it: d_idx 0-5 sits at ~33% (pure prior;
+no play info yet), d_idx 18+ rises to 50-75% (deterministic voids + played
+domino exclusions), d_idx 26 hits 100%. Early-hand belief is fundamentally
+unsharpen-able without more observations.
+
+**Reorients the belief roadmap**: top-1 accuracy is a dead lever. The real
+unfinished work is posterior *shape* — §15 already showed distribution-target
+training closes 47% of the calibration gap (KL 0.078 → 0.062). The open loop
+is co-training belief + world_encoder + Q_head **jointly** so that
+better-calibrated belief actually propagates to better look-ahead value
+estimates. That's a concrete overnight-scale experiment, not a mystery.
+
+See `gus/PRACTICALITIES.md §21` for the full receipt.

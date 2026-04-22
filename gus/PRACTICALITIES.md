@@ -753,3 +753,82 @@ bottleneck is the leaf evaluator, not the opp simulation quality.
 
 **V_head is architecturally world-blind**: std=0.000 across 200 world samples
 for the same decision. Cannot differentiate world hypotheses.
+
+## 21. Belief is at the Bayes ceiling — top-1 is a solved axis
+
+Ran a diagnostic (`gus/eval/belief_ceiling.py`) that computes the
+theoretical best top-1 achievable on the eval corpus: for each unseen
+domino, take `argmax_seat P(seat | oracle sampled worlds)`. Since the
+oracle's samples ARE the posterior, this argmax IS Bayes-optimal.
+
+**Result on `corpus_eval_20.pt` (20 games, 560 decisions, ~2914 worlds/decision)**:
+
+```
+Bayes-optimal top-1:  39.184%
+Gus v3 belief head:   ~38-39% (receipts §6, probe data)
+```
+
+**Gus is at ceiling.** Supervised-to-truth belief training produced a model
+that matches the Bayes-optimal limit of the information available on this
+corpus. Zeb's 39% wasn't a plateau — it was the information ceiling.
+
+### Per-decision-idx: where the information lives
+
+| d_idx range | Bayes top-1 | interpretation |
+|---|---:|---|
+| 0-5 (pre-first-trick) | ~33% | pure prior — 1-in-3 over 3 opp seats, no play info yet |
+| 6-15 (mid-hand) | ~36-40% | voids + lead signaling start to sharpen |
+| 18-25 (endgame) | ~50-75% | many played dominoes narrow the field |
+| 26 (penultimate) | 100% | only one domino unseen |
+
+Early-hand belief is essentially "I see my hand, so each unseen domino is
+1-in-3." No architecture can exceed that — the information isn't available.
+Late-hand accuracy rises sharply because each play rules out possibilities
+deterministically (follow-suit → void inference → direct exclusion).
+
+### Implication: pivot from accuracy to distribution shape
+
+**Top-1 accuracy is a dead lever**. Any belief head that exceeds ~39.2% on
+this corpus is overfitting; any lower is underfitting. Gus is tuned.
+
+**The real unfinished work is posterior shape (calibration)**. §15 already
+showed that distribution-target training lowered KL-vs-truth 0.078 → 0.062
+(closed 47% of the gap from uniform prior to perfect belief). That was the
+right direction but stalled: downstream play didn't improve because the
+other heads weren't co-trained.
+
+**The experiment that closes §15's open loop**: train belief + world_encoder
++ Q_head **jointly** with the distribution-belief target, rather than
+stacking a belief-calibration fix on a frozen ecosystem. This is the single
+most informative belief experiment we could run — tests whether a
+better-calibrated belief translates to better look-ahead value estimates
+when the consuming heads are trained to use its shape.
+
+### Why this matters for look-ahead
+
+PIMC / BMCS / LAMIR all consume the full `P(seat | domino)` distribution,
+not argmax. Gus's belief might be right at the mode but miscalibrated in
+the tails — and tail mass is what determines how much weight rollouts put
+on unusual worlds. Better tail calibration → better-weighted world samples
+→ better look-ahead value aggregation, independent of any leaf-evaluator
+fix.
+
+### What this unlocks (or doesn't)
+
+- **Top-1-chasing architectures** (per-opponent memory tokens, longer
+  context, auxiliary losses) are lower-priority. They might help marginally
+  on late-hand voids-plus-signaling but you're already harvesting most of
+  the signal. Diminishing returns.
+- **LAMIR's "no explicit belief" elegance** is more tempting than it first
+  sounded. If most of the belief information is captured by a small number
+  of discrete strategic buckets (abstract infosets), collapsing to bucket
+  membership loses very little. One training objective replaces three.
+- **Corpus-specific finding**: 39.2% is the ceiling *on this corpus*.
+  Schema v2 / diverse-seed corpora may have slightly different ceilings
+  because of the sampling budget. Worth re-running the diagnostic on any
+  new eval corpus before claiming "belief works / doesn't work."
+
+**Side benefit**: this diagnostic (~60 lines) now exists as a permanent
+sanity check. Before any future belief architecture claim, run the ceiling
+first — the "is belief broken?" question reduces to "is it at ceiling?"
+
