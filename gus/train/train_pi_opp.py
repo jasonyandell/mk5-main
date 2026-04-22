@@ -133,9 +133,11 @@ def pi_opp_loss(
     # Mask logits
     logits_masked = logits.masked_fill(~legal_mask, float("-inf"))
     log_probs = F.log_softmax(logits_masked, dim=-1)  # [B, 7]
+    # Zero illegal slots so 0 * 0 = 0, not 0 * (-inf) = NaN
+    log_probs = log_probs.masked_fill(~legal_mask, 0.0)
 
     # CE: -sum_a target[a] * log_prob[a], only over legal actions
-    ce = -(target * log_probs * legal_mask.float()).sum(dim=-1)  # [B]
+    ce = -(target * log_probs).sum(dim=-1)  # [B]
     return ce.mean()
 
 
