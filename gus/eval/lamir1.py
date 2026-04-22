@@ -338,6 +338,80 @@ def v_bootstrap_decision(
 
 
 # ---------------------------------------------------------------------------
+# Mode: q-bootstrap (depth-1 Q_head, world-conditioned)
+# ---------------------------------------------------------------------------
+
+def q_bootstrap_decision(
+    model,
+    is_voids: bool,
+    game,
+    d_idx: int,
+    device: str,
+    world_cap: int = 200,
+) -> tuple[float, int, float]:
+    """Depth-1 Q_head: apply a → score with Q_head from next-actor's POV.
+
+    For each legal action a:
+      extra = [a]  (P played a)
+      next_actor = (P+1)%4
+      tokens/voids = P's view (same as v-bootstrap)
+      world_rotated = world re-indexed to next_actor's POV
+      out = model(tokens, voids, world_rotated)
+      q_legal[m] = max(out["q"][m] masked to next_actor's legal slots in world m)
+      sign = +1 if next_actor same team as P else -1
+      score[a] = sign * mean(q_legal)
+
+    Falls back to direct π_me for trick_pos==3.
+    Returns (regret, is_bot_match, oracle_best_eq).
+    """
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    legal_mask = decision.legal_mask.bool()
+    trick_pos = d_idx % 4
+
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
+
+    world_hands_all = decision.world_hands  # [M, 3, 7]
+    M = min(world_hands_all.shape[0], world_cap)
+    world_hands = world_hands_all[:M]  # [M, 3, 7]
+
+    next_actor = (P + 1) % 4
+    sign = 1 if (next_actor % 2) == (P % 2) else -1
+
+    # Rotate worlds to next_actor's POV: world row 0 = hand of (next_actor+1)%4, etc.
+    # But for Q_head we want next_actor's perspective, so world_assign reflects
+    # what next_actor knows about the OTHER three players.
+    world_rotated = reindex_world_rows(world_hands, old_cp=P, new_cp=next_actor)  # [M, 3, 7]
+    world_assign_next = world_batch_to_assignment_vectorized(world_rotated)  # [M, 28, 3]
+
+    # State after P plays (for legal mask of next_actor using real deal)
+    state_at_d = _replay_state(game.hands, int(game.decl_id), game.decisions, d_idx)
+
+    action_scores: dict[int, float] = {}
+    for a_slot in legal_slots:
+        state_after_a = state_at_d.apply_actions(torch.tensor([a_slot], dtype=torch.long))
+        next_legal = state_after_a.legal_actions()[0].to(device)  # [7] — real deal
+
+        extra = [_FakeDecision(player=P, action_taken=a_slot)]
+        tokens, attn_mask, voids = _build_tokens_voids(
+            game.hands, int(game.decl_id), game.decisions, d_idx, extra, next_actor
+        )
+        out = query_model_batched(
+            model, is_voids, tokens, attn_mask, voids, world_assign_next, device
+        )
+        q = out["q"]  # [M, 7]
+        q_masked = q.masked_fill(~next_legal.unsqueeze(0), float("-inf"))
+        q_max = q_masked.max(dim=-1).values  # [M]
+        action_scores[a_slot] = sign * float(q_max.mean().item())
+
+    chosen = max(action_scores, key=lambda a: action_scores[a])
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
 # LAMIR-1 per-decision
 # ---------------------------------------------------------------------------
 
@@ -474,7 +548,7 @@ def lamir1_decision(
 # Main
 # ---------------------------------------------------------------------------
 
-_MODES = ("direct", "v-bootstrap", "lamir1")
+_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1")
 
 
 def main() -> int:
@@ -510,6 +584,9 @@ def main() -> int:
     elif args.mode == "v-bootstrap":
         def run_decision(game, d_idx):
             return v_bootstrap_decision(model, is_voids, game, d_idx, device, args.world_cap)
+    elif args.mode == "q-bootstrap":
+        def run_decision(game, d_idx):
+            return q_bootstrap_decision(model, is_voids, game, d_idx, device, args.world_cap)
     else:  # lamir1
         def run_decision(game, d_idx):
             return lamir1_decision(model, is_voids, game, d_idx, device, args.world_cap)
