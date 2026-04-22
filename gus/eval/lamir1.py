@@ -1,17 +1,15 @@
-"""LAMIR-1 evaluation harness — three inference modes.
+"""LAMIR-1 evaluation harness — inference modes.
 
 Modes (--mode flag):
-  direct        Direct π_me argmax with legal mask. Baseline.
-  v-bootstrap   Depth-1 V_head: apply action a → query V_head immediately
-                (no opp rollout). Tests whether V_head has good action
-                ordering at depth-1 before any opp simulation.
-  lamir1        1-ply look-ahead: simulate remaining trick players using
-                rotation-equivariant π_me as π_opp, then score with
-                V_head at leaf averaged over M corpus worlds.
+  direct         Direct π_me argmax with legal mask. Baseline.
+  v-bootstrap    Depth-1 V_head: apply action a → query V_head immediately.
+  q-bootstrap    Depth-1 Q_head (world-conditioned): apply a → max Q for next actor.
+  lamir1         1-ply rollout with rotated π_me as π_opp, V_head leaf.
+  lamir1-qleaf   1-ply rollout with rotated π_me as π_opp, Q_head leaf.
+  lamir1-piopp   1-ply rollout with trained π_opp head as π_opp, Q_head leaf.
+                 Requires --pi-opp-adapter PATH. Use --pi-opp-sample for τ=1 sampling.
 
-For v-bootstrap and lamir1, falls back to direct π_me for trick_pos==3
-(last player in trick — nothing to roll out).
-
+For modes with rollout, falls back to direct π_me for trick_pos==3.
 Batched inference: all M worlds processed in parallel per model call.
 """
 
@@ -34,6 +32,7 @@ from gus.model.features import _hand_list
 from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import voids_feature_vector
+from gus.train.train_pi_opp import PiOppHead, TrunkWithPiOpp
 from forge.eq.game_tensor import GameStateTensor
 
 
@@ -69,6 +68,20 @@ def _load_student(path: str, device: str):
     model.load_state_dict(ckpt["model_state"])
     model.eval()
     return model, is_voids
+
+
+def _load_pi_opp(path: str, trunk: StudentTransformerFullVoids, device: str) -> TrunkWithPiOpp:
+    """Load a trained π_opp adapter onto the given trunk."""
+    ckpt = torch.load(path, weights_only=False, map_location=device)
+    pi_opp_args = ckpt.get("args", {})
+    seat_embed_dim = pi_opp_args.get("seat_embed_dim", 8)
+    trunk_args = ckpt["trunk_args"]
+    d_model = trunk_args["d_model"]
+
+    wrapper = TrunkWithPiOpp(trunk, d_model, seat_embed_dim).to(device)
+    wrapper.pi_opp_head.load_state_dict(ckpt["pi_opp_head_state"])
+    wrapper.eval()
+    return wrapper
 
 
 # ---------------------------------------------------------------------------
@@ -675,10 +688,154 @@ def lamir1_qleaf_decision(
 
 
 # ---------------------------------------------------------------------------
+# Mode: lamir1-piopp (full rollout with trained π_opp, Q_head leaf)
+# ---------------------------------------------------------------------------
+
+def lamir1_piopp_decision(
+    model: StudentTransformerFullVoids,
+    is_voids: bool,
+    pi_opp_wrapper: TrunkWithPiOpp,
+    game,
+    d_idx: int,
+    device: str,
+    world_cap: int = 200,
+    sample: bool = False,
+) -> tuple[float, int, float]:
+    """1-ply rollout using trained π_opp head for opp simulation, Q_head leaf.
+
+    Same structure as lamir1_qleaf but opp steps use pi_opp_head(state_emb,
+    rel_seat_id) instead of rotated π_me. Relative seat id for each opp:
+      step 0: p_next = (P+1)%4 → rel_seat = 1 (L-opp of P)
+      step 1: p_next = (P+2)%4 → rel_seat = 2 (partner)
+      step 2: p_next = (P+3)%4 → rel_seat = 3 (R-opp)
+
+    When sample=True, samples from π_opp softmax (τ=1.0) instead of argmax.
+
+    Falls back to direct π_me for trick_pos==3.
+    """
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    trick_pos = d_idx % 4
+    n_remaining = 3 - trick_pos
+
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
+
+    world_hands_all = decision.world_hands
+    M = min(world_hands_all.shape[0], world_cap)
+    world_hands = world_hands_all[:M]
+
+    state_at_d = _replay_state(game.hands, int(game.decl_id), game.decisions, d_idx)
+    world_game_hands = [_world_game_hands(game.hands, world_hands[m], P) for m in range(M)]
+
+    action_scores: dict[int, float] = {}
+
+    for a_slot in legal_slots:
+        state_after_a = state_at_d.apply_actions(torch.tensor([a_slot], dtype=torch.long))
+        extra_a = _FakeDecision(player=P, action_taken=a_slot)
+        states = [state_after_a] * M
+        extras = [[extra_a] for _ in range(M)]
+
+        for step in range(n_remaining):
+            p_next = (P + 1 + step) % 4
+            rel_seat = step + 1  # 1=L-opp, 2=partner, 3=R-opp relative to P
+            seat_id_val = rel_seat - 1  # PiOppHead index: 0,1,2
+
+            # Build per-world tokens for p_next's POV (same as lamir1 rollout)
+            world_rotated = reindex_world_rows(world_hands, old_cp=P, new_cp=p_next)
+            world_assign_pnext = world_batch_to_assignment_vectorized(world_rotated)
+
+            tok_list, mask_list, void_list = [], [], []
+            for m in range(M):
+                t, am, v = _build_tokens_voids(
+                    world_game_hands[m], int(game.decl_id), game.decisions, d_idx,
+                    extras[m], p_next,
+                )
+                tok_list.append(t)
+                mask_list.append(am)
+                void_list.append(v)
+
+            seat_ids = torch.full((M,), seat_id_val, dtype=torch.long, device=device)
+
+            with torch.no_grad():
+                tok_d = torch.stack(tok_list).to(device)
+                msk_d = torch.stack(mask_list).to(device)
+                wa_d = world_assign_pnext.to(device)
+                vd_d = torch.stack(void_list).to(device) if is_voids else None
+
+                # Get state_emb from trunk, then apply pi_opp_head
+                if is_voids:
+                    trunk_out = pi_opp_wrapper.trunk(tok_d, msk_d, wa_d, vd_d)
+                else:
+                    trunk_out = pi_opp_wrapper.trunk(tok_d, msk_d, wa_d)
+                state_emb = trunk_out["state_emb"]  # [M, D]
+                pi_opp_logits = pi_opp_wrapper.pi_opp_head(state_emb, seat_ids)  # [M, 7]
+
+            new_states = []
+            for m in range(M):
+                state_m = states[m]
+                trick_len_m = int((state_m.trick_plays[0] >= 0).sum().item())
+                if trick_len_m == 0 and step > 0:
+                    new_states.append(state_m)
+                    continue
+
+                opp_legal_m = state_m.legal_actions()[0].to(device)
+                logits_m = pi_opp_logits[m].masked_fill(~opp_legal_m, float("-inf"))
+
+                if sample:
+                    probs_m = torch.softmax(logits_m, dim=-1)
+                    a_next_m = int(torch.multinomial(probs_m, 1).item())
+                else:
+                    a_next_m = int(logits_m.argmax().item())
+
+                new_states.append(state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long)))
+                extras[m].append(_FakeDecision(player=p_next, action_taken=a_next_m))
+            states = new_states
+
+        # Q_head leaf (same as lamir1_qleaf)
+        leaf_cp = int(states[0].current_player[0].item())
+        sign = 1 if (leaf_cp % 2) == (P % 2) else -1
+
+        world_rotated_leaf = reindex_world_rows(world_hands, old_cp=P, new_cp=leaf_cp)
+        world_assign_leaf = world_batch_to_assignment_vectorized(world_rotated_leaf)
+        leaf_legal = states[0].legal_actions()[0].to(device)
+
+        leaf_tok_list, leaf_mask_list, leaf_void_list = [], [], []
+        for m in range(M):
+            world_hands_leaf_m = world_rotated_leaf[m]
+            wgh_leaf_m = _world_game_hands(game.hands, world_hands_leaf_m, leaf_cp)
+            t, am, v = _build_tokens_voids(
+                wgh_leaf_m, int(game.decl_id), game.decisions, d_idx,
+                extras[m], leaf_cp,
+            )
+            leaf_tok_list.append(t)
+            leaf_mask_list.append(am)
+            leaf_void_list.append(v)
+
+        with torch.no_grad():
+            tok_d = torch.stack(leaf_tok_list).to(device)
+            msk_d = torch.stack(leaf_mask_list).to(device)
+            wa_d = world_assign_leaf.to(device)
+            if is_voids:
+                out_leaf = model(tok_d, msk_d, wa_d, torch.stack(leaf_void_list).to(device))
+            else:
+                out_leaf = model(tok_d, msk_d, wa_d)
+
+        q_leaf = out_leaf["q"]
+        q_masked = q_leaf.masked_fill(~leaf_legal.unsqueeze(0), float("-inf"))
+        action_scores[a_slot] = sign * float(q_masked.max(dim=-1).values.mean().item())
+
+    chosen = max(action_scores, key=lambda a: action_scores[a])
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1", "lamir1-qleaf")
+_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1", "lamir1-qleaf", "lamir1-piopp")
 
 
 def main() -> int:
@@ -689,6 +846,10 @@ def main() -> int:
     parser.add_argument("--out", type=str, default=None,
                         help="JSON output path (default: scratch/lamir1_<mode>.json)")
     parser.add_argument("--world-cap", type=int, default=200)
+    parser.add_argument("--pi-opp-adapter", type=str, default=None,
+                        help="Path to trained π_opp adapter (required for lamir1-piopp mode)")
+    parser.add_argument("--pi-opp-sample", action="store_true",
+                        help="Sample from π_opp (τ=1.0) instead of argmax during rollout")
     parser.add_argument("--mode", choices=_MODES, default="lamir1",
                         help="Inference mode (default: lamir1)")
     args = parser.parse_args()
@@ -703,6 +864,15 @@ def main() -> int:
 
     model, is_voids = _load_student(args.adapter, device)
     print(f"Model loaded, voids={is_voids}", flush=True)
+
+    # Load π_opp adapter if needed
+    pi_opp_wrapper = None
+    if args.mode == "lamir1-piopp":
+        if not args.pi_opp_adapter:
+            print("ERROR: --pi-opp-adapter required for lamir1-piopp mode", flush=True)
+            return 1
+        pi_opp_wrapper = _load_pi_opp(args.pi_opp_adapter, model, device)
+        print(f"π_opp adapter loaded from {args.pi_opp_adapter}", flush=True)
 
     ds = JointWorldFullDataset(args.eval, seed=42)
     print(f"Eval corpus: {len(ds.games)} games, qualifying decisions: {len(ds.index)}", flush=True)
@@ -720,6 +890,12 @@ def main() -> int:
     elif args.mode == "lamir1-qleaf":
         def run_decision(game, d_idx):
             return lamir1_qleaf_decision(model, is_voids, game, d_idx, device, args.world_cap)
+    elif args.mode == "lamir1-piopp":
+        def run_decision(game, d_idx):
+            return lamir1_piopp_decision(
+                model, is_voids, pi_opp_wrapper, game, d_idx, device,
+                args.world_cap, sample=args.pi_opp_sample,
+            )
     else:  # lamir1
         def run_decision(game, d_idx):
             return lamir1_decision(model, is_voids, game, d_idx, device, args.world_cap)
