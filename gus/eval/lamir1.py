@@ -30,7 +30,7 @@ import torch
 from torch import Tensor
 
 from gus.model.dataset_seq_world import JointWorldFullDataset
-from gus.model.features import _hand_list, reconstruct_prior_plays
+from gus.model.features import _hand_list
 from gus.model.student import StudentTransformerFull, StudentTransformerFullVoids
 from gus.model.tokenize import tokenize_decision
 from gus.model.voids import voids_feature_vector
@@ -98,21 +98,6 @@ def reindex_world_rows(
     return out
 
 
-def world_batch_to_assignment(world_hands_batch: Tensor) -> Tensor:
-    """Convert [M, 3, 7] world rows to [M, 28, 3] seat-one-hot tensors."""
-    M = world_hands_batch.shape[0]
-    assign = torch.zeros(M, 28, 3, dtype=torch.float32)
-    for seat in range(3):
-        # world_hands_batch[:, seat, :] is [M, 7] domino IDs
-        for slot in range(7):
-            d_ids = world_hands_batch[:, seat, slot].long()  # [M]
-            valid = (d_ids >= 0) & (d_ids < 28)
-            for m in range(M):
-                if valid[m]:
-                    assign[m, d_ids[m].item(), seat] = 1.0
-    return assign
-
-
 def world_batch_to_assignment_vectorized(world_hands_batch: Tensor) -> Tensor:
     """Convert [M, 3, 7] world rows to [M, 28, 3] seat-one-hot (vectorized)."""
     M = world_hands_batch.shape[0]
@@ -126,25 +111,6 @@ def world_batch_to_assignment_vectorized(world_hands_batch: Tensor) -> Tensor:
                 m_idx = torch.where(valid)[0]
                 assign[m_idx, d_ids[m_idx], seat] = 1.0
     return assign
-
-
-# ---------------------------------------------------------------------------
-# Legal mask for a player in a world
-# ---------------------------------------------------------------------------
-
-def legal_mask_in_world(
-    state: GameStateTensor,
-    world_hands_m: Tensor,  # [3, 7] relative to original P
-    player: int,
-    orig_cp: int,
-) -> Tensor:
-    """Return [7] bool legal mask for `player` in state, using world to
-    substitute the player's hand if they're an opponent."""
-    # The GameStateTensor has the real hands for all players.
-    # legal_actions() reads the current player's hand from state.hands.
-    # If player IS the current player per state, this works directly.
-    # We trust state reflects the correct current player after apply_actions.
-    return state.legal_actions()[0]  # [7]
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +145,26 @@ def query_model_batched(
 
 
 # ---------------------------------------------------------------------------
+# Per-world game hands
+# ---------------------------------------------------------------------------
+
+def _world_game_hands(
+    real_hands: list[list[int]],
+    world_hands_m: Tensor,   # [3, 7] — relative to P
+    P: int,
+) -> list[list[int]]:
+    """Build 4-player game_hands where P keeps real hand and opps use world hands.
+
+    world_hands_m row i = hand of absolute player (P + i + 1) % 4.
+    """
+    result: list[list[int]] = [list(real_hands[p]) for p in range(4)]
+    for i in range(3):
+        abs_p = (P + i + 1) % 4
+        result[abs_p] = [int(x) for x in world_hands_m[i].tolist()]
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Build tokens+voids for a (game, state) snapshot
 # ---------------------------------------------------------------------------
 
@@ -197,7 +183,10 @@ def _build_tokens_voids(
     extra: list[_FakeDecision],
     query_player: int,
 ) -> tuple[Tensor, Tensor]:
-    """Build (tokens [L, 5], voids [24]) for query_player at state = orig[:d_idx] + extra."""
+    """Build (tokens [L, 5], voids [24]) for query_player at state = orig[:d_idx] + extra.
+
+    game_hands must be the world-correct 4-player hands for any simulated plays in extra.
+    """
 
     class _Stub:
         def __init__(self, p, a):
@@ -326,6 +315,12 @@ def v_bootstrap_decision(
     world_hands = world_hands_all[:M]
     world_assign_P = world_batch_to_assignment_vectorized(world_hands)  # [M, 28, 3]
 
+    # After P plays, the leaf current_player is (P+1)%4.
+    # V_head is trained in leaf player's team frame. If leaf player is on opp team,
+    # the value must be negated to convert to P's team frame.
+    leaf_cp = (P + 1) % 4
+    sign = 1 if (leaf_cp % 2) == (P % 2) else -1
+
     action_scores: dict[int, float] = {}
     for a_slot in legal_slots:
         extra = [_FakeDecision(player=P, action_taken=a_slot)]
@@ -335,7 +330,7 @@ def v_bootstrap_decision(
         out = query_model_batched(
             model, is_voids, tokens, attn_mask, voids, world_assign_P, device
         )
-        action_scores[a_slot] = float(out["v"].mean().item())
+        action_scores[a_slot] = sign * float(out["v"].mean().item())
 
     chosen = max(action_scores, key=lambda a: action_scores[a])
     regret = oracle_best_eq - float(e_q[chosen].item())
@@ -378,115 +373,93 @@ def lamir1_decision(
     # Replay state to just before decision d_idx
     state_at_d = _replay_state(game.hands, int(game.decl_id), game.decisions, d_idx)
 
+    # Precompute per-world 4-player game_hands (world m's opps replace real deal).
+    world_game_hands: list[list[list[int]]] = [
+        _world_game_hands(game.hands, world_hands[m], P)
+        for m in range(M)
+    ]
+    world_assign_P = world_batch_to_assignment_vectorized(world_hands)  # [M, 28, 3]
+
     action_scores: dict[int, float] = {}
 
     for a_slot in legal_slots:
-        # Step state: P plays slot a_slot
+        # Step state: P plays slot a_slot (same for all worlds — P's hand is real)
         state_after_a = state_at_d.apply_actions(torch.tensor([a_slot], dtype=torch.long))
-        extra_a = [_FakeDecision(player=P, action_taken=a_slot)]
+        extra_a = _FakeDecision(player=P, action_taken=a_slot)
 
-        # State after rolling out the remaining opps in the trick
-        # We need per-world states because opp action depends on the world.
-        # BUT: argmax opp plays will be different per world (legal mask differs).
-        # Strategy: build world_assignment for each step's query, get pi_me per world,
-        # then argmax per world to get the most likely opp action.
-        # Since trick state diverges per world after opp plays, we need per-world tracking.
-
-        # Per-world states and extra lists
-        states = [state_after_a] * M  # all start same; states are immutable so ok
-        extras = [list(extra_a) for _ in range(M)]  # separate per world
+        # Per-world states and per-world extra lists
+        states = [state_after_a] * M
+        extras = [[extra_a] for _ in range(M)]
 
         for step in range(n_remaining):
             p_next = (P + 1 + step) % 4
 
-            # Build tokens+voids for p_next's POV using extra for world 0
-            # (tokens/voids are the same for all worlds since they depend on
-            # public information only — the play sequence so far is identical)
-            tokens_pnext, attn_pnext, voids_pnext = _build_tokens_voids(
-                game.hands, int(game.decl_id), game.decisions, d_idx,
-                extras[0],  # same for all worlds at this step
-                p_next,
-            )
-
             # Rotate world tensor for p_next's POV: [M, 3, 7]
             world_rotated = reindex_world_rows(world_hands, old_cp=P, new_cp=p_next)
-            world_assign_pnext = world_batch_to_assignment_vectorized(world_rotated)  # [M, 28, 3]
+            world_assign_pnext = world_batch_to_assignment_vectorized(world_rotated)
 
-            # Batched forward: get pi_me for all M worlds
-            out_pnext = query_model_batched(
-                model, is_voids,
-                tokens_pnext, attn_pnext, voids_pnext,
-                world_assign_pnext, device
-            )
+            # Per-world tokens for p_next (extras differ per world after step 0)
+            tok_list, mask_list, void_list = [], [], []
+            for m in range(M):
+                t, am, v = _build_tokens_voids(
+                    world_game_hands[m], int(game.decl_id), game.decisions, d_idx,
+                    extras[m], p_next,
+                )
+                tok_list.append(t)
+                mask_list.append(am)
+                void_list.append(v)
+
+            with torch.no_grad():
+                tok_d = torch.stack(tok_list).to(device)   # [M, L, 5]
+                msk_d = torch.stack(mask_list).to(device)  # [M, L]
+                wa_d = world_assign_pnext.to(device)
+                if is_voids:
+                    vd_d = torch.stack(void_list).to(device)  # [M, 24]
+                    out_pnext = model(tok_d, msk_d, wa_d, vd_d)
+                else:
+                    out_pnext = model(tok_d, msk_d, wa_d)
+
             pi_pnext = out_pnext["pi_me_logits"]  # [M, 7]
 
-            # For each world, get legal mask and pick argmax action
             new_states = []
             for m in range(M):
                 state_m = states[m]
-                # Check trick hasn't ended early (trick_len == 0 means new trick started)
                 trick_len_m = int((state_m.trick_plays[0] >= 0).sum().item())
                 if trick_len_m == 0 and step > 0:
-                    # Trick completed before expected — skip remaining steps
                     new_states.append(state_m)
                     continue
 
-                opp_legal_m = state_m.legal_actions()[0].to(device)  # [7]
+                opp_legal_m = state_m.legal_actions()[0].to(device)
                 pi_m = pi_pnext[m].masked_fill(~opp_legal_m, float("-inf"))
                 a_next_m = int(pi_m.argmax().item())
 
-                new_state_m = state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long))
-                new_states.append(new_state_m)
+                new_states.append(state_m.apply_actions(torch.tensor([a_next_m], dtype=torch.long)))
                 extras[m].append(_FakeDecision(player=p_next, action_taken=a_next_m))
 
             states = new_states
 
-        # Query V_head from P's POV at leaf for all worlds simultaneously.
-        # tokens/voids for P's POV after the rollout (use extras[0] since public
-        # plays are same as long as we use extras that reflect the same public play
-        # sequence — but extras[m] differ per world!).
-        #
-        # We batch over worlds but tokens/voids are public info, so same for all worlds.
-        # extras[m] may differ per-world for the opp plays. However, since we're computing
-        # V_head which depends on the sequence seen, we should use P's view. The opp plays
-        # happened in the world context, but from P's perspective ALL opp plays are public
-        # after the trick. For 1-ply end-of-trick evaluation, all opp plays are visible
-        # to P. So the token sequence for P includes all of them.
-        #
-        # Since opp actions may differ per world, we need per-world tokens.
-        # To avoid M separate tokenize calls, we note that the difference is tiny
-        # and use the "most common" opp action or process in batches.
-        # For correctness, we compute per-world tokens but batch the forward pass.
-
-        all_tokens = []
-        all_masks = []
-        all_voids = []
+        # Query V_head from P's POV at leaf — per-world tokens using world-correct hands
+        all_tokens, all_masks, all_voids = [], [], []
         for m in range(M):
             t, am, v = _build_tokens_voids(
-                game.hands, int(game.decl_id), game.decisions, d_idx,
-                extras[m], P
+                world_game_hands[m], int(game.decl_id), game.decisions, d_idx,
+                extras[m], P,
             )
             all_tokens.append(t)
             all_masks.append(am)
             all_voids.append(v)
 
-        tokens_stack = torch.stack(all_tokens)   # [M, L, 5]
-        masks_stack = torch.stack(all_masks)     # [M, L]
-        voids_stack = torch.stack(all_voids)     # [M, 24]
-        world_assign_P = world_batch_to_assignment_vectorized(world_hands)  # [M, 28, 3]
-
         with torch.no_grad():
-            tokens_d = tokens_stack.to(device)
-            masks_d = masks_stack.to(device)
+            tokens_d = torch.stack(all_tokens).to(device)   # [M, L, 5]
+            masks_d = torch.stack(all_masks).to(device)     # [M, L]
             world_d = world_assign_P.to(device)
             if is_voids:
-                voids_d = voids_stack.to(device)
+                voids_d = torch.stack(all_voids).to(device)  # [M, 24]
                 out_v = model(tokens_d, masks_d, world_d, voids_d)
             else:
                 out_v = model(tokens_d, masks_d, world_d)
 
-        v_vals = out_v["v"]  # [M]
-        action_scores[a_slot] = float(v_vals.mean().item())
+        action_scores[a_slot] = float(out_v["v"].mean().item())
 
     chosen = max(action_scores, key=lambda a: action_scores[a])
     regret = oracle_best_eq - float(e_q[chosen].item())
