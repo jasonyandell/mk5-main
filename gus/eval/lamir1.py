@@ -425,6 +425,108 @@ def q_bootstrap_decision(
 
 
 # ---------------------------------------------------------------------------
+# Mode: q-bootstrap-belief (depth-1 Q_head, worlds sampled from belief head)
+# ---------------------------------------------------------------------------
+
+def q_bootstrap_belief_decision(
+    model,
+    is_voids: bool,
+    game,
+    d_idx: int,
+    device: str,
+    world_cap: int = 200,
+    rng_seed: int | None = None,
+) -> tuple[float, int, float]:
+    """Like q-bootstrap, but samples K=world_cap worlds from the belief head
+    instead of using the oracle's corpus worlds. This is the causal test of
+    "does belief calibration propagate to look-ahead Q estimates?"
+    (see PRACTICALITIES §21).
+
+    Uses the existing reindex/assignment pipeline to keep rotation
+    conventions identical to q-bootstrap — the only variable is the world
+    source (belief vs corpus).
+    """
+    from gus.model.sample_worlds import sample_worlds  # lazy import
+
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    trick_pos = d_idx % 4
+
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
+
+    # Step 1: query belief_head to get logits + mask at the current state.
+    tokens, attn_mask, voids = _build_tokens_voids(
+        game.hands, int(game.decl_id), game.decisions, d_idx, [], P
+    )
+    # Use a placeholder world_assign for the belief-extraction forward pass;
+    # belief_head only consumes state_emb (not world), so any assignment works.
+    placeholder_world = torch.zeros(1, 28, 3, dtype=torch.float32)
+    out_belief = query_model_batched(
+        model, is_voids, tokens, attn_mask, voids, placeholder_world, device
+    )
+    belief_logits = out_belief["belief_logits"]  # [1, 28, 3]
+
+    # Build belief_mask: domino unseen iff not in my hand AND not yet played.
+    my_hand = set(int(d) for d in game.hands[P] if int(d) >= 0)
+    played: set[int] = set()
+    for prior in game.decisions[:d_idx]:
+        d_played = int(game.hands[int(prior.player)][int(prior.action_taken)])
+        if d_played >= 0:
+            played.add(d_played)
+    mask_list = [
+        (d not in my_hand) and (d not in played) for d in range(28)
+    ]
+    belief_mask = torch.tensor([mask_list], dtype=torch.bool)  # [1, 28]
+
+    # Step 2: sample K worlds from the belief head.
+    K = int(world_cap)
+    g = torch.Generator(device="cpu")
+    g.manual_seed(rng_seed if rng_seed is not None else (d_idx * 1009 + 7))
+    sampled = sample_worlds(belief_logits.cpu(), belief_mask, K=K, rng=g)  # [1, K, 28, 3]
+    sampled = sampled[0]  # [K, 28, 3] from P's POV
+
+    # Convert [K, 28, 3] back to [K, 3, 7] world_hands for the reindex pipeline.
+    # Each seat gets up to 7 domino ids; pad with -1.
+    world_hands_belief = torch.full((K, 3, 7), -1, dtype=torch.long)
+    for k in range(K):
+        for seat in range(3):
+            doms = torch.where(sampled[k, :, seat] > 0.5)[0]
+            n = min(len(doms), 7)
+            world_hands_belief[k, seat, :n] = doms[:n].long()
+
+    # Step 3: follow the q-bootstrap pipeline (rotate, assign, query Q_head).
+    next_actor = (P + 1) % 4
+    sign = 1 if (next_actor % 2) == (P % 2) else -1
+    world_rotated = reindex_world_rows(world_hands_belief, old_cp=P, new_cp=next_actor)
+    world_assign_next = world_batch_to_assignment_vectorized(world_rotated)  # [K, 28, 3]
+
+    state_at_d = _replay_state(game.hands, int(game.decl_id), game.decisions, d_idx)
+
+    action_scores: dict[int, float] = {}
+    for a_slot in legal_slots:
+        state_after_a = state_at_d.apply_actions(torch.tensor([a_slot], dtype=torch.long))
+        next_legal = state_after_a.legal_actions()[0].to(device)
+
+        extra = [_FakeDecision(player=P, action_taken=a_slot)]
+        tokens_a, attn_a, voids_a = _build_tokens_voids(
+            game.hands, int(game.decl_id), game.decisions, d_idx, extra, next_actor
+        )
+        out = query_model_batched(
+            model, is_voids, tokens_a, attn_a, voids_a, world_assign_next, device
+        )
+        q = out["q"]
+        q_masked = q.masked_fill(~next_legal.unsqueeze(0), float("-inf"))
+        q_max = q_masked.max(dim=-1).values
+        action_scores[a_slot] = sign * float(q_max.mean().item())
+
+    chosen = max(action_scores, key=lambda a: action_scores[a])
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
 # LAMIR-1 per-decision
 # ---------------------------------------------------------------------------
 
@@ -850,7 +952,7 @@ def lamir1_piopp_decision(
 # Main
 # ---------------------------------------------------------------------------
 
-_MODES = ("direct", "v-bootstrap", "q-bootstrap", "lamir1", "lamir1-qleaf", "lamir1-piopp")
+_MODES = ("direct", "v-bootstrap", "q-bootstrap", "q-bootstrap-belief", "lamir1", "lamir1-qleaf", "lamir1-piopp")
 
 
 def main() -> int:
@@ -902,6 +1004,9 @@ def main() -> int:
     elif args.mode == "q-bootstrap":
         def run_decision(game, d_idx):
             return q_bootstrap_decision(model, is_voids, game, d_idx, device, args.world_cap)
+    elif args.mode == "q-bootstrap-belief":
+        def run_decision(game, d_idx):
+            return q_bootstrap_belief_decision(model, is_voids, game, d_idx, device, args.world_cap)
     elif args.mode == "lamir1-qleaf":
         def run_decision(game, d_idx):
             return lamir1_qleaf_decision(model, is_voids, game, d_idx, device, args.world_cap)

@@ -832,3 +832,64 @@ fix.
 sanity check. Before any future belief architecture claim, run the ceiling
 first — the "is belief broken?" question reduces to "is it at ceiling?"
 
+### Follow-up experiment — joint co-train falsified, but something else found
+
+Ran the joint co-train experiment that §21 proposed
+(`gus/train/train_belief_q_joint.py`, 15 epochs, 1000-game corpus, frozen
+trunk + π_me + V_head, unfrozen belief + world_encoder + Q_head, α=1 β=1).
+Result: `gus/adapters/v3_belief_q_joint.pt`.
+
+**Belief KL dropped 20%**: 0.0840 → 0.0672 (epoch 11). Top-1 stayed at
+~38% (ceiling). So the calibration fix itself worked — the target changed
+from truth-mode to distribution-shape and the head followed.
+
+**But the downstream regret did NOT improve — it got slightly worse.**
+On 560 held-out decisions:
+
+| adapter | q-bootstrap (corpus worlds) | q-bootstrap-belief (belief-sampled) |
+|---|---:|---:|
+| original v3_consistency_10000g | 0.685 | **0.655** |
+| joint-co-trained | 0.718 | 0.679 |
+
+Both paths got slightly worse with joint training. **The hypothesis that
+"co-training heads lets calibration propagate" is falsified on our setup.**
+
+Diagnosis: Q_head was trained with the ORIGINAL belief-head's output
+distribution as implicit context. Jointly retraining everything shifts the
+state_emb → Q_head mapping. The calibration win doesn't compensate; we
+just moved Q_head off its sweet spot. This is worth remembering: in a
+distillation pipeline, "better belief" isn't a strictly additive
+improvement when downstream heads were already trained against the old
+belief's shape.
+
+### The unexpected win — belief-sampled worlds beat corpus worlds
+
+Introducing `q-bootstrap-belief` (worlds sampled from the belief head at
+inference rather than read from the oracle's saved world_hands) as a
+required A/B for the co-train experiment **surfaced an independent
+finding**: on the ORIGINAL adapter (no co-train), belief-sampled worlds
+give regret 0.655 vs corpus worlds 0.685 — a **4.4% relative
+improvement** just from changing the world source.
+
+This is the closest any look-ahead variant has come to the 0.551 direct
+baseline (gap 0.104 Q-pts, ~19%).
+
+Likely mechanism (unverified): oracle adaptive sampling runs to SEM<0.5,
+which can overconcentrate probability on a few high-posterior worlds at
+near-consensus decisions. Belief-head softmax sampling is smoother and
+more aligned with the world-distribution Q_head saw during training.
+Either way, **sampling from the learned belief head is apparently a
+better world source for look-ahead than the oracle corpus** — an actual
+usable technique for any future PIMC/BMCS/LAMIR work.
+
+**Artifact**: `gus/eval/lamir1.py --mode q-bootstrap-belief`. Reuses
+`gus/model/sample_worlds.py` (the file symmetry-checker wrote off-plan
+early in the overnight session — it turned out to be exactly what this
+test needed).
+
+**Next experiment (not run)**: vary K (number of sampled worlds). If
+K→∞ gives the asymptote, we know whether the sampling diversity matters
+or just the sampling distribution. At K=200 we already match or beat
+corpus-at-M~3000. That suggests it's the distribution that's better, not
+the diversity.
+

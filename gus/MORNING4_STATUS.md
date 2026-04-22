@@ -197,3 +197,33 @@ better-calibrated belief actually propagates to better look-ahead value
 estimates. That's a concrete overnight-scale experiment, not a mystery.
 
 See `gus/PRACTICALITIES.md §21` for the full receipt.
+
+---
+
+## Addendum 2 — Joint co-train run: falsified hypothesis + accidental win
+
+Ran the §21 proposed experiment (`gus/train/train_belief_q_joint.py`).
+Results landed two findings:
+
+**Hypothesis falsified**: joint co-training lowered belief KL 20%
+(0.0840 → 0.0672) as designed, but downstream q-bootstrap regret got
+slightly worse (0.685 → 0.718). Q_head was already sitting at a sweet
+spot for the original belief's output distribution; moving the belief
+head moved Q_head off it. Calibration improvement doesn't propagate
+additively in a distillation pipeline where downstream heads were
+trained against the old belief's shape.
+
+**Accidental win**: to run the A/B properly, had to build a new inference
+mode `q-bootstrap-belief` that samples worlds from the belief head
+instead of reading them from the oracle's saved corpus. On the
+ORIGINAL adapter (no co-train), this gives **regret 0.655** — the
+closest any look-ahead variant has come to the 0.551 direct baseline
+(gap 0.104, ~19%).
+
+Likely mechanism: oracle adaptive sampling can overconcentrate on a
+few worlds at near-consensus decisions; belief softmax sampling is
+smoother. Reuses `gus/model/sample_worlds.py` (the file symmetry-checker
+wrote off-plan during the original overnight — it turned out to be
+exactly what this follow-up experiment needed).
+
+See PRACTICALITIES §21 for full numbers and the mechanism discussion.
