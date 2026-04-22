@@ -475,3 +475,58 @@ small. Real preference is pure p_make; margin belongs in dynamics.
 behavior is correct as-is. The action items on the oracle side are
 (1) bid_value plumbing for the threshold, (2) per-seat oracle softmax
 for π_opp training targets. Neither touches the utility shape.
+
+## 18. qMAE is data-scaling resistant — the laggard head needs a training-recipe fix
+
+With 3.3× more data (3k → 10k games, same architecture, matched hparams),
+most metrics compounded cleanly. qMAE did not:
+
+| metric                       | 3k     | 10k    | relative improvement |
+|------------------------------|-------:|-------:|---------------------:|
+| regret (Q-pts)               | 1.35   | 0.55   | **−59%**             |
+| bot-match (pi_me)            | 66.4%  | 76.1%  | **+9.7 pp**          |
+| V-MAE                        |  4.5   |  3.6   | **−20%**             |
+| **qMAE**                     | **9.4**| **8.7**| **−7%**              |
+| belief top-1                 | ~38%   | ~39%   | roughly flat         |
+
+qMAE reduction was an order of magnitude smaller than regret reduction.
+v3's consistency loss helped marginally (8.25–8.69 range vs v2's 8.72) —
+exactly the V/π decoupling it was designed to fix — but the magnitude is
+faint relative to the structural problem.
+
+**Why qMAE is structurally harder than V-MAE** (see also §2):
+
+- Q_head predicts **per-world** expected Q. The target is noisy because
+  it depends on *which world* was sampled, plus downstream play
+  uncertainty within that world. V_head predicts the **marginal** E[Q]
+  across worlds — a much smoother target.
+- Current training pipeline samples **one random world per forward
+  pass** (see `JointWorldFullDataset.__getitem__` / _build_item). The
+  gradient is noisy because each forward sees a different world per
+  decision, and Q_head's cross-world consistency is never explicitly
+  rewarded.
+
+**V-MAE of 3.6 is near the Bayes floor** for its target (marginal E[Q]
+at visible state). **qMAE of 8.7 has real headroom**.
+
+**Known fixes, not yet shipped** (either would be ~1 day of work):
+
+1. **Multi-world variance regularization.** During training, query
+   Q_head on K worlds for each decision; penalize high cross-world
+   variance on `Q[action]` for the action_taken. Forces Q to be
+   smoother — predicts the conditional mean with less world-dependence.
+2. **Joint co-training of {belief, world_encoder, Q_head}** with a
+   distribution-belief loss (§15 was the isolated ablation — it didn't
+   help because Q_head wasn't co-trained; this is the integrated
+   follow-up).
+
+Either fix is a training-recipe change, not architecture or data.
+
+**Why this doesn't block LAMIR-1:**
+
+LAMIR-1's rollout uses V_head at the leaf (MAE 3.6, near floor).
+Q_head is currently used for PIMC-via-world-averaging, which we
+already know underperforms π_me direct (§3). LAMIR-1 doesn't invoke
+Q_head at all. So the qMAE plateau is a separable concern from the
+north-star roadmap — tackle it when/if the Q_head becomes critical
+(router with inference-only features, or richer rollout-leaf models).
