@@ -119,6 +119,39 @@ rather than a LAMIR clone. Gus doesn't have to be LAMIR.
 
 ---
 
+## Path (a) post-session experiment: Q_head depletion augmentation (attempted, didn't help)
+
+**Hypothesis**: Q_head is OOD at rollout leaves because it was trained only on
+initial-deal world assignments (all 21 opp dominos present). After 1-3 opp
+plays, the played_mask advances but the assignment tensor has fewer assigned
+dominos. Fine-tuning with random partial depletion (zero k random assigned rows,
+k ~ Uniform(1,3), p=0.5 per item) should teach Q_head to be robust.
+
+**Training**: `train_q_head_augmented.py`, 15 epochs, lr=5e-5, frozen trunk
+(encoder + belief + v_head + π_me), trainable: q_head + world_encoder
+(160,007 params). Best eval q_mae improved 8.277 → 8.169 (epoch 10).
+Adapter saved as `gus/adapters/q_head_aug.pt`.
+
+**Eval**: lamir1-qleaf + Bug 6 + augmented adapter
+
+| mode | regret | bot-match |
+|---|---:|---:|
+| lamir1-qleaf + Bug6 (baseline) | 2.156 | 63.2% |
+| lamir1-qleaf + Bug6 + aug Q_head | **2.216** | 63.8% |
+
+**Result**: Slightly worse. The small q_mae improvement (0.1 pts) did not
+translate to better rollout decisions — the 0.06 regret regression is noise,
+not signal either way. Path (a) closed.
+
+**Why it didn't work**: OOD augmentation fixes a measurement artifact
+(q_mae on depleted inputs) but not the fundamental ordering problem: scalar
+noise from distillation is large relative to the action-value gap at decision
+boundaries. The leaf evaluator would need to be trained end-to-end in the
+rollout context (path b) to fix this. Augmenting the input distribution alone
+is insufficient.
+
+---
+
 ## Artifacts
 
 | file | description |
@@ -131,3 +164,5 @@ rather than a LAMIR clone. Gus doesn't have to be LAMIR.
 | `gus/train/train_pi_opp.py` | π_opp head training script |
 | `scratch/lamir_paper_notes.md` | Paper divergence map |
 | `scratch/lamir1_*.json` | Per-mode eval results |
+| `gus/adapters/q_head_aug.pt` | Augmented Q_head fine-tune (path a, didn't help) |
+| `gus/train/train_q_head_augmented.py` | Depletion-augmentation fine-tune script |
