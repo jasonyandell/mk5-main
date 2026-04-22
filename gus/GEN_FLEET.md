@@ -146,6 +146,94 @@ The existing `JointWorldFullDataset` already accepts a list of paths or a
 glob — so training just points at `gus/data/corpus_train_chunk_*.pt` as it
 does now, and new chunks pulled from HF just slot in.
 
+## Pre-launch fixes (address before the fleet runs — $ is cheap but re-gen is painful)
+
+The working premise: every hour a worker spends generating data under a
+broken assumption is an hour we pay for twice (generate, then re-generate).
+Land these **before** we spin up workers for the diverse-seed corpus.
+
+### Fix 1 — Lazy data loading (done, 2026-04-21)
+
+**Status: shipped in f138069.** `JointWorldFullIterable` in
+`gus/model/dataset_seq_world.py` streams chunks one at a time with a
+shuffle buffer. Memory footprint O(one chunk + buffer), not O(corpus).
+Training scripts have `--lazy` flag.
+
+Receipt: the 3k-games eager corpus fit in 33 GB RAM; the 10k-games eager
+corpus OOM'd the M5 Max at ~110 GB on 2026-04-21. The new lazy path runs
+the full 10k corpus in under 11 GB RSS, and smoke tests show no growth
+across epochs. Without this fix, distillation at Vast-fleet scale (100k+
+games, multi-TB corpora) would require per-training-run schema surgery.
+
+### Fix 2 — Oracle hardcodes bid=30 threshold (PRIORITY: high, not shipped)
+
+`forge/eq/generate/actions.py` line 60-62 uses fixed PDF-bin offsets:
+
+```python
+p_make_offense = e_q_pdf[:, :, 60:].sum(dim=2)  # P(Q >= 18), i.e. team >= 30 pts
+p_make_defense = e_q_pdf[:, :, 25:].sum(dim=2)  # P(Q >= -17), i.e. bidder < 30
+```
+
+These bin offsets correspond to **bid = 30** (minimum). `decl_id` (0-9)
+encodes trump/declaration type only, not bid amount. For any bid > 30 the
+actual "make contract" threshold is stricter, but the oracle doesn't know
+that — it trains Gus to think a 30-point take is always sufficient.
+
+**Priority nuance from user (2026-04-21):** the "cliff" is what matters —
+"29 is never 30" is a hard line the model must never cross. The "strive
+for 42 vs settle for 30" gap is secondary; the current indifference above
+p_make=1 is acceptable. So the fix ordering is:
+
+1. **Plumb actual bid_value into select_actions** so the threshold shifts
+   with the bid. This preserves the cliff behavior at the correct
+   threshold for every bid level.
+2. (Optional) Bump the 1e-6 E[Q] tie-breaker in
+   `actions.py:126` to something like 1e-3 so that **above** threshold,
+   the oracle picks bigger margins. **Deferred per user — not a blocker.**
+
+**Required work (ballpark):**
+- Schema: add `bid_value: int` to `DecisionRecordGPU` and carry it through
+  the gen pipeline. Currently absent — worth adding alongside per-seat
+  oracle softmax (see Fix 3).
+- Engine: compute threshold bin from bid_value in `select_actions`.
+  `bin_offset_offense = 42 + (bid - 42 + 6)` (needs a careful derivation
+  for mark bids too).
+- Testing: verify with a synthetic hand where bid=36 has a meaningfully
+  different optimal action than bid=30 — the fix should change the
+  selected action.
+
+### Fix 3 — Schema v2: per-seat oracle softmax + bid_value in the record
+
+The current corpus saves one decision per hand (the "me" seat). For LAMIR
+multi-step look-ahead, we need oracle policy at **every** seat at every
+trick — same cost to generate, 4-7× more training signal per hand. Also
+saving:
+- Oracle action softmax (not just one-hot argmax) for richer distillation
+- Actual bid_value per decision (Fix 2 prerequisite)
+- Per-seat legal_mask and voids targets (cheap)
+
+This schema change is the one that justifies the fleet's existence — do
+it before generating 100k games, not after.
+
+### Fix 4 — Length cache for corpus scanning at fleet scale
+
+When lazy loading kicks in, the training script scans each chunk once to
+compute `__len__`. At 1000 chunks this is ~15 minutes upfront. The
+`--length-cache` flag saves the result; the cache key includes resolved
+chunk paths, so it stays valid across reruns on the same set.
+
+**Open question:** should the length be stored alongside the chunk on HF
+(as a sidecar `.len` file) rather than recomputed locally? Cheap to do,
+saves the scan time after each `huggingface-cli download`.
+
+### Fix 5 — Resume-safe chunk uploads
+
+`forge/zeb/vast/` pattern already handles per-worker skip-if-exists on
+local output. Need to mirror that for HF pushes: a chunk that's
+half-uploaded when a spot instance gets preempted should re-upload
+cleanly. `huggingface-cli upload` supports this but verify with a killed
+upload test before trusting it in the fleet.
+
 ## Cost envelope
 
 Generation throughput on M5 Max: ~14 games/min at SEM<0.5 adaptive. On a
