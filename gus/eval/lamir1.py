@@ -459,7 +459,11 @@ def lamir1_decision(
             else:
                 out_v = model(tokens_d, masks_d, world_d)
 
-        action_scores[a_slot] = float(out_v["v"].mean().item())
+        # Sign-flip: V_head is in the leaf player's team frame.
+        # If leaf player is on opp team relative to P, negate to get P's frame.
+        leaf_cp = int(states[0].current_player[0].item())
+        sign = 1 if (leaf_cp % 2) == (P % 2) else -1
+        action_scores[a_slot] = sign * float(out_v["v"].mean().item())
 
     chosen = max(action_scores, key=lambda a: action_scores[a])
     regret = oracle_best_eq - float(e_q[chosen].item())
