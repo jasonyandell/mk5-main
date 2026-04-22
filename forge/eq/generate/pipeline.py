@@ -39,7 +39,7 @@ from forge.eq.sampling_mrv_gpu import WorldSamplerMRV
 from forge.eq.tokenize_gpu import GPUTokenizer
 from forge.eq.types import ExplorationPolicy
 
-from .actions import collate_records, record_decisions, select_actions
+from .actions import collate_records, compute_per_seat_data, record_decisions, select_actions
 from .adaptive import sample_until_convergence, sample_until_convergence_posterior
 from .deals import build_hypothetical_deals
 from .enumeration import enumerate_or_sample_worlds
@@ -67,6 +67,8 @@ def generate_eq_games_gpu(
     seeds: list[int] | None = None,
     use_cuda_graph: bool = False,
     save_joint_worlds: bool = False,
+    schema_v2: bool = False,
+    bid_values: list[int] | None = None,
 ) -> list[GameRecordGPU]:
     """Generate E[Q] games entirely on GPU.
 
@@ -282,16 +284,29 @@ def generate_eq_games_gpu(
         # 6. Select actions by p_make (greedy, sampled, or exploration)
         actions, exploration_stats = select_actions(states, e_q, e_q_pdf, greedy, exploration_policy, rng)
 
-        # 7. Record decisions
+        # 7. Compute Schema v2 per-seat data if requested and joint-world data is available
+        v2_softmax = None
+        v2_legal_mask_per_seat = None
+        v2_voids_per_seat = None
+        if schema_v2 and jw_hands is not None and jw_q is not None:
+            v2_softmax, v2_legal_mask_per_seat, v2_voids_per_seat = compute_per_seat_data(
+                states, jw_hands, jw_q, device
+            )
+
+        # 8. Record decisions
         # jw_hands / jw_q populated per-branch above (fixed sampling or adaptive
         # non-posterior). Adaptive + posterior path still skipped.
         record_decisions(
             states, e_q, e_q_var, e_q_pdf, actions, all_decisions,
             diagnostics, exploration_stats, n_samples_used, did_converge,
             world_hands=jw_hands, q_per_world=jw_q,
+            bid_values=bid_values,
+            oracle_softmax_per_seat=v2_softmax,
+            legal_mask_per_seat=v2_legal_mask_per_seat,
+            voids_per_seat=v2_voids_per_seat,
         )
 
-        # 8. Apply actions and advance state
+        # 9. Apply actions and advance state
         # Ensure actions are on same device as states
         if actions.device != states.hands.device:
             actions = actions.to(states.hands.device)
@@ -301,4 +316,4 @@ def generate_eq_games_gpu(
         decision_idx += 1
 
     # Convert to GameRecordGPU format
-    return collate_records(hands, decl_ids, all_decisions)
+    return collate_records(hands, decl_ids, all_decisions, bid_values=bid_values)

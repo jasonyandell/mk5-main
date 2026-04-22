@@ -145,6 +145,23 @@ Examples:
              "Fixed-sampling path only; skipped in adaptive mode."
     )
 
+    # Schema version
+    parser.add_argument(
+        "--schema", type=str, choices=["v1", "v2"], default="v1",
+        help="Output schema version (default: v1). "
+             "v2 adds: bid_value, oracle_softmax_per_seat [4,7], "
+             "legal_mask_per_seat [4,7], voids_per_seat [4,3,8]. "
+             "Requires --save-joint-worlds (per-seat softmax needs world tensors)."
+    )
+
+    # Bid value (used in Schema v2 for per-seat oracle threshold)
+    parser.add_argument(
+        "--bid-value", type=int, default=30,
+        help="Bid value for all games (default: 30 = minimum bid). "
+             "Used in Schema v2 for bid_value field. "
+             "Future: plumb per-game bid values from deal generation."
+    )
+
     # Device
     parser.add_argument(
         "--device", type=str, default="cuda",
@@ -172,6 +189,16 @@ Examples:
         )
         return 1
     n_seeds = args.n_games // args.n_decl_per_seed
+
+    # Validate schema v2 requires joint worlds
+    schema_v2 = args.schema == "v2"
+    if schema_v2 and not args.save_joint_worlds:
+        print(
+            "Warning: --schema v2 requires --save-joint-worlds for per-seat softmax. "
+            "Enabling --save-joint-worlds automatically.",
+            flush=True,
+        )
+        args.save_joint_worlds = True
 
     # Resolve device
     device = args.device
@@ -308,6 +335,11 @@ Examples:
         print(f"  Exploration: {args.exploration}", flush=True)
     if args.save_joint_worlds:
         print(f"  Joint-world tensor: saving per-decision (world_hands, q_per_world)", flush=True)
+    if schema_v2:
+        print(f"  Schema: v2 (bid_value={args.bid_value}, per-seat oracle softmax)", flush=True)
+
+    # Build per-game bid values list (same bid for all games; v2 field)
+    bid_values = [args.bid_value] * args.n_games if schema_v2 else None
 
     t0 = time.perf_counter()
     results = generate_eq_games_gpu(
@@ -323,6 +355,8 @@ Examples:
         enumeration_threshold=args.enum_threshold,
         adaptive_config=adaptive_config,
         save_joint_worlds=args.save_joint_worlds,
+        schema_v2=schema_v2,
+        bid_values=bid_values,
     )
     elapsed = time.perf_counter() - t0
 
@@ -341,6 +375,7 @@ Examples:
         'checkpoint': checkpoint_path,
         'enumerate': args.enumerate,
         'posterior': args.posterior,
+        'schema': args.schema,
     }
     if args.adaptive:
         save_dict['adaptive'] = True

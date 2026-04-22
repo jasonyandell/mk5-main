@@ -57,6 +57,7 @@ class DecisionRecordGPU:
 
     Extended in Phase 1a (t42-xncr) to include variance and diagnostics.
     Extended in t42-qz7f to include full E[Q] PDF (85 bins per action).
+    Extended in Schema v2 to include per-seat oracle softmax + bid_value.
     """
     player: int  # Which player made the decision (0-3)
     e_q: Tensor  # [7] E[Q] mean values (padded, -inf for illegal/empty)
@@ -82,6 +83,11 @@ class DecisionRecordGPU:
     # Enables distillation of the joint belief-Q distribution, not just the marginal PDF.
     world_hands: Tensor | None = None  # [M, 3, 7] sampled opponent dominoes per world
     q_per_world: Tensor | None = None  # [M, 7] oracle Q per action per world
+    # Schema v2 fields (opt-in via --schema v2; superset of v1)
+    bid_value: int | None = None  # Actual bid amount (30-42, or mark value)
+    oracle_softmax_per_seat: Tensor | None = None  # [4, 7] p_make-based softmax per seat
+    legal_mask_per_seat: Tensor | None = None  # [4, 7] legal action mask at each seat
+    voids_per_seat: Tensor | None = None  # [4, 3, 8] voids matrix at each seat's POV
 
 
 @dataclass
@@ -90,3 +96,4 @@ class GameRecordGPU:
     decisions: list[DecisionRecordGPU]
     hands: list[list[int]]  # Initial deal (4 players x 7 dominoes)
     decl_id: int  # Declaration ID
+    bid_value: int | None = None  # Schema v2: actual bid amount for this game
