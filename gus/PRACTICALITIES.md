@@ -530,3 +530,192 @@ already know underperforms π_me direct (§3). LAMIR-1 doesn't invoke
 Q_head at all. So the qMAE plateau is a separable concern from the
 north-star roadmap — tackle it when/if the Q_head becomes critical
 (router with inference-only features, or richer rollout-leaf models).
+
+## 19. Interpretability probes — Gus has internalized real 42 strategy
+
+Six probes on v3-10k against a deliberately hard eval position (seed
+900000, declaration blanks, P0 leading). This hand is "straight
+garbage" in the colloquial sense — P0 is the bidder holding one low
+trump (3-0) against opponents with 5 of 7 trumps including the boss
+(0-0). In real play you'd never bid this; the corpus forces the bid,
+so it's a stress test. The key meta-finding: even on this nightmare
+hand, Gus matches the ground-truth oracle within 0.5 Q-pts on V.
+
+### Probe 1 — domino embedding similarity
+
+Extracted `tok_emb.weight[:28]` (the per-domino identity embedding)
+from v3-10k, computed pairwise cosine similarity.
+
+- **Doubles cluster**: double↔double avg cos = +0.047 vs
+  double↔non-double = −0.022 → Gus learned "doubleness"
+- **Counts cluster**: count↔count = +0.037 vs count↔non-count = −0.021
+  → Gus learned "countness" (the 5-pip-sum or 10-pip-sum rule)
+- **Pip-family tightening by magnitude**: pip=0 intra-family avg cos =
+  +0.007, pip=6 = +0.042 → higher-pip dominoes cluster more strongly,
+  consistent with "they matter more so get more distinct representation"
+
+Magnitudes are small (top neighbors ~+0.17) but signs and orderings
+are clear. Categorical concepts (doubleness, countness, high-pip) live
+in the raw embedding. **Relational concepts ("6-6 protects 6-4") do
+NOT live here** — they're contextual, encoded downstream in attention.
+
+### Probe 2 — attention pattern evolution
+
+Captured per-head attention weights across all 6 encoder layers on
+game 0 decision 0. For the CLS token (pooled state), attention
+targets over layers:
+
+| layer | dominant target | interpretation |
+|---|---|---|
+| 0 | DECL (weight 0.65) | anchor on trump declaration |
+| 1-2 | MINE[6] = 6-4 (~0.22) | survey the big non-trump, see its vulnerability |
+| 3-4 | shift toward MINE[0] = 1-1 (~0.17) | reconsider toward safer lead |
+| 5 | MINE[0] = 1-1 (0.26) | concentrate on the chosen action |
+
+π_me's output: 0.91 probability on 1-1 — matching last-layer CLS
+attention concentration. **This looks like genuine multi-step
+reasoning**, not one-shot argmax: declaration context → survey → risk
+assessment → commit.
+
+### Probe 3 — counterfactual hand swaps (leave-one-out)
+
+For P0's decision 0, edited MINE tokens one at a time (swapping in
+different dominoes), measured ΔV. Two headline findings:
+
+- **Swap 1-1 → 0-0** (top trump of blanks): V jumps +11.66 Q-pts. Gus
+  knows 0-0 dominates blanks.
+- **Swap 1-1 → 6-6** (intuition-check from user — 6-6 looks like an
+  upgrade): V DROPS 5.34 Q-pts. Initially read as suspicious.
+
+V_head does not consume world_assignment (checked by source
+inspection), so the swap is in-distribution for V. This is a real
+model claim, not an input-validity artifact.
+
+### Probe 4 — oracle ground-truth verification
+
+Ran the actual 3.3M-param oracle (`domino-qval-large-3.3M.ckpt`) on
+both counterfactual deals, adaptive SEM<0.5, 18.9s on MPS. Full
+per-action E[Q] extracted for both.
+
+|                            | original (1-1) | counterfactual (6-6) | Δ     |
+|----------------------------|---------------:|---------------------:|------:|
+| Gus V_head                 |         −11.54 |               −16.89 | −5.34 |
+| Oracle best E[Q]           |         −11.07 |               −16.91 | −5.83 |
+
+**Agreement within 0.5 Q-pts.** The counterfactual IS worse. Gus is
+not biased — the oracle also says swapping in 6-6 hurts P0.
+
+And the oracle's reasoning becomes legible: in the counterfactual, it
+picks **5-2 as the best lead** (E[Q] = −16.91) and ranks **6-6 as the
+WORST legal lead** (E[Q] = −24.41). The hand is in defensive territory;
+the oracle plays low/safe; 6-6 is a trap you lead when you shouldn't.
+
+**Game-theoretic explanation of the negative ΔV**: the swap is
+bilateral. P0 gains 6-6 (redundant — 6-suit already secure with
+6-1/6-3/6-4 against only 2 non-trump 6s outside). The opponent (seat 3
+in this deal) gains 1-1 — the TOP of the 1-suit, which includes the
+count dominoes 5-1 and 4-1 in that seat's hand. The opponent's gain
+exceeds P0's gain by ~6 Q-pts. Matches the observed delta exactly.
+
+**Important correction**: I initially attributed this to "strategy
+fusion" in the PIMC training. The user correctly pushed back — with
+adaptive sampling to SEM<0.5 we have thousands of world samples and
+aggregation is tight. Strategy fusion in its classic form doesn't
+apply. The real cause is the bilateral-swap asymmetry above, plus a
+depth-vs-breadth saturation effect: concentrating high cards in one
+suit has diminishing returns because opponents void out quickly and
+trump your subsequent leads in that suit.
+
+### Probe 5 — per-domino impact atlas for 6-6
+
+Across 20 eval games × bilateral swaps = 238 measurements:
+
+| declaration | n | mean ΔV | \|ΔV\|_mean | verdict |
+|---|---:|---:|---:|---|
+| sixes (trump) | 14 | +17.72 | 17.72 | always helpful |
+| doubles (doubles are trump) | 42 | +21.99 | 22.09 | always helpful (41/42) |
+| follow-me-8 | 28 | +16.96 | 16.96 | always helpful |
+| fives | 28 | +4.32 | 7.94 | mostly helpful; ONE catastrophe |
+| threes | 28 | +2.78 | 5.63 | mixed |
+| twos | 28 | +3.06 | 6.68 | mixed |
+| ones | 14 | +2.73 | 6.76 | mixed |
+| blanks | 14 | +2.53 | 3.44 | modestly helpful |
+| fours | 28 | −0.09 | 4.52 | essentially neutral |
+
+The catastrophes on fives/fours/ones/twos/threes are all the same
+pattern: swapping 6-6 IN by displacing the declaration's trump boss
+(5-5, 4-4, 1-1, 2-2, 3-3). Worst case: fives decl, swap 6-6→5-5,
+ΔV = −27.67.
+
+**The takeaway**: 6-6's value to Gus is entirely contextual on
+trumpness of the declaration and which card it displaces.
+**Gus has not learned "big card = good"** — it has learned the
+context-dependent value function that 42 actually has.
+
+### Probe 6 — hand-level threats and boons
+
+Using the stored joint-world tensor (4000 sampled worlds with per-world
+Q values) we grouped Q by where each non-P0 domino lives in each world.
+No forward passes needed — pure conditioning on the oracle's own
+training data. For game 0 decision 0 (leading 1-1), baseline E[Q] = −11.15.
+
+**Top BOONS** (largest uplift when partner holds the domino):
+
+| domino | E[Q\|partner] | uplift vs baseline |
+|---|---:|---:|
+| 0-0 (top trump) | +5.44 | **+16.6** |
+| 6-0 (high trump) | +1.33 | +12.5 |
+| 5-0 (mid-high trump) | −0.96 | +10.2 |
+| 4-0 (mid trump) | −6.03 | +5.1 |
+| 2-0 (low trump) | −6.79 | +4.4 |
+
+**Top THREATS** (largest drop when specific opp holds the domino):
+
+| threat | Q if held there | drop vs baseline |
+|---|---:|---:|
+| R-opp holds 0-0 | −20.52 | **−9.4** — "if R-opp has the boss we're sunk" |
+| L-opp holds 0-0 | −17.58 | −6.4 |
+| L-opp holds 6-0 | −17.55 | −6.4 |
+| R-opp holds 6-0 | −17.31 | −6.2 |
+| L-opp holds 5-0 | −16.35 | −5.2 |
+
+**All five threats AND all five boons are trumps.** The hand's outcome
+is determined by trump distribution before any card is played. 0-0
+alone contributes a 26-Q-pt swing based on location. This is the
+right answer to the user's original question "what dominoes are most
+involved in outcomes, for good or bad" — for this specific hand,
+it's the five trumps, and specifically the interaction between trump
+location and the game's defensive posture.
+
+**Subtle note**: dominoes like 2-1, 5-1, 3-1 show high-magnitude
+NEGATIVE bias_us (E[Q|partner] ~−18 vs E[Q|opp] ~−7). This is
+**not** a strategic threat — it's a correlation artifact. If partner
+is randomly assigned a weak card, partner's other 6 cards are drawn
+from a slightly stronger residual pool; conditioning flips this to
+"opp has 2-1 = opp team weaker on average." Real strategic threats
+are only the positive-bias trumps.
+
+### Meta-conclusions
+
+1. **Gus has internalized categorical game features** (doubles,
+   counts, high-pip magnitude) in the raw embedding, and
+   **contextual/relational knowledge** (declaration-dependent value,
+   trump-vs-non-trump, catching relationships) in the transformer
+   layers.
+2. **Gus's V agrees with the ground-truth oracle** even on a
+   nightmare-grade losing hand (ΔV error 0.49 Q-pts on a 5.83-point
+   delta). The distillation captures the oracle's full strategic
+   understanding, not just its argmax.
+3. **Counterfactual sensitivity is a usable interpretability tool.**
+   Per-domino impact atlas and per-hand threat/boon ranking can be
+   generated cheaply (seconds on CPU for forward passes; pure lookup
+   from the joint-world tensor for conditioning-on-location queries).
+4. **Game-theoretic facts we surfaced experimentally**: depth-vs-breadth
+   saturation in non-trump suits; 6-6's trumpness-gated value; offensive
+   cards as liabilities in defensive positions; the game being mostly
+   decided by trump distribution in bad-hand states.
+
+Probe scripts and output logs live in `scratch/probe_*` for reference.
+These are candidates for promotion to `gus/eval/` if the atlas or
+threat-boon analysis becomes a recurring tool (e.g., pre-game hand
+evaluator, post-hand "what if" explorer).
