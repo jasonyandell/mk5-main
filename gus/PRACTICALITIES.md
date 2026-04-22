@@ -365,3 +365,113 @@ is a Q_head that survives multi-world averaging. Two approaches:
 multi-world variance regularization during training (change train_v2_voids
 loss to query Q_head on K worlds and penalize cross-world variance) OR
 K=100+ at inference (cheap but only 2× improvement over K=50 at best).
+
+## 16. Eager dataset OOMs at 10k games — the lazy IterableDataset is the fix
+
+Baked into the pipeline since day one, `JointWorldFullDataset` loaded
+every chunk's games into a list at `__init__`. Fine for the 100-1000-game
+corpora (≤11 GB) and even for 3000 games (~33 GB). Breaks hard at 10k.
+
+**Observed** (2026-04-21 15:41 CDT): v3 consistency training on the full
+100-chunk 10k-game corpus was killed by macOS SIGKILL (OOM) before the
+first forward pass. The eager load hit ~110 GB of unified memory and the
+OS wouldn't tolerate it alongside the Python runtime.
+
+**Wrong instinct**: just subsample. Works as a patch but doesn't scale,
+and the Vast-fleet plan targets 100k+ games / multi-TB corpora where
+even subsampling the eager path fails.
+
+**Right fix**: `JointWorldFullIterable(IterableDataset)` in the same
+module. Streams chunks in random order; each chunk is loaded, its items
+are shuffled and yielded through an 8192-item shuffle buffer, then the
+chunk is released. Memory footprint is O(one chunk + buffer),
+independent of corpus size.
+
+Smoke-test receipts (5 chunks × 2 epochs, CPU):
+- Peak RSS: **3.4 GB**, flat across epochs (no growth leaks).
+- Throughput: ~4500 items/s (CPU-bound on item-building, not disk-bound).
+- __len__ scan: ~0.5s per chunk one-time; cached to disk via
+  `--length-cache` so subsequent runs skip it.
+
+Tradeoffs accepted:
+- **Approximate shuffle.** Each batch draws from an 8192-item buffer
+  dominated by the currently-loading chunk, so mini-batches have slight
+  chunk-locality bias. WebDataset uses the same pattern at much larger
+  scale; in our training it was imperceptible (see §X below once v3-10k
+  vs v2-10k-big numbers land). If shuffle quality ever becomes suspect,
+  bump buffer to 32K items (~200 MB, still trivial).
+- **No multi-worker support yet.** `DataLoader(num_workers>0)` raises
+  explicitly rather than silently misbehave. Our scripts use 0 anyway.
+
+Landed in `gus/model/dataset_seq_world.py` and behind `--lazy` flags in
+`train_v2_voids.py` and `train_v3_consistency.py`. Eager class retained
+for eval corpora (small, random-access friendly). Two tools for two
+jobs — not legacy; eager is the right tool on ≤1 GB inputs.
+
+**Implication**: the distillation pipeline is now memory-bounded by
+chunk size, not corpus size. Vast-fleet scale-out is no longer blocked
+on infrastructure.
+
+## 17. Oracle optimizes p_make, not E[Q] — utility is cliff-shaped
+
+While investigating how the teacher picks its "best move," we traced
+`forge/eq/generate/actions.py` line 126:
+
+```python
+score = p_make_masked + 1e-6 * e_q_normalized
+actions = score.argmax(dim=1)
+```
+
+`p_make` is the probability of making the contract (P(Q ≥ 18) for
+offense at bid 30). `e_q_normalized` is E[Q] scaled to [0, 1] over
+legal actions. The 1e-6 coefficient is smaller than float32 precision
+on most p_make gaps — **the oracle is effectively optimizing pure
+p_make**.
+
+This is the correct utility for 42 scoring. A mark is a mark; 30 and 42
+yield the same mark. 29 and -42 yield the same mark (to opponents).
+Margin has no durable value. The threshold cliff is the whole thing.
+
+What we confirmed:
+- "29 is never 30" is preserved — p_make=0 (cert. loss) loses to any
+  p_make>0 at argmax. ✓
+- Above threshold, all winning actions tie. Oracle picks arbitrarily.
+  Acceptable: margin above threshold buys nothing.
+- Below threshold, all losing actions tie. Oracle picks arbitrarily.
+  Acceptable: a loss is a loss.
+
+What we **did not** confirm:
+- Hardcoded bid=30 threshold. `decl_id` (0-9) encodes trump only, not
+  bid amount. The `[:, :, 60:]` (offense) and `[:, :, 25:]` (defense)
+  bin offsets are literally P(Q ≥ 18) and P(Q ≥ -17), which are
+  correct only for bid=30. For bid=36 the offense threshold shifts to
+  Q ≥ 30 (bin 72+). Teacher is systematically overconfident on
+  higher-bid hands. **Pre-Vast-launch blocker, tracked in GEN_FLEET.md.**
+
+**The utility-vs-dynamics distinction.** The user's intuition that
+"going for it wins more" is real — but it's a *dynamics* claim, not a
+utility one. Margin at trick 3 compounds into safety at trick 7
+through trump-depletion, partner signaling, and buffer against
+unexpected opponent plays. A single-decision utility has no way to see
+this — it's a property of sequences. The answer is multi-step planning
+(LAMIR), not a richer utility.
+
+Decomposition that stays clean:
+- **Utility**: `U = p_make`. Pure threshold. Trivial to compute,
+  trivial to explain.
+- **Dynamics**: LAMIR rollouts re-score each action by rolled-out
+  future p_make. Naturally values "margin that buys safety later."
+- **These stack cleanly** — LAMIR uses the utility at the rollout
+  leaves and aggregates via expectation. No need to corrupt the
+  utility to imitate what planning provides.
+
+**Earlier wrong turn worth remembering**: proposed `U = E[Q] + C·p_make`
+as a "cliff-preserving, margin-rewarding" utility. Fails on the user's
+own test case: A(p_make=1e-8, E[Q]=-42) vs B(p_make=0, E[Q]=+16) picks
+B — the guaranteed loss — because E[Q] dominates when p_make×100 is
+small. Real preference is pure p_make; margin belongs in dynamics.
+
+**Implication**: no oracle-side utility rewrite needed. The cliff
+behavior is correct as-is. The action items on the oracle side are
+(1) bid_value plumbing for the threshold, (2) per-seat oracle softmax
+for π_opp training targets. Neither touches the utility shape.
