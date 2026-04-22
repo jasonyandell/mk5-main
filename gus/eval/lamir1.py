@@ -1,19 +1,18 @@
-"""LAMIR-1: 1-ply look-ahead using rotation-equivariant π_me as π_opp.
+"""LAMIR-1 evaluation harness — three inference modes.
 
-For each held-out decision d (current_player = P, legal actions A):
-  For each action a in A:
-    For each sampled world m in d.world_hands:
-      state = apply(d.state, action=a, player=P)
-      for p_next in remaining players in trick:
-        pi = model(tokens[p_next_pov], voids[p_next_pov], world_rotated[m, p_next]).pi_me
-        a_next = legal_argmax(pi, p_next's hand in world_m)
-        state = apply(state, a_next)
-      V_leaf = model(tokens_P_pov, voids_P_pov, world_m).v_head
-    score[a] = mean_m(V_leaf)
-  chosen = argmax_a(score)
+Modes (--mode flag):
+  direct        Direct π_me argmax with legal mask. Baseline.
+  v-bootstrap   Depth-1 V_head: apply action a → query V_head immediately
+                (no opp rollout). Tests whether V_head has good action
+                ordering at depth-1 before any opp simulation.
+  lamir1        1-ply look-ahead: simulate remaining trick players using
+                rotation-equivariant π_me as π_opp, then score with
+                V_head at leaf averaged over M corpus worlds.
 
-Batched inference: all M worlds are processed in parallel per model call.
-Falls back to direct π_me when trick_pos == 3 (nothing to roll out).
+For v-bootstrap and lamir1, falls back to direct π_me for trick_pos==3
+(last player in trick — nothing to roll out).
+
+Batched inference: all M worlds processed in parallel per model call.
 """
 
 from __future__ import annotations
@@ -25,8 +24,6 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NamedTuple
-
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 import torch
@@ -247,6 +244,105 @@ def _replay_state(game_hands: list[list[int]], decl_id: int, decisions: list, d_
 
 
 # ---------------------------------------------------------------------------
+# Shared oracle-best helper
+# ---------------------------------------------------------------------------
+
+def _oracle_info(decision) -> tuple[float, int, Tensor, list[int]]:
+    """Return (oracle_best_eq, oracle_best_action, e_q [7], legal_slots)."""
+    legal_mask = decision.legal_mask.bool()
+    e_q = decision.e_q.float()
+    e_q_legal = e_q.clone()
+    e_q_legal[~legal_mask] = float("-inf")
+    oracle_best_eq = float(e_q_legal.max().item())
+    oracle_best_action = int(e_q_legal.argmax().item())
+    legal_slots = legal_mask.nonzero(as_tuple=True)[0].tolist()
+    return oracle_best_eq, oracle_best_action, e_q, legal_slots
+
+
+# ---------------------------------------------------------------------------
+# Mode: direct (baseline π_me argmax)
+# ---------------------------------------------------------------------------
+
+def direct_decision(
+    model,
+    is_voids: bool,
+    game,
+    d_idx: int,
+    device: str,
+) -> tuple[float, int, float]:
+    """Direct π_me argmax. Returns (regret, is_bot_match, oracle_best_eq)."""
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    legal_mask = decision.legal_mask.bool()
+
+    tokens, attn_mask, voids = _build_tokens_voids(
+        game.hands, int(game.decl_id), game.decisions, d_idx, [], P
+    )
+    dummy_world = torch.zeros(1, 28, 3)
+    out = query_model_batched(model, is_voids, tokens, attn_mask, voids, dummy_world, device)
+    pi = out["pi_me_logits"][0]
+    pi_masked = pi.masked_fill(~legal_mask.to(device), float("-inf"))
+    chosen = int(pi_masked.argmax().item())
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
+# Mode: v-bootstrap (depth-1 V_head, no opp rollout)
+# ---------------------------------------------------------------------------
+
+def v_bootstrap_decision(
+    model,
+    is_voids: bool,
+    game,
+    d_idx: int,
+    device: str,
+    world_cap: int = 200,
+) -> tuple[float, int, float]:
+    """Depth-1 V_head: apply a → query V_head immediately, no opp simulation.
+
+    For each legal action a:
+      extra = [a]  (P played a)
+      tokens/voids = P's view after playing a
+      score[a] = mean_m V_head(tokens, voids, world_m)
+    chosen = argmax score
+
+    Falls back to direct π_me for trick_pos==3.
+    Returns (regret, is_bot_match, oracle_best_eq).
+    """
+    decision = game.decisions[d_idx]
+    P = int(decision.player)
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    legal_mask = decision.legal_mask.bool()
+    trick_pos = d_idx % 4
+
+    # trick_pos==3: last play, nothing to evaluate ahead — direct fallback
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
+
+    world_hands_all = decision.world_hands  # [M, 3, 7]
+    M = min(world_hands_all.shape[0], world_cap)
+    world_hands = world_hands_all[:M]
+    world_assign_P = world_batch_to_assignment_vectorized(world_hands)  # [M, 28, 3]
+
+    action_scores: dict[int, float] = {}
+    for a_slot in legal_slots:
+        extra = [_FakeDecision(player=P, action_taken=a_slot)]
+        tokens, attn_mask, voids = _build_tokens_voids(
+            game.hands, int(game.decl_id), game.decisions, d_idx, extra, P
+        )
+        out = query_model_batched(
+            model, is_voids, tokens, attn_mask, voids, world_assign_P, device
+        )
+        action_scores[a_slot] = float(out["v"].mean().item())
+
+    chosen = max(action_scores, key=lambda a: action_scores[a])
+    regret = oracle_best_eq - float(e_q[chosen].item())
+    return regret, int(chosen == oracle_best_action), oracle_best_eq
+
+
+# ---------------------------------------------------------------------------
 # LAMIR-1 per-decision
 # ---------------------------------------------------------------------------
 
@@ -258,38 +354,20 @@ def lamir1_decision(
     device: str,
     world_cap: int = 200,
 ) -> tuple[float, int, float]:
-    """Run LAMIR-1 for one decision. Returns (regret, is_bot_match, oracle_best_eq).
+    """1-ply rollout. Returns (regret, is_bot_match, oracle_best_eq).
 
-    Falls back to direct π_me if trick_pos == 3 (last play in trick).
+    Falls back to direct π_me for trick_pos==3.
     """
     decision = game.decisions[d_idx]
     P = int(decision.player)
-    legal_mask = decision.legal_mask.bool()   # [7]
-    e_q = decision.e_q.float()               # [7]
-    e_q_legal = e_q.clone()
-    e_q_legal[~legal_mask] = float("-inf")
-    oracle_best_eq = float(e_q_legal.max().item())
-    oracle_best_action = int(e_q_legal.argmax().item())
+    oracle_best_eq, oracle_best_action, e_q, legal_slots = _oracle_info(decision)
+    legal_mask = decision.legal_mask.bool()
 
-    legal_slots = legal_mask.nonzero(as_tuple=True)[0].tolist()
-
-    # trick_pos: how many plays have gone in the current trick before this one
     trick_pos = d_idx % 4
-    n_remaining = 3 - trick_pos  # opp plays left in this trick
+    n_remaining = 3 - trick_pos
 
-    # Direct fallback if last-in-trick
-    if trick_pos == 3 or n_remaining == 0:
-        tokens, attn_mask, voids = _build_tokens_voids(
-            game.hands, int(game.decl_id), game.decisions, d_idx, [], P
-        )
-        # Single dummy world (v_head / pi_me don't use it)
-        dummy_world = torch.zeros(1, 28, 3)
-        out = query_model_batched(model, is_voids, tokens, attn_mask, voids, dummy_world, device)
-        pi = out["pi_me_logits"][0]  # [7]
-        pi_masked = pi.masked_fill(~legal_mask.to(device), float("-inf"))
-        chosen = int(pi_masked.argmax().item())
-        regret = oracle_best_eq - float(e_q[chosen].item())
-        return regret, int(chosen == oracle_best_action), oracle_best_eq
+    if trick_pos == 3:
+        return direct_decision(model, is_voids, game, d_idx, device)
 
     # Cap worlds for speed
     world_hands_all = decision.world_hands  # [M, 3, 7]
@@ -419,18 +497,28 @@ def lamir1_decision(
 # Main
 # ---------------------------------------------------------------------------
 
+_MODES = ("direct", "v-bootstrap", "lamir1")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--adapter", default="gus/adapters/v3_consistency_10000g.pt")
     parser.add_argument("--eval", required=True, nargs="+")
     parser.add_argument("--device", type=str, default=None)
-    parser.add_argument("--out", type=str, default="scratch/lamir1_v3_run1.json")
-    parser.add_argument("--world-cap", type=int, default=200,
-                        help="Cap on worlds per decision (default 200)")
+    parser.add_argument("--out", type=str, default=None,
+                        help="JSON output path (default: scratch/lamir1_<mode>.json)")
+    parser.add_argument("--world-cap", type=int, default=200)
+    parser.add_argument("--mode", choices=_MODES, default="lamir1",
+                        help="Inference mode (default: lamir1)")
     args = parser.parse_args()
 
     device = args.device or _pick_device()
-    print(f"Adapter: {args.adapter}  device: {device}  world-cap: {args.world_cap}", flush=True)
+    out_path = args.out or f"scratch/lamir1_{args.mode.replace('-', '_')}.json"
+    print(
+        f"Mode: {args.mode}  adapter: {args.adapter}  "
+        f"device: {device}  world-cap: {args.world_cap}",
+        flush=True,
+    )
 
     model, is_voids = _load_student(args.adapter, device)
     print(f"Model loaded, voids={is_voids}", flush=True)
@@ -438,12 +526,26 @@ def main() -> int:
     ds = JointWorldFullDataset(args.eval, seed=42)
     print(f"Eval corpus: {len(ds.games)} games, qualifying decisions: {len(ds.index)}", flush=True)
 
+    # Select inference function
+    if args.mode == "direct":
+        def run_decision(game, d_idx):
+            return direct_decision(model, is_voids, game, d_idx, device)
+    elif args.mode == "v-bootstrap":
+        def run_decision(game, d_idx):
+            return v_bootstrap_decision(model, is_voids, game, d_idx, device, args.world_cap)
+    else:  # lamir1
+        def run_decision(game, d_idx):
+            return lamir1_decision(model, is_voids, game, d_idx, device, args.world_cap)
+
     total_regret = 0.0
     total_items = 0
     bot_matches = 0
     negligible_regret = 0
     bucket_regret: dict[int, list[float]] = defaultdict(list)
     bucket_match: dict[int, list[int]] = defaultdict(list)
+    # trick_pos buckets: 0=leader, 1=2nd, 2=3rd, 3=last
+    pos_regret: dict[int, list[float]] = defaultdict(list)
+    pos_match: dict[int, list[int]] = defaultdict(list)
     per_decision_results: list[dict] = []
 
     t_start = time.time()
@@ -453,10 +555,8 @@ def main() -> int:
             if dec.world_hands is None or dec.q_per_world is None:
                 continue
 
-            regret, is_match, oracle_best = lamir1_decision(
-                model, is_voids, game, d_idx, device,
-                world_cap=args.world_cap,
-            )
+            regret, is_match, oracle_best = run_decision(game, d_idx)
+            trick_pos = d_idx % 4
 
             total_regret += regret
             total_items += 1
@@ -465,9 +565,12 @@ def main() -> int:
                 negligible_regret += 1
             bucket_regret[d_idx].append(regret)
             bucket_match[d_idx].append(is_match)
+            pos_regret[trick_pos].append(regret)
+            pos_match[trick_pos].append(is_match)
             per_decision_results.append({
                 "game": g_idx,
                 "d_idx": d_idx,
+                "trick_pos": trick_pos,
                 "regret": regret,
                 "bot_match": is_match,
                 "oracle_best_eq": oracle_best,
@@ -489,17 +592,31 @@ def main() -> int:
     near_tie_rate = negligible_regret / max(total_items, 1)
 
     print(flush=True)
-    print(f"=== LAMIR-1 Summary over {total_items} decisions ===")
+    print(f"=== [{args.mode}] Summary over {total_items} decisions ===")
     print(f"  Bot-match rate:            {bot_match_rate:.3%}")
     print(f"  Mean regret (Q-points):    {mean_regret:.3f}")
     print(f"  Decisions with regret<0.5: {negligible_regret}/{total_items} "
           f"= {near_tie_rate:.1%} (near-ties)")
     print(f"  Wall-clock time:           {elapsed_total:.1f}s")
-    print(f"  Baseline regret:           0.551")
-    print(f"  Baseline bot-match:        76.07%")
+    print(f"  Baseline regret:           0.551  bot-match: 76.07%")
     print(flush=True)
 
-    print("=== Per-decision regret + bot-match ===")
+    print("=== Per-trick-pos breakdown ===")
+    print(f"{'pos':>3s}  {'n':>4s}  {'bot':>6s}  {'regret':>8s}  note")
+    pos_labels = {0: "leads", 1: "2nd", 2: "3rd", 3: "last(fallback)"}
+    for pos in range(4):
+        if not pos_regret[pos]:
+            continue
+        rs = pos_regret[pos]
+        ms = pos_match[pos]
+        n = len(rs)
+        print(
+            f"  {pos}  {n:>4d}  {sum(ms)/n:>6.2%}  {sum(rs)/n:>8.3f}"
+            f"  {pos_labels[pos]}"
+        )
+
+    print(flush=True)
+    print("=== Per-decision-slot regret + bot-match ===")
     print(f"{'dec':>3s}  {'bot':>6s}  {'regret':>8s}  {'near-tie':>8s}  {'n':>3s}")
     for d in sorted(bucket_regret.keys()):
         regrets = bucket_regret[d]
@@ -510,9 +627,10 @@ def main() -> int:
         near_ties = sum(1 for r in regrets if r < 0.5) / n
         print(f"{d:>3d}  {match_rate:>6.2%}  {mean_r:>8.2f}  {near_ties:>8.1%}  {n:>3d}")
 
-    out_path = Path(args.out)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
     summary = {
+        "mode": args.mode,
         "adapter": args.adapter,
         "device": device,
         "world_cap": args.world_cap,
@@ -523,11 +641,19 @@ def main() -> int:
         "wall_clock_s": elapsed_total,
         "baseline_regret": 0.551,
         "baseline_bot_match": 0.7607,
+        "by_trick_pos": {
+            str(pos): {
+                "n": len(pos_regret[pos]),
+                "mean_regret": sum(pos_regret[pos]) / max(len(pos_regret[pos]), 1),
+                "bot_match": sum(pos_match[pos]) / max(len(pos_match[pos]), 1),
+            }
+            for pos in range(4) if pos_regret[pos]
+        },
         "per_decision": per_decision_results,
     }
-    with open(out_path, "w") as f:
+    with open(out, "w") as f:
         json.dump(summary, f, indent=2)
-    print(f"\nResults saved to {out_path}", flush=True)
+    print(f"\nResults saved to {out}", flush=True)
 
     return 0
 
