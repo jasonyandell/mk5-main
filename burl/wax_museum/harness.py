@@ -89,6 +89,9 @@ def run_decision_waxed(
     oracle: Any = None,
     parse_completion: Callable[[str], tuple[str, list[tuple[str, dict]], int | None]] | None = None,
     tool_response_style: str = "gemma_native",
+    system_prompt_transform: Callable[[str], str] | None = None,
+    preload_tool_calls: list[tuple[str, dict]] | None = None,
+    menu_override: Callable[[Any], list[dict]] | None = None,
 ) -> WaxResult:
     """Run one decision through the gated HATEOAS loop.
 
@@ -126,6 +129,8 @@ def run_decision_waxed(
         enable_primer=True,
     )
     system_content = _append_gate_instructions(system_content)
+    if system_prompt_transform is not None:
+        system_content = system_prompt_transform(system_content)
 
     ctx = WaxContext(game_state=game_state, me_abs=me_abs, oracle=oracle)
     registry = build_registry(ctx)
@@ -134,6 +139,59 @@ def run_decision_waxed(
         {"role": "system", "content": system_content},
         {"role": "user", "content": user_content},
     ]
+
+    # Optional preload: run one or more tool calls BEFORE the model's first
+    # turn, and inject the results as a synthetic assistant message using the
+    # same tool_calls / tool_responses shape the harness uses for real turns.
+    # Use-case: "Here, I already ran belief_trajectory for you — reason over
+    # this." Preload tools MUST be in the INITIAL menu OR be explicitly
+    # approved by the caller via ``menu_override`` (see variant F).
+    if preload_tool_calls:
+        preload_calls_structured: list[dict] = []
+        preload_resps_structured: list[dict] = []
+        for (tname, targs) in preload_tool_calls:
+            fn = registry.get(tname)
+            if fn is None:
+                on_event({"evt": "preload_skip", "tool": tname,
+                          "reason": "unknown tool"}) if on_event else None
+                continue
+            try:
+                presult = fn(**targs)
+                if on_tool_result is not None:
+                    try:
+                        on_tool_result(tname, dict(targs), presult)
+                    except Exception:
+                        pass
+                if isinstance(presult, dict) and "prose" in presult:
+                    ptext = presult["prose"]
+                elif isinstance(presult, dict):
+                    ptext = json.dumps(presult, default=_json_default, separators=(",", ":"))
+                else:
+                    ptext = str(presult)
+            except Exception as e:
+                ptext = f"ERROR: {e}"
+            preload_calls_structured.append({
+                "type": "function",
+                "function": {"name": tname, "arguments": dict(targs)},
+            })
+            preload_resps_structured.append({"name": tname, "response": ptext})
+        if preload_calls_structured:
+            preload_msg: dict[str, Any] = {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": preload_calls_structured,
+            }
+            if tool_response_style == "gemma_native":
+                preload_msg["tool_responses"] = preload_resps_structured
+                messages.append(preload_msg)
+            else:
+                messages.append(preload_msg)
+                for tr in preload_resps_structured:
+                    messages.append({
+                        "role": "tool",
+                        "name": tr.get("name", "unknown"),
+                        "content": tr.get("response", ""),
+                    })
     trace = BurlTrace(
         game_state_key=_state_key(game_state),
         decision_prompt=f"[SYSTEM]\n{system_content}\n\n[USER]\n{user_content}",
@@ -146,7 +204,9 @@ def run_decision_waxed(
     attempted_commits: list[int] = []
 
     for turn_idx in range(1, max_turns + 1):
-        schemas = menu_for(state)
+        schemas = (
+            menu_override(state) if menu_override is not None else menu_for(state)
+        )
         on_event({
             "evt": "turn_start",
             "turn": turn_idx,
@@ -256,7 +316,7 @@ def run_decision_waxed(
         # <|tool_response>response:NAME{value:<|"|>prose<|"|>}<tool_response|>`
         # — the native shape the model was trained on. Anything else gets
         # silently dropped and the model hallucinates a response.
-        allowed = set(menu_names(state))
+        allowed = {s["function"]["name"] for s in schemas}
         state_transitioned_this_turn = False
 
         def _record_call(
