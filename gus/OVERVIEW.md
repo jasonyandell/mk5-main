@@ -299,6 +299,15 @@ gus/
 - **Can Gus fit in under 10M params?** Zeb was 3.3M. Belief + policy + value
   shouldn't need more capacity than Zeb needed for belief alone. Worth
   finding out before over-parameterizing.
+- **What do you do past belief?** Belief is at the Bayes ceiling on our
+  corpus (§21, 39.2% top-1 ≈ what Gus achieves). The remaining 42-craft
+  isn't about knowing better — it's about acting well given *unresolvable*
+  uncertainty. π_me is trained on one specific meta-strategy (argmax of
+  marginal E[Q] ≈ "play for the mode"). Humans use several — signal, hedge,
+  gamble — and choose based on score context. A richer student could output
+  multiple meta-strategies and a selector. See PRACTICALITIES §22 for
+  extractable analytics (belief-limited high-impact decisions are already
+  identifiable from the joint-world tensor we generate).
 
 ## Related beads
 

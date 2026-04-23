@@ -227,3 +227,35 @@ wrote off-plan during the original overnight — it turned out to be
 exactly what this follow-up experiment needed).
 
 See PRACTICALITIES §21 for full numbers and the mechanism discussion.
+
+---
+
+## Addendum 3 — "What you do past belief" — recorded as option
+
+The §21 finding (belief at ceiling) reframes the 42-craft problem: the
+remaining skill isn't about *knowing better*, it's about *acting well
+given unresolvable uncertainty*. This is the heart of 42 — the moments
+when you genuinely don't know what's in opp hands and everything is on
+the line.
+
+**Already in our data, unlabeled.** `q_per_world` per decision lets us
+mechanically identify (a) outcome-variance (how much the chosen action's
+Q depends on which hidden world is true), (b) action-choice fragility
+(how many distinct actions the oracle would pick across the M worlds),
+and (c) belief-limited high-impact decisions (joining the above with
+§21's per-decision belief sharpness). Estimated effort: an afternoon.
+Output: ranked list of "drama" decisions, distribution across trick
+positions.
+
+**Research direction**: π_me is trained on `argmax(marginal E[Q])`,
+which implicitly commits to one meta-strategy ("play for the mode").
+Real players use several — mode, signal, hedge, gamble — and pick
+based on match context (score, partner expectations, opp mistakes).
+A richer student could output multiple meta-strategies + a selector,
+trained from the same oracle per-world data we already have. No
+LAMIR/CFR+ needed.
+
+Full writeup with connection to §19 probes lives in PRACTICALITIES §22.
+Not blocking anything; noted as a future direction the user flagged as
+"the heart of the game." Could be next-session or never; it's in the
+log now so it doesn't get lost.

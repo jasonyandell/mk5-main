@@ -893,3 +893,96 @@ or just the sampling distribution. At K=200 we already match or beat
 corpus-at-M~3000. That suggests it's the distribution that's better, not
 the diversity.
 
+## 22. "What you do past belief" — the heart of 42 is already in our data
+
+Framing credit: the user, on recognizing that belief is at ceiling
+(§21). The §21 finding reframed the problem: Gus's belief head is
+correct; the remaining 42-craft isn't about *knowing better*, it's
+about *acting well given unresolvable uncertainty*. Human experts call
+this "reading the table," "signaling," "playing the percentages." The
+AI literature has almost no vocabulary for it.
+
+### The extractable analytics (not yet run)
+
+Every decision in the corpus has a `q_per_world` tensor: [M, 7] of
+oracle Q values, one per sampled world × legal action. This tensor
+already tells us *where the strategic uncertainty lives*. Three derived
+quantities, all computable with pure indexing (no new model training):
+
+1. **Outcome-variance per decision**: `q_per_world[:, action_taken].std()`
+   Tells you how much the outcome of the chosen action depends on which
+   hidden world is true. Low → "this play is robust, all worlds look
+   similar." High → "knife's edge; hand-shape decides." The high-variance
+   decisions are the ones worth writing about.
+
+2. **Action-choice fragility**: for each decision, compute the per-world
+   argmax action (`q_per_world.argmax(dim=-1)`, shape [M]). Count how
+   many DIFFERENT actions the oracle would pick across the M worlds.
+   If it's 1, the decision is cleanly determined. If it's 3+, the
+   decision is a fog-of-war call — the optimal play depends on which
+   world you're in, and you can't know.
+
+3. **Belief-limited high-impact decisions**: join (1) and (2) with
+   §21's per-decision belief-sharpness. Decisions where belief is ~33%
+   (pure prior, no signal) AND action-choice fragility is high (3+ argmax
+   actions) AND outcome-variance is high are the **defining moments of
+   42** — everything is on the line AND you genuinely don't know. These
+   are the situations a book would be built around.
+
+Estimated effort to extract: **~1 afternoon**. Uses existing corpus,
+existing oracle data. Output: a ranked list of (game, decision) pairs
+sorted by "drama" (all three quantities high), plus a per-decision-idx
+distribution showing where in the trick these moments concentrate.
+Trick-pos distribution alone tells us something real about 42 — is the
+drama in the lead, the second-to-last play, the mid-hand strategic
+choice?
+
+### Beyond analytics — the research question
+
+Gus's π_me is trained on `argmax(marginal E[Q])`. At belief-limited
+decisions, the marginal E[Q] averages over worlds that favor
+DIFFERENT actions. The marginal argmax is then *"play for the mode of
+the action distribution,"* not *"play for any specific world."* This is
+one specific meta-strategy among several that a real player might use:
+
+- **Mode**: play the action that's best on average (what π_me learns)
+- **Signal**: play an action whose choice *informs partner* about your
+  hand shape, even if its own E[Q] is slightly worse
+- **Hedge**: play an action that has the least downside across worlds,
+  not the highest mean (minimax under belief)
+- **Gamble**: play an action that's catastrophic in most worlds but
+  wins big in a specific one (bid-dependent; "only way I make 42 is
+  if partner has the 6-6")
+
+None of these are distinguishable from π_me's single-output training.
+A richer student could output *multiple meta-strategies* and let the
+player (or a learned selector) pick one based on match context (are we
+ahead or behind on score, is partner likely to punish a missed signal,
+etc.). That's a real, paper-worthy direction that doesn't need LAMIR's
+CFR+ machinery — it just needs the oracle's per-world data (which we
+have), split across meta-strategy targets, and a small head that outputs
+a distribution over meta-strategies given the state.
+
+**This is what ("what you do past belief") names.** It's the gap
+between "oracle-optimal action assuming future play is optimal" (π_me's
+training target) and "human-optimal action given real partners who
+read signals, real opponents who make mistakes, real score context." The
+oracle doesn't care about any of that; a strong player does.
+
+### Connection to §19 (probes)
+
+§19 established that Gus has internalized categorical 42 concepts
+(doubleness, countness, trump-dependent value) and contextual reasoning
+(6-6 as liability in defensive positions). The natural extension of
+that probe series is to look at Gus's behavior on the belief-limited
+decisions surfaced by the analytics above — does Gus's π_me pick
+robust actions or mode-of-distribution actions? Knowing which one
+would tell us whether the model has implicitly learned a meta-strategy
+choice or just follows "play for the mode."
+
+### Status
+
+Noted as an option for future work. Not blocking anything. No code
+written. Could be next-session or next-month or never — it's in the
+log now so it doesn't get lost.
+
