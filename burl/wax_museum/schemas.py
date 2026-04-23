@@ -93,6 +93,22 @@ PROBE_WORST_CASE = _schema(
     required=["play"],
 )
 
+BELIEF_TRAJECTORY = _schema(
+    "belief_trajectory",
+    (
+        "Read Gus's calibrated belief over opponent hands for the current "
+        "decision. Returns per-domino posterior (probability each unseen "
+        "domino sits with left/partner/right opponent), shifts since the "
+        "previous call in this decision, Gus's value estimate V, and the "
+        "final-layer CLS attention top-3 tokens. Calibrated at the Bayes "
+        "ceiling on the eval corpus (39.18% top-1 on 3-way seat classification). "
+        "Free side-call; does not advance the turn state. Example: "
+        "belief_trajectory()."
+    ),
+    {},  # no arguments — belief is read from the current game state
+    required=[],
+)
+
 ASK_RULE = _schema(
     "ask_rule",
     (
@@ -141,9 +157,17 @@ class GateState(Enum):
 
 
 _MENUS: dict[GateState, list[dict]] = {
-    GateState.INITIAL: [EXPLORE_GAME],
-    GateState.AFTER_EXPLORE: [EXPLORE_GAME, PROBE_BEST_CASE, PROBE_WORST_CASE, ASK_RULE],
-    GateState.AFTER_PROBE: [EXPLORE_GAME, PROBE_BEST_CASE, PROBE_WORST_CASE, ASK_RULE, COMMIT_PLAY],
+    # belief_trajectory is a free side-call (like ask_rule): does not advance
+    # the gate state, and is visible from every state so we can see whether
+    # Gemma reaches for it on turn 1 vs later in the loop.
+    GateState.INITIAL: [EXPLORE_GAME, BELIEF_TRAJECTORY],
+    GateState.AFTER_EXPLORE: [
+        EXPLORE_GAME, PROBE_BEST_CASE, PROBE_WORST_CASE, ASK_RULE, BELIEF_TRAJECTORY,
+    ],
+    GateState.AFTER_PROBE: [
+        EXPLORE_GAME, PROBE_BEST_CASE, PROBE_WORST_CASE, ASK_RULE,
+        BELIEF_TRAJECTORY, COMMIT_PLAY,
+    ],
 }
 
 
@@ -175,6 +199,8 @@ def advance(state: GateState, tool_called: str) -> GateState:
     """
     if tool_called == "ask_rule":
         return state
+    if tool_called == "belief_trajectory":
+        return state  # free side-call; never advances
     if tool_called == "explore_game":
         return GateState.AFTER_EXPLORE if state == GateState.INITIAL else state
     if tool_called in ("probe_best_case", "probe_worst_case"):
@@ -211,6 +237,7 @@ def next_actions_after_explore(play: int, has_bimodal: bool) -> list[NextAction]
         {"tool": "probe_worst_case", "when": downside_when + f" Call: probe_worst_case(play={play})."},
         {"tool": "explore_game", "when": "Switch to a different candidate play."},
         {"tool": "ask_rule", "when": "Look up a 42 rule. Free; does not advance state."},
+        {"tool": "belief_trajectory", "when": "Read Gus's calibrated posterior over opponent hands. Free; does not advance state."},
     ]
 
 
@@ -221,13 +248,17 @@ def next_actions_after_probe(play: int) -> list[NextAction]:
         {"tool": "probe_worst_case", "when": f"Check the other branch for play={play}."},
         {"tool": "explore_game", "when": "Examine a different candidate play before committing."},
         {"tool": "ask_rule", "when": "Look up a 42 rule."},
+        {"tool": "belief_trajectory", "when": "Read Gus's calibrated posterior over opponent hands."},
     ]
 
 
 def next_actions_unchanged(state: GateState, play: int | None = None) -> list[NextAction]:
-    """For ask_rule — re-advertise the current state's actions."""
+    """For ask_rule / belief_trajectory — re-advertise the current state's actions."""
     if state == GateState.INITIAL:
-        return [{"tool": "explore_game", "when": "Examine a candidate play (pick any domino in your hand)."}]
+        return [
+            {"tool": "explore_game", "when": "Examine a candidate play (pick any domino in your hand)."},
+            {"tool": "belief_trajectory", "when": "Read Gus's calibrated posterior over opponent hands. Free; does not advance state."},
+        ]
     if state == GateState.AFTER_EXPLORE:
         assert play is not None
         return next_actions_after_explore(play, has_bimodal=True)
@@ -241,17 +272,25 @@ def next_actions_unchanged(state: GateState, play: int | None = None) -> list[Ne
 
 def _smoke() -> None:
     s = GateState.INITIAL
-    assert menu_names(s) == ["explore_game"], menu_names(s)
+    assert set(menu_names(s)) == {"explore_game", "belief_trajectory"}, menu_names(s)
     s = advance(s, "explore_game")
     assert s == GateState.AFTER_EXPLORE
-    assert set(menu_names(s)) == {"explore_game", "probe_best_case", "probe_worst_case", "ask_rule"}
+    assert set(menu_names(s)) == {
+        "explore_game", "probe_best_case", "probe_worst_case",
+        "ask_rule", "belief_trajectory",
+    }
     # probe advances
     s2 = advance(s, "probe_worst_case")
     assert s2 == GateState.AFTER_PROBE
     assert "commit_play" in menu_names(s2)
+    assert "belief_trajectory" in menu_names(s2)
     # ask_rule does not advance
     s3 = advance(s, "ask_rule")
     assert s3 == GateState.AFTER_EXPLORE
+    # belief_trajectory does not advance, from any state
+    assert advance(GateState.INITIAL, "belief_trajectory") == GateState.INITIAL
+    assert advance(GateState.AFTER_EXPLORE, "belief_trajectory") == GateState.AFTER_EXPLORE
+    assert advance(GateState.AFTER_PROBE, "belief_trajectory") == GateState.AFTER_PROBE
     # probe from INITIAL is a no-op (gate enforced)
     assert advance(GateState.INITIAL, "probe_best_case") == GateState.INITIAL
     print("[wax_museum.schemas] smoke OK")

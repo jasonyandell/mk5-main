@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from burl.harness.agent_runner import _DOMINO_LABELS
+from burl.tools.belief_trajectory import belief_trajectory as call_belief_trajectory
 from burl.tools.eq_distribution import (
     ConditionUnreachable,
     OutcomeDistribution,
@@ -616,6 +617,41 @@ _RULE_ANSWERS: dict[str, str] = {
 }
 
 
+def tool_belief_trajectory(ctx: WaxContext) -> dict:
+    """Read Gus's calibrated belief head for the current decision.
+
+    Returns the wrapped payload: the ``prose`` field is what the model sees in
+    the tool-response envelope; ``structured`` carries the full dict for trace
+    analysis (belief per unseen domino, top shifts since last call on this
+    decision, V, attention top tokens, policy top-K). ``format="both"`` on the
+    underlying tool gives us both shapes in a single call.
+
+    Does not advance the gate state — re-advertise the current state's
+    actions via ``next_actions_unchanged``.
+    """
+    try:
+        payload = call_belief_trajectory(
+            ctx.game_state,
+            top_k_shifts=5,
+            include_policy=True,
+            format="both",
+        )
+    except Exception as e:
+        return _wrap(
+            prose=_render_prose_error(f"belief_trajectory failed: {e}"),
+            structured={"error": str(e)},
+            next_actions=[],
+        )
+    # payload is a dict with a "prose" key + all structured fields.
+    prose = payload["prose"]
+    structured = {k: v for k, v in payload.items() if k != "prose"}
+    return _wrap(
+        prose=prose,
+        structured=structured,
+        next_actions=[],   # re-advertised by the harness via next_actions_unchanged
+    )
+
+
 def tool_ask_rule(ctx: WaxContext, topic: str) -> dict:
     answer = _RULE_ANSWERS.get(topic)
     if answer is None:
@@ -646,4 +682,5 @@ def build_registry(ctx: WaxContext) -> dict[str, Any]:
         "probe_best_case": lambda **kw: tool_probe_best_case(ctx, **kw),
         "probe_worst_case": lambda **kw: tool_probe_worst_case(ctx, **kw),
         "ask_rule": lambda **kw: tool_ask_rule(ctx, **kw),
+        "belief_trajectory": lambda **kw: tool_belief_trajectory(ctx, **kw),
     }

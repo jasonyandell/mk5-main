@@ -52,6 +52,10 @@ NativeModelCallable = Callable[[list[dict], list[dict]], str]
 """(messages, tool_schemas) -> raw completion text."""
 
 EventCallback = Callable[[dict], None]
+ToolResultCallback = Callable[[str, dict, Any], None]
+"""(tool_name, args, full_result) — fires immediately after a tool call
+succeeds, BEFORE the harness emits its truncated ``tool_call`` event.
+Callers use this to stream full payloads into live logs without monkey-patching."""
 
 
 # --------------------------------------------------------------------------- #
@@ -81,6 +85,7 @@ def run_decision_waxed(
     max_turns: int = 8,
     max_retries: int = 3,
     on_event: EventCallback | None = None,
+    on_tool_result: ToolResultCallback | None = None,
     oracle: Any = None,
     parse_completion: Callable[[str], tuple[str, list[tuple[str, dict]], int | None]] | None = None,
     tool_response_style: str = "gemma_native",
@@ -297,6 +302,14 @@ def run_decision_waxed(
             try:
                 payload = tool_fn(**args)
                 tc = ToolCall(tool_name=name, args=args, result=payload, ok=True)
+                if on_tool_result is not None:
+                    # Caller opts into a full-payload stream (transcripts,
+                    # debugging). Failures in the callback should never kill
+                    # the decision loop.
+                    try:
+                        on_tool_result(name, dict(args), payload)
+                    except Exception as _cb_err:   # noqa: BLE001
+                        pass
             except Exception as e:
                 tc = ToolCall(
                     tool_name=name, args=args, result=None, ok=False, error=str(e),
@@ -479,12 +492,15 @@ def _append_gate_instructions(system_content: str) -> str:
     """Add a one-paragraph note about the hard-gated tool surface."""
     note = (
         "\n\n# Decision protocol (wax_museum)\n\n"
-        "Your tool menu is STATE-DEPENDENT. On turn 1 only `explore_game(play)` "
-        "is callable — pick a candidate play and examine its outcome "
-        "distribution. The response will name which probes are worthwhile. "
-        "After exploring, `probe_best_case(play)` and `probe_worst_case(play)` "
-        "become available: pick the branch you most need to resolve and run "
-        "it. Only after at least one probe has run does `commit_play` appear.\n\n"
+        "Your tool menu is STATE-DEPENDENT. On turn 1 `explore_game(play)` is "
+        "the main gated tool; `belief_trajectory()` is a free side-call "
+        "available from any state. Pick a candidate play and examine its "
+        "outcome distribution. The response will name which probes are "
+        "worthwhile. After exploring, `probe_best_case(play)` and "
+        "`probe_worst_case(play)` become available: pick the branch you most "
+        "need to resolve and run it. `ask_rule` and `belief_trajectory` remain "
+        "free side-calls at every state. Only after at least one probe has "
+        "run does `commit_play` appear.\n\n"
         "Form a plan on turn 1 (which play are you examining, what's the "
         "shape of its distribution, which branch worries you), then execute. "
         "You have plenty of context — reason explicitly."
@@ -572,7 +588,9 @@ def _selftest(seed: int = 2026) -> None:
     ], result.tool_call_sequence
 
     # Menu progression witnessed by the stub:
+    # INITIAL menu includes explore_game + belief_trajectory; probes come later.
     assert "explore_game" in calls_seen[0][0] and "probe_best_case" not in calls_seen[0][0]
+    assert "belief_trajectory" in calls_seen[0][0], calls_seen[0][0]
     assert "probe_best_case" in calls_seen[1][0] and "commit_play" not in calls_seen[1][0]
     assert "commit_play" in calls_seen[2][0]
 
