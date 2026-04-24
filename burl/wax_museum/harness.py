@@ -72,6 +72,9 @@ class WaxResult:
     tool_call_sequence: list[str] = field(default_factory=list)
     probed: bool = False
     gated_commit_leaks: int = 0   # commit_play emitted before a probe ran
+    forced_commit: bool = False   # post-cap fallback fired
+    forced_commit_reason: str = ""
+    max_turns_extensions: int = 0   # how many times budget was extended post-reject
 
 
 # --------------------------------------------------------------------------- #
@@ -203,7 +206,17 @@ def run_decision_waxed(
     committed: int | None = None
     attempted_commits: list[int] = []
 
-    for turn_idx in range(1, max_turns + 1):
+    # Phase A guard: up to 3 budget extensions of +2 turns each, fired on
+    # illegal commits (engine rejection). The engine's rejection message is
+    # already shown to the model on the next turn; the extension just gives
+    # the model room to recover before the cap trips.
+    MAX_BUDGET_EXTENSIONS = 3
+    EXTENSION_SIZE = 2
+    base_max_turns = max_turns
+
+    turn_idx = 0
+    while turn_idx < max_turns:
+        turn_idx += 1
         schemas = (
             menu_override(state) if menu_override is not None else menu_for(state)
         )
@@ -472,6 +485,20 @@ def run_decision_waxed(
                     commit_outcome = "retry_exhausted"
                 else:
                     commit_outcome = "retry"
+                # Phase A guard: extend the turn budget so the engine-rejection
+                # message has room to land on the next prompt and the model has
+                # a fresh turn to recover. Cap extensions at MAX_BUDGET_EXTENSIONS.
+                if result.max_turns_extensions < MAX_BUDGET_EXTENSIONS:
+                    max_turns += EXTENSION_SIZE
+                    result.max_turns_extensions += 1
+                    on_event({
+                        "evt": "turn_budget_extended",
+                        "turn": turn_idx,
+                        "extension": EXTENSION_SIZE,
+                        "new_max_turns": max_turns,
+                        "extensions_used": result.max_turns_extensions,
+                        "reason": "illegal_commit",
+                    })
 
         # --- If turn produced nothing at all, append the assistant message as-is
         # and nudge via the *next* user turn. After turn 1 we add the nudge to
@@ -539,8 +566,87 @@ def run_decision_waxed(
         ))
         on_event({"evt": "turn_end", "turn": turn_idx})
 
+    # Phase A guard: turn-cap exhaustion fallback. If the loop exited without
+    # a legal commit, force-commit the play with the highest E[Q] we already
+    # know about. Priority:
+    #   (1) plays Burl probed (ctx.caches) — use dist.mean.
+    #   (2) fall back to the oracle's per-legal-play E[Q] (requires oracle).
+    #   (3) last resort: first legal play (deterministic; never final=-1).
+    # ``final=-1`` is reserved for internal errors post-Phase-A.
+    if trace.final_play == -1 and committed is None:
+        forced = _pick_forced_commit(game_state, ctx, oracle)
+        if forced is not None:
+            fplay, freason = forced
+            trace.final_play = int(fplay)
+            result.forced_commit = True
+            result.forced_commit_reason = freason
+            on_event({
+                "evt": "forced_commit",
+                "domino_id": int(fplay),
+                "reason": freason,
+                "probed_plays": sorted(ctx.caches.keys()),
+            })
+
     result.n_turns = len(trace.turns)
     return result
+
+
+def _pick_forced_commit(
+    game_state: Any, ctx: Any, oracle: Any,
+) -> tuple[int, str] | None:
+    """Pick the highest-E[Q] legal play for a forced commit.
+
+    Priority: already-probed plays (use cached dist.mean). If no probes ran,
+    consult the oracle to score every legal play. If neither works, fall back
+    to the first legal play so the decision never crashes.
+    """
+    # Every legal play for "me."
+    me_abs = _current_player(game_state)
+    hand = game_state.hands[me_abs]
+    remaining = [d for d in hand if d not in game_state.played]
+    legal_plays: list[int] = []
+    for d in remaining:
+        ok, _ = engine_tools.is_legal(game_state, d)
+        if ok:
+            legal_plays.append(int(d))
+    if not legal_plays:
+        return None  # no legal play at all — caller's problem
+
+    # (1) Use probed plays if any are legal.
+    probed_legal: list[tuple[int, float]] = []
+    for p, cache in ctx.caches.items():
+        if int(p) in legal_plays:
+            probed_legal.append((int(p), float(cache.dist.mean)))
+    if probed_legal:
+        probed_legal.sort(key=lambda pv: pv[1], reverse=True)
+        best_play, best_mean = probed_legal[0]
+        return best_play, (
+            f"forced: highest-E[Q] probed play (mean={best_mean:+.2f}, "
+            f"probed={len(probed_legal)})"
+        )
+
+    # (2) No probes ran — score all legal plays via the oracle if available.
+    if oracle is not None:
+        try:
+            from burl.tools.eq_distribution import eq_outcome_distribution
+            scored: list[tuple[int, float]] = []
+            for d in legal_plays:
+                dist = eq_outcome_distribution(
+                    game_state, play=d, n_samples=10, oracle=oracle,
+                    suggest_counterfactuals=False, include_spike_drivers=False,
+                )
+                scored.append((d, float(dist.mean)))
+            scored.sort(key=lambda pv: pv[1], reverse=True)
+            best_play, best_mean = scored[0]
+            return best_play, (
+                f"forced: highest-E[Q] oracle scan (mean={best_mean:+.2f}, "
+                f"n_legal={len(legal_plays)})"
+            )
+        except Exception as e:  # noqa: BLE001
+            return legal_plays[0], f"forced: oracle scan failed ({e}); first legal"
+
+    # (3) Last resort.
+    return legal_plays[0], "forced: no probe and no oracle; first legal"
 
 
 # --------------------------------------------------------------------------- #
