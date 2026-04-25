@@ -111,9 +111,19 @@ forge/zeb/checkpoints/
 # Regenerate via burl/train/star_mlx.py or the star_iter*.py Modal launchers
 burl/adapters/
 
+# Gus checkpoints (200+ MB; regenerate via gus/train/* runs)
+gus/adapters/
+
 # bv (beads viewer) local config and caches
 .bv/
 .beads/.bv.lock
+
+# Cloudflare wrangler cache (one-off Pages publishes)
+.wrangler/
+
+# Claude Code session state and project skill drafts
+.claude/scheduled_tasks.lock
+.claude/skills/
 
 wandb/
 lem/data/
