@@ -93,6 +93,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/belief-bayes-ceiling|belief-bayes-ceiling]] — top-1 accuracy solved at 39.184%; early-game information scarcity is the cause; remaining lever is posterior shape (active)
 - [[topics/belief-co-train|belief-co-train]] — co-train falsified (KL −20%, regret worse); q-bootstrap-belief 0.655 unexpected win — belief-sampled worlds beat corpus worlds (active)
 - [[topics/past-belief-future-direction|past-belief-future-direction]] — §22: acting well under unresolvable uncertainty; meta-strategy distribution as richer student output; analytics extractable from q_per_world (active)
+- [[topics/batched-harvest-resilience|batched-harvest-resilience]] — three-part pattern: OOM classifier + quarantine ledger + SIGKILL sentinel; turns multi-hour batched harvest from one-failure-or-restart into one-failure-or-retry-six-decisions (active)
 
 ## Experiments
 
@@ -144,6 +145,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-lamir1-piopp|gus-lamir1-piopp]] — full 8-mode ladder; lamir1-piopp worse than lamir1-qleaf; Bug 6 + depletion OOD root cause; four §20 pivot options (active)
 - [[experiments/gus-q-head-augmentation|gus-q-head-augmentation]] — path (a) postmortem: aug Q_head 2.216 regret, worse than baseline; random ≠ causal depletion; path closed (active)
 - [[experiments/gus-belief-co-train|gus-belief-co-train]] — §21: Bayes ceiling 39.184% confirmed; co-train falsified; q-bootstrap-belief 0.655 best look-ahead; §22 future direction (active)
+- [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
 
 ## Decisions
 
@@ -159,6 +161,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/commit-discipline|commit-discipline]] — commit discipline (willingness to play without retrying) is load-bearing; dropping primer entirely kills it (active)
 - [[decisions/sft-max-seq-length|sft-max-seq-length]] — set SFTConfig max_seq_length=4096; TRL default 1024 was clipping thought-bearing rows (median 2054, max 4210); parallel to sft-completion-only-loss trap (active)
 - [[decisions/gemma-tool-response-shape|gemma-tool-response-shape]] — Gemma 4 Jinja chat-template silently drops role="tool" messages; fix: wrap tool response as user turn with numeric content (active)
+- [[decisions/max-tokens-2048-floor|max-tokens-2048-floor]] — batched Burl harvest minimum per-turn cap; sequential p99 1770 chars / max 2639 ≈ 900 tok; 1024 truncates ~1% of turns mid-thought (active)
 
 ## Sources
 
@@ -292,6 +295,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[sources/548d32a|548d32a]] — 2026-04-22: §21 belief ceiling; Bayes-optimal 39.184%; belief_ceiling.py diagnostic
 - [[sources/cf8ff79|cf8ff79]] — 2026-04-22: co-train falsified + q-bootstrap-belief 0.655 unexpected win; sample_worlds.py finally used
 - [[sources/94d8646|94d8646]] — 2026-04-22: §22 past belief future direction; meta-strategy distribution; no code
+- [[sources/063fcac|063fcac]] — 2026-04-24: Phase A guards on wax_museum (turn-budget extension on reject + forced-commit fallback); enables 2000-decision harvest
 
 ## Trails
 

@@ -2,7 +2,7 @@
 title: wax_museum (hard-gated HATEOAS harness)
 kind: entity
 first_seen: 54f7776
-last_updated: 1bf1885
+last_updated: 063fcac
 status: active
 ---
 
@@ -46,3 +46,16 @@ payloads into live logs. (commit message @ d858781)
 Harness takes `parse_completion` + `tool_response_style` plugins so [[gemma-4-e2b]] (native
 `assistant.tool_responses` shape) and Qwen (OpenAI-style `role="tool"`) share the same
 infrastructure. Introduced alongside the chat-template bug fix in 54f7776.
+
+## Phase A guards (063fcac)
+
+Two hardening guards on `run_decision_waxed` make multi-thousand-decision harvests safe:
+
+- **Illegal-commit budget extension.** When the engine rejects a commit, `max_turns` bumps by +2 so the rejection message has room to land. Capped at 3 extensions (max +6 turns). `max_turns_extensions` field added to the trace. On the v2 2000-decision harvest: 733 total extensions across 2000 decisions, max 3 per decision — guard fires routinely, stays bounded.
+- **Forced-commit fallback.** If the loop exits without a legal commit, pick the highest-E[Q] play already known: probed plays in `ctx.caches` first, then an oracle scan over `legal_plays`, then the first legal play. `forced_commit=True` and `forced_commit_reason` recorded on the trace. `final=-1` is reserved for internal errors only. On the v2 harvest: 219 / 2000 decisions hit the fallback (10.9%), zero illegal commits.
+
+Pre-Phase-A blunder rerun: 3/29 decisions committed illegally. Post-Phase-A and on the v2 2000-decision corpus: zero illegal commits. (commit message @ 063fcac)
+
+## 2000-decision harvest (2026-04-25)
+
+A single batched harvest run produced 2000 [[burl]] decisions on `D_required_first` for [[star]] training corpus. Key parameters: batch=6 sequences, `max_tokens=2048` (see [[max-tokens-2048-floor]]), 5h 46m wall, zero quarantine fires. Bucket distribution lands within ±2pp of the sequential 560 baseline everywhere. Yields 1062-row strict pool (52.5% of corpus) and 299-row sharpest-loss bucket (`BURL_BREAKS_CONSENSUS`). See [[burl-2000-harvest]].

@@ -944,3 +944,35 @@ Five commits (2026-04-22). Final Gus ingest. Three investigations closed; one op
 
 ---
 *Gus replay complete. 10 ingests (G1–G10), 2026-04-20 → 2026-04-22. 50 commits across student scaffolding, scaling, eval infrastructure, LAMIR-1 rollout, and interpretability. Final state: v3_consistency_10000g at 0.551 Q-pt regret; q-bootstrap-belief 0.655 best look-ahead; belief at Bayes ceiling 39.2%; direct π_me is the deployable player.*
+
+---
+
+## [2026-04-25 | 063fcac | Burl 2000-decision harvest — Phase A guards land, v1 truncation bug caught, v2 ships clean]
+
+One landed commit (`063fcac` Phase A guards) plus an in-session research milestone: the 2000-decision Burl batched-MLX harvest that the project has been working toward through the Burl iter-0 → iter-5 → wax_museum chain. Two corpus runs (v1 contaminated, v2 clean), one decision page locked in, one engineering pattern documented.
+
+**Touched pages:** [[entities/burl]] [[entities/wax-museum]] [[topics/star]] [[topics/batched-harvest-resilience]] [[decisions/max-tokens-2048-floor]] [[experiments/burl-2000-harvest]] [[sources/063fcac]]
+
+**Added:** 4 pages — 1 source digest (063fcac), 1 experiment, 1 topic, 1 decision.
+
+**Updated:**
+- [[entities/burl]] — Phase A guards section + 2000-decision harvest section + new open question on McNemar parity test.
+- [[entities/wax-museum]] — Phase A guards section + 2000-decision harvest section.
+- [[topics/star]] — Burl 2000-decision corpus ready section + recipe lessons from prior collapses.
+
+**Frontier shift:**
+
+- **Phase A guards land (063fcac).** Two safety nets on [[wax-museum]]'s `run_decision_waxed`: (1) turn-budget extension on engine reject (max +6 turns, capped at 3 extensions); (2) forced-commit fallback on turn-cap (highest-E[Q] from probed plays → oracle scan → first legal). `max_turns_extensions` and `forced_commit*` fields added to the trace. Pre-Phase-A blunder rerun: 3/29 decisions committed illegally. Post-Phase-A on the v2 2000-decision harvest: **zero illegal commits**, 219 / 2000 forced-commits, 733 budget extensions across the run (max 3 per decision — guards fire routinely, stay bounded).
+- **v1 contamination — turn-1 truncation bug.** First batched 2000-decision attempt (`harvest_batched_20260425_031033`, `max_tokens=1024`) SIGKILLed at 1398/2000. Bucket parity vs sequential 560 looked plausible at distribution level (within ±5pp everywhere). Three parallel investigation agents reproduced the actual data: **11.4% of v1 decisions had `belief_called_turns` not starting at turn 1** because the model had exhausted its 1024-token budget mid-thinking on turn 1 and never reached [[belief-trajectory]]. Per-decision audit on the sequential overlap: **43% of decisions had moved between buckets**. Aggregate parity was a false pass — distribution-level errors cancelled. **Methodological lesson: distribution-level parity gates can hide systematic per-decision regressions when the regression has multiple compensating directions.** The lesson generalizes to any future "matches in aggregate" claim about model behavior.
+- **max_tokens=2048 locked as the floor (decision).** Sequential's p99 turn was 1770 chars (~600 tok); max 2639 chars (~900 tok). 1024 was below the natural distribution. 2048 covers it with comfortable margin and sequential's max with 9× headroom. 4096+ unnecessary; KV-cache cost not justified by the data. See [[decisions/max-tokens-2048-floor]].
+- **v2 clean run (2026-04-25 13:15)**: 5h 46m wall, batch=6, `max_tokens=2048`, `D_required_first` variant, fresh seeds from `gus/data/corpus_train_chunk_0-99.pt`. **Zero quarantine fires** across 333 batches. **0% truncation-at-cap** vs v1's 1.2%. **0/2000 belief-not-starting-turn-1** vs v1's 11.4%. Bucket distribution within ±2pp of sequential 560 everywhere. The −2.4pp `BURL_BREAKS_CONSENSUS` decline (17.3% → 14.9%) is directionally correct (truncation was inflating that bucket); residual delta is a candidate for a paired McNemar test on the 560 overlap.
+- **Corpus ready for STaR run-3.** Strict pool: 1062 rows (52.5% of corpus, 3.6× the sequential 294). Non-trivial gold: 202 rows (excluding `ALL_AGREE_CORRECT`), 3.9× the prior 52. Sharpest [[r1-rationalization]] target: 299 rows of `BURL_BREAKS_CONSENSUS` (3.1× the prior 97). See [[experiments/burl-2000-harvest]].
+- **Engineering pattern: per-wave OOM resilience layer** ([[topics/batched-harvest-resilience]]). OOM classifier (`metal::malloc`, `Resource limit`, `Resource exhausted`, `broadcast_shapes`, `out of memory`, `MemoryError`) → quarantine.jsonl ledger; SIGKILL recovery via `wave_in_progress.txt` sentinel cleared after each wave; `--rerun-quarantined` retry pass. Smoke-tested with `--inject-oom-at-wave N` (4 decisions resolved on retry). Dead code on the v2 success path — its existence is the entire point. Turns multi-hour batched harvest from "one failure or restart" into "one failure or retry six decisions."
+
+**Questions opened:**
+
+- Does v2's residual −2.4pp gap on `BURL_BREAKS_CONSENSUS` (vs sequential 560) reflect real batched-mode policy drift or sampling noise? A paired McNemar test on the 560 overlap (paired by aligned `(seed, declaration, narrator_seat, legal_plays)` tuples) would settle it; not yet run.
+
+**Questions resolved:** none.
+
+**Side artifact:** `scratch/belief_trajectory_rollout/HARVEST_REVIEW.html` (engineer audience) and `HARVEST_REVIEW_FAMILY.html` (intelligent-but-not-ML-engineer audience), bundled to https://burl-42-review.pages.dev as a one-off Cloudflare Pages publish for the 42-playing family. Both pages are static, regenerable from `corpus_index.jsonl` + `trace_summary.json` files via `build_review.py` / `build_review_family.py`.

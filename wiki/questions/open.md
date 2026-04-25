@@ -60,4 +60,8 @@ Format:
   - Raised: `54f7776` ([[sources/54f7776]])
   - Context: The original 0/145 calls finding was a chat-template confound — tool responses were silently dropped. Whether the model calls conditional_outcome in a correctly wired environment is now genuinely unknown.
 
+- **Q:** Does v2's residual −2.4pp gap on `BURL_BREAKS_CONSENSUS` (vs sequential 560) reflect real batched-mode policy drift or sampling noise?
+  - Raised: `063fcac` ([[sources/063fcac]])
+  - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[experiments/burl-2000-harvest]].
+
 

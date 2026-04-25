@@ -2,7 +2,7 @@
 title: Burl — Tool-using Texas 42 agent
 kind: entity
 first_seen: 8d26e0d
-last_updated: 1bf1885
+last_updated: 063fcac
 status: active
 ---
 
@@ -451,6 +451,31 @@ belief source. (commit message @ d858781)
 belief + value). Its belief head now powers [[belief-trajectory]]. Gus's own replay trail
 begins in a later session. (commit message @ d858781)
 
+### Phase A guards + 2000-decision harvest (2026-04-24/25, commit 063fcac)
+
+The next-step that 1bf1885 set up: harvest a STaR-quality corpus at 2000 decisions on the winning `D_required_first` variant. Two prerequisites landed:
+
+**Phase A guards (063fcac)**: turn-budget extension on commit reject + forced-commit fallback on turn-cap, both wired into [[wax-museum]]'s `run_decision_waxed`. Pre-Phase-A blunder rerun had 3/29 decisions committing illegally; post-Phase-A and on the full 2000-decision harvest: zero illegal commits. See [[wax-museum]] "Phase A guards" section.
+
+**Batched 2000-decision harvest (v2, finished 2026-04-25 13:15)**: 5h 46m wall, batch=6, `max_tokens=2048` (see [[max-tokens-2048-floor]]), zero quarantine fires across 333 batches. Output at `scratch/belief_trajectory_rollout/harvest_batched_20260425_072910/` (gitignored). See [[burl-2000-harvest]].
+
+The harvest replaced an earlier v1 run that SIGKILLed at 1398/2000 and was contaminated by a turn-1 truncation bug at `max_tokens=1024`: 11.4% of v1 decisions had `belief_called_turns` not starting at turn 1 because the model had exhausted its budget mid-thinking-block on turn 1 and never reached [[belief-trajectory]]. v2 is at 0.0%. Per-decision audit on the overlap between v1 and the sequential 560 found 43% of decisions had moved between buckets — bucket-parity at the distribution level had been a false pass. **Methodological lesson: distribution-level parity gates can hide systematic per-decision regressions when the regression has multiple compensating directions.**
+
+Bucket distribution on v2 (n=2000):
+
+| Class | n | % |
+|---|---:|---:|
+| Strict pool (Burl matches oracle) | 1062 | 53.1 |
+| → non-trivial gold (excl. ALL_AGREE_CORRECT) | 202 | 10.1 |
+| BURL_BREAKS_CONSENSUS (sharpest loss / [[r1-rationalization]] target) | 299 | 14.9 |
+| All other loss buckets | 420 | 21.0 |
+| FORCED_COMMIT (guard fired) | 219 | 10.9 |
+| ILLEGAL | 0 | 0.0 |
+
+Strict pool is 3.6× the sequential pilot's 294 rows; non-trivial gold is 3.9× the 52 rows that the prior 71-row STaR run had collapsed on. [[star]] run-3 is the planned next step on this corpus, with rank=8 + lr=3e-5 + val-loss + early-stopping per the conservative-hyperparam lesson from the prior collapse.
+
+A side artifact: `scratch/belief_trajectory_rollout/harvest_batched.py` now hosts the per-wave OOM-resilience layer (quarantine ledger + SIGKILL sentinel) — see [[batched-harvest-resilience]]. Dead code on the success path; existence is the entire point.
+
 ## Open questions at this frontier
 
 - Can Gemma 4 E2B tool-use reliably at 2B scale? (Move 3 answers cheaply.)
@@ -458,3 +483,4 @@ begins in a later session. (commit message @ d858781)
 - Does tool-mediated reasoning transfer to tool-less reasoning (ablation)?
 - Does `conditional_outcome` leak evaluative signal through the back door?
 - Is 3M-parameter Zeb strong enough, or does Burl need more capacity?
+- Does v2's residual −2.4pp gap on `BURL_BREAKS_CONSENSUS` (vs sequential 560) reflect real batched-mode policy drift or sampling noise? A paired McNemar test on the 560 overlap would settle it.

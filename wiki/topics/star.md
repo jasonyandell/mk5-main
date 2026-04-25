@@ -2,7 +2,7 @@
 title: STaR — Self-Taught Reasoner
 kind: topic
 first_seen: a8bccfa
-last_updated: 789e14d
+last_updated: 063fcac
 status: active
 ---
 
@@ -150,6 +150,22 @@ Peak 48% at iter-2 is a new high water mark (previously 42% on v1, 46% on Kerry)
 iter-0 did not improve on Layer 1; it reproduced Layer 1's pathology in the adapter weights. Root cause: Phase 2's K1-win corpus was harvested from the primer+framing base, which was already `eq_outcome_distribution`-shy and `is_legal`-heavy. STaR baked in those habits rather than correcting them (789e14d).
 
 **Implication:** STaR on Burl needs a corpus where the WINNING traces are tool-use-broad. If the rollout policy itself is tool-use-narrow, the K1 wins will be narrow too — and STaR amplifies what wins. Planned fix: strip the primer, keep the framing block, re-harvest with the lighter prompt (789e14d). See [[tool-orchestration]] "Primer trade-off" section.
+
+### Burl 2000-decision corpus ready (2026-04-25, post-063fcac)
+
+The corpus that the planned re-harvest produces is now in hand. See [[burl-2000-harvest]]. 2000 decisions of [[burl]] on the `D_required_first` variant of [[wax-museum]] — light prompt, [[belief-trajectory]] required first, post-chat-template-fix tool responses visible. Bucket-classified against K=200 belief-sampled E[Q] (see [[lamir1]]):
+
+- **Strict pool: 1062 rows** (Burl matched the oracle). Of those, 202 are non-trivial (excluding `ALL_AGREE_CORRECT`, where π already had the right answer).
+- **Sharpest [[r1-rationalization]] target: 299 rows** of `BURL_BREAKS_CONSENSUS` — π and Q-mean both agreed on the oracle's answer; Burl alone deviated.
+- 219 forced-commit rows (excluded from regret math), 0 illegal.
+
+Recipe lessons from prior Burl STaR runs (iter-0 through iter-5 + the 71-row collapse):
+
+1. **No tiny corpora.** Filter-only on 71 rows collapsed to loss 0.10 in 100 iterations and learned to memorize templated tail content (0/3 eval). 1062 strict-pool rows is the minimum scale that the next attempt should not collapse on.
+2. **Strip memorizable rows.** `--min-assistant-chars 300` filter on `build_filtered_corpus.py` strips ~40% of templated short rows uniformly across all buckets — they were row-decomposition noise (bare `<|tool_call>...<tool_call|>` strings around 50 chars), not signal. Zero gold-bucket decisions are lost at the 300 cutoff.
+3. **Conservative hyperparams.** rank=8 (not 16), lr=3e-5 (not 1e-4), 1 epoch, val-loss + early-stopping. The val-loss + early-stop wiring already lives in `burl/train/star_mlx.py` from the prior session.
+
+The harvest scaffold's per-wave resilience layer (see [[batched-harvest-resilience]]) is what made the 5h 46m run survive without intervention; future iteration on prompt variants or scaled corpora is now a weekly cadence rather than quarterly.
 
 ## Scratchpad validation attempt (retired at this frontier)
 

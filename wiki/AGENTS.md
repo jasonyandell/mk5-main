@@ -63,8 +63,11 @@ status: active | retired | superseded
 - 3rd person, declarative. No "we did X." No "I believe Y."
 - Terse. Wiki pages are reference, not essays.
 - Every named entity or concept is a `[[backlink]]` on first mention in a section.
-- **Backlink style: prefer bare** (`[[star]]`, `[[backwards-curriculum]]`, `[[gemma-4-e2b]]`). Obsidian's fuzzy resolution finds the file regardless of directory. This keeps page bodies readable.
-- Use the fully-qualified form `[[path/name|alias]]` only in `index.md`, in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
+- **Backlink style: prefer bare in body text.** Obsidian's fuzzy resolution finds the file regardless of directory, and bare links keep pages readable.
+  - ✅ Body: `See [[burl-2000-harvest]]; tuned per [[max-tokens-2048-floor]]; resilient via [[batched-harvest-resilience]].`
+  - ❌ Body: `See [[experiments/burl-2000-harvest]]; tuned per [[decisions/max-tokens-2048-floor]]; resilient via [[topics/batched-harvest-resilience]].`
+  - Use the fully-qualified form `[[path/name|alias]]` **only** in `index.md`, in log entries that need to disambiguate cross-kind pages, and when two pages share the same bare name (in which case rename one).
+  - When you create a new page, link to it bare from every page that mentions it — and audit your existing pages for stale qualified links to it.
 - Cite sources inline: `([lem/OVERVIEW.md @ a8bccfa](../sources/a8bccfa.md))`.
 - Headings: `##` for major sections, `###` for subsections. No `#` — the title is in frontmatter.
 
@@ -120,7 +123,7 @@ For one commit you just made or are ingesting:
 4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
 5. **Update `index.md`** — add new pages to the catalog, update hooks on pages whose gist changed.
 6. **Append to `log.md`** — one entry in the format below.
-7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop.
+7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop. Skim the touched pages once for `[[kind/name]]` patterns in body text — those should almost always be bare `[[name]]` (see Backlink style above).
 
 #### Multi-commit replay path
 
