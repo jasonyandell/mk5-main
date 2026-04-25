@@ -1,0 +1,27 @@
+---
+title: LS-Mixture (verbosity blender)
+kind: topic
+first_seen: 3414507
+last_updated: 3414507
+status: active
+---
+
+## Overview
+
+LS-Mixture is a corpus construction technique that blends concise and verbose traces in a [[star]] training corpus. For [[burl]], it addresses the problem that trimming the rules primer (iter-1) produced traces with 3× larger `<|channel>thought` bodies — useful at inference time but potentially harmful as training signal if the model learns to always ramble (3414507).
+
+## Method
+
+The blender shortens long `<|channel>thought` blocks in existing traces while preserving every `tool_call`/`tool_response` envelope and the terminal `commit_play`. The blend ratio is controlled by `target_short_ratio` (default 0.33 — the short cohort is one-third of the corpus). The 0.33 value is nudged above the LS-Mixture paper's reported 25-50% band because Burl's dominant failure mode is verbosity, not under-reasoning (3414507).
+
+Preview corpus from iter-0 and iter-1 rows: 118 total (79 long + 39 short). Short cohort mean: 767 chars; long cohort mean: 5,078 chars — an 85% reduction on shortened rows, beating the paper's reported 47.6% (3414507).
+
+## Key finding from training
+
+Gemma 4 E2B's `chat_template.jinja` strips `<|channel>thought` blocks before tokenization. SFTTrainer calls `apply_chat_template` per row, so the trainer never sees the thought prose. This means the verbosity difference between long and short traces is invisible at training time. The blend's actual benefit is: (1) 118 vs 79 rows for commit-discipline coverage, and (2) data-augmentation regularization (same tool-call chain, two framings) (eebcae5).
+
+This also explains why iter-0 and iter-1 still ramble at inference: rambly thoughts are base-model reflex, not trained-in behavior (eebcae5).
+
+## Links
+
+[[burl]] [[star]] [[r1-rationalization]]

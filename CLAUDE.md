@@ -80,3 +80,7 @@ Web implementation of Texas 42 dominoes game with pure functional architecture:
 See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architecture, setup, and commands.
 
 Always use `python -u` (unbuffered) so logs stream in real-time
+
+## Replay wiki
+
+A frontier-style wiki of LEM / Burl / Gus history lives in `wiki/`. Start at `wiki/AGENTS.md` for schema + conventions, `wiki/index.md` for the catalog, `wiki/log.md` for the chronological trail. Sources are immutable (`wiki/sources/<commit>.md`); everything else (`entities/`, `topics/`, `experiments/`, `decisions/`, `questions/`) compiles and may be revised in place as understanding advances. New commits extend the wiki via replay: one scribe per dir, indexer sweeps after.
