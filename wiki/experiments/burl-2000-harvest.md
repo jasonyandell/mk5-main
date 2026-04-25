@@ -2,7 +2,7 @@
 title: Burl 2000-decision batched harvest (D_required_first)
 kind: experiment
 first_seen: 063fcac
-last_updated: 063fcac
+last_updated: 02d9096
 status: active
 ---
 

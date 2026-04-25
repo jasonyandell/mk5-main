@@ -2,7 +2,7 @@
 title: STaR — Self-Taught Reasoner
 kind: topic
 first_seen: a8bccfa
-last_updated: 063fcac
+last_updated: 02d9096
 status: active
 ---
 
