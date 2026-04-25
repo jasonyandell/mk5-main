@@ -986,3 +986,75 @@ Noted as an option for future work. Not blocking anything. No code
 written. Could be next-session or next-month or never — it's in the
 log now so it doesn't get lost.
 
+## 23. Belief-sampled Q-mean is a viable fallback signal, not a replacement
+
+Follow-up archaeology on the untracked `gus/eval/eval_lamir1.py` surfaced a
+result that was easy to miss: the script's verdict only evaluates
+`lamir1-argmax`, while the `lamir1-K` mode can beat direct π on regret.
+
+On `v3_consistency_10000g.pt` over `corpus_eval_20.pt`:
+
+| policy | mean regret | bot-match |
+|---|---:|---:|
+| direct π_me | 0.551 | 76.1% |
+| Q-mean, K=100, seed 42 | 0.505 | 75.5% |
+| Q-mean, K=200, corrected RNG, seed sweep mean | 0.506 | ~75.6% |
+| Q-mean, K=500, corrected RNG, seed 42 | 0.500 | 75.7% |
+
+The important slice is the tail:
+
+| slice | n | direct regret | Q-mean K=200 regret |
+|---|---:|---:|---:|
+| direct blunders >=8 | 8 | 11.42 | 5.94 mean (5.28-8.55 range) |
+| direct big misses >=4 | 29 | 7.11 | 3.87 mean (3.64-4.49 range) |
+
+Pure Q-mean is not a clean replacement. It sometimes damages easy direct-π
+wins. But it is a strong second opinion: on disagreements, when Q-mean is
+right it often fixes a large mistake, and when it is wrong it usually breaks a
+near-perfect direct pick.
+
+The best exploratory shape was a tiny router:
+
+```text
+use direct π by default
+if direct π disagrees with Q-mean and pi_peak < 0.5, use Q-mean
+```
+
+After fixing `sample_worlds()` so the caller's RNG state advances across
+batches, the router still holds up across five sampled-world RNG seeds at
+K=200: it routes only ~6.25% of decisions and lands at 0.424 mean regret
+(range 0.405-0.460), versus 0.551 for direct π.
+
+A train-to-eval learned router makes the result more interesting. Trained on
+`corpus_train_100.pt` with target "direct blunder fixed by Q-mean", then
+evaluated on `corpus_eval_20.pt` at K=100 across five sampled-world seeds:
+
+| policy | regret | blunders/seed | big misses/seed | routed |
+|---|---:|---:|---:|---:|
+| direct π_me | 0.551 | 8.00 | 29.00 | - |
+| pure Q-mean | 0.489 | 7.60 | 22.60 | - |
+| learned route top 5% | 0.434 | 4.40 | 20.80 | 5.00% |
+| learned route top 7% | 0.440 | 4.20 | 21.20 | 6.96% |
+
+The 5% learned cutoff introduced zero new blunders across the five seeds. The
+7% cutoff fixed four direct blunders per seed on average and introduced only
+0.2 new blunders/seed.
+
+There is also more headroom in the sampled-world family. Mean-Q is not the only
+aggregator: quantiles, lower-confidence bounds, and per-world argmax votes
+sometimes fix a different direct blunder. An oracle over direct π plus these
+candidate aggregators gets to ~2.6 blunders/seed at K=100 and K=200, but the
+first learned multi-candidate selector still bottoms out around 4 blunders.
+So candidate generation is not exhausted; candidate selection is now the hard
+part.
+
+The hand gate is eval-tuned and the learned result still measures only 8 eval
+blunders, so this needs larger validation before promotion. But it changes the
+working conclusion:
+
+> Direct π remains the fast path, but belief-sampled Q-mean is a useful
+> fallback signal for uncertain direct-π decisions and materially cuts the
+> blunder tail. No oracle fallback required for this first version.
+
+Detailed writeup and reproduction notes:
+`gus/analysis/qmean_router_findings.md`.

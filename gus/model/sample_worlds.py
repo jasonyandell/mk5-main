@@ -114,10 +114,19 @@ def sample_worlds(
     out = torch.zeros(B, K, N_DOMINOES, N_SEATS, dtype=torch.float32, device=device)
 
     # Inner loop runs on CPU regardless of input device; D=28 so this is fast.
-    # Derive a CPU seed from rng.initial_seed() so the caller's rng state
-    # advances deterministically without requiring a same-device randint.
+    # Draw a fresh CPU seed from the caller's generator so repeated calls advance
+    # the caller's RNG state instead of replaying the same random stream for
+    # every batch.
     cpu_rng = torch.Generator(device="cpu")
-    cpu_rng.manual_seed(rng.initial_seed() & 0xFFFFFFFF)
+    rng_device = getattr(rng, "device", torch.device("cpu"))
+    seed_t = torch.randint(
+        0,
+        2**31 - 1,
+        (1,),
+        generator=rng,
+        device=rng_device,
+    )
+    cpu_rng.manual_seed(int(seed_t.item()))
 
     probs_cpu = probs.cpu()
     mask_cpu = belief_mask.cpu()
