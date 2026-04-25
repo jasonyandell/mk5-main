@@ -26,7 +26,7 @@ import json
 import math
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -93,11 +93,35 @@ class PreserveThoughtsDataset:
         return (tokens, 0)
 
 
+class _EarlyStopSignal(Exception):
+    """Raised from the val-loss callback to abort the train loop early.
+
+    Caught by ``train_mlx`` so the adapter is still saved (with the
+    best-checkpoint snapshot if one was captured) and ``early_stop`` is
+    recorded in ``adapter_config.json``.
+    """
+
+
 @dataclass
 class _TrajectoryCollector:
-    """mlx-lm TrainingCallback that accumulates per-iter training loss."""
+    """mlx-lm TrainingCallback that accumulates per-iter training loss
+    and (optionally) tracks val loss + early-stop + best-checkpoint snapshot.
+    """
 
     losses: list[dict[str, float]]
+    val_losses: list[dict[str, float]] = field(default_factory=list)
+    best_val_loss: float = math.inf
+    best_val_iter: int = -1
+    best_params: dict | None = None
+    over_threshold_streak: int = 0
+
+    # When set, the callback also snapshots model.trainable_parameters at
+    # each new best-val-loss and aborts via _EarlyStopSignal once val_loss
+    # has stayed > best_val_loss * early_stop_val_rise for
+    # early_stop_patience consecutive evals.
+    model: Any | None = None
+    early_stop_val_rise: float | None = None
+    early_stop_patience: int = 2
 
     def on_train_loss_report(self, train_info: dict) -> None:
         self.losses.append(
@@ -109,7 +133,45 @@ class _TrajectoryCollector:
         )
 
     def on_val_loss_report(self, val_info: dict) -> None:
-        pass
+        # mlx-lm passes iteration-1 in val_info; use as-is so the val and
+        # train series share the same iteration axis.
+        step = int(val_info["iteration"])
+        val_loss = float(val_info["val_loss"])
+        self.val_losses.append({"step": step, "val_loss": val_loss})
+
+        if val_loss < self.best_val_loss:
+            self.best_val_loss = val_loss
+            self.best_val_iter = step
+            self.over_threshold_streak = 0
+            if self.model is not None:
+                # Snapshot trainable params via tree_flatten so the dict is
+                # stable and serializable with mx.save_safetensors later.
+                from mlx.utils import tree_flatten
+
+                self.best_params = dict(tree_flatten(self.model.trainable_parameters()))
+            return
+
+        # val_loss did not improve; check early-stop trigger.
+        if self.early_stop_val_rise is None:
+            return
+        threshold = self.best_val_loss * float(self.early_stop_val_rise)
+        if val_loss > threshold:
+            self.over_threshold_streak += 1
+            print(
+                f"[early-stop] val {val_loss:.4f} > {threshold:.4f} "
+                f"(best={self.best_val_loss:.4f} @ iter {self.best_val_iter}); "
+                f"streak={self.over_threshold_streak}/{self.early_stop_patience}",
+                flush=True,
+            )
+            if self.over_threshold_streak >= self.early_stop_patience:
+                raise _EarlyStopSignal(
+                    f"val_loss > {self.early_stop_val_rise}x best for "
+                    f"{self.over_threshold_streak} consecutive evals; "
+                    f"best={self.best_val_loss:.4f} @ iter {self.best_val_iter}"
+                )
+        else:
+            # Streak only counts consecutive evals above threshold.
+            self.over_threshold_streak = 0
 
 
 def _load_corpus(path: Path) -> list[dict[str, Any]]:
@@ -188,6 +250,12 @@ def train_mlx(
     preserve_thoughts: bool = False,
     max_steps: int = -1,
     seed: int = 42,
+    max_seq_length: int = 4096,
+    val_corpus_path: Path | None = None,
+    steps_per_eval: int = 50,
+    val_batches: int = -1,
+    early_stop_val_rise: float | None = None,
+    early_stop_patience: int = 2,
 ) -> dict:
     """Train a LoRA adapter on a JSONL chat corpus."""
     import mlx.core as mx
@@ -216,6 +284,16 @@ def train_mlx(
     raw_tok = getattr(tokenizer, "_tokenizer", tokenizer)
     dataset = _build_dataset(rows, raw_tok, preserve_thoughts)
 
+    val_rows: list[dict[str, Any]] = []
+    val_dataset_built = None
+    if val_corpus_path is not None:
+        val_corpus_path = Path(val_corpus_path)
+        val_rows = _load_corpus(val_corpus_path)
+        if not val_rows:
+            raise ValueError(f"val corpus is empty: {val_corpus_path}")
+        print(f"[data] {len(val_rows)} val rows from {val_corpus_path}", flush=True)
+        val_dataset_built = _build_dataset(val_rows, raw_tok, preserve_thoughts)
+
     effective_batch = min(per_device_batch_size, len(dataset))
     if effective_batch < per_device_batch_size:
         print(
@@ -240,33 +318,69 @@ def train_mlx(
     optimizer = _build_optimizer(lr=lr, total_iters=total_iters)
 
     adapter_file = adapter_out_dir / "adapters.safetensors"
+
+    # Auto-size val_batches: cover the val set in one pass, capped at 50 so
+    # an eval call doesn't dominate wall time on a large val_dataset.
+    if val_dataset_built is not None:
+        if val_batches <= 0:
+            val_batches = max(1, min(50, math.ceil(len(val_rows) / max(1, effective_batch))))
+        eval_steps = steps_per_eval
+        print(
+            f"[val] val_batches={val_batches} steps_per_eval={eval_steps} "
+            f"early_stop_val_rise={early_stop_val_rise} patience={early_stop_patience}",
+            flush=True,
+        )
+    else:
+        val_batches = 0
+        eval_steps = 10**9
+
     training_args = TrainingArgs(
         batch_size=effective_batch,
         iters=total_iters,
-        val_batches=0,
+        val_batches=val_batches,
         steps_per_report=1,
-        steps_per_eval=10**9,
+        steps_per_eval=eval_steps,
         steps_per_save=10**9,
-        max_seq_length=4096,
+        max_seq_length=max_seq_length,
         adapter_file=str(adapter_file),
         grad_checkpoint=True,
         grad_accumulation_steps=gradient_accumulation_steps,
     )
 
-    callback = _TrajectoryCollector(losses=[])
-    t_train = time.time()
-    train(
-        model=model,
-        optimizer=optimizer,
-        train_dataset=CacheDataset(dataset),
-        val_dataset=None,
-        args=training_args,
-        training_callback=callback,
+    callback = _TrajectoryCollector(
+        losses=[],
+        model=model if early_stop_val_rise is not None else None,
+        early_stop_val_rise=early_stop_val_rise,
+        early_stop_patience=early_stop_patience,
     )
+    early_stopped = False
+    t_train = time.time()
+    try:
+        train(
+            model=model,
+            optimizer=optimizer,
+            train_dataset=CacheDataset(dataset),
+            val_dataset=CacheDataset(val_dataset_built) if val_dataset_built is not None else None,
+            args=training_args,
+            training_callback=callback,
+        )
+    except _EarlyStopSignal as exc:
+        early_stopped = True
+        print(f"[early-stop] {exc}", flush=True)
     elapsed = time.time() - t_train
 
-    # Defensive final save (steps_per_save semantics vary across mlx-lm versions).
-    adapter_weights = dict(tree_flatten(model.trainable_parameters()))
+    # Save best-checkpoint snapshot if one was captured (early-stop with
+    # val tracking); otherwise save current weights. Defensive final save:
+    # steps_per_save semantics vary across mlx-lm versions.
+    if callback.best_params is not None:
+        print(
+            f"[save] writing best-val checkpoint (iter {callback.best_val_iter}, "
+            f"val_loss {callback.best_val_loss:.4f})",
+            flush=True,
+        )
+        adapter_weights = callback.best_params
+    else:
+        adapter_weights = dict(tree_flatten(model.trainable_parameters()))
     mx.save_safetensors(str(adapter_file), adapter_weights)
 
     # `num_layers` + `lora_parameters` are what load_adapters actually reads.
@@ -287,22 +401,38 @@ def train_mlx(
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "model": model_repo,
         "n_train_rows": len(rows),
+        "n_val_rows": len(val_rows),
         "seed": seed,
+        "early_stop": early_stopped,
+        "best_val_iter": callback.best_val_iter,
+        "best_val_loss": (
+            callback.best_val_loss if math.isfinite(callback.best_val_loss) else None
+        ),
+        "early_stop_val_rise": early_stop_val_rise,
+        "early_stop_patience": early_stop_patience,
     }
     with open(adapter_out_dir / "adapter_config.json", "w") as fid:
         json.dump(adapter_config, fid, indent=2)
 
     loss_trajectory = callback.losses
+    val_loss_trajectory = callback.val_losses
     final_loss = loss_trajectory[-1]["loss"] if loss_trajectory else math.nan
     n_steps = int(total_iters // gradient_accumulation_steps)
 
     result = {
         "adapter_path": str(adapter_out_dir),
         "n_rows": len(rows),
+        "n_val_rows": len(val_rows),
         "n_steps": n_steps,
         "n_iters": total_iters,
         "final_loss": final_loss,
         "loss_trajectory": loss_trajectory,
+        "val_loss_trajectory": val_loss_trajectory,
+        "early_stop": early_stopped,
+        "best_val_iter": callback.best_val_iter,
+        "best_val_loss": (
+            callback.best_val_loss if math.isfinite(callback.best_val_loss) else None
+        ),
         "train_seconds": round(elapsed, 1),
     }
     print(
@@ -329,6 +459,18 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--preserve-thoughts", action="store_true")
     p.add_argument("--max-steps", type=int, default=-1)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--max-seq-length", type=int, default=4096)
+    p.add_argument("--val-corpus", type=Path, default=None,
+                   help="Optional JSONL val corpus; enables periodic eval.")
+    p.add_argument("--steps-per-eval", type=int, default=50,
+                   help="Iters between val-loss evals (in micro-steps).")
+    p.add_argument("--val-batches", type=int, default=-1,
+                   help="Batches per eval; -1 = auto-cover val set, capped 50.")
+    p.add_argument("--early-stop-val-rise", type=float, default=None,
+                   help="Abort when val_loss > this multiple of best (e.g. 1.3). "
+                        "Off by default.")
+    p.add_argument("--early-stop-patience", type=int, default=2,
+                   help="Consecutive evals above threshold required to abort.")
     p.add_argument("--smoke", action="store_true", help="In-memory 5-row smoke test.")
     return p
 
@@ -412,8 +554,15 @@ def main(argv: list[str] | None = None) -> int:
         preserve_thoughts=args.preserve_thoughts,
         max_steps=args.max_steps,
         seed=args.seed,
+        max_seq_length=args.max_seq_length,
+        val_corpus_path=args.val_corpus,
+        steps_per_eval=args.steps_per_eval,
+        val_batches=args.val_batches,
+        early_stop_val_rise=args.early_stop_val_rise,
+        early_stop_patience=args.early_stop_patience,
     )
-    summary = {k: v for k, v in result.items() if k != "loss_trajectory"}
+    summary = {k: v for k, v in result.items()
+               if k not in {"loss_trajectory", "val_loss_trajectory"}}
     print(json.dumps(summary, indent=2))
     return 0
 

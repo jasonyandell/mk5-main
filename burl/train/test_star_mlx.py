@@ -23,6 +23,8 @@ import pytest
 from burl.train.star_mlx import (
     GEMMA4_TURN_TERMINATOR,
     PreserveThoughtsDataset,
+    _EarlyStopSignal,
+    _TrajectoryCollector,
 )
 
 MODEL_ID = "mlx-community/gemma-4-e2b-it-bf16"
@@ -242,6 +244,93 @@ def test_default_chat_dataset_strips_thoughts(tokenizer):
 
 
 # --- Dunder methods pin (mlx-lm iterate_batches / CacheDataset need these) --
+
+
+# --- Val-loss callback: best-tracking + early-stop ------------------------
+
+
+def test_trajectory_collector_no_val_corpus_no_op():
+    """Without --val-corpus the callback's val-tracking machinery is inert."""
+    cb = _TrajectoryCollector(losses=[])
+    cb.on_train_loss_report(
+        {"iteration": 1, "train_loss": 1.5, "learning_rate": 1e-4}
+    )
+    assert len(cb.losses) == 1 and cb.losses[0]["loss"] == 1.5
+    assert cb.val_losses == []
+    assert cb.best_val_iter == -1
+    assert cb.best_params is None
+
+
+def test_trajectory_collector_tracks_best_val_loss():
+    """Without early-stop enabled, the collector still records the best
+    val loss + iter so adapter_config.json can report it."""
+    cb = _TrajectoryCollector(losses=[])
+    cb.on_val_loss_report({"iteration": 50, "val_loss": 1.2})
+    cb.on_val_loss_report({"iteration": 100, "val_loss": 0.9})
+    cb.on_val_loss_report({"iteration": 150, "val_loss": 1.1})  # rose; no abort
+    cb.on_val_loss_report({"iteration": 200, "val_loss": 0.8})  # new best
+    assert [v["step"] for v in cb.val_losses] == [50, 100, 150, 200]
+    assert cb.best_val_loss == 0.8
+    assert cb.best_val_iter == 200
+
+
+def test_trajectory_collector_early_stop_after_patience_breaches():
+    """Aborts once val_loss has stayed > rise * best for `patience`
+    consecutive evals. Streak resets on any improvement or any eval below
+    the threshold."""
+    cb = _TrajectoryCollector(
+        losses=[], early_stop_val_rise=1.3, early_stop_patience=2
+    )
+    # Establish baseline best=1.0 at iter 50.
+    cb.on_val_loss_report({"iteration": 50, "val_loss": 1.0})
+    # Eval 2: 1.31 > 1.0 * 1.3 = 1.3 → streak 1, no abort yet.
+    cb.on_val_loss_report({"iteration": 100, "val_loss": 1.31})
+    assert cb.over_threshold_streak == 1
+    # Eval 3: 1.40 > 1.3 → streak 2, abort.
+    with pytest.raises(_EarlyStopSignal, match="best=1.0000"):
+        cb.on_val_loss_report({"iteration": 150, "val_loss": 1.40})
+    assert cb.best_val_iter == 50
+
+
+def test_trajectory_collector_streak_resets_on_improvement():
+    cb = _TrajectoryCollector(
+        losses=[], early_stop_val_rise=1.3, early_stop_patience=2
+    )
+    cb.on_val_loss_report({"iteration": 50, "val_loss": 1.0})
+    cb.on_val_loss_report({"iteration": 100, "val_loss": 1.40})  # streak 1
+    assert cb.over_threshold_streak == 1
+    cb.on_val_loss_report({"iteration": 150, "val_loss": 0.8})   # new best
+    assert cb.over_threshold_streak == 0
+    assert cb.best_val_loss == 0.8
+    # Now need 2 fresh consecutive breaches over the new best (0.8 * 1.3 = 1.04).
+    cb.on_val_loss_report({"iteration": 200, "val_loss": 1.05})  # streak 1
+    assert cb.over_threshold_streak == 1
+    with pytest.raises(_EarlyStopSignal):
+        cb.on_val_loss_report({"iteration": 250, "val_loss": 1.10})
+
+
+def test_trajectory_collector_streak_resets_on_below_threshold_eval():
+    """An eval that's higher than best but still below the rise threshold
+    counts as 'no breach' and resets the streak."""
+    cb = _TrajectoryCollector(
+        losses=[], early_stop_val_rise=1.3, early_stop_patience=2
+    )
+    cb.on_val_loss_report({"iteration": 50, "val_loss": 1.0})
+    cb.on_val_loss_report({"iteration": 100, "val_loss": 1.40})  # streak 1
+    cb.on_val_loss_report({"iteration": 150, "val_loss": 1.20})  # below 1.3, reset
+    assert cb.over_threshold_streak == 0
+    cb.on_val_loss_report({"iteration": 200, "val_loss": 1.40})  # streak 1
+    assert cb.over_threshold_streak == 1
+
+
+def test_trajectory_collector_disabled_when_rise_is_none():
+    """Without --early-stop-val-rise, even a 100x val_loss spike is silent."""
+    cb = _TrajectoryCollector(losses=[], early_stop_val_rise=None)
+    cb.on_val_loss_report({"iteration": 50, "val_loss": 1.0})
+    cb.on_val_loss_report({"iteration": 100, "val_loss": 100.0})
+    cb.on_val_loss_report({"iteration": 150, "val_loss": 1000.0})
+    # No exception. Best is still tracked.
+    assert cb.best_val_loss == 1.0
 
 
 def test_preserve_thoughts_dataset_has_len_and_getitem(tokenizer):
