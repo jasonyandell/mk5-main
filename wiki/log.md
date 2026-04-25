@@ -978,3 +978,35 @@ One landed commit (`063fcac` Phase A guards) plus an in-session research milesto
 **Side artifact:** `scratch/belief_trajectory_rollout/HARVEST_REVIEW.html` (engineer audience) and `HARVEST_REVIEW_FAMILY.html` (intelligent-but-not-ML-engineer audience), bundled to https://burl-42-review.pages.dev as a one-off Cloudflare Pages publish for the 42-playing family. Both pages are static, regenerable from `corpus_index.jsonl` + `trace_summary.json` files via `build_review.py` / `build_review_family.py`.
 
 **Near-miss (2026-04-25):** Run-3 scout caught a pre-built min-300 corpus that had been silently sourced from `harvest_20260424_133611` (the held-out eval set), not the 2000-decision harvest. Quarantined as `..._FROM_HELD_OUT_EVAL_DO_NOT_TRAIN`; replacement built from `harvest_batched_20260425_072910` (manifest-verified). Rule "trust the manifest, not the prose" added to [[star]] (recipe lesson #4) and [[burl-2000-harvest]] (Footgun caught section). [[AGENTS]] lint sweep now also flags pre-existing-artifact claims for verification.
+
+---
+
+## [2026-04-25 | TBD-shortsha | Burl STaR run-3 attempt — three launch failures, val curve captured, no adapter]
+
+Filter-only STaR on the 2000-harvest strict pool launched on 2026-04-25 afternoon. Three attempts, three failures, no adapter on disk. The third attempt's val curve (2.354 → 0.302 over 9 evals before crash at iter 487/1343) is the result that was filed.
+
+**Touched pages:** [[topics/star]] [[experiments/burl-star-run3]] [[index]]
+
+**Added:** none (skeleton already at `02d9096`).
+
+**Updated:**
+- [[experiments/burl-star-run3]] — Training, Eval, Verdict, What's next, Pointers all filled. Three failure-mode subsections describe what died and why. Last attempt's quarantined log path called out for forensic re-read.
+- [[topics/star]] — recipe lessons extended to **#5 (trust the argparse, not the prose)** generalizing the manifest-vs-prose rule to source-vs-doc, and **#6 (detach the trainer; resumable checkpoints; catch-all snapshot save)** capturing the three orthogonal blockers run-3b must clear.
+- `burl/STAR_RUN3_PLAN.md` — §Step 2 launch command rewritten with the three flag-name fixes, the multiplicative `1.02` early-stop fix, the `.venv/bin/python` invocation, and the `nohup setsid` detachment. New §Postmortem section names the three blockers.
+- [[index]] — burl-star-run3 line updated with the OOM verdict.
+
+**Frontier shift:**
+- The recipe was working when the environment killed it. Val loss dropped 7× (2.354 → 0.302) over 9 evals, no collapse signal, no early-stop trip, no divergence — but no adapter ever materialized because (a) the trainer's exception handler only catches a local `EarlyStopRequested`, (b) `mlx_lm.Trainer`'s `steps_per_save` is set to `10**9` (effectively off), and (c) the in-memory best-checkpoint snapshot is only serialized at end-of-run.
+- **Three blockers are now named and gating run-3b**: resumable checkpoints (priority — see project memory `project_resumable_training_priority.md`), generic-exception catch-and-save in `train_mlx`, and reduced peak-memory headroom (try `--max-seq-length 4096 → 2048` first; corpus's p99 is ~600 tok per [[max-tokens-2048-floor]]).
+- **Two new recipe-lesson generalizations land on [[star]]**: "trust the argparse, not the prose" extends the manifest-vs-prose rule to source-code-vs-documentation; the new lesson #6 packages detachment + resumability + catch-all-save as a single discipline for any future Burl/forge training.
+
+**Questions opened:**
+- Is the MLX OOM at iter 487 reproducible (suggesting a memory leak in the cosine LR scheduler at version 0.31.2), or one-shot (suggesting a peak-memory misalignment with the 4096 max-seq-length default)? Re-launching with the same recipe at `--max-seq-length 2048` answers both.
+- Is the val curve's trajectory (0.302 at iter 450, concave-down) on track for a useful adapter at convergence (~iter 1343), or is the apparent improvement a curve-fitting artifact of the small corpus? Only a complete run answers this.
+
+**Questions resolved:** none.
+
+**Quarantined adapter dirs (gitignored under `scratch/`):**
+- `run3_20260425_144858_DIED_AT_BASELINE_VAL_PARENT_SHELL_KILLED/`
+- `run3_20260425_145914_DIED_BARE_PYTHON_NO_MLX/`
+- `run3_20260425_150538_FAILED_MLX_OOM_AT_ITER_487/` (last one's `train.log` has the full val-loss curve and the MLX traceback)

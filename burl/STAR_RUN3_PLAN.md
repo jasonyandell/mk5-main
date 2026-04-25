@@ -116,18 +116,32 @@ eval harvest; manifest-check is the cheapest defense.
 
 ### Step 2: Train
 
+**Launch with full session detachment** so a parent-shell death (e.g. `/remote-control`) doesn't kill the trainer:
+
 ```bash
-PYTHONPATH=. .venv/bin/python burl/train/star_mlx.py \
-    --train-corpus scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/train.jsonl \
+TS=$(date +%Y%m%d_%H%M%S)
+OUT="scratch/belief_trajectory_rollout/star/adapters/run3_${TS}"
+mkdir -p "$OUT"
+nohup /usr/bin/env bash -c "exec .venv/bin/python -u burl/train/star_mlx.py \
+    --corpus scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/train.jsonl \
     --val-corpus scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/val.jsonl \
+    --adapter-out ${OUT}/ \
     --rank 8 \
     --lr 3e-5 \
     --epochs 1 \
     --steps-per-eval 50 \
-    --early-stop-val-rise 0.02 \
+    --early-stop-val-rise 1.02 \
     --early-stop-patience 2 \
-    --out scratch/belief_trajectory_rollout/star/adapters/run3_$(date +%Y%m%d_%H%M%S)/
+    > ${OUT}/train.log 2>&1" </dev/null >/dev/null 2>&1 &
+disown
 ```
+
+**Flag-name footguns** (caught at the run-3 launch — verify the trainer's argparse before edits):
+
+- The flag is `--corpus`, not `--train-corpus`.
+- The flag is `--adapter-out`, not `--out`.
+- `--early-stop-val-rise` is **multiplicative**, not additive: `1.02` means "trip when val > 1.02 × best", not "trip on a 0.02 rise". The earlier draft of this plan said `0.02`, which would trip on every eval (val > 2% of best is always true).
+- `python` ≠ `.venv/bin/python` on this machine. The mlx wheel is venv-only.
 
 Hyperparameter rationale:
 
@@ -142,7 +156,7 @@ Hyperparameter rationale:
 - `--steps-per-eval 50`: every 50 grad steps recompute val loss. ~15 evals
   per epoch — sufficient resolution for early-stop without burning eval
   compute.
-- `--early-stop-val-rise 0.02 --early-stop-patience 2`: trips when val_loss
+- `--early-stop-val-rise 1.02 --early-stop-patience 2`: trips when val_loss
   has stayed > best_val_loss × 1.02 for 2 consecutive evals. Conservative —
   catches genuine overfitting but tolerates a single noisy eval.
 
@@ -260,6 +274,36 @@ the loop.
   `harvest_dir` before training on a "pre-existing" corpus. See
   [[burl-2000-harvest]] "Footgun caught (2026-04-25)" and the recipe
   lesson on [[star]].
+
+## Postmortem — run-3 first attempt (2026-04-25)
+
+Three launch attempts, three failures, no adapter on disk. Full account
+in [`wiki/experiments/burl-star-run3.md`](../wiki/experiments/burl-star-run3.md).
+TL;DR:
+
+- Attempt 1 died when the parent Claude Code shell was renamed (children
+  killed). Detachment via `nohup setsid` is now in §Step 2 above.
+- Attempt 2 used bare `python` (no mlx). Now also called out in §Step 2.
+- Attempt 3 detached cleanly, ran 37 minutes, val loss 2.354 → 0.302
+  over 9 evals (no collapse, no early-stop trip), then crashed at iter
+  487/1343 with `RuntimeError: [metal::malloc] Resource limit (499000)
+  exceeded` inside the cosine LR scheduler. The `train_mlx` exception
+  handler only catches `EarlyStopRequested`, so the in-memory best
+  snapshot was lost.
+
+**Three blockers before run-3b:**
+
+1. **Resumable checkpointing on `star_mlx.py`** — periodic on-disk
+   adapter writes every N optimizer steps + `--resume-from <adapter-dir>`.
+   This is the priority fix (per the resumability project memory) and
+   gates everything else.
+2. **Generic-exception catch in `train_mlx`** — serialize the in-memory
+   best snapshot on any crash, not just `EarlyStopRequested`. Cheap;
+   land alongside (1).
+3. **Reduce peak-memory headroom** — drop `--max-seq-length 4096 → 2048`
+   first (the corpus's p99 turn is ~600 tok per
+   [[max-tokens-2048-floor]]); fall back to `--batch 1` if 2048 still
+   OOMs.
 
 ## When you finish
 
