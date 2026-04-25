@@ -4,11 +4,15 @@ This file tells any LLM agent how to read, write, and extend this wiki.
 
 ## What this wiki is
 
-This is Karpathy's LLM-Wiki pattern ([gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)) applied to this project. Instead of ingesting sources as they arrive in real time, we **replay the project's git history** commit-by-commit and build the wiki as if we'd been doing this since the first commit.
+This is Karpathy's LLM-Wiki pattern ([gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)) applied to this project. The wiki was bootstrapped by **replaying the project's git history** commit-by-commit (LEM, Burl, and Gus trails). That bootstrap is done — the wiki now lives in steady-state use.
 
-The raw sources are the project's own docs and code, read at specific commits via `git show <sha>:<path>`.
+Three layers, per Karpathy:
 
-The wiki lives in `wiki/` and is an LLM-owned, compounding artifact. Humans curate; the wiki compiles.
+- **Raw sources** — the project's own docs and code, plus historical snapshots in `sources/<sha>.md`. Read-only.
+- **The wiki** — the markdown under `wiki/` minus `sources/`. LLM-owned, mutable, compiles to reflect the current frontier.
+- **The schema** — this file. Tells you how to read, write, and extend the wiki.
+
+The default mode for any agent in this repo is: **consult the wiki first, then read code.** Update the wiki as a side effect of any work that changes what's true. Don't batch updates.
 
 ## Three voices — and the one we use
 
@@ -71,7 +75,29 @@ status: active | retired | superseded
 
 ## Operations
 
-### When to update the wiki
+The three operations, in order of how often you'll do them: **Query** (every session), **Update** (when something changes), **Lint** (occasionally).
+
+### Query — the default operation
+
+Most sessions start here. Before reading code, check whether the wiki already knows.
+
+**When to query:**
+- The user asks "what is X / why did we Y / how does Z work" about LEM, Burl, Gus, forge, or any historical artifact.
+- You're about to read a doc under `lem/`, `burl/`, `gus/`, or `forge/` for orientation — check the corresponding `entities/<project>.md` first; it's the synthesized view.
+- You're picking up a thread from a prior session ("we were working on the consistency regularizer…") — `wiki/log.md` and the relevant entity page are the fastest catch-up.
+- You hit a concept you don't recognize (LAMIR-1, qMAE plateau, q-bootstrap-belief, K1 grading, …). Bare `[[backlink]]` names usually map to a page; check there.
+- You're about to design something the project has tried before. Check `experiments/` and `decisions/` for the prior art.
+
+**How to query:**
+
+1. Start at `wiki/index.md` (catalog with one-line hooks) or jump straight to a likely page name — most concepts have an `entities/`, `topics/`, or `experiments/` page named after them.
+2. Read the relevant pages. Follow backlinks across kinds: an entity → its topics → the experiments that informed it → the decisions that locked it in → the source digests that captured it at a specific commit.
+3. **Cite back to the wiki** when answering the user, with the page path. If the wiki doesn't have the answer, say so explicitly — don't invent.
+4. **File good answers back.** If your synthesis was non-trivial — multiple pages stitched together, a question you had to dig for — capture it as a wiki update before ending the session. Either: extend an existing page with the new framing, create a new `topics/` page if the synthesis is reusable, or open a `questions/open.md` entry if the answer revealed a gap.
+
+The query → file-back loop is what makes the wiki compound. A query that doesn't leave the wiki better than it found it is a missed update.
+
+### Update — when something changes
 
 If you ship a commit, add a doc section, close an experiment, or retire a decision — **update the wiki in the same session**. Don't batch. The wiki stays useful only if it tracks the current frontier; a week-late update is usually a rewrite.
 
@@ -80,8 +106,9 @@ Concrete triggers:
 - An experiment produces a result that falsifies or confirms a hypothesis already on a page.
 - A doc under `lem/`, `burl/`, `gus/`, or `forge/` gets a new section worth citing.
 - A page on disk is wrong about the current frontier. Fix it in place — don't leave a "then vs. now" note.
+- A query revealed a gap, contradiction, or unsynthesized concept (see Query, step 4).
 
-### How to update: single-commit path
+#### Single-commit path
 
 For one commit you just made or are ingesting:
 
@@ -95,7 +122,7 @@ For one commit you just made or are ingesting:
 6. **Append to `log.md`** — one entry in the format below.
 7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop.
 
-### How to update: multi-commit replay path
+#### Multi-commit replay path
 
 For a batch of commits (e.g. catching up after a quiet period, or replaying a trail from scratch):
 
@@ -107,7 +134,7 @@ For a batch of commits (e.g. catching up after a quiet period, or replaying a tr
    - **Indexer** updates `index.md` (page catalog) and `log.md` (one entry per ingest) and sweeps for dead links + orphans.
 4. **Don't preemptively hedge.** If commit A believed X and commit G reverses it, write A's pages as if X is true; revise at G.
 
-### Scribe dispatch pattern (for team-based ingests)
+#### Scribe dispatch pattern (for team-based ingests)
 
 When orchestrating scribes via a team tool:
 - One scribe per top-level dir (`entities/`, `topics/`, `experiments/`) to keep edits disjoint.
@@ -115,18 +142,17 @@ When orchestrating scribes via a team tool:
 - Run the indexer after scribes finish — never in parallel with them — so it sees a stable state.
 - Scribes signal completion by file-on-disk check, not just confirmation messages. If a page's timestamp hasn't moved, the work hasn't landed.
 
-### Query
+### Lint — occasional health check
 
-Ask questions against the wiki. Start at `index.md`, drill into relevant pages, follow backlinks.
+Run when the wiki feels off, or after a large ingest:
 
-### Lint
-
-Periodic health check:
 - Contradictions between pages at the same frontier
 - Orphan pages (no inbound links)
 - Concepts mentioned without their own page
 - Pages that say "TBD" or `?` and never got filled
 - Stale `status: active` claims that a later ingest should have flipped to `retired`
+- Backlinks to non-existent pages (dead links)
+- Open questions in `questions/open.md` that a later commit silently resolved
 
 ## Log format
 

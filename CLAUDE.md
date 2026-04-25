@@ -81,8 +81,12 @@ See [forge/ORIENTATION.md](forge/ORIENTATION.md) for the ML pipeline architectur
 
 Always use `python -u` (unbuffered) so logs stream in real-time
 
-## Replay wiki
+## Wiki
 
-A frontier-style wiki of LEM / Burl / Gus history lives in `wiki/`. Start at `wiki/AGENTS.md` for schema + conventions and for the "How to update" sections — both the single-commit path (you just shipped something) and the multi-commit replay path (you're catching up). `wiki/index.md` is the catalog, `wiki/log.md` the chronological trail. Sources are immutable (`wiki/sources/<commit>.md`); everything else (`entities/`, `topics/`, `experiments/`, `decisions/`, `questions/`) compiles and is revised in place as understanding advances.
+A frontier-style knowledge wiki of LEM / Burl / Gus / forge lives in `wiki/`. It is the synthesized view of the project's history and current state — entities, topics, experiments, decisions, source digests — with backlinks across them.
 
-**Curate as you go.** If you ship a commit, land a doc section, close an experiment, or retire a decision, update the wiki in the same session — don't batch. A week-late update is usually a rewrite.
+**Default mode: consult the wiki first, then read code.** When the user asks about a project, concept, prior experiment, or design decision, start at `wiki/index.md` (catalog) or jump straight to a likely page name. Cite the page in your answer. If the wiki doesn't have it, say so — don't invent.
+
+**Update is a side effect.** If you ship a commit, land a doc section, close an experiment, or retire a decision, update the relevant pages in the same session. If a query forced you to synthesize across multiple pages, file the synthesis back as a page extension or new topic. Don't batch — a week-late update is usually a rewrite.
+
+`wiki/AGENTS.md` is the operating manual: when to query, when to update, the single-commit and multi-commit update paths, and the lint rules. Read it before doing significant wiki work.
