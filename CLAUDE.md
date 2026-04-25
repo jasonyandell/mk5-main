@@ -83,4 +83,6 @@ Always use `python -u` (unbuffered) so logs stream in real-time
 
 ## Replay wiki
 
-A frontier-style wiki of LEM / Burl / Gus history lives in `wiki/`. Start at `wiki/AGENTS.md` for schema + conventions, `wiki/index.md` for the catalog, `wiki/log.md` for the chronological trail. Sources are immutable (`wiki/sources/<commit>.md`); everything else (`entities/`, `topics/`, `experiments/`, `decisions/`, `questions/`) compiles and may be revised in place as understanding advances. New commits extend the wiki via replay: one scribe per dir, indexer sweeps after.
+A frontier-style wiki of LEM / Burl / Gus history lives in `wiki/`. Start at `wiki/AGENTS.md` for schema + conventions and for the "How to update" sections — both the single-commit path (you just shipped something) and the multi-commit replay path (you're catching up). `wiki/index.md` is the catalog, `wiki/log.md` the chronological trail. Sources are immutable (`wiki/sources/<commit>.md`); everything else (`entities/`, `topics/`, `experiments/`, `decisions/`, `questions/`) compiles and is revised in place as understanding advances.
+
+**Curate as you go.** If you ship a commit, land a doc section, close an experiment, or retire a decision, update the wiki in the same session — don't batch. A week-late update is usually a rewrite.

@@ -71,15 +71,49 @@ status: active | retired | superseded
 
 ## Operations
 
-### Ingest
+### When to update the wiki
 
-Triggered by the orchestrator when advancing to a new commit or commit cluster.
+If you ship a commit, add a doc section, close an experiment, or retire a decision — **update the wiki in the same session**. Don't batch. The wiki stays useful only if it tracks the current frontier; a week-late update is usually a rewrite.
 
-1. **Archivist** reads the raw sources (docs, code diffs, commit message) at the target sha and produces a compact bundle: entities introduced, entities updated, concepts introduced, concepts updated, experiments performed, decisions made, questions raised.
-2. **Scribes** run in parallel on disjoint page sets. Each scribe receives the bundle + current contents of the pages it must touch. Each scribe's job is to update the page so it reflects the new frontier.
-3. **Indexer** updates `index.md` (adds/updates page catalog entries) and `log.md` (appends a timestamped entry for this ingest).
+Concrete triggers:
+- A new commit lands that introduces/retires an entity, topic, experiment, or decision.
+- An experiment produces a result that falsifies or confirms a hypothesis already on a page.
+- A doc under `lem/`, `burl/`, `gus/`, or `forge/` gets a new section worth citing.
+- A page on disk is wrong about the current frontier. Fix it in place — don't leave a "then vs. now" note.
 
-A single ingest typically touches 10-15 pages (Karpathy's rule of thumb). If an ingest touches fewer than 3, the unit was probably too small; if it touches more than 20, split it.
+### How to update: single-commit path
+
+For one commit you just made or are ingesting:
+
+1. **Read the commit.** `git show <sha>` for the message + diff. Read any new/changed docs it references.
+2. **Decide which pages move.** Usually 3–8 pages: one entity + 1–2 topics + 1 experiment + the commit's `sources/<sha>.md` digest.
+3. **For each touched page:**
+   - Update the body so it reads as the current frontier (no hedging, no "previously we thought"). Bump `last_updated` to the commit sha.
+   - If the page is being retired/superseded, set `status:` accordingly and add a forward link.
+4. **Create `sources/<sha>.md`** — a compact digest: frontmatter + commit message quote + files-changed table + short "What this commit establishes" narrative + bare `[[backlinks]]` to every touched page.
+5. **Update `index.md`** — add new pages to the catalog, update hooks on pages whose gist changed.
+6. **Append to `log.md`** — one entry in the format below.
+7. **Run the lint pass** (see Lint section). Fix orphans and broken backlinks before you stop.
+
+### How to update: multi-commit replay path
+
+For a batch of commits (e.g. catching up after a quiet period, or replaying a trail from scratch):
+
+1. **Slice the range into ingests** along natural finding/document boundaries, not one-commit-one-ingest. A good ingest has a coherent theme and 10-15 touched pages (Karpathy's rule of thumb). Fewer than 3 touched pages → the unit is too small; more than 20 → split it.
+2. **Run ingests chronologically** — earlier commits first, so later ones can revise pages instead of having to preemptively hedge.
+3. **Per ingest, run three roles** (in one session or via a scribe team):
+   - **Archivist** reads the raw sources (docs, code diffs, commit message) at the target sha(s) and produces a compact bundle: entities introduced, entities updated, concepts introduced, concepts updated, experiments performed, decisions made, questions raised.
+   - **Scribes** update page sets in parallel on disjoint directories (one per `entities/` / `topics/` / `experiments/`). Each receives the bundle + current page contents and rewrites so the page reflects the new frontier.
+   - **Indexer** updates `index.md` (page catalog) and `log.md` (one entry per ingest) and sweeps for dead links + orphans.
+4. **Don't preemptively hedge.** If commit A believed X and commit G reverses it, write A's pages as if X is true; revise at G.
+
+### Scribe dispatch pattern (for team-based ingests)
+
+When orchestrating scribes via a team tool:
+- One scribe per top-level dir (`entities/`, `topics/`, `experiments/`) to keep edits disjoint.
+- Pass each scribe: commit range, theme, which pages to create vs. update, explicit instruction to check `topics/` and `entities/` before creating to avoid duplicates, and any backlink conventions to avoid (e.g. stale names from a prior rename).
+- Run the indexer after scribes finish — never in parallel with them — so it sees a stable state.
+- Scribes signal completion by file-on-disk check, not just confirmation messages. If a page's timestamp hasn't moved, the work hasn't landed.
 
 ### Query
 
