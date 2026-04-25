@@ -121,9 +121,8 @@ gus/adapters/
 # Cloudflare wrangler cache (one-off Pages publishes)
 .wrangler/
 
-# Claude Code session state and project skill drafts
+# Claude Code session state (ephemeral)
 .claude/scheduled_tasks.lock
-.claude/skills/
 
 wandb/
 lem/data/
