@@ -164,6 +164,7 @@ Recipe lessons from prior Burl STaR runs (iter-0 through iter-5 + the 71-row col
 1. **No tiny corpora.** Filter-only on 71 rows collapsed to loss 0.10 in 100 iterations and learned to memorize templated tail content (0/3 eval). 1062 strict-pool rows is the minimum scale that the next attempt should not collapse on.
 2. **Strip memorizable rows.** `--min-assistant-chars 300` filter on `build_filtered_corpus.py` strips ~40% of templated short rows uniformly across all buckets — they were row-decomposition noise (bare `<|tool_call>...<tool_call|>` strings around 50 chars), not signal. Zero gold-bucket decisions are lost at the 300 cutoff.
 3. **Conservative hyperparams.** rank=8 (not 16), lr=3e-5 (not 1e-4), 1 epoch, val-loss + early-stopping. The val-loss + early-stop wiring already lives in `burl/train/star_mlx.py` from the prior session.
+4. **Trust the manifest, not the prose.** Before training on a "pre-existing" corpus, `jq .harvest_dir manifest.json` and confirm the source. Recipe documents go stale; manifests don't lie. See [[burl-2000-harvest]] "Footgun caught (2026-04-25)".
 
 The harvest scaffold's per-wave resilience layer (see [[batched-harvest-resilience]]) is what made the 5h 46m run survive without intervention; future iteration on prompt variants or scaled corpora is now a weekly cadence rather than quarterly.
 

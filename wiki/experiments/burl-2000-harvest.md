@@ -78,6 +78,10 @@ Per-decision strict pool is 1062 (vs 294 from the sequential 560 → +268% absol
 - `scratch/belief_trajectory_rollout/HARVEST_REVIEW.html` and `HARVEST_REVIEW_FAMILY.html` — engineer- and family-audience static review pages bundled to https://burl-42-review.pages.dev (read-only public URL).
 - `scratch/belief_trajectory_rollout/PARITY_AUDIT.md` and `LENGTH_STATS_COMPARISON.md` — agent-produced artifacts that diagnosed v1.
 
+### Footgun caught (2026-04-25)
+
+A pre-built min-300 corpus from a prior session was inadvertently sourced from `harvest_20260424_133611` (the 560-decision held-out eval set), not this 2000-decision harvest. Train/eval leakage averted by manifest-check during a [[star]] Run-3 scout pass; bad dir renamed `..._FROM_HELD_OUT_EVAL_DO_NOT_TRAIN`. The replacement built from `harvest_batched_20260425_072910` lives at `scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/` (1025 surviving decisions; 2686 train + 665 val rows). Lesson: any plan that says "X already exists from a prior session" must be paired with a manifest verification step before consumption.
+
 ## Next
 
 Corpus is ready for [[star]] run-3:

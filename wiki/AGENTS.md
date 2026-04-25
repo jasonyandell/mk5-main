@@ -156,6 +156,7 @@ Run when the wiki feels off, or after a large ingest:
 - Stale `status: active` claims that a later ingest should have flipped to `retired`
 - Backlinks to non-existent pages (dead links)
 - Open questions in `questions/open.md` that a later commit silently resolved
+- Plan or wiki claims of pre-existing artifacts (corpora, adapters, eval sets) that a manifest/config check could verify — flag for verification before downstream consumption.
 
 ## Log format
 

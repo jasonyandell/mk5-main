@@ -976,3 +976,5 @@ One landed commit (`063fcac` Phase A guards) plus an in-session research milesto
 **Questions resolved:** none.
 
 **Side artifact:** `scratch/belief_trajectory_rollout/HARVEST_REVIEW.html` (engineer audience) and `HARVEST_REVIEW_FAMILY.html` (intelligent-but-not-ML-engineer audience), bundled to https://burl-42-review.pages.dev as a one-off Cloudflare Pages publish for the 42-playing family. Both pages are static, regenerable from `corpus_index.jsonl` + `trace_summary.json` files via `build_review.py` / `build_review_family.py`.
+
+**Near-miss (2026-04-25):** Run-3 scout caught a pre-built min-300 corpus that had been silently sourced from `harvest_20260424_133611` (the held-out eval set), not the 2000-decision harvest. Quarantined as `..._FROM_HELD_OUT_EVAL_DO_NOT_TRAIN`; replacement built from `harvest_batched_20260425_072910` (manifest-verified). Rule "trust the manifest, not the prose" added to [[star]] (recipe lesson #4) and [[burl-2000-harvest]] (Footgun caught section). [[AGENTS]] lint sweep now also flags pre-existing-artifact claims for verification.
