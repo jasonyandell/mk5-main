@@ -981,7 +981,7 @@ One landed commit (`063fcac` Phase A guards) plus an in-session research milesto
 
 ---
 
-## [2026-04-25 | TBD-shortsha | Burl STaR run-3 attempt — three launch failures, val curve captured, no adapter]
+## [2026-04-25 | 06bf5bf | Burl STaR run-3 attempt — three launch failures, val curve captured, no adapter]
 
 Filter-only STaR on the 2000-harvest strict pool launched on 2026-04-25 afternoon. Three attempts, three failures, no adapter on disk. The third attempt's val curve (2.354 → 0.302 over 9 evals before crash at iter 487/1343) is the result that was filed.
 
