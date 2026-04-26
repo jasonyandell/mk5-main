@@ -1077,6 +1077,7 @@ Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bo
 - New: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md` (Q1/Q2/Q3 forensic walk + spot-check transcripts + harvest-2 recommendation)
 - Updated: `wiki/experiments/burl-star-run3.md` ("What's next" section replaced; per-bucket regret movement added; FORCED_COMMIT diagnosis subsection added; pointers list extended).
 - New: `wiki/topics/commit-discipline-collapse.md` — names the failure mode for the canon. Backlinks to [[burl-star-run3]], [[k1-grading]], [[ls-mixture]], [[commit-discipline]], [[primer-tradeoff]], [[preserve-thoughts]].
+- Updated: `wiki/topics/regret-eval.md` — new "Ported to Burl evaluation" section + index hook updated. The gus-side regret framework (oracle_best_eq − student_chosen_eq) now scores Burl adapters as well as gus students. Cross-links to [[commit-discipline-collapse]] (the FORCED_COMMIT decision-shape-not-quality refinement was discovered by the regret reframe).
 
 ## [2026-04-25 | add6a2a | Resumable checkpointing + crash-snapshot save lands on `star_mlx.py`]
 
@@ -1173,3 +1174,56 @@ mirror, `best_on_crash/`, and any explicit `--resume-from` fork.
 **Receipts:** `scratch/resume_smoke/TRANSCRIPT.md` documents the full
 SIGKILL+resume transcript with the standalone-loadability checks and
 overhead measurements.
+
+---
+
+## [2026-04-26 | <pending> | In-distribution paired n=180 base eval lands — run-3c regret −39% vs naked-Burl]
+
+The eval-side gap that was open all morning closes here: eval-speeder's batched n=180 base-model eval lands cleanly through the same harness as run-3c. Rescorer immediately folds the paired comparison into the report.
+
+**Touched pages:** [[experiments/burl-star-run3]] [[topics/regret-eval]] [[topics/preserve-thoughts]] [[index]]
+
+**Frontier shift:**
+- **Run-3c beats naked-Burl on oracle regret by 39% on the cleanest comparison available.** Paired n=180 (gi 0..179, same batched harness): regret 1.92 vs 3.13 (−1.22 absolute, −39% relative). The cross-harness 5.7% number from earlier in the day understated the win by 7×.
+- **Per-bucket: the adapter wins on every major bucket including AAC.** AAC −0.36 (cross-harness "AAC tax" was a harness artifact, not the adapter), BIW −6.21, BOTH_FIX −5.73, FORCED_COMMIT −3.15, AAW −1.67, BBC −0.48. Minor losses on small buckets (BPQ +0.73, BAF +0.20, QAF +1.10, BDP +7.08) are on n ≤ 3 each and noise-dominated.
+- **`BURL_BREAKS_CONSENSUS` shrinks 45 → 23 (51% reduction)** in the paired n=180; `BURL_INDEPENDENT_WRONG` shrinks 17 → 4 (76% reduction). Adapter shifts these into FORCED_COMMIT (+41) but the FORCED regret is 0.19 vs the original BBC/BIW regrets of 5.24/7.46 — play quality improves dramatically even though decision shape shifts. Consistent with [[commit-discipline-collapse]]'s "decision-shape cost not play-quality cost" framing.
+- **The user's "did first STaR improve reasoning?" question now has a clean answer: yes, by 39% on the regret metric.** Load-bearing result for the carry-forward decision; validates the run-3c → harvest-2 → run-4 pipeline plan.
+
+**Questions resolved:**
+- "Is the adapter actually a better Texas 42 player than naked-Burl, controlling for harness?" — yes, decisively. The 39% in-distribution paired-regret reduction is much larger than the cross-harness 5.7%; the harness-difference confound was the source of the conservative initial estimate.
+- "Does the cross-harness 'AAC tax' (+0.66 regret on already-correct decisions) survive in-distribution?" — no, it reverses to a slight win (−0.36). The tax was a harness artifact, not adapter-induced.
+
+**Artifacts:**
+- New: `scratch/belief_trajectory_rollout/star/eval/base_eval_batched_n560_20260426_005754/star_rescore.json` + rows.jsonl (in-distribution n=180 base rescore)
+- New: `scratch/belief_trajectory_rollout/star/base_vs_run3c_paired_n180.md` (one-shot paired comparison fragment from `fold_base_into_report.py`)
+- Updated: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md` (final paired n=180 triangle replaces the early-signal table; per-bucket regret-delta + bucket distribution shift sections added)
+- Updated: `wiki/experiments/burl-star-run3.md` (paired n=180 result inserted in §"STaR-shaped rescore", supersedes the cross-harness pending note)
+- Updated: `wiki/topics/regret-eval.md` ("Burl-side reading" section now leads with the paired n=180 result)
+- Updated: `wiki/index.md` (burl-star-run3 + regret-eval hooks updated)
+
+## [2026-04-26 | <pending> | Promote Burl STaR eval/rescore + corpus ops out of scratch]
+
+The load-bearing pure-Python parts of the run-3/run-4 loop now have tracked
+homes while the cap-12 harvest continues undisturbed on its original scratch
+runner.
+
+**Touched pages:** [[experiments/burl-star-run3]] [[topics/regret-eval]] [[topics/batched-eval-resilience]]
+
+**Frontier shift:**
+- `burl/eval/star_metrics.py` promotes the STaR-shaped metric contract and
+  oracle-regret rescore path: signed delta, K1 pass, oracle regret, near-tie
+  rate, bucket flips, forced-commit counts, and real thought-block rate.
+- `burl/eval/star_eval_report.py` is the tracked CLI wrapper. A run-3c smoke
+  reproduced the existing regret/bucket metrics and corrected thought-block
+  accounting to actual `thinking` events (`537/560 = 95.9%`) rather than
+  `belief_trajectory` calls.
+- `burl/train/star_corpus.py` promotes the filter-only corpus builder and
+  per-turn row conversion; `burl/train/build_star_corpus.py` is the tracked
+  CLI wrapper. A smoke rebuild from the 2026-04-25 harvest reproduced the
+  known strict-min300 row shape: 2686 train rows + 665 val rows.
+- The active harvest runner (`scratch/belief_trajectory_rollout/harvest_batched.py`)
+  was not edited. The live cap-12 harvest can still resume against the exact
+  scratch script surface it launched with.
+
+**Tested:** `python -m pytest burl/eval/test_star_metrics.py burl/train/test_star_corpus.py -q`
+passes (6 tests).

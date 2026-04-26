@@ -118,17 +118,43 @@ Post-hoc rescore landed 2026-04-26 — `scratch/belief_trajectory_rollout/star/S
 | Burl-loss buckets total       | 213             | n/a          | **144**      |
 | FORCED_COMMIT count           | 69              | 42 of 130    | **191** (+122) |
 
-**On the harness-independent regret axis, run-3c is the first preserve-thoughts adapter to beat naked-Burl on the held-out 560 — 2.165 vs 2.295 (5.7% relative).** The seven Burl-loss buckets shrink 213 → 144 (32% relative). The cost is `FORCED_COMMIT` ballooning from 12.3% → 34.1% of decisions — the adapter sometimes can't terminate cleanly and the harness picks for it. Investigating that is gating run-4. Reference: π regret on the same 560 = 0.551, Q-mean regret = 0.518 — the adapter still has ~1.6 Q-points of headroom against the policy head.
+**On the harness-independent regret axis, run-3c is the first preserve-thoughts adapter to beat naked-Burl on the held-out 560 — 2.165 vs 2.295 (5.7% relative).** The seven Burl-loss buckets shrink 213 → 144 (32% relative). The cost is `FORCED_COMMIT` ballooning from 12.3% → 34.1% of decisions — the adapter sometimes can't terminate cleanly and the harness picks for it. Reference: π regret on the same 560 = 0.551, Q-mean regret = 0.518 — the adapter still has ~1.6 Q-points of headroom against the policy head.
 
 The carry-forward decision: **run-3c is the carry-forward adapter for harvest-2.** Run-3b is dominated on every metric (k1_pass 61.5% vs 70.5%, regret 3.02 vs 2.17, signedΔ −2.92 vs −1.98). The K=1 keep rule yields ~395 surviving decisions for run-3c vs ~80 for run-3b — only run-3c has a usable carry-forward corpus.
 
-Still pending (separate tasks): same-harness `--adapter`-omitted base eval to confirm the regret comparison against an in-distribution base run (the 2.295 number is from `corpus_index_k200.jsonl`, which used a slightly different rollout setup than `eval_adapter_smoke.py`). And forced-commit root-cause investigation on the 122 new forced commits — likely a max-tokens / turn-budget interaction with the adapter's longer thought blocks.
+Per-bucket regret movement (adapter − base): the adapter pays a small per-decision regret tax on the buckets where base-Burl was already at zero regret (AAC +0.66, BIR +3.20, BFP +2.24) in exchange for large per-decision wins on the Burl-loss buckets (BIW −4.73, QAF −2.58, BBC −1.95, BPP −1.61, BPQ −1.08). On the headline `BURL_BREAKS_CONSENSUS` bucket: of 95 base-BBC decisions, 20 were *recovered* (adapter found oracle, regret = 0), 31 became forced-commits (mean regret 4.11, half-credit win), 44 still-broke (mean regret 7.74, of which 26 picked the same wrong play as base — deeply learned wrong, training didn't shake it loose). **51 of 95 base-BBC decisions are no longer pure-loss BBC under the adapter.**
+
+### FORCED_COMMIT inflation diagnosis (closed)
+
+Full report: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md`. Summary:
+
+- **`--preserve-thoughts` is NOT the cause.** run-3b (no thoughts) and run-3c (with thoughts) force at the same ~33% rate (vs base 12%). The cause is the LoRA fine-tune itself.
+- **Failure shape: 134 of 158 newly-forced decisions hit exactly n_turns=8** (the default cap), 0 bailed, 0 degenerate. The adapter is doing real strategic exploration (explore_game / probe_best / probe_worst patterns) but never narrowing to a commit. `belief_trajectory` gets called 2.04× per forced decision on average — often duplicate calls back-to-back.
+- **`n_legal=2` ("two trumps to choose between") is over-represented** in newly-forced (33% vs 23% in not-forced). Spot-checks on `n_legal=1` decisions show the adapter sometimes mis-reads the trump declaration, attempts illegal commits, gets rejected, and burns recovery turns.
+- **Root cause hypothesis:** the strict-pool training corpus by construction contained only successful Burl commits. The adapter learned the exploration shape verbatim but lost the discrimination signal for "now is the time to commit."
+
+**Recommendation for harvest-2 (#5) and run-4 (#6):**
+
+1. **Bump rollout turn cap from 8 → 12 before harvest-2 launches.** Smoke 50 decisions with the new cap; if forced-commit rate drops to ≤20%, proceed at n=2000. If it stays at 30%+, the training-side problem dominates and a corpus augmentation (negative-commit-discipline rows) is required first.
+2. **Plan harvest-2 for n=4000 instead of 2000** if running on the same recipe with the same cap — at 34% forced-commit rate, ~1300 decisions will be filtered out of the strict pool by being FORCED_COMMIT, halving the usable training corpus.
+
+**In-distribution paired n=180 (FINAL, landed 2026-04-26 ~07:00):** eval-speeder ran the rescoped n=180 base eval through the same batched harness as run-3c. Paired comparison on identical indices gi 0..179:
+
+| Metric                | base @ 180 | run-3c @ paired 180 | Δ            |
+|-----------------------|-----------:|--------------------:|-------------:|
+| k1_pass_rate          | 60.6%      | **69.4%**           | +8.9 pp      |
+| match_oracle_rate     | 55.6%      | **63.3%**           | +7.8 pp      |
+| **mean_oracle_regret**| **3.132**  | **1.915**           | **−1.217 (−39%)** |
+| mean_signed_delta     | −3.045     | **−1.829**          | +1.216       |
+| forced_commit_rate    | 11.1%      | 33.9%               | +22.8 pp     |
+
+**This is the cleanest possible adapter-vs-base comparison.** A 39% regret reduction on the same 180 decisions, much larger than the cross-harness 5.7% — the cross-harness comparison was confounded by the original harvest's different rollout setup. Per-bucket: BIW −6.21, BOTH_FIX −5.73, FORCED_COMMIT −3.15, AAW −1.67, BBC −0.48, **AAC −0.36** (the cross-harness "AAC tax" was a harness artifact, not the adapter — the adapter is *slightly better* than base on the easy cases too).
 
 ### Training-side follow-ups
 
 1. **Why does run-3c skip thinking on ~5% of decisions?** Inspect those traces against the trained corpus — are they multi-turn corrections, forced-commit trips, or genuine "model decided not to think" cases? If the corpus contains rows where Burl committed without thinking (e.g., on forced-commit fallback), the adapter is faithfully reproducing that minority behavior.
 2. **Loss-weighting on thought tokens.** Preserve-thoughts puts thought tokens in the loss with uniform weight against tool-call tokens. Up-weighting thoughts (or down-weighting the verbatim-template tail) may further improve thought-block coverage and match rate.
-3. **[[r1-rationalization]] on the 299-row `BURL_BREAKS_CONSENSUS` bucket** is the next training experiment candidate, gated by [[reasoning-coherence-verification]] (don't ship rationalization without a verifier in the loop, per the [[candlewax]] workstream). Should be run with `--preserve-thoughts` from the start. **Don't launch it until eval-side gaps are closed** — without regret/signed-delta you can't tell whether rationalization helped or hurt.
+3. **[[r1-rationalization]] on the 299-row `BURL_BREAKS_CONSENSUS` bucket** is the next training experiment candidate, gated by [[reasoning-coherence-verification]] (don't ship rationalization without a verifier in the loop, per the [[candlewax]] workstream). Should be run with `--preserve-thoughts` from the start. Eval-side gaps are now closed (see STaR-shaped rescore subsection above + `STAR_EVAL_REPORT_2026-04-26.md`); the gating constraint shifts to (a) verifier in loop and (b) corpus discipline. Target list extracted: `scratch/belief_trajectory_rollout/star/bbc_source_harvest_targets_2026-04-26.jsonl` — 299 rows from source harvest, mean burl_regret 6.04, max 49.06; top-10 highest-regret targets are decisions where Burl played 22+ Q-points worse than oracle. The 26 BBC decisions where run-3c kept the same wrong play as base-Burl are at `scratch/belief_trajectory_rollout/star/deeply_learned_wrong_2026-04-26.jsonl` — these are the highest-priority within-held-out targets (gi=9, 20, 65, 112 are stable across base + run-3b + run-3c).
 4. **Resumable checkpointing on `star_mlx.py`** — **resolved**. `--steps-per-checkpoint N` (default 100) writes the best-val snapshot to `{adapter-out}/checkpoint_iter{N}/adapters.safetensors` and atomically mirrors it at `{adapter-out}/adapters.safetensors`; `--resume` reads `checkpoint_state.json` and trims `total_iters` by the resumed count. LR schedule restarts from zero on resume (crash-recovery, not bit-perfect). Policy: [[resumable-checkpointing]].
 5. **Generic-exception catch in `train_mlx`** — **resolved**. `train_mlx` wraps `train(...)` in `try/except Exception`; on any non-`_EarlyStopSignal` crash, `_save_crash_snapshot` writes `{adapter-out}/best_on_crash/adapters.safetensors` + `crash_info.json` (iter, exc type/msg, traceback) before re-raising. The OOM that took attempt 3 would now leave a recoverable adapter on disk.
 
@@ -136,7 +162,8 @@ Still pending (separate tasks): same-harness `--adapter`-omitted base eval to co
 
 - Plan: `burl/STAR_RUN3_PLAN.md`
 - Trainer: `burl/train/star_mlx.py`
-- Corpus builder: `scratch/belief_trajectory_rollout/star/build_filtered_corpus.py`
+- Tracked corpus builder: `burl/train/star_corpus.py` (CLI: `burl/train/build_star_corpus.py`)
+- Original run-3 corpus builder: `scratch/belief_trajectory_rollout/star/build_filtered_corpus.py`
 - Training corpus: `scratch/belief_trajectory_rollout/star/corpus_strict_min300_FROM_HARVEST_BATCHED_20260425_072910/`
 - **Run-3b adapter**: `scratch/belief_trajectory_rollout/star/adapters/run3b_20260425_160517_maxseq2048/adapters.safetensors` (train log alongside)
 - **Run-3c adapter**: `scratch/belief_trajectory_rollout/star/adapters/run3c_20260425_172329_preservethoughts/adapters.safetensors` (train log alongside)
@@ -145,7 +172,8 @@ Still pending (separate tasks): same-harness `--adapter`-omitted base eval to co
 - Run-3c eval dir: `scratch/belief_trajectory_rollout/star/eval/run3c_eval_seq560_20260425_181016/`
 - Eval harness: `scratch/belief_trajectory_rollout/star/eval_adapter_smoke.py` (flags: `--batch-size N` for batched mode via `GemmaLocalNativeBatched`, default 1 for sequential parity; `--max-tokens N` default 8192; `--resume-dir` to skip already-complete `decision_<gi>/trace_summary.json` for crash recovery; per-wave incremental `summary.json` write so a kill mid-run preserves progress)
 - Eval corpus (held-out): `harvest_20260424_133611/`
-- **STaR-shaped rescorer**: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
+- **Tracked STaR-shaped rescorer**: `burl/eval/star_metrics.py` (CLI: `burl/eval/star_eval_report.py`)
+- **Original STaR-shaped rescorer**: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
 - **STaR-shaped rescore report (run-3b vs run-3c)**: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
 - Postmortem of the 71-row collapse: `scratch/belief_trajectory_rollout/star/POSTMORTEM_002918.md`
 - Live snapshot (run-3b/3c arc): `scratch/belief_trajectory_rollout/star/RUN3BC_LIVE_SNAPSHOT.md`

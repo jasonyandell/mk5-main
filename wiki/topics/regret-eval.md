@@ -53,6 +53,59 @@ Near-tie rate (70–75%) confirms: most "mismatches" are genuinely equivalent pl
 
 [[k1-grading]] in LEM/Burl asks "did the model beat the bot?" (binary). Regret asks "by how much did the model miss the oracle's best?" (continuous). Regret is more informative for a supervised-distillation student where every legal play can be scored by the oracle (2a09050).
 
+## Ported to Burl evaluation (2026-04-26)
+
+The same regret framework now scores Burl adapters as well as gus students. The post-hoc rescorer at `scratch/belief_trajectory_rollout/star/star_eval_report.py` joins existing Burl eval rows to the per-decision K=200 oracle data (`diagnostic/per_decision_eval_k200.jsonl`) and computes:
+
+- `oracle_regret = oracle_best_eq − adapter_chosen_eq` (the gus-side metric, applied per-decision)
+- `signed_delta = adapter_eq − bot_eq` (the rollout-bot reference, signed not absolute — exposes the wins-vs-losses split that bot-match alone hides)
+- `k1_pass = signed_delta ≥ 0` (the [[k1-grading]] keep rule, made post-hoc-able)
+- `near_tie_rate = fraction with regret ≤ 0.5` (the gus-side near-ties metric)
+
+### Why this was needed
+
+The Burl side started with bot-match as the primary success metric. [[burl-star-run3]] caught the trap at scale: run-3c bot-match 66.6% on the held-out 560 looked like a win, but signed-delta = −1.98 revealed that among the 187 disagreements with the bot, the adapter splits 22 wins / 165 losses (7.5:1 lossy). Bot-match was confounding "agreed with the bot" (which can be wrong) with "played well." The gus precedent — Texas 42 has many near-tie positions, so any binary match metric is noisy — applied directly to Burl evaluation.
+
+### Burl-side reading
+
+On the held-out 560 (cross-harness comparison via `corpus_index_k200.jsonl`):
+
+| Player                  | n   | Mean oracle regret |
+|-------------------------|----:|-------------------:|
+| π (gus policy head)     | 560 | 0.551              |
+| Q-mean                  | 560 | 0.518              |
+| Naked Burl (no adapter) | 560 | 2.295              |
+| Run-3c (preserve-thoughts adapter) | 560 | **2.165** |
+
+**FINAL paired n=180 (in-distribution batched harness, same indices both runs, landed 2026-04-26 ~07:00):**
+
+| Player           | n   | Mean oracle regret |
+|------------------|----:|-------------------:|
+| Naked Burl       | 180 | 3.132              |
+| Run-3c           | 180 | **1.915** (−39%)   |
+
+**Run-3c is meaningfully better at Texas 42 than naked-Burl, not just better at emitting thought blocks.** A 39% relative reduction in oracle regret on the same 180 decisions, much larger than the cross-harness 5.7%. Per-bucket on the in-distribution paired sample: BIW −6.21, BOTH_FIX −5.73, FORCED_COMMIT −3.15, AAW −1.67, BBC −0.48, **AAC −0.36** (the cross-harness "AAC tax" was a harness artifact, not the adapter — the adapter is *slightly better* than base on the easy cases too). The in-distribution paired test is the cleanest possible adapter-vs-base comparison.
+
+### Adjacent Burl-side findings the regret reframe surfaced
+
+- **`commit-discipline-collapse`** ([[commit-discipline-collapse]]) — refined to "decision-shape cost not play-quality cost" once the regret metric showed FORCED_COMMIT decisions (1.60 mean regret) outperform not-forced (2.46) — the harness's force-fallback picks near-oracle plays from the adapter's probes, so forcing isn't a strategic loss, it's a self-determination loss.
+- **K=1 keep rule** is uniformly more permissive than zero-regret (run-3c k1_pass 70.5% vs match_oracle 65.4%) — the keep rule passes near-ties as wins, matching the gus near-ties philosophy.
+
+### Implementation pointers
+
+- Tracked rescore + metric contract: `burl/eval/star_metrics.py`
+- Tracked CLI wrapper: `burl/eval/star_eval_report.py`
+- Original run-3 report builder: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
+- Rescore output: per-eval `star_rescore.json` + `star_rescore_rows.jsonl` alongside each eval dir
+- Comparison report: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
+- Triangle script (when n=180 base eval lands): `scratch/belief_trajectory_rollout/star/fold_base_into_report.py`
+- Origin experiment: [[burl-star-run3]]
+- Diagnosis spinoff: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md`
+
+Promotion note (2026-04-26): the tracked metric layer deliberately reads
+actual `thinking` events from per-decision `events.jsonl`; `belief_trajectory`
+usage is not a proxy for thought-block emission.
+
 ## Links
 
-[[gus]] [[expected-q-value]] [[k1-grading]] [[pimc]] [[v-pi-decoupling]] [[consistency-regularizer]]
+[[gus]] [[burl]] [[burl-star-run3]] [[expected-q-value]] [[k1-grading]] [[pimc]] [[v-pi-decoupling]] [[consistency-regularizer]] [[commit-discipline-collapse]] [[preserve-thoughts]]

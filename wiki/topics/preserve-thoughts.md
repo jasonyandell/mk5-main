@@ -58,8 +58,24 @@ Within run-3c, the thought-vs-no-thought split tightened from the early-sample t
 
 This is a phase change *on the thought-emission axis*, not a knob — without `--preserve-thoughts` a Burl LoRA trains reasoning *out* of the model. The [[iter5-e1-rank-sweep]] +3.3pp signal at N=26 was the directional read; at N=560 it's a 95-pp swing on thought-block presence with bot-match holding or improving. **Default it ON for any [[burl]] STaR or [[r1-rationalization]] run.**
 
-A note of caution surfaced by the n=560 eval: the *thought-emission axis* is conclusively answered, but the *play-quality axis* is not. Run-3c's mean signed Δ of −1.98 means that on the 187 disagreements with the bot, the adapter loses on average by ~2 Q-points; wins/ties/losses are 22/373/165 (a 7.5:1 lossy split on disagreements). Bot-match alone undersells this — see [[burl-star-run3]] §"What's next" for the eval-side gaps that need to close before the carry-forward decision can be made cleanly.
+A note of caution surfaced by the n=560 eval: the *thought-emission axis* is conclusively answered, but the *play-quality axis* needed regret-based evaluation to read clearly. The post-hoc rescore lands the play-quality verdict (see below).
+
+### Play-quality axis (paired n=130 result, 2026-04-26)
+
+The 2026-04-26 STaR-shaped post-hoc rescore (`scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`) controls for decision difficulty by comparing run-3b and run-3c on the *same 130 indices* run-3b managed to evaluate before being killed:
+
+| Metric                  | run-3b @ 130 | run-3c @ paired 130 |
+|-------------------------|-------------:|--------------------:|
+| k1_pass_rate (Δ ≥ 0)    |   61.5%      |  64.6%              |
+| match_oracle            |   56.9%      |  57.7%              |
+| mean_signed_delta       |   −2.92      |  **−2.16**          |
+| **mean_oracle_regret**  |   **3.02**   |  **2.255 (−25%)**   |
+| forced_commit_rate      |   32.3%      |  **32.3%** (identical) |
+
+**This is the cleanest preserve-thoughts-helps-play-quality result the project has to date.** Per-decision: run-3c beats run-3b on regret on 28/130 decisions, loses on 23, same on 79 — most decisions are unchanged, but the moved subset moves the right way. The identical 32.3% forced-commit rate independently confirms preserve-thoughts is *not* the driver of [[commit-discipline-collapse]] — the FC inflation is a separate, adapter-family-level issue that affects both variants equally.
+
+So the headline becomes: **`--preserve-thoughts` is a phase change on thought-block emission AND a real per-decision improvement on play quality, controlling for FC inflation.** The `--preserve-thoughts` decision is not a tradeoff between "more thinking" and "less play quality" — it is a strict win on both axes once the eval is regret-based ([[regret-eval]] §"Ported to Burl evaluation").
 
 ## Links
 
-[[burl]] [[burl-star-run3]] [[iter3-rules-adapter]] [[iter5-e1-rank-sweep]] [[experiments/iter4-null-preserve-thoughts]] [[decisions/sft-completion-only-loss]] [[decisions/sft-max-seq-length]]
+[[burl]] [[burl-star-run3]] [[iter3-rules-adapter]] [[iter5-e1-rank-sweep]] [[experiments/iter4-null-preserve-thoughts]] [[decisions/sft-completion-only-loss]] [[decisions/sft-max-seq-length]] [[regret-eval]] [[commit-discipline-collapse]]

@@ -15,6 +15,11 @@ bd.sock
 db.sqlite
 bd.db
 
+# Embedded Dolt runtime database (rebuilt from tracked JSONL/bootstrap)
+embeddeddolt/
+backup/
+export-state.json
+
 # Merge artifacts (temporary files from 3-way merge)
 beads.base.jsonl
 beads.base.meta.json

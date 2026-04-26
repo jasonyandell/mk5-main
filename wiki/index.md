@@ -68,7 +68,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/ls-mixture|ls-mixture]] — staged workstream: mix legal-but-suboptimal traces into SFT to train commit discipline (active)
 - [[topics/rules-as-tools|rules-as-tools]] — validated: rules-as-tools + no primer → iter-3 winner at 90% bot-match; trick_winner_if usage UP post-SFT confirms tools-replace-memorization (active)
 - [[topics/reference-trace-distillation|reference-trace-distillation]] — staged workstream: distill Haiku 4.5 reference traces into Gemma via SFT (active)
-- [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560 (run-3c vs run-3b): without it the adapter emits thought blocks on 0% of decisions; with it, ~95% — a phase change, not a tuning knob (confirmed)
+- [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560: thought-block emission 0% → ~95% (phase change), AND a play-quality win on paired n=130 (regret 2.255 vs 3.016, −25%, identical 32.3% FC rate) (confirmed)
+- [[topics/commit-discipline-collapse|commit-discipline-collapse]] — strict-pool training disrupts when-to-commit timing without disrupting what-to-commit quality; harness's force-fallback substitutes for missing commit signal (forced regret 1.60 < not-forced 2.46); cost is yield, not quality (active)
 - [[topics/conditional-outcome-structural-nonuse|conditional-outcome-structural-nonuse]] — reframed: 0/145 calls was chat-template confound (tool responses invisible); open question is whether model uses it when visible (active)
 - [[topics/candlewax|candlewax]] — reasoning-coherence verification approach: multimodal model checks reasoning traces against game state; bypasses LLM-as-reasoner bottleneck (active)
 - [[topics/reasoning-coherence-verification|reasoning-coherence-verification]] — identified bottleneck in Burl STaR loop; model produces syntactically valid traces that are semantically incoherent (active)
@@ -76,7 +77,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/lamir1|lamir1]] — 5 rollout modes + lamir1-piopp; direct 0.551 beats all 8 look-ahead variants; Q_head OOD at depleted leaves is root cause; Bug 6 + Fix 6 documented (active)
 - [[topics/dense-q-supervision|dense-q-supervision]] — 3400× per-decision signal: Q supervision regularizes the shared encoder; both training-time regularizer and inference-time LAMIR primitive (active)
 - [[topics/pimc|pimc]] — Perfect-Information Monte Carlo inference variants; direct π_me beats single-step PIMC because policy head already is the marginalized policy (active)
-- [[topics/regret-eval|regret-eval]] — primary Gus quality metric; bimodal: 73% perfect, 6% blunder tail drives all mean regret; near-tie rate 70-75% (active)
+- [[topics/regret-eval|regret-eval]] — primary Gus quality metric; bimodal: 73% perfect, 6% blunder tail drives all mean regret; near-tie rate 70-75%; ported to Burl 2026-04-26: paired in-distribution n=180 has run-3c at 1.92 regret vs naked-Burl 3.13 (−39%) (active)
 - [[topics/v-pi-decoupling|v-pi-decoupling]] — V_head correctly predicts +26 while π_me picks −0.4 play; heads decouple because training objectives only couple them indirectly (active)
 - [[topics/consistency-regularizer|consistency-regularizer]] — v3 at 10k: 0.551 regret (first Gus adapter under 1.0); gap vs v2 widens from tied at 3k to −33% at 10k (active)
 - [[topics/probe-analysis|probe-analysis]] — 6-probe interpretability receipt on v3-10k; counterfactual V tracks oracle within 0.5 Q-pts; embedding structure + attention patterns confirm real game learning (active)
@@ -94,6 +95,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/belief-co-train|belief-co-train]] — co-train falsified (KL −20%, regret worse); q-bootstrap-belief 0.655 unexpected win — belief-sampled worlds beat corpus worlds (active)
 - [[topics/past-belief-future-direction|past-belief-future-direction]] — §22: acting well under unresolvable uncertainty; meta-strategy distribution as richer student output; analytics extractable from q_per_world (active)
 - [[topics/batched-harvest-resilience|batched-harvest-resilience]] — three-part pattern: OOM classifier + quarantine ledger + SIGKILL sentinel; turns multi-hour batched harvest from one-failure-or-restart into one-failure-or-retry-six-decisions (active)
+- [[topics/batched-eval-resilience|batched-eval-resilience]] — eval-side port of the harvest pattern: atomic write + per-wave summary roll-up + in-wave per-decision OOM fallback + --resume-dir; turns 4h evals into "lose at most 3 min on any failure" (active)
 
 ## Experiments
 
@@ -146,7 +148,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-q-head-augmentation|gus-q-head-augmentation]] — path (a) postmortem: aug Q_head 2.216 regret, worse than baseline; random ≠ causal depletion; path closed (active)
 - [[experiments/gus-belief-co-train|gus-belief-co-train]] — §21: Bayes ceiling 39.184% confirmed; co-train falsified; q-bootstrap-belief 0.655 best look-ahead; §22 future direction (active)
 - [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
-- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); STaR-shaped rescore (2026-04-26) confirms run-3c beats naked-Burl on oracle regret 2.165 vs 2.295, k1_pass 70.5%, but inflates FORCED_COMMIT 12% → 34% (active)
+- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); paired in-distribution n=180 confirms run-3c beats naked-Burl on oracle regret by **−39%** (1.92 vs 3.13); FORCED_COMMIT 12%→34% is decision-shape not play-quality cost (active)
 
 ## Decisions
 
