@@ -2,8 +2,8 @@
 title: Preserve Thoughts at SFT
 kind: topic
 first_seen: 20f4fa2
-last_updated: edf86e9
-status: re-opened
+last_updated: TBD-shortsha
+status: confirmed
 ---
 
 ## Overview
@@ -20,7 +20,7 @@ Fix: explicit `max_seq_length=4096` in `SFTConfig`. Local path was fixed first i
 
 This is a parallel to LEM's [[decisions/sft-completion-only-loss]] finding: TRL defaults silently trap gradient. The pattern — "we think we're training on X, but a default is preventing it" — has now appeared twice in this project (edf86e9).
 
-**Follow-up:** iter-5 with `max_seq_length=4096` explicit should show whether `preserve_thoughts=True` actually changes the adapter when the thought data reaches the loss. [[experiments/iter4-null-preserve-thoughts]] updated accordingly.
+**Follow-up:** iter-5 with `max_seq_length=4096` explicit shows preserve_thoughts moves bot-match +3.3pp at N=26 ([[iter5-e1-rank-sweep]]); the [[burl-star-run3]] data point at N=560 (run-3c vs run-3b) confirms the directional signal at scale and is the definitive result — see "Result: confirmed" below. [[experiments/iter4-null-preserve-thoughts]] updated accordingly.
 
 ## Implementation
 
@@ -34,6 +34,32 @@ On a real iter-3-rules corpus row: `apply_chat_template` path produces 1,714 tok
 
 A/B comparison against the stripped baseline (iter-4-thoughts vs iter-3-rules, identical recipe otherwise) produced **byte-identical adapter weights**. At the time this was interpreted as LoRA capacity saturation. The truncation discovery (edf86e9) makes this result uninformative about whether preserve-thoughts works — the thought tokens never reached the loss in either branch (dbadb5f, edf86e9).
 
+## Result: confirmed (run-3c, 2026-04-25)
+
+[[burl-star-run3]] is the cleanest preserve-thoughts vs no-preserve-thoughts A/B in the project to date — same 1062-row strict-pool corpus from [[burl-2000-harvest]], same rank-8 lr-3e-5 1-epoch recipe, same `--max-seq-length 2048`, same early-stop, same held-out 560 eval. The only delta is the `--preserve-thoughts` flag.
+
+| Metric | Run-3b (OFF) | Run-3c (ON, n=560 final) |
+|---|---|---|
+| Best val loss | 0.238 | 0.268 (~13% higher) |
+| Wall-clock (training) | 32 min | 45 min |
+| Eval n | 113 (killed mid-run) | 560 (full) |
+| **Thought-block emission at inference** | **0 / 113 = 0%** | **537 / 560 = 95.9%** |
+| Bot-match | 60.2% | 66.6% |
+| Legal | 100% | 100% |
+| Mean \|Δ\| | 2.89 | 2.111 |
+| Mean signed Δ | not measured | −1.984 |
+
+Within run-3c, the thought-vs-no-thought split tightened from the early-sample to the full-sample read — at n=304 the no-thought subset looked ~8pp worse on bot-match, but at n=560 the gap is ~1.5pp:
+
+| Subset | n | Bot-match | Mean \|Δ\| | Mean signed Δ |
+|---|---|---|---|---|
+| Thinking | 537 | 66.7% | 2.110 | −1.985 |
+| No-thought | 23 | 65.2% | 2.130 | −1.965 |
+
+This is a phase change *on the thought-emission axis*, not a knob — without `--preserve-thoughts` a Burl LoRA trains reasoning *out* of the model. The [[iter5-e1-rank-sweep]] +3.3pp signal at N=26 was the directional read; at N=560 it's a 95-pp swing on thought-block presence with bot-match holding or improving. **Default it ON for any [[burl]] STaR or [[r1-rationalization]] run.**
+
+A note of caution surfaced by the n=560 eval: the *thought-emission axis* is conclusively answered, but the *play-quality axis* is not. Run-3c's mean signed Δ of −1.98 means that on the 187 disagreements with the bot, the adapter loses on average by ~2 Q-points; wins/ties/losses are 22/373/165 (a 7.5:1 lossy split on disagreements). Bot-match alone undersells this — see [[burl-star-run3]] §"What's next" for the eval-side gaps that need to close before the carry-forward decision can be made cleanly.
+
 ## Links
 
-[[burl]] [[iter3-rules-adapter]] [[experiments/iter4-null-preserve-thoughts]] [[decisions/sft-completion-only-loss]]
+[[burl]] [[burl-star-run3]] [[iter3-rules-adapter]] [[iter5-e1-rank-sweep]] [[experiments/iter4-null-preserve-thoughts]] [[decisions/sft-completion-only-loss]] [[decisions/sft-max-seq-length]]

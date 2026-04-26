@@ -68,7 +68,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/ls-mixture|ls-mixture]] — staged workstream: mix legal-but-suboptimal traces into SFT to train commit discipline (active)
 - [[topics/rules-as-tools|rules-as-tools]] — validated: rules-as-tools + no primer → iter-3 winner at 90% bot-match; trick_winner_if usage UP post-SFT confirms tools-replace-memorization (active)
 - [[topics/reference-trace-distillation|reference-trace-distillation]] — staged workstream: distill Haiku 4.5 reference traces into Gemma via SFT (active)
-- [[topics/preserve-thoughts|preserve-thoughts]] — hypothesis: retaining thinking tokens in SFT improves reasoning; iter-4 A/B shows null result (byte-identical output) (active)
+- [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560 (run-3c vs run-3b): without it the adapter emits thought blocks on 0% of decisions; with it, ~95% — a phase change, not a tuning knob (confirmed)
 - [[topics/conditional-outcome-structural-nonuse|conditional-outcome-structural-nonuse]] — reframed: 0/145 calls was chat-template confound (tool responses invisible); open question is whether model uses it when visible (active)
 - [[topics/candlewax|candlewax]] — reasoning-coherence verification approach: multimodal model checks reasoning traces against game state; bypasses LLM-as-reasoner bottleneck (active)
 - [[topics/reasoning-coherence-verification|reasoning-coherence-verification]] — identified bottleneck in Burl STaR loop; model produces syntactically valid traces that are semantically incoherent (active)
@@ -146,7 +146,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-q-head-augmentation|gus-q-head-augmentation]] — path (a) postmortem: aug Q_head 2.216 regret, worse than baseline; random ≠ causal depletion; path closed (active)
 - [[experiments/gus-belief-co-train|gus-belief-co-train]] — §21: Bayes ceiling 39.184% confirmed; co-train falsified; q-bootstrap-belief 0.655 best look-ahead; §22 future direction (active)
 - [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
-- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; first attempt val loss 2.354→0.302 over 9 evals then MLX-OOM at iter 487/1343 — no adapter; resumability + setsid detach + catch-all snapshot save are run-3b prereqs (active)
+- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing — run-3c hit ~65% match with thought-block emission on ~95% of decisions, vs run-3b's 0% thought presence at ~60% match (active)
 
 ## Decisions
 

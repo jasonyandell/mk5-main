@@ -1010,3 +1010,37 @@ Filter-only STaR on the 2000-harvest strict pool launched on 2026-04-25 afternoo
 - `run3_20260425_144858_DIED_AT_BASELINE_VAL_PARENT_SHELL_KILLED/`
 - `run3_20260425_145914_DIED_BARE_PYTHON_NO_MLX/`
 - `run3_20260425_150538_FAILED_MLX_OOM_AT_ITER_487/` (last one's `train.log` has the full val-loss curve and the MLX traceback)
+
+---
+
+## [2026-04-25 | TBD-shortsha | Burl STaR run-3b + 3c — preserve-thoughts is load-bearing; recovers thought-block emission 0% → 95%]
+
+Two trained adapters and an in-progress eval. Run-3b (default = preserve-thoughts OFF) and run-3c (preserve-thoughts ON, only delta) form the cleanest A/B in the project to date on whether retaining thought tokens at SFT actually changes inference behavior. Run-3b's adapter learned to skip reasoning entirely; run-3c's adapter emits thoughts on ~95% of decisions and improves on bot-match and |Δ|. The recipe-lesson is filed; the experiment page now reflects the success.
+
+**Touched pages:** [[experiments/burl-star-run3]] [[topics/star]] [[topics/preserve-thoughts]] [[index]]
+
+**Added:** none.
+
+**Updated:**
+- [[experiments/burl-star-run3]] — fully rewritten as the run-3 → run-3b → run-3c story. Three failed launch attempts kept as the run-3 history; run-3b and run-3c training tables and adapter pointers added; partial-eval results filed for both; verdict reframed around the 0% → 95% thought-block-emission swing; prediction-vs-reality table appended.
+- [[topics/star]] — recipe lesson #7 added: `--preserve-thoughts` is load-bearing, not a tuning knob; defaults flips whether the model thinks at all.
+- [[topics/preserve-thoughts]] — `status: re-opened` → `confirmed`; new "Result: confirmed (run-3c, 2026-04-25)" section with run-3b vs run-3c table and within-run-3c thinking-vs-no-thought split.
+- [[index]] — burl-star-run3 hook updated; preserve-thoughts hook updated to reflect the confirmation.
+
+**Frontier shift:**
+- **Preserve-thoughts is a phase change, not a knob.** Run-3b: 0% thought presence at inference, 60.2% bot-match, |Δ| 2.89 (n=113 partial eval). Run-3c: **95.9% thought presence, 66.6% bot-match, |Δ| 2.11, mean signed Δ −1.98 (n=560 full eval)**. Same corpus, same recipe, same early-stop, same eval. The Gemma 4 chat template runs `strip_thinking()` before tokenization unless the trainer opts out via `--preserve-thoughts`; without that opt-out, the LoRA learns to skip the reasoning channel.
+- **A 0.27% LoRA can flip whether the model thinks at all.** Run-3c emits thoughts on 95.9% of decisions vs run-3b's 0%. The within-3c thought-vs-no-thought split tightened as the eval grew (from ~8pp at n=304 to ~1.5pp at n=560 on bot-match) — the early signal that "thinking helps" was real but smaller than first-look. The signal generalizes the [[iter5-e1-rank-sweep]] +3.3pp result at N=26 to a 95-pp swing on thought-block presence at N=560.
+- **Eval-as-designed answers "does it think" but not "does it play well."** Bot-match alone undersells the picture: run-3c's 66.6% is mostly the 373 ties; among the 187 disagreements with the bot, the adapter splits **22 wins / 165 losses (7.5:1 lossy)** with mean signed Δ = −1.98. This is the [[regret-eval]] reframe applied to Burl evaluation. Three eval upgrades now gate the next-iteration decision: (a) same-harness same-seeds base-model eval, (b) report mean signed Δ alongside |Δ|, (c) oracle-relative regret. Until those land, "did STaR-iter-3c improve play quality" cannot be answered cleanly.
+- **The val-loss penalty for preserve-thoughts is small.** Run-3c best val 0.268 vs run-3b's 0.238 (~13% higher) and 13 more wall-clock minutes — the predicted 0.5–0.9 range was too pessimistic. Predicting thought tokens is harder than predicting tool-call patterns, but not nearly as much harder as expected.
+- **Run-3 (the OOM crash) joins the recipe-lesson canon as historical context only.** Resumable checkpointing and generic-exception catch-all save are still unaddressed; run-3b/3c happened to survive without them.
+
+**Questions opened:**
+- Why does run-3c skip thinking on ~5% of decisions? Likely candidates: forced-commit fallback rows, multi-turn corrections, or a corpus-side minority pattern where Burl committed without thought blocks.
+- Would loss-weighting on thought tokens (up-weight thoughts vs tool-call tail) further improve coverage and match rate, or saturate?
+
+**Questions resolved:**
+- "Does preserve-thoughts actually change adapter behavior once truncation is fixed?" — yes, dramatically and at scale (run-3c). The iter-4 byte-identical-weights result remains attributed to the SFTConfig truncation confound.
+
+**Pre-launch prediction artifact (kept for the loop):** `scratch/belief_trajectory_rollout/star/run3c_prediction.md` — the project under-estimated preserve-thoughts in two consistent directions: the val-loss gap was smaller than expected, and the thought-block coverage was much higher than expected. See [[burl-star-run3]] §"Prediction vs reality".
+
+**Live snapshot used by archivist:** `scratch/belief_trajectory_rollout/star/RUN3BC_LIVE_SNAPSHOT.md`. Run-3c eval completed at n=560 (4.1h wall) after the snapshot; final numbers folded in by team-lead before this commit.
