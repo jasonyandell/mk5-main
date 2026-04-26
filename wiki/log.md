@@ -1058,13 +1058,14 @@ Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bo
 - **K=1 pass rate (Δ ≥ 0) for run-3c is 70.5% vs run-3b's 61.5%.** Run-3c yields ~395 surviving decisions for harvest-2 carry-forward; run-3b yields ~80. Run-3c is the carry-forward adapter; run-3b is dominated on every STaR-shaped metric (regret 3.02 vs 2.17, signedΔ −2.92 vs −1.98).
 - **The cost of run-3c's regret win is forced-commit inflation: 12.3% (base) → 34.1% (adapter).** 122 additional decisions where the harness has to pick for the model after the adapter fails to terminate cleanly. Most of this comes out of `ALL_AGREE_CORRECT` (68 of 242 base AAC decisions go to FORCED_COMMIT under the adapter). The forced-commit pick is usually the highest-E[Q] probed play, so match_oracle stays high — but the decision shape is degraded vs a clean Burl commit.
 - **Bucket flip matrix is reproducible.** Saved per-eval as `star_rescore.json` alongside each eval dir, with `match_by_base_bucket`, `bucket_flip_matrix`, and full per-row JSONL. Future runs can drop into the same rescorer without changing the eval harness.
+- **FORCED_COMMIT inflation is NOT a `--preserve-thoughts` artifact.** Follow-up diagnosis (`scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md`): run-3b (no thoughts) and run-3c (with thoughts) force at the same ~33% rate. The cause is the LoRA fine-tune itself — both adapters lose the "now is the time to commit" discrimination signal because the strict-pool training corpus contained, by construction, only successful Burl commits. 134 of 158 newly-forced decisions hit exactly n_turns=8 (the default cap); 0 bailed; 0 degenerate. The adapter is doing real strategic exploration but never narrowing.
 
-**Questions opened:**
-- What's driving the 122 new forced commits? Likely a max-tokens / turn-budget interaction with the adapter's longer thought blocks, but unverified. Investigating before run-4 to avoid baking the failure mode into harvest-2 training distribution.
-- Are the BURL_BREAKS_CONSENSUS reductions (95 → 66, with 20 flipping all the way to ALL_AGREE_CORRECT) generalizing to held-out, or are they a function of training corpus overlap with this specific 560? Confirming requires a fresh-seeds harvest; that's harvest-2 and run-4.
-
-**Questions resolved:**
+**Questions resolved (this entry):**
 - "Did run-3c actually improve play quality, separate from reasoning emission?" — yes, modestly (5.7% relative regret reduction on the same held-out 560). The bucket-shape evidence is consistent: every Burl-loss bucket shrinks under the adapter, and the only bucket that *grows* is FORCED_COMMIT (a known harness-side fallback, not a training-side regression).
+- "What's driving the 122 new forced commits?" — turn-cap exhaustion combined with lost commit-discipline signal. Recommendation for harvest-2: bump rollout turn cap from 8 → 12 and smoke 50 decisions; if force rate doesn't drop to ≤20%, augment training corpus with negative-commit-discipline rows before launching the full harvest.
+
+**Questions still open:**
+- Are the BURL_BREAKS_CONSENSUS reductions (95 → 66, with 20 flipping all the way to ALL_AGREE_CORRECT) generalizing to held-out, or are they a function of training corpus overlap with this specific 560? Confirming requires a fresh-seeds harvest; that's harvest-2 and run-4.
 
 **Reads-only rescore. No GPU. No retraining. Adapter weights unchanged.**
 
@@ -1073,7 +1074,9 @@ Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bo
 - New: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
 - New: `scratch/belief_trajectory_rollout/star/eval/run3b_eval_seq560_20260425_164239/star_rescore.json` + `star_rescore_rows.jsonl`
 - New: `scratch/belief_trajectory_rollout/star/eval/run3c_eval_seq560_20260425_181016/star_rescore.json` + `star_rescore_rows.jsonl`
-- Updated: `wiki/experiments/burl-star-run3.md` ("What's next" section replaced; pointers list extended).
+- New: `scratch/belief_trajectory_rollout/star/FORCED_COMMIT_DIAGNOSIS_2026-04-26.md` (Q1/Q2/Q3 forensic walk + spot-check transcripts + harvest-2 recommendation)
+- Updated: `wiki/experiments/burl-star-run3.md` ("What's next" section replaced; per-bucket regret movement added; FORCED_COMMIT diagnosis subsection added; pointers list extended).
+- New: `wiki/topics/commit-discipline-collapse.md` — names the failure mode for the canon. Backlinks to [[burl-star-run3]], [[k1-grading]], [[ls-mixture]], [[commit-discipline]], [[primer-tradeoff]], [[preserve-thoughts]].
 
 ## [2026-04-25 | add6a2a | Resumable checkpointing + crash-snapshot save lands on `star_mlx.py`]
 
@@ -1095,3 +1098,78 @@ Closes the priority blocker named in [[burl-star-run3]] §"What's next" #4 + #5 
 **Tested:** 12 new unit tests in `burl/train/test_star_mlx.py` (33/33 pass). End-to-end: 50-row corpus, killed at iter 30, relaunched with `--resume`; verified prior checkpoints land at iters 10/20/30, `checkpoint_state.json` records `best_val_loss=1.10 @ iter 24` from the killed run, resume picks up with `iter_offset=30` and trims remaining iters. Smoke artifacts under `scratch/resume_smoke/`.
 
 **Frontier shift:** Future Burl/STaR runs (the cluster of pending tasks numbered #5/#6/#7 on the team's task list — harvest-2, run-4 train, run-4 eval) inherit crash-recovery for free. The run-3 attempt-3 metal-OOM at iter 487/1343 would now leave a recoverable adapter on disk in three places (latest periodic checkpoint, `adapters.safetensors` mirror, `best_on_crash/adapters.safetensors`). The cost is ~one disk write per N iters and a tiny CPU spike on the checkpoint hook.
+
+---
+
+## [2026-04-26 | 86334b8 | batched eval port + resumability hardening on eval_adapter_smoke.py]
+
+Eval-side companion to the same-day [[decisions/resumable-checkpointing|trainer resumability]] work. Held-out adapter eval was 4h sequential (run-3c attempt 1, `run3c_eval_seq560_20260425_181016/`); ported to batched lockstep via `GemmaLocalNativeBatched` (proven by [[burl-2000-harvest|harvest-batched]]) with full crash-recovery.
+
+**Touched pages:** [[experiments/burl-star-run3]] [[topics/batched-eval-resilience]] [[index]]
+
+**Added:** [[topics/batched-eval-resilience]]
+
+**Updated:**
+- [[experiments/burl-star-run3]] §"Recipe" eval line (now documents `--batch-size 6 --max-tokens 8192 --resume-dir`) and §"Pointers" eval-harness line (full flag list).
+- [[index]] topics catalog gained the new page.
+
+**Tested:** Smoke (n=6 batch=6 vs run-3c sequential reference): wall=137.6s, match=2/6 vs reference 3/6 (drift = 1, within spec). Resume sanity (n=12 batch=6, kill@6-of-12): `resume: 6 already done, 6 TODO` — exactly correct, final summary.json has all 12 in gi order. Live n=180 base eval running on hardened code (rescoped from n=560 to fit overnight chain).
+
+**Frontier shift:** Eval cycle goes from "all-or-nothing 4h" to "lose ≤3 min on any failure" — same cadence improvement the [[batched-harvest-resilience]] layer delivered for the harvest pipeline. Combined with [[decisions/resumable-checkpointing]], the train→eval→retag iteration loop is now bracket-resilient end-to-end. The 5h n=560 ETA wouldn't have fit before the user's wake; the resilience layer made the team-lead's mid-flight rescope to n=180 cost-free (kept the 18 already-done decisions via `--resume-dir`).
+
+## [2026-04-26 | fc8f2dd | Resumable trainer hardened: standalone-loadable checkpoints, --resume-from PATH, OOM injection test]
+
+Lifts the resumable trainer to the ULTRA-CRITICAL bar after team-lead flagged
+data-loss survivability as the team's top priority and noted the prior add6a2a
+commit had a correctness gap.
+
+**The bug add6a2a left:** every periodic checkpoint dir contained
+`adapters.safetensors` but no `adapter_config.json`. mlx-lm's
+`load_adapters` requires the config (it reads `num_layers` +
+`lora_parameters` for the LoRA layer reconstruction), so a crash mid-run
+would have left dirs that `mlx_lm.load(adapter_path=...)` couldn't open
+without manual config-copy. Found by re-reading the team-lead's
+"checkpoints must be REAL — every N steps a complete adapter write that
+can be loaded standalone" instruction.
+
+**Touched pages:** [[decisions/resumable-checkpointing]]
+
+**Updated:** policy page rewrites mechanism + tradeoffs + tested
+sections to reflect hardening; how-to-use section adds `--resume-from
+PATH` recipe for the dir-fork case.
+
+**Concretely:**
+- Each periodic write now produces `{adapters.safetensors,
+  adapter_config.json}` in BOTH the snapshot dir and the top-level
+  mirror, via a shared `_build_adapter_config` skeleton +
+  `_enrich_adapter_config` per-write layering.
+- `_save_crash_snapshot` does the same for `best_on_crash/` (so the
+  crash dir loads standalone too).
+- `--resume-from PATH` lands as the explicit "fork from another dir"
+  form alongside `--resume`.
+- New `test_train_mlx_metal_oom_re_raises_after_persisting`
+  monkey-patches `mlx_lm.tuner.trainer.train` to raise the EXACT
+  signature from run-3 attempt 3 (`RuntimeError("[metal::malloc]
+  Resource limit (...) exceeded")`) and asserts `train_mlx` re-raises
+  while leaving `best_on_crash/` loadable via
+  `mlx_lm.load(adapter_path=...)`.
+
+**Tested:** 43/43 unit tests pass (was 21, now includes 22 new — +13
+for this hardening pass). End-to-end `kill -9` + `--resume` validated
+on 50-row corpus: pre-kill best (val 1.163 @ iter 24) preserved across
+SIGKILL, resumed iter-1 val (1.163) matches, new best lands at val
+0.7955 @ iter 49 mid-resume, final adapter loads standalone.
+`--resume-from` dir-fork validated separately. Wall overhead measured
+at <0% (within run-to-run noise) for `--steps-per-checkpoint 5` over
+30 iters; default of 100 is comfortably under the 5% bar.
+
+**Frontier shift:** Run-4 (#6) and any subsequent training run inherits
+crash-survivability that the team-lead emphasized was "a huge part of
+the OOM puzzle." The run-3 attempt-3 metal-OOM at iter 487/1343 would
+now leave a recoverable adapter on disk in five places: latest
+periodic checkpoint dir, prior periodic checkpoint dir, top-level
+mirror, `best_on_crash/`, and any explicit `--resume-from` fork.
+
+**Receipts:** `scratch/resume_smoke/TRANSCRIPT.md` documents the full
+SIGKILL+resume transcript with the standalone-loadability checks and
+overhead measurements.
