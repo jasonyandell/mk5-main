@@ -1013,7 +1013,7 @@ Filter-only STaR on the 2000-harvest strict pool launched on 2026-04-25 afternoo
 
 ---
 
-## [2026-04-25 | TBD-shortsha | Burl STaR run-3b + 3c — preserve-thoughts is load-bearing; recovers thought-block emission 0% → 95%]
+## [2026-04-25 | 47f2d85 | Burl STaR run-3b + 3c — preserve-thoughts is load-bearing; recovers thought-block emission 0% → 95%]
 
 Two trained adapters and an in-progress eval. Run-3b (default = preserve-thoughts OFF) and run-3c (preserve-thoughts ON, only delta) form the cleanest A/B in the project to date on whether retaining thought tokens at SFT actually changes inference behavior. Run-3b's adapter learned to skip reasoning entirely; run-3c's adapter emits thoughts on ~95% of decisions and improves on bot-match and |Δ|. The recipe-lesson is filed; the experiment page now reflects the success.
 
