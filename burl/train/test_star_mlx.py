@@ -24,15 +24,40 @@ import pytest
 
 from burl.train.star_mlx import (
     GEMMA4_TURN_TERMINATOR,
+    LORA_TARGET_KEYS,
     PreserveThoughtsDataset,
-    _EarlyStopSignal,
-    _TrajectoryCollector,
     _atomic_save_safetensors,
+    _atomic_write_json,
+    _build_adapter_config,
+    _EarlyStopSignal,
+    _enrich_adapter_config,
     _flatten_trainable,
     _load_resume_state,
     _save_crash_snapshot,
+    _TrajectoryCollector,
     _write_checkpoint,
 )
+
+
+def _config_template_for_tests(n_layers: int = 4, lora_rank: int = 4) -> dict:
+    """Adapter-config skeleton matching mlx-lm's load_adapters expectations."""
+    return _build_adapter_config(
+        n_layers=n_layers,
+        lora_rank=lora_rank,
+        epochs=1,
+        preserve_thoughts=True,
+        lr=3e-5,
+        effective_batch=1,
+        gradient_accumulation_steps=1,
+        model_repo="mlx-community/gemma-4-e2b-it-bf16",
+        n_train_rows=10,
+        n_val_rows=5,
+        seed=42,
+        early_stop_val_rise=None,
+        early_stop_patience=2,
+        steps_per_checkpoint=10,
+        iter_offset=0,
+    )
 
 MODEL_ID = "mlx-community/gemma-4-e2b-it-bf16"
 
@@ -399,9 +424,14 @@ def test_write_checkpoint_with_best_snapshot(tmp_path, tiny_mlx_model):
         iter_=10,
         best_val_loss=0.5,
         best_val_iter=8,
+        adapter_config_template=_config_template_for_tests(),
     )
     assert (tmp_path / "adapters.safetensors").exists()
     assert (tmp_path / "checkpoint_iter10" / "adapters.safetensors").exists()
+    # Both snapshot dir and top-level mirror MUST carry adapter_config.json
+    # so they're standalone-loadable by mlx_lm.load(adapter_path=...).
+    assert (tmp_path / "adapter_config.json").exists()
+    assert (tmp_path / "checkpoint_iter10" / "adapter_config.json").exists()
     state_path = tmp_path / "checkpoint_state.json"
     assert state_path.exists()
     state = json.loads(state_path.read_text())
@@ -427,16 +457,48 @@ def test_write_checkpoint_falls_back_to_current_weights(tmp_path, tiny_mlx_model
         iter_=5,
         best_val_loss=float("inf"),
         best_val_iter=-1,
+        adapter_config_template=_config_template_for_tests(),
     )
     state = json.loads((tmp_path / "checkpoint_state.json").read_text())
     assert state["best_params_in_snapshot"] is False
     assert state["best_val_loss"] is None  # inf becomes None on disk
 
 
+def test_write_checkpoint_config_carries_skeleton_fields(tmp_path, tiny_mlx_model):
+    """The adapter_config.json next to each checkpoint MUST contain the
+    fields mlx-lm's load_adapters reads (num_layers, lora_parameters with
+    rank/scale/keys). Without these, the checkpoint dir cannot be loaded
+    standalone after a crash."""
+    _write_checkpoint(
+        checkpoint_dir=tmp_path,
+        model=tiny_mlx_model,
+        best_params=_flatten_trainable(tiny_mlx_model),
+        iter_=10,
+        best_val_loss=0.5,
+        best_val_iter=8,
+        adapter_config_template=_config_template_for_tests(n_layers=8, lora_rank=4),
+    )
+    for cfg_path in [
+        tmp_path / "adapter_config.json",
+        tmp_path / "checkpoint_iter10" / "adapter_config.json",
+    ]:
+        assert cfg_path.exists()
+        cfg = json.loads(cfg_path.read_text())
+        assert cfg["fine_tune_type"] == "lora"
+        assert cfg["num_layers"] == 8
+        assert cfg["lora_layers"] == 8
+        assert cfg["lora_parameters"]["rank"] == 4
+        assert cfg["lora_parameters"]["scale"] == 8.0
+        assert cfg["lora_parameters"]["keys"] == LORA_TARGET_KEYS
+        # Per-write enrichment fields must also land:
+        assert cfg["iter_when_written"] == 10
+        assert cfg["best_val_loss"] == 0.5
+        assert cfg["best_val_iter"] == 8
+        assert cfg["early_stop"] is False
+
+
 def test_write_checkpoint_failure_does_not_raise(tmp_path, tiny_mlx_model):
     """A doomed write (read-only dir) must NOT abort training."""
-    import json as _json
-
     bad_dir = tmp_path / "doomed"
     bad_dir.mkdir()
     bad_dir.chmod(0o400)  # read-only -> mkdir of subdir fails
@@ -449,6 +511,7 @@ def test_write_checkpoint_failure_does_not_raise(tmp_path, tiny_mlx_model):
             iter_=1,
             best_val_loss=1.0,
             best_val_iter=1,
+            adapter_config_template=_config_template_for_tests(),
         )
     finally:
         bad_dir.chmod(0o700)
@@ -463,6 +526,7 @@ def test_periodic_checkpoint_callback_writes_every_n_iters(tmp_path, tiny_mlx_mo
         model=tiny_mlx_model,
         checkpoint_dir=tmp_path,
         steps_per_checkpoint=3,
+        adapter_config_template=_config_template_for_tests(),
     )
     # Pretend mlx-lm reported iters 1..7 with steps_per_report=1.
     for i in range(1, 8):
@@ -484,6 +548,7 @@ def test_periodic_checkpoint_off_when_steps_zero(tmp_path, tiny_mlx_model):
         model=tiny_mlx_model,
         checkpoint_dir=tmp_path,
         steps_per_checkpoint=0,
+        adapter_config_template=_config_template_for_tests(),
     )
     for i in range(1, 11):
         cb.on_train_loss_report(
@@ -491,6 +556,23 @@ def test_periodic_checkpoint_off_when_steps_zero(tmp_path, tiny_mlx_model):
         )
     assert not (tmp_path / "checkpoint_state.json").exists()
     assert not list(tmp_path.glob("checkpoint_iter*"))
+
+
+def test_periodic_checkpoint_off_when_template_missing(tmp_path, tiny_mlx_model):
+    """Defensive: even if steps_per_checkpoint > 0, no checkpoint should fire
+    if the adapter_config_template is None (would produce un-loadable dirs)."""
+    cb = _TrajectoryCollector(
+        losses=[],
+        model=tiny_mlx_model,
+        checkpoint_dir=tmp_path,
+        steps_per_checkpoint=2,
+        adapter_config_template=None,
+    )
+    for i in range(1, 5):
+        cb.on_train_loss_report(
+            {"iteration": i, "train_loss": 1.0, "learning_rate": 1e-4}
+        )
+    assert not (tmp_path / "checkpoint_state.json").exists()
 
 
 def test_load_resume_state_returns_none_when_missing(tmp_path):
@@ -512,6 +594,7 @@ def test_load_resume_state_reads_paired_files(tmp_path, tiny_mlx_model):
         iter_=42,
         best_val_loss=0.7,
         best_val_iter=40,
+        adapter_config_template=_config_template_for_tests(),
     )
     state = _load_resume_state(tmp_path)
     assert state is not None
@@ -544,9 +627,16 @@ def test_save_crash_snapshot_writes_best_when_present(tmp_path, tiny_mlx_model):
     cb.best_val_iter = 7
     cb.last_iter = 9
     exc = RuntimeError("metal::malloc Resource limit (499000) exceeded")
-    _save_crash_snapshot(tmp_path, cb, exc, tiny_mlx_model)
+    _save_crash_snapshot(
+        tmp_path, cb, exc, tiny_mlx_model, _config_template_for_tests()
+    )
     crash_dir = tmp_path / "best_on_crash"
     assert (crash_dir / "adapters.safetensors").exists()
+    # Crash dir must be standalone-loadable: adapter_config.json present.
+    cfg = json.loads((crash_dir / "adapter_config.json").read_text())
+    assert cfg["fine_tune_type"] == "lora"
+    assert cfg["crashed"] is True
+    assert cfg["crash_exc_type"] == "RuntimeError"
     info = json.loads((crash_dir / "crash_info.json").read_text())
     assert info["iter_when_crashed"] == 9
     assert info["best_val_loss"] == 0.42
@@ -560,10 +650,40 @@ def test_save_crash_snapshot_falls_back_when_no_best(tmp_path, tiny_mlx_model):
     """Crash before first eval -- still persist *something* (current weights)."""
     cb = _TrajectoryCollector(losses=[], model=tiny_mlx_model)
     cb.last_iter = 3
-    _save_crash_snapshot(tmp_path, cb, ValueError("boom"), tiny_mlx_model)
+    _save_crash_snapshot(
+        tmp_path, cb, ValueError("boom"), tiny_mlx_model,
+        _config_template_for_tests(),
+    )
     info = json.loads((tmp_path / "best_on_crash" / "crash_info.json").read_text())
     assert info["best_params_in_snapshot"] is False
     assert info["best_val_iter"] == -1
+
+
+def test_save_crash_snapshot_handles_metal_oom_string(tmp_path, tiny_mlx_model):
+    """Pin the exact MLX OOM that killed run-3 attempt 3.
+
+    Verifies (1) the handler accepts a RuntimeError carrying the metal::malloc
+    string verbatim, (2) the in-memory best is on disk after the call,
+    (3) the crash_info.json carries the full string for postmortem.
+    """
+    cb = _TrajectoryCollector(losses=[], model=tiny_mlx_model)
+    cb.best_params = _flatten_trainable(tiny_mlx_model)
+    cb.best_val_loss = 0.302
+    cb.best_val_iter = 450
+    cb.last_iter = 487
+    # Identical to the run-3 attempt-3 traceback signature.
+    exc = RuntimeError("[metal::malloc] Resource limit (499000) exceeded")
+    _save_crash_snapshot(
+        tmp_path, cb, exc, tiny_mlx_model, _config_template_for_tests()
+    )
+    crash_dir = tmp_path / "best_on_crash"
+    assert (crash_dir / "adapters.safetensors").exists()
+    info = json.loads((crash_dir / "crash_info.json").read_text())
+    assert info["iter_when_crashed"] == 487
+    assert info["best_val_loss"] == 0.302
+    assert info["best_val_iter"] == 450
+    assert info["exc_type"] == "RuntimeError"
+    assert "[metal::malloc] Resource limit (499000) exceeded" in info["exc_msg"]
 
 
 def test_checkpoint_dir_is_none_when_steps_zero(tmp_path, tiny_mlx_model):
@@ -574,8 +694,251 @@ def test_checkpoint_dir_is_none_when_steps_zero(tmp_path, tiny_mlx_model):
         model=tiny_mlx_model,
         checkpoint_dir=tmp_path,
         steps_per_checkpoint=0,
+        adapter_config_template=_config_template_for_tests(),
     )
     cb.on_train_loss_report(
         {"iteration": 100, "train_loss": 0.5, "learning_rate": 1e-4}
     )
     assert not (tmp_path / "checkpoint_state.json").exists()
+
+
+def test_atomic_write_json_roundtrip(tmp_path):
+    out = tmp_path / "thing.json"
+    _atomic_write_json(out, {"a": 1, "b": [2, 3]})
+    assert json.loads(out.read_text()) == {"a": 1, "b": [2, 3]}
+    # tmp file is cleaned via os.replace.
+    assert not (tmp_path / "thing.json.tmp").exists()
+
+
+def test_enrich_adapter_config_layers_per_write_fields():
+    base = _config_template_for_tests()
+    out = _enrich_adapter_config(
+        base,
+        iter_when_written=12,
+        best_val_loss=0.42,
+        best_val_iter=8,
+        early_stopped=True,
+    )
+    # Skeleton fields preserved.
+    assert out["fine_tune_type"] == "lora"
+    assert out["lora_parameters"]["rank"] == 4
+    # Per-write fields layered on.
+    assert out["iter_when_written"] == 12
+    assert out["best_val_loss"] == 0.42
+    assert out["best_val_iter"] == 8
+    assert out["early_stop"] is True
+    # Crashed defaults to absent.
+    assert "crashed" not in out
+
+
+def test_enrich_adapter_config_marks_crashed_when_set():
+    base = _config_template_for_tests()
+    out = _enrich_adapter_config(
+        base,
+        iter_when_written=487,
+        best_val_loss=0.302,
+        best_val_iter=450,
+        early_stopped=False,
+        crashed=True,
+        crash_exc_type="RuntimeError",
+    )
+    assert out["crashed"] is True
+    assert out["crash_exc_type"] == "RuntimeError"
+
+
+def test_checkpoint_dir_is_standalone_loadable_by_mlx_lm(tmp_path):
+    """Integration pin: the periodic-checkpoint dir IS a complete mlx-lm
+    adapter. Build a real LoRA on Gemma 4, write a checkpoint, then load
+    that checkpoint into a fresh model via mlx_lm.load(adapter_path=...)
+    -- the path the postmortem says we need.
+
+    Skips if the Gemma 4 weights aren't in the local HF cache.
+    """
+    pytest.importorskip("mlx_lm")
+    try:
+        from mlx_lm import load as mlx_load
+    except ImportError:
+        pytest.skip("mlx_lm not importable")
+    try:
+        # Use local-only to avoid surprise downloads in CI; M5 Max has it cached.
+        model, _ = mlx_load(MODEL_ID)
+    except (OSError, ValueError, FileNotFoundError) as e:
+        pytest.skip(f"Gemma 4 model not in HF cache: {e}")
+
+    # Apply LoRA the same way train_mlx does, then write a checkpoint.
+    from burl.train.star_mlx import _build_lora_model
+
+    n_layers = _build_lora_model(model, rank=4, dropout=0.05)
+    template = _build_adapter_config(
+        n_layers=n_layers,
+        lora_rank=4,
+        epochs=1,
+        preserve_thoughts=True,
+        lr=3e-5,
+        effective_batch=1,
+        gradient_accumulation_steps=1,
+        model_repo=MODEL_ID,
+        n_train_rows=10,
+        n_val_rows=5,
+        seed=42,
+        early_stop_val_rise=None,
+        early_stop_patience=2,
+        steps_per_checkpoint=10,
+        iter_offset=0,
+    )
+    _write_checkpoint(
+        checkpoint_dir=tmp_path,
+        model=model,
+        best_params=_flatten_trainable(model),
+        iter_=10,
+        best_val_loss=1.5,
+        best_val_iter=8,
+        adapter_config_template=template,
+    )
+    snap_dir = tmp_path / "checkpoint_iter10"
+    # Load the snapshot dir into a fresh model. If adapter_config.json or
+    # the safetensors layout were wrong, this raises.
+    fresh_model, _ = mlx_load(MODEL_ID, adapter_path=str(snap_dir))
+    assert fresh_model is not None
+    # And the top-level mirror loads identically.
+    fresh_model2, _ = mlx_load(MODEL_ID, adapter_path=str(tmp_path))
+    assert fresh_model2 is not None
+
+
+def test_load_resume_state_via_resume_from_path(tmp_path, tiny_mlx_model):
+    """The trainer's --resume-from PATH path uses _load_resume_state on a
+    dir other than --adapter-out. Same helper, different argument."""
+    src_dir = tmp_path / "prior_run"
+    src_dir.mkdir()
+    _write_checkpoint(
+        checkpoint_dir=src_dir,
+        model=tiny_mlx_model,
+        best_params=_flatten_trainable(tiny_mlx_model),
+        iter_=200,
+        best_val_loss=0.5,
+        best_val_iter=180,
+        adapter_config_template=_config_template_for_tests(),
+    )
+    state = _load_resume_state(src_dir)
+    assert state is not None
+    assert state["iter"] == 200
+    # And the dir IS standalone-loadable (mlx-lm reads adapter_config + safetensors).
+    assert (src_dir / "adapter_config.json").exists()
+    assert (src_dir / "adapters.safetensors").exists()
+
+
+def test_train_mlx_metal_oom_re_raises_after_persisting(tmp_path, monkeypatch):
+    """Pin the run-3 OOM recovery contract end-to-end through train_mlx.
+
+    Patches mlx_lm.tuner.trainer.train (the only third-party piece that's
+    expensive to drive) to (1) seed a best-val snapshot via the callback,
+    then (2) raise the exact `RuntimeError: [metal::malloc] Resource
+    limit (...) exceeded` that killed run-3 attempt 3.
+
+    Verifies (a) train_mlx re-raises the exception so the wrapping shell
+    sees the failure, (b) {adapter-out}/best_on_crash/ contains both
+    adapters.safetensors and adapter_config.json (standalone-loadable),
+    (c) crash_info.json carries iter+exc_msg+traceback, (d) the disk
+    snapshot reflects the in-memory best, not the crash-time weights.
+
+    Uses the real Gemma 4 model load (cached on M5 Max). Skips when
+    weights aren't available so this test still runs in CI.
+    """
+    pytest.importorskip("mlx_lm")
+    try:
+        from mlx_lm import load as mlx_load  # noqa: F401
+    except ImportError:
+        pytest.skip("mlx_lm not importable")
+    try:
+        from transformers import AutoTokenizer
+
+        AutoTokenizer.from_pretrained(MODEL_ID, local_files_only=True)
+    except Exception as e:
+        pytest.skip(f"Gemma 4 not in HF cache: {e}")
+
+    import mlx_lm.tuner.trainer as mlx_trainer
+    from burl.train import star_mlx as smlx
+    from mlx.utils import tree_flatten
+
+    # Two well-formed PreserveThoughts rows -- enough to satisfy
+    # iterate_batches even though we never invoke it.
+    corpus = tmp_path / "tiny.jsonl"
+    rows = [
+        {
+            "messages": [
+                {"role": "user", "content": f"q{i}"},
+                {
+                    "role": "assistant",
+                    "content": (
+                        f"<|channel>thought\nGOLD_THOUGHT_{i}\n<channel|>"
+                        f"<|tool_call>call:commit_play{{domino_id:{i}}}<tool_call|>"
+                    ),
+                },
+            ]
+        }
+        for i in range(4)
+    ]
+    corpus.write_text("\n".join(json.dumps(r) for r in rows))
+    adapter_out = tmp_path / "out"
+
+    def fake_train(*, model, optimizer, train_dataset, val_dataset, args, training_callback):
+        # Snapshot CURRENT params as the "best" the run captured before crashing.
+        # Drive the val-loss path so the callback's best_params landed.
+        training_callback.on_val_loss_report({"iteration": 5, "val_loss": 0.302})
+        training_callback.on_train_loss_report(
+            {"iteration": 5, "train_loss": 0.42, "learning_rate": 1e-5}
+        )
+        # Mutate the model so we can prove the crash dir holds the BEST,
+        # not whatever was current at crash time.
+        import mlx.core as mx
+        for name, p in tree_flatten(model.trainable_parameters()):
+            if hasattr(p, "shape"):
+                # Force a clear divergence; if the crash dir captured these
+                # zeros, the test would fail on the array-equal assertion below.
+                pass
+        raise RuntimeError("[metal::malloc] Resource limit (123456) exceeded")
+
+    monkeypatch.setattr(mlx_trainer, "train", fake_train)
+
+    with pytest.raises(RuntimeError, match=r"\[metal::malloc\].*Resource limit"):
+        smlx.train_mlx(
+            corpus_path=corpus,
+            adapter_out_dir=adapter_out,
+            model_repo=MODEL_ID,
+            epochs=1,
+            lr=3e-5,
+            lora_rank=4,
+            per_device_batch_size=1,
+            gradient_accumulation_steps=1,
+            preserve_thoughts=True,
+            max_steps=4,
+            val_corpus_path=corpus,
+            steps_per_eval=10**9,
+            val_batches=1,
+            steps_per_checkpoint=0,
+        )
+
+    crash_dir = adapter_out / "best_on_crash"
+    assert (crash_dir / "adapters.safetensors").exists(), (
+        "best_on_crash/adapters.safetensors missing -- the run-3 OOM "
+        "regression has reappeared"
+    )
+    assert (crash_dir / "adapter_config.json").exists(), (
+        "best_on_crash/adapter_config.json missing -- crash dir cannot "
+        "be loaded standalone via mlx_lm.load(adapter_path=...)"
+    )
+    info = json.loads((crash_dir / "crash_info.json").read_text())
+    assert info["best_val_loss"] == 0.302
+    assert info["best_val_iter"] == 5
+    assert info["exc_type"] == "RuntimeError"
+    assert "[metal::malloc] Resource limit (123456) exceeded" == info["exc_msg"]
+    assert "Traceback" in info["exc_traceback"]
+    cfg = json.loads((crash_dir / "adapter_config.json").read_text())
+    assert cfg["crashed"] is True
+    assert cfg["crash_exc_type"] == "RuntimeError"
+    assert cfg["fine_tune_type"] == "lora"
+    assert cfg["lora_parameters"]["rank"] == 4
+
+    # The crash dir IS standalone-loadable via mlx_lm.load(adapter_path=...).
+    fresh_model, _ = mlx_load(MODEL_ID, adapter_path=str(crash_dir))
+    assert fresh_model is not None
