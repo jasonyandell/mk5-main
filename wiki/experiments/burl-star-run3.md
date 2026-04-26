@@ -16,7 +16,7 @@ Corpus: 1062-row strict pool from [[burl-2000-harvest]] (`ALL_AGREE_CORRECT` + `
 
 Hyperparameters: rank=8, lr=3e-5, 1 epoch, `--steps-per-eval 50`, `--early-stop-val-rise 1.02 --early-stop-patience 2` (multiplicative — 1.02 = 2% above best, not 0.02). Best-checkpoint snapshot lands the lowest-val-loss params, not the final iteration. Trainer: `burl/train/star_mlx.py`. `--preserve-thoughts` is **load-bearing** (see [[preserve-thoughts]]) — without it the Gemma 4 chat template strips `<|channel>thought...<channel|>` regions before tokenization and the adapter learns to skip reasoning at inference (run-3b).
 
-Eval: held-out sequential 560 (`harvest_20260424_133611/`), `D_required_first`, `max_tokens=2048`, batch=6 via `eval_adapter_smoke.py`. Re-tag against `per_decision_eval_k200.jsonl` and compare bucket distributions to the unadapted 560 baseline.
+Eval: held-out 560 (`harvest_20260424_133611/`), `D_required_first` via `eval_adapter_smoke.py`. The eval defaults to `max_tokens=8192` for parity with the run-3c sequential reference (`run3c_eval_seq560_20260425_181016/`); add `--batch-size 6` (proven on M5 Max with belief+gus loaded) to route through `GemmaLocalNativeBatched` and the harvest-batched lockstep loop. Smoke (n=6, batch=6) matched the sequential reference within 1 decision out of 6 (acceptable temp=0.6 stochastic noise — see `run3c_smoke_n6b6_20260426_005343/`). Re-tag against `per_decision_eval_k200.jsonl` and compare bucket distributions to the unadapted 560 baseline.
 
 Full plan and rationale: `burl/STAR_RUN3_PLAN.md`.
 
@@ -105,23 +105,32 @@ Scored against `burl/STAR_RUN3_PLAN.md` §"Success criteria":
 
 The preserve-thoughts result confirms the iter-5-E1 directional signal ([[iter5-e1-rank-sweep]]: +3.3pp at N=26) at scale (~95pp swing on thought-block presence at N=560). Open questions inherited:
 
-### Eval-side gaps (block the carry-forward decision)
+### STaR-shaped rescore (closes the eval-side gaps; see report for full table)
 
-The run-3c eval as designed answers "does the adapter emit thoughts and play legally?" but does **not** answer "is this adapter actually a better Texas 42 player than the unadapted base?" Three eval upgrades are gating the next training round:
+Post-hoc rescore landed 2026-04-26 — `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md` and the per-run `star_rescore.json` files alongside each eval dir. Rescorer: `scratch/belief_trajectory_rollout/star/star_eval_report.py` (no GPU; joins existing eval rows to `corpus_index_k200.jsonl` + `per_decision_eval_k200.jsonl`).
 
-1. **Same-harness, same-seeds base-model eval.** Without a `--adapter`-omitted run on the *same* 560 indices using the *same* harness, the +6.4pp bot-match vs run-3b is the only legitimate A/B claim. The "+14pp vs unadapted ~52% baseline" line is from a different harness at a different time and is not directly comparable.
-2. **Report mean signed Δ alongside |Δ|.** The harness already records signed `eq_delta_vs_bot`; the summary just needs to surface mean(signed) separately. Run-3c's mean signed Δ of −1.98 is the new headline diagnostic — it says "when the adapter deviates from the bot, it loses ~2 Q-points on average" which is fundamentally different from "the adapter is on average tied with the bot."
-3. **Oracle-relative regret, not just delta-vs-bot.** The wiki's [[regret-eval]] page on the Gus side is the precedent: regret = `Q(oracle_argmax) − Q(model_play)` is the metric that survives "but the bot was wrong too." The harness has the K=200 belief-sampled oracle in memory for tagging; computing the argmax-vs-chosen gap is a small extension.
+| Metric                        | base-Burl @ 560 | run-3b @ 130 | run-3c @ 560 |
+|-------------------------------|----------------:|-------------:|-------------:|
+| **k1_pass_rate** (Δ ≥ 0)      | n/a             | 61.5%        | **70.5%**    |
+| **mean_signed_delta**         | n/a             | −2.92        | **−1.98**    |
+| **mean_oracle_regret**        | **2.295**       | 3.02         | **2.165**    |
+| near_tie_rate (regret≤0.5)    | n/a             | 65.4%        | **74.1%**    |
+| Burl-loss buckets total       | 213             | n/a          | **144**      |
+| FORCED_COMMIT count           | 69              | 42 of 130    | **191** (+122) |
 
-Until those land, "did STaR-iter-3c improve play quality?" cannot be answered cleanly.
+**On the harness-independent regret axis, run-3c is the first preserve-thoughts adapter to beat naked-Burl on the held-out 560 — 2.165 vs 2.295 (5.7% relative).** The seven Burl-loss buckets shrink 213 → 144 (32% relative). The cost is `FORCED_COMMIT` ballooning from 12.3% → 34.1% of decisions — the adapter sometimes can't terminate cleanly and the harness picks for it. Investigating that is gating run-4. Reference: π regret on the same 560 = 0.551, Q-mean regret = 0.518 — the adapter still has ~1.6 Q-points of headroom against the policy head.
+
+The carry-forward decision: **run-3c is the carry-forward adapter for harvest-2.** Run-3b is dominated on every metric (k1_pass 61.5% vs 70.5%, regret 3.02 vs 2.17, signedΔ −2.92 vs −1.98). The K=1 keep rule yields ~395 surviving decisions for run-3c vs ~80 for run-3b — only run-3c has a usable carry-forward corpus.
+
+Still pending (separate tasks): same-harness `--adapter`-omitted base eval to confirm the regret comparison against an in-distribution base run (the 2.295 number is from `corpus_index_k200.jsonl`, which used a slightly different rollout setup than `eval_adapter_smoke.py`). And forced-commit root-cause investigation on the 122 new forced commits — likely a max-tokens / turn-budget interaction with the adapter's longer thought blocks.
 
 ### Training-side follow-ups
 
 1. **Why does run-3c skip thinking on ~5% of decisions?** Inspect those traces against the trained corpus — are they multi-turn corrections, forced-commit trips, or genuine "model decided not to think" cases? If the corpus contains rows where Burl committed without thinking (e.g., on forced-commit fallback), the adapter is faithfully reproducing that minority behavior.
 2. **Loss-weighting on thought tokens.** Preserve-thoughts puts thought tokens in the loss with uniform weight against tool-call tokens. Up-weighting thoughts (or down-weighting the verbatim-template tail) may further improve thought-block coverage and match rate.
 3. **[[r1-rationalization]] on the 299-row `BURL_BREAKS_CONSENSUS` bucket** is the next training experiment candidate, gated by [[reasoning-coherence-verification]] (don't ship rationalization without a verifier in the loop, per the [[candlewax]] workstream). Should be run with `--preserve-thoughts` from the start. **Don't launch it until eval-side gaps are closed** — without regret/signed-delta you can't tell whether rationalization helped or hurt.
-4. **Resumable checkpointing on `star_mlx.py`** is still unaddressed (captured as agent memory `project_resumable_training_priority`). Run-3b/3c happened to survive without it; future longer runs may not.
-5. **Generic-exception catch in `train_mlx`** — same status; cheap fix, not yet landed.
+4. **Resumable checkpointing on `star_mlx.py`** — **resolved**. `--steps-per-checkpoint N` (default 100) writes the best-val snapshot to `{adapter-out}/checkpoint_iter{N}/adapters.safetensors` and atomically mirrors it at `{adapter-out}/adapters.safetensors`; `--resume` reads `checkpoint_state.json` and trims `total_iters` by the resumed count. LR schedule restarts from zero on resume (crash-recovery, not bit-perfect). Policy: [[resumable-checkpointing]].
+5. **Generic-exception catch in `train_mlx`** — **resolved**. `train_mlx` wraps `train(...)` in `try/except Exception`; on any non-`_EarlyStopSignal` crash, `_save_crash_snapshot` writes `{adapter-out}/best_on_crash/adapters.safetensors` + `crash_info.json` (iter, exc type/msg, traceback) before re-raising. The OOM that took attempt 3 would now leave a recoverable adapter on disk.
 
 ## Pointers
 
@@ -134,8 +143,10 @@ Until those land, "did STaR-iter-3c improve play quality?" cannot be answered cl
 - Run-3 quarantined adapter dirs (all failed, under `scratch/belief_trajectory_rollout/star/adapters/`): `run3_20260425_144858_DIED_AT_BASELINE_VAL_PARENT_SHELL_KILLED/`, `run3_20260425_145914_DIED_BARE_PYTHON_NO_MLX/`, `run3_20260425_150538_FAILED_MLX_OOM_AT_ITER_487/`
 - Run-3b eval dir: `scratch/belief_trajectory_rollout/star/eval/run3b_eval_seq560_20260425_164239/`
 - Run-3c eval dir: `scratch/belief_trajectory_rollout/star/eval/run3c_eval_seq560_20260425_181016/`
-- Eval harness: `scratch/belief_trajectory_rollout/star/eval_adapter_smoke.py`
+- Eval harness: `scratch/belief_trajectory_rollout/star/eval_adapter_smoke.py` (flags: `--batch-size N` for batched mode via `GemmaLocalNativeBatched`, default 1 for sequential parity; `--max-tokens N` default 8192; `--resume-dir` to skip already-complete `decision_<gi>/trace_summary.json` for crash recovery; per-wave incremental `summary.json` write so a kill mid-run preserves progress)
 - Eval corpus (held-out): `harvest_20260424_133611/`
+- **STaR-shaped rescorer**: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
+- **STaR-shaped rescore report (run-3b vs run-3c)**: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
 - Postmortem of the 71-row collapse: `scratch/belief_trajectory_rollout/star/POSTMORTEM_002918.md`
 - Live snapshot (run-3b/3c arc): `scratch/belief_trajectory_rollout/star/RUN3BC_LIVE_SNAPSHOT.md`
 - Pre-launch prediction: `scratch/belief_trajectory_rollout/star/run3c_prediction.md`

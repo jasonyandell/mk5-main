@@ -146,7 +146,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-q-head-augmentation|gus-q-head-augmentation]] — path (a) postmortem: aug Q_head 2.216 regret, worse than baseline; random ≠ causal depletion; path closed (active)
 - [[experiments/gus-belief-co-train|gus-belief-co-train]] — §21: Bayes ceiling 39.184% confirmed; co-train falsified; q-bootstrap-belief 0.655 best look-ahead; §22 future direction (active)
 - [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
-- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing — run-3c hit ~65% match with thought-block emission on ~95% of decisions, vs run-3b's 0% thought presence at ~60% match (active)
+- [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); STaR-shaped rescore (2026-04-26) confirms run-3c beats naked-Burl on oracle regret 2.165 vs 2.295, k1_pass 70.5%, but inflates FORCED_COMMIT 12% → 34% (active)
 
 ## Decisions
 
@@ -163,6 +163,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/sft-max-seq-length|sft-max-seq-length]] — set SFTConfig max_seq_length=4096; TRL default 1024 was clipping thought-bearing rows (median 2054, max 4210); parallel to sft-completion-only-loss trap (active)
 - [[decisions/gemma-tool-response-shape|gemma-tool-response-shape]] — Gemma 4 Jinja chat-template silently drops role="tool" messages; fix: wrap tool response as user turn with numeric content (active)
 - [[decisions/max-tokens-2048-floor|max-tokens-2048-floor]] — batched Burl harvest minimum per-turn cap; sequential p99 1770 chars / max 2639 ≈ 900 tok; 1024 truncates ~1% of turns mid-thought (active)
+- [[decisions/resumable-checkpointing|resumable-checkpointing]] — Burl STaR trainer writes periodic on-disk adapters, accepts `--resume`, and persists the in-memory best on any crash; closes the run-3 OOM data-loss footgun (active)
 
 ## Sources
 

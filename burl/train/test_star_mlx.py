@@ -18,6 +18,8 @@ tokenizer-dependent tests skip.
 """
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from burl.train.star_mlx import (
@@ -25,6 +27,11 @@ from burl.train.star_mlx import (
     PreserveThoughtsDataset,
     _EarlyStopSignal,
     _TrajectoryCollector,
+    _atomic_save_safetensors,
+    _flatten_trainable,
+    _load_resume_state,
+    _save_crash_snapshot,
+    _write_checkpoint,
 )
 
 MODEL_ID = "mlx-community/gemma-4-e2b-it-bf16"
@@ -351,3 +358,224 @@ def test_preserve_thoughts_dataset_has_len_and_getitem(tokenizer):
     toks, off = ds.process(rows[0])
     assert off == 0
     assert isinstance(toks, list) and len(toks) > 0
+
+
+# --- Resumable checkpointing -----------------------------------------------
+
+
+@pytest.fixture
+def tiny_mlx_model():
+    """Minimal mlx Module so checkpoint helpers have something to flatten."""
+    pytest.importorskip("mlx")
+    import mlx.nn as nn
+
+    return nn.Linear(4, 4)
+
+
+def test_atomic_save_safetensors_roundtrip(tmp_path, tiny_mlx_model):
+    import mlx.core as mx
+
+    weights = _flatten_trainable(tiny_mlx_model)
+    out = tmp_path / "adapters.safetensors"
+    _atomic_save_safetensors(out, weights)
+    assert out.exists()
+    assert not (tmp_path / "adapters.tmp.safetensors").exists(), "tmp not cleaned"
+    loaded = mx.load(str(out))
+    assert set(loaded.keys()) == set(weights.keys())
+
+
+def test_write_checkpoint_with_best_snapshot(tmp_path, tiny_mlx_model):
+    """When a best-val snapshot exists, the checkpoint mirrors that, not
+    the live model weights."""
+    import mlx.core as mx
+
+    best = _flatten_trainable(tiny_mlx_model)
+    # Mutate the model to drift from `best`; checkpoint should still serialize `best`.
+    tiny_mlx_model.weight = mx.zeros_like(tiny_mlx_model.weight)
+    _write_checkpoint(
+        checkpoint_dir=tmp_path,
+        model=tiny_mlx_model,
+        best_params=best,
+        iter_=10,
+        best_val_loss=0.5,
+        best_val_iter=8,
+    )
+    assert (tmp_path / "adapters.safetensors").exists()
+    assert (tmp_path / "checkpoint_iter10" / "adapters.safetensors").exists()
+    state_path = tmp_path / "checkpoint_state.json"
+    assert state_path.exists()
+    state = json.loads(state_path.read_text())
+    assert state["iter"] == 10
+    assert state["best_val_loss"] == 0.5
+    assert state["best_val_iter"] == 8
+    assert state["best_params_in_snapshot"] is True
+
+    # Mirror must be byte-identical to the snapshot dir adapter.
+    mirror = mx.load(str(tmp_path / "adapters.safetensors"))
+    snap = mx.load(str(tmp_path / "checkpoint_iter10" / "adapters.safetensors"))
+    for k in mirror:
+        assert mx.array_equal(mirror[k], snap[k]).item()
+
+
+def test_write_checkpoint_falls_back_to_current_weights(tmp_path, tiny_mlx_model):
+    """No best snapshot yet (e.g. crash before first eval) -- the checkpoint
+    must capture current trainable params so resume has *something* to load."""
+    _write_checkpoint(
+        checkpoint_dir=tmp_path,
+        model=tiny_mlx_model,
+        best_params=None,
+        iter_=5,
+        best_val_loss=float("inf"),
+        best_val_iter=-1,
+    )
+    state = json.loads((tmp_path / "checkpoint_state.json").read_text())
+    assert state["best_params_in_snapshot"] is False
+    assert state["best_val_loss"] is None  # inf becomes None on disk
+
+
+def test_write_checkpoint_failure_does_not_raise(tmp_path, tiny_mlx_model):
+    """A doomed write (read-only dir) must NOT abort training."""
+    import json as _json
+
+    bad_dir = tmp_path / "doomed"
+    bad_dir.mkdir()
+    bad_dir.chmod(0o400)  # read-only -> mkdir of subdir fails
+    try:
+        # Should print a warning and return cleanly.
+        _write_checkpoint(
+            checkpoint_dir=bad_dir,
+            model=tiny_mlx_model,
+            best_params=_flatten_trainable(tiny_mlx_model),
+            iter_=1,
+            best_val_loss=1.0,
+            best_val_iter=1,
+        )
+    finally:
+        bad_dir.chmod(0o700)
+    # No state written.
+    assert not (bad_dir / "checkpoint_state.json").exists()
+
+
+def test_periodic_checkpoint_callback_writes_every_n_iters(tmp_path, tiny_mlx_model):
+    """The collector hook fires a write on every Nth iter (and only on Nth)."""
+    cb = _TrajectoryCollector(
+        losses=[],
+        model=tiny_mlx_model,
+        checkpoint_dir=tmp_path,
+        steps_per_checkpoint=3,
+    )
+    # Pretend mlx-lm reported iters 1..7 with steps_per_report=1.
+    for i in range(1, 8):
+        cb.on_train_loss_report(
+            {"iteration": i, "train_loss": 1.0, "learning_rate": 1e-4}
+        )
+    # Fires at iter 3 and 6; latest snapshot wins on the mirror.
+    assert (tmp_path / "checkpoint_iter3").exists()
+    assert (tmp_path / "checkpoint_iter6").exists()
+    assert not (tmp_path / "checkpoint_iter4").exists()
+    state = json.loads((tmp_path / "checkpoint_state.json").read_text())
+    assert state["iter"] == 6  # mirror = latest write
+
+
+def test_periodic_checkpoint_off_when_steps_zero(tmp_path, tiny_mlx_model):
+    """steps_per_checkpoint=0 disables the hook entirely (no disk writes)."""
+    cb = _TrajectoryCollector(
+        losses=[],
+        model=tiny_mlx_model,
+        checkpoint_dir=tmp_path,
+        steps_per_checkpoint=0,
+    )
+    for i in range(1, 11):
+        cb.on_train_loss_report(
+            {"iteration": i, "train_loss": 1.0, "learning_rate": 1e-4}
+        )
+    assert not (tmp_path / "checkpoint_state.json").exists()
+    assert not list(tmp_path.glob("checkpoint_iter*"))
+
+
+def test_load_resume_state_returns_none_when_missing(tmp_path):
+    assert _load_resume_state(tmp_path) is None
+
+
+def test_load_resume_state_skips_when_adapter_missing(tmp_path):
+    """A bare state file with no adapter is NOT a valid resume target -- the
+    user might have wiped weights but left the JSON; we must restart cold."""
+    (tmp_path / "checkpoint_state.json").write_text(json.dumps({"iter": 100}))
+    assert _load_resume_state(tmp_path) is None
+
+
+def test_load_resume_state_reads_paired_files(tmp_path, tiny_mlx_model):
+    _write_checkpoint(
+        checkpoint_dir=tmp_path,
+        model=tiny_mlx_model,
+        best_params=_flatten_trainable(tiny_mlx_model),
+        iter_=42,
+        best_val_loss=0.7,
+        best_val_iter=40,
+    )
+    state = _load_resume_state(tmp_path)
+    assert state is not None
+    assert state["iter"] == 42
+    assert state["best_val_loss"] == 0.7
+    assert state["best_val_iter"] == 40
+
+
+def test_iter_offset_shifts_logged_steps(tiny_mlx_model):
+    """On resume, iter_offset shifts the trajectory's step axis so plots
+    don't reset to zero mid-run."""
+    cb = _TrajectoryCollector(
+        losses=[],
+        model=tiny_mlx_model,
+        iter_offset=100,
+    )
+    cb.on_train_loss_report(
+        {"iteration": 1, "train_loss": 0.5, "learning_rate": 1e-4}
+    )
+    cb.on_val_loss_report({"iteration": 5, "val_loss": 0.6})
+    assert cb.losses[0]["step"] == 101
+    assert cb.val_losses[0]["step"] == 105
+    assert cb.best_val_iter == 105  # offset propagates into best-tracker
+
+
+def test_save_crash_snapshot_writes_best_when_present(tmp_path, tiny_mlx_model):
+    cb = _TrajectoryCollector(losses=[], model=tiny_mlx_model)
+    cb.best_params = _flatten_trainable(tiny_mlx_model)
+    cb.best_val_loss = 0.42
+    cb.best_val_iter = 7
+    cb.last_iter = 9
+    exc = RuntimeError("metal::malloc Resource limit (499000) exceeded")
+    _save_crash_snapshot(tmp_path, cb, exc, tiny_mlx_model)
+    crash_dir = tmp_path / "best_on_crash"
+    assert (crash_dir / "adapters.safetensors").exists()
+    info = json.loads((crash_dir / "crash_info.json").read_text())
+    assert info["iter_when_crashed"] == 9
+    assert info["best_val_loss"] == 0.42
+    assert info["best_val_iter"] == 7
+    assert info["best_params_in_snapshot"] is True
+    assert info["exc_type"] == "RuntimeError"
+    assert "metal::malloc" in info["exc_msg"]
+
+
+def test_save_crash_snapshot_falls_back_when_no_best(tmp_path, tiny_mlx_model):
+    """Crash before first eval -- still persist *something* (current weights)."""
+    cb = _TrajectoryCollector(losses=[], model=tiny_mlx_model)
+    cb.last_iter = 3
+    _save_crash_snapshot(tmp_path, cb, ValueError("boom"), tiny_mlx_model)
+    info = json.loads((tmp_path / "best_on_crash" / "crash_info.json").read_text())
+    assert info["best_params_in_snapshot"] is False
+    assert info["best_val_iter"] == -1
+
+
+def test_checkpoint_dir_is_none_when_steps_zero(tmp_path, tiny_mlx_model):
+    """Defensive: even if a caller wires checkpoint_dir + steps_per_checkpoint=0,
+    no checkpoint should land. (We rely on this in train_mlx.)"""
+    cb = _TrajectoryCollector(
+        losses=[],
+        model=tiny_mlx_model,
+        checkpoint_dir=tmp_path,
+        steps_per_checkpoint=0,
+    )
+    cb.on_train_loss_report(
+        {"iteration": 100, "train_loss": 0.5, "learning_rate": 1e-4}
+    )
+    assert not (tmp_path / "checkpoint_state.json").exists()

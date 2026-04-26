@@ -24,8 +24,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import tempfile
 import time
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -114,6 +116,7 @@ class _TrajectoryCollector:
     best_val_iter: int = -1
     best_params: dict | None = None
     over_threshold_streak: int = 0
+    last_iter: int = 0
 
     # When set, the callback also snapshots model.trainable_parameters at
     # each new best-val-loss and aborts via _EarlyStopSignal once val_loss
@@ -123,19 +126,44 @@ class _TrajectoryCollector:
     early_stop_val_rise: float | None = None
     early_stop_patience: int = 2
 
+    # Periodic checkpointing. When steps_per_checkpoint > 0, write
+    # ``adapters.safetensors`` + ``checkpoint_state.json`` to
+    # ``checkpoint_dir`` every N iters. Always writes the best-val snapshot
+    # if one exists; falls back to current trainable params before any eval.
+    checkpoint_dir: Path | None = None
+    steps_per_checkpoint: int = 0
+    iter_offset: int = 0  # added to logged iter on resume so axes are continuous
+
     def on_train_loss_report(self, train_info: dict) -> None:
+        step = int(train_info["iteration"]) + self.iter_offset
+        self.last_iter = step
         self.losses.append(
             {
-                "step": int(train_info["iteration"]),
+                "step": step,
                 "loss": float(train_info["train_loss"]),
                 "lr": float(train_info.get("learning_rate", 0.0)),
             }
         )
+        if (
+            self.steps_per_checkpoint > 0
+            and self.checkpoint_dir is not None
+            and self.model is not None
+            and step > 0
+            and step % self.steps_per_checkpoint == 0
+        ):
+            _write_checkpoint(
+                checkpoint_dir=self.checkpoint_dir,
+                model=self.model,
+                best_params=self.best_params,
+                iter_=step,
+                best_val_loss=self.best_val_loss,
+                best_val_iter=self.best_val_iter,
+            )
 
     def on_val_loss_report(self, val_info: dict) -> None:
         # mlx-lm passes iteration-1 in val_info; use as-is so the val and
         # train series share the same iteration axis.
-        step = int(val_info["iteration"])
+        step = int(val_info["iteration"]) + self.iter_offset
         val_loss = float(val_info["val_loss"])
         self.val_losses.append({"step": step, "val_loss": val_loss})
 
@@ -172,6 +200,154 @@ class _TrajectoryCollector:
         else:
             # Streak only counts consecutive evals above threshold.
             self.over_threshold_streak = 0
+
+
+def _flatten_trainable(model) -> dict:
+    from mlx.utils import tree_flatten
+
+    return dict(tree_flatten(model.trainable_parameters()))
+
+
+def _atomic_save_safetensors(path: Path, weights: dict) -> None:
+    """Write safetensors to a sibling tmp path then os.replace into place.
+
+    Avoids a half-written ``adapters.safetensors`` if the process dies during
+    serialization. ``mx.save_safetensors`` insists on a ``.safetensors``
+    extension, so the tmp filename keeps it ('foo.tmp.safetensors') rather
+    than appending '.tmp' suffix-style.
+    """
+    import mlx.core as mx
+
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.stem + ".tmp" + path.suffix)
+    mx.save_safetensors(str(tmp), weights)
+    os.replace(tmp, path)
+
+
+def _write_checkpoint(
+    checkpoint_dir: Path,
+    model,
+    best_params: dict | None,
+    iter_: int,
+    best_val_loss: float,
+    best_val_iter: int,
+) -> None:
+    """Write the latest checkpoint adapter + state file.
+
+    Layout (rotated, 1-deep history):
+
+      {checkpoint_dir}/checkpoint_iter{iter_}/adapters.safetensors
+      {checkpoint_dir}/adapters.safetensors        # mirror of latest
+      {checkpoint_dir}/checkpoint_state.json       # iter, best-val tracker
+
+    Always serializes the best-val snapshot when one exists; otherwise the
+    current trainable params (in case the run crashes before the first eval).
+
+    Errors are logged but do NOT abort training -- a failed checkpoint write
+    is strictly less bad than losing the run.
+    """
+    try:
+        weights = best_params if best_params is not None else _flatten_trainable(model)
+        snap_dir = checkpoint_dir / f"checkpoint_iter{iter_}"
+        snap_dir.mkdir(parents=True, exist_ok=True)
+        _atomic_save_safetensors(snap_dir / "adapters.safetensors", weights)
+        # Mirror at the top level so {adapter_out}/adapters.safetensors is
+        # always the latest checkpoint -- mlx_lm.load(adapter_path=...) reads
+        # this filename directly.
+        _atomic_save_safetensors(checkpoint_dir / "adapters.safetensors", weights)
+        state = {
+            "iter": int(iter_),
+            "best_val_loss": (
+                float(best_val_loss) if math.isfinite(best_val_loss) else None
+            ),
+            "best_val_iter": int(best_val_iter),
+            "best_params_in_snapshot": best_params is not None,
+            "ts": time.time(),
+        }
+        state_tmp = checkpoint_dir / "checkpoint_state.json.tmp"
+        with open(state_tmp, "w") as fid:
+            json.dump(state, fid, indent=2)
+        os.replace(state_tmp, checkpoint_dir / "checkpoint_state.json")
+        print(
+            f"[ckpt] iter={iter_} -> {snap_dir.name}/ "
+            f"(best_val_loss="
+            f"{best_val_loss if math.isfinite(best_val_loss) else 'inf'} "
+            f"@ {best_val_iter}; "
+            f"{'best-snapshot' if best_params is not None else 'current-weights'})",
+            flush=True,
+        )
+    except Exception as exc:  # never let ckpt failure kill training
+        print(f"[ckpt] WARN write failed at iter={iter_}: {exc}", flush=True)
+
+
+def _save_crash_snapshot(
+    adapter_out_dir: Path, callback: "_TrajectoryCollector", exc: BaseException, model
+) -> None:
+    """Serialize best-so-far + crash trace to ``best_on_crash/`` so a
+    metal-OOM (or any other ``Exception``) doesn't lose the in-memory best.
+
+    Called from the generic-exception handler in ``train_mlx``. Falls back to
+    current trainable params if no eval has fired yet.
+    """
+    crash_dir = adapter_out_dir / "best_on_crash"
+    try:
+        crash_dir.mkdir(parents=True, exist_ok=True)
+        weights = (
+            callback.best_params
+            if callback.best_params is not None
+            else _flatten_trainable(model)
+        )
+        _atomic_save_safetensors(crash_dir / "adapters.safetensors", weights)
+        info = {
+            "iter_when_crashed": int(callback.last_iter),
+            "best_val_loss": (
+                float(callback.best_val_loss)
+                if math.isfinite(callback.best_val_loss)
+                else None
+            ),
+            "best_val_iter": int(callback.best_val_iter),
+            "best_params_in_snapshot": callback.best_params is not None,
+            "exc_type": type(exc).__name__,
+            "exc_msg": str(exc),
+            "exc_traceback": traceback.format_exc(),
+            "ts": time.time(),
+        }
+        with open(crash_dir / "crash_info.json", "w") as fid:
+            json.dump(info, fid, indent=2)
+        print(
+            f"[crash-save] wrote {crash_dir}/adapters.safetensors "
+            f"(best_val_loss="
+            f"{callback.best_val_loss if math.isfinite(callback.best_val_loss) else 'inf'} "
+            f"@ iter {callback.best_val_iter})",
+            flush=True,
+        )
+    except Exception as save_exc:
+        print(
+            f"[crash-save] WARN failed to persist crash snapshot: {save_exc}",
+            flush=True,
+        )
+
+
+def _load_resume_state(adapter_out_dir: Path) -> dict | None:
+    """Read ``checkpoint_state.json`` from a previous run, if present.
+
+    Returns the state dict, or None if no checkpoint is on disk.
+    """
+    state_path = adapter_out_dir / "checkpoint_state.json"
+    if not state_path.exists():
+        return None
+    with open(state_path, "r") as fid:
+        state = json.load(fid)
+    if not (adapter_out_dir / "adapters.safetensors").exists():
+        # Have a state file but no adapter -- treat as cold start; warn.
+        print(
+            f"[resume] checkpoint_state.json found at {state_path} but no "
+            f"adapters.safetensors at sibling; ignoring (cold start)",
+            flush=True,
+        )
+        return None
+    return state
 
 
 def _load_corpus(path: Path) -> list[dict[str, Any]]:
@@ -256,8 +432,18 @@ def train_mlx(
     val_batches: int = -1,
     early_stop_val_rise: float | None = None,
     early_stop_patience: int = 2,
+    steps_per_checkpoint: int = 100,
+    resume: bool = False,
 ) -> dict:
-    """Train a LoRA adapter on a JSONL chat corpus."""
+    """Train a LoRA adapter on a JSONL chat corpus.
+
+    Resumability: if ``resume=True`` and ``adapter_out_dir`` contains a
+    ``checkpoint_state.json`` written by a prior run, the adapter weights are
+    loaded into the freshly-built LoRA layers and ``total_iters`` is reduced
+    by the iter count in the state file. The optimizer + LR schedule restart
+    from scratch -- this is a crash-recovery feature, not a bit-perfect
+    continuation.
+    """
     import mlx.core as mx
     from mlx.utils import tree_flatten
     from mlx_lm import load as mlx_load
@@ -315,6 +501,47 @@ def train_mlx(
     )
     n_layers = _build_lora_model(model, rank=lora_rank, dropout=0.05)
     print_trainable_parameters(model)
+
+    # Resume: load prior adapter weights into the freshly-built LoRA layers,
+    # restore the best-val tracker, and trim total_iters by the iter count
+    # captured at the last on-disk checkpoint. Optimizer + LR schedule are
+    # rebuilt from the trimmed iter budget, so warmup/cosine restart from
+    # zero (this is a crash-recovery feature, not a bit-perfect resume).
+    resume_state: dict | None = None
+    iter_offset = 0
+    resumed_best_val_loss = math.inf
+    resumed_best_val_iter = -1
+    if resume:
+        resume_state = _load_resume_state(adapter_out_dir)
+        if resume_state is None:
+            print(
+                f"[resume] requested but no checkpoint at {adapter_out_dir}; "
+                f"starting cold",
+                flush=True,
+            )
+        else:
+            adapter_weights_path = adapter_out_dir / "adapters.safetensors"
+            print(
+                f"[resume] loading adapter from {adapter_weights_path} "
+                f"(prior iter={resume_state['iter']}, "
+                f"best_val_loss={resume_state.get('best_val_loss')} "
+                f"@ {resume_state.get('best_val_iter')})",
+                flush=True,
+            )
+            model.load_weights(str(adapter_weights_path), strict=False)
+            iter_offset = int(resume_state["iter"])
+            if resume_state.get("best_val_loss") is not None:
+                resumed_best_val_loss = float(resume_state["best_val_loss"])
+            resumed_best_val_iter = int(resume_state.get("best_val_iter", -1))
+            remaining = max(1, total_iters - iter_offset)
+            print(
+                f"[resume] iter_offset={iter_offset} "
+                f"remaining_iters={remaining}/{total_iters} "
+                f"(LR schedule restarts from zero on remaining)",
+                flush=True,
+            )
+            total_iters = remaining
+
     optimizer = _build_optimizer(lr=lr, total_iters=total_iters)
 
     adapter_file = adapter_out_dir / "adapters.safetensors"
@@ -347,12 +574,33 @@ def train_mlx(
         grad_accumulation_steps=gradient_accumulation_steps,
     )
 
+    # The callback always needs ``model`` now: it owns periodic-checkpoint
+    # writes (which fall back to current-weights when no eval has fired) and
+    # best-val snapshotting. Previously model was only attached when
+    # early_stop_val_rise was set.
     callback = _TrajectoryCollector(
         losses=[],
-        model=model if early_stop_val_rise is not None else None,
+        best_val_loss=resumed_best_val_loss,
+        best_val_iter=resumed_best_val_iter,
+        model=model,
         early_stop_val_rise=early_stop_val_rise,
         early_stop_patience=early_stop_patience,
+        checkpoint_dir=adapter_out_dir if steps_per_checkpoint > 0 else None,
+        steps_per_checkpoint=steps_per_checkpoint,
+        iter_offset=iter_offset,
     )
+    # On resume the loaded adapter weights ARE the prior best snapshot.
+    # Seed best_params with them so an early crash (before the first new
+    # best lands) still serializes the prior best, not partially-trained
+    # weights that overrode it.
+    if resume_state is not None:
+        callback.best_params = _flatten_trainable(model)
+    if steps_per_checkpoint > 0:
+        print(
+            f"[ckpt] periodic checkpointing every {steps_per_checkpoint} iters "
+            f"-> {adapter_out_dir}/checkpoint_iter*",
+            flush=True,
+        )
     early_stopped = False
     t_train = time.time()
     try:
@@ -367,6 +615,17 @@ def train_mlx(
     except _EarlyStopSignal as exc:
         early_stopped = True
         print(f"[early-stop] {exc}", flush=True)
+    except Exception as exc:
+        # Generic-exception catch (motivation: run-3 attempt 3 metal-OOM at
+        # iter 487/1343 lost the in-memory best-val snapshot because only
+        # _EarlyStopSignal was caught). Persist the snapshot, then re-raise
+        # so the crash is still visible to the caller / wrapping shell.
+        print(
+            f"[crash] {type(exc).__name__}: {exc} -- saving best-on-crash snapshot",
+            flush=True,
+        )
+        _save_crash_snapshot(adapter_out_dir, callback, exc, model)
+        raise
     elapsed = time.time() - t_train
 
     # Save best-checkpoint snapshot if one was captured (early-stop with
@@ -381,7 +640,7 @@ def train_mlx(
         adapter_weights = callback.best_params
     else:
         adapter_weights = dict(tree_flatten(model.trainable_parameters()))
-    mx.save_safetensors(str(adapter_file), adapter_weights)
+    _atomic_save_safetensors(adapter_file, adapter_weights)
 
     # `num_layers` + `lora_parameters` are what load_adapters actually reads.
     adapter_config = {
@@ -410,6 +669,8 @@ def train_mlx(
         ),
         "early_stop_val_rise": early_stop_val_rise,
         "early_stop_patience": early_stop_patience,
+        "steps_per_checkpoint": steps_per_checkpoint,
+        "resumed_from_iter": iter_offset if iter_offset > 0 else None,
     }
     with open(adapter_out_dir / "adapter_config.json", "w") as fid:
         json.dump(adapter_config, fid, indent=2)
@@ -471,6 +732,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                         "Off by default.")
     p.add_argument("--early-stop-patience", type=int, default=2,
                    help="Consecutive evals above threshold required to abort.")
+    p.add_argument("--steps-per-checkpoint", type=int, default=100,
+                   help="Iters between on-disk adapter checkpoints. 0 disables. "
+                        "Each write atomically updates {adapter-out}/adapters.safetensors "
+                        "+ a checkpoint_iter{N}/ snapshot.")
+    p.add_argument("--resume", action="store_true",
+                   help="If {adapter-out}/checkpoint_state.json exists, load it "
+                        "and pick up training from the recorded iter "
+                        "(LR schedule restarts; this is crash-recovery only).")
     p.add_argument("--smoke", action="store_true", help="In-memory 5-row smoke test.")
     return p
 
@@ -560,6 +829,8 @@ def main(argv: list[str] | None = None) -> int:
         val_batches=args.val_batches,
         early_stop_val_rise=args.early_stop_val_rise,
         early_stop_patience=args.early_stop_patience,
+        steps_per_checkpoint=args.steps_per_checkpoint,
+        resume=args.resume,
     )
     summary = {k: v for k, v in result.items()
                if k not in {"loss_trajectory", "val_loss_trajectory"}}

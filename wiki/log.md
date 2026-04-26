@@ -1044,3 +1044,54 @@ Two trained adapters and an in-progress eval. Run-3b (default = preserve-thought
 **Pre-launch prediction artifact (kept for the loop):** `scratch/belief_trajectory_rollout/star/run3c_prediction.md` — the project under-estimated preserve-thoughts in two consistent directions: the val-loss gap was smaller than expected, and the thought-block coverage was much higher than expected. See [[burl-star-run3]] §"Prediction vs reality".
 
 **Live snapshot used by archivist:** `scratch/belief_trajectory_rollout/star/RUN3BC_LIVE_SNAPSHOT.md`. Run-3c eval completed at n=560 (4.1h wall) after the snapshot; final numbers folded in by team-lead before this commit.
+
+---
+
+## [2026-04-26 | <pending> | Burl STaR run-3b/3c — STaR-shaped post-hoc rescore lands]
+
+Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bot-match and thought-block presence but couldn't answer "does the adapter actually play better Texas 42 than naked-Burl?" The new rescorer (`scratch/belief_trajectory_rollout/star/star_eval_report.py`) joins the existing per-decision eval files to the harvest's `corpus_index_k200.jsonl` and the diagnostic `per_decision_eval_k200.jsonl` to compute STaR-shaped metrics — `k1_pass`, `signed_delta`, `oracle_regret`, re-bucketed adapter-vs-base classification, and per-base-bucket flip matrix — without rerunning inference.
+
+**Touched pages:** [[experiments/burl-star-run3]]
+
+**Frontier shift:**
+- **Run-3c is the first preserve-thoughts adapter to beat naked-Burl on oracle regret on the held-out 560.** Mean oracle regret 2.295 (base) → 2.165 (run-3c), a 5.7% relative reduction. The seven Burl-loss buckets shrink 213 → 144 in count (32% relative). On the harness-independent regret axis, the adapter is on the right side of the line.
+- **K=1 pass rate (Δ ≥ 0) for run-3c is 70.5% vs run-3b's 61.5%.** Run-3c yields ~395 surviving decisions for harvest-2 carry-forward; run-3b yields ~80. Run-3c is the carry-forward adapter; run-3b is dominated on every STaR-shaped metric (regret 3.02 vs 2.17, signedΔ −2.92 vs −1.98).
+- **The cost of run-3c's regret win is forced-commit inflation: 12.3% (base) → 34.1% (adapter).** 122 additional decisions where the harness has to pick for the model after the adapter fails to terminate cleanly. Most of this comes out of `ALL_AGREE_CORRECT` (68 of 242 base AAC decisions go to FORCED_COMMIT under the adapter). The forced-commit pick is usually the highest-E[Q] probed play, so match_oracle stays high — but the decision shape is degraded vs a clean Burl commit.
+- **Bucket flip matrix is reproducible.** Saved per-eval as `star_rescore.json` alongside each eval dir, with `match_by_base_bucket`, `bucket_flip_matrix`, and full per-row JSONL. Future runs can drop into the same rescorer without changing the eval harness.
+
+**Questions opened:**
+- What's driving the 122 new forced commits? Likely a max-tokens / turn-budget interaction with the adapter's longer thought blocks, but unverified. Investigating before run-4 to avoid baking the failure mode into harvest-2 training distribution.
+- Are the BURL_BREAKS_CONSENSUS reductions (95 → 66, with 20 flipping all the way to ALL_AGREE_CORRECT) generalizing to held-out, or are they a function of training corpus overlap with this specific 560? Confirming requires a fresh-seeds harvest; that's harvest-2 and run-4.
+
+**Questions resolved:**
+- "Did run-3c actually improve play quality, separate from reasoning emission?" — yes, modestly (5.7% relative regret reduction on the same held-out 560). The bucket-shape evidence is consistent: every Burl-loss bucket shrinks under the adapter, and the only bucket that *grows* is FORCED_COMMIT (a known harness-side fallback, not a training-side regression).
+
+**Reads-only rescore. No GPU. No retraining. Adapter weights unchanged.**
+
+**Artifacts:**
+- New: `scratch/belief_trajectory_rollout/star/star_eval_report.py`
+- New: `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md`
+- New: `scratch/belief_trajectory_rollout/star/eval/run3b_eval_seq560_20260425_164239/star_rescore.json` + `star_rescore_rows.jsonl`
+- New: `scratch/belief_trajectory_rollout/star/eval/run3c_eval_seq560_20260425_181016/star_rescore.json` + `star_rescore_rows.jsonl`
+- Updated: `wiki/experiments/burl-star-run3.md` ("What's next" section replaced; pointers list extended).
+
+## [2026-04-25 | unstaged | Resumable checkpointing + crash-snapshot save lands on `star_mlx.py`]
+
+Closes the priority blocker named in [[burl-star-run3]] §"What's next" #4 + #5 and in [[star]] recipe-lessons §6. The run-3 OOM lost a healthy adapter (val 0.302 @ iter 487) because `train_mlx` only caught `_EarlyStopSignal`. Three changes land:
+
+- `--steps-per-checkpoint N` (default 100): every Nth iter, the best-val snapshot (or current weights if no eval has fired) is atomic-written to `{adapter-out}/checkpoint_iter{N}/adapters.safetensors` and mirrored at `{adapter-out}/adapters.safetensors`, with `checkpoint_state.json` recording iter + best-val tracker.
+- `--resume`: reads `checkpoint_state.json`, calls `model.load_weights(...)` after `linear_to_lora_layers` is applied, restores the best-val tracker, sets `iter_offset` so trajectory step axes stay continuous, and trims `total_iters` by the resumed count. LR schedule restarts from zero on the trimmed budget — crash-recovery, not bit-perfect continuation.
+- Generic-exception catch in `train_mlx`: any non-`_EarlyStopSignal` exception triggers `_save_crash_snapshot` to `{adapter-out}/best_on_crash/adapters.safetensors` + `crash_info.json` (including `iter_when_crashed`, `exc_type`, `exc_msg`, traceback) before re-raising.
+
+**Touched pages:** [[decisions/resumable-checkpointing]] [[experiments/burl-star-run3]] [[topics/star]] [[index]]
+
+**Added:** [[decisions/resumable-checkpointing]]
+
+**Updated:**
+- [[topics/star]] §"Burl 2000-decision corpus ready" recipe-lesson #6 marked resolved with forward link to [[decisions/resumable-checkpointing]].
+- [[experiments/burl-star-run3]] §"Training-side follow-ups" #4 (resumable) and #5 (generic-exception) marked resolved.
+- [[index]] decisions section gained the new page.
+
+**Tested:** 12 new unit tests in `burl/train/test_star_mlx.py` (33/33 pass). End-to-end: 50-row corpus, killed at iter 30, relaunched with `--resume`; verified prior checkpoints land at iters 10/20/30, `checkpoint_state.json` records `best_val_loss=1.10 @ iter 24` from the killed run, resume picks up with `iter_offset=30` and trims remaining iters. Smoke artifacts under `scratch/resume_smoke/`.
+
+**Frontier shift:** Future Burl/STaR runs (the cluster of pending tasks numbered #5/#6/#7 on the team's task list — harvest-2, run-4 train, run-4 eval) inherit crash-recovery for free. The run-3 attempt-3 metal-OOM at iter 487/1343 would now leave a recoverable adapter on disk in three places (latest periodic checkpoint, `adapters.safetensors` mirror, `best_on_crash/adapters.safetensors`). The cost is ~one disk write per N iters and a tiny CPU spike on the checkpoint hook.
