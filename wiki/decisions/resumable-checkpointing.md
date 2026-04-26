@@ -1,8 +1,8 @@
 ---
 title: Resumable checkpointing for Burl STaR trainer
 kind: decision
-first_seen: 622816a
-last_updated: 622816a
+first_seen: add6a2a
+last_updated: add6a2a
 status: active
 ---
 

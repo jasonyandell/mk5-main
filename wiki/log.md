@@ -1075,7 +1075,7 @@ Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bo
 - New: `scratch/belief_trajectory_rollout/star/eval/run3c_eval_seq560_20260425_181016/star_rescore.json` + `star_rescore_rows.jsonl`
 - Updated: `wiki/experiments/burl-star-run3.md` ("What's next" section replaced; pointers list extended).
 
-## [2026-04-25 | unstaged | Resumable checkpointing + crash-snapshot save lands on `star_mlx.py`]
+## [2026-04-25 | add6a2a | Resumable checkpointing + crash-snapshot save lands on `star_mlx.py`]
 
 Closes the priority blocker named in [[burl-star-run3]] §"What's next" #4 + #5 and in [[star]] recipe-lessons §6. The run-3 OOM lost a healthy adapter (val 0.302 @ iter 487) because `train_mlx` only caught `_EarlyStopSignal`. Three changes land:
 
