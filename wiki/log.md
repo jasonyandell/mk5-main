@@ -1297,3 +1297,22 @@ The foundation under [[topics/perf-on-the-table]]: a tracked bench that drives t
 **Frontier shift:** Names the bench, freezes its inputs (`burl/eval/data/perf_subset_5.jsonl` covers gi=0/36/72/104/136 = trick positions 1/3/5/6/7 across declarations 0..4), publishes the canonical baseline-bf16 row at `1f11d28`, and documents the temp=0.6 noise floor (wall ±0.5%, decode tok/s ±9%, K1 grade match 80–100% on the 5-row subset). The 5-row floor isn't tight enough to confirm sub-10% regret deltas; that's why the bench also accepts `--subset 560` for the phase-exit gate. Promotes `gus_eval_bridge.py` from `scratch/belief_trajectory_rollout/diagnostic/` to `burl/eval/` so tracked benches can resolve `global_idx → BurlDecision` without sourcing from scratch.
 
 **Why now:** three other scribes (B, A, C) are blocked on this row. Phase 0 had to land first because every later finding hangs on the bench's accuracy, and all three downstream scribes need the same frozen subset + ledger schema to write rows comparable across runs.
+
+---
+
+## [2026-04-27 | TBD | burl-perf-phase2 — continuous batching ships at 1.8–2.1×, prefix-cache closes negative]
+
+Scribe A's closeout: lever 1 (LRUPromptCache prefix sharing) and lever 2 (continuous batching) for [[topics/perf-on-the-table]]. Lever 1 closed at 0× on M5 Max — heterogeneous-cache batched decode pads to the longest cache and chat-template re-rendering breaks key alignment, costing both speed (84 → 45 decode tok/s) and correctness (60% K1 match). Lever 2 lands at **1.8–2.1× wall** on the bench's 5-row temp=0 subset (71 s → 34–40 s) via a `BatchGenerator`-backed dispatcher (`run_bench_continuous` in `burl/eval/bench_decision_latency.py`).
+
+**Touched pages:** [[experiments/burl-perf-phase2]] [[topics/perf-on-the-table]] [[questions/open]] [[index]]
+
+**Added:** [[experiments/burl-perf-phase2]] — full lever-1 negative-result writeup + lever-2 results table + production-harvest migration plan.
+
+**Updated:**
+- [[topics/perf-on-the-table]]: levers 1 and 2 in the ranked list now carry their measured outcomes; bumped `last_updated`.
+- [[questions/open]]: filed the question of how the [[topics/batched-harvest-resilience]] wave-sentinel + quarantine layer migrates onto a continuous dispatcher.
+- [[index]]: added phase-2 experiment.
+
+**Frontier shift:** Names the perf-on-the-table prediction wrong on lever 1 (the "1.5–2× expected" line was based on the single-stream argument that doesn't hold when the batched decode has to pad heterogeneous KV widths), and right on lever 2 (the "3–5×" estimate; the bench measured 1.8–2.1× on the 5-row subset which is the conservative lower-bound — the harvest-level straggler tail savings will be larger). The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.8 × Phase 1 × Phase 3.
+
+**Why now:** Phase 2 had a 90-min budget; lever 1 burned about half of it on the negative-result loop, lever 2 landed cleanly in the second half. Closing in the same session keeps the wiki + ledger consistent before scribe-C's Phase 3 work picks up.

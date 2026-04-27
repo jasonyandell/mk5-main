@@ -331,6 +331,173 @@ def make_tracking_model(
 # --------------------------------------------------------------------------- #
 
 
+def run_bench_continuous(
+    *,
+    decisions: list,
+    global_indices: list[int],
+    out_dir: Path,
+    model: Any,
+    variant: Any,
+    oracle: Any,
+    batch: int,
+    turn_cap: int,
+    tracker: "StatsTracker",
+) -> dict:
+    """Continuous-batching dispatcher — Phase 2 lever 2.
+
+    Replaces the sync-wave loop in run_bench with a single long-lived
+    ``BatchGenerator``.  All decisions submit their first turn at once;
+    as a stream finishes (hits EOS or runs to max_tokens), tools dispatch
+    + state transitions for that decision happen on CPU and its next-turn
+    prompt is immediately re-submitted to the same generator while the
+    other streams keep decoding on the GPU.
+
+    The straggler-tail savings: a decision finishing in 5 turns no longer
+    holds up the GPU waiting for a decision running 8 turns; the freed
+    slot in the dispatcher pool fills with the next decision's next turn
+    in the same step.
+    """
+    import harvest_batched as hb  # type: ignore
+    from burl.harness.tool_loop_native import parse_native_completion
+    from mlx_lm.generate import BatchGenerator, BatchStats
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[dict] = []
+    bench_t0 = time.time()
+    finish_wall_by_gi: dict[int, float] = {}
+
+    # Initialize all per-decision state up front; they'll all submit their
+    # first turn into the same dispatcher pool.
+    states: list[hb._DecisionState] = []
+    for gi, dec in zip(global_indices, decisions):
+        dec_dir = out_dir / f"decision_{gi}"
+        st = hb._init_decision_state(
+            gi, dec, variant, oracle, dec_dir, max_turns=turn_cap,
+        )
+        states.append(st)
+
+    # Pool size = configured batch.  At batch=5 with 5 decisions this is one
+    # cohort, but the dispatcher still wins because turns N+1 of fast
+    # finishers can issue while slow turn N's finish.
+    gen = BatchGenerator(
+        model.model,
+        stop_tokens=[[t] for t in model.tokenizer.eos_token_ids],
+        completion_batch_size=max(batch, 1),
+        prefill_batch_size=min(batch, 8),
+    )
+    uid_to_state: dict[int, hb._DecisionState] = {}
+    uid_to_token_buf: dict[int, list[int]] = {}
+
+    def submit(state: hb._DecisionState) -> int:
+        msgs, schemas = hb._prepare_step(state)
+        ptext = model.tokenizer.apply_chat_template(
+            state.messages, tools=state.schemas,
+            tokenize=False, add_generation_prompt=True,
+            enable_thinking=False,
+        )
+        prompt_ids = model.tokenizer.encode(ptext)
+        (uid,) = gen.insert(
+            [prompt_ids],
+            [model.max_tokens],
+            samplers=[model._sampler],
+        )
+        uid_to_state[uid] = state
+        uid_to_token_buf[uid] = []
+        # Stash the prompt text on the state so apply_step can mirror the
+        # transcript bookkeeping that the wave path does.
+        state._continuous_prompt_text = ptext
+        state._continuous_started_at = time.time()
+        return uid
+
+    # Submit initial turns.
+    for st in states:
+        submit(st)
+
+    # Pump until all states are done.
+    bench_stats = BatchStats()
+    with gen.stats(bench_stats):
+        while uid_to_state:
+            responses = gen.next_generated()
+            if not responses:
+                break
+            for r in responses:
+                uid = r.uid
+                buf = uid_to_token_buf.get(uid)
+                if buf is None:
+                    continue
+                if r.finish_reason != "stop":
+                    buf.append(r.token)
+                if r.finish_reason is None:
+                    continue
+                # Stream finished — apply tool dispatch + state transition.
+                state = uid_to_state.pop(uid)
+                buf = uid_to_token_buf.pop(uid)
+                completion = model.tokenizer.decode(buf)
+                t_after_gen = time.time()
+                tracker.steps.append(StepStats(
+                    wall_s=t_after_gen - state._continuous_started_at,
+                    n_active=len(uid_to_state) + 1,
+                    prompt_tokens=0,
+                    prompt_time=0.0,
+                    prompt_tps=0.0,
+                    generation_tokens=len(buf),
+                    generation_time=t_after_gen - state._continuous_started_at,
+                    generation_tps=len(buf) / max(
+                        t_after_gen - state._continuous_started_at, 1e-9,
+                    ),
+                    peak_memory_gb=0.0,
+                ))
+                was_done = state.done
+                try:
+                    hb._apply_step(
+                        state, completion,
+                        getattr(state, "_continuous_prompt_text", ""),
+                        parse_completion=parse_native_completion,
+                    )
+                except Exception as exc:
+                    state.done = True
+                    state.result_meta["bailed"] = True
+                    state.result_meta["bail_reason"] = (
+                        f"apply_step failed (continuous): "
+                        f"{type(exc).__name__}: {exc}"
+                    )
+                if state.done and not was_done:
+                    finish_wall_by_gi[int(state.gi)] = (
+                        t_after_gen - state.wall_t0
+                    )
+                if not state.done:
+                    submit(state)
+    gen.close()
+
+    # Finalize each decision (preserves wave-loop's _finalize semantics).
+    for s in states:
+        wall_s = finish_wall_by_gi.get(int(s.gi), time.time() - s.wall_t0)
+        row = hb._finalize(s, oracle, wall_s)
+        row["global_idx"] = s.gi
+        row["bench_per_decision_wall_s"] = round(wall_s, 3)
+        rows.append(row)
+
+    bench_wall = time.time() - bench_t0
+    # Promote BatchStats into a single tracker entry covering the run so
+    # prefill / decode tok/s aggregates show up in the ledger row.
+    tracker.steps.insert(0, StepStats(
+        wall_s=bench_wall,
+        n_active=len(states),
+        prompt_tokens=int(bench_stats.prompt_tokens),
+        prompt_time=float(bench_stats.prompt_time),
+        prompt_tps=float(getattr(bench_stats, "prompt_tps", 0.0)),
+        generation_tokens=int(bench_stats.generation_tokens),
+        generation_time=float(bench_stats.generation_time),
+        generation_tps=float(getattr(bench_stats, "generation_tps", 0.0)),
+        peak_memory_gb=float(bench_stats.peak_memory),
+    ))
+    return {
+        "rows": rows,
+        "bench_wall_s": bench_wall,
+        "wave_walls_s": [bench_wall],
+    }
+
+
 def run_bench(
     *,
     decisions: list,
@@ -677,7 +844,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=(
             "Phase 2 lever 1: thread mlx_lm's LRUPromptCache through "
             "batch_generate so growing message histories share their KV "
-            "across turns. Off by default (Phase 0 baseline parity)."
+            "across turns. Off by default (Phase 0 baseline parity). "
+            "Note: in this shape it loses on M5 Max — see "
+            "wiki/experiments/burl-perf-phase2.md for the negative-result "
+            "writeup."
+        ),
+    )
+    ap.add_argument(
+        "--continuous", action="store_true",
+        help=(
+            "Phase 2 lever 2: drive the bench through a continuous-batching "
+            "dispatcher built on mlx-lm's BatchGenerator. Decisions submit "
+            "their first turn at once; as a stream finishes, tools dispatch "
+            "and the next turn's prompt re-submits to the same generator "
+            "while other streams keep decoding. Replaces the sync-wave loop."
         ),
     )
     return ap.parse_args(argv)
@@ -800,16 +980,29 @@ def main(argv: list[str] | None = None) -> int:
         REPO_ROOT / "burl" / "eval" / "results" / f"perf_{timestamp}_{args.variant}"
     )
     print(f"[bench] out_dir={out_dir}", flush=True)
-    bench_result = run_bench(
-        decisions=decisions,
-        global_indices=global_indices,
-        out_dir=out_dir,
-        model=model,
-        variant=variant_obj,
-        oracle=oracle,
-        batch=int(args.batch),
-        turn_cap=int(args.turn_cap),
-    )
+    if args.continuous:
+        bench_result = run_bench_continuous(
+            decisions=decisions,
+            global_indices=global_indices,
+            out_dir=out_dir,
+            model=model,
+            variant=variant_obj,
+            oracle=oracle,
+            batch=int(args.batch),
+            turn_cap=int(args.turn_cap),
+            tracker=tracker,
+        )
+    else:
+        bench_result = run_bench(
+            decisions=decisions,
+            global_indices=global_indices,
+            out_dir=out_dir,
+            model=model,
+            variant=variant_obj,
+            oracle=oracle,
+            batch=int(args.batch),
+            turn_cap=int(args.turn_cap),
+        )
     bench_wall = bench_result["bench_wall_s"]
 
     # ----- aggregate -----

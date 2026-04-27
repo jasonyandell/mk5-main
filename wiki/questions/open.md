@@ -64,4 +64,8 @@ Format:
   - Raised: `063fcac` ([[sources/063fcac]])
   - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[experiments/burl-2000-harvest]].
 
+- **Q:** How does the [[batched-harvest-resilience]] wave-sentinel + quarantine layer migrate to a continuous-batching dispatcher?
+  - Raised: `c002075` ([[burl-perf-phase2]])
+  - Context: Phase 2 lever 2 confirmed continuous batching is a 1.8–2.1× wall win at the bench layer, but the production harvest's resilience plumbing assumes a wave abstraction. Forward path: define a "cohort" that fences a logical group of decisions into the dispatcher pool with a shared sentinel, so quarantine semantics ("this cohort failed") survive. Open: whether mlx-lm 0.31.2's broadcast-shapes bug fires differently under continuous mid-flight prefill vs synchronous wave prefill.
+
 

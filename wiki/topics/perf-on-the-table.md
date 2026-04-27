@@ -2,7 +2,7 @@
 title: Perf on the table
 kind: topic
 first_seen: 74464e9
-last_updated: 1f11d28
+last_updated: TBD
 status: active
 ---
 
@@ -16,8 +16,8 @@ This isn't a model problem. It's harness overhead — chat-template rendering on
 
 Estimates are best-guess for M5 Max with the iter-3-rules-shape prompt distribution. Real numbers will diverge; the order is more reliable than the magnitudes.
 
-1. **Prefix sharing on prefill — 1.5–2× expected.** Each batched wave shares ~1500–2500 tokens of system prompt + rules primer + game-state preamble across N decisions, but currently re-prefills them N times. `mlx_lm.batch_generate` may already do prefix-cache-aware prefill; verify. If not, hand-roll the shared prefix once and resume from a shared KV cache. Cheapest lever; just an instrumentation pass + a flag.
-2. **Continuous batching — 3–5×.** The current sync-wave loop ([[batched-eval-resilience]]) waits for the slowest decision in each wave to finish before starting the next batch. The 50-min wave incident on the live n=180 was exactly this — 4 of 6 decisions committed in 5 turns, two ran to 14 turns, the GPU sat idle on the tail. Continuous batching slots fresh decisions into freed positions as decisions terminate; mlx-lm's async path supports this but the harness doesn't use it. Biggest single ROI.
+1. **Prefix sharing on prefill — closed at 0× on M5 Max ([[burl-perf-phase2]]).** mlx-lm 0.31.2 already exposes `prompt_caches` + `LRUPromptCache`; the trie-based prefix match works mechanically (28% hit on the 5-row subset) but loses on M5 Max because heterogeneous-cache batched decode forces `_merge_caches` to pad all streams to the longest cache width — decode tok/s collapses (84 → 45) and partial cache reuse drifts model behavior enough to flip K1 grades. Lever subsumed by lever 2; the right "prefix sharing" is the dispatcher's natural cache-state continuity within a single decision.
+2. **Continuous batching — 1.8–2.1× wall on the 5-row temp=0 subset ([[burl-perf-phase2]]).** Implemented at the bench layer as `run_bench_continuous` (`burl/eval/bench_decision_latency.py`) atop `mlx_lm.generate.BatchGenerator`. All decisions submit to a long-lived dispatcher; tools dispatch + state transitions happen on CPU as soon as a stream finishes, while other streams keep decoding. Wall: 71 s → 34–40 s. Production harvest migration deferred — the [[batched-harvest-resilience]] wave-sentinel + quarantine plumbing needs a cohort abstraction first; filed at `wiki/questions/open.md`.
 3. **Smaller per-turn token budgets — 1.3–1.5×.** `max_tokens=8192` is the eval default; harvest defaulted to 2048 ([[max-tokens-2048-floor]]). Per-turn p95 generation length is ~600 tokens. A turn-aware budget (small for the early "look up belief" turns, larger reserved for the final commit reasoning) recovers most of this. Easiest to ship behind a flag; most defensible because it doesn't change semantics, just stops paying for unused capacity.
 4. **Speculative decoding — 2–4×.** Gemma 4 E0.5B as the draft model, the E2B as the verifier. Tool-call-heavy outputs (structured `<|tool_call>...{}<tool_call|>` shapes) tend to have high acceptance rates because the surface form is templated. Requires running two models simultaneously which doubles memory pressure; needs measurement before scaling out.
 5. **Tool call parallelization within a decision — 1.5–2×.** Gemma 4's native chat template supports parallel tool calls in a single assistant turn (multiple `<|tool_call>` blocks). The current harness sequentializes them — the model emits parallel calls but the dispatcher serializes. Free turn-savings on the ~30% of decisions where the model emits 2+ tool calls in one turn (e.g., `belief_trajectory()` + `explore_game(X)`).
@@ -26,6 +26,8 @@ Estimates are best-guess for M5 Max with the iter-3-rules-shape prompt distribut
 ## Compounded realistic stack
 
 Stacking the top three (prefix sharing × continuous batching × turn-aware budgets) is roughly multiplicative on the GPU-bound portion of the wall: **~7–10× on M5 Max alone, no model changes.** The [[burl-harvest-2]] budget that cost ~5h overnight would land in ~30–45 min. None of these levers requires a Modal multi-GPU spend; M5 Max stays the production host.
+
+Phase 2 result update: lever 1 closed at 0×, lever 2 confirmed at 1.8–2.1× on the bench's 5-row temp=0 subset (and 1.36× at production-faithful temp=0.6).  The compounded realistic stack now reads roughly 1.8 × (Phase 1 turn-aware budgets) × Phase 3 (specdec + quant), and the Phase 1 lever has to do more work than originally estimated to hit the 7–10× target without lever 1.
 
 The remaining three (speculative decoding × parallel tool calls × quantization) compound to another ~3–5× when the harness can absorb the complexity. The end-state — same model, same hardware, same corpus — is plausibly **~20–40× over today's harvest**. That's the gap the calibration above flagged: we're not bottlenecked on model capacity; we're paying for a harness that was written for correctness first and never revised for throughput.
 

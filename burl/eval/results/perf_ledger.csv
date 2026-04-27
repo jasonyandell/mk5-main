@@ -5,3 +5,7 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_015127,160ed1c,perf/batch,baseline-bf16-t0,5,5,default,5,73.692,65.795,73.685,10779.8,82.8,11.33,80.0,-87.83,phase2 lever-1 baseline at temp=0 (run2 - check determinism)
 20260427_015823,eeb3339,perf/batch,prefix-cache,5,5,default,5,114.149,110.483,114.143,6906.6,54.9,12.37,80.0,-87.83,phase2 lever-1 turn-to-turn LRU cache reuse
 20260427_020118,eeb3339,perf/batch,prefix-cache,5,5,default,5,136.681,136.619,136.62,6957.3,45.0,13.46,60.0,-87.65,"phase2 lever-1 (LRUPromptCache approach, slow + no hits)"
+20260427_020553,c002075,perf/batch,continuous-batching,5,5,default,5,34.505,23.034,34.494,27672.4,68.0,10.8,80.0,-87.83,phase2 lever-2 continuous batching
+20260427_020655,c002075,perf/batch,continuous-batching,5,5,default,5,34.982,33.008,34.98,27717.5,65.5,10.8,60.0,-100.0,phase2 lever-2 continuous batching (run 2)
+20260427_020806,c002075,perf/batch,continuous-batching,5,5,default,5,39.933,38.906,39.93,19219.1,50.5,10.8,80.0,-87.83,phase2 lever-2 continuous batching (run 3 stability)
+20260427_021446,c002075,perf/batch,continuous-batching,5,5,default,5,58.584,36.893,58.582,26183.5,56.2,12.25,80.0,80.66,phase2 lever-2 production-faithful temp=0.6
