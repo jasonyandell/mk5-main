@@ -1047,7 +1047,7 @@ Two trained adapters and an in-progress eval. Run-3b (default = preserve-thought
 
 ---
 
-## [2026-04-26 | <pending> | Burl STaR run-3b/3c — STaR-shaped post-hoc rescore lands]
+## [2026-04-26 | fbe798f | Burl STaR run-3b/3c — STaR-shaped post-hoc rescore lands]
 
 Closes the eval-side gap the prior entry flagged: the run-3c eval was good on bot-match and thought-block presence but couldn't answer "does the adapter actually play better Texas 42 than naked-Burl?" The new rescorer (`scratch/belief_trajectory_rollout/star/star_eval_report.py`) joins the existing per-decision eval files to the harvest's `corpus_index_k200.jsonl` and the diagnostic `per_decision_eval_k200.jsonl` to compute STaR-shaped metrics — `k1_pass`, `signed_delta`, `oracle_regret`, re-bucketed adapter-vs-base classification, and per-base-bucket flip matrix — without rerunning inference.
 
@@ -1177,7 +1177,7 @@ overhead measurements.
 
 ---
 
-## [2026-04-26 | <pending> | In-distribution paired n=180 base eval lands — run-3c regret −39% vs naked-Burl]
+## [2026-04-26 | fbe798f | In-distribution paired n=180 base eval lands — run-3c regret −39% vs naked-Burl]
 
 The eval-side gap that was open all morning closes here: eval-speeder's batched n=180 base-model eval lands cleanly through the same harness as run-3c. Rescorer immediately folds the paired comparison into the report.
 
@@ -1201,7 +1201,7 @@ The eval-side gap that was open all morning closes here: eval-speeder's batched 
 - Updated: `wiki/topics/regret-eval.md` ("Burl-side reading" section now leads with the paired n=180 result)
 - Updated: `wiki/index.md` (burl-star-run3 + regret-eval hooks updated)
 
-## [2026-04-26 | <pending> | Promote Burl STaR eval/rescore + corpus ops out of scratch]
+## [2026-04-26 | fbe798f | Promote Burl STaR eval/rescore + corpus ops out of scratch]
 
 The load-bearing pure-Python parts of the run-3/run-4 loop now have tracked
 homes while the cap-12 harvest continues undisturbed on its original scratch
@@ -1282,7 +1282,7 @@ The overnight ingest of harvest-2 (run-3c-as-rollout) → run-4 train (filter-on
 
 ---
 
-## [2026-04-27 | <pending> | perf-sprint playbook promoted to wiki]
+## [2026-04-27 | fbe798f | perf-sprint playbook promoted to wiki]
 
 Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phase0]] → [[burl-perf-phase3]]) into a reusable playbook so future sprints start armed. The first sprint failed at the wrap step because the loop message didn't restate the goal and "wrap and write the digest" felt like discipline rather than rationalization. The playbook closes that off-ramp.
 

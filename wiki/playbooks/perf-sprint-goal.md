@@ -1,8 +1,8 @@
 ---
 title: Perf Sprint — Goal Anchor Template
 kind: playbook
-first_seen: aae430b
-last_updated: aae430b
+first_seen: fbe798f
+last_updated: fbe798f
 status: active
 ---
 
