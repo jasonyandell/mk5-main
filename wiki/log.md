@@ -1279,3 +1279,21 @@ The overnight ingest of harvest-2 (run-3c-as-rollout) → run-4 train (filter-on
 **Frontier shift:** Names the **iter-2 plateau** clearly. Filter-only STaR on a same-shape corpus from a sharper rollout policy (run-3c) does not compound — run-4 lands at regret 2.97 vs base's 3.13 (within noise) and regresses ~1.05 vs run-3c (1.92). What it does deliver: clean commit discipline (FC 9.4% vs run-3c's 33.9%), back to base-comparable. The two-axis Pareto run-3c surfaced is real: run-3c trades commit discipline for play quality; run-4 reverses the trade. Neither is strictly dominant. Bucket distribution at the harvest level was essentially identical (strict pool 1062→1075, +13 dec) — the structural shape of which decisions land in which bucket is fixed by the seed pool, not by the rollout policy. The initial ILLEGAL=28.6% harvest-yield regression read was later corrected: both harvests were `--limit 2000` runs against 2800-row chunks, and `tag_corpus.py` filled the unattempted `global_idx=2000..2799` rows as placeholder ILLEGAL. On attempted `global_idx < 2000`, harvest-2 has 2000 trace summaries and 0 ILLEGAL rows. Forward-implication: filter-only iter-N is a flat slope at this scale; the next move is **changing the loss target** ([[r1-rationalization]] on BBC, FORCED_COMMIT-as-negative), not iterating on the same shape.
 
 **Why now:** run-4 eval landed in the closing window of the overnight session (PID 51999, 45.6 min wall, 180/180 batched). The closer directive was explicit: fold three-way, write harvest-2 with corrected framing (not the early "iter-2 wins" overclaim), capture the play-quality plateau honestly. The iter-without-regression milestone holds at the *behavioral* level, but does not hold at the *play-quality* level — naming both publicly closes the loop on the overnight cycle.
+
+---
+
+## [2026-04-27 | 1f11d28 | burl-perf-phase0 — measurement harness for the speedup sprint]
+
+The foundation under [[topics/perf-on-the-table]]: a tracked bench that drives the production batched eval path against a frozen 5-decision subset and records per-decision wall, prefill/decode tok-s, peak memory, and a K1-grade-match-pct vs the latest baseline-bf16 ledger row. Phases 1–3 (cheap wins, continuous batching + prefix sharing, speculative decoding + quantization) thread their levers through `--variant <name>` and write a row each.
+
+**Touched pages:** [[experiments/burl-perf-phase0]] [[topics/perf-on-the-table]] [[index]]
+
+**Added:** [[experiments/burl-perf-phase0]] — frontmatter + Subset rationale + Measurements + Determinism notes + Pointers.
+
+**Updated:**
+- [[topics/perf-on-the-table]] gained a "Measurement harness" section with the canonical baseline-bf16 numbers (79.5s/5dec, 87 decode tok/s, 11.59 GB peak) and the Phase-1+ noise floor read; bumped `last_updated` to `1f11d28`.
+- [[index]] experiments catalog gained the new page.
+
+**Frontier shift:** Names the bench, freezes its inputs (`burl/eval/data/perf_subset_5.jsonl` covers gi=0/36/72/104/136 = trick positions 1/3/5/6/7 across declarations 0..4), publishes the canonical baseline-bf16 row at `1f11d28`, and documents the temp=0.6 noise floor (wall ±0.5%, decode tok/s ±9%, K1 grade match 80–100% on the 5-row subset). The 5-row floor isn't tight enough to confirm sub-10% regret deltas; that's why the bench also accepts `--subset 560` for the phase-exit gate. Promotes `gus_eval_bridge.py` from `scratch/belief_trajectory_rollout/diagnostic/` to `burl/eval/` so tracked benches can resolve `global_idx → BurlDecision` without sourcing from scratch.
+
+**Why now:** three other scribes (B, A, C) are blocked on this row. Phase 0 had to land first because every later finding hangs on the bench's accuracy, and all three downstream scribes need the same frozen subset + ledger schema to write rows comparable across runs.

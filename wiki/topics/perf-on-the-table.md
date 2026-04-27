@@ -2,7 +2,7 @@
 title: Perf on the table
 kind: topic
 first_seen: 74464e9
-last_updated: 74464e9
+last_updated: 1f11d28
 status: active
 ---
 
@@ -29,6 +29,43 @@ Stacking the top three (prefix sharing × continuous batching × turn-aware budg
 
 The remaining three (speculative decoding × parallel tool calls × quantization) compound to another ~3–5× when the harness can absorb the complexity. The end-state — same model, same hardware, same corpus — is plausibly **~20–40× over today's harvest**. That's the gap the calibration above flagged: we're not bottlenecked on model capacity; we're paying for a harness that was written for correctness first and never revised for throughput.
 
+## Measurement harness
+
+Phase 0 of the sprint shipped at `1f11d28`: a tracked bench that drives
+the production batched eval path against a frozen 5-decision subset and
+records per-decision wall, prefill/decode tok-s, peak memory, plus a
+K1-grade-match-pct vs the latest baseline-bf16 row.  Everything from
+here forward is measured against this bench — Phase 1 (cheap wins),
+Phase 2 (continuous batching + prefix sharing), and Phase 3 (speculative
+decoding + quantization) thread their levers through `--variant <name>`
+and write a row each.
+
+Canonical baseline-bf16 (M5 Max, batch=5, max_tokens=8192, temp=0.6,
+sha `1f11d28`):
+
+- `wall_s_total` ≈ 79.5 s for 5 decisions — about 16 s/decision.
+- `decode_tok_s` ≈ 87 per stream; `prefill_tok_s` ≈ 10,300.
+- `peak_mem_gb` = 11.59 (deterministic to 4 dp run-vs-run).
+
+Stability budget at temp=0.6: total wall reproduces to 0.5%, decode
+tok/s to 9%, K1 grade to 80–100% on the 5-row subset.  The 5-row
+floor isn't tight enough to confirm sub-10% regret deltas; that's
+why the bench also accepts `--subset 560` for the phase-exit gate.
+
+Where the artifacts live:
+
+- `burl/eval/bench_decision_latency.py` — the CLI.
+- `burl/eval/data/perf_subset_5.jsonl` — the frozen subset (5 rows +
+  header with `corpus_eval_20.pt` SHA256 + per-decision fingerprints).
+- `burl/eval/results/perf_ledger.csv` — append-only ledger row per run.
+- `burl/eval/results/perf_<ts>_<variant>.json` — full per-step detail.
+- `burl/eval/gus_eval_bridge.py` — promoted from
+  `scratch/belief_trajectory_rollout/diagnostic/` so tracked benches can
+  resolve `global_idx → BurlDecision` without sourcing from scratch.
+
+Full setup, subset rationale, and noise-floor read at
+[[burl-perf-phase0]].
+
 ## Why it matters for STaR planning
 
 A 12h iter wall and a 1.5h iter wall are different regimes, not the same regime with a faster clock. At 12h, breadth experiments are expensive — running the [[backwards-curriculum]] scout that rolls out from trick 5/0 is a one-shot bet. At 1.5h, the scout becomes a routine sanity check and curriculum-transfer becomes a multi-condition sweep. The same is true of [[r1-rationalization]]'s verifier loop, the rank-16 ablation ([[burl-star-run3]] task #9), and any of the prompt-variant sweeps documented in [[star]].
@@ -37,4 +74,4 @@ The work itself is engineering, not research — each lever is a 2–5 day sprin
 
 ## Related pages
 
-[[batch-throughput-bench]] · [[batched-eval-resilience]] · [[batched-harvest-resilience]] · [[max-tokens-2048-floor]] · [[burl-star-run3]] · [[backwards-curriculum]] · [[mlx-lm]] · [[modal]] · [[candlewax-spike-e2e]] · [[star]]
+[[burl-perf-phase0]] · [[batch-throughput-bench]] · [[batched-eval-resilience]] · [[batched-harvest-resilience]] · [[max-tokens-2048-floor]] · [[burl-star-run3]] · [[backwards-curriculum]] · [[mlx-lm]] · [[modal]] · [[candlewax-spike-e2e]] · [[star]]
