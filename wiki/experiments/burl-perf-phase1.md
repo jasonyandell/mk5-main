@@ -2,7 +2,7 @@
 title: Burl Perf — Phase 1 (Cheap Wins)
 kind: experiment
 first_seen: 160ed1c
-last_updated: 160ed1c
+last_updated: 1c4f063
 status: active
 ---
 
@@ -69,20 +69,65 @@ that gap (the bench can pass `--max-tokens 2048` directly, or
 `--max-tokens-policy turn-aware`, with identical effect on the current
 corpus).
 
-### Ledger row
+### GPU contention with scribe-A — explained, then resolved
 
-| variant | wall_total | wall_p50 | decode tok/s | peak GB | K1 match | regret Δ | notes |
-|---|---:|---:|---:|---:|---:|---:|---|
-| `baseline-bf16` (Phase 0) | 79.5 s | 77.6 s | 87.5 | 11.59 | 100% | 0% | reference (1f11d28) |
-| `baseline-bf16` (re-measure) | 40.1 s | 40.1 s | 184.5 | 11.59 | 80% | −34% | 22:00 — system was much less loaded than 01:37 |
-| `turn-aware-2048` run 1 | 47.8 s | 44.6 s | 141.8 | 11.59 | 100% | 0% | 20:07 |
-| `turn-aware-2048` run 2 | 45.5 s | 44.3 s | 140.9 | 11.59 | 60% | −100% | 20:08 |
+The first 90 minutes of Phase 1 measurement was contaminated by an
+**undeclared parallel bench from scribe-A on `perf/batch`** (Phase 2,
+continuous batching + prefix sharing) running on the same M5 Max GPU.
+The same `baseline-bf16-temp0` config drifted from 73.5 s → 82.1 s →
+134.5 s in 10 minutes; `turn-aware-budgets` (90 s) and
+`turn-aware-1024` (124 s) were measured into that drift. Team-lead
+paused scribe-A and re-ran. **Lesson worth remembering** (filed as
+[[mlx-cohort-bench-discipline]]): Apple Silicon's unified-memory GPU
+is one resource — parallel scribes on the same M5 Max contend even
+when their Python processes don't see each other. Multi-agent perf
+sprints need either a serialization protocol or a tagged-GPU
+discipline.
 
-The 79.5 → 47.8 s "speedup" is **not** the lever — it is mostly system
-load drift (see [[burl-perf-noise-floor]] below). Holding the lever's
-wall delta against the same-state `baseline-bf16` re-measure (40.1 s)
-puts `turn-aware-2048` at +13% (slower, inside the 5-row noise floor).
-The lever is correctness-preserving, not speed-positive on this corpus.
+### Clean-GPU re-measurement (after scribe-A paused)
+
+All temp=0, batch=5, max_tokens=8192 baseline / per-state under lever:
+
+| variant | wall_total | wall_p50 | decode tok/s | peak GB | gi=104 final | sha |
+|---|---:|---:|---:|---:|---:|---|
+| `baseline-bf16-temp0-clean` run 1 | 36.0 s | 31.3 s | 171.4 | 11.30 | 6 | 1b78269 |
+| `baseline-bf16-temp0-clean` run 2 | 38.9 s | 35.1 s | 168.5 | 11.59 | 6 | 1b78269 |
+| `turn-aware-256-512-2048` run 1 | 31.0 s | 29.9 s | 160.8 | 11.15 | **19** (forced) | 1b78269 |
+| `turn-aware-256-512-2048` run 2 | 30.4 s | 29.7 s | 163.9 | 11.18 | **19** (forced) | 1b78269 |
+| `turn-aware-2048-clean` run 1 | 38.0 s | 36.8 s | 172.8 | 11.59 | 19 (one-flip) | 1c4f063 |
+| `turn-aware-2048-clean` run 2 | 46.2 s | 41.3 s | 136.2 | 11.38 | 6 | 1c4f063 |
+
+Reads:
+
+- Clean baseline mean: **37.5 s ± 4%** across two consecutive runs.
+  This is the same config the Phase 0 reference reported as 79.5 s
+  ± 0.5%; the only difference is whether scribe-A was running. The
+  Phase 0 reference is now understood to be a contended measurement.
+- `256/512/2048` (the original brief spec) is **18% faster (30.7 s mean)**
+  but **output-changing**: 2 of 5 decisions hit forced-commit each run
+  (gi=36 and gi=104), and gi=104 lands play 19 instead of baseline's
+  play 6 — beyond the temp=0 MLX kernel noise that flips gi=72 between
+  plays 1 and 13 in baseline-vs-baseline.
+- `2048-flat` is **output-equivalent** to the unaware baseline within
+  the same MLX-noise envelope. gi=104's one-time flip to 19 in run 1
+  did not reproduce in run 2 — same kind of kernel-level flip the
+  baseline runs show on gi=72.
+- gi=72 alternating between play 1 and play 13 across all four
+  baseline-or-2048-flat runs (2/4 each) is the MLX-kernel noise
+  signature at temp=0 on this corpus.
+
+### What this leaves Lever 1 as
+
+The plumbing — per-prompt `max_tokens: List[int]` end-to-end, policy
+keyed on `GateState` — ships at 2048-flat. Per the Phase 1 brief's
+"K1 change → revert and move on" rule, the per-state cap stays at
+2048 because every tighter setting tested (256/512/2048, 768/768/2048,
+1024/1024/2048) flipped clean-commits to forced-commits.
+
+The bench's prior 8192 default WAS a 4× over-provision — the Phase 1
+plumbing closes that gap by making it easy for callers to opt in to
+either flat-2048 or per-state caps once a future corpus / SFT round
+gives the model less reasoning headroom to use.
 
 ## Lever 2 — Parallel tool dispatch (not shipped)
 
@@ -144,28 +189,31 @@ The plumbing landed by Lever 1 (per-prompt `max_tokens` through
 prompt-length distribution may differ enough to make per-state budgets
 matter again.
 
-## Burl-perf noise floor
+## Burl-perf noise floor (revised post-contention diagnosis)
 
-Run-to-run wall variance on the 5-decision subset is **far** larger
-than was assumed in the Phase 0 stability read (which sampled two
-back-to-back runs in a quiet system state). On 2026-04-27, the same
-`baseline-bf16` config reproduced wall at:
+The Phase 0 stability read (wall ±0.5%) sampled two back-to-back runs
+in a quiet system state. The 3.4× spread (40-134 s) observed during
+Phase 1's first 90 minutes turned out to be **mostly explainable by
+GPU contention with scribe-A**, not residual MLX noise:
 
-| Run | wall_s_total | decode tok/s | sha |
+| Run | wall_s_total | decode tok/s | scribe-A active? |
 |---|---:|---:|---|
-| Phase 0 reference | 79.5 s | 87.5 | 1f11d28 |
-| Phase 1 baseline-temp0 run 1 | 73.5 s | 81.1 | 160ed1c |
-| Phase 1 baseline-temp0 run 2 | 82.1 s | 75.7 | 160ed1c |
-| Phase 1 baseline-temp0 run 3 | 134.5 s | 47.0 | 160ed1c |
-| Phase 1 baseline-bf16 re-measure | 40.1 s | 184.5 | 160ed1c |
+| Phase 0 reference (1f11d28) | 79.5 s | 87.5 | yes (perf/batch) |
+| baseline-temp0 run 1 (160ed1c, 01:53) | 73.5 s | 81.1 | yes |
+| baseline-temp0 run 2 (160ed1c, 01:54) | 82.1 s | 75.7 | yes |
+| baseline-temp0 run 3 (160ed1c, 02:01) | 134.5 s | 47.0 | yes |
+| baseline-bf16 re-measure (160ed1c, 22:00) | 40.1 s | 184.5 | no (lull) |
+| **clean run 1** (1b78269, 02:30) | **36.0 s** | **171.4** | **no (paused)** |
+| **clean run 2** (1b78269, 02:30) | **38.9 s** | **168.5** | **no (paused)** |
 
-That's a **3.4×** run-to-run wall range on the same config. No
-concurrent MLX processes were detected; no Modal jobs were running. The
-likely cause is OS-level scheduler / Metal compiler cache warmth /
-shared memory pressure — 5 decisions is too few to ride out these
-sources. **Lever-induced wall deltas under ~2× cannot be cleanly
-attributed at this floor**; Phase 4's 560-decision run is the
-measurement that will resolve Phase 1's lever.
+After serialization, run-to-run on identical config is **±4% on wall,
+±2% on decode tok/s** at temp=0 — much closer to Phase 0's claimed
+stability budget. The remaining variance shows up at **temp=0 K1**:
+gi=72 flips between plays 1 and 13 across the two clean baseline runs
+(MLX kernel non-determinism at greedy decoding); other decisions
+reproduce exactly. So **K1 grade match between two clean baseline
+runs at temp=0 is 80%, not 100%** — the brief's expectation that
+temp=0 would round to 100% K1 was just wrong for MLX-LM 0.31.2.
 
 ## Links
 

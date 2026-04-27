@@ -74,4 +74,4 @@ The work itself is engineering, not research — each lever is a 2–5 day sprin
 
 ## Related pages
 
-[[burl-perf-phase0]] · [[burl-perf-phase1]] · [[batch-throughput-bench]] · [[batched-eval-resilience]] · [[batched-harvest-resilience]] · [[max-tokens-2048-floor]] · [[burl-star-run3]] · [[backwards-curriculum]] · [[mlx-lm]] · [[modal]] · [[candlewax-spike-e2e]] · [[star]]
+[[burl-perf-phase0]] · [[burl-perf-phase1]] · [[mlx-cohort-bench-discipline]] · [[batch-throughput-bench]] · [[batched-eval-resilience]] · [[batched-harvest-resilience]] · [[max-tokens-2048-floor]] · [[burl-star-run3]] · [[backwards-curriculum]] · [[mlx-lm]] · [[modal]] · [[candlewax-spike-e2e]] · [[star]]

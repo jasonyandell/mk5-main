@@ -72,3 +72,8 @@ Format:
   - Raised: implicitly at `b8116b5` (B3 iter-0 pipeline — target was to exceed the 88.9% spike baseline systematically)
   - Resolved: `dbadb5f` ([[sources/dbadb5f]])
   - Answer: Yes on 10-decision eval: 90% bot-match, 0 retry-exhausted, 100% first-legal. Needs larger eval to confirm at scale.
+
+- **Q:** What sets the perf-subset-5 wall floor at 3.4× run-to-run variance on identical config?
+  - Raised: `160ed1c` ([[experiments/burl-perf-phase1]])
+  - Resolved: `1c4f063` ([[experiments/burl-perf-phase1]] · [[topics/mlx-cohort-bench-discipline]])
+  - Answer: GPU contention with scribe-A's parallel `perf/batch` bench. After team-lead serialized the team, the same `baseline-bf16-temp0` config reproduces wall at **36.0 s ± 4%** across consecutive runs — far cleaner than the 73-134 s spread the original question reported. Apple Silicon's unified-memory GPU is one resource that the OS arbitrates invisibly to user-space `ps aux`; the detection signal is `decode_tok_s` (clean floor ~170 tok/s for batch=5 bf16 Gemma 4 E2B at temp=0; under 100 = contended).

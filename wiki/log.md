@@ -1316,3 +1316,22 @@ Phase 1 of the [[topics/perf-on-the-table]] sprint: two non-output-changing leve
 **Frontier shift:** The "perf cheap wins" framing turned out to be mostly diagnostic: (1) Gemma's [[entities/wax-museum]] turn-1 reasoning is consistently 500-700 tokens at temp=0.6, so pinching the budget below ~2048 is a behavior switch, not a free dial; (2) the [[entities/wax-museum]] gate has converged the model to one tool call per turn, so within-turn parallelism is empty; (3) the 5-row perf-subset has a **3.4× run-to-run wall variance** (40s-134s on identical config, no concurrent processes) that drowns sub-2× lever effects. Phase 4's 560-decision pass is now the measurement that settles whether Phase 1's plumbing matters at all in practice. The plumbing is correct and cheap; whether it's a perf win is currently an open empirical question.
 
 **Why now:** the bench harness from `1f11d28` made it possible to actually run Lever 1, find the per-state-cap counter-evidence within ~30 minutes, and stop chasing the wall when the noise floor proved too wide for the 5-row subset. Filing the negative result clearly is more valuable to Phase 4 than papering it.
+
+---
+
+## [2026-04-27 | 1c4f063 | mlx-cohort-bench-discipline — perf wall variance was contention, not noise]
+
+Phase 1's "3.4× wall variance on the 5-decision subset" turned out to be **GPU contention with scribe-A on `perf/batch`**, not residual MLX noise. Team-lead diagnosed the parallel scribe and serialized the team. After scribe-A paused, the same `baseline-bf16-temp0` config landed at **36.0 s ± 4%** across two consecutive runs — far cleaner than the 73-134 s spread reported earlier. Re-bench confirmed Lever 1's `2048-flat` policy is output-equivalent to baseline within MLX kernel noise; the brief's `256/512/2048` spec saves 18% wall but is output-changing (gi=104 final play 6 → 19, plus 2 forced-commits per run), so it stays reverted.
+
+**Touched pages:** [[topics/mlx-cohort-bench-discipline]] [[experiments/burl-perf-phase1]] [[topics/perf-on-the-table]] [[index]]
+
+**Added:** [[topics/mlx-cohort-bench-discipline]] — Apple Silicon's unified-memory GPU is one resource. Parallel scribes contend invisibly at the process layer (`ps aux` won't show it). Detection signal: `decode_tok_s` is the cleanest indicator (clean floor for batch=5 bf16 Gemma 4 E2B at temp=0 is ~170 tok/s; under 100 = contended; under 60 = heavily contended). Discipline: serialize benches across scribes, sanity-check decode_tok_s before trusting wall, re-bench after team-lead serializes.
+
+**Updated:**
+- [[experiments/burl-perf-phase1]] gained a "GPU contention with scribe-A" section, a clean-GPU re-measurement table, and a revised noise-floor section that retracts the "3.4× MLX noise" framing (it was contention, not noise). Bumped `last_updated` to `1c4f063`.
+- [[topics/perf-on-the-table]] gained a Related-pages link to the new discipline page.
+- [[index]] catalog entry for the new topic page.
+
+**Frontier shift:** Phase 0's "wall ±0.5%, decode tok/s ±9%" stability claim was true *for that specific quiet system state*, but didn't hold once another scribe started running on the same GPU — and the writeup didn't think to caveat for that. The discipline page captures the lesson so future multi-scribe perf sprints can't repeat it. Lever 1 (turn-aware budgets) lands at 2048-flat with K1 grade match equivalent to MLX kernel noise; the bench's 8192 default was indeed a 4× over-provision, but tighter per-state caps change the model's multi-turn trajectory rather than just trimming a tail.
+
+**Why now:** the contention diagnosis happened in real time during the Phase 1 sprint. Filing it as a topic page (rather than just a postmortem on the phase-1 experiment) makes it reusable for Phase 4 (the 560-decision pass that has to be clean-GPU to mean anything) and for any future perf bench.

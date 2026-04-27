@@ -64,10 +64,6 @@ Format:
   - Raised: `063fcac` ([[sources/063fcac]])
   - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[experiments/burl-2000-harvest]].
 
-- **Q:** What sets the perf-subset-5 wall floor at 3.4× run-to-run variance on identical config?
-  - Raised: `160ed1c` ([[experiments/burl-perf-phase1]])
-  - Context: Same `bench_decision_latency.py --variant baseline-bf16 --subset 5 --temperature 0.6` reproduces wall at 40-134 s on M5 Max with no concurrent MLX processes detected (`ps aux` empty of competing python). decode_tok_s tracks the wall: 47-184 tok/s. Likely candidates are OS scheduler contention, Metal compiler-cache warmth, MPS shared-memory pressure, or thermal state — none probed yet. Practical implication: Phase 1's lever wall deltas (which would have been ~10-20% under the original "reduce 8192 → 2048" assumption) are unattributable at this floor; Phase 4's 560-row run is the cleaner measurement.
-
 - **Q:** Does Gemma 4's parallel-tool-call shape return under a future Burl SFT round?
   - Raised: `160ed1c` ([[experiments/burl-perf-phase1]])
   - Context: 297/297 sampled turns under the [[entities/wax-museum]] gate emit one tool call per turn — the post-trained chat-template envelope can carry many, but the gate-state instructions train the model into a single-call rhythm. A future Burl SFT round that includes parallel-tool-call traces (e.g. `belief_trajectory()` + `explore_game(X)` in one assistant turn before any tool response is fed back) would unlock Lever 2 of [[topics/perf-on-the-table]]. Not currently planned; recorded as a precondition.
