@@ -194,17 +194,27 @@ def menu_names(state: GateState) -> list[str]:
 
 
 _TURN_AWARE_BUDGETS: dict[GateState, int] = {
-    # Empirical: the existing 2048 floor is already a 4x cut from the
-    # 8192 default the bench's --max-tokens flag inherits. On the
-    # 5-decision perf subset, 768 and 1024 both caused per-turn
-    # truncations that re-shaped the tool-call sequence (extra retries,
-    # forced commits) — the lever became output-changing rather than
-    # output-preserving. Holding the cap at 2048 across all gate states
-    # is therefore a no-op (production harvest already runs at 2048),
-    # except in the bench, where it docks the 8192 default down to 2048
-    # to match the production code path. The "turn-aware" knob is kept
-    # around so a future scribe can re-tune once we have a wider
-    # subset / more headroom data.
+    # Empirical: the existing 2048 floor ([[max-tokens-2048-floor]]) is
+    # already a 4× cut from the bench's 8192 default. Tighter per-state
+    # caps were tried on the perf-subset-5 (after the team serialized
+    # benches to remove GPU contention) and consistently flipped
+    # clean-commits to forced-commits because Gemma's wax_museum turn-1
+    # reasoning is consistently 500-700 tokens at temp=0.6 / similar at
+    # temp=0:
+    #
+    #   Spec               wall    K1 vs clean  forced-commits  output-changing?
+    #   256 / 512 / 2048   30.7s   3/5 (60%)    2/5 (gi=36,104) yes (gi=104 6 → 19)
+    #   768 / 768 / 2048   90.3s*  3/5 (60%)    2/5             yes
+    #   1024/1024/2048    124.7s*  3/5 (60%)    1/5             yes
+    #   2048/2048/2048     45.5s   5/5 (100%)   0/5             no
+    #
+    #   * earlier numbers were taken under GPU contention with scribe-A
+    #     and over-state the wall; they remain in the ledger for the
+    #     contention paper-trail.
+    #
+    # 2048-flat is the Phase 1 lever. The data structure is the lever;
+    # the per-state knob stays so a future scribe can re-tune once the
+    # corpus has more headroom.
     GateState.INITIAL: 2048,
     GateState.AFTER_EXPLORE: 2048,
     GateState.AFTER_PROBE: 2048,
@@ -214,9 +224,10 @@ _TURN_AWARE_BUDGETS: dict[GateState, int] = {
 def max_tokens_for_state(state: GateState) -> int:
     """Per-turn max generation token budget under the ``turn-aware`` policy.
 
-    The AFTER_PROBE bucket holds at the 2048 floor so the model has room to
-    commit + justify; earlier turns get 768 (covers the observed p99 of
-    turn-1/turn-2 generation lengths in the 560-decision baseline).
+    Lands at flat-2048 across all gate states on the perf-subset-5 because
+    tighter caps changed the multi-turn trajectory (clean-commits flipped
+    to forced-commits). See ``_TURN_AWARE_BUDGETS`` table for the
+    measurements.
     """
     return _TURN_AWARE_BUDGETS[state]
 
