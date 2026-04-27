@@ -37,7 +37,7 @@ The work itself is engineering, not research — each lever is a 2–5 day sprin
 
 ## How to run a sprint against this
 
-The practical "let's friggin rock this" entry point is [[perf-sprint]] — kickoff message, team shape, wrap conditions, mandatory rules. Created the day after sprint 1 ([[perf-sprint-history]]) to encode what that session wished it had at minute zero.
+The practical "let's friggin rock this" entry point is [[perf-sprint]] — clear goal, equivalence bar, don't-give-up clause, lever ladder, trap recipes. Built around lessons from sprint 1 ([[perf-sprint-history]]).
 
 ## Related pages
 

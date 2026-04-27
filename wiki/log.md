@@ -1307,3 +1307,21 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 **Frontier shift:** the wiki now has a how-to layer alongside the what/why layers. Playbooks are the first kind that's neither historical (sources/, experiments/) nor reference (entities/, topics/, decisions/) but procedural — read this and execute. The expectation is that sprint 2 starts by reading [[perf-sprint]] and ends by appending to [[perf-sprint-history]].
 
 **Why now:** the user, post-sprint-1 wake-up, explicitly asked for promotion to wiki ("in-wiki is more first-class than project root"). The lessons were freshest now. Codifying late would have lost the texture of the failure modes (wrap rationalization, contention detection signals, the bench's hardcoded misleading log line).
+
+## [2026-04-27 | unstaged | perf-sprint playbook simplified]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]] [[perf-sprint-goal]] [[perf-sprint-levers]] [[perf-sprint-traps]] [[perf-sprint-history]] [[perf-on-the-table]] [[index]]
+
+**Why:** the original promotion (fbe798f) over-specified the playbook with sprint-1 trauma laced through every page — wrap-condition predicates, mandatory rules, scribe team shape, "user is recharging" framing in the goal template, the 3.4× noise-floor claim repeated as doctrine, dead backlinks to phase pages that were never written. An implementer reading it at minute zero would hit conflicting instructions ("3.4× is the floor" vs "1.5× variance = contention"), unsatisfiable kickoff steps (read the doc and every doc it links to, half of which don't exist), and mood framing that bakes a single session's circumstances into universal procedure.
+
+**Updated:**
+- [[perf-sprint]] — collapsed to the contract: make it faster, verify equivalence with wall/K1/regret, don't give up. Removed team shape, scribe roles, kickoff procedure, wrap-conditions list, mandatory rules. Added scope (Burl-style mlx-lm on Apple Silicon).
+- [[perf-sprint-goal]] — stripped recharge framing. EQUIVALENCE BAR replaces QUALITY BAR. "Don't give up" lives here and in the loop, nowhere else.
+- [[perf-sprint-loop]] — kept goal-restating + idle-is-a-bug + "don't give up" as the loop's job. Dropped the wrap-conditions recital and the deliberate-features commentary.
+- [[perf-sprint-levers]] — replaced dead backlinks (`burl-perf-phase{1,2,3}`, `harvest-cohort-abstraction`) with inline facts. Trimmed the per-lever budget paragraph.
+- [[perf-sprint-traps]] — kept mechanical recipes (broadcast_shapes, AssertionError, hardcoded bf16 log line, comparison anchor). Removed the wrap-rationalization mood section. Folded clean-GPU contention floor (±4%, ~170 decode tok/s) into the contention detection signal.
+- [[perf-sprint-history]] — sprint-1 trauma absorbed here as one entry: noise-floor misdiagnosis, wrap-rationalization, in-session retractions, what changed in the playbook.
+- [[perf-on-the-table]] — entry-point description updated to match the new shape.
+- [[index]] — playbook hooks rewritten.
+
+**Frontier shift:** the playbook is now "clear goal + clear guidelines + trust the team" rather than predicate-and-procedure. Failures of past sprints are recorded as history, not as scaffolding on every page. "Don't give up" stays — it's the load-bearing instruction — but it lives in two places, in one voice.

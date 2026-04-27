@@ -6,7 +6,7 @@ last_updated: fbe798f
 status: active
 ---
 
-Template for `scratch/PERF_GOAL.md` — the sticky goal file the orchestrator writes at sprint kickoff and re-reads at every loop fire. Lives in `scratch/` because it's session-specific; the playbook lives in the wiki because it's reusable.
+Template for `scratch/PERF_GOAL.md` — the sticky goal file written at sprint kickoff and re-read at every loop fire. Lives in `scratch/` because it's session-specific; the playbook lives in the wiki because it's reusable.
 
 ## Template
 
@@ -17,28 +17,21 @@ TARGET: <baseline> → <target> on <hardware>. <ratio>×.
        (e.g. 26s/decision → 2s/decision on M5 Max. 13×.)
        Anything substantial is a win. The full ratio is a stretch.
 
-ANCHOR METRIC: <e.g. wall_s_total on perf_subset_5; or wall_s on full-N>
+ANCHOR METRIC: <e.g. wall_s on full-N; or wall_s_total on perf_subset_5
+               with paired baseline immediately before each variant>
 
-QUALITY BAR:
-  - K1 grade match >= 60% (the noise floor on small subsets)
+EQUIVALENCE BAR (the faster version must still be the same model):
+  - K1 grade match >= 60%
   - regret_delta within ±10% on the comparison anchor
-  - paired protocol required: fresh baseline IMMEDIATELY before each variant
-  - never compare against ledger's "latest baseline" without verifying same flags
+  - paired protocol: fresh baseline immediately before each variant
 
-NEVER GIVE UP. The user is recharging. You are the team. The goal stays
-front-of-mind every loop fire — that's what this file is for.
-
-WRAP CONDITIONS (read [[perf-sprint]] for the full list):
-  (a) goal achieved + user approves
-  (b) every lever in [[perf-sprint-levers]] has a ledger row
-  (c) user typed "stop"
+DON'T GIVE UP. Crashes are work, not a stop sign. Stop only when the
+goal is hit or the user types "stop".
 ~~~
 
-## Why this exists separately from the loop message
+## Why a separate file
 
-The loop message restates the goal but is short — it has to fit in a brief slack-style ping. The goal file holds the deeper anchoring (quality bar, paired protocol, the wrap-conditions reference) that the orchestrator re-reads in 30 seconds at every fire to stay grounded.
-
-Loop message = the bumper sticker. Goal file = the contract.
+The loop message is short — a slack-style bumper sticker. The goal file is the contract: target, anchor, equivalence bar, the don't-give-up clause. The orchestrator re-reads it in 30 seconds at every fire to stay grounded.
 
 ## Links
 

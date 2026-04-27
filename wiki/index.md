@@ -310,12 +310,12 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 
 ## Playbooks
 
-- [[playbooks/perf-sprint|perf-sprint]] — entry point for "let's friggin rock this perf problem" sessions; team shape, wrap conditions, mandatory rules (active)
+- [[playbooks/perf-sprint|perf-sprint]] — entry point: make it faster, verify equivalence, don't give up (active)
 - [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message: goal-restating + idle-is-a-bug (active)
 - [[playbooks/perf-sprint-goal|perf-sprint-goal]] — sticky-goal template for scratch/PERF_GOAL.md (active)
 - [[playbooks/perf-sprint-levers|perf-sprint-levers]] — ROI-ordered lever ladder; closed-lever pre-conditions; PLE quant landmine (active)
-- [[playbooks/perf-sprint-traps|perf-sprint-traps]] — crash recipes, contention detection, comparison-anchor footguns, wrap-rationalization warning (active)
-- [[playbooks/perf-sprint-history|perf-sprint-history]] — append-only sprint post-mortems; sprint 1 entry as canonical form (active)
+- [[playbooks/perf-sprint-traps|perf-sprint-traps]] — bench crash recipes, contention detection, comparison-anchor footguns (active)
+- [[playbooks/perf-sprint-history|perf-sprint-history]] — append-only sprint post-mortems (active)
 
 ## Open questions
 
