@@ -1,8 +1,8 @@
 ---
 title: Burl Perf — Phase 2 (Continuous Batching + Prefix Sharing)
 kind: experiment
-first_seen: TBD
-last_updated: TBD
+first_seen: 29da3d2
+last_updated: 29da3d2
 status: active
 ---
 

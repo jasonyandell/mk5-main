@@ -2,7 +2,7 @@
 title: Perf on the table
 kind: topic
 first_seen: 74464e9
-last_updated: TBD
+last_updated: 29da3d2
 status: active
 ---
 

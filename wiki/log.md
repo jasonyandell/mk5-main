@@ -1300,7 +1300,7 @@ The foundation under [[topics/perf-on-the-table]]: a tracked bench that drives t
 
 ---
 
-## [2026-04-27 | TBD | burl-perf-phase2 — continuous batching ships at 1.8–2.1×, prefix-cache closes negative]
+## [2026-04-27 | 29da3d2 | burl-perf-phase2 — continuous batching ships at 1.8–2.1×, prefix-cache closes negative]
 
 Scribe A's closeout: lever 1 (LRUPromptCache prefix sharing) and lever 2 (continuous batching) for [[topics/perf-on-the-table]]. Lever 1 closed at 0× on M5 Max — heterogeneous-cache batched decode pads to the longest cache and chat-template re-rendering breaks key alignment, costing both speed (84 → 45 decode tok/s) and correctness (60% K1 match). Lever 2 lands at **1.8–2.1× wall** on the bench's 5-row temp=0 subset (71 s → 34–40 s) via a `BatchGenerator`-backed dispatcher (`run_bench_continuous` in `burl/eval/bench_decision_latency.py`).
 
