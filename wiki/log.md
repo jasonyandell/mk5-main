@@ -1335,3 +1335,21 @@ Team-lead paused new bench runs because cross-scribe GPU contention with scribe-
 **Frontier shift:** The Phase-2 *direction* (Lever 1 fails, Lever 2 wins) survives the caveat because it rests on structural mlx-lm properties, not measured wall.  The *magnitude* (1.8–2.1× for Lever 2) is parked pending clean re-run.  The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.5 × Phase 1 × Phase 3 — which means Phase 1 and Phase 3 carry more of the speedup load than the original perf-table estimate assumed.
 
 **Why now:** Pausing on GPU lets the wiki absorb what was learned without churning the conclusion when the clean re-run lands.  The structural arguments stay; the numbers will be replaced.
+
+---
+
+## [2026-04-27 | TBD | phase-2 follow-up — cohort spec + mlx-lm internals]
+
+While waiting for scribe-B's Phase 1 to finish so the GPU re-validation window can open, scribe-A worked through the team-lead's two non-GPU asks: a sibling spec for the `harvest_batched.py` migration and an internals touch-up on `wiki/entities/mlx-lm.md`.
+
+**Touched pages:** [[topics/harvest-cohort-abstraction]] [[entities/mlx-lm]] [[index]] [[log]]
+
+**Added:** [[topics/harvest-cohort-abstraction]] — fenced-group primitive bridging [[topics/batched-harvest-resilience]]'s wave-sentinel + quarantine semantics onto a continuous-batching dispatcher.  Cohort = fixed-size group of decisions that enter the pool together, share one sentinel, quarantine as a unit on Metal OOM / `broadcast_shapes` / `Resource exhausted`, drop+rebuild the dispatcher on poisoned state.  Preserves all four ledger files (`quarantine.jsonl`, `quarantine_resolved.jsonl`, `quarantine_terminal.jsonl`, sentinel renamed `cohort_in_progress.txt`) and `--rerun-quarantined`.  Failure-mode map columns the wave model and cohort model side-by-side; CLI surface preserved with `--cohort-size` / `--retry-cohort-size` / `--inject-oom-at-cohort` rename; acceptance criteria and three open questions (broadcast-bug under continuous variance, `BatchGenerator.close()` mid-pump safety, `cohort_idx` durability across resume).
+
+**Updated:**
+- [[entities/mlx-lm]] gained a new "Internals — what mlx-lm 0.31.2 actually exposes" section: `BatchGenerator` continuous-scheduler walkthrough (`_unprocessed_sequences` deque, `_prompt_batch` / `_generation_batch` interplay, the `_next()` step body), `_merge_caches` + `BatchKVCache.merge` heterogeneous-pad penalty (line citations to `models/cache.py:1056-1085`), `LRUPromptCache` API + the model-key hashability + chat-template trie-key alignment constraints, `BatchKVCache` left-padding semantics, and minor gotchas (empty-prompt insert, `prefill_batch_size=8` broadcast bug, `BatchGenerator.close()` wired-memory release).  This is the deep-reference companion to the surface-level summary in [[topics/perf-on-the-table]] § "What mlx-lm 0.31.2 actually exposes".
+- [[index]]: index hook for [[entities/mlx-lm]] expanded to flag the internals section; new line for [[topics/harvest-cohort-abstraction]].
+
+**Frontier shift:** None — both pages are documentation of facts already established during Phase 2.  The cohort spec moves the open question from "what should we do?" to "here's the design; here's the acceptance criteria"; Phase-3+ scribes have a clean handoff if they want to pick up the harvest migration.
+
+**Why now:** Team-lead asked for both during the GPU pause window; landing them in the same session keeps the wiki + the open-question ledger consistent.

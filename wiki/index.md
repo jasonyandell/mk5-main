@@ -35,7 +35,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/haiku-4-5|haiku-4-5]] — Claude Haiku 4.5; Burl reference-trace teacher; N=30 run: 72.4% bot-match; zero conditional_outcome usage (active)
 - [[entities/iter3-rules-adapter|iter3-rules-adapter]] — winning Burl adapter: rules-as-tools + no primer; 90% bot-match, 0 retry-exhausted, 100% first-legal (active)
 - [[entities/selfplay-arena|selfplay-arena]] — game-level eval harness; Burl vs Burl or Burl vs baseline; ships with B7 (active)
-- [[entities/mlx-lm|mlx-lm]] — local Apple Silicon inference path; 1.86× wall vs Modal; batch ceiling 43→1334 tok/s (16×) after B9 bench (active)
+- [[entities/mlx-lm|mlx-lm]] — local Apple Silicon inference path; 1.86× wall vs Modal; batch ceiling 43→1334 tok/s (16×) after B9 bench; internals breakdown (BatchGenerator continuous scheduler, _merge_caches heterogeneous-pad penalty, LRUPromptCache trie, BatchKVCache left-padding) added Phase 2 (active)
 - [[entities/candlewax-spike|candlewax-spike]] — E2E spike: Qwen 3.6-35B-A3B via mlx-vlm; reasoning-coherence verifier; pivots away from LLM-as-reasoner (active)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (active)
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (active)
@@ -99,6 +99,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/batched-eval-resilience|batched-eval-resilience]] — eval-side port of the harvest pattern: atomic write + per-wave summary roll-up + in-wave per-decision OOM fallback + --resume-dir; turns 4h evals into "lose at most 3 min on any failure" (active)
 - [[topics/perf-on-the-table|perf-on-the-table]] — Gemma 4 E2B benches at 1334 tok/s; harness runs at ~70 tok/s — six identified levers compound to ~7-10× on M5 Max alone, no model changes (active)
 - [[topics/continuous-batching-dispatcher-design|continuous-batching-dispatcher-design]] — design doc for the `ContinuousDispatcher` abstraction over mlx-lm's `BatchGenerator`; submit/pump/close API + cohort-based OOM resilience preserving [[topics/batched-harvest-resilience]] semantics (active)
+- [[topics/harvest-cohort-abstraction|harvest-cohort-abstraction]] — sibling spec to the dispatcher design: how to migrate `harvest_batched.py`'s wave-aware sentinel + quarantine plumbing onto a cohort primitive that fences a fixed-size group of decisions into the dispatcher pool with a shared sentinel; preserves all four ledger files + `--rerun-quarantined` semantics (active)
 
 ## Experiments
 
