@@ -3,3 +3,5 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_013851,da25079,perf/bench,baseline-bf16,5,5,default,5,79.862,69.641,79.859,10568.3,79.8,11.59,80.0,-44.65,Phase 0 stability check (vs prior baseline)
 20260427_015004,160ed1c,perf/batch,baseline-bf16-t0,5,5,default,5,70.953,65.967,70.95,11072.7,84.8,11.3,80.0,-87.83,phase2 lever-1 baseline at temp=0
 20260427_015127,160ed1c,perf/batch,baseline-bf16-t0,5,5,default,5,73.692,65.795,73.685,10779.8,82.8,11.33,80.0,-87.83,phase2 lever-1 baseline at temp=0 (run2 - check determinism)
+20260427_015823,eeb3339,perf/batch,prefix-cache,5,5,default,5,114.149,110.483,114.143,6906.6,54.9,12.37,80.0,-87.83,phase2 lever-1 turn-to-turn LRU cache reuse
+20260427_020118,eeb3339,perf/batch,prefix-cache,5,5,default,5,136.681,136.619,136.62,6957.3,45.0,13.46,60.0,-87.65,"phase2 lever-1 (LRUPromptCache approach, slow + no hits)"

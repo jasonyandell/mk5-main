@@ -35,6 +35,7 @@ import time
 from typing import Any
 
 from mlx_lm import batch_generate, load
+from mlx_lm.models.cache import LRUPromptCache
 from mlx_lm.sample_utils import make_sampler
 
 log = logging.getLogger(__name__)
@@ -65,6 +66,8 @@ class GemmaLocalNativeBatched:
         adapter_path: str | None = None,
         max_tokens: int = 512,
         temperature: float = 0.6,
+        enable_prompt_cache: bool = False,
+        prompt_cache_max_entries: int = 64,
     ) -> None:
         t0 = time.time()
         log.info(
@@ -83,8 +86,30 @@ class GemmaLocalNativeBatched:
         # batched-vs-sequential semantic comparison doesn't have a sampling
         # confounder.
         self._sampler = make_sampler(temp=self.temperature)
+        # Phase 2 lever 1: prefix-aware prompt cache. When enabled, step_batch
+        # threads previously-seen prefix KV through batch_generate so growing
+        # message histories (turn N+1 = turn N + new tool messages) prefill
+        # only the suffix. Disabled by default to preserve the existing
+        # production behavior; bench/harvest enable it via the constructor.
+        self._prompt_cache_enabled = bool(enable_prompt_cache)
+        self._prompt_cache: LRUPromptCache | None = (
+            LRUPromptCache(max_size=int(prompt_cache_max_entries))
+            if self._prompt_cache_enabled else None
+        )
+        # Cache stats — exposed so the bench can record cache_hit_tokens per
+        # ledger row.
+        self.cache_hit_tokens_total = 0
+        self.cache_processed_tokens_total = 0
+        # mlx_lm's LRUPromptCache keys on a hashable "model" identifier;
+        # nn.Module instances are not hashable, so we use a stable string per
+        # wrapper instance.  All step_batch lookups within a single bench
+        # run share this key.
+        self._cache_model_key = (
+            f"{model_repo}:{adapter_path or 'base'}:{id(self)}"
+        )
         log.info(
-            "[gemma-local-batched] ready in %.1fs", time.time() - t0,
+            "[gemma-local-batched] ready in %.1fs prompt_cache=%s",
+            time.time() - t0, self._prompt_cache_enabled,
         )
 
     # --------------------------------------------------------------------- #
@@ -141,6 +166,12 @@ class GemmaLocalNativeBatched:
         BatchGenerator runs the whole group concurrently. This matches the
         bench's measured-best shape for ~2400-token prompts at batch=64
         on M5 Max.
+
+        When the constructor flag ``enable_prompt_cache`` is True, the
+        wrapper threads ``mlx_lm.models.cache.LRUPromptCache`` through
+        ``batch_generate`` so growing message histories share their prefix
+        with the prior turn's cache (turn N+1 prefills only the new
+        suffix tokens added since turn N).
         """
         not_done = [e for e in active if not e.get("done", False)]
         if not not_done:
@@ -150,20 +181,100 @@ class GemmaLocalNativeBatched:
             self._render_prompt_ids(e["messages"], e.get("tools"))
             for e in not_done
         ]
+
+        if self._prompt_cache is None:
+            resp = batch_generate(
+                self.model,
+                self.tokenizer,
+                prompts=prompts,
+                max_tokens=self.max_tokens,
+                sampler=self._sampler,
+                verbose=False,
+                completion_batch_size=len(prompts),
+            )
+            assert len(resp.texts) == len(prompts), (
+                f"batch_generate returned {len(resp.texts)} texts for "
+                f"{len(prompts)} prompts"
+            )
+            return list(resp.texts)
+
+        # Prefix-cache path: per-stream LRU lookup. We pass full prompts to
+        # batch_generate alongside the trimmed-to-prefix caches; mlx-lm's
+        # BatchGenerator processes only the suffix not covered by each cache.
+        prompt_caches: list = []
+        suffix_prompts: list[list[int]] = []
+        all_tokens_per_stream: list[list[int]] = []
+        cache_keys: list[list[int]] = [list(p) for p in prompts]
+        for full_prompt in prompts:
+            cache, rest = self._prompt_cache.fetch_nearest_cache(
+                self._cache_model_key, full_prompt,
+            )
+            n_total = len(full_prompt)
+            n_rest = len(rest)
+            n_hit = n_total - n_rest
+            self.cache_hit_tokens_total += n_hit
+            self.cache_processed_tokens_total += n_rest
+            # When fetch_nearest_cache returns None we still need a fresh cache
+            # so batch_generate sees an aligned per-stream cache list.
+            from mlx_lm.models.cache import make_prompt_cache as _mk_cache
+            if cache is None:
+                cache = _mk_cache(self.model)
+            prompt_caches.append(cache)
+            suffix_prompts.append(list(rest))
+            all_tokens_per_stream.append(list(full_prompt[:n_hit]))
+
+        # Defensive: BatchGenerator's insert() seq-splitting requires each
+        # input segment to be non-empty. If any suffix is empty (the entire
+        # prompt was a cache hit), we have to leave at least one token to
+        # prefill so generation can step. mlx-lm handles this by appending a
+        # single "split" token; we mirror by reverting to a fresh cache when
+        # rest == [].
+        for i, suf in enumerate(suffix_prompts):
+            if not suf:
+                from mlx_lm.models.cache import make_prompt_cache as _mk_cache
+                prompt_caches[i] = _mk_cache(self.model)
+                suffix_prompts[i] = list(prompts[i])
+                all_tokens_per_stream[i] = []
+                # The hit and processed counters were skewed by this row;
+                # roll them back to "no hit, full processing".
+                self.cache_hit_tokens_total -= len(prompts[i])
+                self.cache_processed_tokens_total += len(prompts[i])
+
         resp = batch_generate(
             self.model,
             self.tokenizer,
-            prompts=prompts,
+            prompts=suffix_prompts,
+            prompt_caches=prompt_caches,
             max_tokens=self.max_tokens,
             sampler=self._sampler,
             verbose=False,
-            completion_batch_size=len(prompts),
+            return_prompt_caches=True,
+            completion_batch_size=len(suffix_prompts),
         )
-        # BatchResponse.texts is aligned to the input prompts order.
         assert len(resp.texts) == len(prompts), (
             f"batch_generate returned {len(resp.texts)} texts for "
             f"{len(prompts)} prompts"
         )
+
+        # Insert post-decode caches keyed on (full_prompt + decoded_tokens) so
+        # the next turn's fetch_nearest_cache finds the longest viable prefix.
+        # We approximate the decoded tokens via the tokenizer encoding of the
+        # response text; this can differ by at most the BPE rendering boundary
+        # but the LRU's prefix-search degrades gracefully on partial matches.
+        if resp.caches is not None:
+            for full_prompt, text, cache in zip(prompts, resp.texts, resp.caches):
+                if cache is None:
+                    continue
+                completion_ids = self.tokenizer.encode(text) if text else []
+                key = list(full_prompt) + list(completion_ids)
+                try:
+                    self._prompt_cache.insert_cache(self._cache_model_key, key, cache)
+                except Exception as exc:
+                    log.warning(
+                        "[gemma-local-batched] LRU insert_cache failed (%s); "
+                        "skipping for this stream", exc,
+                    )
+
         return list(resp.texts)
 
 

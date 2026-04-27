@@ -214,14 +214,20 @@ def make_tracking_model(
     temperature: float,
     model_repo: str,
     tracker: StatsTracker,
+    enable_prompt_cache: bool = False,
 ):
     """Build a ``GemmaLocalNativeBatched`` whose ``step_batch`` records stats.
 
-    We subclass at runtime (rather than editing the model class) so the
-    bench's instrumentation never leaks into production code paths.
+    We instrument at runtime (rather than editing the model class) so the
+    bench's instrumentation never leaks into production code paths.  The
+    instrumented step_batch wraps the production path in a
+    ``BatchStats``-capturing ``stats()`` block; the production class owns
+    the cache-management decision (``enable_prompt_cache``) so the bench
+    treats both code paths uniformly.
     """
     from burl.modal.gemma_local_batched import GemmaLocalNativeBatched
-    from mlx_lm import batch_generate
+    from mlx_lm.generate import BatchGenerator, BatchStats
+    from mlx_lm.models.cache import make_prompt_cache
 
     class _Tracking(GemmaLocalNativeBatched):
         def step_batch(self, active: list[dict]) -> list[str]:
@@ -232,29 +238,91 @@ def make_tracking_model(
                 self._render_prompt_ids(e["messages"], e.get("tools"))
                 for e in not_done
             ]
+            # Prefix-cache fetch (or fresh caches if disabled).
+            cache_hit_before = self.cache_hit_tokens_total
+            processed_before = self.cache_processed_tokens_total
+            if self._prompt_cache is not None:
+                prompt_caches: list = []
+                suffix_prompts: list[list[int]] = []
+                for full_prompt in prompts:
+                    cache, rest = self._prompt_cache.fetch_nearest_cache(
+                        self._cache_model_key, full_prompt,
+                    )
+                    n_hit = len(full_prompt) - len(rest)
+                    self.cache_hit_tokens_total += n_hit
+                    self.cache_processed_tokens_total += len(rest)
+                    if cache is None or not rest:
+                        cache = make_prompt_cache(self.model)
+                        suffix_prompts.append(list(full_prompt))
+                        # Roll back the misleading hit counter when we fall
+                        # back to a fresh cache (entire prompt is processed).
+                        if not rest:
+                            self.cache_hit_tokens_total -= n_hit
+                            self.cache_processed_tokens_total += n_hit
+                    else:
+                        suffix_prompts.append(list(rest))
+                    prompt_caches.append(cache)
+            else:
+                prompt_caches = None
+                suffix_prompts = prompts
+
+            # Drive BatchGenerator directly so we get a single BatchStats
+            # block per step_batch call (the public batch_generate creates a
+            # fresh generator each call too, so this is functionally identical
+            # but exposes stats() to the tracker).
             t0 = time.time()
-            resp = batch_generate(
+            gen = BatchGenerator(
                 self.model,
-                self.tokenizer,
-                prompts=prompts,
-                max_tokens=self.max_tokens,
-                sampler=self._sampler,
-                verbose=False,
-                completion_batch_size=len(prompts),
+                stop_tokens=[[t] for t in self.tokenizer.eos_token_ids],
+                completion_batch_size=len(suffix_prompts),
             )
+            uids = gen.insert(
+                suffix_prompts,
+                [self.max_tokens] * len(suffix_prompts),
+                caches=prompt_caches,
+                samplers=[self._sampler] * len(suffix_prompts),
+            )
+            results: dict[int, list[int]] = {uid: [] for uid in uids}
+            post_caches: dict[int, list] = {}
+            stats = BatchStats()
+            with gen.stats(stats):
+                while responses := gen.next_generated():
+                    for r in responses:
+                        if r.finish_reason is not None:
+                            if self._prompt_cache is not None:
+                                post_caches[r.uid] = r.prompt_cache
+                        if r.finish_reason != "stop":
+                            results[r.uid].append(r.token)
+            gen.close()
             wall = time.time() - t0
             tracker.record(
                 wall_s=wall,
                 n_active=len(not_done),
-                batch_stats=resp.stats,
+                batch_stats=stats,
             )
-            return list(resp.texts)
+            texts = [self.tokenizer.decode(results[uid]) for uid in uids]
+
+            # Insert post-decode caches.
+            if self._prompt_cache is not None:
+                for full_prompt, text, uid in zip(prompts, texts, uids):
+                    cache = post_caches.get(uid)
+                    if cache is None:
+                        continue
+                    completion_ids = self.tokenizer.encode(text) if text else []
+                    key = list(full_prompt) + list(completion_ids)
+                    try:
+                        self._prompt_cache.insert_cache(self._cache_model_key, key, cache)
+                    except Exception:
+                        pass
+
+            return texts
 
     return _Tracking(
         model_repo=model_repo,
         adapter_path=adapter_path,
         max_tokens=max_tokens,
         temperature=temperature,
+        enable_prompt_cache=enable_prompt_cache,
     )
 
 
@@ -604,6 +672,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "burl/eval/results/perf_<timestamp>_<variant>/"
         ),
     )
+    ap.add_argument(
+        "--enable-prompt-cache", action="store_true",
+        help=(
+            "Phase 2 lever 1: thread mlx_lm's LRUPromptCache through "
+            "batch_generate so growing message histories share their KV "
+            "across turns. Off by default (Phase 0 baseline parity)."
+        ),
+    )
     return ap.parse_args(argv)
 
 
@@ -703,7 +779,8 @@ def main(argv: list[str] | None = None) -> int:
 
     tracker = StatsTracker()
     print(
-        f"[bench] loading Gemma 4 E2B (bf16, adapter={args.model_path}) ...",
+        f"[bench] loading Gemma 4 E2B (bf16, adapter={args.model_path}) "
+        f"prompt_cache={args.enable_prompt_cache}...",
         flush=True,
     )
     t_load = time.time()
@@ -713,6 +790,7 @@ def main(argv: list[str] | None = None) -> int:
         temperature=float(args.temperature),
         model_repo=args.model_repo,
         tracker=tracker,
+        enable_prompt_cache=bool(args.enable_prompt_cache),
     )
     load_wall = time.time() - t_load
     print(f"[bench] model ready in {load_wall:.1f}s", flush=True)
@@ -735,6 +813,15 @@ def main(argv: list[str] | None = None) -> int:
     bench_wall = bench_result["bench_wall_s"]
 
     # ----- aggregate -----
+    cache_hit_tokens_total = int(getattr(model, "cache_hit_tokens_total", 0))
+    cache_processed_tokens_total = int(getattr(
+        model, "cache_processed_tokens_total", 0,
+    ))
+    print(
+        f"[bench] cache_hit_tokens={cache_hit_tokens_total} "
+        f"cache_processed_tokens={cache_processed_tokens_total}",
+        flush=True,
+    )
     eval_rows = bench_result["rows"]
     grades = [per_decision_grade(r) for r in eval_rows]
     walls = [
