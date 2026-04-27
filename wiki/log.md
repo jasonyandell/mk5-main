@@ -1335,3 +1335,25 @@ Team-lead paused new bench runs because cross-scribe GPU contention with scribe-
 **Frontier shift:** The Phase-2 *direction* (Lever 1 fails, Lever 2 wins) survives the caveat because it rests on structural mlx-lm properties, not measured wall.  The *magnitude* (1.8–2.1× for Lever 2) is parked pending clean re-run.  The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.5 × Phase 1 × Phase 3 — which means Phase 1 and Phase 3 carry more of the speedup load than the original perf-table estimate assumed.
 
 **Why now:** Pausing on GPU lets the wiki absorb what was learned without churning the conclusion when the clean re-run lands.  The structural arguments stay; the numbers will be replaced.
+
+---
+
+## [2026-04-27 | unstaged | burl-perf-phase3 — research-mode spec, two dragons disclosed]
+
+Scribe-C's Phase-3 research-mode landing: full spec page for the speculative-decoding + quantization phase, written during the GPU pause (scribe-B holds the bench).  Two structural findings forced the spec to bend before any wall measurement:
+
+1. **mlx-lm 0.31.2 spec decode is single-stream-only.**  `speculative_generate_step` (`mlx_lm/generate.py:473`) plumbs through `stream_generate` and the CLI/HTTP server, but **not** through `batch_generate` / `BatchGenerator` — the path [[burl-perf-phase2]] just landed.  Confirmed independently via LM Studio's MLX engine raising `SpeculativeDecodingNotSupportedError` even at batch=1 (lmstudio-ai issues #269, #1519).  Consequence: spec decode cannot stack on Phase-2's continuous batching; choosing it means accepting single-stream inference and losing Phase-2's parallelism win.  Anchor numbers: 43 tok/s single-stream vs ~84 tok/s batched — spec decode needs >2× to catch and >4× to win.
+2. **There is no Gemma 4 E0.5B.**  `google/gemma-4-E2B-it` is the smallest Gemma 4 release; the team-lead spec assumed an E0.5B based on [[perf-on-the-table]]'s old draft-model line which was speculative.  Viable drafts narrow to Gemma 3 270M IT (vocab 262144 = Gemma 4 E2B's 262144 — passes mlx-lm's `server.py:354` validator, but token id alignment is unverified across the gemma3_text → gemma4 family boundary; a 5-min tokenizer probe gates the variant) and self-speculation (Q4-E2B drafting bf16-E2B) as fallback.
+
+Quant work is also dragon-rich: every `mlx-community/gemma-4-*-{4,8}bit` and the original `unsloth/gemma-4-*-MLX-{4,8}bit` quants produce garbage output because they quantize PLE (Per-Layer Embeddings) layers — Gemma 4's PLE uses ScaledLinear with output multipliers that amplify quant error.  PLE-safe quants are released in `FakeRocket543/gemma-4-e2b-it-MLX-{4bit,8bit,bf16}` and `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (note: Unsloth's *non-UD* MLX-4bit is in the broken set).
+
+**Touched pages:** [[burl-perf-phase3]] [[index]]
+
+**Added:** [[burl-perf-phase3]] — full Phase-3 spec covering eight named variants (`q8-bf16-cont`, `q4-mlx-cont`, `q4-kvq8-cont`, `q6-mxfp-cont`, `spec-stream-bf16`, `spec-stream-q8`, `spec-stream-self`, `phase3-stack-best`), tradeoff matrix template (rows = variants, columns = wall / k1 / regret / mem / complexity), validation bar (≥4/5 K1 + regret Δ ±10% vs Phase-2's continuous baseline; tighter ±5% on Q4 to catch the quality cliff), spec-decode acceptance instrumentation plan (`was_drafted` per token, segmented by thought / tool-call / text), full test plan with hard time-boxes (tokenizer probe → quant smoke → quant benches → spec benches → stack), memory + complexity tradeoffs for the morning digest, and three open questions on mlx-lm's spec-decode internals.
+
+**Updated:**
+- [[index]]: added [[burl-perf-phase3]] entry with the dragon summary.
+
+**Frontier shift:** Phase 3's compounded ceiling is *forced to a choice* by Dragon 1 — spec decode and continuous batching cannot stack in mlx-lm 0.31.2, so the headline `phase3-stack-best` row is necessarily a quant-only stack on top of Phase-2's continuous-batching win.  Spec decode is benched as an alternative path (single-stream + draft) and the two paths' compounded numbers will be reported side-by-side to scribe-team-lead.
+
+**Why now:** Research-mode pause is the right time to land the spec — the dragon list is the load-bearing finding (named variants + validation bar are easy without GPU; the dragons require web search + mlx-lm source audit).  The ledger row format and validation gate are settled before any bench so the later wall-time write-up doesn't have to argue with the framing.
