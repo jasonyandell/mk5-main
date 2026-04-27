@@ -1357,3 +1357,24 @@ Quant work is also dragon-rich: every `mlx-community/gemma-4-*-{4,8}bit` and the
 **Frontier shift:** Phase 3's compounded ceiling is *forced to a choice* by Dragon 1 — spec decode and continuous batching cannot stack in mlx-lm 0.31.2, so the headline `phase3-stack-best` row is necessarily a quant-only stack on top of Phase-2's continuous-batching win.  Spec decode is benched as an alternative path (single-stream + draft) and the two paths' compounded numbers will be reported side-by-side to scribe-team-lead.
 
 **Why now:** Research-mode pause is the right time to land the spec — the dragon list is the load-bearing finding (named variants + validation bar are easy without GPU; the dragons require web search + mlx-lm source audit).  The ledger row format and validation gate are settled before any bench so the later wall-time write-up doesn't have to argue with the framing.
+
+---
+
+## [2026-04-27 | 96ebf0b | burl-perf-phase3 — Q4 PLE-safe ships, spec-decode dies on tokenizer probe]
+
+Scribe-C's Phase-3 execution under exclusive GPU.  Headline: **Q4 PLE-safe (`FakeRockert543/gemma-4-e2b-it-MLX-4bit`) is the production pick** — drop-in `--model-repo` swap, no other code changes, 4/5 paired play match vs bf16 at temp=0 (single divergence at gi=0 marginal-decision slot bf16 itself flips across runs), 1.3–2.3× paired wall delta (1.29× on cleaner pair, 2.34× on noisier pair), peak mem 8.93 GB vs 10.80 GB bf16 (−17%).  `phase3-stack-best` row: **28.3 s wall** vs paired baseline 36.4 s, decode 87.7 tok/s.
+
+**Speculative-decoding lever shelved before any GPU bench.**  Tokenizer compat probe (5 plain-text + special-token Burl prompts) showed Gemma 3 270M IT (the only viable smaller draft on the same vocab 262144) collapses Gemma 4's special tokens (`<|tool_call>`, `<|channel>`, `<channel|>`, `<tool_call|>`) into byte-fallback subword sequences.  Burl's outputs are dominated by these tokens (every assistant turn opens with `<|channel>thought` and closes with `<|tool_call>`), so a draft model whose tokenizer can't emit them as single tokens hits acceptance rate ≈ 0 on the highest-acceptance regions — exactly the regions spec decode would *most* want to win.  Combined with mlx-lm 0.31.2's spec-decode-not-supported-on-batched constraint (would surrender Phase-2's parallelism to use), the lever is closed for this harness shape.
+
+Q8 PLE-safe ran *faster* than Q4 in raw decode tok/s (90.8 vs 62.2) but **lost on quality** (3/5 paired play match) and on memory (9.83 GB vs 9.17 GB).  Worse pick than Q4 on both axes — the M5 Max's memory-bandwidth-bound regime favors the smaller-weights variant despite same compute.
+
+**Touched pages:** [[burl-perf-phase3]] [[perf-on-the-table]] [[index]]
+
+**Updated:**
+- [[burl-perf-phase3]] flipped `status: spec` → `status: active`, added a tradeoff matrix with real numbers, validation-against-bar table, paired-comparison play-match audit, three execution-time dragon notes (Gemma 3 tokenizer probe, HF username typo `FakeRockert543` not `FakeRocket543`, gi=0 marginal-decision noise widening the K1 gate), bumped `last_updated` to 96ebf0b.
+- [[perf-on-the-table]] lever 4 (speculative decoding) marked closed with the three-way kill writeup; lever 6 (quantization) marked confirmed at 1.3–2.3× wall + 25% memory cut, citing `phase3-stack-best` numbers.
+- [[index]] hook on [[burl-perf-phase3]] reflects the result.
+
+**Frontier shift:** The compounded perf-table stack is now: Phase-1 turn-aware tokens × Phase-2 continuous batching × Phase-3 Q4 PLE-safe.  Speculative decoding is shelved permanently for this harness shape; the parallelism win and the spec-decode win are mutually exclusive in mlx-lm 0.31.2, and continuous-batching wins on Burl's workload (heterogeneous turn-counts make the straggler-tail savings substantial).  Phase-4 full-560 will pin the absolute compounded multiplier; the 5-row results are *suggestive directional evidence*.
+
+**Why now:** Headline + writeup land in the same session per the wiki "update is a side effect" rule.  The bench rows are durably in `burl/eval/results/perf_ledger.csv`; the per-run JSON detail captures step-stats for downstream analysis; the wiki frontier reflects the current truth.

@@ -9,3 +9,9 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_020655,c002075,perf/batch,continuous-batching,5,5,default,5,34.982,33.008,34.98,27717.5,65.5,10.8,60.0,-100.0,phase2 lever-2 continuous batching (run 2)
 20260427_020806,c002075,perf/batch,continuous-batching,5,5,default,5,39.933,38.906,39.93,19219.1,50.5,10.8,80.0,-87.83,phase2 lever-2 continuous batching (run 3 stability)
 20260427_021446,c002075,perf/batch,continuous-batching,5,5,default,5,58.584,36.893,58.582,26183.5,56.2,12.25,80.0,80.66,phase2 lever-2 production-faithful temp=0.6
+20260427_024913,96ebf0b,perf/aggressive,continuous-paired-q4,5,5,default,5,79.666,49.526,79.663,15424.1,32.0,12.43,80.0,0.18,phase3 paired baseline before q4-mlx-cont
+20260427_025045,96ebf0b,perf/aggressive,q4-mlx-cont,5,5,default,5,34.077,25.882,34.075,20574.8,62.2,9.17,100.0,0.0,phase3 lever-B Q4 PLE-safe + continuous batching
+20260427_025135,96ebf0b,perf/aggressive,continuous-paired-q8,5,5,default,5,46.222,33.766,46.218,26096.1,49.0,12.22,60.0,-100.0,phase3 paired baseline before q8-bf16-cont
+20260427_025231,96ebf0b,perf/aggressive,q8-bf16-cont,5,5,default,5,27.366,20.478,27.362,23928.9,90.8,9.83,60.0,-46.26,phase3 lever-B Q8 PLE-safe + continuous batching
+20260427_025350,96ebf0b,perf/aggressive,continuous-paired-stack,5,5,default,5,36.379,25.058,36.367,27745.1,67.5,10.8,60.0,-100.0,phase3 paired baseline before phase3-stack-best run-2
+20260427_025437,96ebf0b,perf/aggressive,phase3-stack-best,5,5,default,5,28.298,18.696,28.295,24903.7,87.7,8.93,80.0,-31.1,phase3 headline: Q4 PLE-safe + continuous batching
