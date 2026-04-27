@@ -308,6 +308,15 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 
 - [[trails/lem-to-burl-handoff|lem-to-burl-handoff]] — thematic walkthrough of the LEM→Burl transition: shared infrastructure, diverging philosophies, open questions inherited (active)
 
+## Playbooks
+
+- [[playbooks/perf-sprint|perf-sprint]] — entry point for "let's friggin rock this perf problem" sessions; team shape, wrap conditions, mandatory rules (active)
+- [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message: goal-restating + idle-is-a-bug (active)
+- [[playbooks/perf-sprint-goal|perf-sprint-goal]] — sticky-goal template for scratch/PERF_GOAL.md (active)
+- [[playbooks/perf-sprint-levers|perf-sprint-levers]] — ROI-ordered lever ladder; closed-lever pre-conditions; PLE quant landmine (active)
+- [[playbooks/perf-sprint-traps|perf-sprint-traps]] — crash recipes, contention detection, comparison-anchor footguns, wrap-rationalization warning (active)
+- [[playbooks/perf-sprint-history|perf-sprint-history]] — append-only sprint post-mortems; sprint 1 entry as canonical form (active)
+
 ## Open questions
 
 See [[questions/open]].

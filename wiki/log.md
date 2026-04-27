@@ -1279,3 +1279,31 @@ The overnight ingest of harvest-2 (run-3c-as-rollout) → run-4 train (filter-on
 **Frontier shift:** Names the **iter-2 plateau** clearly. Filter-only STaR on a same-shape corpus from a sharper rollout policy (run-3c) does not compound — run-4 lands at regret 2.97 vs base's 3.13 (within noise) and regresses ~1.05 vs run-3c (1.92). What it does deliver: clean commit discipline (FC 9.4% vs run-3c's 33.9%), back to base-comparable. The two-axis Pareto run-3c surfaced is real: run-3c trades commit discipline for play quality; run-4 reverses the trade. Neither is strictly dominant. Bucket distribution at the harvest level was essentially identical (strict pool 1062→1075, +13 dec) — the structural shape of which decisions land in which bucket is fixed by the seed pool, not by the rollout policy. The initial ILLEGAL=28.6% harvest-yield regression read was later corrected: both harvests were `--limit 2000` runs against 2800-row chunks, and `tag_corpus.py` filled the unattempted `global_idx=2000..2799` rows as placeholder ILLEGAL. On attempted `global_idx < 2000`, harvest-2 has 2000 trace summaries and 0 ILLEGAL rows. Forward-implication: filter-only iter-N is a flat slope at this scale; the next move is **changing the loss target** ([[r1-rationalization]] on BBC, FORCED_COMMIT-as-negative), not iterating on the same shape.
 
 **Why now:** run-4 eval landed in the closing window of the overnight session (PID 51999, 45.6 min wall, 180/180 batched). The closer directive was explicit: fold three-way, write harvest-2 with corrected framing (not the early "iter-2 wins" overclaim), capture the play-quality plateau honestly. The iter-without-regression milestone holds at the *behavioral* level, but does not hold at the *play-quality* level — naming both publicly closes the loop on the overnight cycle.
+
+---
+
+## [2026-04-27 | <pending> | perf-sprint playbook promoted to wiki]
+
+Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phase0]] → [[burl-perf-phase3]]) into a reusable playbook so future sprints start armed. The first sprint failed at the wrap step because the loop message didn't restate the goal and "wrap and write the digest" felt like discipline rather than rationalization. The playbook closes that off-ramp.
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]] [[perf-sprint-goal]] [[perf-sprint-levers]] [[perf-sprint-traps]] [[perf-sprint-history]] [[index]] [[AGENTS]]
+
+**Added:**
+- [[perf-sprint]] — entry point. Kickoff line, team shape, three explicit wrap conditions, mandatory rules.
+- [[perf-sprint-loop]] — the /loop message verbatim. Restates goal every fire; names idle as a bug.
+- [[perf-sprint-goal]] — `scratch/PERF_GOAL.md` template. Quality bar + paired protocol + wrap-conditions reference, re-readable in 30s.
+- [[perf-sprint-levers]] — 8-lever ROI-ordered ladder. Closed-lever pre-conditions. PLE quant landmine (broken set + safe set).
+- [[perf-sprint-traps]] — recipes for the two Phase 4 crashes (`dynamic_roll` broadcast, `assert play is not None`), cross-scribe contention detection, comparison-anchor footguns, the wrap-rationalization warning.
+- [[perf-sprint-history]] — append-only post-mortems. Sprint 1 entry as canonical form.
+
+**Updated:**
+- [[AGENTS]] — `playbooks/` directory recognized; `playbook` added to the kind enum.
+- [[index]] — new "Playbooks" section catalogs the six pages.
+
+**Retired:** none.
+
+**Questions opened:** none. The relevant open questions live in `questions/open.md` already; the playbook references them.
+
+**Frontier shift:** the wiki now has a how-to layer alongside the what/why layers. Playbooks are the first kind that's neither historical (sources/, experiments/) nor reference (entities/, topics/, decisions/) but procedural — read this and execute. The expectation is that sprint 2 starts by reading [[perf-sprint]] and ends by appending to [[perf-sprint-history]].
+
+**Why now:** the user, post-sprint-1 wake-up, explicitly asked for promotion to wiki ("in-wiki is more first-class than project root"). The lessons were freshest now. Codifying late would have lost the texture of the failure modes (wrap rationalization, contention detection signals, the bench's hardcoded misleading log line).

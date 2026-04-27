@@ -35,6 +35,7 @@ wiki/
 ├── decisions/         ← explicit design choices worth their own page
 ├── sources/           ← per-commit or per-doc digest pages
 ├── trails/            ← thematic walkthroughs stitching pages together
+├── playbooks/         ← repeatable how-to procedures (e.g. perf-sprint kickoff)
 └── questions/open.md  ← open questions raised but not yet answered
 ```
 
@@ -49,7 +50,7 @@ Every page starts with YAML frontmatter:
 ```yaml
 ---
 title: Human Readable Title
-kind: entity | topic | experiment | decision | source | trail
+kind: entity | topic | experiment | decision | source | trail | playbook
 first_seen: <commit-shortsha>
 last_updated: <commit-shortsha>
 status: active | retired | superseded
