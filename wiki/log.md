@@ -1338,7 +1338,7 @@ Team-lead paused new bench runs because cross-scribe GPU contention with scribe-
 
 ---
 
-## [2026-04-27 | TBD | phase-2 follow-up — cohort spec + mlx-lm internals]
+## [2026-04-27 | 1f48fda | phase-2 follow-up — cohort spec + mlx-lm internals]
 
 While waiting for scribe-B's Phase 1 to finish so the GPU re-validation window can open, scribe-A worked through the team-lead's two non-GPU asks: a sibling spec for the `harvest_batched.py` migration and an internals touch-up on `wiki/entities/mlx-lm.md`.
 

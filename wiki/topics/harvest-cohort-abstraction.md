@@ -1,8 +1,8 @@
 ---
 title: Harvest cohort abstraction
 kind: topic
-first_seen: TBD
-last_updated: TBD
+first_seen: 1f48fda
+last_updated: 1f48fda
 status: active
 ---
 
