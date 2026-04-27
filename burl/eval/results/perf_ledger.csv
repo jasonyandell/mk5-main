@@ -16,3 +16,5 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_023340,33bf3eb,perf/cheap,turn-aware-256-512-2048,5,5,turn-aware,5,30.437,29.725,30.381,26077.3,163.9,11.18,60.0,-81.54,phase1 lever1 256/512/2048 run2
 20260427_023511,33bf3eb,perf/cheap,turn-aware-2048-clean,5,5,turn-aware,5,37.964,36.77,37.89,27544.7,172.8,11.59,60.0,-99.73,phase1 lever1 final 2048-flat at temp=0 vs clean
 20260427_023614,33bf3eb,perf/cheap,turn-aware-2048-clean,5,5,turn-aware,5,46.231,41.292,46.229,17434.5,136.2,11.38,60.0,-81.54,phase1 lever1 2048-flat clean run2
+20260427_024453,2be0003,perf/cheap,baseline-bf16,5,5,default,5,39.088,34.969,39.086,26663.8,170.2,11.59,80.0,-0.27,phase1 apples-to-apples baseline at temp=0.6 (clean GPU)
+20260427_024544,2be0003,perf/cheap,turn-aware-2048,5,5,turn-aware,5,38.992,32.629,38.991,26062.0,158.9,11.18,100.0,52.12,phase1 apples-to-apples lever1 at temp=0.6 vs fresh baseline
