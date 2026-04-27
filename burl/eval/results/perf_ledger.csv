@@ -9,3 +9,10 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_020655,c002075,perf/batch,continuous-batching,5,5,default,5,34.982,33.008,34.98,27717.5,65.5,10.8,60.0,-100.0,phase2 lever-2 continuous batching (run 2)
 20260427_020806,c002075,perf/batch,continuous-batching,5,5,default,5,39.933,38.906,39.93,19219.1,50.5,10.8,80.0,-87.83,phase2 lever-2 continuous batching (run 3 stability)
 20260427_021446,c002075,perf/batch,continuous-batching,5,5,default,5,58.584,36.893,58.582,26183.5,56.2,12.25,80.0,80.66,phase2 lever-2 production-faithful temp=0.6
+20260427_023638,e5b7d47,perf/batch,baseline-bf16-revalidate,5,5,default,5,44.545,42.782,44.543,17268.8,139.8,11.59,80.0,-87.83,phase2 revalidate row 1 (alternating)
+20260427_023736,e5b7d47,perf/batch,continuous-batching-revalidate,5,5,default,5,30.436,28.413,30.434,26967.9,66.6,10.8,80.0,-87.83,phase2 revalidate row 2 (alternating)
+20260427_023817,e5b7d47,perf/batch,baseline-bf16-revalidate,5,5,default,5,36.849,32.508,36.848,26790.3,172.6,11.59,80.0,-87.83,phase2 revalidate row 3 (alternating)
+20260427_023903,e5b7d47,perf/batch,continuous-batching-revalidate,5,5,default,5,51.984,31.565,51.982,26101.7,52.8,12.17,80.0,-87.83,phase2 revalidate row 4 (alternating)
+20260427_024004,e5b7d47,perf/batch,baseline-bf16-revalidate,5,5,default,5,35.214,32.535,35.213,26549.9,179.0,11.59,80.0,-87.83,phase2 revalidate row 5 (alternating)
+20260427_024050,e5b7d47,perf/batch,prefix-cache-revalidate,5,5,default,5,38.167,36.766,38.166,24333.2,169.1,13.05,80.0,-87.83,phase2 revalidate row 6 (alternating)
+20260427_024141,e5b7d47,perf/batch,continuous-batching-revalidate,5,5,default,5,32.011,26.157,32.009,27827.4,64.3,10.8,60.0,-100.0,phase2 revalidate row 7 (alternating)

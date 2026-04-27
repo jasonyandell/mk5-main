@@ -6,28 +6,31 @@ last_updated: 29da3d2
 status: active
 ---
 
-> **Caveat — read this first (added during scribe-A pause, 2026-04-27):**
-> Two compounding noise sources make every wall-time number on this page
-> unattributable as a lever effect:
+> **Headline (re-validated 2026-04-27 on a clean GPU):**
+> The original "1.8–2.1× lever-2 win" was almost entirely cross-scribe
+> GPU contention with [[burl-perf-phase1]]'s parallel batch=5 jobs.
+> A 7-row alternating clean re-run shows **continuous batching is a
+> statistical tie with the wave loop on `perf_subset_5`** (mean 38.1 s
+> vs 38.9 s, −1.9%; pairwise deltas −31.7%, +41.1%, −9.1% — direction
+> alternates).  Prefix-cache also lands as a tie (+8.4% vs adjacent
+> baseline; the 137 s contended reading was contention).  **The
+> structural Phase-2 contributions stand** — the mlx-lm internals
+> writeup, the Lever-1 root-cause diagnosis, and the cohort + dispatcher
+> design specs — but the *magnitude* claims for both levers are
+> retracted on the 5-row bench.  Phase 4's full-560 pass is the gate
+> for any defensible magnitude.
 >
-> - **Cross-scribe GPU contention.** Numbers below were collected while
->   [[burl-perf-phase1]] ran parallel mlx-lm batch=5 jobs on the same
->   M5 Max — Metal + unified-memory contention is consistent with the
->   same-config baseline-t0 drifting 71.0 s → 73.7 s and prefix-cache
->   rows hitting 114 s and 137 s.
-> - **Bench's intrinsic 3.4× wall variance on `perf_subset_5`.**
->   Memory `project_perf_subset_5_noise_floor`: same-config
->   `baseline-bf16` reproduces at 40 s, 79.5 s, 134.5 s across sessions
->   on M5 Max — even *unloaded*. Decode tok/s tracks 47–184. The 5-row
->   subset is too small to ride out OS-scheduler / Metal compiler-cache
->   / shared-memory state. **Sub-2× wall effects are unattributable on
->   this floor** regardless of contention.
+> **Why the 5-row bench can't see a real continuous-batching win:** at
+> 5 decisions = 1 wave, the only straggler-tail savings continuous
+> batching can deliver are within a single wave's heterogeneous turn
+> counts — and the bench's intrinsic 3.4× wall variance (memory
+> `project_perf_subset_5_noise_floor`: same-config 40 s / 79.5 s /
+> 134.5 s across sessions; clean re-run 35 s / 37 s / 45 s) drowns
+> any sub-2× lever effect.  Continuous batching's actual production
+> win lives in the *cross-wave* straggler tail, which only manifests
+> at scale (560+ decisions).
 >
-> Both Phase-2 wall claims sit inside this floor. Lever-1 ~2× *slower*
-> and Lever-2 ~2× *faster* could each be the same noise distribution
-> sampled at opposite ends.
->
-> What is **not** noise-dependent and survives:
+> What survives independent of any wall measurement:
 >
 > 1. The mlx-lm `_merge_caches` heterogeneous-pad penalty is a documented
 >    property of `BatchKVCache.merge` (`mlx_lm/models/cache.py:1056-1085`):
@@ -45,13 +48,9 @@ status: active
 >    terminates short and partial-cache reuse drifts model behaviour.
 >    See "Lever 1 — root-cause writeup" below.
 >
-> Re-validation gate: a sub-2× re-run on perf_subset_5 cannot resolve
-> the lever effect because the subset's noise floor swallows it.  Phase 2
-> must gate on either **a back-to-back paired re-run in the same quiet
-> session** (where the noise floor narrows to ~10–20% per the Phase 0
-> docs) **or** the **560-decision phase-exit pass** where the 1/√n
-> averaging knocks the floor down to the few-percent regime.  See
-> [[continuous-batching-dispatcher-design]] § Validation plan.
+> Re-validation has been done on a clean window (results in
+> "Re-validated 5-row alternating run" below).  Defensible Phase-2
+> magnitude must wait for [[burl-perf-phase4]]'s full-560 pass.
 
 ## Overview
 
@@ -117,39 +116,31 @@ Validation rule for Phase 2 levers:
   - K1-grade match vs temp=0 baseline on the 5-row subset must be 100%.
   - Wall delta target: ≥10% for Lever 1 (prefix), ≥30% for Lever 2 (continuous).
 
-## Lever 1 result — negative on this workload
+## Lever 1 result — closed; structural failure modes confirmed
 
 `mlx_lm.models.cache.LRUPromptCache` was plumbed through `batch_generate`
 via a new `enable_prompt_cache` flag on `GemmaLocalNativeBatched`.  The
 trie does match prefixes (28% of prompt tokens hit on the 5-decision
-subset, 35,285 / 125,239), but the lever loses on both axes:
+subset, 35,285 / 125,239) but the lever closes for two structural
+reasons that hold independently of any wall measurement (see "Lever 1
+— root-cause writeup" below).  The contended runs read 137 s vs a
+71 s baseline; the clean re-run reads:
 
-| variant            | wall  | decode tok/s | K1 match |
-|--------------------|------:|-------------:|---------:|
-| baseline-bf16-t0   |  71 s |           84 |    100%  |
-| prefix-cache       | 137 s |           45 |     60%  |
+| variant (clean re-run, alternating)  | wall  | decode tok/s | K1 vs t0 |
+|--------------------------------------|------:|-------------:|---------:|
+| baseline-bf16-t0 (row 5)             | 35.2 s|          179 |     5/5  |
+| prefix-cache (row 6)                 | 38.2 s|          169 |     5/5  |
 
-Two compounding failures:
-
-1. **Heterogeneous-cache batched decode is slow.** `mlx-lm`'s
-   `_merge_caches` pads all streams to the max cache width, so a
-   batch of 5 streams with mixed cache lengths (0, 800, 1600, 1800,
-   2200 tokens) decodes at the speed of the longest one but pays the
-   memory cost of all of them.  The original full-prefill batched
-   decode keeps all streams at the same KV state, which actually wins.
-2. **Chat-template re-rendering breaks key alignment.** The trie key
-   used `tokenizer.encode(completion_text)` for the appended segment,
-   but the next turn's chat template wraps the assistant content with
-   role markers (`<|turn>model\n…<turn|>` — Gemma 4 normalises
-   `assistant` → `model`) before emitting the new user/tool turn.
-   The trie's longest-common-prefix is shorter than intended, and —
-   more worryingly — partial cache reuse drifts model behavior enough
-   to flip K1 grades on 2/5 decisions (60% match vs the 100% temp=0
-   floor).  See "Lever 1 — root-cause writeup" below for the full
-   diagnosis.
+So in a clean window the lever is a small loss (+8.4% vs adjacent
+baseline) — well inside noise but explained by the
+heterogeneous-cache merge-pad penalty.  K1 holds at 5/5 because the
+trie hit rate is small enough on the 5-row subset that the
+chat-template-misalignment correctness bug doesn't surface — but the
+bug is still in the code, and would surface at scale where more
+turn-to-turn cache hits happen.
 
 Lever 1 in this shape is **not viable** on M5 Max with mlx-lm 0.31.2
-batch_generate.  A correct implementation needs to extract the cache
+`batch_generate`.  A correct implementation needs to extract the cache
 at a stable boundary (the *end of segment* hook in `BatchGenerator`,
 before the assistant turn opens) and feed the cache back into the
 next turn's prefill — which is what the mlx-lm `server.py` does.  But
@@ -157,11 +148,9 @@ that requires a continuous-batching dispatcher (Lever 2) to avoid the
 heterogeneous-merge penalty: only streams at similar cache widths get
 fused into the same decode step.
 
-Lever 1 is therefore subsumed by Lever 2 on this hardware.  We close
-the lever-1 ledger row as a negative result and document the failure
-mode for future Burl perf scribes.
+Lever 1 is therefore subsumed by Lever 2 on this hardware.
 
-Artefact: `burl/eval/results/perf_20260427_020118_prefix-cache.json`.
+Artefact: `burl/eval/results/perf_20260427_024050_prefix-cache-revalidate.json`.
 
 ## Lever 1 — root-cause writeup (non-GPU audit)
 
@@ -298,7 +287,113 @@ the 5-decision subset's ~80k prompt tokens).  Worth doing if it
 slots into the [[continuous-batching-dispatcher-design]] cleanly,
 not worth a standalone lever.
 
-## Lever 2 result — 1.8-2.1× wall on M5 Max
+## Lever 2 result — statistical tie on the 5-row bench
+
+The contended-window read of "1.8–2.1× faster" was almost entirely
+GPU contention with [[burl-perf-phase1]]'s parallel batch=5 jobs.
+The clean alternating re-run (7 rows on uncontested GPU, sequence
+B-C-B-C-B-P-C, 2026-04-27) lands inside the bench's intrinsic noise:
+
+| row | variant         | wall_total | wall_p50 | decode tok/s | K1 vs t0 |
+|----:|-----------------|-----------:|---------:|-------------:|---------:|
+|  1  | baseline-bf16   |     44.5 s |   42.8 s |          140 |     5/5  |
+|  2  | continuous      |     30.4 s |   28.4 s |           67 |     5/5  |
+|  3  | baseline-bf16   |     36.8 s |   32.5 s |          173 |     5/5  |
+|  4  | continuous      |     52.0 s |   31.6 s |           53 |     5/5  |
+|  5  | baseline-bf16   |     35.2 s |   32.5 s |          179 |     5/5  |
+|  6  | prefix-cache    |     38.2 s |   36.8 s |          169 |     5/5  |
+|  7  | continuous      |     32.0 s |   26.2 s |           64 |     4/5  |
+
+Aggregates:
+
+- baseline mean: 38.9 s (range 35–45 s)
+- continuous mean: 38.1 s (range 30–52 s)
+- **mean(continuous) − mean(baseline) = −1.9%** — a tie
+- pairwise deltas vs immediately adjacent baseline: **−31.7%, +41.1%, −9.1%** —
+  *direction alternates*, the hypothesis "continuous is consistently
+  faster than its adjacent baseline" fails the alternation test
+- prefix-cache vs adjacent baseline: +8.4% (also a tie)
+
+What the clean re-run reveals:
+
+- **Continuous batching's wall variance is *wider* than the baseline's**
+  on `perf_subset_5` (range 21.5 s vs 9.3 s).  The dispatcher genuinely
+  changes batch composition step-to-step and surfaces kernel-noise that
+  the wave loop's lockstep nature suppresses.  This widening is the
+  same mechanism that flips gi=72's K1 grade: marginal decisions sit
+  on a fence and the noise pushes them either way.
+- **Decode tok/s on the baseline jumped from ~85 (contended) to
+  140–179 (clean).**  The Phase-0 reference baseline of 87 tok/s
+  was itself contended-or-cold; the true clean ceiling for the
+  wave-loop baseline is closer to 175 tok/s.
+- **Prefix-cache decode tok/s recovers to 169** (vs 45 contended) —
+  the merge-pad penalty is real but quiet at small cache sizes in a
+  hot session.
+
+Conclusion: **the 5-row bench cannot resolve the lever-2 effect.**
+Continuous batching's expected production win is the *cross-wave*
+straggler tail savings at scale (560+ decisions, where some decisions
+finish 3 turns ahead of others and the wave-loop GPU sits idle on
+every wave's tail).  At 5 decisions = 1 wave, only intra-wave straggler
+savings apply, and those are smaller than the bench's variance.
+
+What survives the re-run:
+
+- `BatchGenerator` already implements continuous batching at the kernel
+  level (`prefill_batch_size`, `completion_batch_size`,
+  `_unprocessed_sequences` deque, automatic prompt→generation handoff
+  via `_next()`).  The wrapper-side change in `run_bench_continuous`
+  is putting tool dispatch + state transitions on the same continuous
+  timeline rather than gate-driving turn-by-turn batches — a real
+  architectural improvement that costs nothing.
+- The cohort + dispatcher design specs ([[continuous-batching-dispatcher-design]],
+  [[harvest-cohort-abstraction]]) hold; their value is unblocking
+  Phase-4 production-harvest work where the cross-wave straggler
+  savings actually manifest.
+- Phase 4's full-560 pass is the gate for any defensible Lever-2
+  magnitude.
+
+Artefacts: `burl/eval/results/perf_20260427_023638..024141_*.json`
+(rows 1–7 of the clean re-run).
+
+## Earlier (contended) reading — preserved for the lessons-learned trail
+
+The original Phase 2 commit (`29da3d2`) reported Lever 2 at 1.8–2.1×
+on the basis of three runs collected during scribe-B's parallel-job
+window.  Numbers below were never produced on a clean GPU:
+
+| variant                   | wall_total | wall_p50 | prefill tok/s | decode tok/s | peak GB | K1 vs t0-baseline |
+|---------------------------|-----------:|---------:|--------------:|-------------:|--------:|------------------:|
+| baseline-bf16-t0 (run 1)  |     71.0 s |   66.0 s |        11,073 |         84.8 |   11.30 |               5/5 |
+| baseline-bf16-t0 (run 2)  |     73.7 s |   65.8 s |        10,780 |         82.8 |   11.33 |               5/5 |
+| continuous (run 1, t=0)   |     34.5 s |   23.0 s |        27,672 |         68.0 |   10.80 |               5/5 |
+| continuous (run 2, t=0)   |     35.0 s |   33.0 s |        27,718 |         65.5 |   10.80 |               4/5 |
+| continuous (run 3, t=0)   |     39.9 s |   38.9 s |        19,219 |         50.5 |   10.80 |               5/5 |
+| continuous (t=0.6)        |     58.6 s |   36.9 s |        26,183 |         56.2 |   12.25 |        — vs t=0.6 |
+
+**Lessons learned:**
+
+1. The 5-row bench's intrinsic 3.4× variance (memory
+   `project_perf_subset_5_noise_floor`) is real, not just contention.
+   Same-config `baseline-bf16` reproduces at 40 s, 79.5 s, 134.5 s
+   across sessions on M5 Max — even unloaded.
+2. Cross-scribe GPU contention can produce a *coherent* false signal.
+   In the contended window, the lever-2 numbers were consistently
+   "fast" because contention hits prefill-heavy code paths harder
+   than decode-heavy ones, and the wave loop happens to be more
+   prefill-dominant than the dispatcher.  The "win" was a contention
+   artifact correlated with the variant.
+3. **Always alternate variant-vs-baseline in the same session.**  The
+   clean re-run alternation produced the honest "tie" reading; the
+   original three-runs-in-a-row pattern cannot tell signal from
+   timing-of-day.
+4. Direction-of-mean is not the same as direction-of-pairwise-deltas.
+   On a 3-vs-3 sample with 3.4× same-config variance, `mean(C) <
+   mean(B)` would have to be ≥ 30% to count as signal; we got −1.9%.
+5. The **structural** Phase-2 contributions (mlx-lm internals
+   writeup, Lever-1 root-cause diagnosis, dispatcher + cohort design
+   specs) are the real win.  They unblock Phase-4 work that *can*
+   resolve the magnitude question.
 
 A continuous-batching dispatcher built on `mlx_lm.generate.BatchGenerator`
 replaces the bench's sync-wave loop.  All decisions submit their first
@@ -320,34 +415,6 @@ but heterogeneous turn counts: 4 to 8 turns per decision).
 | continuous (run 2, t=0)   |     35.0 s |   33.0 s |        27,718 |         65.5 |   10.80 |               4/5 |
 | continuous (run 3, t=0)   |     39.9 s |   38.9 s |        19,219 |         50.5 |   10.80 |               5/5 |
 | continuous (t=0.6)        |     58.6 s |   36.9 s |        26,183 |         56.2 |   12.25 |        — vs t=0.6 |
-
-**Wall delta vs temp=0 baseline: 1.8–2.1× faster** (51–53% reduction).
-**Wall delta vs production-faithful temp=0.6 baseline: 1.36×** (26%
-reduction; sampling adds turn-count variance which the dispatcher
-amortizes more conservatively).
-
-Prefill throughput jumped from ~11k to ~27k tok/s — the dispatcher
-prefills the next-turn suffix for one decision while other streams
-decode, shifting the prefill→decode ratio.  Peak memory dropped slightly
-(11.3 → 10.8 GB at temp=0) since the pool size flexes downward as
-streams finish.
-
-K1 stability vs the temp=0 baseline: 4–5/5 across three runs.  The
-single run that flipped affected gi=72 (the trick-5 forced-commit
-decision flagged in [[burl-perf-phase0]] as the "marginal-decision"
-slot), where `eq_delta_vs_bot` lives near the K1 threshold.  The
-dispatcher widens the kernel-noise envelope for marginal decisions
-because each step's batch composition changes turn-to-turn.  Two
-mitigations available if needed: (a) larger subset ([[burl-perf-phase0]]
-documents the 560-row gate where 1/n noise dominates), or (b) post-decode
-logit-snapshot determinism — out of scope here.
-
-mlx-lm's `BatchGenerator` already implements continuous batching at the
-kernel level (`prefill_batch_size`, `completion_batch_size`,
-`_unprocessed_sequences` deque, automatic prompt→generation handoff via
-`_next()`).  The wrapper-side win is putting tool dispatch + state
-transitions on the same continuous timeline rather than gate-driving
-turn-by-turn batches.
 
 ## Production harvest path
 

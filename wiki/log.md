@@ -1353,3 +1353,20 @@ While waiting for scribe-B's Phase 1 to finish so the GPU re-validation window c
 **Frontier shift:** None — both pages are documentation of facts already established during Phase 2.  The cohort spec moves the open question from "what should we do?" to "here's the design; here's the acceptance criteria"; Phase-3+ scribes have a clean handoff if they want to pick up the harvest migration.
 
 **Why now:** Team-lead asked for both during the GPU pause window; landing them in the same session keeps the wiki + the open-question ledger consistent.
+
+---
+
+## [2026-04-27 | TBD | phase-2 RESUME — clean alternating re-run retracts magnitudes]
+
+Team-lead opened the GPU window after scribe-B finished Phase 1.  Scribe-A ran the 7-row alternating re-validation (B-C-B-C-B-P-C at temp=0, no parallel scribe load) and recorded the results.  The original "1.8–2.1× lever-2 win" was a contention artifact — the clean re-run lands as a statistical tie.
+
+**Touched pages:** [[experiments/burl-perf-phase2]] [[topics/perf-on-the-table]] [[log]]
+
+**Updated:**
+- [[experiments/burl-perf-phase2]] — top-of-page caveat replaced with the clean-re-run headline.  Lever-1 result section now leads with the clean read (+8.4% vs adjacent baseline, K1 5/5; the structural failure modes still close the lever).  Lever-2 result section completely rewritten: 7-row alternating table; aggregates show baseline mean 38.9 s vs continuous mean 38.1 s (−1.9%, statistical tie); pairwise deltas −31.7% / +41.1% / −9.1% — direction *alternates*; continuous's wall variance is *wider* than baseline's (range 22 s vs 9 s).  New "Earlier (contended) reading" section preserves the original numbers as a lessons-learned trail with five takeaways (5-row noise floor is real; cross-scribe contention can produce a coherent false signal; alternation discipline is required; mean-vs-pairwise distinction; structural contributions are the real win).
+- [[topics/perf-on-the-table]] — Lever-1 entry now lists the clean +8.4% tie alongside the structural close; Lever-2 entry rewritten to "magnitude unresolvable on perf_subset_5" with pairwise deltas; compounded-stack estimate revised: Phase 2 = ~1.0× on the bench, with cross-wave straggler savings unlocked at production scale; total stack reads 4–6× via Phase 1+3 with Phase 2 contributing the *architectural* unblock.
+- Removed stale duplicate prose paragraphs from the original Lever-2 result section (the 1.8–2.1× claim and its supporting sub-paragraphs that contradicted the new headline).
+
+**Frontier shift:** Phase-2 magnitude claim retracted on the 5-row bench.  The structural contributions (mlx-lm internals writeup, Lever-1 root-cause diagnosis, dispatcher + cohort design specs) remain the real Phase-2 win and unblock Phase-4 work that *can* resolve the magnitude question.  Continuous batching's actual production payoff lives in cross-wave straggler savings at 560+ decisions; the 5-row bench at 1 wave only sees intra-wave savings, which are smaller than the bench's intrinsic 3.4× variance.
+
+**Why now:** Team-lead authorized RESUME and asked for an alternating sequence specifically to falsify the contended numbers.  The clean read replaces them in the same session per `wiki/AGENTS.md`'s "update is a side effect" rule; the contended numbers are preserved as a lessons-learned trail rather than deleted.
