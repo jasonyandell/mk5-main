@@ -1,3 +1,11 @@
 timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wall_s_total,wall_s_p50,wall_s_p95,prefill_tok_s,decode_tok_s,peak_mem_gb,k1_grade_match_pct,regret_delta_pct,notes
 20260427_013720,da25079,perf/bench,baseline-bf16,5,5,default,5,79.52,77.578,79.515,10274.0,87.5,11.59,100.0,0.0,Phase 0 baseline (self-graded)
 20260427_013851,da25079,perf/bench,baseline-bf16,5,5,default,5,79.862,69.641,79.859,10568.3,79.8,11.59,80.0,-44.65,Phase 0 stability check (vs prior baseline)
+20260427_015323,160ed1c,perf/cheap,baseline-bf16-temp0,5,5,default,5,73.503,67.409,73.499,10877.9,81.1,11.21,80.0,-87.83,phase1-gate baseline at temp=0
+20260427_015450,160ed1c,perf/cheap,baseline-bf16-temp0,5,5,default,5,82.085,73.481,81.999,10121.2,75.7,11.28,60.0,-100.0,phase1-gate baseline temp=0 run2
+20260427_015634,160ed1c,perf/cheap,turn-aware-budgets,5,5,turn-aware,5,90.274,80.592,90.199,9493.1,69.1,11.31,60.0,-87.65,phase1 lever1 temp=0
+20260427_015842,160ed1c,perf/cheap,turn-aware-1024,5,5,turn-aware,5,124.677,121.429,124.576,8934.4,55.7,11.59,60.0,-100.0,phase1 lever1 1024/1024/2048
+20260427_020122,160ed1c,perf/cheap,baseline-bf16-temp0,5,5,default,5,134.544,133.699,134.487,7035.8,47.0,11.59,60.0,-100.0,phase1-gate baseline temp=0 run3
+20260427_020733,160ed1c,perf/cheap,turn-aware-2048,5,5,turn-aware,5,47.807,44.6,47.805,23558.1,141.8,11.59,100.0,0.0,phase1 lever1 2048-flat at temp=0.6
+20260427_020836,160ed1c,perf/cheap,turn-aware-2048,5,5,turn-aware,5,45.481,44.277,45.48,24267.3,140.9,11.59,60.0,-100.0,phase1 lever1 2048-flat at temp=0.6 run2
+20260427_022000,160ed1c,perf/cheap,baseline-bf16,5,5,default,5,40.124,40.051,40.052,27205.1,184.5,11.59,80.0,-34.09,phase1 baseline-bf16 fresh re-measure
