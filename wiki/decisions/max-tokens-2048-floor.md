@@ -2,7 +2,7 @@
 title: max_tokens=2048 is the floor for batched Burl harvest
 kind: decision
 first_seen: 063fcac
-last_updated: 063fcac
+last_updated: 160ed1c
 status: active
 ---
 
@@ -47,6 +47,8 @@ KV-cache memory is `O(batch × seq_len × n_layers × hidden_dim)`. At batch=6 o
 ## Why not less than 2048
 
 Sequential never produced a turn over 2639 chars. 2048 tokens (≈5500–6500 chars worst case) covers it with margin. 1500 would handle the median + p90 cleanly but would still truncate the p99 tail — and the project's reasoning quality lives in the tail.
+
+[[burl-perf-phase1]] revisited this from the perf side. Two attempts at gate-state-keyed sub-2048 caps (768/768/2048 and 1024/1024/2048) **changed the multi-turn trajectory** on the perf-subset-5: clean-commits flipped to forced-commits and turn counts doubled because Gemma's [[wax-museum]] turn-1 reasoning is consistently 500-700 tokens at temp=0.6. The 2048-flat floor stands. The per-prompt `max_tokens: List[int]` plumbing that Phase 1 wired through `mlx_lm.batch_generate` and `GemmaLocalNativeBatched.step_batch` is reusable; the per-state knob in `burl/wax_museum/schemas.py:max_tokens_for_state` is a future re-tuning surface rather than a current win.
 
 ## Companion: per-wave OOM resilience
 

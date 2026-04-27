@@ -1297,3 +1297,22 @@ The foundation under [[topics/perf-on-the-table]]: a tracked bench that drives t
 **Frontier shift:** Names the bench, freezes its inputs (`burl/eval/data/perf_subset_5.jsonl` covers gi=0/36/72/104/136 = trick positions 1/3/5/6/7 across declarations 0..4), publishes the canonical baseline-bf16 row at `1f11d28`, and documents the temp=0.6 noise floor (wall ±0.5%, decode tok/s ±9%, K1 grade match 80–100% on the 5-row subset). The 5-row floor isn't tight enough to confirm sub-10% regret deltas; that's why the bench also accepts `--subset 560` for the phase-exit gate. Promotes `gus_eval_bridge.py` from `scratch/belief_trajectory_rollout/diagnostic/` to `burl/eval/` so tracked benches can resolve `global_idx → BurlDecision` without sourcing from scratch.
 
 **Why now:** three other scribes (B, A, C) are blocked on this row. Phase 0 had to land first because every later finding hangs on the bench's accuracy, and all three downstream scribes need the same frozen subset + ledger schema to write rows comparable across runs.
+
+---
+
+## [2026-04-27 | 160ed1c | burl-perf-phase1 — cheap wins land mostly as plumbing]
+
+Phase 1 of the [[topics/perf-on-the-table]] sprint: two non-output-changing levers were assigned. Lever 1 (turn-aware token budgets) wired per-prompt `max_tokens: List[int]` end-to-end through `mlx_lm.batch_generate` (verified at mlx-lm 0.31.2; per-stream EOS-or-cap), with the policy keyed on [[entities/wax-museum]]'s [[topics/gate-state]] in `burl/wax_museum/schemas.py:max_tokens_for_state`. Lever 2 (parallel tool dispatch) was found unnecessary: 297/297 sampled assistant turns from [[experiments/burl-2000-harvest]] emit exactly one tool call per turn, and execution time per call is sub-millisecond.
+
+**Touched pages:** [[experiments/burl-perf-phase1]] [[topics/perf-on-the-table]] [[decisions/max-tokens-2048-floor]] [[index]]
+
+**Added:** [[experiments/burl-perf-phase1]] — Lever 1 / Lever 2 framing + per-state-cap empirical attempts + the noise-floor read that matters more than the lever results.
+
+**Updated:**
+- [[topics/perf-on-the-table]] marked levers 3 (per-turn budgets) and 5 (parallel tool calls) as "Tried" with the actual outcome; bumped `last_updated` to `160ed1c`.
+- [[decisions/max-tokens-2048-floor]] gained a Phase-1 revisit paragraph: gate-state-keyed sub-2048 caps (768/768/2048 and 1024/1024/2048) **changed the multi-turn trajectory** on the perf-subset-5 (clean-commits flipped to forced-commits, turn counts doubled). The 2048 floor stands; the per-prompt plumbing is reusable.
+- [[index]] experiments catalog gained the new page.
+
+**Frontier shift:** The "perf cheap wins" framing turned out to be mostly diagnostic: (1) Gemma's [[entities/wax-museum]] turn-1 reasoning is consistently 500-700 tokens at temp=0.6, so pinching the budget below ~2048 is a behavior switch, not a free dial; (2) the [[entities/wax-museum]] gate has converged the model to one tool call per turn, so within-turn parallelism is empty; (3) the 5-row perf-subset has a **3.4× run-to-run wall variance** (40s-134s on identical config, no concurrent processes) that drowns sub-2× lever effects. Phase 4's 560-decision pass is now the measurement that settles whether Phase 1's plumbing matters at all in practice. The plumbing is correct and cheap; whether it's a perf win is currently an open empirical question.
+
+**Why now:** the bench harness from `1f11d28` made it possible to actually run Lever 1, find the per-state-cap counter-evidence within ~30 minutes, and stop chasing the wall when the noise floor proved too wide for the 5-row subset. Filing the negative result clearly is more valuable to Phase 4 than papering it.
