@@ -70,6 +70,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/reference-trace-distillation|reference-trace-distillation]] — staged workstream: distill Haiku 4.5 reference traces into Gemma via SFT (active)
 - [[topics/preserve-thoughts|preserve-thoughts]] — confirmed at N=560: thought-block emission 0% → ~95% (phase change), AND a play-quality win on paired n=130 (regret 2.255 vs 3.016, −25%, identical 32.3% FC rate) (confirmed)
 - [[topics/commit-discipline-collapse|commit-discipline-collapse]] — strict-pool training disrupts when-to-commit timing without disrupting what-to-commit quality; harness's force-fallback substitutes for missing commit signal (forced regret 1.60 < not-forced 2.46); cost is yield, not quality (active)
+- [[topics/iter-without-regression|iter-without-regression]] — milestone: harvest-2 + run-4 is the first Burl iteration with no new bug, pathology, or regression; every prior iter introduced one (eq-shy, retry-exhausted, rank-collapse, loss-collapse, three launch failures); foundation for real iter-N comparisons (active)
 - [[topics/conditional-outcome-structural-nonuse|conditional-outcome-structural-nonuse]] — reframed: 0/145 calls was chat-template confound (tool responses invisible); open question is whether model uses it when visible (active)
 - [[topics/candlewax|candlewax]] — reasoning-coherence verification approach: multimodal model checks reasoning traces against game state; bypasses LLM-as-reasoner bottleneck (active)
 - [[topics/reasoning-coherence-verification|reasoning-coherence-verification]] — identified bottleneck in Burl STaR loop; model produces syntactically valid traces that are semantically incoherent (active)
@@ -96,6 +97,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/past-belief-future-direction|past-belief-future-direction]] — §22: acting well under unresolvable uncertainty; meta-strategy distribution as richer student output; analytics extractable from q_per_world (active)
 - [[topics/batched-harvest-resilience|batched-harvest-resilience]] — three-part pattern: OOM classifier + quarantine ledger + SIGKILL sentinel; turns multi-hour batched harvest from one-failure-or-restart into one-failure-or-retry-six-decisions (active)
 - [[topics/batched-eval-resilience|batched-eval-resilience]] — eval-side port of the harvest pattern: atomic write + per-wave summary roll-up + in-wave per-decision OOM fallback + --resume-dir; turns 4h evals into "lose at most 3 min on any failure" (active)
+- [[topics/perf-on-the-table|perf-on-the-table]] — Gemma 4 E2B benches at 1334 tok/s; harness runs at ~70 tok/s — six identified levers compound to ~7-10× on M5 Max alone, no model changes (active)
 
 ## Experiments
 
@@ -149,6 +151,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-belief-co-train|gus-belief-co-train]] — §21: Bayes ceiling 39.184% confirmed; co-train falsified; q-bootstrap-belief 0.655 best look-ahead; §22 future direction (active)
 - [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
 - [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); paired in-distribution n=180 confirms run-3c beats naked-Burl on oracle regret by **−39%** (1.92 vs 3.13); FORCED_COMMIT 12%→34% is decision-shape not play-quality cost (active)
+- [[experiments/burl-harvest-2|burl-harvest-2]] — first STaR self-sharpening test: harvest-2 with run-3c-as-rollout + filter-only run-4. Strategic distribution unchanged from harvest-1 (strict pool 1062→1075); play quality plateaued (run-4 regret 2.97 ≈ base 3.13, regresses ~1.05 vs run-3c 1.92); FC repaired (33.9%→9.4%); ILLEGAL=28.6% harvest-yield regression flagged (active)
 
 ## Decisions
 

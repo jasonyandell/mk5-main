@@ -1227,3 +1227,55 @@ runner.
 
 **Tested:** `python -m pytest burl/eval/test_star_metrics.py burl/train/test_star_corpus.py -q`
 passes (6 tests).
+
+---
+
+## [2026-04-26 | 74464e9 | perf-on-the-table — name the speedup landscape]
+
+Forward-looking topic page after the user's calibration that Gemma 4 E2B is mobile-class (1334 tok/s benched) but our harness sits at ~70 tok/s effective — two orders of magnitude of pure software cost, not model capacity.
+
+**Touched pages:** [[topics/perf-on-the-table]] [[index]]
+
+**Added:** [[topics/perf-on-the-table]]
+
+**Updated:**
+- [[index]] topics catalog gained the new page.
+
+**Frontier shift:** Names the six engineering levers (prefix sharing, continuous batching, turn-aware token budgets, speculative decoding, parallel tool calls, quantization) and ranks by ROI. Compounded top-three is ~7–10× on M5 Max alone with no model changes — would land harvest-2 in 30–45 min instead of the 5h overnight slot it took. Not research, just engineering: each lever is a 2–5 day sprint. The page is reference; the work itself is for next sessions. The 12h-iter regime selects against breadth experiments ([[backwards-curriculum]] scout, rank ablations, prompt sweeps) — the 1.5h-iter regime opens that door.
+
+**Why now:** the live n=180 base eval had a 50-min wave dominated by two long-tail decisions (the sync-wave straggler tax) that the user noticed and used as the calibration moment. Capturing the landscape before the iteration cycles forget what slow felt like.
+
+---
+
+## [2026-04-26 | 74464e9 | iter-without-regression — name the milestone]
+
+The user surfaced the framing during the overnight cycle: harvest-2 + run-4 is the **first Burl iteration that landed without a new bug, pathology, or regression**. Iter-0 baked in eq-shy, iter-1 collapsed commit discipline, iter-5 had the rank-128 cliff, the 71-row run loss-collapsed, run-3 burned three launches before run-3b adapter wrote. Run-4 cleared all of these — harvest survived 5h+, trainer survived a probability-of-resume crash, eval ran end-to-end, adapter loaded standalone.
+
+**Touched pages:** [[topics/iter-without-regression]] [[index]]
+
+**Added:** [[topics/iter-without-regression]]
+
+**Updated:**
+- [[index]] topics catalog gained the new page (under [[commit-discipline-collapse]]).
+
+**Frontier shift:** Names a milestone that's easy to underclaim ("nothing broke") but is actually the foundation everything else needs. Lists the six infra prerequisites that quietly enabled it ([[batched-harvest-resilience]], [[batched-eval-resilience]], [[resumable-checkpointing]], [[preserve-thoughts]] defaulted ON, [[regret-eval]] ported to Burl, [[commit-discipline-collapse]] named and explained). Forward-implications: r1-rationalization on the 299 base-harvest BBC bucket, FORCED_COMMIT-as-negative corpus enrichment, backwards-curriculum ratchet to trick 5, capacity scaling experiments — all of these become *cleanly testable* against a stable iter-2 base. Calibration paragraph at the end: 4000 decisions vs Zeb's hundreds-of-thousands is two ratchets in on a workstream that needs many more; "no regression" ≠ "no plateau"; the milestone is **stability**, full stop.
+
+**Why now:** the user explicitly flagged the framing during recharge mode ("this is the first Burl iteration that didn't introduce a bug or regression"). Capturing the celebratory-but-bounded read while the prior-iteration regressions are still concrete enough to enumerate.
+
+---
+
+## [2026-04-26 | 74464e9 | burl-harvest-2 + run-4 — first STaR self-sharpening test, plateau confirmed]
+
+The overnight ingest of harvest-2 (run-3c-as-rollout) → run-4 train (filter-only, same recipe as run-3c) → run-4 eval (paired n=180, cap=12, three-way fold against base + run-3c). The first end-to-end iter-1 → iter-2 test for filter-only STaR on Burl.
+
+**Touched pages:** [[experiments/burl-harvest-2]] [[index]]
+
+**Added:** [[experiments/burl-harvest-2]] — harvest+train+eval ingest as one coherent page.
+
+**Updated:**
+- [[index]] experiments catalog gained the new page.
+- `scratch/belief_trajectory_rollout/star/STAR_EVAL_REPORT_2026-04-26.md` extended with §"Run-4 fold — three-way paired n=180".
+
+**Frontier shift:** Names the **iter-2 plateau** clearly. Filter-only STaR on a same-shape corpus from a sharper rollout policy (run-3c) does not compound — run-4 lands at regret 2.97 vs base's 3.13 (within noise) and regresses ~1.05 vs run-3c (1.92). What it does deliver: clean commit discipline (FC 9.4% vs run-3c's 33.9%), back to base-comparable. The two-axis Pareto run-3c surfaced is real: run-3c trades commit discipline for play quality; run-4 reverses the trade. Neither is strictly dominant. Bucket distribution at the harvest level was essentially identical (strict pool 1062→1075, +13 dec) — the structural shape of which decisions land in which bucket is fixed by the seed pool, not by the rollout policy. Names the harvest-2 ILLEGAL=28.6% **harvest-yield regression** (2000 successful, 800 with no `trace_summary.json`) as a footgun for follow-up — the bucket parity comparison is honest on the surviving corpus but the harness yield silently halved. Forward-implication: filter-only iter-N is a flat slope at this scale; the next move is **changing the loss target** ([[r1-rationalization]] on BBC, FORCED_COMMIT-as-negative), not iterating on the same shape.
+
+**Why now:** run-4 eval landed in the closing window of the overnight session (PID 51999, 45.6 min wall, 180/180 batched). The closer directive was explicit: fold three-way, write harvest-2 with corrected framing (not the early "iter-2 wins" overclaim), capture the play-quality plateau honestly. The iter-without-regression milestone holds at the *behavioral* level, but does not hold at the *play-quality* level — naming both publicly closes the loop on the overnight cycle.

@@ -64,6 +64,7 @@ scratch/
 .cache/
 .parcel-cache/
 .vite/
+.obsidian/
 
 # Editor directories and files
 .idea
