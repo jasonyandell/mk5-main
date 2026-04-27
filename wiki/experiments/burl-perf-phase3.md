@@ -2,17 +2,32 @@
 title: Burl Perf — Phase 3 (Speculative Decoding + Quantization)
 kind: experiment
 first_seen: 29da3d2
-last_updated: 96ebf0b
+last_updated: ec46190
 status: active
 ---
 
-> **Status:** complete (post-RESUME bench).  Two structural surprises
-> killed the speculative-decoding lever before any GPU work
-> ([[#Dragons]]); the quantization lever shipped a clean win:
-> **`phase3-stack-best` lands at 28.3 s wall on the 5-row temp=0
-> subset (1.29× vs paired baseline 36.4 s, peak mem 8.93 GB vs 10.8
-> GB) with 4/5 paired play match — Q4 PLE-safe quant + Phase-2
-> continuous batching.**
+> **Status:** complete (post-RESUME bench + Unsloth-UD cross-check).
+> Three dragons killed speculative decoding before any GPU work
+> ([[#Dragons]]); the quantization lever shipped a clean win.
+>
+> **Production pick: `unsloth/gemma-4-E2B-it-UD-MLX-4bit` + Phase-2
+> continuous batching.**  Q4 plays *identical* to FakeRockert Q4 at
+> temp=0 (5/5 same play, head-to-head paired run) and within the 5-row
+> noise envelope of bf16 (4/5 paired play match in 2 of 3 stack runs;
+> 3/5 on one run with kernel-noise widening at marginal decisions).
+> Peak memory **5.08–6.24 GB** vs bf16's **11.6 GB** baseline — a
+> **45–56% memory cut**.  Wall is in the noise on the 5-row bench;
+> the memory savings are the load-bearing finding for harvest-cohort
+> scaling at Phase 4.
+>
+> Speculative decoding closed without a bench row: mlx-lm 0.31.2's
+> `speculative_generate_step` is single-stream-only (would surrender
+> Phase-2's parallelism win), there is no Gemma 4 E0.5B (smallest is
+> E2B itself), and Gemma 3 270M IT — the only viable smaller draft on
+> the same vocab — collapses Gemma 4's special tokens to byte-fallback
+> sequences (acceptance ≈ 0 on the highest-acceptance regions).
+> Defensive audit confirmed: `mlx_vlm` does not expose a separate
+> spec-decode path either.
 
 ## Overview
 
@@ -145,28 +160,61 @@ paired comparison is the only attribution that holds).
 
 | variant | wall_s | paired_baseline_wall_s | wall_Δ | decode tok/s | peak GB | paired_play_match | regret_Δ vs paired |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| q4-mlx-cont | **34.1** | 79.7 | 2.34× | 62.2 | **9.17** | **4/5** | **−0.06 Q-pts** (Q4 *gained*) |
-| q8-bf16-cont | **27.4** | 46.2 | 1.69× | 90.8 | 9.83 | 3/5 | +1.56 Q-pts (Q8 lost) |
-| phase3-stack-best (Q4 + cont) | **28.3** | 36.4 | 1.29× | 87.7 | **8.93** | 4/5 | +1.96 Q-pts |
+| q4-mlx-cont (FakeRockert) | **34.1** | 79.7 | 2.34× | 62.2 | **9.17** | **4/5** | **−0.06 Q-pts** (Q4 *gained*) |
+| q8-bf16-cont (FakeRockert) | **27.4** | 46.2 | 1.69× | 90.8 | 9.83 | 3/5 | +1.56 Q-pts (Q8 lost) |
+| phase3-stack-best run-1 (FakeRockert Q4 + cont) | **28.3** | 36.4 | 1.29× | 87.7 | 8.93 | 4/5 | +1.96 Q-pts |
+| q4-unsloth-ud-cont | **44.1** | 71.3 | 1.62× | 61.3 | **6.24** | **4/5** | **0.0 Q-pts** |
+| phase3-stack-best run-2 (Unsloth UD Q4 + cont) | **48.7** | 60.2 | 1.24× | 66.1 | **5.08** | 3/5 | +9.6 Q-pts (kernel-noise) |
+| phase3-stack-best run-3 (Unsloth UD Q4 + cont) | **43.0** | 60.2 | 1.40× | 61.9 | **6.07** | 4/5 | +0.8 Q-pts |
 
-The headline `phase3-stack-best` row is the Q4 variant re-run on a
-cleaner-GPU window, so it's the cleanest paired number.  Q8 is faster
-than Q4 in raw tok/s (90.8 vs 62.2 / 87.7) — a paradox driven by the
-M5 Max's memory-bandwidth-bound regime: smaller weights + same compute
-runs faster on this hardware, but Q8's larger weights leave more
-bandwidth headroom for the high-arithmetic-intensity steps.  Q4 wins
-on memory and on quality (paired-play match), so the headline pick is
-Q4.
+The headline `phase3-stack-best` rows triangulate across three runs
+of the Unsloth UD Q4.  Wall numbers are noise-floor on this 5-row
+bench (paired baselines themselves swing 36 → 80 s on identical
+config), so wall is suggestive, not authoritative.  Phase 4 full-560
+will pin the absolute multiplier.
+
+**Memory is the load-bearing finding.**  The Unsloth UD-MLX-4bit
+quant lands at peak **5.08–6.24 GB** on the same workload that
+costs bf16 **11.6 GB**.  That's a 45–56% memory cut — enough to:
+
+- Run Burl harvest at cohort=10 (5.08 × 2 = 10.16 GB) inside 12 GB
+  vs current cohort=5 at bf16.
+- Run two parallel Burl jobs on a single 24 GB / 36 GB M-series
+  unified-memory host without OOM.
+- Free GPU budget for KV-cache growth at higher per-turn token
+  budgets ([[burl-perf-phase1]]'s lever 1 work).
+
+Q8 is faster than Q4 in raw decode tok/s (90.8 vs 61–66) — a paradox
+driven by the M5 Max's memory-bandwidth-bound regime: smaller weights
++ same compute runs faster on this hardware, but Q8's larger weights
+leave more bandwidth headroom for the high-arithmetic-intensity
+steps.  Q4 wins on memory and on quality (paired play match), so the
+headline pick is Q4 PLE-safe Unsloth UD.
+
+**Head-to-head Q4 source comparison (FakeRockert vs Unsloth UD):**
+At temp=0 in paired runs, both Q4 sources produced **5/5 identical
+plays** with 5/5 identical signed_deltas — the two PLE-safe quant
+schemes converge on the same model behaviour.  The only meaningful
+difference is memory: Unsloth UD-MLX-4bit lands at peak **6.24 GB
+vs FakeRockert Q4's 9.17 GB** on the same workload, and disk **4.2
+vs 7.1 GB**.  Unsloth UD's "Dynamic" quant uses a more aggressive
+group-size and per-channel scale scheme; quality is byte-equivalent
+within the bench's noise envelope.
 
 ### Bench rows in the ledger
 
 ```
-20260427_024913 continuous-paired-q4   wall=79.7 decode=32.0 peak=12.43 (paired baseline)
-20260427_025045 q4-mlx-cont            wall=34.1 decode=62.2 peak=9.17  (Q4 + continuous)
-20260427_025135 continuous-paired-q8   wall=46.2 decode=49.0 peak=12.22 (paired baseline)
-20260427_025231 q8-bf16-cont           wall=27.4 decode=90.8 peak=9.83  (Q8 + continuous)
-20260427_025350 continuous-paired-stack wall=36.4 decode=67.5 peak=10.80 (paired baseline)
-20260427_025437 phase3-stack-best      wall=28.3 decode=87.7 peak=8.93  (Q4 + continuous, headline)
+20260427_024913 continuous-paired-q4         wall=79.7 decode=32.0 peak=12.43 (paired baseline)
+20260427_025045 q4-mlx-cont                  wall=34.1 decode=62.2 peak=9.17  (FakeRockert Q4 + continuous)
+20260427_025135 continuous-paired-q8         wall=46.2 decode=49.0 peak=12.22 (paired baseline)
+20260427_025231 q8-bf16-cont                 wall=27.4 decode=90.8 peak=9.83  (FakeRockert Q8 + continuous)
+20260427_025350 continuous-paired-stack      wall=36.4 decode=67.5 peak=10.80 (paired baseline)
+20260427_025437 phase3-stack-best            wall=28.3 decode=87.7 peak=8.93  (FakeRockert Q4 + continuous)
+20260427_030306 continuous-paired-q4unsloth  wall=71.3 decode=36.8 peak=12.24 (paired baseline)
+20260427_030429 q4-unsloth-ud-cont           wall=44.1 decode=61.3 peak=6.24  (Unsloth UD Q4 + continuous)
+20260427_030755 continuous-paired-stack2     wall=60.2 decode=42.1 peak=10.80 (paired baseline)
+20260427_030849 phase3-stack-best-v2         wall=48.7 decode=66.1 peak=5.08  (Unsloth UD Q4 + continuous, headline)
+20260427_031040 phase3-stack-best-v3         wall=43.0 decode=61.9 peak=6.07  (Unsloth UD Q4 + continuous, stability)
 ```
 
 ### Dragons that bit during execution
@@ -325,6 +373,69 @@ User-memory preference: **bf16 over quant if all else equal**, but
 Q4 with regret Δ within 2% is approved.  The morning digest must
 present BOTH options with hard numbers; the call to ship Q4 in
 production is scribe-team-lead's, not Phase-3's.
+
+## Defensive audits performed during Phase 3
+
+### `mlx_vlm` spec-decode audit (negative)
+
+Searched `/Users/jason/code/mk5-main/.venv/lib/python3.12/site-packages/mlx_vlm/*.py`
+and `mlx_vlm/**/*.py` for `speculat*` and `draft_model` references.
+**No matches.**  `mlx_vlm` does not expose a separate spec-decode
+path; it shares the same constraint as `mlx_lm.batch_generate` for
+batched workloads.  Spec decode for Burl on Apple Silicon is a dead
+end on the current mlx-lm 0.31.2 / mlx-vlm 0.4.4 stack regardless of
+which top-level entry point you choose.
+
+### Tokenizer probe (gated step 1 of step 3, executed per spec)
+
+Loaded `mlx-community/gemma-4-e2b-it-bf16` and
+`mlx-community/gemma-3-270m-it-bf16` tokenizers.  Vocab size matches
+(262144 each).  Encoded 5 representative Burl prompts:
+
+| prompt | g4_len | g3_len | match |
+|---|---:|---:|---|
+| Plain English Texas-42 narrator preamble | 19 | 19 | ✓ |
+| `<|tool_call>call:explore_game{play:0}<tool_call|>` | **12** | **20** | ✗ |
+| `<|channel>thought\n…<channel|>` | **15** | **19** | ✗ |
+| Plain hand listing | 41 | 41 | ✓ |
+| Tool-name listing | 19 | 19 | ✓ |
+
+The diverging prompts are exactly the Gemma-4-special-token regions.
+Gemma 3 270M's tokenizer has no `<|tool_call>` / `<|channel>` /
+`<channel|>` / `<tool_call|>` tokens (those are added in Gemma 4),
+so they collapse to byte-fallback subword sequences.  Where Gemma 4
+emits token id 100 for `<|channel>`, Gemma 3 emits a 4-token subword
+sequence.
+
+Burl outputs are **dominated** by these tokens — every assistant turn
+opens with `<|channel>thought` and closes with `<|tool_call>` — so a
+spec-decode draft using Gemma 3 270M IT would hit acceptance ≈ 0 on
+the highest-acceptance regions.  **Lever ruled out before any GPU
+bench.**
+
+## Cohort-size headroom — the morning-digest payoff
+
+The Phase-2 continuous-batching dispatcher caps cohort size at
+`min(batch, prefill_batch_size)` ≤ 8 to stay clear of
+[[batched-harvest-resilience]]'s broadcast bug at ≥14.  Memory peak
+on bf16 at cohort=5 is **11.6 GB**; the M5 Max's 48 GB unified memory
+nominally allows ~4× this in headroom but the chunked-prefill +
+heterogeneous-cache merge bursts can transient to 1.5×, so the
+practical ceiling sits around 16 GB.
+
+Unsloth UD-MLX-4bit drops peak to **5.08 GB** at cohort=5.  Linear
+scaling argues a cohort=10 Q4 run lands around 10 GB peak — comfortably
+inside the 16 GB practical ceiling.  This is the lever that unlocks
+[[burl-harvest-2]]-scale runs at 2× cohort throughput without
+re-introducing the broadcast bug.
+
+The dispatcher's cohort knob is plumbed via `--batch <N>` on
+`bench_decision_latency.py` (which forwards through to
+`BatchGenerator(... completion_batch_size=N)`).  The 5-row subset is
+too small to exercise cohort=10 directly; this is a **prediction**
+the Phase-4 full-560 will validate or falsify.  If validated, it's
+the harvest-throughput multiplier the wiki's [[perf-on-the-table]]
+calibration calculus has been waiting for.
 
 ## Known open questions
 

@@ -15,3 +15,8 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_025231,96ebf0b,perf/aggressive,q8-bf16-cont,5,5,default,5,27.366,20.478,27.362,23928.9,90.8,9.83,60.0,-46.26,phase3 lever-B Q8 PLE-safe + continuous batching
 20260427_025350,96ebf0b,perf/aggressive,continuous-paired-stack,5,5,default,5,36.379,25.058,36.367,27745.1,67.5,10.8,60.0,-100.0,phase3 paired baseline before phase3-stack-best run-2
 20260427_025437,96ebf0b,perf/aggressive,phase3-stack-best,5,5,default,5,28.298,18.696,28.295,24903.7,87.7,8.93,80.0,-31.1,phase3 headline: Q4 PLE-safe + continuous batching
+20260427_030306,ec46190,perf/aggressive,continuous-paired-q4unsloth,5,5,default,5,71.311,54.958,71.308,17117.9,36.8,12.24,80.0,-87.83,phase3 paired baseline before q4-unsloth-ud-cont cross-check
+20260427_030429,ec46190,perf/aggressive,q4-unsloth-ud-cont,5,5,default,5,44.132,41.971,44.087,15393.0,61.3,6.24,100.0,0.0,phase3 lever-B Q4 Unsloth UD (cross-check vs FakeRockert)
+20260427_030558,ec46190,perf/aggressive,continuous-paired-stack2,5,5,default,5,60.197,44.889,60.195,18767.2,42.1,10.8,80.0,-87.83,phase3 paired baseline before phase3-stack-best v2 (unsloth UD)
+20260427_030708,ec46190,perf/aggressive,phase3-stack-best-v2,5,5,default,5,48.667,37.022,48.665,17452.7,66.1,5.08,80.0,80.66,phase3 v2 headline: Unsloth UD-MLX-4bit + continuous batching
+20260427_030825,ec46190,perf/aggressive,phase3-stack-best-v3,5,5,default,5,42.979,40.778,42.977,16415.0,61.9,6.07,80.0,-12.17,"phase3 v3 stability: Unsloth UD second run, same config"

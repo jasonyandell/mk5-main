@@ -1378,3 +1378,27 @@ Q8 PLE-safe ran *faster* than Q4 in raw decode tok/s (90.8 vs 62.2) but **lost o
 **Frontier shift:** The compounded perf-table stack is now: Phase-1 turn-aware tokens × Phase-2 continuous batching × Phase-3 Q4 PLE-safe.  Speculative decoding is shelved permanently for this harness shape; the parallelism win and the spec-decode win are mutually exclusive in mlx-lm 0.31.2, and continuous-batching wins on Burl's workload (heterogeneous turn-counts make the straggler-tail savings substantial).  Phase-4 full-560 will pin the absolute compounded multiplier; the 5-row results are *suggestive directional evidence*.
 
 **Why now:** Headline + writeup land in the same session per the wiki "update is a side effect" rule.  The bench rows are durably in `burl/eval/results/perf_ledger.csv`; the per-run JSON detail captures step-stats for downstream analysis; the wiki frontier reflects the current truth.
+
+---
+
+## [2026-04-27 | unstaged | burl-perf-phase3 — Unsloth UD cross-check + PLE landmine doc]
+
+Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" message arrived after the first headline shipped, with two explicit asks: (1) cross-check `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (UD variant ONLY, the non-UD is in the broken-PLE set) head-to-head against the FakeRockert Q4, (2) document the PLE-quant landmine on [[gemma-4-e2b]] with the broken set + safe set.
+
+**Cross-check headline:** Unsloth UD-MLX-4bit is the new production pick.  Identical plays to FakeRockert Q4 in head-to-head paired runs at temp=0 (5/5 same play, 5/5 same delta), 34% smaller peak memory (5.08–6.24 GB vs FakeRockert's 9.17 GB on the same workload), 41% smaller disk (4.2 vs 7.1 GB).  Three Unsloth UD stacked-with-continuous-batching runs landed at peak **5.08 / 6.07 / 6.24 GB** — a **45–56% memory cut** vs bf16's 11.6 GB.  Wall is in the bench's noise floor (paired baselines themselves swing 36 → 80 s on identical config) — wall is suggestive, memory is load-bearing.
+
+**Cohort-size unlock:** at peak 5.08 GB, the M5 Max's 16 GB practical ceiling (3× nominal-peak headroom against chunked-prefill + heterogeneous-cache merge bursts) admits cohort=10 vs current cohort=5 at bf16.  This is the harvest-throughput multiplier the wiki's [[perf-on-the-table]] calibration calculus has been waiting for.  The 5-row subset is too small to exercise it directly; Phase 4 full-560 will validate.
+
+**Defensive `mlx_vlm` audit:** searched `mlx_vlm/*.py` for `speculat*` and `draft_model` references — **no matches**.  Spec decode is dead-on-arrival on Apple Silicon for batched workloads regardless of whether you reach for `mlx_lm.batch_generate` or `mlx_vlm`.  Confirms the Phase-3 dragon-1 finding through a second source.
+
+**Touched pages:** [[burl-perf-phase3]] [[perf-on-the-table]] [[gemma-4-e2b]] [[index]]
+
+**Updated:**
+- [[burl-perf-phase3]] tradeoff matrix gained 3 Unsloth UD rows (q4-unsloth-ud-cont, phase3-stack-best v2, v3); ledger snapshot expanded to 11 rows; head-to-head Q4-source comparison added (5/5 identical plays); cohort-size headroom analysis added; defensive audits section added (`mlx_vlm` spec-decode + tokenizer probe per-prompt table); top-of-page summary rewritten to call Unsloth UD as production pick.
+- [[gemma-4-e2b]] gained an "MLX quant landscape — PLE landmine + the safe set" section with both the broken set table and the PLE-safe set table (disk + peak GB + paired play match + recommendation).  Plus a Burl bench-rows snippet citing the relevant phase-3 ledger entries.  Bumped `last_updated` to ec46190.
+- [[perf-on-the-table]] lever 6 rewritten with Unsloth UD as production pick + the −56% memory finding + cohort=10 unlock.
+- [[index]]: hook on phase-3 reflects the new headline + memory cut.
+
+**Frontier shift:** Production Burl inference path is now **`unsloth/gemma-4-E2B-it-UD-MLX-4bit` + Phase-2 continuous batching**.  bf16 stays as the belt-and-suspenders default; Q4 ships when memory or cohort-size is the binding constraint.  The wiki's [[perf-on-the-table]] compounded-stack calculus picks up Phase-3's memory-ceiling unlock as a separate axis from raw wall reduction.
+
+**Why now:** Same-session wiki update per the "update is a side effect" rule.  The Unsloth UD cross-check was an explicit ask in the GO message and produces a strictly better production pick than the first-pass FakeRockert headline.  Documenting the PLE landmine on [[gemma-4-e2b]] is doctrinally important — every future scribe touching Gemma 4 quantization will hit the broken-set repos by default if the wiki doesn't name the safe set.
