@@ -133,9 +133,10 @@ gives the model less reasoning headroom to use.
 
 ### Empirical brief against implementation
 
-A 60-decision sample from the latest `harvest_batched_20260425_010306`
-([[burl-2000-harvest]]) shows the [[wax-museum]] gate produces **exactly
-one tool call per assistant turn** in 297 of 297 sampled turns. Tool
+A 300-decision sample across all `harvest_batched_*` runs from
+[[burl-2000-harvest]] shows the [[wax-museum]] gate produces **exactly
+one tool call per assistant turn** in 1434 of 1434 sampled turns
+(60-decision narrow sample also gave 297/297). Tool
 execution time per call is sub-millisecond:
 
 | Tool | Calls sampled | Mean exec time |
