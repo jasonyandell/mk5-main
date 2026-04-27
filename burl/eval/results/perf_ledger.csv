@@ -1,0 +1,3 @@
+timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wall_s_total,wall_s_p50,wall_s_p95,prefill_tok_s,decode_tok_s,peak_mem_gb,k1_grade_match_pct,regret_delta_pct,notes
+20260427_013720,da25079,perf/bench,baseline-bf16,5,5,default,5,79.52,77.578,79.515,10274.0,87.5,11.59,100.0,0.0,Phase 0 baseline (self-graded)
+20260427_013851,da25079,perf/bench,baseline-bf16,5,5,default,5,79.862,69.641,79.859,10568.3,79.8,11.59,80.0,-44.65,Phase 0 stability check (vs prior baseline)

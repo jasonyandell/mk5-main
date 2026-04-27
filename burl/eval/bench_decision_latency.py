@@ -55,7 +55,19 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SCRATCH_HARVEST = REPO_ROOT / "scratch" / "belief_trajectory_rollout"
+# When the bench runs inside a git worktree, scratch/ lives in the main
+# checkout (gitignored).  Fall back to the canonical absolute path so the
+# harvest_batched + sweep modules resolve regardless of where the bench
+# is invoked from.  If/when the eval harness is promoted to tracked code,
+# this fallback can drop.
+_SCRATCH_CANDIDATES = [
+    REPO_ROOT / "scratch" / "belief_trajectory_rollout",
+    Path("/Users/jason/code/mk5-main/scratch/belief_trajectory_rollout"),
+]
+SCRATCH_HARVEST = next(
+    (p for p in _SCRATCH_CANDIDATES if p.exists()),
+    _SCRATCH_CANDIDATES[0],
+)
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(SCRATCH_HARVEST))
 sys.path.insert(0, str(SCRATCH_HARVEST / "diagnostic"))
@@ -291,6 +303,16 @@ def run_bench(
             )
             states.append(st)
 
+        # Per-decision finish-wall: records the moment ``s.done`` first
+        # flipped to True (or wave end if it never did, which can't happen
+        # post-finalize but we guard).  At batch=N with one wave, decisions
+        # that finish in fewer turns get a shorter wall — what we care
+        # about for p50/p95.  Note: at batch>1 the GPU is shared, so this
+        # under-reports the marginal cost of an additional decision in
+        # the batch.  Single-stream (batch=1) gives the cleanest per-
+        # decision number; the bench's job is to report both.
+        finish_wall_by_gi: dict[int, float] = {}
+
         step_idx = 0
         while any(not s.done for s in states):
             step_idx += 1
@@ -310,15 +332,22 @@ def run_bench(
 
             completions = model.step_batch(active_payload)
             assert len(completions) == len(active)
+            t_after_gen = time.time()
             for s, comp, ptext in zip(active, completions, prompt_texts):
+                was_done = s.done
                 hb._apply_step(
                     s, comp, ptext,
                     parse_completion=parse_native_completion,
                 )
+                if s.done and not was_done:
+                    finish_wall_by_gi[int(s.gi)] = t_after_gen - s.wall_t0
 
-        # Finalize each decision; preserves the per-decision wall via wall_t0.
+        # Finalize each decision; preserves the per-decision wall.
         for s in states:
-            wall_s = time.time() - s.wall_t0
+            # Use the recorded finish-wall (when s.done flipped); fall back
+            # to wave-end for any decision that completed via the
+            # post-loop finalize forced-commit path.
+            wall_s = finish_wall_by_gi.get(int(s.gi), time.time() - s.wall_t0)
             row = hb._finalize(s, oracle, wall_s)
             row["global_idx"] = s.gi
             row["bench_per_decision_wall_s"] = round(wall_s, 3)
@@ -655,7 +684,19 @@ def main(argv: list[str] | None = None) -> int:
     print("[bench] loading E[Q] oracle ...", flush=True)
     oracle = load_eq_oracle()
     print("[bench] loading gus belief adapter ...", flush=True)
-    _ = load_gus()
+    # Resolve gus adapter explicitly so the bench works inside a worktree
+    # (gus/adapters/ is gitignored and lives only in the main checkout).
+    gus_candidates = [
+        REPO_ROOT / "gus" / "adapters" / "v3_consistency_10000g.pt",
+        Path("/Users/jason/code/mk5-main/gus/adapters/v3_consistency_10000g.pt"),
+    ]
+    gus_path = next((p for p in gus_candidates if p.exists()), None)
+    if gus_path is None:
+        raise FileNotFoundError(
+            "gus belief adapter not found at any of: "
+            + ", ".join(str(p) for p in gus_candidates)
+        )
+    _ = load_gus(adapter_path=gus_path)
     variant_obj = next(
         v for v in build_variants() if v.name == DEFAULT_VARIANT_NAME_RUNTIME
     )
@@ -708,13 +749,28 @@ def main(argv: list[str] | None = None) -> int:
     p95 = walls_sorted[p95_idx] if n else 0.0
     stat_agg = tracker.aggregate()
 
-    # K1 + regret vs baseline-bf16
+    # K1 + regret vs baseline-bf16.
+    # If no prior baseline-bf16 row exists AND this run is itself a
+    # baseline-bf16 row, fall back to self-comparison so the ledger row
+    # carries 100/0 instead of empty cells — exercises the rescore code
+    # path the first time the bench is invoked.
     baseline_run = latest_baseline_run(
         ledger_path=LEDGER_PATH,
         subset_label=subset_label,
         results_dir=REPO_ROOT / "burl" / "eval" / "results",
     )
-    cmp = compare_to_baseline(grades=grades, baseline_run=baseline_run)
+    if baseline_run is None and args.variant == "baseline-bf16":
+        cmp = compare_to_baseline(
+            grades=grades,
+            baseline_run={
+                "variant_label": "self",
+                "timestamp": timestamp,
+                "per_decision_grades": grades,
+            },
+        )
+        cmp["baseline_label"] = "self (no prior baseline)"
+    else:
+        cmp = compare_to_baseline(grades=grades, baseline_run=baseline_run)
 
     # ----- write per-run JSON -----
     json_path = REPO_ROOT / "burl" / "eval" / "results" / (
