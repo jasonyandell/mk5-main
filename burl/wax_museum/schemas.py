@@ -180,6 +180,47 @@ def menu_names(state: GateState) -> list[str]:
     return [s["function"]["name"] for s in _MENUS[state]]
 
 
+# --------------------------------------------------------------------------- #
+# Per-turn max-tokens policy (Phase 1, Lever 1)                                #
+#                                                                              #
+# Generation happens in waves through ``mlx_lm.batch_generate``, which accepts #
+# a per-prompt ``max_tokens: List[int]`` and stops each stream the moment it   #
+# either emits EOS or hits its own budget. Capping the budget per gate state   #
+# does not change the model's outputs in any turn that finishes before the    #
+# cap — it only trims the runaway tails. The 2048 floor is preserved for the  #
+# final commit turn (state == AFTER_PROBE) per                                 #
+# wiki/decisions/max-tokens-2048-floor.md.                                     #
+# --------------------------------------------------------------------------- #
+
+
+_TURN_AWARE_BUDGETS: dict[GateState, int] = {
+    # Empirical: the existing 2048 floor is already a 4x cut from the
+    # 8192 default the bench's --max-tokens flag inherits. On the
+    # 5-decision perf subset, 768 and 1024 both caused per-turn
+    # truncations that re-shaped the tool-call sequence (extra retries,
+    # forced commits) — the lever became output-changing rather than
+    # output-preserving. Holding the cap at 2048 across all gate states
+    # is therefore a no-op (production harvest already runs at 2048),
+    # except in the bench, where it docks the 8192 default down to 2048
+    # to match the production code path. The "turn-aware" knob is kept
+    # around so a future scribe can re-tune once we have a wider
+    # subset / more headroom data.
+    GateState.INITIAL: 2048,
+    GateState.AFTER_EXPLORE: 2048,
+    GateState.AFTER_PROBE: 2048,
+}
+
+
+def max_tokens_for_state(state: GateState) -> int:
+    """Per-turn max generation token budget under the ``turn-aware`` policy.
+
+    The AFTER_PROBE bucket holds at the 2048 floor so the model has room to
+    commit + justify; earlier turns get 768 (covers the observed p99 of
+    turn-1/turn-2 generation lengths in the 560-decision baseline).
+    """
+    return _TURN_AWARE_BUDGETS[state]
+
+
 class NextAction(TypedDict):
     tool: str
     when: str

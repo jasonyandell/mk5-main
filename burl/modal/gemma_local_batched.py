@@ -130,12 +130,22 @@ class GemmaLocalNativeBatched:
                 "messages": list[dict],  # HF chat format
                 "tools": list[dict],     # JSON tool schemas
                 "done": bool,            # True -> skipped
+                "max_tokens": int,       # OPTIONAL per-prompt cap;
+                                         # falls back to self.max_tokens.
             }
 
         Returns a list of completion strings, one per non-done entry, in
         the same order as the non-done entries appear in ``active``. Done
         entries are NOT in the return list — the caller pairs results back
         to indices via its own not-done filter.
+
+        Per-prompt ``max_tokens`` (Phase 1, Lever 1): MLX-LM's
+        ``batch_generate`` accepts ``max_tokens: List[int]`` and stops each
+        stream individually at its own budget. The harvest harness uses this
+        to give early-turn streams a tighter cap (turn-aware policy in
+        ``burl.wax_museum.schemas.max_tokens_for_state``). When the key is
+        absent the entry falls back to ``self.max_tokens`` so existing
+        callers keep working unchanged.
 
         Uses ``completion_batch_size=len(prompts)`` so MLX-LM's
         BatchGenerator runs the whole group concurrently. This matches the
@@ -150,11 +160,14 @@ class GemmaLocalNativeBatched:
             self._render_prompt_ids(e["messages"], e.get("tools"))
             for e in not_done
         ]
+        per_prompt_max = [
+            int(e.get("max_tokens", self.max_tokens)) for e in not_done
+        ]
         resp = batch_generate(
             self.model,
             self.tokenizer,
             prompts=prompts,
-            max_tokens=self.max_tokens,
+            max_tokens=per_prompt_max,
             sampler=self._sampler,
             verbose=False,
             completion_batch_size=len(prompts),

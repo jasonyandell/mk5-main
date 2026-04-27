@@ -232,12 +232,17 @@ def make_tracking_model(
                 self._render_prompt_ids(e["messages"], e.get("tools"))
                 for e in not_done
             ]
+            # Honor per-prompt max_tokens passed in the payload (Phase 1,
+            # Lever 1). Falls back to the wrapper's class-level cap.
+            per_prompt_max = [
+                int(e.get("max_tokens", self.max_tokens)) for e in not_done
+            ]
             t0 = time.time()
             resp = batch_generate(
                 self.model,
                 self.tokenizer,
                 prompts=prompts,
-                max_tokens=self.max_tokens,
+                max_tokens=per_prompt_max,
                 sampler=self._sampler,
                 verbose=False,
                 completion_batch_size=len(prompts),
@@ -273,15 +278,25 @@ def run_bench(
     oracle: Any,
     batch: int,
     turn_cap: int,
+    max_tokens_policy: str = "default",
 ) -> dict:
     """Drive ``decisions`` through the production tool loop, return per-decision rows.
 
     Imports the harvest_batched primitives at call time — they are not
     public modules, but they are the canonical eval inner loop.  When/if
     they get promoted, this bench updates with them.
+
+    ``max_tokens_policy``:
+      - ``default``  — every step inherits ``model.max_tokens`` (Phase 0 parity).
+      - ``turn-aware`` — per-stream cap from
+        :func:`burl.wax_museum.schemas.max_tokens_for_state`, keyed on each
+        decision's current ``GateState``. MLX-LM ``batch_generate`` accepts
+        ``max_tokens: List[int]`` and stops each stream individually at its
+        own budget (see ``GemmaLocalNativeBatched.step_batch``).
     """
     import harvest_batched as hb  # type: ignore
     from burl.harness.tool_loop_native import parse_native_completion
+    from burl.wax_museum.schemas import max_tokens_for_state
 
     out_dir.mkdir(parents=True, exist_ok=True)
     rows: list[dict] = []
@@ -321,9 +336,12 @@ def run_bench(
             prompt_texts: list[str] = []
             for s in active:
                 msgs, schemas = hb._prepare_step(s)
-                active_payload.append({
+                payload: dict = {
                     "messages": msgs, "tools": schemas, "done": False,
-                })
+                }
+                if max_tokens_policy == "turn-aware":
+                    payload["max_tokens"] = int(max_tokens_for_state(s.state))
+                active_payload.append(payload)
                 prompt_texts.append(model.tokenizer.apply_chat_template(
                     s.messages, tools=s.schemas,
                     tokenize=False, add_generation_prompt=True,
@@ -558,9 +576,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument(
         "--max-tokens-policy", choices=("default", "turn-aware"), default="default",
         help=(
-            "default = constant max_tokens=8192 per turn (run-3c parity). "
-            "turn-aware reserved for Phase 1's small-budget-on-early-turns "
-            "lever; not implemented in Phase 0."
+            "default = constant max_tokens (--max-tokens) per turn — run-3c parity. "
+            "turn-aware = per-stream cap from "
+            "burl.wax_museum.schemas.max_tokens_for_state, keyed on each "
+            "decision's current GateState (768/768/2048 for "
+            "INITIAL/AFTER_EXPLORE/AFTER_PROBE). Output-preserving when "
+            "all turns finish below the cap; truncates the runaway tail "
+            "when they don't."
         ),
     )
     ap.add_argument(
@@ -609,11 +631,6 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    if args.max_tokens_policy == "turn-aware":
-        raise NotImplementedError(
-            "turn-aware max-tokens policy is reserved for Phase 1; "
-            "the Phase 0 bench measures only --max-tokens-policy default."
-        )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     sha, branch = _git_rev()
@@ -731,6 +748,7 @@ def main(argv: list[str] | None = None) -> int:
         oracle=oracle,
         batch=int(args.batch),
         turn_cap=int(args.turn_cap),
+        max_tokens_policy=args.max_tokens_policy,
     )
     bench_wall = bench_result["bench_wall_s"]
 
