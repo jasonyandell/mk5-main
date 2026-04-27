@@ -300,3 +300,31 @@ Drop-in: pass `--model-repo unsloth/gemma-4-E2B-it-UD-MLX-4bit` to
 `GemmaLocalNativeBatched(model_repo=...)` is instantiated.  No code
 changes required — `mlx_lm.load` handles both bf16 and Q4-mlx
 formats transparently.
+
+### Forward guidance — M5 Max is memory-bandwidth-bound, not compute-bound
+
+The Q4 vs Q8 paradox surfaced in [[burl-perf-phase3]] is the most
+durable lesson for any future Gemma 4 quant work on Apple Silicon:
+**Q8 produced higher raw decode tok/s (90.8) than Q4 (61–66) but lost
+on every other axis** — quality (3/5 vs 4/5 paired play match),
+peak memory (9.83 vs 5.08–6.24 GB), and even paired-wall (lost vs
+its own paired baseline more often).  The single bench number
+("decode tok/s") that pre-Phase-3 perf-table thinking would have
+optimized for is the misleading one.
+
+Reason: M5 Max's GPU is memory-bandwidth-bound on this workload
+(Gemma 4 E2B at batch=5, ~2400-token prompts).  Smaller weights pull
+fewer bytes per matmul, so even at the same compute the decode loop
+runs faster *per unit work*.  But once the workload fits comfortably
+in cache, the compute-vs-bandwidth balance flips: Q8's slightly
+larger weights leave more bandwidth headroom for the
+high-arithmetic-intensity prefill steps, which is why Q8 wins on
+prefill_tok_s in the benches.  The decode loop dominates wall on
+Burl's heterogeneous-turn workload, so Q4 wins overall.
+
+**Implication for future quant work on Apple Silicon:** optimize for
+the smallest PLE-safe quant your quality bar tolerates, not the
+"middle ground" Q8.  Q4-PLE-safe is the sweet spot on E2B; Q3 / Q2
+are unverified and would need a fresh quality audit.  On larger
+Gemma 4 variants (E4B / 26B / 31B) the bandwidth balance shifts —
+the same Q4-vs-Q8 comparison may invert.  Bench, don't extrapolate.
