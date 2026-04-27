@@ -1,0 +1,402 @@
+{
+  "timestamp": "20260427_023614",
+  "sha": "33bf3eb",
+  "branch": "perf/cheap",
+  "variant_label": "turn-aware-2048-clean",
+  "subset": "5",
+  "batch": 5,
+  "max_tokens": 8192,
+  "max_tokens_policy": "turn-aware",
+  "turn_cap": 8,
+  "temperature": 0.0,
+  "adapter_path": null,
+  "model_repo": "mlx-community/gemma-4-e2b-it-bf16",
+  "n_decisions": 5,
+  "bench_wall_s_total": 46.231,
+  "model_load_wall_s": 1.431,
+  "wall_s_per_decision": [
+    31.521,
+    41.293,
+    41.292,
+    36.383,
+    46.229
+  ],
+  "wall_s_p50": 41.292,
+  "wall_s_p95": 46.229,
+  "stats_aggregate": {
+    "n_steps": 8,
+    "prefill_tok_s": 17434.484763251818,
+    "decode_tok_s": 136.16719187999425,
+    "peak_mem_gb": 11.379837692,
+    "total_prompt_tokens": 93052,
+    "total_generation_tokens": 4979,
+    "total_prompt_time_s": 5.337238310370594,
+    "total_generation_time_s": 36.56534243864007
+  },
+  "per_decision_grades": [
+    {
+      "global_idx": 0,
+      "k1_pass": true,
+      "signed_delta": 0.0,
+      "regret": 0.0,
+      "final_play": 2,
+      "matches_bot": true
+    },
+    {
+      "global_idx": 36,
+      "k1_pass": true,
+      "signed_delta": 0.0,
+      "regret": 0.0,
+      "final_play": 1,
+      "matches_bot": true
+    },
+    {
+      "global_idx": 72,
+      "k1_pass": false,
+      "signed_delta": -1.7338371276855469,
+      "regret": 1.7338371276855469,
+      "final_play": 1,
+      "matches_bot": false
+    },
+    {
+      "global_idx": 104,
+      "k1_pass": true,
+      "signed_delta": 0.0,
+      "regret": 0.0,
+      "final_play": 6,
+      "matches_bot": true
+    },
+    {
+      "global_idx": 136,
+      "k1_pass": true,
+      "signed_delta": 0.0,
+      "regret": 0.0,
+      "final_play": 0,
+      "matches_bot": true
+    }
+  ],
+  "per_decision_rows": [
+    {
+      "variant": "D_required_first",
+      "seed": 900000,
+      "seat": 0,
+      "decl": 0,
+      "legal_plays": [
+        2,
+        6,
+        17,
+        19,
+        22,
+        24,
+        25
+      ],
+      "bot_play": 2,
+      "final_play": 2,
+      "legal_final": true,
+      "matches_bot": true,
+      "burl_eq": -11.149720191955566,
+      "eq_delta_vs_bot": 0.0,
+      "n_turns": 4,
+      "tool_sequence": [
+        "belief_trajectory",
+        "explore_game",
+        "probe_best_case"
+      ],
+      "belief_called_turns": [
+        1
+      ],
+      "preload_absorbed": false,
+      "prose_quoted": false,
+      "prose_excerpt": "",
+      "bailed": false,
+      "forced_commit": false,
+      "forced_commit_reason": "",
+      "max_turns_extensions": 0,
+      "wall_s": 31.5,
+      "global_idx": 0,
+      "bench_per_decision_wall_s": 31.521
+    },
+    {
+      "variant": "D_required_first",
+      "seed": 900001,
+      "seat": 0,
+      "decl": 1,
+      "legal_plays": [
+        1,
+        6,
+        17,
+        19,
+        26
+      ],
+      "bot_play": 1,
+      "final_play": 1,
+      "legal_final": true,
+      "matches_bot": true,
+      "burl_eq": 13.398759841918945,
+      "eq_delta_vs_bot": 0.0,
+      "n_turns": 6,
+      "tool_sequence": [
+        "belief_trajectory",
+        "belief_trajectory",
+        "explore_game",
+        "probe_best_case",
+        "probe_worst_case"
+      ],
+      "belief_called_turns": [
+        1,
+        2
+      ],
+      "preload_absorbed": false,
+      "prose_quoted": false,
+      "prose_excerpt": "",
+      "bailed": false,
+      "forced_commit": false,
+      "forced_commit_reason": "",
+      "max_turns_extensions": 0,
+      "wall_s": 41.3,
+      "global_idx": 36,
+      "bench_per_decision_wall_s": 41.293
+    },
+    {
+      "variant": "D_required_first",
+      "seed": 900002,
+      "seat": 0,
+      "decl": 2,
+      "legal_plays": [
+        1,
+        13,
+        21
+      ],
+      "bot_play": 21,
+      "final_play": 1,
+      "legal_final": true,
+      "matches_bot": false,
+      "burl_eq": -9.697844505310059,
+      "eq_delta_vs_bot": -1.7338371276855469,
+      "n_turns": 6,
+      "tool_sequence": [
+        "belief_trajectory",
+        "belief_trajectory",
+        "explore_game",
+        "probe_best_case",
+        "probe_worst_case"
+      ],
+      "belief_called_turns": [
+        1,
+        2
+      ],
+      "preload_absorbed": false,
+      "prose_quoted": false,
+      "prose_excerpt": "",
+      "bailed": false,
+      "forced_commit": false,
+      "forced_commit_reason": "",
+      "max_turns_extensions": 0,
+      "wall_s": 41.3,
+      "global_idx": 72,
+      "bench_per_decision_wall_s": 41.292
+    },
+    {
+      "variant": "D_required_first",
+      "seed": 900003,
+      "seat": 1,
+      "decl": 3,
+      "legal_plays": [
+        6,
+        19
+      ],
+      "bot_play": 6,
+      "final_play": 6,
+      "legal_final": true,
+      "matches_bot": true,
+      "burl_eq": 11.59758472442627,
+      "eq_delta_vs_bot": 0.0,
+      "n_turns": 5,
+      "tool_sequence": [
+        "belief_trajectory",
+        "belief_trajectory",
+        "explore_game",
+        "probe_best_case"
+      ],
+      "belief_called_turns": [
+        1,
+        2
+      ],
+      "preload_absorbed": false,
+      "prose_quoted": false,
+      "prose_excerpt": "",
+      "bailed": false,
+      "forced_commit": false,
+      "forced_commit_reason": "",
+      "max_turns_extensions": 0,
+      "wall_s": 36.4,
+      "global_idx": 104,
+      "bench_per_decision_wall_s": 36.383
+    },
+    {
+      "variant": "D_required_first",
+      "seed": 900004,
+      "seat": 3,
+      "decl": 4,
+      "legal_plays": [
+        0
+      ],
+      "bot_play": 0,
+      "final_play": 0,
+      "legal_final": true,
+      "matches_bot": true,
+      "burl_eq": 5.852827548980713,
+      "eq_delta_vs_bot": 0.0,
+      "n_turns": 8,
+      "tool_sequence": [
+        "belief_trajectory",
+        "belief_trajectory",
+        "explore_game",
+        "explore_game",
+        "probe_best_case",
+        "probe_best_case",
+        "probe_worst_case"
+      ],
+      "belief_called_turns": [
+        1,
+        2
+      ],
+      "preload_absorbed": false,
+      "prose_quoted": false,
+      "prose_excerpt": "",
+      "bailed": false,
+      "forced_commit": false,
+      "forced_commit_reason": "",
+      "max_turns_extensions": 0,
+      "wall_s": 46.2,
+      "global_idx": 136,
+      "bench_per_decision_wall_s": 46.229
+    }
+  ],
+  "wave_walls_s": [
+    46.231
+  ],
+  "step_stats": [
+    {
+      "wall_s": 16.576966285705566,
+      "n_active": 5,
+      "prompt_tokens": 8879,
+      "prompt_time": 0.36581343971192837,
+      "prompt_tps": 24271.934915764865,
+      "generation_tokens": 2931,
+      "generation_time": 16.20953064330388,
+      "generation_tps": 180.8195477400075,
+      "peak_memory_gb": 10.804918044
+    },
+    {
+      "wall_s": 0.699009895324707,
+      "n_active": 5,
+      "prompt_tokens": 12420,
+      "prompt_time": 0.4284171260660514,
+      "prompt_tps": 28990.437693392163,
+      "generation_tokens": 54,
+      "generation_time": 0.26996829092968255,
+      "generation_tps": 200.0234909590369,
+      "peak_memory_gb": 11.004136146
+    },
+    {
+      "wall_s": 4.98379921913147,
+      "n_active": 5,
+      "prompt_tokens": 13943,
+      "prompt_time": 0.4802256604889408,
+      "prompt_tps": 29034.266902364117,
+      "generation_tokens": 938,
+      "generation_time": 4.502209505531937,
+      "generation_tps": 208.34214819356237,
+      "peak_memory_gb": 11.004136146
+    },
+    {
+      "wall_s": 5.189208030700684,
+      "n_active": 5,
+      "prompt_tokens": 18332,
+      "prompt_time": 2.106951831956394,
+      "prompt_tps": 8700.720976130699,
+      "generation_tokens": 212,
+      "generation_time": 3.080855918000452,
+      "generation_tps": 68.81204627628058,
+      "peak_memory_gb": 11.379837692
+    },
+    {
+      "wall_s": 4.749693870544434,
+      "n_active": 4,
+      "prompt_tokens": 16281,
+      "prompt_time": 0.7955339564941823,
+      "prompt_tps": 20465.499765400727,
+      "generation_tokens": 376,
+      "generation_time": 3.952981668524444,
+      "generation_tps": 95.11807327463576,
+      "peak_memory_gb": 11.379837692
+    },
+    {
+      "wall_s": 4.810445785522461,
+      "n_active": 3,
+      "prompt_tokens": 13222,
+      "prompt_time": 0.6484809226822108,
+      "prompt_tps": 20389.18885279138,
+      "generation_tokens": 240,
+      "generation_time": 4.16094336938113,
+      "generation_tps": 57.679227688142255,
+      "peak_memory_gb": 11.379837692
+    },
+    {
+      "wall_s": 2.6410999298095703,
+      "n_active": 1,
+      "prompt_tokens": 4804,
+      "prompt_time": 0.24460908758919686,
+      "prompt_tps": 19639.499281678232,
+      "generation_tokens": 125,
+      "generation_time": 2.3956752034137025,
+      "generation_tps": 52.17735685617233,
+      "peak_memory_gb": 11.379837692
+    },
+    {
+      "wall_s": 2.261121988296509,
+      "n_active": 1,
+      "prompt_tokens": 5171,
+      "prompt_time": 0.26720628538168967,
+      "prompt_tps": 19352.08968836009,
+      "generation_tokens": 103,
+      "generation_time": 1.9931778395548463,
+      "generation_tps": 51.676271909085585,
+      "peak_memory_gb": 11.379837692
+    }
+  ],
+  "comparison_vs_baseline": {
+    "k1_grade_match_pct": 60.0,
+    "regret_delta_pct": -81.54,
+    "baseline_label": "baseline-bf16",
+    "baseline_timestamp": "20260427_022000",
+    "baseline_n": 5
+  },
+  "notes": "phase1 lever1 2048-flat clean run2",
+  "subset_header": {
+    "_meta": true,
+    "subset_name": "perf_subset_5",
+    "n_decisions": 5,
+    "corpus_path": "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt",
+    "corpus_sha256": "67b9d578af5c3d12d16bdb3cc4b6a01d292af2d213cf625cba5bdf9603cce2a6",
+    "n_games_in_corpus": 20,
+    "decisions_per_game": 28,
+    "players_per_trick": 4,
+    "trick_positions_one_based_covered": [
+      1,
+      3,
+      5,
+      6,
+      7
+    ],
+    "declarations_covered": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "rationale": "5 decisions covering trick positions 1/3/5/6/7 across declarations 0..4 (one per game so prefill cost averages over distinct rules-tool primer payloads, not biased to one decl)."
+  }
+}

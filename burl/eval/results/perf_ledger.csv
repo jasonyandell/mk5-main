@@ -10,3 +10,9 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_020836,160ed1c,perf/cheap,turn-aware-2048,5,5,turn-aware,5,45.481,44.277,45.48,24267.3,140.9,11.59,60.0,-100.0,phase1 lever1 2048-flat at temp=0.6 run2
 20260427_022000,160ed1c,perf/cheap,baseline-bf16,5,5,default,5,40.124,40.051,40.052,27205.1,184.5,11.59,80.0,-34.09,phase1 baseline-bf16 fresh re-measure
 20260427_022639,1b78269,perf/cheap,turn-aware-2048,5,5,turn-aware,5,44.412,39.096,44.411,26512.8,158.3,11.59,60.0,3.41,phase1 final at 1b78269
+20260427_023012,33bf3eb,perf/cheap,baseline-bf16-temp0-clean,5,5,default,5,36.025,31.325,36.023,27424.0,171.4,11.3,60.0,-81.54,phase1 re-baseline after scribe-A paused
+20260427_023059,33bf3eb,perf/cheap,baseline-bf16-temp0-clean,5,5,default,5,38.852,35.058,38.815,27085.7,168.5,11.59,40.0,-100.0,phase1 re-baseline run2 (clean)
+20260427_023250,33bf3eb,perf/cheap,turn-aware-256-512-2048,5,5,turn-aware,5,30.983,29.895,30.929,27097.6,160.8,11.15,80.0,-81.27,phase1 lever1 256/512/2048 vs clean baseline
+20260427_023340,33bf3eb,perf/cheap,turn-aware-256-512-2048,5,5,turn-aware,5,30.437,29.725,30.381,26077.3,163.9,11.18,60.0,-81.54,phase1 lever1 256/512/2048 run2
+20260427_023511,33bf3eb,perf/cheap,turn-aware-2048-clean,5,5,turn-aware,5,37.964,36.77,37.89,27544.7,172.8,11.59,60.0,-99.73,phase1 lever1 final 2048-flat at temp=0 vs clean
+20260427_023614,33bf3eb,perf/cheap,turn-aware-2048-clean,5,5,turn-aware,5,46.231,41.292,46.229,17434.5,136.2,11.38,60.0,-81.54,phase1 lever1 2048-flat clean run2
