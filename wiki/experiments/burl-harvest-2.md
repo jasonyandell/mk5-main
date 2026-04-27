@@ -47,9 +47,9 @@ So the bottom line: **filter-only iter-2 produced an adapter that essentially ma
 | BURL_PARROTS_QMEAN_WRONG    |           41  |           45  |     +4  | loss |
 | BURL_DRIFTS_FROM_PI         |           37  |           46  |     +9  | loss |
 | FORCED_COMMIT               |          219  |          183  |    −36  | guarded (cap=12 win) |
-| **ILLEGAL**                 |            0  |          800  |  **+800** | **regression** |
+| ILLEGAL (attempted `gi<2000`) |          0  |            0  |      0  | none |
 
-**The ILLEGAL row is a regression flag worth honest framing.** Harvest-2 has 800 decisions (28.6%) with no `trace_summary.json` on disk — i.e. 800 decisions silently failed to produce a usable trace. Harvest-1 had zero. The bucket counts above are normalized to the 2000 decisions that did succeed, so the strategic distribution comparison is apples-to-apples on the surviving corpus. But the harness yield regressed from 100% → 71.4%. Possible drivers: longer turn cap × longer effective sequences × cap-bump path causing OOM-quarantine without ledger entry, or run-3c's chattier rollout occasionally exceeding `max_tokens` mid-thinking-block (the [[burl-2000-harvest]] v1 contamination pattern). Not yet root-caused; **noted as the harvest-2 footgun for follow-up**.
+**Correction:** the earlier `ILLEGAL=800` read was a denominator artifact, not a harvest-yield regression. Both harvest-1 and harvest-2 were launched with `--limit 2000` against 2800-row corpus chunks. `tag_corpus.py` iterated all 2800 per-decision rows and filled rows `global_idx=2000..2799` as placeholder `ILLEGAL` because those decisions were never attempted and therefore had no `trace_summary.json`. On the actual attempted range (`global_idx < 2000`), both harvests have 2000 decision dirs, 2000 trace summaries, and 0 ILLEGAL rows. The one harvest-2 quarantine entry was an orphan-wave sentinel at `gi=594..599`; those six traces are present after resume.
 
 The non-trivial gold count is **identical at 202 rows** — the structural distribution of "where Burl is sharper than the bot consensus" is essentially fixed by the seed pool, not by the rollout policy. Same goes for `BURL_BREAKS_CONSENSUS` (299 → 295). Run-3c-as-rollout did not preferentially surface the kinds of decisions that filter-only training cares about.
 
@@ -88,7 +88,7 @@ The plateau strongly motivates **changing the loss target**, not just iterating 
 1. **[[r1-rationalization]] on `BURL_BREAKS_CONSENSUS` (n=295 in harvest-2, 299 in harvest-1)**: condition the model on the oracle answer and learn the *reasoning* that gets there. The sharpest STaR-shaped target the project has.
 2. **FORCED_COMMIT-as-negative**: include FC decisions in training with a negative signal (counterfactual: the bot would not have forced). Aimed at the FC-vs-regret tradeoff that run-3c and run-4 expose as a real two-axis Pareto.
 3. **Ratchet curriculum to trick 5**: harvest D_trick5_first to get away from the trick-0 bias of the current corpus.
-4. **Investigate the harvest-2 ILLEGAL=28.6% regression** before trusting any harvest-3 numbers.
+4. **Fix/promote the corpus tagger's denominator handling** so future summaries count the harvested GI set, not every row in the source per-decision file.
 
 ## Caveat
 
@@ -97,7 +97,7 @@ Only ~4000 total decisions across two harvests. Zeb plateaued only after hundred
 ## Open questions
 
 - Does run-3c-rolled-out at trick 5 / trick 0 produce different bucket distributions, or is the harvest-2 distribution-parity a property of the seed pool independent of rollout policy?
-- What drives the harvest-2 ILLEGAL=28.6% regression — cap-bump path OOM, run-3c chattiness blowing `max_tokens`, or something in the harvest harness path?
+- Does the corpus tagger need an explicit `--limit` / `--decisions` argument, or should it infer the harvested GI set from existing `decision_*` dirs?
 - Is the run-3c regret win on this paired n=180 sustained at larger N, or is the −1.05 vs run-4 partly a paired-180 sampling artifact? (Run-3c was eval'd at N=560 originally; its regret on the wider set was ~2.30, vs 1.92 on this paired 180 — the first 180 indices may be a slightly easier subset for the FC-heavy run-3c policy.)
 - Does R1-rationalization on the 295 BBC rows compound on top of run-4, or does the loss target change need to start from run-3c (FC-and-all)?
 
