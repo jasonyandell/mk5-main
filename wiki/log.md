@@ -1356,7 +1356,7 @@ While waiting for scribe-B's Phase 1 to finish so the GPU re-validation window c
 
 ---
 
-## [2026-04-27 | TBD | phase-2 RESUME — clean alternating re-run retracts magnitudes]
+## [2026-04-27 | 7c4991c | phase-2 RESUME — clean alternating re-run retracts magnitudes]
 
 Team-lead opened the GPU window after scribe-B finished Phase 1.  Scribe-A ran the 7-row alternating re-validation (B-C-B-C-B-P-C at temp=0, no parallel scribe load) and recorded the results.  The original "1.8–2.1× lever-2 win" was a contention artifact — the clean re-run lands as a statistical tie.
 
