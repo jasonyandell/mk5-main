@@ -7,12 +7,27 @@ status: active
 ---
 
 > **Caveat — read this first (added during scribe-A pause, 2026-04-27):**
-> All wall-time numbers in this page were collected while [[burl-perf-phase1]]
-> was running parallel mlx-lm batch=5 jobs on the same M5 Max — Metal +
-> unified-memory contention is consistent with the same-config baseline-t0
-> drifting 71.0 s → 73.7 s and the prefix-cache rows hitting 114 s and
-> 137 s.  Treat the *magnitudes* below as suspect.  What is **not**
-> contention-dependent and survives:
+> Two compounding noise sources make every wall-time number on this page
+> unattributable as a lever effect:
+>
+> - **Cross-scribe GPU contention.** Numbers below were collected while
+>   [[burl-perf-phase1]] ran parallel mlx-lm batch=5 jobs on the same
+>   M5 Max — Metal + unified-memory contention is consistent with the
+>   same-config baseline-t0 drifting 71.0 s → 73.7 s and prefix-cache
+>   rows hitting 114 s and 137 s.
+> - **Bench's intrinsic 3.4× wall variance on `perf_subset_5`.**
+>   Memory `project_perf_subset_5_noise_floor`: same-config
+>   `baseline-bf16` reproduces at 40 s, 79.5 s, 134.5 s across sessions
+>   on M5 Max — even *unloaded*. Decode tok/s tracks 47–184. The 5-row
+>   subset is too small to ride out OS-scheduler / Metal compiler-cache
+>   / shared-memory state. **Sub-2× wall effects are unattributable on
+>   this floor** regardless of contention.
+>
+> Both Phase-2 wall claims sit inside this floor. Lever-1 ~2× *slower*
+> and Lever-2 ~2× *faster* could each be the same noise distribution
+> sampled at opposite ends.
+>
+> What is **not** noise-dependent and survives:
 >
 > 1. The mlx-lm `_merge_caches` heterogeneous-pad penalty is a documented
 >    property of `BatchKVCache.merge` (`mlx_lm/models/cache.py:1056-1085`):
@@ -30,10 +45,13 @@ status: active
 >    terminates short and partial-cache reuse drifts model behaviour.
 >    See "Lever 1 — root-cause writeup" below.
 >
-> Re-validation gate: re-run baseline-bf16-t0, prefix-cache, and
-> continuous-batching after scribe-B's Phase 1 work is done; only the
-> *deltas* between rows recorded in the same uncontended window count
-> toward Phase 2's phase-exit gate.
+> Re-validation gate: a sub-2× re-run on perf_subset_5 cannot resolve
+> the lever effect because the subset's noise floor swallows it.  Phase 2
+> must gate on either **a back-to-back paired re-run in the same quiet
+> session** (where the noise floor narrows to ~10–20% per the Phase 0
+> docs) **or** the **560-decision phase-exit pass** where the 1/√n
+> averaging knocks the floor down to the few-percent regime.  See
+> [[continuous-batching-dispatcher-design]] § Validation plan.
 
 ## Overview
 

@@ -247,23 +247,46 @@ saves churn when production-harvest migration starts.
 
 ## Validation plan (post-pause)
 
-1. Re-baseline `baseline-bf16-t0` clean (no parallel scribe load).
-   Two consecutive runs to confirm <1% wall variance.
-2. Re-run `prefix-cache` with the same uncontended window.  Expected
-   delta direction: still negative on M5 Max for the reasons in
-   "Lever 1 — root-cause writeup", but the magnitude needs the clean
-   number to write down.
-3. Re-run `continuous-batching` with the same uncontended window,
-   three trials.  Expected delta direction: positive (1.3–2×); the
-   precise number again needs a clean window.  K1 stability gate:
-   ≥ 4/5 vs the clean baseline-t0 (recognising the kernel-noise
-   widening at gi=72).
-4. If continuous's clean win is ≥ 30%, declare Phase 2 done.  If
-   the win is in the 10–30% band, document the partial win and
-   defer the full harvest migration to a follow-up.
-5. Phase-exit gate (full560) deferred to scribe-C / Phase 4 because
-   it's a 2 hour run and the 5-row gate already discriminates the
-   levers' direction.
+The bench's intrinsic 3.4× wall variance on `perf_subset_5` (memory
+`project_perf_subset_5_noise_floor`) means a one-off lever-vs-baseline
+diff at sub-2× cannot be distinguished from noise even with a clean
+GPU.  Two paths through:
+
+**Path A — back-to-back paired runs in one quiet session.**
+Per the Phase 0 docs, two back-to-back runs in a quiet system reproduce
+to ±0.5% wall.  Within one session the OS scheduler / Metal compiler
+cache / unified-memory state are stable.  The signal isn't the absolute
+wall — it's the within-session paired delta.
+
+1. In one quiet session, run *all* of: `baseline-bf16-t0` ×2,
+   `prefix-cache` ×2, `continuous-batching` ×3, all back-to-back, no
+   gaps, no other scribes touching the GPU.
+2. Report deltas as `mean(continuous_runs) - mean(baseline_runs)`
+   and `mean(prefix_runs) - mean(baseline_runs)` from that session
+   alone.  Discard cross-session comparisons.
+3. K1 stability gate: ≥ 4/5 on every individual lever run vs the
+   in-session baseline (recognising the kernel-noise widening at
+   gi=72).
+
+**Path B — `--subset 560` phase-exit pass.**
+With n=560 the variance drops by `1/√n` ≈ 1/24, putting the floor in
+the few-percent regime.  This is the authoritative gate.  Cost: ~2 h
+per row, three rows (baseline + each lever) = ~6 h wall.  Acceptable
+once per phase; not for every iteration.
+
+Recommendation: Path A first (fast, fits in the resume window), then
+Path B once at phase-end if Path A reads ≥ 30%.  If Path A reads in
+the 10–30% band, run Path B before declaring the lever shipped.
+Below 10%, declare the bench too noisy for a Phase-2 conclusion and
+defer to Phase 4's full-560 pass.
+
+Phase-exit acceptance criteria:
+
+- Lever-2 win confirmed iff Path A delta ≥ 30% **and** Path B delta
+  ≥ 10% **and** K1 ≥ 4/5 across runs.
+- Lever-1 stays closed regardless of Path A magnitude — the structural
+  failure modes in [[burl-perf-phase2]] are independent of wall
+  measurement.
 
 ## Links
 
