@@ -18,3 +18,5 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_023614,33bf3eb,perf/cheap,turn-aware-2048-clean,5,5,turn-aware,5,46.231,41.292,46.229,17434.5,136.2,11.38,60.0,-81.54,phase1 lever1 2048-flat clean run2
 20260427_024453,2be0003,perf/cheap,baseline-bf16,5,5,default,5,39.088,34.969,39.086,26663.8,170.2,11.59,80.0,-0.27,phase1 apples-to-apples baseline at temp=0.6 (clean GPU)
 20260427_024544,2be0003,perf/cheap,turn-aware-2048,5,5,turn-aware,5,38.992,32.629,38.991,26062.0,158.9,11.18,100.0,52.12,phase1 apples-to-apples lever1 at temp=0.6 vs fresh baseline
+20260427_024841,160ed1c,HEAD,baseline-bf16-pre,5,5,default,5,46.272,42.734,46.207,21687.1,153.3,11.59,80.0,0.18,phase1 disentangle: pre-Lever-1 inference path at 160ed1c (clean GPU)
+20260427_024938,7fcf430,HEAD,baseline-bf16-post-codepath,5,5,default,5,81.453,75.836,81.412,17150.4,77.7,11.59,80.0,0.18,phase1 disentangle: post-Lever-1 inference path baseline (no turn-aware) at 7fcf430
