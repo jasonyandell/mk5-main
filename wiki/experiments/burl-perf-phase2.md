@@ -6,6 +6,35 @@ last_updated: 29da3d2
 status: active
 ---
 
+> **Caveat — read this first (added during scribe-A pause, 2026-04-27):**
+> All wall-time numbers in this page were collected while [[burl-perf-phase1]]
+> was running parallel mlx-lm batch=5 jobs on the same M5 Max — Metal +
+> unified-memory contention is consistent with the same-config baseline-t0
+> drifting 71.0 s → 73.7 s and the prefix-cache rows hitting 114 s and
+> 137 s.  Treat the *magnitudes* below as suspect.  What is **not**
+> contention-dependent and survives:
+>
+> 1. The mlx-lm `_merge_caches` heterogeneous-pad penalty is a documented
+>    property of `BatchKVCache.merge` (`mlx_lm/models/cache.py:1056-1085`):
+>    every batched decode step processes `B × max_length` even when most
+>    streams have `size()==0`.  That predicts a slowdown for any
+>    mixed-cache batch independent of contention.
+> 2. The Lever-1 implementation has a chat-template alignment bug
+>    independent of contention — assistant content is stored as plain
+>    `content`, but the chat template re-extracts structured
+>    `tool_calls` + `reasoning_content` on re-render.  The cached KV
+>    from decode covers the raw `<|channel>thought>` /
+>    `<|tool_call>` markers; the next-turn render wraps them with
+>    `<|turn>model\n…<turn|>` (assistant role normalised to `model`)
+>    that the decode never wrote.  Result: trie longest-common-prefix
+>    terminates short and partial-cache reuse drifts model behaviour.
+>    See "Lever 1 — root-cause writeup" below.
+>
+> Re-validation gate: re-run baseline-bf16-t0, prefix-cache, and
+> continuous-batching after scribe-B's Phase 1 work is done; only the
+> *deltas* between rows recorded in the same uncontended window count
+> toward Phase 2's phase-exit gate.
+
 ## Overview
 
 Phase 2 of the [[perf-on-the-table]] sprint: drive Burl's per-decision
@@ -93,11 +122,13 @@ Two compounding failures:
 2. **Chat-template re-rendering breaks key alignment.** The trie key
    used `tokenizer.encode(completion_text)` for the appended segment,
    but the next turn's chat template wraps the assistant content with
-   role markers (`<|turn>assistant\n…<turn|>`) before emitting the new
-   user/tool turn. The trie's longest-common-prefix is shorter than
-   intended, and — more worryingly — partial cache reuse drifts model
-   behavior enough to flip K1 grades on 2/5 decisions (60% match
-   vs the 100% temp=0 floor).
+   role markers (`<|turn>model\n…<turn|>` — Gemma 4 normalises
+   `assistant` → `model`) before emitting the new user/tool turn.
+   The trie's longest-common-prefix is shorter than intended, and —
+   more worryingly — partial cache reuse drifts model behavior enough
+   to flip K1 grades on 2/5 decisions (60% match vs the 100% temp=0
+   floor).  See "Lever 1 — root-cause writeup" below for the full
+   diagnosis.
 
 Lever 1 in this shape is **not viable** on M5 Max with mlx-lm 0.31.2
 batch_generate.  A correct implementation needs to extract the cache
@@ -113,6 +144,141 @@ the lever-1 ledger row as a negative result and document the failure
 mode for future Burl perf scribes.
 
 Artefact: `burl/eval/results/perf_20260427_020118_prefix-cache.json`.
+
+## Lever 1 — root-cause writeup (non-GPU audit)
+
+This section records what is provably true about the Lever-1 implementation
+from reading mlx-lm source + the Gemma 4 chat template — independent of
+any wall-time measurement.  Two failure modes:
+
+### Failure mode A — heterogeneous-cache batched decode pads to max width
+
+`mlx_lm.generate.PromptProcessingBatch.__init__` wraps each stream's
+per-stream cache through `_merge_caches`
+(`mlx_lm/generate.py:1036`), which delegates to
+`BatchKVCache.merge` (`mlx_lm/models/cache.py:1056-1085`):
+
+```python
+@classmethod
+def merge(cls, caches):
+    lengths = [c.size() for c in caches]
+    max_length = max(lengths)
+    ...
+    keys = mx.zeros((B, H, max_length, Dk), dtype=dt)
+    values = mx.zeros((B, H, max_length, Dv), dtype=dt)
+    for i, (p, c) in enumerate(zip(padding, caches)):
+        keys[i:i+1, :, p:p+c.offset] = c.keys[..., :c.offset, :]
+        ...
+```
+
+Each batched decode step then runs `model(inputs[:, None],
+cache=self.prompt_cache)` over `B × max_length`.  For Lever 1's
+turn-N→N+1 pattern, after the first turn the streams have mixed cache
+sizes — a stream that finished its turn in 200 generated tokens has
+`size()=prompt_T1+200`, while a stream still on turn 1 might be 0.
+The fast streams' attention runs at the slow stream's KV width.
+
+This is a **structural property of mlx-lm 0.31.2**, not a contention
+artifact.  It predicts that Lever 1, in any shape that shares the same
+batched decode call across heterogeneous-cache streams, will lose on
+decode tok/s.  Confirmed by reading source; the magnitude (84 → ~45)
+needs an uncontended re-run to be precise but the direction is fixed.
+
+### Failure mode B — chat-template re-render misaligns the trie key
+
+The Gemma 4 chat template (`chat_template.jinja` in the `mlx-community/
+gemma-4-e2b-it-bf16` snapshot) does three things on each render:
+
+1. **Role normalization.**  `assistant` → `model`:
+   ```jinja
+   {%- set role = 'model' if message['role'] == 'assistant' else message['role'] -%}
+   ```
+   The decoded raw token stream during generation has no `<|turn>model`
+   wrapper because the model is *inside* the assistant turn that
+   `add_generation_prompt=True` opened.  The next-turn render *closes*
+   that turn with `<turn|>` and (if continuing) opens a new one.
+2. **Continuation detection.**  `continue_same_model_turn` suppresses
+   the second `<|turn>model\n` opener if two assistant messages are
+   adjacent.  This means the boundary tokens between turn-N and
+   turn-N+1 depend on the prior assistant message structure, which
+   the trie key has no way to anticipate.
+3. **Structured re-extraction of tool calls and reasoning.**
+   ```jinja
+   {%- if message['tool_calls'] -%}
+       {%- for tool_call in message['tool_calls'] -%}
+           {{- '<|tool_call>call:' + function['name'] + '{' -}}
+           ...
+   ```
+   The chat template *only* renders `<|tool_call>` markers if
+   `message['tool_calls']` is present as a structured list.  But the
+   Phase-2 implementation stores the full assistant completion in
+   `message['content']` and never populates `tool_calls`/`reasoning`
+   on the appended assistant message.  So:
+
+   - **What the model decoded:** raw tokens including
+     `<|channel>thought\n…<channel|><|tool_call>call:explore_game{play:0}<tool_call|><eos>`.
+   - **What the next turn's chat template renders for the *same*
+     content:** `<|turn>model\n{the entire raw text including all
+     the markers as plain text}<turn|>`.
+   - The two token streams diverge at every Gemma special token
+     boundary.
+
+The trie's `search` walks the new prompt token stream until it finds
+the first divergence; that's where `common_prefix` ends.  Since the
+divergence sits at the `<|turn>system\n…<turn|>` boundary that opens
+the assistant turn (very early in the prompt), the cache hit is
+short — but worse, on the boundaries that *do* match by coincidence
+(generic content tokens), the cached KV is from a position where the
+model had different surrounding context, which corrupts the attention
+pattern and drifts logits.
+
+This explains the 60% K1 match: not a tolerance issue, a correctness
+bug.  Independent of contention.
+
+### What a correct Lever-1 implementation needs
+
+The mlx-lm `server.py` does this right.  `BatchGenerator.insert_segments`
+(`generate.py:1599-1647`) accepts `segments: List[List[List[int]]]` —
+each stream is split into prompt-segments where each segment-end is a
+"stable boundary" the cache should snapshot.  The server uses this to
+cache the system+rules+user prefix of every request:
+
+```python
+# server.py:746-757
+self.prompt_cache.fetch_nearest_cache(...)
+batch_generator.insert_segments(
+    segments=[segments],
+    caches=[cache],
+    all_tokens=[prompt[:prompt_cache_count]],
+    ...
+)
+# After end_of_segment: server.py:836-851
+caches = batch_generator.extract_cache(eos_ids)
+self.prompt_cache.insert_cache(model_key, cache_key, cache,
+                               cache_type="user")
+```
+
+The cache is captured *at the end of the user segment*, before the
+assistant turn opens.  When a later request has the same system+
+user prefix, it reuses that cache and resumes from the assistant
+boundary — never trying to bridge across an `<|turn>model\n…<turn|>`
+re-render.
+
+For Burl, the cache hit pattern would only work *across decisions
+that share a literal-token prefix* — i.e. the system prompt + rules
+primer (~1500 tok) before the per-decision game-state block diverges.
+Cross-turn within a decision is not addressable through this API
+because the decision's history grows with raw-decoded tokens that
+the chat template would never re-emit verbatim.
+
+The Lever-1 expectation in [[perf-on-the-table]] ("1.5–2× expected")
+was therefore over-optimistic on M5 Max for this harness shape.  The
+realistic shape on this hardware is "shared system+user prefix
+*across the wave's decisions*, captured once per wave-start" — which
+saves ~5 × 1500 = 7,500 prompt tokens (~10–15% of total prefill at
+the 5-decision subset's ~80k prompt tokens).  Worth doing if it
+slots into the [[continuous-batching-dispatcher-design]] cleanly,
+not worth a standalone lever.
 
 ## Lever 2 result — 1.8-2.1× wall on M5 Max
 

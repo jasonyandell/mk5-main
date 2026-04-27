@@ -1316,3 +1316,22 @@ Scribe A's closeout: lever 1 (LRUPromptCache prefix sharing) and lever 2 (contin
 **Frontier shift:** Names the perf-on-the-table prediction wrong on lever 1 (the "1.5–2× expected" line was based on the single-stream argument that doesn't hold when the batched decode has to pad heterogeneous KV widths), and right on lever 2 (the "3–5×" estimate; the bench measured 1.8–2.1× on the 5-row subset which is the conservative lower-bound — the harvest-level straggler tail savings will be larger). The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.8 × Phase 1 × Phase 3.
 
 **Why now:** Phase 2 had a 90-min budget; lever 1 burned about half of it on the negative-result loop, lever 2 landed cleanly in the second half. Closing in the same session keeps the wiki + ledger consistent before scribe-C's Phase 3 work picks up.
+
+---
+
+## [2026-04-27 | TBD | phase-2 caveat — GPU-contention disclosed, root-cause writeup, dispatcher design]
+
+Team-lead paused new bench runs because cross-scribe GPU contention with scribe-B's parallel mlx-lm batch=5 jobs is consistent with the same-config baseline-t0 walking 71 → 73.7 s and the lever-1 prefix-cache rows hitting 114 s and 137 s.  All Phase-2 wall-time magnitudes are pending re-validation.  Used the pause window for non-GPU work: deeper mlx-lm source audit, Lever-1 root-cause writeup, continuous-batching dispatcher design doc.
+
+**Touched pages:** [[experiments/burl-perf-phase2]] [[topics/perf-on-the-table]] [[topics/continuous-batching-dispatcher-design]] [[index]] [[log]]
+
+**Added:** [[topics/continuous-batching-dispatcher-design]] — submit / pump / close API for a `ContinuousDispatcher` class wrapping mlx-lm's `BatchGenerator`; cohort-based OOM resilience that preserves [[topics/batched-harvest-resilience]]'s wave-sentinel + quarantine semantics under continuous batching; explicit acknowledgement that the current `run_bench_continuous` is inline and the class extraction is a follow-up refactor.
+
+**Updated:**
+- [[experiments/burl-perf-phase2]] gained a top-of-page contention caveat and a "Lever 1 — root-cause writeup" section diagnosing the two structural failure modes (`_merge_caches` heterogeneous-pad penalty + chat-template re-rendering vs trie-key alignment) with line-cited sources from `mlx_lm/models/cache.py` and the Gemma 4 `chat_template.jinja`.
+- [[topics/perf-on-the-table]] gained a "What mlx-lm 0.31.2 actually exposes" section: `batch_generate` / `BatchGenerator` / `LRUPromptCache` API surface, the constraints that ruled the naive Lever-1 shape out (model-key hashability, `BatchKVCache.merge` padding, `prefill_batch_size=8` broadcast bug, chat-template structured re-extraction), and the "right pattern for prefix reuse" derived from `mlx_lm.server.py`.  Compounded-stack estimate revised from 7–10× down to ~4–6× for the Phase-2 contribution.
+- Lever-1 and Lever-2 entries in the ranked list now flag wall magnitudes as contention-suspect while preserving the contention-independent structural claims.
+
+**Frontier shift:** The Phase-2 *direction* (Lever 1 fails, Lever 2 wins) survives the caveat because it rests on structural mlx-lm properties, not measured wall.  The *magnitude* (1.8–2.1× for Lever 2) is parked pending clean re-run.  The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.5 × Phase 1 × Phase 3 — which means Phase 1 and Phase 3 carry more of the speedup load than the original perf-table estimate assumed.
+
+**Why now:** Pausing on GPU lets the wiki absorb what was learned without churning the conclusion when the clean re-run lands.  The structural arguments stay; the numbers will be replaced.
