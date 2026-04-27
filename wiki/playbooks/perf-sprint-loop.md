@@ -14,33 +14,39 @@ The `/loop` message to register at sprint start. Paste verbatim, replacing the b
 /loop 10m
 
 GOAL: <restate the sprint goal here, e.g. "drive Burl per-decision
-latency from ~26s toward ~2s on M5 Max">. Speed is the goal; memory
-wins are pleasant side-effects, not the destination.
+wall_s on perf_subset_5 from ~26s toward ~2s on M5 Max">.
 
-DON'T GIVE UP. Crashes are work, not a stop sign.
-  - Read the traceback, apply the smallest fix, re-run.
-  - If 3 fixes on one lever still crash, switch to the next lever.
-  - "The bench is unreliable" is never a reason to stop measuring
-    speed. Find another way to measure speed.
+CONTRACT METRIC: wall_s_per_decision on perf_subset_5, paired baseline
+immediately before each variant. End-to-end (tokens + tools + harness).
+EQUIVALENCE GATE: K1_match >= 60% AND regret_delta within ±10% on the
+same paired run. If the gate fails, status = discard regardless of wall.
 
-Stop only when the goal is hit or the user types "stop".
+LOOP FOREVER:
+  1. Pick the next variant. Read [[perf-sprint-levers]] for seed ideas;
+     freelance is fine. Read [[perf-sprint-traps]] for known pitfalls.
+  2. Modify the editable surface (see [[perf-sprint]]). git commit.
+  3. Run paired baseline + variant on perf_subset_5.
+  4. Read wall_s, k1_match, regret_delta, peak_gb from the run.
+  5. Decide:
+       gate failed OR wall_s didn't improve  → status = discard, git reset.
+       gate passed AND wall_s improved       → status = keep, advance branch.
+       run crashed                            → read traceback, smallest fix,
+                                                 re-run. After 3 crashes on the
+                                                 same idea, status = crash, log,
+                                                 move to a new idea.
+  6. Append row to scratch/<sprint>/results.tsv.
+  7. Slack update: what tried, current best wall_s, what's next.
 
-Each fire:
-  1. Re-read scratch/PERF_GOAL.md and [[perf-sprint-levers]] to re-anchor.
-  2. Status: what's running? what crashed? where's the latest ledger row?
-  3. If nothing is running and the goal isn't hit:
-     START THE NEXT LEVER. Idle is a bug. Heartbeat-without-action is a bug.
-  4. Slack update: what trying now, what tried last, current best wall.
+DON'T GIVE UP. "The bench is unreliable" is never a reason to stop
+measuring speed — find another way. Idle is a bug. Heartbeat-without-
+action is a bug.
+
+Stop only when wall_s_per_decision hits the target OR the user types "stop".
 ~~~
 
 ## Why this shape
 
-Context churns over hours. The loop message has to do two things at every fire:
-
-1. **Restate the goal** so the orchestrator re-anchors on what they're here to do.
-2. **Name idle as a bug.** Heartbeat without progress is the failure mode dressed up as patience.
-
-The "don't give up" clause lives here and in [[perf-sprint-goal]] — two places, same voice. Nowhere else.
+The loop is where the stop decision fires, so the rule lives here. The metric, the gate, and the keep/discard mechanic are stated together because they decide together. Every fire re-anchors on what advances the branch and what doesn't.
 
 ## Links
 

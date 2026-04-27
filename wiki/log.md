@@ -1325,3 +1325,24 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 - [[index]] — playbook hooks rewritten.
 
 **Frontier shift:** the playbook is now "clear goal + clear guidelines + trust the team" rather than predicate-and-procedure. Failures of past sprints are recorded as history, not as scaffolding on every page. "Don't give up" stays — it's the load-bearing instruction — but it lives in two places, in one voice.
+
+## [2026-04-27 | unstaged | perf-sprint reshaped around Karpathy's autoresearch primitives]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]] [[perf-sprint-goal]] [[perf-sprint-levers]] [[perf-sprint-traps]] [[perf-sprint-history]] [[index]]
+
+**Why:** Karpathy's autoresearch (March 2026) collapses ML research to three primitives — one editable asset, one scalar metric, one time-boxed cycle with keep/discard — and gets clarity from aligning the solution to the problem. Same move applies here. The earlier simplification removed mood and dead backlinks but kept "wrap conditions" and "ledger row per lever" as procedural scaffolding. Replacing them with one metric (`wall_s_per_decision` on perf_subset_5, paired) plus a binary equivalence gate plus a TSV ledger structurally closes the wrap-checkbox loophole and makes every iteration's keep/discard decision unambiguous.
+
+**Updated:**
+- [[perf-sprint]] — leads with the contract paragraph (metric + gate). Adds editable-surface list (likely candidates: bench harnesses, eval harness, wax_museum, mlx-lm pin, batch flags) — non-strict, "go wild" with git as the safety net. Pins the TSV format (commit, wall_s, k1_match, regret_delta, peak_gb, status, description). The TSV is the digest.
+- [[perf-sprint-loop]] — replaced loop message with a LOOP FOREVER block. Metric, gate, keep/discard rule stated together. "Don't give up" lives only here now (was in two places).
+- [[perf-sprint-goal]] — collapsed to one paragraph: target, contract metric, equivalence gate values, ledger location.
+- [[perf-sprint-levers]] — reframed intro: suggestions, not procedure. Hypothesis fuel for the loop.
+- [[perf-sprint-traps]] — reframed intro: when the loop hits one of these, here's the smallest fix.
+- [[perf-sprint-history]] — added one line: results.tsv is the truth, prose is texture.
+
+**Design choices:**
+- End-to-end metric — `wall_s` includes token generation, tool calls, harness overhead. Optimizing tool dispatch and prefix sharing both count.
+- `aggregate_tok_s` deliberately left out of the TSV. Stick to one metric; learn the lay of the land; improvise if needed.
+- Editable surface is a list of likely candidates, not strict. Trust the model + git.
+
+**Frontier shift:** wrap conditions disappear structurally — the loop has two exits (metric hits target OR user typed stop). Paired protocol stops being a separate rule (it's step 3 of the loop). The sprint is interruptible — the user wakes up, reads the TSV, picks winners.

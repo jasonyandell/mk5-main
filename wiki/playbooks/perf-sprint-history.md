@@ -8,6 +8,8 @@ status: active
 
 Append-only log of perf sprints. Each entry: target, outcome, what worked, what didn't, what changed in the playbook. Future sprints read this so the wisdom of past sprints is already encoded.
 
+The per-sprint `results.tsv` is the truth — every iteration's wall_s, gate values, and keep/discard decision. The prose entries below are texture: why a sprint went the way it did, what the rows don't say on their own.
+
 ## 2026-04-27 — Sprint 1 — Burl per-decision latency
 
 **Target:** 26s/decision → 2s/decision on M5 Max (13×).

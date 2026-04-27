@@ -6,7 +6,7 @@ last_updated: fbe798f
 status: active
 ---
 
-Levers ordered by expected ROI for an M5-Max edge-class Burl-style workload. Append wins, retire dead ones, evolve the ladder. Each sprint reads from this and writes back.
+Levers ordered by expected ROI for an M5-Max edge-class Burl-style workload. **Suggestions, not procedure** — the loop ([[perf-sprint-loop]]) decides keep/discard on `wall_s_per_decision`. This page is hypothesis fuel: read it for ideas to seed the next iteration, freelance is fine. Append wins, retire dead ones, evolve the ladder.
 
 ## Active ladder (try in order)
 

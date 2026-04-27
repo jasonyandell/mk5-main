@@ -6,7 +6,7 @@ last_updated: fbe798f
 status: active
 ---
 
-Known crashes, footguns, and contention modes. When you see X, do Y. Append when a sprint discovers a new failure mode.
+Known crashes, footguns, and contention modes. When the loop hits one of these, here's the smallest fix — apply it and re-run rather than re-deriving from scratch. Append when a sprint discovers a new failure mode.
 
 ## Bench crashes
 

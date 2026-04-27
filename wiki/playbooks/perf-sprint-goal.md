@@ -6,32 +6,33 @@ last_updated: fbe798f
 status: active
 ---
 
-Template for `scratch/PERF_GOAL.md` — the sticky goal file written at sprint kickoff and re-read at every loop fire. Lives in `scratch/` because it's session-specific; the playbook lives in the wiki because it's reusable.
+Template for `scratch/<sprint>/PERF_GOAL.md` — the sticky goal file written at sprint kickoff. Re-read at every loop fire.
 
 ## Template
 
 ~~~
 # Perf Sprint — Goal
 
-TARGET: <baseline> → <target> on <hardware>. <ratio>×.
-       (e.g. 26s/decision → 2s/decision on M5 Max. 13×.)
+TARGET: wall_s_per_decision <baseline> → <target> on <hardware>.
+       (e.g. 26s → 2s on M5 Max. 13×.)
        Anything substantial is a win. The full ratio is a stretch.
 
-ANCHOR METRIC: <e.g. wall_s on full-N; or wall_s_total on perf_subset_5
-               with paired baseline immediately before each variant>
+CONTRACT METRIC: wall_s_per_decision on perf_subset_5,
+                paired baseline immediately before each variant.
+                End-to-end (tokens + tools + harness).
 
-EQUIVALENCE BAR (the faster version must still be the same model):
-  - K1 grade match >= 60%
-  - regret_delta within ±10% on the comparison anchor
-  - paired protocol: fresh baseline immediately before each variant
+EQUIVALENCE GATE (binary, must pass):
+  - K1_match >= 60%
+  - regret_delta within ±10%
+  - measured on the same paired run as wall_s
 
-DON'T GIVE UP. Crashes are work, not a stop sign. Stop only when the
-goal is hit or the user types "stop".
+LEDGER: scratch/<sprint>/results.tsv
+        columns: commit  wall_s  k1_match  regret_delta  peak_gb  status  description
 ~~~
 
 ## Why a separate file
 
-The loop message is short — a slack-style bumper sticker. The goal file is the contract: target, anchor, equivalence bar, the don't-give-up clause. The orchestrator re-reads it in 30 seconds at every fire to stay grounded.
+The loop message restates the goal at every fire but is short. The goal file is the contract: target, metric, gate, ledger location. Re-readable in 30 seconds to re-anchor.
 
 ## Links
 
