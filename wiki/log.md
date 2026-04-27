@@ -1319,7 +1319,7 @@ Scribe A's closeout: lever 1 (LRUPromptCache prefix sharing) and lever 2 (contin
 
 ---
 
-## [2026-04-27 | TBD | phase-2 caveat — GPU-contention disclosed, root-cause writeup, dispatcher design]
+## [2026-04-27 | 0310b12 | phase-2 caveat — GPU-contention disclosed, root-cause writeup, dispatcher design]
 
 Team-lead paused new bench runs because cross-scribe GPU contention with scribe-B's parallel mlx-lm batch=5 jobs is consistent with the same-config baseline-t0 walking 71 → 73.7 s and the lever-1 prefix-cache rows hitting 114 s and 137 s.  All Phase-2 wall-time magnitudes are pending re-validation.  Used the pause window for non-GPU work: deeper mlx-lm source audit, Lever-1 root-cause writeup, continuous-batching dispatcher design doc.
 

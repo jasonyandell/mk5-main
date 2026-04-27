@@ -1,8 +1,8 @@
 ---
 title: Continuous batching dispatcher — design
 kind: topic
-first_seen: TBD
-last_updated: TBD
+first_seen: 0310b12
+last_updated: 0310b12
 status: active
 ---
 
