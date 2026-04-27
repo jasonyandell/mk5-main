@@ -105,6 +105,10 @@ runs/
 lightning_logs/
 *.tar.gz
 
+# Tracked perf-bench inputs + ledger (small frozen JSONL/CSV/JSON, not bulk data)
+!burl/eval/data/
+!burl/eval/results/
+
 # Zeb training checkpoints (large, use export_model.py for git-friendly snapshots)
 forge/zeb/checkpoints/
 
