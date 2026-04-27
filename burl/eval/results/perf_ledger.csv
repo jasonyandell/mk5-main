@@ -9,3 +9,4 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_020733,160ed1c,perf/cheap,turn-aware-2048,5,5,turn-aware,5,47.807,44.6,47.805,23558.1,141.8,11.59,100.0,0.0,phase1 lever1 2048-flat at temp=0.6
 20260427_020836,160ed1c,perf/cheap,turn-aware-2048,5,5,turn-aware,5,45.481,44.277,45.48,24267.3,140.9,11.59,60.0,-100.0,phase1 lever1 2048-flat at temp=0.6 run2
 20260427_022000,160ed1c,perf/cheap,baseline-bf16,5,5,default,5,40.124,40.051,40.052,27205.1,184.5,11.59,80.0,-34.09,phase1 baseline-bf16 fresh re-measure
+20260427_022639,1b78269,perf/cheap,turn-aware-2048,5,5,turn-aware,5,44.412,39.096,44.411,26512.8,158.3,11.59,60.0,3.41,phase1 final at 1b78269
