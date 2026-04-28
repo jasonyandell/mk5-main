@@ -2,7 +2,7 @@
 title: Perf Sprint — Trap Recipes
 kind: playbook
 first_seen: fbe798f
-last_updated: fbe798f
+last_updated: e9f1e6c (iter 13: Metal-capture-blows-up + Python instance-call-override traps)
 status: active
 ---
 
@@ -101,6 +101,21 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 - **What it is.** Sprint 2 iter 6 (commit `1e82482`, reset) ran Q8 (`FakeRockert543/gemma-4-e2b-it-MLX-8bit`) at temp=0 batch=5 expecting Q8's ~16× smaller quant noise to byte-match bf16 on gi=0. **Q8 deterministically flipped gi=0 to play=6 with byte-identical regret 7.632 to Q4 UD-MLX-4bit.** Two different quant recipes (UD-MLX 4-bit, FakeRockert 8-bit) at two very different bit-widths produced the same wrong answer with the same regret. Q8 also added NEW damage at gi=104 (bf16 play=6 K1=True regret=0 → Q8 play=19 K1=False regret=0.025) — wider damage footprint than Q4. The "Q8 ≈ bf16" rule of thumb is unreliable on individual logit-cliff decisions; bit-width reduction does not commute with argmax across all decisions.
 - **Recipe.** When a single decision flips deterministically across two unrelated quant recipes with byte-identical regret, treat the *decision* as quant-fragile, not the *quant set* as broken. Either (a) re-freeze the perf subset to exclude that decision before chasing quant wall wins, or (b) widen the equivalence gate to tolerate one K1-flip per subset (e.g. `K1_match >= 60% AND |regret_delta| <= max(10%, 1 fragile-decision worth of regret)`), or (c) pivot to non-quant levers (mlx-lm version bump, `mx.compile`, spec-decode) that don't perturb logits at all.
 - **Long-term fix.** Subset-freeze protocol should include a "quant-fragility audit": for each frozen decision, verify its bf16 argmax survives a Q4 + Q8 perturbation. Decisions that flip across quant should either be excluded from the perf subset or marked as known-fragile so the gate weights them differently.
+
+## Profiling / instrumentation footguns
+
+### Apple Metal capture (`mx.metal.start_capture`) blows up to multi-GB on a real bench run
+
+- **What it is.** mlx exposes `mx.metal.start_capture(path)` / `stop_capture()` with `MTL_CAPTURE_ENABLED=1` to record a `.gputrace` file for Xcode. Apple Metal capture serializes every command buffer dispatch and writes the binary state into the trace bundle (the `.gputrace` is a directory with thousands of `MTLBuffer-*` files, often hardlinked to share state). Sprint 2 iter 13 (2026-04-28, commit `e9f1e6c`) wrapped a 5-decision continuous bench run in `start_capture` and the trace ballooned to **5.3 GB at 6 minutes elapsed** with no signs of stopping (iter 11's clean baseline of the same workload is 41s). Killed before it filled the disk; the .gputrace was unrecoverable to Xcode anyway since the host runs macOS 26.4.1 (issue [#2846](https://github.com/ml-explore/mlx/issues/2846) — "metal_capture does not capture working GPU trace in MacOS 26.1+", same on .4.x).
+- **Recipe.** Don't wrap a multi-second whole-bench run in `mx.metal.start_capture`. If you need kernel-level profiling, two options: (a) capture a SINGLE forward pass (~10-50ms) — small enough that the trace fits in low MB and replay won't take forever; (b) skip the .gputrace entirely and use a `KernelCounter` analytical breakdown (call-counts × per-call bandwidth-bound cost) — reusable from iter 13's `bench_decision_latency.py:--kernel-audit` flag. Option (b) is what produced the iter 13 5-row breakdown without ever opening Xcode.
+- **Long-term fix.** None at the playbook level. Apple's Metal capture is structurally not designed for whole-application traces of long-running workloads; it's a single-frame-snapshot tool.
+- **Caveat — instrumentation overhead.** Even WITHOUT `MTL_CAPTURE_ENABLED=1`, the iter 13 kernel-counter wrappers (per-call Python wrapping of `nn.Linear.__call__` at the class level) added ~38% wall overhead on the bf16 continuous bench (56.5s instrumented vs 41s clean). Use the `--kernel-audit` flag only when needed, never for paired wall comparisons against an un-instrumented baseline.
+
+### `nn.Module.__call__` cannot be overridden at the instance level
+
+- **What it is.** Setting `instance.__call__ = hooked_fn` on an `nn.Linear` (or any `nn.Module`) silently does nothing — Python's special-method lookup for `__call__` skips the instance dict and goes straight to the class via type(...). Sprint 2 iter 13 hit this when adding `KernelCounter` hooks; the original "set `layer.__call__ = wrapped`" approach left every Linear unwrapped (zero counter increments, but no visible error). Wasted ~10 minutes of debug time on an audit run.
+- **Recipe.** To intercept `nn.Linear.__call__` per-instance, replace the CLASS-level `__call__` with a wrapper that reads a per-instance tag (`getattr(self, "_audit_kernel_name", None)`) and falls through to the original for untagged instances. Tag the instances you care about during install. Reverse on teardown by restoring the original class-level `__call__`. See `bench_decision_latency.py:install_kernel_hooks` for the working recipe.
+- **Long-term fix.** None — this is a Python-language constraint, not an MLX issue.
 
 ## Stuck worker
 
