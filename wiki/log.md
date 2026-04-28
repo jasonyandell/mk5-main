@@ -1438,3 +1438,19 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 - #11 explicitly marked "flag only — not for spawn picks." The active-ladder header already says "Suggestions, not procedure," but the multi-week scope is worth flagging at the row level.
 
 **Frontier shift:** the playbook now distinguishes model-side and harness-side perf surfaces. Sprint 2 closed the model side; sprint 3 (or an extension of sprint 2 if it keeps running) has a written ladder of harness-side surfaces to climb.
+
+## [2026-04-28 | unstaged | perf-sprint-levers gains tool-dispatch surface (#12, #13)]
+
+**Touched pages:** [[perf-sprint-levers]]
+
+**Why:** iter 10's `PhaseTimer` finding "tool dispatch hypothesis is dead — apply_step is just 4.78%" was correct on the *old* 68.9s sync-wave baseline but **inverts on the new 13.28s/decision continuous-batching floor**. Apply_step is 549ms × 6 turns = ~3.3s/decision regardless of model-side wall (tool dispatch is per-turn, not per-wall-time). At iter 14's floor that's ~25% of wall — the single biggest known overhead in the harness. Memory says tool execution is "sub-millisecond per call (table-cached)" — a ~1000× gap between expectation and measurement that demands diagnosis.
+
+**Updated:**
+- [[perf-sprint-levers]] — appended rows #12 and #13 to the active ladder. **#12** is a research-only diagnostic (mirrors iter 10's PhaseTimer pattern): wrap `_apply_step` in `burl/wax_museum/harness.py` with a sub-phase timer splitting into `chat_template_render`, `tool_call_inner`, `state_update`, `serialize_result`, `gate_validation`. Pure instrumentation; gate auto-passes; produces a fingerprint table. **#13** is a conditional fix that branches by what #12 reveals: (a) incremental chat-template caching, (b) gus non-cached path optimization, (c) avoid round-trip serialization, (d) pre-compute frozen-subset gus calls (bench-only, with explicit caveat that this is measurement separation, not production-translatable perf).
+
+**Design choices:**
+- Diagnostic + conditional fix is the same pattern that worked for iter 10 → iter 11. Keep it.
+- #13(d) is explicitly bench-only with a "do NOT treat as production-translatable win" caveat — distinguishes "make the bench faster" from "make Burl faster" so the orchestrator doesn't game the metric without realizing it.
+- The lever rows themselves cite the math: 4.78% of OLD wall = 25% of NEW wall, because tool dispatch is per-turn not per-wall-time. This is the kind of insight that ages without context, so it's encoded in the row text rather than just the log.
+
+**Frontier shift:** none — the architecture and contract are unchanged. This corrects a stale conclusion ("tool dispatch is fine") that was correct on the old baseline and isn't on the new one.
