@@ -37,16 +37,10 @@ python -u -m burl.wax_museum.run_pilot --model local --n 5 --run-id my_gemma_run
 # Base Qwen3.6-35B-A3B-4bit, local MLX-LM. Slow (big <think> blocks) but coherent.
 python -u -m burl.wax_museum.run_pilot --model qwen --n 5 --run-id my_qwen_run --no-live-stdout
 
-# Eagerly precompute the bounded per-decision tool lattice.
-python -u -m burl.wax_museum.run_pilot --model local --n 5 --eager-tool-cache
-
 # Modal L4 (needs deploy first).
 modal deploy burl/wax_museum/modal_serve.py    # first time only
 python -u -m burl.wax_museum.run_pilot --model modal --n 5
 ```
-
-`--eager-tool-cache` is only a latency/cache layer. `menu_for` and `advance`
-still decide which tools the model is allowed to call on each turn.
 
 ## Tail the run
 

@@ -2,7 +2,7 @@
 title: wax_museum (hard-gated HATEOAS harness)
 kind: entity
 first_seen: 54f7776
-last_updated: mk5-main-7v4
+last_updated: 063fcac
 status: active
 ---
 
@@ -55,20 +55,6 @@ Two hardening guards on `run_decision_waxed` make multi-thousand-decision harves
 - **Forced-commit fallback.** If the loop exits without a legal commit, pick the highest-E[Q] play already known: probed plays in `ctx.caches` first, then an oracle scan over `legal_plays`, then the first legal play. `forced_commit=True` and `forced_commit_reason` recorded on the trace. `final=-1` is reserved for internal errors only. On the v2 harvest: 219 / 2000 decisions hit the fallback (10.9%), zero illegal commits.
 
 Pre-Phase-A blunder rerun: 3/29 decisions committed illegally. Post-Phase-A and on the v2 2000-decision corpus: zero illegal commits. (commit message @ 063fcac)
-
-## Eager tool-cache option (mk5-main-7v4)
-
-`run_decision_waxed(..., eager_tool_cache=True)` precomputes the bounded
-decision-local tool lattice before the first model turn: `belief_trajectory()`,
-`explore_game(play)` for every legal play, both probe branches for each legal
-play, and the four static `ask_rule` topics. `run_pilot.py` exposes the same
-path as `--eager-tool-cache`.
-
-The cache is intentionally below the gate: `menu_for` and `advance` still decide
-which tools the model is allowed to call, while cache hits return payloads
-produced by the normal tool functions. Per-decision stats record
-`legal_play_count`, `precomputed_count`, `hit_count`, `wasted_count`,
-`precompute_wall_s`, and `saved_tool_wall_s`.
 
 ## 2000-decision harvest (2026-04-25)
 

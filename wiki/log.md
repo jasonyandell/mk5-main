@@ -1474,3 +1474,17 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 - **Production-scale framing baked into row descriptions**, not just the log. At 1M+ decisions, "Burl-only derivative checkpoint" is a feature; "weeks of compute saved" is a real metric. The lever rows make those tradeoffs explicit so future workers see the right ROI calculus.
 
 **Frontier shift:** the playbook now has explicit hypothesis fuel for "what would close the gap to the bf16 ceiling" — runtime swap, model surgery, mixed-precision quant, KV quant, harness speculation. The model-side ladder isn't actually exhausted; it was exhausted *with respect to the surfaces tried*. Five new untouched surfaces are now visible.
+
+## [2026-04-28 | unstaged | back out synchronous wax_museum eager-cache attempt]
+
+**Touched pages:** [[wax-museum]] [[perf-sprint-traps]]
+
+**Why:** mk5-main-7v4 implemented a synchronous whole-lattice registry cache, but the user's intent was ANE/Core ML overlap while Gemma was busy. The implementation did not use ANE, did not overlap with prompt/decode, and precomputed too broadly.
+
+**Updated:**
+- [[wax-museum]] — removed the eager tool-cache option section so the active entity page no longer advertises the rejected implementation.
+- [[perf-sprint-traps]] — added "Synchronous whole-lattice wax_museum precompute is not ANE overlap" with the clean stub A/B: lazy 3.6s wall vs eager 13.5s wall on `perf_subset_5`, same legal/final behavior, 79 scheduled responses, 10 hits, 69 wasted.
+
+**Side artifact:** `scratch/mk5-main-ane-sidecar-bead-draft.md` captures the replacement bead text because active `bd create` is blocked by the current `.beads` reinitialization state.
+
+**Frontier shift:** whole-lattice pre-turn precompute is rejected. The next attempt must start with an ANE/Core ML proof and a turn-scoped overlapping sidecar, not a blocking registry memoization layer.
