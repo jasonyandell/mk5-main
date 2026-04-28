@@ -474,6 +474,9 @@ def make_tracking_model(
     model_repo: str,
     tracker: StatsTracker,
     enable_prompt_cache: bool = False,
+    prune_lm_head: bool = False,
+    prune_freq_tsv: str | None = None,
+    prune_keep_n: int = 8192,
 ):
     """Build a ``GemmaLocalNativeBatched`` whose ``step_batch`` records stats.
 
@@ -586,6 +589,9 @@ def make_tracking_model(
         max_tokens=max_tokens,
         temperature=temperature,
         enable_prompt_cache=enable_prompt_cache,
+        prune_lm_head=prune_lm_head,
+        prune_freq_tsv=prune_freq_tsv,
+        prune_keep_n=prune_keep_n,
     )
 
 
@@ -1260,6 +1266,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     ap.add_argument(
+        "--prune-lm-head", action="store_true",
+        help=(
+            "Lever #16 phase 2: slice the (tied) LM head output projection "
+            "down to the iter28 keep-set (top-N most-frequent emit token "
+            "rows ∪ tokenizer special ids). Input embeddings are unchanged; "
+            "only the output matmul shrinks. Sampler is wrapped with a "
+            "pruned-index → original-vocab-id LUT so KV cache + tokenizer "
+            "downstream see original IDs."
+        ),
+    )
+    ap.add_argument(
+        "--prune-keep-n", type=int, default=8192,
+        help=(
+            "Number of top-frequency emit token rows to keep when "
+            "--prune-lm-head is set. Default 8192. Phase 1 measured only "
+            "4,493 unique emit IDs across 2.2M emit tokens, so 8192 covers "
+            "100%% with comfortable headroom for distribution drift."
+        ),
+    )
+    ap.add_argument(
+        "--prune-freq-tsv",
+        default="/Users/jason/code/mk5-main/scratch/burl-perf-2/iter28_emit_token_freqs.tsv",
+        help=(
+            "Path to iter28's emit-frequency TSV. Default: the canonical "
+            "main-checkout artifact built by iter28_probe.py."
+        ),
+    )
+    ap.add_argument(
         "--kernel-audit", action="store_true",
         help=(
             "Lever #7 sub-fused-kernel audit: install KernelCounter hooks on "
@@ -1397,6 +1431,9 @@ def main(argv: list[str] | None = None) -> int:
         model_repo=args.model_repo,
         tracker=tracker,
         enable_prompt_cache=bool(args.enable_prompt_cache),
+        prune_lm_head=bool(args.prune_lm_head),
+        prune_freq_tsv=args.prune_freq_tsv,
+        prune_keep_n=int(args.prune_keep_n),
     )
     load_wall = time.time() - t_load
     print(f"[bench] model ready in {load_wall:.1f}s", flush=True)

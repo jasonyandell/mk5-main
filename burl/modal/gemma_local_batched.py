@@ -68,6 +68,9 @@ class GemmaLocalNativeBatched:
         temperature: float = 0.6,
         enable_prompt_cache: bool = False,
         prompt_cache_max_entries: int = 64,
+        prune_lm_head: bool = False,
+        prune_freq_tsv: str | None = None,
+        prune_keep_n: int = 8192,
     ) -> None:
         t0 = time.time()
         log.info(
@@ -86,6 +89,36 @@ class GemmaLocalNativeBatched:
         # batched-vs-sequential semantic comparison doesn't have a sampling
         # confounder.
         self._sampler = make_sampler(temp=self.temperature)
+        # Lever #16 phase 2: optional LM-head vocab prune. When enabled, slice
+        # the tied output projection down to (top-N freq emit ids ∪ tokenizer
+        # special ids) and wrap the sampler with a pruned-index →
+        # original-vocab-id LUT. The input-side ``embed_tokens`` table is left
+        # intact so prompts can still contain any vocab ID — only the output
+        # matmul shrinks.
+        self.prune_keep_ids: list[int] | None = None
+        if prune_lm_head:
+            from pathlib import Path as _P
+            from burl.eval.lm_head_prune import (
+                apply_lm_head_prune,
+                load_keep_ids,
+                wrap_sampler_with_lut,
+            )
+            if prune_freq_tsv is None:
+                raise ValueError(
+                    "prune_lm_head=True requires prune_freq_tsv path"
+                )
+            keep_ids = load_keep_ids(
+                _P(prune_freq_tsv),
+                int(prune_keep_n),
+                self.tokenizer,
+            )
+            lut = apply_lm_head_prune(self.model, keep_ids)
+            self._sampler = wrap_sampler_with_lut(self._sampler, lut)
+            self.prune_keep_ids = keep_ids
+            log.info(
+                "[gemma-local-batched] lm_head pruned to %d kept ids",
+                len(keep_ids),
+            )
         # Phase 2 lever 1: prefix-aware prompt cache. When enabled, step_batch
         # threads previously-seen prefix KV through batch_generate so growing
         # message histories (turn N+1 = turn N + new tool messages) prefill
