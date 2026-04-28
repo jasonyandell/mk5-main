@@ -1387,3 +1387,26 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 - [[perf-sprint]] — added a "Heartbeat" line to the contract paragraph (`/loop 10m` from [[perf-sprint-loop]], registered before the first iteration; load-bearing). Added a follow-up sentence to the kickoff section warning that the orchestrator's first job is to register the heartbeat. Reworded "How to work" step 3 to lead with "**Register the heartbeat**" and explain what registering does and doesn't do.
 
 **Frontier shift:** none — this is a defect fix, not an architecture change. The architecture already required `/loop`; the playbook just didn't say so loudly enough.
+
+## [2026-04-28 | unstaged | perf-sprint adopts orchestrator + backgrounded team-worker shape]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]] [[perf-sprint-traps]] [[index]]
+
+**Why:** the previous shape had the orchestrator block synchronously on each `Agent` spawn. While blocked, `/loop` couldn't fire — `/loop` only fires between orchestrator turns. So if a worker hung (mlx-lm wedge, OOM stuck process, bench infinite loop), the orchestrator hung with it and the heartbeat never lit up. The supervision was structurally dead exactly when needed most.
+
+The fix uses Claude Code's team primitives (`TeamCreate`, `SendMessage`, `TaskStop`) to spawn the worker in background. `/loop` fires regardless of worker state and pings via `SendMessage`; if a worker hangs, the orchestrator can `TaskStop` and respawn. This keeps the architecture single-threaded (one worker at a time) but makes supervision real.
+
+The "team" is a harness convenience — the team has exactly one member at a time. It's the addressability scope for `SendMessage` and the lifecycle handle for `TaskStop`, not a real team-of-agents architecture.
+
+**Updated:**
+- [[perf-sprint]] — replaced the "Heartbeat" line in the contract with an "Architecture" line that names the team primitive. Reworked "How to work" into a "Kickoff sequence" (load deferred tools → write goal → init TSV → TeamCreate → register /loop → spawn first worker) plus a "Steady state" block (driven by worker returns, not by /loop). Renamed "Context discipline" to "Architecture" and updated the rationale to name `run_in_background` as the mechanism that keeps supervision live. Spawn template now includes `team_name`, `name`, `run_in_background: true`, plus a SendMessage status hook in the prompt body.
+- [[perf-sprint-loop]] — loop message rewritten as supervisory. Each fire: SendMessage worker for one-line status, slack-update, re-anchor. If silent for 2+ fires: SendMessage once more, TaskStop on no response, respawn fresh worker with same variant. Same variant wedges twice → crash row, pick different variant.
+- [[perf-sprint-traps]] — added a "Stuck worker" section with the SendMessage / TaskStop / respawn recipe.
+- [[index]] — playbook hooks updated.
+
+**Design choices:**
+- Worker drives iteration cadence; orchestrator spawns the next worker immediately on return, not on `/loop` fire. `/loop` is purely supervisory. Otherwise the loop interval becomes the iteration interval (10 min/iteration) which throws away the throughput.
+- Same-variant wedges twice → crash + skip. Don't grind on a wedge variant indefinitely.
+- Worker contract gains a SendMessage status hook (one-line response, no output paste) but is otherwise unchanged. Iteration agent contract still single-coherent-variant, no side quests, rigid TSV-row + 2-sentence return.
+
+**Frontier shift:** the architecture now has explicit asynchronous primitives. The worker is non-blocking; the orchestrator can intervene on hangs; the supervision heartbeat is structurally guaranteed to fire.

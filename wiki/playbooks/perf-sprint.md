@@ -14,7 +14,7 @@ Paste into a fresh session at the project root:
 
 > Read [[perf-sprint]]. Run a perf sprint targeting `<GOAL>`. e.g. *"drive Burl per-decision latency from current baseline toward ~2s on this M5 Max."*
 
-The orchestrator's first job is to register the heartbeat (`/loop 10m`, see "How to work" below) — without that, the sprint runs once and stops.
+The orchestrator's first job is the kickoff sequence in "How to work" below — load deferred tools, create the team, register the `/loop` heartbeat, spawn the first worker. Skipping any step breaks the supervision loop.
 
 ## The contract
 
@@ -24,7 +24,7 @@ The orchestrator's first job is to register the heartbeat (`/loop 10m`, see "How
 
 **Cycle:** modify, run paired baseline + variant, log one row to the ledger, `keep` or `discard` (advance branch or `git reset`). See [[perf-sprint-loop]].
 
-**Heartbeat:** `/loop 10m` from [[perf-sprint-loop]], registered before the first iteration. **Load-bearing — without this, the orchestrator runs once and stops.** Each fire is one orchestrator turn: read TSV tail, pick variant, spawn iteration, append returned row.
+**Architecture:** orchestrator + one backgrounded worker at a time, in a `TeamCreate`'d team for addressability. The worker drives iterations; the orchestrator never blocks. `/loop` is the supervision heartbeat (status pings, stuck-worker recovery), not the driver. See "Architecture" below.
 
 **Don't give up.** Crashes are work, not a stop sign. Stop only when the metric hits the target or the user types stop.
 
@@ -60,17 +60,30 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 ## How to work
 
-1. Write `scratch/<sprint>/PERF_GOAL.md` from [[perf-sprint-goal]] — sprint goal + equivalence gate values.
-2. Initialize `scratch/<sprint>/results.tsv` with the header row.
-3. **Register the heartbeat** — paste the [[perf-sprint-loop]] message (`/loop 10m` + body) verbatim. Do this *before* spawning the first iteration. Without it, the orchestrator runs once and stops; with it, every fire is one orchestrator turn that picks a variant, spawns an iteration agent, and appends the returned row.
-4. Read [[perf-sprint-levers]] for ideas to seed the loop. The iteration agent (below) reads [[perf-sprint-traps]] when something crashes.
-5. Append a post-mortem to [[perf-sprint-history]] when the sprint ends.
+**Kickoff (run once at sprint start):**
 
-## Context discipline
+1. Load deferred tools via `ToolSearch`: `TeamCreate`, `SendMessage`, `TaskStop`. The orchestrator can't supervise workers without these.
+2. Write `scratch/<sprint>/PERF_GOAL.md` from [[perf-sprint-goal]] — sprint goal + equivalence gate values.
+3. Initialize `scratch/<sprint>/results.tsv` with the header row.
+4. `TeamCreate(name="<sprint>-team")` — the team is the addressability scope for workers.
+5. Register the heartbeat: paste the [[perf-sprint-loop]] message (`/loop 10m` + body) verbatim.
+6. Spawn the first worker into the team using the spawn template below (`run_in_background=true`).
 
-The orchestrator runs the loop and owns the TSV but **never reads bench output, source dumps, or tracebacks directly**. Each iteration is delegated to a fresh `Agent` that does the modify → run → parse → decide work in its own context and returns *only* a TSV row plus a 2-sentence note. The orchestrator appends the row, picks the next variant, spawns the next iteration. This keeps the orchestrator under context-degradation thresholds across 100+ iterations.
+**Steady state (driven by worker returns, not by /loop):**
 
-The wiki is the cross-iteration learning channel — durable findings (new levers, new traps) are written to [[perf-sprint-levers]] or [[perf-sprint-traps]] inside the iteration's context before it returns, so the next iteration inherits them without the orchestrator having to relay.
+- **On worker return** (synchronous, immediate): append the returned row to `results.tsv`, pick the next variant from [[perf-sprint-levers]] / TSV tail / web search, spawn the next worker. Don't wait for `/loop`.
+- **On `/loop` fire while worker is in flight:** `SendMessage` the worker for a one-line status, slack-update with what it says, re-anchor on `PERF_GOAL.md` and TSV tail.
+- **If worker silent for 2+ `/loop` fires:** `SendMessage` once more; if no response, `TaskStop` and respawn fresh worker with the same variant. Same variant wedges twice → log a `crash` row, pick a different variant.
+
+**End:** sprint ends when `wall_s_per_decision` hits the target OR the user types "stop". Append a post-mortem to [[perf-sprint-history]].
+
+## Architecture
+
+Single-threaded loop with a supervised, backgrounded worker. The orchestrator runs for hours; it has to stay under context-degradation thresholds. It owns the TSV but **never reads bench output, source dumps, or tracebacks directly** — that work happens in worker contexts that die on return. Per-iteration cost to the orchestrator's context is ~2k tokens (TSV row + 2-sentence note) regardless of iteration weight.
+
+`/loop` is supervisory because the worker is non-blocking — without `run_in_background`, `/loop` can't fire while the orchestrator waits for an `Agent`, and a hung worker hangs the whole sprint. With background workers, `/loop` fires regardless and pings via `SendMessage`.
+
+The wiki is the cross-iteration learning channel — durable findings (new levers, new traps) are written to [[perf-sprint-levers]] or [[perf-sprint-traps]] inside the worker's context before it returns, so the next worker inherits them without the orchestrator having to relay.
 
 ### Iteration agent contract
 
@@ -88,6 +101,9 @@ The orchestrator reuses this verbatim, filling in `<sprint>`, `<N>`, and the var
 ~~~
 Agent({
   description: "perf iter <N>: <one-line variant>",
+  team_name: "<sprint>-team",
+  name: "worker-<N>",
+  run_in_background: true,
   prompt: "Read wiki/playbooks/perf-sprint.md for the contract — metric,
           equivalence gate, ledger format, iteration agent contract.
           Sprint dir: scratch/<sprint>/.
@@ -106,6 +122,9 @@ Agent({
 
           Read wiki/playbooks/perf-sprint-traps.md if the bench crashes —
           known recipes are there.
+
+          If SendMessage'd mid-flight, reply with a one-line status
+          (current step, % done if estimable). Don't paste output.
 
           Web search is sanctioned and encouraged. Gemma 4 E2B and mlx-lm
           are moving weekly; primary sources beat priors. Load WebSearch /

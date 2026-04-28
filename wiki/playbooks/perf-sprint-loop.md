@@ -21,32 +21,36 @@ immediately before each variant. End-to-end (tokens + tools + harness).
 EQUIVALENCE GATE: K1_match >= 60% AND regret_delta within ±10% on the
 same paired run. If the gate fails, status = discard regardless of wall.
 
-You are the orchestrator. You do not read bench output, source dumps,
-or tracebacks. Each iteration is delegated to a fresh Agent — see the
-spawn template in [[perf-sprint]].
+You are the orchestrator. /loop is SUPERVISION, not the driver.
+The worker drives iterations: when a worker returns, you immediately
+spawn the next one — you do NOT wait for /loop to fire. /loop only
+matters while a worker is in flight (status pings, stuck-worker
+recovery) or to re-anchor between iterations.
 
-LOOP FOREVER:
-  1. Read scratch/<sprint>/PERF_GOAL.md and the tail of results.tsv
-     (last ~5 rows is enough). Re-anchor.
-  2. Pick the next variant. Read [[perf-sprint-levers]] for seed ideas;
-     freelance is fine. A coherent stack of co-required changes counts
-     as one variant.
-  3. Spawn an iteration Agent (template in [[perf-sprint]]). Wait for
-     the return: one TSV row + exactly 2 sentences.
-  4. Append the returned row to scratch/<sprint>/results.tsv. The
-     iteration already advanced or reset the branch — you don't.
-  5. Slack update: current best wall_s, what was just tried, what's next.
+EACH FIRE:
+  1. Re-read scratch/<sprint>/PERF_GOAL.md and the tail of results.tsv
+     (last ~5 rows). Re-anchor.
+  2. SendMessage the active worker for a one-line status. Slack-update
+     with what it says ("variant X, running paired bench, ~60% done").
+  3. If the worker has been silent for 2+ fires:
+     - SendMessage one more time.
+     - If no response: TaskStop, respawn fresh worker with same variant
+       (template in [[perf-sprint]]).
+     - If the same variant wedges twice: log a crash row to results.tsv,
+       pick a different variant.
+  4. If no worker is active (orchestrator missed spawning the next one
+     after a return): pick the next variant, spawn the next worker.
 
 DON'T GIVE UP. "The bench is unreliable" is never a reason to stop —
-spawn an iteration to fix the bench. Idle is a bug. Heartbeat-without-
-action is a bug.
+spawn a worker to fix the bench. Idle is a bug. A silent /loop fire
+with no slack-update is a bug.
 
 Stop only when wall_s_per_decision hits the target OR the user types "stop".
 ~~~
 
 ## Why this shape
 
-The orchestrator's loop is thin by design — pick variant, spawn, append, repeat. All the noisy work (modify code, run bench, parse output, handle crashes, decide keep/discard) happens inside the iteration Agent's context, which dies after returning. This is what keeps the orchestrator runnable for hours: it never accumulates the bench output, tracebacks, or source dumps that fill context fastest.
+The orchestrator's loop is supervisory by design. Workers run in background (`run_in_background=true` in the spawn template) so the orchestrator never blocks. `/loop` fires periodically regardless of worker state and pings via `SendMessage` for status. If a worker hangs, `/loop` catches it; with synchronous `Agent` calls, a hung iteration would freeze the whole sprint.
 
 The metric, gate, and keep/discard mechanic are stated together because they decide together. Every fire re-anchors on what advances the branch and what doesn't.
 

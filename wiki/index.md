@@ -310,8 +310,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 
 ## Playbooks
 
-- [[playbooks/perf-sprint|perf-sprint]] — entry point: one metric, equivalence gate, keep/discard loop, iteration-agent delegation for context discipline (active)
-- [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message; thin orchestrator that delegates each iteration to a fresh Agent (active)
+- [[playbooks/perf-sprint|perf-sprint]] — entry point: one metric, equivalence gate, orchestrator + backgrounded team-worker for context discipline (active)
+- [[playbooks/perf-sprint-loop|perf-sprint-loop]] — verbatim /loop message; supervision heartbeat (status pings, stuck-worker recovery), not the driver (active)
 - [[playbooks/perf-sprint-goal|perf-sprint-goal]] — sticky-goal template for scratch/<sprint>/PERF_GOAL.md (active)
 - [[playbooks/perf-sprint-levers|perf-sprint-levers]] — ROI-ordered hypothesis fuel for the loop; closed-lever pre-conditions; PLE quant landmine (active)
 - [[playbooks/perf-sprint-traps|perf-sprint-traps]] — bench crash recipes, contention detection, comparison-anchor footguns (active)

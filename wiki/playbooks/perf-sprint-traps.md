@@ -50,6 +50,18 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 - **Recipe.** Verify model from RSS instead — bf16 ~10–11 GB resident, Q4 PLE-safe ~4–5 GB. Or check the run's JSON output (`model_repo` field is correctly threaded through `args.model_repo` at line 971).
 - **Long-term fix.** Patch line 962 to use `args.model_repo` instead of the hardcoded string.
 
+## Stuck worker
+
+### Symptom: worker silent for 2+ `/loop` fires
+
+- **What it is.** The worker is wedged — could be an mlx-lm internal hang, a stuck subprocess, an infinite loop in the bench, or the worker reasoning itself into a corner. The orchestrator's `/loop` fires don't get a `SendMessage` reply.
+- **Recipe.**
+  1. `SendMessage` the worker once more with a tight question (e.g. "respond with one word: alive?").
+  2. If no response: `TaskStop` the worker.
+  3. Respawn a fresh worker with the same variant via the spawn template in [[perf-sprint]]. The new context may avoid whatever wedge the previous one hit.
+  4. If the same variant wedges twice in a row: log a `crash` row to `results.tsv` with description "wedge — variant skipped," and pick a different variant.
+- **Long-term fix.** None at the playbook level. If a specific variant or technique consistently wedges, document it as a closed lever in [[perf-sprint-levers]] with the wedge as the closure reason.
+
 ## Append a trap
 
 When a sprint discovers a new failure mode, add a section with: symptom, what it is, recipe.
