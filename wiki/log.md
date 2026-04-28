@@ -1422,3 +1422,19 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 - [[perf-sprint-loop]] — added a CLEANUP step to the loop body: if any prior worker is in returned/idle state, `TaskStop` by name. Catches the case where the orchestrator missed cleanup between iterations.
 
 **Frontier shift:** none — defect fix. The architecture already required explicit cleanup; the playbook didn't say so.
+
+## [2026-04-28 | unstaged | perf-sprint-levers gains four mlx-lm-side levers]
+
+**Touched pages:** [[perf-sprint-levers]]
+
+**Why:** sprint 2 closed levers #1-#7 on the model+quant+kernel side and surfaced a fresh win on #6 (cohort abstraction MVP, iter 20). The model-side ladder is exhausted on M5 Max with current MLX/Gemma 4 stack; the harness-side ladder hadn't been written down. Per [[perf-on-the-table]] the bench is operating ~20× under raw mlx-lm capability, so the next factor-2 likely lives in the harness↔mlx-lm coupling, not in the model. Adding four levers to make that surface explicit and pickable.
+
+**Updated:**
+- [[perf-sprint-levers]] — appended rows #8–#11 to the active ladder. #8 prefill prefix-sharing (re-opens sprint 1's LRU-prompt-cache closure under its stated pre-condition; ~3–5% wall, cheap, low gate-risk). #9 CPU/GPU pipeline overlap audit (research-only first iter to map sync points; iter 10's PhaseTimer was GPU-only). #10 mlx-lm parallel-tool-call coupling (design pass first; constrained by wax_museum gate's one-call-per-turn rhythm). #11 Burl-aware continuous-batching dispatcher (STRUCTURAL flag only — multi-week project that belongs as its own sprint).
+
+**Design choices:**
+- Appended cleanly. Existing rows untouched, so worker descriptions that reference levers by number stay valid.
+- Each new lever named "PROPOSED" or "STRUCTURAL" + first-iter shape (research-only / design-pass / iter-shippable) so spawned workers can scope their iteration before pulling.
+- #11 explicitly marked "flag only — not for spawn picks." The active-ladder header already says "Suggestions, not procedure," but the multi-week scope is worth flagging at the row level.
+
+**Frontier shift:** the playbook now distinguishes model-side and harness-side perf surfaces. Sprint 2 closed the model side; sprint 3 (or an extension of sprint 2 if it keeps running) has a written ladder of harness-side surfaces to climb.
