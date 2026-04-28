@@ -21,8 +21,36 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 ### `ValueError: Received 60 parameters not in model: language_model.model.layers.{15..34}.self_attn.{k,k_norm,v}_proj.weight` at bf16 Gemma 4 E2B load time on mlx-lm 0.31.3+
 
 - **What it is.** mlx-lm 0.31.3 ships [PR #1158](https://github.com/ml-explore/mlx-lm/pull/1158) which removes the `k_proj`/`v_proj`/`k_norm`/`v_norm` modules from Gemma 4 attention layers that are KV-shared (`num_kv_shared_layers=20` for E2B → layers 15-34). The model class no longer has weight slots for those tensors. The official `google/gemma-4-E2B-it` (and `mlx-community/gemma-4-E2B-it-bf16`) safetensors STILL ship them. `mlx_lm.utils.load()` calls `load_weights(strict=True)` and the load aborts with the 60-parameter rejection. Confirmed firing in sprint 2 iter 7 (2026-04-28). bf16 model cannot be loaded at all on 0.31.3 — this is a hard wall, not a degradation.
-- **Recipe.** Pin `mlx-lm==0.31.2` until one of: (a) Google re-issues Gemma 4 safetensors without the unused KV-shared weights, (b) upstream adds `strict` plumb-through to `mlx_lm.utils.load()`, or (c) you vendor `load_model(model_path, strict=False)` locally (~10 LoC in `burl/modal/gemma_local_batched.py`: replace `from mlx_lm import load` with a local helper that calls `mlx_lm.utils.load_model(model_path, lazy=False, strict=False)` plus a `mlx_lm.utils.load_tokenizer` call). Option (c) is the smallest forward path and unblocks the rest of 0.31.3's wins (BatchKVCache extend fix #1141, thread-local generation streams #1090).
+- **Recipe (vendored loader, ~14 LoC).** Sprint 2 iter 8 (2026-04-28, commit `9be36dc`, reset) verified the vendored-loader path loads bf16 Gemma 4 E2B successfully on 0.31.3. The patch (in `burl/modal/gemma_local_batched.py`):
+  ```python
+  from mlx_lm import batch_generate  # drop `load` from this import
+  from mlx_lm.utils import (
+      _download as _mlx_download,
+      load_adapters as _mlx_load_adapters,
+      load_model as _mlx_load_model,
+      load_tokenizer as _mlx_load_tokenizer,
+  )
+
+  def _load_strict_false(path_or_hf_repo, adapter_path=None):
+      model_path = _mlx_download(path_or_hf_repo)
+      model, config = _mlx_load_model(model_path, lazy=False, strict=False)
+      if adapter_path is not None:
+          model = _mlx_load_adapters(model, adapter_path)
+          model.eval()
+      tokenizer = _mlx_load_tokenizer(
+          model_path, eos_token_ids=config.get("eos_token_id", None),
+      )
+      return model, tokenizer
+  ```
+  Then in `__init__`: `self.model, self.tokenizer = _load_strict_false(model_repo, adapter_path=adapter_path)`. Mirrors the four-line body of `mlx_lm.utils.load()` exactly, with the single `strict=False` change. Loader is sound and reusable in any future iter targeting 0.31.3+.
+- **Caveat — vendored loader DOES NOT make 0.31.3 usable for the perf gate.** Iter 8 also discovered an mlx-lm 0.31.3 bf16 regression (next trap below) that breaks the sanity gate even with the loader fix. Until that regression clears in 0.31.4+ or upstream, pin `mlx-lm==0.31.2` regardless.
 - **Long-term fix.** File an upstream issue requesting `mlx_lm.utils.load()` accept `strict=False` (the underlying `load_model` already does). Or PR upstream a `sanitize` hook for Gemma 4 that drops the unused KV-shared weight names before `load_weights` sees them.
+
+### bf16 Gemma 4 E2B perf + determinism regression on mlx-lm 0.31.3
+
+- **What it is.** Sprint 2 iter 8 (2026-04-28) ran three back-to-back paired bf16 batch=5 temp=0 sanity baselines on mlx-lm 0.31.3 (with the vendored strict=False loader unblocking model load). All three returned per-decision grades that match prior bf16 grades on the deterministic decisions, but two regressions surfaced. **Wall regression**: A=99.3s, B=72.4s, C=73.6s — steady-state ~75s vs the 0.31.2 floor of 38–48s, so ~70% slower. Decode dropped from ~142 tok/s to ~75 tok/s, ps clean, no contention. **Determinism regression**: at the same config (bf16 batch=5 temp=0), runs A and C produced gi=72 play=13 K1=True regret=0; run B produced gi=72 play=1 K1=False regret=1.7338. Iter 5 explicitly verified at mlx-lm 0.31.2 that bf16 at temp=0 was byte-identical across batch widths and runs. **0.31.3 broke deterministic equivalence at temp=0 for bf16 Gemma 4 E2B on this subset.** Either PR #1158's KV-shared cleanup or PR #1141's BatchKVCache rework introduced numerical drift; root cause not bisected.
+- **Recipe.** Pin `mlx-lm==0.31.2` until 0.31.4+ ships and the regression is verified clear. Do NOT trust 0.31.3 wall numbers for paired-baseline comparisons even after the strict=False loader fix unblocks model load — both arms of the pair will land at the new structurally-worse floor, so the comparison metric is moot. Re-run the iter 8 sanity protocol (3× bf16 batch=5 temp=0 paired runs, manual cross-comparison of K1+regret) on each future bump to detect when the regression clears.
+- **Long-term fix.** File upstream issue with the iter 8 reproducer (3 paired bf16 batch=5 temp=0 runs producing differing gi=72 plays). On a known-good future release, retire this trap and re-open lever #3.
 
 ### `AssertionError: assert play is not None` in `burl/wax_museum/schemas.py:next_actions_unchanged`
 
