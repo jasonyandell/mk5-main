@@ -41,8 +41,8 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 
 ### Silent comparison-anchor mismatch
 
-- **What it is.** The bench's `latest_baseline_run()` selector grabs the latest `baseline-*` row in the ledger as the comparison anchor for K1+regret. If the latest baseline was contended, at a different temperature, or from a different code path, the comparison is nonsense.
-- **Recipe.** Run a fresh baseline immediately before each variant, with same flags. Reference your variant against THAT row, not the ledger's "latest." Better: extend the bench to take an explicit `--baseline-row <timestamp>` flag.
+- **What it is.** The bench's `latest_baseline_run()` selector grabs the latest `baseline-bf16` row in the ledger as the comparison anchor for K1+regret. If the latest baseline was contended, at a different temperature, or from a different code path, the comparison is nonsense. **Confirmed firing in sprint 2 iter 2** (2026-04-28): both the paired baseline (variant_label `baseline-iter2-pre`) and the variant compared against a stale `baseline-bf16` from 20260427_013851 — even though I ran `baseline-iter2-pre` immediately before the variant. Cause: the selector matches on `baseline-bf16` exactly (or some prefix), not "the most recent baseline-* row of any name." A baseline labeled `baseline-iter2-pre` is invisible to it.
+- **Recipe.** Don't trust `comparison_vs_baseline` in the JSON output. Read `per_decision_grades` from BOTH the paired baseline JSON and the variant JSON, compute K1 (count of `k1_pass=true`) and regret (`sum(regret)`) yourself, then `regret_delta_pct = (variant_total_regret - baseline_total_regret) / baseline_mean_regret_or_eps * 100`. Or: run your paired baseline with `--variant baseline-bf16` exactly so the selector picks it up. Or: extend the bench to take an explicit `--baseline-row <timestamp>` flag.
 
 ### Misleading "loading bf16" log line
 
