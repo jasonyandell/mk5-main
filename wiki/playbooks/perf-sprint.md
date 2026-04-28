@@ -62,7 +62,7 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 **Kickoff (run once at sprint start):**
 
-1. Load deferred tools via `ToolSearch`: `TeamCreate`, `SendMessage`, `TaskStop`. The orchestrator can't supervise workers without these.
+1. Load deferred tools via `ToolSearch`: `TeamCreate`, `TeamDelete`, `SendMessage`, `TaskStop`. The orchestrator can't supervise workers or clean up without these.
 2. Write `scratch/<sprint>/PERF_GOAL.md` from [[perf-sprint-goal]] — sprint goal + equivalence gate values.
 3. Initialize `scratch/<sprint>/results.tsv` with the header row.
 4. `TeamCreate(name="<sprint>-team")` — the team is the addressability scope for workers.
@@ -71,9 +71,10 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 **Steady state (driven by worker returns, not by /loop):**
 
-- **On worker return** (synchronous, immediate): append the returned row to `results.tsv`, pick the next variant from [[perf-sprint-levers]] / TSV tail / web search, spawn the next worker. Don't wait for `/loop`.
+- **On worker return** (synchronous, immediate): append the returned row to `results.tsv`, **`TaskStop` the returned worker by name** (sessions don't auto-release on return — over a multi-hour sprint, completed workers leak), pick the next variant from [[perf-sprint-levers]] / TSV tail / web search, spawn the next worker. Don't wait for `/loop`.
 - **On `/loop` fire while worker is in flight:** `SendMessage` the worker for a one-line status, slack-update with what it says, re-anchor on `PERF_GOAL.md` and TSV tail.
 - **If worker silent for 2+ `/loop` fires:** `SendMessage` once more; if no response, `TaskStop` and respawn fresh worker with the same variant. Same variant wedges twice → log a `crash` row, pick a different variant.
+- **End-of-sprint cleanup:** when the sprint ends (target hit or user said "stop"), `TaskStop` the active worker if any, then `TeamDelete` the team.
 
 **End:** sprint ends when `wall_s_per_decision` hits the target OR the user types "stop". Append a post-mortem to [[perf-sprint-history]].
 
@@ -82,6 +83,8 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 Single-threaded loop with a supervised, backgrounded worker. The orchestrator runs for hours; it has to stay under context-degradation thresholds. It owns the TSV but **never reads bench output, source dumps, or tracebacks directly** — that work happens in worker contexts that die on return. Per-iteration cost to the orchestrator's context is ~2k tokens (TSV row + 2-sentence note) regardless of iteration weight.
 
 `/loop` is supervisory because the worker is non-blocking — without `run_in_background`, `/loop` can't fire while the orchestrator waits for an `Agent`, and a hung worker hangs the whole sprint. With background workers, `/loop` fires regardless and pings via `SendMessage`.
+
+Workers don't auto-release on return — backgrounded sessions persist until explicitly stopped. The orchestrator owns cleanup: `TaskStop` each returned worker by name before spawning the next, and `TeamDelete` at end-of-sprint. Without this, completed workers accumulate over a multi-hour sprint and leak sessions.
 
 The wiki is the cross-iteration learning channel — durable findings (new levers, new traps) are written to [[perf-sprint-levers]] or [[perf-sprint-traps]] inside the worker's context before it returns, so the next worker inherits them without the orchestrator having to relay.
 

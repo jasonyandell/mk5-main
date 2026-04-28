@@ -40,6 +40,9 @@ EACH FIRE:
        pick a different variant.
   4. If no worker is active (orchestrator missed spawning the next one
      after a return): pick the next variant, spawn the next worker.
+  5. CLEANUP: if any prior worker is in returned/idle state, TaskStop it
+     by name. Workers don't auto-release on return — completed sessions
+     leak over a multi-hour sprint without explicit cleanup.
 
 DON'T GIVE UP. "The bench is unreliable" is never a reason to stop —
 spawn a worker to fix the bench. Idle is a bug. A silent /loop fire

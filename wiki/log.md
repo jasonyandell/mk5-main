@@ -1410,3 +1410,15 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 - Worker contract gains a SendMessage status hook (one-line response, no output paste) but is otherwise unchanged. Iteration agent contract still single-coherent-variant, no side quests, rigid TSV-row + 2-sentence return.
 
 **Frontier shift:** the architecture now has explicit asynchronous primitives. The worker is non-blocking; the orchestrator can intervene on hangs; the supervision heartbeat is structurally guaranteed to fire.
+
+## [2026-04-28 | unstaged | perf-sprint adds explicit worker-cleanup rule]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]]
+
+**Why:** observed during sprint 2 — backgrounded workers don't auto-release on return. Sessions persist until explicitly stopped, so over a multi-hour sprint with dozens of iterations, completed worker sessions accumulate and leak. The user flagged this after seeing the first two workers run.
+
+**Updated:**
+- [[perf-sprint]] — added "TaskStop the returned worker by name" to the steady-state on-return bullet, with a parenthetical explaining the leak. Added an end-of-sprint cleanup bullet (`TaskStop` active worker + `TeamDelete` the team). Added `TeamDelete` to the deferred-tool load list at kickoff. Added an Architecture paragraph explaining that workers don't auto-release and the orchestrator owns cleanup.
+- [[perf-sprint-loop]] — added a CLEANUP step to the loop body: if any prior worker is in returned/idle state, `TaskStop` by name. Catches the case where the orchestrator missed cleanup between iterations.
+
+**Frontier shift:** none — defect fix. The architecture already required explicit cleanup; the playbook didn't say so.
