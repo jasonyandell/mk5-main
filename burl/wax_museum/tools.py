@@ -13,10 +13,13 @@ recomputing the full distribution.
 
 from __future__ import annotations
 
+import copy
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
 from burl.harness.agent_runner import _DOMINO_LABELS
+from burl.tools import engine as engine_tools
 from burl.tools.belief_trajectory import belief_trajectory as call_belief_trajectory
 from burl.tools.eq_distribution import (
     ConditionUnreachable,
@@ -84,6 +87,41 @@ class PlayCache:
 
 
 @dataclass
+class ToolCacheEntry:
+    """One eagerly materialized tool response."""
+
+    payload: Any = None
+    error: str | None = None
+    wall_s: float = 0.0
+    hit: bool = False
+
+
+@dataclass
+class WaxToolCacheStats:
+    """Per-decision accounting for eager wax tool-cache materialization."""
+
+    legal_play_count: int = 0
+    precomputed_count: int = 0
+    hit_count: int = 0
+    precompute_wall_s: float = 0.0
+    saved_tool_wall_s: float = 0.0
+    hit_keys: set[tuple[str, tuple[tuple[str, Any], ...]]] = field(
+        default_factory=set, repr=False
+    )
+
+    def as_dict(self) -> dict[str, int | float]:
+        wasted = max(0, self.precomputed_count - len(self.hit_keys))
+        return {
+            "legal_play_count": self.legal_play_count,
+            "precomputed_count": self.precomputed_count,
+            "hit_count": self.hit_count,
+            "wasted_count": wasted,
+            "precompute_wall_s": round(self.precompute_wall_s, 6),
+            "saved_tool_wall_s": round(self.saved_tool_wall_s, 6),
+        }
+
+
+@dataclass
 class WaxContext:
     """Per-decision tool state — passed through tool_registry as closure state."""
 
@@ -91,6 +129,10 @@ class WaxContext:
     me_abs: int
     oracle: Any = None
     caches: dict[int, PlayCache] = field(default_factory=dict)
+    tool_cache: dict[tuple[str, tuple[tuple[str, Any], ...]], ToolCacheEntry] = field(
+        default_factory=dict
+    )
+    tool_cache_stats: WaxToolCacheStats = field(default_factory=WaxToolCacheStats)
     # Tool-call history — the harness uses this to decide menu transitions and
     # detect bail conditions.
     call_log: list[tuple[str, dict]] = field(default_factory=list)
@@ -189,6 +231,18 @@ class WaxContext:
             f"lift={top['lift']})"
         )
         return {"player": abs_seat, "holds": dom}, rationale
+
+    def legal_plays(self) -> list[int]:
+        """Return legal domino ids for the current player in stable hand order."""
+        hand = self.game_state.hands[self.me_abs]
+        out: list[int] = []
+        for dom in hand:
+            if dom in self.game_state.played:
+                continue
+            ok, _ = engine_tools.is_legal(self.game_state, int(dom))
+            if ok:
+                out.append(int(dom))
+        return out
 
 
 # --------------------------------------------------------------------------- #
@@ -676,7 +730,21 @@ def tool_ask_rule(ctx: WaxContext, topic: str) -> dict:
 # --------------------------------------------------------------------------- #
 
 
-def build_registry(ctx: WaxContext) -> dict[str, Any]:
+def _cache_key(name: str, args: dict) -> tuple[str, tuple[tuple[str, Any], ...]]:
+    return name, tuple(sorted((str(k), _cache_arg(v)) for k, v in args.items()))
+
+
+def _cache_arg(value: Any) -> Any:
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if isinstance(value, (list, tuple)):
+        return tuple(_cache_arg(v) for v in value)
+    if isinstance(value, dict):
+        return tuple(sorted((str(k), _cache_arg(v)) for k, v in value.items()))
+    return str(value)
+
+
+def _raw_registry(ctx: WaxContext) -> dict[str, Any]:
     return {
         "explore_game": lambda **kw: tool_explore_game(ctx, **kw),
         "probe_best_case": lambda **kw: tool_probe_best_case(ctx, **kw),
@@ -684,3 +752,65 @@ def build_registry(ctx: WaxContext) -> dict[str, Any]:
         "ask_rule": lambda **kw: tool_ask_rule(ctx, **kw),
         "belief_trajectory": lambda **kw: tool_belief_trajectory(ctx, **kw),
     }
+
+
+def build_registry(ctx: WaxContext, use_eager_cache: bool = False) -> dict[str, Any]:
+    registry = _raw_registry(ctx)
+    if not use_eager_cache:
+        return registry
+
+    def cached(name: str, fn: Any) -> Any:
+        def call(**kw: Any) -> Any:
+            key = _cache_key(name, kw)
+            entry = ctx.tool_cache.get(key)
+            if entry is not None:
+                entry.hit = True
+                ctx.tool_cache_stats.hit_keys.add(key)
+                ctx.tool_cache_stats.hit_count += 1
+                ctx.tool_cache_stats.saved_tool_wall_s += entry.wall_s
+                if entry.error is not None:
+                    raise RuntimeError(entry.error)
+                return copy.deepcopy(entry.payload)
+            return fn(**kw)
+
+        return call
+
+    return {name: cached(name, fn) for name, fn in registry.items()}
+
+
+def precompute_tool_lattice(ctx: WaxContext) -> WaxToolCacheStats:
+    """Eagerly materialize the bounded wax_museum tool universe.
+
+    This is a latency/cache layer only. The harness still gates tool visibility
+    with ``menu_for``/``advance``; this cache simply lets allowed calls return a
+    payload that has already been produced by the normal tool implementation.
+    """
+    registry = _raw_registry(ctx)
+    legal_plays = ctx.legal_plays()
+    stats = ctx.tool_cache_stats
+    stats.legal_play_count = len(legal_plays)
+
+    calls: list[tuple[str, dict]] = [("belief_trajectory", {})]
+    calls.extend(("explore_game", {"play": play}) for play in legal_plays)
+    for play in legal_plays:
+        calls.append(("probe_best_case", {"play": play}))
+        calls.append(("probe_worst_case", {"play": play}))
+    calls.extend(("ask_rule", {"topic": topic}) for topic in sorted(_RULE_ANSWERS))
+
+    precompute_start = time.perf_counter()
+    for name, args in calls:
+        key = _cache_key(name, args)
+        if key in ctx.tool_cache:
+            continue
+        fn = registry[name]
+        call_start = time.perf_counter()
+        entry = ToolCacheEntry()
+        try:
+            entry.payload = fn(**args)
+        except Exception as e:  # noqa: BLE001
+            entry.error = str(e)
+        entry.wall_s = time.perf_counter() - call_start
+        ctx.tool_cache[key] = entry
+        stats.precomputed_count += 1
+    stats.precompute_wall_s += time.perf_counter() - precompute_start
+    return stats

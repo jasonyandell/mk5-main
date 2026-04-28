@@ -36,7 +36,7 @@ from burl.wax_museum.schemas import (
     menu_names,
     next_actions_unchanged,
 )
-from burl.wax_museum.tools import WaxContext, build_registry
+from burl.wax_museum.tools import WaxContext, build_registry, precompute_tool_lattice
 
 
 # --------------------------------------------------------------------------- #
@@ -75,6 +75,7 @@ class WaxResult:
     forced_commit: bool = False   # post-cap fallback fired
     forced_commit_reason: str = ""
     max_turns_extensions: int = 0   # how many times budget was extended post-reject
+    tool_cache_stats: dict[str, int | float] = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- #
@@ -95,6 +96,7 @@ def run_decision_waxed(
     system_prompt_transform: Callable[[str], str] | None = None,
     preload_tool_calls: list[tuple[str, dict]] | None = None,
     menu_override: Callable[[Any], list[dict]] | None = None,
+    eager_tool_cache: bool = False,
 ) -> WaxResult:
     """Run one decision through the gated HATEOAS loop.
 
@@ -136,7 +138,13 @@ def run_decision_waxed(
         system_content = system_prompt_transform(system_content)
 
     ctx = WaxContext(game_state=game_state, me_abs=me_abs, oracle=oracle)
-    registry = build_registry(ctx)
+    if eager_tool_cache:
+        stats = precompute_tool_lattice(ctx)
+        on_event({
+            "evt": "tool_cache_precompute",
+            "stats": stats.as_dict(),
+        })
+    registry = build_registry(ctx, use_eager_cache=eager_tool_cache)
 
     messages: list[dict] = [
         {"role": "system", "content": system_content},
@@ -588,6 +596,7 @@ def run_decision_waxed(
             })
 
     result.n_turns = len(trace.turns)
+    result.tool_cache_stats = ctx.tool_cache_stats.as_dict()
     return result
 
 
@@ -612,9 +621,20 @@ def _pick_forced_commit(
     if not legal_plays:
         return None  # no legal play at all — caller's problem
 
-    # (1) Use probed plays if any are legal.
+    # (1) Use plays the model actually inspected if any are legal. Eager
+    # precompute may fill ctx.caches for every legal play before the model sees
+    # anything, so forced-commit must key off call_log rather than cache keys.
+    seen_plays = {
+        int(args["play"])
+        for name, args in getattr(ctx, "call_log", [])
+        if name in ("explore_game", "probe_best_case", "probe_worst_case")
+        and "play" in args
+    }
     probed_legal: list[tuple[int, float]] = []
-    for p, cache in ctx.caches.items():
+    for p in seen_plays:
+        cache = ctx.caches.get(int(p))
+        if cache is None:
+            continue
         if int(p) in legal_plays:
             probed_legal.append((int(p), float(cache.dist.mean)))
     if probed_legal:

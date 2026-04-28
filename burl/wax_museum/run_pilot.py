@@ -170,6 +170,7 @@ class PilotLogger:
             "probed": result.probed,
             "tool_seq": result.tool_call_sequence,
             "gated_commit_leaks": result.gated_commit_leaks,
+            "tool_cache_stats": result.tool_cache_stats,
             **grade,
         }
         self._emit_event({"evt": "decision_end", "idx": idx, "summary": summary})
@@ -218,6 +219,8 @@ class PilotLogger:
                 f"[d{idx} t{event['turn']}] tool_call: "
                 f"{event['tool']}({event.get('args')}) → {marker}"
             )
+        elif evt == "tool_cache_precompute":
+            self._tail(f"[d{idx}] tool_cache_precompute: {event['stats']}")
         elif evt == "menu_change":
             added = sorted(set(event["after_menu"]) - set(event["before_menu"]))
             removed = sorted(set(event["before_menu"]) - set(event["after_menu"]))
@@ -400,6 +403,8 @@ def main() -> int:
                     help="Write live stream only to live.log; suppress stdout mirror.")
     ap.add_argument("--max-turns", type=int, default=8)
     ap.add_argument("--max-retries", type=int, default=3)
+    ap.add_argument("--eager-tool-cache", action="store_true",
+                    help="Precompute the decision-local wax_museum tool lattice.")
     ap.add_argument("--run-tag", type=str, default="",
                     help="Optional suffix appended to the run_id.")
     ap.add_argument("--run-id", type=str, default="",
@@ -434,6 +439,7 @@ def main() -> int:
         "max_tokens": args.max_tokens,
         "max_turns": args.max_turns,
         "max_retries": args.max_retries,
+        "eager_tool_cache": args.eager_tool_cache,
     }
     logger.run_start(len(sl), config)
     print(f"[pilot] run_id={run_id}", file=sys.stderr)
@@ -517,6 +523,7 @@ def main() -> int:
                     oracle=oracle,
                     parse_completion=parse_completion,
                     tool_response_style=tool_response_style,
+                    eager_tool_cache=args.eager_tool_cache,
                 )
             except Exception as e:
                 print(f"[pilot] d{i} EXCEPTION: {e}", file=sys.stderr)
@@ -533,7 +540,8 @@ def main() -> int:
             summary_rows.append({"idx": i, **asdict(decision) | {"game_state": None}, **g,
                                  "bailed": result.bailed, "n_turns": result.n_turns,
                                  "probed": result.probed,
-                                 "tool_seq": result.tool_call_sequence})
+                                 "tool_seq": result.tool_call_sequence,
+                                 "tool_cache_stats": result.tool_cache_stats})
 
             if result.bailed:
                 consecutive_bails += 1
@@ -564,6 +572,19 @@ def main() -> int:
             "wall_s": round(wall, 1),
             "probe_rate": round(n_probed / len(summary_rows), 2) if summary_rows else 0.0,
         }
+        if args.eager_tool_cache:
+            cache_rows = [r.get("tool_cache_stats") or {} for r in summary_rows]
+            summary["tool_cache"] = {
+                "precomputed_count": sum(int(r.get("precomputed_count", 0)) for r in cache_rows),
+                "hit_count": sum(int(r.get("hit_count", 0)) for r in cache_rows),
+                "wasted_count": sum(int(r.get("wasted_count", 0)) for r in cache_rows),
+                "precompute_wall_s": round(
+                    sum(float(r.get("precompute_wall_s", 0.0)) for r in cache_rows), 3
+                ),
+                "saved_tool_wall_s": round(
+                    sum(float(r.get("saved_tool_wall_s", 0.0)) for r in cache_rows), 3
+                ),
+            }
         logger.run_end(summary)
         print(f"[pilot] done: {summary}", file=sys.stderr)
 
