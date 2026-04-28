@@ -44,6 +44,7 @@ import argparse
 import csv
 import hashlib
 import json
+import os
 import statistics
 import subprocess
 import sys
@@ -201,6 +202,207 @@ class PhaseTimer:
 
 
 PHASES = PhaseTimer()
+
+
+# --------------------------------------------------------------------------- #
+# Kernel-class call counter (lever #7 — sub-fused-kernel audit)               #
+# --------------------------------------------------------------------------- #
+
+
+class KernelCounter:
+    """Counts kernel-class invocations on the Gemma 4 hot path.
+
+    Instrumented by ``install_kernel_hooks`` which monkey-patches the loaded
+    model's bound methods + the imported ``mx.fast.rms_norm`` /
+    ``scaled_dot_product_attention`` symbols inside ``mlx_lm.models.gemma4_text``
+    to increment counters before delegating. Zero perf cost (counter increment
+    plus original call); does NOT call ``mx.synchronize`` so the lazy-async
+    pipeline is preserved.
+
+    Cumulative time per kernel-class is computed analytically from call counts
+    and the per-call read bytes (decode is bandwidth-bound at B=5, L=1 — every
+    matmul is a vector-matrix gemv whose wall is dominated by reading the
+    weight tile from unified memory). M5 Max bf16 effective bandwidth is
+    measured at ~400 GB/s achieved (≈50% of 800 GB/s peak; standard Apple
+    Silicon utilization for streaming gemv).
+    """
+
+    def __init__(self) -> None:
+        self.counts: dict[str, int] = {}
+        # bytes_read per call, populated lazily on first call so we don't have
+        # to know the model config up front.
+        self.bytes_per_call: dict[str, int] = {}
+
+    def bump(self, name: str, bytes_read: int = 0) -> None:
+        self.counts[name] = self.counts.get(name, 0) + 1
+        if name not in self.bytes_per_call and bytes_read > 0:
+            self.bytes_per_call[name] = bytes_read
+
+    def report(
+        self, *, gen_tokens: int, decode_wall_s: float, achieved_bw_gbs: float = 400.0,
+    ) -> dict[str, Any]:
+        """Build the audited 5-row table.
+
+        achieved_bw_gbs: M5 Max measured effective bandwidth (~400 GB/s on bf16
+        gemv from prior benches). Per-call wall = bytes / (achieved_bw * 1e9).
+        Cumulative wall = wall_per_call × calls.
+        """
+        rows = []
+        for name, count in self.counts.items():
+            bytes_pc = self.bytes_per_call.get(name, 0)
+            est_wall = (bytes_pc * count) / (achieved_bw_gbs * 1e9)
+            rows.append({
+                "kernel_class": name,
+                "calls_total": count,
+                "calls_per_token": round(count / max(gen_tokens, 1), 2),
+                "bytes_per_call": bytes_pc,
+                "est_cum_time_s": round(est_wall, 3),
+                "pct_of_decode_wall": round(
+                    100.0 * est_wall / decode_wall_s, 2,
+                ) if decode_wall_s > 0 else 0.0,
+            })
+        rows.sort(key=lambda r: -r["est_cum_time_s"])
+        return {
+            "model_decode_bandwidth_assumed_gbs": achieved_bw_gbs,
+            "gen_tokens": gen_tokens,
+            "decode_wall_s": round(decode_wall_s, 3),
+            "kernels": rows,
+        }
+
+
+KERNELS = KernelCounter()
+
+
+def install_kernel_hooks(loaded_model) -> None:
+    """Monkey-patch Gemma 4 hot-path entry points to increment KERNELS counters.
+
+    The patch is applied to (a) the imported ``mx.fast.rms_norm`` /
+    ``scaled_dot_product_attention`` symbols in ``mlx_lm.models.gemma4_text``,
+    (b) ``BatchKVCache.update_and_fetch`` on the cache class, and (c) every
+    ``nn.Linear`` instance reachable from the loaded model — wrappers cache
+    the read-bytes-per-call from the weight shape on first invocation.
+
+    Reversible: the patch installs ``_kernel_audit_orig_*`` attributes and the
+    bench tears them down at run end. Idempotent: re-installing is a no-op.
+    """
+    import mlx.core as mx
+    from mlx_lm.models import gemma4_text as g4t
+    from mlx_lm.models import cache as mcache
+    from mlx.nn.layers.linear import Linear as _Linear
+
+    if getattr(install_kernel_hooks, "_installed", False):
+        return
+
+    # 1. Wrap mx.fast.rms_norm at the gemma4_text module's lookup site.
+    _orig_rms = g4t.mx.fast.rms_norm
+    def _rms_norm_hooked(x, scale, eps, **kw):
+        # rms_norm reads x once + scale once; 2*B*L*D bytes for x + scale.
+        # In bf16 (2B). Counted per call; cumulative is small.
+        nbytes = 0
+        try:
+            nbytes = 2 * x.size * x.dtype.size
+        except Exception:
+            pass
+        KERNELS.bump("rms_norm_fused", nbytes)
+        return _orig_rms(x, scale, eps, **kw)
+    g4t.mx.fast.rms_norm = _rms_norm_hooked
+
+    # 2. Wrap scaled_dot_product_attention.
+    _orig_sdpa = g4t.scaled_dot_product_attention
+    def _sdpa_hooked(queries, keys, values, **kw):
+        # SDPA bytes = read Q + K + V; all three are
+        # B * n_heads * L * head_dim. At decode L_q=1, L_kv=cache_len.
+        try:
+            kv_b, kv_h, kv_l, kv_d = keys.shape
+            q_b, q_h, q_l, q_d = queries.shape
+            nbytes_q = q_b * q_h * q_l * q_d * queries.dtype.size
+            nbytes_kv = 2 * kv_b * kv_h * kv_l * kv_d * keys.dtype.size
+            nbytes = nbytes_q + nbytes_kv
+        except Exception:
+            nbytes = 0
+        KERNELS.bump("scaled_dot_product_attention_fused", nbytes)
+        return _orig_sdpa(queries, keys, values, **kw)
+    g4t.scaled_dot_product_attention = _sdpa_hooked
+
+    # 3. Wrap nn.Linear.__call__ at the CLASS level (instance-level override
+    # of __call__ does not work — Python skips instance dict for dunder method
+    # lookup). We tag each Linear we want to count with `_audit_kernel_name`
+    # + `_audit_bytes_per_call`; the class-level wrapper increments only for
+    # tagged instances and falls through for everything else.
+    text_model = loaded_model.language_model.model if hasattr(
+        loaded_model, "language_model",
+    ) else loaded_model.model
+    _orig_linear_call = _Linear.__call__
+    def _wrap_linear(layer, kernel_name):
+        weight = layer.weight  # shape (out, in)
+        out_dim, in_dim = weight.shape
+        weight_bytes = out_dim * in_dim * weight.dtype.size
+        layer._audit_kernel_name = kernel_name
+        layer._audit_bytes_per_call = weight_bytes
+
+    def _linear_call_hooked(self, x):
+        name = getattr(self, "_audit_kernel_name", None)
+        if name is not None:
+            KERNELS.bump(name, getattr(self, "_audit_bytes_per_call", 0))
+        return _orig_linear_call(self, x)
+    _Linear.__call__ = _linear_call_hooked
+
+    # Walk the decoder layers and bind kernel-class names to projection sites.
+    for li, layer in enumerate(text_model.layers):
+        attn = layer.self_attn
+        _wrap_linear(attn.q_proj, "matmul_q_proj")
+        if hasattr(attn, "k_proj") and not getattr(attn, "use_k_eq_v", False):
+            _wrap_linear(attn.k_proj, "matmul_k_proj")
+            if hasattr(attn, "v_proj") and attn.v_proj is not None:
+                _wrap_linear(attn.v_proj, "matmul_v_proj")
+        _wrap_linear(attn.o_proj, "matmul_o_proj")
+        if hasattr(layer.mlp, "gate_proj"):
+            _wrap_linear(layer.mlp.gate_proj, "matmul_mlp_gate_proj")
+            _wrap_linear(layer.mlp.up_proj, "matmul_mlp_up_proj")
+            _wrap_linear(layer.mlp.down_proj, "matmul_mlp_down_proj")
+        if getattr(layer, "per_layer_input_gate", None) is not None:
+            _wrap_linear(layer.per_layer_input_gate, "matmul_per_layer_gate")
+            _wrap_linear(layer.per_layer_projection, "matmul_per_layer_proj")
+
+    # 4. lm_head — reachable from the outer Model. The output head is the
+    # single largest weight tile in the forward (vocab × hidden_size).
+    if hasattr(loaded_model, "language_model") and hasattr(
+        loaded_model.language_model, "lm_head",
+    ):
+        _wrap_linear(loaded_model.language_model.lm_head, "matmul_lm_head")
+    elif hasattr(loaded_model, "lm_head"):
+        _wrap_linear(loaded_model.lm_head, "matmul_lm_head")
+
+    # 5. BatchKVCache.update_and_fetch — count via class wrap.
+    _orig_uaf = mcache.BatchKVCache.update_and_fetch
+    def _uaf_hooked(self, keys, values):
+        # update copies (B * n_kv_heads * L_new * head_dim) for K and V each.
+        try:
+            B, n_kv, L_new, d = keys.shape
+            nbytes = 2 * B * n_kv * L_new * d * keys.dtype.size
+        except Exception:
+            nbytes = 0
+        KERNELS.bump("kv_cache_update_and_fetch", nbytes)
+        return _orig_uaf(self, keys, values)
+    mcache.BatchKVCache.update_and_fetch = _uaf_hooked
+
+    install_kernel_hooks._installed = True
+    install_kernel_hooks._teardown = (
+        ("g4t.mx.fast.rms_norm", g4t.mx.fast, "rms_norm", _orig_rms),
+        ("g4t.scaled_dot_product_attention", g4t,
+         "scaled_dot_product_attention", _orig_sdpa),
+        ("BatchKVCache.update_and_fetch", mcache.BatchKVCache,
+         "update_and_fetch", _orig_uaf),
+        ("Linear.__call__", _Linear, "__call__", _orig_linear_call),
+    )
+
+
+def teardown_kernel_hooks() -> None:
+    if not getattr(install_kernel_hooks, "_installed", False):
+        return
+    for _label, mod, name, original in install_kernel_hooks._teardown:
+        setattr(mod, name, original)
+    install_kernel_hooks._installed = False
 
 
 @dataclass
@@ -933,6 +1135,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "while other streams keep decoding. Replaces the sync-wave loop."
         ),
     )
+    ap.add_argument(
+        "--kernel-audit", action="store_true",
+        help=(
+            "Lever #7 sub-fused-kernel audit: install KernelCounter hooks on "
+            "the loaded Gemma 4 hot path before run; emit a kernel_audit "
+            "block in the per-run JSON ranking kernel-class call counts and "
+            "estimated cumulative GPU wall (decode is bandwidth-bound at B=5 "
+            "L=1; per-call cost is dominated by reading the weight tile from "
+            "unified memory). If MTL_CAPTURE_ENABLED=1, also writes a "
+            ".gputrace file under the out_dir as a research artifact."
+        ),
+    )
     return ap.parse_args(argv)
 
 
@@ -1053,6 +1267,36 @@ def main(argv: list[str] | None = None) -> int:
         REPO_ROOT / "burl" / "eval" / "results" / f"perf_{timestamp}_{args.variant}"
     )
     print(f"[bench] out_dir={out_dir}", flush=True)
+
+    # Lever #7 kernel-class audit instrumentation (pre-run install).
+    gputrace_path: Path | None = None
+    if args.kernel_audit:
+        # The model wrapper's underlying mlx model lives on .model.
+        underlying = getattr(model, "model", model)
+        install_kernel_hooks(underlying)
+        print(f"[bench] kernel-audit hooks installed", flush=True)
+        if os.environ.get("MTL_CAPTURE_ENABLED") == "1":
+            import mlx.core as _mx
+            out_dir.mkdir(parents=True, exist_ok=True)
+            gputrace_path = out_dir / "kernel_audit.gputrace"
+            if gputrace_path.exists():
+                # mx.metal.start_capture refuses to overwrite.
+                import shutil
+                shutil.rmtree(gputrace_path)
+            try:
+                _mx.metal.start_capture(str(gputrace_path))
+                print(
+                    f"[bench] mx.metal capture started → {gputrace_path}",
+                    flush=True,
+                )
+            except Exception as exc:
+                print(
+                    f"[bench] WARN: mx.metal.start_capture failed "
+                    f"({type(exc).__name__}: {exc}); continuing without trace",
+                    flush=True,
+                )
+                gputrace_path = None
+
     if args.continuous:
         bench_result = run_bench_continuous(
             decisions=decisions,
@@ -1077,6 +1321,24 @@ def main(argv: list[str] | None = None) -> int:
             turn_cap=int(args.turn_cap),
         )
     bench_wall = bench_result["bench_wall_s"]
+
+    # Lever #7 — stop Metal capture (if running) and tear down hooks.
+    if args.kernel_audit:
+        if gputrace_path is not None:
+            try:
+                import mlx.core as _mx
+                _mx.metal.stop_capture()
+                print(
+                    f"[bench] mx.metal capture stopped → {gputrace_path}",
+                    flush=True,
+                )
+            except Exception as exc:
+                print(
+                    f"[bench] WARN: mx.metal.stop_capture failed "
+                    f"({type(exc).__name__}: {exc})",
+                    flush=True,
+                )
+        teardown_kernel_hooks()
 
     # ----- aggregate -----
     cache_hit_tokens_total = int(getattr(model, "cache_hit_tokens_total", 0))
@@ -1163,6 +1425,17 @@ def main(argv: list[str] | None = None) -> int:
         "notes": args.notes,
         "subset_header": header,
     }
+    if args.kernel_audit:
+        # Use BatchStats decode wall as the denominator (not bench_wall —
+        # bench_wall includes apply_step + prompt_build, kernel hooks only
+        # fire inside decode).
+        decode_wall_s = float(stat_agg.get("total_generation_time_s") or 0.0)
+        gen_tok = int(stat_agg.get("total_generation_tokens") or 0)
+        detail["kernel_audit"] = KERNELS.report(
+            gen_tokens=gen_tok, decode_wall_s=decode_wall_s,
+        )
+        if gputrace_path is not None and gputrace_path.exists():
+            detail["kernel_audit"]["gputrace_path"] = str(gputrace_path)
     json_path.write_text(json.dumps(detail, indent=2, default=str))
     print(f"[bench] per-run detail -> {json_path}", flush=True)
 
@@ -1235,6 +1508,25 @@ def main(argv: list[str] | None = None) -> int:
           f"{100.0 * timed_sum / bench_wall if bench_wall > 0 else 0.0:>7.2f}%")
     print(f"  {'(bench_wall_s_total)':<28}{bench_wall:>10.4f}{'100.00':>8}%")
     print("=" * 72)
+
+    if args.kernel_audit and "kernel_audit" in detail:
+        ka = detail["kernel_audit"]
+        print("[bench] kernel-class audit "
+              f"(decode_wall={ka['decode_wall_s']}s gen_tokens="
+              f"{ka['gen_tokens']} bw_assumed={ka['model_decode_bandwidth_assumed_gbs']}GB/s):")
+        print("=" * 72)
+        print(f"  {'kernel_class':<32}{'calls':>8}{'/tok':>7}{'MB/call':>10}{'cum_s':>8}{'pct':>7}")
+        for r in ka["kernels"]:
+            mb = r["bytes_per_call"] / 1e6
+            print(
+                f"  {r['kernel_class']:<32}"
+                f"{r['calls_total']:>8}"
+                f"{r['calls_per_token']:>7.2f}"
+                f"{mb:>10.2f}"
+                f"{r['est_cum_time_s']:>8.3f}"
+                f"{r['pct_of_decode_wall']:>6.2f}%"
+            )
+        print("=" * 72)
 
     if subset_label == "560":
         # Phase-exit gate: also emit a markdown report.
