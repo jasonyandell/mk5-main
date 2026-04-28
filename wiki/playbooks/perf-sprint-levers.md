@@ -2,7 +2,7 @@
 title: Perf Sprint — Lever Ladder
 kind: playbook
 first_seen: fbe798f
-last_updated: fbe798f
+last_updated: 8313b7d
 status: active
 ---
 
@@ -18,9 +18,54 @@ Lever notes age. mlx-lm releases ship frequently and "untested" or "could be alr
 | 2 | Q4 PLE-safe Unsloth UD + continuous + max-batch stack | CLOSED. Sprint 2 iter 5 (commit `dac9d28`, reset) ran the bisect: re-ran Q4 UD-MLX-4bit at batch=5 temp=0 (matching the bf16 baseline's batch width). gi=0 STILL deterministically flipped to play=6 with byte-identical regret 7.632 and 60% K1_match — same numbers as iter 4's batch=8 run. Verdict: **pure quant damage**, not batch-prefill-numerics. UD-MLX-4bit's logits on gi=0 prefer play=6 to play=2 regardless of batch width. The 42–44% wall win + ~50% peak-mem reduction is real but the gate is structurally unreachable on this quant. Pre-condition for re-opening: a different PLE-safe Q4 set (different quantization recipe), or a re-frozen subset that doesn't include gi=0-style logit-cliff decisions, or a widened gate definition. |
 | 3 | mlx-lm version bump | CLOSED at 0.31.3. Sprint 2 iter 7 (2026-04-28) bumped to mlx-lm 0.31.3 — the latest release ships [PR #1141](https://github.com/ml-explore/mlx-lm/pull/1141) (BatchKVCache extend dim-mismatch fix, the upstream fix for [#1139](https://github.com/ml-explore/mlx-lm/issues/1139)) AND [PR #1158](https://github.com/ml-explore/mlx-lm/pull/1158) (Gemma 4 KV-shared layers fix). #1158 is the blocker: it removes 60 unused k_proj/v_proj/k_norm parameters from the Gemma 4 model class (layers 15-34 are KV-shared per `num_kv_shared_layers=20`), but the official `google/gemma-4-E2B-it` safetensors STILL ship those weights. `mlx_lm.utils.load()` calls `load_weights(strict=True)` and rejects them with `ValueError: Received 60 parameters not in model`. The bench cannot load bf16 Gemma 4 E2B at 0.31.3 at all. Reset on iter 7; restored 0.31.2. **Sprint 2 iter 8 (2026-04-28, commit `9be36dc`, reset)** vendored ~14 LoC `strict=False` loader in `gemma_local_batched.py` (mirrors `mlx_lm.utils.load()`: `_download` → `load_model(strict=False)` → `load_tokenizer`) + re-bumped to 0.31.3. **Vendored loader works** — bf16 model loads cleanly. BUT 0.31.3 carries a hard bf16 regression on this subset: (1) wall jumped from ~38–48s floor at 0.31.2 to ~75s steady-state at 0.31.3 (~70% slower); decode dropped from ~142 tok/s to ~75 tok/s. ps clean, no contention. (2) bf16 at temp=0 is no longer deterministic across runs at 0.31.3 — three back-to-back paired runs A/B/C produced gi=72 play={13, 1, 13}, where 0.31.2 was byte-identical across batch widths (iter5 verified). Sanity gate (must match prior bc4fbd9 numbers + K1=100%) failed on both axes; experimental continuous-batching test skipped because the new baseline is structurally worse and the comparison-anchor is broken. Reset to bc4fbd9; restored mlx-lm==0.31.2. New pre-conditions for re-opening: (a) Google re-issues Gemma 4 safetensors without the unused KV-shared weights AND a fast 0.31.3+ release fixes the bf16 perf/determinism regression, OR (b) wait for 0.31.4+ and re-run iter8's exact vendored-loader+continuous protocol. The vendored-loader recipe itself is sound and reusable when the upstream regression is fixed — see [[perf-sprint-traps]] for the recipe. |
 | 4 | `mx.compile` audit on inference hot path | CLOSED. Sprint 2 iter 9 (2026-04-28, audit-only, no code change) inspected mlx-lm 0.31.2's hot path on Gemma 4 E2B. **Already compiled**: (a) sampler chain — `categorical_sampling`, `apply_top_k`, `apply_top_p`, `apply_min_p`, `apply_xtc` all `@partial(mx.compile, inputs=mx.random.state, outputs=mx.random.state)` in `mlx_lm/sample_utils.py:129/154/204/240/277`; (b) Gemma 4 fast paths — `logit_softcap`, `_complete_square`, `geglu` all `@partial(mx.compile, shapeless=True)` in `mlx_lm/models/gemma4_text.py:84/89/94`; (c) every RMSNorm runs through `mx.fast.rms_norm` (Metal kernel-fused, bypasses Python compile graph entirely); (d) attention runs through `scaled_dot_product_attention` (fused MLX kernel). **Not compiled** but unviable: `Attention.__call__` and `DecoderLayer.__call__` (per-token forward) are not `@mx.compile`-wrapped, but they take optional kwargs, conditional branches on `shared_kv` / `per_layer_input`, and variable B/L shapes per call — wrapping near-certain to no-op (real cost is already on the fused kernels) or regress (shape-recompilation churn). `BatchKVCache.update_and_fetch` is plain `mx.concatenate` + index ops (single-kernel ops; compile won't fuse across the boundary). `BatchGenerator._step` (per-token sampling/scheduling) is Python control flow with list comprehensions and variable-length `mx.concatenate` — not compileable as written. Web search (mlx-lm releases through 0.31.3, GitHub blame on `generate.py` and `sample_utils.py`) shows no in-flight `mx.compile` additions on the hot path. Pre-condition for re-opening: a future mlx-lm release (0.32+) restructures `BatchGenerator._step` into a compile-friendly form, OR Apple ships an `mx.compile`-friendly batched `update_and_fetch` for `BatchKVCache`, OR a Gemma 4 model class refactor stabilizes `Attention.__call__` shape signature so `shapeless=True` compile becomes safe. |
-| 5 | Spec-decode self-speculation (Q4 draft, bf16 verifier, single-stream lateral) | Doesn't stack with continuous batching but useful for the single-decision path. |
-| 6 | Cohort abstraction implementation | Cohort-as-quarantine-unit pattern. Unblocks reliable full-N attribution and full-batch-560 production runs. |
-| 7 | Direct mlx Metal kernel audit | nvtx-style profiling — what kernels dominate? Last-resort lever; needs lower-level mlx familiarity. |
+| 5 | **Continuous batching @ temp=0 (bf16, paired against iter 5 deterministic baseline)** | **TOP CANDIDATE** after sprint 2 iter 10 wall-time fingerprint. Iter 10 instrumentation showed bf16 baseline is 89.3% decode-bound and the per-step decode_tps drops from 133-150 to 24.5-33.6 on straggler-tail steps where one slow stream holds the whole sync-wave. The existing `run_bench_continuous` + `--continuous` flag (sprint 1 lever #2, last run `c002075` on `perf/batch` 2026-04-27 at 34.5s @ temp=0) was never run on `perf/aggressive` at temp=0 against the iter 5 deterministic baseline. Predicted 30-50% wall reduction if it preserves per-decision plays at temp=0. Pre-conditions met: `prefill_batch_size=2` already pinned (lever 1 closed bench-side), bf16 baseline at temp=0 known deterministic on this subset (iter 5). |
+| 6 | Spec-decode self-speculation (Q4 draft, bf16 verifier, single-stream lateral) | Doesn't stack with continuous batching but useful for the single-decision path. Was lever #5 pre-iter 10. |
+| 7 | Cohort abstraction implementation | Cohort-as-quarantine-unit pattern. Unblocks reliable full-N attribution and full-batch-560 production runs. |
+| 8 | Direct mlx Metal kernel audit | nvtx-style profiling — what kernels dominate? Last-resort lever; needs lower-level mlx familiarity. Iter 10 fingerprint shows decode is 89% of wall and `mx.compile` is already applied at every shape-stable site (lever #4 closure) — sub-fused-kernel work is the only remaining surface below the continuous-batching lever. |
+
+## Wall-time fingerprint (bf16 baseline, sync-wave, batch=5 temp=0, M5 Max, mlx-lm 0.31.2)
+
+Sprint 2 iter 10 (2026-04-28, commit `8313b7d`, kept) instrumented the sync-wave bench with a `PhaseTimer` context manager wrapping seven phase boundaries: `prompt_build_outer`, `prompt_build_inner`, `prefill_decode`, `tokenizer_decode_output`, `init_decision_states`, `apply_step`, `finalize`. Sub-ms cumulative overhead. Paired bf16 batch=5 temp=0 (baseline pre-instrumentation 74.1s, variant 68.9s, plays byte-identical across 5/5 decisions, gate passes cleanly).
+
+Phase breakdown (sorted by % of bench wall):
+
+| Phase | wall_s | % | n | mean ms |
+|---|---:|---:|---:|---:|
+| `prefill_decode` | 65.52 | **95.12%** | 6 | 10920 |
+| `apply_step` | 3.29 | 4.78% | 6 | 549 |
+| `prompt_build_inner` | 0.045 | 0.07% | 6 | 7.6 |
+| `prompt_build_outer` | 0.022 | 0.03% | 6 | 3.8 |
+| `tokenizer_decode_output` | 0.002 | 0.00% | 6 | 0.3 |
+| `init_decision_states` | 0.001 | 0.00% | 1 | 0.7 |
+| `finalize` | 0.001 | 0.00% | 1 | 0.6 |
+
+Sub-phase split inside `prefill_decode` (from `BatchStats` already collected by the bench):
+
+- prefill GPU time: **3.99s = 5.79% of wall**
+- decode GPU time: **61.53s = 89.34% of wall**
+- scheduler/sampling overhead: GPU sums match phase wall to <0.01s — essentially zero
+
+**Decisive finding for the lever ladder.** The bf16 baseline workload at temp=0 batch=5 is **pure decode-bound**:
+
+- Decode is 89.34% of wall — token-gen levers were the right targets through iters 1-9; the closed levers covered the right surface area.
+- Tool dispatch (`apply_step`) is 4.78% of wall — caching tool results or batching `explore_game()` would save sub-1s. Not worth a lever.
+- Prompt build (inner + outer combined) is 67ms — 0.1% of wall. Pre-formatting the system prompt would save microseconds.
+- Prefill is 5.79% of wall — a prefill-batching lever (different from `--batch`) is uninteresting at this baseline.
+
+**Per-step straggler collapse in the sync-wave loop.** Per-step decode_tps from the iter 10 variant:
+
+| step | n_active | gen_tokens | gen_time | decode_tps | reading |
+|---:|---:|---:|---:|---:|---|
+| 1 | 5 | 2918 | 21.93s | **133** | normal batched decode |
+| 2 | 5 | 363 | 14.81s | **24.5** | straggler collapse — 1 long stream holds 4 idle |
+| 3 | 5 | 639 | 4.26s | **150** | normal |
+| 4 | 5 | 525 | 5.32s | **99** | mild straggler |
+| 5 | 5 | 372 | 11.09s | **33.6** | straggler collapse |
+| 6 | 2 | 359 | 4.12s | **87** | tail (only 2 streams left) |
+
+The bench's reported aggregate decode_tps (84 in iter 10 variant) is a weighted mean dragged down by steps 2 and 5 where the sync-wave forces all 5 streams to march in lockstep. The model's solo decode rate is ~133-150 tok/s at this batch width; the wall isn't the model's solo rate, it's **the marginal cost of one slow stream holding the whole wave**.
+
+**Implication for lever #5 (continuous batching).** The existing `run_bench_continuous` + `--continuous` flag (lever #2 in sprint 1, last run 2026-04-27 commit `c002075` at 34.5s on `perf/batch`) directly attacks this straggler phase: as a stream finishes, its slot fills with the next decision's next turn rather than waiting for the wave. The breakdown predicts **30-50% wall reduction** if continuous batching preserves per-decision plays at temp=0. The sprint 1 continuous-batching numbers were at temp=0.6 where the gate was broken; rerunning at temp=0 against the iter 5 bf16 deterministic baseline is the obvious next iter.
 
 ## Closed levers (don't re-try without a pre-condition met)
 
