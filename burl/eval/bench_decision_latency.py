@@ -1058,6 +1058,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="'5' (frozen 5-decision subset) or '560' (full run-3c eval set).",
     )
     ap.add_argument(
+        "--subset-limit", type=int, default=None,
+        help=(
+            "Optional row cap: truncate the resolved decision list to the first "
+            "N rows. Used by sub-lever 5c to slice subset 560 down to N=40-60 "
+            "where N >> batch_width is true but iter wall stays under ~15min."
+        ),
+    )
+    ap.add_argument(
         "--model-path", default=None,
         help=(
             "Optional MLX adapter path. The bench feeds this through to "
@@ -1212,6 +1220,14 @@ def main(argv: list[str] | None = None) -> int:
         decisions.append(bd)
 
     global_indices = [int(r["global_idx"]) for r in rows]
+    if args.subset_limit is not None and args.subset_limit < len(decisions):
+        decisions = decisions[: args.subset_limit]
+        global_indices = global_indices[: args.subset_limit]
+        print(
+            f"[bench] subset-limit applied: truncated to first "
+            f"{args.subset_limit} decisions",
+            flush=True,
+        )
     print(
         f"[bench] resolved {len(decisions)} decisions; "
         f"trick positions = "
