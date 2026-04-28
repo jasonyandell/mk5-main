@@ -146,6 +146,63 @@ def sha256_of(path: Path, chunk_bytes: int = 1 << 20) -> str:
 # --------------------------------------------------------------------------- #
 
 
+# --------------------------------------------------------------------------- #
+# Phase timer — wall-time fingerprint of the per-decision loop                 #
+# --------------------------------------------------------------------------- #
+
+
+class PhaseTimer:
+    """Cumulative ``time.perf_counter()`` accounting keyed by phase name.
+
+    Used as a context manager: ``with PHASES.phase("prefill_decode"): ...``.
+    Sub-microsecond overhead per enter/exit. Phases nest cleanly because each
+    enter/exit pair only touches its own bucket — caller-side outer phases
+    over-count if they wrap an inner phase, so we keep the instrumentation
+    flat (no phase wraps another timed phase).
+    """
+
+    def __init__(self) -> None:
+        self._totals: dict[str, float] = {}
+        self._counts: dict[str, int] = {}
+
+    def add(self, name: str, dt: float) -> None:
+        self._totals[name] = self._totals.get(name, 0.0) + dt
+        self._counts[name] = self._counts.get(name, 0) + 1
+
+    def phase(self, name: str):
+        timer = self
+
+        class _Ctx:
+            def __enter__(self_inner):
+                self_inner.t0 = time.perf_counter()
+                return self_inner
+
+            def __exit__(self_inner, *_):
+                timer.add(name, time.perf_counter() - self_inner.t0)
+                return False
+
+        return _Ctx()
+
+    def report(self, *, total_wall_s: float) -> dict[str, dict[str, float]]:
+        out: dict[str, dict[str, float]] = {}
+        for name, total in sorted(
+            self._totals.items(), key=lambda kv: -kv[1],
+        ):
+            count = self._counts.get(name, 0)
+            out[name] = {
+                "total_s": round(total, 4),
+                "pct_of_wall": round(100.0 * total / total_wall_s, 2)
+                if total_wall_s > 0 else 0.0,
+                "n_calls": count,
+                "mean_ms": round(1000.0 * total / count, 3)
+                if count else 0.0,
+            }
+        return out
+
+
+PHASES = PhaseTimer()
+
+
 @dataclass
 class StepStats:
     """One BatchResponse.stats record + the wall it cost."""
@@ -234,10 +291,11 @@ def make_tracking_model(
             not_done = [e for e in active if not e.get("done", False)]
             if not not_done:
                 return []
-            prompts = [
-                self._render_prompt_ids(e["messages"], e.get("tools"))
-                for e in not_done
-            ]
+            with PHASES.phase("prompt_build_inner"):
+                prompts = [
+                    self._render_prompt_ids(e["messages"], e.get("tools"))
+                    for e in not_done
+                ]
             # Prefix-cache fetch (or fresh caches if disabled).
             cache_hit_before = self.cache_hit_tokens_total
             processed_before = self.cache_processed_tokens_total
@@ -271,37 +329,39 @@ def make_tracking_model(
             # fresh generator each call too, so this is functionally identical
             # but exposes stats() to the tracker).
             t0 = time.time()
-            gen = BatchGenerator(
-                self.model,
-                stop_tokens=[[t] for t in self.tokenizer.eos_token_ids],
-                completion_batch_size=len(suffix_prompts),
-                prefill_batch_size=2,
-            )
-            uids = gen.insert(
-                suffix_prompts,
-                [self.max_tokens] * len(suffix_prompts),
-                caches=prompt_caches,
-                samplers=[self._sampler] * len(suffix_prompts),
-            )
-            results: dict[int, list[int]] = {uid: [] for uid in uids}
-            post_caches: dict[int, list] = {}
-            stats = BatchStats()
-            with gen.stats(stats):
-                while responses := gen.next_generated():
-                    for r in responses:
-                        if r.finish_reason is not None:
-                            if self._prompt_cache is not None:
-                                post_caches[r.uid] = r.prompt_cache
-                        if r.finish_reason != "stop":
-                            results[r.uid].append(r.token)
-            gen.close()
+            with PHASES.phase("prefill_decode"):
+                gen = BatchGenerator(
+                    self.model,
+                    stop_tokens=[[t] for t in self.tokenizer.eos_token_ids],
+                    completion_batch_size=len(suffix_prompts),
+                    prefill_batch_size=2,
+                )
+                uids = gen.insert(
+                    suffix_prompts,
+                    [self.max_tokens] * len(suffix_prompts),
+                    caches=prompt_caches,
+                    samplers=[self._sampler] * len(suffix_prompts),
+                )
+                results: dict[int, list[int]] = {uid: [] for uid in uids}
+                post_caches: dict[int, list] = {}
+                stats = BatchStats()
+                with gen.stats(stats):
+                    while responses := gen.next_generated():
+                        for r in responses:
+                            if r.finish_reason is not None:
+                                if self._prompt_cache is not None:
+                                    post_caches[r.uid] = r.prompt_cache
+                            if r.finish_reason != "stop":
+                                results[r.uid].append(r.token)
+                gen.close()
             wall = time.time() - t0
             tracker.record(
                 wall_s=wall,
                 n_active=len(not_done),
                 batch_stats=stats,
             )
-            texts = [self.tokenizer.decode(results[uid]) for uid in uids]
+            with PHASES.phase("tokenizer_decode_output"):
+                texts = [self.tokenizer.decode(results[uid]) for uid in uids]
 
             # Insert post-decode caches.
             if self._prompt_cache is not None:
@@ -532,12 +592,13 @@ def run_bench(
         wave_t0 = time.time()
 
         states: list[hb._DecisionState] = []
-        for gi, dec in zip(wave_gis, wave_decisions):
-            dec_dir = out_dir / f"decision_{gi}"
-            st = hb._init_decision_state(
-                gi, dec, variant, oracle, dec_dir, max_turns=turn_cap,
-            )
-            states.append(st)
+        with PHASES.phase("init_decision_states"):
+            for gi, dec in zip(wave_gis, wave_decisions):
+                dec_dir = out_dir / f"decision_{gi}"
+                st = hb._init_decision_state(
+                    gi, dec, variant, oracle, dec_dir, max_turns=turn_cap,
+                )
+                states.append(st)
 
         # Per-decision finish-wall: records the moment ``s.done`` first
         # flipped to True (or wave end if it never did, which can't happen
@@ -555,47 +616,50 @@ def run_bench(
             active = [s for s in states if not s.done]
             active_payload: list[dict] = []
             prompt_texts: list[str] = []
-            for s in active:
-                msgs, schemas = hb._prepare_step(s)
-                active_payload.append({
-                    "messages": msgs, "tools": schemas, "done": False,
-                })
-                prompt_texts.append(model.tokenizer.apply_chat_template(
-                    s.messages, tools=s.schemas,
-                    tokenize=False, add_generation_prompt=True,
-                    enable_thinking=False,
-                ))
+            with PHASES.phase("prompt_build_outer"):
+                for s in active:
+                    msgs, schemas = hb._prepare_step(s)
+                    active_payload.append({
+                        "messages": msgs, "tools": schemas, "done": False,
+                    })
+                    prompt_texts.append(model.tokenizer.apply_chat_template(
+                        s.messages, tools=s.schemas,
+                        tokenize=False, add_generation_prompt=True,
+                        enable_thinking=False,
+                    ))
 
             completions = model.step_batch(active_payload)
             assert len(completions) == len(active)
             t_after_gen = time.time()
-            for s, comp, ptext in zip(active, completions, prompt_texts):
-                was_done = s.done
-                try:
-                    hb._apply_step(
-                        s, comp, ptext,
-                        parse_completion=parse_native_completion,
-                    )
-                except Exception as exc:
-                    s.done = True
-                    s.result_meta["bailed"] = True
-                    s.result_meta["bail_reason"] = (
-                        f"apply_step failed (sync-wave): "
-                        f"{type(exc).__name__}: {exc}"
-                    )
-                if s.done and not was_done:
-                    finish_wall_by_gi[int(s.gi)] = t_after_gen - s.wall_t0
+            with PHASES.phase("apply_step"):
+                for s, comp, ptext in zip(active, completions, prompt_texts):
+                    was_done = s.done
+                    try:
+                        hb._apply_step(
+                            s, comp, ptext,
+                            parse_completion=parse_native_completion,
+                        )
+                    except Exception as exc:
+                        s.done = True
+                        s.result_meta["bailed"] = True
+                        s.result_meta["bail_reason"] = (
+                            f"apply_step failed (sync-wave): "
+                            f"{type(exc).__name__}: {exc}"
+                        )
+                    if s.done and not was_done:
+                        finish_wall_by_gi[int(s.gi)] = t_after_gen - s.wall_t0
 
         # Finalize each decision; preserves the per-decision wall.
-        for s in states:
-            # Use the recorded finish-wall (when s.done flipped); fall back
-            # to wave-end for any decision that completed via the
-            # post-loop finalize forced-commit path.
-            wall_s = finish_wall_by_gi.get(int(s.gi), time.time() - s.wall_t0)
-            row = hb._finalize(s, oracle, wall_s)
-            row["global_idx"] = s.gi
-            row["bench_per_decision_wall_s"] = round(wall_s, 3)
-            rows.append(row)
+        with PHASES.phase("finalize"):
+            for s in states:
+                # Use the recorded finish-wall (when s.done flipped); fall back
+                # to wave-end for any decision that completed via the
+                # post-loop finalize forced-commit path.
+                wall_s = finish_wall_by_gi.get(int(s.gi), time.time() - s.wall_t0)
+                row = hb._finalize(s, oracle, wall_s)
+                row["global_idx"] = s.gi
+                row["bench_per_decision_wall_s"] = round(wall_s, 3)
+                rows.append(row)
 
         wave_walls.append(time.time() - wave_t0)
 
@@ -1066,6 +1130,7 @@ def main(argv: list[str] | None = None) -> int:
         f"perf_{timestamp}_{args.variant}.json"
     )
     json_path.parent.mkdir(parents=True, exist_ok=True)
+    phase_breakdown = PHASES.report(total_wall_s=bench_wall)
     detail = {
         "timestamp": timestamp,
         "sha": sha,
@@ -1093,6 +1158,7 @@ def main(argv: list[str] | None = None) -> int:
         ],
         "wave_walls_s": [round(w, 3) for w in bench_result["wave_walls_s"]],
         "step_stats": [s.__dict__ for s in tracker.steps],
+        "phase_breakdown": phase_breakdown,
         "comparison_vs_baseline": cmp,
         "notes": args.notes,
         "subset_header": header,
@@ -1151,6 +1217,23 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  peak_mem_gb       : {stat_agg['peak_mem_gb']}")
     print(f"  k1_grade_match_pct: {cmp['k1_grade_match_pct']}")
     print(f"  regret_delta_pct  : {cmp['regret_delta_pct']}")
+    print("=" * 72)
+    print("[bench] phase breakdown (sorted by wall, sum may differ from")
+    print("        total because untimed regions exist between phases):")
+    print("=" * 72)
+    print(f"  {'phase':<28}{'total_s':>10}{'pct':>8}{'n':>6}{'mean_ms':>12}")
+    for name, info in phase_breakdown.items():
+        print(
+            f"  {name:<28}"
+            f"{info['total_s']:>10.4f}"
+            f"{info['pct_of_wall']:>7.2f}%"
+            f"{info['n_calls']:>6}"
+            f"{info['mean_ms']:>12.3f}"
+        )
+    timed_sum = sum(info['total_s'] for info in phase_breakdown.values())
+    print(f"  {'(sum of timed phases)':<28}{timed_sum:>10.4f}"
+          f"{100.0 * timed_sum / bench_wall if bench_wall > 0 else 0.0:>7.2f}%")
+    print(f"  {'(bench_wall_s_total)':<28}{bench_wall:>10.4f}{'100.00':>8}%")
     print("=" * 72)
 
     if subset_label == "560":
