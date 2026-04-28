@@ -59,8 +59,54 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 1. Write `scratch/<sprint>/PERF_GOAL.md` from [[perf-sprint-goal]] — sprint goal + equivalence gate values.
 2. Initialize `scratch/<sprint>/results.tsv` with the header row.
 3. Register the [[perf-sprint-loop]] message verbatim.
-4. Read [[perf-sprint-levers]] for ideas to seed the loop. Read [[perf-sprint-traps]] when something crashes.
+4. Read [[perf-sprint-levers]] for ideas to seed the loop. The iteration agent (below) reads [[perf-sprint-traps]] when something crashes.
 5. Append a post-mortem to [[perf-sprint-history]] when the sprint ends.
+
+## Context discipline
+
+The orchestrator runs the loop and owns the TSV but **never reads bench output, source dumps, or tracebacks directly**. Each iteration is delegated to a fresh `Agent` that does the modify → run → parse → decide work in its own context and returns *only* a TSV row plus a 2-sentence note. The orchestrator appends the row, picks the next variant, spawns the next iteration. This keeps the orchestrator under context-degradation thresholds across 100+ iterations.
+
+The wiki is the cross-iteration learning channel — durable findings (new levers, new traps) are written to [[perf-sprint-levers]] or [[perf-sprint-traps]] inside the iteration's context before it returns, so the next iteration inherits them without the orchestrator having to relay.
+
+### Iteration agent contract
+
+- **One coherent variant per spawn.** Coherent = one hypothesis interpretable on its own. Co-required changes (change A is meaningless without change B) ship together. Obvious blocker fixes (typos, hardcoded constants in the way, wrong import paths) ship silently as part of the variant — they don't earn their own iteration.
+- **No side quests.** Interesting findings become text in the `description` column as "hypothesis for next iteration," not work this iteration completes.
+- **Wiki updates are the one sanctioned side effect.** If the iteration revealed a durable lever or trap, append to the relevant page before returning.
+- **Owns the git decision.** The iteration does the commit, the bench run, and the `git reset` on `discard` — all in its own context.
+- **Return shape is rigid.** One TSV row + 2 sentences (what was tried, hypothesis for next). Nothing else. Knowing the return shape is small forces summarization during the iteration, not after.
+
+### Spawn template
+
+The orchestrator reuses this verbatim, filling in `<sprint>`, `<N>`, and the variant description:
+
+~~~
+Agent({
+  description: "perf iter <N>: <one-line variant>",
+  prompt: "Read wiki/playbooks/perf-sprint.md for the contract — metric,
+          equivalence gate, ledger format, iteration agent contract.
+          Sprint dir: scratch/<sprint>/.
+
+          Variant to try: <description>.
+
+          Do: modify the editable surface, git commit, run paired baseline
+          + variant on perf_subset_5, parse wall_s + k1_match + regret_delta
+          + peak_gb. Decide keep (advance branch) or discard (git reset).
+          Append one row to scratch/<sprint>/results.tsv.
+
+          Coherent variant — co-required changes and obvious blocker fixes
+          ship together as part of this variant. No side quests. If the
+          iteration revealed a durable lever or trap, update
+          wiki/playbooks/perf-sprint-levers.md or -traps.md before returning.
+
+          Read wiki/playbooks/perf-sprint-traps.md if the bench crashes —
+          known recipes are there.
+
+          Reply with that one TSV row plus exactly 2 sentences (what you
+          tried, hypothesis for next). Do NOT paste bench output, source
+          code, or tracebacks."
+})
+~~~
 
 ## Scope
 

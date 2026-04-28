@@ -21,24 +21,24 @@ immediately before each variant. End-to-end (tokens + tools + harness).
 EQUIVALENCE GATE: K1_match >= 60% AND regret_delta within ±10% on the
 same paired run. If the gate fails, status = discard regardless of wall.
 
-LOOP FOREVER:
-  1. Pick the next variant. Read [[perf-sprint-levers]] for seed ideas;
-     freelance is fine. Read [[perf-sprint-traps]] for known pitfalls.
-  2. Modify the editable surface (see [[perf-sprint]]). git commit.
-  3. Run paired baseline + variant on perf_subset_5.
-  4. Read wall_s, k1_match, regret_delta, peak_gb from the run.
-  5. Decide:
-       gate failed OR wall_s didn't improve  → status = discard, git reset.
-       gate passed AND wall_s improved       → status = keep, advance branch.
-       run crashed                            → read traceback, smallest fix,
-                                                 re-run. After 3 crashes on the
-                                                 same idea, status = crash, log,
-                                                 move to a new idea.
-  6. Append row to scratch/<sprint>/results.tsv.
-  7. Slack update: what tried, current best wall_s, what's next.
+You are the orchestrator. You do not read bench output, source dumps,
+or tracebacks. Each iteration is delegated to a fresh Agent — see the
+spawn template in [[perf-sprint]].
 
-DON'T GIVE UP. "The bench is unreliable" is never a reason to stop
-measuring speed — find another way. Idle is a bug. Heartbeat-without-
+LOOP FOREVER:
+  1. Read scratch/<sprint>/PERF_GOAL.md and the tail of results.tsv
+     (last ~5 rows is enough). Re-anchor.
+  2. Pick the next variant. Read [[perf-sprint-levers]] for seed ideas;
+     freelance is fine. A coherent stack of co-required changes counts
+     as one variant.
+  3. Spawn an iteration Agent (template in [[perf-sprint]]). Wait for
+     the return: one TSV row + exactly 2 sentences.
+  4. Append the returned row to scratch/<sprint>/results.tsv. The
+     iteration already advanced or reset the branch — you don't.
+  5. Slack update: current best wall_s, what was just tried, what's next.
+
+DON'T GIVE UP. "The bench is unreliable" is never a reason to stop —
+spawn an iteration to fix the bench. Idle is a bug. Heartbeat-without-
 action is a bug.
 
 Stop only when wall_s_per_decision hits the target OR the user types "stop".
@@ -46,7 +46,9 @@ Stop only when wall_s_per_decision hits the target OR the user types "stop".
 
 ## Why this shape
 
-The loop is where the stop decision fires, so the rule lives here. The metric, the gate, and the keep/discard mechanic are stated together because they decide together. Every fire re-anchors on what advances the branch and what doesn't.
+The orchestrator's loop is thin by design — pick variant, spawn, append, repeat. All the noisy work (modify code, run bench, parse output, handle crashes, decide keep/discard) happens inside the iteration Agent's context, which dies after returning. This is what keeps the orchestrator runnable for hours: it never accumulates the bench output, tracebacks, or source dumps that fill context fastest.
+
+The metric, gate, and keep/discard mechanic are stated together because they decide together. Every fire re-anchors on what advances the branch and what doesn't.
 
 ## Links
 

@@ -1346,3 +1346,20 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 - Editable surface is a list of likely candidates, not strict. Trust the model + git.
 
 **Frontier shift:** wrap conditions disappear structurally — the loop has two exits (metric hits target OR user typed stop). Paired protocol stops being a separate rule (it's step 3 of the loop). The sprint is interruptible — the user wakes up, reads the TSV, picks winners.
+
+## [2026-04-27 | unstaged | perf-sprint context discipline + iteration-agent delegation]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-loop]] [[index]]
+
+**Why:** sprint-1's team-of-scribes architecture wasn't actually about parallelism — it was about context isolation. Each scribe had its own fresh context to dump bench output, source reads, and tracebacks; the orchestrator stayed lean because it never saw the noise. The simplified single-threaded playbook lost that benefit and the orchestrator hits context-degradation thresholds 800k+ tokens deep into a long sprint. The fix isn't to bring back the team — it's to delegate each iteration (not each parallel scribe) to a fresh Agent. Single-threaded loop, isolated per-iteration contexts.
+
+**Updated:**
+- [[perf-sprint]] — added "Context discipline" section: orchestrator never reads bench output, source dumps, or tracebacks; each iteration delegates to a fresh Agent. Iteration agent contract: one coherent variant per spawn (co-required changes + obvious blocker fixes ship together); no side quests; wiki updates are the one sanctioned side effect; rigid return shape (one TSV row + 2 sentences). Includes a verbatim Agent spawn template.
+- [[perf-sprint-loop]] — thinned orchestrator loop. Steps are now pick-variant, spawn-iteration, append-row, slack-update. The modify/run/parse/decide work moved into the iteration agent's context. "You do not read bench output, source dumps, or tracebacks" stated explicitly.
+
+**Design choices:**
+- "Coherent variant" not "atomic change." A stack of co-required knobs (e.g. lift batch ceiling + sweep batch + add prefill_batch_size=2) ships as one variant. Karpathy's program.md backs this implicitly — no atomicity rule.
+- Wiki updates by iteration agents are deliberately encouraged, not just permitted. The wiki is the cross-iteration learning channel that closes the "slower cadence loses cross-iteration learning" critique of the delegation pattern.
+- Return shape rigid (one row + 2 sentences) by contract. Forces summarization during the iteration, not after.
+
+**Frontier shift:** the orchestrator is now structurally bounded in context cost. Each iteration costs ~2k tokens to the orchestrator (TSV row + brief note) regardless of how heavy the iteration was. 100 iterations = ~200k orchestrator context. The bench output, source dumps, and tracebacks live in iteration-agent contexts that die on return.
