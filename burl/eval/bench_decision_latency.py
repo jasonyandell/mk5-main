@@ -650,6 +650,14 @@ def run_bench_continuous(
     )
     uid_to_state: dict[int, hb._DecisionState] = {}
     uid_to_token_buf: dict[int, list[int]] = {}
+    # Pending decisions waiting for a free slot. Submitting all N at N>=100
+    # piles ~250k+ pending prompt tokens into the BatchGenerator's queue
+    # before the pump starts and SIGKILLs the process silently — see
+    # wiki/playbooks/perf-sprint-traps.md "SIGKILL silently after out_dir=".
+    # Keep the in-flight pool ~ batch*4 so steady-state matches all-at-once
+    # semantics (dispatcher pool stays saturated) without the up-front spike.
+    pending: list[hb._DecisionState] = list(states)
+    in_flight_target = max(int(batch) * 4, int(batch))
 
     def submit(state: hb._DecisionState) -> int:
         msgs, schemas = hb._prepare_step(state)
@@ -672,14 +680,17 @@ def run_bench_continuous(
         state._continuous_started_at = time.time()
         return uid
 
-    # Submit initial turns.
-    for st in states:
-        submit(st)
+    def fill_pool() -> None:
+        while pending and len(uid_to_state) < in_flight_target:
+            submit(pending.pop(0))
+
+    # Submit initial turns up to the pool target.
+    fill_pool()
 
     # Pump until all states are done.
     bench_stats = BatchStats()
     with gen.stats(bench_stats):
-        while uid_to_state:
+        while uid_to_state or pending:
             responses = gen.next_generated()
             if not responses:
                 break
@@ -730,6 +741,9 @@ def run_bench_continuous(
                     )
                 if not state.done:
                     submit(state)
+                else:
+                    # Slot freed — admit the next pending decision.
+                    fill_pool()
     gen.close()
 
     # Finalize each decision (preserves wave-loop's _finalize semantics).
