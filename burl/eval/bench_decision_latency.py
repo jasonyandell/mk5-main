@@ -1166,6 +1166,13 @@ def main(argv: list[str] | None = None) -> int:
             "the Phase 0 bench measures only --max-tokens-policy default."
         )
 
+    # Convert silent macOS jetsam SIGKILL into a visible RuntimeError when
+    # the bench's working set exceeds Apple's recommended 40.2 GB Metal
+    # working-set on M5 Max. See wiki/playbooks/perf-sprint-traps.md
+    # ("Silent SIGKILL right after [bench] out_dir= print at N>=52 ...").
+    import mlx.core as mx
+    mx.set_memory_limit(40 * 1024**3)
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     sha, branch = _git_rev()
 
