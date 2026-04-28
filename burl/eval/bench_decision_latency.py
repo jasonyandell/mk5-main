@@ -761,6 +761,109 @@ def run_bench_continuous(
     }
 
 
+def run_bench_continuous_cohorts(
+    *,
+    decisions: list,
+    global_indices: list[int],
+    out_dir: Path,
+    model: Any,
+    variant: Any,
+    oracle: Any,
+    batch: int,
+    turn_cap: int,
+    tracker: "StatsTracker",
+    cohort_size: int,
+) -> dict:
+    """Lever #6 cohort wrapper around ``run_bench_continuous``.
+
+    Splits ``decisions`` into chunks of ``cohort_size`` and runs each
+    chunk as an independent BatchGenerator session, with explicit
+    KV/heap teardown between cohorts. Hypothesis: cumulative KV cache +
+    heap from a single long-running session is what trips macOS jetsam
+    at N>=52 on M5 Max bf16 (iter 17 silent-SIGKILL). Releasing the
+    generator + forcing gc + clearing the metal cache between cohorts
+    keeps peak transient pressure bounded.
+    """
+    import gc
+    import mlx.core as mx
+
+    n = len(decisions)
+    n_cohorts = (n + cohort_size - 1) // cohort_size
+    print(
+        f"[bench] cohort mode: N={n} cohort_size={cohort_size} "
+        f"-> {n_cohorts} cohort(s)",
+        flush=True,
+    )
+
+    all_rows: list[dict] = []
+    all_wave_walls: list[float] = []
+    cohort_walls: list[float] = []
+    bench_t0 = time.time()
+    for ci in range(n_cohorts):
+        lo = ci * cohort_size
+        hi = min(lo + cohort_size, n)
+        c_decisions = decisions[lo:hi]
+        c_gis = global_indices[lo:hi]
+        c_t0 = time.time()
+        print(
+            f"[bench] cohort {ci+1}/{n_cohorts}: decisions {lo}..{hi-1} "
+            f"(n={len(c_decisions)})",
+            flush=True,
+        )
+        result = run_bench_continuous(
+            decisions=c_decisions,
+            global_indices=c_gis,
+            out_dir=out_dir,
+            model=model,
+            variant=variant,
+            oracle=oracle,
+            batch=batch,
+            turn_cap=turn_cap,
+            tracker=tracker,
+        )
+        all_rows.extend(result["rows"])
+        all_wave_walls.extend(result["wave_walls_s"])
+        c_wall = time.time() - c_t0
+        cohort_walls.append(c_wall)
+        print(
+            f"[bench] cohort {ci+1}/{n_cohorts} done in {c_wall:.1f}s "
+            f"(per-decision wall ~{c_wall / max(len(c_decisions), 1):.2f}s)",
+            flush=True,
+        )
+
+        # Inter-cohort teardown: gen.close() already ran inside
+        # run_bench_continuous, so the BatchGenerator + its KV cache
+        # are released by name. Force gc + clear metal cache so the
+        # OS sees the freed working set before the next cohort starts.
+        gc.collect()
+        try:
+            mx.metal.clear_cache()
+        except Exception:
+            pass
+        try:
+            mx.metal.reset_peak_memory()
+        except Exception:
+            pass
+        print(
+            f"[bench] post-cohort teardown: gc.collect + "
+            f"mx.metal.clear_cache",
+            flush=True,
+        )
+
+    bench_wall = time.time() - bench_t0
+    print(
+        f"[bench] all cohorts done; total bench_wall={bench_wall:.1f}s "
+        f"per-cohort walls={[round(w,1) for w in cohort_walls]}",
+        flush=True,
+    )
+    return {
+        "rows": all_rows,
+        "bench_wall_s": bench_wall,
+        "wave_walls_s": all_wave_walls,
+        "cohort_walls_s": cohort_walls,
+    }
+
+
 def run_bench(
     *,
     decisions: list,
@@ -1144,6 +1247,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     ap.add_argument(
+        "--cohort-size", type=int, default=0,
+        help=(
+            "Lever #6 cohort abstraction (continuous mode only). 0 = no "
+            "cohorts (current behavior; one BatchGenerator session for all "
+            "N decisions). N>0 = split decisions into chunks of size N; "
+            "each chunk runs through a fresh BatchGenerator with explicit "
+            "KV/heap teardown between chunks (gc.collect + "
+            "mx.metal.clear_cache). Workaround for the iter 17 silent-jetsam "
+            "ceiling — sidesteps the cumulative KV-cache + heap pressure "
+            "from a single long-running session."
+        ),
+    )
+    ap.add_argument(
         "--kernel-audit", action="store_true",
         help=(
             "Lever #7 sub-fused-kernel audit: install KernelCounter hooks on "
@@ -1320,7 +1436,20 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 gputrace_path = None
 
-    if args.continuous:
+    if args.continuous and int(args.cohort_size) > 0:
+        bench_result = run_bench_continuous_cohorts(
+            decisions=decisions,
+            global_indices=global_indices,
+            out_dir=out_dir,
+            model=model,
+            variant=variant_obj,
+            oracle=oracle,
+            batch=int(args.batch),
+            turn_cap=int(args.turn_cap),
+            tracker=tracker,
+            cohort_size=int(args.cohort_size),
+        )
+    elif args.continuous:
         bench_result = run_bench_continuous(
             decisions=decisions,
             global_indices=global_indices,
