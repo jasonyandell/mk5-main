@@ -8,6 +8,8 @@ status: active
 
 Known crashes, footguns, and contention modes. When the loop hits one of these, here's the smallest fix — apply it and re-run rather than re-deriving from scratch. Append when a sprint discovers a new failure mode.
 
+Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an iteration on a workaround, web-search the upstream changelog or GitHub issue tracker; the bug may already be fixed.
+
 ## Bench crashes
 
 ### `ValueError: [broadcast_shapes] Shapes (4,1,256) and (3,1,1) cannot be broadcast` in `mlx_lm.models.cache.dynamic_roll`

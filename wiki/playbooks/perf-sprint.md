@@ -73,6 +73,7 @@ The wiki is the cross-iteration learning channel — durable findings (new lever
 - **One coherent variant per spawn.** Coherent = one hypothesis interpretable on its own. Co-required changes (change A is meaningless without change B) ship together. Obvious blocker fixes (typos, hardcoded constants in the way, wrong import paths) ship silently as part of the variant — they don't earn their own iteration.
 - **No side quests.** Interesting findings become text in the `description` column as "hypothesis for next iteration," not work this iteration completes.
 - **Wiki updates are the one sanctioned side effect.** If the iteration revealed a durable lever or trap, append to the relevant page before returning.
+- **Web search is sanctioned and encouraged.** Gemma 4 E2B is weeks old as of this playbook; mlx-lm ships frequently; spec-decode and continuous-batching state-of-the-art moves weekly. Reach for `WebSearch` / `WebFetch` when: a trap recipe doesn't match what you're seeing (upstream may have shipped a fix), a lever is marked "untested" or "could be already-applied" (check upstream docs/examples first), a model variant or quant set is in play (HuggingFace cards drift), or the technique is recent. Primary sources beat priors when "common knowledge" is weeks old. `WebSearch` / `WebFetch` are deferred tools — load schemas via `ToolSearch` first.
 - **Owns the git decision.** The iteration does the commit, the bench run, and the `git reset` on `discard` — all in its own context.
 - **Return shape is rigid.** One TSV row + 2 sentences (what was tried, hypothesis for next). Nothing else. Knowing the return shape is small forces summarization during the iteration, not after.
 
@@ -101,6 +102,12 @@ Agent({
 
           Read wiki/playbooks/perf-sprint-traps.md if the bench crashes —
           known recipes are there.
+
+          Web search is sanctioned and encouraged. Gemma 4 E2B and mlx-lm
+          are moving weekly; primary sources beat priors. Load WebSearch /
+          WebFetch via ToolSearch and use them when an upstream changelog,
+          GitHub issue, model card, or recent paper would resolve a question
+          faster than re-deriving.
 
           Reply with that one TSV row plus exactly 2 sentences (what you
           tried, hypothesis for next). Do NOT paste bench output, source

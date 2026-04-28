@@ -1363,3 +1363,16 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 - Return shape rigid (one row + 2 sentences) by contract. Forces summarization during the iteration, not after.
 
 **Frontier shift:** the orchestrator is now structurally bounded in context cost. Each iteration costs ~2k tokens to the orchestrator (TSV row + brief note) regardless of how heavy the iteration was. 100 iterations = ~200k orchestrator context. The bench output, source dumps, and tracebacks live in iteration-agent contexts that die on return.
+
+## [2026-04-27 | unstaged | perf-sprint sanctions web search for fast-moving deps]
+
+**Touched pages:** [[perf-sprint]] [[perf-sprint-levers]] [[perf-sprint-traps]]
+
+**Why:** Gemma 4 E2B is weeks old; mlx-lm ships frequently; spec-decode and continuous-batching state-of-the-art moves weekly. The iteration agent's default reflex is to reason from priors, which are stale by default in this domain. Trap recipes and lever notes also age — a workaround may already be fixed upstream; an "untested" lever may already be the upstream default. The fix is to explicitly sanction web search and tell the agent to reach for upstream changelogs, GitHub issue trackers, model cards, and recent papers when "common knowledge" is weeks old.
+
+**Updated:**
+- [[perf-sprint]] — added "Web search is sanctioned and encouraged" bullet to the iteration-agent contract. Spawn template now reminds the agent to load `WebSearch` / `WebFetch` via `ToolSearch` (deferred tools) and names the cases where primary sources beat priors.
+- [[perf-sprint-levers]] — one-line note that lever notes age; web-search upstream before assuming "untested" or "could be already-applied" is current.
+- [[perf-sprint-traps]] — one-line note that trap recipes age; web-search upstream changelog before spending an iteration on a workaround.
+
+**Frontier shift:** the playbook now treats upstream web sources as a peer of the wiki's own pages. Wiki = synthesized state of the project; web = synthesized state of the deps. Both are primary sources from the iteration agent's perspective.
