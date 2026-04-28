@@ -64,18 +64,32 @@ def load_keep_ids(
     """
     keep: set[int] = set()
     n_taken = 0
-    with open(freq_tsv) as f:
-        header = f.readline()
-        assert header.startswith("rank\tvocab_id\t"), (
-            f"unexpected freq TSV header: {header!r}"
-        )
-        for line in f:
-            parts = line.rstrip("\n").split("\t")
-            vocab_id = int(parts[1])
-            keep.add(vocab_id)
+    # Iter 30: also accept a precomputed keep-ids JSON file (a list of ints).
+    # Used by Phase 2-redo to feed the calibration-corrected keep_set in
+    # without going through the freq TSV. The keep_n arg is treated as a
+    # cap (truncate to first keep_n entries if the JSON has more, otherwise
+    # take all).
+    if str(freq_tsv).endswith(".json"):
+        import json
+        ids = json.loads(Path(freq_tsv).read_text())
+        for vocab_id in ids:
+            keep.add(int(vocab_id))
             n_taken += 1
             if n_taken >= keep_n:
                 break
+    else:
+        with open(freq_tsv) as f:
+            header = f.readline()
+            assert header.startswith("rank\tvocab_id\t"), (
+                f"unexpected freq TSV header: {header!r}"
+            )
+            for line in f:
+                parts = line.rstrip("\n").split("\t")
+                vocab_id = int(parts[1])
+                keep.add(vocab_id)
+                n_taken += 1
+                if n_taken >= keep_n:
+                    break
 
     # Union special ids — tokenizer.all_special_ids should be a small list of
     # ints in vocab range. (HF/MLX tokenizer wrappers expose this.)
@@ -173,3 +187,38 @@ def wrap_sampler_with_lut(
         sampled_pruned = base_sampler(logprobs)
         return lut[sampled_pruned]
     return remapped
+
+
+def wrap_sampler_with_argmax_logger(
+    base_sampler: Callable[[mx.array], mx.array],
+    log_path: Path,
+) -> Callable[[mx.array], mx.array]:
+    """Wrap a sampler to log every decode step's strict-argmax winner.
+
+    Iter 30 calibration mode (lever #16 phase 2-redo). The point: derive a
+    keep_set from what greedy temp=0 *actually* picks at each decode step on
+    the bench's input distribution, not from what temp=0.6 sampling happens
+    to emit in a harvest. The two distributions diverge — temp=0.6 can skip
+    a high-logit token in favor of a lower-logit competitor, leaving the
+    "lost" argmax-winner missing from a sampling-derived keep set.
+
+    On every batched call ``logprobs`` has shape ``(B, V)``; we compute
+    ``argmax(logprobs, axis=-1)``, eval it, and append one int per active
+    stream as a single line of comma-separated ints to ``log_path``. The
+    base sampler still runs and returns whatever it returns — calibration
+    does NOT change decode behavior, only observes it. Off-flag = zero
+    overhead (this wrapper isn't installed at all).
+    """
+    log_path = Path(log_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    fh = open(log_path, "a", buffering=1)  # line-buffered
+
+    def logging_sampler(logprobs: mx.array) -> mx.array:
+        winners = mx.argmax(logprobs, axis=-1)
+        mx.eval(winners)
+        ids = winners.tolist()
+        if isinstance(ids, int):
+            ids = [ids]
+        fh.write(",".join(str(int(x)) for x in ids) + "\n")
+        return base_sampler(logprobs)
+    return logging_sampler

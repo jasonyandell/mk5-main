@@ -477,6 +477,7 @@ def make_tracking_model(
     prune_lm_head: bool = False,
     prune_freq_tsv: str | None = None,
     prune_keep_n: int = 8192,
+    log_argmax_winners: str | None = None,
 ):
     """Build a ``GemmaLocalNativeBatched`` whose ``step_batch`` records stats.
 
@@ -592,6 +593,7 @@ def make_tracking_model(
         prune_lm_head=prune_lm_head,
         prune_freq_tsv=prune_freq_tsv,
         prune_keep_n=prune_keep_n,
+        log_argmax_winners=log_argmax_winners,
     )
 
 
@@ -1294,6 +1296,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     ap.add_argument(
+        "--log-argmax-winners", default=None,
+        help=(
+            "Lever #16 phase 2-redo calibration mode (iter 30). When set, "
+            "wrap the sampler with a shim that logs strict-argmax winners "
+            "of the FULL-vocab logprobs at every decode step to this path "
+            "(one line per step, comma-separated ids per active stream). "
+            "Run with --prune-lm-head OFF so the logged ids are real "
+            "argmax winners, not LUT-mapped pruned-space winners. Used to "
+            "derive a greedy-decode keep_set that complements the "
+            "temp=0.6-sampled iter28 emit set."
+        ),
+    )
+    ap.add_argument(
         "--kernel-audit", action="store_true",
         help=(
             "Lever #7 sub-fused-kernel audit: install KernelCounter hooks on "
@@ -1434,6 +1449,7 @@ def main(argv: list[str] | None = None) -> int:
         prune_lm_head=bool(args.prune_lm_head),
         prune_freq_tsv=args.prune_freq_tsv,
         prune_keep_n=int(args.prune_keep_n),
+        log_argmax_winners=args.log_argmax_winners,
     )
     load_wall = time.time() - t_load
     print(f"[bench] model ready in {load_wall:.1f}s", flush=True)

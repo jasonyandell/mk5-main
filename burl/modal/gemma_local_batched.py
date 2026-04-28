@@ -71,6 +71,7 @@ class GemmaLocalNativeBatched:
         prune_lm_head: bool = False,
         prune_freq_tsv: str | None = None,
         prune_keep_n: int = 8192,
+        log_argmax_winners: str | None = None,
     ) -> None:
         t0 = time.time()
         log.info(
@@ -118,6 +119,23 @@ class GemmaLocalNativeBatched:
             log.info(
                 "[gemma-local-batched] lm_head pruned to %d kept ids",
                 len(keep_ids),
+            )
+        # Lever #16 phase 2-redo (iter 30): calibration mode. Wrap sampler
+        # with a shim that logs strict-argmax winners over the FULL-vocab
+        # logprobs at every decode step. Run with prune_lm_head=False so the
+        # logged ids are actual argmax winners (not LUT-mapped pruned-space
+        # winners). The harvest in iter 28 used temp=0.6 sampling so it can
+        # miss high-logit tokens that lose the sampling lottery; this log
+        # captures what the bench's greedy temp=0 mode actually picks.
+        if log_argmax_winners is not None:
+            from pathlib import Path as _Pl
+            from burl.eval.lm_head_prune import wrap_sampler_with_argmax_logger
+            self._sampler = wrap_sampler_with_argmax_logger(
+                self._sampler, _Pl(log_argmax_winners),
+            )
+            log.info(
+                "[gemma-local-batched] argmax-winner log -> %s",
+                log_argmax_winners,
             )
         # Phase 2 lever 1: prefix-aware prompt cache. When enabled, step_batch
         # threads previously-seen prefix KV through batch_generate so growing
