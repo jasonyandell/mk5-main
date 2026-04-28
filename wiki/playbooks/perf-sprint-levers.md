@@ -14,8 +14,8 @@ Lever notes age. mlx-lm releases ship frequently and "untested" or "could be alr
 
 | # | Lever | Notes |
 |---|---|---|
-| 1 | `--batch` sweep: 5 → 8 → 10 → 12 → 16 at Q4 PLE-safe | Q4's memory headroom (peak ~5 GB) admits this. Sprint 2 iter 2 lifted the default to 8 and confirmed wall improves ~49% (45.8s → 23.2s) at batch=8 + Q4. The equivalence-gate failure in iter 2 (gi=0 regret jump) was traced in iter 3 to gi=0's multimodal temp=0.6 sampling distribution, NOT Q4 damage — bf16 itself samples play=6 (the Q4 result) with regret 7.632 on other runs. Re-attempt with `--temperature 0` gate (see traps note "Single-shot equivalence gate is broken at temp=0.6"). |
-| 2 | Q4 PLE-safe Unsloth UD + continuous + max-batch stack | Sprint 1's "byte-equivalence on the 5-row corpus" claim is consistent with iter 3's finding: at temp=0.6, gi=0 is multimodal for bf16 itself (final_play ∈ {2, 6, 19, 25} across 11 runs), so iter 2's Q4 final_play=6 falls inside the bf16 sampling distribution. Stack everything that doesn't conflict; gate at temp=0. |
+| 1 | `--batch` sweep: 5 → 8 → 10 → 12 → 16 at PLE-safe quant | Q4's memory headroom (peak ~6.2 GB at batch=8) admits this. Wall improvement is real and material: iter 2 saw 49% (45.8s → 23.2s) at temp=0.6, iter 4 confirmed 44% (44.6s → 25.0s) at temp=0 with decode 408 tok/s. Use bf16 baseline at temp=0 for the comparison anchor. Pre-condition: a quant whose argmax matches bf16 at temp=0 — Q4 UD-MLX-4bit deterministically flips gi=0 (see PLE landmine table). Try Q8 (`FakeRockert543/gemma-4-e2b-it-MLX-8bit`) next, or disentangle quant damage from batch-prefill numerics by re-running Q4 at batch=5 temp=0. |
+| 2 | Q4 PLE-safe Unsloth UD + continuous + max-batch stack | DEPRIORITIZED. Sprint 2 iter 4 showed Q4 UD-MLX-4bit fails the temp=0 gate on gi=0 (deterministic play=2 → play=6 flip, regret jump 0 → 7.632). The iter 3 multimodal-sampler hypothesis was right about temp=0.6, but it was wrong to assume Q4 would converge with bf16 at temp=0. Sprint 1's byte-equivalence claim doesn't survive temp=0 scrutiny on this subset. Move to Q8 or disentangle the batch-vs-quant confound before stacking further on UD-MLX-4bit. |
 | 3 | mlx-lm version bump | Check release notes for `dynamic_roll` / cache fixes. Sprint 1 was on 0.31.2; sprint 2 iter 1 confirmed [#1139](https://github.com/ml-explore/mlx-lm/issues/1139) was still open as of 2026-04-28 (no fix landed yet). |
 | 4 | `mx.compile` audit on inference hot path | Untested. Could be substantial; could be already-applied. |
 | 5 | Spec-decode self-speculation (Q4 draft, bf16 verifier, single-stream lateral) | Doesn't stack with continuous batching but useful for the single-decision path. |
@@ -33,7 +33,8 @@ Lever notes age. mlx-lm releases ship frequently and "untested" or "could be alr
 ## PLE quant landmine — known sets
 
 - **Broken (do not use):** `mlx-community/gemma-4-*-{4,8}bit`, `unsloth/gemma-4-*-MLX-{4,8}bit` (the non-UD ones). Quantize per-layer-embedding (PLE) layers, produce garbage outputs.
-- **Safe:** `FakeRockert543/gemma-4-e2b-it-MLX-{4,8}bit`, `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (UD variant only). Byte-equivalence on the 5-row corpus is confirmed.
+- **PLE-safe but NOT byte-equivalent:** `unsloth/gemma-4-E2B-it-UD-MLX-4bit`. Sprint 2 iter 4 (2026-04-28) at temp=0 batch=8 deterministically flipped gi=0 from bf16's play=2 (regret 0) to play=6 (regret 7.632) on the 5-row subset. Earlier "byte-equivalence on the 5-row corpus is confirmed" claim from sprint 1 didn't hold; either it was at temp=0.6 with a fortunate landing or batch=5 vs batch=8 prefill-numerics also matter. Q4 UD-MLX-4bit gives ~44% wall win + ~50% peak-mem reduction but the equivalence gate fails. Open question: pure quant damage vs batch-width interaction.
+- **Likely-safe (untested at temp=0):** `FakeRockert543/gemma-4-e2b-it-MLX-{4,8}bit`. Q8 in particular is the next floor candidate if Q4 UD-MLX-4bit's gi=0 flip turns out to be quant damage.
 
 ## Append a lever
 

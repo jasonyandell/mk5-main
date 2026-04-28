@@ -54,7 +54,13 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 
 - **What it is.** Bench logs `[bench] loading Gemma 4 E2B (bf16, adapter=None)` regardless of what `--model-repo` was passed. The "bf16" is hardcoded printf text in `bench_decision_latency.py:962`.
 - **Recipe.** Verify model from RSS instead — bf16 ~10–11 GB resident, Q4 PLE-safe ~4–5 GB. Or check the run's JSON output (`model_repo` field is correctly threaded through `args.model_repo` at line 971).
-- **Long-term fix.** Patch line 962 to use `args.model_repo` instead of the hardcoded string.
+- **Long-term fix.** Patch line 962 to use `args.model_repo` instead of the hardcoded string. **Status:** patched and reverted in sprint 2 iter 4 (whole iter 4 commit was reset on gate failure). Re-apply on the next keep iteration.
+
+### Q4 UD-MLX-4bit byte-equivalence claim doesn't survive temp=0
+
+- **What it is.** Sprint 1 declared `unsloth/gemma-4-E2B-it-UD-MLX-4bit` byte-equivalent to bf16 on the 5-row corpus. Sprint 2 iter 4 (commit `6353da6`, reset) ran Q4 vs bf16 paired at temp=0 and found gi=0 deterministically flipped (bf16 play=2 regret 0 → Q4 play=6 regret 7.632). Same temp, same subset, deterministic both sides — the equivalence claim is wrong on this subset. The 44% wall win + ~50% peak-mem reduction is real, but the gate fails.
+- **Recipe.** Don't trust prior byte-equivalence claims when bumping defaults to a quant model — re-verify at temp=0 against bf16 on the actual subset before declaring a new floor. The cheapest discriminator for whether Q4 is *quant-damaged* vs *batch-prefill-numerics-perturbed* is to re-run Q4 at batch=5 temp=0 (matching the bf16 baseline's batch width); if gi=0 still flips, it's pure quant damage.
+- **Long-term fix.** When promoting any quant set to "safe," include the temp=0 deterministic comparison artifact in the lever ladder note, not just a prose claim.
 
 ## Stuck worker
 
