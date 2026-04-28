@@ -275,6 +275,7 @@ def make_tracking_model(
                 self.model,
                 stop_tokens=[[t] for t in self.tokenizer.eos_token_ids],
                 completion_batch_size=len(suffix_prompts),
+                prefill_batch_size=2,
             )
             uids = gen.insert(
                 suffix_prompts,
@@ -383,7 +384,7 @@ def run_bench_continuous(
         model.model,
         stop_tokens=[[t] for t in model.tokenizer.eos_token_ids],
         completion_batch_size=max(batch, 1),
-        prefill_batch_size=min(batch, 8),
+        prefill_batch_size=2,
     )
     uid_to_state: dict[int, hb._DecisionState] = {}
     uid_to_token_buf: dict[int, list[int]] = {}
@@ -570,10 +571,18 @@ def run_bench(
             t_after_gen = time.time()
             for s, comp, ptext in zip(active, completions, prompt_texts):
                 was_done = s.done
-                hb._apply_step(
-                    s, comp, ptext,
-                    parse_completion=parse_native_completion,
-                )
+                try:
+                    hb._apply_step(
+                        s, comp, ptext,
+                        parse_completion=parse_native_completion,
+                    )
+                except Exception as exc:
+                    s.done = True
+                    s.result_meta["bailed"] = True
+                    s.result_meta["bail_reason"] = (
+                        f"apply_step failed (sync-wave): "
+                        f"{type(exc).__name__}: {exc}"
+                    )
                 if s.done and not was_done:
                     finish_wall_by_gi[int(s.gi)] = t_after_gen - s.wall_t0
 
