@@ -1815,6 +1815,10 @@ def main(argv: list[str] | None = None) -> int:
             f"{bench_result['bench_wall_s']:.1f}s)",
             flush=True,
         )
+        del model
+        import gc
+        gc.collect()
+        mx.metal.clear_cache()
         return 0
 
     # Lever #7 — stop Metal capture (if running) and tear down hooks.
