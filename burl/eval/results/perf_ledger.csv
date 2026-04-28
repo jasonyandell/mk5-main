@@ -20,3 +20,12 @@ timestamp,sha,branch,variant_label,subset,batch,max_tokens_policy,n_decisions,wa
 20260427_030558,ec46190,perf/aggressive,continuous-paired-stack2,5,5,default,5,60.197,44.889,60.195,18767.2,42.1,10.8,80.0,-87.83,phase3 paired baseline before phase3-stack-best v2 (unsloth UD)
 20260427_030708,ec46190,perf/aggressive,phase3-stack-best-v2,5,5,default,5,48.667,37.022,48.665,17452.7,66.1,5.08,80.0,80.66,phase3 v2 headline: Unsloth UD-MLX-4bit + continuous batching
 20260427_030825,ec46190,perf/aggressive,phase3-stack-best-v3,5,5,default,5,42.979,40.778,42.977,16415.0,61.9,6.07,80.0,-12.17,"phase3 v3 stability: Unsloth UD second run, same config"
+20260428_012407,8313b7d,perf/aggressive,baseline-iter10-pre,5,5,default,5,74.091,74.089,74.09,20994.6,77.2,12.39,80.0,-87.83,iter 10 paired baseline at bc4fbd9 (pre-instrumentation)
+20260428_012609,8313b7d,perf/aggressive,iter10-instrumented,5,5,default,5,68.883,64.395,68.882,20989.5,84.1,12.54,80.0,-87.83,iter 10 wall-time phase instrumentation
+20260428_013316,8313b7d,perf/aggressive,iter11-baseline-syncwave,5,5,default,5,67.665,67.663,67.663,21541.3,91.4,12.52,80.0,-87.83,iter11 paired baseline bf16 batch=5 temp=0 sync-wave
+20260428_013438,8313b7d,perf/aggressive,iter11-continuous,5,5,default,5,41.008,24.368,41.006,27649.8,54.3,10.37,60.0,-100.0,iter11 variant bf16 batch=5 temp=0 continuous
+20260428_014041,8313b7d,perf/aggressive,iter12-baseline-batch5-cont,5,5,default,5,39.321,32.871,39.319,27584.2,56.9,10.4,60.0,-100.0,iter12 paired baseline: bf16 batch=5 continuous temp=0
+20260428_014129,8313b7d,perf/aggressive,iter12-variant-batch8-cont,5,8,default,5,51.554,39.894,51.549,24458.3,43.8,12.22,40.0,-99.82,iter12 variant: bf16 batch=8 continuous temp=0
+20260428_020047,e9f1e6c,perf/aggressive,iter13-kernel-audit,5,5,default,5,56.485,45.894,56.483,25747.1,36.3,12.39,60.0,-100.0,lever#7 kernel-class audit on bf16 cont batch=5 (no .gputrace)
+20260428_020959,b3f68e0,perf/aggressive,iter14-baseline-batch5-cont-N50,560,5,default,50,883.667,776.471,858.911,13912.2,3.0,13.08,,,
+20260428_022535,b3f68e0,perf/aggressive,iter14-variant-batch8-cont-N50,560,8,default,50,664.226,567.593,649.773,14507.5,4.2,13.51,,,
