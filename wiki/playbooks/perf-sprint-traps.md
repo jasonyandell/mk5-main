@@ -2,7 +2,7 @@
 title: Perf Sprint — Trap Recipes
 kind: playbook
 first_seen: fbe798f
-last_updated: 8deaba4 (iter 15-redo: gus belief adapter not found in worktree)
+last_updated: 4263721 (iter 17: silent SIGKILL at N>=52 — unified-memory jetsam at scale, not up-front-submit pile)
 status: active
 ---
 
@@ -11,6 +11,12 @@ Known crashes, footguns, and contention modes. When the loop hits one of these, 
 Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an iteration on a workaround, web-search the upstream changelog or GitHub issue tracker; the bug may already be fixed.
 
 ## Bench crashes
+
+### Silent SIGKILL right after `[bench] out_dir=` print at N>=52 in continuous mode (M5 Max, bf16 batch=5/8)
+
+- **What it is.** Sprint 2 iter 17 (2026-04-28) tried to scale iter 14's batch=5/8 cont KEEP from N=50 to N=100. The bench died silently at every N tested above 50: N=100, N=80, N=64, N=56, N=52 ALL produced the same fingerprint — log freezes at `[bench] out_dir=...`, ALL N decision dirs are created (because `_init_decision_state` ran first and writes a meta event per dir), each `events.jsonl` has exactly 1 line (the meta), no traceback in stdout or stderr, no faulthandler output, `ps` shows no python after death. Pump-loop diagnostic prints showed the bench DOES enter the pump and run ~50 decode steps before dying mid-decode at N=100 with no decision finishing. Cause is unified-memory / OS-jetsam: at N>=52 with batch=5 cont on Gemma 4 E2B bf16, the peak transient KV+heap exceeds Apple's recommended 40.2GB Metal working-set on the M5 Max (queryable via `mx.device_info()['max_recommended_working_set_size']`). MLX's default memory limit is `mx.set_memory_limit` ≈ 49GB = full system RAM, but macOS reclaims aggressively when system pressure rises and **SIGKILLs python without raising any Python-level signal** — bypasses faulthandler entirely. iter 14's N=50 (peak 13.51GB) is the operational ceiling for this batch+config on this hardware; N=52 fails the same way as N=100. Iter 17 first tried a queue-cap fix (commit 9c490a7, capped initial submits to batch*4 instead of all N up-front) on the hypothesis that the up-front submit pile was the bound — that fix was a **no-op for this bug** (death still occurred mid-pump after init+submit completed) and was reverted in commit 4263721.
+- **Recipe (workarounds, no clean fix).** (a) Stay at N≤50 for batch=5/8 cont on M5 Max bf16 — that's the confirmed-working ceiling. (b) Wrap the bench with `mx.set_memory_limit(40 * 1024**3)` so silent jetsam becomes a visible `RuntimeError` instead of a silent kill — useful as a guard while iterating, but doesn't unblock larger N. (c) Cohort abstraction (lever 6) — split N into multiple ≤50 cohorts and reuse the loaded model + adapters across cohorts to amortize the ~2s setup. (d) Throttle BatchGenerator prefill backlog to keep peak working-set under 40GB (e.g. cap pool to predicted-peak-safe size with backpressure on submit) — this is what 9c490a7 ATTEMPTED to do on a wrong hypothesis but the queue cap alone doesn't reduce per-stream KV growth during decode. Always launch from the venv python (`/Users/jason/code/mk5-main/.venv/bin/python`); the system python doesn't have torch and dies with `ModuleNotFoundError: No module named 'torch'` in `gus_eval_bridge` import — that's a separate, loud crash, but a useful sanity check.
+- **Long-term fix.** Cohort abstraction (lever 6) is the cleanest path — splits the workload into pieces that fit. Alternatively, a hardware bump (e.g. M5 Ultra) raises the recommended working-set ceiling. A bench-level `mx.set_memory_limit(40GB)` guard is worth landing regardless to convert silent kills into actionable errors.
 
 ### `ValueError: [broadcast_shapes] Shapes (4,1,256) and (3,1,1) cannot be broadcast` in `mlx_lm.models.cache.dynamic_roll`
 
