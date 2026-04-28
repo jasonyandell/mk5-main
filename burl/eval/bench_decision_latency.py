@@ -613,6 +613,8 @@ def run_bench_continuous(
     batch: int,
     turn_cap: int,
     tracker: "StatsTracker",
+    heartbeat_label: str = "",
+    heartbeat_interval_s: float = 30.0,
 ) -> dict:
     """Continuous-batching dispatcher — Phase 2 lever 2.
 
@@ -684,11 +686,39 @@ def run_bench_continuous(
     for st in states:
         submit(st)
 
+    # Heartbeat state: never go more than ~heartbeat_interval_s without
+    # emitting *something*, so silent-jetsam (process gone but log frozen)
+    # is detectable by the orchestrator within 30s instead of 14min.
+    n_total = len(states)
+    n_finished = 0
+    hb_label = heartbeat_label or "[bench]"
+    last_emit_t = time.monotonic()
+    last_emit_gen_tokens = 0
+
     # Pump until all states are done.
     bench_stats = BatchStats()
     with gen.stats(bench_stats):
         while uid_to_state:
             responses = gen.next_generated()
+            now_mono = time.monotonic()
+            elapsed_since_emit = now_mono - last_emit_t
+            if elapsed_since_emit >= heartbeat_interval_s:
+                cur_gen = int(bench_stats.generation_tokens)
+                delta_tok = cur_gen - last_emit_gen_tokens
+                last_30s_tps = (
+                    delta_tok / elapsed_since_emit
+                    if elapsed_since_emit > 0 else 0.0
+                )
+                print(
+                    f"{hb_label}: alive ({n_finished}/{n_total} done, "
+                    f"n_active={len(uid_to_state)}, "
+                    f"gen_tokens_total={cur_gen}, "
+                    f"last_{int(elapsed_since_emit)}s_tok_s="
+                    f"{last_30s_tps:.1f})",
+                    flush=True,
+                )
+                last_emit_t = now_mono
+                last_emit_gen_tokens = cur_gen
             if not responses:
                 break
             for r in responses:
@@ -736,6 +766,23 @@ def run_bench_continuous(
                     finish_wall_by_gi[int(state.gi)] = (
                         t_after_gen - state.wall_t0
                     )
+                    n_finished += 1
+                    dec_wall = t_after_gen - state.wall_t0
+                    cur_gen = int(bench_stats.generation_tokens)
+                    decode_tps = (
+                        cur_gen / float(bench_stats.generation_time)
+                        if bench_stats.generation_time > 0 else 0.0
+                    )
+                    peak_gb = float(bench_stats.peak_memory)
+                    print(
+                        f"{hb_label}: decision_{state.gi} finished "
+                        f"({n_finished}/{n_total}, wall={dec_wall:.2f}s, "
+                        f"decode_tok_s={decode_tps:.1f}, "
+                        f"peak_gb={peak_gb:.2f})",
+                        flush=True,
+                    )
+                    last_emit_t = time.monotonic()
+                    last_emit_gen_tokens = cur_gen
                 if not state.done:
                     submit(state)
     gen.close()
@@ -766,6 +813,127 @@ def run_bench_continuous(
         "rows": rows,
         "bench_wall_s": bench_wall,
         "wave_walls_s": [bench_wall],
+    }
+
+
+def run_bench_continuous_cohorts_subprocess(
+    *,
+    n_decisions: int,
+    out_dir: Path,
+    cohort_size: int,
+    parent_argv: list[str],
+) -> dict:
+    """Lever #6 closure: each cohort runs in a fresh python subprocess.
+
+    The parent process resolves the decision list and out_dir, then
+    spawns one ``subprocess.run`` per cohort. Each child re-enters
+    ``__main__`` with ``--subprocess-cohort-range LO:HI`` (a slice into
+    the parent's resolved decision list, identical because subset
+    resolution is deterministic) plus ``--subprocess-cohort-result``
+    (sidecar JSON path). The child runs ``run_bench_continuous`` on
+    just its slice, writes ``{rows, bench_wall_s, wave_walls_s,
+    step_stats}`` to the sidecar, and exits — releasing all Metal
+    cache + KV state + ALL cumulative session pressure. The parent
+    aggregates per-cohort sidecars into the same ``bench_result`` dict
+    the in-process path produces.
+
+    Eliminates the iter 17/18/22/31 silent-jetsam ceiling drift
+    permanently: each cohort starts from a fresh python interpreter
+    state, so cumulative pressure cannot accumulate across cohort
+    boundaries.
+    """
+    n_cohorts = (n_decisions + cohort_size - 1) // cohort_size
+    print(
+        f"[bench] subprocess-isolation cohort mode: N={n_decisions} "
+        f"cohort_size={cohort_size} -> {n_cohorts} cohort(s)",
+        flush=True,
+    )
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    all_rows: list[dict] = []
+    all_wave_walls: list[float] = []
+    all_step_stats: list[dict] = []
+    cohort_walls: list[float] = []
+    bench_t0 = time.time()
+    for ci in range(n_cohorts):
+        lo = ci * cohort_size
+        hi = min(lo + cohort_size, n_decisions)
+        sidecar_path = out_dir / f"cohort_{ci:03d}_result.json"
+        print(
+            f"[bench] subproc-cohort {ci+1}/{n_cohorts}: decisions "
+            f"{lo}..{hi-1} (n={hi-lo}) -> sidecar={sidecar_path.name}",
+            flush=True,
+        )
+        # Build child argv: same as parent, with isolation/cohort-size
+        # stripped (so child does not recurse) and cohort-range +
+        # cohort-result added.
+        child_argv = list(parent_argv)
+        # Drop --subprocess-isolation (flag) and --cohort-size N (key+val)
+        # so the child runs the in-process continuous path on its slice.
+        cleaned: list[str] = []
+        i = 0
+        while i < len(child_argv):
+            tok = child_argv[i]
+            if tok == "--subprocess-isolation":
+                i += 1
+                continue
+            if tok == "--cohort-size":
+                i += 2
+                continue
+            if tok.startswith("--cohort-size="):
+                i += 1
+                continue
+            cleaned.append(tok)
+            i += 1
+        child_argv = cleaned + [
+            "--subprocess-cohort-range", f"{lo}:{hi}",
+            "--subprocess-cohort-result", str(sidecar_path),
+        ]
+        child_cmd = [sys.executable, "-u", "-m",
+                     "burl.eval.bench_decision_latency"] + child_argv
+        c_t0 = time.time()
+        # Inherit parent's stdout/stderr so the child's [bench] logs
+        # stream into the parent log in real time.
+        rc = subprocess.run(
+            child_cmd, cwd=str(REPO_ROOT), check=False,
+        ).returncode
+        c_wall = time.time() - c_t0
+        cohort_walls.append(c_wall)
+        if rc != 0:
+            raise RuntimeError(
+                f"subproc-cohort {ci+1}/{n_cohorts} exited rc={rc} "
+                f"(see child stderr above; sidecar may be absent)"
+            )
+        if not sidecar_path.exists():
+            raise RuntimeError(
+                f"subproc-cohort {ci+1}/{n_cohorts} exited cleanly but "
+                f"sidecar {sidecar_path} was not written"
+            )
+        with sidecar_path.open() as fh:
+            sidecar = json.load(fh)
+        all_rows.extend(sidecar["rows"])
+        all_wave_walls.extend(sidecar["wave_walls_s"])
+        all_step_stats.extend(sidecar["step_stats"])
+        print(
+            f"[bench] subproc-cohort {ci+1}/{n_cohorts} done in "
+            f"{c_wall:.1f}s (per-decision wall ~"
+            f"{c_wall / max(hi - lo, 1):.2f}s)",
+            flush=True,
+        )
+
+    bench_wall = time.time() - bench_t0
+    print(
+        f"[bench] all subproc-cohorts done; total "
+        f"bench_wall={bench_wall:.1f}s per-cohort walls="
+        f"{[round(w, 1) for w in cohort_walls]}",
+        flush=True,
+    )
+    return {
+        "rows": all_rows,
+        "bench_wall_s": bench_wall,
+        "wave_walls_s": all_wave_walls,
+        "cohort_walls_s": cohort_walls,
+        "subprocess_step_stats": all_step_stats,
     }
 
 
@@ -828,6 +996,7 @@ def run_bench_continuous_cohorts(
             batch=batch,
             turn_cap=turn_cap,
             tracker=tracker,
+            heartbeat_label=f"[bench] cohort {ci+1}/{n_cohorts}",
         )
         all_rows.extend(result["rows"])
         all_wave_walls.extend(result["wave_walls_s"])
@@ -1268,6 +1437,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     ap.add_argument(
+        "--subprocess-isolation", action="store_true",
+        help=(
+            "Lever #6 closure (continuous + cohort-size>0 only). Each "
+            "cohort runs in a fresh python subprocess that loads the "
+            "model from scratch and exits, so cumulative session "
+            "pressure (Metal cache, KV state, heap fragmentation) "
+            "cannot accumulate across cohort boundaries. Eliminates "
+            "the silent-jetsam ceiling drift documented in iters "
+            "17/18/22/31. Pays ~3s warmup tax per cohort, negligible "
+            "vs cohort wall of ~7-14min."
+        ),
+    )
+    ap.add_argument(
+        "--subprocess-cohort-range", default=None,
+        help=(
+            "INTERNAL — set by the parent when --subprocess-isolation "
+            "is on. Format LO:HI; restricts decisions to this slice "
+            "of the resolved (and subset-limit-applied) decision list."
+        ),
+    )
+    ap.add_argument(
+        "--subprocess-cohort-result", default=None,
+        help=(
+            "INTERNAL — set by the parent when --subprocess-isolation "
+            "is on. Path where the child writes its sidecar JSON "
+            "(rows + bench_wall_s + wave_walls_s + step_stats); the "
+            "child exits before parent-only ledger aggregation."
+        ),
+    )
+    ap.add_argument(
         "--prune-lm-head", action="store_true",
         help=(
             "Lever #16 phase 2: slice the (tied) LM head output projection "
@@ -1400,6 +1599,31 @@ def main(argv: list[str] | None = None) -> int:
             f"{args.subset_limit} decisions",
             flush=True,
         )
+    # Subprocess-isolation child: restrict to the parent's cohort slice.
+    # Subset resolution is deterministic, so the child re-resolving the
+    # same subset and slicing [lo:hi] yields the same decisions the parent
+    # would have passed to a single cohort of run_bench_continuous.
+    if args.subprocess_cohort_range is not None:
+        try:
+            lo_str, hi_str = args.subprocess_cohort_range.split(":")
+            lo, hi = int(lo_str), int(hi_str)
+        except ValueError as exc:
+            raise ValueError(
+                f"--subprocess-cohort-range must be LO:HI integers, "
+                f"got {args.subprocess_cohort_range!r}"
+            ) from exc
+        if lo < 0 or hi > len(decisions) or lo >= hi:
+            raise ValueError(
+                f"--subprocess-cohort-range {lo}:{hi} out of range for "
+                f"resolved n={len(decisions)} decisions"
+            )
+        decisions = decisions[lo:hi]
+        global_indices = global_indices[lo:hi]
+        print(
+            f"[bench] subprocess-cohort-range applied: sliced to "
+            f"[{lo}:{hi}] -> n={len(decisions)} decisions",
+            flush=True,
+        )
     print(
         f"[bench] resolved {len(decisions)} decisions; "
         f"trick positions = "
@@ -1433,26 +1657,45 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     tracker = StatsTracker()
-    print(
-        f"[bench] loading Gemma 4 E2B (bf16, adapter={args.model_path}) "
-        f"prompt_cache={args.enable_prompt_cache}...",
-        flush=True,
+    # Subprocess-isolation parent: do NOT load the model. Each cohort
+    # subprocess loads its own (and exits), which is the whole point —
+    # the parent never holds the bf16 weights, so OS-level pressure
+    # cannot accumulate across cohort boundaries.
+    parent_isolation = (
+        args.subprocess_isolation
+        and args.continuous
+        and int(args.cohort_size) > 0
+        and args.subprocess_cohort_range is None
     )
-    t_load = time.time()
-    model = make_tracking_model(
-        adapter_path=args.model_path,
-        max_tokens=int(args.max_tokens),
-        temperature=float(args.temperature),
-        model_repo=args.model_repo,
-        tracker=tracker,
-        enable_prompt_cache=bool(args.enable_prompt_cache),
-        prune_lm_head=bool(args.prune_lm_head),
-        prune_freq_tsv=args.prune_freq_tsv,
-        prune_keep_n=int(args.prune_keep_n),
-        log_argmax_winners=args.log_argmax_winners,
-    )
-    load_wall = time.time() - t_load
-    print(f"[bench] model ready in {load_wall:.1f}s", flush=True)
+    if parent_isolation:
+        model = None
+        load_wall = 0.0
+        print(
+            f"[bench] subprocess-isolation parent: skipping model load "
+            f"(each cohort child loads its own)",
+            flush=True,
+        )
+    else:
+        print(
+            f"[bench] loading Gemma 4 E2B (bf16, adapter={args.model_path}) "
+            f"prompt_cache={args.enable_prompt_cache}...",
+            flush=True,
+        )
+        t_load = time.time()
+        model = make_tracking_model(
+            adapter_path=args.model_path,
+            max_tokens=int(args.max_tokens),
+            temperature=float(args.temperature),
+            model_repo=args.model_repo,
+            tracker=tracker,
+            enable_prompt_cache=bool(args.enable_prompt_cache),
+            prune_lm_head=bool(args.prune_lm_head),
+            prune_freq_tsv=args.prune_freq_tsv,
+            prune_keep_n=int(args.prune_keep_n),
+            log_argmax_winners=args.log_argmax_winners,
+        )
+        load_wall = time.time() - t_load
+        print(f"[bench] model ready in {load_wall:.1f}s", flush=True)
 
     # ----- run -----
     out_dir = args.out_dir or (
@@ -1462,7 +1705,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Lever #7 kernel-class audit instrumentation (pre-run install).
     gputrace_path: Path | None = None
-    if args.kernel_audit:
+    if args.kernel_audit and not parent_isolation:
         # The model wrapper's underlying mlx model lives on .model.
         underlying = getattr(model, "model", model)
         install_kernel_hooks(underlying)
@@ -1489,7 +1732,24 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 gputrace_path = None
 
-    if args.continuous and int(args.cohort_size) > 0:
+    if parent_isolation:
+        # Strip the program name (sys.argv[0]) — we re-invoke with -m,
+        # so the child receives only flags.
+        parent_argv = list(sys.argv[1:])
+        bench_result = run_bench_continuous_cohorts_subprocess(
+            n_decisions=len(decisions),
+            out_dir=out_dir,
+            cohort_size=int(args.cohort_size),
+            parent_argv=parent_argv,
+        )
+        # Reconstitute the parent tracker from each child's step_stats so
+        # decode_tok_s / peak_mem_gb aggregation flows through the same
+        # tracker.aggregate() path the in-process run uses. step_stats
+        # were serialized in the child via __dict__; re-hydrate via
+        # StepStats(**fields).
+        for s in bench_result.get("subprocess_step_stats", []):
+            tracker.steps.append(StepStats(**s))
+    elif args.continuous and int(args.cohort_size) > 0:
         bench_result = run_bench_continuous_cohorts(
             decisions=decisions,
             global_indices=global_indices,
@@ -1503,6 +1763,13 @@ def main(argv: list[str] | None = None) -> int:
             cohort_size=int(args.cohort_size),
         )
     elif args.continuous:
+        # In subprocess-isolation child mode the cohort label includes the
+        # parent's slice range so heartbeat lines disambiguate cohorts in
+        # the parent log.
+        if args.subprocess_cohort_range is not None:
+            hb_label = f"[bench] subproc-cohort {args.subprocess_cohort_range}"
+        else:
+            hb_label = "[bench]"
         bench_result = run_bench_continuous(
             decisions=decisions,
             global_indices=global_indices,
@@ -1513,6 +1780,7 @@ def main(argv: list[str] | None = None) -> int:
             batch=int(args.batch),
             turn_cap=int(args.turn_cap),
             tracker=tracker,
+            heartbeat_label=hb_label,
         )
     else:
         bench_result = run_bench(
@@ -1527,8 +1795,30 @@ def main(argv: list[str] | None = None) -> int:
         )
     bench_wall = bench_result["bench_wall_s"]
 
+    # Subprocess-isolation child: emit the sidecar JSON and exit before
+    # parent-only ledger aggregation. Parent re-aggregates across all
+    # cohort sidecars from inside its own main().
+    if args.subprocess_cohort_result is not None:
+        sidecar = {
+            "rows": bench_result["rows"],
+            "bench_wall_s": float(bench_result["bench_wall_s"]),
+            "wave_walls_s": list(bench_result.get("wave_walls_s", [])),
+            "step_stats": [s.__dict__ for s in tracker.steps],
+            "n_decisions": len(bench_result["rows"]),
+        }
+        sidecar_path = Path(args.subprocess_cohort_result)
+        sidecar_path.parent.mkdir(parents=True, exist_ok=True)
+        sidecar_path.write_text(json.dumps(sidecar, default=str))
+        print(
+            f"[bench] subproc-cohort sidecar -> {sidecar_path} "
+            f"(n={len(bench_result['rows'])} bench_wall="
+            f"{bench_result['bench_wall_s']:.1f}s)",
+            flush=True,
+        )
+        return 0
+
     # Lever #7 — stop Metal capture (if running) and tear down hooks.
-    if args.kernel_audit:
+    if args.kernel_audit and not parent_isolation:
         if gputrace_path is not None:
             try:
                 import mlx.core as _mx
