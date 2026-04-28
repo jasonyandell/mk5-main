@@ -18,6 +18,12 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 - **Workaround.** Pass `prefill_batch_size=2` to `BatchGenerator` (or whatever lower number works for the current batch size). Or revert that specific run to sync-wave (`run_bench` not `run_bench_continuous`).
 - **Long-term fix.** mlx-lm version bump may resolve. Watch for cache-related fixes in changelog. Consider filing an upstream issue with the `(4,1,256)` vs `(3,1,1)` reproducer.
 
+### `ValueError: Received 60 parameters not in model: language_model.model.layers.{15..34}.self_attn.{k,k_norm,v}_proj.weight` at bf16 Gemma 4 E2B load time on mlx-lm 0.31.3+
+
+- **What it is.** mlx-lm 0.31.3 ships [PR #1158](https://github.com/ml-explore/mlx-lm/pull/1158) which removes the `k_proj`/`v_proj`/`k_norm`/`v_norm` modules from Gemma 4 attention layers that are KV-shared (`num_kv_shared_layers=20` for E2B → layers 15-34). The model class no longer has weight slots for those tensors. The official `google/gemma-4-E2B-it` (and `mlx-community/gemma-4-E2B-it-bf16`) safetensors STILL ship them. `mlx_lm.utils.load()` calls `load_weights(strict=True)` and the load aborts with the 60-parameter rejection. Confirmed firing in sprint 2 iter 7 (2026-04-28). bf16 model cannot be loaded at all on 0.31.3 — this is a hard wall, not a degradation.
+- **Recipe.** Pin `mlx-lm==0.31.2` until one of: (a) Google re-issues Gemma 4 safetensors without the unused KV-shared weights, (b) upstream adds `strict` plumb-through to `mlx_lm.utils.load()`, or (c) you vendor `load_model(model_path, strict=False)` locally (~10 LoC in `burl/modal/gemma_local_batched.py`: replace `from mlx_lm import load` with a local helper that calls `mlx_lm.utils.load_model(model_path, lazy=False, strict=False)` plus a `mlx_lm.utils.load_tokenizer` call). Option (c) is the smallest forward path and unblocks the rest of 0.31.3's wins (BatchKVCache extend fix #1141, thread-local generation streams #1090).
+- **Long-term fix.** File an upstream issue requesting `mlx_lm.utils.load()` accept `strict=False` (the underlying `load_model` already does). Or PR upstream a `sanitize` hook for Gemma 4 that drops the unused KV-shared weight names before `load_weights` sees them.
+
 ### `AssertionError: assert play is not None` in `burl/wax_museum/schemas.py:next_actions_unchanged`
 
 - **What it is.** A stream completed a turn without calling `explore_game(X)`, leaving `last_explored_play` unset. The bench has no per-decision quarantine path, so the whole run dies.
