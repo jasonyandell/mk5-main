@@ -2,7 +2,7 @@
 title: Perf Sprint — Trap Recipes
 kind: playbook
 first_seen: fbe798f
-last_updated: e9f1e6c (iter 13: Metal-capture-blows-up + Python instance-call-override traps)
+last_updated: 8deaba4 (iter 15-redo: gus belief adapter not found in worktree)
 status: active
 ---
 
@@ -128,6 +128,18 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
   3. Respawn a fresh worker with the same variant via the spawn template in [[perf-sprint]]. The new context may avoid whatever wedge the previous one hit.
   4. If the same variant wedges twice in a row: log a `crash` row to `results.tsv` with description "wedge — variant skipped," and pick a different variant.
 - **Long-term fix.** None at the playbook level. If a specific variant or technique consistently wedges, document it as a closed lever in [[perf-sprint-levers]] with the wedge as the closure reason.
+
+### `FileNotFoundError` on `gus/adapters/v3_consistency_10000g.pt` mid-decision when running the bench from a worktree
+
+- **What it is.** Two adapter-resolution paths in the bench disagree when the bench runs from a `git worktree`. The bench top-level (`bench_decision_latency.py:1248-1258`) explicitly falls back to the absolute main-checkout path and pre-loads gus successfully, populating `belief_trajectory._load_gus_cached`'s lru_cache keyed on the main-checkout string. But `belief_trajectory.DEFAULT_ADAPTER` is computed from `Path(__file__).resolve().parents[2] / "gus/adapters/v3_consistency_10000g.pt"` — i.e. **worktree-relative**. The first time a stream calls `belief_trajectory()` as a tool with `adapter_path=None`, `load_gus()` falls through to that worktree path, misses the lru_cache (different string key than the pre-load used), and `torch.load` aborts with `[Errno 2] No such file or directory`. Bench setup looks healthy (corpus loaded, oracle loaded, gus pre-loaded, model ready) and decision dirs are created up-front by continuous mode — the bench dies on `decision_0`'s first turn. Confirmed firing in sprint 2 iter 15 (2026-04-28) when `gus/adapters/` did not exist in the perf/aggressive worktree.
+- **Recipe.** From the worktree, symlink the adapter into the worktree-relative path so both resolution paths converge:
+  ```bash
+  mkdir -p .claude/worktrees/<name>/gus/adapters
+  ln -s /Users/jason/code/mk5-main/gus/adapters/v3_consistency_10000g.pt \
+        .claude/worktrees/<name>/gus/adapters/v3_consistency_10000g.pt
+  ```
+  Pre-flight check before any iter that runs from a worktree: `ls <worktree>/gus/adapters/v3_consistency_10000g.pt`. The .gitignore on `gus/adapters/` means a fresh `git worktree add` will never carry the directory across.
+- **Long-term fix.** Make `belief_trajectory.DEFAULT_ADAPTER` use the same fallback list as the bench top-level (try worktree-relative, then `/Users/jason/code/mk5-main/gus/adapters/...` absolute). One ~6-line edit in `burl/tools/belief_trajectory.py`. Or thread the resolved path through the tool registration so callers don't fall back to the module default. Either fix removes the trap permanently.
 
 ## Append a trap
 
