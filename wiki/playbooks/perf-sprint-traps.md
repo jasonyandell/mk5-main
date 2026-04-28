@@ -62,6 +62,12 @@ Trap recipes age. mlx-lm and Gemma 4 are moving weekly — before spending an it
 - **Recipe.** Don't trust prior byte-equivalence claims when bumping defaults to a quant model — re-verify at temp=0 against bf16 on the actual subset before declaring a new floor. UD-MLX-4bit is dead for this subset's gate; for the next quant attempt, try Q8 (`FakeRockert543/gemma-4-e2b-it-MLX-8bit`) — Q8 quant noise is typically ~16× smaller than Q4 and is the next floor candidate.
 - **Long-term fix.** When promoting any quant set to "safe," include the temp=0 deterministic comparison artifact in the lever ladder note, not just a prose claim.
 
+### gi=0 is a quant-fragile logit-cliff decision (the "~16× smaller noise" prior failed)
+
+- **What it is.** Sprint 2 iter 6 (commit `1e82482`, reset) ran Q8 (`FakeRockert543/gemma-4-e2b-it-MLX-8bit`) at temp=0 batch=5 expecting Q8's ~16× smaller quant noise to byte-match bf16 on gi=0. **Q8 deterministically flipped gi=0 to play=6 with byte-identical regret 7.632 to Q4 UD-MLX-4bit.** Two different quant recipes (UD-MLX 4-bit, FakeRockert 8-bit) at two very different bit-widths produced the same wrong answer with the same regret. Q8 also added NEW damage at gi=104 (bf16 play=6 K1=True regret=0 → Q8 play=19 K1=False regret=0.025) — wider damage footprint than Q4. The "Q8 ≈ bf16" rule of thumb is unreliable on individual logit-cliff decisions; bit-width reduction does not commute with argmax across all decisions.
+- **Recipe.** When a single decision flips deterministically across two unrelated quant recipes with byte-identical regret, treat the *decision* as quant-fragile, not the *quant set* as broken. Either (a) re-freeze the perf subset to exclude that decision before chasing quant wall wins, or (b) widen the equivalence gate to tolerate one K1-flip per subset (e.g. `K1_match >= 60% AND |regret_delta| <= max(10%, 1 fragile-decision worth of regret)`), or (c) pivot to non-quant levers (mlx-lm version bump, `mx.compile`, spec-decode) that don't perturb logits at all.
+- **Long-term fix.** Subset-freeze protocol should include a "quant-fragility audit": for each frozen decision, verify its bf16 argmax survives a Q4 + Q8 perturbation. Decisions that flip across quant should either be excluded from the perf subset or marked as known-fragile so the gate weights them differently.
+
 ## Stuck worker
 
 ### Symptom: worker silent for 2+ `/loop` fires
