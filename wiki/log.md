@@ -1454,3 +1454,23 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 - The lever rows themselves cite the math: 4.78% of OLD wall = 25% of NEW wall, because tool dispatch is per-turn not per-wall-time. This is the kind of insight that ages without context, so it's encoded in the row text rather than just the log.
 
 **Frontier shift:** none — the architecture and contract are unchanged. This corrects a stale conclusion ("tool dispatch is fine") that was correct on the old baseline and isn't on the new one.
+
+## [2026-04-28 | unstaged | perf-sprint-levers gains five model+harness levers shaped for production scale]
+
+**Touched pages:** [[perf-sprint-levers]]
+
+**Why:** the user articulated production-scale framing ("hundreds of thousands or even a million+ decisions"; "thousands of turns would be a rounding error"). At that scale, ROI ranking changes — single-digit-% harness wins are dwarfed by levers that re-open closed surfaces (gate-passing quant, vocab pruning) because the savings compound across millions of forward passes. The lever ladder needs surfaces that haven't been varied yet so the next wave of iters has hypothesis fuel beyond just "scale cohort #6 wider."
+
+**Updated:**
+- [[perf-sprint-levers]] — appended rows #14–#18.
+  - **#14 Runtime comparison probe** (research-only, cheapest first): mlx-lm vs llama.cpp vs mlc-llm vs candle on Gemma 4 E2B bf16. Theoretical bandwidth ceiling ~100–200 tok/s/stream; current 133–150 is ~50–60% of that, suggesting 1.5–2× headroom. Single afternoon's work; reshapes the rest of the ladder by establishing the actual ceiling.
+  - **#15 KV cache quantization (int8)**: doesn't touch model weights so gi=0 quant-fragility doesn't fire. Cuts KV memory in half (pushes jetsam ceiling), reduces KV-fetch bandwidth (~5–10% wall). Cheap, low gate-risk, untouched surface.
+  - **#16 lm_head vocab pruning / Burl-derivative checkpoint**: Burl's emit space is probably <2K unique tokens vs Gemma 4's 262K-vocab. Pruning lm_head → ~15–20% wall reduction. **At 1M+ decision scale, plausibly the single highest-value lever in the playbook** — weeks of M5 Max compute saved per full corpus run. Risks (Burl-only checkpoint, UNK semantics) are explicitly *features* at production scale because Burl is what runs.
+  - **#17 Speculative prefill parallelism**: gate state deterministically dictates next-turn tool surface; speculatively prefill turn N+1 while decode N runs. ~3–5% wall stacked with #8.
+  - **#18 Mixed-precision quantization with gi=0 protection** (multi-iter investigation): the gi=0 brittleness probably lives in specific layers, not all of them. Per-layer activation analysis → selective quantization preserving the brittle layer(s) at bf16. Re-opens previously-closed Q4/Q8 surface. Higher-risk multi-iter project but at scale, ~30–40% wall reduction with the gate intact dwarfs every other lever.
+
+**Design choices:**
+- Sequenced the rows by cost-of-discovery: #14 first (cheapest, most informational), #15 next (cheap win), #16 (structural Burl-derivative; needs distribution analysis first), #17 (harness-side stack with #8), #18 (multi-iter; sequence after #14 confirms runtime ceiling).
+- **Production-scale framing baked into row descriptions**, not just the log. At 1M+ decisions, "Burl-only derivative checkpoint" is a feature; "weeks of compute saved" is a real metric. The lever rows make those tradeoffs explicit so future workers see the right ROI calculus.
+
+**Frontier shift:** the playbook now has explicit hypothesis fuel for "what would close the gap to the bf16 ceiling" — runtime swap, model surgery, mixed-precision quant, KV quant, harness speculation. The model-side ladder isn't actually exhausted; it was exhausted *with respect to the surfaces tried*. Five new untouched surfaces are now visible.
