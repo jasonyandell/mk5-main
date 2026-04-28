@@ -1376,3 +1376,14 @@ Codifies the sprint-1 lessons (the burl-perf overnight session, [[burl-perf-phas
 - [[perf-sprint-traps]] — one-line note that trap recipes age; web-search upstream changelog before spending an iteration on a workaround.
 
 **Frontier shift:** the playbook now treats upstream web sources as a peer of the wiki's own pages. Wiki = synthesized state of the project; web = synthesized state of the deps. Both are primary sources from the iteration agent's perspective.
+
+## [2026-04-27 | unstaged | perf-sprint emphasizes the /loop heartbeat as load-bearing]
+
+**Touched pages:** [[perf-sprint]]
+
+**Why:** observed in the wild — an orchestrator read the playbook, spawned one iteration agent, and stopped. The `/loop 10m` registration was buried in step 3 of "How to work" without flagging it as load-bearing, so the orchestrator skipped it. Without `/loop`, the orchestrator gets one turn and the sprint dies after the first iteration. This is the heartbeat that makes the architecture work.
+
+**Updated:**
+- [[perf-sprint]] — added a "Heartbeat" line to the contract paragraph (`/loop 10m` from [[perf-sprint-loop]], registered before the first iteration; load-bearing). Added a follow-up sentence to the kickoff section warning that the orchestrator's first job is to register the heartbeat. Reworded "How to work" step 3 to lead with "**Register the heartbeat**" and explain what registering does and doesn't do.
+
+**Frontier shift:** none — this is a defect fix, not an architecture change. The architecture already required `/loop`; the playbook just didn't say so loudly enough.

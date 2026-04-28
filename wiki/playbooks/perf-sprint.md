@@ -14,6 +14,8 @@ Paste into a fresh session at the project root:
 
 > Read [[perf-sprint]]. Run a perf sprint targeting `<GOAL>`. e.g. *"drive Burl per-decision latency from current baseline toward ~2s on this M5 Max."*
 
+The orchestrator's first job is to register the heartbeat (`/loop 10m`, see "How to work" below) — without that, the sprint runs once and stops.
+
 ## The contract
 
 **Metric (one number, lower is better):** `wall_s_per_decision` on `perf_subset_5`, with a paired baseline run immediately before each variant. End-to-end — token generation, tool calls, harness overhead, all of it.
@@ -21,6 +23,8 @@ Paste into a fresh session at the project root:
 **Equivalence gate (binary, must pass):** `K1_match >= 60%` AND `regret_delta` within ±10% on that same paired run. If the gate fails, the row is `discard` regardless of wall.
 
 **Cycle:** modify, run paired baseline + variant, log one row to the ledger, `keep` or `discard` (advance branch or `git reset`). See [[perf-sprint-loop]].
+
+**Heartbeat:** `/loop 10m` from [[perf-sprint-loop]], registered before the first iteration. **Load-bearing — without this, the orchestrator runs once and stops.** Each fire is one orchestrator turn: read TSV tail, pick variant, spawn iteration, append returned row.
 
 **Don't give up.** Crashes are work, not a stop sign. Stop only when the metric hits the target or the user types stop.
 
@@ -58,7 +62,7 @@ The TSV *is* the digest. The user wakes up, reads the keep rows, picks winners.
 
 1. Write `scratch/<sprint>/PERF_GOAL.md` from [[perf-sprint-goal]] — sprint goal + equivalence gate values.
 2. Initialize `scratch/<sprint>/results.tsv` with the header row.
-3. Register the [[perf-sprint-loop]] message verbatim.
+3. **Register the heartbeat** — paste the [[perf-sprint-loop]] message (`/loop 10m` + body) verbatim. Do this *before* spawning the first iteration. Without it, the orchestrator runs once and stops; with it, every fire is one orchestrator turn that picks a variant, spawns an iteration agent, and appends the returned row.
 4. Read [[perf-sprint-levers]] for ideas to seed the loop. The iteration agent (below) reads [[perf-sprint-traps]] when something crashes.
 5. Append a post-mortem to [[perf-sprint-history]] when the sprint ends.
 
