@@ -58,23 +58,22 @@ Suggested merge order back to `forge`: bench → cheap → batch → aggressive 
 - **mx.compile lever was already closed** by upstream. Iter 9 audited every shape-stable site; mlx-lm has compiled what's compileable (sampler chain, Gemma 4 fast paths, RMSNorm/SDPA on fused Metal kernels). Remaining un-compiled sites (Attention.__call__, BatchKVCache.update_and_fetch, BatchGenerator._step) have variable shapes + Python control flow and aren't viable.
 - **Metal kernel audit found no sub-fused-kernel ROI.** Iter 13 identified that ~85% of decode wall is bandwidth-bound bf16 gemv on Apple's MPS-fused matmul path (lm_head + 3 MLP matmuls per layer). Lever #7 closed.
 - **Pool-size scaling at N=50 is a sharp threshold.** Iters 15/16 (batch=12, batch=10 cont at N=50) both fail the gate with regret_delta=+27.7%/+28.8% (unfavorable). Iter 14's batch=8 is the regret-stable ceiling; the favorable-flip mode does not generalize smoothly with batch width. Sub-lever 5d closed.
-- **N>50 is infeasible on M5 Max with this bench architecture.** Iter 17 bisected N=100/80/64/56/52; all silent-died via macOS jetsam (peak KV+heap exceeds Apple's 40.2GB recommended Metal working-set). Workaround paths: stay at N≤50, wrap `mx.set_memory_limit(40GB)` for visible RuntimeError, implement lever #6 cohort abstraction, or hardware bump.
+- **N>50 is infeasible on M5 Max with this bench architecture.** Iter 17 bisected N=100/80/64/56/52; all silent-died via macOS jetsam (peak KV+heap exceeds Apple's 40.2GB recommended Metal working-set). **Iter 18 sharpened this finding into two corrections.** (1) The `mx.set_memory_limit(40GB)` workaround claim from iter 17 was wrong: the limit is a soft guideline, not a hard fence (smoke test: `set_memory_limit(2GB)` followed by 3GB bf16 alloc succeeds silently; MLX docstring confirms exception only when limit exceeded AND host RAM+swap is also exhausted). The patch ships on perf/aggressive (commit ffc9ef1) as a no-op marker, but does NOT convert silent jetsam into a visible RuntimeError. (2) Even N=50 is not durable. Two iter 18 baseline-only attempts on the IDENTICAL setup that iter 14 ran cleanly ~9h earlier both silent-died with the same fingerprint, on a system with healthy memory state at attempt time (~15GB free of 48GB). The N=50 ceiling drifts downward with cumulative process state / fragmentation across a long sprint session — treat it as a fresh-boot-only claim. Real workarounds reduce to: lever #6 cohort abstraction, throttle BatchGenerator prefill backlog, or hardware bump (M5 Ultra).
 
 **What changed in the playbook.**
 - Added explicit worker-cleanup discipline (TaskStop returned workers; TeamDelete at sprint end). Backgrounded workers don't auto-release on return.
 - New trap recipes: silent-anchor-mismatch (confirmed firing); single-shot equivalence gate broken at temp=0.6 on multimodal decisions; bf16 60-parameter rejection on mlx-lm 0.31.3; mlx-lm 0.31.3 bf16 wall+determinism regression; vendored-loader pattern for upstream/checkpoint mismatches; run_bench_continuous queue-fill at scale; quant-fragility on logit-cliff decisions (Q4 and Q8 byte-identical at gi=0); silent SIGKILL via OS jetsam at N≥52 with bf16 cont.
-- Lever ladder pruned. #1, #2 closed (quant-fragility); #3 closed pending 0.31.4+; #4 closed (mx.compile already applied); #5 sub-levers a-f mostly closed (5c stays as confirmed-active at N≤50); #7 closed (kernel landscape fully fused). #6 cohort and `mx.set_memory_limit` guard are the only remaining levers.
+- Lever ladder pruned. #1, #2 closed (quant-fragility); #3 closed pending 0.31.4+; #4 closed (mx.compile already applied); #5 sub-levers a-f mostly closed (5c stays as confirmed-active at N≤50 on a fresh-boot system); #7 closed (kernel landscape fully fused). #6 cohort is the only remaining lever; the `mx.set_memory_limit` guard turned out to be a soft guideline (iter 18) and is not a workaround.
 
-**Open levers when sprint ended:**
+**Open levers when sprint ended (post iter 18):**
 - **#6 cohort abstraction** — multi-iter structural project; the only path to subset_560 full-N on M5 Max.
-- **bench `mx.set_memory_limit(40GB)` guard** — small hygiene patch so future scale attempts surface RuntimeError instead of silent jetsam. Saves future workers ~2hr of debugging.
 - **mlx-lm 0.31.4+ retest** — when upstream ships, re-run iter 8's vendored-loader + continuous-batching protocol. PRs #1141 (dynamic_roll fix), #1090 (thread-local streams), #1170/#1171 (parallel tool calls) all unblock if the bf16 wall+determinism regression clears.
 
 **Worktrees + branches at session end:**
-- `perf/aggressive` — iter 17 final state at 4263721 (queue-cap experiment reverted). Carries iter 1 bench resilience, iter 10 phase-time instrumentation, iter 13 kernel-audit instrumentation, iter 14 --subset-limit flag, iter 16 adapter symlink fix. The instrumented bench is the durable artifact.
-- `forge` — wiki updates throughout; latest at de67c4d.
+- `perf/aggressive` — iter 18 final state at ffc9ef1 (mx.set_memory_limit guard committed as no-op marker; documents the working-set ceiling intent in source even though the limit is a soft guideline). Carries iter 1 bench resilience, iter 10 phase-time instrumentation, iter 13 kernel-audit instrumentation, iter 14 --subset-limit flag, iter 16 adapter symlink fix, iter 18 mguard. The instrumented bench is the durable artifact.
+- `forge` — wiki updates throughout; latest at the iter 18 trap+lever+history correction commit.
 
-Suggested merge order back to `forge`: perf/aggressive's bench improvements stack cleanly (resilience → instrumentation → subset-limit). The diagnostic prints landed and reverted, so the working tree is clean.
+Suggested merge order back to `forge`: perf/aggressive's bench improvements stack cleanly (resilience → instrumentation → subset-limit → mguard-no-op). The diagnostic prints landed and reverted, so the working tree is clean.
 
 ## Append a sprint reflection
 
