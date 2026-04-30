@@ -1,19 +1,41 @@
 {
-  "permissions": {
-    "defaultMode": "bypassPermissions"
-  },
+  "enabledPlugins": {},
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "(Write|Edit|MultiEdit|NotebookEdit).*\\.(ts|svelte)$",
         "hooks": [
           {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/file-check.sh"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/file-check.sh",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "(Write|Edit|MultiEdit|NotebookEdit).*\\.(ts|svelte)$"
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bd prime",
+            "type": "command"
+          }
+        ],
+        "matcher": ""
       }
     ]
   },
-  "enabledPlugins": {}
+  "permissions": {
+    "defaultMode": "bypassPermissions"
+  }
 }
