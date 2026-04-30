@@ -1,5 +1,9 @@
 {
-  "database": "beads.db",
-  "jsonl_export": "issues.jsonl",
-  "last_bd_version": "0.26.0"
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_server_host": "127.0.0.1",
+  "dolt_server_port": 38846,
+  "dolt_database": "mg",
+  "project_id": "gc-local-23883da86556597e44ce332e766a550c"
 }
