@@ -37,6 +37,7 @@ import torch
 from torch.utils.data import Dataset, IterableDataset
 
 from .features import extract_belief_target, reconstruct_prior_plays
+from .strategy_features import extract_strategy_action_features, extract_strategy_features
 from .tokenize import SEQ_LEN, tokenize_decision
 from .voids import voids_feature_vector
 
@@ -52,7 +53,12 @@ class JointWorldFullDataset(Dataset):
     total ~11 GB. Fits in typical laptop RAM; if not, use lazy loading.
     """
 
-    def __init__(self, corpus_path: str | Path | list[str | Path], seed: int | None = None):
+    def __init__(
+        self,
+        corpus_path: str | Path | list[str | Path],
+        seed: int | None = None,
+        include_strategy_features: bool = False,
+    ):
         # Accept a single .pt path, a glob, or a list of paths/globs.
         from glob import glob
         raw: list[str]
@@ -81,6 +87,7 @@ class JointWorldFullDataset(Dataset):
         self._rng = torch.Generator()
         if seed is not None:
             self._rng.manual_seed(seed)
+        self.include_strategy_features = include_strategy_features
 
         # Flatten to (game_idx, decision_idx) index. Only include decisions
         # that actually carry a joint-world tensor.
@@ -162,6 +169,13 @@ class JointWorldFullDataset(Dataset):
             "player": torch.tensor(current_player, dtype=torch.long),
             "voids": voids,                        # [24]
         }
+        if self.include_strategy_features:
+            item["strategy_features"] = extract_strategy_features(
+                game.hands, int(game.decl_id), game.decisions, d_idx
+            )
+            item["strategy_action_features"] = extract_strategy_action_features(
+                game.hands, int(game.decl_id), game.decisions, d_idx
+            )
         # Schema v2 fields — present only if corpus was generated with --schema v2
         if decision.oracle_softmax_per_seat is not None:
             item["oracle_softmax_per_seat"] = decision.oracle_softmax_per_seat.float()   # [4, 7]
@@ -199,7 +213,12 @@ def _world_to_assignment(world_hands_m: torch.Tensor) -> torch.Tensor:
     return assign
 
 
-def _build_item(game, d_idx: int, rng: torch.Generator) -> dict[str, torch.Tensor]:
+def _build_item(
+    game,
+    d_idx: int,
+    rng: torch.Generator,
+    include_strategy_features: bool = False,
+) -> dict[str, torch.Tensor]:
     decision = game.decisions[d_idx]
     current_player = int(decision.player)
     tokens, attn_mask = tokenize_decision(
@@ -233,6 +252,13 @@ def _build_item(game, d_idx: int, rng: torch.Generator) -> dict[str, torch.Tenso
         "player": torch.tensor(current_player, dtype=torch.long),
         "voids": voids,
     }
+    if include_strategy_features:
+        item["strategy_features"] = extract_strategy_features(
+            game.hands, int(game.decl_id), game.decisions, d_idx
+        )
+        item["strategy_action_features"] = extract_strategy_action_features(
+            game.hands, int(game.decl_id), game.decisions, d_idx
+        )
     # Schema v2 fields — present only if corpus was generated with --schema v2
     if decision.oracle_softmax_per_seat is not None:
         item["oracle_softmax_per_seat"] = decision.oracle_softmax_per_seat.float()   # [4, 7]
@@ -270,11 +296,13 @@ class JointWorldFullIterable(IterableDataset):
         seed: int | None = None,
         buffer_size: int = 8192,
         length_cache_path: str | Path | None = None,
+        include_strategy_features: bool = False,
     ):
         self.paths = _expand_paths(corpus_path)
         self.shuffle = shuffle
         self.seed = seed
         self.buffer_size = max(1, buffer_size)
+        self.include_strategy_features = include_strategy_features
         self._len = self._compute_length(length_cache_path)
 
     def _compute_length(self, cache_path: str | Path | None) -> int:
@@ -330,7 +358,12 @@ class JointWorldFullIterable(IterableDataset):
                 py_rng.shuffle(items)
 
             for g_idx, d_idx in items:
-                built = _build_item(games[g_idx], d_idx, torch_rng)
+                built = _build_item(
+                    games[g_idx],
+                    d_idx,
+                    torch_rng,
+                    include_strategy_features=self.include_strategy_features,
+                )
                 if not self.shuffle:
                     yield built
                     continue

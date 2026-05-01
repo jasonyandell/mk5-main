@@ -2,7 +2,7 @@
 title: Gus (sibling project — neural player + belief + value)
 kind: entity
 first_seen: d858781
-last_updated: 94d8646
+last_updated: local-2026-04-30
 status: active
 ---
 
@@ -56,6 +56,23 @@ Gus is the **fast player**. [[lem]] is the downstream commentary/explanation hea
 Gus's player works, LEM can be a low-cost interpretation layer on top. [[burl]] takes a
 different path (tool orchestration + reasoning). All three siblings share [[forge]]
 infrastructure (solver, E[Q] framework, engine, [[zeb]]).
+
+## Current frontier: explicit strategy tags probe (2026-04-30)
+
+The Winning 42 strategy-book harvest produced a new Gus experiment: can cheap,
+human-legible public-state/action tags help a tiny policy student over raw public
+state alone?
+
+Result: yes, materially, though not enough to beat `E[Q] N=10`. On 28k early-decision
+examples, a tiny `tokens + voids` probe scored **2.012 regret**, while the same probe
+with 68 global strategy features plus 7×32 action-local features scored **1.181 regret**.
+`E[Q] N=10` remained far ahead at **0.167 regret** on the same 560-decision eval slice.
+
+The experiment is now promoted out of scratch:
+
+- `gus/model/strategy_features.py`
+- `gus/eval/strategy_probe.py`
+- [[experiments/gus-strategy-tags-probe]]
 
 ## Progress: v0 → v1 → v2 scaffolding (2026-04-20/21, commits c04bda3–3c02d10)
 
