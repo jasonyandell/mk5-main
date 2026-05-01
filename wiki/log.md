@@ -1488,3 +1488,51 @@ The "team" is a harness convenience — the team has exactly one member at a tim
 **Side artifact:** `scratch/mk5-main-ane-sidecar-bead-draft.md` captures the replacement bead text because active `bd create` is blocked by the current `.beads` reinitialization state.
 
 **Frontier shift:** whole-lattice pre-turn precompute is rejected. The next attempt must start with an ANE/Core ML proof and a turn-scoped overlapping sidecar, not a blocking registry memoization layer.
+
+## [2026-04-30 | local | Gus strategy tags probe promoted]
+
+**Touched pages:** [[entities/gus]] [[experiments/gus-strategy-tags-probe]]
+
+**Why:** Winning 42 strategy-book work suggested a concrete empirical question: do
+human-legible strategy tags help a small Gus-like policy model learn from public state,
+or are they just explanation garnish?
+
+**Updated:**
+- [[entities/gus]] — added the current-frontier strategy-tag probe result and promoted
+  file locations.
+- [[experiments/gus-strategy-tags-probe]] — new experiment page with setup, feature
+  shape, 100-game, 10k early-decision, and 28k early-decision results.
+
+**Result:** explicit strategy tags contain real signal but do not beat `E[Q] N=10`.
+On the 28k early-decision probe, the tiny base model scores 2.012 regret, the same
+model with 68 global + 7×32 action-local strategy features scores 1.181 regret, and
+`E[Q] N=10` remains far ahead at 0.167 regret.
+
+**Frontier shift:** strategy tags are now a durable Gus experiment, not scratch. The
+next question is concept-bucketed: find where tags already help most, especially
+count pressure, trump pressure, off-risk/protection, donation windows, pounce windows,
+and walker/endgame states.
+
+---
+
+## [2026-04-30 | 4a747f6 | catalog forge/analysis workstream into the wiki (t42-ff42)]
+
+Brings the forge/analysis/ workstream into the wiki as first-class. Synthesis ingest, not a single-commit ingest — the underlying work landed across many commits between 2026-01-06 (`5ffdf58`) and 2026-01-31 (`4a747f6`); the wiki gap was the issue, fixed now via [[t42-ff42]].
+
+**Touched pages:** [[entities/forge-analysis]] [[topics/oracle-vs-human-play]] [[topics/risk-return-inverse]] [[topics/q0-positional-bias]] [[entities/forge]] [[index]] [[log]]
+
+**Added:** 4 pages — 1 entity (`forge-analysis`), 3 topics (`oracle-vs-human-play`, `risk-return-inverse`, `q0-positional-bias`).
+
+**Updated:**
+- [[entities/forge]] — appended a "Standalone analytics workstream" section with backlinks to forge-analysis, oracle-vs-human-play, risk-return-inverse, and q0-positional-bias.
+- [[index]] — catalogued the new entity + 3 topics.
+
+**Frontier established:**
+- forge/analysis/ is a publication-shaped statistical analysis of the perfect-information oracle — distinct from LEM/Burl/Gus modeling work. ~21 numbered notebook themes, per-section report writeups, executive summary at `forge/analysis/report/00_executive_summary.md`.
+- The load-bearing caveat ([[oracle-vs-human-play]]) is its own page so any downstream wiki claim that wants to extrapolate to human play has a one-link reminder of the gap.
+- Headline finding extracted as its own topic: [[risk-return-inverse]] (r=−0.38, medium effect, survives FDR + CV).
+- The slot-0 Q-bias investigation in `forge/analysis/bias/` (20 probes, proposed shuffle fix not yet validated) lands as [[q0-positional-bias]] — reference for any future model retraining work.
+
+**Questions opened:**
+- Does the proposed shuffle fix (`bias/20-proposed-fix-shuffle.md`) actually eliminate the bias when validated? Open until [[gus]] or another model retraining incorporates it.
+- Does the inverse risk-return correlation hold in marginalized data and (eventually) human play? Marginalized data is a partial bridge but full validation is untested.

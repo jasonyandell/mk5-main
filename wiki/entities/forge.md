@@ -57,3 +57,13 @@ Forge is not part of LEM. LEM imports Forge's public interface at the paths list
 and does not modify it. The game generation policy (N=10 E[Q] greedy) was verified during
 an earlier Forge experiment (zeb) as not materially worse than N=100 at a fraction of the
 cost. (lem/OVERVIEW.md @ a8bccfa)
+
+## Standalone analytics workstream
+
+[[forge-analysis]] (`forge/analysis/`) is a sustained statistical-analysis workstream
+over the oracle's ~300M-state output, distinct from any of the modeling siblings.
+It produces a publication-shaped report; its load-bearing epistemic frame
+([[oracle-vs-human-play]]) flags that all findings describe perfect-information
+minimax structure, not human play. Highlights include the [[risk-return-inverse]]
+correlation (r=−0.38) and the [[q0-positional-bias]] sub-investigation that
+characterized a slot-0 anomaly in forge's trained Q-value model.

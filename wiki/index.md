@@ -8,6 +8,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 
 - [[entities/texas-42|texas-42]] — the game: 28 dominoes, 2 partnerships, 7 tricks, 42 points per hand (active)
 - [[entities/forge|forge]] — pipeline with three components: solver, E[Q] framework, E[Q] bot; shared by LEM and Burl (active)
+- [[entities/forge-analysis|forge-analysis]] — statistical analysis workstream over forge's ~300M oracle states; produces a publication-shaped report (active)
 - [[entities/engine|engine]] — TS game engine (src/core/); authoritative on rules, move legality, state transitions (active)
 - [[entities/modal|modal]] — Modal serverless compute platform; L4 for Stage 0, A100 for training, B200 for inference (active)
 
@@ -98,6 +99,9 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/batched-harvest-resilience|batched-harvest-resilience]] — three-part pattern: OOM classifier + quarantine ledger + SIGKILL sentinel; turns multi-hour batched harvest from one-failure-or-restart into one-failure-or-retry-six-decisions (active)
 - [[topics/batched-eval-resilience|batched-eval-resilience]] — eval-side port of the harvest pattern: atomic write + per-wave summary roll-up + in-wave per-decision OOM fallback + --resume-dir; turns 4h evals into "lose at most 3 min on any failure" (active)
 - [[topics/perf-on-the-table|perf-on-the-table]] — Gemma 4 E2B benches at 1334 tok/s; harness runs at ~70 tok/s — six identified levers compound to ~7-10× on M5 Max alone, no model changes (active)
+- [[topics/oracle-vs-human-play|oracle-vs-human-play]] — load-bearing epistemic frame: forge-analysis findings describe perfect-info minimax, not human play; transfer is untested (active)
+- [[topics/risk-return-inverse|risk-return-inverse]] — r(E[V], σ[V]) = −0.38 in oracle data; good hands are also predictable hands; Pareto frontier degenerate (active)
+- [[topics/q0-positional-bias|q0-positional-bias]] — slot-0 anomaly in forge's Q-value model; 20-probe investigation, proposed shuffle fix (#20) not yet validated (active)
 
 ## Experiments
 
@@ -143,6 +147,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-router-pilot|gus-router-pilot]] — detect-and-route end-to-end validation; oracle fallback works (0.49 regret at 25%); PIMC-Q-K50 hurts due to Q_head signal noise (active)
 - [[experiments/gus-v3-consistency-full-run|gus-v3-consistency-full-run]] — first sub-1.0 regret: v3 at 10k → 0.551; v2-3k→v3-10k total −60%; consistency loss rides forward into LAMIR-1 (active)
 - [[experiments/gus-probe|gus-probe]] — interpretability probes on v3-10k; counterfactual V oracle agreement ±0.5 Q-pts; 6-6 impact trumpness-gated; game structure internalized (active)
+- [[experiments/gus-strategy-tags-probe|gus-strategy-tags-probe]] — Winning 42 strategy tags promoted into Gus probe; 28k early-decision tiny model improves 2.012→1.181 regret, but `E[Q] N=10` remains boss at 0.167 (active)
 - [[experiments/gus-lamir1-pilot|gus-lamir1-pilot]] — first LAMIR-1 rollout: 2.384 regret (vs 0.551 direct); adversarial leaf states from argmax π_me as π_opp identified as root cause (active)
 - [[experiments/gus-lamir1-mode-comparison|gus-lamir1-mode-comparison]] — 4 modes compared; v-bootstrap isolates V_head distribution shift (not opp sim); Bug 5 + Fix 2 found; q-bootstrap/qleaf added (active)
 - [[experiments/gus-pi-opp-training|gus-pi-opp-training]] — frozen trunk + PiOppHead; 68.6% oracle accuracy; NaN bug (0×−∞) found and fixed; Schema v2 loader extended (active)
