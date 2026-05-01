@@ -40,6 +40,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/candlewax-spike|candlewax-spike]] — E2E spike: Qwen 3.6-35B-A3B via mlx-vlm; reasoning-coherence verifier; pivots away from LLM-as-reasoner (active)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (active)
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (active)
+- [[entities/burl-chat|burl-chat]] — interactive workbench for talking with Burl about a finished decision; in-process MLX-LM + Svelte 5 + typed-segment rendering; standalone under burl/chat/ (active)
 
 ### Gus — oracle distillation project
 
@@ -102,6 +103,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/oracle-vs-human-play|oracle-vs-human-play]] — load-bearing epistemic frame: forge-analysis findings describe perfect-info minimax, not human play; transfer is untested (active)
 - [[topics/risk-return-inverse|risk-return-inverse]] — r(E[V], σ[V]) = −0.38 in oracle data; good hands are also predictable hands; Pareto frontier degenerate (active)
 - [[topics/q0-positional-bias|q0-positional-bias]] — slot-0 anomaly in forge's Q-value model; 20-probe investigation, proposed shuffle fix (#20) not yet validated (active)
+- [[topics/post-commit-q-and-a|post-commit-q-and-a]] — fourth surface above play-time tools and pre-game commentary: conversational Q&A with Burl after a hand; Roberson chapters 2-8 are the canonical voice anchor (active)
+- [[topics/at-risk-points|at-risk-points]] — Roberson's canonical 42 bidding framework: predict losses backwards, offs make-or-break-the-bid, "double ahead of your off"; voice anchor for post-commit Q&A (active)
 
 ## Experiments
 
@@ -157,6 +160,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/burl-2000-harvest|burl-2000-harvest]] — Burl 2000-decision batched harvest on D_required_first; 5h 46m, 0 quarantines, 0 illegal commits; strict pool 1062, BURL_BREAKS_CONSENSUS 299; v1 truncation bug caught and fixed (active)
 - [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); paired in-distribution n=180 confirms run-3c beats naked-Burl on oracle regret by **−39%** (1.92 vs 3.13); FORCED_COMMIT 12%→34% is decision-shape not play-quality cost (active)
 - [[experiments/burl-harvest-2|burl-harvest-2]] — first STaR self-sharpening test: harvest-2 with run-3c-as-rollout + filter-only run-4. Strategic distribution unchanged from harvest-1 (strict pool 1062→1075); play quality plateaued (run-4 regret 2.97 ≈ base 3.13, regresses ~1.05 vs run-3c 1.92); FC repaired (33.9%→9.4%); earlier ILLEGAL=28.6% read corrected to a tagger denominator artifact (active)
+- [[experiments/burl-chat-spike|burl-chat-spike]] — first burl-chat sessions: clean A/B confirms adapter lock-in (e1-rank16 emits commit_play; base Gemma engages in prose Q&A); chat-mode primer is load-bearing; first product feedback from Burl on its own tools; SSE+CRLF and MLX thread-affinity bugs found and fixed (active)
 
 ## Decisions
 
@@ -174,6 +178,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/gemma-tool-response-shape|gemma-tool-response-shape]] — Gemma 4 Jinja chat-template silently drops role="tool" messages; fix: wrap tool response as user turn with numeric content (active)
 - [[decisions/max-tokens-2048-floor|max-tokens-2048-floor]] — batched Burl harvest minimum per-turn cap; sequential p99 1770 chars / max 2639 ≈ 900 tok; 1024 truncates ~1% of turns mid-thought (active)
 - [[decisions/resumable-checkpointing|resumable-checkpointing]] — Burl STaR trainer writes periodic on-disk adapters, accepts `--resume`, and persists the in-memory best on any crash; closes the run-3 OOM data-loss footgun (active)
+- [[decisions/chat-mode-primer|chat-mode-primer]] — inject a synthetic "yeah I committed N, ask me anything" assistant turn after commit_play; recency-weighted in-context cue that flips base Gemma from play-decision mode to chat mode (active)
+- [[decisions/play-adapter-lock-in|play-adapter-lock-in]] — STaR-distilled play adapters cannot be talked out of commit_play even with primer + explicit prohibition; A/B vs base Gemma is clean; post-commit Q&A adapter must be co-trained, not stacked (active)
 
 ## Sources
 

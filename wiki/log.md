@@ -1536,3 +1536,33 @@ Brings the forge/analysis/ workstream into the wiki as first-class. Synthesis in
 **Questions opened:**
 - Does the proposed shuffle fix (`bias/20-proposed-fix-shuffle.md`) actually eliminate the bias when validated? Open until [[gus]] or another model retraining incorporates it.
 - Does the inverse risk-return correlation hold in marginalized data and (eventually) human play? Marginalized data is a partial bridge but full validation is untested.
+
+---
+
+## [2026-04-30 | cba521d | burl-chat workbench + post-commit Q&A research direction]
+
+Standalone interactive workbench under `burl/chat/` for talking with Burl about a finished decision. FastAPI + in-process [[mlx-lm]] (no vLLM — abandoned twice on this project, never reintroduced) + Svelte 5 + Vite frontend. Loads any `harvest_batched_*` decision as a typed-segment conversation prefix (system, user, thinking, tool_call, tool_result, assistant_text, commit), color-coded by [[burl-2000-harvest]] bucket. Three implementation gotchas worth their own wiki page: MLX default GPU stream is thread-affine (single-thread executor required), sse-starlette emits `\r\n\r\n` frame separators that browser TextDecoder doesn't strip (split must be CRLF-aware), and Svelte 5 reactivity loses in-place mutations to objects already in `$state` (parser must replace segments by index, not mutate).
+
+First-session findings opened a new research direction: **post-commit Q&A**. Talking with Burl after a hand the way a teammate would. Roberson's *Winning 42* chapters 2-8 are the canonical voice anchor — structurally a worked-example dialogue corpus, owned by the project via the user's family heritage.
+
+**Touched pages:** [[entities/burl-chat]] [[experiments/burl-chat-spike]] [[topics/post-commit-q-and-a]] [[topics/at-risk-points]] [[decisions/chat-mode-primer]] [[decisions/play-adapter-lock-in]] [[entities/burl]] [[index]] [[log]]
+
+**Added:** 6 pages — 1 entity (`burl-chat`), 1 experiment (`burl-chat-spike`), 2 topics (`post-commit-q-and-a`, `at-risk-points`), 2 decisions (`chat-mode-primer`, `play-adapter-lock-in`).
+
+**Updated:**
+- [[entities/burl]] — appended a "burl-chat workbench + post-commit Q&A research direction" section linking the new entity, experiment, primer decision, and lock-in decision.
+- [[index]] — catalogued 1 entity + 2 topics + 1 experiment + 2 decisions.
+
+**Frontier established:**
+- **Adapter lock-in is real.** Stacking Q&A on top of a STaR-distilled play adapter does not work. e1-rank16 + harvested prefix + chat-mode primer + explicit "do not output a tool call" + a non-tool question → model still emits `commit_play({"domino_id":14})` mid-response, re-committing a play already in the prefix. Same prefix without the adapter (base Gemma 4 E2B) → engages cleanly, produces structured prose Q&A. A/B clean. See [[play-adapter-lock-in]].
+- **Chat-mode primer is load-bearing.** Synthetic "Yeah, I committed N. Ask me anything" assistant turn injected after `commit_play` flips base Gemma from play-decision mode to chat mode via in-context recency. Without it, even base Gemma falls back to "I am Burl, my next action is to call commit_play." See [[chat-mode-primer]].
+- **First product feedback from Burl on its own tools.** Base Gemma + a 9-word prompt produced a structured three-section critique of the eq_outcome_distribution and probe tool surface, suggesting (a) structured summaries before raw histograms, (b) explicit strategic labels, (c) "why" framing matching the [[at-risk-points]] frame. Real backlog item.
+- **Voice gap visible.** Model spontaneously used Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes), not Roberson vocabulary (offs, walkers, double ahead of your off). To get the family-game voice the [[user_role_and_north_star|north star]] requires, either the tools must surface Roberson framing or a Roberson primer rides the system prompt. Probably both.
+
+**Methodological lesson logged:** SSE consumers must be tested with `repr()` of raw response bytes, not eyeballed terminal output. The CRLF framing bug was invisible to every prior `curl` test because terminals strip CR. Cost: one false success cycle and a rebuild of the streaming consumer.
+
+**Questions opened:**
+- Does [[iter3-rules-adapter]] (90% bot-match Burl winner) suffer the same lock-in as e1-rank16, or is it more steerable due to less aggressive distillation? Adapter is on HuggingFace at `jasonyandell/gemma-4-e2b-texas42-burl-iter3-rules` — pull and A/B in [[burl-chat]].
+- Does a Roberson primer (Flemmons foreword + chapter 2 paragraphs in the system prompt) shift the model's vocabulary toward the family-game register without retraining?
+- Does bucket category (agreement / disagreement / forced / illegal) map to qualitatively different self-critique shapes? Need ~3-4 samples per bucket.
+- Would a stronger chat-mode system-prompt override on top of the primer help on adapters that are merely steered, not welded?

@@ -1,0 +1,18 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+  background: #1a1a1a;
+  color: #e8e8e8;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  height: 100%;
+}
+
+button, textarea, input {
+  font: inherit;
+  color: inherit;
+}

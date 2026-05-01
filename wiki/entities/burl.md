@@ -476,6 +476,19 @@ Strict pool is 3.6× the sequential pilot's 294 rows; non-trivial gold is 3.9× 
 
 A side artifact: `scratch/belief_trajectory_rollout/harvest_batched.py` now hosts the per-wave OOM-resilience layer (quarantine ledger + SIGKILL sentinel) — see [[batched-harvest-resilience]]. Dead code on the success path; existence is the entire point.
 
+### burl-chat workbench + post-commit Q&A research direction (2026-04-30)
+
+A standalone interactive workbench under `burl/chat/` lets the user load any wax_museum decision as a conversation prefix and chat with Burl about it. See [[burl-chat]] for the architecture (FastAPI + in-process [[mlx-lm]] + Svelte 5 + typed-segment rendering) and [[burl-chat-spike]] for the first sessions.
+
+First-session findings opened a new research direction, [[post-commit-q-and-a]]: talking with Burl after a hand the way a teammate would. Closest published precedent is chapters 2-8 of Roberson's *Winning 42*, which structurally is a worked-example dialogue corpus and which the project owns as canonical text via the user's family heritage.
+
+Two findings from this spike worth carrying forward:
+
+- **[[chat-mode-primer]]** is load-bearing. A synthetic "Yeah, I committed N. The decision is done — ask me anything" assistant turn injected after `commit_play` flips base Gemma from play-decision mode into chat mode. Without it, even the base model produces "I am Burl, my next action is to call commit_play" responses.
+- **[[play-adapter-lock-in]]** is real and complete. e1-rank16 ([[experiments/iter5-e1-rank-sweep]]) cannot be talked out of `commit_play` even with primer + explicit "do not output a tool call" + a non-tool question. Base Gemma + same prefix engages cleanly. Implication: any post-commit Q&A adapter must be co-trained or trained from base, not stacked on a play adapter.
+
+A side product of the first session: base Gemma critiqued the existing tool surface unprompted, suggesting structured summaries before raw histograms, explicit strategic labels, and a "why" framing that reads as the [[topics/at-risk-points]] frame Roberson uses. First product feedback from Burl on its own tools — usable backlog item.
+
 ## Open questions at this frontier
 
 - Can Gemma 4 E2B tool-use reliably at 2B scale? (Move 3 answers cheaply.)

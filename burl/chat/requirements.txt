@@ -1,0 +1,7 @@
+# burl/chat server deps. Assumes burl/requirements-mlx.txt is already installed
+# in the same env (mlx, mlx-lm, etc.).
+
+fastapi>=0.115
+uvicorn[standard]>=0.32
+sse-starlette>=2.1
+pydantic>=2.9
