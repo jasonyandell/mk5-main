@@ -2,7 +2,7 @@
 title: Winning 42 Strategy Measurement
 kind: experiment
 first_seen: local-2026-04-30
-last_updated: local-2026-04-30
+last_updated: local-2026-05-01
 status: active
 ---
 
@@ -52,6 +52,32 @@ The catalog enumerates surfaces for:
 The final statistical-analysis layer is explicit: verify book odds by enumeration,
 calibrate claims against forge/oracle outcomes, report confidence intervals and paired
 tests, and maintain a supported / contradicted / context-limited / underpowered claim ledger.
+
+## Chapter Workstream
+
+Each Winning 42 chapter now has a bead-backed wiki page. The pages treat the book as
+a source of measurable hypotheses for [[gus]], [[burl]], and [[forge]], not as an
+authority to hard-code. A chapter is complete only when its bead closes with a wiki
+update that lists source-backed concepts, detector inputs, metrics/tests, likely data
+sources, implementation notes, and readiness for enumeration, oracle rollout, Gus,
+or Burl analysis.
+
+- [[winning42-ch01-in-a-nutshell]] — foundational rule/state accounting.
+- [[winning42-ch02-bidding]] — bidding as risk budget.
+- [[winning42-ch03-bidder-play]] — bidder sequencing after winning the bid.
+- [[winning42-ch04-partner-support]] — helping the bidder make the contract.
+- [[winning42-ch05-setter-defense]] — setting the bidder.
+- [[winning42-ch06-concentration-style]] — attention, inference, and style.
+- [[winning42-ch07-taking-every-trick-84]] — bidder-side 84 plan.
+- [[winning42-ch08-setting-84]] — defending the 84 bid.
+- [[winning42-ch09-doubles-no-trump]] — doubles-as-trump and no-trump regimes.
+- [[winning42-ch10-tournament-scoring]] — reward-function drift under scoring systems.
+- [[winning42-ch11-table-talk]] — legal inference versus illegal information.
+- [[winning42-ch12-advanced-bidding-playing]] — advanced exception handling.
+- [[winning42-ch13-optional-variations]] — ruleset gates and contamination guards.
+- [[winning42-ch14-history-tournaments]] — tournament and population ecology.
+- [[winning42-ch15-celebrities-style]] — player style and partnership patterns.
+- [[winning42-ch16-statistical-odds]] — statistical validation and odds checks.
 
 ## First Work Package
 
