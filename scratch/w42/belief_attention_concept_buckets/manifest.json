@@ -1,0 +1,82 @@
+{
+  "schema": "w42.belief_attention_concept_buckets.v1",
+  "bead": "t42-csw6.24",
+  "title": "Belief and Attention Concept Buckets",
+  "created_utc": "2026-05-02T00:00:00Z",
+  "git_sha_at_drafting": "f746b93f4ea0bacc697ed27b9dbf2fbd9ef8e744",
+  "evidence_mode": "report-only synthesis from existing w42 artifacts and Winning 42 chapter pages",
+  "fresh_analysis_or_model_validation_script_run": false,
+  "wandb_links": "not applicable; no fresh analysis/model validation script was run for this bead",
+  "hf_links": "not applicable",
+  "claim_ledger_impact": "no claim-ledger change",
+  "source_wiki_pages": [
+    "wiki/AGENTS.md",
+    "wiki/entities/w42.md",
+    "wiki/experiments/w42-lab-infrastructure.md",
+    "wiki/experiments/w42-report-template.md",
+    "wiki/experiments/w42-claim-ledger.md",
+    "wiki/experiments/w42-detector-tests.md",
+    "wiki/experiments/w42-strategy-tags-v1-map.md",
+    "wiki/experiments/w42-concept-bucket-regret.md",
+    "wiki/experiments/w42-raw-public-state-baseline.md",
+    "wiki/experiments/w42-v0-strategy-tags-baseline.md",
+    "wiki/experiments/w42-strategy-tags-v0.md",
+    "wiki/experiments/winning42-strategy-measurement.md",
+    "wiki/experiments/winning42-ch06-concentration-style.md",
+    "wiki/experiments/winning42-ch11-table-talk.md"
+  ],
+  "source_artifacts": [
+    "scratch/w42/concept_bucket_regret_report/concept_bucket_regret.csv",
+    "scratch/w42/concept_bucket_regret_report/manifest.json",
+    "scratch/w42/detector_tests/report.json",
+    "scratch/w42/detector_tests/checks.csv",
+    "scratch/w42/detector_tests/coverage.csv",
+    "scratch/w42/strategy_tags_v1_map/detector_map.json",
+    "scratch/w42/strategy_tags_v0/tag_schema.json",
+    "scratch/w42/raw_public_state_baseline/metrics.json",
+    "scratch/w42/raw_public_state_baseline/manifest.json",
+    "scratch/w42/v0_strategy_tags_baseline/metrics.json",
+    "scratch/w42/v0_strategy_tags_baseline/bucket_metrics.csv",
+    "scratch/w42/v0_strategy_tags_baseline/manifest.json"
+  ],
+  "data_inputs": {
+    "corpora_inherited_from_source_runs": [
+      "/Users/jason/code/mk5-main/gus/data/corpus_train_100.pt",
+      "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt"
+    ],
+    "split_policy_inherited": "train seeds 0-99; eval-only seeds 900000-900019",
+    "ruleset_score_mode": "existing Gus corpus semantics"
+  },
+  "random_seeds": {
+    "fresh_run": "not applicable",
+    "inherited_dataset_shuffle": 42,
+    "inherited_train": 42,
+    "inherited_eval": 43,
+    "inherited_oracle_world_sampling": "first 10 worlds per decision for E[Q] N=10"
+  },
+  "artifact_outputs": [
+    "wiki/experiments/w42-belief-attention-concept-buckets.md",
+    "scratch/w42/belief_attention_concept_buckets/bucket_matrix.csv",
+    "scratch/w42/belief_attention_concept_buckets/manifest.json"
+  ],
+  "public_state_boundary": {
+    "online_safe": [
+      "ruleset and scoring metadata",
+      "public auction and declaration",
+      "public trick history",
+      "legal action set",
+      "current player's own hand",
+      "candidate-action facts",
+      "public void evidence",
+      "public priors derived from bids and legal play"
+    ],
+    "report_only": [
+      "true hidden owner labels",
+      "partner/opponent private hand facts",
+      "forge oracle values",
+      "completed-hand attribution",
+      "Burl trace text and leakage audit labels",
+      "synthetic contaminated traces"
+    ]
+  }
+}
