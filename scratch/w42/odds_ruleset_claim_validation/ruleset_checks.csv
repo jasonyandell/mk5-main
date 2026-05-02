@@ -1,0 +1,11 @@
+claim_group,claim_id,check,sample_size,pass_count,status,details
+chapter1_rules,ch01-hand-total-42,7 trick points plus 35 count points equals 42,1,1,supported,count_points=35; trick_points=7; total=42
+chapter1_rules,ch01-count-identity,"Count dominoes are 5-5, 6-4, 5-0, 4-1, and 3-2 with values 10/10/5/5/5",5,5,supported,"{""6-4"": 10, ""5-5"": 10, ""5-0"": 5, ""4-1"": 5, ""3-2"": 5}"
+chapter1_rules,ch01-native-suit-membership,Doubles have one native suit; non-doubles have two native suits,28,28,supported,28-tile double-six set
+chapter1_rules,ch01-trump-exclusivity,"Called-suit tiles are treated only as trump/called suit, not as secondary pip suits",56,56,supported,7 pip-trump declarations plus doubles-trump
+chapter1_rules,ch01-follow-suit-obligation,"Legal play is the follow-suit set when nonempty, otherwise any held tile",4422600,4422600,supported,hand_size=4; constrained_positions=2690940; declarations=9
+chapter13_rules,ch13-straight-variant-exclusion,Straight-42 ruleset gate excludes optional-variant events,7,7,supported,"nel_o,sevens,plunge,splash,partner_trade,small_end_suit_override,doubles_fallback_follow"
+chapter13_rules,ch13-direct-84-legal,A direct 84 bid is legal without a prior 42 bid in straight auction grammar,1,1,supported,range checked: bid >= 30 and high-bid values admitted by chapter harvest
+chapter13_rules,ch13-nontrump-first-lead-legal,Bidder first lead may be nontrump,196,196,supported,Enumerated all non-called-suit leads under straight declarations
+chapter13_rules,ch13-small-end-illegal,A nontrump first lead cannot choose the low/small end as an arbitrary led suit,147,147,supported,Led suit is fixed to the high pip for non-called-suit leads in this predicate
+chapter13_rules,ch13-high-bid-score-mode,"High bids score by made/set formula, not bid plus captured points",6,6,supported,"[[42, 42], [42, 41], [84, 84], [84, 60], [126, 126], [168, 100]]"

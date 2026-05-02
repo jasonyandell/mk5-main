@@ -1,0 +1,52 @@
+{
+  "bead": "t42-csw6.16",
+  "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+  "generated_at_utc": "2026-05-02T02:33:21.852553+00:00",
+  "command": "python scratch/w42/odds_ruleset_claim_validation/validate_odds_ruleset.py",
+  "random_seeds": "not applicable",
+  "sample_sizes": {
+    "seven_domino_hands": 1184040,
+    "four_trump_assignments_per_claim": 27,
+    "follow_suit_positions": 4422600
+  },
+  "headline": {
+    "total_hands": 1184040,
+    "modal_joint_bucket": {
+      "double_count": 2,
+      "void_count": 1,
+      "count": 213255,
+      "percent": 18.010793554271814
+    },
+    "four_trump_counts": [
+      {
+        "claim_group": "four_trump",
+        "bucket": "missing second-highest only; setter can retain it after following double",
+        "count": 10,
+        "total": 27,
+        "percent": 37.03703703703704
+      },
+      {
+        "claim_group": "four_trump",
+        "bucket": "missing next two highest; setter can retain a high trump after double lead",
+        "count": 14,
+        "total": 27,
+        "percent": 51.851851851851855
+      }
+    ],
+    "all_ruleset_checks_passed": true
+  },
+  "data_inputs": [
+    "wiki/experiments/winning42-ch01-in-a-nutshell.md",
+    "wiki/experiments/winning42-ch13-optional-variations.md",
+    "wiki/experiments/winning42-ch16-statistical-odds.md",
+    "forge/oracle/tables.py",
+    "forge/oracle/declarations.py"
+  ],
+  "wandb_links": "not applicable",
+  "hf_links": "not applicable",
+  "caveats": [
+    "scratch/winning42/winning42.with_figures.md is absent in this worktree, so source-slice line claims were read through the chapter wiki pages.",
+    "No forge E[Q], Gus/w42 model, Burl trace, W&B, or HF run was used.",
+    "Supported statuses apply to odds arithmetic and deterministic ruleset predicates, not to downstream strategy optimality."
+  ]
+}
