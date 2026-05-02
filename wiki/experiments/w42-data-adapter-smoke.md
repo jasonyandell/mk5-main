@@ -16,11 +16,10 @@ public-state, action, and oracle-label adapter shape:
 - `scratch/w42/data_adapter_smoke/report.json`
 - `scratch/w42/data_adapter_smoke/example_row.json`
 
-The local worktree did not contain the declared Gus or Forge corpora, so this
-bead produced a deterministic fixture-backed smoke rather than a real-data
-smoke. This is a blocker for proving the adapter on local corpus bytes, but it
-does validate the expected batch surface and records the missing inputs in the
-manifest.
+The main checkout contains `gus/data/corpus_train_100.pt`, so the merged smoke
+now validates the adapter against a real Gus joint-world corpus row. The script
+still keeps a deterministic fixture fallback for machines without local corpus
+bytes, but the recorded report for this run is `source_mode: real-corpus`.
 
 No serious model was trained.
 
@@ -31,18 +30,19 @@ The smoke checked the declared w42 source shapes from
 
 | path or glob | observed locally |
 |---|---|
-| `gus/data/corpus_train_100.pt` | absent |
-| `gus/data/corpus_train_chunk_*-*.pt` | absent |
-| `gus/data/corpus_v2_train_*_d0-9.pt` | absent |
-| `gus/data/corpus_eval_20.pt` | absent |
-| `gus/data/corpus_v2_eval.pt` | absent |
-| `data/eq-games/train` | absent |
-| `data/eq-games/val` | absent |
-| `data/eq-games/test` | absent |
+| `gus/data/corpus_train_100.pt` | present; loaded as the smoke source |
+| `gus/data/corpus_train_chunk_*-*.pt` | not consumed in this smoke |
+| `gus/data/corpus_v2_train_*_d0-9.pt` | not consumed in this smoke |
+| `gus/data/corpus_eval_20.pt` | not consumed in this smoke |
+| `gus/data/corpus_v2_eval.pt` | not consumed in this smoke |
+| `data/eq-games/train` | not consumed in this smoke |
+| `data/eq-games/val` | not consumed in this smoke |
+| `data/eq-games/test` | not consumed in this smoke |
 
-Because the local corpora are absent, the generated manifest records
-`exists_at_manifest_time: false` and uses
-`scratch/w42/data_adapter_smoke/example_row.json` as the fixture source.
+The smoke intentionally loads only the first available declared corpus path so
+it remains a small adapter check rather than a bulk data scan. The generated
+manifest records `exists_at_manifest_time: true` for
+`gus/data/corpus_train_100.pt`.
 
 ## Batch Shape
 
@@ -51,9 +51,9 @@ tag dimensions:
 
 | field | shape | role |
 |---|---:|---|
-| `tokens` | `[1, 33]` | public-state token sequence |
+| `tokens` | `[1, 33, 5]` | public-state token sequence |
 | `attention_mask` | `[1, 33]` | token mask |
-| `belief_target` | `[1, 28]` | hidden-owner label fixture |
+| `belief_target` | `[1, 28]` | hidden-owner label |
 | `belief_mask` | `[1, 28]` | belief supervision mask |
 | `world_assignment` | `[1, 28, 3]` | sampled-world hidden-seat assignment |
 | `q_per_world` | `[1, 7]` | oracle per-world Q label |
@@ -70,8 +70,8 @@ Derived labels:
 
 | label | value |
 |---|---:|
-| `action_taken` | `1` |
-| `oracle_best_action` | `1` |
+| `action_taken` | `5` |
+| `oracle_best_action` | `5` |
 
 ## Example Row
 
@@ -84,14 +84,13 @@ Important fields:
 {
   "decision_idx": 0,
   "player": 0,
-  "action_taken": 1,
-  "legal_mask": [true, true, true, false, true, false, false],
-  "e_q": [3.25, 6.5, 5.75, -99.0, 4.0, -99.0, -99.0],
-  "q_per_world": [2.5, 7.0, 4.75, -8.0, 3.25, -8.0, -8.0]
+  "action_taken": 5,
+  "legal_mask": [true, true, true, true, true, true, true],
+  "e_q": [-14.435, -15.853, -15.045, -14.06, -13.798, -12.936, -14.917]
 }
 ```
 
-The fixture keeps oracle values as labels only. They are not included in
+The adapter keeps oracle values as labels only. They are not included in
 `tokens`, `strategy_features`, or `strategy_action_features`.
 
 ## Reproducibility
@@ -112,10 +111,10 @@ Config:
 | bead | `t42-csw6.4` |
 | batch size | `1` |
 | device | `cpu` |
-| source mode | `fixture` |
+| source mode | `real-corpus` |
+| data input | `gus/data/corpus_train_100.pt` |
 | data manifest | `scratch/w42/data_adapter_smoke/manifest.json` |
 | report JSON | `scratch/w42/data_adapter_smoke/report.json` |
-| fixture source | `scratch/w42/data_adapter_smoke/example_row.json` |
 | checkpoint | `not applicable` |
 | W&B links | `not applicable` |
 | HF links | `not applicable` |
@@ -176,7 +175,7 @@ git status --short --untracked-files=all
 
 no claim-ledger change
 
-This smoke validates adapter shape and fixture determinism only. It creates no
+This smoke validates adapter shape and deterministic real-corpus loading only. It creates no
 empirical evidence for a Winning 42 strategy claim and does not move any claim
 status.
 

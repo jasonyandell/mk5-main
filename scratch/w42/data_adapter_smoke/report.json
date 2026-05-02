@@ -1,10 +1,10 @@
 {
   "bead_id": "t42-csw6.4",
-  "source_mode": "fixture",
-  "blocker": "Declared local Gus/Forge corpora are absent in this worktree; real-data adapter smoke is blocked.",
-  "repo_commit": "fe8500155f4a3dd003feb6e3a2a92c35db28ea4d",
+  "source_mode": "real-corpus",
+  "blocker": null,
+  "repo_commit": "68e6ee3afb659e26239f72264e5c94515ef947f9",
   "command": "python scratch/w42/data_adapter_smoke.py --seed 42 --batch-size 1",
-  "cwd": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-4",
+  "cwd": "/Users/jason/code/mk5-main",
   "random_seeds": {
     "torch": 42,
     "dataset_shuffle": 42,
@@ -14,14 +14,7 @@
   "hf_links": "not applicable",
   "claim_ledger_impact": "no claim-ledger change",
   "data_inputs": [
-    "gus/data/corpus_train_100.pt",
-    "gus/data/corpus_train_chunk_*-*.pt",
-    "gus/data/corpus_v2_train_*_d0-9.pt",
-    "gus/data/corpus_eval_20.pt",
-    "gus/data/corpus_v2_eval.pt",
-    "data/eq-games/train",
-    "data/eq-games/val",
-    "data/eq-games/test"
+    "gus/data/corpus_train_100.pt"
   ],
   "batch_size": 1,
   "shapes": {
@@ -69,7 +62,8 @@
     ],
     "tokens": [
       1,
-      33
+      33,
+      5
     ],
     "voids": [
       1,
@@ -83,10 +77,10 @@
   },
   "derived_labels": {
     "oracle_best_action": [
-      1
+      5
     ],
     "action_taken": [
-      1
+      5
     ]
   },
   "example_row_path": "scratch/w42/data_adapter_smoke/example_row.json",

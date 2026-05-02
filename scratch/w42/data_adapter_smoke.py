@@ -12,6 +12,7 @@ import argparse
 import glob
 import json
 import subprocess
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -128,20 +129,24 @@ def collate_first_rows(rows: list[dict[str, torch.Tensor]]) -> dict[str, torch.T
 
 def existing_sources(root: Path, extra_inputs: list[str]) -> list[Path]:
     patterns = extra_inputs or DECLARED_SOURCE_PATTERNS
-    paths: list[Path] = []
     for pattern in patterns:
         full_pattern = str(root / pattern)
         matches = sorted(Path(p) for p in glob.glob(full_pattern))
-        if matches:
-            paths.extend(p for p in matches if p.is_file())
-        else:
-            candidate = root / pattern
-            if candidate.is_file():
-                paths.append(candidate)
-    return paths
+        files = [p for p in matches if p.is_file()]
+        if files:
+            return [files[0]]
+        candidate = root / pattern
+        if candidate.is_file():
+            return [candidate]
+    return []
 
 
 def load_real_batch(paths: list[Path], seed: int, batch_size: int) -> dict[str, torch.Tensor]:
+    root = repo_root()
+    root_str = str(root)
+    if root_str not in sys.path:
+        sys.path.insert(0, root_str)
+
     from gus.model.dataset_seq_world import JointWorldFullDataset
 
     ds = JointWorldFullDataset(paths, seed=seed, include_strategy_features=True)
@@ -204,7 +209,11 @@ def manifest(root: Path, commit: str, source_mode: str, sources: list[Path], see
             },
         },
         "leakage_exclusions": [
-            "No held-out eval corpora consumed in fixture mode.",
+            (
+                "No held-out eval corpora consumed; smoke loaded the first available train corpus."
+                if source_mode == "real-corpus"
+                else "No held-out eval corpora consumed in fixture mode."
+            ),
             "Oracle labels are emitted only as labels, not public-state features.",
         ],
         "labels_available": ["e_q", "q_per_world", "action_taken", "legal_mask"],
@@ -219,7 +228,11 @@ def manifest(root: Path, commit: str, source_mode: str, sources: list[Path], see
             "change_type": "initial",
             "compatibility": "compatible",
             "supersedes": [],
-            "notes": "Fixture smoke only; replace with real corpus manifest when local corpora exist.",
+            "notes": (
+                "Real-corpus smoke only; expand beyond the first available source in a later adapter bead."
+                if source_mode == "real-corpus"
+                else "Fixture smoke only; replace with real corpus manifest when local corpora exist."
+            ),
         },
         "claim_ledger_impact": "no claim-ledger change",
     }
