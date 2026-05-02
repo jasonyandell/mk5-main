@@ -1850,3 +1850,19 @@ Fix in `burl/chat/web/src/App.svelte`:
 **Touched pages:** [[burl-lab]] [[burl-chat]] [[log]]
 
 First end-to-end wire run of the burl/lab platform: web → SSE → server :8002 → real `MlxEngine`. Session `d80349b45ad6` committed `domino_id=21 (6-0)` for `harvest_batched_20260425_072910` decision_idx=1 via the `commit_play` envelope, matching the canonical in-process smoke `3dc73cb67bc1`. First live confirmation that the Decision Protocol section is rendered from active `ToolSpec.protocol_phrase` (captured in `scratch/burl-lab-runlogs/rendered-system.txt`), not hand-edited. Full write-up — including the chat-vs-lab structural diff and a sampling-stochastic envelope-miss note from session `8ff6e41fd87e` — at [[burl-lab]] § "First wire run (session d80349b45ad6)".
+
+---
+
+## [2026-05-02 | local | w42 powered branch atlas v1]
+
+**Touched pages:** [[w42]] [[w42-next-model-decision]] [[w42-phase2-hidden-domino-threat-attribution]] [[w42-phase2-distribution-aware-ev-report]] [[w42-powered-branch-atlas-v1]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-powered-branch-atlas-v1]]; 1 artifact directory - `w42/branch_atlas_v1/`.
+**Updated:** [[w42]] now lists the powered branch atlas as the eighth phase-2 surface; [[w42-next-model-decision]] records it as the first executable hidden-impact measurement loop; [[w42-phase2-hidden-domino-threat-attribution]] now points to real hidden-threat rows instead of only the schema design.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- w42's branch-aware EV work is no longer only a visualizer/JSONL schema. The project generated two schema-v2 E[Q] games with N=1000 saved joint worlds and built 56 decision rows, 134 legal-action rows, and 1026 hidden-threat attribution rows.
+- Hidden-holder impact is now measured by conditioning `q_per_world` on `(hidden_domino, holder)` and comparing mean Q, lower-tail mass, high-shelf mass, and std against the baseline action distribution. The labels remain offline-only and must not become live hidden-truth inputs.
+- W&B is now used as a dashboard for report experiments: run `44z1kl9j` logs repeated points over `progress/decisions_processed` rather than only final summary fields.
+- The pilot still uses fixed `bid_value=30`, so bid-margin and "bid only enough" claims remain untested until real auction metadata is attached.

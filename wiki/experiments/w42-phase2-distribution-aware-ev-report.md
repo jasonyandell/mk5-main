@@ -91,6 +91,11 @@ feature vocabulary needed by [[w42-next-model-decision]]: future claim-led probe
 can train or report against threshold mass, bad-tail mass, and branch shape
 instead of only scalar mean regret.
 
+[[w42-powered-branch-atlas-v1]] is the powered follow-up for this report. It
+recomputes the same distribution family from saved `q_per_world` tensors rather
+than collapsed JSONL PDFs, then adds hidden-holder impact rows from the matching
+`world_hands` tensor.
+
 ## Artifacts
 
 | artifact | path | purpose |
@@ -126,4 +131,5 @@ instead of only scalar mean regret.
 
 ## Links
 
-[[w42]] | [[eq-browser-visualizers]] | [[w42-next-model-decision]]
+[[w42]] | [[eq-browser-visualizers]] | [[w42-next-model-decision]] |
+[[w42-powered-branch-atlas-v1]]

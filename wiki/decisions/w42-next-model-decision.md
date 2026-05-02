@@ -99,6 +99,13 @@ distribution-aware labels, and explicit blank columns for bid margin and
 hidden-domino ownership. It is ready for schema review and slice analysis, not a
 claim-ledger verdict or a training dataset.
 
+[[w42-powered-branch-atlas-v1]] is the first powered follow-up. It uses saved
+joint worlds rather than collapsed visualizer PDFs, fills the hidden-threat
+label surface on a two-game N=1000 pilot, and logs W&B dashboard series over
+processed decisions. Its result is still a report/label artifact, not a model
+decision or claim-ledger verdict, but it proves the branch-aware/hidden-impact
+measurement loop is now executable.
+
 ## Risks
 
 - Direct detectors may require state not present in current Gus corpora.
@@ -109,6 +116,9 @@ claim-ledger verdict or a training dataset.
 - Hidden-domino attribution must remain an offline label/eval target; using
   hidden truth directly as a live feature would violate the legal public-state
   boundary.
+- The branch-atlas v1 pilot uses fixed `bid_value=30`; real bid-margin analysis
+  still needs auction metadata and should not infer "bid only enough" claims from
+  this slice.
 - A better model may exploit tags as shortcuts without learning the intended
   strategy mechanism.
 - W&B curves can look exciting while claim evidence remains proxy-only.

@@ -1,0 +1,67 @@
+{
+  "bead_id": "t42-gc7m",
+  "config": {
+    "examples": 12,
+    "log_every_decisions": 4,
+    "top_k_hidden_threats_per_action": 8,
+    "wandb_group": "w42-powered-branch-atlas-v1",
+    "wandb_mode": "online",
+    "wandb_name": "t42-gc7m-branch-atlas-v1-s9420-9421-n1000",
+    "wandb_project": "w42"
+  },
+  "created_at_utc": "2026-05-02T23:03:14.538205+00:00",
+  "feature_groups": {
+    "actor_private_context": [
+      "actor remaining hand facts",
+      "candidate legal action"
+    ],
+    "offline_distribution_labels": [
+      "q_per_world-derived PDF shape",
+      "threshold mass",
+      "lower-tail mass",
+      "quantiles",
+      "CVaR",
+      "scalar-EV omission flags"
+    ],
+    "offline_hidden_threat_labels": [
+      "conditioned hidden domino holder impact",
+      "top downside/upside hidden drivers",
+      "holder/domino impact rows"
+    ],
+    "online_safe_context": [
+      "seat_role",
+      "trick_position",
+      "public score",
+      "played count",
+      "current trick winner",
+      "candidate action facts"
+    ]
+  },
+  "input": {
+    "bid_value_status": "schema_v2_fixed_cli_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      0,
+      1
+    ],
+    "input_games": 2,
+    "n_samples": 1000,
+    "path": "w42/branch_atlas_v1/eq_pdf_s9420-9421_joint_1000s_v2.pt",
+    "schema": "v2",
+    "seeds": [
+      9420,
+      9421
+    ],
+    "sha256": "c6e2a700c3110c84b622014226fdece45bc811d0b3d2ede42a536fcbc5e49c26",
+    "start_seed": 9420
+  },
+  "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+  "outputs": {
+    "decision_actions_csv": "w42/branch_atlas_v1/decision_actions.csv",
+    "decision_states_csv": "w42/branch_atlas_v1/decision_states.csv",
+    "examples_json": "w42/branch_atlas_v1/examples.json",
+    "hidden_threat_rows_csv": "w42/branch_atlas_v1/hidden_threat_rows.csv",
+    "manifest_json": "w42/branch_atlas_v1/manifest.json"
+  },
+  "schema_version": "w42.branch_atlas_v1.manifest.v0"
+}

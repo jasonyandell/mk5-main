@@ -10,14 +10,11 @@ status: active
 
 [[w42]] Phase 2 needs a way to explain branch-shaped E[Q] PDFs: which unseen
 domino ownerships create the high shelves, middle lumps, and disaster tails?
-This bead defines the first attribution schema and script for saved
-joint-world artifacts.
-
-No empirical attribution table was produced in this worktree. The tiny
-generation command was attempted, but the local Python environment was missing
-`lightning`, which is required by `forge.eq.oracle.Stage1Oracle`. The result is
-therefore a concrete, runnable design plus illustrative rows, not a claim about
-any real seed.
+This page defines the attribution schema and leakage boundary for saved
+joint-world artifacts. The first empirical implementation is now
+[[w42-powered-branch-atlas-v1]], which generated two N=1000 schema-v2 games and
+produced 1026 hidden-threat rows from real `world_hands` and `q_per_world`
+tensors.
 
 ## Method
 
@@ -31,12 +28,18 @@ generation with `--save-joint-worlds`. Each decision must retain:
 - `legal_mask`, `player`, and `hands` so rows can be tied back to legal visible
   actions.
 
-The analyzer in `w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py`
-groups worlds by `(hidden_domino, holder)` for each decision/action and compares
-the holder-conditioned Q distribution against the unconditional distribution.
-The first-pass thresholds are `Q <= -18` for disaster-tail mass and `Q >= 18`
-for high-shelf mass, matching the bid-30 cliff used in the E[Q] PDF and action
-selection surfaces.
+The original analyzer in
+`w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py` groups
+worlds by `(hidden_domino, holder)` for each decision/action and compares the
+holder-conditioned Q distribution against the unconditional distribution.
+[[w42-powered-branch-atlas-v1]] extends that design into the reusable branch
+atlas at `w42/branch_atlas_v1/build_branch_atlas.py`, adding public decision
+context, distribution-shape features, W&B progress series, and action/decision
+tables beside the hidden-threat rows.
+
+The first-pass thresholds remain `Q <= -18` for disaster-tail mass and `Q >= 18`
+for high-shelf mass. The current powered run uses fixed `bid_value=30`; true
+bid-margin analysis still requires real auction metadata.
 
 The output row grain is:
 
@@ -81,49 +84,27 @@ donation, or bid-margin detector should care about.
 
 | artifact | path | status |
 |---|---|---|
-| manifest | `w42/hidden_domino_threat_attribution/manifest.json` | created |
-| summary | `w42/hidden_domino_threat_attribution/summary.json` | created |
-| schema proposal | `w42/hidden_domino_threat_attribution/metrics_schema_proposal.json` | created |
-| analyzer | `w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py` | created |
+| manifest | `w42/hidden_domino_threat_attribution/manifest.json` | schema/design artifact |
+| summary | `w42/hidden_domino_threat_attribution/summary.json` | schema/design artifact |
+| schema proposal | `w42/hidden_domino_threat_attribution/metrics_schema_proposal.json` | schema/design artifact |
+| original analyzer | `w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py` | standalone attribution analyzer |
 | example rows | `w42/hidden_domino_threat_attribution/example_rows.jsonl` | illustrative only |
 | walkthrough | `w42/hidden_domino_threat_attribution/example_walkthrough.md` | illustrative only |
-
-## Attempted Tiny Run
-
-Command attempted:
-
-```bash
-python -u -m forge.eq.generate \
-  --start-seed 9200 \
-  --n-games 1 \
-  --samples 10 \
-  --save-joint-worlds \
-  --device mps \
-  -o w42/hidden_domino_threat_attribution/tiny_joint_world_sample.pt
-```
-
-Failure:
-
-```text
-ModuleNotFoundError: No module named 'lightning'
-```
-
-The failure occurred while importing `forge.eq.oracle.Stage1Oracle`, before any
-sampled-world artifact was written. `forge/requirements.txt` lists
-`lightning>=2.0`, so the command recipe remains the expected small reproduction
-path after dependencies are installed.
+| powered implementation | `w42/branch_atlas_v1/build_branch_atlas.py` | empirical branch/threat atlas |
+| powered threat rows | `w42/branch_atlas_v1/hidden_threat_rows.csv` | 1026 real rows |
 
 ## Run Recipe
 
-Tiny inspectable smoke sample:
+Standalone attribution sample:
 
 ```bash
-python -m pip install -r forge/requirements.txt
 python -u -m forge.eq.generate \
-  --start-seed 9200 \
+  --start-seed 9420 \
   --n-games 1 \
-  --samples 10 \
+  --samples 1000 \
   --save-joint-worlds \
+  --schema v2 \
+  --bid-value 30 \
   --device mps \
   -o w42/hidden_domino_threat_attribution/tiny_joint_world_sample.pt
 python w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py \
@@ -147,15 +128,13 @@ Real metric pass:
 | worktree | `.claude/worktrees/w42-phase2-hidden-threat` |
 | branch | `w42/phase2-hidden-threat` |
 | design-time commit | `343a9f4c45244889ea9c1eaa8edacde7e2a69920` |
-| generation status | attempted, blocked by missing `lightning` dependency |
-| W&B links | not applicable |
+| generation status | schema design superseded by [[w42-powered-branch-atlas-v1]] empirical run |
+| W&B links | `https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j` |
 | HF links | not applicable |
 | claim-ledger impact | no central claim status change |
 
 ## Next Steps
 
-- Install the forge requirements or run in the normal forge environment, then
-  execute the tiny recipe above.
 - Add bid-aware make/set thresholds from `bid_value`.
 - Preserve per-world posterior weights for posterior runs.
 - Feed the resulting top-k rows into the next targeted w42 regime: setter pounce,
@@ -165,4 +144,4 @@ Real metric pass:
 
 [[w42]] | [[w42-final-empirical-strategy-report]] |
 [[w42-next-model-decision]] | [[joint-world-tensor]] |
-[[gus-joint-world-tire-kick]]
+[[gus-joint-world-tire-kick]] | [[w42-powered-branch-atlas-v1]]

@@ -170,6 +170,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/w42-phase2-hidden-domino-threat-attribution|w42-phase2-hidden-domino-threat-attribution]] — design for attributing E[Q] PDF shelves/lumps to hidden-domino ownership and impact-weighted belief targets (active)
 - [[experiments/w42-phase2-distribution-aware-ev-report|w42-phase2-distribution-aware-ev-report]] — E[Q] PDF report computing threshold mass, tails, quantiles, and scalar-EV omission examples (active)
 - [[experiments/w42-phase2-decision-table|w42-phase2-decision-table]] — v0 140-state / 346-action bridge table joining E[Q] PDFs to seat-role context and explicit missing hidden-threat fields (active)
+- [[experiments/w42-powered-branch-atlas-v1|w42-powered-branch-atlas-v1]] — powered two-game N=1000 joint-world branch atlas with 56 decisions, 134 actions, 1026 hidden-threat rows, and live W&B progress series (active)
 - [[experiments/w42-phase2-setter-pounce-direct-label-probe|w42-phase2-setter-pounce-direct-label-probe]] — direct-label spec, fixtures, and leakage checks for setter pounce/count-to-set windows (active)
 - [[experiments/w42-phase2-84-weapon-preservation-probe|w42-phase2-84-weapon-preservation-probe]] — 84 weapon/stopping/preservation label surface and fixture plan (active)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
