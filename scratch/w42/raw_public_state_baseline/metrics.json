@@ -1,0 +1,31 @@
+{
+  "deltas": {
+    "model_final_minus_e_q_n_10_mean_regret": 2.7155827990600043,
+    "model_final_minus_oracle_ceiling_mean_regret": 2.833551515851702
+  },
+  "e_q_n_10": {
+    "match_rate": 0.9,
+    "mean_regret": 0.11796871679169792,
+    "n": 560.0,
+    "near_tie_rate_regret_lt_0_5": 0.95
+  },
+  "oracle_best_e_q_ceiling": {
+    "match_rate": 1.0,
+    "mean_regret": 0.0,
+    "n": 560.0,
+    "near_tie_rate_regret_lt_0_5": 1.0
+  },
+  "raw_public_state_action_model_best": {
+    "epoch": 3,
+    "match_rate": 0.5964285714285714,
+    "mean_regret": 2.4710691724504743,
+    "n": 560.0,
+    "near_tie_rate_regret_lt_0_5": 0.675
+  },
+  "raw_public_state_action_model_final": {
+    "match_rate": 0.5660714285714286,
+    "mean_regret": 2.833551515851702,
+    "n": 560.0,
+    "near_tie_rate_regret_lt_0_5": 0.65
+  }
+}
