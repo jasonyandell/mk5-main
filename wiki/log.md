@@ -1714,3 +1714,18 @@ Fix in `burl/chat/web/src/App.svelte`:
 - [[w42]] now has a five-seed raw/v0/rich replication on 2,800 held-out decisions, with live per-epoch W&B series for all 15 model runs.
 - Raw-to-v0 and raw-to-rich gains held on the larger slice; rich-over-v0 is a modest positive signal, not a promotion decision or claim-ledger verdict.
 - `E[Q] N=10` remains far stronger on the same eval slice, so the result supports continued feature work rather than final conclusions.
+
+---
+
+## [2026-05-02 | local | w42 initial survey close-out]
+
+**Touched pages:** [[w42]] [[winning42-strategy-measurement]] [[w42-hugging-face-artifact-publishing]] [[w42-final-empirical-strategy-report]] [[w42-next-model-decision]] [[w42-promote-or-retire]] [[index]] [[log]]
+**Added:** 4 pages — 2 experiment pages ([[w42-hugging-face-artifact-publishing]], [[w42-final-empirical-strategy-report]]) and 2 decision pages ([[w42-next-model-decision]], [[w42-promote-or-retire]]).
+**Updated:** [[w42]] now points future readers at the initial survey synthesis and keep-as-research decision; [[winning42-strategy-measurement]] records that strategy tags help models but tactical advice remains mostly underpowered/context-limited; [[index]] catalogued the new pages.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The initial w42 survey is closed as a research map, not as a book verdict. Strategy tags are useful model inputs; exact odds/rules/scoring claims have narrow support; tactical claims need direct detectors and paired tests.
+- HF publishing is deferred because current artifacts are scratch reports/checkpoints, not stable public datasets or promoted models.
+- w42 stays active as research. The next model step is a targeted v2 direct-detector probe for one tactical regime, preferably setter pounce if current public-state/contract context can support it.

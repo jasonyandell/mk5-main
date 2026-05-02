@@ -23,6 +23,9 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
 - `scratch/winning42/winning42.with_figures.md` — OCR/preview source used for the chapter harvest.
 - [[experiments/gus-strategy-tags-probe]] — first promoted empirical probe showing that
   explicit strategy tags improve a tiny Gus-like policy, though not enough to beat `E[Q] N=10`.
+- [[w42-final-empirical-strategy-report]] — first w42 survey synthesis: strategy tags
+  help small models, exact substrate claims can be supported, and most tactical claims
+  remain context-limited or underpowered until direct detectors and paired tests land.
 
 ## Analysis Catalog Shape
 
@@ -142,6 +145,12 @@ layer. Future experiment pages should promote a claim to `supported` or `contrad
 only after enumeration, oracle rollout, Gus belief/policy evaluation, or Burl trace
 review actually runs.
 
+The first w42 close-out keeps that posture. The survey found useful strategy signal
+in model inputs, but only deterministic arithmetic/ruleset/scoring predicates moved
+to supported evidence. Tactical advice such as pounce timing, safe donation, 84
+weapon preservation, and bid-margin discipline remains the next digging surface, not
+a settled conclusion.
+
 ## First Work Package
 
 Build a `strategy_tags` analyzer over generated games that emits public-state JSON tags
@@ -172,4 +181,5 @@ The first report should have three tables:
 
 ## Links
 
-[[gus]] · [[burl]] · [[forge]] · [[topics/regret-eval]] · [[experiments/gus-strategy-tags-probe]]
+[[gus]] · [[burl]] · [[forge]] · [[topics/regret-eval]] ·
+[[experiments/gus-strategy-tags-probe]] · [[w42-final-empirical-strategy-report]]
