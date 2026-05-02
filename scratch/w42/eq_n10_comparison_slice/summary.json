@@ -1,0 +1,65 @@
+{
+  "schema_version": "w42.eq_n10_comparison_slice.v1",
+  "bead_id": "t42-csw6.13",
+  "created_from": {
+    "raw_baseline_bead_id": "t42-csw6.10",
+    "raw_run_commit": "8df0c3b1f03893cc4c059762de1fa1dd0c84ca06",
+    "raw_metrics": "scratch/w42/raw_public_state_baseline/metrics.json",
+    "raw_run": "scratch/w42/raw_public_state_baseline/run.json",
+    "raw_manifest": "scratch/w42/raw_public_state_baseline/manifest.json"
+  },
+  "data_inputs": {
+    "train": "/Users/jason/code/mk5-main/gus/data/corpus_train_100.pt",
+    "eval": "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt",
+    "eval_game_seeds": "900000-900019",
+    "eval_n": 560
+  },
+  "command_provenance": {
+    "fresh_command_run_for_this_slice": "not run",
+    "source_command": "scratch/w42/raw_public_state_baseline.py --train /Users/jason/code/mk5-main/gus/data/corpus_train_100.pt --eval /Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt --train-limit 2800 --eval-limit 560 --epochs 8 --batch-size 256 --seed 42 --split-seed 42 --eval-seed 43 --output-dir scratch/w42/raw_public_state_baseline",
+    "eq_n": 10,
+    "oracle_world_sampling": "first-N deterministic"
+  },
+  "seeds": {
+    "data_generation": "not applicable",
+    "dataset_shuffle": 42,
+    "train": 42,
+    "eval": 43,
+    "oracle_world_sampling": "first-N deterministic"
+  },
+  "metrics": {
+    "oracle_best_e_q_ceiling": {
+      "mean_regret": 0.0,
+      "match_rate": 1.0,
+      "near_tie_rate_regret_lt_0_5": 1.0,
+      "n": 560
+    },
+    "e_q_n_10": {
+      "mean_regret": 0.11796871679169792,
+      "match_rate": 0.9,
+      "near_tie_rate_regret_lt_0_5": 0.95,
+      "n": 560
+    },
+    "raw_public_state_action_model_best": {
+      "epoch": 3,
+      "mean_regret": 2.4710691724504743,
+      "match_rate": 0.5964285714285714,
+      "near_tie_rate_regret_lt_0_5": 0.675,
+      "n": 560
+    },
+    "raw_public_state_action_model_final": {
+      "mean_regret": 2.833551515851702,
+      "match_rate": 0.5660714285714286,
+      "near_tie_rate_regret_lt_0_5": 0.65,
+      "n": 560
+    }
+  },
+  "deltas": {
+    "raw_best_minus_e_q_n_10_mean_regret": 2.3531004556587764,
+    "raw_final_minus_e_q_n_10_mean_regret": 2.7155827990600043,
+    "e_q_n_10_minus_oracle_ceiling_mean_regret": 0.11796871679169792
+  },
+  "wandb": "not applicable",
+  "huggingface": "not applicable",
+  "claim_ledger_impact": "no claim-ledger change"
+}
