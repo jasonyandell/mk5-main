@@ -1,0 +1,118 @@
+{
+  "schema": "w42.scoring_objective_drift.v1",
+  "repo_commit": "f746b93f4ea0bacc697ed27b9dbf2fbd9ef8e744",
+  "terminal_rows": 860,
+  "ordinary_terminal_rows": 516,
+  "high_terminal_rows": 344,
+  "partial_point_erasure_rows": 246,
+  "ordinary_made_rows": 90,
+  "ordinary_set_rows": 426,
+  "ordinary_set_severity_min": 43,
+  "ordinary_set_severity_max": 83,
+  "ordinary_set_severity_compressed_to_one_mark": 41,
+  "mark_multiplier_by_bid": {
+    "30": 1,
+    "35": 1,
+    "41": 1,
+    "42": 1,
+    "84": 2,
+    "126": 3,
+    "168": 4
+  },
+  "early_terminal_rows": 14623,
+  "max_tricks_saved_by_mark_terminal": 6,
+  "thresholds": [
+    {
+      "bid": 30,
+      "mark_multiplier": 1,
+      "point_success_net": 18,
+      "point_failure_loss": 72,
+      "point_break_even_make_probability": 0.8,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": -0.3
+    },
+    {
+      "bid": 35,
+      "mark_multiplier": 1,
+      "point_success_net": 28,
+      "point_failure_loss": 77,
+      "point_break_even_make_probability": 0.733333,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": -0.233333
+    },
+    {
+      "bid": 41,
+      "mark_multiplier": 1,
+      "point_success_net": 40,
+      "point_failure_loss": 83,
+      "point_break_even_make_probability": 0.674797,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": -0.174797
+    },
+    {
+      "bid": 42,
+      "mark_multiplier": 1,
+      "point_success_net": 42,
+      "point_failure_loss": 42,
+      "point_break_even_make_probability": 0.5,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": 0.0
+    },
+    {
+      "bid": 84,
+      "mark_multiplier": 2,
+      "point_success_net": 84,
+      "point_failure_loss": 84,
+      "point_break_even_make_probability": 0.5,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": 0.0
+    },
+    {
+      "bid": 126,
+      "mark_multiplier": 3,
+      "point_success_net": 126,
+      "point_failure_loss": 126,
+      "point_break_even_make_probability": 0.5,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": 0.0
+    },
+    {
+      "bid": 168,
+      "mark_multiplier": 4,
+      "point_success_net": 168,
+      "point_failure_loss": 168,
+      "point_break_even_make_probability": 0.5,
+      "mark_break_even_make_probability": 0.5,
+      "threshold_delta_mark_minus_point": 0.0
+    }
+  ],
+  "claim_statuses": {
+    "ch10-score-mode-objective": "supported",
+    "ch10-early-terminal-under-marks": "supported",
+    "ch10-nonbidder-partial-points-erased": "supported",
+    "ch10-set-severity-compression": "supported",
+    "ch10-special-bid-mark-multiplier": "supported",
+    "ch10-low-bid-score-distortion": "supported",
+    "ch10-point-system-skill-signal": "underpowered",
+    "ch10-tournament-speed-tradeoff": "context-limited",
+    "ch10-timed-marks-advancement-objective": "not-yet-tested"
+  },
+  "caveats": [
+    "Deterministic terminal scoring and synthetic transforms only; no forge E[Q] or model policy rollout.",
+    "Tournament objective is represented as marks/hand wins and tiebreak hooks, not a full bracket simulator.",
+    "84/126/168 rows validate multipliers and objective scale, not make probability or optimal bidding."
+  ],
+  "wandb": {
+    "enabled": true,
+    "available": true,
+    "mode": "online",
+    "project": "w42",
+    "entity": "jasonyandell-forge42",
+    "group": "w42-csw6-scoring-objective-drift",
+    "name": "t42-csw6.23-strategy-validation-s0000-f746b93",
+    "id": "7keeve33",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/7keeve33",
+    "dir": "scratch/w42/scoring_objective_drift_claim_validation/wandb/wandb/run-20260501_220053-7keeve33/files"
+  },
+  "hf_links": "not applicable"
+}

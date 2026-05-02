@@ -1,0 +1,8 @@
+bid,mark_multiplier,point_success_net,point_failure_loss,point_break_even_make_probability,mark_break_even_make_probability,threshold_delta_mark_minus_point
+30,1,18,72,0.8,0.5,-0.3
+35,1,28,77,0.733333,0.5,-0.233333
+41,1,40,83,0.674797,0.5,-0.174797
+42,1,42,42,0.5,0.5,0.0
+84,2,84,84,0.5,0.5,0.0
+126,3,126,126,0.5,0.5,0.0
+168,4,168,168,0.5,0.5,0.0
