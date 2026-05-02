@@ -1,0 +1,510 @@
+{
+  "schema_version": "w42.strategy_tags_v0.schema.v1",
+  "global_dim": 68,
+  "action_dim": 32,
+  "global_tags": [
+    {
+      "idx": 0,
+      "name": "decl_0_blanks",
+      "group": "declaration"
+    },
+    {
+      "idx": 1,
+      "name": "decl_1_ones",
+      "group": "declaration"
+    },
+    {
+      "idx": 2,
+      "name": "decl_2_twos",
+      "group": "declaration"
+    },
+    {
+      "idx": 3,
+      "name": "decl_3_threes",
+      "group": "declaration"
+    },
+    {
+      "idx": 4,
+      "name": "decl_4_fours",
+      "group": "declaration"
+    },
+    {
+      "idx": 5,
+      "name": "decl_5_fives",
+      "group": "declaration"
+    },
+    {
+      "idx": 6,
+      "name": "decl_6_sixes",
+      "group": "declaration"
+    },
+    {
+      "idx": 7,
+      "name": "decl_7_doubles_trump",
+      "group": "declaration"
+    },
+    {
+      "idx": 8,
+      "name": "decl_8_doubles_suit",
+      "group": "declaration"
+    },
+    {
+      "idx": 9,
+      "name": "decl_9_notrump",
+      "group": "declaration"
+    },
+    {
+      "idx": 10,
+      "name": "decision_fraction",
+      "group": "phase"
+    },
+    {
+      "idx": 11,
+      "name": "trick_index_fraction",
+      "group": "phase"
+    },
+    {
+      "idx": 12,
+      "name": "trick_position_fraction",
+      "group": "phase"
+    },
+    {
+      "idx": 13,
+      "name": "current_hand_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 14,
+      "name": "hand_trump_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 15,
+      "name": "hand_called_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 16,
+      "name": "hand_double_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 17,
+      "name": "hand_count_tile_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 18,
+      "name": "hand_count_point_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 19,
+      "name": "hand_off_tile_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 20,
+      "name": "hand_max_called_rank_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 21,
+      "name": "hand_has_called_count",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 22,
+      "name": "hand_off_count_point_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 23,
+      "name": "legal_action_frac",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 24,
+      "name": "legal_trump_frac",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 25,
+      "name": "legal_double_frac",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 26,
+      "name": "legal_count_tile_frac",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 27,
+      "name": "legal_count_point_frac",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 28,
+      "name": "must_follow_or_restricted",
+      "group": "legal_action_summary"
+    },
+    {
+      "idx": 29,
+      "name": "played_tile_frac",
+      "group": "public_count"
+    },
+    {
+      "idx": 30,
+      "name": "played_count_point_frac",
+      "group": "public_count"
+    },
+    {
+      "idx": 31,
+      "name": "unknown_count_point_frac",
+      "group": "public_count"
+    },
+    {
+      "idx": 32,
+      "name": "played_called_frac",
+      "group": "public_count"
+    },
+    {
+      "idx": 33,
+      "name": "unseen_called_frac",
+      "group": "public_count"
+    },
+    {
+      "idx": 34,
+      "name": "void_mean_all",
+      "group": "void_summary"
+    },
+    {
+      "idx": 35,
+      "name": "void_left_mean",
+      "group": "void_summary"
+    },
+    {
+      "idx": 36,
+      "name": "void_partner_mean",
+      "group": "void_summary"
+    },
+    {
+      "idx": 37,
+      "name": "void_right_mean",
+      "group": "void_summary"
+    },
+    {
+      "idx": 38,
+      "name": "visible_pip_0_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 39,
+      "name": "visible_pip_1_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 40,
+      "name": "visible_pip_2_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 41,
+      "name": "visible_pip_3_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 42,
+      "name": "visible_pip_4_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 43,
+      "name": "visible_pip_5_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 44,
+      "name": "visible_pip_6_coverage",
+      "group": "visible_pip_coverage"
+    },
+    {
+      "idx": 45,
+      "name": "current_trick_count_point_frac",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 46,
+      "name": "current_trick_trump_frac",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 47,
+      "name": "current_trick_count_tile_frac",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 48,
+      "name": "current_trick_has_ten_count",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 49,
+      "name": "current_trick_has_trump",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 50,
+      "name": "partner_currently_winning",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 51,
+      "name": "opponent_currently_winning",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 52,
+      "name": "is_lead_position",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 53,
+      "name": "is_last_to_play",
+      "group": "current_trick_pressure"
+    },
+    {
+      "idx": 54,
+      "name": "own_pip_0_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 55,
+      "name": "own_pip_1_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 56,
+      "name": "own_pip_2_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 57,
+      "name": "own_pip_3_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 58,
+      "name": "own_pip_4_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 59,
+      "name": "own_pip_5_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 60,
+      "name": "own_pip_6_coverage",
+      "group": "own_pip_coverage"
+    },
+    {
+      "idx": 61,
+      "name": "unseen_count_pip_0_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 62,
+      "name": "unseen_count_pip_1_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 63,
+      "name": "unseen_count_pip_2_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 64,
+      "name": "unseen_count_pip_3_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 65,
+      "name": "unseen_count_pip_4_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 66,
+      "name": "unseen_count_pip_5_frac",
+      "group": "unseen_count_by_pip"
+    },
+    {
+      "idx": 67,
+      "name": "unseen_count_pip_6_frac",
+      "group": "unseen_count_by_pip"
+    }
+  ],
+  "action_tags": [
+    {
+      "idx": 0,
+      "name": "present",
+      "group": "slot"
+    },
+    {
+      "idx": 1,
+      "name": "legal",
+      "group": "slot"
+    },
+    {
+      "idx": 2,
+      "name": "called",
+      "group": "identity"
+    },
+    {
+      "idx": 3,
+      "name": "trump",
+      "group": "identity"
+    },
+    {
+      "idx": 4,
+      "name": "double",
+      "group": "identity"
+    },
+    {
+      "idx": 5,
+      "name": "count_points_frac",
+      "group": "identity"
+    },
+    {
+      "idx": 6,
+      "name": "called_rank_frac",
+      "group": "identity"
+    },
+    {
+      "idx": 7,
+      "name": "high_pip_frac",
+      "group": "identity"
+    },
+    {
+      "idx": 8,
+      "name": "low_pip_frac",
+      "group": "identity"
+    },
+    {
+      "idx": 9,
+      "name": "off_non_double",
+      "group": "identity"
+    },
+    {
+      "idx": 10,
+      "name": "follows_led",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 11,
+      "name": "beats_current",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 12,
+      "name": "is_ten_count",
+      "group": "count_pressure"
+    },
+    {
+      "idx": 13,
+      "name": "is_lead_position",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 14,
+      "name": "partner_currently_winning",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 15,
+      "name": "opponent_currently_winning",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 16,
+      "name": "trump_in",
+      "group": "trick_relation"
+    },
+    {
+      "idx": 17,
+      "name": "point_dump",
+      "group": "count_pressure"
+    },
+    {
+      "idx": 18,
+      "name": "live_suit_frac",
+      "group": "suit_pressure"
+    },
+    {
+      "idx": 19,
+      "name": "live_higher_suit_frac",
+      "group": "suit_pressure"
+    },
+    {
+      "idx": 20,
+      "name": "live_count_frac",
+      "group": "suit_pressure"
+    },
+    {
+      "idx": 21,
+      "name": "live_higher_count_frac",
+      "group": "suit_pressure"
+    },
+    {
+      "idx": 22,
+      "name": "pip_count_risk",
+      "group": "pip_pressure"
+    },
+    {
+      "idx": 23,
+      "name": "min_pip_coverage",
+      "group": "pip_pressure"
+    },
+    {
+      "idx": 24,
+      "name": "max_pip_coverage",
+      "group": "pip_pressure"
+    },
+    {
+      "idx": 25,
+      "name": "protected_by_my_double",
+      "group": "double_protection"
+    },
+    {
+      "idx": 26,
+      "name": "protected_by_high_double",
+      "group": "double_protection"
+    },
+    {
+      "idx": 27,
+      "name": "protected_by_low_double",
+      "group": "double_protection"
+    },
+    {
+      "idx": 28,
+      "name": "hand_high_pip_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 29,
+      "name": "hand_low_pip_frac",
+      "group": "hand_shape"
+    },
+    {
+      "idx": 30,
+      "name": "count_donation_to_partner",
+      "group": "donation_window"
+    },
+    {
+      "idx": 31,
+      "name": "count_donation_to_opponent",
+      "group": "donation_window"
+    }
+  ],
+  "source": "Gus cheap public-state/action-local extractors, exposed through w42-owned metadata."
+}

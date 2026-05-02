@@ -1,0 +1,193 @@
+---
+title: w42 Strategy Tags v0
+kind: experiment
+first_seen: local-2026-05-02
+last_updated: local-2026-05-02
+status: active
+---
+
+## Summary
+
+[[w42]] now has a scratch-owned Strategy Detector v0 wrapper for the cheap
+public-state/action-local tags that [[gus-strategy-tags-probe]] found useful:
+
+- `scratch/w42/strategy_tags_v0.py`
+- `scratch/w42/strategy_tags_v0/manifest.json`
+- `scratch/w42/strategy_tags_v0/report.json`
+- `scratch/w42/strategy_tags_v0/tag_schema.json`
+- `scratch/w42/strategy_tags_v0/example_row.json`
+- `scratch/w42/strategy_tags_v0/summary.csv`
+
+The wrapper imports the existing Gus detector implementation and validates that
+the w42 tag metadata still matches the Gus constants: `strategy_features` has 68
+global public-state dimensions, and `strategy_action_features` has 32 dimensions
+per action slot across 7 action slots. Gus code, Gus training defaults, Burl
+code, and forge oracle semantics were not modified.
+
+This bead validates the detector surface and report shape only. It does not test
+a Winning 42 strategy claim, train a model, run W&B, or publish a HF artifact.
+
+## Data Slice
+
+The intended first input is the manifest train split using
+`gus/data/corpus_train_100.pt` when available. In this worktree, the declared Gus
+and forge corpus paths were absent, so the recorded run used the existing
+`scratch/w42/data_adapter_smoke.py` deterministic fixture fallback.
+
+Source mode: `fixture`.
+
+Blocker note:
+
+```text
+Declared local Gus/Forge corpora are absent in this worktree; using the data-adapter smoke fixture fallback.
+```
+
+Declared inputs checked, in order:
+
+| path or glob | consumed |
+|---|---|
+| `gus/data/corpus_train_100.pt` | absent |
+| `gus/data/corpus_train_chunk_*-*.pt` | absent |
+| `gus/data/corpus_v2_train_*_d0-9.pt` | absent |
+| `data/eq-games/train` | absent |
+| `data/eq-games/val` | absent |
+| `data/eq-games/test` | absent |
+| `gus/data/corpus_eval_20.pt` | absent |
+| `gus/data/corpus_v2_eval.pt` | absent |
+| `scratch/w42/data_adapter_smoke/example_row.json` | fixture fallback provenance |
+
+## Tag Dimensions
+
+The full tag-name schema is recorded in
+`scratch/w42/strategy_tags_v0/tag_schema.json`.
+
+Global public-state groups:
+
+| group | width |
+|---|---:|
+| declaration | 10 |
+| phase | 3 |
+| hand_shape | 10 |
+| legal_action_summary | 6 |
+| public_count | 5 |
+| void_summary | 4 |
+| visible_pip_coverage | 7 |
+| current_trick_pressure | 9 |
+| own_pip_coverage | 7 |
+| unseen_count_by_pip | 7 |
+| total | 68 |
+
+Action-local groups:
+
+| group | width |
+|---|---:|
+| slot | 2 |
+| identity | 8 |
+| trick_relation | 6 |
+| count_pressure | 2 |
+| suit_pressure | 4 |
+| pip_pressure | 3 |
+| double_protection | 3 |
+| hand_shape | 2 |
+| donation_window | 2 |
+| total | 32 |
+
+These are public-state and action-local features. Oracle labels such as `e_q`,
+`q_per_world`, and `action_taken` remain labels or diagnostics, not detector
+inputs.
+
+## Sample Output
+
+The deterministic fixture sample has one row:
+
+| field | value |
+|---|---|
+| `decision_idx` | `0` |
+| `player` | `0` |
+| `action_taken` | `1` |
+| `oracle_best_action` | `1` |
+| `legal_mask` | `[true, true, true, false, true, false, false]` |
+| `strategy_features` shape | `[1, 68]` |
+| `strategy_action_features` shape | `[1, 7, 32]` |
+
+Group summaries are in `scratch/w42/strategy_tags_v0/summary.csv`. Because this
+run used the smoke fixture, the numeric values validate shape, naming, and
+determinism only; they are not semantic evidence about play quality.
+
+## Reproducibility
+
+Run commit at artifact generation:
+`8df0c3b1f03893cc4c059762de1fa1dd0c84ca06`.
+
+Exact detector command:
+
+```bash
+python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1
+```
+
+Config:
+
+| key | value |
+|---|---|
+| bead | `t42-csw6.7` |
+| device | `cpu` |
+| source mode | `fixture` |
+| output directory | `scratch/w42/strategy_tags_v0/` |
+| checkpoint | `not applicable` |
+| W&B links | `not applicable` |
+| HF links | `not applicable` |
+| claim ledger impact | `no claim-ledger change` |
+
+Random seeds:
+
+| seed | value |
+|---|---:|
+| torch | `42` |
+| dataset shuffle | `42` |
+| train loader | `42` |
+| world sampling | `42` |
+| data generation | `not applicable` |
+| eval sampling | `not applicable` |
+
+## Commands And Checks
+
+Required reading and grounding:
+
+```bash
+git status --short --branch
+bd show t42-csw6.7 --json
+sed -n '1,220p' wiki/AGENTS.md
+sed -n '1,260p' wiki/entities/w42.md
+sed -n '1,260p' wiki/experiments/w42-data-adapter-smoke.md
+sed -n '1,320p' wiki/experiments/w42-dataset-manifest.md
+sed -n '1,320p' wiki/experiments/w42-claim-ledger.md
+sed -n '1,420p' wiki/experiments/gus-strategy-tags-probe.md
+sed -n '1,280p' gus/model/strategy_features.py
+sed -n '280,620p' gus/model/strategy_features.py
+sed -n '1,360p' gus/model/dataset_seq_world.py
+sed -n '360,760p' gus/model/dataset_seq_world.py
+```
+
+Implementation and artifact checks:
+
+```bash
+python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1
+sed -n '1,220p' scratch/w42/strategy_tags_v0/report.json
+sed -n '1,80p' scratch/w42/strategy_tags_v0/summary.csv
+sed -n '1,140p' scratch/w42/strategy_tags_v0/example_row.json
+python -m py_compile scratch/w42/strategy_tags_v0.py
+git status --short --untracked-files=all
+```
+
+## Claim Ledger
+
+no claim-ledger change
+
+This detector surface validates that w42 can name, group, and emit the cheap
+public-state/action-local tags from the Gus probe. It creates no empirical
+evidence for a Winning 42 strategy claim and does not move any claim status.
+
+## Links
+
+[[w42]] | [[w42-dataset-manifest]] | [[w42-data-adapter-smoke]] |
+[[w42-claim-ledger]] | [[gus-strategy-tags-probe]] | [[gus]]
