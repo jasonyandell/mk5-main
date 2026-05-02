@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0.0",
+  "ledger_impact": "schema created, no empirical claim tested",
+  "entries": [
+    {
+      "claim_id": "ch02-bid-only-enough",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch02-bidding.md",
+        "source_slice": "scratch/winning42/winning42.with_figures.md lines 735-1406",
+        "chapter": 2,
+        "source_note": "Chapter harvest row for bid-only-enough discipline."
+      },
+      "claim": "A bidder should bid only enough to win the auction when the same captured points score regardless of bid size.",
+      "detector": "unnecessary_bid_margin",
+      "metric_test": "Auction counterfactual: unnecessary bid margin versus set rate, paired regret, and tail loss.",
+      "data_source": "Generated auction logs plus forge E[Q] or oracle rollouts.",
+      "readiness": ["enumeration", "oracle", "gus", "burl"],
+      "evidence_artifact": "not applicable",
+      "status": "not-yet-tested",
+      "caveats": "Detector shape exists from the chapter harvest, but no evidence run has checked this claim.",
+      "provenance": {
+        "commands": [],
+        "configs": "not applicable",
+        "data_inputs": "not applicable",
+        "commit_sha": "not applicable",
+        "random_seeds": "not applicable",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    }
+  ]
+}
