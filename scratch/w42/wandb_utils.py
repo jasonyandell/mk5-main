@@ -4,19 +4,28 @@ from __future__ import annotations
 
 import argparse
 import os
+import subprocess
+import sys
+import traceback
 from pathlib import Path
 from typing import Any
+
+DEFAULT_WANDB_ENTITY = "jasonyandell-forge42"
+DEFAULT_WANDB_PROJECT = "w42"
+_ORIGINAL_EXCEPTHOOK = sys.excepthook
 
 
 def add_wandb_args(
     parser: argparse.ArgumentParser,
     *,
-    default_project: str = "w42",
+    default_project: str = DEFAULT_WANDB_PROJECT,
+    default_entity: str | None = DEFAULT_WANDB_ENTITY,
     default_group: str | None = None,
+    default_enabled: bool = True,
 ) -> None:
-    parser.add_argument("--wandb", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--wandb", action=argparse.BooleanOptionalAction, default=default_enabled)
     parser.add_argument("--wandb-project", default=os.environ.get("WANDB_PROJECT", default_project))
-    parser.add_argument("--wandb-entity", default=os.environ.get("WANDB_ENTITY"))
+    parser.add_argument("--wandb-entity", default=os.environ.get("WANDB_ENTITY", default_entity))
     parser.add_argument("--wandb-group", default=os.environ.get("WANDB_GROUP", default_group))
     parser.add_argument("--wandb-name", default=os.environ.get("WANDB_NAME"))
     parser.add_argument(
@@ -47,6 +56,37 @@ def _flatten_metrics(prefix: str, metrics: dict[str, Any]) -> dict[str, float]:
         elif isinstance(value, int | float):
             out[f"{prefix}/{key}"] = float(value)
     return out
+
+
+def _install_failure_hook(run: Any) -> None:
+    def hook(exc_type: type[BaseException], exc: BaseException, tb: Any) -> None:
+        failure_text = "".join(traceback.format_exception(exc_type, exc, tb))
+        try:
+            run.summary["status"] = "failed"
+            run.summary["failure/type"] = exc_type.__name__
+            run.summary["failure/message"] = str(exc)
+            run.summary["failure/traceback_tail"] = failure_text[-4000:]
+            run.log({"status/failed": 1})
+            run.finish(exit_code=1)
+        finally:
+            _ORIGINAL_EXCEPTHOOK(exc_type, exc, tb)
+
+    sys.excepthook = hook
+
+
+def _short_sha() -> str:
+    try:
+        return subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], text=True).strip()
+    except Exception:
+        return "unknown"
+
+
+def _default_run_name(config: dict[str, Any], tags: list[str]) -> str:
+    bead = str(config.get("bead_id") or "w42")
+    seed = config.get("seed")
+    feature = next((tag for tag in tags if tag not in {"w42", bead}), "experiment")
+    seed_part = f"s{int(seed):04d}" if isinstance(seed, int) else "sna"
+    return f"{bead}-{feature}-{seed_part}-{_short_sha()}"
 
 
 class WandbRun:
@@ -130,6 +170,8 @@ class WandbRun:
 
     def finish(self, exit_code: int = 0) -> None:
         if self.run is not None:
+            if exit_code == 0:
+                self.run.summary["status"] = "completed"
             self.run.finish(exit_code=exit_code)
 
 
@@ -180,17 +222,19 @@ def init_wandb(
 
     wandb_dir = output_dir / "wandb"
     wandb_dir.mkdir(parents=True, exist_ok=True)
+    run_name = args.wandb_name or _default_run_name(config, tags)
     try:
         run = wandb.init(
             project=args.wandb_project,
             entity=args.wandb_entity,
             group=args.wandb_group,
-            name=args.wandb_name,
+            name=run_name,
             config=config,
             tags=tags,
             mode=mode,
             dir=str(wandb_dir),
         )
+        _install_failure_hook(run)
     except Exception as exc:  # pragma: no cover - defensive for auth/network quirks.
         return WandbRun(
             enabled=True,
@@ -199,7 +243,7 @@ def init_wandb(
             project=args.wandb_project,
             entity=args.wandb_entity,
             group=args.wandb_group,
-            name=args.wandb_name,
+            name=run_name,
             error=f"wandb init failed: {exc}",
         )
 
@@ -210,6 +254,6 @@ def init_wandb(
         project=args.wandb_project,
         entity=args.wandb_entity,
         group=args.wandb_group,
-        name=args.wandb_name,
+        name=run_name,
         run=run,
     )

@@ -127,7 +127,7 @@ Required config keys:
 Implemented script flags:
 
 ```bash
---wandb / --no-wandb
+--wandb / --no-wandb        # default: --wandb
 --wandb-project w42
 --wandb-entity jasonyandell-forge42
 --wandb-group t42-csw6
@@ -138,26 +138,67 @@ Implemented script flags:
 `--wandb-mode auto` chooses `online` when a W&B API key or login is present and
 `offline` otherwise.
 
-Smoke command:
+w42 policy: model/experiment scripts should use W&B by default. Use
+`--no-wandb` only for deliberately boring local checks. Failed, splatted, or
+interrupted experiment attempts are useful evidence and should create titled
+runs when W&B can initialize.
+
+Automatic run names use:
+
+```text
+{bead_id}-{feature_tag}-s{seed}-{short_sha}
+```
+
+Examples:
+
+- `t42-csw6.10-raw-public-state-s0042-f1aac89`
+- `t42-csw6.11-v0-strategy-tags-s0042-f1aac89`
+
+Failure capture:
+
+- uncaught exceptions after W&B init set summary `status=failed`
+- summary captures `failure/type`, `failure/message`, and
+  `failure/traceback_tail`
+- W&B logs `status/failed=1`
+- successful runs set summary `status=completed`
+
+Successful smoke command:
 
 ```bash
 python scratch/w42/raw_public_state_baseline.py \
   --train gus/data/corpus_train_100.pt \
   --eval gus/data/corpus_eval_20.pt \
-  --train-limit 8 \
-  --eval-limit 8 \
+  --train-limit 4 \
+  --eval-limit 4 \
   --epochs 1 \
   --batch-size 8 \
   --prediction-sample-limit 2 \
-  --output-dir scratch/w42/wandb_smoke/raw \
-  --wandb \
-  --wandb-mode offline \
-  --wandb-name w42-wandb-smoke
+  --output-dir scratch/w42/wandb_smoke/default_success \
+  --wandb-mode offline
 ```
 
-Smoke result: W&B created offline run id `8d5o57dv`, logged train/eval/final
-metrics, and wrote local artifacts under `scratch/w42/wandb_smoke/raw/`. The
-cloud sync waits on login.
+Successful smoke result: W&B created offline run id `rwexij8m`, logged
+train/eval/final metrics, marked `status=completed`, and wrote local artifacts
+under `scratch/w42/wandb_smoke/default_success/`. The cloud sync waits on login.
+
+Failure smoke command:
+
+```bash
+python scratch/w42/raw_public_state_baseline.py \
+  --train scratch/w42/does-not-exist.pt \
+  --eval gus/data/corpus_eval_20.pt \
+  --train-limit 4 \
+  --eval-limit 4 \
+  --epochs 1 \
+  --batch-size 4 \
+  --prediction-sample-limit 1 \
+  --output-dir scratch/w42/wandb_smoke/default_failure \
+  --wandb-mode offline
+```
+
+Failure smoke result: W&B created offline run id `as3xy7oz`, marked
+`status=failed`, captured `failure/type=FileNotFoundError`, captured the missing
+path in `failure/message`, and stored the traceback tail.
 
 Resume policy:
 
@@ -171,7 +212,7 @@ Resume policy:
 
 Run links:
 
-- W&B run: pending login / next run
+- W&B run: offline smoke ids `rwexij8m`, `as3xy7oz`; live links pending login
 - W&B artifact: `not applicable`
 
 ## Hugging Face Conventions
