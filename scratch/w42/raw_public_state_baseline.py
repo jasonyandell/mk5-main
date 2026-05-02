@@ -28,6 +28,7 @@ from torch.utils.data import DataLoader, Subset
 
 from gus.model.dataset_seq_world import JointWorldFullDataset
 from gus.model.student import TransformerEncoder, VoidsEncoder
+from wandb_utils import add_wandb_args, init_wandb
 
 
 @dataclass
@@ -53,6 +54,12 @@ class RunConfig:
     eval_seed: int
     device: str
     output_dir: str
+    wandb_enabled: bool
+    wandb_project: str
+    wandb_entity: str | None
+    wandb_group: str | None
+    wandb_name: str | None
+    wandb_mode: str
 
 
 class RawPublicStateActionModel(nn.Module):
@@ -281,6 +288,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default=None)
     parser.add_argument("--output-dir", default="scratch/w42/raw_public_state_baseline")
     parser.add_argument("--prediction-sample-limit", type=int, default=32)
+    add_wandb_args(parser, default_project="w42", default_group="t42-csw6")
     return parser.parse_args()
 
 
@@ -313,6 +321,18 @@ def main() -> int:
         eval_seed=args.eval_seed,
         device=device,
         output_dir=str(out_dir),
+        wandb_enabled=args.wandb,
+        wandb_project=args.wandb_project,
+        wandb_entity=args.wandb_entity,
+        wandb_group=args.wandb_group,
+        wandb_name=args.wandb_name,
+        wandb_mode=args.wandb_mode,
+    )
+    wb = init_wandb(
+        args,
+        config=asdict(config),
+        output_dir=out_dir,
+        tags=["w42", "raw-public-state", "baseline", "t42-csw6.10"],
     )
 
     started_at = datetime.now(UTC).isoformat()
@@ -371,6 +391,20 @@ def main() -> int:
             **eval_metrics,
         }
         history.append(row)
+        wb.log(
+            {
+                "epoch": epoch + 1,
+                "train/loss": row["train_loss"],
+                "train/epoch_seconds": row["epoch_seconds"],
+                "eval/mean_regret": eval_metrics["mean_regret"],
+                "eval/match_rate": eval_metrics["match_rate"],
+                "eval/near_tie_rate_regret_lt_0_5": eval_metrics[
+                    "near_tie_rate_regret_lt_0_5"
+                ],
+                "eval/n": eval_metrics["n"],
+            },
+            step=epoch + 1,
+        )
         if best_metrics is None or eval_metrics["mean_regret"] < best_metrics["mean_regret"]:
             best_metrics = eval_metrics
             best_epoch = epoch + 1
@@ -399,6 +433,27 @@ def main() -> int:
             "model_final_minus_oracle_ceiling_mean_regret": final_metrics["mean_regret"],
         },
     }
+    wb.log_metric_groups(
+        {
+            "final/model": final_metrics,
+            f"final/e_q_n_{args.eq_n}": eq_metrics,
+            "final/oracle": oracle_metrics,
+            "best/model": {"epoch": float(best_epoch), **best_metrics},
+        },
+        step=args.epochs,
+    )
+    wb.update_summary(
+        {
+            "best_epoch": best_epoch,
+            "best_mean_regret": best_metrics["mean_regret"],
+            "final_mean_regret": final_metrics["mean_regret"],
+            f"e_q_n_{args.eq_n}_mean_regret": eq_metrics["mean_regret"],
+            "final_minus_eq_n_mean_regret": metrics["deltas"][
+                f"model_final_minus_e_q_n_{args.eq_n}_mean_regret"
+            ],
+        }
+    )
+    wandb_status = wb.status()
     manifest = {
         "schema_version": "w42.raw_public_state_baseline.v1",
         "bead_id": "t42-csw6.10",
@@ -430,7 +485,7 @@ def main() -> int:
             "cwd": str(ROOT),
             "environment": {
                 "device": device,
-                "wandb": "not applicable",
+                "wandb": wandb_status,
                 "huggingface": "not applicable",
             },
         },
@@ -471,7 +526,7 @@ def main() -> int:
         "config": asdict(config),
         "metrics": metrics,
         "history": history,
-        "wandb": "not applicable",
+        "wandb": wandb_status,
         "huggingface": "not applicable",
     }
 
@@ -488,6 +543,18 @@ def main() -> int:
         },
         out_dir / "model.pt",
     )
+    wb.log_artifact_files(
+        name=f"w42-raw-public-state-{_git_sha()[:8]}",
+        artifact_type="w42-baseline",
+        paths=[
+            out_dir / "manifest.json",
+            out_dir / "run.json",
+            out_dir / "metrics.json",
+            out_dir / "predictions_sample.jsonl",
+            out_dir / "model.pt",
+        ],
+    )
+    wb.finish()
     print("\n=== Summary ===", flush=True)
     print(json.dumps(metrics, indent=2, sort_keys=True), flush=True)
     print(f"artifacts={out_dir}", flush=True)

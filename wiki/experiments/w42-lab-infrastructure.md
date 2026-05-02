@@ -13,17 +13,20 @@ runs, durable datasets, or promotable artifacts exist. This page standardizes th
 names before those artifacts are created, so early work can remain local without
 inventing new conventions each time.
 
-No W&B run or HF artifact was created for this bead. The local setup check found
-`wandb` unavailable on `PATH`, `hf` installed but unauthenticated, and the older
-`huggingface-cli` command present only as a deprecated shim. Run links and
-artifact links are therefore `not applicable`.
+Initial infrastructure checks found `wandb` unavailable on `PATH`, `hf`
+installed but unauthenticated, and the older `huggingface-cli` command present
+only as a deprecated shim. A later w42 infrastructure patch installed `wandb`
+into the active Python and added optional W&B logging to the raw and v0-tagged
+baseline scripts. W&B authentication is still pending, so runs can be created in
+offline mode and synced after login.
 
 ## Local Setup
 
 Secrets stay out of git. Local credentials, if added later, belong in the normal
 tool locations or environment variables:
 
-- W&B: login via the W&B CLI or `WANDB_API_KEY` in the caller's environment.
+- W&B: login via `python -m wandb login` or `WANDB_API_KEY` in the caller's
+  environment.
 - Hugging Face: login via `hf auth login` or `HF_TOKEN` in the caller's
   environment.
 - Modal/cloud secrets, if used later, should follow the existing Forge/LEM
@@ -37,9 +40,20 @@ export WANDB_PROJECT=w42
 export HF_NAMESPACE=jasonyandell
 ```
 
+The active mise Python currently has both `wandb` and `huggingface_hub`
+available. The W&B executable may not be on the shell `PATH`, so the reliable
+local command form is:
+
+```bash
+python -m wandb status
+python -m wandb login
+```
+
 Training scripts should accept explicit flags or environment overrides for all
 remote destinations. If W&B is unavailable or disabled, runs should still write a
-local manifest under `scratch/w42/` with the same run identity fields.
+local manifest under `scratch/w42/` with the same run identity fields. If W&B is
+enabled before login, w42 scripts use offline mode by default and record the
+local sync command in their run metadata.
 
 ## W&B Conventions
 
@@ -110,6 +124,41 @@ Required config keys:
 - `hf_repo_id`
 - `wandb_group`
 
+Implemented script flags:
+
+```bash
+--wandb / --no-wandb
+--wandb-project w42
+--wandb-entity jasonyandell-forge42
+--wandb-group t42-csw6
+--wandb-name <run-name>
+--wandb-mode auto|online|offline|disabled
+```
+
+`--wandb-mode auto` chooses `online` when a W&B API key or login is present and
+`offline` otherwise.
+
+Smoke command:
+
+```bash
+python scratch/w42/raw_public_state_baseline.py \
+  --train gus/data/corpus_train_100.pt \
+  --eval gus/data/corpus_eval_20.pt \
+  --train-limit 8 \
+  --eval-limit 8 \
+  --epochs 1 \
+  --batch-size 8 \
+  --prediction-sample-limit 2 \
+  --output-dir scratch/w42/wandb_smoke/raw \
+  --wandb \
+  --wandb-mode offline \
+  --wandb-name w42-wandb-smoke
+```
+
+Smoke result: W&B created offline run id `8d5o57dv`, logged train/eval/final
+metrics, and wrote local artifacts under `scratch/w42/wandb_smoke/raw/`. The
+cloud sync waits on login.
+
 Resume policy:
 
 - Resume an interrupted run only when the same checkpoint or local manifest stores
@@ -122,7 +171,7 @@ Resume policy:
 
 Run links:
 
-- W&B run: `not applicable`
+- W&B run: pending login / next run
 - W&B artifact: `not applicable`
 
 ## Hugging Face Conventions
@@ -234,6 +283,8 @@ Observed results:
 - `bd show t42-csw6.1 --json`: closed; charter exists at [[w42]]
 - `command -v wandb`: no path returned
 - `wandb status`: `zsh:1: command not found: wandb`
+- Later install: `python -m pip install wandb` installed `wandb==0.26.1`
+- Later status: `python -m wandb status` works; `api_key` is still `null`
 - `command -v huggingface-cli`:
   `/Users/jason/.local/share/mise/installs/python/3.12/bin/huggingface-cli`
 - `huggingface-cli whoami`: deprecated; directed callers to use `hf`

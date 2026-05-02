@@ -44,6 +44,7 @@ from raw_public_state_baseline import (
     evaluate_oracle_best,
 )
 from strategy_tags_v0 import ACTION_TAGS, GLOBAL_TAGS, group_slices, validate_tag_dims
+from wandb_utils import add_wandb_args, init_wandb
 
 
 @dataclass
@@ -71,6 +72,12 @@ class RunConfig:
     raw_metrics_path: str
     raw_checkpoint: str
     output_dir: str
+    wandb_enabled: bool
+    wandb_project: str
+    wandb_entity: str | None
+    wandb_group: str | None
+    wandb_name: str | None
+    wandb_mode: str
 
 
 class RawPlusV0StrategyTagsModel(nn.Module):
@@ -378,6 +385,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--raw-checkpoint", default="scratch/w42/raw_public_state_baseline/model.pt")
     parser.add_argument("--output-dir", default="scratch/w42/v0_strategy_tags_baseline")
     parser.add_argument("--prediction-sample-limit", type=int, default=32)
+    add_wandb_args(parser, default_project="w42", default_group="t42-csw6")
     return parser.parse_args()
 
 
@@ -413,6 +421,18 @@ def main() -> int:
         raw_metrics_path=args.raw_metrics_path,
         raw_checkpoint=args.raw_checkpoint,
         output_dir=args.output_dir,
+        wandb_enabled=args.wandb,
+        wandb_project=args.wandb_project,
+        wandb_entity=args.wandb_entity,
+        wandb_group=args.wandb_group,
+        wandb_name=args.wandb_name,
+        wandb_mode=args.wandb_mode,
+    )
+    wb = init_wandb(
+        args,
+        config=asdict(config),
+        output_dir=out_dir,
+        tags=["w42", "v0-strategy-tags", "baseline", "t42-csw6.11"],
     )
 
     started_at = datetime.now(UTC).isoformat()
@@ -477,6 +497,20 @@ def main() -> int:
             **eval_metrics,
         }
         history.append(row)
+        wb.log(
+            {
+                "epoch": epoch + 1,
+                "train/loss": row["train_loss"],
+                "train/epoch_seconds": row["epoch_seconds"],
+                "eval/mean_regret": eval_metrics["mean_regret"],
+                "eval/match_rate": eval_metrics["match_rate"],
+                "eval/near_tie_rate_regret_lt_0_5": eval_metrics[
+                    "near_tie_rate_regret_lt_0_5"
+                ],
+                "eval/n": eval_metrics["n"],
+            },
+            step=epoch + 1,
+        )
         if best_metrics is None or eval_metrics["mean_regret"] < best_metrics["mean_regret"]:
             best_metrics = eval_metrics
             best_state = deepcopy(model.state_dict())
@@ -532,6 +566,43 @@ def main() -> int:
         "bucket_comparison_raw_final_vs_tagged_final": bucket_comparison,
         "bucket_comparison_raw_final_vs_tagged_best": best_bucket_comparison,
     }
+    deltas = metrics["deltas"]
+    wb.log_metric_groups(
+        {
+            "final/tagged": final_metrics,
+            "best/tagged": {"epoch": float(best_epoch), **tagged_best_metrics},
+            "final/raw_checkpoint": raw_final_metrics,
+            "prior/raw_best": raw_best_prior,
+            f"final/e_q_n_{args.eq_n}": eq_metrics,
+            "final/oracle": oracle_metrics,
+            "delta": deltas,
+        },
+        step=args.epochs,
+    )
+    top_bucket_rows = sorted(
+        best_bucket_comparison.items(),
+        key=lambda item: item[1]["delta_mean_regret"],
+    )[:10]
+    wb.log(
+        {
+            f"bucket_best/{bucket}/delta_mean_regret": row["delta_mean_regret"]
+            for bucket, row in top_bucket_rows
+        },
+        step=args.epochs,
+    )
+    wb.update_summary(
+        {
+            "best_epoch": best_epoch,
+            "best_mean_regret": tagged_best_metrics["mean_regret"],
+            "best_match_rate": tagged_best_metrics["match_rate"],
+            "raw_best_mean_regret": raw_best_prior["mean_regret"],
+            "tagged_best_minus_raw_best_mean_regret": deltas[
+                "tagged_best_minus_raw_best_mean_regret"
+            ],
+            f"e_q_n_{args.eq_n}_mean_regret": eq_metrics["mean_regret"],
+        }
+    )
+    wandb_status = wb.status()
 
     manifest = {
         "schema_version": "w42.v0_strategy_tags_baseline.v1",
@@ -570,7 +641,7 @@ def main() -> int:
             "cwd": str(ROOT),
             "environment": {
                 "device": device,
-                "wandb": "not applicable",
+                "wandb": wandb_status,
                 "huggingface": "not applicable",
             },
         },
@@ -620,7 +691,7 @@ def main() -> int:
         "config": asdict(config),
         "metrics": metrics,
         "history": history,
-        "wandb": "not applicable",
+        "wandb": wandb_status,
         "huggingface": "not applicable",
     }
 
@@ -642,6 +713,22 @@ def main() -> int:
         },
         out_dir / "model.pt",
     )
+    wb.log_artifact_files(
+        name=f"w42-v0-strategy-tags-{_git_sha()[:8]}",
+        artifact_type="w42-baseline",
+        paths=[
+            out_dir / "manifest.json",
+            out_dir / "run.json",
+            out_dir / "metrics.json",
+            out_dir / "bucket_metrics.csv",
+            out_dir / "bucket_metrics_best.csv",
+            out_dir / "predictions_sample_tagged_best.jsonl",
+            out_dir / "predictions_sample_tagged_final.jsonl",
+            out_dir / "predictions_sample_raw_final.jsonl",
+            out_dir / "model.pt",
+        ],
+    )
+    wb.finish()
 
     print("\n=== Summary ===", flush=True)
     print(json.dumps(metrics, indent=2, sort_keys=True), flush=True)
