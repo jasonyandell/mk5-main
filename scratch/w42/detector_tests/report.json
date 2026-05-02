@@ -1,0 +1,212 @@
+{
+  "bead_id": "t42-csw6.9",
+  "schema_version": "w42.detector_tests.v1",
+  "created_at": "2026-05-02T02:28:52.497196+00:00",
+  "repo_commit": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+  "command": "python scratch/w42/detector_tests.py --out-dir scratch/w42/detector_tests",
+  "cwd": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-9",
+  "random_seeds": {
+    "torch": 42,
+    "fixture_generation": "not applicable; fixtures are literal public-state cases",
+    "engine_enumeration": "not applicable"
+  },
+  "data_inputs": [
+    "scratch/w42/strategy_tags_v0.py",
+    "scratch/w42/strategy_tags_v1_map/detector_map.json",
+    "literal fixture hands in scratch/w42/detector_tests.py"
+  ],
+  "wandb_links": "not applicable",
+  "hf_links": "not applicable",
+  "claim_ledger_impact": "no claim-ledger change",
+  "engine_enumeration": {
+    "status": "not run",
+    "reason": "The existing v1 detector artifact is a design map, not an engine-integrated detector implementation. Full game-tree enumeration would require a later implementation/promotion bead; this suite keeps deterministic fixture checks reproducible and public-state-only."
+  },
+  "summary": {
+    "checks_total": 53,
+    "checks_passed": 53,
+    "checks_failed": 0,
+    "fixture_checks": 26,
+    "map_checks": 27,
+    "families": {
+      "schema": {
+        "checks": 2,
+        "positive": 2,
+        "negative": 0,
+        "passed": 2
+      },
+      "rule_variant_gate": {
+        "checks": 2,
+        "positive": 1,
+        "negative": 1,
+        "passed": 2
+      },
+      "legal_action_summary": {
+        "checks": 4,
+        "positive": 2,
+        "negative": 2,
+        "passed": 4
+      },
+      "effective_walker_or_promoted_tile": {
+        "checks": 1,
+        "positive": 1,
+        "negative": 0,
+        "passed": 1
+      },
+      "safe_partner_count_donation": {
+        "checks": 6,
+        "positive": 2,
+        "negative": 4,
+        "passed": 6
+      },
+      "doubles_native_suit_removal": {
+        "checks": 4,
+        "positive": 3,
+        "negative": 1,
+        "passed": 4
+      },
+      "setter_pounce_window": {
+        "checks": 3,
+        "positive": 2,
+        "negative": 1,
+        "passed": 3
+      },
+      "no_trump_support_double_preservation": {
+        "checks": 2,
+        "positive": 0,
+        "negative": 2,
+        "passed": 2
+      },
+      "count_protection_throwaway": {
+        "checks": 2,
+        "positive": 1,
+        "negative": 1,
+        "passed": 2
+      },
+      "v1_map": {
+        "checks": 27,
+        "positive": 27,
+        "negative": 0,
+        "passed": 27
+      }
+    }
+  },
+  "coverage": {
+    "v0_global_tags": 68,
+    "v0_action_tags": 32,
+    "v1_buckets": 8,
+    "v1_detectors": 48,
+    "v1_high_priority_detectors": 12,
+    "bucket_rows": [
+      {
+        "bucket": "bidding",
+        "detector_count": 6,
+        "high_priority_count": 3,
+        "detectors": [
+          "candidate_bid_loss_budget",
+          "side_specific_off_risk",
+          "unnecessary_bid_margin",
+          "strong_trump_bad_risk_trap",
+          "partner_help_dependency",
+          "natural_bid_bucket_anomaly"
+        ]
+      },
+      {
+        "bucket": "pounce",
+        "detector_count": 5,
+        "high_priority_count": 2,
+        "detectors": [
+          "setter_pounce_window",
+          "count_before_certainty",
+          "pull_trump_vs_early_off_window",
+          "count_protection_throwaway",
+          "effective_walker_or_promoted_tile"
+        ]
+      },
+      {
+        "bucket": "donation",
+        "detector_count": 4,
+        "high_priority_count": 1,
+        "detectors": [
+          "safe_partner_count_donation",
+          "count_before_certainty",
+          "lead_away_from_count_damage",
+          "dot_count_discipline"
+        ]
+      },
+      {
+        "bucket": "84",
+        "detector_count": 8,
+        "high_priority_count": 2,
+        "detectors": [
+          "84_contract_regime",
+          "laydown_84_proof",
+          "protected_one_off_84_shape",
+          "final_walker_counter",
+          "live_final_weapon_tiles",
+          "live_same_suit_pair",
+          "throwaway_ladder_rank",
+          "84_set_attribution"
+        ]
+      },
+      {
+        "bucket": "no_trump_doubles",
+        "detector_count": 6,
+        "high_priority_count": 2,
+        "detectors": [
+          "declaration_regime_compare",
+          "doubles_native_suit_removal",
+          "dual_suit_top_protection",
+          "planned_low_double_sacrifice",
+          "no_trump_support_double_preservation",
+          "dynamic_no_trump_suit_counter"
+        ]
+      },
+      {
+        "bucket": "scoring",
+        "detector_count": 6,
+        "high_priority_count": 2,
+        "detectors": [
+          "score_mode_objective",
+          "mark_terminal_state",
+          "point_mark_policy_divergence",
+          "rule_variant_gate",
+          "straight_auction_legality",
+          "high_bid_scoring_invariant"
+        ]
+      },
+      {
+        "bucket": "style",
+        "detector_count": 7,
+        "high_priority_count": 0,
+        "detectors": [
+          "legal_inference_boundary",
+          "early_trick_belief_discovery",
+          "trace_public_evidence_faithfulness",
+          "dot_count_discipline",
+          "overbid_restraint_bucket",
+          "partner_fit_residual",
+          "style_prior_bucket"
+        ]
+      },
+      {
+        "bucket": "odds",
+        "detector_count": 6,
+        "high_priority_count": 0,
+        "detectors": [
+          "hand_shape_prior_check",
+          "four_trump_boss_first_threshold",
+          "four_trump_missing_top_two_threshold",
+          "partner_double_help_prior",
+          "odds_rationalization_faithfulness",
+          "rare_extreme_double_bucket"
+        ]
+      }
+    ]
+  },
+  "artifacts": {
+    "report": "scratch/w42/detector_tests/report.json",
+    "checks": "scratch/w42/detector_tests/checks.csv",
+    "coverage": "scratch/w42/detector_tests/coverage.csv"
+  }
+}
