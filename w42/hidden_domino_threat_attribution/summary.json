@@ -1,0 +1,40 @@
+{
+  "artifact_kind": "w42_hidden_domino_threat_attribution_summary",
+  "bead": "t42-5m82.3",
+  "status": "design_and_schema_complete_empirical_run_blocked",
+  "empirical_status": "not_run_in_this_worktree",
+  "blocker": {
+    "attempted_command": "python -u -m forge.eq.generate --start-seed 9200 --n-games 1 --samples 10 --save-joint-worlds --device mps -o w42/hidden_domino_threat_attribution/tiny_joint_world_sample.pt",
+    "failure": "ModuleNotFoundError: No module named 'lightning'",
+    "failure_stage": "generator CLI import of forge.eq.oracle.Stage1Oracle before any sampled-world artifact was written",
+    "missing_dependency_source": "forge/requirements.txt lists lightning>=2.0"
+  },
+  "source_artifact_status": {
+    "forge_data_directory_present": false,
+    "local_eq_pdf_samples_found": 0,
+    "joint_world_samples_found": 0,
+    "aggregate_pdf_limitation": "aggregate e_q_pdf tensors can show shelves and tails but cannot attribute them to hidden holders without world_hands and q_per_world"
+  },
+  "implemented_artifacts": {
+    "analysis_script": "w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py",
+    "metrics_schema": "w42/hidden_domino_threat_attribution/metrics_schema_proposal.json",
+    "example_rows": "w42/hidden_domino_threat_attribution/example_rows.jsonl",
+    "example_walkthrough": "w42/hidden_domino_threat_attribution/example_walkthrough.md",
+    "wiki_page": "wiki/experiments/w42-phase2-hidden-domino-threat-attribution.md"
+  },
+  "recommended_generation_recipe": {
+    "install_dependency_if_needed": "python -m pip install -r forge/requirements.txt",
+    "tiny_command": "python -u -m forge.eq.generate --start-seed 9200 --n-games 1 --samples 10 --save-joint-worlds --device mps -o w42/hidden_domino_threat_attribution/tiny_joint_world_sample.pt",
+    "analysis_command": "python w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py w42/hidden_domino_threat_attribution/tiny_joint_world_sample.pt --output-dir w42/hidden_domino_threat_attribution --top-k 10",
+    "recommended_minimum_for_real_metrics": "Use M>=100 before reading correlations or top-k impacts as stable; M=10 is only an inspectable smoke sample."
+  },
+  "proposed_metrics": [
+    "threshold-mass delta by hidden holder",
+    "outcome mean/tail delta by hidden domino holder",
+    "impact-weighted belief calibration",
+    "top-k hidden holdings by absolute make/set mass or tail-risk impact"
+  ],
+  "leakage_boundary": "Hidden truth is offline label/eval target only, never a live feature.",
+  "claim_ledger_impact": "No claim-ledger status changes; this bead creates an attribution schema and report plan.",
+  "commit_sha_at_design_time": "343a9f4c45244889ea9c1eaa8edacde7e2a69920"
+}

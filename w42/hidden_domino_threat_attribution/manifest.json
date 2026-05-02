@@ -1,0 +1,62 @@
+{
+  "artifact_id": "w42-hidden-domino-threat-attribution",
+  "schema_id": "w42.hidden_domino_threat_attribution.v0",
+  "bead": "t42-5m82.3",
+  "status": "active_design_not_empirical",
+  "created_at": "2026-05-02",
+  "repo_commit_at_creation": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "owned_paths": [
+    "w42/hidden_domino_threat_attribution/",
+    "wiki/experiments/w42-phase2-hidden-domino-threat-attribution.md"
+  ],
+  "files": [
+    {
+      "path": "w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py",
+      "kind": "analysis_script",
+      "description": "Loads saved joint-world E[Q] .pt artifacts and emits top-k holder-conditioned hidden-domino impact rows."
+    },
+    {
+      "path": "w42/hidden_domino_threat_attribution/metrics_schema_proposal.json",
+      "kind": "schema_proposal",
+      "description": "Machine-readable row schema, leakage boundary, and candidate metrics."
+    },
+    {
+      "path": "w42/hidden_domino_threat_attribution/summary.json",
+      "kind": "run_summary",
+      "description": "Records the attempted tiny generation, dependency blocker, command recipe, and scientific status."
+    },
+    {
+      "path": "w42/hidden_domino_threat_attribution/example_rows.jsonl",
+      "kind": "illustrative_rows",
+      "description": "Toy rows showing expected output shape; not empirical."
+    },
+    {
+      "path": "w42/hidden_domino_threat_attribution/example_walkthrough.md",
+      "kind": "walkthrough",
+      "description": "Human-readable explanation of the illustrative rows."
+    },
+    {
+      "path": "wiki/experiments/w42-phase2-hidden-domino-threat-attribution.md",
+      "kind": "wiki_report",
+      "description": "Methods, leakage boundaries, proposed metrics, provenance, and next steps."
+    }
+  ],
+  "input_artifacts": {
+    "required_for_empirical_run": "A torch .pt payload from forge.eq.generate with --save-joint-worlds.",
+    "available_in_this_worktree": false,
+    "notes": "forge/data is absent in this worktree; no local E[Q] PDF sample or saved joint-world sample was present."
+  },
+  "validation": {
+    "json": [
+      "python -m json.tool w42/hidden_domino_threat_attribution/manifest.json",
+      "python -m json.tool w42/hidden_domino_threat_attribution/summary.json",
+      "python -m json.tool w42/hidden_domino_threat_attribution/metrics_schema_proposal.json"
+    ],
+    "jsonl": [
+      "python - <<'PY'\nimport json\nfrom pathlib import Path\nfor line in Path('w42/hidden_domino_threat_attribution/example_rows.jsonl').read_text().splitlines():\n    json.loads(line)\nPY"
+    ],
+    "script_smoke": [
+      "python w42/hidden_domino_threat_attribution/analyze_joint_world_threats.py --help"
+    ]
+  }
+}
