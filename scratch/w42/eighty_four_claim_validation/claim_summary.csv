@@ -1,0 +1,9 @@
+bucket,caveat,claim_id,evidence,status
+bidder,The report relies on existing chapter/ruleset pages for scoring semantics.,ch07-84-contract-regime,rules/source-backed; no engine score replay in this bead,context-limited
+bidder,Shape existence and asset pools do not prove that bidding 84 is value-positive.,ch07-protected-one-off-84-shape,exact hand/declaration shape count; no make/set rollout,underpowered
+bidder,The 'nearly set two out of three' policy claim still needs rollouts.,ch07-straight-off-two-to-one-double,exact opponent-team ownership odds for a named missing matching double,context-limited
+bidder,Needs terminal score-state oracle or match utility simulation.,ch07-score-42-vs-84-gate,not measured,not-yet-tested
+defender,Initial inventory ignores forced-follow pressure and bidder inference.,ch08-one-to-four-last-trick-weapons,exact static weapon-pool distribution by final-off case,context-limited
+defender,A pair existing initially is not a set path without final-two-trick simulation.,ch08-double-ahead-needs-same-suit-pair,exact same-suit pair pool size/probability proxy,underpowered
+defender,Needs public replay or oracle action counterfactuals to tell correct abandonment from lucky discard.,ch08-abandon-dead-assets,detector trigger table only,not-yet-tested
+defender,Needs legal discard/action-local states and regret labels.,ch08-throwaway-priority-ladder,not measured,not-yet-tested
