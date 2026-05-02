@@ -1,0 +1,6 @@
+scenario,hands,point_score_bidder_team,point_score_opponent_team,mark_score_bidder_team,mark_score_opponent_team,tournament_hand_wins_bidder_team,tournament_hand_wins_opponent_team,mark_lead_minus_point_lead_scaled
+three_barely_made_30s,3,90,36,3,0,3,0,1.714286
+one_clean_84,1,84,0,2,0,1,0,0.0
+one_set_84,1,0,84,0,2,0,1,0.0
+three_big_sets_ordinary,3,0,216,0,3,0,3,2.142857
+mixed_point_close_mark_lopsided,3,101,25,3,0,3,0,1.190476
