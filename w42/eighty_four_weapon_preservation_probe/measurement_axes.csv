@@ -1,0 +1,6 @@
+axis,question,primary_metric,why_mean_is_not_enough
+scalar_value,What is the mean E[Q] of preserving versus spending the weapon?,paired mean E[Q] delta,A moderate mean can hide make-all and set branches.
+threshold_mass,How does the action change all-seven-tricks make/set mass?,make84_mass_delta or set84_mass_delta,84 is threshold-dominated: one trick flips the contract.
+tail_risk,Does spending a weapon create a disaster tail even when mean remains close?,lower-tail mass / CVaR-style set branch,The book advice is often about bracing for the bad branch.
+hidden_threat_attribution,Which hidden holder/weapon explains the branch?,impact-weighted belief calibration,"Belief should focus on high-impact threats, not average ownership accuracy."
+forcedness,Was the weapon break voluntary or forced by follow-suit?,voluntary break regret excluding forced spend,A model should not be punished for unavoidable losses.
