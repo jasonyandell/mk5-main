@@ -1670,3 +1670,17 @@ Fix in `burl/chat/web/src/App.svelte`:
 - Does the [[iter3-rules-adapter]] (which we still haven't pulled locally) suffer reflection-deafness too, or is its less-aggressive distillation enough to engage with "why?" prompts?
 - Does a system-prompt patch — e.g., *"if the user asks you a question instead of giving you a state, answer the question; do not call tools"* in the protocol section — close the deafness, or does the trained pattern override even that explicit instruction (parallel to the [[chat-mode-primer]] vs adapter lock-in case)?
 - Now that `explore_game` outputs are trustworthy in rerun-fresh, is there a measurable regret delta when Burl is rerun on `BURL_BREAKS_CONSENSUS` decisions with the corrected dispatch? Worth a small N=5 batch to confirm before scaling.
+
+---
+
+## [2026-05-01 | f746b93 | w42 rich-tag many-signal probe]
+
+**Touched pages:** [[w42-rich-tag-many-signal-probe]] [[index]] [[log]]
+**Added:** 1 experiment page — [[w42-rich-tag-many-signal-probe]].
+**Updated:** [[index]] catalogued the new w42 experiment.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- [[w42]] now has a live-W&B rich-tag probe on the same small split as the raw and v0 baselines. The many-signal public feature surface narrowly beats v0 on one seed (1.970 vs 2.000 mean regret) and improves raw-final tail risk, but remains report-only and underpowered.
+- The useful signal still concentrates in count/donation and pounce-like proxy windows. True claim movement still waits for multi-seed runs or claim-specific detector/oracle evidence.
