@@ -1,8 +1,8 @@
 ---
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
-first_seen: 2026-05-02
-last_updated: 2026-05-02
+first_seen: a2db3c7
+last_updated: a2db3c7
 status: active
 ---
 
@@ -16,13 +16,13 @@ Lives entirely under `burl/lab/`. Side-by-side with `burl/chat/` until parity: s
 
 Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, and `/api/move` are wired; the three base ToolSpecs (`belief_trajectory`, `explore_game`, `commit_play`) register correctly, and **`events.jsonl` is the only on-disk source of truth**. Phase handlers journal config Moves directly (`SystemSet`, `AdvertisedSet`, `ToolAdded`, `ToolRemoved`, `UserText`); the server's state-load path is just `fold(replay(session_dir))`. Verified by `tests/test_server_smoke.py::test_journal_is_canonical_no_state_json`.
 
-15/15 tests pass across `tests/test_{transcript_roundtrip,engine_smoke,tools_base,render,drive_with_fake_engine,server_smoke}.py`. Real MLX engine integration is wired in `core/engine.py`, including a fix for an upstream `mlx_lm` module-level `generation_stream` bug — rebound via `sys.modules["mlx_lm.generate"]` after `load()` inside the executor thread. See [[mlx-lm]] "Upstream bug: module-level generation_stream" for the full diagnosis and the submodule-shadowing trap.
+15/15 fast tests pass across `tests/test_{transcript_roundtrip,engine_smoke,tools_base,render,drive_with_fake_engine,server_smoke}.py`, plus one slow MLX smoke (gated, runs against a real Gemma 4 E2B load). Real MLX engine integration is wired in `core/engine.py` ([burl/lab/core/engine.py @ a2db3c7](../sources/a2db3c7.md)), including a fix for an upstream `mlx_lm` module-level `generation_stream` bug — rebound via `sys.modules["mlx_lm.generate"]` after `load()` inside the executor thread. See [[mlx-lm]] "Upstream bug: module-level generation_stream" for the full diagnosis and the submodule-shadowing trap.
 
 **Phase ownership of transitions.** Drive is engine-shaped — it does not mint `PhaseExit`/`PhaseEnter` Moves. The server is transition-shaped — it journals exit/enter when a phase's `handle()` returns a non-`None` `next_phase`. After a commit-role tool dispatches in `in_run`, drive synthesizes `EngineCommit`, the server calls `in_run.handle(state, EngineCommit)` which returns `next_phase="post_turn"`, and the server appends `PhaseExit("in_run") + PhaseEnter("post_turn")`. `post_turn` renders the committed-session segments and offers `start_new_session` → `pre_game`.
 
 ## Architecture
 
-Five load-bearing properties, each codified in `burl/lab/SPEC.md`:
+Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPEC.md @ a2db3c7](../sources/a2db3c7.md)):
 
 ### 1. State is a fold over events
 

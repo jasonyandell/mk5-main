@@ -1762,7 +1762,7 @@ Fix in `burl/chat/web/src/App.svelte`:
 
 ---
 
-## [2026-05-02 | local | burl-lab platform spec lands]
+## [2026-05-02 | a2db3c7 | burl-lab platform spec lands]
 
 **Touched pages:** [[burl-lab]] [[burl-chat]] [[index]] [[log]]
 **Added:** 1 entity page — [[burl-lab]] documenting the new deterministic experimentation platform replacing burl-chat.
@@ -1777,11 +1777,11 @@ Fix in `burl/chat/web/src/App.svelte`:
 - The architecture turns four spike findings into structural choices: (1) rendered protocol text from first-class ToolSpec replaces hand-edited primer prose; (2) `Stamp` makes timings part of the journal; (3) HATEOAS tool advertisement replaces "Burl plans a tool he doesn't have"; (4) Phase machine gives reflection a dedicated surface instead of relying on play-decision lock-in to crack open.
 - The platform was first named `burl/harness/` before the team noticed the collision with the existing agent tool-loop runner package (~20 importers across `wax_museum/`, `haiku_spike/`, `candlewax_spike/`, `eval/run_move4_*`, `burl/chat/server/tools_runner.py`). Renamed to `burl/lab/`; misrouted files were consolidated via `git mv` during the spike. The existing `burl/harness/` package is untouched.
 - SPEC.md (`burl/lab/SPEC.md`) is the canonical contract; build order is types → engine → tools → runtime. As of this entry, types + engine + tools have landed (transcript, tool, phase, engine modules + base ToolSpecs); runtime layer (render, drive, hf_sink, phases, server) is in flight.
-- Citation note: `burl/lab/SPEC.md` is referenced by path on this entry because the artifacts are not yet committed at session time. Future log entries should cite by `<path> @ <shortsha>` once the burl-lab tree lands a commit.
+- Citation note: this entry was originally written before the commit landed; it now cites `a2db3c7` ([[sources/a2db3c7]]) — the platform spine commit (31 files, 4619 insertions) that landed all three same-day burl-lab milestones in one shot.
 
 ---
 
-## [2026-05-02 | local | burl-lab server runs end-to-end on fake engine]
+## [2026-05-02 | a2db3c7 | burl-lab server runs end-to-end on fake engine]
 
 **Touched pages:** [[burl-lab]] [[log]] [[questions/open]]
 **Added:** none.
@@ -1797,7 +1797,7 @@ Fix in `burl/chat/web/src/App.svelte`:
 
 ---
 
-## [2026-05-02 | local | burl-lab journal-canonical + post_turn lands]
+## [2026-05-02 | a2db3c7 | burl-lab journal-canonical + post_turn lands]
 
 **Touched pages:** [[burl-lab]] [[mlx-lm]] [[burl-chat]] [[log]] [[questions/open]] (resolved)
 **Added:** none.
@@ -1826,3 +1826,19 @@ Fix in `burl/chat/web/src/App.svelte`:
 - The statistics ledger is the bedrock: 62 rows separate supported exact/rules/scoring substrates from underpowered tactical advice. No tactical book claim is promoted simply because its arithmetic substrate is true.
 - The E[Q] visualizer insight has been operationalized: phase-2 reports now track threshold mass, tails, quantiles, branch shape, and belief-impact magnitude instead of reducing every decision to scalar mean EV.
 - The direct tactical probes remain conservative. Setter pounce and 84 preservation produced label specs, fixtures, required fields, and leakage checks; dynamic rollouts/model probes are explicitly next work, not silently assumed.
+
+---
+
+## [2026-05-02 | local | w42 phase-2 decision table v0]
+
+**Touched pages:** [[w42]] [[w42-next-model-decision]] [[w42-phase2-decision-table]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase2-decision-table]]; 1 top-level artifact directory - `w42/phase2_decision_table/`.
+**Updated:** [[w42]] lists the decision table as the seventh phase-2 surface; [[w42-next-model-decision]] records it as the first bridge artifact for targeted probes; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- w42 now has a reusable v0 decision table rather than only separate phase-2 reports. It joins the E[Q] PDF visualizer sample to seat/role context, public trick state, actor hand/action facts, and distribution-aware labels.
+- The table has 140 decision-state rows and 346 legal-action rows from 5 games, with 1000 samples per PDF. It reproduces the prior 68 scalar-EV omission decisions and adds detector tags for first-trick belief update, late threshold closure, last-to-act closure, defender damage leads, bidder first leads, setter count pressure, and partner donation.
+- The missing columns are explicit: bid amount, bid margin, and hidden-world ownership are not present in the current visualizer JSONL. Hidden-threat holder/domino/impact fields remain blank until a joint-world generation pass lands.
+- The table is a schema and slice-analysis artifact, not a training run, W&B run, HF artifact, or claim-ledger verdict.

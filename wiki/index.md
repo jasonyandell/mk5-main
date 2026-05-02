@@ -169,6 +169,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/w42-phase2-seat-position-strategy-map|w42-phase2-seat-position-strategy-map]] — seat/role/phase strategy taxonomy with first-trick perspective walkthrough and detector gaps (active)
 - [[experiments/w42-phase2-hidden-domino-threat-attribution|w42-phase2-hidden-domino-threat-attribution]] — design for attributing E[Q] PDF shelves/lumps to hidden-domino ownership and impact-weighted belief targets (active)
 - [[experiments/w42-phase2-distribution-aware-ev-report|w42-phase2-distribution-aware-ev-report]] — E[Q] PDF report computing threshold mass, tails, quantiles, and scalar-EV omission examples (active)
+- [[experiments/w42-phase2-decision-table|w42-phase2-decision-table]] — v0 140-state / 346-action bridge table joining E[Q] PDFs to seat-role context and explicit missing hidden-threat fields (active)
 - [[experiments/w42-phase2-setter-pounce-direct-label-probe|w42-phase2-setter-pounce-direct-label-probe]] — direct-label spec, fixtures, and leakage checks for setter pounce/count-to-set windows (active)
 - [[experiments/w42-phase2-84-weapon-preservation-probe|w42-phase2-84-weapon-preservation-probe]] — 84 weapon/stopping/preservation label surface and fixture plan (active)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
@@ -216,7 +217,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/resumable-checkpointing|resumable-checkpointing]] — Burl STaR trainer writes periodic on-disk adapters, accepts `--resume`, and persists the in-memory best on any crash; closes the run-3 OOM data-loss footgun (active)
 - [[decisions/chat-mode-primer|chat-mode-primer]] — inject a synthetic "yeah I committed N, ask me anything" assistant turn after commit_play; recency-weighted in-context cue that flips base Gemma from play-decision mode to chat mode (active)
 - [[decisions/play-adapter-lock-in|play-adapter-lock-in]] — STaR-distilled play adapters cannot be talked out of commit_play even with primer + explicit prohibition; A/B vs base Gemma is clean; post-commit Q&A adapter must be co-trained, not stacked (active)
-- [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe with distribution-aware labels and belief-impact diagnostics where available (active)
+- [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe; the phase-2 decision table is the bridge artifact for distribution-aware labels and belief-impact diagnostics (active)
 - [[decisions/w42-promote-or-retire|w42-promote-or-retire]] — keep w42 active as top-level research; promote tracked artifacts into `w42/`, but do not promote research models into Gus/Burl yet (active)
 
 ## Sources
@@ -352,6 +353,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[sources/cf8ff79|cf8ff79]] — 2026-04-22: co-train falsified + q-bootstrap-belief 0.655 unexpected win; sample_worlds.py finally used
 - [[sources/94d8646|94d8646]] — 2026-04-22: §22 past belief future direction; meta-strategy distribution; no code
 - [[sources/063fcac|063fcac]] — 2026-04-24: Phase A guards on wax_museum (turn-budget extension on reject + forced-commit fallback); enables 2000-decision harvest
+- [[sources/a2db3c7|a2db3c7]] — 2026-05-02: burl/lab/ workbench platform spine; 31 files / 4619 insertions; phase machine + engine protocol + first-class ToolSpec + journal-canonical + mlx_lm rebind fix; 15 fast tests + 1 slow MLX smoke green
 
 ## Trails
 
