@@ -1699,3 +1699,18 @@ Fix in `burl/chat/web/src/App.svelte`:
 - [[w42]] now treats W&B as a trajectory notebook. Any long run with epochs, variants, claims/specs, bootstrap checkpoints, chunks, seeds, or eval checkpoints should log multiple points with a meaningful numeric axis.
 - The shared W&B helper has `log_series_point(...)`; ablations now log generic `variant/*` metrics on `variant/index`, and setter-defense claim validation logs generic `claim/*` metrics on `claim/index`.
 - The live smoke run `xq7q9bar` logged six points across epoch and bootstrap axes at `https://wandb.ai/jasonyandell-forge42/w42/runs/xq7q9bar`.
+
+---
+
+## [2026-05-02 | local | w42 multi-seed larger-eval replication]
+
+**Touched pages:** [[w42-multi-seed-larger-eval-replication]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-multi-seed-larger-eval-replication]].
+**Updated:** [[index]] catalogued the replication page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- [[w42]] now has a five-seed raw/v0/rich replication on 2,800 held-out decisions, with live per-epoch W&B series for all 15 model runs.
+- Raw-to-v0 and raw-to-rich gains held on the larger slice; rich-over-v0 is a modest positive signal, not a promotion decision or claim-ledger verdict.
+- `E[Q] N=10` remains far stronger on the same eval slice, so the result supports continued feature work rather than final conclusions.

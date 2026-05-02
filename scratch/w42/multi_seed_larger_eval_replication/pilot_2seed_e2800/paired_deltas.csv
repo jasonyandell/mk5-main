@@ -1,0 +1,4 @@
+comparison,n_pairs,mean_delta_best_regret,sd_delta_best_regret,ci95_half_width_delta_best_regret,direction
+v0_minus_raw,5,-0.3607605209350586,0.05170246424914079,0.064186796734192,negative is better for left feature set
+rich_minus_raw,5,-0.4520632651192802,0.05157986346102986,0.06403459215400009,negative is better for left feature set
+rich_minus_v0,5,-0.09130274418422153,0.06907459716703794,0.0857536907040275,negative is better for left feature set
