@@ -20,8 +20,8 @@ emission, or [[burl]] trace review before they can support a claim.
 
 Machine-readable design artifacts:
 
-- `scratch/w42/strategy_tags_v1_map/detector_map.json`
-- `scratch/w42/strategy_tags_v1_map/README.md`
+- `w42/strategy_tags_v1_map/detector_map.json`
+- `w42/strategy_tags_v1_map/README.md`
 
 W&B links: not applicable.
 
@@ -260,11 +260,11 @@ sed -n '1,360p' wiki/experiments/winning42-ch16-statistical-odds.md
 find scratch -maxdepth 4 -type f | sort | rg 'w42|winning42|claim|strategy'
 git rev-parse HEAD
 date +%Y-%m-%d
-jq . scratch/w42/strategy_tags_v1_map/detector_map.json >/tmp/w42-detector-map.json && wc -c /tmp/w42-detector-map.json
-git diff --check -- wiki/experiments/w42-strategy-tags-v1-map.md scratch/w42/strategy_tags_v1_map/README.md scratch/w42/strategy_tags_v1_map/detector_map.json
+jq . w42/strategy_tags_v1_map/detector_map.json >/tmp/w42-detector-map.json && wc -c /tmp/w42-detector-map.json
+git diff --check -- wiki/experiments/w42-strategy-tags-v1-map.md w42/strategy_tags_v1_map/README.md w42/strategy_tags_v1_map/detector_map.json
 git status --short --untracked-files=all
 git diff --stat
-git check-ignore -v scratch/w42/strategy_tags_v1_map/README.md scratch/w42/strategy_tags_v1_map/detector_map.json || true
+git check-ignore -v w42/strategy_tags_v1_map/README.md w42/strategy_tags_v1_map/detector_map.json || true
 rg -n "W&B links|HF links|Claim ledger impact|no claim-ledger change|online-computable|not-live-safe|Non-Goals|bidding|pounce|donation|84|no-trump|scoring|style|odds" wiki/experiments/w42-strategy-tags-v1-map.md
 sed -n '1,220p' wiki/experiments/w42-strategy-tags-v1-map.md
 sed -n '220,520p' wiki/experiments/w42-strategy-tags-v1-map.md

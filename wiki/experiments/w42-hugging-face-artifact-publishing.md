@@ -9,7 +9,7 @@ status: active
 ## Summary
 
 [[w42]] does not yet publish a Hugging Face dataset, model checkpoint, or artifact
-repo. The initial survey produced useful local scripts, scratch tables, wiki
+repo. The initial survey produced useful local scripts, w42 tables, wiki
 reports, and W&B runs, but the artifacts are still research-lab outputs rather
 than stable public packages.
 
@@ -21,10 +21,11 @@ HF artifact publishing is deferred until at least one of these becomes true:
 
 - a detector dataset has a stable schema, versioned card, and leakage boundary
 - a model checkpoint is selected by a multi-seed or larger-run decision, not only
-  by a scratch pilot
+  by a pilot
 - an artifact bundle is useful outside this repo without local Gus corpora,
-  scratch paths, or wiki context
-- a later promotion decision names the exact durable home for w42 code and data
+  repo-local w42 paths, or wiki context
+- a later promotion decision names a public/exportable artifact home beyond the
+  top-level `w42/` research directory
 
 The current durable external surface is W&B, not HF:
 
@@ -37,7 +38,7 @@ The current durable external surface is W&B, not HF:
 
 The survey outputs are valuable but not HF-ready:
 
-- The raw/v0/rich models are small scratch probes, not selected checkpoints.
+- The raw/v0/rich models are small w42 research probes, not selected checkpoints.
 - The richer tags improved learning, but rich-over-v0 is still modest and not a
   promotion decision.
 - Several claim-validation reports use exact enumeration or deterministic
@@ -52,9 +53,9 @@ The survey outputs are valuable but not HF-ready:
 
 | candidate | current home | HF status | reason |
 |---|---|---|---|
-| raw/v0/rich tiny checkpoints | `scratch/w42/*baseline*`; replication output | defer | useful probes, not promoted models |
-| v0/v1 detector schemas | `scratch/w42/strategy_tags_v0*`; `scratch/w42/strategy_tags_v1_map/` | defer | schemas need durable code home before public dataset card |
-| claim-validation CSV/JSON tables | `scratch/w42/*claim_validation*/` | defer | good local evidence, but report-linked and narrow |
+| raw/v0/rich tiny checkpoints | `w42/*baseline*`; replication output | defer | useful probes, not promoted models |
+| v0/v1 detector schemas | `w42/strategy_tags_v0*`; `w42/strategy_tags_v1_map/` | defer | schemas need public dataset-card work before HF |
+| claim-validation CSV/JSON tables | `w42/*claim_validation*/` | defer | good local evidence, but report-linked and narrow |
 | W&B run metadata | W&B project | not applicable | W&B is already the right external notebook |
 | final report / decision memo | wiki | not applicable | repo wiki is the durable narrative surface |
 
@@ -68,7 +69,7 @@ for this bead.
 | bead | `t42-csw6.27` |
 | commands | `bd show t42-csw6.27 --json`; wiki/report inspection; `git rev-parse HEAD` |
 | configs | not applicable |
-| data inputs | existing w42 wiki pages and scratch artifact inventory |
+| data inputs | existing w42 wiki pages and artifact inventory |
 | commit SHA at decision time | `326fc5092d31e94b67fa5b548e6596b6d5e1d3d2` |
 | random seeds | not applicable |
 | W&B links | not applicable |

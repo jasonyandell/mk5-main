@@ -1,0 +1,101 @@
+{
+  "bead_id": "t42-csw6.25",
+  "claim_ledger_impact": "no central claim-ledger change",
+  "created_at": "2026-05-02T03:20:36.631553+00:00",
+  "evidence_mode": "report-artifact pilot from existing w42 artifacts",
+  "git_sha": "1830e5f3bd7fedaf24e186765d709e868618c900",
+  "headline": {
+    "overbid_restraint": "rich:bidding_risk regret 3.442 -> 2.349; best static low-risk candidate in 27.74% of hands; any strong-trump bad-risk trap in 20.12% of hands",
+    "partner_fit_residual": "not run; required repeated identities or synthetic style-policy pool are absent",
+    "partner_legibility": "partner donation mean regret 2.743 vs opponent-winning donation 7.026; rich:count_donation regret delta -2.172",
+    "social_pressure_robustness": "not run; needs paired clean-vs-pressure prompts or timed/tournament state wrapper"
+  },
+  "hf_links": "not applicable",
+  "random_seeds": {
+    "fresh_run": "not applicable",
+    "inherited_partner_support_bootstrap": 20260502,
+    "inherited_rich_tag_run": {
+      "eval": 43,
+      "split": 42,
+      "train": 42
+    }
+  },
+  "rows": [
+    {
+      "bucket": "overbid_restraint",
+      "caveat": "No auction counterfactual or calibrated make threshold is present; raw bid height is not style.",
+      "claim_ledger_recommendation": "no central change; treat as underpowered proxy evidence",
+      "measurement_status": "partially-measured proxy",
+      "online_safe_inputs": "own hand, candidate trump, off-risk/count exposure, auction/score when available",
+      "pilot_evidence": "rich bidding-risk slice over 560 eval decisions; exact static hand enumeration for risk traps",
+      "pilot_metric": "rich-vs-raw regret delta; static risk prevalence",
+      "pilot_n": 447,
+      "pilot_value": -1.092294,
+      "report_only_labels": "make/set rate, bid regret, unnecessary bid margin, partner hidden rescue ownership",
+      "supporting_detail": "rich:bidding_risk regret 3.442 -> 2.349; best static low-risk candidate in 27.74% of hands; any strong-trump bad-risk trap in 20.12% of hands",
+      "tail_or_residual_value": -0.076063
+    },
+    {
+      "bucket": "partner_legibility",
+      "caveat": "Current tags show public support opportunities, not stable partner readability or intent.",
+      "claim_ledger_recommendation": "no central change; directional but unpaired and underpowered",
+      "measurement_status": "partially-measured proxy",
+      "online_safe_inputs": "team relation to current trick winner, legal action set, public count pressure, lead transfers",
+      "pilot_evidence": "partner-support proxy report plus rich count/donation slice",
+      "pilot_metric": "safe partner donation regret vs opponent-winning count donation",
+      "pilot_n": 25,
+      "pilot_value": 2.742552,
+      "report_only_labels": "true partner need, hidden future overtrump safety, support precision/recall",
+      "supporting_detail": "partner donation mean regret 2.743 vs opponent-winning donation 7.026; rich:count_donation regret delta -2.172",
+      "tail_or_residual_value": -0.140351
+    },
+    {
+      "bucket": "partner_fit_residual",
+      "caveat": "Do not infer partner fit from a single generated hand or from hidden partner facts.",
+      "claim_ledger_recommendation": "no central change; stay underpowered until identity/cohort data exists",
+      "measurement_status": "design-only / no-run rationale",
+      "online_safe_inputs": "player or policy id, partner id, public support windows, style cohorts, shuffled-pair assignment",
+      "pilot_evidence": "not run; required repeated identities or synthetic style-policy pool are absent",
+      "pilot_metric": "team residual = team EV - individual policy ratings - seat/deal controls",
+      "pilot_n": "not applicable",
+      "pilot_value": "not applicable",
+      "report_only_labels": "team EV residual beyond additive individual ratings; fixed-vs-random partner delta",
+      "supporting_detail": "The current Gus eval corpus has decisions, not repeated player/policy identities or partner-shuffle cohorts.",
+      "tail_or_residual_value": "not applicable"
+    },
+    {
+      "bucket": "social_pressure_robustness",
+      "caveat": "Pressure evaluation must remain paired with oracle regret so style flavor cannot mask bad play.",
+      "claim_ledger_recommendation": "no central change; report-only design until paired wrapper exists",
+      "measurement_status": "design-only / no-run rationale",
+      "online_safe_inputs": "score pressure, loss streak, time/tool budget, prompt condition, tournament/marks context",
+      "pilot_evidence": "not run; needs paired clean-vs-pressure prompts or timed/tournament state wrapper",
+      "pilot_metric": "paired tail-regret and trace-leakage delta under pressure wrapper",
+      "pilot_n": "not applicable",
+      "pilot_value": "not applicable",
+      "report_only_labels": "tail-regret shift under pressure; illegal/private trace claim rate; recovery after blunder",
+      "supporting_detail": "Existing rich-tag run has state buckets but no social prompt, time pressure, or repeated-loss condition.",
+      "tail_or_residual_value": "not applicable"
+    },
+    {
+      "bucket": "support_proxy_contradiction_check",
+      "caveat": "Highest-remaining tile is not sufficient for partner-support correctness.",
+      "claim_ledger_recommendation": "no central change; use as detector-caveat evidence",
+      "measurement_status": "measured warning proxy",
+      "online_safe_inputs": "highest remaining same-suit off tile, lead context, live count presence",
+      "pilot_evidence": "partner-support proxy report",
+      "pilot_metric": "paired virtual-boss preferred minus alternative regret",
+      "pilot_n": 21,
+      "pilot_value": 2.299316,
+      "report_only_labels": "lead recovery value, future set line, partner rescue need",
+      "supporting_detail": "Virtual-boss proxy was lower regret unpaired but worse in paired decisions; count-damage proxy remains directionally favorable with CI crossing zero.",
+      "tail_or_residual_value": -2.227684
+    }
+  ],
+  "schema_version": "w42.style_partnership_concept_buckets.v1",
+  "source_artifacts": {
+    "bidding_summary": "w42/bidding_risk_budget_claim_validation/summary.json",
+    "partner_support_stats": "w42/partner_support_claim_validation/claim_proxy_stats.csv",
+    "rich_bucket_metrics": "w42/rich_tag_many_signal_probe/bucket_metrics_best.csv"
+  }
+}

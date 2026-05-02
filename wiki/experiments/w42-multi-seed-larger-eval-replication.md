@@ -12,9 +12,9 @@ status: active
 small-model comparison on a larger held-out slice than the original baseline
 reports.
 
-- script: `scratch/w42/multi_seed_larger_eval_replication.py`
+- script: `w42/multi_seed_larger_eval_replication.py`
 - aggregate artifacts:
-  `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/`
+  `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/`
 - W&B group: `w42-csw6-31-multi-seed-larger-eval`
 - feature sets: raw public state, raw plus v0 tags, raw plus v0 plus rich tags
 - seeds: `42, 43, 44, 45, 46`
@@ -22,7 +22,7 @@ reports.
 
 The replication keeps the conclusion conservative. The raw-to-v0 and raw-to-rich
 gains held across five seeds on this slice. The rich surface also beat v0 by a
-modest paired mean-regret delta, but this is still a small scratch model with
+modest paired mean-regret delta, but this is still a small research model with
 four-epoch training, not a book-claim verdict or a promotion decision.
 
 ## Key Question
@@ -132,12 +132,12 @@ or Burl trace review.
 
 | artifact | path | durable? |
 |---|---|---|
-| script | `scratch/w42/multi_seed_larger_eval_replication.py` | scratch |
-| aggregate summary | `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/summary.json` | scratch |
-| per-seed table | `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/per_seed_metrics.csv` | scratch |
-| feature summary | `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/feature_summary.csv` | scratch |
-| paired deltas | `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/paired_deltas.csv` | scratch |
-| per-run manifests | `scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/{raw,v0,rich}_s*/manifest.json` | scratch |
+| script | `w42/multi_seed_larger_eval_replication.py` | w42 |
+| aggregate summary | `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/summary.json` | w42 |
+| per-seed table | `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/per_seed_metrics.csv` | w42 |
+| feature summary | `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/feature_summary.csv` | w42 |
+| paired deltas | `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/paired_deltas.csv` | w42 |
+| per-run manifests | `w42/multi_seed_larger_eval_replication/pilot_2seed_e2800/{raw,v0,rich}_s*/manifest.json` | w42 |
 | W&B group | `w42-csw6-31-multi-seed-larger-eval` | yes |
 | HF dataset/model/artifact | not applicable | not applicable |
 
@@ -149,13 +149,13 @@ a two-seed pilot and then extended in place to five seeds with `--skip-existing`
 Implementation check:
 
 ```bash
-python -m py_compile scratch/w42/multi_seed_larger_eval_replication.py
+python -m py_compile w42/multi_seed_larger_eval_replication.py
 ```
 
 Initial two-seed pilot:
 
 ```bash
-python scratch/w42/multi_seed_larger_eval_replication.py \
+python w42/multi_seed_larger_eval_replication.py \
   --seeds 42 43 \
   --train gus/data/corpus_train_chunk_0-99.pt gus/data/corpus_train_chunk_100-199.pt \
   --eval gus/data/corpus_train_chunk_9000-9099.pt \
@@ -163,14 +163,14 @@ python scratch/w42/multi_seed_larger_eval_replication.py \
   --eval-limit 2800 \
   --epochs 4 \
   --batch-size 256 \
-  --output-dir scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800 \
+  --output-dir w42/multi_seed_larger_eval_replication/pilot_2seed_e2800 \
   --wandb-mode online
 ```
 
 Extension to the preferred five-seed run:
 
 ```bash
-python scratch/w42/multi_seed_larger_eval_replication.py \
+python w42/multi_seed_larger_eval_replication.py \
   --seeds 42 43 44 45 46 \
   --train gus/data/corpus_train_chunk_0-99.pt gus/data/corpus_train_chunk_100-199.pt \
   --eval gus/data/corpus_train_chunk_9000-9099.pt \
@@ -178,7 +178,7 @@ python scratch/w42/multi_seed_larger_eval_replication.py \
   --eval-limit 2800 \
   --epochs 4 \
   --batch-size 256 \
-  --output-dir scratch/w42/multi_seed_larger_eval_replication/pilot_2seed_e2800 \
+  --output-dir w42/multi_seed_larger_eval_replication/pilot_2seed_e2800 \
   --wandb-mode online \
   --skip-existing
 ```
@@ -186,7 +186,7 @@ python scratch/w42/multi_seed_larger_eval_replication.py \
 Fresh one-shot equivalent:
 
 ```bash
-python scratch/w42/multi_seed_larger_eval_replication.py \
+python w42/multi_seed_larger_eval_replication.py \
   --seeds 42 43 44 45 46 \
   --train gus/data/corpus_train_chunk_0-99.pt gus/data/corpus_train_chunk_100-199.pt \
   --eval gus/data/corpus_train_chunk_9000-9099.pt \
@@ -194,7 +194,7 @@ python scratch/w42/multi_seed_larger_eval_replication.py \
   --eval-limit 2800 \
   --epochs 4 \
   --batch-size 256 \
-  --output-dir scratch/w42/multi_seed_larger_eval_replication/five_seed_e2800 \
+  --output-dir w42/multi_seed_larger_eval_replication/five_seed_e2800 \
   --wandb-mode online
 ```
 

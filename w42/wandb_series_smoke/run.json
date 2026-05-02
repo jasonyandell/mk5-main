@@ -1,0 +1,61 @@
+{
+  "bead_id": "t42-csw6.32",
+  "claim_ledger_impact": "no claim-ledger change",
+  "command": "w42/wandb_series_smoke.py --epochs 3 --bootstrap-checkpoints 3 --bootstrap-samples 300 --wandb-mode auto --wandb-name t42-csw6.32-wandb-series-smoke-s0000-4ff779d",
+  "created_at": "2026-05-02T05:33:55.708924+00:00",
+  "git_sha": "4ff779d115069930b54bd72415e04750c2cf427d",
+  "hf_links": "not applicable",
+  "history": [
+    {
+      "epoch": 1,
+      "eval_mean_regret": 2.42,
+      "phase": "epoch",
+      "train_loss": 1.0
+    },
+    {
+      "epoch": 2,
+      "eval_mean_regret": 2.34,
+      "phase": "epoch",
+      "train_loss": 0.5
+    },
+    {
+      "epoch": 3,
+      "eval_mean_regret": 2.26,
+      "phase": "epoch",
+      "train_loss": 0.3333333333333333
+    },
+    {
+      "bootstrap_samples_seen": 100,
+      "checkpoint": 1,
+      "ci_width": 0.5,
+      "phase": "bootstrap"
+    },
+    {
+      "bootstrap_samples_seen": 200,
+      "checkpoint": 2,
+      "ci_width": 0.3333333333333333,
+      "phase": "bootstrap"
+    },
+    {
+      "bootstrap_samples_seen": 300,
+      "checkpoint": 3,
+      "ci_width": 0.25,
+      "phase": "bootstrap"
+    }
+  ],
+  "points_logged": 6,
+  "schema_version": "w42.wandb_series_smoke.v1",
+  "started_at": "2026-05-02T05:33:55.707951+00:00",
+  "wandb": {
+    "available": true,
+    "dir": "w42/wandb_series_smoke/wandb/wandb/run-20260502_003354-xq7q9bar/files",
+    "enabled": true,
+    "entity": "jasonyandell-forge42",
+    "group": "w42-csw6-wandb-series-standard",
+    "id": "xq7q9bar",
+    "mode": "online",
+    "name": "t42-csw6.32-wandb-series-smoke-s0000-4ff779d",
+    "project": "w42",
+    "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/xq7q9bar"
+  }
+}

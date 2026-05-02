@@ -12,7 +12,7 @@ status: active
 Chapter 11 surfaces in Winning 42:
 
 - report owner bead: `t42-csw6.24`
-- report artifacts: `scratch/w42/belief_attention_concept_buckets/`
+- report artifacts: `w42/belief_attention_concept_buckets/`
 - primary chapter sources: [[winning42-ch06-concentration-style]] and
   [[winning42-ch11-table-talk]]
 - evidence mode: synthesis from existing detector/baseline artifacts; no fresh
@@ -50,7 +50,7 @@ future analysis/model-validation scripts per [[w42-lab-infrastructure]].
 
 | field | value |
 |---|---|
-| manifest path | `scratch/w42/belief_attention_concept_buckets/manifest.json` |
+| manifest path | `w42/belief_attention_concept_buckets/manifest.json` |
 | dataset id/version | local report synthesis, schema `w42.belief_attention_concept_buckets.v1` |
 | source corpora | inherited only: `/Users/jason/code/mk5-main/gus/data/corpus_train_100.pt`; `/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt` |
 | source wiki pages | [[w42-lab-infrastructure]], [[w42-report-template]], [[w42-claim-ledger]], [[w42-detector-tests]], [[w42-strategy-tags-v1-map]], [[w42-concept-bucket-regret]], [[w42-raw-public-state-baseline]], [[w42-v0-strategy-tags-baseline]], [[winning42-ch06-concentration-style]], [[winning42-ch11-table-talk]] |
@@ -94,17 +94,17 @@ reports only.
 
 Machine-readable table:
 
-- `scratch/w42/belief_attention_concept_buckets/bucket_matrix.csv`
+- `w42/belief_attention_concept_buckets/bucket_matrix.csv`
 
 ## Baselines
 
 | baseline | configuration | metric role | artifact |
 |---|---|---|---|
-| raw public state | raw final checkpoint, public tokens/attention mask/voids/action id | source model floor | `scratch/w42/raw_public_state_baseline/metrics.json` |
-| raw plus v0 strategy tags | tagged final checkpoint with public/global and action-local v0 tags | source paired comparison | `scratch/w42/v0_strategy_tags_baseline/metrics.json` |
-| `E[Q] N=10` | first 10 worlds per decision | boss baseline | `scratch/w42/raw_public_state_baseline/metrics.json` |
-| v1 detector map | design-only public/report boundary map | readiness/boundary evidence | `scratch/w42/strategy_tags_v1_map/detector_map.json` |
-| detector tests | literal fixture and map coverage checks | detector-surface sanity | `scratch/w42/detector_tests/report.json` |
+| raw public state | raw final checkpoint, public tokens/attention mask/voids/action id | source model floor | `w42/raw_public_state_baseline/metrics.json` |
+| raw plus v0 strategy tags | tagged final checkpoint with public/global and action-local v0 tags | source paired comparison | `w42/v0_strategy_tags_baseline/metrics.json` |
+| `E[Q] N=10` | first 10 worlds per decision | boss baseline | `w42/raw_public_state_baseline/metrics.json` |
+| v1 detector map | design-only public/report boundary map | readiness/boundary evidence | `w42/strategy_tags_v1_map/detector_map.json` |
+| detector tests | literal fixture and map coverage checks | detector-surface sanity | `w42/detector_tests/report.json` |
 
 Overall source metrics on the 560-decision eval slice:
 
@@ -183,8 +183,8 @@ Practical follow-up ledger targets:
 | artifact | path | produced by | durable? |
 |---|---|---|---|
 | wiki report | `wiki/experiments/w42-belief-attention-concept-buckets.md` | manual synthesis | yes |
-| bucket matrix | `scratch/w42/belief_attention_concept_buckets/bucket_matrix.csv` | manual synthesis | scratch |
-| report manifest | `scratch/w42/belief_attention_concept_buckets/manifest.json` | manual synthesis | scratch |
+| bucket matrix | `w42/belief_attention_concept_buckets/bucket_matrix.csv` | manual synthesis | w42 |
+| report manifest | `w42/belief_attention_concept_buckets/manifest.json` | manual synthesis | w42 |
 
 ## Exact Commands / Configs / Seeds
 
@@ -208,32 +208,32 @@ sed -n '1,280p' wiki/experiments/w42-strategy-tags-v0.md
 sed -n '1,260p' wiki/experiments/winning42-strategy-measurement.md
 sed -n '1,380p' wiki/experiments/winning42-ch06-concentration-style.md
 sed -n '1,380p' wiki/experiments/winning42-ch11-table-talk.md
-find scratch/w42 -maxdepth 3 -type f | sort | rg 'belief|attention|concept|strategy_tags|detector|baseline|wandb|raw_public|v0_strategy'
-sed -n '1,220p' scratch/w42/concept_bucket_regret_report/concept_bucket_regret.csv
-sed -n '1,220p' scratch/w42/v0_strategy_tags_baseline/metrics.json
-sed -n '1,120p' scratch/w42/raw_public_state_baseline/metrics.json
-sed -n '1,220p' scratch/w42/strategy_tags_v1_map/detector_map.json
+find w42 -maxdepth 3 -type f | sort | rg 'belief|attention|concept|strategy_tags|detector|baseline|wandb|raw_public|v0_strategy'
+sed -n '1,220p' w42/concept_bucket_regret_report/concept_bucket_regret.csv
+sed -n '1,220p' w42/v0_strategy_tags_baseline/metrics.json
+sed -n '1,120p' w42/raw_public_state_baseline/metrics.json
+sed -n '1,220p' w42/strategy_tags_v1_map/detector_map.json
 git rev-parse HEAD
 ```
 
 Validation commands for this bead:
 
 ```bash
-python -m json.tool scratch/w42/belief_attention_concept_buckets/manifest.json >/tmp/w42-csw6-24-manifest.json
+python -m json.tool w42/belief_attention_concept_buckets/manifest.json >/tmp/w42-csw6-24-manifest.json
 python - <<'PY'
 import csv
 from pathlib import Path
-rows = list(csv.DictReader(Path("scratch/w42/belief_attention_concept_buckets/bucket_matrix.csv").open()))
+rows = list(csv.DictReader(Path("w42/belief_attention_concept_buckets/bucket_matrix.csv").open()))
 assert len(rows) == 6
 assert {r["bucket"] for r in rows} >= {"public_evidence", "void_inference", "bid_derived_priors", "attention_failures", "legal_information_boundaries"}
 print("bucket matrix ok")
 PY
-git diff --check -- wiki/experiments/w42-belief-attention-concept-buckets.md scratch/w42/belief_attention_concept_buckets/bucket_matrix.csv scratch/w42/belief_attention_concept_buckets/manifest.json
+git diff --check -- wiki/experiments/w42-belief-attention-concept-buckets.md w42/belief_attention_concept_buckets/bucket_matrix.csv w42/belief_attention_concept_buckets/manifest.json
 ```
 
 Configs:
 
-- `scratch/w42/belief_attention_concept_buckets/manifest.json`
+- `w42/belief_attention_concept_buckets/manifest.json`
 - source configs/manifests listed in that manifest
 
 Seeds:

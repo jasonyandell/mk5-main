@@ -19,8 +19,8 @@ has run on the stated slice.
 
 Machine-readable schema:
 
-- `scratch/w42/claim_ledger.schema.json`
-- `scratch/w42/claim_ledger.template.json`
+- `w42/claim_ledger.schema.json`
+- `w42/claim_ledger.template.json`
 
 Claim ledger impact for `t42-csw6.5`: schema created, no empirical claim tested.
 

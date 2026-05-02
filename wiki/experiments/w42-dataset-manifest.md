@@ -22,7 +22,7 @@ claim ledger.
 
 Every durable w42 dataset or promoted scratch corpus should have a sibling
 manifest named `manifest.json` or `manifest.yaml`. For scratch work, place it next
-to the data under `scratch/w42/<dataset-version>/`. For promoted local corpora,
+to the data under `w42/<dataset-version>/`. For promoted local corpora,
 place it beside the data path chosen by the promotion bead. If a dataset is later
 published, the same manifest content should travel with the HF dataset card.
 

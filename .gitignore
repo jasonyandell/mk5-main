@@ -126,6 +126,7 @@ gus/adapters/
 .claude/scheduled_tasks.lock
 
 wandb/
+w42/**/wandb/
 lem/data/
 
 # Beads / Dolt files (added by bd init)

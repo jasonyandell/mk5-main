@@ -157,7 +157,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-strategy-tags-probe|gus-strategy-tags-probe]] — Winning 42 strategy tags promoted into Gus probe; 28k early-decision tiny model improves 2.012→1.181 regret, but `E[Q] N=10` remains boss at 0.167 (active)
 - [[experiments/winning42-strategy-measurement|winning42-strategy-measurement]] — book-derived strategy concepts harvested as measurable Gus/Burl/forge hypotheses, with chapter pages and a supported/contradicted claim ledger (active)
 - [[experiments/w42-final-empirical-strategy-report|w42-final-empirical-strategy-report]] — initial w42 survey synthesis: strategy tags help tiny models, substrate claims have support, tactical book claims mostly remain underpowered/context-limited (active)
-- [[experiments/w42-hugging-face-artifact-publishing|w42-hugging-face-artifact-publishing]] — explicit HF non-publish decision: current w42 scratch artifacts are useful but not mature public datasets/checkpoints (active)
+- [[experiments/w42-hugging-face-artifact-publishing|w42-hugging-face-artifact-publishing]] — explicit HF non-publish decision: top-level w42 research artifacts are useful but not mature public datasets/checkpoints (active)
 - [[experiments/w42-wandb-run-comparison-dashboard|w42-wandb-run-comparison-dashboard]] — reusable W&B view definition plus direct links for raw/v0/rich, smoke, claim-validation, diagnostic, superseded, and failed w42 runs (active)
 - [[experiments/w42-wandb-series-logging-standard|w42-wandb-series-logging-standard]] — W&B trajectory standard: named axes for epochs, variants, claims, bootstrap checkpoints, chunks, seeds, and smoke-proven multi-point logging (active)
 - [[experiments/w42-multi-seed-larger-eval-replication|w42-multi-seed-larger-eval-replication]] — five-seed, 2,800-row eval replication of raw/v0/rich w42 feature sets with live per-epoch W&B series (active)
@@ -209,7 +209,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/chat-mode-primer|chat-mode-primer]] — inject a synthetic "yeah I committed N, ask me anything" assistant turn after commit_play; recency-weighted in-context cue that flips base Gemma from play-decision mode to chat mode (active)
 - [[decisions/play-adapter-lock-in|play-adapter-lock-in]] — STaR-distilled play adapters cannot be talked out of commit_play even with primer + explicit prohibition; A/B vs base Gemma is clean; post-commit Q&A adapter must be co-trained, not stacked (active)
 - [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe for one claim regime, not a broader rich-tag kitchen sink or Gus core change (active)
-- [[decisions/w42-promote-or-retire|w42-promote-or-retire]] — keep w42 active as research; promote W&B/report discipline and substrate checks, but do not promote scratch models into Gus/Burl yet (active)
+- [[decisions/w42-promote-or-retire|w42-promote-or-retire]] — keep w42 active as top-level research; promote tracked artifacts into `w42/`, but do not promote research models into Gus/Burl yet (active)
 
 ## Sources
 

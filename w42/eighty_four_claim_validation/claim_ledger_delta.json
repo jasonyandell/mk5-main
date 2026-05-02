@@ -1,0 +1,48 @@
+{
+  "owner_bead": "t42-csw6.21",
+  "claim_ledger_impact": "no central claim-ledger change",
+  "reason": "This bead produced static enumeration/proxy evidence and a report-local status table; it did not update wiki/experiments/w42-claim-ledger.md.",
+  "claim_statuses_reported_in_page": {
+    "ch07-84-contract-regime": "context-limited",
+    "ch07-protected-one-off-84-shape": "underpowered",
+    "ch07-straight-off-two-to-one-double": "context-limited",
+    "ch07-score-42-vs-84-gate": "not-yet-tested",
+    "ch08-one-to-four-last-trick-weapons": "context-limited",
+    "ch08-double-ahead-needs-same-suit-pair": "underpowered",
+    "ch08-abandon-dead-assets": "not-yet-tested",
+    "ch08-throwaway-priority-ladder": "not-yet-tested"
+  },
+  "provenance": {
+    "commands": [
+      "python w42/eighty_four_claim_validation/validate_84_claims.py --wandb-mode online"
+    ],
+    "configs": "not applicable",
+    "data_inputs": [
+      "wiki/experiments/winning42-ch07-taking-every-trick-84.md",
+      "wiki/experiments/winning42-ch08-setting-84.md",
+      "wiki/experiments/winning42-ch12-advanced-bidding-playing.md",
+      "wiki/experiments/winning42-ch13-optional-variations.md",
+      "wiki/experiments/w42-strategy-tags-v1-map.md",
+      "wiki/experiments/w42-detector-tests.md",
+      "wiki/experiments/w42-concept-bucket-regret.md",
+      "wiki/experiments/w42-claim-ledger.md"
+    ],
+    "commit_sha": "f746b93f4ea0bacc697ed27b9dbf2fbd9ef8e744",
+    "random_seeds": {
+      "analysis_seed": 42
+    },
+    "wandb_links": {
+      "enabled": true,
+      "available": true,
+      "mode": "online",
+      "project": "w42",
+      "entity": "jasonyandell-forge42",
+      "group": "w42-csw6-84-claim-validation",
+      "name": "t42-csw6.21-84-validation-corrected-s0042-f746b93",
+      "id": "vmta9zew",
+      "url": "https://wandb.ai/jasonyandell-forge42/w42/runs/vmta9zew",
+      "dir": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-21/w42/eighty_four_claim_validation/wandb/wandb/run-20260501_220238-vmta9zew/files"
+    },
+    "hf_links": "not applicable"
+  }
+}

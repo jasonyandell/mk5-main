@@ -51,7 +51,7 @@ python -m wandb login
 
 Training scripts should accept explicit flags or environment overrides for all
 remote destinations. If W&B is unavailable or disabled, runs should still write a
-local manifest under `scratch/w42/` with the same run identity fields. If W&B is
+local manifest under `w42/` with the same run identity fields. If W&B is
 enabled before login, w42 scripts use offline mode by default and record the
 local sync command in their run metadata.
 
@@ -93,7 +93,8 @@ Every W&B run should include tags:
 - `strategy-validation`
 - `forge-eq`
 - `gus-format` when it reuses Gus corpus shape
-- `scratch` or `promoted`
+- `promoted` for new top-level w42 runs; historical runs may still show
+  `scratch`
 - the relevant concept bucket, such as `bidding-risk`, `count-donation`,
   `trump-pressure`, `off-protection`, `pounce-window`, `eighty-four`,
   `walker-endgame`, or `belief-memory`
@@ -181,7 +182,7 @@ The full standard and current script inventory live at
 Successful smoke command:
 
 ```bash
-python scratch/w42/raw_public_state_baseline.py \
+python w42/raw_public_state_baseline.py \
   --train gus/data/corpus_train_100.pt \
   --eval gus/data/corpus_eval_20.pt \
   --train-limit 4 \
@@ -189,13 +190,13 @@ python scratch/w42/raw_public_state_baseline.py \
   --epochs 1 \
   --batch-size 8 \
   --prediction-sample-limit 2 \
-  --output-dir scratch/w42/wandb_smoke/default_success \
+  --output-dir w42/wandb_smoke/default_success \
   --wandb-mode offline
 ```
 
 Successful smoke result: W&B created offline run id `rwexij8m`, logged
 train/eval/final metrics, marked `status=completed`, and wrote local artifacts
-under `scratch/w42/wandb_smoke/default_success/`.
+under `w42/wandb_smoke/default_success/`.
 
 After login, the same default-on W&B path created a live smoke run:
 
@@ -205,15 +206,15 @@ After login, the same default-on W&B path created a live smoke run:
 Failure smoke command:
 
 ```bash
-python scratch/w42/raw_public_state_baseline.py \
-  --train scratch/w42/does-not-exist.pt \
+python w42/raw_public_state_baseline.py \
+  --train w42/does-not-exist.pt \
   --eval gus/data/corpus_eval_20.pt \
   --train-limit 4 \
   --eval-limit 4 \
   --epochs 1 \
   --batch-size 4 \
   --prediction-sample-limit 1 \
-  --output-dir scratch/w42/wandb_smoke/default_failure \
+  --output-dir w42/wandb_smoke/default_failure \
   --wandb-mode offline
 ```
 
@@ -299,7 +300,7 @@ HF links:
 
 ## What Stays Local
 
-Keep these local under `scratch/w42/` until a later bead promotes them:
+Keep these local under `w42/` until a later bead promotes them:
 
 - one-off notebooks and first-pass scripts
 - tiny corpora used only to validate feature shapes

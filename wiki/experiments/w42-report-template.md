@@ -17,9 +17,9 @@ next checks.
 This page is template-only. It does not run an experiment, create a dataset,
 upload an artifact, or test a Winning 42 claim.
 
-Reusable scratch template:
+Reusable w42 template:
 
-- `scratch/w42/report_template.md`
+- `w42/report_template.md`
 
 W&B links: not applicable.
 
@@ -224,18 +224,18 @@ sed -n '1,280p' wiki/experiments/gus-strategy-tags-probe.md
 find scratch -maxdepth 3 -type f | sort | rg 'w42|winning42|claim|report'
 git rev-parse HEAD
 date +%Y-%m-%d
-git diff --check -- wiki/experiments/w42-report-template.md scratch/w42/report_template.md
+git diff --check -- wiki/experiments/w42-report-template.md w42/report_template.md
 git status --short --untracked-files=all
-git check-ignore -v scratch/w42/report_template.md
+git check-ignore -v w42/report_template.md
 sed -n '1,260p' wiki/experiments/w42-report-template.md
-sed -n '1,240p' scratch/w42/report_template.md
+sed -n '1,240p' w42/report_template.md
 bd close t42-csw6.6 --reason "w42 forge-style report template documented; W&B links: not applicable; HF links: not applicable; claim-ledger impact: no claim-ledger change"
 bd show t42-csw6.6 --json
 git diff -- .beads/issues.jsonl
 bd export --no-memories -o /tmp/w42-issues-export.jsonl
 node -e 'const fs=require("fs"); const id="t42-csw6.6"; const src="/tmp/w42-issues-export.jsonl"; const dst=".beads/issues.jsonl"; const replacement=fs.readFileSync(src,"utf8").split(/\n/).find(line=>line.includes(`"id":"${id}"`)); if(!replacement) throw new Error(`missing ${id} in export`); const lines=fs.readFileSync(dst,"utf8").split(/\n/); let count=0; const out=lines.map(line=>{ if(line.includes(`"id":"${id}"`)){ count++; return replacement; } return line; }).join("\n"); if(count!==1) throw new Error(`expected one ${id} line, found ${count}`); fs.writeFileSync(dst,out); console.log(`replaced ${id}`);'
 git diff --stat
-git add .beads/issues.jsonl wiki/experiments/w42-report-template.md && git add -f scratch/w42/report_template.md
+git add .beads/issues.jsonl wiki/experiments/w42-report-template.md && git add -f w42/report_template.md
 git diff --cached --stat
 git diff --cached --check
 git diff --cached --name-status

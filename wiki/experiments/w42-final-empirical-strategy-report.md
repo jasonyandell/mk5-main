@@ -108,7 +108,7 @@ them.
 
 ## Caveats
 
-- Many reports use local scratch artifacts and existing Gus corpora.
+- Many reports use local w42 artifacts and existing Gus corpora.
 - Several validation scripts are deterministic one-shot reports rather than W&B
   trajectory runs; the W&B series standard applies to future iterative runs.
 - Hidden-hand labels are acceptable for evaluation but not for live strategy
@@ -142,7 +142,7 @@ but does not move central claim statuses.
 - Which strategy tags reduce tail-risk errors rather than only mean regret?
 - Can Burl traces expose where the model has strategy vocabulary but poor
   reasoning discipline?
-- Which outputs deserve promotion out of scratch?
+- Which outputs deserve promotion from w42 research into Gus, Burl, forge, or HF?
 
 ## Provenance
 
@@ -151,7 +151,7 @@ but does not move central claim statuses.
 | bead | `t42-csw6.28` |
 | commands | `bd show t42-csw6 --json`; `bd show t42-csw6.28 --json`; wiki/report inspection; `git rev-parse HEAD` |
 | configs | not applicable |
-| data inputs | completed w42 wiki reports and scratch artifacts cited above |
+| data inputs | completed w42 wiki reports and w42 artifacts cited above |
 | commit SHA at synthesis time | `326fc5092d31e94b67fa5b548e6596b6d5e1d3d2` |
 | random seeds | not applicable for synthesis; see source reports |
 | W&B links | existing project links cited above; no new run |

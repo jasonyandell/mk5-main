@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.0.0",
+  "ledger_impact": "8 odds/ruleset claims supported by exact enumeration or deterministic predicate in t42-csw6.16 report.",
+  "entries": [
+    {
+      "claim_id": "ch01-hand-total-42",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch01-in-a-nutshell.md",
+        "chapter": 1,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "Seven tricks plus count tiles produce the 42-point hand total.",
+      "detector": "rule_accounting_core",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch01-follow-suit-obligation",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch01-in-a-nutshell.md",
+        "chapter": 1,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "A player must follow the led suit when possible, with trump/called-suit exclusivity.",
+      "detector": "legal_follow_suit_with_trump_exclusivity",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch13-direct-84-legal",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch13-optional-variations.md",
+        "chapter": 13,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "A player may bid 84 directly without a prior 42 bid.",
+      "detector": "straight_auction_legality",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch13-nontrump-first-lead-legal",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch13-optional-variations.md",
+        "chapter": 13,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "The bidder may lead a nontrump tile first.",
+      "detector": "first_lead_exception_bucket",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch13-small-end-illegal",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch13-optional-variations.md",
+        "chapter": 13,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "A nontrump first lead may not choose an arbitrary small-end led suit.",
+      "detector": "straight_auction_legality",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch13-high-bid-score-mode",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch13-optional-variations.md",
+        "chapter": 13,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "High bids use the made/set score formula rather than bid plus captured points.",
+      "detector": "high_bid_scoring_invariant",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch16-hand-shape-priors",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch16-statistical-odds.md",
+        "chapter": 16,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "The book's double-six hand-shape and double-count odds match exact enumeration within rounding.",
+      "detector": "hand_shape_prior_check",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    },
+    {
+      "claim_id": "ch16-four-trump-thresholds",
+      "chapter_source": {
+        "wiki_page": "wiki/experiments/winning42-ch16-statistical-odds.md",
+        "chapter": 16,
+        "source_note": "Validated from chapter wiki harvest; OCR source file absent in this worktree."
+      },
+      "claim": "The 10/27 and 14/27 four-trump double-first risk counts are recovered by assignment enumeration.",
+      "detector": "four_trump_boss_first_threshold",
+      "metric_test": "Exact enumeration or deterministic table-driven predicate; Wilson intervals reported for enumerated proportions.",
+      "data_source": "Standard 28-tile double-six set plus straight-42 ruleset fixtures.",
+      "readiness": [
+        "enumeration",
+        "ruleset",
+        "report-only"
+      ],
+      "evidence_artifact": "w42/odds_ruleset_claim_validation/validation_summary.json",
+      "status": "supported",
+      "caveats": "Supports odds/ruleset arithmetic only; strategy recommendations still need forge E[Q], Gus/w42 model, or Burl trace evidence.",
+      "provenance": {
+        "commands": [
+          "python w42/odds_ruleset_claim_validation/validate_odds_ruleset.py"
+        ],
+        "configs": "not applicable",
+        "data_inputs": "wiki/experiments/winning42-ch01-in-a-nutshell.md; wiki/experiments/winning42-ch13-optional-variations.md; wiki/experiments/winning42-ch16-statistical-odds.md; forge/oracle/tables.py; forge/oracle/declarations.py",
+        "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+        "random_seeds": "not applicable; exhaustive enumeration and deterministic fixtures",
+        "wandb_links": "not applicable",
+        "hf_links": "not applicable"
+      }
+    }
+  ]
+}

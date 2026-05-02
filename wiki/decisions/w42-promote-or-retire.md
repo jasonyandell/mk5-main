@@ -27,7 +27,7 @@ Promote now:
 - deterministic odds/rules/scoring checks as reference evidence;
 - the idea that strategy tags are worth testing.
 
-Keep in scratch/research:
+Keep in w42 research:
 
 - tiny raw/v0/rich model checkpoints;
 - rich-tag feature maps;
@@ -43,8 +43,9 @@ Do not promote:
 
 ## Cleanup And Follow-Up
 
-The current scratch artifacts should remain because they are useful provenance.
-Cleanup should wait until a later promotion bead names a durable code home.
+The tracked w42 artifacts now live under the top-level `w42/` directory. Local
+W&B run directories, caches, and other generated machine-state remain
+non-durable.
 
 The next phase should open new, narrower beads from
 [[w42-next-model-decision]], starting with one direct detector/regime work

@@ -20,9 +20,9 @@ definition plus a comparison table with direct run links.
 
 Artifacts:
 
-- `scratch/w42/wandb_run_comparison_dashboard/run_comparison.csv`
-- `scratch/w42/wandb_run_comparison_dashboard/wandb_view_definition.json`
-- `scratch/w42/wandb_run_comparison_dashboard/README.md`
+- `w42/wandb_run_comparison_dashboard/run_comparison.csv`
+- `w42/wandb_run_comparison_dashboard/wandb_view_definition.json`
+- `w42/wandb_run_comparison_dashboard/README.md`
 
 W&B project: `https://wandb.ai/jasonyandell-forge42/w42`.
 
@@ -47,7 +47,7 @@ Recommended panels:
 - failures/splats table filtered to failed/crashed state plus diagnostic and superseded runs
 
 Machine-readable definition:
-`scratch/w42/wandb_run_comparison_dashboard/wandb_view_definition.json`.
+`w42/wandb_run_comparison_dashboard/wandb_view_definition.json`.
 
 ## Run Comparison
 
@@ -66,7 +66,7 @@ Machine-readable definition:
 | doubles/no-trump validation | `t42-csw6.22` | finished | primary | corrected pass: 5 supported ruleset checks, 0 failed | `https://wandb.ai/jasonyandell-forge42/w42/runs/0kop3jhk` |
 | scoring drift validation | `t42-csw6.23` | finished | primary | deterministic scoring transform; 6 Chapter 10 claims supported in local delta | `https://wandb.ai/jasonyandell-forge42/w42/runs/7keeve33` |
 
-Full table: `scratch/w42/wandb_run_comparison_dashboard/run_comparison.csv`.
+Full table: `w42/wandb_run_comparison_dashboard/run_comparison.csv`.
 
 ## Grouping And Tags
 
@@ -82,8 +82,9 @@ Current grouping is useful but inconsistent across beads:
 Future w42 runs should keep the existing [[w42-lab-infrastructure]] tags and add
 lineage tags that make dashboards easier:
 
-- Always include: `w42`, `winning42`, `strategy-validation`, `scratch` or
-  `promoted`, and `t42-csw6.N`.
+- Always include: `w42`, `winning42`, `strategy-validation`, `promoted`, and
+  `t42-csw6.N` for new runs. Historical runs may still carry the old `scratch`
+  tag.
 - Model runs should include feature tags: `raw-public-state`,
   `v0-strategy-tags`, `rich-tags`, `many-signal`.
 - Claim runs should include bucket tags: `setter-defense`, `pounce-window`,
@@ -99,7 +100,7 @@ lineage tags that make dashboards easier:
 | W&B API | available; `wandb.Api()` returned 10 project runs |
 | W&B project | `https://wandb.ai/jasonyandell-forge42/w42` |
 | W&B hosted dashboard/report | not created; local programmatic report/workspace support is unavailable without `wandb_workspaces` |
-| W&B reusable view definition | `scratch/w42/wandb_run_comparison_dashboard/wandb_view_definition.json` |
+| W&B reusable view definition | `w42/wandb_run_comparison_dashboard/wandb_view_definition.json` |
 | HF dataset/model/artifact links | not applicable for this dashboard bead |
 
 The lab-infrastructure page mentions live smoke run ids `5ychhiid`, `as3xy7oz`,
@@ -153,8 +154,8 @@ PY
 
 Configs:
 
-- `scratch/w42/wandb_run_comparison_dashboard/wandb_view_definition.json`
-- `scratch/w42/wandb_run_comparison_dashboard/run_comparison.csv`
+- `w42/wandb_run_comparison_dashboard/wandb_view_definition.json`
+- `w42/wandb_run_comparison_dashboard/run_comparison.csv`
 
 Seeds: not applicable; no run occurred.
 

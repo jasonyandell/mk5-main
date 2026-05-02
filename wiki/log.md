@@ -1727,5 +1727,20 @@ Fix in `burl/chat/web/src/App.svelte`:
 
 **Frontier shift:**
 - The initial w42 survey is closed as a research map, not as a book verdict. Strategy tags are useful model inputs; exact odds/rules/scoring claims have narrow support; tactical claims need direct detectors and paired tests.
-- HF publishing is deferred because current artifacts are scratch reports/checkpoints, not stable public datasets or promoted models.
+- HF publishing is deferred because current artifacts are research reports/checkpoints, not stable public datasets or promoted models.
 - w42 stays active as research. The next model step is a targeted v2 direct-detector probe for one tactical regime, preferably setter pounce if current public-state/contract context can support it.
+
+---
+
+## [2026-05-02 | local | promote w42 to top-level workstream]
+
+**Touched pages:** [[w42]] [[w42-promote-or-retire]] [[w42-hugging-face-artifact-publishing]] [[index]] [[log]]
+**Added:** top-level `w42/README.md` and package marker.
+**Updated:** tracked w42 code, reports, schemas, tables, and small checkpoints moved from `scratch/w42/` to `w42/`; wiki paths now point at the durable project home; local W&B directories remain ignored machine-state.
+**Retired:** tracked `scratch/w42/` home.
+**Questions opened:** none.
+
+**Frontier shift:**
+- w42 is no longer throwaway scratch. It is a durable project-root research workstream like Gus or Burl in repo shape, while still keeping a research boundary around model/checkpoint promotion.
+- The promotion is about ownership and continuity, not about declaring the tiny w42 probes production-ready.
+- Temporary unrelated notebooks and generated caches can still live in `scratch/`; durable w42 evidence and scripts now belong under `w42/`.

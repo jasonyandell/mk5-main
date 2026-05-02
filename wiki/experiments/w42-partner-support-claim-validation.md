@@ -16,9 +16,9 @@ bidder-partner detector exists.
 
 Generated artifacts:
 
-- `scratch/w42/partner_support_claim_validation/analyze_partner_support.py`
-- `scratch/w42/partner_support_claim_validation/summary.json`
-- `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv`
+- `w42/partner_support_claim_validation/analyze_partner_support.py`
+- `w42/partner_support_claim_validation/summary.json`
+- `w42/partner_support_claim_validation/claim_proxy_stats.csv`
 
 Evidence mode: oracle E[Q] report slice over existing public-state features. No model
 training, W&B run, HF artifact, Burl trace review, or Gus core-path edit was performed.
@@ -57,7 +57,7 @@ Bootstrap seed: `20260502`. Bootstrap samples: `5000`.
 | ruleset / score mode | inherited from existing Gus eval corpus; no variant split available in this report |
 | evidence mode | oracle E[Q] report slice over public-state strategy tags |
 | decision slice | all 560 held-out eval decisions; partner-support proxies are action-local subsets |
-| manifest path | `scratch/w42/partner_support_claim_validation/summary.json` |
+| manifest path | `w42/partner_support_claim_validation/summary.json` |
 | source corpus | `/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt` |
 | source wiki pages | `wiki/experiments/winning42-ch04-partner-support.md`, `wiki/experiments/w42-strategy-tags-v0.md`, `wiki/experiments/w42-strategy-tags-v1-map.md` |
 | split policy | eval-only seeds `900000-900019`, inherited from w42/Gus eval convention |
@@ -113,12 +113,12 @@ because they probe the surfaces Chapter 4 cares about, but the v0 tags do not id
 
 | claim id | before | after | reason | evidence artifact |
 |---|---|---|---|---|
-| `ch04-safe-partner-count-donation` | `underpowered` on chapter page | unchanged | Directional, unpaired proxy only; partner intent and guarantee strength are not isolated. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
-| `ch04-low-trump-trap-against-count-dump` | `underpowered` on chapter page | unchanged | Tiny alternative sample and no paired decisions. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
-| `ch04-lead-capture-for-support` | `underpowered` on chapter page | unchanged | Generic trick-capture proxy, not partner-support gated. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
-| `ch04-effective-double-highest-remaining` | `underpowered` on chapter page | unchanged | Proxy contradiction is useful negative evidence, but detector is too coarse for ledger status. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
-| `ch04-lead-away-from-count-damage` | `underpowered` on chapter page | unchanged | Directional paired effect with CI crossing zero. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
-| `ch04-avoid-disruptive-partner-trump-lead` | `underpowered` on chapter page | unchanged | Missing bidder-partner role gate and exception features. | `scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-safe-partner-count-donation` | `underpowered` on chapter page | unchanged | Directional, unpaired proxy only; partner intent and guarantee strength are not isolated. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-low-trump-trap-against-count-dump` | `underpowered` on chapter page | unchanged | Tiny alternative sample and no paired decisions. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-lead-capture-for-support` | `underpowered` on chapter page | unchanged | Generic trick-capture proxy, not partner-support gated. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-effective-double-highest-remaining` | `underpowered` on chapter page | unchanged | Proxy contradiction is useful negative evidence, but detector is too coarse for ledger status. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-lead-away-from-count-damage` | `underpowered` on chapter page | unchanged | Directional paired effect with CI crossing zero. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
+| `ch04-avoid-disruptive-partner-trump-lead` | `underpowered` on chapter page | unchanged | Missing bidder-partner role gate and exception features. | `w42/partner_support_claim_validation/claim_proxy_stats.csv` |
 
 Claim ledger impact: no claim-ledger change.
 
@@ -162,13 +162,13 @@ sed -n '1,260p' wiki/experiments/w42-strategy-tags-v0.md
 sed -n '1,260p' wiki/experiments/w42-strategy-tags-v1-map.md
 sed -n '1,220p' wiki/entities/forge.md
 sed -n '1,220p' wiki/entities/gus.md
-python scratch/w42/partner_support_claim_validation/analyze_partner_support.py --eval /Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt --eval-seed 43 --bootstrap-seed 20260502 --bootstrap-samples 5000 --output-dir scratch/w42/partner_support_claim_validation
-python -m py_compile scratch/w42/partner_support_claim_validation/analyze_partner_support.py
+python w42/partner_support_claim_validation/analyze_partner_support.py --eval /Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt --eval-seed 43 --bootstrap-seed 20260502 --bootstrap-samples 5000 --output-dir w42/partner_support_claim_validation
+python -m py_compile w42/partner_support_claim_validation/analyze_partner_support.py
 ```
 
 Configs:
 
-- `scratch/w42/partner_support_claim_validation/analyze_partner_support.py`
+- `w42/partner_support_claim_validation/analyze_partner_support.py`
 
 Seeds:
 

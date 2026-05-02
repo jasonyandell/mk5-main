@@ -8,15 +8,15 @@ status: active
 
 ## Summary
 
-[[w42]] now has a scratch-owned Strategy Detector v0 wrapper for the cheap
+[[w42]] now has a w42-owned Strategy Detector v0 wrapper for the cheap
 public-state/action-local tags that [[gus-strategy-tags-probe]] found useful:
 
-- `scratch/w42/strategy_tags_v0.py`
-- `scratch/w42/strategy_tags_v0/manifest.json`
-- `scratch/w42/strategy_tags_v0/report.json`
-- `scratch/w42/strategy_tags_v0/tag_schema.json`
-- `scratch/w42/strategy_tags_v0/example_row.json`
-- `scratch/w42/strategy_tags_v0/summary.csv`
+- `w42/strategy_tags_v0.py`
+- `w42/strategy_tags_v0/manifest.json`
+- `w42/strategy_tags_v0/report.json`
+- `w42/strategy_tags_v0/tag_schema.json`
+- `w42/strategy_tags_v0/example_row.json`
+- `w42/strategy_tags_v0/summary.csv`
 
 The wrapper imports the existing Gus detector implementation and validates that
 the w42 tag metadata still matches the Gus constants: `strategy_features` has 68
@@ -55,7 +55,7 @@ Declared inputs checked, in order:
 ## Tag Dimensions
 
 The full tag-name schema is recorded in
-`scratch/w42/strategy_tags_v0/tag_schema.json`.
+`w42/strategy_tags_v0/tag_schema.json`.
 
 Global public-state groups:
 
@@ -106,7 +106,7 @@ The deterministic real-corpus sample has one row:
 | `strategy_features` shape | `[1, 68]` |
 | `strategy_action_features` shape | `[1, 7, 32]` |
 
-Group summaries are in `scratch/w42/strategy_tags_v0/summary.csv`. The numeric
+Group summaries are in `w42/strategy_tags_v0/summary.csv`. The numeric
 values validate real-corpus loading, shape, naming, and determinism only; they
 are not semantic evidence about play quality.
 
@@ -118,7 +118,7 @@ Run commit at artifact generation:
 Exact detector command:
 
 ```bash
-python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1
+python w42/strategy_tags_v0.py --seed 42 --limit 1
 ```
 
 Config:
@@ -129,7 +129,7 @@ Config:
 | device | `cpu` |
 | source mode | `real-corpus` |
 | data input | `gus/data/corpus_train_100.pt` |
-| output directory | `scratch/w42/strategy_tags_v0/` |
+| output directory | `w42/strategy_tags_v0/` |
 | checkpoint | `not applicable` |
 | W&B links | `not applicable` |
 | HF links | `not applicable` |
@@ -168,11 +168,11 @@ sed -n '360,760p' gus/model/dataset_seq_world.py
 Implementation and artifact checks:
 
 ```bash
-python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1
-sed -n '1,220p' scratch/w42/strategy_tags_v0/report.json
-sed -n '1,80p' scratch/w42/strategy_tags_v0/summary.csv
-sed -n '1,140p' scratch/w42/strategy_tags_v0/example_row.json
-python -m py_compile scratch/w42/strategy_tags_v0.py
+python w42/strategy_tags_v0.py --seed 42 --limit 1
+sed -n '1,220p' w42/strategy_tags_v0/report.json
+sed -n '1,80p' w42/strategy_tags_v0/summary.csv
+sed -n '1,140p' w42/strategy_tags_v0/example_row.json
+python -m py_compile w42/strategy_tags_v0.py
 git status --short --untracked-files=all
 ```
 

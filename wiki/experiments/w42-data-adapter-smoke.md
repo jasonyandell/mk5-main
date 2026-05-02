@@ -8,13 +8,13 @@ status: active
 
 ## Summary
 
-[[w42]] has a tiny promoted-scratch smoke path for the [[forge]] / [[gus]]
+[[w42]] has a tiny promoted smoke path for the [[forge]] / [[gus]]
 public-state, action, and oracle-label adapter shape:
 
-- `scratch/w42/data_adapter_smoke.py`
-- `scratch/w42/data_adapter_smoke/manifest.json`
-- `scratch/w42/data_adapter_smoke/report.json`
-- `scratch/w42/data_adapter_smoke/example_row.json`
+- `w42/data_adapter_smoke.py`
+- `w42/data_adapter_smoke/manifest.json`
+- `w42/data_adapter_smoke/report.json`
+- `w42/data_adapter_smoke/example_row.json`
 
 The main checkout contains `gus/data/corpus_train_100.pt`, so the merged smoke
 now validates the adapter against a real Gus joint-world corpus row. The script
@@ -76,7 +76,7 @@ Derived labels:
 ## Example Row
 
 The full example row is in
-`scratch/w42/data_adapter_smoke/example_row.json`.
+`w42/data_adapter_smoke/example_row.json`.
 
 Important fields:
 
@@ -101,7 +101,7 @@ Run commit at smoke generation:
 Exact command:
 
 ```bash
-python scratch/w42/data_adapter_smoke.py --seed 42 --batch-size 1
+python w42/data_adapter_smoke.py --seed 42 --batch-size 1
 ```
 
 Config:
@@ -113,8 +113,8 @@ Config:
 | device | `cpu` |
 | source mode | `real-corpus` |
 | data input | `gus/data/corpus_train_100.pt` |
-| data manifest | `scratch/w42/data_adapter_smoke/manifest.json` |
-| report JSON | `scratch/w42/data_adapter_smoke/report.json` |
+| data manifest | `w42/data_adapter_smoke/manifest.json` |
+| report JSON | `w42/data_adapter_smoke/report.json` |
 | checkpoint | `not applicable` |
 | W&B links | `not applicable` |
 | HF links | `not applicable` |
@@ -152,22 +152,22 @@ sed -n '1,340p' wiki/entities/forge.md
 Code and data inspection:
 
 ```bash
-rg --files gus data scratch/w42 wiki/experiments | rg 'gus/data|corpus|eq-games|JointWorld|strategy_features|strategy_probe|w42'
+rg --files gus data w42 wiki/experiments | rg 'gus/data|corpus|eq-games|JointWorld|strategy_features|strategy_probe|w42'
 rg -n "class JointWorldFullDataset|JointWorldFullDataset|strategy_features|strategy_action_features|action_taken|q_per_world|e_q|legal_mask" gus -g '*.py'
-find gus/data data/eq-games scratch/w42 -maxdepth 3 -type f
+find gus/data data/eq-games w42 -maxdepth 3 -type f
 sed -n '1,230p' gus/model/dataset_seq_world.py
 sed -n '1,220p' gus/model/strategy_features.py
 sed -n '220,380p' gus/model/strategy_features.py
-find scratch/w42 -maxdepth 3 -type f -print
+find w42 -maxdepth 3 -type f -print
 ```
 
 Smoke run and output inspection:
 
 ```bash
-python scratch/w42/data_adapter_smoke.py --seed 42 --batch-size 1
-sed -n '1,220p' scratch/w42/data_adapter_smoke/report.json
-sed -n '1,220p' scratch/w42/data_adapter_smoke/example_row.json
-sed -n '1,240p' scratch/w42/data_adapter_smoke/manifest.json
+python w42/data_adapter_smoke.py --seed 42 --batch-size 1
+sed -n '1,220p' w42/data_adapter_smoke/report.json
+sed -n '1,220p' w42/data_adapter_smoke/example_row.json
+sed -n '1,240p' w42/data_adapter_smoke/manifest.json
 git status --short --untracked-files=all
 ```
 

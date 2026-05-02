@@ -10,10 +10,10 @@ status: active
 
 [[w42]] now has a deterministic detector check suite for `t42-csw6.9`:
 
-- `scratch/w42/detector_tests.py`
-- `scratch/w42/detector_tests/report.json`
-- `scratch/w42/detector_tests/checks.csv`
-- `scratch/w42/detector_tests/coverage.csv`
+- `w42/detector_tests.py`
+- `w42/detector_tests/report.json`
+- `w42/detector_tests/checks.csv`
+- `w42/detector_tests/coverage.csv`
 
 The suite validates existing [[w42-strategy-tags-v0]] semantics against literal
 public-state fixtures and checks that the [[w42-strategy-tags-v1-map]] detector
@@ -79,16 +79,16 @@ v1 detector predicates are implemented as callable code.
 
 | artifact | purpose |
 |---|---|
-| `scratch/w42/detector_tests.py` | deterministic fixture and map check runner |
-| `scratch/w42/detector_tests/report.json` | machine-readable run summary and provenance |
-| `scratch/w42/detector_tests/checks.csv` | one row per assertion |
-| `scratch/w42/detector_tests/coverage.csv` | v1 bucket and detector coverage report |
+| `w42/detector_tests.py` | deterministic fixture and map check runner |
+| `w42/detector_tests/report.json` | machine-readable run summary and provenance |
+| `w42/detector_tests/checks.csv` | one row per assertion |
+| `w42/detector_tests/coverage.csv` | v1 bucket and detector coverage report |
 
 Data inputs:
 
-- `scratch/w42/strategy_tags_v0.py`
-- `scratch/w42/strategy_tags_v1_map/detector_map.json`
-- literal fixture hands in `scratch/w42/detector_tests.py`
+- `w42/strategy_tags_v0.py`
+- `w42/strategy_tags_v1_map/detector_map.json`
+- literal fixture hands in `w42/detector_tests.py`
 
 ## Reproducibility
 
@@ -98,7 +98,7 @@ Run commit at artifact generation:
 Exact detector command:
 
 ```bash
-python scratch/w42/detector_tests.py
+python w42/detector_tests.py
 ```
 
 Exact checks run:
@@ -109,13 +109,13 @@ bd show t42-csw6.9
 sed -n '1,220p' wiki/AGENTS.md
 sed -n '1,260p' wiki/experiments/w42-strategy-tags-v0.md
 sed -n '1,260p' wiki/experiments/w42-strategy-tags-v1-map.md
-sed -n '1,320p' scratch/w42/strategy_tags_v0.py
-sed -n '320,760p' scratch/w42/strategy_tags_v0.py
-sed -n '1,260p' scratch/w42/strategy_tags_v1_map/detector_map.json
-sed -n '1,240p' scratch/w42/strategy_tags_v1_map/README.md
+sed -n '1,320p' w42/strategy_tags_v0.py
+sed -n '320,760p' w42/strategy_tags_v0.py
+sed -n '1,260p' w42/strategy_tags_v1_map/detector_map.json
+sed -n '1,240p' w42/strategy_tags_v1_map/README.md
 sed -n '1,280p' gus/model/strategy_features.py
 sed -n '280,620p' gus/model/strategy_features.py
-python scratch/w42/detector_tests.py
+python w42/detector_tests.py
 ```
 
 Config:
@@ -125,8 +125,8 @@ Config:
 | bead | `t42-csw6.9` |
 | device | `cpu` |
 | source mode | literal public-state fixtures plus v1 detector-map coverage |
-| data input | `scratch/w42/strategy_tags_v0.py`; `scratch/w42/strategy_tags_v1_map/detector_map.json`; literal fixtures |
-| output directory | `scratch/w42/detector_tests/` |
+| data input | `w42/strategy_tags_v0.py`; `w42/strategy_tags_v1_map/detector_map.json`; literal fixtures |
+| output directory | `w42/detector_tests/` |
 | checkpoint | `not applicable` |
 | W&B links | `not applicable` |
 | HF links | `not applicable` |

@@ -35,7 +35,7 @@ Every W&B-enabled w42 script follows these rules:
 - Uncaught post-init failures still set `status=failed`,
   `failure/type`, `failure/message`, and `failure/traceback_tail`.
 
-The shared helper `scratch/w42/wandb_utils.py` provides
+The shared helper `w42/wandb_utils.py` provides
 `WandbRun.log_series_point(axis=..., value=..., metrics=..., step=...)` so
 future scripts can make the axis explicit without repeating W&B boilerplate.
 
@@ -43,32 +43,32 @@ future scripts can make the axis explicit without repeating W&B boilerplate.
 
 | script | W&B behavior after this bead | series status |
 |---|---|---|
-| `scratch/w42/raw_public_state_baseline.py` | live/default W&B; logs train/eval metrics once per epoch with `epoch` and final/best groups | series-ready |
-| `scratch/w42/v0_strategy_tags_baseline.py` | live/default W&B; logs train/eval metrics once per epoch with `epoch` and final/best groups | series-ready |
-| `scratch/w42/rich_tag_many_signal_probe.py` | live/default W&B; logs rich-model train/eval metrics once per epoch with `epoch`, then final/bucket deltas | series-ready |
-| `scratch/w42/strategy_tag_family_ablations.py` | live/default W&B; now logs a generic per-variant series on `variant/index` plus variant-specific metric names | series-ready |
-| `scratch/w42/setter_defense_claim_validation/analyze_setter_defense.py` | live/default W&B; now logs one point per claim on `claim/index` plus claim-specific metric names | series-ready for claim sweep; bootstrap remains aggregate |
-| `scratch/w42/eighty_four_claim_validation/validate_84_claims.py` | live/default W&B; logs one final deterministic/static validation summary | final-only, acceptable one-shot |
-| `scratch/w42/doubles_no_trump_claim_validation/validate_doubles_no_trump.py` | live/default W&B; logs one final deterministic ruleset/static validation summary | final-only, acceptable one-shot |
-| `scratch/w42/scoring_objective_drift_claim_validation/validate_scoring_objective_drift.py` | live/default W&B; logs one final deterministic scoring-transform summary | final-only, acceptable one-shot |
-| `scratch/w42/style_partnership_concept_buckets/build_style_partnership_report.py` | live/default W&B; logs a synthesized bucket table/report summary | report-only; add bucket/spec series if expanded |
-| `scratch/w42/partner_support_claim_validation/analyze_partner_support.py` | no W&B instrumentation; local summary records `wandb_links: not applicable` | report-only backlog if rerun |
-| `scratch/w42/bidding_risk_budget_claim_validation/validate_bidding_risk_budget.py` | no W&B match found in the current script scan | report-only backlog if rerun |
-| `scratch/w42/bidder_sequencing_claim_validation/analyze.py` | no W&B match found in the current script scan | report-only backlog if rerun |
-| `scratch/w42/odds_ruleset_claim_validation/validate_odds_ruleset.py` | no W&B instrumentation; deterministic local ruleset summary | final-only, acceptable one-shot |
-| `scratch/w42/detector_tests.py` | no W&B instrumentation; local detector/unit-style report | final-only, acceptable one-shot |
-| `scratch/w42/data_adapter_smoke.py` | no W&B instrumentation; local adapter shape smoke | final-only, acceptable one-shot |
-| `scratch/w42/strategy_tags_v0.py` | no W&B instrumentation; feature-map generation/reporting | final-only, acceptable one-shot |
+| `w42/raw_public_state_baseline.py` | live/default W&B; logs train/eval metrics once per epoch with `epoch` and final/best groups | series-ready |
+| `w42/v0_strategy_tags_baseline.py` | live/default W&B; logs train/eval metrics once per epoch with `epoch` and final/best groups | series-ready |
+| `w42/rich_tag_many_signal_probe.py` | live/default W&B; logs rich-model train/eval metrics once per epoch with `epoch`, then final/bucket deltas | series-ready |
+| `w42/strategy_tag_family_ablations.py` | live/default W&B; now logs a generic per-variant series on `variant/index` plus variant-specific metric names | series-ready |
+| `w42/setter_defense_claim_validation/analyze_setter_defense.py` | live/default W&B; now logs one point per claim on `claim/index` plus claim-specific metric names | series-ready for claim sweep; bootstrap remains aggregate |
+| `w42/eighty_four_claim_validation/validate_84_claims.py` | live/default W&B; logs one final deterministic/static validation summary | final-only, acceptable one-shot |
+| `w42/doubles_no_trump_claim_validation/validate_doubles_no_trump.py` | live/default W&B; logs one final deterministic ruleset/static validation summary | final-only, acceptable one-shot |
+| `w42/scoring_objective_drift_claim_validation/validate_scoring_objective_drift.py` | live/default W&B; logs one final deterministic scoring-transform summary | final-only, acceptable one-shot |
+| `w42/style_partnership_concept_buckets/build_style_partnership_report.py` | live/default W&B; logs a synthesized bucket table/report summary | report-only; add bucket/spec series if expanded |
+| `w42/partner_support_claim_validation/analyze_partner_support.py` | no W&B instrumentation; local summary records `wandb_links: not applicable` | report-only backlog if rerun |
+| `w42/bidding_risk_budget_claim_validation/validate_bidding_risk_budget.py` | no W&B match found in the current script scan | report-only backlog if rerun |
+| `w42/bidder_sequencing_claim_validation/analyze.py` | no W&B match found in the current script scan | report-only backlog if rerun |
+| `w42/odds_ruleset_claim_validation/validate_odds_ruleset.py` | no W&B instrumentation; deterministic local ruleset summary | final-only, acceptable one-shot |
+| `w42/detector_tests.py` | no W&B instrumentation; local detector/unit-style report | final-only, acceptable one-shot |
+| `w42/data_adapter_smoke.py` | no W&B instrumentation; local adapter shape smoke | final-only, acceptable one-shot |
+| `w42/strategy_tags_v0.py` | no W&B instrumentation; feature-map generation/reporting | final-only, acceptable one-shot |
 
 ## Smoke
 
-The smoke script `scratch/w42/wandb_series_smoke.py` logs synthetic epoch and
+The smoke script `w42/wandb_series_smoke.py` logs synthetic epoch and
 bootstrap checkpoint series without loading Gus corpora or training a model.
 
 Command:
 
 ```bash
-python scratch/w42/wandb_series_smoke.py \
+python w42/wandb_series_smoke.py \
   --epochs 3 \
   --bootstrap-checkpoints 3 \
   --bootstrap-samples 300 \
@@ -85,7 +85,7 @@ Result:
 - Series metrics visible: `epoch`, `train/loss`, `eval/mean_regret`,
   `bootstrap/samples_seen`, `bootstrap/checkpoint`, `bootstrap/ci_width`, and
   `series/global_step`
-- Local manifest: `scratch/w42/wandb_series_smoke/run.json`
+- Local manifest: `w42/wandb_series_smoke/run.json`
 - HF links: `not applicable`
 - Claim-ledger impact: `no claim-ledger change`
 
