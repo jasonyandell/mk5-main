@@ -149,7 +149,7 @@ def game_players(hands: list[list[int]]) -> tuple[list[dict[str, Any]], list[int
     return players, domino_order
 
 
-def process_game_record(game: Any, game_idx: int) -> dict[str, Any]:
+def process_game_record(game: Any, game_idx: int, default_samples: int | None = None) -> dict[str, Any]:
     n_dominoes = 28
     n_moves = 28
     players, domino_order = game_players(game.hands)
@@ -194,7 +194,7 @@ def process_game_record(game: Any, game_idx: int) -> dict[str, Any]:
                             "mean": value,
                             "std": float(np.sqrt(max(var, 0.0))),
                             "win": float(pdf[win_bin_start:].sum()),
-                            "samples": int(decision.n_samples or 0),
+                            "samples": int(decision.n_samples or default_samples or 0),
                             "converged": bool(decision.converged)
                             if decision.converged is not None
                             else None,
@@ -250,7 +250,8 @@ def export_game_and_pdf(sample_path: Path, output_dir: Path, limit: int | None) 
     if limit is not None:
         games = games[:limit]
 
-    records = [process_game_record(game, idx) for idx, game in enumerate(games)]
+    default_samples = payload.get("n_samples")
+    records = [process_game_record(game, idx, default_samples) for idx, game in enumerate(games)]
 
     per_game_path = output_dir / "27b_eq_per_game.jsonl"
     pdf_path = output_dir / "eq_pdf_v3_sample.jsonl"

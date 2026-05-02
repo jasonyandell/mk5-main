@@ -17,7 +17,8 @@ book failed to correlate." The result is:
 - most tactical and partnership recommendations are still proxy-only,
   context-limited, underpowered, or not-yet-tested;
 - `E[Q] N=10` remains much stronger than the tiny w42 models;
-- the next phase should be targeted digging, not broader surveying.
+- the next phase should be targeted, distribution-aware digging, not broader
+  surveying.
 
 The book is useful as a hypothesis generator. The current evidence supports
 continuing the w42 line, but it does not justify broad book-claim conclusions.
@@ -58,6 +59,51 @@ Paired regret deltas:
 
 On the same replication slice, `E[Q] N=10` reached 0.175 mean regret. The tiny
 models remain far behind the boss baseline.
+
+## Distribution-Aware Refinement
+
+Follow-up inspection in the E[Q] PDF browser visualizer showed why mean regret is
+necessary but incomplete. Some decisions are not well summarized by their
+expected value: the PDF can show separated shelves, threshold cliffs, and heavy
+disaster tails. In those positions, the strategic question is not only "which
+move has the best mean?" but "which branch am I entering, and can I mitigate the
+bad branch before it hardens?"
+
+This matters for the next w42 phase. Book concepts such as preserving the 84
+stopper, safe donation, setter pounce, avoiding a broken off suit, or bracing
+after a poisoned trick are often tail-risk and branch-management claims. Future
+model/report beads should therefore record distribution features when E[Q] PDFs
+or sampled worlds are available:
+
+- make/set threshold mass;
+- variance and quantiles;
+- lower-tail or CVaR-style disaster risk;
+- branch or shelf labels visible in the PDF;
+- whether a legal move appears to mitigate, expose, or preserve future options.
+
+The sampled-world data also supports a stronger diagnostic than a human table can
+observe directly: hidden-domino threat attribution. The visual PDF may show two
+high-odds shelves and two intermediate lumps; those modes are often driven by
+which player holds a specific unseen domino or set of dominoes. Because the
+generated training data records hidden ownership and outcome branches together,
+w42 can estimate which unseen holdings have large impact magnitude even when a
+live agent only has a belief distribution over them.
+
+That suggests a separate evaluation axis for belief work:
+
+- how much the outcome distribution changes when a specific hidden domino is
+  assigned to each plausible holder;
+- whether the model's belief mass is concentrated on high-impact hidden
+  threats, not just calibrated on average ownership;
+- whether a strategy tag or detector identifies plays that mitigate the
+  high-impact hidden branches;
+- whether the selector distinguishes harmless uncertainty from uncertainty that
+  can decide make/set or swing a trick.
+
+This refinement does not change any claim-ledger status. It changes the next
+measurement target: do not ask only whether a tag improves average regret; ask
+whether it helps identify and respond to branch-shaped tactical states and the
+hidden-domino threats that create them.
 
 ## Claim Families
 
@@ -140,6 +186,10 @@ but does not move central claim statuses.
   preservation, or auction bid margin?
 - Does eight-epoch or larger-data training preserve the rich-over-v0 signal?
 - Which strategy tags reduce tail-risk errors rather than only mean regret?
+- Which PDF/distribution features expose "brace for disaster" or mitigation
+  states better than scalar E[Q]?
+- Which hidden dominoes and holders explain the main shelves or lumps in an
+  E[Q] PDF, and can a belief model learn to weight those threats correctly?
 - Can Burl traces expose where the model has strategy vocabulary but poor
   reasoning discipline?
 - Which outputs deserve promotion from w42 research into Gus, Burl, forge, or HF?

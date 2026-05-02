@@ -9,8 +9,8 @@ status: active
 ## Decision
 
 The next w42 model step is a **targeted v2 strategy-tag probe with direct
-claim-regime detectors**, not a broader rich-tag kitchen sink and not a Gus
-architecture change.
+claim-regime detectors and distribution-aware labels where available**, not a
+broader rich-tag kitchen sink and not a Gus architecture change.
 
 The first target should be one high-value tactical regime with direct labels:
 
@@ -22,6 +22,19 @@ The preferred first target is setter pounce if the detector can be implemented
 from existing public state plus contract context. It is the clearest gap exposed
 by [[w42-setter-defense-claim-validation]]: the current proxy evidence is noisy
 because the direct labels are missing.
+
+The refinement from the E[Q] PDF visualizer is that the target should not be
+trained or reported only against scalar expected value. Some positions are
+branch-shaped: a mean may sit between a safe shelf and a disaster tail. The
+strategy problem is then mitigation, preservation, and branch recognition, not
+just average-value maximization.
+
+A second refinement is belief impact magnitude. The generated E[Q] artifacts can
+record sampled worlds, hidden domino ownership, and outcome branches together.
+That allows offline reports to ask which unseen dominoes and holders explain the
+large shelves or middle lumps in the PDF. Live play still cannot use hidden truth,
+but w42 can use these attributions as belief-quality targets and as diagnostics
+for whether a model is worrying about the right unseen threats.
 
 ## Evidence Used
 
@@ -37,6 +50,14 @@ The decision rests on four survey findings:
   detectors, not by lack of a larger model.
 - [[w42-final-empirical-strategy-report]] separates supported substrate claims
   from underpowered tactical claims, so the next model should be claim-led.
+- E[Q] PDF visual inspection shows that mean E[Q] can hide threshold cliffs,
+  high-variance shelves, and disaster tails that are directly relevant to book
+  strategy concepts such as bracing, preserving stoppers, and mitigating bad
+  branches.
+- Generated sampled-world artifacts can connect distribution modes back to
+  specific hidden domino ownerships, creating an impact-weighted belief target
+  that is unavailable to human players but legal as offline supervision and
+  evaluation.
 
 ## Alternatives Considered
 
@@ -44,6 +65,8 @@ The decision rests on four survey findings:
 |---|---|---|
 | train longer raw/v0/rich runs immediately | defer | useful as confirmation, but does not answer which book claims are real |
 | add every easy detector and rerun | reject for now | the rich-over-v0 signal is modest; indiscriminate features risk hiding the mechanism |
+| optimize only scalar E[Q] / mean regret | reject for targeted tactical work | scalar EV is useful but hides branch shape, threshold mass, and tail-risk mitigation opportunities |
+| evaluate beliefs only by average ownership calibration | reject for tactical belief work | some unseen dominoes matter far more than others; belief quality should be weighted by outcome impact |
 | promote w42 into Gus training now | reject | evidence is not strong enough, and w42's charter keeps Gus core paths out of scope |
 | publish HF checkpoint/dataset now | defer | [[w42-hugging-face-artifact-publishing]] says artifacts are not mature enough |
 | build direct claim-regime detectors, then train/evaluate | choose | most aligned with the survey's gaps and the user's desire to dig scientifically |
@@ -55,18 +78,30 @@ Create a new bead series for a single targeted regime:
 - implement direct public-state/report labels for the chosen regime;
 - add deterministic fixture tests and anti-leakage checks;
 - build a held-out slice for that regime;
-- train raw/v0/rich/direct-detector variants with W&B per-epoch series;
-- report aggregate regret, tail regret, and claim-specific bucket metrics;
+- attach E[Q] PDF or sampled-world distribution features where available:
+  threshold mass, variance, quantiles, lower-tail risk, and branch/shelf labels;
+- attach hidden-domino threat attribution where saved worlds allow it: for each
+  branch or shelf, identify the unseen domino holdings most associated with that
+  outcome shift;
+- train raw/v0/rich/direct-detector/distribution-aware variants with W&B
+  per-epoch series;
+- report aggregate regret, tail regret, distribution calibration, threshold-mass
+  errors, belief-impact calibration, and claim-specific bucket metrics;
 - only then consider claim-ledger movement.
 
 The model can stay small and cheap. The value is in better labels, sharper
-slices, and honest comparisons.
+slices, branch-aware reports, and honest comparisons.
 
 ## Risks
 
 - Direct detectors may require state not present in current Gus corpora.
 - Some claims may need generated games with special contracts or late-hand
   states, especially 84.
+- Distribution labels may require heavier E[Q] generation than scalar N=10
+  labels, so the first probe should keep the slice small and inspectable.
+- Hidden-domino attribution must remain an offline label/eval target; using
+  hidden truth directly as a live feature would violate the legal public-state
+  boundary.
 - A better model may exploit tags as shortcuts without learning the intended
   strategy mechanism.
 - W&B curves can look exciting while claim evidence remains proxy-only.
