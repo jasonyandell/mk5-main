@@ -1,0 +1,17 @@
+{
+  "claim_ledger_impact": "no central ledger change",
+  "claim_statuses_reported_in_page": {
+    "ch05-count-calling-lead": "underpowered",
+    "ch05-count-protection": "underpowered",
+    "ch05-extra-count-to-set": "underpowered",
+    "ch05-pounce-count-before-certainty": "underpowered",
+    "ch05-trump-rich-count-intervention": "underpowered",
+    "ch12-setter-pounce-high-bid-off": "underpowered",
+    "missing-bid-margin-set-accounting": "not-yet-tested",
+    "missing-high-bid-off-pounce": "not-yet-tested",
+    "missing-trump-set-detection": "not-yet-tested",
+    "missing-void-creation": "not-yet-tested"
+  },
+  "owner_bead": "t42-csw6.20",
+  "reason": "The run validates only v0 proxy slices. Direct Ch05/Ch12 setter-defense claim movement requires setter-role, bidder-off, void-creation, trump-set, and bid-margin detectors that are not present in the source artifacts."
+}
