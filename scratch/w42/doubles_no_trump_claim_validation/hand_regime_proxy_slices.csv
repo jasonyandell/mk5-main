@@ -1,0 +1,24 @@
+slice,n,denominator,pct,status,interpretation
+all_hands,1184040,1184040,100.0,descriptive,All exact double-six seven-tile hands.
+doubles_trump_candidate_4plus,51108,1184040,4.316408,context-limited,"Four-plus doubles are rare enough to be a candidate gate, not a strategy verdict."
+dt_candidate_missing_6_6,21231,51108,41.541442,context-limited,"Many four-plus-double hands lack the top double, so double count alone is insufficient."
+dt_candidate_missing_top_double,35602,51108,69.660327,context-limited,A stricter high-double gate still filters a large share of doubles-trump candidates.
+dt_candidate_off_count_liability,8960,51108,17.531502,context-limited,Off-count exposure remains common among candidate doubles-trump hands.
+dt_candidate_has_dual_top_6_5,7077,51108,13.847147,context-limited,6-5 dual-top protection is measurable but not common enough to be assumed.
+no_trump_support_proxy,527559,1184040,44.555843,underpowered,Static proxy for no-trump support doubles; needs oracle rollout for strategy status.
+regime_switch_proxy_nt_over_dt,21884,51108,42.819128,underpowered,"Candidate same-hand regime-switch bucket: 4+ doubles, weak high-double coverage, and no-trump support proxy."
+double_count_0,116280,1184040,9.820614,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_1,379848,1184040,32.080673,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_2,427329,1184040,36.090757,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_3,209475,1184040,17.691548,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_4,46550,1184040,3.931455,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_5,4410,1184040,0.372454,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_6,147,1184040,0.012415,descriptive,Exact double-count distribution for Chapter 9 gates.
+double_count_7,1,1184040,8.4e-05,descriptive,Exact double-count distribution for Chapter 9 gates.
+support_non_double_tiles_0,157168,1184040,13.273876,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_1,187593,1184040,15.843468,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_2,357105,1184040,30.159876,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_3,343735,1184040,29.030692,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_4,128100,1184040,10.818891,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_5,10332,1184040,0.872606,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
+support_non_double_tiles_6,7,1184040,0.000591,descriptive,Non-double tiles with a matching held double under no-trump support proxy.
