@@ -1,0 +1,53 @@
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+  background: #1a1a1a;
+  color: #e8e8e8;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  height: 100%;
+}
+
+button, textarea, input, select {
+  font: inherit;
+  color: inherit;
+}
+
+textarea, input[type="text"], input[type="number"] {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+  color: #e8e8e8;
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 0.85rem;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  background: #2a4d3a;
+  border: 1px solid #3a6d4a;
+  border-radius: 6px;
+  color: white;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: #555;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.78rem;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -49,6 +49,7 @@ from .transcript import (
     State,
     ToolResult,
     fold,
+    replay,
 )
 
 log = logging.getLogger(__name__)
@@ -140,9 +141,15 @@ async def drive(
                 accumulated.append(commit_move)
                 return
 
-            # Re-fold State so the next engine.step sees the tool result.
+            # Re-fold State from the on-disk journal so the next
+            # engine.step sees the tool result *plus* all prior session
+            # moves (system text, advertised tools, user prompt, prior
+            # tool calls).  Folding ``accumulated`` alone loses everything
+            # that was journaled before drive() was invoked.
             current_state = fold(
-                accumulated, session_dir=state.session_dir, registry=registry
+                list(replay(state.session_dir)),
+                session_dir=state.session_dir,
+                registry=registry,
             )
             continue
 
