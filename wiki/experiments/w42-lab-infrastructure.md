@@ -1,0 +1,258 @@
+---
+title: w42 Lab Infrastructure
+kind: experiment
+first_seen: local-2026-05-02
+last_updated: local-2026-05-02
+status: active
+---
+
+## Summary
+
+[[w42]] uses W&B and Hugging Face as optional lab infrastructure once training
+runs, durable datasets, or promotable artifacts exist. This page standardizes the
+names before those artifacts are created, so early work can remain local without
+inventing new conventions each time.
+
+No W&B run or HF artifact was created for this bead. The local setup check found
+`wandb` unavailable on `PATH`, `hf` installed but unauthenticated, and the older
+`huggingface-cli` command present only as a deprecated shim. Run links and
+artifact links are therefore `not applicable`.
+
+## Local Setup
+
+Secrets stay out of git. Local credentials, if added later, belong in the normal
+tool locations or environment variables:
+
+- W&B: login via the W&B CLI or `WANDB_API_KEY` in the caller's environment.
+- Hugging Face: login via `hf auth login` or `HF_TOKEN` in the caller's
+  environment.
+- Modal/cloud secrets, if used later, should follow the existing Forge/LEM
+  pattern of named secrets rather than committed token files.
+
+Local default until configured:
+
+```bash
+export WANDB_ENTITY=jasonyandell-forge42
+export WANDB_PROJECT=w42
+export HF_NAMESPACE=jasonyandell
+```
+
+Training scripts should accept explicit flags or environment overrides for all
+remote destinations. If W&B is unavailable or disabled, runs should still write a
+local manifest under `scratch/w42/` with the same run identity fields.
+
+## W&B Conventions
+
+Entity/project:
+
+- Entity: `jasonyandell-forge42`
+- Project: `w42`
+
+Run group schema:
+
+```text
+w42-{bead_slug}-{experiment_slug}
+```
+
+Examples:
+
+- `w42-csw6-lab-infrastructure`
+- `w42-tags-v0-rich-strategy`
+- `w42-probe-count-donation`
+
+Run name schema:
+
+```text
+{model_slug}-{feature_set}-s{seed}-{short_sha}
+```
+
+Examples:
+
+- `tiny-policy-raw-public-s0000-489c1fd`
+- `tiny-policy-rich-tags-s0000-489c1fd`
+- `bucket-probe-pounce-window-s0042-489c1fd`
+
+Every W&B run should include tags:
+
+- `w42`
+- `winning42`
+- `strategy-validation`
+- `forge-eq`
+- `gus-format` when it reuses Gus corpus shape
+- `scratch` or `promoted`
+- the relevant concept bucket, such as `bidding-risk`, `count-donation`,
+  `trump-pressure`, `off-protection`, `pounce-window`, `eighty-four`,
+  `walker-endgame`, or `belief-memory`
+
+Required config keys:
+
+- `bead_id`
+- `git_sha`
+- `data_manifest`
+- `source_corpus`
+- `dataset_name`
+- `dataset_version`
+- `ruleset`
+- `label_source`
+- `decision_slice`
+- `feature_set`
+- `concept_buckets`
+- `model_family`
+- `model_params`
+- `random_seed`
+- `train_seed`
+- `split_seed`
+- `eval_seed`
+- `baseline_policy`
+- `metrics`
+- `claim_ledger_status_before`
+- `local_artifact_path`
+- `hf_repo_id`
+- `wandb_group`
+
+Resume policy:
+
+- Resume an interrupted run only when the same checkpoint or local manifest stores
+  the W&B run id.
+- Use `resume="allow"` with the stored id for exact continuation.
+- Start a new run id for a new hypothesis, new feature set, changed data
+  manifest, or changed random seed.
+- Do not rely on display name uniqueness for lineage. Names are human-readable;
+  ids and manifests are the durable join keys.
+
+Run links:
+
+- W&B run: `not applicable`
+- W&B artifact: `not applicable`
+
+## Hugging Face Conventions
+
+Namespace:
+
+- HF namespace: `jasonyandell`
+
+Repository naming:
+
+- Durable dataset repo: `jasonyandell/w42-strategy-corpus`
+- Durable report artifact repo, if a report outgrows git/wiki tables:
+  `jasonyandell/w42-report-artifacts`
+- Promoted model repo: `jasonyandell/w42-{model_slug}`
+
+Dataset naming inside manifests:
+
+```text
+w42-{slice_slug}-{feature_set}-v{major}
+```
+
+Examples:
+
+- `w42-early-decisions-raw-public-v0`
+- `w42-full-decisions-rich-tags-v0`
+- `w42-pounce-window-buckets-v0`
+
+Model naming:
+
+```text
+w42-{model_family}-{feature_set}-{data_slug}
+```
+
+Examples:
+
+- `w42-tiny-policy-rich-tags-early-decisions`
+- `w42-bucket-probe-count-donation-full-decisions`
+
+Artifact file naming:
+
+```text
+{artifact_slug}-{git_sha}-s{seed}.{ext}
+```
+
+Examples:
+
+- `metrics-489c1fd-s0000.json`
+- `predictions-489c1fd-s0000.parquet`
+- `claim-ledger-deltas-489c1fd-s0000.csv`
+
+HF links:
+
+- Dataset repo: `not applicable`
+- Model repo: `not applicable`
+- Artifact repo: `not applicable`
+
+## What Stays Local
+
+Keep these local under `scratch/w42/` until a later bead promotes them:
+
+- one-off notebooks and first-pass scripts
+- tiny corpora used only to validate feature shapes
+- failed or underpowered runs
+- raw generated games whose data card is not ready
+- intermediate predictions, logits, and per-decision debug dumps
+- private credentials, local cache paths, and machine-specific launch wrappers
+
+Publish only when an artifact has a clear manifest, reproducible command, stable
+schema, and report text that explains what was measured. Detector existence alone
+does not justify publishing a dataset or moving a claim out of `not-yet-tested`.
+
+## Commands And Checks
+
+Required reading and prerequisite checks:
+
+```bash
+sed -n '1,240p' wiki/AGENTS.md
+bd show t42-csw6.2 --json
+sed -n '1,260p' wiki/entities/w42.md
+sed -n '1,260p' wiki/experiments/winning42-strategy-measurement.md
+sed -n '1,260p' wiki/experiments/gus-strategy-tags-probe.md
+sed -n '1,280p' wiki/entities/forge-analysis.md
+sed -n '1,280p' wiki/entities/forge.md
+sed -n '1,280p' wiki/entities/gus.md
+sed -n '281,620p' wiki/entities/gus.md
+bd show t42-csw6.1 --json
+git rev-parse --short HEAD
+```
+
+Local infrastructure checks:
+
+```bash
+rg -n "wandb|W&B|Weights|huggingface|Hugging Face|hf_|HF_|HF_HOME|WANDB" . \
+  --glob '!**/.git/**' --glob '!**/__pycache__/**' --glob '!**/*.pt' \
+  --glob '!**/*.ckpt' --glob '!**/*.parquet'
+command -v wandb
+wandb status
+command -v huggingface-cli
+huggingface-cli whoami
+command -v hf
+hf auth whoami
+hf --version
+git status --short
+```
+
+Observed results:
+
+- Base commit for this bead: `489c1fd`
+- `bd show t42-csw6.1 --json`: closed; charter exists at [[w42]]
+- `command -v wandb`: no path returned
+- `wandb status`: `zsh:1: command not found: wandb`
+- `command -v huggingface-cli`:
+  `/Users/jason/.local/share/mise/installs/python/3.12/bin/huggingface-cli`
+- `huggingface-cli whoami`: deprecated; directed callers to use `hf`
+- `command -v hf`:
+  `/Users/jason/.local/share/mise/installs/python/3.12/bin/hf`
+- `hf auth whoami`: `Error: Not logged in`
+- `hf --version`: `1.12.0`
+- `git status --short`: clean before editing this page
+
+No training run occurred. Random seeds are `not applicable`.
+
+## Claim Ledger
+
+no claim-ledger change
+
+This bead defines lab conventions only. It creates no detector, model, dataset,
+metric result, run, artifact, or claim status change.
+
+## Links
+
+[[w42]] | [[winning42-strategy-measurement]] |
+[[gus-strategy-tags-probe]] | [[forge-analysis]] | [[forge]] | [[gus]]
