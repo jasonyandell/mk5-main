@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "source": "E[Q] PDF visualizer records; one row per legal action with an 85-bin PDF over E[Q] values -42..42.",
+  "features": [
+    {
+      "name": "mean",
+      "type": "float",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Scalar E[Q]; useful baseline but intentionally not sufficient."
+    },
+    {
+      "name": "std",
+      "type": "float",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Distribution spread from sampled hidden worlds."
+    },
+    {
+      "name": "make_mass",
+      "type": "float|null",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Offense-side mass at E[Q] >= 18; null for defense rows."
+    },
+    {
+      "name": "set_mass",
+      "type": "float|null",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Defense-side threshold mass using the visualizer's E[Q] > -18 rule; null for offense rows."
+    },
+    {
+      "name": "lower_tail_mass",
+      "type": "float",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Mass at E[Q] <= -18; a compact tail-risk indicator."
+    },
+    {
+      "name": "q10/q25/q50/q75/q90",
+      "type": "integer",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Empirical quantiles from the PDF bins."
+    },
+    {
+      "name": "cvar_low_10",
+      "type": "float",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Approximate expectation over the lowest 10% of mass."
+    },
+    {
+      "name": "branch_entropy",
+      "type": "float",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Entropy of the E[Q] PDF; crude branchiness indicator."
+    },
+    {
+      "name": "branch_peak_count",
+      "type": "integer",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Number of local PDF peaks with at least 2% mass."
+    },
+    {
+      "name": "shelf_gap",
+      "type": "integer|null",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Distance between lowest and highest local peak bins when at least two shelves are visible."
+    },
+    {
+      "name": "high_variance_close_mean",
+      "type": "boolean",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Action is within one E[Q] point of the best mean and in the decision's upper spread quartile."
+    },
+    {
+      "name": "scalar_ev_lying_by_omission",
+      "type": "boolean",
+      "cheap_for_training_labels": true,
+      "cheap_for_live_inference": false,
+      "notes": "Top-mean action hides threshold, lower-tail, or high-variance evidence worth reporting."
+    }
+  ],
+  "live_inference_note": "These features require sampled-world E[Q] PDFs. They are cheap once the offline visualizer tensor exists, but too expensive for a live selector unless a smaller model learns to predict them from legal public state."
+}

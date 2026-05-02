@@ -1,0 +1,153 @@
+{
+  "bead": "t42-5m82.4",
+  "report": "w42 phase 2: distribution-aware EV report",
+  "data_slice": {
+    "games": 5,
+    "legal_action_pdf_rows": 346,
+    "decisions_with_pdf": 140,
+    "decisions_with_multiple_legal_pdf_actions": 81,
+    "samples_per_pdf_values": [
+      1000
+    ]
+  },
+  "thresholds": {
+    "pdf_bins": "85 integer bins from -42 to +42",
+    "offense_make_mass": "E[Q] >= 18",
+    "defense_set_mass": "E[Q] > -18, matching eq_pdf_discs/exporter threshold",
+    "lower_tail_mass": "E[Q] <= -18",
+    "cvar_low_10": "lowest 10% of PDF mass"
+  },
+  "aggregate_findings": {
+    "scalar_ev_lying_by_omission_count": 68,
+    "high_variance_close_mean_count": 87,
+    "mean_std": 16.9081,
+    "max_std": 31.046,
+    "mean_lower_tail_mass": 0.2937,
+    "max_lower_tail_mass": 1.0
+  },
+  "walkthrough_example": {
+    "game_id": "sample_001_decl_1",
+    "move_idx": 18,
+    "active_player": 0,
+    "trump_name": "ones",
+    "legal_action_count": 3,
+    "why": "top scalar mean disagrees with threshold mass, lower-tail safety, or high-variance branch evidence",
+    "top_mean_action": {
+      "domino": "6-4",
+      "player": 0,
+      "team": "offense",
+      "mean": 20.0685,
+      "std": 4.1868,
+      "threshold_mass": 0.785,
+      "make_mass": 0.785,
+      "set_mass": null,
+      "lower_tail_mass": 0.0,
+      "q10": 14,
+      "q50": 21,
+      "q90": 24,
+      "cvar_low_10": 10.21,
+      "branch_entropy": 3.1397,
+      "branch_peak_count": 4,
+      "shelf_gap": 14
+    },
+    "top_threshold_action": {
+      "domino": "2-0",
+      "player": 0,
+      "team": "offense",
+      "mean": 19.5722,
+      "std": 10.298,
+      "threshold_mass": 0.899,
+      "make_mass": 0.899,
+      "set_mass": null,
+      "lower_tail_mass": 0.0,
+      "q10": -2,
+      "q50": 24,
+      "q90": 24,
+      "cvar_low_10": -11.0,
+      "branch_entropy": 2.0117,
+      "branch_peak_count": 3,
+      "shelf_gap": 36
+    },
+    "lowest_tail_action": {
+      "domino": "2-0",
+      "player": 0,
+      "team": "offense",
+      "mean": 19.5722,
+      "std": 10.298,
+      "threshold_mass": 0.899,
+      "make_mass": 0.899,
+      "set_mass": null,
+      "lower_tail_mass": 0.0,
+      "q10": -2,
+      "q50": 24,
+      "q90": 24,
+      "cvar_low_10": -11.0,
+      "branch_entropy": 2.0117,
+      "branch_peak_count": 3,
+      "shelf_gap": 36
+    },
+    "actions_by_mean": [
+      {
+        "domino": "6-4",
+        "player": 0,
+        "team": "offense",
+        "mean": 20.0685,
+        "std": 4.1868,
+        "threshold_mass": 0.785,
+        "make_mass": 0.785,
+        "set_mass": null,
+        "lower_tail_mass": 0.0,
+        "q10": 14,
+        "q50": 21,
+        "q90": 24,
+        "cvar_low_10": 10.21,
+        "branch_entropy": 3.1397,
+        "branch_peak_count": 4,
+        "shelf_gap": 14
+      },
+      {
+        "domino": "2-0",
+        "player": 0,
+        "team": "offense",
+        "mean": 19.5722,
+        "std": 10.298,
+        "threshold_mass": 0.899,
+        "make_mass": 0.899,
+        "set_mass": null,
+        "lower_tail_mass": 0.0,
+        "q10": -2,
+        "q50": 24,
+        "q90": 24,
+        "cvar_low_10": -11.0,
+        "branch_entropy": 2.0117,
+        "branch_peak_count": 3,
+        "shelf_gap": 36
+      },
+      {
+        "domino": "6-5",
+        "player": 0,
+        "team": "offense",
+        "mean": 11.9701,
+        "std": 14.796,
+        "threshold_mass": 0.662,
+        "make_mass": 0.662,
+        "set_mass": null,
+        "lower_tail_mass": 0.0,
+        "q10": -9,
+        "q50": 21,
+        "q90": 24,
+        "cvar_low_10": -11.36,
+        "branch_entropy": 3.1346,
+        "branch_peak_count": 5,
+        "shelf_gap": 36
+      }
+    ]
+  },
+  "scientific_status": {
+    "production_selector": false,
+    "training_run": false,
+    "wandb": "not applicable",
+    "claim_ledger_impact": "no claim-ledger change",
+    "note": "Feature/report design from a small N=1000 visualizer sample, not a final empirical selector result."
+  }
+}

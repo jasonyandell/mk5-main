@@ -1,0 +1,18 @@
+{
+  "bead": "t42-5m82.4",
+  "created_utc": "2026-05-02T21:16:55.983071+00:00",
+  "script": "w42/distribution_aware_ev_report/build_distribution_aware_ev_report.py",
+  "input": "/Users/jason/code/mk5-main/forge/analysis/results/data/eq_pdf_v3_sample.jsonl",
+  "input_sha256": "8c1e501db65da7f9cc6ad70738e7992ad0ca09042ba4edc1a05c461f21e55e4b",
+  "outputs": [
+    "action_distribution_features.csv",
+    "example_decisions.json",
+    "candidate_feature_schema.json",
+    "summary.json",
+    "manifest.json"
+  ],
+  "commands": [
+    "python /Users/jason/code/mk5-main/.claude/worktrees/w42-phase2-distribution-ev/w42/distribution_aware_ev_report/build_distribution_aware_ev_report.py --input /Users/jason/code/mk5-main/forge/analysis/results/data/eq_pdf_v3_sample.jsonl"
+  ],
+  "wandb": "not applicable; no training run"
+}
