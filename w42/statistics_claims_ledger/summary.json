@@ -1,0 +1,97 @@
+{
+  "schema_version": "w42.statistics_claims_ledger.v1",
+  "owner_bead": "t42-5m82.1",
+  "generated_at_utc": "2026-05-02T21:17:15.549224+00:00",
+  "git_sha": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "claim_count": 62,
+  "status_counts": {
+    "context-limited": 10,
+    "contradicted": 2,
+    "not-yet-tested": 6,
+    "supported": 20,
+    "underpowered": 24
+  },
+  "family_counts": {
+    "84 bidder/defender": 9,
+    "bidder sequencing": 5,
+    "bidding risk": 3,
+    "count exposure": 5,
+    "double-count odds": 1,
+    "doubles/no-trump odds": 4,
+    "doubles/no-trump rules": 5,
+    "four-trump odds": 2,
+    "four-trump tactics": 1,
+    "hand odds": 2,
+    "partner support": 6,
+    "partner-help odds": 1,
+    "scoring objective": 9,
+    "setter defense": 6,
+    "stopper ownership": 1,
+    "trump counts": 1,
+    "void frequencies": 1
+  },
+  "evidence_mode_counts": {
+    "deterministic ruleset predicate": 5,
+    "deterministic scoring transform": 9,
+    "exact assignment enumeration": 2,
+    "exact conditional arithmetic": 1,
+    "exact enumeration": 5,
+    "exact hypergeometric ownership check": 1,
+    "exact static enumeration": 9,
+    "exact static enumeration / hypergeometric proxy": 8,
+    "exact unconditional prior": 1,
+    "not yet measured": 1,
+    "proxy regret analysis": 12,
+    "secondary model-bucket analysis": 5,
+    "static detector evidence only": 1,
+    "static proxy limitation": 1,
+    "unsupported strategy inference": 1
+  },
+  "headline_findings": [
+    "Exact hand-count, void-frequency, double-count, modal-hand, four-trump assignment, ruleset, and scoring-algebra substrates are supported on their stated slices.",
+    "Bidding, partner-support, setter-defense, bidder-sequencing, 84, and no-trump tactical recommendations remain mostly context-limited, underpowered, or not-yet-tested.",
+    "The contradicted rows are narrow: one 84 stopper-ownership overgeneralization and one partner-support proxy result.",
+    "No tactical advice was moved to supported solely because its statistical substrate is true."
+  ],
+  "source_inventory": {
+    "book_preview": [
+      "scratch/winning42/winning42.with_figures.md"
+    ],
+    "wiki_inputs": [
+      "wiki/AGENTS.md",
+      "wiki/entities/w42.md",
+      "wiki/experiments/w42-final-empirical-strategy-report.md",
+      "wiki/experiments/winning42-ch16-statistical-odds.md",
+      "wiki/experiments/w42-claim-ledger.md",
+      "wiki/experiments/w42-odds-ruleset-claim-validation.md",
+      "wiki/experiments/w42-bidding-risk-budget-claim-validation.md",
+      "wiki/experiments/w42-doubles-no-trump-claim-validation.md",
+      "wiki/experiments/w42-scoring-objective-drift-claim-validation.md",
+      "wiki/experiments/w42-84-claim-validation.md"
+    ],
+    "w42_artifact_inputs": [
+      "w42/odds_ruleset_claim_validation/",
+      "w42/bidding_risk_budget_claim_validation/",
+      "w42/doubles_no_trump_claim_validation/",
+      "w42/scoring_objective_drift_claim_validation/",
+      "w42/eighty_four_claim_validation/",
+      "w42/partner_support_claim_validation/",
+      "w42/setter_defense_claim_validation/",
+      "w42/bidder_sequencing_claim_validation/"
+    ]
+  },
+  "artifacts": {
+    "claims_csv": "w42/statistics_claims_ledger/claims.csv",
+    "summary_json": "w42/statistics_claims_ledger/summary.json",
+    "manifest_json": "w42/statistics_claims_ledger/manifest.json",
+    "script": "w42/statistics_claims_ledger/build_statistics_claims_ledger.py"
+  },
+  "wandb_hf_note": "No new W&B or HuggingFace run/artifact was created for this synthesis. Rows retain source W&B links where an upstream validation artifact logged one; HF remains not applicable.",
+  "claim_ledger_impact": "Phase-2 statistics ledger created as a local artifact and report page. No central ledger, wiki index, entity page, decision page, or bead file was updated.",
+  "caveats": [
+    "Static enumeration supports arithmetic, prevalence, and ruleset substrate claims, not strategy optimality.",
+    "Proxy model/regret reports are retained with their original conservative statuses.",
+    "Hidden ownership is used only for report-time odds or evaluation labels, not live-agent features.",
+    "Book preview OCR lines are cited sparingly; the CSV points to paths and line ranges rather than copying prose."
+  ]
+}

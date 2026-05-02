@@ -1,0 +1,55 @@
+{
+  "schema_version": "w42.statistics_claims_ledger.manifest.v1",
+  "owner_bead": "t42-5m82.1",
+  "generated_at_utc": "2026-05-02T21:17:15.549224+00:00",
+  "git_sha": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "generator": "w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
+  "command": "python w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
+  "check_command": "python w42/statistics_claims_ledger/build_statistics_claims_ledger.py --check",
+  "status_vocabulary": [
+    "context-limited",
+    "contradicted",
+    "not-yet-tested",
+    "supported",
+    "underpowered"
+  ],
+  "claim_count": 62,
+  "inputs": [
+    "wiki/AGENTS.md",
+    "wiki/entities/w42.md",
+    "wiki/experiments/w42-final-empirical-strategy-report.md",
+    "wiki/experiments/winning42-ch16-statistical-odds.md",
+    "wiki/experiments/w42-claim-ledger.md",
+    "scratch/winning42/winning42.with_figures.md",
+    "w42/odds_ruleset_claim_validation/validation_summary.json",
+    "w42/odds_ruleset_claim_validation/*.csv",
+    "w42/bidding_risk_budget_claim_validation/summary.json",
+    "w42/bidding_risk_budget_claim_validation/*.csv",
+    "w42/doubles_no_trump_claim_validation/summary.json",
+    "w42/doubles_no_trump_claim_validation/*.csv",
+    "w42/scoring_objective_drift_claim_validation/claim_ledger_delta.json",
+    "w42/scoring_objective_drift_claim_validation/*.csv",
+    "w42/eighty_four_claim_validation/summary.json",
+    "w42/eighty_four_claim_validation/*.csv",
+    "w42/partner_support_claim_validation/summary.json",
+    "w42/partner_support_claim_validation/claim_proxy_stats.csv",
+    "w42/setter_defense_claim_validation/summary.json",
+    "w42/setter_defense_claim_validation/claim_proxy_stats.csv",
+    "w42/bidder_sequencing_claim_validation/summary.json",
+    "w42/bidder_sequencing_claim_validation/claim_summary.csv"
+  ],
+  "outputs": [
+    "w42/statistics_claims_ledger/claims.csv",
+    "w42/statistics_claims_ledger/summary.json",
+    "w42/statistics_claims_ledger/manifest.json"
+  ],
+  "validation": {
+    "row_statuses_checked": true,
+    "unique_claim_ids_checked": true,
+    "referenced_local_artifacts_checked_by_check_command": true
+  },
+  "no_new_external_artifacts": {
+    "wandb": true,
+    "huggingface": true
+  }
+}
