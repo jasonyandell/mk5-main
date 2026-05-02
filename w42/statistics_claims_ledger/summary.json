@@ -1,0 +1,43 @@
+{
+  "artifact_paths": [
+    "w42/statistics_claims_ledger/claims.csv",
+    "w42/statistics_claims_ledger/claims.json",
+    "w42/statistics_claims_ledger/summary.json",
+    "w42/statistics_claims_ledger/manifest.json"
+  ],
+  "bead_id": "t42-5m82.1",
+  "created_at": "2026-05-02T21:17:36.004232+00:00",
+  "family_counts": {
+    "84 weapon availability": 6,
+    "bidding": 2,
+    "count exposure": 9,
+    "doubles no-trump odds": 6,
+    "doubles odds": 2,
+    "hand odds": 2,
+    "scoring statistics": 3,
+    "stopper ownership": 1,
+    "style statistics": 1,
+    "trump counts": 3,
+    "void frequencies": 2
+  },
+  "headline": {
+    "largest_gap": "84 play policy, setter pounce, no-trump/doubles declaration choice, partner conditional support, and score-aware bid escalation need direct fixtures.",
+    "not_supported_scope": "Tactical strategy claims remain underpowered or not-yet-tested unless a paired rollout, direct detector, or policy simulation actually matches the claim.",
+    "supported_scope": "Arithmetic, deterministic ruleset, scoring-accounting, and static prevalence claims are supported where exact enumeration matches the predicate."
+  },
+  "repo_commit_at_build": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "schema_version": "w42.statistics_claims_ledger.summary.v1",
+  "status_counts": {
+    "context-limited": 5,
+    "contradicted": 1,
+    "not-yet-tested": 9,
+    "supported": 13,
+    "underpowered": 9
+  },
+  "testability_class_counts": {
+    "exact-enumerable": 19,
+    "policy-dependent": 5,
+    "simulation-estimable": 13
+  },
+  "total_claims": 37
+}

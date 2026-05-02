@@ -1,0 +1,46 @@
+{
+  "bead_id": "t42-5m82.1",
+  "builder": "w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
+  "command": "python w42/statistics_claims_ledger/build_statistics_claims_ledger.py",
+  "created_at": "2026-05-02T21:17:36.004232+00:00",
+  "hf_links": "not applicable",
+  "inputs": [
+    "wiki/AGENTS.md",
+    "wiki/entities/w42.md",
+    "wiki/experiments/w42-final-empirical-strategy-report.md",
+    "wiki/experiments/winning42-ch16-statistical-odds.md",
+    "wiki/experiments/w42-odds-ruleset-claim-validation.md",
+    "wiki/experiments/w42-bidding-risk-budget-claim-validation.md",
+    "wiki/experiments/w42-partner-support-claim-validation.md",
+    "wiki/experiments/w42-setter-defense-claim-validation.md",
+    "wiki/experiments/w42-doubles-no-trump-claim-validation.md",
+    "wiki/experiments/w42-84-claim-validation.md",
+    "wiki/experiments/w42-scoring-objective-drift-claim-validation.md",
+    "w42/odds_ruleset_claim_validation/*",
+    "w42/bidding_risk_budget_claim_validation/*",
+    "w42/partner_support_claim_validation/*",
+    "w42/setter_defense_claim_validation/*",
+    "w42/doubles_no_trump_claim_validation/*",
+    "w42/eighty_four_claim_validation/*",
+    "w42/scoring_objective_drift_claim_validation/*",
+    "w42/belief_attention_concept_buckets/bucket_matrix.csv",
+    "w42/style_partnership_concept_buckets/bucket_matrix.csv",
+    "scratch/winning42/strategy_measurement_breakdown.md"
+  ],
+  "outputs": [
+    "w42/statistics_claims_ledger/claims.csv",
+    "w42/statistics_claims_ledger/claims.json",
+    "w42/statistics_claims_ledger/summary.json",
+    "w42/statistics_claims_ledger/manifest.json"
+  ],
+  "random_seeds": "not applicable; no sampling or new simulation run",
+  "repo_commit_at_build": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "schema_version": "w42.statistics_claims_ledger.manifest.v1",
+  "validation_commands": [
+    "python -m json.tool w42/statistics_claims_ledger/claims.json >/dev/null",
+    "python -m json.tool w42/statistics_claims_ledger/summary.json >/dev/null",
+    "python -m json.tool w42/statistics_claims_ledger/manifest.json >/dev/null",
+    "python - <<'PY'\nimport csv, json\nfrom pathlib import Path\nrows = list(csv.DictReader(Path('w42/statistics_claims_ledger/claims.csv').open()))\nassert rows\nsummary = json.loads(Path('w42/statistics_claims_ledger/summary.json').read_text())\nassert summary['total_claims'] == len(rows)\nPY"
+  ],
+  "wandb_links": "not applicable; ledger build is synthesis-only"
+}
