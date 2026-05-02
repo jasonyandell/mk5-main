@@ -1,0 +1,18 @@
+{
+  "artifacts": {
+    "bucket_matrix": "scratch/w42/style_partnership_concept_buckets/bucket_matrix.csv",
+    "summary": "scratch/w42/style_partnership_concept_buckets/summary.json"
+  },
+  "bead_id": "t42-csw6.25",
+  "claim_ledger_impact": "no central claim-ledger change",
+  "created_at": "2026-05-02T03:20:36.631553+00:00",
+  "git_sha": "1830e5f3bd7fedaf24e186765d709e868618c900",
+  "hf_links": "not applicable",
+  "schema_version": "w42.style_partnership_concept_buckets.manifest.v1",
+  "source_artifacts": {
+    "bidding_summary": "scratch/w42/bidding_risk_budget_claim_validation/summary.json",
+    "partner_support_stats": "scratch/w42/partner_support_claim_validation/claim_proxy_stats.csv",
+    "rich_bucket_metrics": "scratch/w42/rich_tag_many_signal_probe/bucket_metrics_best.csv"
+  },
+  "wandb": "filled by run.json"
+}
