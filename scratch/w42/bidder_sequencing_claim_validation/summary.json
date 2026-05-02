@@ -1,0 +1,200 @@
+{
+  "schema_version": "w42.bidder_sequencing_claim_validation.v1",
+  "owner_bead": "t42-csw6.18",
+  "created_at": "2026-05-02T02:32:12.460533+00:00",
+  "commit_sha": "c603a0d9b19374414753e0953ca1535455f0d0a6",
+  "method": {
+    "evidence_mode": "secondary analysis of existing w42 oracle-regret/model artifacts",
+    "statistical_test": "Wilson/Newcombe-style 95% intervals for aggregate match-rate and near-tie deltas; descriptive mean-regret deltas because per-row variance was not retained",
+    "paired_limitation": "The source eval is paired by row, but only aggregate bucket metrics are available in this worktree."
+  },
+  "data_inputs": {
+    "v0_strategy_tags_metrics": "scratch/w42/v0_strategy_tags_baseline/metrics.json",
+    "v0_strategy_tags_run": "scratch/w42/v0_strategy_tags_baseline/run.json",
+    "raw_public_state_metrics": "scratch/w42/raw_public_state_baseline/metrics.json",
+    "eq_n10_summary": "scratch/w42/eq_n10_comparison_slice/summary.json"
+  },
+  "run_config": {
+    "action_hidden": 96,
+    "batch_size": 256,
+    "bead_id": "t42-csw6.11",
+    "d_model": 64,
+    "device": "mps",
+    "dropout": 0.1,
+    "epochs": 8,
+    "eq_n": 10,
+    "eval_limit": 560,
+    "eval_paths": [
+      "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt"
+    ],
+    "eval_seed": 43,
+    "ff_dim": 128,
+    "lr": 0.0005,
+    "n_heads": 4,
+    "n_layers": 1,
+    "output_dir": "scratch/w42/v0_strategy_tags_baseline",
+    "raw_checkpoint": "scratch/w42/raw_public_state_baseline/model.pt",
+    "raw_metrics_path": "scratch/w42/raw_public_state_baseline/metrics.json",
+    "seed": 42,
+    "split_seed": 42,
+    "train_limit": 2800,
+    "train_paths": [
+      "/Users/jason/code/mk5-main/gus/data/corpus_train_100.pt"
+    ],
+    "weight_decay": 0.01
+  },
+  "baseline_context": {
+    "tagged_best_overall": {
+      "epoch": 7,
+      "n": 560,
+      "mean_regret": 1.9997066225324358,
+      "match_rate": 0.6392857142857142,
+      "near_tie_rate_regret_lt_0_5": 0.7214285714285714
+    },
+    "raw_best": {
+      "epoch": 3,
+      "match_rate": 0.5964285714285714,
+      "mean_regret": 2.4710691724504743,
+      "n": 560.0,
+      "near_tie_rate_regret_lt_0_5": 0.675
+    },
+    "raw_final": {
+      "match_rate": 0.5660714285714286,
+      "mean_regret": 2.833551515851702,
+      "n": 560.0,
+      "near_tie_rate_regret_lt_0_5": 0.65
+    },
+    "e_q_n_10": {
+      "match_rate": 0.9,
+      "mean_regret": 0.11796871679169792,
+      "n": 560.0,
+      "near_tie_rate_regret_lt_0_5": 0.95
+    },
+    "eq_n10_comparison_slice": {
+      "schema_version": "w42.eq_n10_comparison_slice.v1",
+      "bead_id": "t42-csw6.13",
+      "created_from": {
+        "raw_baseline_bead_id": "t42-csw6.10",
+        "raw_run_commit": "8df0c3b1f03893cc4c059762de1fa1dd0c84ca06",
+        "raw_metrics": "scratch/w42/raw_public_state_baseline/metrics.json",
+        "raw_run": "scratch/w42/raw_public_state_baseline/run.json",
+        "raw_manifest": "scratch/w42/raw_public_state_baseline/manifest.json"
+      },
+      "data_inputs": {
+        "train": "/Users/jason/code/mk5-main/gus/data/corpus_train_100.pt",
+        "eval": "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt",
+        "eval_game_seeds": "900000-900019",
+        "eval_n": 560
+      },
+      "command_provenance": {
+        "fresh_command_run_for_this_slice": "not run",
+        "source_command": "scratch/w42/raw_public_state_baseline.py --train /Users/jason/code/mk5-main/gus/data/corpus_train_100.pt --eval /Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt --train-limit 2800 --eval-limit 560 --epochs 8 --batch-size 256 --seed 42 --split-seed 42 --eval-seed 43 --output-dir scratch/w42/raw_public_state_baseline",
+        "eq_n": 10,
+        "oracle_world_sampling": "first-N deterministic"
+      },
+      "seeds": {
+        "data_generation": "not applicable",
+        "dataset_shuffle": 42,
+        "train": 42,
+        "eval": 43,
+        "oracle_world_sampling": "first-N deterministic"
+      },
+      "metrics": {
+        "oracle_best_e_q_ceiling": {
+          "mean_regret": 0.0,
+          "match_rate": 1.0,
+          "near_tie_rate_regret_lt_0_5": 1.0,
+          "n": 560
+        },
+        "e_q_n_10": {
+          "mean_regret": 0.11796871679169792,
+          "match_rate": 0.9,
+          "near_tie_rate_regret_lt_0_5": 0.95,
+          "n": 560
+        },
+        "raw_public_state_action_model_best": {
+          "epoch": 3,
+          "mean_regret": 2.4710691724504743,
+          "match_rate": 0.5964285714285714,
+          "near_tie_rate_regret_lt_0_5": 0.675,
+          "n": 560
+        },
+        "raw_public_state_action_model_final": {
+          "mean_regret": 2.833551515851702,
+          "match_rate": 0.5660714285714286,
+          "near_tie_rate_regret_lt_0_5": 0.65,
+          "n": 560
+        }
+      },
+      "deltas": {
+        "raw_best_minus_e_q_n_10_mean_regret": 2.3531004556587765,
+        "raw_final_minus_e_q_n_10_mean_regret": 2.7155827990600043,
+        "e_q_n_10_minus_oracle_ceiling_mean_regret": 0.11796871679169792
+      },
+      "wandb": "not applicable",
+      "huggingface": "not applicable",
+      "claim_ledger_impact": "no claim-ledger change"
+    }
+  },
+  "claims": [
+    {
+      "claim_id": "ch03-trump-pull-sequencing",
+      "status": "underpowered",
+      "proxy_buckets": "global:current_trick_pressure;action:trick_relation;action:suit_pressure",
+      "n_weighted_bucket_rows": 1307,
+      "weighted_delta_mean_regret": -1.017278,
+      "weighted_delta_match_rate": 0.078806,
+      "proxy_delta_match_rate_ci95_span": "[-0.020447, 0.182711]",
+      "verdict": "Proxy evidence improves tiny-model oracle alignment, but no trump-first/off-first counterfactual was run."
+    },
+    {
+      "claim_id": "ch03-reentry-preservation",
+      "status": "underpowered",
+      "proxy_buckets": "action:double_protection;global:hand_shape;action:hand_shape",
+      "n_weighted_bucket_rows": 1088,
+      "weighted_delta_mean_regret": -1.045158,
+      "weighted_delta_match_rate": 0.082721,
+      "proxy_delta_match_rate_ci95_span": "[-0.04371, 0.269112]",
+      "verdict": "Available buckets touch hand/protection structure but do not encode final-trump-spent-before-off-clear."
+    },
+    {
+      "claim_id": "ch03-off-timing",
+      "status": "underpowered",
+      "proxy_buckets": "action:suit_pressure;action:double_protection;global:void_summary",
+      "n_weighted_bucket_rows": 917,
+      "weighted_delta_mean_regret": -0.898029,
+      "weighted_delta_match_rate": 0.078517,
+      "proxy_delta_match_rate_ci95_span": "[-0.04371, 0.269112]",
+      "verdict": "Proxy buckets improve alignment; no paired early-off versus trump-first rollout exists in the artifacts."
+    },
+    {
+      "claim_id": "ch03-count-inventory",
+      "status": "context-limited",
+      "proxy_buckets": "action:count_pressure;global:public_count;global:unseen_count_by_pip",
+      "n_weighted_bucket_rows": 1117,
+      "weighted_delta_mean_regret": -1.082058,
+      "weighted_delta_match_rate": 0.080573,
+      "proxy_delta_match_rate_ci95_span": "[-0.058563, 0.298204]",
+      "verdict": "Count buckets show the strongest proxy gains, but this validates tag usefulness rather than the book's full sequencing rule."
+    },
+    {
+      "claim_id": "ch03-laydown-correctness",
+      "status": "not-yet-tested",
+      "proxy_buckets": "not applicable",
+      "n_weighted_bucket_rows": "not applicable",
+      "weighted_delta_mean_regret": "not applicable",
+      "weighted_delta_match_rate": "not applicable",
+      "proxy_delta_match_rate_ci95_span": "not applicable",
+      "verdict": "No deterministic laydown proof checker or late-endgame enumeration artifact exists in the available w42 outputs."
+    }
+  ],
+  "wandb_links": "not applicable",
+  "hf_links": "not applicable",
+  "claim_ledger_impact": "no claim-ledger change",
+  "artifacts": {
+    "summary_json": "scratch/w42/bidder_sequencing_claim_validation/summary.json",
+    "claim_summary_csv": "scratch/w42/bidder_sequencing_claim_validation/claim_summary.csv",
+    "bucket_proxy_stats_csv": "scratch/w42/bidder_sequencing_claim_validation/bucket_proxy_stats.csv",
+    "claim_ledger_delta_json": "scratch/w42/bidder_sequencing_claim_validation/claim_ledger_delta.json"
+  }
+}
