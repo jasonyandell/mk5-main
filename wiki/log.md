@@ -1566,3 +1566,76 @@ First-session findings opened a new research direction: **post-commit Q&A**. Tal
 - Does a Roberson primer (Flemmons foreword + chapter 2 paragraphs in the system prompt) shift the model's vocabulary toward the family-game register without retraining?
 - Does bucket category (agreement / disagreement / forced / illegal) map to qualitatively different self-critique shapes? Need ~3-4 samples per bucket.
 - Would a stronger chat-mode system-prompt override on top of the primer help on adapters that are merely steered, not welded?
+
+---
+
+## [2026-05-01 | unstaged | improvised-tools loop and the meta-layer lock-in finding]
+
+Second working session in [[burl-chat]]. Wired up a hot-register tool layer ([[improvised-tools]]) so Claude (in another window) can read the live chat state, design a wax_museum-shaped tool against Burl's request, register it with one MCP call, and the user advertises it on the next turn. Tools persist to `burl/chat/server/tools_library/` as `<name>.py` files (`DESCRIPTION` constant + `def tool(...)`); the registry rehydrates from disk on import.
+
+Three tools landed in the library across two decisions, each addressing a real failure visible in Burl's own transcript that turn:
+- `board_snapshot` — wraps the existing `render_full_board_snapshot` in `burl/wax_museum/snapshot.py`. Built when Burl asked for "Comprehensive Game State Visualizer" on decision #0.
+- `legal_plays` — names led suit + lists legal/illegal plays. Built when Burl committed an illegal 27(6-6) on decision #7 (must-follow ones from lead 2(1-1)) and asked for a "Strategic Synthesis Engine that picks for me." The literal request was answered with a state-tool, not a strategy-tool, per the wax_museum doctrine *"state tools answer WHAT IS the state — they never tell you WHAT TO DO."*
+- `state_brief` — Burl's own preferred `[GAME STATE]` / `[CONTEXT & GOAL]` / `[PROTOCOL]` labeled-bullet rendering of the same data. Built when Burl said decision #0's input was "slightly confusing" and sketched the format.
+
+UI: per-tool checkbox popover in the workbench header with `all` / `none` / delete (×) controls. Two bug fixes during the build — the `advertise tools` button was inert (only mutated segments without re-streaming; needed `await send("")`); and the auto-select `$effect` clobbered manual unchecks (needed a separate `seenToolNames` set so tools auto-select only on first appearance).
+
+**Touched pages:** [[entities/burl-chat]] [[entities/improvised-tools]] [[topics/burl-tool-wishlist]] [[experiments/burl-chat-spike]] [[decisions/play-adapter-lock-in]] [[index]] [[log]]
+
+**Added:** 2 pages — 1 entity (`improvised-tools`), 1 topic (`burl-tool-wishlist`).
+
+**Updated:**
+- [[entities/burl-chat]] — Files table extended with the registry, MCP server, library directory, and `snapshot.py` helpers; added an "Improvised-tool registry" section.
+- [[experiments/burl-chat-spike]] — appended a "Session 2 (2026-05-01)" subsection documenting the three meta-asks, the doctrine moment with `legal_plays`, and the two UI bug fixes.
+- [[decisions/play-adapter-lock-in]] — appended a "Meta-layer corroboration" section: the lock-in is structural ("the next assistant turn is a tool-call plan"), not just contextual to play states. Even when explicitly invited to chat about itself, Burl produces tool-spec plans in prose.
+- [[index]] — catalogued the new entity + topic.
+
+**Frontier shift:**
+- The lock-in is at the structural level of "what an assistant turn looks like," not at the contextual level of "what to do at a play state." The post-commit Q&A adapter must train against this structurally — not just bolt a chat primer onto a play distribution.
+- The lock-in is also **productive** as long as it is read sideways. Burl can name what would help its reasoning, and what it names is correct; it just names it in tool-spec form. That makes [[burl-tool-wishlist]] a corpus-mining strategy: every (Burl-asks, Claude-implements, demonstrated-improvement) triple is a candidate row for the future post-commit-Q&A training set.
+- The improvised-tool layer is the operational answer to "vibe coding buddy" — Claude as the in-the-loop tool author. The library is the on-ramp; promotion to `burl/wax_museum/tools.py` is the destination for tools that earn their keep across decisions.
+
+**Questions opened:**
+- Does providing the named tool actually shift Burl's play on the same kind of decision next time? The wishlist is the question; the experiment is the answer. Pending.
+- Can the wishlist be harvested across many decisions to bootstrap a real post-commit-Q&A corpus, or does the same ask recur and saturate quickly?
+- What's the right doctrine line when Burl asks for a strategy-picker? `legal_plays` was the worked example (build the state-tool that closes the same gap), but harder cases will arrive — e.g., "rank my candidate plays by expected count" is borderline.
+- Does swapping in the [[iter3-rules-adapter]] change the *shape* of the wishlist, or does the lock-in produce the same meta-structure across adapters?
+
+---
+
+## [2026-05-01 | unstaged | rerun-fresh + play_brief + first measurable lift on decision-1]
+
+Second wave of the [[improvised-tools]] loop, same calendar day as the [[burl-chat-spike]] session 2. Three follow-on changes.
+
+**`play_brief` tool.** Burl asked for `explore_game` output reshaped with a HEADLINE (variance + p_make), modes sorted by mass with `[BIG WIN]`/`[WIN]`/`[NEAR-BREAKEVEN]`/`[LOSS]`/`[DISASTER]` labels + catalysts, and a risk-profile line. Built on top of `WaxContext.get_or_build()` so it shares the cache with `explore_game` — calling both costs one set of oracle samples, not two. Doctrine intact: labels describe outcomes, not picks.
+
+**Rerun-fresh in the workbench.** New header button. Pick a decision, check the desired improvised-tool subset in the popover, click `rerun fresh`. The workbench replaces `segments` with `[harvested_system + appended_tool_declarations, harvested_first_user_message]` and re-streams from turn 1. Burl plays the decision again with the new tools available from the system prompt onward — no chat-mode primer, no harvested trace to anchor on. The existing tool dispatch (improvised-registry checked first) handles new tools transparently.
+
+**First measurable lift.** Reran `harvest_batched_20260425_072910` decision #1 (`BURL_BREAKS_CONSENSUS`, defense, position 2/4 in trick 1, lead 14(4-4) → led suit 4s). Original harvest played 25(6-4) — burned a 10-point count domino on trick 1, regret 3.53. Rerun-fresh with state_brief / legal_plays / play_brief / board_snapshot all available: Burl called `state_brief` first, immediately enumerated the legal subset (`I have 4(2-1) and 19(5-4) and 25(6-4). I can follow suit.`), and committed `4(2-1)` — a 0-count blank, defensively correct. State-brief's upstream legality clarity is now confirmed across two seats and roles (defense seat-3 trick-2 + defense seat-1 trick-1). Working hypothesis: state-brief lifts mean regret on follow-suit decisions where original-Burl explored an illegal candidate before catching the constraint.
+
+**Two new findings worth their own pages.**
+
+The first: **adoption is not automatic.** `play_brief` was registered, advertised, and never called in the rerun-fresh of decision-1. Burl followed the system prompt's literal `explore_game(play=X)` reference. `state_brief` got picked up because its self-description ("first read on any decision") was strong enough to clear the protocol's check. Documented in [[improvised-tools]] under "Adoption asymmetry" and in [[burl-tool-wishlist]] under "Adoption is not automatic." Cheap lever: tool descriptions that mimic protocol language. More expensive: patching the protocol section of the system prompt at rerun time (not yet implemented).
+
+The second: **[[count-vs-pip-sum-confusion]]**, a separable rules-grounding bug. In the rerun-fresh decision-1 trace Burl wrote *"4(2-1) is a low count domino (2 points). 19(5-4) is medium count (5 points). 25(6-4) is high count (10 points)"* — confusing pip-sum with the official Texas 42 count value. Actual count values: 0/0/10. The two coincide for the five count-carriers (5-5, 6-4, 5-0, 4-1, 3-2) and only those, so the bug is silent ~5/28 of the time and bites the rest. Likely origin: the rules primer learned a "high pips → expensive" continuous proxy instead of the categorical labels. Fix path: improvised `count_ledger` tool → system-prompt patch → adapter retraining.
+
+**Touched pages:** [[entities/burl-chat]] [[entities/improvised-tools]] [[topics/burl-tool-wishlist]] [[topics/count-vs-pip-sum-confusion]] [[experiments/burl-chat-spike]] [[index]] [[log]]
+
+**Added:** 1 page — 1 topic (`count-vs-pip-sum-confusion`).
+
+**Updated:**
+- [[entities/burl-chat]] — added a "Rerun-fresh" section describing the two modes (join-at-end vs replay-turn-1).
+- [[entities/improvised-tools]] — added `play_brief` to the library table; added "Adoption asymmetry" subsection on why `state_brief` got picked up and `play_brief` did not.
+- [[topics/burl-tool-wishlist]] — added the `play_brief` row to the wishlist table; added "Adoption is not automatic" section listing the three intervention layers (tool description, protocol-text patch, adapter co-training).
+- [[experiments/burl-chat-spike]] — appended a "Second wave" subsection covering `play_brief`, rerun-fresh, the decision-1 comparison, and the two new findings.
+- [[index]] — catalogued the new topic.
+
+**Frontier shift:**
+- The wishlist loop now has a measurable lift signal, not just an aesthetic one. State-brief plus rerun-fresh produces strictly better play on a follow-suit decision the original Burl mishandled — without any model retraining. That's the demo template. The next experiment milestone: 5–10 such comparisons across diverse buckets and seats, recorded as a paired-regret table in `experiments/`.
+- Adoption asymmetry (`state_brief` used, `play_brief` ignored) reframes the question. The improvised-tools loop is now in two stages — *will Burl call this?* and only then *will it lift his play?*. The first stage is downstream of system-prompt protocol text, not just tool quality.
+
+**Questions opened:**
+- Across N=5+ rerun-fresh comparisons, what's the mean regret delta from making `state_brief` available? Is it concentrated in `BURL_BREAKS_CONSENSUS` and `ILLEGAL` buckets, or does it lift `BURL_INDEPENDENT_WRONG` too?
+- Will Burl ask for a count-ledger tool on a future decision, or does the count-vs-pip-sum confusion remain invisible to him because his pip-sum heuristic happens to land on the right answer often enough?
+- What's the minimum protocol-text patch that gets `play_brief` into rotation? "Call `play_brief(play=X)` to examine a candidate" as a one-line replacement for the existing `explore_game` reference would be the natural test.
+- Is there a third workbench mode — *patch-and-rerun*, where the user can edit the system prompt's protocol section before the rerun streams — that closes the adoption gap without code changes? Worth prototyping if the protocol-text lever pans out on the play_brief case.

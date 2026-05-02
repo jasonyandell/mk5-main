@@ -3,11 +3,17 @@ export type Message = { role: "user" | "assistant" | "system"; content: string }
 export type ChatEvent =
   | { type: "token"; text: string }
   | { type: "done"; n_tokens: number }
+  | { type: "stopped_at_tool_call"; n_tokens: number }
   | { type: "error"; message: string };
 
 export async function* streamChat(
   messages: Message[],
-  opts: { enable_thinking?: boolean; max_tokens?: number; temperature?: number } = {},
+  opts: {
+    enable_thinking?: boolean;
+    max_tokens?: number;
+    temperature?: number;
+    stop_at_tool_call?: boolean;
+  } = {},
 ): AsyncGenerator<ChatEvent> {
   const resp = await fetch("/api/chat", {
     method: "POST",
@@ -17,6 +23,7 @@ export async function* streamChat(
       enable_thinking: opts.enable_thinking ?? false,
       max_tokens: opts.max_tokens ?? 1024,
       temperature: opts.temperature ?? 0.6,
+      stop_at_tool_call: opts.stop_at_tool_call ?? true,
     }),
   });
   if (!resp.ok || !resp.body) {
@@ -103,5 +110,23 @@ export async function loadDecision(
   globalIdx: number,
 ): Promise<LoadedDecision> {
   const r = await fetch(`/api/harvests/${harvest}/decisions/${globalIdx}`);
+  return r.json();
+}
+
+export type ToolRunResult =
+  | { ok: true; prose: string; structured: any }
+  | { ok: false; error: string; tool: string; args: any };
+
+export async function runTool(
+  harvest: string,
+  global_idx: number,
+  tool: string,
+  args: any,
+): Promise<ToolRunResult> {
+  const r = await fetch("/api/tools/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ harvest, global_idx, tool, args: args ?? {} }),
+  });
   return r.json();
 }

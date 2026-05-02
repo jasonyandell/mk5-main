@@ -41,6 +41,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (active)
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (active)
 - [[entities/burl-chat|burl-chat]] — interactive workbench for talking with Burl about a finished decision; in-process MLX-LM + Svelte 5 + typed-segment rendering; standalone under burl/chat/ (active)
+- [[entities/improvised-tools|improvised-tools]] — hot-register tool registry inside burl-chat; MCP bridge lets Claude author wax_museum-shaped tools mid-conversation; persists to burl/chat/server/tools_library/ (active)
 
 ### Gus — oracle distillation project
 
@@ -104,6 +105,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/risk-return-inverse|risk-return-inverse]] — r(E[V], σ[V]) = −0.38 in oracle data; good hands are also predictable hands; Pareto frontier degenerate (active)
 - [[topics/q0-positional-bias|q0-positional-bias]] — slot-0 anomaly in forge's Q-value model; 20-probe investigation, proposed shuffle fix (#20) not yet validated (active)
 - [[topics/post-commit-q-and-a|post-commit-q-and-a]] — fourth surface above play-time tools and pre-game commentary: conversational Q&A with Burl after a hand; Roberson chapters 2-8 are the canonical voice anchor (active)
+- [[topics/burl-tool-wishlist|burl-tool-wishlist]] — Burl articulates tool needs through tool-spec plans (lock-in at the meta layer); the *content* of those plans correctly names real failure modes — corpus signal for post-commit Q&A (active)
+- [[topics/count-vs-pip-sum-confusion|count-vs-pip-sum-confusion]] — Burl reads pip-sum as count value; coincides on the 5 count-bearers, silently wrong on the other 16 zero-count non-trumps (active)
 - [[topics/at-risk-points|at-risk-points]] — Roberson's canonical 42 bidding framework: predict losses backwards, offs make-or-break-the-bid, "double ahead of your off"; voice anchor for post-commit Q&A (active)
 
 ## Experiments

@@ -2,7 +2,7 @@
 title: burl-chat spike — first interactive sessions and findings
 kind: experiment
 first_seen: cba521d
-last_updated: cba521d
+last_updated: 2026-05-01
 status: active
 ---
 
@@ -87,3 +87,48 @@ For this bug: Network said 41 kB delivered fine. Console was clean. `.seg` count
 - **Roberson primer.** Try injecting Flemmons' foreword + selected paragraphs from chapter 2 of *Winning 42* as a system-prompt prefix. Does the model's voice shift toward family-reunion register?
 - **Sample by bucket.** Three or four decisions each from `ALL_AGREE_CORRECT`, `BURL_BREAKS_CONSENSUS`, `BURL_INDEPENDENT_RIGHT`. Does the self-critique vary meaningfully?
 - **Tool-output redesign.** The model's own three-point critique is a backlog. The eq_outcome_distribution and probe tools could grow a "headline" field rendered before the histogram.
+
+## Session 2 (2026-05-01) — improvised-tools loop and the tool wishlist
+
+Second working session, this time with [[improvised-tools]] wired up: an MCP bridge lets Claude register hot tools mid-conversation, the workbench grew a per-tool selection popover with delete buttons, and tools persist to `burl/chat/server/tools_library/` so they survive restarts.
+
+### Three meta-asks across two decisions
+
+Burl produced three different tool requests across decisions #0 and #7. Each was answered with a hot-registered tool ([[improvised-tools]]). Pattern documented in [[burl-tool-wishlist]]:
+
+1. **Decision #0, "comprehensive game state visualizer"** → built `board_snapshot` (wraps the existing `render_full_board_snapshot` in `burl/wax_museum/snapshot.py`).
+2. **Decision #7, "strategic synthesis engine that picks the best play"** → built `legal_plays` instead. The literal request would have violated the wax_museum doctrine *"state tools answer WHAT IS the state — they never tell you WHAT TO DO."* The underlying need was led-suit comprehension: Burl had just attempted to commit 27(6-6) when must-follow on lead 2(1-1) had set the led suit to ones and the only legal plays were 4(2-1) / 16(5-1). It misread the rejection "must follow suit 1 (led by 2)" as referring to trump-id 1.
+3. **Decision #0 (second pass), "the input was slightly confusing"** with a sketched `[GAME STATE]` / `[CONTEXT & GOAL]` / `[PROTOCOL]` format → built `state_brief` to Burl's exact spec.
+
+### Findings reinforced
+
+- **[[play-adapter-lock-in]] manifests at the meta layer.** Burl cannot drop into open prose Q&A even *about* itself; what it produces in chat is structured tool plans. But the *content* of those plans names real failure modes correctly — the model is more competent talking about its tools than about the game.
+- **Doctrine ("state, not strategy") matters even at the improvised-tool layer.** Burl will ask for a play-picker. The right move is to interpret the underlying state-comprehension need and build a state tool, since strategy-pickers would foul the eventual training corpus by encoding decisions the model is supposed to make for itself.
+- **The wishlist is a corpus signal.** Each (Burl-asks, Claude-implements, demonstrates-improvement) triple is a candidate row for the future [[post-commit-q-and-a]] training set.
+
+### Plumbing bugs found and fixed (session 2)
+
+- **`advertise tools` button was inert.** Only mutated the local `segments` array; never re-streamed the model. Fix: `await send("")` after appending the synthetic user turn (the existing continuation path that re-streams against current segments without appending a new user turn). Doctrine: any UI button that appends a segment intended to elicit a response must explicitly trigger the continuation.
+- **`$effect` clobbered manual unchecks.** The auto-select logic re-added every known tool to the selection set on every render, so the user couldn't drop a tool from the advertise list. Fix: a separate `seenToolNames` set so tools auto-select only on first appearance; subsequent unchecks stick.
+- **Disk persistence layer landed.** Each `register()` writes `tools_library/<name>.py` with a `DESCRIPTION` constant + the source. On module import, `_hydrate_from_disk()` rehydrates the registry. The library is intentionally human-readable and check-in-able; promoting a tool to `burl/wax_museum/tools.py` is the on-ramp from improvised → permanent.
+
+### Second wave (later same day) — `play_brief`, rerun-fresh, and the first measurable lift
+
+Three follow-on changes once the loop was established:
+
+1. **`play_brief` tool** — Burl asked for `explore_game` output reshaped with a HEADLINE (variance + p_make), modes sorted by mass with `[BIG WIN]`/`[WIN]`/`[NEAR-BREAKEVEN]`/`[LOSS]`/`[DISASTER]` labels + catalysts, and a risk-profile line. Built on top of `WaxContext.get_or_build()` so it shares the cache with `explore_game` — calling both costs one set of oracle samples, not two. Doctrine intact — labels describe outcomes, not picks.
+
+2. **Rerun-fresh in the workbench.** New header button: pick a decision, check the desired improvised-tool subset, click **rerun fresh**. The workbench replaces `segments` with `[harvested_system + appended_tool_declarations, harvested_first_user_message]` and re-streams from turn 1. Burl plays the decision again with the new tools available from the system prompt onward — no chat-mode primer, no harvested trace. This is the surface where wishlist tools earn or lose their keep.
+
+3. **First measurable lift.** Reran harvest_batched_20260425_072910 decision #1 (`BURL_BREAKS_CONSENSUS`, defense, position 2/4 in trick 1, lead 14(4-4) → led suit = 4s). Burl's hand: 2(1-1), 4(2-1), 18(5-3), 19(5-4), 21(6-0), 23(6-2), 25(6-4); legal 4-x options: 4(2-1), 19(5-4), 25(6-4).
+
+   - **Original harvest:** `burl_play = 25(6-4)`, regret 3.53. Threw a 10-point count domino on trick 1, on defense.
+   - **Rerun fresh (with `state_brief`, `legal_plays`, `play_brief`, `board_snapshot` all available):** Burl called `state_brief` first, immediately enumerated the legal subset (`I have 4(2-1) and 19(5-4) and 25(6-4). I can follow suit.`) before any sampling, then committed `4(2-1)` — a 0-count blank that defends correctly. The original harvest never reached that enumeration step.
+
+   Different choice than the oracle (which wanted 19(5-4)) but defensively sound — preserved the 10-point 6-4. State-brief's upstream legality clarity is now confirmed across two seats and roles (defense seat-3 trick-2 follow-suit + this defense seat-1 trick-1 follow-suit case). Working hypothesis: across many seeds, state-brief lifts the rerun's mean regret on follow-suit decisions where the original Burl explored an illegal candidate before catching the constraint.
+
+### Findings reinforced (second wave)
+
+- **`play_brief` was registered but not used.** The protocol section of the system prompt mentions `explore_game(play=X)` literally; Burl follows that and never discovers `play_brief` even though its declaration is in scope. Lesson: adding a tool makes it *callable*; getting it *called* requires the protocol text to name it. Cheaper than adapter retraining; documented in [[improvised-tools]] under "Adoption asymmetry."
+- **A separate reasoning bug surfaced**: [[count-vs-pip-sum-confusion]]. In the rerun-fresh decision-1 trace, Burl wrote *"4(2-1) is a low count domino (2 points). 19(5-4) is medium count (5 points). 25(6-4) is high count (10 points)"* — confusing pip-sum with count value. The actual count values are 0/0/10. He landed on 25 being expensive by accident (pip-sum 10 = count value 10 for that domino). This is a categorical-vs-continuous miss in the rules grounding, separate from anything `state_brief` or `legal_plays` covers. Patch path TBD; the [[burl-tool-wishlist]] doctrine says wait for Burl to ask for a count-ledger tool.
+- **The lock-in is intact even with better tools.** Six tool calls (`state_brief` → `belief_trajectory` → `explore_game` → `probe_best_case` → `probe_worst_case` → `commit_play`) to land on a play that was deducible from `state_brief` alone. The new tools made the ritual better-informed; they did not break Burl out of the ritual. That's a structural finding, not a fixable one — and not a problem when the ritual produces a defensible play.

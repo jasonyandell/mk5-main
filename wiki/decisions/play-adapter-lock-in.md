@@ -2,7 +2,7 @@
 title: Play-adapter lock-in — STaR-distilled adapters cannot be talked out of commit_play
 kind: decision
 first_seen: cba521d
-last_updated: cba521d
+last_updated: 2026-05-01
 status: active
 ---
 
@@ -44,10 +44,20 @@ The A/B is clean. The lock-in is the adapter.
 - Would a stronger system-prompt override at chat time ("the decision is over, this is now a review session, do not output tool calls") help on top of the primer? Untested. Plausibly closes some of the gap with adapters that are merely steered, not welded.
 - Can a smaller chat-only LoRA be trained quickly enough to be worth it as a separate session-time adapter, swapped in over the play adapter? Open.
 
+## Meta-layer corroboration (2026-05-01)
+
+Second-session evidence (see [[burl-chat-spike]] §"Session 2"): even when explicitly invited to chat about itself ("describe the tool you'd want"), Burl produces **structured tool-spec plans**, not prose. It cannot drop the play-decision shape; it just maps it onto the meta-conversation. The play-decision protocol is: read state → think → call tools → commit. The meta-protocol Burl produces is: read request → think → propose tool with description+parameters → end.
+
+Three meta-asks across two decisions, all in the same shape: "I would want a tool called X. **Purpose:** … **Input Parameters:** … **Output Format:** …" — wax_museum tool-declaration style, in prose. The lock-in is not just at `commit_play`; it is at the structural level of "the next assistant turn is a tool-call plan."
+
+This corroborates the original A/B but extends the claim: the lock-in survives even when there is no decision to make. It is not an artifact of in-context recency to a play state; it is encoded in the weights as "what an assistant turn looks like." The post-commit-Q&A adapter must train against this structurally, not just contextually. See [[burl-tool-wishlist]] for the productive read of this finding — the meta-asks are themselves signal about which tools would help, even though the asker is welded.
+
 ## Related
 
 - [[burl-chat]] — workbench
 - [[burl-chat-spike]] — A/B session
 - [[chat-mode-primer]] — what it can't unlock
+- [[improvised-tools]] — meta-layer corroboration surface
+- [[burl-tool-wishlist]] — the productive read of the meta-layer lock-in
 - [[post-commit-q-and-a]] — research direction this constrains
 - [[topics/conditional-outcome-structural-nonuse]] — adjacent finding: the same training pipeline produces structural non-use of certain tool calls, also an artifact of distillation distribution.

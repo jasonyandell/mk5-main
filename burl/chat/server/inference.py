@@ -64,35 +64,66 @@ class InferenceEngine:
         max_tokens: int = 1024,
         temperature: float = 0.6,
         enable_thinking: bool = False,
+        stop_at_tool_call: bool = True,
     ) -> AsyncIterator[dict]:
-        """Yield ``{"type": "token"|"done", ...}`` events.
+        """Yield ``{"type": "token"|"done"|"stopped_at_tool_call", ...}`` events.
 
-        The synchronous ``stream_generate`` runs in a thread; ``on_chunk``
-        pushes each token text into an asyncio.Queue this coroutine drains.
+        ``stop_at_tool_call`` (default True): when the streaming text contains
+        ``<tool_call|>``, signal the producer to break out of the MLX iterator
+        as soon as the next chunk is delivered. The model's generation stops
+        cleanly at a tool boundary so the workbench can intercept and let the
+        user supply / replay / cancel the tool response.
         """
         queue: asyncio.Queue[dict | None] = asyncio.Queue()
         loop = asyncio.get_running_loop()
 
+        # Mutable container so the producer can mutate it from its thread.
+        state = {"stop_requested": False, "look_buf": ""}
+        CLOSE_TOOL = "<tool_call|>"
+        BUF_CAP = 2 * len(CLOSE_TOOL)
+
         def on_chunk(text: str) -> None:
-            if text:
-                loop.call_soon_threadsafe(
-                    queue.put_nowait, {"type": "token", "text": text},
-                )
+            if not text:
+                return
+            loop.call_soon_threadsafe(
+                queue.put_nowait, {"type": "token", "text": text},
+            )
+            if stop_at_tool_call:
+                state["look_buf"] = (state["look_buf"] + text)[-BUF_CAP:]
+                if CLOSE_TOOL in state["look_buf"]:
+                    state["stop_requested"] = True
+
+        # Patch on_chunk to also throw a sentinel that breaks the MLX loop.
+        # MLX's stream_generate doesn't accept a stop callback, so we use a
+        # custom exception raised from inside on_chunk; the producer catches it.
+        class _ToolCallStop(Exception):
+            pass
+
+        def on_chunk_with_break(text: str) -> None:
+            on_chunk(text)
+            if state["stop_requested"]:
+                raise _ToolCallStop()
 
         def producer() -> dict:
+            stopped_early = False
             try:
-                result = self._native.generate_native(
-                    messages,
-                    tools=tools,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    enable_thinking=enable_thinking,
-                    on_chunk=on_chunk,
-                )
-                loop.call_soon_threadsafe(
-                    queue.put_nowait,
-                    {"type": "done", "n_tokens": result["n_tokens"]},
-                )
+                try:
+                    result = self._native.generate_native(
+                        messages,
+                        tools=tools,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        enable_thinking=enable_thinking,
+                        on_chunk=on_chunk_with_break,
+                    )
+                except _ToolCallStop:
+                    stopped_early = True
+                    result = {"n_tokens": 0}
+                event = {
+                    "type": "stopped_at_tool_call" if stopped_early else "done",
+                    "n_tokens": result.get("n_tokens", 0),
+                }
+                loop.call_soon_threadsafe(queue.put_nowait, event)
                 return result
             except Exception as exc:  # noqa: BLE001 — propagate to client
                 log.exception("[burl-chat] generate failed")

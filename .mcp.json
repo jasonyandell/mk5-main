@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "burl-chat": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "burl.chat.mcp_server"]
+    }
+  }
+}

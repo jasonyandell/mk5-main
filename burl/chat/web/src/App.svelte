@@ -6,6 +6,7 @@
     listHarvests,
     listDecisions,
     loadDecision,
+    runTool,
     type Message,
     type Harvest,
     type DecisionMeta,
@@ -41,6 +42,183 @@
   // Enables visible reasoning for adapters trained on preserve_thoughts.
   let enableThinking = $state(true);
   let maxTokens = $state(1024);
+  let stopAtToolCall = $state(true);
+
+  // Tool-call interception state: when streaming stops at a tool_call|>, the
+  // last segment is an open tool_call. We surface inline composer + auto-fill
+  // below it so the user can supply / replay / customize the response, then
+  // continue generation with the response in context.
+  let pendingToolCallIdx = $state<number | null>(null);
+  let toolResponseDraft = $state("");
+
+  // Auto-serve: tools that are cheap, deterministic, and trusted run live
+  // without pausing for user review. The user can still inspect the result
+  // afterwards; they just don't have to click. The improvised registry is
+  // refreshed from the server and added to this set on every poll.
+  const AUTO_SERVE_BASE = new Set([
+    "full_board_snapshot",
+    "game_state_snapshot",
+    "belief_trajectory",
+    "ask_rule",
+  ]);
+  let improvisedTools = $state<{ name: string; description: string; declaration: string }[]>([]);
+
+  function isAutoServeTool(name: string): boolean {
+    return AUTO_SERVE_BASE.has(name) || improvisedTools.some((t) => t.name === name);
+  }
+
+  async function refreshImprovisedTools() {
+    try {
+      const r = await fetch("/api/improvised_tools");
+      const j = await r.json();
+      improvisedTools = j.tools ?? [];
+    } catch (e) {
+      console.error("refreshImprovisedTools failed", e);
+    }
+  }
+
+  let shareStatus = $state<string>("");
+
+  async function shareWithClaude() {
+    const body = {
+      decision: loadedDecision
+        ? { harvest: selectedHarvest, meta: loadedDecision.meta }
+        : null,
+      segments,
+      note: `shared at ${new Date().toISOString()}`,
+    };
+    try {
+      const r = await fetch("/api/chat/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const j = await r.json();
+      shareStatus = j.ok ? `shared ${j.n_segments} segments` : "share failed";
+      setTimeout(() => (shareStatus = ""), 3000);
+    } catch (e) {
+      shareStatus = `share error: ${e}`;
+    }
+  }
+
+  // Tool-library popover state. The picker stays open across registry
+  // refreshes so the user can curate which tools to advertise on this turn.
+  let toolMenuOpen = $state(false);
+  let selectedToolNames = $state<Set<string>>(new Set());
+  // Tracks names already shown in the picker — used to detect *first*
+  // appearances so newly registered tools auto-select once, but the user's
+  // subsequent unchecks stick.
+  let seenToolNames = $state<Set<string>>(new Set());
+
+  $effect(() => {
+    const known = new Set(improvisedTools.map((t) => t.name));
+    const nextSelected = new Set<string>();
+    let selChanged = false;
+    for (const n of selectedToolNames) {
+      if (known.has(n)) nextSelected.add(n);
+      else selChanged = true;
+    }
+    for (const n of known) {
+      if (!seenToolNames.has(n)) {
+        nextSelected.add(n);
+        selChanged = true;
+      }
+    }
+    if (selChanged) selectedToolNames = nextSelected;
+    // Snapshot the new "known" set so future unchecks of these names persist.
+    let seenChanged = known.size !== seenToolNames.size;
+    if (!seenChanged) {
+      for (const n of known) if (!seenToolNames.has(n)) { seenChanged = true; break; }
+    }
+    if (seenChanged) seenToolNames = known;
+  });
+
+  function toggleToolSelection(name: string) {
+    const next = new Set(selectedToolNames);
+    if (next.has(name)) next.delete(name);
+    else next.add(name);
+    selectedToolNames = next;
+  }
+
+  async function advertiseImprovisedTools(names?: string[]) {
+    await refreshImprovisedTools();
+    if (improvisedTools.length === 0) {
+      alert("no improvised tools registered yet.");
+      return;
+    }
+    const want = names ?? [...selectedToolNames];
+    const picked = improvisedTools.filter((t) => want.includes(t.name));
+    if (picked.length === 0) {
+      alert("no tools selected — check at least one in the menu.");
+      return;
+    }
+    const lines = [
+      "New tools just came online. Add them to your toolbox — they will be served live when you call them.",
+      "",
+      ...picked.map((t) => t.declaration),
+    ];
+    segments = [...segments, { kind: "user", content: lines.join("\n\n") }];
+    toolMenuOpen = false;
+    await send("");
+  }
+
+  async function rerunFresh() {
+    if (streaming || !loadedDecision) return;
+    await refreshImprovisedTools();
+    // Find the harvested system message and the first user-state message.
+    const original = loadedDecision.segments;
+    const sys = original.find((s) => s.kind === "system");
+    const firstUser = original.find((s) => s.kind === "user");
+    if (!sys || !firstUser) {
+      alert("decision is missing system or user segment; cannot rerun.");
+      return;
+    }
+    // Append declarations for the user-checked improvised tools to the
+    // harvested system prompt. Burl sees them as additional available tools
+    // alongside the base ones; the protocol section is left intact.
+    const picked = improvisedTools.filter((t) => selectedToolNames.has(t.name));
+    const extraDecls = picked.map((t) => t.declaration).join("");
+    const newSystem: Segment = {
+      kind: "system",
+      content: extraDecls
+        ? `${sys.content}\n\n${extraDecls}`
+        : sys.content,
+    };
+    segments = [newSystem, firstUser];
+    collapsed = { 0: true };
+    toolMenuOpen = false;
+    await send("");
+  }
+
+  async function unregisterTool(name: string) {
+    if (!confirm(`Remove tool "${name}" from the library?`)) return;
+    try {
+      await fetch(`/api/improvised_tools/${encodeURIComponent(name)}`, {
+        method: "DELETE",
+      });
+      await refreshImprovisedTools();
+    } catch (e) {
+      alert(`unregister failed: ${e}`);
+    }
+  }
+
+  // Primer: arbitrary system-prompt prefix the user can paste in (e.g.,
+  // Roberson chapter excerpts). Prepended to the harvested system message
+  // so the model sees: [primer, original system, user state, ...]. Persists
+  // in localStorage for cross-session continuity.
+  let primerText = $state("");
+  let primerOpen = $state(false);
+
+  $effect(() => {
+    // load on mount
+    const saved = localStorage.getItem("burl-chat-primer");
+    if (saved !== null) primerText = saved;
+  });
+
+  $effect(() => {
+    // save on change (untracks-ok: we want to persist)
+    localStorage.setItem("burl-chat-primer", primerText);
+  });
 
   // Streaming-progress indicator: shows elapsed time while we wait for the
   // first token (prefill on a ~14K-token prefix takes a few seconds).
@@ -63,6 +241,7 @@
     } catch (e) {
       console.error("listHarvests failed", e);
     }
+    await refreshImprovisedTools();
   });
 
   async function refreshDecisions() {
@@ -119,10 +298,16 @@
         curAssistantParts = [];
       }
     };
+    const primer = primerText.trim();
+    let primerInjected = false;
     for (const s of segments) {
       if (s.kind === "system") {
         flushAssistant();
-        out.push({ role: "system", content: s.content });
+        const sys = primer && !primerInjected
+          ? `# Roberson primer (selected passages)\n\n${primer}\n\n---\n\n${s.content}`
+          : s.content;
+        primerInjected = true;
+        out.push({ role: "system", content: sys });
       } else if (s.kind === "user") {
         flushAssistant();
         out.push({ role: "user", content: s.content });
@@ -142,12 +327,18 @@
     return out;
   }
 
-  async function send() {
-    const content = input.trim();
-    if (!content || streaming) return;
-    input = "";
-    segments = [...segments, { kind: "user", content }];
+  async function send(prependedUserContent?: string) {
+    if (streaming) return;
+    const content = (prependedUserContent ?? input).trim();
+    // Allow continuation with no new user content (e.g. after feeding a tool response).
+    const isContinuation = prependedUserContent === "";
+    if (!content && !isContinuation) return;
+    if (!isContinuation) {
+      input = "";
+      segments = [...segments, { kind: "user", content }];
+    }
     streaming = true;
+    pendingToolCallIdx = null;
     streamStart = performance.now();
     firstTokenAt = null;
     now = streamStart;
@@ -161,19 +352,22 @@
     const anchor = segments.length;
     queueMicrotask(() => scrollEl?.scrollTo(0, scrollEl.scrollHeight));
 
+    let stoppedAtToolCall = false;
     try {
       for await (const ev of streamChat(messages, {
         enable_thinking: enableThinking,
         max_tokens: maxTokens,
+        stop_at_tool_call: stopAtToolCall,
       })) {
         if (ev.type === "token") {
           if (firstTokenAt === null) firstTokenAt = performance.now();
           parser.feed(ev.text);
           segments = [...segments.slice(0, anchor), ...parser.segments];
           queueMicrotask(() => scrollEl?.scrollTo(0, scrollEl.scrollHeight));
-        } else if (ev.type === "done") {
+        } else if (ev.type === "done" || ev.type === "stopped_at_tool_call") {
           parser.end();
           segments = [...segments.slice(0, anchor), ...parser.segments];
+          if (ev.type === "stopped_at_tool_call") stoppedAtToolCall = true;
         } else if (ev.type === "error") {
           segments = [
             ...segments,
@@ -192,6 +386,116 @@
         clearInterval(timerHandle);
         timerHandle = null;
       }
+    }
+
+    // Detect an open tool_call: stream ended at one, OR last meaningful
+    // assistant segment is a tool_call with no following tool_result.
+    if (stoppedAtToolCall) {
+      // Find the last tool_call segment.
+      for (let i = segments.length - 1; i >= 0; i--) {
+        if (segments[i].kind === "tool_call") {
+          pendingToolCallIdx = i;
+          const tc = segments[i] as any;
+          if (loadedDecision && isAutoServeTool(tc.tool)) {
+            await autoServeTool();
+            return;
+          }
+          toolResponseDraft = autoFillFromHarvest(tc) ?? "";
+          break;
+        }
+      }
+    }
+  }
+
+  async function autoServeTool() {
+    if (pendingToolCallIdx === null || !loadedDecision) return;
+    const tc = segments[pendingToolCallIdx] as any;
+    runningLiveTool = true;
+    try {
+      const res = await runTool(selectedHarvest!, loadedDecision.meta.global_idx, tc.tool, tc.args);
+      const content = res.ok ? res.prose : `[tool error] ${res.error}`;
+      segments = [
+        ...segments.slice(0, pendingToolCallIdx + 1),
+        { kind: "tool_result", tool: tc.tool, content, turn: tc.turn },
+      ];
+      pendingToolCallIdx = null;
+      toolResponseDraft = "";
+      await send("");
+    } catch (e) {
+      segments = [
+        ...segments,
+        { kind: "assistant_text", content: `[autoserve error] ${e}` },
+      ];
+    } finally {
+      runningLiveTool = false;
+    }
+  }
+
+  /** Find a matching tool_result in the harvest events for an open tool_call.
+   *  Match on tool name and (when present) arg equality; falls back to first
+   *  matching tool name if args are different. Returns null if not found. */
+  function autoFillFromHarvest(tc: any): string | null {
+    const events = loadedDecision?.events;
+    if (!events) return null;
+    const matches = events.filter(
+      (e: any) => e.kind === "tool_result" && e.tool === tc.tool,
+    );
+    if (matches.length === 0) return null;
+    const argsKey = JSON.stringify(tc.args ?? {});
+    // Prefer the result whose preceding tool_call had the same args.
+    for (let i = 0; i < events.length; i++) {
+      const e = events[i];
+      if (e.kind === "tool_call" && e.tool === tc.tool &&
+          JSON.stringify(e.args ?? {}) === argsKey) {
+        // walk forward to next tool_result for this turn
+        for (let j = i + 1; j < events.length; j++) {
+          if (events[j].kind === "tool_result" && events[j].tool === tc.tool) {
+            return events[j].content;
+          }
+        }
+      }
+    }
+    return matches[0].content;
+  }
+
+  async function feedToolResponse() {
+    if (pendingToolCallIdx === null) return;
+    const tc = segments[pendingToolCallIdx] as any;
+    const content = toolResponseDraft.trim();
+    if (!content) return;
+    // Cull anything after the tool_call (model may have hallucinated past it).
+    segments = [
+      ...segments.slice(0, pendingToolCallIdx + 1),
+      { kind: "tool_result", tool: tc.tool, content, turn: tc.turn },
+    ];
+    pendingToolCallIdx = null;
+    toolResponseDraft = "";
+    // Continue generation with the supplied response now in context.
+    await send("");
+  }
+
+  function skipToolResponse() {
+    pendingToolCallIdx = null;
+    toolResponseDraft = "";
+  }
+
+  let runningLiveTool = $state(false);
+
+  async function runLiveTool() {
+    if (pendingToolCallIdx === null || !loadedDecision) return;
+    const tc = segments[pendingToolCallIdx] as any;
+    runningLiveTool = true;
+    try {
+      const res = await runTool(selectedHarvest, loadedDecision.meta.global_idx, tc.tool, tc.args);
+      if (res.ok) {
+        toolResponseDraft = res.prose;
+      } else {
+        toolResponseDraft = `[tool error] ${res.error}`;
+      }
+    } catch (e) {
+      toolResponseDraft = `[tool error] ${e}`;
+    } finally {
+      runningLiveTool = false;
     }
   }
 
@@ -250,12 +554,109 @@
         · burl {loadedDecision.meta.burl_play} vs oracle {loadedDecision.meta.oracle_play}
         · regret {loadedDecision.meta.burl_regret.toFixed(2)}
       </span>
+      <button
+        class="ghost"
+        onclick={shareWithClaude}
+        title="push current chat state to /api/chat/shared so the MCP server can surface it to Claude">
+        share with claude{shareStatus ? ` — ${shareStatus}` : ""}
+      </button>
+      <button
+        class="ghost"
+        onclick={rerunFresh}
+        disabled={streaming}
+        title="replay this decision from turn 1 with the selected improvised tools available from the system prompt onward">
+        rerun fresh{selectedToolNames.size > 0 ? ` (+${selectedToolNames.size})` : ""}
+      </button>
+      <div class="tool-menu-wrap">
+        <button
+          class="ghost"
+          onclick={async () => {
+            toolMenuOpen = !toolMenuOpen;
+            if (toolMenuOpen) await refreshImprovisedTools();
+          }}
+          title="open the improvised-tools library; pick which to advertise into chat">
+          tools{improvisedTools.length > 0 ? ` (${selectedToolNames.size}/${improvisedTools.length})` : ""}
+          <span class="caret">{toolMenuOpen ? "▾" : "▸"}</span>
+        </button>
+        {#if toolMenuOpen}
+          <div class="tool-menu" role="menu">
+            <div class="tool-menu-head">
+              <span class="dim small">improvised library — toggle, then advertise</span>
+            </div>
+            {#if improvisedTools.length === 0}
+              <div class="tool-menu-empty dim small">
+                no tools yet. register one via the MCP server.
+              </div>
+            {:else}
+              {#each improvisedTools as t (t.name)}
+                <label class="tool-row">
+                  <input
+                    type="checkbox"
+                    checked={selectedToolNames.has(t.name)}
+                    onchange={() => toggleToolSelection(t.name)}
+                  />
+                  <span class="tool-row-body">
+                    <span class="tool-row-name">{t.name}</span>
+                    <span class="tool-row-desc dim small">{t.description}</span>
+                  </span>
+                  <button
+                    class="ghost tool-row-x"
+                    onclick={(e) => { e.preventDefault(); unregisterTool(t.name); }}
+                    title="remove this tool from the library">×</button>
+                </label>
+              {/each}
+            {/if}
+            <div class="tool-menu-foot">
+              <button
+                class="ghost"
+                onclick={() => (selectedToolNames = new Set(improvisedTools.map((t) => t.name)))}
+                disabled={improvisedTools.length === 0}>all</button>
+              <button
+                class="ghost"
+                onclick={() => (selectedToolNames = new Set())}
+                disabled={selectedToolNames.size === 0}>none</button>
+              <span class="spacer"></span>
+              <button
+                onclick={() => advertiseImprovisedTools()}
+                disabled={selectedToolNames.size === 0 || streaming}>
+                advertise {selectedToolNames.size}
+              </button>
+            </div>
+          </div>
+        {/if}
+      </div>
       <button class="ghost" onclick={newSession}>new session</button>
     {/if}
   </header>
 
   <main>
     <aside class="sidebar">
+      <section class="primer">
+        <button
+          class="primer-head"
+          onclick={() => (primerOpen = !primerOpen)}
+        >
+          <span>roberson primer</span>
+          <span class="dim">{primerText ? `${primerText.length}c` : "(empty)"}</span>
+          <span class="caret">{primerOpen ? "▾" : "▸"}</span>
+        </button>
+        {#if primerOpen}
+          <textarea
+            bind:value={primerText}
+            rows="8"
+            placeholder="paste foreword + chapter 2 excerpts here. prepended to the system prompt, persisted to localStorage."
+          ></textarea>
+          <div class="primer-actions">
+            <button class="ghost" onclick={() => (primerText = "")} disabled={!primerText}>
+              clear
+            </button>
+            <span class="dim small">
+              {primerText.split(/\s+/).filter(Boolean).length} words
+            </span>
+          </div>
+        {/if}
+      </section>
+
       <section>
         <label>harvest</label>
         <select bind:value={selectedHarvest} onchange={refreshDecisions}>
@@ -344,6 +745,34 @@
                 <span class="tool-name">{s.tool}</span>(<span class="args">{JSON.stringify(s.args)}</span>)
               </code>
             </div>
+            {#if pendingToolCallIdx === i}
+              <div class="seg tool-pending">
+                <span class="badge pending">awaiting tool response</span>
+                <textarea
+                  bind:value={toolResponseDraft}
+                  rows="6"
+                  placeholder={`type or paste a response for ${s.tool}(${JSON.stringify(s.args)})`}
+                  disabled={streaming}
+                ></textarea>
+                <div class="tool-actions">
+                  <button onclick={feedToolResponse} disabled={streaming || !toolResponseDraft.trim()}>
+                    feed → continue
+                  </button>
+                  <button class="ghost" onclick={runLiveTool} disabled={streaming || runningLiveTool || !loadedDecision}>
+                    {runningLiveTool ? "running…" : "run live"}
+                  </button>
+                  <button class="ghost" onclick={() => {
+                    const auto = autoFillFromHarvest(s);
+                    if (auto) toolResponseDraft = auto;
+                  }} disabled={streaming || !autoFillFromHarvest(s)}>
+                    auto-fill from harvest
+                  </button>
+                  <button class="ghost" onclick={skipToolResponse} disabled={streaming}>
+                    skip
+                  </button>
+                </div>
+              </div>
+            {/if}
           {:else if s.kind === "tool_result"}
             <div class="seg tool-result">
               <div class="seg-head" onclick={() => toggleCollapse(i)} role="button" tabindex="0">
@@ -386,6 +815,10 @@
             <input type="checkbox" bind:checked={enableThinking} disabled={streaming}>
             think
           </label>
+          <label class="toggle">
+            <input type="checkbox" bind:checked={stopAtToolCall} disabled={streaming}>
+            stop@tool
+          </label>
           <label class="toggle dim small">
             max
             <input
@@ -418,7 +851,7 @@
             onkeydown={onKey}
             disabled={streaming}
           ></textarea>
-          <button onclick={send} disabled={streaming || !input.trim()}>
+          <button onclick={() => send()} disabled={streaming || !input.trim()}>
             {streaming ? "…" : "send"}
           </button>
         </div>
@@ -594,6 +1027,129 @@
   .badge.think { background: #5a4a18; color: #f5d77a; }
 
   .seg.tool-call { background: #2a1f1f; border-color: #4a2c2c; border-left: 3px solid #c46a6a; padding: 0.3rem 0.65rem; display: flex; gap: 0.5rem; align-items: center; }
+  .primer { display: flex; flex-direction: column; gap: 0.4rem; }
+  .primer-head {
+    background: #1c1c1c;
+    border: 1px solid #2c2c2c;
+    border-radius: 4px;
+    color: #ddd;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.5rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .primer textarea {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: #e8e8e8;
+    resize: vertical;
+    width: 100%;
+  }
+  .primer-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .primer-actions button { font-size: 0.72rem; padding: 0.15rem 0.5rem; }
+
+  .tool-menu-wrap { position: relative; display: inline-block; }
+  .tool-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
+    min-width: 360px;
+    max-width: 520px;
+    max-height: 60vh;
+    overflow-y: auto;
+    background: #161616;
+    border: 1px solid #333;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    padding: 0.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    z-index: 50;
+  }
+  .tool-menu-head {
+    padding: 0.2rem 0.35rem 0.35rem;
+    border-bottom: 1px solid #2a2a2a;
+  }
+  .tool-menu-empty { padding: 0.6rem 0.35rem; }
+  .tool-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    padding: 0.35rem 0.35rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .tool-row:hover { background: #1f1f1f; }
+  .tool-row input[type="checkbox"] { margin-top: 0.2rem; }
+  .tool-row-body { display: flex; flex-direction: column; gap: 0.15rem; flex: 1; min-width: 0; }
+  .tool-row-name {
+    font-family: ui-monospace, monospace;
+    font-size: 0.78rem;
+    color: #e8e8e8;
+  }
+  .tool-row-desc {
+    font-size: 0.7rem;
+    line-height: 1.35;
+    color: #9a9a9a;
+    word-break: break-word;
+  }
+  .tool-row-x {
+    font-size: 0.85rem;
+    line-height: 1;
+    padding: 0.1rem 0.4rem;
+    color: #c46a6a;
+  }
+  .tool-menu-foot {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    border-top: 1px solid #2a2a2a;
+    padding: 0.4rem 0.25rem 0.1rem;
+  }
+  .tool-menu-foot button { font-size: 0.74rem; padding: 0.2rem 0.55rem; }
+
+  .seg.tool-pending {
+    background: #2a2618;
+    border: 1px dashed #4a4028;
+    border-left: 3px solid #b8923a;
+    padding: 0.5rem 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .seg.tool-pending textarea {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.82rem;
+    color: #e8e8e8;
+    resize: vertical;
+  }
+  .tool-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .tool-actions button {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+  }
   .badge.call { background: #4a2c2c; color: #f3a4a4; }
   .call-line {
     font-family: ui-monospace, monospace;

@@ -2,7 +2,7 @@
 title: burl-chat — Interactive workbench for talking with Burl
 kind: entity
 first_seen: cba521d
-last_updated: cba521d
+last_updated: 2026-05-01
 status: active
 ---
 
@@ -34,12 +34,17 @@ One Python process owns both the model (in-process via [[mlx-lm]] through `burl.
 
 | Path | Role |
 |---|---|
-| `server/app.py` | FastAPI app: `/api/health`, `/api/chat` (SSE), `/api/harvests/*` |
+| `server/app.py` | FastAPI app: `/api/health`, `/api/chat` (SSE), `/api/harvests/*`, `/api/improvised_tools` |
 | `server/inference.py` | Single-thread executor wrapping `GemmaLocalNative`; `on_chunk` → asyncio.Queue → SSE bridge |
 | `server/decisions.py` | Reads harvest `corpus_index.jsonl` + per-decision `events.jsonl`; reconstructs typed segments |
-| `web/src/App.svelte` | Three-pane UI; segment-typed conversation rendering; live thinking indicator |
+| `server/improvised_tools.py` | Hot-register registry; compiles + persists tools to `tools_library/`; rehydrates on import. See [[improvised-tools]]. |
+| `server/tools_runner.py` | Looks up an incoming tool call in the improvised registry first, then base tools |
+| `server/tools_library/` | Persisted tool source: `<name>.py` files with a `DESCRIPTION = "..."` constant + `def tool(ctx, **kwargs)` |
+| `mcp_server.py` | FastMCP server bridging Claude (the assistant authoring tools) to the chat server; exposes `read_chat_state`, `register_improvised_tool`, `run_tool`, etc. |
+| `web/src/App.svelte` | Three-pane UI; segment-typed conversation rendering; live thinking indicator; tool-library popover with per-tool checkboxes + delete buttons |
 | `web/src/lib/parse.ts` | Streaming parser for `<\|channel>thought ... <channel\|>` and `<\|tool_call>...<tool_call\|>` markers |
 | `web/src/lib/api.ts` | Fetch + SSE consumer (CRLF-aware framing) |
+| `burl/wax_museum/snapshot.py` | `render_full_board_snapshot` / `render_full_board_structured` — pure rule-based state-rendering helpers reused by improvised tools (`board_snapshot` wraps these directly) |
 
 ## Three load-bearing implementation details
 
@@ -66,6 +71,23 @@ After loading a decision, the workbench injects a synthetic chat-cadence assista
 | `BURL_CHAT_MODEL_REPO` | `mlx-community/gemma-4-e2b-it-bf16` | Base model |
 | `BURL_CHAT_ADAPTER_PATH` | (none) | Local adapter dir; falls back to base if unset |
 | `BURL_CHAT_HARVEST_ROOT` | `scratch/belief_trajectory_rollout` | Where to look for `harvest_batched_*` dirs |
+
+## Improvised-tool registry
+
+A hot-register layer on top of the base wax_museum tools. Claude (acting as the user's tool-author teammate via the [[improvised-tools]] MCP bridge) reads the live chat state, designs a tool against Burl's request, and POSTs Python source to `/api/improvised_tools`. The server compiles it, registers it under a `<name> → ImprovisedTool` map, and writes it to `tools_library/<name>.py` for future hydration. Tools become callable on the next turn with no restart.
+
+The web UI presents the registry as a popover in the header: each tool shows up with a checkbox + a delete (×). The user picks a subset, hits **advertise**, and the workbench appends a synthetic user turn carrying the wax_museum-format declarations and re-streams the model. The same tools can be re-advertised across decisions; selection state survives registry refreshes (newly registered tools auto-select on first appearance, but unchecks stick).
+
+This is the surface where the [[burl-tool-wishlist]] gets answered. Burl articulates a need; Claude implements it; the user evaluates whether it shifts Burl's reasoning.
+
+## Rerun-fresh
+
+Two modes for working a decision:
+
+1. **Join-at-end (default).** Click a decision in the sidebar; the workbench replays the harvest's full typed-segment trace and appends the chat-mode primer. The user converses with Burl about the finished play. This is the post-commit-Q&A path.
+2. **Rerun-fresh.** Click the **rerun fresh** button. The workbench rebuilds `segments` as `[harvested_system_with_appended_improvised_tool_declarations, harvested_first_user_message]` and triggers `send("")`. Burl plays the decision from turn 1 with the user's selected improvised tools available from the system prompt onward — no chat-mode primer, no harvested trace to anchor on. The workbench's existing tool dispatch (which checks the improvised registry first) handles the new tools transparently.
+
+Rerun-fresh is the surface where the wishlist tools earn or lose their keep. Mechanism: pick a decision the original Burl handled poorly (high-regret bucket like `BURL_BREAKS_CONSENSUS` or any illegal-commit case), check the tool subset, click rerun. Compare regret of the new commit against the harvested baseline. If the same tool produces lower regret across multiple seeds, it's a candidate for promotion to `burl/wax_museum/tools.py`; if the protocol's literal tool references override its discovery, the system prompt is the next intervention layer.
 
 ## Why this exists
 

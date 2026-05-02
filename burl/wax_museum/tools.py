@@ -32,6 +32,10 @@ from burl.wax_museum.schemas import (
     next_actions_after_probe,
     next_actions_unchanged,
 )
+from burl.wax_museum.snapshot import (
+    render_full_board_snapshot,
+    render_full_board_structured,
+)
 
 
 def _label(dom: int) -> str:
@@ -676,11 +680,28 @@ def tool_ask_rule(ctx: WaxContext, topic: str) -> dict:
 # --------------------------------------------------------------------------- #
 
 
+def tool_full_board_snapshot(ctx: WaxContext) -> dict:
+    """Single instant picture of the table — pure rule-based read of state.
+
+    No oracle/Gus calls; sub-millisecond. Surfaces seats, trump ranking,
+    remaining hand, current trick, score + bid math, count-domino ledger,
+    and completed-trick history. Does NOT include opponent posteriors —
+    the prose tells the model to call ``belief_trajectory()`` for that.
+    """
+    prose = render_full_board_snapshot(ctx.game_state, ctx.me_abs)
+    structured = render_full_board_structured(ctx.game_state, ctx.me_abs)
+    return _wrap(prose=prose, structured=structured, next_actions=[])
+
+
 def build_registry(ctx: WaxContext) -> dict[str, Any]:
+    snap = lambda **kw: tool_full_board_snapshot(ctx, **kw)  # noqa: E731
     return {
         "explore_game": lambda **kw: tool_explore_game(ctx, **kw),
         "probe_best_case": lambda **kw: tool_probe_best_case(ctx, **kw),
         "probe_worst_case": lambda **kw: tool_probe_worst_case(ctx, **kw),
         "ask_rule": lambda **kw: tool_ask_rule(ctx, **kw),
         "belief_trajectory": lambda **kw: tool_belief_trajectory(ctx, **kw),
+        "full_board_snapshot": snap,
+        # Burl proposed both names — register the alias too.
+        "game_state_snapshot": snap,
     }
