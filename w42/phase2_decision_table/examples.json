@@ -1,0 +1,1593 @@
+[
+  {
+    "game_id": "sample_004_decl_4",
+    "move_idx": 0,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [
+      "bidder_opening_lead",
+      "called_suit_pressure",
+      "first_trick"
+    ],
+    "actual_action": "5-4",
+    "top_mean": "5-4",
+    "top_threshold": "5-4",
+    "safest_tail": "6-5",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "5-4",
+        "actual": true,
+        "mean": 14.4222,
+        "std": 21.8067,
+        "threshold_mass": 0.509,
+        "lower_tail_mass": 0.097,
+        "q10": -17,
+        "q50": 18,
+        "q90": 41,
+        "shelf_gap": 60,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-5",
+        "actual": false,
+        "mean": 12.5882,
+        "std": 20.5017,
+        "threshold_mass": 0.452,
+        "lower_tail_mass": 0.082,
+        "q10": -16,
+        "q50": 14,
+        "q90": 40,
+        "shelf_gap": 21,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "1-0",
+        "actual": false,
+        "mean": 10.7793,
+        "std": 20.5469,
+        "threshold_mass": 0.402,
+        "lower_tail_mass": 0.093,
+        "q10": -17,
+        "q50": 11,
+        "q90": 39,
+        "shelf_gap": 59,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-5",
+        "actual": false,
+        "mean": 10.5021,
+        "std": 22.594,
+        "threshold_mass": 0.451,
+        "lower_tail_mass": 0.121,
+        "q10": -19,
+        "q50": 12,
+        "q90": 40,
+        "shelf_gap": 59,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "2-0",
+        "actual": false,
+        "mean": 7.9609,
+        "std": 20.9841,
+        "threshold_mass": 0.353,
+        "lower_tail_mass": 0.13,
+        "q10": -19,
+        "q50": 6,
+        "q90": 39,
+        "shelf_gap": 59,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-2",
+        "actual": false,
+        "mean": 6.3399,
+        "std": 21.5088,
+        "threshold_mass": 0.332,
+        "lower_tail_mass": 0.159,
+        "q10": -20,
+        "q50": 5,
+        "q90": 39,
+        "shelf_gap": 58,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-4",
+        "actual": false,
+        "mean": 3.9606,
+        "std": 27.4881,
+        "threshold_mass": 0.373,
+        "lower_tail_mass": 0.314,
+        "q10": -31,
+        "q50": 0,
+        "q90": 41,
+        "shelf_gap": 73,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_001_decl_1",
+    "move_idx": 0,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [
+      "bidder_opening_lead",
+      "called_suit_pressure",
+      "first_trick"
+    ],
+    "actual_action": "6-1",
+    "top_mean": "3-3",
+    "top_threshold": "6-1",
+    "safest_tail": "3-3",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "3-3",
+        "actual": false,
+        "mean": -4.7053,
+        "std": 23.5011,
+        "threshold_mass": 0.196,
+        "lower_tail_mass": 0.329,
+        "q10": -36,
+        "q50": -6,
+        "q90": 31,
+        "shelf_gap": 46,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-1",
+        "actual": true,
+        "mean": -10.2898,
+        "std": 27.1619,
+        "threshold_mass": 0.202,
+        "lower_tail_mass": 0.471,
+        "q10": -41,
+        "q50": -14,
+        "q90": 33,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-4",
+        "actual": false,
+        "mean": -14.3197,
+        "std": 24.3991,
+        "threshold_mass": 0.13,
+        "lower_tail_mass": 0.529,
+        "q10": -41,
+        "q50": -20,
+        "q90": 24,
+        "shelf_gap": 35,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-5",
+        "actual": false,
+        "mean": -15.7082,
+        "std": 23.6106,
+        "threshold_mass": 0.119,
+        "lower_tail_mass": 0.549,
+        "q10": -41,
+        "q50": -21,
+        "q90": 20,
+        "shelf_gap": 9,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-0",
+        "actual": false,
+        "mean": -16.9489,
+        "std": 24.5668,
+        "threshold_mass": 0.132,
+        "lower_tail_mass": 0.587,
+        "q10": -41,
+        "q50": -25,
+        "q90": 25,
+        "shelf_gap": 7,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-0",
+        "actual": false,
+        "mean": -17.4361,
+        "std": 23.2022,
+        "threshold_mass": 0.1,
+        "lower_tail_mass": 0.582,
+        "q10": -41,
+        "q50": -24,
+        "q90": 17,
+        "shelf_gap": 22,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "2-0",
+        "actual": false,
+        "mean": -17.8561,
+        "std": 21.797,
+        "threshold_mass": 0.077,
+        "lower_tail_mass": 0.59,
+        "q10": -41,
+        "q50": -24,
+        "q90": 13,
+        "shelf_gap": 24,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_002_decl_2",
+    "move_idx": 0,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [
+      "bidder_opening_lead",
+      "first_trick"
+    ],
+    "actual_action": "5-5",
+    "top_mean": "5-5",
+    "top_threshold": "5-5",
+    "safest_tail": "5-5",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "5-5",
+        "actual": true,
+        "mean": -7.1602,
+        "std": 24.8238,
+        "threshold_mass": 0.193,
+        "lower_tail_mass": 0.367,
+        "q10": -41,
+        "q50": -6,
+        "q90": 27,
+        "shelf_gap": 46,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "3-3",
+        "actual": false,
+        "mean": -13.0241,
+        "std": 24.0292,
+        "threshold_mass": 0.127,
+        "lower_tail_mass": 0.482,
+        "q10": -41,
+        "q50": -16,
+        "q90": 24,
+        "shelf_gap": 44,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "4-3",
+        "actual": false,
+        "mean": -17.9184,
+        "std": 22.441,
+        "threshold_mass": 0.098,
+        "lower_tail_mass": 0.584,
+        "q10": -42,
+        "q50": -22,
+        "q90": 17,
+        "shelf_gap": 26,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-3",
+        "actual": false,
+        "mean": -19.2365,
+        "std": 22.1017,
+        "threshold_mass": 0.086,
+        "lower_tail_mass": 0.605,
+        "q10": -42,
+        "q50": -24,
+        "q90": 14,
+        "shelf_gap": 25,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-1",
+        "actual": false,
+        "mean": -19.4454,
+        "std": 22.0685,
+        "threshold_mass": 0.088,
+        "lower_tail_mass": 0.612,
+        "q10": -42,
+        "q50": -25,
+        "q90": 14,
+        "shelf_gap": 25,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "1-0",
+        "actual": false,
+        "mean": -20.6128,
+        "std": 20.2686,
+        "threshold_mass": 0.061,
+        "lower_tail_mass": 0.62,
+        "q10": -42,
+        "q50": -25,
+        "q90": 6,
+        "shelf_gap": 27,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-3",
+        "actual": false,
+        "mean": -20.7518,
+        "std": 20.2233,
+        "threshold_mass": 0.055,
+        "lower_tail_mass": 0.616,
+        "q10": -42,
+        "q50": -25,
+        "q90": 7,
+        "shelf_gap": 32,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_003_decl_3",
+    "move_idx": 0,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [
+      "bidder_opening_lead",
+      "called_suit_pressure",
+      "first_trick"
+    ],
+    "actual_action": "6-3",
+    "top_mean": "6-3",
+    "top_threshold": "6-3",
+    "safest_tail": "6-3",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "6-3",
+        "actual": true,
+        "mean": 27.0966,
+        "std": 16.6094,
+        "threshold_mass": 0.744,
+        "lower_tail_mass": 0.003,
+        "q10": -1,
+        "q50": 36,
+        "q90": 41,
+        "shelf_gap": 9,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "3-3",
+        "actual": false,
+        "mean": 27.002,
+        "std": 16.6122,
+        "threshold_mass": 0.743,
+        "lower_tail_mass": 0.004,
+        "q10": -1,
+        "q50": 35,
+        "q90": 41,
+        "shelf_gap": 16,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-3",
+        "actual": false,
+        "mean": 26.727,
+        "std": 16.8474,
+        "threshold_mass": 0.738,
+        "lower_tail_mass": 0.006,
+        "q10": -2,
+        "q50": 35,
+        "q90": 41,
+        "shelf_gap": 10,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "2-1",
+        "actual": false,
+        "mean": 8.9977,
+        "std": 20.4733,
+        "threshold_mass": 0.37,
+        "lower_tail_mass": 0.094,
+        "q10": -17,
+        "q50": 6,
+        "q90": 39,
+        "shelf_gap": 50,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-4",
+        "actual": false,
+        "mean": 8.5481,
+        "std": 21.6098,
+        "threshold_mass": 0.368,
+        "lower_tail_mass": 0.097,
+        "q10": -17,
+        "q50": 3,
+        "q90": 40,
+        "shelf_gap": 58,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "1-0",
+        "actual": false,
+        "mean": 8.0499,
+        "std": 21.0976,
+        "threshold_mass": 0.365,
+        "lower_tail_mass": 0.121,
+        "q10": -19,
+        "q50": 5,
+        "q90": 38,
+        "shelf_gap": 57,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "4-2",
+        "actual": false,
+        "mean": 5.1358,
+        "std": 24.1048,
+        "threshold_mass": 0.359,
+        "lower_tail_mass": 0.22,
+        "q10": -25,
+        "q50": 0,
+        "q90": 40,
+        "shelf_gap": 66,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_000_decl_0",
+    "move_idx": 2,
+    "seat_role": "bidder_partner",
+    "trick_position": 2,
+    "tags": [
+      "first_trick",
+      "partner_count_donation",
+      "partner_third_seat_support"
+    ],
+    "actual_action": "4-2",
+    "top_mean": "4-2",
+    "top_threshold": "5-4",
+    "safest_tail": "6-3",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "4-2",
+        "actual": true,
+        "mean": -21.2334,
+        "std": 20.6368,
+        "threshold_mass": 0.052,
+        "lower_tail_mass": 0.629,
+        "q10": -42,
+        "q50": -25,
+        "q90": 7,
+        "shelf_gap": 21,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-3",
+        "actual": false,
+        "mean": -21.4696,
+        "std": 20.384,
+        "threshold_mass": 0.05,
+        "lower_tail_mass": 0.626,
+        "q10": -42,
+        "q50": -25,
+        "q90": 7,
+        "shelf_gap": 32,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "3-3",
+        "actual": false,
+        "mean": -21.6956,
+        "std": 20.102,
+        "threshold_mass": 0.048,
+        "lower_tail_mass": 0.629,
+        "q10": -42,
+        "q50": -25,
+        "q90": 6,
+        "shelf_gap": 32,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "2-2",
+        "actual": false,
+        "mean": -21.7617,
+        "std": 20.2862,
+        "threshold_mass": 0.05,
+        "lower_tail_mass": 0.633,
+        "q10": -42,
+        "q50": -25,
+        "q90": 6,
+        "shelf_gap": 21,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-5",
+        "actual": false,
+        "mean": -21.9456,
+        "std": 20.4042,
+        "threshold_mass": 0.051,
+        "lower_tail_mass": 0.644,
+        "q10": -42,
+        "q50": -26,
+        "q90": 7,
+        "shelf_gap": 23,
+        "distribution_tags": [
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-4",
+        "actual": false,
+        "mean": -22.0894,
+        "std": 20.5139,
+        "threshold_mass": 0.052,
+        "lower_tail_mass": 0.655,
+        "q10": -42,
+        "q50": -27,
+        "q90": 6,
+        "shelf_gap": 22,
+        "distribution_tags": [
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "4-1",
+        "actual": false,
+        "mean": -25.0805,
+        "std": 18.1747,
+        "threshold_mass": 0.035,
+        "lower_tail_mass": 0.72,
+        "q10": -42,
+        "q50": -30,
+        "q90": 1,
+        "shelf_gap": 23,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_000_decl_0",
+    "move_idx": 4,
+    "seat_role": "left_setter",
+    "trick_position": 0,
+    "tags": [
+      "called_suit_pressure",
+      "setter_count_pressure",
+      "setter_lead_pressure"
+    ],
+    "actual_action": "6-4",
+    "top_mean": "6-4",
+    "top_threshold": "6-4",
+    "safest_tail": "6-4",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "6-4",
+        "actual": true,
+        "mean": -0.3842,
+        "std": 27.7896,
+        "threshold_mass": 0.645,
+        "lower_tail_mass": 0.355,
+        "q10": -36,
+        "q50": -5,
+        "q90": 41,
+        "shelf_gap": 81,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "3-0",
+        "actual": false,
+        "mean": -1.7606,
+        "std": 31.046,
+        "threshold_mass": 0.605,
+        "lower_tail_mass": 0.395,
+        "q10": -42,
+        "q50": -6,
+        "q90": 41,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-2",
+        "actual": false,
+        "mean": -2.0099,
+        "std": 27.4411,
+        "threshold_mass": 0.634,
+        "lower_tail_mass": 0.366,
+        "q10": -37,
+        "q50": -6,
+        "q90": 41,
+        "shelf_gap": 82,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "1-0",
+        "actual": false,
+        "mean": -2.5788,
+        "std": 30.9574,
+        "threshold_mass": 0.591,
+        "lower_tail_mass": 0.409,
+        "q10": -41,
+        "q50": -7,
+        "q90": 41,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "3-1",
+        "actual": false,
+        "mean": -2.7069,
+        "std": 26.1454,
+        "threshold_mass": 0.641,
+        "lower_tail_mass": 0.359,
+        "q10": -36,
+        "q50": -6,
+        "q90": 40,
+        "shelf_gap": 81,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-2",
+        "actual": false,
+        "mean": -4.8021,
+        "std": 26.9523,
+        "threshold_mass": 0.587,
+        "lower_tail_mass": 0.413,
+        "q10": -38,
+        "q50": -9,
+        "q90": 41,
+        "shelf_gap": 82,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_004_decl_4",
+    "move_idx": 4,
+    "seat_role": "left_setter",
+    "trick_position": 0,
+    "tags": [
+      "called_suit_pressure",
+      "setter_count_pressure",
+      "setter_lead_pressure"
+    ],
+    "actual_action": "2-2",
+    "top_mean": "2-2",
+    "top_threshold": "2-2",
+    "safest_tail": "2-2",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "2-2",
+        "actual": true,
+        "mean": 1.0517,
+        "std": 25.6221,
+        "threshold_mass": 0.695,
+        "lower_tail_mass": 0.305,
+        "q10": -32,
+        "q50": -1,
+        "q90": 40,
+        "shelf_gap": 81,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-6",
+        "actual": false,
+        "mean": -1.0797,
+        "std": 27.0723,
+        "threshold_mass": 0.652,
+        "lower_tail_mass": 0.348,
+        "q10": -37,
+        "q50": -4,
+        "q90": 40,
+        "shelf_gap": 81,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "4-2",
+        "actual": false,
+        "mean": -9.4261,
+        "std": 29.9001,
+        "threshold_mass": 0.492,
+        "lower_tail_mass": 0.508,
+        "q10": -40,
+        "q50": -19,
+        "q90": 39,
+        "shelf_gap": 80,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "3-0",
+        "actual": false,
+        "mean": -9.9122,
+        "std": 26.4096,
+        "threshold_mass": 0.549,
+        "lower_tail_mass": 0.451,
+        "q10": -40,
+        "q50": -12,
+        "q90": 34,
+        "shelf_gap": 81,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-0",
+        "actual": false,
+        "mean": -11.9949,
+        "std": 26.1763,
+        "threshold_mass": 0.525,
+        "lower_tail_mass": 0.475,
+        "q10": -40,
+        "q50": -12,
+        "q90": 35,
+        "shelf_gap": 80,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-0",
+        "actual": false,
+        "mean": -13.1261,
+        "std": 25.6622,
+        "threshold_mass": 0.496,
+        "lower_tail_mass": 0.504,
+        "q10": -40,
+        "q50": -18,
+        "q90": 32,
+        "shelf_gap": 80,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_001_decl_1",
+    "move_idx": 4,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [],
+    "actual_action": "3-3",
+    "top_mean": "3-3",
+    "top_threshold": "3-3",
+    "safest_tail": "3-3",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "3-3",
+        "actual": true,
+        "mean": -3.4395,
+        "std": 26.1138,
+        "threshold_mass": 0.24,
+        "lower_tail_mass": 0.334,
+        "q10": -40,
+        "q50": -5,
+        "q90": 38,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "5-0",
+        "actual": false,
+        "mean": -16.0287,
+        "std": 27.3755,
+        "threshold_mass": 0.151,
+        "lower_tail_mass": 0.579,
+        "q10": -42,
+        "q50": -25,
+        "q90": 32,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-5",
+        "actual": false,
+        "mean": -16.4777,
+        "std": 26.1675,
+        "threshold_mass": 0.134,
+        "lower_tail_mass": 0.562,
+        "q10": -42,
+        "q50": -23,
+        "q90": 28,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-4",
+        "actual": false,
+        "mean": -16.5734,
+        "std": 26.2158,
+        "threshold_mass": 0.135,
+        "lower_tail_mass": 0.554,
+        "q10": -42,
+        "q50": -24,
+        "q90": 24,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-0",
+        "actual": false,
+        "mean": -17.034,
+        "std": 25.8775,
+        "threshold_mass": 0.128,
+        "lower_tail_mass": 0.576,
+        "q10": -42,
+        "q50": -23,
+        "q90": 26,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "2-0",
+        "actual": false,
+        "mean": -17.5614,
+        "std": 25.1741,
+        "threshold_mass": 0.119,
+        "lower_tail_mass": 0.595,
+        "q10": -42,
+        "q50": -25,
+        "q90": 23,
+        "shelf_gap": 83,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_003_decl_3",
+    "move_idx": 7,
+    "seat_role": "right_setter",
+    "trick_position": 3,
+    "tags": [
+      "last_to_act",
+      "setter_count_pressure"
+    ],
+    "actual_action": "4-0",
+    "top_mean": "4-0",
+    "top_threshold": "4-0",
+    "safest_tail": "4-0",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "4-0",
+        "actual": true,
+        "mean": -10.1478,
+        "std": 24.0129,
+        "threshold_mass": 0.627,
+        "lower_tail_mass": 0.373,
+        "q10": -42,
+        "q50": -9,
+        "q90": 27,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "0-0",
+        "actual": false,
+        "mean": -10.2759,
+        "std": 23.9651,
+        "threshold_mass": 0.618,
+        "lower_tail_mass": 0.382,
+        "q10": -42,
+        "q50": -9,
+        "q90": 27,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "4-4",
+        "actual": false,
+        "mean": -11.2295,
+        "std": 23.6577,
+        "threshold_mass": 0.606,
+        "lower_tail_mass": 0.394,
+        "q10": -42,
+        "q50": -10,
+        "q90": 26,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-5",
+        "actual": false,
+        "mean": -11.5706,
+        "std": 23.7515,
+        "threshold_mass": 0.6,
+        "lower_tail_mass": 0.4,
+        "q10": -42,
+        "q50": -10,
+        "q90": 25,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-1",
+        "actual": false,
+        "mean": -12.4722,
+        "std": 23.741,
+        "threshold_mass": 0.581,
+        "lower_tail_mass": 0.419,
+        "q10": -42,
+        "q50": -13,
+        "q90": 26,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      },
+      {
+        "domino": "6-4",
+        "actual": false,
+        "mean": -24.963,
+        "std": 17.0291,
+        "threshold_mass": 0.308,
+        "lower_tail_mass": 0.692,
+        "q10": -42,
+        "q50": -30,
+        "q90": 5,
+        "shelf_gap": 50,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std",
+          "large_lower_tail"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_000_decl_0",
+    "move_idx": 0,
+    "seat_role": "bidder",
+    "trick_position": 0,
+    "tags": [
+      "bidder_opening_lead",
+      "called_suit_pressure",
+      "first_trick"
+    ],
+    "actual_action": "6-0",
+    "top_mean": "6-0",
+    "top_threshold": "6-0",
+    "safest_tail": "6-0",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "6-0",
+        "actual": true,
+        "mean": 20.3964,
+        "std": 18.3044,
+        "threshold_mass": 0.589,
+        "lower_tail_mass": 0.02,
+        "q10": -6,
+        "q50": 23,
+        "q90": 41,
+        "shelf_gap": 9,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-5",
+        "actual": false,
+        "mean": 16.4049,
+        "std": 19.6896,
+        "threshold_mass": 0.529,
+        "lower_tail_mass": 0.054,
+        "q10": -14,
+        "q50": 19,
+        "q90": 40,
+        "shelf_gap": 38,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "2-0",
+        "actual": false,
+        "mean": 15.9653,
+        "std": 19.8888,
+        "threshold_mass": 0.494,
+        "lower_tail_mass": 0.048,
+        "q10": -12,
+        "q50": 17,
+        "q90": 40,
+        "shelf_gap": 42,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-3",
+        "actual": false,
+        "mean": 15.2903,
+        "std": 18.6086,
+        "threshold_mass": 0.474,
+        "lower_tail_mass": 0.034,
+        "q10": -11,
+        "q50": 16,
+        "q90": 40,
+        "shelf_gap": 44,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-0",
+        "actual": false,
+        "mean": 15.2731,
+        "std": 23.1479,
+        "threshold_mass": 0.534,
+        "lower_tail_mass": 0.117,
+        "q10": -19,
+        "q50": 21,
+        "q90": 41,
+        "shelf_gap": "",
+        "distribution_tags": [
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-1",
+        "actual": false,
+        "mean": 14.2372,
+        "std": 19.046,
+        "threshold_mass": 0.433,
+        "lower_tail_mass": 0.04,
+        "q10": -11,
+        "q50": 13,
+        "q90": 40,
+        "shelf_gap": 50,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "2-1",
+        "actual": false,
+        "mean": 12.9458,
+        "std": 18.9646,
+        "threshold_mass": 0.429,
+        "lower_tail_mass": 0.042,
+        "q10": -12,
+        "q50": 12,
+        "q90": 40,
+        "shelf_gap": 43,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_003_decl_3",
+    "move_idx": 6,
+    "seat_role": "bidder_partner",
+    "trick_position": 2,
+    "tags": [
+      "partner_count_donation"
+    ],
+    "actual_action": "6-2",
+    "top_mean": "5-0",
+    "top_threshold": "6-2",
+    "safest_tail": "5-5",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "5-0",
+        "actual": false,
+        "mean": 25.0027,
+        "std": 17.9501,
+        "threshold_mass": 0.675,
+        "lower_tail_mass": 0.029,
+        "q10": -2,
+        "q50": 31,
+        "q90": 41,
+        "shelf_gap": 34,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-2",
+        "actual": true,
+        "mean": 24.0044,
+        "std": 20.9432,
+        "threshold_mass": 0.68,
+        "lower_tail_mass": 0.069,
+        "q10": -8,
+        "q50": 33,
+        "q90": 41,
+        "shelf_gap": 23,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "2-0",
+        "actual": false,
+        "mean": 23.0103,
+        "std": 21.2718,
+        "threshold_mass": 0.656,
+        "lower_tail_mass": 0.07,
+        "q10": -11,
+        "q50": 31,
+        "q90": 41,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-2",
+        "actual": false,
+        "mean": 21.579,
+        "std": 21.3333,
+        "threshold_mass": 0.625,
+        "lower_tail_mass": 0.08,
+        "q10": -13,
+        "q50": 29,
+        "q90": 41,
+        "shelf_gap": 35,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "1-1",
+        "actual": false,
+        "mean": 16.1019,
+        "std": 21.505,
+        "threshold_mass": 0.482,
+        "lower_tail_mass": 0.09,
+        "q10": -16,
+        "q50": 17,
+        "q90": 41,
+        "shelf_gap": 71,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "5-5",
+        "actual": false,
+        "mean": 15.3142,
+        "std": 15.0185,
+        "threshold_mass": 0.4,
+        "lower_tail_mass": 0.0,
+        "q10": -4,
+        "q50": 13,
+        "q90": 40,
+        "shelf_gap": 49,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      }
+    ]
+  },
+  {
+    "game_id": "sample_002_decl_2",
+    "move_idx": 5,
+    "seat_role": "left_setter",
+    "trick_position": 1,
+    "tags": [
+      "called_suit_pressure",
+      "setter_count_pressure"
+    ],
+    "actual_action": "2-1",
+    "top_mean": "2-1",
+    "top_threshold": "2-1",
+    "safest_tail": "2-1",
+    "scalar_ev_lying_by_omission": true,
+    "actions_by_mean": [
+      {
+        "domino": "2-1",
+        "actual": true,
+        "mean": 14.6602,
+        "std": 20.3822,
+        "threshold_mass": 0.91,
+        "lower_tail_mass": 0.09,
+        "q10": -17,
+        "q50": 20,
+        "q90": 36,
+        "shelf_gap": 25,
+        "distribution_tags": [
+          "scalar_ev_lying_by_omission",
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "4-2",
+        "actual": false,
+        "mean": 14.5727,
+        "std": 20.5184,
+        "threshold_mass": 0.906,
+        "lower_tail_mass": 0.094,
+        "q10": -17,
+        "q50": 19,
+        "q90": 36,
+        "shelf_gap": 17,
+        "distribution_tags": [
+          "high_variance_close_mean",
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-2",
+        "actual": false,
+        "mean": 12.3977,
+        "std": 20.9758,
+        "threshold_mass": 0.878,
+        "lower_tail_mass": 0.122,
+        "q10": -20,
+        "q50": 17,
+        "q90": 36,
+        "shelf_gap": 18,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "1-1",
+        "actual": false,
+        "mean": 1.865,
+        "std": 19.7811,
+        "threshold_mass": 0.813,
+        "lower_tail_mass": 0.187,
+        "q10": -22,
+        "q50": -1,
+        "q90": 33,
+        "shelf_gap": 53,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "4-4",
+        "actual": false,
+        "mean": -0.1344,
+        "std": 19.769,
+        "threshold_mass": 0.784,
+        "lower_tail_mass": 0.216,
+        "q10": -24,
+        "q50": -4,
+        "q90": 33,
+        "shelf_gap": 54,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      },
+      {
+        "domino": "6-4",
+        "actual": false,
+        "mean": -2.8964,
+        "std": 15.3584,
+        "threshold_mass": 0.828,
+        "lower_tail_mass": 0.172,
+        "q10": -22,
+        "q50": -5,
+        "q90": 15,
+        "shelf_gap": 31,
+        "distribution_tags": [
+          "multi_peak_pdf",
+          "wide_shelf_gap",
+          "high_std"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,52 @@
+{
+  "schema_version": "w42.phase2_decision_table.v0",
+  "grain": {
+    "decision_actions.csv": "one legal action with an E[Q] PDF for one public decision state",
+    "decision_states.csv": "one public decision state with top-mean, top-threshold, safest-tail, and actual-action summary"
+  },
+  "feature_groups": {
+    "public_context": [
+      "game_id",
+      "trump_name",
+      "move_idx",
+      "trick_idx",
+      "trick_position",
+      "score before action",
+      "played/unplayed public count",
+      "current trick winner/count/led suit"
+    ],
+    "private_actor_context": [
+      "actor remaining hand count",
+      "actor remaining count points",
+      "actor remaining called-suit count",
+      "actor remaining doubles"
+    ],
+    "candidate_action": [
+      "candidate domino",
+      "count points",
+      "double/called-suit flags",
+      "follow/beat/current trick flags"
+    ],
+    "offline_distribution_labels": [
+      "mean",
+      "std",
+      "threshold mass",
+      "quantiles",
+      "CVaR low 10%",
+      "branch peaks",
+      "shelf gap",
+      "scalar-EV omission flag"
+    ],
+    "offline_missing_for_now": [
+      "bid amount",
+      "bid margin",
+      "joint-world hidden ownership",
+      "top hidden threat holder/domino/impact"
+    ]
+  },
+  "leakage_boundary": {
+    "online_safe": "public trick state plus the actor's own private hand and legal candidate action facts",
+    "offline_label_only": "E[Q] PDFs, scalar E[Q], threshold/tail labels, future outcome rank, hidden-domino threat attribution when generated",
+    "not_present_in_v0": "bid amount/margin and saved joint-world hidden ownership"
+  }
+}

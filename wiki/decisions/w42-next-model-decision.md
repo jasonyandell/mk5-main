@@ -92,6 +92,13 @@ Create a new bead series for a single targeted regime:
 The model can stay small and cheap. The value is in better labels, sharper
 slices, branch-aware reports, and honest comparisons.
 
+[[w42-phase2-decision-table]] is the first bridge artifact for this package. It
+turns the E[Q] PDF visualizer sample into 140 decision-state rows and 346
+legal-action rows with public seat/role context, actor hand/action facts,
+distribution-aware labels, and explicit blank columns for bid margin and
+hidden-domino ownership. It is ready for schema review and slice analysis, not a
+claim-ledger verdict or a training dataset.
+
 ## Risks
 
 - Direct detectors may require state not present in current Gus corpora.
