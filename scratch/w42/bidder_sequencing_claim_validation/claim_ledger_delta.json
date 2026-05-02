@@ -1,0 +1,12 @@
+{
+  "owner_bead": "t42-csw6.18",
+  "claim_ledger_impact": "no claim-ledger change",
+  "reason": "Available artifacts provide proxy bucket evidence only; no direct oracle counterfactuals or laydown proof enumeration were run.",
+  "claim_statuses_reported_in_page": {
+    "ch03-trump-pull-sequencing": "underpowered",
+    "ch03-reentry-preservation": "underpowered",
+    "ch03-off-timing": "underpowered",
+    "ch03-count-inventory": "context-limited",
+    "ch03-laydown-correctness": "not-yet-tested"
+  }
+}
