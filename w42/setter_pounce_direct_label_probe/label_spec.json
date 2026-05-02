@@ -1,0 +1,180 @@
+{
+  "bead_id": "t42-5m82.5",
+  "default_thresholds": {
+    "disaster_tail_quantile": 0.1,
+    "material_eq_delta_points": 1.0,
+    "one_count_away_points": 5,
+    "threshold_mass_delta_tau": 0.1
+  },
+  "direct_labels": [
+    {
+      "anti_leakage": "Do not infer bidder team from final score or rollout result.",
+      "definition": "current_player_team != bidder_team",
+      "level": "decision",
+      "live_safe": true,
+      "name": "is_setter_decision",
+      "negative_condition": "The acting player is on the bidder team.",
+      "positive_condition": "The acting player is on the defending team.",
+      "required_fields": [
+        "current_player_seat",
+        "bidder_seat"
+      ]
+    },
+    {
+      "anti_leakage": "Use only points captured before the candidate action, not terminal hand totals.",
+      "definition": "normalized bid, declaration, ruleset, and points already captured by bidder team and defender team",
+      "level": "decision",
+      "live_safe": true,
+      "name": "contract_context",
+      "negative_condition": "Unknown bidder, bid amount, declaration, or captured points.",
+      "positive_condition": "Contract fields are present and internally consistent.",
+      "required_fields": [
+        "bid_amount",
+        "bidder_seat",
+        "declaration",
+        "ruleset_id",
+        "bidder_team_points_so_far",
+        "defender_team_points_so_far"
+      ]
+    },
+    {
+      "anti_leakage": "Do not use hidden count still held by other players as live availability; only use candidate action and public trick count.",
+      "definition": "A public threshold window where candidate count can bring the bidder team to or below set threshold, or materially reduce the remaining allowance.",
+      "derived_fields": [
+        "bidder_points_needed_to_make = max(0, contract_point_target - bidder_team_points_so_far)",
+        "defender_points_needed_to_set = max(0, contract_point_target - bidder_team_points_so_far - current_public_defender_trick_points)",
+        "candidate_crosses_set_threshold = candidate_count_points >= defender_points_needed_to_set"
+      ],
+      "level": "decision",
+      "live_safe": true,
+      "name": "count_to_set_window",
+      "negative_condition": "Candidate count cannot affect the public make/set threshold under current contract accounting.",
+      "positive_condition": "Candidate count can cross the public set threshold or move the hand into a one-count-away set state.",
+      "required_fields": [
+        "bid_amount",
+        "bidder_team_points_so_far",
+        "defender_team_points_so_far",
+        "current_trick_count_points",
+        "candidate_count_points",
+        "contract_point_target"
+      ]
+    },
+    {
+      "anti_leakage": "Do not mark positive only because a hidden defender tile would win; the live label must be explainable from public voids, current winner, and legal actions.",
+      "definition": "The current trick is in a non-trump/non-declaration suit that is publicly vulnerable for bidder team and can be won by a defender or defender's partner.",
+      "level": "decision",
+      "live_safe": true,
+      "name": "bidder_off_window",
+      "negative_condition": "The trick is trump/declaration control, the acting player is forced into non-count follow with no count choice, or public state gives no bidder-off exposure.",
+      "positive_condition": "A defender is acting while bidder team is exposed on an off-suit trick and public void/legal-action evidence makes a defender win or partner win plausible.",
+      "required_fields": [
+        "declaration",
+        "led_suit",
+        "current_public_winning_seat",
+        "current_trick_position",
+        "public_voids_by_seat_suit",
+        "legal_action_set",
+        "bidder_seat"
+      ]
+    },
+    {
+      "anti_leakage": "Public certainty may use legal-action constraints and public voids, but not hidden later-player hands.",
+      "definition": "A candidate count action by a setter before the final trick winner is publicly certain.",
+      "level": "action",
+      "live_safe": true,
+      "name": "count_before_certainty",
+      "negative_condition": "Candidate is not count, the trick winner is already public-certain, or the action is not by a setter.",
+      "positive_condition": "candidate_count_points > 0 and at least one later player can legally change the current winner under public state.",
+      "required_fields": [
+        "current_trick_position",
+        "current_public_winning_seat",
+        "candidate_tile",
+        "candidate_count_points",
+        "remaining_players_to_act",
+        "public_winning_certainty"
+      ]
+    },
+    {
+      "anti_leakage": "This is a window label, not a claim that every count action is optimal.",
+      "definition": "is_setter_decision and bidder_off_window and count_to_set_window with at least one legal count action available to the setter.",
+      "level": "decision",
+      "live_safe": true,
+      "name": "setter_pounce_window",
+      "negative_condition": "Any gate is absent, or only non-count legal actions exist.",
+      "positive_condition": "All three public gates hold and at least one legal action carries count.",
+      "required_fields": [
+        "is_setter_decision",
+        "bidder_off_window",
+        "count_to_set_window",
+        "legal_action_set",
+        "candidate_count_points"
+      ]
+    },
+    {
+      "anti_leakage": "Do not use oracle regret to decide whether an action receives this structural label.",
+      "definition": "Legal candidate count action inside setter_pounce_window.",
+      "level": "action",
+      "live_safe": true,
+      "name": "setter_pounce_action",
+      "negative_condition": "Window is absent or action has no count.",
+      "positive_condition": "Action is legal and candidate_count_points > 0 inside a setter_pounce_window.",
+      "required_fields": [
+        "setter_pounce_window",
+        "candidate_count_points",
+        "legal_action_set"
+      ]
+    },
+    {
+      "anti_leakage": "Allowed only as training/eval target or report metric, never as live policy input.",
+      "definition": "Offline report label measuring how the action changes sampled-world mass at or below the set threshold for bidder team.",
+      "level": "action",
+      "live_safe": false,
+      "name": "threshold_mass_delta",
+      "negative_condition": "No material set-threshold mass increase.",
+      "positive_condition": "Action increases defender set probability by at least configured threshold tau versus non-count alternatives in same decision.",
+      "required_fields": [
+        "e_q_pdf_or_sampled_world_outcomes",
+        "bid_amount",
+        "bidder_team_score_distribution_by_action"
+      ]
+    },
+    {
+      "anti_leakage": "Hidden branch labels remain offline diagnostics.",
+      "definition": "Offline report label for lower-tail bidder-team outcome change, including CVaR or low-quantile shift.",
+      "level": "action",
+      "live_safe": false,
+      "name": "disaster_tail_mitigation_delta",
+      "negative_condition": "No material tail movement.",
+      "positive_condition": "Action materially worsens bidder-team lower tail or improves defender-team lower tail relative to alternatives.",
+      "required_fields": [
+        "e_q_pdf_or_sampled_world_outcomes",
+        "action_outcome_distribution"
+      ]
+    }
+  ],
+  "live_feature_boundary": {
+    "hidden_state_forbidden_live": [
+      "unplayed domino owner truth outside current player's hand",
+      "partner's hidden winning tile availability",
+      "future rollout outcomes",
+      "forge E[Q], E[Q] PDF, sampled-world outcome branches, or completed-hand set attribution"
+    ],
+    "offline_label_allowed": [
+      "forge E[Q] and E[Q] PDF deltas",
+      "sampled-world make/set threshold mass",
+      "hidden-domino threat attribution",
+      "completed-hand or rollout set attribution"
+    ],
+    "public_state_allowed": [
+      "current player seat and team relation to bidder team",
+      "public auction winner, bid amount, declaration, and ruleset metadata",
+      "current hand/trick score visible in the public state",
+      "public trick history including played tiles, trick winners, captured count, and public void evidence",
+      "current trick position and current public winning seat",
+      "current player's hand",
+      "legal action set and action-local tile facts"
+    ]
+  },
+  "schema_version": "w42.setter_pounce_direct_label_probe.spec.v1",
+  "scope": "first-pass direct labels for setter pounce and count-to-set windows"
+}
