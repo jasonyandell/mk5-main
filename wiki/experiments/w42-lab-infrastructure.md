@@ -179,7 +179,12 @@ python scratch/w42/raw_public_state_baseline.py \
 
 Successful smoke result: W&B created offline run id `rwexij8m`, logged
 train/eval/final metrics, marked `status=completed`, and wrote local artifacts
-under `scratch/w42/wandb_smoke/default_success/`. The cloud sync waits on login.
+under `scratch/w42/wandb_smoke/default_success/`.
+
+After login, the same default-on W&B path created a live smoke run:
+
+- W&B success run:
+  `https://wandb.ai/jasonyandell-forge42/w42/runs/wv7pkuco`
 
 Failure smoke command:
 
@@ -200,6 +205,11 @@ Failure smoke result: W&B created offline run id `as3xy7oz`, marked
 `status=failed`, captured `failure/type=FileNotFoundError`, captured the missing
 path in `failure/message`, and stored the traceback tail.
 
+After login, the same failure path created a live failure smoke run:
+
+- W&B failure run:
+  `https://wandb.ai/jasonyandell-forge42/w42/runs/5ychhiid`
+
 Resume policy:
 
 - Resume an interrupted run only when the same checkpoint or local manifest stores
@@ -212,8 +222,10 @@ Resume policy:
 
 Run links:
 
-- W&B run: offline smoke ids `rwexij8m`, `as3xy7oz`; live links pending login
-- W&B artifact: `not applicable`
+- W&B project: `https://wandb.ai/jasonyandell-forge42/w42`
+- W&B success smoke: `https://wandb.ai/jasonyandell-forge42/w42/runs/wv7pkuco`
+- W&B failure smoke: `https://wandb.ai/jasonyandell-forge42/w42/runs/5ychhiid`
+- W&B artifact: logged by success smoke as `w42-raw-public-state-b10a6c95`
 
 ## Hugging Face Conventions
 
