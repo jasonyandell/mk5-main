@@ -1,0 +1,146 @@
+{
+  "bead": "t42-csw6.8",
+  "title": "w42 Strategy Detector v1 Chapter-Derived Tags",
+  "status": "design-only",
+  "claim_ledger_impact": "no claim-ledger change",
+  "wandb_links": "not applicable",
+  "hf_links": "not applicable",
+  "buckets": [
+    {
+      "bucket": "bidding",
+      "detectors": [
+        "candidate_bid_loss_budget",
+        "side_specific_off_risk",
+        "unnecessary_bid_margin",
+        "strong_trump_bad_risk_trap",
+        "partner_help_dependency",
+        "natural_bid_bucket_anomaly"
+      ],
+      "chapters": ["ch02", "ch03", "ch10", "ch12", "ch15", "ch16"],
+      "online_sources": ["public auction", "candidate declaration", "own hand", "score mode", "ruleset metadata"],
+      "report_sources": ["forge E[Q]", "paired bid/declaration counterfactuals", "completed games", "belief calibration"],
+      "non_goals": ["no hidden partner hand as live input", "no hard-coded book bid rule"]
+    },
+    {
+      "bucket": "pounce",
+      "detectors": [
+        "setter_pounce_window",
+        "count_before_certainty",
+        "pull_trump_vs_early_off_window",
+        "count_protection_throwaway",
+        "effective_walker_or_promoted_tile"
+      ],
+      "chapters": ["ch03", "ch05", "ch06", "ch12"],
+      "online_sources": ["public trick history", "current trick winner", "legal actions", "bid margin", "void evidence"],
+      "report_sources": ["full deal labels", "oracle action values", "set attribution"],
+      "non_goals": ["no live reveal of hidden pounce ownership", "no claim that every pounce window requires count"]
+    },
+    {
+      "bucket": "donation",
+      "detectors": [
+        "safe_partner_count_donation",
+        "count_before_certainty",
+        "lead_away_from_count_damage",
+        "dot_count_discipline"
+      ],
+      "chapters": ["ch03", "ch04", "ch05", "ch06", "ch12", "ch15"],
+      "online_sources": ["team relation", "current trick winner", "candidate count value", "overtrump risk", "points needed"],
+      "report_sources": ["unsafe donation tail loss", "held-count-never-used rate", "Burl trace arithmetic"],
+      "non_goals": ["no hidden count availability as live feature", "no generic count dumping rule"]
+    },
+    {
+      "bucket": "84",
+      "detectors": [
+        "84_contract_regime",
+        "laydown_84_proof",
+        "protected_one_off_84_shape",
+        "final_walker_counter",
+        "live_final_weapon_tiles",
+        "live_same_suit_pair",
+        "throwaway_ladder_rank",
+        "84_set_attribution"
+      ],
+      "chapters": ["ch07", "ch08", "ch12", "ch13", "ch14"],
+      "online_sources": ["bid value", "trick index", "score context", "own hand", "public suit depletion", "legal actions"],
+      "report_sources": ["proof search", "full-world live asset labels", "oracle rollouts", "completed-hand attribution"],
+      "non_goals": ["no ordinary count objective in 84 mode", "no heuristic laydown proof"]
+    },
+    {
+      "bucket": "no_trump_doubles",
+      "detectors": [
+        "declaration_regime_compare",
+        "doubles_native_suit_removal",
+        "dual_suit_top_protection",
+        "planned_low_double_sacrifice",
+        "no_trump_support_double_preservation",
+        "dynamic_no_trump_suit_counter"
+      ],
+      "chapters": ["ch09", "ch13"],
+      "online_sources": ["declaration regime", "tile suit membership", "suit top recomputation", "public suit counts"],
+      "report_sources": ["paired declaration rollouts", "regime comparison tables", "counterfactual play lines"],
+      "non_goals": ["no fallback-follow contamination unless flagged", "no regime choice from final declaration alone"]
+    },
+    {
+      "bucket": "scoring",
+      "detectors": [
+        "score_mode_objective",
+        "mark_terminal_state",
+        "point_mark_policy_divergence",
+        "rule_variant_gate",
+        "straight_auction_legality",
+        "high_bid_scoring_invariant"
+      ],
+      "chapters": ["ch01", "ch10", "ch13", "ch14"],
+      "online_sources": ["ruleset id", "score mode", "bid amount", "captured points", "match score"],
+      "report_sources": ["paired point-vs-mark utility", "scoreboard replay", "legal fixtures"],
+      "non_goals": ["no mixed objective evaluation", "no variant records in straight corpus"]
+    },
+    {
+      "bucket": "style",
+      "detectors": [
+        "legal_inference_boundary",
+        "early_trick_belief_discovery",
+        "trace_public_evidence_faithfulness",
+        "dot_count_discipline",
+        "overbid_restraint_bucket",
+        "partner_fit_residual",
+        "style_prior_bucket"
+      ],
+      "chapters": ["ch06", "ch11", "ch14", "ch15"],
+      "online_sources": ["public reveals", "auction history", "trick history", "score context", "legal public style history when present"],
+      "report_sources": ["Gus belief metrics", "Burl traces", "synthetic style policies", "fixed-vs-random partner simulations"],
+      "non_goals": ["no private table-talk signal", "no style inference from a single hand"]
+    },
+    {
+      "bucket": "odds",
+      "detectors": [
+        "hand_shape_prior_check",
+        "four_trump_boss_first_threshold",
+        "four_trump_missing_top_two_threshold",
+        "partner_double_help_prior",
+        "odds_rationalization_faithfulness",
+        "rare_extreme_double_bucket"
+      ],
+      "chapters": ["ch02", "ch07", "ch16"],
+      "online_sources": ["own hand shape", "public declaration", "public priors", "ruleset gate"],
+      "report_sources": ["exact enumeration", "corpus chi-square checks", "oracle rollouts", "Burl odds trace audit"],
+      "non_goals": ["no action optimality from odds alone", "no live hidden owner facts"]
+    }
+  ],
+  "readiness_labels": [
+    "online-computable",
+    "report-only",
+    "enumeration-ready",
+    "oracle-ready",
+    "gus-ready",
+    "burl-ready",
+    "not-live-safe"
+  ],
+  "required_boundaries": [
+    "online features must use only public state, current player hand, legal action set, action-local facts, score/ruleset metadata, and public history",
+    "hidden owner labels are report-only",
+    "trace leakage and table-talk concepts are audits, not live strategy features",
+    "detector existence does not change claim-ledger status",
+    "Gus code, Burl behavior, and forge oracle semantics are out of scope"
+  ]
+}
