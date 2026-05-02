@@ -20,6 +20,11 @@ The `eq_outcome_distribution` tool surfaces bimodality explicitly via four field
 
 In the E3 rollout set (N=500 decisions, 98 `eq_outcome_distribution` calls), 74 returned non-unimodal shapes; 53 had mixed-mode geometry (ceca203).
 
+The browser visualizer runbook [[eq-browser-visualizers]] is the visual companion:
+`eq_pdf_discs.html` shows the 85-bin PDF shape and win-threshold mass for each
+candidate action, while `eq_surface_3d.html` and `eq_game_journey.html` make
+near-tie and high-uncertainty E[Q] surfaces inspectable before changing policy.
+
 ## Tool-surface companions
 
 Three tools make candlewax distributions actionable for [[burl]]:
@@ -44,4 +49,6 @@ Receipts from the spike: image-as-alignment rescues small models (Haiku decision
 
 ## Links
 
-[[burl]] [[tool-orchestration]] [[zeb]] [[forge]] [[reasoning-coherence-verification]] [[experiments/iter5-e2-candlewax-null]] [[candlewax-spike]]
+[[burl]] [[tool-orchestration]] [[zeb]] [[forge]] [[eq-browser-visualizers]]
+[[reasoning-coherence-verification]] [[experiments/iter5-e2-candlewax-null]]
+[[candlewax-spike]]

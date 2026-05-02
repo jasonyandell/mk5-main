@@ -1744,3 +1744,18 @@ Fix in `burl/chat/web/src/App.svelte`:
 - w42 is no longer throwaway scratch. It is a durable project-root research workstream like Gus or Burl in repo shape, while still keeping a research boundary around model/checkpoint promotion.
 - The promotion is about ownership and continuity, not about declaring the tiny w42 probes production-ready.
 - Temporary unrelated notebooks and generated caches can still live in `scratch/`; durable w42 evidence and scripts now belong under `w42/`.
+
+---
+
+## [2026-05-02 | local | E[Q] browser visualizers refreshed]
+
+**Touched pages:** [[eq-browser-visualizers]] [[candlewax]] [[index]] [[log]]
+**Added:** 1 experiment page - [[eq-browser-visualizers]].
+**Updated:** [[index]] catalogued the E[Q] visualizer runbook; [[candlewax]] links the browser visualizers as the visual companion to the tool-surface PDF fields.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The E[Q] web visualizers now have a portable local data-export path instead of relying on stale hardcoded `/home/jason/...` script paths.
+- Browser Use verified all three local pages: aggregate 3D surface, per-action PDF discs, and game-journey value trajectories.
+- The visualizer is a useful hypothesis tool for w42/E[Q] work: it makes near-tie, high-uncertainty, candlewax-shaped decision regions visible before any reranker or policy change is attempted.
