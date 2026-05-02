@@ -1,0 +1,82 @@
+{
+  "schema_id": "w42.hidden_domino_threat_attribution.v0",
+  "status": "proposal_not_empirically_run_in_this_worktree",
+  "source_artifact_requirement": {
+    "producer": "python -m forge.eq.generate --save-joint-worlds",
+    "required_payload_keys": ["results"],
+    "required_game_fields": ["hands", "decl_id", "decisions"],
+    "required_decision_fields": [
+      "player",
+      "legal_mask",
+      "world_hands",
+      "q_per_world"
+    ],
+    "world_hands_shape": "[M, 3, 7], opponent hands relative to decision.player",
+    "q_per_world_shape": "[M, 7], oracle Q per action slot before PDF collapse"
+  },
+  "leakage_boundary": {
+    "allowed": "Use hidden holder truth only in offline labels, reports, calibration targets, and evaluation.",
+    "forbidden": "Do not feed true hidden ownership as a live feature to Gus, Burl, or any gameplay selector.",
+    "online_replacement": "A live model may predict beliefs from legal public state; the impact labels only weight and evaluate those beliefs offline."
+  },
+  "row_grain": "one decision, one legal action, one hidden domino, one candidate holder",
+  "thresholds": {
+    "tail_low_q": -18,
+    "shelf_high_q": 18,
+    "notes": "These first-pass thresholds mirror the bid-30 make/set cliff used by the E[Q] PDF visualizer and action selection code. A later bid-aware schema should set thresholds from bid_value."
+  },
+  "fields": {
+    "game_idx": "zero-based game index in payload.results",
+    "seed": "source seed when present in payload.seeds",
+    "decl_id": "declaration id from the GameRecordGPU",
+    "decision_idx": "zero-based decision index within the generated game",
+    "actor": "absolute seat making the decision",
+    "action_slot": "actor hand slot being evaluated",
+    "action_domino_id": "visible domino id for action_slot when game.hands is present",
+    "action_domino": "human-readable action domino pips",
+    "hidden_domino_id": "candidate unseen domino id from world_hands",
+    "hidden_domino": "human-readable hidden domino pips",
+    "relative_holder": "0,1,2 for next opponent, partner/opposite, previous opponent relative to actor",
+    "absolute_holder": "(actor + relative_holder + 1) % 4",
+    "world_count": "number of sampled worlds for this decision",
+    "conditioned_world_count": "worlds where this holder owns this hidden domino",
+    "conditioned_mass": "conditioned_world_count / world_count",
+    "baseline_mean_q": "mean q_per_world for this action across all worlds",
+    "conditioned_mean_q": "mean q_per_world for this action where holder owns the hidden domino",
+    "mean_q_delta": "conditioned_mean_q - baseline_mean_q",
+    "baseline_tail_low_mass": "P(Q <= tail_low_q) across all worlds",
+    "conditioned_tail_low_mass": "P(Q <= tail_low_q | holder owns hidden domino)",
+    "tail_low_mass_delta": "conditioned_tail_low_mass - baseline_tail_low_mass",
+    "baseline_shelf_high_mass": "P(Q >= shelf_high_q) across all worlds",
+    "conditioned_shelf_high_mass": "P(Q >= shelf_high_q | holder owns hidden domino)",
+    "shelf_high_mass_delta": "conditioned_shelf_high_mass - baseline_shelf_high_mass",
+    "impact_score": "abs(mean_q_delta) + 10 * (abs(tail_low_mass_delta) + abs(shelf_high_mass_delta))"
+  },
+  "candidate_metrics": [
+    {
+      "name": "threshold_mass_delta_by_hidden_holder",
+      "definition": "conditioned_shelf_high_mass - baseline_shelf_high_mass and conditioned_tail_low_mass - baseline_tail_low_mass grouped by hidden_domino_id and absolute_holder",
+      "use": "Find unseen holdings that explain make/set shelves or disaster tails."
+    },
+    {
+      "name": "outcome_mean_delta_by_hidden_holder",
+      "definition": "conditioned_mean_q - baseline_mean_q",
+      "use": "Rank holder/domino pairs by expected outcome impact."
+    },
+    {
+      "name": "top_k_hidden_holdings_by_abs_impact",
+      "definition": "top rows per decision/action by impact_score",
+      "use": "Inspectable labels for reports and trace review."
+    },
+    {
+      "name": "impact_weighted_belief_calibration",
+      "definition": "belief error for a hidden holder/domino assignment weighted by abs(mean_q_delta) and threshold-mass deltas",
+      "use": "Evaluate whether learned beliefs concentrate probability on tactically important uncertainty, not just average ownership."
+    }
+  ],
+  "known_gaps": [
+    "The first-pass script uses fixed thresholds and should become bid-aware when bid_value is consistently present.",
+    "Aggregate E[Q] PDFs alone cannot support this attribution; q_per_world and world_hands must be regenerated or preserved.",
+    "Posterior-weighted saved worlds need explicit per-world weights before weighted attribution can be exact."
+  ]
+}
