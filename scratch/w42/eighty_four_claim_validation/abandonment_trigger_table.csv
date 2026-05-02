@@ -1,0 +1,6 @@
+abandon_when,asset_before,current_artifact_status,trigger
+"all higher same-suit target tiles are public-played, held by bidder, or no longer plausible final offs",live double or same-suit tile that only beats a watched final off,"designed, not replay-measured",watched final-off suit exhausted
+a lone double can no longer beat the bidder's final off because the bidder can force the suit with the double ahead,single saved double in the protected suit,static proxy only; no final-two-trick proof,bidder double-ahead protection revealed/proved
+the lower/upper target role is impossible because target tiles are public-dead or the pair was forced apart,two-tile same-suit pair plus optional protectors,detector map exists; no replay labels,same-suit pair target killed
+"the pair is dead, the watched lead suit is exhausted, or legal follow pressure can no longer force the pair tile",side-suit protector guarding a live pair from forced follow,not measured,protector spent or no longer needed
+partner play/discard makes the bidder final-off branch impossible under public evidence,defender asset kept for a final-off branch partner can publicly eliminate,requires belief/replay; not measurable from current v0 artifacts,partner kills target branch
