@@ -1,0 +1,6 @@
+claim_id,check,sample_size,pass_count,status,details
+ch09-doubles-trump-doubles-leave-native-suits,Under doubles-as-trump all doubles are called suit and non-doubles are not.,28,28,supported,doubles become the called suit under declaration id 7
+ch09-doubles-trump-follow-suit-removal,A native double cannot follow its old pip suit after doubles are trump.,7,7,supported,"double-pip tiles are callable trump only, not native-suit followers"
+ch09-no-trump-doubles-remain-native-tops,"Under no-trump, doubles remain in native suits and outrank non-doubles in that suit.",7,7,supported,standard no-trump keeps doubles as suit tops
+ch09-dual-suit-top-protection,Some non-doubles become top tiles in both native suits once doubles leave native suits.,1,1,supported,dual-top non-doubles=6-5
+ch09-no-trump-separate-doubles-suit-variant,"No-trump with doubles as a separate suit is a non-standard variant gate, not standard no-trump.",1,1,supported,"engine declaration ids: doubles-trump=7, doubles-suit variant=8, no-trump=9"
