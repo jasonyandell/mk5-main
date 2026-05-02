@@ -1842,3 +1842,11 @@ Fix in `burl/chat/web/src/App.svelte`:
 - The table has 140 decision-state rows and 346 legal-action rows from 5 games, with 1000 samples per PDF. It reproduces the prior 68 scalar-EV omission decisions and adds detector tags for first-trick belief update, late threshold closure, last-to-act closure, defender damage leads, bidder first leads, setter count pressure, and partner donation.
 - The missing columns are explicit: bid amount, bid margin, and hidden-world ownership are not present in the current visualizer JSONL. Hidden-threat holder/domino/impact fields remain blank until a joint-world generation pass lands.
 - The table is a schema and slice-analysis artifact, not a training run, W&B run, HF artifact, or claim-ledger verdict.
+
+---
+
+## [2026-05-02 | local | burl/lab first wire run end-to-end]
+
+**Touched pages:** [[burl-lab]] [[burl-chat]] [[log]]
+
+First end-to-end wire run of the burl/lab platform: web → SSE → server :8002 → real `MlxEngine`. Session `d80349b45ad6` committed `domino_id=21 (6-0)` for `harvest_batched_20260425_072910` decision_idx=1 via the `commit_play` envelope, matching the canonical in-process smoke `3dc73cb67bc1`. First live confirmation that the Decision Protocol section is rendered from active `ToolSpec.protocol_phrase` (captured in `scratch/burl-lab-runlogs/rendered-system.txt`), not hand-edited. Full write-up — including the chat-vs-lab structural diff and a sampling-stochastic envelope-miss note from session `8ff6e41fd87e` — at [[burl-lab]] § "First wire run (session d80349b45ad6)".

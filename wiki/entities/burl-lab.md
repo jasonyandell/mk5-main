@@ -177,3 +177,48 @@ The package was first called `burl/harness/` before the team noticed the collisi
 - [[play-adapter-lock-in]] — the structural finding that says post-commit Q&A needs co-training, not stacking; the experimentation platform is the surface for figuring out what that co-training corpus should look like.
 - [[post-commit-q-and-a]] — research direction the workbench is feeding.
 - [[mlx-lm]] — the engine the live `core/engine.py` wraps.
+
+## First wire run (session d80349b45ad6)
+
+**Date:** 2026-05-02. **Session:** `d80349b45ad6` (web → SSE → server :8002 → real `MlxEngine`). **Decision:** `harvest_batched_20260425_072910` decision_idx=1 — `BURL_BREAKS_CONSENSUS`, follow-suit, lead `14 (4-4)`. Journal: `scratch/burl-lab-runlogs/sessions/d80349b45ad6/events.jsonl` (99 events).
+
+**Wire commit.** Tail is the canonical commit-role envelope:
+
+- `EngineToolCall(name=commit_play, args={"domino_id": 21})`
+- `EngineDone(reason=tool_dispatch)`
+- `ToolResult("COMMIT: domino_id=21 recorded")`
+- `EngineCommit(final={"domino_id": 21})`
+- `PhaseExit("in_run")` → `PhaseEnter("post_turn")`
+
+`domino_id=21` is `6-0`. The canonical in-process smoke session `scratch/burl-lab-sessions/3dc73cb67bc1/events.jsonl` committed the same `domino_id=21` for the same harvest+idx — wire and in-process agree on the answer end-to-end.
+
+**Rendered Decision Protocol — first live confirmation.** Captured at `scratch/burl-lab-runlogs/rendered-system.txt`. The "Decision Protocol" section (lines 7–21) is composed verbatim from each active `ToolSpec.protocol_phrase`, grouped by `protocol_role` (`_ROLE_ORDER = ("first_read", "candidate_eval", "diagnostic", "commit")` in `core/render.py`):
+
+```
+## Decision Protocol
+
+You have access to the following tools. Each tool plays a specific role in the decision loop; use the protocol phrase to decide when to call it.
+
+### first_read
+
+- **belief_trajectory** — Call `belief_trajectory()` once per turn to read the belief state before considering candidate plays.
+
+### candidate_eval
+
+- **explore_game** — Call `explore_game(play=X)` for each candidate play to sample its outcome distribution.
+
+### commit
+
+- **commit_play** — When you've decided, call `commit_play(domino_id=X)` once to play it. Do not call other tools after committing.
+```
+
+Only three of the four canonical roles appear. There is no `diagnostic`-role tool in the base set, so `core/render.py` skips that subsection — that is the rendered behavior, not a bug. Add a `diagnostic` ToolSpec to the active set and the next render will name it; remove a tool and the section shrinks. This is the first live confirmation that the Decision Protocol is rendered, not hand-edited.
+
+**Chat-vs-lab structural diff.** No live A/B was run for this decision — `burl/chat` was not booted (out of scope: heavy second model copy). The platforms differ by construction:
+
+- **burl/chat:** the protocol-instruction surface is a static template string spliced into the system prompt during prompt assembly. Tools added via the improvised registry don't change the protocol section unless the template is also edited. This is the [[burl-chat]] "necessary but insufficient" framing — the executor pattern is in place but the registry and the prompt are not coupled, so adoption is a separate manual step.
+- **burl/lab:** the protocol section is `core/render.py` walking the active `ToolSpec` set every step, grouped by `protocol_role`. Tools selected and registered via `ToolResult.next_tools` (HATEOAS) appear in the next render's protocol section automatically. The Decision Protocol section is whatever the active tools say it is.
+
+This is the structural answer to the [[burl-chat-spike]] adoption asymmetry — `play_brief` sat unused in burl-chat because the protocol text named only `explore_game(play=X)` literally. With rendered protocol text, the adoption gap closes by construction: there is no static template to drift out of sync with the registry.
+
+**Sampling-stochastic note.** A pre-existing failed session for the same harvest+idx, `scratch/burl-lab-runlogs/sessions/8ff6e41fd87e/`, reasoned to `domino_id=21` but emitted it in plaintext, missing the `<|tool_call>` envelope — the engine never dispatched. Same answer (correct domino), missed envelope (no commit). Two-of-two on the answer; one-of-two on syntactic compliance for un-adapted base Gemma 4 E2B BF16. Exactly the kind of empirical observation this platform is built to make. Tracked under follow-up bead for envelope-adoption rate measurement.

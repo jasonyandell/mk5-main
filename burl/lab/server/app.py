@@ -52,6 +52,7 @@ from burl.lab.core.transcript import (
 )
 from burl.lab.phases import PHASES
 
+from .ctx import build_ctx_for_session
 from .stream import sse_from_async_iter
 
 log = logging.getLogger(__name__)
@@ -283,6 +284,23 @@ async def post_move(req: MoveRequest):
     engine = app_state.get("engine")
     should_drive = new_state.phase == "in_run" and engine is not None
 
+    # Per-session ctx cache — base tools require a real WaxContext.
+    # Built lazily on first drive by replaying the journal for the most
+    # recent load_decision UserChoice. See server/ctx.py and bead t42-xhnl
+    # follow-up: ctx construction belongs in a phase, not server here.
+    ctx: Any = None
+    if should_drive:
+        ctx_cache: dict = app_state.setdefault("ctx_cache", {})
+        ctx = ctx_cache.get(sid)
+        if ctx is None:
+            try:
+                ctx = build_ctx_for_session(state.session_dir)
+            except Exception as exc:  # noqa: BLE001
+                log.exception("[lab] ctx build failed for session %s", sid)
+                ctx = None
+            if ctx is not None:
+                ctx_cache[sid] = ctx
+
     async def gen() -> AsyncIterator[Any]:
         for mv in pre_drive_transitions:
             yield mv
@@ -292,7 +310,7 @@ async def post_move(req: MoveRequest):
 
         last_emitted: Any = None
         try:
-            async for mv in drive(new_state, registry, engine):
+            async for mv in drive(new_state, registry, engine, ctx=ctx):
                 append(state.session_dir, mv)
                 last_emitted = mv
                 yield mv
