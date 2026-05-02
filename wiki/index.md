@@ -156,6 +156,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-probe|gus-probe]] — interpretability probes on v3-10k; counterfactual V oracle agreement ±0.5 Q-pts; 6-6 impact trumpness-gated; game structure internalized (active)
 - [[experiments/gus-strategy-tags-probe|gus-strategy-tags-probe]] — Winning 42 strategy tags promoted into Gus probe; 28k early-decision tiny model improves 2.012→1.181 regret, but `E[Q] N=10` remains boss at 0.167 (active)
 - [[experiments/winning42-strategy-measurement|winning42-strategy-measurement]] — book-derived strategy concepts harvested as measurable Gus/Burl/forge hypotheses, with chapter pages and a supported/contradicted claim ledger (active)
+- [[experiments/w42-wandb-run-comparison-dashboard|w42-wandb-run-comparison-dashboard]] — reusable W&B view definition plus direct links for raw/v0/rich, smoke, claim-validation, diagnostic, superseded, and failed w42 runs (active)
 - [[experiments/w42-rich-tag-many-signal-probe|w42-rich-tag-many-signal-probe]] — rich public tag probe: many cheap chapter-bucket signals narrowly beat v0 on the small split, with live W&B provenance (active)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
 - [[experiments/winning42-ch02-bidding|winning42-ch02-bidding]] — bidding-as-risk-budget detectors from Winning 42 Chapter 2 (active)

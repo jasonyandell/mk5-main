@@ -1,0 +1,166 @@
+{
+  "schema_version": "w42.wandb_run_comparison_dashboard.v1",
+  "created_for_bead": "t42-csw6.26",
+  "wandb_api_status": {
+    "project": "jasonyandell-forge42/w42",
+    "api_checked": true,
+    "api_result": "ok",
+    "credentials_source": "/Users/jason/.netrc",
+    "run_count_returned": 10,
+    "programmatic_workspace_or_report_creation": "not available locally; wandb_workspaces is not installed"
+  },
+  "project_links": {
+    "project": "https://wandb.ai/jasonyandell-forge42/w42",
+    "primary_rich_run": "https://wandb.ai/jasonyandell-forge42/w42/runs/3xyy2dxr",
+    "primary_84_run": "https://wandb.ai/jasonyandell-forge42/w42/runs/vmta9zew",
+    "useful_failure_run": "https://wandb.ai/jasonyandell-forge42/w42/runs/oizyjty5"
+  },
+  "recommended_view": {
+    "name": "w42 run comparison",
+    "entity": "jasonyandell-forge42",
+    "project": "w42",
+    "filters": [
+      {
+        "field": "tags",
+        "operator": "contains",
+        "value": "w42"
+      }
+    ],
+    "group_by": [
+      "group",
+      "config.bead_id"
+    ],
+    "sort": [
+      {
+        "field": "created_at",
+        "direction": "asc"
+      }
+    ],
+    "include_states": [
+      "finished",
+      "failed",
+      "crashed"
+    ],
+    "columns": [
+      "name",
+      "id",
+      "state",
+      "group",
+      "tags",
+      "config.bead_id",
+      "config.git_sha",
+      "summary.status",
+      "summary.best_mean_regret",
+      "summary.best_match_rate",
+      "summary.best_tail_regret_rate_ge_5",
+      "summary.ruleset_supported",
+      "summary.ruleset_checks/failed",
+      "summary.failure/type",
+      "summary.failure/message",
+      "created_at",
+      "url"
+    ],
+    "panels": [
+      {
+        "title": "Model comparison: best mean regret",
+        "type": "line_or_bar",
+        "x": "config.bead_id",
+        "y": "summary.best_mean_regret",
+        "runs": [
+          "wv7pkuco",
+          "3xyy2dxr",
+          "c5x85xfx"
+        ]
+      },
+      {
+        "title": "Model comparison: match rate",
+        "type": "line_or_bar",
+        "x": "config.bead_id",
+        "y": "summary.best_match_rate",
+        "runs": [
+          "3xyy2dxr",
+          "c5x85xfx"
+        ]
+      },
+      {
+        "title": "Failures and superseded runs",
+        "type": "table",
+        "filters": [
+          "state != finished OR tags contains diagnostic OR run_id in [c5x85xfx,w4wupdih]"
+        ],
+        "columns": [
+          "name",
+          "state",
+          "summary.status",
+          "summary.failure/type",
+          "summary.failure/message",
+          "url"
+        ]
+      },
+      {
+        "title": "Claim validation runs",
+        "type": "table",
+        "filters": [
+          "tags contains strategy-validation"
+        ],
+        "columns": [
+          "config.bead_id",
+          "name",
+          "group",
+          "summary.status",
+          "summary.ruleset_supported",
+          "summary.ruleset_checks/failed",
+          "url"
+        ]
+      }
+    ]
+  },
+  "tag_conventions": {
+    "required": [
+      "w42",
+      "winning42",
+      "strategy-validation",
+      "scratch"
+    ],
+    "model_feature_tags": [
+      "raw-public-state",
+      "v0-strategy-tags",
+      "rich-tags",
+      "many-signal"
+    ],
+    "claim_bucket_tags": [
+      "setter-defense",
+      "pounce-window",
+      "eighty-four",
+      "doubles",
+      "no-trump",
+      "scoring",
+      "tournament",
+      "trump-pressure",
+      "off-protection"
+    ],
+    "lineage_tags": [
+      "t42-csw6.10",
+      "t42-csw6.11",
+      "t42-csw6.12",
+      "t42-csw6.20",
+      "t42-csw6.21",
+      "t42-csw6.22",
+      "t42-csw6.23",
+      "t42-csw6.26"
+    ],
+    "recommended_additions_for_future_runs": [
+      "primary",
+      "superseded",
+      "diagnostic",
+      "failure",
+      "claim-validation",
+      "smoke"
+    ]
+  },
+  "local_artifacts": {
+    "comparison_csv": "scratch/w42/wandb_run_comparison_dashboard/run_comparison.csv",
+    "readme": "scratch/w42/wandb_run_comparison_dashboard/README.md",
+    "wiki_report": "wiki/experiments/w42-wandb-run-comparison-dashboard.md"
+  }
+}
