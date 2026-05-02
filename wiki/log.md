@@ -1882,3 +1882,18 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 - The E[Q] generator now uses recorded `bid_value` for p_make thresholds, and the atlas computes threshold mass / hidden-threat shelf mass from each recorded bid value. Bid 30 behavior is preserved and tested.
 - W&B run `7fwi2zwn` logs repeated progress points for the scaled report, including action rows, hidden-threat rows, branch rates, coverage, and wall time.
 - The scaled v0 artifact still fixes `bid_value=30`; it validates declaration coverage and bid-aware plumbing, not real auction metadata, bid margin, or "bid only enough" strategy claims.
+
+---
+
+## [2026-05-02 | local | burl/lab logged arrows restored]
+
+**Touched pages:** [[burl-lab]] [[logged-arrows]] [[index]] [[log]]
+**Added:** [[logged-arrows]]
+**Updated:** [[burl-lab]] records the Trace-based phase protocol; [[index]] catalogues the topic.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- burl-lab now has an explicit logged-arrow algebra for phase handling: `Trace[O] = (events: tuple[Move, ...], output: O | None)`.
+- Phase handlers no longer append to disk or re-fold state. They return journalable Moves plus an optional next phase; the server interprets the trace by appending, streaming, folding, and materializing phase transitions.
+- The narrower `WaxContext`-in-server cleanup remains a symptom; the deeper invariant is that harness steps compose by returning logs plus optional outputs rather than by smuggling side effects through phase code.

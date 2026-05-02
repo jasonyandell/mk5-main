@@ -14,11 +14,12 @@
    recovered by `fold(replay(session_dir), registry)`. There is no in-memory
    master; the journal is the source of truth.
 
-2. **Phase is a pure state machine.** Five phases planned (first pass: `pre_game`,
+2. **Phase is a logged arrow.** Five phases planned (first pass: `pre_game`,
    `in_run`). Each phase implements `render(state) -> Frame`,
-   `options(state) -> [Option]`, `async handle(state, move) -> (state', next_phase)`.
-   The model never sees the phase machinery — it only sees the messages each
-   phase produces.
+   `options(state) -> [Option]`, `async handle(state, move) -> Trace[str]`.
+   The trace carries journalable `Move`s plus an optional next phase. Phases do
+   not append or re-fold; the runtime interprets the trace. The model never sees
+   the phase machinery — it only sees the messages each phase produces.
 
 3. **Engine is a pure async generator.** `step(messages, tools) -> AsyncIterator[Event]`.
    It knows nothing about phases, sessions, harvests, or UI. Yields a strict
@@ -58,6 +59,7 @@ burl/lab/
   SPEC.md                       <-- this file
   core/
     __init__.py
+    arrow.py                    # Trace algebra: journalable events + optional output
     transcript.py               # Stamp, Move union, Frame, Option, State, append/replay/fold
     tool.py                     # ToolSpec, ToolResult, Registry
     phase.py                    # Phase Protocol, PHASES registry
@@ -106,6 +108,25 @@ the engine is in.
 ---
 
 ## Canonical types
+
+### `core/arrow.py`
+
+`Trace` is the small algebraic result every phase handler returns:
+
+```python
+@dataclass(frozen=True)
+class Trace(Generic[O]):
+    events: tuple[Move, ...] = ()
+    output: O | None = None
+
+    def then(self, fn: Callable[[O], Trace[P]]) -> Trace[P]: ...
+```
+
+Read it as `input -> (journalable Moves, optional output)`. Composition
+concatenates `events`; when `output is None`, the next arrow is skipped but the
+events already produced remain durable. The runtime owns interpretation:
+append the events, re-fold state from `events.jsonl`, then route on the optional
+output.
 
 ### `core/transcript.py`
 
@@ -260,12 +281,16 @@ class Phase(Protocol):
     name: str
     def render(self, state: State) -> Frame: ...
     def options(self, state: State) -> list[Option]: ...
-    async def handle(self, state: State, move: Move) -> tuple[State, str | None]: ...
+    async def handle(self, state: State, move: Move) -> Trace[str]: ...
 
 PHASES: dict[str, Phase] = {}
 
 def register(p: Phase) -> None: PHASES[p.name] = p
 ```
+
+`Trace.output` is the optional next phase name. `Trace.events` are the only
+state changes a phase requests. A phase handler must not call `append()` or
+`fold()`; that makes the server/smoke runner the only journal interpreter.
 
 ### `core/engine.py` — engine agent's contract
 

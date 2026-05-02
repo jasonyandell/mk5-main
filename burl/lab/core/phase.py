@@ -5,7 +5,7 @@ A Phase is a pure state machine vertex. Each phase implements:
 - `name: str`
 - `render(state) -> Frame`           — view for the UI
 - `options(state) -> list[Option]`   — what the user can pick next
-- `async handle(state, move) -> (state', next_phase | None)`
+- `async handle(state, move) -> Trace[str]`
 
 Phases are HARNESS-PRIVATE — the model sees only the messages the phase
 produces, never the phase identifier or transition logic.
@@ -13,9 +13,13 @@ produces, never the phase identifier or transition logic.
 
 from __future__ import annotations
 
-from typing import Awaitable, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from .arrow import Trace
 from .transcript import Frame, Move, Option, State
+
+if TYPE_CHECKING:
+    from .tool import Registry
 
 
 @runtime_checkable
@@ -27,8 +31,11 @@ class Phase(Protocol):
     def options(self, state: State) -> list[Option]: ...
 
     async def handle(
-        self, state: State, move: Move
-    ) -> tuple[State, str | None]: ...
+        self,
+        state: State,
+        move: Move,
+        registry: "Registry | None" = None,
+    ) -> Trace[str]: ...
 
 
 PHASES: dict[str, Phase] = {}

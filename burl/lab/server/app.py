@@ -10,10 +10,10 @@ Endpoints:
   ``{"session_id": str, "move": {"kind": ..., ...}}``.
 
 State is reconstructed via ``fold(replay(session_dir))`` — the journal IS
-the snapshot.  Phase handlers journal their own config Moves; this server
-just orchestrates: it appends the incoming user Move, calls ``handle``,
-synthesises ``PhaseExit``/``PhaseEnter`` when the phase changes, and
-optionally drives the engine.
+the snapshot. Phase handlers return trace Moves; this server interprets them:
+it appends the incoming user Move, appends returned trace events, synthesises
+``PhaseExit``/``PhaseEnter`` when the phase changes, and optionally drives the
+engine.
 
 Sessions live at ``$BURL_HARNESS_SESSION_ROOT`` (default
 ``~/.cache/burl-harness/<session_id>/``). Port 8002 by default to avoid
@@ -250,9 +250,10 @@ async def post_move(req: MoveRequest):
     Flow:
       1. Load State by folding the existing journal.
       2. Decode the incoming move and append it to the journal.
-      3. Run the current phase's ``handle`` — it journals its own config
-         Moves and returns ``(new_state, next_phase | None)``.
-      4. If the phase changed, journal PhaseExit/PhaseEnter.
+      3. Run the current phase's ``handle`` — it returns journalable
+         trace events plus an optional next phase.
+      4. Journal the returned trace events; if the phase changed, journal
+         PhaseExit/PhaseEnter.
       5. If we're now in_run with an engine available, drive the engine
          (drive() journals its own engine + tool Moves).  After drive
          returns, call the phase's ``handle`` again with the **last
@@ -272,13 +273,17 @@ async def post_move(req: MoveRequest):
     if phase is None:
         raise HTTPException(status_code=500, detail=f"unknown phase: {state.phase}")
 
-    new_state, next_phase_name = await phase.handle(state, incoming, registry)  # type: ignore[call-arg]
+    trace = await phase.handle(state, incoming, registry)  # type: ignore[call-arg]
+    for mv in trace.events:
+        append(state.session_dir, mv)
+    new_state = _load_state(sid, registry)
+    next_phase_name = trace.output
 
-    pre_drive_transitions: list = []
+    pre_drive_moves: list = list(trace.events)
     if next_phase_name and next_phase_name != state.phase:
-        pre_drive_transitions = _journal_phase_transition(
+        pre_drive_moves.extend(_journal_phase_transition(
             state.session_dir, state.phase, next_phase_name, new_state
-        )
+        ))
         new_state = _load_state(sid, registry)
 
     engine = app_state.get("engine")
@@ -295,14 +300,14 @@ async def post_move(req: MoveRequest):
         if ctx is None:
             try:
                 ctx = build_ctx_for_session(state.session_dir)
-            except Exception as exc:  # noqa: BLE001
+            except Exception:  # noqa: BLE001
                 log.exception("[lab] ctx build failed for session %s", sid)
                 ctx = None
             if ctx is not None:
                 ctx_cache[sid] = ctx
 
     async def gen() -> AsyncIterator[Any]:
-        for mv in pre_drive_transitions:
+        for mv in pre_drive_moves:
             yield mv
 
         if not should_drive:
@@ -328,14 +333,20 @@ async def post_move(req: MoveRequest):
         post_phase = PHASES.get(post_state.phase or "")
         if post_phase is None:
             return
-        _, post_next = await post_phase.handle(post_state, last_emitted, registry)  # type: ignore[call-arg]
+        post_trace = await post_phase.handle(post_state, last_emitted, registry)  # type: ignore[call-arg]
+        for mv in post_trace.events:
+            append(state.session_dir, mv)
+            yield mv
+        if post_trace.events:
+            post_state = _load_state(sid, registry)
+        post_next = post_trace.output
         if post_next and post_next != post_state.phase:
             for mv in _journal_phase_transition(
                 state.session_dir, post_state.phase, post_next, post_state
             ):
                 yield mv
 
-    return EventSourceResponse(sse_from_async_iter(gen()))
+    return EventSourceResponse(sse_from_async_iter(gen()), sep="\n")
 
 
 def _journal_phase_transition(

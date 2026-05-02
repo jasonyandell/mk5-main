@@ -364,7 +364,12 @@ async def _run() -> int:
         post_state = fold(list(replay(session_dir)), session_dir=session_dir, registry=registry)
         post_phase = PHASES.get(post_state.phase or "")
         if post_phase is not None:
-            _, post_next = await post_phase.handle(post_state, last_emitted, registry)
+            post_trace = await post_phase.handle(post_state, last_emitted, registry)
+            for mv in post_trace.events:
+                append(session_dir, mv)
+            if post_trace.events:
+                post_state = fold(list(replay(session_dir)), session_dir=session_dir, registry=registry)
+            post_next = post_trace.output
             if post_next and post_next != post_state.phase:
                 exit_mv = PhaseExit(stamp=now_stamp(post_state), phase=post_state.phase)
                 enter_mv = PhaseEnter(stamp=now_stamp(post_state), phase=post_next)

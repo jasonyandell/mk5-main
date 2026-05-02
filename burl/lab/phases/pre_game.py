@@ -6,9 +6,8 @@ registry (name, role, protocol_phrase) with checkboxes for which are
 advertised. The user can also load a decision from a harvest dir, which
 seeds the first user message and transitions to ``in_run``.
 
-Phase handlers journal their effects as Moves directly to ``events.jsonl``
-via ``transcript.append``, then re-fold to produce the next State.  The
-journal is the source of truth — there is no in-memory side state.
+Phase handlers return effects as Moves in a ``Trace``. The server journals
+those Moves; there is no in-memory side state.
 """
 
 from __future__ import annotations
@@ -17,6 +16,7 @@ import json
 import os
 from pathlib import Path
 
+from burl.lab.core.arrow import Trace
 from burl.lab.core.render import render_system
 from burl.lab.core.tool import Registry
 from burl.lab.core.transcript import (
@@ -30,10 +30,7 @@ from burl.lab.core.transcript import (
     ToolRemoved,
     UserText,
     UserChoice,
-    append,
-    fold,
     now_stamp,
-    replay,
 )
 
 DEFAULT_HARVEST_ROOT = "scratch/belief_trajectory_rollout"
@@ -136,20 +133,13 @@ class _PreGamePhase:
         state: State,
         move: Move,
         registry: Registry | None = None,
-    ) -> tuple[State, str | None]:
-        """Journal config Moves to events.jsonl, then re-fold.
-
-        The handler does NOT mutate `state` directly — it appends config
-        Moves (SystemSet, AdvertisedSet, ToolAdded, ToolRemoved, UserText)
-        to the journal and re-folds.  This keeps `fold(replay(...))`
-        total: the journal IS the snapshot.
-        """
+    ) -> Trace[str]:
+        """Return config Moves to journal; do not mutate or write State."""
         if not isinstance(move, UserChoice):
-            return state, None
+            return Trace()
 
         opt = move.option_name
         args = dict(move.args)
-        registry = registry or _default_registry()
         new_moves: list[Move] = []
 
         if opt == "set_system":
@@ -159,7 +149,7 @@ class _PreGamePhase:
         elif opt == "add_tool":
             name = str(args.get("name", ""))
             if not name:
-                return state, None
+                return Trace()
             if name not in state.active_tools:
                 new_moves.append(ToolAdded(stamp=now_stamp(state), name=name))
             new_advertised = list(state.advertised)
@@ -188,18 +178,10 @@ class _PreGamePhase:
             new_moves.append(UserText(stamp=now_stamp(state), text=user_content))
 
         else:
-            return state, None
-
-        for mv in new_moves:
-            append(state.session_dir, mv)
-        new_state = fold(
-            list(replay(state.session_dir)),
-            session_dir=state.session_dir,
-            registry=registry,
-        )
+            return Trace()
 
         next_phase = "in_run" if opt == "load_decision" else None
-        return new_state, next_phase
+        return Trace(events=tuple(new_moves), output=next_phase)
 
 
 # ---- helpers ---------------------------------------------------------- #

@@ -11,6 +11,7 @@ just enough to make the post-commit phase reachable so the server doesn't
 
 from __future__ import annotations
 
+from burl.lab.core.arrow import Trace
 from burl.lab.core.tool import Registry
 from burl.lab.core.transcript import (
     Frame,
@@ -53,10 +54,10 @@ class _PostTurnPhase:
         state: State,
         move: Move,
         registry: Registry | None = None,
-    ) -> tuple[State, str | None]:
+    ) -> Trace[str]:
         if isinstance(move, UserChoice) and move.option_name == "start_new_session":
-            return state, "pre_game"
-        return state, None
+            return Trace(output="pre_game")
+        return Trace()
 
 
 POST_TURN = _PostTurnPhase()

@@ -47,6 +47,7 @@ curl -s http://localhost:8002/api/sessions/$SID/frame | jq .
 burl/lab/
   SPEC.md                 canonical contract — read first
   core/
+    arrow.py              Trace algebra: journalable Moves + optional output
     transcript.py         Stamp, Move union, Frame, Option, State, append/replay/fold
     tool.py               ToolSpec, ToolResult, Registry
     phase.py              Phase Protocol + PHASES registry

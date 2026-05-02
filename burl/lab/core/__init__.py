@@ -1,1 +1,1 @@
-"""Core types: transcript (events + state), tool (specs + registry), phase (state machine)."""
+"""Core types: arrows, transcript events, tools, and phases."""

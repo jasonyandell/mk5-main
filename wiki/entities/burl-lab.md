@@ -2,7 +2,7 @@
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
 first_seen: a2db3c7
-last_updated: a2db3c7
+last_updated: local-2026-05-02
 status: active
 ---
 
@@ -14,11 +14,11 @@ Lives entirely under `burl/lab/`. Side-by-side with `burl/chat/` until parity: s
 
 ## Status
 
-Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, and `/api/move` are wired; the three base ToolSpecs (`belief_trajectory`, `explore_game`, `commit_play`) register correctly, and **`events.jsonl` is the only on-disk source of truth**. Phase handlers journal config Moves directly (`SystemSet`, `AdvertisedSet`, `ToolAdded`, `ToolRemoved`, `UserText`); the server's state-load path is just `fold(replay(session_dir))`. Verified by `tests/test_server_smoke.py::test_journal_is_canonical_no_state_json`.
+Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, and `/api/move` are wired; the three base ToolSpecs (`belief_trajectory`, `explore_game`, `commit_play`) register correctly, and **`events.jsonl` is the only on-disk source of truth**. Phase handlers are now [[logged-arrows]]: `handle(state, move)` returns a `Trace[str]` carrying journalable Moves (`SystemSet`, `AdvertisedSet`, `ToolAdded`, `ToolRemoved`, `UserText`, etc.) plus an optional next phase. The server interprets that trace by appending its Moves, re-folding from `events.jsonl`, and materializing any phase transition. Verified by `tests/test_phase_arrow.py` and `tests/test_server_smoke.py::test_journal_is_canonical_no_state_json`.
 
 15/15 fast tests pass across `tests/test_{transcript_roundtrip,engine_smoke,tools_base,render,drive_with_fake_engine,server_smoke}.py`, plus one slow MLX smoke (gated, runs against a real Gemma 4 E2B load). Real MLX engine integration is wired in `core/engine.py` ([burl/lab/core/engine.py @ a2db3c7](../sources/a2db3c7.md)), including a fix for an upstream `mlx_lm` module-level `generation_stream` bug — rebound via `sys.modules["mlx_lm.generate"]` after `load()` inside the executor thread. See [[mlx-lm]] "Upstream bug: module-level generation_stream" for the full diagnosis and the submodule-shadowing trap.
 
-**Phase ownership of transitions.** Drive is engine-shaped — it does not mint `PhaseExit`/`PhaseEnter` Moves. The server is transition-shaped — it journals exit/enter when a phase's `handle()` returns a non-`None` `next_phase`. After a commit-role tool dispatches in `in_run`, drive synthesizes `EngineCommit`, the server calls `in_run.handle(state, EngineCommit)` which returns `next_phase="post_turn"`, and the server appends `PhaseExit("in_run") + PhaseEnter("post_turn")`. `post_turn` renders the committed-session segments and offers `start_new_session` → `pre_game`.
+**Phase ownership of transitions.** Drive is engine-shaped — it does not mint `PhaseExit`/`PhaseEnter` Moves. The server is transition-shaped — it journals exit/enter when a phase trace's `output` is a next phase. After a commit-role tool dispatches in `in_run`, drive synthesizes `EngineCommit`, the server calls `in_run.handle(state, EngineCommit)` which returns `Trace(output="post_turn")`, and the server appends `PhaseExit("in_run") + PhaseEnter("post_turn")`. `post_turn` renders the committed-session segments and offers `start_new_session` → `pre_game`.
 
 ## Architecture
 
@@ -28,15 +28,15 @@ Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPE
 
 A session is `events.jsonl` on disk. State is recovered by `fold(replay(session_dir), registry)`. There is no in-memory master; the journal is the source of truth. Every Move is one JSON line: `kind` discriminator + `Stamp` + flat payload. See `core/transcript.py`.
 
-### 2. Phase is a pure state machine
+### 2. Phase is a logged arrow
 
 Five phases planned (`empty`, `pre_game`, `in_run`, `post_turn`, `post_session`); current cut ships `pre_game` + `in_run` + `post_turn`. Each phase implements:
 
 - `render(state) -> Frame`
 - `options(state) -> [Option]`
-- `async handle(state, move) -> (state', next_phase)`
+- `async handle(state, move) -> Trace[str]`
 
-Phases are **harness-private**. The model never sees phase identifiers or transitions — only the messages a phase produces. See `core/phase.py` for the Protocol; `phases/{pre_game,in_run,post_turn}.py` for the implementations. Drive is engine-shaped only; the server owns `PhaseExit`/`PhaseEnter` Moves whenever a `handle()` returns a non-`None` `next_phase`.
+`Trace` is the algebra the arrows thread through the harness: `events: tuple[Move, ...]` plus `output: str | None`. Composition concatenates events; absent output stops the next arrow while keeping the emitted logs. Phases are **harness-private** and side-effect-free with respect to disk: they do not append or re-fold. The model never sees phase identifiers or transitions — only the messages a phase produces. See `core/arrow.py` and `core/phase.py` for the Protocol; `phases/{pre_game,in_run,post_turn}.py` for implementations. Drive is engine-shaped only; the server owns `PhaseExit`/`PhaseEnter` Moves whenever a phase trace outputs a next phase.
 
 ### 3. Engine is a pure async generator
 
@@ -102,6 +102,7 @@ burl/lab/
   SPEC.md                       # canonical contract
   core/
     transcript.py               # Stamp, Move union, Frame, Option, State, append/replay/fold
+    arrow.py                    # Trace algebra: journalable events + optional output
     tool.py                     # ToolSpec, ToolResult, Registry
     phase.py                    # Phase Protocol, PHASES registry
     engine.py                   # async step(messages, tools) generator

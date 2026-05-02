@@ -5,12 +5,13 @@ The render shows live segments + a timing ribbon.  Options let the user
 interject text, abort, or select a tool that the previous ToolResult
 surfaced via ``next_tools``.
 
-Phase handlers journal config Moves to ``events.jsonl`` directly (via
-``transcript.append``) and re-fold the State.  No in-memory side state.
+Phase handlers return config Moves in a ``Trace``. The server journals those
+Moves; there is no in-memory side state.
 """
 
 from __future__ import annotations
 
+from burl.lab.core.arrow import Trace
 from burl.lab.core.tool import Registry
 from burl.lab.core.transcript import (
     AdvertisedSet,
@@ -21,10 +22,7 @@ from burl.lab.core.transcript import (
     State,
     UserChoice,
     UserText,
-    append,
-    fold,
     now_stamp,
-    replay,
 )
 
 
@@ -86,16 +84,15 @@ class _InRunPhase:
         state: State,
         move: Move,
         registry: Registry | None = None,
-    ) -> tuple[State, str | None]:
-        """Apply a move and (optionally) signal a phase transition.
+    ) -> Trace[str]:
+        """Return journalable effects and optionally signal a phase transition.
 
         Observes the terminal ``EngineCommit`` Move that ``drive`` yields
         on a commit-role tool dispatch, and returns
-        ``next_phase="post_turn"``.  The server is responsible for
+        ``output="post_turn"``.  The server is responsible for
         journaling PhaseExit/PhaseEnter from that decision — drive is
         engine-shaped, the phase is transition-shaped.
         """
-        registry = registry or Registry()
         new_moves: list[Move] = []
         next_phase: str | None = None
 
@@ -106,7 +103,7 @@ class _InRunPhase:
             next_phase = "post_turn"
 
         elif isinstance(move, UserText):
-            new_moves.append(UserText(stamp=now_stamp(state), text=move.text))
+            return Trace()
 
         elif isinstance(move, UserChoice):
             opt = move.option_name
@@ -127,17 +124,7 @@ class _InRunPhase:
                         AdvertisedSet(stamp=now_stamp(state), names=new_advertised)
                     )
 
-        if not new_moves and next_phase is None:
-            return state, None
-
-        for mv in new_moves:
-            append(state.session_dir, mv)
-        new_state = fold(
-            list(replay(state.session_dir)),
-            session_dir=state.session_dir,
-            registry=registry,
-        )
-        return new_state, next_phase
+        return Trace(events=tuple(new_moves), output=next_phase)
 
 
 IN_RUN = _InRunPhase()
