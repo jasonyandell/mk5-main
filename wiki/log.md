@@ -1639,3 +1639,34 @@ The second: **[[count-vs-pip-sum-confusion]]**, a separable rules-grounding bug.
 - Will Burl ask for a count-ledger tool on a future decision, or does the count-vs-pip-sum confusion remain invisible to him because his pip-sum heuristic happens to land on the right answer often enough?
 - What's the minimum protocol-text patch that gets `play_brief` into rotation? "Call `play_brief(play=X)` to examine a candidate" as a one-line replacement for the existing `explore_game` reference would be the natural test.
 - Is there a third workbench mode — *patch-and-rerun*, where the user can edit the system prompt's protocol section before the rerun streams — that closes the adoption gap without code changes? Worth prototyping if the protocol-text lever pans out on the play_brief case.
+
+---
+
+## [2026-05-01 | unstaged | autoFillFromHarvest silent-fallback bug + reflection-deafness]
+
+Third wave on `burl-chat`. One real bug fixed, one structural finding documented.
+
+**Bug fix: `autoFillFromHarvest` silent wrong-args fallback.** When Burl emitted `explore_game(play=X)` for any X that wasn't in the harvest's recorded tool calls, the workbench's stream-end handler pre-populated the manual-review draft with the *first* matching `tool_result` by tool name, regardless of args. For decision #0 the harvest only recorded `explore_game(play=14)`, so every rerun-fresh `explore_game(play=25)` or `(play=20)` got pre-filled with the play=14 prose. The user clicked "feed" without re-reading; Burl reasoned over fabricated outcome distributions thinking he had explored multiple candidates. Three different play arguments returned identical output in one shared trace. Symptom-equivalent to a hard wiring bug, mechanism is a UX-quality lapse: the auto-filled wrong-args response is structurally identical to a real response and only became visible when one trace happened to call `explore_game` with three different args in a row.
+
+Fix in `burl/chat/web/src/App.svelte`:
+- `autoFillFromHarvest` returns `null` on args mismatch (caller fetches live or the user supplies manually).
+- `explore_game`, `probe_best_case`, `probe_worst_case` joined `AUTO_SERVE_BASE` so they live-dispatch instead of going through the harvest-fallback path. Trade-off: live samples are not byte-identical to what the harvest recorded (N=20 fresh resample), so join-at-end mode no longer reproduces the harvest's exact numbers — but it always returns correct numbers for the actual args. For exact reproduction the user reads the events panel directly; the chat path is now correct-by-args, not faithful-to-harvest.
+
+**Topic added: [[burl-reflection-deafness]].** During the same trace the user injected (via harness free-text feedback routed back as a `commit_play` tool_result): *"that is not the best play. why?"* Burl's response: zero engagement. Re-ran `explore_game`, re-probed, re-committed `14`. Three identical commits in a row. The pedagogical opening was absorbed into "the user wants me to do my decision job again." This is [[play-adapter-lock-in]]'s third symptom (alongside the wishlist's tool-spec response shape and the post-commit primer's load-bearing role). Implication for [[post-commit-q-and-a]]: the eventual training corpus has to include reflection turns explicitly, since the current model cannot produce them organically.
+
+**Touched pages:** [[experiments/burl-chat-spike]] [[topics/burl-reflection-deafness]] [[index]] [[log]]
+
+**Added:** 1 page — 1 topic (`burl-reflection-deafness`).
+
+**Updated:**
+- [[experiments/burl-chat-spike]] — appended a "Third wave" subsection covering the autoFill bug, fix, and reflection-deafness observation.
+- [[index]] — catalogued the new topic.
+
+**Frontier shift:**
+- Past `BURL_BREAKS_CONSENSUS` analyses that *appeared* to show Burl exploring multiple candidates and selecting the best one need re-examination if they came from join-at-end chat sessions where the harvest didn't record the explored args. The autoFill silently produced uniform output. Going forward, `play_brief`'s headline (which always names the actual play in its first line) is the cheap diagnostic — if every `play_brief` in a trace shows the same `PLAY: X(p-p)` regardless of input arg, the bug regression is back.
+- Reflection-deafness reframes a chunk of the post-commit-Q&A corpus question. We can't bootstrap reflections from organic chat with the current model; either hand-write from Roberson chapters 2-8 (canonical voice) or distill from a stronger model.
+
+**Questions opened:**
+- Does the [[iter3-rules-adapter]] (which we still haven't pulled locally) suffer reflection-deafness too, or is its less-aggressive distillation enough to engage with "why?" prompts?
+- Does a system-prompt patch — e.g., *"if the user asks you a question instead of giving you a state, answer the question; do not call tools"* in the protocol section — close the deafness, or does the trained pattern override even that explicit instruction (parallel to the [[chat-mode-primer]] vs adapter lock-in case)?
+- Now that `explore_game` outputs are trustworthy in rerun-fresh, is there a measurable regret delta when Burl is rerun on `BURL_BREAKS_CONSENSUS` decisions with the corrected dispatch? Worth a small N=5 batch to confirm before scaling.

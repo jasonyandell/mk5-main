@@ -60,6 +60,9 @@
     "game_state_snapshot",
     "belief_trajectory",
     "ask_rule",
+    "explore_game",
+    "probe_best_case",
+    "probe_worst_case",
   ]);
   let improvisedTools = $state<{ name: string; description: string; declaration: string }[]>([]);
 
@@ -432,22 +435,20 @@
   }
 
   /** Find a matching tool_result in the harvest events for an open tool_call.
-   *  Match on tool name and (when present) arg equality; falls back to first
-   *  matching tool name if args are different. Returns null if not found. */
+   *  Strict: requires both the tool NAME and the args to match exactly. If
+   *  the args differ, returns null — the caller must fetch live or have the
+   *  user supply the response. The previous "fall back to first matching tool
+   *  name" behaviour silently fed wrong-args data (e.g. explore_game(play=25)
+   *  pre-filled with the harvest's explore_game(play=14) result), which made
+   *  rerun-fresh sessions reason over fabricated outcome distributions. */
   function autoFillFromHarvest(tc: any): string | null {
     const events = loadedDecision?.events;
     if (!events) return null;
-    const matches = events.filter(
-      (e: any) => e.kind === "tool_result" && e.tool === tc.tool,
-    );
-    if (matches.length === 0) return null;
     const argsKey = JSON.stringify(tc.args ?? {});
-    // Prefer the result whose preceding tool_call had the same args.
     for (let i = 0; i < events.length; i++) {
       const e = events[i];
       if (e.kind === "tool_call" && e.tool === tc.tool &&
           JSON.stringify(e.args ?? {}) === argsKey) {
-        // walk forward to next tool_result for this turn
         for (let j = i + 1; j < events.length; j++) {
           if (events[j].kind === "tool_result" && events[j].tool === tc.tool) {
             return events[j].content;
@@ -455,7 +456,7 @@
         }
       }
     }
-    return matches[0].content;
+    return null;
   }
 
   async function feedToolResponse() {

@@ -107,6 +107,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/post-commit-q-and-a|post-commit-q-and-a]] — fourth surface above play-time tools and pre-game commentary: conversational Q&A with Burl after a hand; Roberson chapters 2-8 are the canonical voice anchor (active)
 - [[topics/burl-tool-wishlist|burl-tool-wishlist]] — Burl articulates tool needs through tool-spec plans (lock-in at the meta layer); the *content* of those plans correctly names real failure modes — corpus signal for post-commit Q&A (active)
 - [[topics/count-vs-pip-sum-confusion|count-vs-pip-sum-confusion]] — Burl reads pip-sum as count value; coincides on the 5 count-bearers, silently wrong on the other 16 zero-count non-trumps (active)
+- [[topics/burl-reflection-deafness|burl-reflection-deafness]] — explicit "why?" prompts get parsed as continuation cues and routed back into the tool ritual; third symptom of play-adapter lock-in (active)
 - [[topics/at-risk-points|at-risk-points]] — Roberson's canonical 42 bidding framework: predict losses backwards, offs make-or-break-the-bid, "double ahead of your off"; voice anchor for post-commit Q&A (active)
 
 ## Experiments
