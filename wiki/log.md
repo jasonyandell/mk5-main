@@ -1684,3 +1684,18 @@ Fix in `burl/chat/web/src/App.svelte`:
 **Frontier shift:**
 - [[w42]] now has a live-W&B rich-tag probe on the same small split as the raw and v0 baselines. The many-signal public feature surface narrowly beats v0 on one seed (1.970 vs 2.000 mean regret) and improves raw-final tail risk, but remains report-only and underpowered.
 - The useful signal still concentrates in count/donation and pounce-like proxy windows. True claim movement still waits for multi-seed runs or claim-specific detector/oracle evidence.
+
+---
+
+## [2026-05-02 | local | w42 W&B series logging standard]
+
+**Touched pages:** [[w42-lab-infrastructure]] [[w42-wandb-series-logging-standard]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-wandb-series-logging-standard]].
+**Updated:** [[w42-lab-infrastructure]] now links the named-axis series standard; [[index]] catalogued the page.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- [[w42]] now treats W&B as a trajectory notebook. Any long run with epochs, variants, claims/specs, bootstrap checkpoints, chunks, seeds, or eval checkpoints should log multiple points with a meaningful numeric axis.
+- The shared W&B helper has `log_series_point(...)`; ablations now log generic `variant/*` metrics on `variant/index`, and setter-defense claim validation logs generic `claim/*` metrics on `claim/index`.
+- The live smoke run `xq7q9bar` logged six points across epoch and bootstrap axes at `https://wandb.ai/jasonyandell-forge42/w42/runs/xq7q9bar`.

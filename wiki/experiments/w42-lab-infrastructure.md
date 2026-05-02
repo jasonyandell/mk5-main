@@ -162,6 +162,22 @@ Failure capture:
 - W&B logs `status/failed=1`
 - successful runs set summary `status=completed`
 
+Series logging standard:
+
+- Training scripts log one W&B point per epoch with `epoch` as the explicit
+  axis metric.
+- Ablations log one point per variant with `variant/index` as the explicit axis
+  metric and generic `variant/*` comparison metrics for cross-variant panels.
+- Claim/report scripts that iterate over claim specs log one point per claim or
+  spec with a named axis such as `claim/index`.
+- Bootstrap or statistical scripts with many iterations log checkpointed
+  aggregate points when the bootstrap itself is long enough to matter in W&B.
+- Deterministic one-shot ruleset/report scripts may remain final-only when there
+  is no meaningful trajectory.
+
+The full standard and current script inventory live at
+[[w42-wandb-series-logging-standard]].
+
 Successful smoke command:
 
 ```bash

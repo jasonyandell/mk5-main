@@ -500,15 +500,36 @@ def main() -> int:
     ledger_path.write_text(json.dumps(ledger_delta, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     wb.log({"sample/eval_rows": len(rows), "sample/legal_candidate_actions": summary["sample"]["legal_candidate_actions"]})
-    for row in results:
-        wb.log(
-            {
+    for claim_idx, row in enumerate(results, start=1):
+        wb.log_series_point(
+            axis="claim/index",
+            value=claim_idx,
+            step=claim_idx,
+            metrics={
+                "claim/total": len(results),
+                "claim/preferred_mean_regret": row["preferred_mean_regret"] or 0.0,
+                "claim/alternative_mean_regret": row["alternative_mean_regret"] or 0.0,
+                "claim/paired_decision_n": row["paired_decision_n"],
+                "claim/preferred_oracle_best_decision_rate": row[
+                    "preferred_oracle_best_decision_rate"
+                ]
+                or 0.0,
+                "claim/alternative_oracle_best_decision_rate": row[
+                    "alternative_oracle_best_decision_rate"
+                ]
+                or 0.0,
                 f"{row['claim_id']}/preferred_mean_regret": row["preferred_mean_regret"] or 0.0,
                 f"{row['claim_id']}/alternative_mean_regret": row["alternative_mean_regret"] or 0.0,
                 f"{row['claim_id']}/paired_decision_n": row["paired_decision_n"],
-                f"{row['claim_id']}/preferred_oracle_best_decision_rate": row["preferred_oracle_best_decision_rate"] or 0.0,
-                f"{row['claim_id']}/alternative_oracle_best_decision_rate": row["alternative_oracle_best_decision_rate"] or 0.0,
-            }
+                f"{row['claim_id']}/preferred_oracle_best_decision_rate": row[
+                    "preferred_oracle_best_decision_rate"
+                ]
+                or 0.0,
+                f"{row['claim_id']}/alternative_oracle_best_decision_rate": row[
+                    "alternative_oracle_best_decision_rate"
+                ]
+                or 0.0,
+            },
         )
     wb.update_summary(
         {

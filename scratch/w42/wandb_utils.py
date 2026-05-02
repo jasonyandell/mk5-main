@@ -117,6 +117,23 @@ class WandbRun:
         if self.run is not None:
             self.run.log(metrics, step=step)
 
+    def log_series_point(
+        self,
+        *,
+        axis: str,
+        value: int | float,
+        metrics: dict[str, Any],
+        step: int | None = None,
+    ) -> None:
+        """Log one W&B point with an explicit human-meaningful axis metric."""
+        payload: dict[str, Any] = {axis: value}
+        for key, metric_value in metrics.items():
+            if isinstance(metric_value, bool):
+                payload[key] = float(metric_value)
+            elif isinstance(metric_value, int | float):
+                payload[key] = metric_value
+        self.log(payload, step=step)
+
     def log_metric_groups(self, groups: dict[str, dict[str, Any]], *, step: int | None = None) -> None:
         flat: dict[str, float] = {}
         for prefix, metrics in groups.items():

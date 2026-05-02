@@ -592,6 +592,20 @@ def main() -> int:
         checkpoints[spec["variant"]] = result.pop("checkpoint")
         results.append(result)
         best = result["best_metrics"]
+        wb.log_series_point(
+            axis="variant/index",
+            value=variant_idx,
+            step=variant_idx,
+            metrics={
+                "variant/total": len(specs),
+                "variant/best_mean_regret": best["mean_regret"],
+                "variant/best_match_rate": best["match_rate"],
+                "variant/best_tail_ge_5": best["tail_regret_rate_ge_5"],
+                "variant/best_epoch": result["best_epoch"],
+                "variant/dropped_global_count": len(spec["drop_global"]),
+                "variant/dropped_action_count": len(spec["drop_action"]),
+            },
+        )
         wb.log(
             {
                 f"variant/{spec['variant']}/best_mean_regret": best["mean_regret"],
