@@ -350,7 +350,11 @@ def build_manifest(
         },
         "splits": {
             "policy": "w42-seed-bucket-v1",
-            "train": "seed 42 (42 % 1000 < 900) for fixture mode; corpus rows inherit their source seed split.",
+            "train": (
+                "corpus rows inherit their source seed split"
+                if source_mode == "real-corpus"
+                else "seed 42 (42 % 1000 < 900) for fixture mode"
+            ),
             "val": "not applicable",
             "test": "not applicable",
             "eval": "not applicable",

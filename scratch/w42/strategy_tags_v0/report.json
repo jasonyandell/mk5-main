@@ -1,10 +1,10 @@
 {
   "bead_id": "t42-csw6.7",
-  "source_mode": "fixture",
-  "blocker": "Declared local Gus/Forge corpora are absent in this worktree; using the data-adapter smoke fixture fallback.",
-  "repo_commit": "8df0c3b1f03893cc4c059762de1fa1dd0c84ca06",
+  "source_mode": "real-corpus",
+  "blocker": null,
+  "repo_commit": "e3bfefa7f3f01b32c39b74545badbb6d1b27a642",
   "command": "python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1",
-  "cwd": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-7",
+  "cwd": "/Users/jason/code/mk5-main",
   "random_seeds": {
     "torch": 42,
     "dataset_shuffle": 42,
@@ -15,16 +15,9 @@
   "hf_links": "not applicable",
   "claim_ledger_impact": "no claim-ledger change",
   "data_inputs": [
-    "gus/data/corpus_train_100.pt",
-    "gus/data/corpus_train_chunk_*-*.pt",
-    "gus/data/corpus_v2_train_*_d0-9.pt",
-    "data/eq-games/train",
-    "data/eq-games/val",
-    "data/eq-games/test",
-    "gus/data/corpus_eval_20.pt",
-    "gus/data/corpus_v2_eval.pt"
+    "gus/data/corpus_train_100.pt"
   ],
-  "available_rows": 1,
+  "available_rows": 2800,
   "sampled_rows": 1,
   "shapes": {
     "action_taken": [
@@ -71,7 +64,8 @@
     ],
     "tokens": [
       1,
-      33
+      33,
+      5
     ],
     "voids": [
       1,
@@ -91,96 +85,96 @@
   "global_group_summary": {
     "declaration": {
       "width": 10,
-      "mean": 0.067164,
+      "mean": 0.1,
       "min": 0.0,
-      "max": 0.134328,
-      "nonzero_fraction": 0.9
+      "max": 1.0,
+      "nonzero_fraction": 0.1
     },
     "phase": {
       "width": 3,
-      "mean": 0.164179,
-      "min": 0.149254,
-      "max": 0.179104,
-      "nonzero_fraction": 1.0
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "nonzero_fraction": 0.0
     },
     "hand_shape": {
       "width": 10,
-      "mean": 0.261194,
-      "min": 0.19403,
-      "max": 0.328358,
-      "nonzero_fraction": 1.0
+      "mean": 0.357143,
+      "min": 0.0,
+      "max": 1.0,
+      "nonzero_fraction": 0.6
     },
     "legal_action_summary": {
       "width": 6,
-      "mean": 0.380597,
-      "min": 0.343284,
-      "max": 0.41791,
-      "nonzero_fraction": 1.0
+      "mean": 0.309524,
+      "min": 0.0,
+      "max": 1.0,
+      "nonzero_fraction": 0.5
     },
     "public_count": {
       "width": 5,
-      "mean": 0.462687,
-      "min": 0.432836,
-      "max": 0.492537,
-      "nonzero_fraction": 1.0
+      "mean": 0.314286,
+      "min": 0.0,
+      "max": 1.0,
+      "nonzero_fraction": 0.4
     },
     "void_summary": {
       "width": 4,
-      "mean": 0.529851,
-      "min": 0.507463,
-      "max": 0.552239,
-      "nonzero_fraction": 1.0
+      "mean": 0.0,
+      "min": 0.0,
+      "max": 0.0,
+      "nonzero_fraction": 0.0
     },
     "visible_pip_coverage": {
       "width": 7,
-      "mean": 0.61194,
-      "min": 0.567164,
-      "max": 0.656716,
-      "nonzero_fraction": 1.0
+      "mean": 0.22449,
+      "min": 0.0,
+      "max": 0.428571,
+      "nonzero_fraction": 0.857143
     },
     "current_trick_pressure": {
       "width": 9,
-      "mean": 0.731343,
-      "min": 0.671642,
-      "max": 0.791045,
-      "nonzero_fraction": 1.0
+      "mean": 0.111111,
+      "min": 0.0,
+      "max": 1.0,
+      "nonzero_fraction": 0.111111
     },
     "own_pip_coverage": {
       "width": 7,
-      "mean": 0.850746,
-      "min": 0.80597,
-      "max": 0.895522,
-      "nonzero_fraction": 1.0
+      "mean": 0.22449,
+      "min": 0.0,
+      "max": 0.428571,
+      "nonzero_fraction": 0.857143
     },
     "unseen_count_by_pip": {
       "width": 7,
-      "mean": 0.955224,
-      "min": 0.910448,
-      "max": 1.0,
+      "mean": 0.244898,
+      "min": 0.142857,
+      "max": 0.428571,
       "nonzero_fraction": 1.0
     }
   },
   "action_group_summary": {
     "slot": {
       "width": 2,
-      "mean": 0.785714,
-      "min": 0.0,
+      "mean": 1.0,
+      "min": 1.0,
       "max": 1.0,
-      "nonzero_fraction": 0.785714
+      "nonzero_fraction": 1.0
     },
     "identity": {
       "width": 8,
-      "mean": 0.0625,
+      "mean": 0.308248,
       "min": 0.0,
       "max": 1.0,
-      "nonzero_fraction": 0.107143
+      "nonzero_fraction": 0.428571
     },
     "trick_relation": {
       "width": 6,
-      "mean": 0.0,
+      "mean": 0.166667,
       "min": 0.0,
-      "max": 0.0,
-      "nonzero_fraction": 0.0
+      "max": 1.0,
+      "nonzero_fraction": 0.166667
     },
     "count_pressure": {
       "width": 2,
@@ -191,31 +185,31 @@
     },
     "suit_pressure": {
       "width": 4,
-      "mean": 0.0,
+      "mean": 0.329932,
       "min": 0.0,
-      "max": 0.0,
-      "nonzero_fraction": 0.0
+      "max": 0.833333,
+      "nonzero_fraction": 0.785714
     },
     "pip_pressure": {
       "width": 3,
-      "mean": 0.0,
-      "min": 0.0,
-      "max": 0.0,
-      "nonzero_fraction": 0.0
+      "mean": 0.312925,
+      "min": 0.142857,
+      "max": 0.428571,
+      "nonzero_fraction": 1.0
     },
     "double_protection": {
       "width": 3,
-      "mean": 0.0,
+      "mean": 0.380952,
       "min": 0.0,
-      "max": 0.0,
-      "nonzero_fraction": 0.0
+      "max": 1.0,
+      "nonzero_fraction": 0.380952
     },
     "hand_shape": {
       "width": 2,
-      "mean": 0.0,
-      "min": 0.0,
-      "max": 0.0,
-      "nonzero_fraction": 0.0
+      "mean": 0.336735,
+      "min": 0.142857,
+      "max": 0.428571,
+      "nonzero_fraction": 1.0
     },
     "donation_window": {
       "width": 2,
@@ -227,10 +221,10 @@
   },
   "derived_labels": {
     "oracle_best_action": [
-      1
+      5
     ],
     "action_taken": [
-      1
+      5
     ]
   },
   "artifacts": {

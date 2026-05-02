@@ -2,23 +2,23 @@
   "schema_version": "w42.dataset_manifest.v1",
   "dataset_id": "w42-strategy-tags-v0-20260502",
   "dataset_version": "v0",
-  "created_at": "2026-05-02T02:02:54.837710+00:00",
-  "repo_commit": "8df0c3b1f03893cc4c059762de1fa1dd0c84ca06",
+  "created_at": "2026-05-02T02:04:37.808459+00:00",
+  "repo_commit": "e3bfefa7f3f01b32c39b74545badbb6d1b27a642",
   "owner_bead": "t42-csw6.7",
   "status": "scratch",
   "source_corpora": [
     {
-      "path": "scratch/w42/data_adapter_smoke/example_row.json",
+      "path": "gus/data/corpus_train_100.pt",
       "role": "train",
-      "exists_at_manifest_time": false,
-      "source_kind": "other",
-      "provenance": "Existing w42 data-adapter smoke deterministic fixture fallback.",
+      "exists_at_manifest_time": true,
+      "source_kind": "gus-joint-world",
+      "provenance": "Existing local Gus joint-world corpus loaded with include_strategy_features=True.",
       "split_policy": "w42-seed-bucket-v1"
     }
   ],
   "generation": {
     "command": "python scratch/w42/strategy_tags_v0.py --seed 42 --limit 1",
-    "cwd": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-7",
+    "cwd": "/Users/jason/code/mk5-main",
     "environment": {
       "device": "cpu",
       "wandb": "not applicable",
@@ -29,13 +29,13 @@
       "seed_ranges": [
         42
       ],
-      "declarations": "fixture declaration id 0",
-      "sampling": "deterministic fixture"
+      "declarations": "from corpus",
+      "sampling": "JointWorldFullDataset deterministic world sampling seed"
     }
   },
   "splits": {
     "policy": "w42-seed-bucket-v1",
-    "train": "seed 42 (42 % 1000 < 900) for fixture mode; corpus rows inherit their source seed split.",
+    "train": "corpus rows inherit their source seed split",
     "val": "not applicable",
     "test": "not applicable",
     "eval": "not applicable",

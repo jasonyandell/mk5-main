@@ -29,32 +29,28 @@ a Winning 42 strategy claim, train a model, run W&B, or publish a HF artifact.
 
 ## Data Slice
 
-The intended first input is the manifest train split using
-`gus/data/corpus_train_100.pt` when available. In this worktree, the declared Gus
-and forge corpus paths were absent, so the recorded run used the existing
-`scratch/w42/data_adapter_smoke.py` deterministic fixture fallback.
+The input is the manifest train split using `gus/data/corpus_train_100.pt`.
+The wrapper intentionally consumes only the first available declared corpus path
+for this v0 surface check, so it remains a small deterministic tag-shape run
+rather than a bulk corpus scan.
 
-Source mode: `fixture`.
+Source mode: `real-corpus`.
 
-Blocker note:
-
-```text
-Declared local Gus/Forge corpora are absent in this worktree; using the data-adapter smoke fixture fallback.
-```
+Blocker note: none for the main checkout. The script keeps a fixture fallback for
+machines without local corpus bytes.
 
 Declared inputs checked, in order:
 
 | path or glob | consumed |
 |---|---|
-| `gus/data/corpus_train_100.pt` | absent |
-| `gus/data/corpus_train_chunk_*-*.pt` | absent |
-| `gus/data/corpus_v2_train_*_d0-9.pt` | absent |
-| `data/eq-games/train` | absent |
-| `data/eq-games/val` | absent |
-| `data/eq-games/test` | absent |
-| `gus/data/corpus_eval_20.pt` | absent |
-| `gus/data/corpus_v2_eval.pt` | absent |
-| `scratch/w42/data_adapter_smoke/example_row.json` | fixture fallback provenance |
+| `gus/data/corpus_train_100.pt` | consumed |
+| `gus/data/corpus_train_chunk_*-*.pt` | not consumed in this smoke |
+| `gus/data/corpus_v2_train_*_d0-9.pt` | not consumed in this smoke |
+| `data/eq-games/train` | not consumed in this smoke |
+| `data/eq-games/val` | not consumed in this smoke |
+| `data/eq-games/test` | not consumed in this smoke |
+| `gus/data/corpus_eval_20.pt` | not consumed in this smoke |
+| `gus/data/corpus_v2_eval.pt` | not consumed in this smoke |
 
 ## Tag Dimensions
 
@@ -98,21 +94,21 @@ inputs.
 
 ## Sample Output
 
-The deterministic fixture sample has one row:
+The deterministic real-corpus sample has one row:
 
 | field | value |
 |---|---|
 | `decision_idx` | `0` |
 | `player` | `0` |
-| `action_taken` | `1` |
-| `oracle_best_action` | `1` |
-| `legal_mask` | `[true, true, true, false, true, false, false]` |
+| `action_taken` | `5` |
+| `oracle_best_action` | `5` |
+| `legal_mask` | `[true, true, true, true, true, true, true]` |
 | `strategy_features` shape | `[1, 68]` |
 | `strategy_action_features` shape | `[1, 7, 32]` |
 
-Group summaries are in `scratch/w42/strategy_tags_v0/summary.csv`. Because this
-run used the smoke fixture, the numeric values validate shape, naming, and
-determinism only; they are not semantic evidence about play quality.
+Group summaries are in `scratch/w42/strategy_tags_v0/summary.csv`. The numeric
+values validate real-corpus loading, shape, naming, and determinism only; they
+are not semantic evidence about play quality.
 
 ## Reproducibility
 
@@ -131,7 +127,8 @@ Config:
 |---|---|
 | bead | `t42-csw6.7` |
 | device | `cpu` |
-| source mode | `fixture` |
+| source mode | `real-corpus` |
+| data input | `gus/data/corpus_train_100.pt` |
 | output directory | `scratch/w42/strategy_tags_v0/` |
 | checkpoint | `not applicable` |
 | W&B links | `not applicable` |
