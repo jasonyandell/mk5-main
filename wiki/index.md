@@ -157,6 +157,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/gus-strategy-tags-probe|gus-strategy-tags-probe]] — Winning 42 strategy tags promoted into Gus probe; 28k early-decision tiny model improves 2.012→1.181 regret, but `E[Q] N=10` remains boss at 0.167 (active)
 - [[experiments/winning42-strategy-measurement|winning42-strategy-measurement]] — book-derived strategy concepts harvested as measurable Gus/Burl/forge hypotheses, with chapter pages and a supported/contradicted claim ledger (active)
 - [[experiments/w42-rich-tag-many-signal-probe|w42-rich-tag-many-signal-probe]] — rich public tag probe: many cheap chapter-bucket signals narrowly beat v0 on the small split, with live W&B provenance (active)
+- [[experiments/w42-strategy-tag-family-ablations|w42-strategy-tag-family-ablations]] — rich tag family-drop ablation matrix: no family crosses a practical signal threshold; current evidence is weak/noisy and prioritizes cleaner detectors (active)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
 - [[experiments/winning42-ch02-bidding|winning42-ch02-bidding]] — bidding-as-risk-budget detectors from Winning 42 Chapter 2 (active)
 - [[experiments/winning42-ch03-bidder-play|winning42-ch03-bidder-play]] — bidder sequencing detectors from Winning 42 Chapter 3 (active)
