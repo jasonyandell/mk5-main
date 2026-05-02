@@ -1,0 +1,76 @@
+{
+  "schema_version": "w42.dataset_manifest.v1",
+  "dataset_id": "w42-data-adapter-smoke-20260502",
+  "dataset_version": "v0",
+  "created_at": "2026-05-02T01:51:05.106436+00:00",
+  "repo_commit": "fe8500155f4a3dd003feb6e3a2a92c35db28ea4d",
+  "owner_bead": "t42-csw6.4",
+  "status": "scratch",
+  "source_corpora": [
+    {
+      "path": "scratch/w42/data_adapter_smoke/example_row.json",
+      "role": "train",
+      "exists_at_manifest_time": false,
+      "source_kind": "other",
+      "provenance": "Deterministic synthetic fixture because declared local Gus/Forge corpora were absent.",
+      "split_policy": "w42-seed-bucket-v1"
+    }
+  ],
+  "generation": {
+    "command": "python scratch/w42/data_adapter_smoke.py --seed 42 --batch-size 1",
+    "cwd": "/Users/jason/code/mk5-main/.claude/worktrees/w42-csw6-4",
+    "environment": {
+      "device": "cpu",
+      "wandb": "not applicable",
+      "huggingface": "not applicable"
+    },
+    "inputs": {
+      "checkpoint": "not applicable",
+      "seed_ranges": [
+        42
+      ],
+      "declarations": "fixture declaration id 0",
+      "sampling": "deterministic fixture"
+    }
+  },
+  "splits": {
+    "policy": "w42-seed-bucket-v1",
+    "train": "seed 42 (42 % 1000 < 900)",
+    "val": "not applicable",
+    "test": "not applicable",
+    "eval": "not applicable",
+    "random_seeds": {
+      "data_generation": "not applicable",
+      "dataset_shuffle": 42,
+      "train_loader": 42,
+      "eval_sampling": "not applicable"
+    }
+  },
+  "leakage_exclusions": [
+    "No held-out eval corpora consumed in fixture mode.",
+    "Oracle labels are emitted only as labels, not public-state features."
+  ],
+  "labels_available": [
+    "e_q",
+    "q_per_world",
+    "action_taken",
+    "legal_mask"
+  ],
+  "tags_available": {
+    "cheap_strategy_tags": [
+      "strategy_features",
+      "strategy_action_features"
+    ],
+    "chapter_derived_tags": [],
+    "analysis_buckets": []
+  },
+  "versioning": {
+    "parent_dataset_id": null,
+    "parent_dataset_version": null,
+    "change_type": "initial",
+    "compatibility": "compatible",
+    "supersedes": [],
+    "notes": "Fixture smoke only; replace with real corpus manifest when local corpora exist."
+  },
+  "claim_ledger_impact": "no claim-ledger change"
+}
