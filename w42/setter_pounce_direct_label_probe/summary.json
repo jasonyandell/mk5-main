@@ -1,0 +1,96 @@
+{
+  "bead_id": "t42-5m82.5",
+  "claim_ledger_impact": "no central ledger change",
+  "created_at": "2026-05-02T21:17:07.549459+00:00",
+  "current_corpus_inspection": {
+    "available_item_fields": [
+      "tokens",
+      "attention_mask",
+      "belief_target",
+      "belief_mask",
+      "world_assignment",
+      "q_per_world",
+      "e_q",
+      "action_taken",
+      "legal_mask",
+      "decision_idx",
+      "player",
+      "voids",
+      "strategy_features",
+      "strategy_action_features"
+    ],
+    "eval_corpus": "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt",
+    "missing_for_direct_probe": [
+      "bidder_seat",
+      "bid_amount",
+      "declaration as named contract context",
+      "pre-action bidder_team_points_so_far",
+      "pre-action defender_team_points_so_far",
+      "current trick led suit and public winning certainty as named fields",
+      "E[Q] PDF or sampled-world outcome distribution by action"
+    ],
+    "rows": 560
+  },
+  "data_inputs": [
+    "wiki/decisions/w42-next-model-decision.md",
+    "wiki/experiments/w42-setter-defense-claim-validation.md",
+    "w42/setter_defense_claim_validation/summary.json",
+    "w42/strategy_tags_v1_map/detector_map.json",
+    "wiki/experiments/w42-final-empirical-strategy-report.md",
+    "/Users/jason/code/mk5-main/gus/data/corpus_eval_20.pt field inspection"
+  ],
+  "first_pass_labels": [
+    "is_setter_decision",
+    "contract_context",
+    "count_to_set_window",
+    "bidder_off_window",
+    "count_before_certainty",
+    "setter_pounce_window",
+    "setter_pounce_action",
+    "threshold_mass_delta",
+    "disaster_tail_mitigation_delta"
+  ],
+  "hf_links": "not applicable",
+  "next_run_command_plan": [
+    "Export or generate a phase-2 decision table with bidder_seat, bid_amount, declaration, pre-action team points, led_suit, current public winner, public voids, legal actions, and candidate tiles.",
+    "Attach optional offline distribution columns from E[Q] PDFs or sampled worlds: set_probability_by_action, q10_by_action, cvar10_by_action, and high-impact hidden-domino attribution.",
+    "Run a future analyzer over that table to emit direct-label coverage, paired pounce-action regret, threshold-mass deltas, and disaster-tail deltas.",
+    "Only after that direct table exists, train raw/v0/rich/direct/distribution-aware variants or log W&B series."
+  ],
+  "offline_only_labels": [
+    "threshold_mass_delta",
+    "disaster_tail_mitigation_delta"
+  ],
+  "public_state_labels": [
+    "is_setter_decision",
+    "contract_context",
+    "count_to_set_window",
+    "bidder_off_window",
+    "count_before_certainty",
+    "setter_pounce_window",
+    "setter_pounce_action"
+  ],
+  "repo_commit": "343a9f4c45244889ea9c1eaa8edacde7e2a69920",
+  "schema_version": "w42.setter_pounce_direct_label_probe.summary.v1",
+  "status": "direct-label spec and fixtures complete; model probe deferred",
+  "tiny_report_slice": {
+    "interpretation": "Existing artifacts support dependency/readiness reporting, not a direct label verdict.",
+    "path": "w42/setter_pounce_direct_label_probe/tiny_report_slice.csv",
+    "source": "manual slice from w42/setter_defense_claim_validation/summary.json"
+  },
+  "validation": {
+    "anti_leakage_checks": "5 checks",
+    "csv_artifacts": [
+      "required_fields.csv",
+      "anti_leakage_checks.csv",
+      "tiny_report_slice.csv"
+    ],
+    "fixtures": "4 JSONL fixture records with expected labels",
+    "json_artifacts": [
+      "label_spec.json",
+      "summary.json",
+      "manifest.json"
+    ]
+  },
+  "wandb_links": "not applicable"
+}

@@ -1,0 +1,4 @@
+claim_id,existing_evidence,proxy_paired_n,proxy_paired_regret_delta,direct_label_ready,missing_direct_fields,next_status
+ch05-pounce-count-before-certainty,v0 proxy count into opponent-currently-winning window,52,+5.111 preferred-minus-alternative,no,bidder_seat; bid_amount; pre-action team points; bidder_off_window; public winning certainty,direct-label spec ready; rerun after seat/contract state export
+ch05-extra-count-to-set,v0 proxy ten-count versus five-count to opponent-currently-winning,4,+4.353 preferred-minus-alternative,no,bid_amount; points_needed_to_make; points_needed_to_set; current trick count ownership,count-to-set formulas and fixtures ready
+ch12-setter-pounce-high-bid-off,broad current-trick count-pressure proxy,0,not applicable,no,high-bid contract context; bidder_off_window; setter role; threshold/tail distribution,requires phase-2 seat/position plus distribution outputs
