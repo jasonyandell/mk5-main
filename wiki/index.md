@@ -40,7 +40,8 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/candlewax-spike|candlewax-spike]] — E2E spike: Qwen 3.6-35B-A3B via mlx-vlm; reasoning-coherence verifier; pivots away from LLM-as-reasoner (active)
 - [[entities/wax-museum|wax-museum]] — hard-gated HATEOAS harness with three extension hooks: system_prompt_transform, preload_tool_calls, menu_override (active)
 - [[entities/belief-trajectory|belief-trajectory]] — tool wiring Gus's calibrated belief head into Burl; replaces static E[Q] PDF primitive (active)
-- [[entities/burl-chat|burl-chat]] — interactive workbench for talking with Burl about a finished decision; in-process MLX-LM + Svelte 5 + typed-segment rendering; standalone under burl/chat/ (active)
+- [[entities/burl-chat|burl-chat]] — reference predecessor workbench; in-process MLX-LM + Svelte 5 + typed-segment rendering; stays alongside burl-lab until parity (active)
+- [[entities/burl-lab|burl-lab]] — deterministic experimentation platform replacing burl-chat: event-sourced sessions, phase state machine, first-class ToolSpec with rendered protocol text, HATEOAS tool advertisement (active)
 - [[entities/improvised-tools|improvised-tools]] — hot-register tool registry inside burl-chat; MCP bridge lets Claude author wax_museum-shaped tools mid-conversation; persists to burl/chat/server/tools_library/ (active)
 
 ### Gus — oracle distillation project
@@ -164,6 +165,12 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/w42-multi-seed-larger-eval-replication|w42-multi-seed-larger-eval-replication]] — five-seed, 2,800-row eval replication of raw/v0/rich w42 feature sets with live per-epoch W&B series (active)
 - [[experiments/w42-rich-tag-many-signal-probe|w42-rich-tag-many-signal-probe]] — rich public tag probe: many cheap chapter-bucket signals narrowly beat v0 on the small split, with live W&B provenance (active)
 - [[experiments/w42-strategy-tag-family-ablations|w42-strategy-tag-family-ablations]] — rich tag family-drop ablation matrix: no family crosses a practical signal threshold; current evidence is weak/noisy and prioritizes cleaner detectors (active)
+- [[experiments/w42-phase2-statistics-claims-ledger|w42-phase2-statistics-claims-ledger]] — phase-2 62-row statistics ledger: exact substrate claims separated from underpowered tactical advice (active)
+- [[experiments/w42-phase2-seat-position-strategy-map|w42-phase2-seat-position-strategy-map]] — seat/role/phase strategy taxonomy with first-trick perspective walkthrough and detector gaps (active)
+- [[experiments/w42-phase2-hidden-domino-threat-attribution|w42-phase2-hidden-domino-threat-attribution]] — design for attributing E[Q] PDF shelves/lumps to hidden-domino ownership and impact-weighted belief targets (active)
+- [[experiments/w42-phase2-distribution-aware-ev-report|w42-phase2-distribution-aware-ev-report]] — E[Q] PDF report computing threshold mass, tails, quantiles, and scalar-EV omission examples (active)
+- [[experiments/w42-phase2-setter-pounce-direct-label-probe|w42-phase2-setter-pounce-direct-label-probe]] — direct-label spec, fixtures, and leakage checks for setter pounce/count-to-set windows (active)
+- [[experiments/w42-phase2-84-weapon-preservation-probe|w42-phase2-84-weapon-preservation-probe]] — 84 weapon/stopping/preservation label surface and fixture plan (active)
 - [[experiments/winning42-ch01-in-a-nutshell|winning42-ch01-in-a-nutshell]] — foundational rule/state-accounting detectors from Winning 42 Chapter 1 (active)
 - [[experiments/winning42-ch02-bidding|winning42-ch02-bidding]] — bidding-as-risk-budget detectors from Winning 42 Chapter 2 (active)
 - [[experiments/winning42-ch03-bidder-play|winning42-ch03-bidder-play]] — bidder sequencing detectors from Winning 42 Chapter 3 (active)
@@ -209,7 +216,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[decisions/resumable-checkpointing|resumable-checkpointing]] — Burl STaR trainer writes periodic on-disk adapters, accepts `--resume`, and persists the in-memory best on any crash; closes the run-3 OOM data-loss footgun (active)
 - [[decisions/chat-mode-primer|chat-mode-primer]] — inject a synthetic "yeah I committed N, ask me anything" assistant turn after commit_play; recency-weighted in-context cue that flips base Gemma from play-decision mode to chat mode (active)
 - [[decisions/play-adapter-lock-in|play-adapter-lock-in]] — STaR-distilled play adapters cannot be talked out of commit_play even with primer + explicit prohibition; A/B vs base Gemma is clean; post-commit Q&A adapter must be co-trained, not stacked (active)
-- [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe for one claim regime, not a broader rich-tag kitchen sink or Gus core change (active)
+- [[decisions/w42-next-model-decision|w42-next-model-decision]] — next w42 step is a targeted v2 direct-detector probe with distribution-aware labels and belief-impact diagnostics where available (active)
 - [[decisions/w42-promote-or-retire|w42-promote-or-retire]] — keep w42 active as top-level research; promote tracked artifacts into `w42/`, but do not promote research models into Gus/Burl yet (active)
 
 ## Sources

@@ -1759,3 +1759,70 @@ Fix in `burl/chat/web/src/App.svelte`:
 - The E[Q] web visualizers now have a portable local data-export path instead of relying on stale hardcoded `/home/jason/...` script paths.
 - Browser Use verified all three local pages: aggregate 3D surface, per-action PDF discs, and game-journey value trajectories.
 - The visualizer is a useful hypothesis tool for w42/E[Q] work: it makes near-tie, high-uncertainty, candlewax-shaped decision regions visible before any reranker or policy change is attempted.
+
+---
+
+## [2026-05-02 | local | burl-lab platform spec lands]
+
+**Touched pages:** [[burl-lab]] [[burl-chat]] [[index]] [[log]]
+**Added:** 1 entity page — [[burl-lab]] documenting the new deterministic experimentation platform replacing burl-chat.
+**Updated:** [[burl-chat]] gains a status note flagging burl-lab as the active surface and itself as the reference predecessor (not yet superseded — that flips when burl-lab reaches parity); [[index]] catalogues the new entity and rewrites burl-chat's hook.
+**Retired:** none.
+**Questions opened:**
+- Will phase markers stay harness-private as the post-commit-Q&A adapter co-trains, or get tokenized once the corpus harvests stabilize?
+- Does HATEOAS `next_tools` advertisement actually shift Burl's tool selection, or does the model still defer to the system-prompt protocol-text (the [[improvised-tools]] adoption-asymmetry finding) even when the prior tool result names the next move?
+
+**Frontier shift:**
+- burl-chat is no longer the active workbench — it is the reference predecessor. New experimentation lands in `burl/lab/`.
+- The architecture turns four spike findings into structural choices: (1) rendered protocol text from first-class ToolSpec replaces hand-edited primer prose; (2) `Stamp` makes timings part of the journal; (3) HATEOAS tool advertisement replaces "Burl plans a tool he doesn't have"; (4) Phase machine gives reflection a dedicated surface instead of relying on play-decision lock-in to crack open.
+- The platform was first named `burl/harness/` before the team noticed the collision with the existing agent tool-loop runner package (~20 importers across `wax_museum/`, `haiku_spike/`, `candlewax_spike/`, `eval/run_move4_*`, `burl/chat/server/tools_runner.py`). Renamed to `burl/lab/`; misrouted files were consolidated via `git mv` during the spike. The existing `burl/harness/` package is untouched.
+- SPEC.md (`burl/lab/SPEC.md`) is the canonical contract; build order is types → engine → tools → runtime. As of this entry, types + engine + tools have landed (transcript, tool, phase, engine modules + base ToolSpecs); runtime layer (render, drive, hf_sink, phases, server) is in flight.
+- Citation note: `burl/lab/SPEC.md` is referenced by path on this entry because the artifacts are not yet committed at session time. Future log entries should cite by `<path> @ <shortsha>` once the burl-lab tree lands a commit.
+
+---
+
+## [2026-05-02 | local | burl-lab server runs end-to-end on fake engine]
+
+**Touched pages:** [[burl-lab]] [[log]] [[questions/open]]
+**Added:** none.
+**Updated:** [[burl-lab]] gains a Status section: server live on port 18002 (alt of 8002), 11/11 tests pass (`test_transcript_roundtrip`, `test_engine_smoke`, `test_tools_base`, `test_render`, `test_drive_with_fake_engine`, `test_server_smoke`), `/api/health` + `/api/sessions` + `/api/move` wired, three base ToolSpecs registered, `events.jsonl` authoritative. Also documents the interim `state.json` companion as transient — pending `SystemSet` / `AdvertisedSet` Move kinds.
+**Retired:** none.
+**Questions opened:**
+- When do `SystemSet` / `AdvertisedSet` Move kinds land in `core/transcript.py`, and does `state.json` get fully dropped at that point or does any read path linger?
+
+**Frontier shift:**
+- burl-lab transitions from server-spec to server-running. The Phase machine + Engine protocol + ToolSpec rendering + HATEOAS advertisement compose end-to-end against a fake engine — the architecture is no longer a paper claim.
+- Real MLX engine integration is gated on a thread-affinity bug surfaced during runtime testing. The same single-thread executor pattern from [[burl-chat]] (`ThreadPoolExecutor(max_workers=1)` with model load and generate on the same thread) is the known fix; recovery in progress.
+- One transient shape worth tracking: `state.json` is written alongside `events.jsonl` because `fold` does not yet reconstruct config moves. This is interim, not the contract — once the new Move kinds land, the wiki should not ossify the two-sources-of-truth shape.
+
+---
+
+## [2026-05-02 | local | burl-lab journal-canonical + post_turn lands]
+
+**Touched pages:** [[burl-lab]] [[mlx-lm]] [[burl-chat]] [[log]] [[questions/open]] (resolved)
+**Added:** none.
+**Updated:** [[burl-lab]] retires the **Transient: `state.json` companion** subsection in place; Status now reads "events.jsonl is the only on-disk source of truth" with the journal-canonical test cited (`test_server_smoke.py::test_journal_is_canonical_no_state_json`). Adds a **Phase ownership of transitions** paragraph: drive is engine-shaped (no `PhaseExit`/`PhaseEnter`), server is transition-shaped (owns those Moves whenever `handle()` returns a non-`None` `next_phase`). Phase machine description bumped to ship `pre_game` + `in_run` + `post_turn`; module layout adds `phases/post_turn.py`. Test count 11/11 → **15/15** across the six test files. [[mlx-lm]] gains the **Upstream bug: module-level generation_stream** section (diagnosis + fix + submodule-shadowing trap). [[burl-chat]] notes that its single-thread executor pattern is necessary but **insufficient** for full MLX threading correctness; the executor's import path leaves the bug latent there.
+**Retired:** `state.json` companion as a runtime artifact (the journal is canonical); the corresponding **Transient** subsection on [[burl-lab]] (retired in place per the prior log entry's standing instruction).
+**Resolved:** the open question "When do `SystemSet` / `AdvertisedSet` Move kinds land in burl-lab's `core/transcript.py`, and does `state.json` get fully dropped?" — answered: `SystemSet`/`AdvertisedSet`/`ToolAdded`/`ToolRemoved` are journaled directly by phase handlers; `state.json` is gone; verified by test.
+
+**Frontier shift:**
+- burl-lab is now **journal-canonical**: every read goes through `fold(replay(session_dir))`, no snapshot file exists, and a server-smoke test enforces it. SPEC.md philosophy point 1 ("state is a fold over events") is no longer aspirational.
+- The Phase Protocol's `next_phase` return value is the only place transition information lives. The drive loop never knows which phase it is in; the server is the only component that materializes phase boundaries as journal Moves. This split keeps drive engine-shaped and reusable across recorded / fake / real engines.
+- The upstream `mlx_lm.generate.generation_stream` bug is fully diagnosed and fixed: rebind via `sys.modules["mlx_lm.generate"]` after `load()` on the executor thread. The submodule-shadowing trap (`from mlx_lm import generate` resolves to the function and silently no-ops) is what made the naive fix invisible; documented on [[mlx-lm]] so future readers do not retread it. burl-chat's import path happened to mask the bug; burl-lab surfaced it explicitly.
+- One open question remains for the platform: does HATEOAS `next_tools` advertisement actually shift adoption when a real model is on the other end? Real MLX is wired but the experiment has not run yet.
+
+---
+
+## [2026-05-02 | local | w42 phase-2 research surfaces land]
+
+**Touched pages:** [[w42]] [[w42-phase2-statistics-claims-ledger]] [[w42-phase2-seat-position-strategy-map]] [[w42-phase2-hidden-domino-threat-attribution]] [[w42-phase2-distribution-aware-ev-report]] [[w42-phase2-setter-pounce-direct-label-probe]] [[w42-phase2-84-weapon-preservation-probe]] [[index]] [[log]]
+**Added:** 6 experiment pages and six top-level `w42/` artifact directories for phase-2 research.
+**Updated:** [[w42]] now links the phase-2 surfaces; [[index]] catalogues the new pages.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- w42 phase 2 now has a concrete research bench rather than a discussion queue: a statistics ledger, seat/position strategy map, hidden-domino threat attribution design, distribution-aware EV report, setter-pounce direct-label probe, and 84 weapon-preservation probe.
+- The statistics ledger is the bedrock: 62 rows separate supported exact/rules/scoring substrates from underpowered tactical advice. No tactical book claim is promoted simply because its arithmetic substrate is true.
+- The E[Q] visualizer insight has been operationalized: phase-2 reports now track threshold mass, tails, quantiles, branch shape, and belief-impact magnitude instead of reducing every decision to scalar mean EV.
+- The direct tactical probes remain conservative. Setter pounce and 84 preservation produced label specs, fixtures, required fields, and leakage checks; dynamic rollouts/model probes are explicitly next work, not silently assumed.

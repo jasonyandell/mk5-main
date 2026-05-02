@@ -64,4 +64,12 @@ Format:
   - Raised: `063fcac` ([[sources/063fcac]])
   - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[experiments/burl-2000-harvest]].
 
+- **Q:** Will burl-lab's phase markers stay harness-private as a post-commit-Q&A adapter co-trains, or get tokenized?
+  - Raised: 2026-05-02 (burl-lab platform spec)
+  - Context: SPEC.md is explicit that phase identifiers and transitions are not surfaced to the model, since retraining is not a goal of the experimentation platform. Once a co-trained post-commit-Q&A adapter is on the table, the question reopens — phase boundaries are exactly the kind of structure-aware signal a multi-task adapter could exploit, and tokenizing them changes the model's view from "messages a phase produces" to "messages tagged with the phase that produced them." See [[burl-lab]], [[post-commit-q-and-a]], [[play-adapter-lock-in]].
+
+- **Q:** Does burl-lab's HATEOAS `next_tools` advertisement actually shift Burl's tool selection, or does the model still defer to the system-prompt protocol-text even when the prior tool result names the next move?
+  - Raised: 2026-05-02 (burl-lab platform spec)
+  - Context: The [[improvised-tools]] adoption asymmetry finding (`play_brief` registered but never called because the protocol section named only `explore_game(play=X)` literally) drove two structural fixes in burl-lab: rendered protocol text from active ToolSpecs, and HATEOAS `next_tools` on every tool result. The first is by-construction; the second is empirical. If `next_tools` advertisement does not move adoption, the rendered-protocol-text lever is the only one that does — and the platform's surface area shrinks to "edit the active set, watch the protocol text re-render, see what the model does." See [[burl-lab]], [[improvised-tools]], [[burl-tool-wishlist]].
+
 

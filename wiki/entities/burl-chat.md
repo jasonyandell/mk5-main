@@ -2,9 +2,11 @@
 title: burl-chat — Interactive workbench for talking with Burl
 kind: entity
 first_seen: cba521d
-last_updated: 2026-05-01
+last_updated: 2026-05-02
 status: active
 ---
+
+> **Reference predecessor.** New experimentation work happens in [[burl-lab]] (greenfield event-sourced platform with first-class ToolSpec + Phase machine). burl-chat stays alongside as the working reference until burl-lab reaches parity; do not delete or restructure.
 
 ## What it is
 
@@ -49,6 +51,8 @@ One Python process owns both the model (in-process via [[mlx-lm]] through `burl.
 ## Three load-bearing implementation details
 
 **1. Single-thread MLX executor.** MLX's default GPU stream is bound to the first thread that touches it. Loading the model on the FastAPI startup thread and then trying to generate from `loop.run_in_executor(None, ...)` fails immediately with `There is no Stream(gpu, 0) in current thread.` Fix: a `ThreadPoolExecutor(max_workers=1)` that loads the model AND runs every generate call. Both happen on the same thread; the default stream stays valid.
+
+The executor pattern is **necessary but insufficient** for full MLX threading correctness. `mlx_lm.generate` declares `generation_stream` at module scope, so whichever thread imports the submodule owns the stream — and FastAPI lifespan imports run on the event-loop thread, not the executor thread. burl-chat's GemmaLocalNative path happens to import on the executor thread by construction, leaving the bug latent here; [[burl-lab]] surfaced it explicitly and ships the rebind via `sys.modules["mlx_lm.generate"]` after `load()`. Full diagnosis (and the submodule-shadowing trap that makes the naive `from mlx_lm import generate; generate.generation_stream = ...` silently no-op) lives on [[mlx-lm]] under "Upstream bug: module-level generation_stream."
 
 **2. CRLF SSE frames.** sse-starlette emits frames separated by `\r\n\r\n` (literal carriage returns) per the SSE spec. The browser's `TextDecoder` returns the bytes verbatim. A `buf.split("\n\n")` consumer never finds a frame boundary and yields nothing — the response body grows on the wire (Network tab shows 41 kB delivered) but the streaming generator never yields a single event. Fix: strip `\r` before splitting, OR split on `\r?\n\r?\n`. Methodological note: every diagnostic via `curl` on a terminal hides CR, so the bug is invisible until you `repr()` the raw bytes.
 

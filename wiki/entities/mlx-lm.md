@@ -2,7 +2,7 @@
 title: MLX-LM (Apple Silicon local path for Burl)
 kind: entity
 first_seen: 6fea6ab
-last_updated: 6a97d55
+last_updated: 2026-05-02
 status: active
 ---
 
@@ -72,3 +72,45 @@ This reframes ingest B7's iter-4 null result: the byte-identical A/B was almost 
 truncation, not LoRA capacity saturation — no prior Burl adapter was trained on complete
 thought-to-tool-call traces. Parallel to LEM's [[decisions/sft-completion-only-loss]]
 finding: TRL defaults are traps. (commit message @ edf86e9)
+
+## Upstream bug: module-level `generation_stream`
+
+`mlx_lm/generate.py` declares `generation_stream = mx.new_stream(mx.default_device())` at
+**module scope**. Whichever thread first imports the submodule owns the stream for the
+process lifetime. Subsequent generate calls from any other thread fail with
+`There is no Stream(gpu, 0) in current thread.`
+
+The single-thread executor pattern (load + generate on the same `ThreadPoolExecutor(max_workers=1)`)
+is **necessary but insufficient**. The executor pattern handles streams that the embedder's
+own code creates inside the executor thread — but `mlx_lm.generate.generation_stream` is
+created at *import* time, on whichever thread happens to import the submodule first. In
+pytest, `pytest.importorskip("mlx_lm")` runs on the main thread; in FastAPI, the lifespan
+import runs on the event-loop thread. Neither matches the executor thread that later runs
+generate, so the stream is bound to the wrong thread and every call fails.
+
+### The fix
+
+After `load()` succeeds inside the executor thread, rebind the module-level stream onto
+the executor thread:
+
+```python
+import sys
+mlx_generate_mod = sys.modules["mlx_lm.generate"]
+mlx_generate_mod.generation_stream = mx.new_stream(mx.default_device())
+```
+
+### The submodule-shadowing trap
+
+`from mlx_lm import generate` does **not** give you the submodule — it gives you the
+`generate` *function*, because `mlx_lm/__init__.py` does `from .generate import generate`
+and shadows the submodule name in the package namespace. Mutating `generate.generation_stream`
+on that bound name silently no-ops because you are setting an attribute on the function
+object, not the submodule.
+
+You must reach the actual submodule via `sys.modules["mlx_lm.generate"]`. Without that
+detail the fix is invisible — pytest still passes if the executor thread happens to be
+the import thread, FastAPI still fails, and the diff "looks right" to a casual reader.
+
+Lives at `burl/lab/core/engine.py:_load()` (lines 281–282 at session time, fake-MLX path
+no-ops). The rebind is the second half of the MLX threading correctness story; the
+single-thread executor is the first.

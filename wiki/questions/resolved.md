@@ -72,3 +72,8 @@ Format:
   - Raised: implicitly at `b8116b5` (B3 iter-0 pipeline — target was to exceed the 88.9% spike baseline systematically)
   - Resolved: `dbadb5f` ([[sources/dbadb5f]])
   - Answer: Yes on 10-decision eval: 90% bot-match, 0 retry-exhausted, 100% first-legal. Needs larger eval to confirm at scale.
+
+- **Q:** When do `SystemSet` / `AdvertisedSet` Move kinds land in burl-lab's `core/transcript.py`, and does `state.json` get fully dropped at that point or does any read path linger?
+  - Raised: 2026-05-02 (burl-lab server end-to-end milestone)
+  - Resolved: 2026-05-02 (burl-lab journal-canonical milestone, same day)
+  - Answer: Resolved fully. `SystemSet`, `AdvertisedSet`, `ToolAdded`, `ToolRemoved` (and `UserText`) are journaled by phase handlers directly via `transcript.append`. `state.json` is gone from the runtime; `server/app.py:_load_state` is `fold(replay(session_dir))` with no snapshot read or write. Verified by `tests/test_server_smoke.py::test_journal_is_canonical_no_state_json` and `test_transcript_roundtrip.py::test_state_journal_only_no_state_json_needed`. See [[burl-lab]] Status section.
