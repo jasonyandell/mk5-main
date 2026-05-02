@@ -1,0 +1,298 @@
+{
+  "duplicate_exposure": [
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 1,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 20,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 2,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 15,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 3,
+      "trump_count": 1,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 20,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 4,
+      "trump_count": 0,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 30,
+      "duplicate_overcount_points": 20,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 5,
+      "trump_count": 0,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 25,
+      "duplicate_overcount_points": 15,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 6,
+      "trump_count": 0,
+      "unique_exposed_points": 15,
+      "naive_exposed_points": 40,
+      "duplicate_overcount_points": 25,
+      "bid_ceiling_proxy": 27
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+      "trump_pip": 0,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 20,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+      "trump_pip": 2,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 15,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 32
+    }
+  ],
+  "strong_trump_bad_risk_trap": [
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-1",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 15,
+      "naive_exposed_points": 15,
+      "duplicate_overcount_points": 0,
+      "bid_ceiling_proxy": 27
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-2",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 30,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 22
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,4-3",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 30,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 22
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-1",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 25,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 22
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-2",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 25,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 22
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-3",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 25,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 22
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 35,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,6-1",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 20,
+      "naive_exposed_points": 25,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 22
+    }
+  ],
+  "minimum_shape_low_risk": [
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 10,
+      "duplicate_overcount_points": 0,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 1,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 20,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-0",
+      "trump_pip": 2,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 15,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+      "trump_pip": 0,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 20,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+      "trump_pip": 1,
+      "trump_count": 4,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 10,
+      "duplicate_overcount_points": 0,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-1",
+      "trump_pip": 2,
+      "trump_count": 3,
+      "unique_exposed_points": 10,
+      "naive_exposed_points": 15,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 32
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-2",
+      "trump_pip": 0,
+      "trump_count": 3,
+      "unique_exposed_points": 5,
+      "naive_exposed_points": 5,
+      "duplicate_overcount_points": 0,
+      "bid_ceiling_proxy": 37
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,3-2",
+      "trump_pip": 1,
+      "trump_count": 3,
+      "unique_exposed_points": 5,
+      "naive_exposed_points": 5,
+      "duplicate_overcount_points": 0,
+      "bid_ceiling_proxy": 37
+    }
+  ],
+  "four_five_off": [
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+      "trump_pip": 0,
+      "trump_count": 3,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 35,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+      "trump_pip": 1,
+      "trump_count": 3,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 35,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+      "trump_pip": 2,
+      "trump_count": 3,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 40,
+      "duplicate_overcount_points": 10,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+      "trump_pip": 3,
+      "trump_count": 0,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 50,
+      "duplicate_overcount_points": 20,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,2-2,5-4",
+      "trump_pip": 6,
+      "trump_count": 0,
+      "unique_exposed_points": 25,
+      "naive_exposed_points": 50,
+      "duplicate_overcount_points": 25,
+      "bid_ceiling_proxy": 17
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+      "trump_pip": 0,
+      "trump_count": 4,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 35,
+      "duplicate_overcount_points": 5,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+      "trump_pip": 1,
+      "trump_count": 3,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 45,
+      "duplicate_overcount_points": 15,
+      "bid_ceiling_proxy": 12
+    },
+    {
+      "hand": "0-0,1-0,1-1,2-0,2-1,3-0,5-4",
+      "trump_pip": 2,
+      "trump_count": 2,
+      "unique_exposed_points": 30,
+      "naive_exposed_points": 45,
+      "duplicate_overcount_points": 15,
+      "bid_ceiling_proxy": 12
+    }
+  ]
+}
