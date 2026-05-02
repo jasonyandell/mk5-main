@@ -25,6 +25,8 @@ Main entry points:
 - `*_claim_validation/` directories - claim-family validation reports
 - `branch_atlas_v1/` - powered joint-world E[Q] branch atlas with hidden-holder
   impact rows and W&B progress series
+- `branch_atlas_scaled_v0/` - all-declarations N=1000 branch atlas scale-up
+  with bid-aware threshold plumbing and W&B progress series
 - `wandb_utils.py` - shared W&B helper with failure-visible and series logging
 
 Canonical wiki pages:

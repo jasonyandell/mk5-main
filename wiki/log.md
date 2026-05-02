@@ -1866,3 +1866,19 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 - Hidden-holder impact is now measured by conditioning `q_per_world` on `(hidden_domino, holder)` and comparing mean Q, lower-tail mass, high-shelf mass, and std against the baseline action distribution. The labels remain offline-only and must not become live hidden-truth inputs.
 - W&B is now used as a dashboard for report experiments: run `44z1kl9j` logs repeated points over `progress/decisions_processed` rather than only final summary fields.
 - The pilot still uses fixed `bid_value=30`, so bid-margin and "bid only enough" claims remain untested until real auction metadata is attached.
+
+---
+
+## [2026-05-02 | local | w42 branch atlas scaled v0]
+
+**Touched pages:** [[w42]] [[w42-next-model-decision]] [[w42-powered-branch-atlas-v1]] [[w42-phase2-hidden-domino-threat-attribution]] [[w42-phase2-distribution-aware-ev-report]] [[w42-branch-atlas-scaled-v0]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-branch-atlas-scaled-v0]]; 1 artifact directory - `w42/branch_atlas_scaled_v0/`.
+**Updated:** [[w42]] lists the scaled atlas as a ninth phase-2 surface; [[w42-next-model-decision]] records the bid-aware threshold plumbing; [[w42-powered-branch-atlas-v1]], [[w42-phase2-hidden-domino-threat-attribution]], and [[w42-phase2-distribution-aware-ev-report]] point forward to the scale-up.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- The branch-atlas loop now covers all ten declarations for seed 9430: 280 decisions, 773 legal-action rows, and 5955 hidden-threat rows at N=1000.
+- The E[Q] generator now uses recorded `bid_value` for p_make thresholds, and the atlas computes threshold mass / hidden-threat shelf mass from each recorded bid value. Bid 30 behavior is preserved and tested.
+- W&B run `7fwi2zwn` logs repeated progress points for the scaled report, including action rows, hidden-threat rows, branch rates, coverage, and wall time.
+- The scaled v0 artifact still fixes `bid_value=30`; it validates declaration coverage and bid-aware plumbing, not real auction metadata, bid margin, or "bid only enough" strategy claims.

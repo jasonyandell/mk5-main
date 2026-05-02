@@ -178,10 +178,15 @@ branch-atlas summaries by role and strategy detector. After that, w42 can train 
 small belief/threat probe that predicts impact-weighted hidden-threat labels from
 legal public state and learned beliefs.
 
+[[w42-branch-atlas-scaled-v0]] completes the first part of that next step: one
+seed across all declarations, with bid-aware threshold plumbing. It still does
+not supply real auction metadata or bid margin.
+
 ## Links
 
 [[w42]] | [[w42-next-model-decision]] |
 [[w42-phase2-decision-table]] |
 [[w42-phase2-hidden-domino-threat-attribution]] |
 [[w42-phase2-distribution-aware-ev-report]] |
+[[w42-branch-atlas-scaled-v0]] |
 [[gus-joint-world-tire-kick]]

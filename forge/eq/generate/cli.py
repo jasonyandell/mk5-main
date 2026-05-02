@@ -14,6 +14,24 @@ from .pipeline import generate_eq_games_gpu
 from .types import AdaptiveConfig, PosteriorConfig
 
 
+def _parse_bid_values(raw: str | None, *, fallback: int, n_games: int) -> list[int]:
+    """Parse one or N comma-separated bid values."""
+    if raw:
+        values = [int(part.strip()) for part in raw.split(",") if part.strip()]
+    else:
+        values = [fallback]
+    if len(values) == 1:
+        values = values * n_games
+    if len(values) != n_games:
+        raise ValueError(f"Expected 1 or {n_games} bid values, got {len(values)}")
+    for value in values:
+        if value == 84:
+            continue
+        if value < 30 or value > 42:
+            raise ValueError(f"Bid values must be 30..42, or 84 for take-all contracts (got {value})")
+    return values
+
+
 def main() -> int:
     """CLI for E[Q] generation."""
     parser = argparse.ArgumentParser(
@@ -158,8 +176,12 @@ Examples:
     parser.add_argument(
         "--bid-value", type=int, default=30,
         help="Bid value for all games (default: 30 = minimum bid). "
-             "Used in Schema v2 for bid_value field. "
-             "Future: plumb per-game bid values from deal generation."
+             "Used for p_make thresholds and recorded in Schema v2."
+    )
+    parser.add_argument(
+        "--bid-values", type=str, default=None,
+        help="Comma-separated per-game bid values. Length must be 1 or n-games. "
+             "Overrides --bid-value. Values must be 30..42, or 84 for take-all."
     )
 
     # Device
@@ -189,6 +211,16 @@ Examples:
         )
         return 1
     n_seeds = args.n_games // args.n_decl_per_seed
+
+    try:
+        parsed_bid_values = _parse_bid_values(
+            args.bid_values,
+            fallback=args.bid_value,
+            n_games=args.n_games,
+        )
+    except ValueError as exc:
+        print(f"Error: {exc}", flush=True)
+        return 1
 
     # Validate schema v2 requires joint worlds
     schema_v2 = args.schema == "v2"
@@ -336,10 +368,15 @@ Examples:
     if args.save_joint_worlds:
         print(f"  Joint-world tensor: saving per-decision (world_hands, q_per_world)", flush=True)
     if schema_v2:
-        print(f"  Schema: v2 (bid_value={args.bid_value}, per-seat oracle softmax)", flush=True)
+        unique_bids = sorted(set(parsed_bid_values))
+        bid_label = unique_bids[0] if len(unique_bids) == 1 else unique_bids
+        print(f"  Schema: v2 (bid_value={bid_label}, per-seat oracle softmax)", flush=True)
 
-    # Build per-game bid values list (same bid for all games; v2 field)
-    bid_values = [args.bid_value] * args.n_games if schema_v2 else None
+    # Build per-game bid values when they are recorded (schema v2) or when the
+    # user explicitly requested non-default bid-aware action selection.
+    bid_values = None
+    if schema_v2 or args.bid_values is not None or args.bid_value != 30:
+        bid_values = parsed_bid_values
 
     t0 = time.perf_counter()
     results = generate_eq_games_gpu(
@@ -377,6 +414,8 @@ Examples:
         'posterior': args.posterior,
         'schema': args.schema,
     }
+    if bid_values is not None:
+        save_dict['bid_values'] = bid_values
     if args.adaptive:
         save_dict['adaptive'] = True
         save_dict['adaptive_config'] = {

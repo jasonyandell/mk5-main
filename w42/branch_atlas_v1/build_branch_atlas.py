@@ -60,6 +60,7 @@ EQ_MAX = 42
 LOW_TAIL_Q = -18.0
 OFFENSE_MAKE_Q = 18.0
 DEFENSE_SET_Q = -17.0
+DEFAULT_BID_VALUE = 30
 TOTAL_COUNT_POINTS = sum(tables.DOMINO_COUNT_POINTS)
 
 
@@ -165,6 +166,7 @@ THREAT_COLUMNS = [
     "action_slot",
     "action_domino_id",
     "action_domino",
+    "contract_threshold_q",
     "hidden_domino_id",
     "hidden_domino",
     "relative_holder",
@@ -260,7 +262,12 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 
 def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> None:
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            extrasaction="ignore",
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(rows)
 
@@ -302,8 +309,19 @@ def led_suit_name(led_suit: int | None) -> str:
     return str(int(led_suit))
 
 
-def threshold_q_for_player(player: int) -> float:
-    return OFFENSE_MAKE_Q if player in OFFENSE_PLAYERS else DEFENSE_SET_Q
+def contract_points_from_bid_value(bid_value: int | None) -> int:
+    if bid_value is None:
+        return DEFAULT_BID_VALUE
+    if int(bid_value) == 84:
+        return 42
+    return int(bid_value)
+
+
+def threshold_q_for_player(player: int, bid_value: int | None = None) -> float:
+    contract_points = contract_points_from_bid_value(bid_value)
+    if player in OFFENSE_PLAYERS:
+        return float(2 * contract_points - 42)
+    return float(43 - 2 * contract_points)
 
 
 def values_to_pdf(values: torch.Tensor) -> list[float]:
@@ -485,7 +503,7 @@ def actor_remaining_hand(hands: list[list[int]], played_slots: dict[int, set[int
     return remaining
 
 
-def describe_conditioned_q(values: torch.Tensor) -> dict[str, float]:
+def describe_conditioned_q(values: torch.Tensor, threshold_q: float) -> dict[str, float]:
     if values.numel() == 0:
         return {
             "n": 0,
@@ -499,7 +517,7 @@ def describe_conditioned_q(values: torch.Tensor) -> dict[str, float]:
         "n": int(values.numel()),
         "mean": float(values.mean().item()),
         "tail_low_mass": float((values <= LOW_TAIL_Q).float().mean().item()),
-        "shelf_high_mass": float((values >= OFFENSE_MAKE_Q).float().mean().item()),
+        "shelf_high_mass": float((values >= threshold_q).float().mean().item()),
         "std": float(values.std(unbiased=False).item()),
     }
 
@@ -515,9 +533,10 @@ def hidden_threat_rows_for_action(
     action_domino_id: int,
     world_hands: torch.Tensor,
     q_values: torch.Tensor,
+    threshold_q: float,
     top_k: int,
 ) -> list[dict[str, Any]]:
-    baseline = describe_conditioned_q(q_values)
+    baseline = describe_conditioned_q(q_values, threshold_q)
     if baseline["n"] == 0:
         return []
 
@@ -527,7 +546,7 @@ def hidden_threat_rows_for_action(
         for rel_holder in range(3):
             abs_holder = (actor + rel_holder + 1) % 4
             mask = (world_hands[:, rel_holder, :] == domino_id).any(dim=1)
-            conditioned = describe_conditioned_q(q_values[mask])
+            conditioned = describe_conditioned_q(q_values[mask], threshold_q)
             if conditioned["n"] == 0:
                 continue
 
@@ -551,6 +570,7 @@ def hidden_threat_rows_for_action(
                     "action_slot": action_slot,
                     "action_domino_id": action_domino_id,
                     "action_domino": domino_label(action_domino_id),
+                    "contract_threshold_q": threshold_q,
                     "hidden_domino_id": domino_id,
                     "hidden_domino": domino_label(domino_id),
                     "relative_holder": rel_holder,
@@ -861,6 +881,7 @@ def process_payload(
     *,
     input_path: Path,
     output_dir: Path,
+    bead_id: str,
     top_k: int,
     log_every_decisions: int,
     wb: Any,
@@ -891,7 +912,7 @@ def process_payload(
         decl_id = int(getattr(game, "decl_id", decl_ids[game_idx] if game_idx < len(decl_ids) else -1))
         seed = seeds[game_idx] if game_idx < len(seeds) else None
         bid_value = getattr(game, "bid_value", None)
-        bid_value_source = "schema_v2_fixed_cli_value" if bid_value is not None else "missing"
+        bid_value_source = "schema_v2_bid_value" if bid_value is not None else "missing"
         score = [0, 0]
         played_count_points = 0
         trick_plays: list[tuple[int, int]] = []
@@ -931,7 +952,7 @@ def process_payload(
                 legal_action_count = len(legal_slots)
                 hand_called_count = sum(1 for d in remaining if tables.is_in_called_suit(d, decl_id))
                 hand_double_count = sum(1 for d in remaining if tables.DOMINO_IS_DOUBLE[d])
-                threshold_q = threshold_q_for_player(actor)
+                threshold_q = threshold_q_for_player(actor, bid_value)
 
                 decision_start = len(action_rows)
                 for slot in legal_slots:
@@ -969,6 +990,7 @@ def process_payload(
                         action_domino_id=candidate_domino,
                         world_hands=world_hands,
                         q_values=q_per_world[:, slot],
+                        threshold_q=threshold_q,
                         top_k=top_k,
                     )
                     threat_rows.extend(h_rows)
@@ -1044,6 +1066,7 @@ def process_payload(
         skipped_no_legal=skipped_no_legal,
         sample_counts=sample_counts,
         output_dir=output_dir,
+        bead_id=bead_id,
         started_seconds=time.perf_counter() - t0,
         wb=wb,
     )
@@ -1063,6 +1086,7 @@ def summarize(
     skipped_no_legal: int,
     sample_counts: Counter[int],
     output_dir: Path,
+    bead_id: str,
     started_seconds: float,
     wb: Any,
 ) -> dict[str, Any]:
@@ -1079,9 +1103,26 @@ def summarize(
     actual_top_mean = sum(int(row["actual_mean_rank_desc"]) == 1 for row in decision_rows)
     actual_top_threshold = sum(int(row["actual_threshold_rank_desc"]) == 1 for row in decision_rows)
     actual_safest_tail = sum(int(row["actual_lower_tail_rank_asc"]) == 1 for row in decision_rows)
+    bid_values = [
+        int(value)
+        for value in payload.get("bid_values", [])
+    ]
+    if not bid_values:
+        bid_values = [
+            int(getattr(game, "bid_value"))
+            for game in payload.get("results", [])
+            if getattr(game, "bid_value", None) is not None
+        ]
+    bid_value_counts = dict(sorted(Counter(bid_values).items()))
+    if not bid_values:
+        bid_value_status = "not present; atlas defaults thresholds to bid 30"
+    elif len(bid_value_counts) == 1:
+        bid_value_status = "fixed recorded bid_value"
+    else:
+        bid_value_status = "mixed recorded bid_values"
     return {
         "schema_version": "w42.branch_atlas_v1.summary.v0",
-        "bead_id": "t42-gc7m",
+        "bead_id": bead_id,
         "created_at_utc": datetime.now(UTC).isoformat(),
         "repo_commit": git_sha(),
         "git_status_before_artifacts": git_status_short(),
@@ -1096,7 +1137,8 @@ def summarize(
             "seeds": payload.get("seeds"),
             "decl_ids": payload.get("decl_ids"),
             "checkpoint": payload.get("checkpoint"),
-            "bid_value_status": "schema_v2_fixed_cli_value" if payload.get("schema") == "v2" else "not present",
+            "bid_value_status": bid_value_status,
+            "bid_value_counts": bid_value_counts,
         },
         "coverage": {
             "inspected_decisions": inspected_decisions,
@@ -1173,7 +1215,8 @@ def summarize(
 def build_manifest(args: argparse.Namespace, summary: dict[str, Any]) -> dict[str, Any]:
     return {
         "schema_version": "w42.branch_atlas_v1.manifest.v0",
-        "bead_id": "t42-gc7m",
+        "bead_id": args.bead_id,
+        "experiment": args.experiment,
         "created_at_utc": summary["created_at_utc"],
         "input": summary["source"],
         "outputs": summary["artifacts"],
@@ -1221,6 +1264,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", type=Path, help="Saved .pt artifact from forge.eq.generate --save-joint-worlds")
     parser.add_argument("--output-dir", type=Path, default=OUT_DIR)
+    parser.add_argument("--bead-id", default="t42-gc7m")
+    parser.add_argument("--experiment", default="w42-powered-branch-atlas-v1")
     parser.add_argument("--top-k", type=int, default=8)
     parser.add_argument("--examples", type=int, default=12)
     parser.add_argument("--log-every-decisions", type=int, default=4)
@@ -1237,13 +1282,13 @@ def main() -> int:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     sha = git_sha()
     config = {
-        "bead_id": "t42-gc7m",
+        "bead_id": args.bead_id,
         "git_sha": sha,
         "input": str(args.input),
         "input_sha256": sha256_file(args.input) if args.input.exists() else "missing",
         "top_k": args.top_k,
         "log_every_decisions": args.log_every_decisions,
-        "experiment": "w42-powered-branch-atlas-v1",
+        "experiment": args.experiment,
         "model_family": "not applicable; report/label artifact",
         "claim_ledger_status_before": "no claim-ledger movement",
         "hf_repo_id": "not applicable",
@@ -1258,7 +1303,8 @@ def main() -> int:
             "eq-pdf",
             "joint-worlds",
             "hidden-threat-attribution",
-            "t42-gc7m",
+            args.experiment,
+            args.bead_id,
         ],
     )
     try:
@@ -1267,6 +1313,7 @@ def main() -> int:
             payload,
             input_path=args.input,
             output_dir=args.output_dir,
+            bead_id=args.bead_id,
             top_k=args.top_k,
             log_every_decisions=args.log_every_decisions,
             wb=wb,
@@ -1312,7 +1359,7 @@ def main() -> int:
             }
         )
         wb.log_artifact_files(
-            name=f"w42-branch-atlas-v1-{sha[:8]}",
+            name=f"{args.experiment}-{sha[:8]}",
             artifact_type="w42-branch-atlas",
             paths=[
                 args.output_dir / "summary.json",

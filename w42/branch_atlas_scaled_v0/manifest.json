@@ -1,0 +1,87 @@
+{
+  "bead_id": "t42-uptc",
+  "config": {
+    "examples": 16,
+    "log_every_decisions": 20,
+    "top_k_hidden_threats_per_action": 8,
+    "wandb_group": "w42-branch-atlas-scaled-v0",
+    "wandb_mode": "online",
+    "wandb_name": "t42-uptc-branch-atlas-scaled-v0-s9430-d10-n1000",
+    "wandb_project": "w42"
+  },
+  "created_at_utc": "2026-05-02T23:30:39.050975+00:00",
+  "experiment": "w42-branch-atlas-scaled-v0",
+  "feature_groups": {
+    "actor_private_context": [
+      "actor remaining hand facts",
+      "candidate legal action"
+    ],
+    "offline_distribution_labels": [
+      "q_per_world-derived PDF shape",
+      "threshold mass",
+      "lower-tail mass",
+      "quantiles",
+      "CVaR",
+      "scalar-EV omission flags"
+    ],
+    "offline_hidden_threat_labels": [
+      "conditioned hidden domino holder impact",
+      "top downside/upside hidden drivers",
+      "holder/domino impact rows"
+    ],
+    "online_safe_context": [
+      "seat_role",
+      "trick_position",
+      "public score",
+      "played count",
+      "current trick winner",
+      "candidate action facts"
+    ]
+  },
+  "input": {
+    "bid_value_counts": {
+      "30": 10
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "input_games": 10,
+    "n_samples": 1000,
+    "path": "w42/branch_atlas_scaled_v0/eq_pdf_s9430_d10_bid30_joint_1000s_v2.pt",
+    "schema": "v2",
+    "seeds": [
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430,
+      9430
+    ],
+    "sha256": "c0d124b0733dedd08227de7a3a4ca8cb200a9900d585721d654b461b798af9b8",
+    "start_seed": 9430
+  },
+  "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+  "outputs": {
+    "decision_actions_csv": "w42/branch_atlas_scaled_v0/decision_actions.csv",
+    "decision_states_csv": "w42/branch_atlas_scaled_v0/decision_states.csv",
+    "examples_json": "w42/branch_atlas_scaled_v0/examples.json",
+    "hidden_threat_rows_csv": "w42/branch_atlas_scaled_v0/hidden_threat_rows.csv",
+    "manifest_json": "w42/branch_atlas_scaled_v0/manifest.json"
+  },
+  "schema_version": "w42.branch_atlas_v1.manifest.v0"
+}

@@ -14,7 +14,8 @@ This page defines the attribution schema and leakage boundary for saved
 joint-world artifacts. The first empirical implementation is now
 [[w42-powered-branch-atlas-v1]], which generated two N=1000 schema-v2 games and
 produced 1026 hidden-threat rows from real `world_hands` and `q_per_world`
-tensors.
+tensors. [[w42-branch-atlas-scaled-v0]] expands the same analyzer to all ten
+declarations for one seed, producing 5955 hidden-threat rows.
 
 ## Method
 
@@ -37,9 +38,9 @@ atlas at `w42/branch_atlas_v1/build_branch_atlas.py`, adding public decision
 context, distribution-shape features, W&B progress series, and action/decision
 tables beside the hidden-threat rows.
 
-The first-pass thresholds remain `Q <= -18` for disaster-tail mass and `Q >= 18`
-for high-shelf mass. The current powered run uses fixed `bid_value=30`; true
-bid-margin analysis still requires real auction metadata.
+The analyzer now computes high-shelf/threshold mass from recorded `bid_value`
+when it exists. The current powered artifacts still use fixed `bid_value=30`;
+true bid-margin analysis still requires real auction metadata.
 
 The output row grain is:
 
@@ -92,6 +93,7 @@ donation, or bid-margin detector should care about.
 | walkthrough | `w42/hidden_domino_threat_attribution/example_walkthrough.md` | illustrative only |
 | powered implementation | `w42/branch_atlas_v1/build_branch_atlas.py` | empirical branch/threat atlas |
 | powered threat rows | `w42/branch_atlas_v1/hidden_threat_rows.csv` | 1026 real rows |
+| scaled threat rows | `w42/branch_atlas_scaled_v0/hidden_threat_rows.csv` | 5955 real rows |
 
 ## Run Recipe
 
@@ -128,14 +130,13 @@ Real metric pass:
 | worktree | `.claude/worktrees/w42-phase2-hidden-threat` |
 | branch | `w42/phase2-hidden-threat` |
 | design-time commit | `343a9f4c45244889ea9c1eaa8edacde7e2a69920` |
-| generation status | schema design superseded by [[w42-powered-branch-atlas-v1]] empirical run |
-| W&B links | `https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j` |
+| generation status | schema design superseded by [[w42-powered-branch-atlas-v1]] and [[w42-branch-atlas-scaled-v0]] empirical runs |
+| W&B links | `https://wandb.ai/jasonyandell-forge42/w42/runs/44z1kl9j`; `https://wandb.ai/jasonyandell-forge42/w42/runs/7fwi2zwn` |
 | HF links | not applicable |
 | claim-ledger impact | no central claim status change |
 
 ## Next Steps
 
-- Add bid-aware make/set thresholds from `bid_value`.
 - Preserve per-world posterior weights for posterior runs.
 - Feed the resulting top-k rows into the next targeted w42 regime: setter pounce,
   84 weapon preservation, or auction bid-margin counterfactuals.
@@ -144,4 +145,5 @@ Real metric pass:
 
 [[w42]] | [[w42-final-empirical-strategy-report]] |
 [[w42-next-model-decision]] | [[joint-world-tensor]] |
-[[gus-joint-world-tire-kick]] | [[w42-powered-branch-atlas-v1]]
+[[gus-joint-world-tire-kick]] | [[w42-powered-branch-atlas-v1]] |
+[[w42-branch-atlas-scaled-v0]]

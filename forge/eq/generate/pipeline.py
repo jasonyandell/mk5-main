@@ -97,6 +97,8 @@ def generate_eq_games_gpu(
                         (max SEM < threshold) or max_samples is reached.
         use_cuda_graph: Enable CUDA graph optimization for model forward pass (reduces
                        kernel launch overhead by ~10-20%)
+        bid_values: Optional per-game bid values used for p_make selection and
+                    stored on schema-v2 records.
 
     Returns:
         List of N GameRecordGPU, one per game
@@ -282,7 +284,15 @@ def generate_eq_games_gpu(
             e_q_pdf = e_q_pdf.to(states.hands.device)
 
         # 6. Select actions by p_make (greedy, sampled, or exploration)
-        actions, exploration_stats = select_actions(states, e_q, e_q_pdf, greedy, exploration_policy, rng)
+        actions, exploration_stats = select_actions(
+            states,
+            e_q,
+            e_q_pdf,
+            greedy,
+            exploration_policy,
+            rng,
+            bid_values=bid_values,
+        )
 
         # 7. Compute Schema v2 per-seat data if requested and joint-world data is available
         v2_softmax = None

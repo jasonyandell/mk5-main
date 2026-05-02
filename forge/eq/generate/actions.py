@@ -11,17 +11,61 @@ from forge.eq.types import ExplorationPolicy, PosteriorDiagnostics
 
 from .types import DecisionRecordGPU, GameRecordGPU
 
-# Bin offset for bid_value 30 (offense needs Q >= 18 -> bin 60+)
-# For bid_value B, offense needs Q >= (B - 42 + 42) = B - 42 in Q-space,
-# so bin offset = B - 42 + 42 = B (Q = bin - 42, so bin = Q + 42 = B)
-_BID30_OFFENSE_BIN = 60  # P(Q >= 18) = bins 60..84
-_BID30_DEFENSE_BIN = 25  # P(Q >= -17) = bins 25..84
+DEFAULT_BID_VALUE = 30
+EQ_BIN_COUNT = 85
+
+
+def _bid_values_tensor(
+    bid_values: list[int] | Tensor | None,
+    *,
+    n_games: int,
+    device: torch.device | str,
+) -> Tensor:
+    """Return one contract value per game."""
+    if bid_values is None:
+        return torch.full((n_games,), DEFAULT_BID_VALUE, dtype=torch.long, device=device)
+    if isinstance(bid_values, Tensor):
+        values = bid_values.to(device=device, dtype=torch.long).flatten()
+    else:
+        values = torch.tensor(bid_values, dtype=torch.long, device=device).flatten()
+    if values.numel() == 1 and n_games != 1:
+        values = values.expand(n_games)
+    if values.numel() != n_games:
+        raise ValueError(f"Expected {n_games} bid values, got {values.numel()}")
+    return values
+
+
+def _contract_points_from_bid_values(bid_values: Tensor) -> Tensor:
+    """Map recorded bid values to contract point targets."""
+    return torch.where(bid_values == 84, torch.full_like(bid_values, 42), bid_values)
+
+
+def contract_threshold_bins(
+    bid_values: list[int] | Tensor | None,
+    *,
+    n_games: int,
+    device: torch.device | str,
+) -> tuple[Tensor, Tensor]:
+    """Compute PDF start bins for offense make and defense set thresholds.
+
+    The PDF has bins 0..84 for Q values -42..+42. For an offense contract B,
+    the bidder team needs Q >= 2B - 42, so the offense bin is 2B. The defense
+    team needs the bidder team to fall short, matching the historical bid-30
+    convention of Q >= -17 / bin 25, so the defense bin is 85 - 2B.
+    """
+    contract_points = _contract_points_from_bid_values(
+        _bid_values_tensor(bid_values, n_games=n_games, device=device)
+    )
+    offense_bins = (2 * contract_points).clamp(min=0, max=EQ_BIN_COUNT - 1)
+    defense_bins = (EQ_BIN_COUNT - 2 * contract_points).clamp(min=0, max=EQ_BIN_COUNT - 1)
+    return offense_bins.long(), defense_bins.long()
 
 
 def _p_make_from_pdf(
     e_q_pdf: Tensor,
     bidder: Tensor,
     current_players: Tensor,
+    bid_values: list[int] | Tensor | None = None,
 ) -> Tensor:
     """Compute p_make (probability of making contract) per seat from PDF.
 
@@ -29,13 +73,21 @@ def _p_make_from_pdf(
         e_q_pdf: [n_games, 7, 85] PDF per action per game
         bidder: [n_games] bidder seat (int8)
         current_players: [n_games] seat whose perspective we're computing for
+        bid_values: Optional [n_games] contract values. Defaults to 30.
 
     Returns:
         [n_games, 7] p_make values
     """
+    n_games = e_q_pdf.shape[0]
     is_offense = ((current_players % 2) == (bidder % 2)).unsqueeze(1)  # [n_games, 1]
-    p_make_offense = e_q_pdf[:, :, _BID30_OFFENSE_BIN:].sum(dim=2)
-    p_make_defense = e_q_pdf[:, :, _BID30_DEFENSE_BIN:].sum(dim=2)
+    offense_bins, defense_bins = contract_threshold_bins(
+        bid_values,
+        n_games=n_games,
+        device=e_q_pdf.device,
+    )
+    bins = torch.arange(EQ_BIN_COUNT, device=e_q_pdf.device).view(1, 1, EQ_BIN_COUNT)
+    p_make_offense = (e_q_pdf * (bins >= offense_bins.view(n_games, 1, 1))).sum(dim=2)
+    p_make_defense = (e_q_pdf * (bins >= defense_bins.view(n_games, 1, 1))).sum(dim=2)
     return torch.where(is_offense, p_make_offense, p_make_defense)
 
 
@@ -177,6 +229,7 @@ def select_actions(
     greedy: bool,
     exploration_policy: ExplorationPolicy | None = None,
     rng: np.random.Generator | None = None,
+    bid_values: list[int] | Tensor | None = None,
 ) -> tuple[Tensor, list | None]:
     """Select actions by probability of making the contract (p_make).
 
@@ -186,8 +239,9 @@ def select_actions(
     instead of E[Q], with E[Q] as tie-breaker.
 
     Win thresholds:
-        - Offense (P0, P2): win when Q >= 18 (team scored >= 30) -> bin 60+
-        - Defense (P1, P3): win when Q >= -17 (bidder scored <30) -> bin 25+
+        - Offense at bid 30: win when Q >= 18 (team scored >= 30) -> bin 60+
+        - Defense at bid 30: win when Q >= -17 (bidder scored <30) -> bin 25+
+        - Higher bids move those bins per bid value.
 
     Args:
         states: GameStateTensor
@@ -196,6 +250,7 @@ def select_actions(
         greedy: If True, argmax. If False, softmax sample.
         exploration_policy: Optional exploration policy (overrides greedy if provided)
         rng: NumPy RNG for exploration
+        bid_values: Optional [n_games] contract values. Defaults to 30.
 
     Returns:
         Tuple of (actions, exploration_stats):
@@ -209,15 +264,7 @@ def select_actions(
     # Get legal actions: [n_games, 7]
     legal_mask = states.legal_actions()
 
-    # Compute p_make from PDF
-    # Offense (bidder's team): need Q >= 18 -> bin 60+ (bin = Q + 42)
-    # Defense (opponent team): need Q > -18, i.e., Q >= -17 -> bin 25+
-    # Player is offense if they're on the same team as the bidder
-    is_offense = ((states.current_player % 2) == (states.bidder % 2)).unsqueeze(1)  # [n_games, 1]
-
-    p_make_offense = e_q_pdf[:, :, 60:].sum(dim=2)  # [n_games, 7]
-    p_make_defense = e_q_pdf[:, :, 25:].sum(dim=2)  # [n_games, 7]
-    p_make = torch.where(is_offense, p_make_offense, p_make_defense)  # [n_games, 7]
+    p_make = _p_make_from_pdf(e_q_pdf, states.bidder, states.current_player, bid_values)
 
     # If exploration policy provided, use it (per-game selection)
     # Note: exploration still uses E[Q] for now (separate concern)

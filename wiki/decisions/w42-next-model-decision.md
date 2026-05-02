@@ -106,6 +106,12 @@ processed decisions. Its result is still a report/label artifact, not a model
 decision or claim-ledger verdict, but it proves the branch-aware/hidden-impact
 measurement loop is now executable.
 
+[[w42-branch-atlas-scaled-v0]] is the first scale-up of that loop. It covers all
+ten declarations for seed 9430, produces 280 decision rows and 5955 hidden-threat
+rows, and patches the E[Q] generator plus atlas so `bid_value` controls
+contract-threshold computation. The artifact still fixes bid at 30, so it proves
+plumbing and declaration coverage rather than real auction strategy.
+
 ## Risks
 
 - Direct detectors may require state not present in current Gus corpora.
@@ -116,9 +122,9 @@ measurement loop is now executable.
 - Hidden-domino attribution must remain an offline label/eval target; using
   hidden truth directly as a live feature would violate the legal public-state
   boundary.
-- The branch-atlas v1 pilot uses fixed `bid_value=30`; real bid-margin analysis
-  still needs auction metadata and should not infer "bid only enough" claims from
-  this slice.
+- The current branch-atlas artifacts use fixed `bid_value=30`; real bid-margin
+  analysis still needs auction metadata and should not infer "bid only enough"
+  claims from these slices.
 - A better model may exploit tags as shortcuts without learning the intended
   strategy mechanism.
 - W&B curves can look exciting while claim evidence remains proxy-only.

@@ -96,6 +96,11 @@ recomputes the same distribution family from saved `q_per_world` tensors rather
 than collapsed JSONL PDFs, then adds hidden-holder impact rows from the matching
 `world_hands` tensor.
 
+[[w42-branch-atlas-scaled-v0]] expands the powered follow-up to all ten
+declarations for one seed and adds bid-aware threshold plumbing. Its fixed
+`bid_value=30` means distribution rates remain a declaration-coverage pilot, not
+real auction strategy evidence.
+
 ## Artifacts
 
 | artifact | path | purpose |
@@ -132,4 +137,4 @@ than collapsed JSONL PDFs, then adds hidden-holder impact rows from the matching
 ## Links
 
 [[w42]] | [[eq-browser-visualizers]] | [[w42-next-model-decision]] |
-[[w42-powered-branch-atlas-v1]]
+[[w42-powered-branch-atlas-v1]] | [[w42-branch-atlas-scaled-v0]]
