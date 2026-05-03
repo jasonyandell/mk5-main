@@ -1,0 +1,47 @@
+{
+  "probe_id": "t42-v9lu_reentry_v2",
+  "bead_id": "t42-v9lu",
+  "wave": "2.A.3",
+  "claim_tested": "ch03-reentry-preservation",
+  "predecessor": "wave2/snapshots/reentry_preservation (Wave 2.A, random-play, underpowered context bias)",
+  "question": "Does preserving the bidder's single remaining trump produce better E[Q] than consuming it immediately?",
+  "slice": {
+    "corpus": "oracle-greedy (reentry_preservation_v2)",
+    "n_snapshots_input": 500,
+    "n_viable_pairs": 222,
+    "n_skipped_trump_not_legal": 208,
+    "n_skipped_no_off_suit_legal": 70,
+    "declarations": "pip-trump 0-6 only",
+    "bid_value": 30,
+    "shape_filter": "bidder turn, exactly 1 trump remaining, >=2 distinct off suits, trick>=2"
+  },
+  "methodology": {
+    "branch_a": "trump_slot (consume reentry)",
+    "branch_b": "highest_pip_off_suit_slot (preserve reentry — book's 'cash high tiles')",
+    "off_suit_selection": "highest pip-sum legal non-trump tile in bidder hand",
+    "n_samples_per_branch": 200,
+    "device": "mps",
+    "evaluation": "single pipeline call per snapshot, two slots read simultaneously",
+    "metric": "ev_delta = E[Q](preserve) - E[Q](consume)"
+  },
+  "model": {
+    "checkpoint": "forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "qgap": 0.071,
+    "qmae": 0.94
+  },
+  "inputs": {
+    "snapshots": "w42/book_validation_v1/wave2/snapshots/reentry_preservation_v2/snapshots.jsonl",
+    "snapshots_sha256": "60d56b932c9a1c9d50b5acd8e20997312d41c7e71293a798a9459dd8f9ba538e"
+  },
+  "outputs": {
+    "paired_contrasts": "w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2/paired_contrasts.csv",
+    "slice_by_phase": "w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2/slice_by_phase.csv",
+    "summary": "w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2/summary.json"
+  },
+  "command": "python w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2/run_reentry_v2_probe.py --samples 200 --device mps --output-dir w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2",
+  "run_metadata": {
+    "wall_seconds": 135.2,
+    "n_valid_pairs_produced": 222,
+    "date": "2026-05-03"
+  }
+}
