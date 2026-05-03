@@ -72,6 +72,21 @@ bd close bd-42 --reason "Completed" --json
 5. **Complete**: `bd close <id> --reason "Done"`
 6. **Commit together**: Always commit the `.beads/issues.jsonl` file together with the code changes so issue state stays in sync with code state
 
+### Context Hygiene for AI Agents
+
+Beads are bookkeeping, not the main work surface. Keep them from consuming the
+conversation context:
+
+- Prefer one bead per coherent session or work slice; do not create a new bead
+  for every tiny patch unless the user asks for that granularity.
+- Do not print broad bead JSON into chat. Avoid `bd ready --json`, `bd list
+  --json`, or `git diff .beads/issues.jsonl` unless the user specifically asks
+  for issue archaeology.
+- Use targeted commands such as `bd show <id> --json`, `bd create`, `bd update`,
+  and `bd close`, then summarize the result in prose.
+- Never paste `.beads/issues.jsonl` diffs into the conversation. Git is
+  configured to suppress textual diffs for that export; respect that boundary.
+
 ### Auto-Sync
 
 bd automatically syncs with git:
