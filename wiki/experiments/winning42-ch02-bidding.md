@@ -106,7 +106,36 @@ make/set/E[Q] counterfactuals.
 | Double-ahead protection reduces only the protected side of an off, not both sides. | static side detector supported, context-limited | Side-specific protection covers only `16.774838%` of exposed count points; live sequence value remains untested. |
 | Duplicate count exposures should be counted once in the bid risk budget. | context-limited / not run | Unit-testable enumeration against naive risk-sum baseline. |
 | One vulnerable trick should be bid pessimistically, while two or more vulnerable tricks can justify some partner-help expectation. | context-limited / not run | Partner rescue probability and bid-regret interaction by loss-opportunity count. |
-| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | supported for generated bid-margin counterfactuals | Phase 3 found no positive-margin rows where bidding above the minimum improved over the minimum bid; full human/table auction policy remains separate. |
+| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | context-limited (paired same-hand evidence) | [[w42-bookval-v1-wave2-bid-aware-atlas]] paired bid=32 vs bid=30 over n=14,000 same-hand decisions: mark_ev delta `-0.076` (CI `[-0.085, -0.067]`), p_make delta `-0.038` (CI `[-0.042, -0.034]`). Both CIs exclude zero in book direction (overbidding hurts even on same hand). Tested only on one-step bid margin; multi-step bid choice and full auction policy remain untested. Ledger row promoted from `not-yet-tested` to `context-limited`. |
+
+## Wave 2 Findings (Book Validation v1)
+
+The campaign's first ledger promotion landed here. Wave 2.B.2's
+50-seed bid-aware MPS sweep (259,618 action rows) provides
+**paired same-hand counterfactual evidence** for the bid-only-enough
+principle:
+
+- For every (seed, decl_id, decision_idx) actually-played action across
+  50 seeds × 10 decls, mark_ev and p_make are computed under both
+  bid=30 and bid=32 incentives.
+- The paired delta (bid=32 minus bid=30) is `-0.076` for mark_ev and
+  `-0.038` for p_make. Both have tight CIs that exclude zero in the
+  book direction.
+- N=14,000 paired decisions per bid bucket. Power: sufficient for
+  mark_ev and p_make; borderline for threshold_mass.
+
+This is the cleanest possible same-contract test of the book's claim:
+on the same hand at the same decision, evaluating under bid=32 makes
+you mark-worse than under bid=30 by ~0.08 marks per decision. The
+audit's original overclaim risk was that bid-only-enough should not
+be promoted broadly without auction evidence; this paired-same-hand
+slice is conservative because it tests only the "captured-points
+identity" mechanism the book proposes, not auction strategy.
+
+The high-bid steps (bid=35, 36, 39, 42, 84) and full auction policy
+remain untested. Wave 2.G (bead `t42-ey88`) will extend the analysis to
+multi-step bid margins; auction-policy testing remains in the Wave 3
+plan.
 
 ## Links
 

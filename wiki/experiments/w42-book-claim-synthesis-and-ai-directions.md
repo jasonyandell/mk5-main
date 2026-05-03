@@ -389,6 +389,42 @@ will mine follow-position candidates. The contradicted finding applies
 narrowly to lead-to-self-void; it does not refute the broader chapter
 concept.
 
+## Wave 2.B.2 Full Bid-Aware Sweep — Power Analysis
+
+[[w42-bookval-v1-wave2-bid-aware-atlas]] now contains 259,618 action
+rows from a 50-seed × 10-decl × 7-bid sweep on M5 MPS. Validation at
+bid=30 vs [[w42-branch-atlas-scaled-v0]] passes 10/10. Power analysis
+verdicts:
+
+- `ch10-special-bid-mark-multiplier`: **sufficient** at all bids
+  (n=14,000 paired decisions per bid, CI half-widths < 0.008). Mark_ev
+  changes in 65-100% of decisions as bid rises, with 100% at bid=84.
+  Adds action-level evidence to a row already `supported` via
+  deterministic transform.
+- `ch02-bid-only-enough`: **sufficient** for `mark_ev` and `p_make`
+  paired deltas (bid=32 minus bid=30: `mark_ev` `-0.076` CI
+  `[-0.085, -0.067]`; `p_make` `-0.038` CI `[-0.042, -0.034]`). Both
+  CIs exclude zero in book direction (overbidding hurts). Borderline
+  for `threshold_mass`. **Ledger row promoted: `not-yet-tested` ->
+  `context-limited`** (paired counterfactual evidence on the
+  same-contract one-step bid-margin slice; auction-policy and
+  multi-step bid-margin scopes remain untested).
+- `ch12-setter-pounce-high-bid-off`: **sufficient** at bid=39
+  (delta `+0.376`, CI `[+0.010, +0.751]`) and bid=42 (delta `+0.410`,
+  CI `[+0.068, +0.765]`); borderline at bid=35/36/84. The pounce-Q
+  signal flips from negative at bid=30 (Wave 2.E) to positive at
+  bid >= 39, consistent with the book's "pounce harder at high bids"
+  framing. **Ledger row promoted: `underpowered` ->
+  `context-limited`** (rough proxy on aggregate Q delta, not yet
+  snapshot-level paired contrast). Wave 2.E.2 (bead `t42-8kbh`) will
+  produce snapshot-level evidence.
+
+Status counts after Wave 2.B.2: supported 23, context-limited 16,
+underpowered 19, not-yet-tested 4, contradicted 2. Two rows promoted
+into the active-evidence pool; the campaign now has its first
+non-trivial movement out of `not-yet-tested` and `underpowered` based
+on paired counterfactual evidence.
+
 ## Links
 
 [[w42]] | [[w42-phase4-final-claim-audit]] |

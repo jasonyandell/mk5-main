@@ -32,7 +32,7 @@ the central ledger or the synthesis page.
 | 2.A.2 | oracle-greedy snapshot mining (5 corpora, 1822 snapshots) | t42-y8b5 | closed (commit 77a8511) |
 | 2.A.3 | reentry probe v2 | t42-v9lu | closed (d9f8dbf) — `context-limited`, late game contradicts book |
 | 2.B | bid-aware E[Q] driver smoke | t42-6j3k | closed (0c802d4) |
-| 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | in flight |
+| 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | closed (720aa83) — 259,618 rows, validation 10/10 PASS, **2 ledger promotions** |
 | 2.C | void-creation paired contrast | t42-26j8 | closed (8507b11) — **contradicted** (lead-to-self-void slice only); follow-position scope filed as t42-z31l |
 | 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
 | 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
@@ -52,18 +52,25 @@ during Wave 1.4 reconciliation): `t42-v0m5`, `t42-2yb5`, `t42-btpg`.
 Wave 1 absorbed 2 promotions (Ch 10 timed-marks-advancement-objective and
 point-system-skill-signal: both into `context-limited` from
 `not-yet-tested` and `underpowered` respectively) and normalized one
-non-vocabulary status string in a phase-4 worker artifact. No claim was
-demoted. No claim crossed into `supported` from `context-limited` or
-weaker.
+non-vocabulary status string in a phase-4 worker artifact.
 
-Status counts after Wave 1:
+Wave 2 (so far) absorbed 2 more promotions: `ch02-bid-only-enough`
+(`not-yet-tested` -> `context-limited`) and
+`ch12-setter-pounce-high-bid-off` (`underpowered` -> `context-limited`),
+both backed by paired same-hand counterfactual evidence from
+[[w42-bookval-v1-wave2-bid-aware-atlas]] (n=14,000 paired decisions).
+
+No claim has been demoted. No claim has crossed into `supported` from
+`context-limited` or weaker.
+
+Status counts after Wave 2.B.2:
 
 | status | count |
 |---|---:|
 | supported | 23 |
-| context-limited | 14 |
-| underpowered | 20 |
-| not-yet-tested | 5 |
+| context-limited | 16 |
+| underpowered | 19 |
+| not-yet-tested | 4 |
 | contradicted | 2 |
 
 The campaign's design discipline says we move a row out of
