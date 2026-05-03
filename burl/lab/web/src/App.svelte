@@ -388,6 +388,10 @@
   let healthOk = $derived(!!(healthInfo && healthInfo.ok));
 
   let preGameToolRows = $derived(frame ? toolRows(frame.segments) : []);
+  let advertisedCount = $derived(frame ? frame.advertised.length : 0);
+  let toolSurfaceCount = $derived(
+    preGameToolRows.length > 0 ? preGameToolRows.length : (frame?.active_tools.length ?? 0),
+  );
 </script>
 
 <div class="app">
@@ -508,10 +512,18 @@
           {:else if k === "rendered_system"}
             <div class="seg system">
               <span class="badge sys">rendered system · {String(s.text ?? "").length} chars</span>
-              <details>
-                <summary class="dim small">show / hide</summary>
-                <div class="seg-body mono">{String(s.text ?? "")}</div>
-              </details>
+              {#if String(s.text ?? "").length === 0}
+                <div class="seg-body dim small">
+                  no system prompt yet. use <strong>Set system prompt</strong> for manual text,
+                  or <strong>Load harvested decision + prompt</strong> to import the harvested
+                  `prompt_system` and `prompt_user`.
+                </div>
+              {:else}
+                <details>
+                  <summary class="dim small">show / hide</summary>
+                  <div class="seg-body mono">{String(s.text ?? "")}</div>
+                </details>
+              {/if}
             </div>
           {:else if k === "advertised_set"}
             <div class="seg cfg dim small">
@@ -534,7 +546,7 @@
         <button class="aside-toggle ghost" onclick={() => (asideOpen = !asideOpen)}>
           tools
           <span class="dim small">
-            {frame.advertised.length}/{frame.active_tools.length} advertised
+            {advertisedCount}/{toolSurfaceCount} advertised
             {#if surfacedTools.length > 0}
               · {surfacedTools.length} surfaced
             {/if}

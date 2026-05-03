@@ -116,7 +116,7 @@ class _PreGamePhase:
             ),
             Option(
                 name="load_decision",
-                label="Load harvested decision",
+                label="Load harvested decision + prompt",
                 args_schema={
                     "type": "object",
                     "properties": {

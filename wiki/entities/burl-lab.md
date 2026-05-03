@@ -24,6 +24,8 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Mined chat tools.** The four [[improvised-tools]] that earned their keep in [[burl-chat-spike]] now have first-class `ToolSpec` wrappers under `burl/lab/tools/chat_mined.py`: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Their implementations still live in `burl/chat/server/tools_library/`; burl-lab wraps them only to attach JSON schemas, examples, `protocol_role`, and `protocol_phrase`. The server registry now boots with seven tools total: the three base decision tools plus the four mined chat tools.
 
+**Prompt UX.** A fresh pre-game session intentionally renders `0 chars` because no `SystemSet` has been journaled yet. The two prompt entry paths are explicit: `Set system prompt` journals manual text, while `Load harvested decision + prompt` mines the harvested `prompt_system` and `prompt_user` together. The web UI now calls this out in the empty rendered-system panel and counts the pre-game registry rows as the available tool surface so the drawer no longer reports `0/0 advertised` when seven registry tools are present but none are selected.
+
 ## Architecture
 
 Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPEC.md @ a2db3c7](../sources/a2db3c7.md)):

@@ -1913,3 +1913,11 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 **Touched pages:** [[burl-lab]] [[log]]
 
 The four useful [[improvised-tools]] from [[burl-chat-spike]] now load into burl-lab as first-class `ToolSpec` wrappers: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Implementations still delegate to `burl/chat/server/tools_library/`, but burl-lab now owns their schemas, examples, protocol roles, and protocol phrases, so the rendered Decision Protocol can name them directly.
+
+---
+
+## [2026-05-02 | local | burl/lab prompt UX clarification]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+Fresh pre-game sessions still start with no system prompt (`rendered system · 0 chars`) until a `SystemSet` is journaled, but the UI now explains the two paths: manual `Set system prompt`, or `Load harvested decision + prompt` to import harvested `prompt_system` plus `prompt_user`. The tool drawer now counts registry rows in pre-game, so the initial surface reports `0/7 advertised` instead of the misleading `0/0 advertised`.
