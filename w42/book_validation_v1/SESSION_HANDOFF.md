@@ -59,10 +59,11 @@ Wave 2 probes:
 
 ### Deferred (filed but not launched)
 
-- **2.F (84-throwaway, `t42-wikw`)**: needs custom snapshot mining
-  design. Legacy corpus is bid=30; bid-aware atlas's bid=84 doesn't
-  enforce 4+ doubles. Description updated with two design options;
-  needs orchestrator design pass before launch.
+- **2.F (84-throwaway, `t42-wikw`)**: design pass complete (Option 3
+  hybrid: filter Wave 2.B.2 bid=84 generations to bidder-seat 4+-doubles
+  hands at endgame; expected ~170 paired contrasts). Held until Wave 3.0
+  lands so the utility-lens slate can inform the per-utility verdict
+  shape (84 is likely a sharp p_make vs EV split case).
 - **Detector hygiene** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`): P2,
   unclaimed.
 
@@ -115,8 +116,10 @@ closed probes.
 
 ### Pending decisions for the user when resuming
 
-- **2.F (84-throwaway)**: design needs orchestrator pass. See bead
-  description for two design options.
+- **2.F (84-throwaway)**: design pass on bead complete (Option 3
+  hybrid). Decision pending Wave 3.0 results: if 84 lands as p_make-clear
+  in the utility lens, the throwaway-ladder probe is highest-value;
+  otherwise it's a one-off claim probe.
 - **Detector hygiene beads** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`):
   could roll into a single Wave 2.X cleanup pass when Wave 3.0 lands.
 - **Wave 4 design**: training implications. If Wave 3.0 confirms the
