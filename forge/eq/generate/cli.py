@@ -10,7 +10,7 @@ import torch
 
 from forge.eq.types import ExplorationPolicy
 
-from .pipeline import generate_eq_games_gpu
+from .pipeline import generate_eq_from_snapshots, generate_eq_games_gpu
 from .types import AdaptiveConfig, PosteriorConfig
 
 
@@ -30,6 +30,132 @@ def _parse_bid_values(raw: str | None, *, fallback: int, n_games: int) -> list[i
         if value < 30 or value > 42:
             raise ValueError(f"Bid values must be 30..42, or 84 for take-all contracts (got {value})")
     return values
+
+
+def _run_snapshot_mode(args) -> int:
+    """Dispatch to generate_eq_from_snapshots when --snapshot-file is set."""
+    import json
+
+    snapshot_path = Path(args.snapshot_file)
+    if not snapshot_path.exists():
+        print(f"Error: snapshot file not found: {snapshot_path}", flush=True)
+        return 1
+
+    snapshots = []
+    with snapshot_path.open() as fh:
+        for lineno, line in enumerate(fh, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                snapshots.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                print(f"Error: line {lineno} in {snapshot_path}: {exc}", flush=True)
+                return 1
+
+    if not snapshots:
+        print(f"Error: {snapshot_path} contains no snapshots.", flush=True)
+        return 1
+
+    n_games = len(snapshots)
+    print(f"Loaded {n_games} snapshots from {snapshot_path}", flush=True)
+
+    # Resolve device
+    device = args.device
+    if device == "cuda" and not torch.cuda.is_available():
+        if torch.backends.mps.is_available():
+            print("Warning: CUDA unavailable; falling back to MPS.", flush=True)
+            device = "mps"
+        else:
+            print("Warning: CUDA unavailable; falling back to CPU (slow).", flush=True)
+            device = "cpu"
+
+    # Find checkpoint
+    if args.checkpoint:
+        checkpoint_path = args.checkpoint
+    else:
+        model_dir = Path(__file__).parent.parent.parent / "models"
+        candidates = [
+            model_dir / "domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+            model_dir / "domino-large-817k-valuehead-acc97.8-qgap0.07.ckpt",
+            Path("checkpoints/stage1/best.ckpt"),
+        ]
+        checkpoint_path = None
+        for path in candidates:
+            if path.exists():
+                checkpoint_path = str(path)
+                break
+        if checkpoint_path is None:
+            print("Error: No model checkpoint found. Use --checkpoint to specify.", flush=True)
+            return 1
+
+    # Resolve output path
+    output_path = args.output or f"forge/data/eq_pdf_snapshots_{n_games}g_{args.samples}s.pt"
+
+    schema_v2 = args.schema == "v2"
+    if schema_v2 and not args.save_joint_worlds:
+        print("Warning: --schema v2 requires --save-joint-worlds. Enabling automatically.", flush=True)
+        args.save_joint_worlds = True
+
+    # Configure optional features
+    posterior_config = None
+    if args.posterior:
+        posterior_config = PosteriorConfig(
+            enabled=True, window_k=args.posterior_k, tau=0.1, uniform_mix=0.1
+        )
+
+    exploration_policy = None
+    if args.exploration == "boltzmann":
+        exploration_policy = ExplorationPolicy.boltzmann(temperature=args.temperature)
+    elif args.exploration == "epsilon":
+        exploration_policy = ExplorationPolicy.epsilon_greedy(epsilon=args.epsilon)
+
+    adaptive_config = None
+    if args.adaptive:
+        adaptive_config = AdaptiveConfig(
+            enabled=True,
+            min_samples=args.min_samples,
+            max_samples=args.max_samples,
+            batch_size=args.batch_size,
+            sem_threshold=args.sem_threshold,
+        )
+
+    from forge.eq.oracle import Stage1Oracle
+    print(f"Loading model from {checkpoint_path}...", flush=True)
+    oracle = Stage1Oracle(checkpoint_path, device=device, compile=False)
+
+    print(f"  Samples: {args.samples}", flush=True)
+    print(f"  Device: {device}", flush=True)
+
+    t0 = time.perf_counter()
+    results = generate_eq_from_snapshots(
+        model=oracle.model,
+        snapshots=snapshots,
+        n_samples=args.samples,
+        device=device,
+        greedy=(exploration_policy is None),
+        exploration_policy=exploration_policy,
+        posterior_config=posterior_config,
+        use_enumeration=args.enumerate,
+        enumeration_threshold=args.enum_threshold,
+        adaptive_config=adaptive_config,
+        save_joint_worlds=args.save_joint_worlds,
+        schema_v2=schema_v2,
+    )
+    elapsed = time.perf_counter() - t0
+    print(f"Generated {len(results)} games in {elapsed:.1f}s ({len(results)/elapsed:.2f} games/s)", flush=True)
+
+    save_dict = {
+        'results': results,
+        'snapshot_file': str(snapshot_path),
+        'n_snapshots': n_games,
+        'checkpoint': checkpoint_path,
+        'n_samples': args.samples,
+        'schema': args.schema,
+    }
+    torch.save(save_dict, output_path)
+    print(f"Saved to {output_path}", flush=True)
+    return 0
 
 
 def main() -> int:
@@ -62,17 +188,28 @@ Examples:
   # 100 games = 10 seeds x 10 decls.
   python -m forge.eq.generate --start-seed 0 --n-games 100 --n-decl-per-seed 10 \\
       --samples 500
+
+  # Mid-game state injection: evaluate from arbitrary snapshots (JSONL)
+  python -m forge.eq.generate --snapshot-file snapshots.jsonl --samples 500 -o results.pt
 """,
     )
 
-    # Required arguments
-    parser.add_argument(
-        "--start-seed", type=int, required=True,
-        help="Starting seed for deal generation"
+    # Mutually exclusive: fresh-deal mode vs snapshot-injection mode
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--start-seed", type=int, default=None,
+        help="Starting seed for deal generation (fresh-deal mode)"
     )
+    source_group.add_argument(
+        "--snapshot-file", type=str, default=None,
+        help="Path to JSONL file of forge.eq.snapshot.v1 dicts. "
+             "When provided, evaluates from mid-game positions rather than fresh deals. "
+             "Mutually exclusive with --start-seed / --n-games."
+    )
+
     parser.add_argument(
-        "--n-games", type=int, required=True,
-        help="Total number of (seed, decl) games to generate. "
+        "--n-games", type=int, default=None,
+        help="Total number of (seed, decl) games to generate (fresh-deal mode). "
              "With --n-decl-per-seed N, this must be divisible by N; "
              "the first n_games/N seeds are expanded across the first N decls."
     )
@@ -191,6 +328,15 @@ Examples:
     )
 
     args = parser.parse_args()
+
+    # --- Snapshot-injection mode ---
+    if args.snapshot_file is not None:
+        return _run_snapshot_mode(args)
+
+    # --- Fresh-deal mode: validate required arguments ---
+    if args.n_games is None:
+        print("Error: --n-games is required in fresh-deal mode.", flush=True)
+        return 1
 
     # Validate decl-per-seed expansion
     if args.n_decl_per_seed < 1:

@@ -327,3 +327,234 @@ def generate_eq_games_gpu(
 
     # Convert to GameRecordGPU format
     return collate_records(hands, decl_ids, all_decisions, bid_values=bid_values)
+
+
+def generate_eq_from_snapshots(
+    model,
+    snapshots: list[dict],
+    n_samples: int = 50,
+    device: str = 'cuda',
+    greedy: bool = True,
+    use_mrv_sampler: bool = True,
+    exploration_policy: "ExplorationPolicy | None" = None,
+    posterior_config: "PosteriorConfig | None" = None,
+    use_enumeration: bool = False,
+    enumeration_threshold: int = 100_000,
+    adaptive_config: "AdaptiveConfig | None" = None,
+    use_cuda_graph: bool = False,
+    save_joint_worlds: bool = False,
+    schema_v2: bool = False,
+) -> "list[GameRecordGPU]":
+    """Generate E[Q] decisions from arbitrary mid-game snapshots.
+
+    Mirrors ``generate_eq_games_gpu`` but initialises ``GameStateTensor``
+    via ``GameStateTensor.from_snapshot`` rather than ``from_deals``.
+    Everything downstream — sampler, tokenizer, decision loop, return shape —
+    is identical.
+
+    Args:
+        model: Stage 1 oracle model.
+        snapshots: List of N snapshot dicts (``forge.eq.snapshot.v1`` schema).
+        n_samples: World samples per decision (ignored in adaptive/enumeration modes).
+        device: Device to run on ('cuda', 'mps', or 'cpu').
+        greedy: Greedy action selection if True.
+        use_mrv_sampler: MRV-based sampler if True, rejection sampler if False.
+        exploration_policy: Optional stochastic exploration policy.
+        posterior_config: Optional posterior-weighting config.
+        use_enumeration: Exact enumeration for late-game positions.
+        enumeration_threshold: Max worlds before falling back to sampling.
+        adaptive_config: Adaptive convergence-based sampling config.
+        use_cuda_graph: Enable CUDA-graph optimisation.
+        save_joint_worlds: Save per-world hands and Q-values on records.
+        schema_v2: Emit Schema v2 per-seat fields.
+
+    Returns:
+        List of N ``GameRecordGPU``, one per snapshot, containing only the
+        decisions made *from* the snapshot position onward.
+    """
+    if device == 'cuda' and not torch.cuda.is_available():
+        raise RuntimeError("CUDA not available. GPU-only pipeline requires CUDA.")
+    if device == 'mps' and not torch.backends.mps.is_available():
+        raise RuntimeError("MPS requested but not available on this machine.")
+
+    n_games = len(snapshots)
+
+    # Extract metadata needed for collate_records and per-game bookkeeping
+    hands: list[list[list[int]]] = [snap["hands"] for snap in snapshots]
+    decl_ids: list[int] = [int(snap["decl_id"]) for snap in snapshots]
+    bid_values: list[int] = [int(snap.get("bid_value", 30)) for snap in snapshots]
+
+    # Initialize RNG for exploration (if enabled)
+    if exploration_policy is not None:
+        if exploration_policy.seed is not None:
+            rng = np.random.default_rng(exploration_policy.seed)
+        else:
+            rng = np.random.default_rng()
+    else:
+        rng = None
+
+    # Initialize GPU state from snapshots
+    states = GameStateTensor.from_snapshot(snapshots, device=device)
+
+    # Determine sample allocation for adaptive vs fixed sampling
+    use_adaptive = adaptive_config is not None and adaptive_config.enabled
+    if use_adaptive:
+        sampler_max_samples = adaptive_config.batch_size
+        tokenizer_samples = adaptive_config.batch_size
+    else:
+        sampler_max_samples = n_samples
+        tokenizer_samples = n_samples
+
+    # Pre-allocate sampler and tokenizer
+    if use_mrv_sampler:
+        sampler = WorldSamplerMRV(max_games=n_games, max_samples=sampler_max_samples, device=device)
+    else:
+        sampler = WorldSampler(max_games=n_games, max_samples=sampler_max_samples, device=device)
+
+    # Pre-allocate enumerator if enabled
+    enumerator = None
+    if use_enumeration:
+        enumerator = WorldEnumeratorGPU(
+            max_games=n_games,
+            max_worlds=enumeration_threshold,
+            device=device,
+        )
+
+    tokenizer = GPUTokenizer(max_batch=n_games * tokenizer_samples, device=device)
+
+    # Track decisions for each game
+    all_decisions: list[list[DecisionRecordGPU]] = [[] for _ in range(n_games)]
+    decision_idx = 0
+
+    # Main generation loop — identical to generate_eq_games_gpu
+    while states.active_games().any():
+        n_samples_used = None
+        did_converge = None
+
+        history_len = (states.history[:, :, 0] >= 0).sum(dim=1).min().item()
+        should_enumerate = use_enumeration and history_len >= 12
+
+        use_posterior = posterior_config is not None and posterior_config.enabled
+
+        jw_hands = None
+        jw_q = None
+
+        if use_adaptive and not should_enumerate:
+            if use_posterior:
+                e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge = sample_until_convergence_posterior(
+                    states=states,
+                    sampler=sampler,
+                    tokenizer=tokenizer,
+                    model=model,
+                    adaptive_config=adaptive_config,
+                    posterior_config=posterior_config,
+                    device=device,
+                    decision_idx=decision_idx,
+                    seeds=None,
+                    use_cuda_graph=use_cuda_graph,
+                )
+            else:
+                e_q, e_q_var, e_q_pdf, diagnostics, n_samples_used, did_converge, adapt_wh, adapt_qpw = sample_until_convergence(
+                    states=states,
+                    sampler=sampler,
+                    tokenizer=tokenizer,
+                    model=model,
+                    adaptive_config=adaptive_config,
+                    device=device,
+                    decision_idx=decision_idx,
+                    seeds=None,
+                    use_cuda_graph=use_cuda_graph,
+                    save_joint_worlds=save_joint_worlds,
+                )
+                if save_joint_worlds:
+                    jw_hands = adapt_wh
+                    jw_q = adapt_qpw
+        else:
+            if use_enumeration:
+                worlds, world_counts, actual_n_samples = enumerate_or_sample_worlds(
+                    states, enumerator, sampler, n_samples, enumeration_threshold
+                )
+            else:
+                worlds = sample_worlds_batched(states, sampler, n_samples)
+                world_counts = None
+                actual_n_samples = n_samples
+
+            hypothetical = build_hypothetical_deals(states, worlds)
+
+            n_worlds_padded = worlds.shape[1]
+            batch_size = n_games * n_worlds_padded
+            if batch_size > tokenizer.max_batch:
+                tokenizer = GPUTokenizer(max_batch=batch_size, device=device)
+            tokens, masks = tokenize_batched(states, hypothetical, tokenizer)
+
+            q_values = query_model(model, tokens, masks, states, n_worlds_padded, device, use_cuda_graph=use_cuda_graph)
+
+            q_reshaped = q_values.view(n_games, n_worlds_padded, 7)
+
+            if save_joint_worlds:
+                jw_hands = worlds
+                jw_q = q_reshaped
+
+            if posterior_config and posterior_config.enabled:
+                e_q, e_q_var, e_q_pdf, diagnostics = compute_posterior_weighted_eq(
+                    states=states,
+                    worlds=worlds,
+                    q_values=q_values,
+                    n_samples=n_worlds_padded,
+                    model=model,
+                    tokenizer=tokenizer,
+                    posterior_config=posterior_config,
+                    device=device,
+                )
+            else:
+                if world_counts is not None:
+                    e_q, e_q_var = compute_eq_with_counts(q_reshaped, world_counts)
+                    e_q_pdf = compute_eq_pdf(q_reshaped, weights=None, world_counts=world_counts)
+                else:
+                    e_q = q_reshaped.mean(dim=1)
+                    e_q_var = q_reshaped.var(dim=1, unbiased=False)
+                    e_q_pdf = compute_eq_pdf(q_reshaped)
+                diagnostics = None
+
+        if e_q.device != states.hands.device:
+            e_q = e_q.to(states.hands.device)
+        if e_q_var.device != states.hands.device:
+            e_q_var = e_q_var.to(states.hands.device)
+        if e_q_pdf.device != states.hands.device:
+            e_q_pdf = e_q_pdf.to(states.hands.device)
+
+        actions, exploration_stats = select_actions(
+            states,
+            e_q,
+            e_q_pdf,
+            greedy,
+            exploration_policy,
+            rng,
+            bid_values=bid_values,
+        )
+
+        v2_softmax = None
+        v2_legal_mask_per_seat = None
+        v2_voids_per_seat = None
+        if schema_v2 and jw_hands is not None and jw_q is not None:
+            v2_softmax, v2_legal_mask_per_seat, v2_voids_per_seat = compute_per_seat_data(
+                states, jw_hands, jw_q, device
+            )
+
+        record_decisions(
+            states, e_q, e_q_var, e_q_pdf, actions, all_decisions,
+            diagnostics, exploration_stats, n_samples_used, did_converge,
+            world_hands=jw_hands, q_per_world=jw_q,
+            bid_values=bid_values,
+            oracle_softmax_per_seat=v2_softmax,
+            legal_mask_per_seat=v2_legal_mask_per_seat,
+            voids_per_seat=v2_voids_per_seat,
+        )
+
+        if actions.device != states.hands.device:
+            actions = actions.to(states.hands.device)
+        states = states.apply_actions(actions)
+
+        decision_idx += 1
+
+    return collate_records(hands, decl_ids, all_decisions, bid_values=bid_values)

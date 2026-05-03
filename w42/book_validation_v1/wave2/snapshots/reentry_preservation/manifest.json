@@ -1,0 +1,15 @@
+{
+  "corpus": "reentry_preservation",
+  "schema_version": "forge.eq.snapshot.v1",
+  "n_snapshots": 200,
+  "seed": 0,
+  "max_seeds_tried": 5000,
+  "output": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/reentry_preservation/snapshots.jsonl",
+  "sha256": "e6d9132dfd6ce5d60bb5b2d9c2559520c9d1ab79391de0bd1ce6cdc707736553",
+  "shape_filter": {
+    "bidder_turn": true,
+    "n_trumps_remaining": 1,
+    "min_distinct_off_suits": 2
+  },
+  "claim_tested": "ch03-reentry-preservation"
+}
