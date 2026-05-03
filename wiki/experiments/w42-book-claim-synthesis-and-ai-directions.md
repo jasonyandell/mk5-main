@@ -374,20 +374,29 @@ book claims that read as universal advice may turn out to encode
 implicit `p_make` reasoning that is correct at threshold-sharp bids and
 incorrect under tail-aware utilities.
 
-[[w42-bookval-v1-wave2-void-creation]] — paired-contrast probe on 276
-oracle-greedy snapshots. **Status: `contradicted` for the
-lead-to-self-void slice at bid=30** (the campaign's first
-contradicted-status finding). Both `p_set` delta (CI `[-0.028, -0.003]`)
-and EV delta (CI `[-3.42, -1.84]`) exclude zero opposite to the book's
-direction. Voiding by leading a singleton off-suit makes the setter's
-situation worse, consistently across phase and count-exposure subgroups.
-**Critical scope caveat from the probe**: the corpus captures setter in
-a leading position, not the book's canonical scenario of following a
-non-trump trick and discarding the last tile of a held suit. The
-broader Ch 05 void-creation claim remains untested; bead `t42-z31l`
-will mine follow-position candidates. The contradicted finding applies
-narrowly to lead-to-self-void; it does not refute the broader chapter
-concept.
+[[w42-bookval-v1-wave2-void-creation]] (lead, n=276) and
+[[w42-bookval-v1-wave2-void-creation-follow]] (follow, n=500) together
+yield the campaign's clearest **position-dependent reversal**:
+
+- Lead-position void creation is **contradicted**: EV delta `-2.63`
+  (CI `[-3.42, -1.84]`) — voiding by leading a singleton makes the
+  setter worse off.
+- Follow-position void creation is **`context-limited` in book
+  direction**: EV delta `+0.77` (CI `[+0.12, +1.42]`) — voiding by
+  discarding a singleton when forced off-suit is marginally better.
+
+The mechanism is intuitive in retrospect: leading announces the void
+at a cost; following only chooses which suit to deplete. **The book's
+canonical scenario (follow) survives. The adjacent lead scenario,
+which sounds similar, fails.** This is the campaign's strongest case
+study for why scope precision matters: a single ch05 advice paragraph
+contains two operationalizable scenarios with opposite empirical
+verdicts.
+
+A future synthesis pass should classify every `context-limited` and
+`underpowered` row by which sub-scenarios it survives — many book
+claims likely have similar position-dependent or phase-dependent
+splits.
 
 ## Wave 2.B.2 Full Bid-Aware Sweep — Power Analysis
 

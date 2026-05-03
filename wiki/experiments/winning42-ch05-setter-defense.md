@@ -202,24 +202,32 @@ recommendation encodes implicit `p_make` reasoning at the contract
 threshold; under tail-aware utilities (CVaR, robust_q25) it would
 recommend a different action substantially more often.
 
-[[w42-bookval-v1-wave2-void-creation]] — paired-contrast probe on 276
-oracle-greedy snapshots. Status: **`contradicted`** for the
-**lead-to-self-void** slice at bid=30. Both primary metrics have CIs
-excluding zero in the direction OPPOSITE to the book claim:
-`p_set` delta `-0.0155` (CI `[-0.028, -0.003]`), EV delta `-2.63`
-(CI `[-3.42, -1.84]`). Voiding by leading a singleton off-suit makes
-the setter's situation worse, consistently across phase and count-exposure
-subgroups. **Critical scope caveat**: this probe captures setter in
-a leading position, not the book's canonical scenario where setter is
-following a non-trump trick and chooses to discard their last tile
-from a held suit. The broader Ch 05 void-creation framing remains
-untested; bead `t42-z31l` will mine follow-position candidates and
-re-run.
+[[w42-bookval-v1-wave2-void-creation]] and
+[[w42-bookval-v1-wave2-void-creation-follow]] together test the book's
+void-creation claim under both **lead** and **follow** positions, with
+a position-dependent reversal:
 
-This is the campaign's first contradicted-status finding. The narrow
-scope matters: a future ledger reconciliation should NOT mark the
-broader Ch 05 void-creation concept as contradicted — only the
-lead-to-self-void sub-scenario.
+- **Lead-position (Wave 2.C, n=276): `contradicted`**. Both `p_set`
+  delta (CI `[-0.028, -0.003]`) and EV delta (CI `[-3.42, -1.84]`)
+  exclude zero opposite to the book's direction. Leading a singleton
+  off-suit announces the void at a cost that exceeds the future
+  trump-in value.
+- **Follow-position (Wave 2.C.2, n=500): `context-limited`** in book
+  direction. EV delta `+0.77` (CI `[+0.12, +1.42]`) — CI excludes
+  zero on the positive side. p_set CI straddles zero (`[-0.002,
+  +0.019]`); only 52.6% of contrasts favor voiding. Effect is real
+  but weak; book's canonical scenario survives.
+
+The mechanistic reading: when leading you choose *whether* to declare
+a void at the cost of revealing it; when following without ability to
+follow suit you only choose *which* suit to deplete, so the singleton
+void is a marginally better partition. The book's advice is right in
+the canonical scenario it actually describes. Lead-to-self-void
+should not be conflated with following-and-discarding-singleton.
+
+The campaign's first `contradicted` finding (lead position) is
+intentionally narrow. The broader Ch 05 void-creation concept retains
+weak directional support in its canonical scenario.
 
 ## Wave 1 Findings (Book Validation v1)
 
