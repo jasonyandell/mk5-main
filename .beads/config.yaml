@@ -56,3 +56,5 @@
 # - sync.branch - Git branch for beads commits (use BEADS_SYNC_BRANCH env var or bd config set)
 
 backup.enabled: true
+
+export.git-add: false
