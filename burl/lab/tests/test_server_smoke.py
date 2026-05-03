@@ -57,6 +57,8 @@ def test_create_session_then_post_move(client):
     assert body["phase"] == "pre_game"
     option_names = [o["name"] for o in body["options"]]
     assert "set_system" in option_names
+    assert "generate_system" in option_names
+    assert "start_run" in option_names
 
     # Apply set_system; should SSE-stream a no-op transition (still pre_game).
     r = client.post(
@@ -78,11 +80,54 @@ def test_create_session_then_post_move(client):
     # Frame reflects the new system text.
     r = client.get(f"/api/sessions/{sid}/frame")
     frame = r.json()["frame"]
+    builder = next(
+        (s for s in frame["segments"] if s.get("kind") == "prompt_builder"), None
+    )
+    assert builder is not None
+    assert builder["base_chars"] == len("hello burl")
     rendered = next(
         (s for s in frame["segments"] if s.get("kind") == "rendered_system"), None
     )
     assert rendered is not None
     assert "hello burl" in rendered["text"]
+
+
+def test_pre_game_generate_system_builds_default_prompt_with_selected_tools(client):
+    sid = client.post("/api/sessions").json()["session_id"]
+    client.post(
+        "/api/move",
+        json={
+            "session_id": sid,
+            "move": {
+                "kind": "UserChoice",
+                "option_name": "set_advertised",
+                "args": {"names": ["state_brief", "legal_plays"]},
+            },
+        },
+    )
+
+    r = client.post(
+        "/api/move",
+        json={
+            "session_id": sid,
+            "move": {
+                "kind": "UserChoice",
+                "option_name": "generate_system",
+                "args": {},
+            },
+        },
+    )
+    assert r.status_code == 200
+
+    frame = client.get(f"/api/sessions/{sid}/frame").json()["frame"]
+    rendered = next(
+        (s for s in frame["segments"] if s.get("kind") == "rendered_system"), None
+    )
+    assert rendered is not None
+    assert "You are Burl, a Texas 42 dominoes agent" in rendered["text"]
+    assert "## Decision Protocol" in rendered["text"]
+    assert "state_brief" in rendered["text"]
+    assert "legal_plays" in rendered["text"]
 
 
 def test_journal_is_canonical_no_state_json(client, tmp_path, monkeypatch):
@@ -199,10 +244,8 @@ def test_server_journals_post_turn_transition_after_drive_commit(client):
                 },
             },
         )
-        # Transition to in_run via load_decision — but we can't actually
-        # load a real harvest in the test env. Instead, drop into in_run
-        # directly by appending a UserText (interject-equivalent) after
-        # synthesising the transition via PhaseEnter.
+        # Drop into in_run directly; this test is about the post-drive
+        # transition after commit, not about pre_game prompt building.
         from burl.lab.core.transcript import PhaseEnter, PhaseExit, append
 
         from pathlib import Path

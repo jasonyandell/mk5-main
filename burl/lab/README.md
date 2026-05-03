@@ -36,7 +36,7 @@ curl -s http://localhost:8002/api/sessions/$SID/frame | jq .
 | var | default | meaning |
 |-----|---------|---------|
 | `BURL_HARNESS_SESSION_ROOT` | `~/.cache/burl-harness` | where session dirs live |
-| `BURL_HARNESS_HARVEST_ROOT` | `scratch/belief_trajectory_rollout` | harvest root for `load_decision` |
+| `BURL_HARNESS_HARVEST_ROOT` | `scratch/belief_trajectory_rollout` | harvest root for `load_decision`; this fills the prompt builder, it does not start a run |
 | `BURL_HARNESS_MODEL_REPO` | `mlx-community/gemma-4-e2b-it-bf16` | MLX model for `MlxEngine` |
 | `BURL_HARNESS_ADAPTER_PATH` | unset | optional LoRA adapter path |
 | `BURL_HARNESS_HF_PUSH` | unset | set to `1` to enable HF Hub session push (default off) |
@@ -56,8 +56,9 @@ burl/lab/
     drive.py              phase-aware drive loop
     hf_sink.py            optional HF Hub push (gated)
   phases/
-    pre_game.py           configure prompt + advertised tool set
+    pre_game.py           prompt builder + advertised tool set + explicit run start
     in_run.py             live model run + interject/abort/select_tool
+    post_turn.py          committed-turn review surface
   server/
     app.py                FastAPI on :8002
     stream.py             SSE emitter (CRLF-aware)

@@ -20,7 +20,7 @@ from burl.lab.core.transcript import (
 from burl.lab.phases.in_run import IN_RUN
 from burl.lab.phases.post_turn import POST_TURN
 from burl.lab.phases import pre_game as pre_game_module
-from burl.lab.phases.pre_game import PRE_GAME
+from burl.lab.phases.pre_game import DEFAULT_BASE_SYSTEM, PRE_GAME
 
 
 def _stamp(seq: int = 0) -> Stamp:
@@ -82,7 +82,7 @@ async def test_pre_game_returns_config_moves_without_writing(tmp_path: Path) -> 
 
 
 @pytest.mark.asyncio
-async def test_pre_game_load_decision_outputs_in_run(
+async def test_pre_game_load_decision_fills_builder_without_starting_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(
@@ -107,7 +107,7 @@ async def test_pre_game_load_decision_outputs_in_run(
     assert trace.events[0].text == "system h:7"
     assert isinstance(trace.events[1], UserText)
     assert trace.events[1].text == "loaded h:7"
-    assert trace.output == "in_run"
+    assert trace.output is None
     assert not (tmp_path / "events.jsonl").exists()
 
 
@@ -138,6 +138,57 @@ async def test_pre_game_set_system_returns_system_set(tmp_path: Path) -> None:
 
     assert trace.events == (SystemSet(stamp=trace.events[0].stamp, text="You are Burl."),)
     assert trace.output is None
+
+
+@pytest.mark.asyncio
+async def test_pre_game_generate_system_seeds_default_prompt(tmp_path: Path) -> None:
+    state = _state(tmp_path)
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="generate_system",
+        args={},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert trace.events == (
+        SystemSet(stamp=trace.events[0].stamp, text=DEFAULT_BASE_SYSTEM),
+    )
+    assert trace.output is None
+
+
+@pytest.mark.asyncio
+async def test_pre_game_start_run_is_explicit_transition(tmp_path: Path) -> None:
+    state = _state(tmp_path)
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="start_run",
+        args={},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert trace.events == (
+        SystemSet(stamp=trace.events[0].stamp, text=DEFAULT_BASE_SYSTEM),
+    )
+    assert trace.output == "in_run"
+
+
+@pytest.mark.asyncio
+async def test_pre_game_ask_gemma_adds_user_text_and_starts(tmp_path: Path) -> None:
+    state = _state(tmp_path)
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="ask_gemma",
+        args={"text": "look at this setup"},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert [type(event) for event in trace.events] == [SystemSet, UserText]
+    assert trace.events[0].text == DEFAULT_BASE_SYSTEM
+    assert trace.events[1].text == "look at this setup"
+    assert trace.output == "in_run"
 
 
 @pytest.mark.asyncio

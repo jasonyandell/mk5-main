@@ -2,7 +2,7 @@
 title: burl-lab — Deterministic experimentation platform for Burl
 kind: entity
 first_seen: a2db3c7
-last_updated: local-2026-05-02
+last_updated: local-2026-05-03
 status: active
 ---
 
@@ -24,7 +24,7 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Mined chat tools.** The four [[improvised-tools]] that earned their keep in [[burl-chat-spike]] now have first-class `ToolSpec` wrappers under `burl/lab/tools/chat_mined.py`: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Their implementations still live in `burl/chat/server/tools_library/`; burl-lab wraps them only to attach JSON schemas, examples, `protocol_role`, and `protocol_phrase`. The server registry now boots with seven tools total: the three base decision tools plus the four mined chat tools.
 
-**Prompt UX.** A fresh pre-game session intentionally renders `0 chars` because no `SystemSet` has been journaled yet. The two prompt entry paths are explicit: `Set system prompt` journals manual text, while `Load harvested decision + prompt` mines the harvested `prompt_system` and `prompt_user` together. The web UI now calls this out in the empty rendered-system panel and counts the pre-game registry rows as the available tool surface so the drawer no longer reports `0/0 advertised` when seven registry tools are present but none are selected.
+**Prompt-builder UX.** Pre-game is now an explicit prompt builder rather than a hidden bootstrap step. The user picks an advertised tool set from registry checkboxes, clicks `Generate system prompt` to seed the default Burl base prompt, and sees the composed `rendered_system` immediately: base prompt plus the selected tools' `ToolSpec.protocol_phrase` values. `Load harvested decision into builder` imports harvested `prompt_system` and `prompt_user` but does not start the run; `Start run` and `Ask Gemma now` are separate phase choices. The tool drawer now represents the selected set directly, so unchecking a tool removes it from the next `AdvertisedSet` instead of only supporting additive advertisement.
 
 ## Architecture
 
@@ -116,7 +116,7 @@ burl/lab/
     drive.py                    # phase-aware drive loop
     hf_sink.py                  # session -> HF dataset push
   phases/
-    pre_game.py                 # session bootstrap, pick a hand
+    pre_game.py                 # prompt builder, tool picking, explicit run start
     in_run.py                   # play through a hand
     post_turn.py                # render committed-session, offer start_new_session
   tools/base/

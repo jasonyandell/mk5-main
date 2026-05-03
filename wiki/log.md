@@ -1921,3 +1921,11 @@ The four useful [[improvised-tools]] from [[burl-chat-spike]] now load into burl
 **Touched pages:** [[burl-lab]] [[log]]
 
 Fresh pre-game sessions still start with no system prompt (`rendered system · 0 chars`) until a `SystemSet` is journaled, but the UI now explains the two paths: manual `Set system prompt`, or `Load harvested decision + prompt` to import harvested `prompt_system` plus `prompt_user`. The tool drawer now counts registry rows in pre-game, so the initial surface reports `0/7 advertised` instead of the misleading `0/0 advertised`.
+
+---
+
+## [2026-05-03 | local | burl/lab prompt builder]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+Pre-game is now a walkable prompt-builder phase. The user can select the exact advertised tool set, click `Generate system prompt` to seed the default Burl base prompt, inspect the composed rendered system with the selected tools' protocol phrases, then explicitly `Start run` or `Ask Gemma now`. Harvested decision loading now fills the builder with `prompt_system` and `prompt_user` without automatically entering `in_run`, so prompt construction and model generation are separate logged-arrow steps.

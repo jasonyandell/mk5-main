@@ -47,7 +47,7 @@
 
   // HATEOAS aside: tools that are active but not advertised.
   let asideOpen = $state(false);
-  let asideSelected = $state<Set<string>>(new Set());
+  let toolDraft = $state<Set<string>>(new Set());
 
   let surfacedTools = $derived(
     frame
@@ -82,6 +82,7 @@
     phaseName = r.phase;
     segments = [...r.frame.segments];
     timing = r.frame.timing;
+    toolDraft = new Set(r.frame.advertised);
     closeComposer();
   }
 
@@ -355,19 +356,21 @@
   // ---- HATEOAS aside ---------------------------------------------------- #
 
   function toggleAsideTool(name: string) {
-    const next = new Set(asideSelected);
+    const next = new Set(toolDraft);
     if (next.has(name)) next.delete(name);
     else next.add(name);
-    asideSelected = next;
+    toolDraft = next;
   }
 
   async function submitAside() {
     if (!frame) return;
-    // Combine current advertised set with the user's picks.
-    const merged = Array.from(new Set([...frame.advertised, ...asideSelected]));
-    asideSelected = new Set();
+    const names = Array.from(toolDraft);
     asideOpen = false;
-    await sendMove({ option_name: "set_advertised", args: { names: merged } });
+    await sendMove({ option_name: "set_advertised", args: { names } });
+  }
+
+  function sortedNames(names: Iterable<string>): string {
+    return Array.from(names).sort().join("\n");
   }
 
   // ---- Helpers ---------------------------------------------------------- #
@@ -391,6 +394,9 @@
   let advertisedCount = $derived(frame ? frame.advertised.length : 0);
   let toolSurfaceCount = $derived(
     preGameToolRows.length > 0 ? preGameToolRows.length : (frame?.active_tools.length ?? 0),
+  );
+  let toolDraftChanged = $derived(
+    frame ? sortedNames(frame.advertised) !== sortedNames(toolDraft) : false,
   );
 </script>
 
@@ -514,9 +520,11 @@
               <span class="badge sys">rendered system · {String(s.text ?? "").length} chars</span>
               {#if String(s.text ?? "").length === 0}
                 <div class="seg-body dim small">
-                  no system prompt yet. use <strong>Set system prompt</strong> for manual text,
-                  or <strong>Load harvested decision + prompt</strong> to import the harvested
-                  `prompt_system` and `prompt_user`.
+                  no system prompt yet. pick tools, then use
+                  <strong>Generate system prompt</strong> for the default Burl prompt,
+                  <strong>Set system prompt</strong> for manual text, or
+                  <strong>Load harvested decision into builder</strong> to import
+                  harvested `prompt_system` and `prompt_user`.
                 </div>
               {:else}
                 <details>
@@ -524,6 +532,16 @@
                   <div class="seg-body mono">{String(s.text ?? "")}</div>
                 </details>
               {/if}
+            </div>
+          {:else if k === "prompt_builder"}
+            <div class="seg builder">
+              <span class="badge builder">prompt builder</span>
+              <div class="builder-grid mono small">
+                <span>base {Number(s.base_chars ?? 0)} chars</span>
+                <span>rendered {Number(s.rendered_chars ?? 0)} chars</span>
+                <span>tools {Number(s.advertised_count ?? 0)}/{Number(s.tool_count ?? 0)}</span>
+                <span>{s.has_user_message ? "user prompt loaded" : "no user prompt"}</span>
+              </div>
             </div>
           {:else if k === "advertised_set"}
             <div class="seg cfg dim small">
@@ -562,7 +580,7 @@
                   <label class="tool-row">
                     <input
                       type="checkbox"
-                      checked={row.advertised || asideSelected.has(row.name)}
+                      checked={toolDraft.has(row.name)}
                       onchange={() => toggleAsideTool(row.name)}
                     />
                     <span class="tool-row-body">
@@ -584,7 +602,7 @@
                   <label class="tool-row">
                     <input
                       type="checkbox"
-                      checked={asideSelected.has(name)}
+                      checked={toolDraft.has(name)}
                       onchange={() => toggleAsideTool(name)}
                     />
                     <span class="tool-row-body">
@@ -596,8 +614,8 @@
             {/if}
             <div class="aside-foot">
               {#if options.find((o) => o.name === "set_advertised")}
-                <button onclick={submitAside} disabled={asideSelected.size === 0 || streaming}>
-                  apply ({asideSelected.size})
+                <button onclick={submitAside} disabled={!toolDraftChanged || streaming}>
+                  apply ({toolDraft.size})
                 </button>
               {:else}
                 <span class="dim small">phase has no set_advertised option</span>
@@ -782,6 +800,16 @@
 
   .seg.system { background: #1d1d1d; border-color: #333; }
   .badge.sys { background: #333; color: #aaa; }
+
+  .seg.builder { background: #191f1d; border-color: #2c3e36; }
+  .badge.builder { background: #254238; color: #bfe6d2; }
+  .builder-grid {
+    margin-top: 0.35rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem 0.8rem;
+    color: #a8b8b0;
+  }
 
   .seg.engine-done, .seg.cfg { padding: 0.2rem 0.65rem; }
 

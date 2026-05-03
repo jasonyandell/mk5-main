@@ -4,7 +4,8 @@ In this phase the user is *building the prompt the model will see*. The
 render shows the current system prompt + a table of every ToolSpec in the
 registry (name, role, protocol_phrase) with checkboxes for which are
 advertised. The user can also load a decision from a harvest dir, which
-seeds the first user message and transitions to ``in_run``.
+fills the builder with the harvested system/user prompts. Starting a run is
+an explicit follow-up choice.
 
 Phase handlers return effects as Moves in a ``Trace``. The server journals
 those Moves; there is no in-memory side state.
@@ -34,6 +35,14 @@ from burl.lab.core.transcript import (
 )
 
 DEFAULT_HARVEST_ROOT = "scratch/belief_trajectory_rollout"
+DEFAULT_BASE_SYSTEM = (
+    "You are Burl, a Texas 42 dominoes agent. Pick the next play. "
+    "You have tools that describe the game state; call them as needed. "
+    "The state tools answer WHAT IS the state; they never tell you WHAT TO DO. "
+    "Reason with what they return. When you are ready to commit, call the "
+    "`commit_play` tool with the integer domino_id from your hand. That ends "
+    "the decision."
+)
 
 
 def _harvest_root() -> Path:
@@ -62,6 +71,16 @@ class _PreGamePhase:
             base_text, [s for s in all_specs if s.name in advertised_set]
         )
         segments: list[dict] = list(state.segments) + [
+            {
+                "kind": "prompt_builder",
+                "base_chars": len(base_text),
+                "rendered_chars": len(rendered),
+                "advertised_count": len(advertised_set),
+                "tool_count": len(all_specs),
+                "has_user_message": any(
+                    msg.get("role") == "user" for msg in state.messages
+                ),
+            },
             {"kind": "rendered_system", "text": rendered},
             *rows,
         ]
@@ -84,6 +103,11 @@ class _PreGamePhase:
                     "properties": {"text": {"type": "string"}},
                     "required": ["text"],
                 },
+            ),
+            Option(
+                name="generate_system",
+                label="Generate system prompt",
+                args_schema={"type": "object", "properties": {}},
             ),
             Option(
                 name="add_tool",
@@ -116,7 +140,7 @@ class _PreGamePhase:
             ),
             Option(
                 name="load_decision",
-                label="Load harvested decision + prompt",
+                label="Load harvested decision into builder",
                 args_schema={
                     "type": "object",
                     "properties": {
@@ -125,6 +149,20 @@ class _PreGamePhase:
                     },
                     "required": ["harvest", "idx"],
                 },
+            ),
+            Option(
+                name="ask_gemma",
+                label="Ask Gemma now",
+                args_schema={
+                    "type": "object",
+                    "properties": {"text": {"type": "string"}},
+                    "required": ["text"],
+                },
+            ),
+            Option(
+                name="start_run",
+                label="Start run",
+                args_schema={"type": "object", "properties": {}},
             ),
         ]
 
@@ -144,6 +182,10 @@ class _PreGamePhase:
 
         if opt == "set_system":
             text = str(args.get("text", ""))
+            new_moves.append(SystemSet(stamp=now_stamp(state), text=text))
+
+        elif opt == "generate_system":
+            text = _system_text(state) or DEFAULT_BASE_SYSTEM
             new_moves.append(SystemSet(stamp=now_stamp(state), text=text))
 
         elif opt == "add_tool":
@@ -181,10 +223,25 @@ class _PreGamePhase:
                 )
             new_moves.append(UserText(stamp=now_stamp(state), text=user_content))
 
+        elif opt == "ask_gemma":
+            text = str(args.get("text", ""))
+            if text:
+                if not _system_text(state):
+                    new_moves.append(
+                        SystemSet(stamp=now_stamp(state), text=DEFAULT_BASE_SYSTEM)
+                    )
+                new_moves.append(UserText(stamp=now_stamp(state), text=text))
+
+        elif opt == "start_run":
+            if not _system_text(state):
+                new_moves.append(
+                    SystemSet(stamp=now_stamp(state), text=DEFAULT_BASE_SYSTEM)
+                )
+
         else:
             return Trace()
 
-        next_phase = "in_run" if opt == "load_decision" else None
+        next_phase = "in_run" if opt in {"ask_gemma", "start_run"} else None
         return Trace(events=tuple(new_moves), output=next_phase)
 
 
@@ -276,4 +333,4 @@ def _strip_legacy_tool_protocol(system_content: str) -> str:
 PRE_GAME = _PreGamePhase()
 
 
-__all__ = ["PRE_GAME"]
+__all__ = ["PRE_GAME", "DEFAULT_BASE_SYSTEM"]

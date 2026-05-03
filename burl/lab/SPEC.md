@@ -69,7 +69,7 @@ burl/lab/
     hf_sink.py                  # session -> HF dataset push                  (runtime agent)
   phases/
     __init__.py                 # imports & registers each phase
-    pre_game.py                 # session bootstrap, pick a hand              (runtime agent)
+    pre_game.py                 # prompt builder, pick tools, start run       (runtime agent)
     in_run.py                   # play through a hand                         (runtime agent)
   tools/
     __init__.py
@@ -331,7 +331,9 @@ One move per line. `kind` discriminator + `stamp` + payload, all flat:
 
 ```json
 {"kind":"PhaseEnter","stamp":{"t_wall_ms":0,"t_mono_ns":42424242,"tok_in":0,"tok_out":0,"tok_cum_in":0,"tok_cum_out":0,"ms_ttft":null,"ms_decode":null,"tok_per_s":null},"phase":"pre_game"}
-{"kind":"UserChoice","stamp":{...},"option_name":"start_run","args":{"hand":"66 55 44 33 22 11 00"}}
+{"kind":"UserChoice","stamp":{...},"option_name":"set_advertised","args":{"names":["state_brief","legal_plays","commit_play"]}}
+{"kind":"UserChoice","stamp":{...},"option_name":"generate_system","args":{}}
+{"kind":"UserChoice","stamp":{...},"option_name":"start_run","args":{}}
 {"kind":"EngineStart","stamp":{...},"messages_hash":"abc...","n_messages":3,"n_tools":2}
 {"kind":"EngineToken","stamp":{...},"text":"Looking at"}
 {"kind":"EngineToolCall","stamp":{...},"name":"belief_trajectory","args":{"play":14},"call_id":"01HXY..."}
