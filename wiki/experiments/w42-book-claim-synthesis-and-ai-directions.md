@@ -328,6 +328,30 @@ production run should be a 50-seed × 1000-sample CUDA sweep so paired
 contrasts at bids 32 / 35 / 36 / 42 / 84 carry enough statistical power
 to move ledger rows (rather than just demonstrating divergence).
 
+## Wave 2 Probes (in flight)
+
+[[w42-bookval-v1-wave2-reentry-v2]] — re-runs the original Wave 2.A
+reentry probe on oracle-greedy snapshots from
+[[w42-claim-data-inventory]]. **Phase-conditional verdict**: overall EV
+delta is `-1.23` (CI `[-2.62, +0.16]`, consume direction); the late-game
+slice (tricks 5-6, n=60) is statistically `contradicted` against the
+book at CI `[-6.76, -1.17]` (consume strictly better); mid-game (n=162)
+is underpowered (CI `[-1.79, +1.36]`); no early-game data in the corpus.
+Status: `context-limited`. The book's reentry-preservation advice does
+not survive paired counterfactual testing in the phase where it is most
+pointed.
+
+[[w42-bookval-v1-wave2-low-trump-trap]] — paired contrast on 257
+oracle-greedy snapshots. Overall delta is `-1.95` (CI `[-2.94, -1.07]`),
+but the aggregate is dominated by positions where hoarding the dominant
+trump is broadly correct, not the specific trap the book warns about.
+**In the count-bearing subgroup (n=86, the actual book scenario)**,
+mean delta is `-0.02` with CI `[-2.16, +2.15]` — symmetric, no signal.
+The trap fires in 42.4% of cases (severe in 7.4%) but is offset by the
+larger correct-hoard class. Status: `context-limited`. The probe
+correctly distinguishes the book's narrow claim from the broader
+contrast pulled by the detector vocabulary.
+
 ## Links
 
 [[w42]] | [[w42-phase4-final-claim-audit]] |
