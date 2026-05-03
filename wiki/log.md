@@ -1897,3 +1897,11 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 - burl-lab now has an explicit logged-arrow algebra for phase handling: `Trace[O] = (events: tuple[Move, ...], output: O | None)`.
 - Phase handlers no longer append to disk or re-fold state. They return journalable Moves plus an optional next phase; the server interprets the trace by appending, streaming, folding, and materializing phase transitions.
 - The narrower `WaxContext`-in-server cleanup remains a symptom; the deeper invariant is that harness steps compose by returning logs plus optional outputs rather than by smuggling side effects through phase code.
+
+---
+
+## [2026-05-02 | local | burl/lab harvested chat prompt import]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+`pre_game.load_decision` now imports the harvested [[burl-chat]] `prompt_system` alongside `prompt_user`, strips the legacy `# Decision protocol (wax_museum)` section and raw `<|tool>declaration:` blobs, and journals the cleaned prompt via `SystemSet`. The next engine render appends the lab-owned Decision Protocol from active `ToolSpec.protocol_phrase` values, preserving chat-era Burl grounding without letting the protocol/tool surface drift out of sync.

@@ -174,7 +174,11 @@ class _PreGamePhase:
         elif opt == "load_decision":
             harvest = str(args.get("harvest", ""))
             idx = int(args.get("idx", 0))
-            user_content = _load_user_content(harvest, idx)
+            system_content, user_content = _load_decision_prompts(harvest, idx)
+            if system_content:
+                new_moves.append(
+                    SystemSet(stamp=now_stamp(state), text=system_content)
+                )
             new_moves.append(UserText(stamp=now_stamp(state), text=user_content))
 
         else:
@@ -208,8 +212,8 @@ def _default_registry() -> Registry:
     return Registry()
 
 
-def _load_user_content(harvest: str, idx: int) -> str:
-    """Read events.jsonl for one decision and return its user content.
+def _load_decision_prompts(harvest: str, idx: int) -> tuple[str, str]:
+    """Read events.jsonl for one decision and return (system, user) prompts.
 
     Layout (from the chat-server reference):
       ``$BURL_HARNESS_HARVEST_ROOT/<harvest>/corpus_index.jsonl`` —
@@ -217,6 +221,11 @@ def _load_user_content(harvest: str, idx: int) -> str:
       ``<row.transcript_path>`` (relative to ``<harvest>/``) points into
         the decision's events dir; replace ``/transcript`` to find
         ``events.jsonl``.
+
+    The harvested ``prompt_system`` includes wax_museum's hand-edited
+    Decision protocol plus raw ``<|tool>declaration`` blobs. burl-lab owns
+    that surface via ``ToolSpec.protocol_phrase`` and ``render_system()``, so
+    the imported base prompt stops before the legacy protocol section.
     """
     root = _harvest_root()
     idx_path = root / harvest / "corpus_index.jsonl"
@@ -240,6 +249,8 @@ def _load_user_content(harvest: str, idx: int) -> str:
     dec_dir = root / harvest / transcript_rel.split("/transcript")[0]
     events_path = dec_dir / "events.jsonl"
 
+    system_content = ""
+    user_content = ""
     with events_path.open() as f:
         for raw in f:
             try:
@@ -247,8 +258,19 @@ def _load_user_content(harvest: str, idx: int) -> str:
             except json.JSONDecodeError:
                 continue
             if e.get("kind") == "prompt_user":
-                return str(e.get("content", ""))
-    return ""
+                user_content = str(e.get("content", ""))
+            elif e.get("kind") == "prompt_system":
+                system_content = _strip_legacy_tool_protocol(str(e.get("content", "")))
+            if system_content and user_content:
+                break
+    return system_content, user_content
+
+
+def _strip_legacy_tool_protocol(system_content: str) -> str:
+    """Drop the old wax_museum protocol/tool-declaration tail from a prompt."""
+    marker = "\n# Decision protocol (wax_museum)"
+    head, _sep, _tail = system_content.partition(marker)
+    return head.rstrip()
 
 
 PRE_GAME = _PreGamePhase()

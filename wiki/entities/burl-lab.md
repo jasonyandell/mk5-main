@@ -20,6 +20,8 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Phase ownership of transitions.** Drive is engine-shaped — it does not mint `PhaseExit`/`PhaseEnter` Moves. The server is transition-shaped — it journals exit/enter when a phase trace's `output` is a next phase. After a commit-role tool dispatches in `in_run`, drive synthesizes `EngineCommit`, the server calls `in_run.handle(state, EngineCommit)` which returns `Trace(output="post_turn")`, and the server appends `PhaseExit("in_run") + PhaseEnter("post_turn")`. `post_turn` renders the committed-session segments and offers `start_new_session` → `pre_game`.
 
+**Harvested chat prompt import.** `pre_game.load_decision` now mines the original [[burl-chat]] `prompt_system` as well as `prompt_user`. It keeps Burl's identity, trimmed Texas 42 rules primer, current-decision 42 framing, and user-facing state prompt, but strips the legacy `# Decision protocol (wax_museum)` tail and raw `<|tool>declaration:` blobs before journaling `SystemSet`. The next engine step then re-renders the Decision Protocol from active `ToolSpec.protocol_phrase` values. This preserves the useful chat-era grounding while keeping the tool/protocol surface algebraic and non-stale.
+
 ## Architecture
 
 Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPEC.md @ a2db3c7](../sources/a2db3c7.md)):

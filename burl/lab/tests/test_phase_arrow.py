@@ -87,8 +87,11 @@ async def test_pre_game_load_decision_outputs_in_run(
 ) -> None:
     monkeypatch.setattr(
         pre_game_module,
-        "_load_user_content",
-        lambda harvest, idx: f"loaded {harvest}:{idx}",
+        "_load_decision_prompts",
+        lambda harvest, idx: (
+            f"system {harvest}:{idx}",
+            f"loaded {harvest}:{idx}",
+        ),
     )
     state = _state(tmp_path)
     move = UserChoice(
@@ -99,11 +102,27 @@ async def test_pre_game_load_decision_outputs_in_run(
 
     trace = await PRE_GAME.handle(state, move)
 
-    assert len(trace.events) == 1
-    assert isinstance(trace.events[0], UserText)
-    assert trace.events[0].text == "loaded h:7"
+    assert len(trace.events) == 2
+    assert isinstance(trace.events[0], SystemSet)
+    assert trace.events[0].text == "system h:7"
+    assert isinstance(trace.events[1], UserText)
+    assert trace.events[1].text == "loaded h:7"
     assert trace.output == "in_run"
     assert not (tmp_path / "events.jsonl").exists()
+
+
+def test_load_decision_strips_legacy_tool_protocol() -> None:
+    raw = (
+        "You are Burl.\n\n"
+        "# Current decision\n\n"
+        "state facts\n"
+        "\n# Decision protocol (wax_museum)\n\n"
+        "old protocol<|tool>declaration:explore_game{}<tool|>"
+    )
+
+    assert pre_game_module._strip_legacy_tool_protocol(raw) == (
+        "You are Burl.\n\n# Current decision\n\nstate facts"
+    )
 
 
 @pytest.mark.asyncio
