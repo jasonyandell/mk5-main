@@ -8,6 +8,8 @@ composed at run time and rendered into the prompt by core.render.
 Subpackages:
   * ``base`` — the three always-present tools (belief_trajectory,
     explore_game, commit_play).
+  * ``chat_mined`` — first-class ToolSpecs wrapping useful improvised tools
+    from the burl-chat spike.
 """
 
 from burl.lab.tools.base import (
@@ -15,5 +17,21 @@ from burl.lab.tools.base import (
     COMMIT_PLAY,
     EXPLORE_GAME,
 )
+from burl.lab.tools.chat_mined import (
+    BOARD_SNAPSHOT,
+    CHAT_MINED_TOOLS,
+    LEGAL_PLAYS,
+    PLAY_BRIEF,
+    STATE_BRIEF,
+)
 
-__all__ = ["BELIEF_TRAJECTORY", "COMMIT_PLAY", "EXPLORE_GAME"]
+__all__ = [
+    "BELIEF_TRAJECTORY",
+    "BOARD_SNAPSHOT",
+    "CHAT_MINED_TOOLS",
+    "COMMIT_PLAY",
+    "EXPLORE_GAME",
+    "LEGAL_PLAYS",
+    "PLAY_BRIEF",
+    "STATE_BRIEF",
+]

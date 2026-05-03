@@ -1905,3 +1905,11 @@ First end-to-end wire run of the burl/lab platform: web → SSE → server :8002
 **Touched pages:** [[burl-lab]] [[log]]
 
 `pre_game.load_decision` now imports the harvested [[burl-chat]] `prompt_system` alongside `prompt_user`, strips the legacy `# Decision protocol (wax_museum)` section and raw `<|tool>declaration:` blobs, and journals the cleaned prompt via `SystemSet`. The next engine render appends the lab-owned Decision Protocol from active `ToolSpec.protocol_phrase` values, preserving chat-era Burl grounding without letting the protocol/tool surface drift out of sync.
+
+---
+
+## [2026-05-02 | local | burl/lab mined chat tools]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+The four useful [[improvised-tools]] from [[burl-chat-spike]] now load into burl-lab as first-class `ToolSpec` wrappers: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Implementations still delegate to `burl/chat/server/tools_library/`, but burl-lab now owns their schemas, examples, protocol roles, and protocol phrases, so the rendered Decision Protocol can name them directly.

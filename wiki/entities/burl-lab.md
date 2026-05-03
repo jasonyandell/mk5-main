@@ -22,6 +22,8 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Harvested chat prompt import.** `pre_game.load_decision` now mines the original [[burl-chat]] `prompt_system` as well as `prompt_user`. It keeps Burl's identity, trimmed Texas 42 rules primer, current-decision 42 framing, and user-facing state prompt, but strips the legacy `# Decision protocol (wax_museum)` tail and raw `<|tool>declaration:` blobs before journaling `SystemSet`. The next engine step then re-renders the Decision Protocol from active `ToolSpec.protocol_phrase` values. This preserves the useful chat-era grounding while keeping the tool/protocol surface algebraic and non-stale.
 
+**Mined chat tools.** The four [[improvised-tools]] that earned their keep in [[burl-chat-spike]] now have first-class `ToolSpec` wrappers under `burl/lab/tools/chat_mined.py`: `state_brief`, `board_snapshot`, `legal_plays`, and `play_brief`. Their implementations still live in `burl/chat/server/tools_library/`; burl-lab wraps them only to attach JSON schemas, examples, `protocol_role`, and `protocol_phrase`. The server registry now boots with seven tools total: the three base decision tools plus the four mined chat tools.
+
 ## Architecture
 
 Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPEC.md @ a2db3c7](../sources/a2db3c7.md)):
@@ -119,6 +121,7 @@ burl/lab/
     belief_trajectory.py        # ToolSpec
     explore_game.py             # ToolSpec
     commit_play.py              # ToolSpec
+  tools/chat_mined.py           # ToolSpecs wrapping burl-chat improvised tools
   server/
     app.py                      # FastAPI on :8002
     stream.py                   # SSE streaming

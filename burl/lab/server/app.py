@@ -88,13 +88,20 @@ def _load_registry() -> Registry:
     return an empty Registry so the server boots."""
     reg = Registry()
     try:
-        from burl.lab.tools import BELIEF_TRAJECTORY, COMMIT_PLAY, EXPLORE_GAME
+        from burl.lab.tools import (
+            BELIEF_TRAJECTORY,
+            CHAT_MINED_TOOLS,
+            COMMIT_PLAY,
+            EXPLORE_GAME,
+        )
 
         reg.add(BELIEF_TRAJECTORY)
         reg.add(EXPLORE_GAME)
         reg.add(COMMIT_PLAY)
+        for spec in CHAT_MINED_TOOLS:
+            reg.add(spec)
     except ImportError as exc:
-        log.info("[lab] base tools not available: %s", exc)
+        log.info("[lab] tools not available: %s", exc)
     return reg
 
 
