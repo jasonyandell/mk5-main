@@ -1,0 +1,20 @@
+{
+  "probe": "t42-ntbe_pounce_window_bid30",
+  "bead": "t42-ntbe",
+  "claim": "ch12-setter-pounce",
+  "scope": "bid=30 baseline only",
+  "wave": "2.E",
+  "input_corpus": "w42/book_validation_v1/wave2/snapshots/pounce_window/snapshots.jsonl",
+  "input_corpus_sha256": "a45352211e2a7ed7e78f9b03ae4515c6ef672a0f64ea31202eb57477774cd4b0",
+  "input_manifest": "w42/book_validation_v1/wave2/snapshots/pounce_window/manifest.json",
+  "method": "oracle_eq_contrast",
+  "method_note": "Uses stored E[Q] values from oracle-greedy corpus decisions. No fresh model inference. Paired contrast: best pounce e_q vs best decline e_q within each position. V perspective: Team 0 (positive=Team0). Setter (Team 1): lower e_q = better.",
+  "output_files": {
+    "paired_contrasts.csv": "e42f9a586576887e04d95623f43827ae76824ad84de6b9eb3e1b0118328afd95",
+    "summary.json": "cd2ee4dddda00284477d064493829c1aef31b045a9f6175b5721aea1c12de6e4"
+  },
+  "related_beads": {
+    "ch12-setter-pounce-high-bid-off": "DEFERRED to Wave 2.B.2 (bid-aware data required)",
+    "parent_epic": "t42-4zi6"
+  }
+}
