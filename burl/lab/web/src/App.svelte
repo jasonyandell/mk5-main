@@ -44,6 +44,10 @@
   let composerNum = $state<number | null>(null);
   let composerJson = $state("{}");
   let composerError = $state<string | null>(null);
+  let wizardHarvest = $state("harvest_batched_20260425_072910");
+  let wizardIdx = $state<number | null>(1);
+  let wizardMessage = $state("");
+  let wizardError = $state<string | null>(null);
 
   // HATEOAS aside: tools that are active but not advertised.
   let asideOpen = $state(false);
@@ -257,6 +261,7 @@
     if (!sessionId || streaming) return;
     streaming = true;
     streamError = null;
+    wizardError = null;
     try {
       for await (const ev of postMove(sessionId, payload)) {
         if ("error" in ev) {
@@ -373,6 +378,69 @@
     return Array.from(names).sort().join("\n");
   }
 
+  // ---- Guided wizard ---------------------------------------------------- #
+
+  function hasOption(name: string): boolean {
+    return options.some((o) => o.name === name);
+  }
+
+  function chooseToolPreset(names: string[]) {
+    const available = new Set(preGameToolRows.map((row) => row.name));
+    toolDraft = new Set(names.filter((name) => available.has(name)));
+  }
+
+  function chooseAllTools() {
+    toolDraft = new Set(preGameToolRows.map((row) => row.name));
+  }
+
+  async function wizardApplyTools() {
+    if (!hasOption("set_advertised")) return;
+    await submitAside();
+  }
+
+  async function wizardGenerateSystem() {
+    if (!hasOption("generate_system")) return;
+    await sendMove({ option_name: "generate_system", args: {} });
+  }
+
+  async function wizardLoadDecision() {
+    if (!hasOption("load_decision")) return;
+    const harvest = wizardHarvest.trim();
+    if (!harvest) {
+      wizardError = "enter a harvest name";
+      return;
+    }
+    await sendMove({
+      option_name: "load_decision",
+      args: { harvest, idx: wizardIdx ?? 0 },
+    });
+  }
+
+  async function wizardShipToGemma() {
+    if (!hasOption("start_run")) return;
+    await sendMove({ option_name: "start_run", args: {} });
+  }
+
+  async function wizardSendMessage() {
+    const text = wizardMessage.trim();
+    if (!text) {
+      wizardError = "write a message first";
+      return;
+    }
+    wizardMessage = "";
+    if (phaseName === "pre_game" && hasOption("ask_gemma")) {
+      await sendMove({ option_name: "ask_gemma", args: { text } });
+    } else if (phaseName === "in_run" && hasOption("interject")) {
+      await sendMove({ option_name: "interject", args: { text } });
+    }
+  }
+
+  async function wizardStartAnotherSession() {
+    if (phaseName === "post_turn" && hasOption("start_new_session")) {
+      await sendMove({ option_name: "start_new_session", args: {} });
+    }
+  }
+
   // ---- Helpers ---------------------------------------------------------- #
 
   let prettyHealth = $derived(() => {
@@ -397,6 +465,19 @@
   );
   let toolDraftChanged = $derived(
     frame ? sortedNames(frame.advertised) !== sortedNames(toolDraft) : false,
+  );
+  let promptBuilderSegment = $derived(
+    [...segments].reverse().find((s) => s.kind === "prompt_builder") ?? null,
+  );
+  let renderedSystemSegment = $derived(
+    [...segments].reverse().find((s) => s.kind === "rendered_system") ?? null,
+  );
+  let systemBaseChars = $derived(Number(promptBuilderSegment?.base_chars ?? 0));
+  let renderedSystemChars = $derived(Number(promptBuilderSegment?.rendered_chars ?? 0));
+  let hasUserPrompt = $derived(Boolean(promptBuilderSegment?.has_user_message));
+  let hasSystemPrompt = $derived(systemBaseChars > 0);
+  let hasRenderedSystem = $derived(
+    renderedSystemChars > 0 || String(renderedSystemSegment?.text ?? "").length > 0,
   );
 </script>
 
@@ -433,6 +514,198 @@
   </header>
 
   <main>
+    {#if !sessionId}
+      <section class="wizard">
+        <div class="wizard-title">
+          <strong>Start here</strong>
+          <span class="dim small">new session → prompt → tools → Gemma</span>
+        </div>
+        <div class="wizard-steps compact">
+          <div class="wizard-step active">
+            <span class="step-num">1</span>
+            <div class="step-main">
+              <strong>New session</strong>
+              <span class="dim small">fresh event log, fresh prompt builder</span>
+            </div>
+            <button onclick={onCreateSession} disabled={!healthOk || streaming}>
+              start
+            </button>
+          </div>
+          <div class="wizard-step muted">
+            <span class="step-num">2</span>
+            <div class="step-main">
+              <strong>Build prompt or chat</strong>
+              <span class="dim small">rules, system message, optional harvested decision</span>
+            </div>
+          </div>
+          <div class="wizard-step muted">
+            <span class="step-num">3</span>
+            <div class="step-main">
+              <strong>Select tools</strong>
+              <span class="dim small">choose the protocol Gemma will see</span>
+            </div>
+          </div>
+          <div class="wizard-step muted">
+            <span class="step-num">4</span>
+            <div class="step-main">
+              <strong>Ship to Gemma</strong>
+              <span class="dim small">confirm, then generate</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    {:else if phaseName === "pre_game"}
+      <section class="wizard">
+        <div class="wizard-title">
+          <strong>Setup wizard</strong>
+          <span class="dim small">session {sessionId.slice(0, 8)}…</span>
+        </div>
+        {#if wizardError}
+          <div class="wizard-error mono small">{wizardError}</div>
+        {/if}
+        <div class="wizard-steps">
+          <div class="wizard-step done">
+            <span class="step-num">1</span>
+            <div class="step-main">
+              <strong>New session</strong>
+              <span class="dim small">ready</span>
+            </div>
+          </div>
+
+          <div class="wizard-step" class:done={hasSystemPrompt || hasUserPrompt} class:active={!hasSystemPrompt && !hasUserPrompt}>
+            <span class="step-num">2</span>
+            <div class="step-main">
+              <strong>Build prompt or chat</strong>
+              <div class="wizard-actions">
+                <button onclick={wizardGenerateSystem} disabled={streaming || !hasOption("generate_system")}>
+                  use default rules + system
+                </button>
+              </div>
+              <div class="wizard-load">
+                <input
+                  bind:value={wizardHarvest}
+                  placeholder="harvest name"
+                  disabled={streaming}
+                />
+                <input
+                  class="idx-input"
+                  type="number"
+                  bind:value={wizardIdx}
+                  disabled={streaming}
+                />
+                <button onclick={wizardLoadDecision} disabled={streaming || !hasOption("load_decision")}>
+                  load decision
+                </button>
+              </div>
+              <div class="wizard-chat">
+                <textarea
+                  bind:value={wizardMessage}
+                  rows="2"
+                  placeholder="or ask Gemma directly"
+                  disabled={streaming}
+                ></textarea>
+                <button onclick={wizardSendMessage} disabled={streaming || !hasOption("ask_gemma")}>
+                  chat
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" class:done={!toolDraftChanged && advertisedCount > 0} class:active={hasSystemPrompt && advertisedCount === 0}>
+            <span class="step-num">3</span>
+            <div class="step-main">
+              <strong>Select tools</strong>
+              <div class="wizard-actions">
+                <button class="ghost" onclick={() => chooseToolPreset(["state_brief", "legal_plays", "commit_play"])} disabled={streaming}>
+                  basic
+                </button>
+                <button class="ghost" onclick={() => chooseToolPreset(["belief_trajectory", "explore_game", "commit_play"])} disabled={streaming}>
+                  classic
+                </button>
+                <button class="ghost" onclick={chooseAllTools} disabled={streaming}>
+                  all
+                </button>
+                <button class="ghost" onclick={() => (toolDraft = new Set())} disabled={streaming}>
+                  clear
+                </button>
+              </div>
+              <div class="wizard-tool-grid">
+                {#each preGameToolRows as row (row.name)}
+                  <label class="wizard-tool">
+                    <input
+                      type="checkbox"
+                      checked={toolDraft.has(row.name)}
+                      onchange={() => toggleAsideTool(row.name)}
+                      disabled={streaming}
+                    />
+                    <span>
+                      <span class="mono">{row.name}</span>
+                      <span class="dim small">{row.role}</span>
+                    </span>
+                  </label>
+                {/each}
+              </div>
+              <div class="wizard-actions">
+                <button onclick={wizardApplyTools} disabled={streaming || !toolDraftChanged || !hasOption("set_advertised")}>
+                  apply tools ({toolDraft.size})
+                </button>
+                <span class="dim small">{advertisedCount}/{toolSurfaceCount} advertised</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wizard-step" class:active={hasRenderedSystem && !toolDraftChanged} class:done={false}>
+            <span class="step-num">4</span>
+            <div class="step-main">
+              <strong>Confirm and ship</strong>
+              <div class="wizard-status mono small">
+                <span class:ok-text={hasSystemPrompt}>system {systemBaseChars} chars</span>
+                <span class:ok-text={advertisedCount > 0}>tools {advertisedCount}</span>
+                <span class:ok-text={hasUserPrompt}>{hasUserPrompt ? "user prompt loaded" : "no user prompt"}</span>
+                <span class:ok-text={hasRenderedSystem}>rendered {renderedSystemChars} chars</span>
+              </div>
+              <div class="wizard-actions">
+                <button onclick={wizardGenerateSystem} disabled={streaming || !hasOption("generate_system")}>
+                  refresh prompt
+                </button>
+                <button onclick={wizardShipToGemma} disabled={streaming || toolDraftChanged || !hasRenderedSystem || !hasOption("start_run")}>
+                  ship to Gemma
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    {:else if phaseName === "in_run"}
+      <section class="wizard run-wizard">
+        <div class="wizard-title">
+          <strong>Gemma is running</strong>
+          <span class="dim small">chat before or after the next tool/answer</span>
+        </div>
+        <div class="wizard-chat run-chat">
+          <textarea
+            bind:value={wizardMessage}
+            rows="2"
+            placeholder="send a note into this run"
+            disabled={streaming}
+          ></textarea>
+          <button onclick={wizardSendMessage} disabled={streaming || !hasOption("interject")}>
+            send
+          </button>
+        </div>
+      </section>
+    {:else if phaseName === "post_turn"}
+      <section class="wizard run-wizard">
+        <div class="wizard-title">
+          <strong>Turn finished</strong>
+          <span class="dim small">review the trace, then start another setup</span>
+        </div>
+        <button onclick={wizardStartAnotherSession} disabled={streaming || !hasOption("start_new_session")}>
+          new setup
+        </button>
+      </section>
+    {/if}
+
     <section class="feed">
       <div class="conv" bind:this={scrollEl}>
         {#if !sessionId}
@@ -627,52 +900,55 @@
     {/if}
 
     <section class="composer-region">
-      {#if options.length === 0}
-        <div class="dim small">no options in this phase</div>
-      {:else}
-        <div class="options">
-          {#each options as opt (opt.name + ":" + JSON.stringify(opt.args_schema))}
-            <button class="ghost" onclick={() => clickOption(opt)} disabled={streaming}>
-              {opt.label}
-              <span class="dim small">· {opt.name}</span>
-            </button>
-          {/each}
-        </div>
-        {#if activeComposerOption}
-          {@const kind = composerKindFor(activeComposerOption)}
-          <div class="composer">
-            <div class="composer-head">
-              <strong>{activeComposerOption.label}</strong>
-              <span class="dim small mono">{activeComposerOption.name}</span>
-              <span class="spacer"></span>
-              <button class="ghost" onclick={closeComposer} disabled={streaming}>cancel</button>
-            </div>
-            {#if kind === "text"}
-              <textarea
-                bind:value={composerText}
-                rows="4"
-                placeholder="text"
-                disabled={streaming}
-              ></textarea>
-            {:else if kind === "number"}
-              <input type="number" bind:value={composerNum} disabled={streaming} />
-            {:else if kind === "json"}
-              <textarea
-                bind:value={composerJson}
-                rows="6"
-                placeholder={'{"key": "value"}'}
-                disabled={streaming}
-              ></textarea>
-            {/if}
-            {#if composerError}
-              <div class="composer-error">{composerError}</div>
-            {/if}
-            <div class="composer-actions">
-              <button onclick={submitComposer} disabled={streaming}>send</button>
-            </div>
+      <details class="advanced-console">
+        <summary>advanced console</summary>
+        {#if options.length === 0}
+          <div class="dim small">no options in this phase</div>
+        {:else}
+          <div class="options">
+            {#each options as opt (opt.name + ":" + JSON.stringify(opt.args_schema))}
+              <button class="ghost" onclick={() => clickOption(opt)} disabled={streaming}>
+                {opt.label}
+                <span class="dim small">· {opt.name}</span>
+              </button>
+            {/each}
           </div>
+          {#if activeComposerOption}
+            {@const kind = composerKindFor(activeComposerOption)}
+            <div class="composer">
+              <div class="composer-head">
+                <strong>{activeComposerOption.label}</strong>
+                <span class="dim small mono">{activeComposerOption.name}</span>
+                <span class="spacer"></span>
+                <button class="ghost" onclick={closeComposer} disabled={streaming}>cancel</button>
+              </div>
+              {#if kind === "text"}
+                <textarea
+                  bind:value={composerText}
+                  rows="4"
+                  placeholder="text"
+                  disabled={streaming}
+                ></textarea>
+              {:else if kind === "number"}
+                <input type="number" bind:value={composerNum} disabled={streaming} />
+              {:else if kind === "json"}
+                <textarea
+                  bind:value={composerJson}
+                  rows="6"
+                  placeholder={'{"key": "value"}'}
+                  disabled={streaming}
+                ></textarea>
+              {/if}
+              {#if composerError}
+                <div class="composer-error">{composerError}</div>
+              {/if}
+              <div class="composer-actions">
+                <button onclick={submitComposer} disabled={streaming}>send</button>
+              </div>
+            </div>
+          {/if}
         {/if}
-      {/if}
+      </details>
     </section>
   </main>
 </div>
@@ -728,10 +1004,181 @@
 
   main {
     display: grid;
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto 1fr auto;
     grid-template-columns: 1fr;
     overflow: hidden;
     position: relative;
+  }
+
+  .wizard {
+    border-bottom: 1px solid #303030;
+    background: #171a1a;
+    padding: 0.65rem 1rem;
+  }
+  .wizard-title {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    margin-bottom: 0.55rem;
+  }
+  .wizard-steps {
+    display: grid;
+    grid-template-columns: minmax(8rem, 0.85fr) minmax(11rem, 1fr) minmax(12rem, 1.05fr) minmax(9rem, 0.95fr);
+    gap: 0.55rem;
+  }
+  .wizard-steps.compact .wizard-step {
+    min-height: 4.2rem;
+  }
+  .wizard-step {
+    display: flex;
+    gap: 0.55rem;
+    align-items: flex-start;
+    min-width: 0;
+    border: 1px solid #303535;
+    border-radius: 6px;
+    padding: 0.55rem;
+    background: #1d2020;
+  }
+  .wizard-step.active {
+    border-color: #54708a;
+    background: #1e2730;
+  }
+  .wizard-step.done {
+    border-color: #355d49;
+    background: #1b241f;
+  }
+  .wizard-step.muted {
+    opacity: 0.58;
+  }
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.45rem;
+    height: 1.45rem;
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: #2c3333;
+    color: #d6e2de;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+  }
+  .wizard-step.done .step-num {
+    background: #28533d;
+  }
+  .wizard-step.active .step-num {
+    background: #315574;
+  }
+  .step-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+    flex: 1;
+  }
+  .wizard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .wizard-load {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.5rem;
+    gap: 0.35rem;
+  }
+  .wizard-load button {
+    grid-column: 1 / -1;
+  }
+  .wizard-chat {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem;
+    align-items: stretch;
+  }
+  .wizard-load input,
+  .wizard-chat textarea {
+    min-width: 0;
+    width: 100%;
+  }
+  .idx-input {
+    text-align: right;
+  }
+  .wizard-tool-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+    max-height: 18rem;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+  }
+  .wizard-tool {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    min-width: 0;
+    padding: 0.25rem;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .wizard-tool:hover {
+    background: #242828;
+  }
+  .wizard-tool span {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.05rem;
+  }
+  .wizard-tool .mono {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wizard-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .wizard-status span {
+    border: 1px solid #333;
+    border-radius: 999px;
+    padding: 0.12rem 0.45rem;
+    color: #888;
+  }
+  .wizard-status span.ok-text {
+    border-color: #31583f;
+    color: #bfe6c6;
+  }
+  .wizard-error {
+    color: #f3a4a4;
+    margin-bottom: 0.4rem;
+  }
+  .run-wizard {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .run-wizard .wizard-title {
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  .run-chat {
+    flex: 1;
+  }
+  @media (max-width: 900px) {
+    .wizard-steps {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 650px) {
+    .wizard {
+      max-height: 64vh;
+      overflow-y: auto;
+    }
+    .wizard-steps {
+      grid-template-columns: 1fr;
+    }
   }
 
   .feed { overflow: hidden; }
@@ -877,6 +1324,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+  }
+  .advanced-console summary {
+    cursor: pointer;
+    color: #aaa;
+    font-size: 0.82rem;
+  }
+  .advanced-console[open] summary {
+    margin-bottom: 0.55rem;
   }
   .options {
     display: flex;

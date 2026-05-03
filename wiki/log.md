@@ -1929,3 +1929,11 @@ Fresh pre-game sessions still start with no system prompt (`rendered system · 0
 **Touched pages:** [[burl-lab]] [[log]]
 
 Pre-game is now a walkable prompt-builder phase. The user can select the exact advertised tool set, click `Generate system prompt` to seed the default Burl base prompt, inspect the composed rendered system with the selected tools' protocol phrases, then explicitly `Start run` or `Ask Gemma now`. Harvested decision loading now fills the builder with `prompt_system` and `prompt_user` without automatically entering `in_run`, so prompt construction and model generation are separate logged-arrow steps.
+
+---
+
+## [2026-05-03 | local | burl/lab guided wizard]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+The web surface now presents the prompt-builder path as a four-step wizard: start a new session, build a prompt or load/chat from a harvested decision, select tools with presets or checkboxes, then confirm and ship to Gemma. The wizard drives the same logged-arrow moves (`generate_system`, `set_advertised`, `load_decision`, `ask_gemma`, `start_run`) while keeping the raw option composer behind an advanced console.

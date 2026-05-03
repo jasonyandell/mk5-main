@@ -31,6 +31,13 @@ curl -N -X POST http://localhost:8002/api/move \
 curl -s http://localhost:8002/api/sessions/$SID/frame | jq .
 ```
 
+## Web workflow
+
+The Svelte app on port `5174` opens with a guided wizard: start a session,
+build or load the prompt, select the advertised tools, then confirm and ship
+the run to Gemma. The lower advanced console exposes the raw phase options for
+debugging the same event-sourced moves.
+
 ## Environment
 
 | var | default | meaning |
