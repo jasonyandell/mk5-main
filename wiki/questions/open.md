@@ -64,6 +64,10 @@ Format:
   - Raised: `063fcac` ([[sources/063fcac]])
   - Context: v1's truncation bug inflated that bucket; v2 dropped from 17.3% → 14.9% in the right direction. The 560 decisions in the sequential pilot align with v2 by `(seed, declaration, narrator_seat, legal_plays)` tuples, admitting a paired McNemar test on bucket flips. Not yet run. If the test fails-to-reject, batched-mode parity is settled; if it rejects, there's a residual systematic shift to characterize before treating the v2 corpus as a drop-in replacement for sequential. See [[experiments/burl-2000-harvest]].
 
+- **Q:** How does the [[batched-harvest-resilience]] wave-sentinel + quarantine layer migrate to a continuous-batching dispatcher?
+  - Raised: `c002075` ([[burl-perf-phase2]])
+  - Context: Phase 2 lever 2 confirmed continuous batching is a 1.8–2.1× wall win at the bench layer, but the production harvest's resilience plumbing assumes a wave abstraction. Forward path: define a "cohort" that fences a logical group of decisions into the dispatcher pool with a shared sentinel, so quarantine semantics ("this cohort failed") survive. Open: whether mlx-lm 0.31.2's broadcast-shapes bug fires differently under continuous mid-flight prefill vs synchronous wave prefill.
+
 - **Q:** Will burl-lab's phase markers stay harness-private as a post-commit-Q&A adapter co-trains, or get tokenized?
   - Raised: 2026-05-02 (burl-lab platform spec)
   - Context: SPEC.md is explicit that phase identifiers and transitions are not surfaced to the model, since retraining is not a goal of the experimentation platform. Once a co-trained post-commit-Q&A adapter is on the table, the question reopens — phase boundaries are exactly the kind of structure-aware signal a multi-task adapter could exploit, and tokenizing them changes the model's view from "messages a phase produces" to "messages tagged with the phase that produced them." See [[burl-lab]], [[post-commit-q-and-a]], [[play-adapter-lock-in]].

@@ -2,7 +2,7 @@
 title: Gemma 4 E2B
 kind: entity
 first_seen: a8bccfa
-last_updated: dbadb5f
+last_updated: ec46190
 status: retired-as-lem-base
 ---
 
@@ -218,3 +218,113 @@ The architectural issues (PLE, KV-sharing, no FA2) that blocked LEM's training r
 become lower priority when training on smaller trajectory corpora and relying on
 inference-time behavior. Gemma 4 E2B is therefore simultaneously retired from LEM and
 active in Burl. (burl/OVERVIEW.md @ 8d26e0d)
+
+## MLX quant landscape — PLE landmine + the safe set
+
+Gemma 4 introduces **PLE (Per-Layer Embeddings)** with `ScaledLinear`
+layers that multiply outputs by a learned scalar.  Standard MLX
+quantization quantizes everything including PLE.  The scalar
+multiplication amplifies the rounding error, and the model output
+becomes garbage — fluent-looking but semantically broken text, or
+infinite-loop unused-token streams.
+
+This trap caught the entire community during Gemma 4's launch window.
+Anyone benching a "fast Gemma 4 4-bit on MLX" without verifying which
+repo has PLE-safe quantization gets unusable results.  HF discussion
+chronicling the discovery + the fix:
+[mlx-community/gemma-4-e2b-4bit/discussions/1](https://huggingface.co/mlx-community/gemma-4-e2b-4bit/discussions/1).
+
+### Broken MLX quants — DO NOT USE
+
+These quantize PLE and produce garbage output:
+
+| Repo | Status |
+|---|---|
+| `mlx-community/gemma-4-e2b-4bit` | Broken — quantizes PLE |
+| `mlx-community/gemma-4-e2b-it-4bit` | Broken — quantizes PLE |
+| `unsloth/gemma-4-E2B-it-MLX-8bit` (non-UD) | Broken — quantizes PLE |
+| `mlx-community/gemma-4-*-{4,8}bit` (entire collection) | Broken — quantizes PLE |
+| Other community converters using `mlx_lm.convert` defaults | Broken |
+
+### PLE-safe MLX quants — verified by Burl bench
+
+| Repo | Disk | Peak GB (Burl 5-row) | Quality | Recommended |
+|---|---|---|---|---|
+| `mlx-community/gemma-4-e2b-it-bf16` | 9.6 GB | 11.6 (b16 baseline) | reference | yes (full precision) |
+| `FakeRockert543/gemma-4-e2b-it-MLX-bf16` | ~10 GB | not benched | parity expected | alt source |
+| `FakeRockert543/gemma-4-e2b-it-MLX-8bit` | 8.0 GB | 9.83 | 3/5 paired play match (regressed vs bf16) | no |
+| `FakeRockert543/gemma-4-e2b-it-MLX-4bit` | 7.1 GB | 9.17 | 4/5 paired play match | yes (alt) |
+| **`unsloth/gemma-4-E2B-it-UD-MLX-4bit`** | **4.2 GB** | **5.08–6.24** | **4/5 paired play match (identical plays to FakeRockert Q4)** | **yes (production pick)** |
+
+Note the username spelling: the community PLE-safe quant set is
+published by **`FakeRockert543`** on HF (extra 'r'); the GitHub repo
+hosting the conversion code is `FakeRocket543/mlx-gemma4` (without the
+extra 'r').  Same author, different spellings.
+
+`unsloth/gemma-4-E2B-it-UD-MLX-4bit` ("UD" = Unsloth Dynamic) is the
+production pick: identical plays to FakeRockert Q4 in head-to-head
+paired benches at temp=0 (5/5 same play, 5/5 same delta), 34% smaller
+peak memory (5.08 vs 9.17 GB on the same workload), 41% smaller disk
+(4.2 vs 7.1 GB).  The smaller memory footprint comes from a more
+aggressive group-size / dynamic-quant scheme; quality is byte-equivalent
+within the bench's noise floor.
+
+### Burl bench rows ([[burl-perf-phase3]])
+
+Each variant ran with the production batched continuous-batching
+dispatcher (`--continuous --temperature 0 --subset 5`).  Paired
+baseline = fresh `continuous-batching` row immediately preceding the
+variant; play-match counts are *vs that paired baseline*, not vs
+[[burl-perf-phase0]]'s reference.
+
+```
+variant                wall  decode  peak   paired_play_match  notes
+continuous-bf16        ~36   ~70     ~11    5/5 (reference)    Phase-2 anchor (clean window)
+q4-mlx-cont (FakeR)    34.1  62.2    9.17   4/5                gi=104 *gained* 0.025 Q-pts vs bf16
+q8-bf16-cont (FakeR)   27.4  90.8    9.83   3/5                gi=0 + gi=104 regressed; FAIL on quality
+q4-unsloth-ud-cont     44.1  61.3    6.24   4/5                gi=0 marginal flip (same as FakeR Q4)
+phase3-stack-best v2   48.7  66.1    5.08   3/5                kernel-noise widening at gi=36 + gi=72
+phase3-stack-best v3   43.0  61.9    6.07   4/5                gi=0 marginal flip
+```
+
+**Production pick: Q4 PLE-safe** (`unsloth/gemma-4-E2B-it-UD-MLX-4bit`)
+preserves play quality within the 5-row temp=0 noise floor and saves
+5–6 GB of peak memory.  Q8 PLE-safe runs faster in raw decode tok/s
+but loses on quality and memory — a worse pick on both axes.  bf16
+remains the belt-and-suspenders default; Q4 ships when the workload
+is memory-constrained or when the cohort-size ceiling is the binding
+constraint on harvest throughput.
+
+Drop-in: pass `--model-repo unsloth/gemma-4-E2B-it-UD-MLX-4bit` to
+`burl/eval/bench_decision_latency.py` or wherever
+`GemmaLocalNativeBatched(model_repo=...)` is instantiated.  No code
+changes required — `mlx_lm.load` handles both bf16 and Q4-mlx
+formats transparently.
+
+### Forward guidance — M5 Max is memory-bandwidth-bound, not compute-bound
+
+The Q4 vs Q8 paradox surfaced in [[burl-perf-phase3]] is the most
+durable lesson for any future Gemma 4 quant work on Apple Silicon:
+**Q8 produced higher raw decode tok/s (90.8) than Q4 (61–66) but lost
+on every other axis** — quality (3/5 vs 4/5 paired play match),
+peak memory (9.83 vs 5.08–6.24 GB), and even paired-wall (lost vs
+its own paired baseline more often).  The single bench number
+("decode tok/s") that pre-Phase-3 perf-table thinking would have
+optimized for is the misleading one.
+
+Reason: M5 Max's GPU is memory-bandwidth-bound on this workload
+(Gemma 4 E2B at batch=5, ~2400-token prompts).  Smaller weights pull
+fewer bytes per matmul, so even at the same compute the decode loop
+runs faster *per unit work*.  But once the workload fits comfortably
+in cache, the compute-vs-bandwidth balance flips: Q8's slightly
+larger weights leave more bandwidth headroom for the
+high-arithmetic-intensity prefill steps, which is why Q8 wins on
+prefill_tok_s in the benches.  The decode loop dominates wall on
+Burl's heterogeneous-turn workload, so Q4 wins overall.
+
+**Implication for future quant work on Apple Silicon:** optimize for
+the smallest PLE-safe quant your quality bar tolerates, not the
+"middle ground" Q8.  Q4-PLE-safe is the sweet spot on E2B; Q3 / Q2
+are unverified and would need a fresh quality audit.  On larger
+Gemma 4 variants (E4B / 26B / 31B) the bandwidth balance shifts —
+the same Q4-vs-Q8 comparison may invert.  Bench, don't extrapolate.

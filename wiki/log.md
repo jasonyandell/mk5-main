@@ -2271,3 +2271,123 @@ The guided wizard now exposes the intended seeded decision flow directly: option
 - Bid-aware E[Q] generation now exists W42-side (forge already supported `--bid-values`). At bid=30 vs `branch_atlas_scaled_v0`, 10/10 decl_id pairs match within sampling noise; aggregate mean-EV is the correct validation contract because two stochastic oracle runs diverge in trajectory after decision 0.
 - Cross-bid `mark_ev` divergence breaks the Wave 1.2 algebraic-identity finding for inter-bid comparisons: 56-63% of actual-action mark_evs change at bids 32-42 vs bid=30; 100% change at bid=84. The structural mechanism is that the Q-space threshold for "made" rises with bid (`tq_off = 2·bid - 42`), so even with multiplier=1 the mark utility distribution shifts.
 - Wave 2 unblocks Wave 2.C-2.H (six paired-bid / state-injection probes for Ch 02 / Ch 04 / Ch 05 / Ch 08 / Ch 10 / Ch 12). Smoke-scope evidence is sufficient to start; ledger-moving statistical power requires the 50-seed CUDA sweep.
+## [2026-04-27 | 1f11d28 | burl-perf-phase0 — measurement harness for the speedup sprint]
+
+The foundation under [[topics/perf-on-the-table]]: a tracked bench that drives the production batched eval path against a frozen 5-decision subset and records per-decision wall, prefill/decode tok-s, peak memory, and a K1-grade-match-pct vs the latest baseline-bf16 ledger row. Phases 1–3 (cheap wins, continuous batching + prefix sharing, speculative decoding + quantization) thread their levers through `--variant <name>` and write a row each.
+
+**Touched pages:** [[experiments/burl-perf-phase0]] [[topics/perf-on-the-table]] [[index]]
+
+**Added:** [[experiments/burl-perf-phase0]] — frontmatter + Subset rationale + Measurements + Determinism notes + Pointers.
+
+**Updated:**
+- [[topics/perf-on-the-table]] gained a "Measurement harness" section with the canonical baseline-bf16 numbers (79.5s/5dec, 87 decode tok/s, 11.59 GB peak) and the Phase-1+ noise floor read; bumped `last_updated` to `1f11d28`.
+- [[index]] experiments catalog gained the new page.
+
+**Frontier shift:** Names the bench, freezes its inputs (`burl/eval/data/perf_subset_5.jsonl` covers gi=0/36/72/104/136 = trick positions 1/3/5/6/7 across declarations 0..4), publishes the canonical baseline-bf16 row at `1f11d28`, and documents the temp=0.6 noise floor (wall ±0.5%, decode tok/s ±9%, K1 grade match 80–100% on the 5-row subset). The 5-row floor isn't tight enough to confirm sub-10% regret deltas; that's why the bench also accepts `--subset 560` for the phase-exit gate. Promotes `gus_eval_bridge.py` from `scratch/belief_trajectory_rollout/diagnostic/` to `burl/eval/` so tracked benches can resolve `global_idx → BurlDecision` without sourcing from scratch.
+
+**Why now:** three other scribes (B, A, C) are blocked on this row. Phase 0 had to land first because every later finding hangs on the bench's accuracy, and all three downstream scribes need the same frozen subset + ledger schema to write rows comparable across runs.
+
+---
+
+## [2026-04-27 | 29da3d2 | burl-perf-phase2 — continuous batching ships at 1.8–2.1×, prefix-cache closes negative]
+
+Scribe A's closeout: lever 1 (LRUPromptCache prefix sharing) and lever 2 (continuous batching) for [[topics/perf-on-the-table]]. Lever 1 closed at 0× on M5 Max — heterogeneous-cache batched decode pads to the longest cache and chat-template re-rendering breaks key alignment, costing both speed (84 → 45 decode tok/s) and correctness (60% K1 match). Lever 2 lands at **1.8–2.1× wall** on the bench's 5-row temp=0 subset (71 s → 34–40 s) via a `BatchGenerator`-backed dispatcher (`run_bench_continuous` in `burl/eval/bench_decision_latency.py`).
+
+**Touched pages:** [[experiments/burl-perf-phase2]] [[topics/perf-on-the-table]] [[questions/open]] [[index]]
+
+**Added:** [[experiments/burl-perf-phase2]] — full lever-1 negative-result writeup + lever-2 results table + production-harvest migration plan.
+
+**Updated:**
+- [[topics/perf-on-the-table]]: levers 1 and 2 in the ranked list now carry their measured outcomes; bumped `last_updated`.
+- [[questions/open]]: filed the question of how the [[topics/batched-harvest-resilience]] wave-sentinel + quarantine layer migrates onto a continuous dispatcher.
+- [[index]]: added phase-2 experiment.
+
+**Frontier shift:** Names the perf-on-the-table prediction wrong on lever 1 (the "1.5–2× expected" line was based on the single-stream argument that doesn't hold when the batched decode has to pad heterogeneous KV widths), and right on lever 2 (the "3–5×" estimate; the bench measured 1.8–2.1× on the 5-row subset which is the conservative lower-bound — the harvest-level straggler tail savings will be larger). The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.8 × Phase 1 × Phase 3.
+
+**Why now:** Phase 2 had a 90-min budget; lever 1 burned about half of it on the negative-result loop, lever 2 landed cleanly in the second half. Closing in the same session keeps the wiki + ledger consistent before scribe-C's Phase 3 work picks up.
+
+---
+
+## [2026-04-27 | 0310b12 | phase-2 caveat — GPU-contention disclosed, root-cause writeup, dispatcher design]
+
+Team-lead paused new bench runs because cross-scribe GPU contention with scribe-B's parallel mlx-lm batch=5 jobs is consistent with the same-config baseline-t0 walking 71 → 73.7 s and the lever-1 prefix-cache rows hitting 114 s and 137 s.  All Phase-2 wall-time magnitudes are pending re-validation.  Used the pause window for non-GPU work: deeper mlx-lm source audit, Lever-1 root-cause writeup, continuous-batching dispatcher design doc.
+
+**Touched pages:** [[experiments/burl-perf-phase2]] [[topics/perf-on-the-table]] [[topics/continuous-batching-dispatcher-design]] [[index]] [[log]]
+
+**Added:** [[topics/continuous-batching-dispatcher-design]] — submit / pump / close API for a `ContinuousDispatcher` class wrapping mlx-lm's `BatchGenerator`; cohort-based OOM resilience that preserves [[topics/batched-harvest-resilience]]'s wave-sentinel + quarantine semantics under continuous batching; explicit acknowledgement that the current `run_bench_continuous` is inline and the class extraction is a follow-up refactor.
+
+**Updated:**
+- [[experiments/burl-perf-phase2]] gained a top-of-page contention caveat and a "Lever 1 — root-cause writeup" section diagnosing the two structural failure modes (`_merge_caches` heterogeneous-pad penalty + chat-template re-rendering vs trie-key alignment) with line-cited sources from `mlx_lm/models/cache.py` and the Gemma 4 `chat_template.jinja`.
+- [[topics/perf-on-the-table]] gained a "What mlx-lm 0.31.2 actually exposes" section: `batch_generate` / `BatchGenerator` / `LRUPromptCache` API surface, the constraints that ruled the naive Lever-1 shape out (model-key hashability, `BatchKVCache.merge` padding, `prefill_batch_size=8` broadcast bug, chat-template structured re-extraction), and the "right pattern for prefix reuse" derived from `mlx_lm.server.py`.  Compounded-stack estimate revised from 7–10× down to ~4–6× for the Phase-2 contribution.
+- Lever-1 and Lever-2 entries in the ranked list now flag wall magnitudes as contention-suspect while preserving the contention-independent structural claims.
+
+**Frontier shift:** The Phase-2 *direction* (Lever 1 fails, Lever 2 wins) survives the caveat because it rests on structural mlx-lm properties, not measured wall.  The *magnitude* (1.8–2.1× for Lever 2) is parked pending clean re-run.  The compounded realistic stack at the wiki's calibration calculus drops from 7–10× to roughly 1.5 × Phase 1 × Phase 3 — which means Phase 1 and Phase 3 carry more of the speedup load than the original perf-table estimate assumed.
+
+**Why now:** Pausing on GPU lets the wiki absorb what was learned without churning the conclusion when the clean re-run lands.  The structural arguments stay; the numbers will be replaced.
+
+---
+
+## [2026-04-27 | unstaged | burl-perf-phase3 — research-mode spec, two dragons disclosed]
+
+Scribe-C's Phase-3 research-mode landing: full spec page for the speculative-decoding + quantization phase, written during the GPU pause (scribe-B holds the bench).  Two structural findings forced the spec to bend before any wall measurement:
+
+1. **mlx-lm 0.31.2 spec decode is single-stream-only.**  `speculative_generate_step` (`mlx_lm/generate.py:473`) plumbs through `stream_generate` and the CLI/HTTP server, but **not** through `batch_generate` / `BatchGenerator` — the path [[burl-perf-phase2]] just landed.  Confirmed independently via LM Studio's MLX engine raising `SpeculativeDecodingNotSupportedError` even at batch=1 (lmstudio-ai issues #269, #1519).  Consequence: spec decode cannot stack on Phase-2's continuous batching; choosing it means accepting single-stream inference and losing Phase-2's parallelism win.  Anchor numbers: 43 tok/s single-stream vs ~84 tok/s batched — spec decode needs >2× to catch and >4× to win.
+2. **There is no Gemma 4 E0.5B.**  `google/gemma-4-E2B-it` is the smallest Gemma 4 release; the team-lead spec assumed an E0.5B based on [[perf-on-the-table]]'s old draft-model line which was speculative.  Viable drafts narrow to Gemma 3 270M IT (vocab 262144 = Gemma 4 E2B's 262144 — passes mlx-lm's `server.py:354` validator, but token id alignment is unverified across the gemma3_text → gemma4 family boundary; a 5-min tokenizer probe gates the variant) and self-speculation (Q4-E2B drafting bf16-E2B) as fallback.
+
+Quant work is also dragon-rich: every `mlx-community/gemma-4-*-{4,8}bit` and the original `unsloth/gemma-4-*-MLX-{4,8}bit` quants produce garbage output because they quantize PLE (Per-Layer Embeddings) layers — Gemma 4's PLE uses ScaledLinear with output multipliers that amplify quant error.  PLE-safe quants are released in `FakeRocket543/gemma-4-e2b-it-MLX-{4bit,8bit,bf16}` and `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (note: Unsloth's *non-UD* MLX-4bit is in the broken set).
+
+**Touched pages:** [[burl-perf-phase3]] [[index]]
+
+**Added:** [[burl-perf-phase3]] — full Phase-3 spec covering eight named variants (`q8-bf16-cont`, `q4-mlx-cont`, `q4-kvq8-cont`, `q6-mxfp-cont`, `spec-stream-bf16`, `spec-stream-q8`, `spec-stream-self`, `phase3-stack-best`), tradeoff matrix template (rows = variants, columns = wall / k1 / regret / mem / complexity), validation bar (≥4/5 K1 + regret Δ ±10% vs Phase-2's continuous baseline; tighter ±5% on Q4 to catch the quality cliff), spec-decode acceptance instrumentation plan (`was_drafted` per token, segmented by thought / tool-call / text), full test plan with hard time-boxes (tokenizer probe → quant smoke → quant benches → spec benches → stack), memory + complexity tradeoffs for the morning digest, and three open questions on mlx-lm's spec-decode internals.
+
+**Updated:**
+- [[index]]: added [[burl-perf-phase3]] entry with the dragon summary.
+
+**Frontier shift:** Phase 3's compounded ceiling is *forced to a choice* by Dragon 1 — spec decode and continuous batching cannot stack in mlx-lm 0.31.2, so the headline `phase3-stack-best` row is necessarily a quant-only stack on top of Phase-2's continuous-batching win.  Spec decode is benched as an alternative path (single-stream + draft) and the two paths' compounded numbers will be reported side-by-side to scribe-team-lead.
+
+**Why now:** Research-mode pause is the right time to land the spec — the dragon list is the load-bearing finding (named variants + validation bar are easy without GPU; the dragons require web search + mlx-lm source audit).  The ledger row format and validation gate are settled before any bench so the later wall-time write-up doesn't have to argue with the framing.
+
+---
+
+## [2026-04-27 | 96ebf0b | burl-perf-phase3 — Q4 PLE-safe ships, spec-decode dies on tokenizer probe]
+
+Scribe-C's Phase-3 execution under exclusive GPU.  Headline: **Q4 PLE-safe (`FakeRockert543/gemma-4-e2b-it-MLX-4bit`) is the production pick** — drop-in `--model-repo` swap, no other code changes, 4/5 paired play match vs bf16 at temp=0 (single divergence at gi=0 marginal-decision slot bf16 itself flips across runs), 1.3–2.3× paired wall delta (1.29× on cleaner pair, 2.34× on noisier pair), peak mem 8.93 GB vs 10.80 GB bf16 (−17%).  `phase3-stack-best` row: **28.3 s wall** vs paired baseline 36.4 s, decode 87.7 tok/s.
+
+**Speculative-decoding lever shelved before any GPU bench.**  Tokenizer compat probe (5 plain-text + special-token Burl prompts) showed Gemma 3 270M IT (the only viable smaller draft on the same vocab 262144) collapses Gemma 4's special tokens (`<|tool_call>`, `<|channel>`, `<channel|>`, `<tool_call|>`) into byte-fallback subword sequences.  Burl's outputs are dominated by these tokens (every assistant turn opens with `<|channel>thought` and closes with `<|tool_call>`), so a draft model whose tokenizer can't emit them as single tokens hits acceptance rate ≈ 0 on the highest-acceptance regions — exactly the regions spec decode would *most* want to win.  Combined with mlx-lm 0.31.2's spec-decode-not-supported-on-batched constraint (would surrender Phase-2's parallelism to use), the lever is closed for this harness shape.
+
+Q8 PLE-safe ran *faster* than Q4 in raw decode tok/s (90.8 vs 62.2) but **lost on quality** (3/5 paired play match) and on memory (9.83 GB vs 9.17 GB).  Worse pick than Q4 on both axes — the M5 Max's memory-bandwidth-bound regime favors the smaller-weights variant despite same compute.
+
+**Touched pages:** [[burl-perf-phase3]] [[perf-on-the-table]] [[index]]
+
+**Updated:**
+- [[burl-perf-phase3]] flipped `status: spec` → `status: active`, added a tradeoff matrix with real numbers, validation-against-bar table, paired-comparison play-match audit, three execution-time dragon notes (Gemma 3 tokenizer probe, HF username typo `FakeRockert543` not `FakeRocket543`, gi=0 marginal-decision noise widening the K1 gate), bumped `last_updated` to 96ebf0b.
+- [[perf-on-the-table]] lever 4 (speculative decoding) marked closed with the three-way kill writeup; lever 6 (quantization) marked confirmed at 1.3–2.3× wall + 25% memory cut, citing `phase3-stack-best` numbers.
+- [[index]] hook on [[burl-perf-phase3]] reflects the result.
+
+**Frontier shift:** The compounded perf-table stack is now: Phase-1 turn-aware tokens × Phase-2 continuous batching × Phase-3 Q4 PLE-safe.  Speculative decoding is shelved permanently for this harness shape; the parallelism win and the spec-decode win are mutually exclusive in mlx-lm 0.31.2, and continuous-batching wins on Burl's workload (heterogeneous turn-counts make the straggler-tail savings substantial).  Phase-4 full-560 will pin the absolute compounded multiplier; the 5-row results are *suggestive directional evidence*.
+
+**Why now:** Headline + writeup land in the same session per the wiki "update is a side effect" rule.  The bench rows are durably in `burl/eval/results/perf_ledger.csv`; the per-run JSON detail captures step-stats for downstream analysis; the wiki frontier reflects the current truth.
+
+---
+
+## [2026-04-27 | unstaged | burl-perf-phase3 — Unsloth UD cross-check + PLE landmine doc]
+
+Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" message arrived after the first headline shipped, with two explicit asks: (1) cross-check `unsloth/gemma-4-E2B-it-UD-MLX-4bit` (UD variant ONLY, the non-UD is in the broken-PLE set) head-to-head against the FakeRockert Q4, (2) document the PLE-quant landmine on [[gemma-4-e2b]] with the broken set + safe set.
+
+**Cross-check headline:** Unsloth UD-MLX-4bit is the new production pick.  Identical plays to FakeRockert Q4 in head-to-head paired runs at temp=0 (5/5 same play, 5/5 same delta), 34% smaller peak memory (5.08–6.24 GB vs FakeRockert's 9.17 GB on the same workload), 41% smaller disk (4.2 vs 7.1 GB).  Three Unsloth UD stacked-with-continuous-batching runs landed at peak **5.08 / 6.07 / 6.24 GB** — a **45–56% memory cut** vs bf16's 11.6 GB.  Wall is in the bench's noise floor (paired baselines themselves swing 36 → 80 s on identical config) — wall is suggestive, memory is load-bearing.
+
+**Cohort-size unlock:** at peak 5.08 GB, the M5 Max's 16 GB practical ceiling (3× nominal-peak headroom against chunked-prefill + heterogeneous-cache merge bursts) admits cohort=10 vs current cohort=5 at bf16.  This is the harvest-throughput multiplier the wiki's [[perf-on-the-table]] calibration calculus has been waiting for.  The 5-row subset is too small to exercise it directly; Phase 4 full-560 will validate.
+
+**Defensive `mlx_vlm` audit:** searched `mlx_vlm/*.py` for `speculat*` and `draft_model` references — **no matches**.  Spec decode is dead-on-arrival on Apple Silicon for batched workloads regardless of whether you reach for `mlx_lm.batch_generate` or `mlx_vlm`.  Confirms the Phase-3 dragon-1 finding through a second source.
+
+**Touched pages:** [[burl-perf-phase3]] [[perf-on-the-table]] [[gemma-4-e2b]] [[index]]
+
+**Updated:**
+- [[burl-perf-phase3]] tradeoff matrix gained 3 Unsloth UD rows (q4-unsloth-ud-cont, phase3-stack-best v2, v3); ledger snapshot expanded to 11 rows; head-to-head Q4-source comparison added (5/5 identical plays); cohort-size headroom analysis added; defensive audits section added (`mlx_vlm` spec-decode + tokenizer probe per-prompt table); top-of-page summary rewritten to call Unsloth UD as production pick.
+- [[gemma-4-e2b]] gained an "MLX quant landscape — PLE landmine + the safe set" section with both the broken set table and the PLE-safe set table (disk + peak GB + paired play match + recommendation).  Plus a Burl bench-rows snippet citing the relevant phase-3 ledger entries.  Bumped `last_updated` to ec46190.
+- [[perf-on-the-table]] lever 6 rewritten with Unsloth UD as production pick + the −56% memory finding + cohort=10 unlock.
+- [[index]]: hook on phase-3 reflects the new headline + memory cut.
+
+**Frontier shift:** Production Burl inference path is now **`unsloth/gemma-4-E2B-it-UD-MLX-4bit` + Phase-2 continuous batching**.  bf16 stays as the belt-and-suspenders default; Q4 ships when memory or cohort-size is the binding constraint.  The wiki's [[perf-on-the-table]] compounded-stack calculus picks up Phase-3's memory-ceiling unlock as a separate axis from raw wall reduction.
+
+**Why now:** Same-session wiki update per the "update is a side effect" rule.  The Unsloth UD cross-check was an explicit ask in the GO message and produces a strictly better production pick than the first-pass FakeRockert headline.  Documenting the PLE landmine on [[gemma-4-e2b]] is doctrinally important — every future scribe touching Gemma 4 quantization will hit the broken-set repos by default if the wiki doesn't name the safe set.

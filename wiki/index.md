@@ -111,6 +111,7 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[topics/count-vs-pip-sum-confusion|count-vs-pip-sum-confusion]] — Burl reads pip-sum as count value; coincides on the 5 count-bearers, silently wrong on the other 16 zero-count non-trumps (active)
 - [[topics/burl-reflection-deafness|burl-reflection-deafness]] — explicit "why?" prompts get parsed as continuation cues and routed back into the tool ritual; third symptom of play-adapter lock-in (active)
 - [[topics/at-risk-points|at-risk-points]] — Roberson's canonical 42 bidding framework: predict losses backwards, offs make-or-break-the-bid, "double ahead of your off"; voice anchor for post-commit Q&A (active)
+- [[topics/continuous-batching-dispatcher-design|continuous-batching-dispatcher-design]] — design doc for the `ContinuousDispatcher` abstraction over mlx-lm's `BatchGenerator`; submit/pump/close API + cohort-based OOM resilience preserving [[topics/batched-harvest-resilience]] semantics (active)
 
 ## Experiments
 
@@ -232,6 +233,9 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[experiments/burl-star-run3|burl-star-run3]] — filter-only STaR on the 1062-row strict pool; preserve-thoughts is load-bearing (run-3c thoughts ~95%, run-3b 0%); paired in-distribution n=180 confirms run-3c beats naked-Burl on oracle regret by **−39%** (1.92 vs 3.13); FORCED_COMMIT 12%→34% is decision-shape not play-quality cost (active)
 - [[experiments/burl-harvest-2|burl-harvest-2]] — first STaR self-sharpening test: harvest-2 with run-3c-as-rollout + filter-only run-4. Strategic distribution unchanged from harvest-1 (strict pool 1062→1075); play quality plateaued (run-4 regret 2.97 ≈ base 3.13, regresses ~1.05 vs run-3c 1.92); FC repaired (33.9%→9.4%); earlier ILLEGAL=28.6% read corrected to a tagger denominator artifact (active)
 - [[experiments/burl-chat-spike|burl-chat-spike]] — first burl-chat sessions: clean A/B confirms adapter lock-in (e1-rank16 emits commit_play; base Gemma engages in prose Q&A); chat-mode primer is load-bearing; first product feedback from Burl on its own tools; SSE+CRLF and MLX thread-affinity bugs found and fixed (active)
+- [[experiments/burl-perf-phase0|burl-perf-phase0]] — Phase 0 perf bench: 5-row hermetic subset (gi=0/36/72/104/136 across declarations 0..4 + trick positions 1/3/5/6/7); baseline-bf16 at 79.5s/5dec, 87 decode tok/s, 11.6 GB; bench drives the production batched eval path and tracks ledger CSV + per-run JSON under `burl/eval/results/` (active)
+- [[experiments/burl-perf-phase2|burl-perf-phase2]] — Phase 2 result: lever 1 (LRUPromptCache prefix sharing) closed negative on M5 Max — heterogeneous-cache decode + chat-template misalignment kill speed and K1; lever 2 (continuous batching via `BatchGenerator`) lands 1.8–2.1× wall on the 5-row temp=0 subset, validated via `run_bench_continuous` in `burl/eval/bench_decision_latency.py` (active)
+- [[experiments/burl-perf-phase3|burl-perf-phase3]] — Phase 3 result: speculative-decoding lever ruled out (mlx-lm spec-decode single-stream-only + Gemma 3 270M collapses Gemma 4 special tokens); Q4 PLE-safe ships clean — production pick `unsloth/gemma-4-E2B-it-UD-MLX-4bit` lands at peak **5.08 GB vs bf16's 11.6 GB (−56%)**, 4/5 paired play match (identical plays to FakeRockert Q4 head-to-head), wall in noise on 5-row bench; memory headroom unlocks cohort=10 inside M5 Max's 16 GB ceiling (active)
 
 ## Decisions
 
