@@ -26,6 +26,11 @@ adversarial buckets, regret metrics, belief-calibration tests, or training examp
 - [[w42-final-empirical-strategy-report]] — first w42 survey synthesis: strategy tags
   help small models, exact substrate claims can be supported, and most tactical claims
   remain context-limited or underpowered until direct detectors and paired tests land.
+- [[w42-book-claim-synthesis-and-ai-directions]] — post-phase-4 synthesis: confirmed
+  vs unconfirmed claims, distribution-aware E[Q] alternatives, AI/Burl/Gus directions.
+- [[w42-book-validation-campaign]] — live multi-wave campaign (epic `t42-4zi6`) to take
+  all 64 ledger rows from "evidence on slice" to paired counterfactuals on real auctions
+  or injected late states.
 
 ## Analysis Catalog Shape
 
