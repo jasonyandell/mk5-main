@@ -2254,3 +2254,20 @@ The guided wizard now exposes the intended seeded decision flow directly: option
 - Hidden-threat attribution surfaces concrete training targets: trump-count tiles are 100% directionally helpful as load-bearing tiles; 5-5 in twos and 4-4 in no-trump are the highest-impact non-trump load-bearing tiles; right- and left-setter seats are asymmetric in load-bearing-tile category, contradicting the book's symmetric Ch 5 treatment.
 - Two Ch 10 ledger rows promoted to context-limited (`ch10-point-system-skill-signal`, `ch10-timed-marks-advancement-objective`) after the independent audit found phase-4 worker evidence the prior audit had not absorbed. The `ch10-tournament-speed-tradeoff` worker artifact's non-vocabulary status string was normalized.
 - Three detectors flagged for refinement (not retirement): `ch05_reckless_count` (mean regret 9.18 over 2,300 fires - overfires beyond qualifying window); `ch03_called_non_double` (within-pair contrast valid, action-level endorsement wrong 86% of the time); `ch05_setter_pressure_regime` (regime label, not action label).
+
+---
+
+## [2026-05-03 | local | w42 book validation v1 wave 2 infra]
+
+**Touched pages:** [[w42]] [[w42-book-claim-synthesis-and-ai-directions]] [[w42-bookval-v1-wave2-infra-design]] [[w42-bookval-v1-wave2-reentry-preservation]] [[w42-bookval-v1-wave2-bid-aware-atlas]] [[w42-book-validation-campaign]] [[index]] [[log]]
+**Added:** 3 experiment pages — Wave 2 infra design, Wave 2.A reentry preservation probe, Wave 2.B bid-aware E[Q] atlas. Forge core extensions: `GameStateTensor.from_snapshot/to_snapshot`, `generate_eq_from_snapshots`, `--snapshot-file` CLI flag (commit 19fc675). W42-side bid-aware driver and 5,550-row joined action table (commit 0c802d4).
+**Updated:** [[w42-book-claim-synthesis-and-ai-directions]] absorbs Wave 2 infra-build findings and the cross-bid `mark_ev` divergence. [[w42-book-validation-campaign]] marks Waves 2.A and 2.B closed.
+**Retired:** none.
+**Questions opened:** when does the 50-seed × 1000-sample CUDA sweep land for ledger-moving statistical power; should the reentry-preservation corpus be rebuilt on oracle-greedy trajectories before downstream Ch 03 work treats its `underpowered` direction as evidence; does bid=84 strategic interpretation require filtering to ≥4-double hands or accept the engine's permissive enforcement.
+
+**Frontier shift:**
+- `forge.eq.GameStateTensor` gains a public mid-game snapshot interface. The forge engine already produced these states via `apply_actions`; what was missing was the entry-point constructor, and the `from_snapshot`/`to_snapshot` round-trip plus 6 new tests prove the schema (`forge.eq.snapshot.v1`) is consistent.
+- The first state-injection probe (200 reentry-shape snapshots, bid=30, M5 MPS, 50 samples) returns direction `consume > preserve` with EV delta `-1.62` (CI `[-2.93, -0.31]`), correctly self-classified as `underpowered`. Random-play context bias dominates; oracle-greedy trajectory regeneration is the next prerequisite for promotion.
+- Bid-aware E[Q] generation now exists W42-side (forge already supported `--bid-values`). At bid=30 vs `branch_atlas_scaled_v0`, 10/10 decl_id pairs match within sampling noise; aggregate mean-EV is the correct validation contract because two stochastic oracle runs diverge in trajectory after decision 0.
+- Cross-bid `mark_ev` divergence breaks the Wave 1.2 algebraic-identity finding for inter-bid comparisons: 56-63% of actual-action mark_evs change at bids 32-42 vs bid=30; 100% change at bid=84. The structural mechanism is that the Q-space threshold for "made" rises with bid (`tq_off = 2·bid - 42`), so even with multiplier=1 the mark utility distribution shifts.
+- Wave 2 unblocks Wave 2.C-2.H (six paired-bid / state-injection probes for Ch 02 / Ch 04 / Ch 05 / Ch 08 / Ch 10 / Ch 12). Smoke-scope evidence is sufficient to start; ledger-moving statistical power requires the 50-seed CUDA sweep.

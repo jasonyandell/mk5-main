@@ -292,6 +292,42 @@ generation; hidden-threat attribution has surfaced concrete training targets
 several detectors need refinement before they can serve as direct training
 labels.
 
+## Wave 2 Findings (Book Validation v1) — Infra Builds
+
+Wave 2 landed the two infra pieces flagged by Wave 1 as prerequisite for
+further claim movement. Two new wiki pages capture the details:
+[[w42-bookval-v1-wave2-reentry-preservation]] (state-injection harness +
+first probe) and [[w42-bookval-v1-wave2-bid-aware-atlas]] (bid-aware
+E[Q] driver + smoke sweep).
+
+**State-injection harness** ([[w42-bookval-v1-wave2-reentry-preservation]]):
+`GameStateTensor.from_snapshot` and `generate_eq_from_snapshots` now let
+the forge generator start from arbitrary mid-game snapshots. 121 forge
+tests pass with the new code, 0 regressions. The integration probe on
+200 reentry-shape snapshots returned `underpowered` because the snapshots
+were extracted from random-play trajectories rather than oracle-greedy
+play - a context bias the agent flagged in its own write-up.
+
+**Bid-aware E[Q] driver** ([[w42-bookval-v1-wave2-bid-aware-atlas]]):
+the W42-side wrapper sweeps {30,32,35,36,39,42,84} on the same hands
+and recomputes `mark_ev` with the correct multiplier per bid. Validation
+at bid=30 against [[w42-branch-atlas-scaled-v0]] passes 10/10 decl_id
+pairs within sampling noise.
+
+**Headline cross-bid finding**: the Wave 1.2 algebraic identity
+`mark_ev == p_make` holds within each bid value but **breaks across bids**.
+Mean absolute divergence between `mark_ev` and `threshold_mass` rises
+monotonically with bid: `0.398` at bid=30, `0.640` at bid=36, `0.897` at
+bid=42, `3.774` at bid=84. Cross-bid mark_ev change rate is 56-63% at
+bids 32-42 vs bid=30, and 100% at bid=84. This is the first corpus where
+`ch10-special-bid-mark-multiplier` is meaningfully testable.
+
+The remaining six Wave 2 probes (`t42-26j8`, `t42-jysl`, `t42-ntbe`,
+`t42-wikw`, `t42-ey88`, `t42-8na4`) are now unblocked. The first
+production run should be a 50-seed × 1000-sample CUDA sweep so paired
+contrasts at bids 32 / 35 / 36 / 42 / 84 carry enough statistical power
+to move ledger rows (rather than just demonstrating divergence).
+
 ## Links
 
 [[w42]] | [[w42-phase4-final-claim-audit]] |
