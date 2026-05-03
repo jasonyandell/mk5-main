@@ -28,8 +28,8 @@ the central ledger or the synthesis page.
 | 1.3 | hidden-threat impact ranker | t42-c2y9 | closed |
 | 1.4 | cross-AI agreement matrix | t42-m2i7 | closed |
 | 1.5 | independent ledger audit re-run | t42-1nmm | closed |
-| 2.A | state-injection harness | t42-rwdj | in progress |
-| 2.B | bid-aware E[Q] driver | t42-6j3k | in progress |
+| 2.A | state-injection harness | t42-rwdj | closed (commit 19fc675) |
+| 2.B | bid-aware E[Q] driver | t42-6j3k | in progress (artifacts landed; wiki pending) |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
