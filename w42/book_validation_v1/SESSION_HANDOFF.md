@@ -24,17 +24,25 @@
 - `.git/hooks/pre-commit` updated to use `bd export` (bd 1.0.3 removed
   `bd sync --flush-only`).
 
-### In flight (not yet reconciled)
+### Closed since first handoff
 
-- **Wave 2.A** (bead `t42-rwdj`) — state-injection harness. Agent ID
-  was launched as background `analytics-engineer` in an isolated
-  worktree. Substantial changes to `forge/eq/game_tensor.py`,
-  `forge/eq/generate/cli.py`, `forge/eq/generate/pipeline.py` were
-  observed in the main worktree — isolation may not have taken effect.
-  When the agent reports back, **review the diff carefully before
-  merging** since this is forge core code.
-- **Wave 2.B** (bead `t42-6j3k`) — bid-aware E[Q] driver. Agent in
-  isolated worktree. W42-side only, lower risk.
+- **Wave 2.A** (bead `t42-rwdj`) — state-injection harness. Closed at
+  commit 19fc675. 121 forge tests pass, 6 new tests, 0 regressions.
+  First reentry-preservation corpus self-classified as `underpowered`
+  due to random-play context bias.
+
+### In flight (artifacts landed; wiki/agent-summary pending)
+
+- **Wave 2.B** (bead `t42-6j3k`) — bid-aware E[Q] driver. The agent's
+  artifacts have landed under `w42/book_validation_v1/wave2/bid_aware_atlas/`:
+  driver script, 7 per-bid `.pt` files for seed 9430, joined
+  `bid_aware_actions.csv` (812 KB), `validation_check.csv` (10/10
+  decl_ids match branch_atlas_v1 within noise), `manifest.json` showing
+  wall_seconds=53.05 and `validation_bid30.pass=true`. The agent has
+  NOT yet sent a completion notification or written its wiki page. The
+  driver ran on MPS at the smoke scope (1 seed × 10 decls × 7 bids =
+  70 games, n_samples=200) — full GPU sweep is still pending decision.
+  Bead remains open.
 
 ### Reconciliation work pending when Wave 2 lands
 
