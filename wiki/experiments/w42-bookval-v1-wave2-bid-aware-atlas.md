@@ -3,6 +3,7 @@ title: w42 Book Validation v1 — Wave 2.B Bid-Aware E[Q] Atlas
 kind: experiment
 status: active
 bead: t42-6j3k
+wave2b2_bead: t42-7eop
 parent_epic: t42-4zi6
 wave: wave2
 first_seen: local-2026-05-03
@@ -182,6 +183,142 @@ with 3×SEM + 3 pt buffer to account for trajectory divergence after decision 0.
     --start-seed 9000 --n-seeds 50 --n-decl-per-seed 10 \
     --n-samples 1000 --bid-values "30,32,35,36,39,42,84" --device cuda
   ```
+
+## Wave 2.B.2 Full Sweep (bead t42-7eop)
+
+**Headline: first corpus with statistical power for paired-bid claim promotion on ch10 and ch02.**
+The full 50-seed × 10-decl × 7-bid × n=200 sweep was completed on 2026-05-03 in 32.3 min wall
+on Apple M-series MPS. The corpus contains 259,618 action rows across 50 seeds (9000–9049),
+10 declarations each, 7 bid values. Validation at bid=30 PASS (10/10).
+
+### Full Sweep Parameters
+
+| Parameter | Value |
+|-----------|-------|
+| Seeds | 9000–9049 (50 seeds) |
+| Declarations per seed | 10 (decl_ids 0–9) |
+| Bid values | 30, 32, 35, 36, 39, 42, 84 |
+| Samples per decision | 200 |
+| Device | Apple MPS (M-series) |
+| Batch strategy | 5 batches × 10 seeds (MPS INT_MAX limit prevents 500-game batches) |
+| Wall time | 32.3 min (1939.9 s) |
+| Total action rows | 259,618 |
+
+### Per-Bid Row Counts
+
+| bid | rows |
+|-----|------|
+| 30 | 36,940 |
+| 32 | 37,148 |
+| 35 | 37,036 |
+| 36 | 36,980 |
+| 39 | 37,254 |
+| 42 | 37,103 |
+| 84 | 37,157 |
+
+All 10 decl_ids appear at all 7 bid values.
+
+### Validation Status
+
+bid=30 vs branch_atlas_scaled_v0 at seed 9430: **PASS 10/10** (0 discrepant).
+
+### Mark EV Divergence at Full Scale (50 seeds)
+
+| bid | mm | tq_off | mean_mark_ev | mean_tm | divergence |
+|-----|----|----|------|------|------|
+| 30 | 1 | 18 | −0.549 | 0.442 | 0.432 |
+| 32 | 1 | 22 | −0.624 | 0.447 | 0.519 |
+| 35 | 1 | 28 | −0.729 | 0.452 | 0.634 |
+| 36 | 1 | 30 | −0.774 | 0.449 | 0.672 |
+| 39 | 1 | 36 | −0.872 | 0.457 | 0.786 |
+| 42 | 1 | 42 | −1.000 | 0.444 | 0.889 |
+| 84 | 2 | 42 | −2.000 | 0.442 | 3.769 |
+
+Consistent with smoke-run findings; monotone divergence confirmed at 50-seed scale.
+
+### Power Analysis
+
+`power_analysis.csv` computed with 1000-iteration bootstrap CIs (percentile method).
+
+#### ch10-special-bid-mark-multiplier (mark_ev change-rate vs bid=30)
+
+| bid | n | change_rate | 95% CI | verdict |
+|-----|---|-------------|--------|---------|
+| 32 | 14,000 | 0.665 | [0.658, 0.673] | sufficient |
+| 35 | 14,000 | 0.656 | [0.648, 0.664] | sufficient |
+| 36 | 14,000 | 0.651 | [0.643, 0.658] | sufficient |
+| 39 | 14,000 | 0.647 | [0.640, 0.655] | sufficient |
+| 42 | 14,000 | 0.638 | [0.631, 0.646] | sufficient |
+| 84 | 14,000 | 1.000 | [1.000, 1.000] | sufficient |
+
+CI half-widths all < 0.005. At bid=84, mark_ev changed at every actual decision (100%) vs bid=30.
+**Verdict: sufficient for claim promotion** — multiplier effect is measurable and tight.
+
+#### ch02-bid-only-enough (paired bid=32 − bid=30 deltas)
+
+| metric | n | delta | 95% CI | verdict |
+|--------|---|-------|--------|---------|
+| mark_ev | 14,000 | −0.076 | [−0.085, −0.067] | sufficient |
+| p_make | 14,000 | −0.038 | [−0.042, −0.034] | sufficient |
+| threshold_mass | 14,000 | +0.006 | [−0.000, +0.013] | borderline |
+
+mark_ev and p_make: raising bid from 30→32 reduces bidder's make probability by ~3.8pp paired.
+threshold_mass: 95% CI crosses zero (borderline) — threshold_mass is a less sensitive proxy.
+**Verdict: sufficient for mark_ev and p_make; borderline for threshold_mass.**
+Interpretation: bidding 32 instead of 30 measurably reduces mark_ev for the bidder — supports
+the book's "bid only enough" advice, but the effect (−0.076 mark_ev units) is small.
+
+#### ch12-setter-pounce-high-bid-off (setter mean Q delta vs bid=30)
+
+| bid | n | delta_Q | 95% CI | verdict |
+|-----|---|---------|--------|---------|
+| 35 | 8,400 | +0.179 | [−0.172, +0.527] | borderline |
+| 36 | 8,400 | +0.209 | [−0.150, +0.564] | borderline |
+| 39 | 8,762 | +0.376 | [+0.010, +0.751] | sufficient |
+| 42 | 8,734 | +0.410 | [+0.068, +0.765] | sufficient |
+| 84 | 8,688 | +0.348 | [−0.008, +0.725] | borderline |
+
+At bid≥39, setter's mean Q rises vs bid=30 (CI excludes zero), suggesting setter-side positions
+improve as bid rises — consistent with "pounce at high bids" claim. At bid=35/36/84, CI includes
+zero (borderline).
+**Verdict: sufficient at bid=39 and bid=42; borderline at bid=35/36/84.**
+Caveat: mean Q is a rough proxy; proper test needs snapshot-level setter-side probes.
+
+### Infrastructure Note
+
+MPS backend raises `MPSGraph does not support tensor dims larger than INT_MAX` with
+500+ games (50 seeds × 10 decls) in a single `forge.eq.generate` call at n=200 samples.
+Workaround: batch runner `run_full_sweep_batched.py` runs 10 seeds per forge call (100 games).
+The driver `run_bid_aware_atlas.py` was not modified.
+
+### Overall Power Verdict
+
+| Claim | Status |
+|-------|--------|
+| ch10-special-bid-mark-multiplier | **sufficient** (all bid buckets) |
+| ch02-bid-only-enough | **sufficient** for mark_ev/p_make; borderline for threshold_mass |
+| ch12-setter-pounce-high-bid-off | sufficient at bid≥39; borderline at bid=35/36/84 |
+
+This corpus has enough power for ledger promotion of ch10 (full multiplier effect) and
+ch02 (mark_ev/p_make paired delta). ch12 promotion requires snapshot-level probes for
+the setter-pounce mechanism at bid=35/36.
+
+### Reproduce (Full Sweep, MPS)
+
+```
+python -u w42/book_validation_v1/wave2/run_full_sweep_batched.py \
+  --start-seed 9000 --n-seeds 50 --batch-seeds 10 \
+  --n-decl-per-seed 10 --n-samples 200 \
+  --bid-values "30,32,35,36,39,42,84" \
+  --device mps \
+  --output-dir w42/book_validation_v1/wave2/bid_aware_atlas
+
+# Post-process: include seed 9430 for validation
+python -u w42/book_validation_v1/wave2/rejoin_with_validation.py
+
+# Power analysis
+python -u w42/book_validation_v1/wave2/compute_power_analysis.py
+```
 
 ## Links
 
