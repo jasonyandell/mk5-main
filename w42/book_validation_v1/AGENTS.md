@@ -86,3 +86,23 @@ When all agents in a wave finish, the orchestrator:
 4. Closes wave beads, appends `wiki/log.md`, pushes to remote.
 
 No agent edits the central ledger or the synthesis page directly.
+
+## Promotion guard (added 2026-05-03 after Wave 2.E.2 demotion)
+
+A claim may move toward `supported` only on **paired same-decision
+contrast evidence on the relevant action shape**. Aggregate proxies do
+not qualify. Examples:
+
+- Paired (qualifies): same `(seed, decl_id, decision_idx)` evaluated
+  under two action choices; same snapshot run through `from_snapshot`
+  with action A vs action B; same hand under bid=X vs bid=Y.
+- Aggregate (does not qualify): per-team mean Q across all chosen
+  actions in games at bid X; per-declaration mean regret across all
+  decisions; cross-corpus aggregate flip rate.
+
+The Wave 2.B.2 promotion of `ch12-setter-pounce-high-bid-off` to
+`context-limited` based on aggregate Q-delta was reversed by Wave
+2.E.2's snapshot-level evidence (-10.42 EV CI [-11.25, -9.59], all 4
+bids contradict). The agent had flagged the proxy as insufficient; the
+orchestrator promoted anyway. This guard prevents repeating that
+mistake.

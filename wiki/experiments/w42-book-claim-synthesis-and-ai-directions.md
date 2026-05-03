@@ -459,6 +459,47 @@ The remaining caveat is intentional: cross-contract bid choice
 (different declarations at different bids) and full auction-policy
 response remain Wave 3 work.
 
+## Wave 2.E.2 — High-Bid Pounce CONTRADICTED (with Methodology Lesson)
+
+[[w42-bookval-v1-wave2-pounce-high-bid]] tested
+`ch12-setter-pounce-high-bid-off` at the snapshot level on 1,140
+high-bid pounce-eligible positions (bids 35/36/39/42). Result:
+
+- Pooled EV delta `-10.42` (CI `[-11.25, -9.59]`); pooled p_set delta
+  `-0.047` (CI `[-0.056, -0.038]`).
+- All 4 bid buckets contradict: pounce-better fraction 21.6%-26.6%
+  per bid.
+- Effect is 3x larger in magnitude than at bid=30 (Wave 2.E).
+
+**Ledger row demoted: `ch12-setter-pounce-high-bid-off`
+`context-limited` -> `contradicted`** (the earlier Wave 2.B.2
+promotion was based on an aggregate per-team Q-delta proxy and is
+reversed by paired snapshot-level evidence).
+
+**Methodology lesson** worth pulling forward: the Wave 2.B.2 promotion
+relied on aggregate Q-delta showing setter teams perform better at
+high bids in book direction. The Wave 2.B.2 agent flagged this as a
+"rough proxy" requiring snapshot-level confirmation; the orchestrator
+promoted anyway because the CI was clean. Wave 2.E.2's snapshot-level
+paired evidence reverses the verdict completely. The aggregate Q-delta
+and the paired pounce-vs-decline contrast are fundamentally different
+objects:
+
+- Aggregate: setter-team mean Q across all chosen actions in games at
+  bid X. Reflects general game dynamics (high bids over-commit
+  bidders, helping setters in expectation regardless of pounce
+  decisions).
+- Paired: same-snapshot pounce vs decline. Tests the local action
+  question.
+
+Going forward, **aggregate proxies should never trigger ledger
+promotion**; only paired same-snapshot or same-decision contrasts on
+the relevant action shape qualify. This is added to the agent contract
+in `w42/book_validation_v1/AGENTS.md` for future waves.
+
+Status counts after Wave 2.E.2: supported 24, context-limited 14,
+underpowered 19, not-yet-tested 4, contradicted 3.
+
 ## Wave 2.H — Mark-Multiplier Threshold Insight
 
 [[w42-bookval-v1-wave2-ch10-action-level]] reframes the

@@ -37,7 +37,7 @@ the central ledger or the synthesis page.
 | 2.C.2 | void-creation paired contrast (follow) | t42-z31l | closed (37a5804) — **context-limited** in book direction (follow position) |
 | 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
 | 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
-| 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | in flight (MPS) |
+| 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | closed (0b7fb01) — **`ch12-setter-pounce-high-bid-off` DEMOTED to `contradicted`** |
 | 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — **`ch02-bid-only-enough` promoted to `supported`** (campaign's first) |
 | 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
@@ -57,26 +57,31 @@ point-system-skill-signal: both into `context-limited` from
 `not-yet-tested` and `underpowered` respectively) and normalized one
 non-vocabulary status string in a phase-4 worker artifact.
 
-Wave 2 (so far) absorbed 3 promotions:
+Wave 2 absorbed 2 net promotions plus 1 promotion-then-demotion:
 
 - `ch02-bid-only-enough`: `not-yet-tested` → `context-limited`
   (Wave 2.B.2) → **`supported`** (Wave 2.G; 5 step pairs, 85/85 slice
   cells in book direction)
 - `ch12-setter-pounce-high-bid-off`: `underpowered` → `context-limited`
-  (Wave 2.B.2)
+  (Wave 2.B.2 aggregate proxy) → **`contradicted`** (Wave 2.E.2
+  snapshot-level paired probe reversed it)
 
 The Wave 2.G promotion is the campaign's first crossing into
-`supported` from a non-supported start. No claim has been demoted.
+`supported` from a non-supported start. The Wave 2.E.2 demotion is
+the first time a Wave-2 promotion was reversed by stronger evidence —
+it triggered a new "promotion guard" rule in `AGENTS.md`: aggregate
+proxies do not qualify for promotion, only paired same-decision
+contrasts on the relevant action shape.
 
-Status counts after Wave 2.G:
+Status counts after Wave 2.E.2:
 
 | status | count |
 |---|---:|
 | supported | 24 |
-| context-limited | 15 |
+| context-limited | 14 |
 | underpowered | 19 |
 | not-yet-tested | 4 |
-| contradicted | 2 |
+| contradicted | 3 |
 
 The campaign's design discipline says we move a row out of
 `context-limited` / `underpowered` / `not-yet-tested` only when paired
