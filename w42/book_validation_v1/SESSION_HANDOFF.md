@@ -30,35 +30,33 @@
   commit 19fc675. 121 forge tests pass, 6 new tests, 0 regressions.
   First reentry-preservation corpus self-classified as `underpowered`
   due to random-play context bias.
+- **Wave 2.B** (bead `t42-6j3k`) — bid-aware E[Q] driver. Closed at
+  commit 0c802d4. Smoke sweep (M5 MPS) on seeds 9000-9004 + validation
+  seed 9430 across 7 bid values, 5,550 action rows. 10/10 decl_id pairs
+  match branch_atlas_scaled_v0 within sampling noise at bid=30.
+  Headline: cross-bid mark_ev divergence is structural and monotone
+  (0.398 → 3.774). Wave 2.C-2.H are now unblocked.
 
-### In flight (artifacts landed; wiki/agent-summary pending)
+### In flight
 
-- **Wave 2.B** (bead `t42-6j3k`) — bid-aware E[Q] driver. The agent's
-  artifacts have landed under `w42/book_validation_v1/wave2/bid_aware_atlas/`:
-  driver script, 7 per-bid `.pt` files for seed 9430, joined
-  `bid_aware_actions.csv` (812 KB), `validation_check.csv` (10/10
-  decl_ids match branch_atlas_v1 within noise), `manifest.json` showing
-  wall_seconds=53.05 and `validation_bid30.pass=true`. The agent has
-  NOT yet sent a completion notification or written its wiki page. The
-  driver ran on MPS at the smoke scope (1 seed × 10 decls × 7 bids =
-  70 games, n_samples=200) — full GPU sweep is still pending decision.
-  Bead remains open.
+None. Both Wave 2 infra builds are closed. Six dependent probe beads
+(t42-26j8, t42-jysl, t42-ntbe, t42-wikw, t42-ey88, t42-8na4) are now
+unblocked but not yet claimed.
 
 ### Reconciliation work pending when Wave 2 lands
 
-1. Read agent summaries.
-2. Run all existing forge tests (`find /Users/jason/code/mk5-main/forge
-   -name "test_*.py"`) before merging Wave 2.A. The agent was instructed
-   to run them but verify.
-3. Review the `from_snapshot` round-trip and `apply_actions` equivalence
-   tests Wave 2.A added.
-4. Check that Wave 2.B's bid=30 outputs match `branch_atlas_v1` within
-   sampling noise (the agent's validation contract).
-5. Update `w42/book_validation_v1/wave2/` README with manifest.
-6. Append `wiki/log.md` with a Wave 2 entry.
-7. Close beads `t42-rwdj` and `t42-6j3k`.
-8. Launch Waves 2.C-2.H if both 2.A and 2.B validated cleanly.
-9. Push.
+All complete:
+1. ✓ Agent summaries read.
+2. ✓ Forge tests run (121 pass, 0 regressions).
+3. ✓ from_snapshot/apply_actions equivalence tests verified.
+4. ✓ Wave 2.B bid=30 validation against branch_atlas_scaled_v0: 10/10 pass.
+5. ✓ Per-bid .pt files gitignored (~270MB sweep tensors); joined CSV +
+   manifest preserve reproducibility.
+6. ✓ wiki/log.md appended with Wave 2 entry.
+7. ✓ Beads t42-rwdj and t42-6j3k closed.
+8. **Pending**: Waves 2.C-2.H launch — these need user decision on
+   smoke-vs-CUDA sweep before launch. See "Open questions" below.
+9. ✓ All work pushed to origin/forge.
 
 ### Files the user might want to look at first when resuming
 
@@ -71,17 +69,39 @@
 
 ## Open questions for the user when resuming
 
-- Wave 2.B's GPU runtime is unknown locally. Agent was instructed to
-  fall back to a 5-seed smoke run if GPU unavailable. Decide whether
-  the smoke run is enough for first-pass Ch 10 mark-multiplier work
-  or a full GPU run is needed before Wave 2.H launches.
-- Wave 2.A modifies forge core code. If the diff looks clean and tests
-  pass, it can merge directly. If anything is questionable, the
-  worktree path means it's easy to abandon and respec.
-- Detector hygiene beads (`t42-v0m5`, `t42-2yb5`, `t42-btpg`) are P2 —
-  not blocking Wave 2 work. Could be assigned to a future session as
-  cleanup. Or rolled into Wave 2.E (the high-bid pounce probe) since
-  that's where ch05 detector hygiene matters most.
+- **Smoke vs CUDA sweep for Wave 2 probes**: Wave 2.B's smoke run (5
+  seeds × 200 samples) is enough to *demonstrate* cross-bid mark_ev
+  divergence (which it did, conclusively). It is NOT enough statistical
+  power to *promote* Ch 02 / Ch 10 / Ch 12 ledger rows to `supported`.
+  Three paths:
+  1. Launch Waves 2.C-2.H on the smoke corpus now → fast, but each
+     probe will return `underpowered` or `context-limited` evidence.
+     Result: useful directional signals, no ledger movement.
+  2. Get GPU access (Modal H100 or equivalent), run the full 50-seed ×
+     1000-sample sweep first → ~35s compute on H100, then launch all
+     six probes in parallel. Result: paired contrasts have power, ledger
+     rows can move.
+  3. Hybrid: launch the cheapest two (Wave 2.G ch02 bid-only-enough,
+     Wave 2.H ch10 mark-multiplier) on smoke now, run the CUDA sweep,
+     then launch the four state-injection probes on CUDA outputs.
+  My recommendation: option 2. The CUDA sweep is the rate-limiter;
+  doing it once well is cheaper than running the smoke probes only to
+  redo them on CUDA.
+- **Reentry corpus regeneration**: the Wave 2.A reentry probe is
+  underpowered because snapshots came from random-play decay. The next
+  reentry pass should mine snapshots from oracle-greedy trajectories
+  in the `branch_atlas_scaled_v0` corpus (which exists at 1000 samples
+  and full per-world tensors). That's a reasonable foreground task or
+  a Wave 2.A.2 follow-up bead.
+- **Detector hygiene beads** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`) are
+  P2 — not blocking Wave 2.C-2.H. Best rolled into Wave 2.E (the
+  high-bid pounce probe) since that's where Ch 05 detector hygiene
+  matters most.
+- **bid=84 strategic filtering**: the engine doesn't enforce 4+ doubles
+  for 84 bids. Wave 2.B's run includes all 10 decl_ids at bid=84;
+  downstream Ch 07/08 work will need to filter to eligible hands.
+  Consider a `--require-84-eligible` flag on the bid-aware driver
+  before Wave 2.F launches.
 
 ## Branches and remotes
 
