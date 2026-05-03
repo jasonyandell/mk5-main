@@ -151,6 +151,18 @@ class _PreGamePhase:
                 },
             ),
             Option(
+                name="send_seeded_decision",
+                label="Send seeded decision to Gemma",
+                args_schema={
+                    "type": "object",
+                    "properties": {
+                        "harvest": {"type": "string"},
+                        "seed": {"type": "integer"},
+                    },
+                    "required": ["harvest", "seed"],
+                },
+            ),
+            Option(
                 name="ask_gemma",
                 label="Ask Gemma now",
                 args_schema={
@@ -223,6 +235,18 @@ class _PreGamePhase:
                 )
             new_moves.append(UserText(stamp=now_stamp(state), text=user_content))
 
+        elif opt == "send_seeded_decision":
+            harvest = str(args.get("harvest", ""))
+            seed = int(args.get("seed", args.get("idx", 0)))
+            _system_content, user_content = _load_seeded_decision_prompts(
+                harvest, seed
+            )
+            if not _system_text(state):
+                new_moves.append(
+                    SystemSet(stamp=now_stamp(state), text=DEFAULT_BASE_SYSTEM)
+                )
+            new_moves.append(UserText(stamp=now_stamp(state), text=user_content))
+
         elif opt == "ask_gemma":
             text = str(args.get("text", ""))
             if text:
@@ -243,7 +267,11 @@ class _PreGamePhase:
         else:
             return Trace()
 
-        next_phase = "in_run" if opt in {"ask_gemma", "start_run"} else None
+        next_phase = (
+            "in_run"
+            if opt in {"ask_gemma", "send_seeded_decision", "start_run"}
+            else None
+        )
         return Trace(events=tuple(new_moves), output=next_phase)
 
 
@@ -290,11 +318,21 @@ def _load_decision_prompts(harvest: str, idx: int) -> tuple[str, str]:
     that surface via ``ToolSpec.protocol_phrase`` and ``render_system()``, so
     the imported base prompt stops before the legacy protocol section.
     """
+    matched = _find_decision_row(harvest, "global_idx", idx)
+    return _load_prompts_for_row(harvest, matched)
+
+
+def _load_seeded_decision_prompts(harvest: str, seed: int) -> tuple[str, str]:
+    """Read prompts for the decision whose corpus row has ``seed``."""
+    matched = _find_decision_row(harvest, "seed", seed)
+    return _load_prompts_for_row(harvest, matched)
+
+
+def _find_decision_row(harvest: str, key: str, value: int) -> dict:
     root = _harvest_root()
     idx_path = root / harvest / "corpus_index.jsonl"
     if not idx_path.exists():
         raise FileNotFoundError(idx_path)
-
     matched: dict | None = None
     with idx_path.open() as f:
         for line in f:
@@ -302,12 +340,16 @@ def _load_decision_prompts(harvest: str, idx: int) -> tuple[str, str]:
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if row.get("global_idx") == idx:
+            if row.get(key) == value:
                 matched = row
                 break
     if matched is None:
-        raise KeyError(f"global_idx {idx} not found in {harvest}")
+        raise KeyError(f"{key} {value} not found in {harvest}")
+    return matched
 
+
+def _load_prompts_for_row(harvest: str, matched: dict) -> tuple[str, str]:
+    root = _harvest_root()
     transcript_rel = matched.get("transcript_path", "")
     dec_dir = root / harvest / transcript_rel.split("/transcript")[0]
     events_path = dec_dir / "events.jsonl"

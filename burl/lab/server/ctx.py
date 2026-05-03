@@ -57,8 +57,13 @@ def _parse_play_history(prompt_user: str) -> list[tuple[int, int]]:
     return [(int(s), int(d)) for s, d in _VISIBLE_HISTORY_RE.findall(body)]
 
 
-def _resolve_decision(harvest: str, idx: int) -> tuple[dict, str]:
-    """Return (meta, prompt_user) for harvest+idx — same recipe as smoke."""
+def _resolve_decision(
+    harvest: str,
+    value: int,
+    *,
+    key: str = "global_idx",
+) -> tuple[dict, str]:
+    """Return (meta, prompt_user) for one corpus row — same recipe as smoke."""
     root = _harvest_root()
     idx_path = root / harvest / "corpus_index.jsonl"
     if not idx_path.exists():
@@ -71,11 +76,11 @@ def _resolve_decision(harvest: str, idx: int) -> tuple[dict, str]:
                 row = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if row.get("global_idx") == idx:
+            if row.get(key) == value:
                 matched = row
                 break
     if matched is None:
-        raise KeyError(f"global_idx {idx} not found in {harvest}")
+        raise KeyError(f"{key} {value} not found in {harvest}")
 
     transcript_rel = matched.get("transcript_path", "")
     dec_dir = root / harvest / transcript_rel.split("/transcript")[0]
@@ -122,23 +127,31 @@ def _build_wax_ctx(meta: dict, prompt_user: str) -> Any:
 
 
 def build_ctx_for_session(session_dir: Path) -> Any | None:
-    """Replay the journal, find the most recent load_decision UserChoice,
-    and build a WaxContext from it. Returns None if no load_decision is
-    in the journal (the model can still drive but base tools will fail).
+    """Replay the journal, find the most recent decision-loading UserChoice,
+    and build a WaxContext from it. Returns None if no decision-loading choice
+    is in the journal.
     """
-    last_load: tuple[str, int] | None = None
+    last_load: tuple[str, str, int] | None = None
     for mv in replay(session_dir):
         if isinstance(mv, UserChoice) and mv.option_name == "load_decision":
             harvest = str(mv.args.get("harvest", ""))
             idx = int(mv.args.get("idx", 0))
             if harvest:
-                last_load = (harvest, idx)
+                last_load = (harvest, "global_idx", idx)
+        elif (
+            isinstance(mv, UserChoice)
+            and mv.option_name == "send_seeded_decision"
+        ):
+            harvest = str(mv.args.get("harvest", ""))
+            seed = int(mv.args.get("seed", mv.args.get("idx", 0)))
+            if harvest:
+                last_load = (harvest, "seed", seed)
     if last_load is None:
-        log.info("[lab.ctx] no load_decision in journal at %s", session_dir)
+        log.info("[lab.ctx] no decision context in journal at %s", session_dir)
         return None
-    harvest, idx = last_load
-    log.info("[lab.ctx] building ctx for harvest=%s idx=%s", harvest, idx)
-    meta, prompt_user = _resolve_decision(harvest, idx)
+    harvest, key, value = last_load
+    log.info("[lab.ctx] building ctx for harvest=%s %s=%s", harvest, key, value)
+    meta, prompt_user = _resolve_decision(harvest, value, key=key)
     return _build_wax_ctx(meta, prompt_user)
 
 

@@ -111,6 +111,69 @@ async def test_pre_game_load_decision_fills_builder_without_starting_run(
     assert not (tmp_path / "events.jsonl").exists()
 
 
+@pytest.mark.asyncio
+async def test_pre_game_send_seeded_decision_uses_existing_system_and_starts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        pre_game_module,
+        "_load_seeded_decision_prompts",
+        lambda harvest, seed: (
+            f"harvested system {harvest}:{seed}",
+            f"seed prompt {harvest}:{seed}",
+        ),
+    )
+    state = State(
+        session_dir=tmp_path,
+        phase="pre_game",
+        messages=({"role": "system", "content": "custom system"},),
+        active_tools=(),
+        advertised=(),
+        segments=(),
+        cum_tok_in=0,
+        cum_tok_out=0,
+        started_mono_ns=0,
+        started_wall_ns=0,
+    )
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="send_seeded_decision",
+        args={"harvest": "h", "seed": 42},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert trace.events == (
+        UserText(stamp=trace.events[0].stamp, text="seed prompt h:42"),
+    )
+    assert trace.output == "in_run"
+    assert not (tmp_path / "events.jsonl").exists()
+
+
+@pytest.mark.asyncio
+async def test_pre_game_send_seeded_decision_seeds_default_system_if_needed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        pre_game_module,
+        "_load_seeded_decision_prompts",
+        lambda harvest, seed: ("ignored system", f"seed prompt {seed}"),
+    )
+    state = _state(tmp_path)
+    move = UserChoice(
+        stamp=_stamp(1),
+        option_name="send_seeded_decision",
+        args={"harvest": "h", "seed": 7},
+    )
+
+    trace = await PRE_GAME.handle(state, move)
+
+    assert [type(event) for event in trace.events] == [SystemSet, UserText]
+    assert trace.events[0].text == DEFAULT_BASE_SYSTEM
+    assert trace.events[1].text == "seed prompt 7"
+    assert trace.output == "in_run"
+
+
 def test_load_decision_strips_legacy_tool_protocol() -> None:
     raw = (
         "You are Burl.\n\n"

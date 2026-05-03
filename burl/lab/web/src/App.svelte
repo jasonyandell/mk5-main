@@ -45,9 +45,9 @@
   let composerJson = $state("{}");
   let composerError = $state<string | null>(null);
   let wizardHarvest = $state("harvest_batched_20260425_072910");
-  let wizardIdx = $state<number | null>(1);
   let wizardMessage = $state("");
   let wizardError = $state<string | null>(null);
+  let wizardSeed = $state<number | null>(1);
 
   // HATEOAS aside: tools that are active but not advertised.
   let asideOpen = $state(false);
@@ -412,13 +412,30 @@
     }
     await sendMove({
       option_name: "load_decision",
-      args: { harvest, idx: wizardIdx ?? 0 },
+      args: { harvest, idx: wizardSeed ?? 0 },
     });
   }
 
   async function wizardShipToGemma() {
     if (!hasOption("start_run")) return;
     await sendMove({ option_name: "start_run", args: {} });
+  }
+
+  async function wizardSendSeededDecision() {
+    if (!hasOption("send_seeded_decision")) return;
+    const harvest = wizardHarvest.trim();
+    if (!harvest) {
+      wizardError = "enter a harvest name";
+      return;
+    }
+    if (wizardSeed == null) {
+      wizardError = "enter a seed";
+      return;
+    }
+    await sendMove({
+      option_name: "send_seeded_decision",
+      args: { harvest, seed: wizardSeed },
+    });
   }
 
   async function wizardSendMessage() {
@@ -479,8 +496,17 @@
   let hasRenderedSystem = $derived(
     renderedSystemChars > 0 || String(renderedSystemSegment?.text ?? "").length > 0,
   );
+  let hasCommitTool = $derived(Boolean(frame?.advertised.includes("commit_play")));
   let canShipToGemma = $derived(
     hasRenderedSystem && hasUserPrompt && !toolDraftChanged && hasOption("start_run"),
+  );
+  let canSendSeededDecision = $derived(
+    hasRenderedSystem &&
+      hasCommitTool &&
+      !toolDraftChanged &&
+      hasOption("send_seeded_decision") &&
+      wizardHarvest.trim().length > 0 &&
+      wizardSeed != null,
   );
 </script>
 
@@ -537,8 +563,8 @@
           <div class="wizard-step muted">
             <span class="step-num">2</span>
             <div class="step-main">
-              <strong>Build prompt or chat</strong>
-              <span class="dim small">rules, system message, optional harvested decision</span>
+              <strong>Prompt or chat</strong>
+              <span class="dim small">optional chat, then generate system rules</span>
             </div>
           </div>
           <div class="wizard-step muted">
@@ -551,8 +577,8 @@
           <div class="wizard-step muted">
             <span class="step-num">4</span>
             <div class="step-main">
-              <strong>Ship to Gemma</strong>
-              <span class="dim small">confirm, then generate</span>
+              <strong>Send play</strong>
+              <span class="dim small">seeded decision prompt into Gemma</span>
             </div>
           </div>
         </div>
@@ -575,29 +601,13 @@
             </div>
           </div>
 
-          <div class="wizard-step" class:done={hasSystemPrompt || hasUserPrompt} class:active={!hasSystemPrompt && !hasUserPrompt}>
+          <div class="wizard-step" class:done={hasSystemPrompt} class:active={!hasSystemPrompt}>
             <span class="step-num">2</span>
             <div class="step-main">
-              <strong>Build prompt or chat</strong>
+              <strong>Prompt or chat</strong>
               <div class="wizard-actions">
                 <button onclick={wizardGenerateSystem} disabled={streaming || !hasOption("generate_system")}>
                   use default rules + system
-                </button>
-              </div>
-              <div class="wizard-load">
-                <input
-                  bind:value={wizardHarvest}
-                  placeholder="harvest name"
-                  disabled={streaming}
-                />
-                <input
-                  class="idx-input"
-                  type="number"
-                  bind:value={wizardIdx}
-                  disabled={streaming}
-                />
-                <button onclick={wizardLoadDecision} disabled={streaming || !hasOption("load_decision")}>
-                  load decision
                 </button>
               </div>
               <div class="wizard-chat">
@@ -660,24 +670,53 @@
           <div class="wizard-step" class:active={hasRenderedSystem && !toolDraftChanged} class:done={false}>
             <span class="step-num">4</span>
             <div class="step-main">
-              <strong>Confirm and ship</strong>
+              <strong>Send play</strong>
               <div class="wizard-status mono small">
                 <span class:ok-text={hasSystemPrompt}>system {systemBaseChars} chars</span>
                 <span class:ok-text={advertisedCount > 0}>tools {advertisedCount}</span>
-                <span class:ok-text={hasUserPrompt}>{hasUserPrompt ? "user prompt loaded" : "no user prompt"}</span>
+                <span class:ok-text={hasCommitTool}>{hasCommitTool ? "commit tool ready" : "need commit_play"}</span>
                 <span class:ok-text={hasRenderedSystem}>rendered {renderedSystemChars} chars</span>
               </div>
-              {#if !hasUserPrompt}
+              {#if toolDraftChanged}
                 <div class="dim small">
-                  load a decision first, or use chat if you want a free-form run.
+                  apply your tool selection before sending; the selected tools are rendered into the system prompt.
+                </div>
+              {:else if !hasCommitTool}
+                <div class="dim small">
+                  include `commit_play` if this run should end by committing a domino.
+                </div>
+              {/if}
+              <div class="wizard-load">
+                <input
+                  bind:value={wizardHarvest}
+                  placeholder="harvest name"
+                  disabled={streaming}
+                />
+                <input
+                  class="idx-input"
+                  type="number"
+                  aria-label="seed"
+                  bind:value={wizardSeed}
+                  disabled={streaming}
+                />
+                <button onclick={wizardLoadDecision} disabled={streaming || !hasOption("load_decision")}>
+                  load only
+                </button>
+              </div>
+              {#if hasUserPrompt}
+                <div class="dim small">
+                  user prompt loaded; `ship to Gemma` will run that loaded prompt.
                 </div>
               {/if}
               <div class="wizard-actions">
                 <button onclick={wizardGenerateSystem} disabled={streaming || !hasOption("generate_system")}>
                   refresh prompt
                 </button>
+                <button onclick={wizardSendSeededDecision} disabled={streaming || !canSendSeededDecision}>
+                  send seed {wizardSeed ?? ""}
+                </button>
                 <button onclick={wizardShipToGemma} disabled={streaming || !canShipToGemma}>
-                  ship to Gemma
+                  ship loaded
                 </button>
               </div>
             </div>

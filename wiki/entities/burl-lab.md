@@ -26,6 +26,8 @@ Server runs end-to-end against a fake engine. `/api/health`, `/api/sessions`, an
 
 **Prompt-builder UX.** Pre-game is now an explicit prompt builder rather than a hidden bootstrap step. The user picks an advertised tool set from registry checkboxes, clicks `Generate system prompt` to seed the default Burl base prompt, and sees the composed `rendered_system` immediately: base prompt plus the selected tools' `ToolSpec.protocol_phrase` values. `Load harvested decision into builder` imports harvested `prompt_system` and `prompt_user` but does not start the run; `Start run` and `Ask Gemma now` are separate phase choices. The web surface now wraps this in a guided wizard: new session → build prompt or chat → select tools → confirm and ship to Gemma. The raw HATEOAS/option controls remain available as an advanced console, but the happy path no longer requires knowing internal move names like `SystemSet`, `AdvertisedSet`, or `load_decision`. The wizard and backend now refuse `Start run` until a user/decision prompt exists, and `ToolSpec.requires_context` keeps game-state tools hidden from the engine until ctx exists.
 
+**Seeded decision lane.** The happy path no longer requires a separate "load then ship" move. `send_seeded_decision` takes `(harvest, seed)`, loads the same harvested user prompt that [[burl-chat]] uses, preserves the currently built system prompt/tool protocol, enters `in_run`, and gives the server enough journal data to build the game ctx for state tools. The wizard surfaces this as "Send play": optional chat, generate system prompt, select/apply tools, then send a seed.
+
 ## Architecture
 
 Five load-bearing properties, each codified in `burl/lab/SPEC.md` ([burl/lab/SPEC.md @ a2db3c7](../sources/a2db3c7.md)):

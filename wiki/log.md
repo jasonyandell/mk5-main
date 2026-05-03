@@ -1945,3 +1945,11 @@ The web surface now presents the prompt-builder path as a four-step wizard: star
 **Touched pages:** [[burl-lab]] [[log]]
 
 The wizard and `pre_game.start_run` now require a user/decision prompt before entering `in_run`. `ToolSpec.requires_context` also keeps game-state tools hidden from the engine until a harvested decision has produced ctx, with a `missing_context` tool result as the last-resort guard. This prevents the footgun where a system prompt plus advertised game-state tools could be shipped with no harvested decision, causing context-bound tools such as `state_brief` to run with `ctx=None`.
+
+---
+
+## [2026-05-03 | local | burl/lab seeded decision lane]
+
+**Touched pages:** [[burl-lab]] [[log]]
+
+The guided wizard now exposes the intended seeded decision flow directly: optional chat, generate the system prompt from the selected tool protocol, select/apply tools, then `send_seeded_decision(harvest, seed)`. The new arrow preserves the built system prompt, loads the harvested user prompt for the seed, enters `in_run`, and lets the server reconstruct ctx from the same journaled `(harvest, seed)` so state tools can run.
