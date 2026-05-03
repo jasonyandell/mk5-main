@@ -186,4 +186,4 @@ w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/
 
 - [[w42-bookval-v1-wave2-pounce-window-bid30]] — sibling bid=30 probe (Wave 2.E)
 - [[w42-bookval-v1-wave2-bid-aware-atlas]] — source corpus
-- [[w42-bookval-v1-session-handoff]] — campaign overview
+- [[w42-book-validation-campaign]] — campaign overview

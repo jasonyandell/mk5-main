@@ -1517,7 +1517,7 @@ and walker/endgame states.
 
 ## [2026-04-30 | 4a747f6 | catalog forge/analysis workstream into the wiki (t42-ff42)]
 
-Brings the forge/analysis/ workstream into the wiki as first-class. Synthesis ingest, not a single-commit ingest — the underlying work landed across many commits between 2026-01-06 (`5ffdf58`) and 2026-01-31 (`4a747f6`); the wiki gap was the issue, fixed now via [[t42-ff42]].
+Brings the forge/analysis/ workstream into the wiki as first-class. Synthesis ingest, not a single-commit ingest — the underlying work landed across many commits between 2026-01-06 (`5ffdf58`) and 2026-01-31 (`4a747f6`); the wiki gap was the issue, fixed now via bead `t42-ff42`.
 
 **Touched pages:** [[entities/forge-analysis]] [[topics/oracle-vs-human-play]] [[topics/risk-return-inverse]] [[topics/q0-positional-bias]] [[entities/forge]] [[index]] [[log]]
 
@@ -1557,7 +1557,7 @@ First-session findings opened a new research direction: **post-commit Q&A**. Tal
 - **Adapter lock-in is real.** Stacking Q&A on top of a STaR-distilled play adapter does not work. e1-rank16 + harvested prefix + chat-mode primer + explicit "do not output a tool call" + a non-tool question → model still emits `commit_play({"domino_id":14})` mid-response, re-committing a play already in the prefix. Same prefix without the adapter (base Gemma 4 E2B) → engages cleanly, produces structured prose Q&A. A/B clean. See [[play-adapter-lock-in]].
 - **Chat-mode primer is load-bearing.** Synthetic "Yeah, I committed N. Ask me anything" assistant turn injected after `commit_play` flips base Gemma from play-decision mode to chat mode via in-context recency. Without it, even base Gemma falls back to "I am Burl, my next action is to call commit_play." See [[chat-mode-primer]].
 - **First product feedback from Burl on its own tools.** Base Gemma + a 9-word prompt produced a structured three-section critique of the eq_outcome_distribution and probe tool surface, suggesting (a) structured summaries before raw histograms, (b) explicit strategic labels, (c) "why" framing matching the [[at-risk-points]] frame. Real backlog item.
-- **Voice gap visible.** Model spontaneously used Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes), not Roberson vocabulary (offs, walkers, double ahead of your off). To get the family-game voice the [[user_role_and_north_star|north star]] requires, either the tools must surface Roberson framing or a Roberson primer rides the system prompt. Probably both.
+- **Voice gap visible.** Model spontaneously used Gus/forge vocabulary (Q axis, mean shifts, catalyst dominoes), not Roberson vocabulary (offs, walkers, double ahead of your off). To get the family-game voice the north star requires, either the tools must surface Roberson framing or a Roberson primer rides the system prompt. Probably both.
 
 **Methodological lesson logged:** SSE consumers must be tested with `repr()` of raw response bytes, not eyeballed terminal output. The CRLF framing bug was invisible to every prior `curl` test because terminals strip CR. Cost: one false success cycle and a rebuild of the streaming consumer.
 
@@ -2485,3 +2485,46 @@ Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" me
 - **Three parked-or-experimental models are simultaneously rescued by this architecture:** Burl (LLM strategy selector — finally a use case where small action space + narrative reasoning is the natural fit), Gus (input encoder — what it was designed for), Zeb (training-data generator + Model C target). Coherent re-integration that makes all three load-bearing again rather than parked.
 - This is the cleanest path past the EV ceiling that the campaign has identified. Other paths are dead (multi-utility heads, soft-cliff utilities) or impractical (generic MCTS, Lookahead-Lens at K=2-3 with the 4-player branching multiplier).
 - Wiki-first per project doctrine — bead filing is next, scoped as Phase 1 (framework + 1-3 starter strategies + recording + Lens(ev) head-to-head harness).
+
+---
+
+## [2026-05-03 | local | wiki curation pilot — hubs, trails, and W42 routing]
+
+Pilot curation pass for the steady-state wiki. The goal is not to delete leaf
+evidence, but to make the wiki usable without loading the full catalog into
+context. The pass adds a frontier-hub / trail / leaf-page navigation role and
+uses W42 as the first pilot cluster.
+
+**Touched pages:** [[AGENTS]] [[index]] [[w42]] [[wiki-entrypoints]] [[w42-book-validation]] [[book-strategy-player]] [[w42-lens-v1-utility-head-to-head]] [[w42-bookval-v1-wave1-mark-utility-transform]] [[w42-bookval-v1-wave2-low-trump-trap]] [[w42-bookval-v1-wave2-pounce-high-bid]] [[w42-claim-analysis-synthesis-report]] [[log]]
+
+**Added:**
+- [[wiki-entrypoints]] — lightweight route map for agents: frontier hubs, large
+  leaf clusters, and `rg` query shortcuts.
+- [[w42-book-validation]] — curated path through the W42 / Winning 42 book
+  harvest, chapter pages, claim-validation ladder, phase sweep, evidence
+  surfaces, and current validation campaign.
+
+**Updated:**
+- [[AGENTS]] now names frontier hubs, trails, and leaf pages as explicit
+  navigation roles and makes [[index]] a catalog fallback rather than mandatory
+  first context for every query.
+- [[index]] gained a compact "Start here" section and trail entries for the two
+  new route pages.
+- [[w42]] was slimmed into a frontier hub; long phase-by-phase evidence moved
+  behind [[w42-book-validation]] and existing leaf pages, including the later
+  Wave 3/4, Lens v1, and [[book-strategy-player]] planning-aware frontier. The
+  refreshed route includes the book-strategy-player algebraic spec as the build
+  contract for Phase 1.
+- Four W42 link-hygiene fixes landed while validating the trail: the
+  mark-utility transform now points to [[w42-book-validation]], the phase-2
+  synthesis now points to [[w42-phase2-seat-position-strategy-map]], and two
+  Wave 2 pages point to [[w42-book-validation-campaign]] instead of placeholder
+  overview/handoff pages.
+
+**Frontier shift:** The wiki remains Karpathy-style and backlink-first, but
+large clusters should now be approached through hubs and trails. W42 is the
+pilot: the latest Wave 2-4, Lens v1, and [[book-strategy-player]] evidence stays
+intact, while the entity page becomes orientation material rather than a
+complete ledger.
+
+**Questions opened:** none.

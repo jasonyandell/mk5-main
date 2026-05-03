@@ -47,7 +47,7 @@ The strongest empirical movement is tactical and action-local:
 
 - [[w42-tactical-claim-replication]] keeps the pounce story sturdy on 28,000
   decisions and 75,079 legal actions.
-- [[w42-seat-position-strategy-map]] now distinguishes structural seat slices
+- [[w42-phase2-seat-position-strategy-map]] now distinguishes structural seat slices
   from pairable action labels. Closure take-trick and pounce closure are large
   positive same-decision contrasts; unsupported count donation into defense is
   sharply negative.

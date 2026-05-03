@@ -2,6 +2,19 @@
 
 The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (status)`. Updated every ingest.
 
+## Start here
+
+For broad orientation, prefer these compact entrypoints before loading the full
+catalog:
+
+- [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: hubs, trails, leaf clusters, and search shortcuts (active)
+- [[entities/lem|lem]] — rules comprehension, Stage 0 adapters, STaR, and the LEM half of the LEM→Burl handoff (active)
+- [[entities/burl|burl]] — tool-using play, wax_museum, burl-lab, chat, STaR traces, and post-commit Q&A (active)
+- [[entities/gus|gus]] — oracle distillation, belief/value/policy heads, LAMIR, regret eval, and strategy probes (active)
+- [[entities/w42|w42]] — Winning 42 book validation, strategy detectors, claim ledger, and report-shaped research (active)
+- [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 evidence pile, Lens v1, and planning-aware frontier (active)
+- [[entities/book-strategy-player|book-strategy-player]] — multi-step book-plan architecture, nine-algebra spec, and strategy-selector training route (design)
+
 ## Entities
 
 ### Shared infrastructure
@@ -49,7 +62,11 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 - [[entities/gus|gus]] — third sibling project; distills forge's E[Q] oracle via multi-head transformer; skips reasoning channel; 5-head LAMIR-ready (active)
 - [[entities/joint-world-tensor|joint-world-tensor]] — packed game-state representation enabling look-ahead without oracle calls; core Gus data structure (active)
 - [[entities/gen-fleet|gen-fleet]] — Vast.ai distributed corpus generation plan; 5 pre-launch fixes identified (bid=30 bias, schema v2, lazy dataset done); not yet launched (plan)
-- [[entities/book-strategy-player|book-strategy-player]] — multi-step strategy framework with explicit lifecycle, namespaced plan state, free counterfactual recording for training pipeline; resurrects Burl/Gus/Zeb roles (design)
+- [[entities/book-strategy-player|book-strategy-player]] — multi-step strategy framework with explicit lifecycle, nine algebras / ten laws, namespaced plan state, and free counterfactual recording for training pipeline; resurrects Burl/Gus/Zeb roles (design)
+
+### W42 — book validation and strategy measurement
+
+- [[entities/w42|w42]] — Winning 42 empirical strategy-validation workstream; book claims become detectors, reports, paired tests, and bounded claim statuses (active)
 
 ## Topics
 
@@ -399,7 +416,9 @@ The catalog of every page in the wiki. Each line: `[[page]] — one-line hook (s
 
 ## Trails
 
+- [[trails/wiki-entrypoints|wiki-entrypoints]] — lightweight route map for agents: frontier hubs, trails, large leaf clusters, and query shortcuts (active)
 - [[trails/lem-to-burl-handoff|lem-to-burl-handoff]] — thematic walkthrough of the LEM→Burl transition: shared infrastructure, diverging philosophies, open questions inherited (active)
+- [[trails/w42-book-validation|w42-book-validation]] — curated route through the W42 / Winning 42 book-validation cluster, utility-lens work, Lens v1, and planning-aware frontier without loading every leaf page (active)
 
 ## Playbooks
 

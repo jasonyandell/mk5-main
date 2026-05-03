@@ -172,4 +172,4 @@ to test whether high-stakes special bids produce qualitatively different flip ra
 - [[winning42-ch10-tournament-scoring]] — book source for mark/match utility claims
 - [[w42-book-claim-synthesis-and-ai-directions]] — synthesis and AI directions
 - [[w42-phase4-claim-completion-board]] — claim ledger baseline
-- [[w42-bookval-v1-wave1]] — wave overview (when created)
+- [[w42-book-validation]] — wave overview route

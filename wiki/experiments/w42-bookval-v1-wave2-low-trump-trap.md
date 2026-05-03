@@ -131,5 +131,5 @@ python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.
 ## Related
 
 - [[winning42-ch04-partner-support]] — chapter source
-- [[w42-bookval-v1-wave2]] — wave overview (when written)
+- [[w42-book-validation-campaign]] — wave overview
 - Campaign rules: `w42/book_validation_v1/AGENTS.md`

@@ -41,6 +41,24 @@ wiki/
 
 Do not create directories or pages speculatively. Create a page the first time an ingest needs it.
 
+## Navigation roles
+
+The wiki should be usable without loading the whole catalog into context. Treat
+pages as one of three navigation roles:
+
+- **Frontier hubs** — short entity pages that summarize the current state of a
+  major workstream and route to trails. Examples: [[lem]], [[burl]], [[gus]],
+  [[w42]], [[forge]], [[engine]].
+- **Trails** — curated walkthroughs through a cluster of pages. Trails are the
+  preferred way to traverse large evidence piles without promoting every leaf
+  page into a headline topic.
+- **Leaf pages** — experiments, decisions, chapter inventories, receipts,
+  source digests, and detailed reports. Leaf pages stay source-backed and
+  discoverable, but they are not default orientation material.
+
+This preserves the Karpathy/Obsidian shape: organization still emerges from
+backlinks and curated trails, not from a rigid folder taxonomy.
+
 ## Page conventions
 
 ### Frontmatter
@@ -94,10 +112,18 @@ Most sessions start here. Before reading code, check whether the wiki already kn
 
 **How to query:**
 
-1. Start at `wiki/index.md` (catalog with one-line hooks) or jump straight to a likely page name — most concepts have an `entities/`, `topics/`, or `experiments/` page named after them.
-2. Read the relevant pages. Follow backlinks across kinds: an entity → its topics → the experiments that informed it → the decisions that locked it in → the source digests that captured it at a specific commit.
-3. **Cite back to the wiki** when answering the user, with the page path. If the wiki doesn't have the answer, say so explicitly — don't invent.
-4. **File good answers back.** If your synthesis was non-trivial — multiple pages stitched together, a question you had to dig for — capture it as a wiki update before ending the session. Either: extend an existing page with the new framing, create a new `topics/` page if the synthesis is reusable, or open a `questions/open.md` entry if the answer revealed a gap.
+1. If the user names a major family, start at the frontier hub or trail for that
+   family: [[lem]], [[burl]], [[gus]], [[w42]], [[forge]], [[engine]], or an
+   appropriate page under `trails/`.
+2. If the user names a specific concept, jump straight to the likely bare page
+   name or use `rg` over `wiki/` to find it. Prefer this to loading the full
+   catalog when the slug or phrase is already known.
+3. Use `wiki/index.md` as the catalog fallback and route map, not as mandatory
+   first context for every query.
+4. Read the relevant pages. Follow backlinks across roles: frontier hub → trail
+   → leaf pages → decisions → source digests.
+5. **Cite back to the wiki** when answering the user, with the page path. If the wiki doesn't have the answer, say so explicitly — don't invent.
+6. **File good answers back.** If your synthesis was non-trivial — multiple pages stitched together, a question you had to dig for — capture it as a wiki update before ending the session. Either: extend an existing page with the new framing, create a new `topics/` page if the synthesis is reusable, create or extend a trail if the answer is mainly navigational, or open a `questions/open.md` entry if the answer revealed a gap.
 
 The query → file-back loop is what makes the wiki compound. A query that doesn't leave the wiki better than it found it is a missed update.
 
