@@ -1,0 +1,8 @@
+bid,n_decisions,mark_ev_eq_ev_rate,p_make_eq_ev_rate,mark_ev_eq_pma_rate,both_agree_rate,me_only_agree_rate,pm_only_agree_rate,neither_agree_rate,note
+30,14000,0.7856428571428572,0.7856428571428572,1.0,0.7856428571428572,0.0,0.0,0.21435714285714286,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+32,14000,0.7637857142857143,0.7637857142857143,1.0,0.7637857142857143,0.0,0.0,0.2362142857142857,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+35,14000,0.7405,0.7405,1.0,0.7405,0.0,0.0,0.2595,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+36,14000,0.7145714285714285,0.7145714285714285,1.0,0.7145714285714285,0.0,0.0,0.2854285714285714,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+39,14000,0.6745,0.6745,1.0,0.6745,0.0,0.0,0.3255,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+42,14000,0.6,0.6,1.0,0.6,0.0,0.0,0.4,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))
+84,14000,0.5987142857142858,0.5987142857142858,1.0,0.5987142857142858,0.0,0.0,0.4012857142857143,mark_ev and p_make always agree on top-1 (verified: mark_ev=mm*(2pm-1))

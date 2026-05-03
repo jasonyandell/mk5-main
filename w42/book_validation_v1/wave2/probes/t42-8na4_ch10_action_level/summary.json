@@ -1,0 +1,87 @@
+{
+  "bead_id": "t42-8na4",
+  "analysis": "ch10_action_level_mark_multiplier_strategic_effect",
+  "claim_id": "ch10-special-bid-mark-multiplier",
+  "status_proposal": "supported",
+  "status_change": "none",
+  "evidence_base_change": "widened",
+  "n_decisions": 14000,
+  "n_bids": 7,
+  "n_bootstrap_iterations": 2000,
+  "headline": {
+    "mark_ev_vs_ev_flip_rate_bid30": 0.2144,
+    "mark_ev_vs_ev_flip_rate_bid42": 0.4,
+    "mark_ev_vs_ev_flip_rate_bid84": 0.4013,
+    "multiplier_effect_bid32_vs_30": 0.5616,
+    "multiplier_effect_bid84_vs_30": 0.7091,
+    "mark_ev_always_eq_pma_top1": true,
+    "wave12_identity_holds_all_bids": true
+  },
+  "action_flip_rates_by_bid": {
+    "30": 0.2144,
+    "32": 0.2362,
+    "35": 0.2595,
+    "36": 0.2854,
+    "39": 0.3255,
+    "42": 0.4,
+    "84": 0.4013
+  },
+  "multiplier_strategic_effect_by_bid": {
+    "32": 0.5616,
+    "35": 0.6026,
+    "36": 0.6324,
+    "39": 0.7003,
+    "42": 0.7104,
+    "84": 0.7091
+  },
+  "cross_utility_matrix": {
+    "30": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.7856
+    },
+    "32": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.7638
+    },
+    "35": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.7405
+    },
+    "36": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.7146
+    },
+    "39": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.6745
+    },
+    "42": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.6
+    },
+    "84": {
+      "mark_ev_eq_pma": 1.0,
+      "mark_ev_eq_ev": 0.5987
+    }
+  },
+  "most_sensitive_declaration": {
+    "decl_name": "sixes",
+    "flip_rate_at_bid84": 0.7479
+  },
+  "least_sensitive_declaration": {
+    "decl_name": "doubles-suit",
+    "flip_rate_at_bid84": 0.6821
+  },
+  "most_sensitive_seat_role": {
+    "seat_role": "bidder",
+    "flip_rate_at_bid84": 0.7457
+  },
+  "caveats": [
+    "flip rate measures top-1 action change under mark_ev@bid vs mark_ev@bid=30; both utilities rank actions by p_make (mark_ev = mm*(2pm-1)), so the flip arises solely from p_make recomputation at the new threshold_q, not from the scalar multiplier itself.",
+    "at bid=42 p_make=0 for all actions (all points needed), so mark_ev = -mm always; flip relative to bid=30 still occurs because different threshold_q shifts which action maximises p_make.",
+    "bid=84 mm=2 vs bid=42 mm=1 both map to mm*(2pm-1); since threshold_q is identical (42) for both, the flip rate at bid=84 is the SAME as bid=42 \u2014 multiplier scalar alone does not add strategic differentiation beyond the threshold_q change.",
+    "analysis is restricted to seeds 9000-9049 (50 seeds * 10 decl each = 500 games).",
+    "decl_name grouping has 1400 decisions each \u2014 sufficient for 95% CI width < 0.03."
+  ],
+  "created_at_utc": "2026-05-03T21:53:03.069637Z"
+}

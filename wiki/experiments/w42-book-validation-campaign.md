@@ -37,7 +37,9 @@ the central ledger or the synthesis page.
 | 2.C.2 | void-creation paired contrast (follow) | t42-z31l | closed (37a5804) — **context-limited** in book direction (follow position) |
 | 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
 | 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
-| 2.E.2 | setter-pounce high-bid | t42-8kbh | filed, blocked on 2.B.2 |
+| 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | in flight (MPS) |
+| 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — **`ch02-bid-only-enough` promoted to `supported`** (campaign's first) |
+| 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
@@ -55,21 +57,23 @@ point-system-skill-signal: both into `context-limited` from
 `not-yet-tested` and `underpowered` respectively) and normalized one
 non-vocabulary status string in a phase-4 worker artifact.
 
-Wave 2 (so far) absorbed 2 more promotions: `ch02-bid-only-enough`
-(`not-yet-tested` -> `context-limited`) and
-`ch12-setter-pounce-high-bid-off` (`underpowered` -> `context-limited`),
-both backed by paired same-hand counterfactual evidence from
-[[w42-bookval-v1-wave2-bid-aware-atlas]] (n=14,000 paired decisions).
+Wave 2 (so far) absorbed 3 promotions:
 
-No claim has been demoted. No claim has crossed into `supported` from
-`context-limited` or weaker.
+- `ch02-bid-only-enough`: `not-yet-tested` → `context-limited`
+  (Wave 2.B.2) → **`supported`** (Wave 2.G; 5 step pairs, 85/85 slice
+  cells in book direction)
+- `ch12-setter-pounce-high-bid-off`: `underpowered` → `context-limited`
+  (Wave 2.B.2)
 
-Status counts after Wave 2.B.2:
+The Wave 2.G promotion is the campaign's first crossing into
+`supported` from a non-supported start. No claim has been demoted.
+
+Status counts after Wave 2.G:
 
 | status | count |
 |---|---:|
-| supported | 23 |
-| context-limited | 16 |
+| supported | 24 |
+| context-limited | 15 |
 | underpowered | 19 |
 | not-yet-tested | 4 |
 | contradicted | 2 |

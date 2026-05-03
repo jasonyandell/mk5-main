@@ -106,7 +106,7 @@ make/set/E[Q] counterfactuals.
 | Double-ahead protection reduces only the protected side of an off, not both sides. | static side detector supported, context-limited | Side-specific protection covers only `16.774838%` of exposed count points; live sequence value remains untested. |
 | Duplicate count exposures should be counted once in the bid risk budget. | context-limited / not run | Unit-testable enumeration against naive risk-sum baseline. |
 | One vulnerable trick should be bid pessimistically, while two or more vulnerable tricks can justify some partner-help expectation. | context-limited / not run | Partner rescue probability and bid-regret interaction by loss-opportunity count. |
-| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | context-limited (paired same-hand evidence) | [[w42-bookval-v1-wave2-bid-aware-atlas]] paired bid=32 vs bid=30 over n=14,000 same-hand decisions: mark_ev delta `-0.076` (CI `[-0.085, -0.067]`), p_make delta `-0.038` (CI `[-0.042, -0.034]`). Both CIs exclude zero in book direction (overbidding hurts even on same hand). Tested only on one-step bid margin; multi-step bid choice and full auction policy remain untested. Ledger row promoted from `not-yet-tested` to `context-limited`. |
+| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | **supported** on same-hand bid-margin slice | [[w42-bookval-v1-wave2-ch02-multistep]] paired all 5 step pairs (30↔32, 32↔35, 35↔36, 36↔39, 39↔42) over n=8,168-10,052 paired decisions per step: mark_ev deltas `+0.07` to `+0.15`, all CIs exclude zero in book direction. Cohen d grows monotonically `0.16` → `0.47`. All 85 slice cells (decl × seat × phase × step) support book direction. Transitive 30→42 cumulative matches sum-of-steps within 0.81%. Ledger row promoted from `context-limited` to **`supported`** — the campaign's first promotion above `context-limited` from a non-supported start. Cross-contract bid choice (different declarations at different bids) and full auction-policy testing remain separate scopes. |
 
 ## Wave 2 Findings (Book Validation v1)
 
@@ -136,6 +136,16 @@ The high-bid steps (bid=35, 36, 39, 42, 84) and full auction policy
 remain untested. Wave 2.G (bead `t42-ey88`) will extend the analysis to
 multi-step bid margins; auction-policy testing remains in the Wave 3
 plan.
+
+**Update**: Wave 2.G landed at [[w42-bookval-v1-wave2-ch02-multistep]]
+and extended the evidence to all 5 adjacent step pairs in {30, 32, 35,
+36, 39, 42}. Result: monotone overbid penalty across all steps
+(Cohen d `0.16` → `0.47`), 85 of 85 slice cells in book direction,
+transitive cumulative matches sum-of-steps. Ledger row promoted from
+`context-limited` to **`supported`** on the same-hand bid-margin
+slice — the campaign's first non-trivial `supported` promotion. The
+remaining caveat is cross-contract bid choice (different declarations
+at different bids) and real auction-policy response, both Wave 3 work.
 
 ## Links
 

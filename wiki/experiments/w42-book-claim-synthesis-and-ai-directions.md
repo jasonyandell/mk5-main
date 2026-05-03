@@ -434,6 +434,57 @@ into the active-evidence pool; the campaign now has its first
 non-trivial movement out of `not-yet-tested` and `underpowered` based
 on paired counterfactual evidence.
 
+## Wave 2.G — First `supported` Promotion
+
+[[w42-bookval-v1-wave2-ch02-multistep]] extended the bid=32-vs-bid=30
+result to all 5 adjacent step pairs in {30, 32, 35, 36, 39, 42}.
+Headline:
+
+- All 5 step pairs show overbid penalty in mark_ev with 95% CIs
+  excluding zero (deltas `+0.07` to `+0.15`, n=8,168-10,052 per
+  step).
+- Cohen d grows monotonically `0.16` → `0.47`.
+- All **85 of 85** slice cells (decl × seat × phase × step) support
+  book direction.
+- Transitive 30→42 cumulative matches sum-of-steps within 0.81%
+  (additive).
+
+**Ledger row promoted: `ch02-bid-only-enough` `context-limited` →
+`supported`.** This is the campaign's first promotion above
+`context-limited` from a non-supported start. Status counts after
+Wave 2.G: supported 24, context-limited 15, underpowered 19,
+not-yet-tested 4, contradicted 2.
+
+The remaining caveat is intentional: cross-contract bid choice
+(different declarations at different bids) and full auction-policy
+response remain Wave 3 work.
+
+## Wave 2.H — Mark-Multiplier Threshold Insight
+
+[[w42-bookval-v1-wave2-ch10-action-level]] reframes the
+mark-multiplier story. Key findings:
+
+- **71% of decisions at bid=42** have a different `mark_ev` top-1
+  action than at bid=30 (n=14,000 paired decisions). Action-flip rate
+  grows monotonically through bids 32/35/36/39/42 then **plateaus at
+  bid=84**.
+- **The plateau exists because both bid=42 and bid=84 share
+  `threshold_q=42`**. The 2× mark multiplier at bid=84 cannot change
+  argmax (positive affine transform); the strategic effect operates
+  through `threshold_q` recomputation, not the multiplier scalar.
+- **`mark_ev ≡ p_make` on top-1 at every bid** — Wave 1.2's algebraic
+  identity confirmed structurally and across the bid-aware corpus.
+
+This is a refinement of the book's framing: the mark-multiplier story
+is really a **threshold-q story** in disguise. Several other
+"mark-aware" chapter claims (set severity compression, special-bid
+multipliers, defender erasure under marks) likely operate through
+threshold-q recomputation rather than the multiplier scalar; future
+analyses should test that hypothesis.
+
+The row stays `supported` (already there); the evidence base is now
+wider. No status counts change from this finding.
+
 ## Links
 
 [[w42]] | [[w42-phase4-final-claim-audit]] |

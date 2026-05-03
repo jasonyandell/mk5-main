@@ -1,0 +1,4 @@
+metric,direct_30_42_mean,direct_30_42_ci_lo,direct_30_42_ci_hi,N_direct,sum_of_steps_mean,sum_of_steps_ci_lo_approx,sum_of_steps_ci_hi_approx,deviation_direct_minus_sum,pct_deviation,additive_approx
+mark_ev,0.481728,0.469743,0.493455,8644,0.485616,0.450716,0.520312,-0.003888,0.81,True
+p_make,0.240864,0.235195,0.246478,8644,0.242808,0.225835,0.259861,-0.001944,0.81,True
+threshold_mass,0.012391,0.004334,0.020564,8644,0.011435,-0.006298,0.029141,0.000956,7.71,True

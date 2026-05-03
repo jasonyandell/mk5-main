@@ -135,6 +135,42 @@ tensors. Two structural findings have direct Ch 10 implications:
   to `context-limited`. Ledger statuses are now stable on the AGENTS.md
   taxonomy.
 
+## Wave 2 Findings (Book Validation v1)
+
+[[w42-bookval-v1-wave2-bid-aware-atlas]] (Wave 2.B.2) generates 259,618
+action rows across 50 seeds × 10 declarations × 7 bid values on M5
+MPS, with `mark_ev` recomputed at the correct multiplier per bid.
+
+[[w42-bookval-v1-wave2-ch10-action-level]] (Wave 2.H) extends the
+mark-multiplier evidence from deterministic transform support to
+action-level paired demonstration:
+
+- **71% of decisions at bid=42** have a different `mark_ev` top-1
+  action than at bid=30 (n=14,000 paired decisions, CI ~0.8pp).
+  Action-flip rate grows monotonically: 56% at bid=32, 60% at bid=35,
+  70% at bid=39, 71% at bid=42, 71% at bid=84.
+- **bid=84 plateaus at 71%** — same as bid=42 — because both share
+  `threshold_q=42`. The 2× mark multiplier at bid=84 doesn't add
+  strategic differentiation beyond bid=42; the strategic effect
+  operates through `threshold_q` recomputation, not through the `mm`
+  scalar.
+- **`mark_ev ≡ p_make` on top-1 at every bid** — Wave 1.2's algebraic
+  identity confirmed structurally (positive affine transform cannot
+  change argmax regardless of multiplier).
+- Most multiplier-sensitive: **sixes** declaration (74.8% flip at
+  bid=84), **bidder** seat (74.6% flip).
+
+The row stays `supported` (it was already there via deterministic
+transform). The evidence base is now wider: from "the multiplier is
+arithmetically correct" to "the multiplier strategically reorders the
+oracle's optimal play in over two-thirds of decisions at high bids."
+
+This refines the chapter's framing: the mark-multiplier story is
+really a **threshold-q story** in disguise. The book's emphasis on
+the multiplier being "different" misses that the strategic effect
+operates through the make/set threshold, not the post-make scoring
+scalar.
+
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]] - [[texas-42]]
