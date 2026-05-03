@@ -323,9 +323,10 @@ def _load_decision_prompts(harvest: str, idx: int) -> tuple[str, str]:
 
 
 def _load_seeded_decision_prompts(harvest: str, seed: int) -> tuple[str, str]:
-    """Read prompts for the decision whose corpus row has ``seed``."""
-    matched = _find_decision_row(harvest, "seed", seed)
-    return _load_prompts_for_row(harvest, matched)
+    """Return the board snapshot as the seeded decision's user prompt."""
+    from burl.lab.server.ctx import build_board_snapshot_prompt
+
+    return "", build_board_snapshot_prompt(harvest, seed)
 
 
 def _find_decision_row(harvest: str, key: str, value: int) -> dict:

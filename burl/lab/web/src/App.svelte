@@ -196,6 +196,15 @@
           { kind: "commit", final: (mv as unknown as { final: unknown }).final },
         ];
         break;
+      case "SessionOutcome":
+        segments = [
+          ...segments,
+          {
+            kind: "session_outcome",
+            summary: (mv as unknown as { summary: Record<string, unknown> }).summary,
+          },
+        ];
+        break;
       case "EngineDone":
         segments = [
           ...segments,
@@ -820,6 +829,24 @@
             <div class="seg commit">
               <span class="badge commit">commit</span>
               <code class="args-line">{JSON.stringify(s.final)}</code>
+            </div>
+          {:else if k === "session_outcome"}
+            {@const outcome = s.summary as Record<string, unknown>}
+            {@const matches = (outcome.matches ?? {}) as Record<string, unknown>}
+            {@const refs = (outcome.references ?? {}) as Record<string, unknown>}
+            <div class="seg cfg">
+              <span class="badge result">outcome</span>
+              <div class="seg-body mono small">
+                final {String(outcome.final_domino_id)} ·
+                {outcome.legal ? "legal" : "illegal"} ·
+                tools {Array.isArray(outcome.selected_tools) ? (outcome.selected_tools as string[]).join(", ") : ""}
+                <br />
+                pi {String(refs.pi_play)} {matches.pi ? "✓" : "·"}
+                qmean {String(refs.qmean_play)} {matches.qmean ? "✓" : "·"}
+                oracle {String(refs.oracle_play)} {matches.oracle ? "✓" : "·"}
+                consensus {String(outcome.consensus_play ?? "none")}
+                {matches.consensus === true ? " ✓" : ""}
+              </div>
             </div>
           {:else if k === "engine_done"}
             <div class="seg engine-done dim small">

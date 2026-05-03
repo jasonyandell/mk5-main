@@ -1952,4 +1952,4 @@ The wizard and `pre_game.start_run` now require a user/decision prompt before en
 
 **Touched pages:** [[burl-lab]] [[log]]
 
-The guided wizard now exposes the intended seeded decision flow directly: optional chat, generate the system prompt from the selected tool protocol, select/apply tools, then `send_seeded_decision(harvest, seed)`. The new arrow preserves the built system prompt, loads the harvested user prompt for the seed, enters `in_run`, and lets the server reconstruct ctx from the same journaled `(harvest, seed)` so state tools can run.
+The guided wizard now exposes the intended seeded decision flow directly: optional chat, generate the system prompt from the selected tool protocol, select/apply tools, then `send_seeded_decision(harvest, seed)`. The arrow now uses rendered `board_snapshot()` prose as the user message instead of the harvested prompt text, without requiring `legal_plays` in the selected tool set. After a commit, the server journals `SessionOutcome`: selected tools, final domino, legal/illegal status, legal set, and pi/qmean/burl/oracle/consensus comparisons for later tool-selection mining.

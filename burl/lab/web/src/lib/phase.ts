@@ -26,6 +26,7 @@ export type MoveKind =
   | "EngineToolCall"
   | "ToolResult"
   | "EngineCommit"
+  | "SessionOutcome"
   | "EngineError"
   | "EngineDone"
   | "SystemSet"

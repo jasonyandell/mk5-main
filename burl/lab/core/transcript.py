@@ -116,6 +116,15 @@ class EngineCommit:
 
 
 @dataclass(frozen=True)
+class SessionOutcome:
+    """Post-commit analysis row for mining tool-selection sessions."""
+
+    stamp: Stamp
+    summary: dict
+    kind: str = "SessionOutcome"
+
+
+@dataclass(frozen=True)
 class EngineError:
     """Engine raised mid-step. Yielded immediately before `EngineDone(reason="aborted")`.
 
@@ -199,6 +208,7 @@ Move = Union[
     EngineToolCall,
     ToolResult,
     EngineCommit,
+    SessionOutcome,
     EngineError,
     EngineDone,
     SystemSet,
@@ -218,6 +228,7 @@ _MOVE_BY_KIND: dict[str, type] = {
     "EngineToolCall": EngineToolCall,
     "ToolResult": ToolResult,
     "EngineCommit": EngineCommit,
+    "SessionOutcome": SessionOutcome,
     "EngineError": EngineError,
     "EngineDone": EngineDone,
     "SystemSet": SystemSet,
@@ -427,6 +438,10 @@ def fold(
             )
         elif k == "EngineCommit":
             segments.append({"kind": "commit", "final": m.final})  # type: ignore[attr-defined]
+        elif k == "SessionOutcome":
+            segments.append(
+                {"kind": "session_outcome", "summary": dict(m.summary)}
+            )
         elif k == "EngineError":
             segments.append(
                 {
@@ -526,6 +541,7 @@ __all__ = [
     "EngineToolCall",
     "ToolResult",
     "EngineCommit",
+    "SessionOutcome",
     "EngineError",
     "EngineDone",
     "SystemSet",

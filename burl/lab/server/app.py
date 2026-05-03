@@ -38,9 +38,11 @@ from sse_starlette.sse import EventSourceResponse
 from burl.lab.core.drive import drive
 from burl.lab.core.tool import Registry
 from burl.lab.core.transcript import (
+    EngineCommit,
     EVENTS_FILENAME,
     PhaseEnter,
     PhaseExit,
+    SessionOutcome,
     Stamp,
     State,
     UserChoice,
@@ -52,7 +54,7 @@ from burl.lab.core.transcript import (
 )
 from burl.lab.phases import PHASES
 
-from .ctx import build_ctx_for_session
+from .ctx import build_ctx_for_session, build_session_outcome
 from .stream import sse_from_async_iter
 
 log = logging.getLogger(__name__)
@@ -346,6 +348,22 @@ async def post_move(req: MoveRequest):
             yield mv
         if post_trace.events:
             post_state = _load_state(sid, registry)
+
+        if isinstance(last_emitted, EngineCommit):
+            outcome = build_session_outcome(
+                state.session_dir,
+                post_state,
+                last_emitted,
+                ctx,
+            )
+            if outcome is not None:
+                outcome_move = SessionOutcome(
+                    stamp=now_stamp(post_state),
+                    summary=outcome,
+                )
+                append(state.session_dir, outcome_move)
+                yield outcome_move
+                post_state = _load_state(sid, registry)
         post_next = post_trace.output
         if post_next and post_next != post_state.phase:
             for mv in _journal_phase_transition(

@@ -30,7 +30,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from burl.lab.core.transcript import UserChoice, replay
+from burl.lab.core.transcript import EngineCommit, State, UserChoice, replay
 
 log = logging.getLogger(__name__)
 
@@ -62,13 +62,18 @@ def _resolve_decision(
     value: int,
     *,
     key: str = "global_idx",
-) -> tuple[dict, str]:
-    """Return (meta, prompt_user) for one corpus row — same recipe as smoke."""
+) -> tuple[dict, dict, str]:
+    """Return (index row, meta, prompt_user) — same recipe as smoke."""
+    matched = _find_decision_row(harvest, key=key, value=value)
+    meta, prompt_user = _read_decision_events(harvest, matched)
+    return matched, meta, prompt_user
+
+
+def _find_decision_row(harvest: str, *, key: str, value: int) -> dict:
     root = _harvest_root()
     idx_path = root / harvest / "corpus_index.jsonl"
     if not idx_path.exists():
         raise FileNotFoundError(idx_path)
-
     matched: dict | None = None
     with idx_path.open() as f:
         for line in f:
@@ -81,8 +86,12 @@ def _resolve_decision(
                 break
     if matched is None:
         raise KeyError(f"{key} {value} not found in {harvest}")
+    return matched
 
-    transcript_rel = matched.get("transcript_path", "")
+
+def _read_decision_events(harvest: str, row: dict) -> tuple[dict, str]:
+    root = _harvest_root()
+    transcript_rel = row.get("transcript_path", "")
     dec_dir = root / harvest / transcript_rel.split("/transcript")[0]
     events_path = dec_dir / "events.jsonl"
 
@@ -126,6 +135,26 @@ def _build_wax_ctx(meta: dict, prompt_user: str) -> Any:
     )
 
 
+def build_ctx_for_decision(
+    harvest: str,
+    value: int,
+    *,
+    key: str = "global_idx",
+) -> Any:
+    """Build a WaxContext directly from a harvest index row."""
+    _row, meta, prompt_user = _resolve_decision(harvest, value, key=key)
+    return _build_wax_ctx(meta, prompt_user)
+
+
+def build_board_snapshot_prompt(harvest: str, seed: int) -> str:
+    """Render the board snapshot for a seeded decision as the user prompt."""
+    from burl.chat.server.tools_library.board_snapshot import tool
+
+    ctx = build_ctx_for_decision(harvest, seed, key="seed")
+    payload = tool(ctx)
+    return str(payload.get("prose", ""))
+
+
 def build_ctx_for_session(session_dir: Path) -> Any | None:
     """Replay the journal, find the most recent decision-loading UserChoice,
     and build a WaxContext from it. Returns None if no decision-loading choice
@@ -151,8 +180,109 @@ def build_ctx_for_session(session_dir: Path) -> Any | None:
         return None
     harvest, key, value = last_load
     log.info("[lab.ctx] building ctx for harvest=%s %s=%s", harvest, key, value)
-    meta, prompt_user = _resolve_decision(harvest, value, key=key)
+    _row, meta, prompt_user = _resolve_decision(harvest, value, key=key)
     return _build_wax_ctx(meta, prompt_user)
 
 
-__all__ = ["build_ctx_for_session"]
+def _last_decision_choice(session_dir: Path) -> tuple[str, str, int] | None:
+    last_load: tuple[str, str, int] | None = None
+    for mv in replay(session_dir):
+        if isinstance(mv, UserChoice) and mv.option_name == "load_decision":
+            harvest = str(mv.args.get("harvest", ""))
+            idx = int(mv.args.get("idx", 0))
+            if harvest:
+                last_load = (harvest, "global_idx", idx)
+        elif (
+            isinstance(mv, UserChoice)
+            and mv.option_name == "send_seeded_decision"
+        ):
+            harvest = str(mv.args.get("harvest", ""))
+            seed = int(mv.args.get("seed", mv.args.get("idx", 0)))
+            if harvest:
+                last_load = (harvest, "seed", seed)
+    return last_load
+
+
+def build_session_outcome(
+    session_dir: Path,
+    state: State,
+    commit: EngineCommit,
+    ctx: Any,
+) -> dict | None:
+    """Summarize a completed decision for later tool-selection mining."""
+    last_load = _last_decision_choice(session_dir)
+    if last_load is None or ctx is None:
+        return None
+
+    harvest, key, value = last_load
+    row, _meta, _prompt_user = _resolve_decision(harvest, value, key=key)
+    final = commit.final if isinstance(commit.final, dict) else {}
+    final_domino = final.get("domino_id")
+    if final_domino is None:
+        return None
+    final_domino = int(final_domino)
+
+    from burl.chat.server.tools_library.legal_plays import tool as legal_tool
+
+    legal_payload = legal_tool(ctx)
+    legal_structured = dict(legal_payload.get("structured", {}))
+    legal_plays = [int(d) for d in legal_structured.get("legal_plays", [])]
+    illegal_plays = [int(d) for d in legal_structured.get("illegal_plays", [])]
+
+    references = {
+        "pi_play": _maybe_int(row.get("pi_play")),
+        "qmean_play": _maybe_int(row.get("qmean_play")),
+        "burl_play": _maybe_int(row.get("burl_play")),
+        "oracle_play": _maybe_int(row.get("oracle_play")),
+    }
+    consensus_play = (
+        references["pi_play"]
+        if references["pi_play"] is not None
+        and references["pi_play"] == references["qmean_play"]
+        else None
+    )
+
+    return {
+        "harvest": harvest,
+        "lookup": {"key": key, "value": value},
+        "seed": _maybe_int(row.get("seed")),
+        "global_idx": _maybe_int(row.get("global_idx")),
+        "bucket": row.get("bucket"),
+        "forced_commit": bool(row.get("forced_commit", False)),
+        "selected_tools": list(state.advertised),
+        "active_tools": list(state.active_tools),
+        "final_domino_id": final_domino,
+        "legal": final_domino in legal_plays,
+        "legal_plays": legal_plays,
+        "illegal_plays": illegal_plays,
+        "references": references,
+        "consensus_play": consensus_play,
+        "matches": {
+            "pi": final_domino == references["pi_play"],
+            "qmean": final_domino == references["qmean_play"],
+            "burl": final_domino == references["burl_play"],
+            "oracle": final_domino == references["oracle_play"],
+            "consensus": (
+                final_domino == consensus_play
+                if consensus_play is not None
+                else None
+            ),
+        },
+    }
+
+
+def _maybe_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+__all__ = [
+    "build_board_snapshot_prompt",
+    "build_ctx_for_decision",
+    "build_ctx_for_session",
+    "build_session_outcome",
+]
