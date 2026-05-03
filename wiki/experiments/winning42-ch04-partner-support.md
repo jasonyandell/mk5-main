@@ -110,6 +110,29 @@ Private guarantee and exact low-trump trap claims still need richer state fields
 | Highest remaining suit tile can substitute for a double | Page 39 four-trey example | underpowered | Detect virtual-boss leads and compare regret when chosen or missed |
 | Partner should usually avoid leading trump while helping bidder | Page 40 warning and exception | underpowered | Measure trump-lead regret in partner-support regime and learn exception boundaries |
 
+## Wave 1 Findings (Book Validation v1)
+
+The hidden-threat impact ranker in
+[[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] surfaced a finding
+this chapter does not currently formalize:
+
+- **In low-pip declarations, the highest off-suit double substitutes for
+  trump as the load-bearing hidden tile**. The single highest-impact
+  load-bearing tile in the corpus is `5-5` in a twos declaration
+  (impact 56.8) - despite `5-5` not being trump in twos. Partner-support
+  thinking in low-pip declarations should therefore weight knowledge of
+  the highest off-suit double in the same way it weights trump knowledge.
+  The chapter's "virtual boss tile" framing (Page 39 four-trey example)
+  generalizes: the virtual boss in twos may be a hidden boss double, not
+  a high tile of called suit.
+
+The cross-AI agreement matrix in
+[[w42-bookval-v1-wave1-cross-ai-agreement]] also confirms the chapter's
+gated stance on count donation: detector hygiene work is needed to keep
+`ch05_reckless_count` from over-firing as the partner-support analog (it
+overfires on setter seats in 2,300 cases), but the within-pair contrast
+between donation-on-closure and donation-before-closure is robust.
+
 ## Links
 
 [[winning42-strategy-measurement]] · [[gus-strategy-tags-probe]] · [[gus]] · [[burl]] · [[forge]]

@@ -186,3 +186,33 @@ trump-rich recognition remain blocked by missing state fields.
   paired regret, tail regret, near-tie rate, set conversion, held-count-never-used rate,
   belief Brier/log-loss for key hidden owners, and Burl forced-commit/tool-faithfulness
   errors by Ch05 bucket.
+
+## Wave 1 Findings (Book Validation v1)
+
+The cross-AI agreement matrix in [[w42-bookval-v1-wave1-cross-ai-agreement]]
+and the hidden-threat impact ranker in
+[[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] both turned the
+setter-seat surface from "broadly important" to "concretely structured":
+
+- **Setters dominate the divisive-decision pile**: 83 of the 100 most-divisive
+  decisions in the spot-check pack are setter seats (45 left, 38 right).
+  Detectors, the row model, and oracle EV most often disagree with each
+  other in setter-seat positions.
+- **Setter seats are asymmetric**: right-setter load-bearing hidden tiles
+  are ~30% trump doubles; left-setter is ~37% plain tiles. The book's Ch 5
+  treatment is symmetric; the data is not. A future detector pass should
+  emit a `seat_pos` feature and not rely on `role_regime=setter` alone.
+- **`ch05_reckless_count_to_bidder_control` overfires**: mean regret 9.18
+  over 2,300 fires; the worst three cases all sit on trick-0 setter
+  closures with 38-43 EV-point regret. The detector cannot distinguish
+  the qualifying sub-condition from the broader regime. Refine via bead
+  `t42-v0m5`.
+- **`ch05_setter_pressure_regime` is a regime label, not an action label**:
+  fires on all setter-regime candidates simultaneously. Reclassify as a
+  regime feature; consider a sibling action-level label for specific
+  pounces. Tracked as `t42-btpg`.
+
+These findings do not retire any Ch 5 source-backed claim. They sharpen
+the implementation hooks: setter-defense work needs seat-aware features,
+gated reckless-count detection, and a regime-vs-action separation in the
+detector schema.

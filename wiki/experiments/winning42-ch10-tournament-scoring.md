@@ -107,8 +107,33 @@ tournament advancement.
 | Marks erase defender partial-point rewards when the bidder makes the contract. | supported | Among made ordinary contracts, defender partial points are erased `84.989%` of the time under marks. |
 | Marks erase set severity except for bid-class mark multipliers. | supported | Ordinary failed bids collapse 41 point-severity values into one mark; 84/126/168 multipliers remain distinct. |
 | Point scoring better hones skill for small groups. | context-limited | Heuristic policy rows show score-label separation, but promotion needs oracle, Gus/Burl, human, or stronger policy-population evidence. |
-| Marks speed tournaments enough to justify the strategic loss. | supported-for-generated-trace-proxy | Generated mark matches use `23.814062` fewer played tricks in the proxy, but real wall-clock table time remains unmeasured. |
+| Marks speed tournaments enough to justify the strategic loss. | context-limited | Generated mark matches use `23.814062` fewer played tricks in the proxy, but real wall-clock table time remains unmeasured. |
 | Timed marks can change advancement objectives. | context-limited | Synthetic pools choose different leaders by marks than by points `15%` of the time; real tournament formats and tiebreakers remain blockers. |
+
+## Wave 1 Findings (Book Validation v1)
+
+The mark-utility transform in [[w42-bookval-v1-wave1-mark-utility-transform]]
+applied the deterministic Ch 10 scoring transform to existing per-world Q
+tensors. Two structural findings have direct Ch 10 implications:
+
+- **At bid=30 with one-mark multiplier, mark_ev is algebraically identical
+  to `p_make`**. The "marks change the action" claim is real but only
+  appears at higher bid multipliers (35/36/42 ranges). The existing
+  fixed-bid corpus cannot test it; a bid-aware E[Q] generator (Wave 2.B,
+  bead `t42-6j3k`) is required to make `ch10-special-bid-mark-multiplier`
+  testable.
+- **Genuine mark-vs-point flips are 3.6% of decisions** (10/280) on the
+  bid=30 corpus; 81.5% of nominal flips are surface-flattening artifacts
+  of the binary {-1, 0, +1} mark transform near the 30-point make
+  threshold. The 10 genuine flips concentrate at mid-hand on partner
+  third-seat count-safe lines and setter lead-pressure plays.
+- **Two ledger rows promoted to context-limited** after the independent
+  audit absorbed prior phase-4 worker evidence (160 timed trials,
+  4 heuristic policy pairs). See [[w42-bookval-v1-wave1-independent-audit]].
+- **The non-vocabulary status string `supported-for-generated-trace-proxy`**
+  in `w42/phase4_scoring_objective_tests/claim_summary.csv` was normalized
+  to `context-limited`. Ledger statuses are now stable on the AGENTS.md
+  taxonomy.
 
 ## Links
 

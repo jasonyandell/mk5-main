@@ -143,6 +143,35 @@ context-limited where optimal play or auction pressure matters.
 | No-trump defenders should preserve doubles/pairs like 84 defenders. | context-limited | Reuse Ch8 preservation detector on no-trump defense positions and measure missed-set regret. |
 | No-trump with doubles as a separate suit is a non-standard variant. | supported-rules | Add ruleset gate so tournament analyses exclude variant contamination. |
 
+## Wave 1 Findings (Book Validation v1)
+
+The distribution-lens reranker in
+[[w42-bookval-v1-wave1-distribution-lens-reranker]] produced two findings
+that change how Ch 9 declaration-choice work should be framed:
+
+- **No-trump shows a 90% EV-lying rate** when ranking actions under
+  alternative utility lenses. More than for any other regime. In no-trump,
+  multiple actions cluster near the make threshold and scalar EV becomes
+  an unstable predictor of optimal play; tail-aware utilities (CVaR,
+  robust_q25) separate them more cleanly. This sharpens the no-trump-as-
+  late-off-management framing the chapter already uses.
+- **Doubles-trump shows 39% CVaR disagreement with EV** - nearly double
+  the corpus average. Confirms the chapter's "doubles-trump is high-
+  variance" intuition at the action-ranking level, not just at the
+  declaration-choice level.
+
+The hidden-threat impact ranker in
+[[w42-bookval-v1-wave1-hidden-threat-impact-ranker]] adds a no-trump-
+specific finding:
+
+- **`4-4` held by `bidder_partner` in no-trump** is the second-highest-
+  impact non-trump load-bearing tile class (impact 47-49 across 8
+  decisions). The chapter notes that no-trump bosses determine count
+  timing; the data confirms a specific per-suit boss is load-bearing in a
+  way the existing `hidden_proxy_early_high_uncertainty` proxy partially
+  but incompletely captures. A dedicated `4-4-in-nt` belief label is
+  warranted.
+
 ## Links
 
 [[winning42-strategy-measurement]] / [[gus-strategy-tags-probe]] / [[gus]] / [[burl]] / [[forge]]

@@ -243,6 +243,18 @@ The wave's structural findings:
   wrong as an absolute action endorsement 86% of the time (within-pair
   contrast is fine, action-level endorsement is not);
   `ch05_setter_pressure_regime` is a regime label, not an action label.
+- **Divisive decisions concentrate on setter seats**: of the 100 most
+  divisive decisions in the cross-AI spot-check pack, 83 are setter seats
+  (45 left, 38 right). This compounds the setter-seat-asymmetry finding
+  from hidden-threat ranking: setters are simultaneously where the detectors
+  most over-fire, where book advice diverges from oracle play, AND where
+  hidden-tile attribution is most asymmetric. Setter-defense is the single
+  richest tactical surface for future probes.
+- **Worst detector misfires are all `ch05_reckless_count_to_bidder_control`
+  on trick-0 setter closures**: detector picks regret 38-43 in the worst
+  three cases; EV consistently picks a non-count tile. The detector cannot
+  distinguish the qualifying sub-condition from the broader regime. Tracked
+  as `t42-v0m5`.
 
 ### Ledger absorptions
 
