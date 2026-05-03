@@ -1,0 +1,51 @@
+{
+  "bead": "t42-8kbh",
+  "claim": "ch12-setter-pounce-high-bid-off",
+  "wave": "2.E.2",
+  "probe": "pounce_high_bid_paired_contrast",
+  "atlas_dir": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/bid_aware_atlas",
+  "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+  "device": "mps",
+  "n_samples": 100,
+  "max_per_bid": 600,
+  "bid_values": [
+    35,
+    36,
+    39,
+    42
+  ],
+  "n_snapshots_mined": {
+    "35": 275,
+    "36": 259,
+    "39": 290,
+    "42": 316
+  },
+  "n_contrasts_run": 1140,
+  "n_contrasts_by_bid": {
+    "35": 275,
+    "36": 259,
+    "39": 290,
+    "42": 316
+  },
+  "runtime_probe_seconds": 1548.5,
+  "artifacts": {
+    "pounce_snapshots": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/pounce_high_bid_snapshots.jsonl",
+    "paired_contrasts": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/paired_contrasts.csv",
+    "slice_breakdown": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/slice_breakdown.csv",
+    "summary": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/summary.json"
+  },
+  "sibling_bid30_probe": "w42/book_validation_v1/wave2/probes/t42-ntbe_pounce_window_bid30/",
+  "command": "python run_pounce_high_bid_probe.py --atlas-dir /Users/jason/code/mk5-main/w42/book_validation_v1/wave2/bid_aware_atlas --checkpoint /Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt --samples 100 --device mps --max-per-bid 600",
+  "claim_ledger_impact": "context-limited",
+  "bid_level_verdicts": {
+    "35": "contradicted",
+    "36": "contradicted",
+    "39": "contradicted",
+    "42": "contradicted"
+  },
+  "overall_ev_delta_setter": -10.4204,
+  "overall_ev_ci95": [
+    -11.2532,
+    -9.5876
+  ]
+}
