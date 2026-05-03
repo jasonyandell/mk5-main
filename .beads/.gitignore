@@ -67,6 +67,14 @@ backup/
 *.db-shm
 db.sqlite
 bd.db
+
+# Issue export — kept local-only on this repo (solo dev, multi-worktree).
+# Tracking issues.jsonl in git generates merge conflicts every time two
+# worktrees commit; the embedded Dolt engine is the durable source of truth.
+# Recover/snapshot manually with: bd export -o .beads/backup/issues-$(date +%F).jsonl
+issues.jsonl
+deletions.jsonl
+
 # NOTE: Do NOT add negation patterns here.
 # They would override fork protection in .git/info/exclude.
 # Config files (metadata.json, config.yaml) are tracked by git by default
