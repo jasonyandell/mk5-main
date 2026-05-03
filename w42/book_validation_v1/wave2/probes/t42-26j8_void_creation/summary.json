@@ -1,0 +1,51 @@
+{
+  "N_pairs": 276,
+  "p_set_delta_mean": -0.015507250376369642,
+  "p_set_delta_ci95_lo": -0.028347081211079123,
+  "p_set_delta_ci95_hi": -0.002667419541660162,
+  "p_set_direction": "preserve > void",
+  "n_p_set_higher_void": 92,
+  "pct_p_set_higher_void": 33.333333333333336,
+  "ev_delta_setter_mean": -2.629453323619521,
+  "ev_delta_ci95_lo": -3.421133506457004,
+  "ev_delta_ci95_hi": -1.8377731407820384,
+  "ev_direction": "preserve > void",
+  "n_void_ev_better": 90,
+  "pct_void_ev_better": 32.608695652173914,
+  "cvar_delta_mean": -0.21259776427262073,
+  "threshold_mass_delta_mean": 0.01550724415405505,
+  "claim_ledger_impact": "contradicted",
+  "claim_ledger_rationale": "N=276 paired contrasts from oracle-greedy legacy corpus. Mean p_set delta=-0.0155 (95% CI [-0.028, -0.003]), mean EV delta (setter)=-2.63 (95% CI [-3.42, -1.84]). Both CIs exclude zero on the negative side: oracle-greedy play favors PRESERVING suit over voiding, in the opposite direction to the book claim. The effect is consistent across off-suit slices, phases, and count-exposure sub-groups.",
+  "slices": {
+    "suit_type=off_suit": {
+      "N": 276,
+      "p_set_delta_mean": -0.015507250376369642,
+      "ev_delta_setter_mean": -2.629453323619521,
+      "pct_void_better": 32.608695652173914
+    },
+    "phase=early": {
+      "N": 156,
+      "p_set_delta_mean": -0.016474362653799545,
+      "ev_delta_setter_mean": -3.7862507190841894,
+      "pct_void_better": 28.846153846153843
+    },
+    "phase=mid": {
+      "N": 120,
+      "p_set_delta_mean": -0.014250004415710766,
+      "ev_delta_setter_mean": -1.1256167095154523,
+      "pct_void_better": 37.5
+    },
+    "bidder_count_exposure=count_exposed": {
+      "N": 18,
+      "p_set_delta_mean": -0.05277780215773317,
+      "ev_delta_setter_mean": -3.2822266386614904,
+      "pct_void_better": 22.22222222222222
+    },
+    "bidder_count_exposure=no_count": {
+      "N": 258,
+      "p_set_delta_mean": -0.012906979321855907,
+      "ev_delta_setter_mean": -2.5839109993142677,
+      "pct_void_better": 33.33333333333333
+    }
+  }
+}

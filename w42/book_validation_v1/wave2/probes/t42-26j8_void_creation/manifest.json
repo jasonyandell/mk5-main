@@ -1,0 +1,20 @@
+{
+  "bead": "t42-26j8",
+  "claim": "ch05-void-creation",
+  "wave": "wave2",
+  "probe": "void_creation_paired_contrast",
+  "snapshots_path": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/void_creation/snapshots.jsonl",
+  "snapshots_sha256": "41bba78a1e9a76f033e69906edf869a7b80a360dc23ba6fba6f6dc92c0e3180d",
+  "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+  "n_snapshots_input": 500,
+  "n_pairs_run": 276,
+  "device": "mps",
+  "samples_per_decision": 100,
+  "runtime_seconds": 388.1,
+  "artifacts": {
+    "paired_contrasts": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/paired_contrasts.csv",
+    "slice_breakdown": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/slice_breakdown.csv",
+    "summary": "/Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/summary.json"
+  },
+  "command": "python run_void_creation_probe.py --snapshots /Users/jason/code/mk5-main/w42/book_validation_v1/wave2/snapshots/void_creation/snapshots.jsonl --checkpoint /Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt --samples 100 --device mps --output-dir /Users/jason/code/mk5-main/w42/book_validation_v1/wave2/probes/t42-26j8_void_creation"
+}
