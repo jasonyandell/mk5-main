@@ -1,0 +1,35 @@
+{
+  "bead_id": "t42-jysl",
+  "wave": "wave2",
+  "claim_tested": "ch04-low-trump-trap-against-count-dump",
+  "question": "When the bidder is following in a trick and holds both the dominant trump and at least one low trump, does playing the low trump cost significant EV (the 'trap'), versus playing the dominant trump?",
+  "slice": "bidder (P0) following, pip-trump decls (decl_id 0-6), bidder void in led suit or trump led, bidder holds dominant+low trump, oracle-greedy legacy corpus",
+  "input_snapshot_file": "w42/book_validation_v1/wave2/snapshots/low_trump_trap/snapshots.jsonl",
+  "input_snapshot_sha256": "eedf97c707261aab8c5f2909905904532ee537d54622ba8f96274f35900108e3",
+  "n_snapshots_loaded": 300,
+  "n_snapshots_skipped": 43,
+  "skip_reason": "follow-suit law prevented bidder from playing any trump in those positions",
+  "n_paired_contrasts": 257,
+  "analysis_script": "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.py",
+  "reproducibility_command": "cd /Users/jason/code/mk5-main && python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.py",
+  "artifacts": {
+    "paired_contrasts.csv": {
+      "path": "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/paired_contrasts.csv",
+      "sha256": "f4c062754e05b98a8dcd34ed14c895f547cdb4b8191f31ceea9965ffc21019d9",
+      "rows": 257
+    },
+    "slice_breakdown.csv": {
+      "path": "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/slice_breakdown.csv",
+      "sha256": "bc9a3a8bd847f5aa94b5a07483fce4cd0be3a694b7aacf31796d6f1ccd1cda98"
+    },
+    "summary.json": {
+      "path": "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/summary.json",
+      "sha256": "1e617263f6d58999cd6545b05fe597ac480e7456e8186361b25909edf5eb4055"
+    }
+  },
+  "method": "Within-snapshot paired contrast: A=play worst low trump, B=play dominant trump. EV delta = Q(B) - Q(A) from oracle E[Q] at decision point. No model query; Q values from corpus snapshot metadata.",
+  "claim_ledger_impact": "context-limited",
+  "campaign_wave": "wave2",
+  "parent_epic": "t42-4zi6",
+  "generated_date": "2026-05-03"
+}

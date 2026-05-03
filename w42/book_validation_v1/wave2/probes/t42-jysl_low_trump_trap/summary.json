@@ -1,0 +1,91 @@
+{
+  "question": "ch04-low-trump-trap-against-count-dump: does playing a low trump instead of the dominant trump cost EV for the bidder?",
+  "slice": "bidder following (not leading), pip-trump decls, bidder holds dominant+low trump, oracle-greedy corpus",
+  "n_consumed": 300,
+  "n_rows_analyzed": 257,
+  "n_paired_contrasts": 257,
+  "n_skipped": 43,
+  "skip_detail": {
+    "null_return": 43
+  },
+  "paired_or_unpaired": "paired",
+  "metric": "EV_delta = Q(dominant_trump) - Q(low_trump), from oracle E[Q] at decision",
+  "mean_ev_delta": -1.9487062128340455,
+  "ci_lo_95": -2.9441206970589113,
+  "ci_hi_95": -1.0650944309675134,
+  "pct_dominant_better": 0.42412451361867703,
+  "pct_low_better": 0.5758754863813229,
+  "trap_fire_rate": 0.42412451361867703,
+  "trap_severe_rate_delta_gt5": 0.07392996108949416,
+  "oracle_chose_dominant_rate": 0.3229571984435798,
+  "oracle_chose_low_rate": 0.5058365758754864,
+  "phase_breakdown": {
+    "early": {
+      "n": 40,
+      "mean": -2.813691454194486,
+      "ci_lo": -5.391636451485101,
+      "ci_hi": 0.07684898813487932,
+      "pct_trap_fires": 0.3
+    },
+    "mid": {
+      "n": 181,
+      "mean": -1.68775400579058,
+      "ci_lo": -2.8437009586520414,
+      "ci_hi": -0.5224928719886884,
+      "pct_trap_fires": 0.48066298342541436
+    },
+    "late": {
+      "n": 36,
+      "mean": -2.2996212078465357,
+      "ci_lo": -4.7100433595478535,
+      "ci_hi": -0.4778072492116027,
+      "pct_trap_fires": 0.2777777777777778
+    }
+  },
+  "trump_proximity_breakdown": {
+    "abundant": {
+      "n": 1,
+      "mean": -8.99282455444336,
+      "ci_lo": -8.99282455444336,
+      "ci_hi": -8.99282455444336
+    },
+    "medium": {
+      "n": 68,
+      "mean": -2.7381757953039862,
+      "ci_lo": -4.856996712595334,
+      "ci_hi": -0.5400212714243134
+    },
+    "scarce": {
+      "n": 188,
+      "mean": -1.625684670549124,
+      "ci_lo": -2.748550035592981,
+      "ci_hi": -0.5734878416762669
+    }
+  },
+  "count_in_trick_n": 86,
+  "no_count_in_trick_n": 171,
+  "count_in_trick_mean_delta": -0.015320031058996222,
+  "no_count_in_trick_mean_delta": -2.9210524796916726,
+  "claim_ledger_impact": "context-limited",
+  "status_reason": "Overall CI [-2.94, -1.07] negative (low trump preferred globally); but count-in-trick subgroup (N=86) CI crosses zero (mean~0), the book's specific scenario shows no reliable directional signal at this N. Claim is context-limited: oracle does not uniformly favor dominant trump, and count-context evidence is underpowered.",
+  "caveats": [
+    "Q values are from oracle-greedy corpus (not live model query); they represent E[V] under optimal play for both teams from this state.",
+    "Contrast is purely within-snapshot: same game state, two action choices. No simulation of subsequent plays.",
+    "Capture-by-opposition-trump rate is approximated by ev_delta > 0 (dominant better); no next-play data available.",
+    "43/300 snapshots (14.3%) skipped: follow-suit law prevented bidder from playing any trump at all in those positions.",
+    "257 paired contrasts from 300 snapshots (85.7% usable rate).",
+    "Count-in-trick subgroup N=86 is borderline for detecting small effects.",
+    "'Dominant trump' defined as highest-ranking unplayed trump globally, which bidder holds.",
+    "Low trump = worst (lowest-rank) among bidder's other trump options.",
+    "Decl restricted to pip-trump only (decl_id 0-6); doubles-trump and notrump excluded by corpus filter.",
+    "Oracle chose neither trump option in 17.1% of cases (preferred a non-trump play entirely).",
+    "Overall negative delta driven by non-count situations; count-context delta ~0 is the book-relevant slice."
+  ],
+  "artifacts": [
+    "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/paired_contrasts.csv",
+    "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/slice_breakdown.csv",
+    "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/summary.json",
+    "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/manifest.json"
+  ],
+  "reproducibility_command": "cd /Users/jason/code/mk5-main && python w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/run_analysis.py"
+}
