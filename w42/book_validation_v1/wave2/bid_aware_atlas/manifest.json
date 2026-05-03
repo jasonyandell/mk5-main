@@ -1,0 +1,253 @@
+{
+  "84_eligibility_note": "All 10 decl_ids run at bid=84. The forge engine accepts any decl_id with any bid; 84 contracts are only strategically meaningful when the caller holds 4+ doubles, but this constraint is not enforced during generation. Mark multiplier at bid=84 is 2 (bid // 42).",
+  "args": {
+    "bid_values": [
+      30,
+      32,
+      35,
+      36,
+      39,
+      42,
+      84
+    ],
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "device": "mps",
+    "n_decl_per_seed": 10,
+    "n_samples": 200,
+    "n_seeds": 1,
+    "start_seed": 9430
+  },
+  "artifacts": {
+    "bid_aware_actions_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/bid_aware_actions.csv",
+    "manifest_json": "w42/book_validation_v1/wave2/bid_aware_atlas/manifest.json",
+    "per_bid_pt_files": {
+      "30": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid30_v2.pt",
+      "32": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid32_v2.pt",
+      "35": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid35_v2.pt",
+      "36": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid36_v2.pt",
+      "39": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid39_v2.pt",
+      "42": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid42_v2.pt",
+      "84": "w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds9430-9430_bid84_v2.pt"
+    },
+    "validation_check_csv": "w42/book_validation_v1/wave2/bid_aware_atlas/validation_check.csv"
+  },
+  "bead_id": "t42-6j3k",
+  "created_at_utc": "2026-05-03T18:19:25.634013+00:00",
+  "dry_run": false,
+  "generation": {
+    "30": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "32": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "35": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "36": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "39": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "42": {
+      "reason": "file_exists",
+      "skipped": true
+    },
+    "84": {
+      "reason": "file_exists",
+      "skipped": true
+    }
+  },
+  "join": {
+    "30": {
+      "rows": 808,
+      "sha256": "1bb121fa4e07772917b8517bde4bca9b618e045905be04e6ea1ab0ba78de9169",
+      "status": "ok"
+    },
+    "32": {
+      "rows": 790,
+      "sha256": "f08e31c68268ea9576941e444c0f8fb514d63224d0111206e63e04426686696f",
+      "status": "ok"
+    },
+    "35": {
+      "rows": 792,
+      "sha256": "b095ee47cb98787f3f9e0e41a8fffa7678e5a3f72c4e3e4eff4098ba04042b54",
+      "status": "ok"
+    },
+    "36": {
+      "rows": 786,
+      "sha256": "cc2e6f9175db8d6e609f5933aad8334753277b3b3c296aa439c3fe0b5c5202fc",
+      "status": "ok"
+    },
+    "39": {
+      "rows": 783,
+      "sha256": "8a2dfbf96cbf1a90153e64091deb5f8fdf9b4068deba2add2da49819225bce5d",
+      "status": "ok"
+    },
+    "42": {
+      "rows": 797,
+      "sha256": "dec6d329498077feadcc6f490376c10be2cfdd7578f471810e95add6c86fe752",
+      "status": "ok"
+    },
+    "84": {
+      "rows": 794,
+      "sha256": "a15fa8d411c386532e54356eb5469f9e01777c9b02284a54fa86ce4c9243ec67",
+      "status": "ok"
+    }
+  },
+  "mark_ev_divergence": {
+    "by_bid": {
+      "30": {
+        "headline": "bid=30: mm=1, tq_off=18, mean_mark_ev=-0.473, mean_tm=0.462, divergence(mark_ev vs 2*tm-1)=0.398",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.3975,
+        "mean_mark_ev": -0.4726,
+        "mean_p_make": 0.2637,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4624,
+        "n_rows": 808,
+        "r_mark_ev_threshold_mass": 0.6554,
+        "threshold_q_for_offense": 18
+      },
+      "32": {
+        "headline": "bid=32: mm=1, tq_off=22, mean_mark_ev=-0.500, mean_tm=0.464, divergence(mark_ev vs 2*tm-1)=0.428",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.428,
+        "mean_mark_ev": -0.5001,
+        "mean_p_make": 0.2499,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4639,
+        "n_rows": 790,
+        "r_mark_ev_threshold_mass": 0.5888,
+        "threshold_q_for_offense": 22
+      },
+      "35": {
+        "headline": "bid=35: mm=1, tq_off=28, mean_mark_ev=-0.625, mean_tm=0.468, divergence(mark_ev vs 2*tm-1)=0.560",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.5602,
+        "mean_mark_ev": -0.625,
+        "mean_p_make": 0.1875,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4676,
+        "n_rows": 792,
+        "r_mark_ev_threshold_mass": 0.4254,
+        "threshold_q_for_offense": 28
+      },
+      "36": {
+        "headline": "bid=36: mm=1, tq_off=30, mean_mark_ev=-0.698, mean_tm=0.471, divergence(mark_ev vs 2*tm-1)=0.640",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.6398,
+        "mean_mark_ev": -0.6984,
+        "mean_p_make": 0.1508,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4707,
+        "n_rows": 786,
+        "r_mark_ev_threshold_mass": 0.3419,
+        "threshold_q_for_offense": 30
+      },
+      "39": {
+        "headline": "bid=39: mm=1, tq_off=36, mean_mark_ev=-0.822, mean_tm=0.468, divergence(mark_ev vs 2*tm-1)=0.757",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.7568,
+        "mean_mark_ev": -0.8216,
+        "mean_p_make": 0.0892,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4676,
+        "n_rows": 783,
+        "r_mark_ev_threshold_mass": 0.0939,
+        "threshold_q_for_offense": 36
+      },
+      "42": {
+        "headline": "bid=42: mm=1, tq_off=42, mean_mark_ev=-1.000, mean_tm=0.449, divergence(mark_ev vs 2*tm-1)=0.897",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 1,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 0.8973,
+        "mean_mark_ev": -1.0,
+        "mean_p_make": 0.0,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4487,
+        "n_rows": 797,
+        "r_mark_ev_threshold_mass": null,
+        "threshold_q_for_offense": 42
+      },
+      "84": {
+        "headline": "bid=84: mm=2, tq_off=42, mean_mark_ev=-2.000, mean_tm=0.444, divergence(mark_ev vs 2*tm-1)=3.774",
+        "identity_mark_ev_eq_mm_times_2pm_minus1_holds": true,
+        "mark_multiplier": 2,
+        "mean_divergence_mark_ev_vs_2tm_minus1": 3.7743,
+        "mean_mark_ev": -2.0,
+        "mean_p_make": 0.0,
+        "mean_residual_identity_check": 0.0,
+        "mean_threshold_mass": 0.4436,
+        "n_rows": 794,
+        "r_mark_ev_threshold_mass": null,
+        "threshold_q_for_offense": 42
+      }
+    },
+    "cross_bid_flip_rates_vs_bid30": {
+      "32": {
+        "mark_ev_change_rate": 0.6321,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 177
+      },
+      "35": {
+        "mark_ev_change_rate": 0.6321,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 177
+      },
+      "36": {
+        "mark_ev_change_rate": 0.5571,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 156
+      },
+      "39": {
+        "mark_ev_change_rate": 0.575,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 161
+      },
+      "42": {
+        "mark_ev_change_rate": 0.575,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 161
+      },
+      "84": {
+        "mark_ev_change_rate": 1.0,
+        "n_actual_actions": 280,
+        "n_mark_ev_changed": 280
+      }
+    }
+  },
+  "repo_commit": "963186d3fc0970c6531286f4ffda30c46dd117dc",
+  "run_label": "smoke",
+  "schema_version": "w42.bookval.wave2.bid_aware_atlas.v1",
+  "totals": {
+    "n_action_rows": 5550,
+    "n_bid_values": 7,
+    "n_decl_per_seed": 10,
+    "n_games_per_bid": 10,
+    "n_seeds": 1,
+    "n_total_games": 70
+  },
+  "validation_bid30": {
+    "match_rate": 1.0,
+    "n_decl_ids_compared": 10,
+    "n_discrepant": 0,
+    "n_within_noise": 10,
+    "note": "Validation compares aggregate per-(seed,decl_id) mean EV of actual-action decisions, not per-decision scalar EVs. Two stochastic oracle runs on the same seed diverge in game trajectory after decision 0, so direct per-(decision_idx,slot) comparison is not appropriate.",
+    "pass": true,
+    "status": "completed",
+    "target_seed": 9430
+  },
+  "wall_seconds": 0.59
+}

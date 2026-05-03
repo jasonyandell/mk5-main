@@ -132,6 +132,12 @@ wandb/
 w42/**/wandb/
 lem/data/
 
+# Wave 2 bid-aware E[Q] sweep tensors (~37 MB each per 5-seed run, ~270 MB total).
+# Reproducible from w42/book_validation_v1/wave2/bid_aware_atlas/manifest.json
+# command lines. The joined bid_aware_actions.csv and validation_check.csv are
+# committed; per-bid .pt files are not.
+w42/book_validation_v1/wave2/bid_aware_atlas/eq_pdf_seeds*.pt
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
