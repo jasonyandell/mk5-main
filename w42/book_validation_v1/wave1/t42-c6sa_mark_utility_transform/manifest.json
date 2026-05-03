@@ -1,0 +1,40 @@
+{
+  "schema": "w42.bookval.wave1.agent_manifest.v1",
+  "bead": "t42-c6sa",
+  "wave": "wave1",
+  "parent_epic": "t42-4zi6",
+  "agent_role": "mark_utility_transform",
+  "question": "How often does the preferred action change when scoring Q values under Chapter 10 mark/match utility instead of raw point EV, and which book-detector families explain those flips?",
+  "slice": "branch_atlas_scaled_v0: seed=9430, decl_ids=0-9, bid=30, n_worlds=1000 per decision",
+  "N": "280 decisions, 773 legal actions",
+  "paired_or_unpaired": "unpaired (per-decision ranking comparison)",
+  "metric": "top-1 flip rate; mean EV-cost on flip; mean mark-gain on flip",
+  "inputs": {
+    "pt_file": "w42/branch_atlas_scaled_v0/eq_pdf_s9430_d10_bid30_joint_1000s_v2.pt",
+    "pt_sha256": "c0d124b0733dedd08227de7a3a4ca8cb200a9900d585721d654b461b798af9b8",
+    "decision_actions_csv": "w42/branch_atlas_scaled_v0/decision_actions.csv",
+    "transform_source": "w42/phase4_scoring_objective_tests/run_phase4_scoring_objective_tests.py",
+    "transform_sha256": "a43adfe5e5a052b47945fb14d703da0f2ab00080d8710ca64367e7a1141f198d",
+    "transform_functions_reused": [
+      "made_contract",
+      "score_hand_marks",
+      "mark_multiplier",
+      "score_hand_points"
+    ]
+  },
+  "transform_implementation_note": "q_per_world[w,a] is remaining (team0-team1) point differential in world w if action a is taken. To apply the mark transform: remaining_t0 = (q + remaining_total) / 2; final_t0 = pre_t0 + remaining_t0; apply score_hand_marks(bid, bidder_team, (final_t0, 42-final_t0)). Per-world hook fully maintained: mark_utility is (n_worlds, n_actions) tensor.",
+  "per_world_hook_maintained": true,
+  "outputs": {
+    "run_script": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/run_mark_utility_transform.py",
+    "readme": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/README.md",
+    "manifest": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/manifest.json",
+    "summary": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/summary.json",
+    "action_mark_ev_scalars": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/action_mark_ev_scalars.csv",
+    "flip_rate_by_slice": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/flip_rate_by_slice.csv",
+    "detector_endorsed_flips": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/detector_endorsed_flips.csv",
+    "per_ch10_claim_correlation": "w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/per_ch10_claim_correlation.csv"
+  },
+  "reproduce_command": "source forge/venv/bin/activate && python3 -u w42/book_validation_v1/wave1/t42-c6sa_mark_utility_transform/run_mark_utility_transform.py",
+  "repo_commit": "12064bf1e67052bb1515fe59f4393104f2a3766b",
+  "created_utc": "2026-05-03"
+}

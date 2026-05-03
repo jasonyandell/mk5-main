@@ -1,0 +1,10 @@
+claim_id,mechanism_active_decisions,flips_when_active,flip_rate_when_active,overall_flip_rate,enrichment_vs_baseline,interpretation
+ch10-early-terminal-under-marks,160,45,0.2812,0.2321,1.2115,enriched
+ch10-set-severity-compression,200,44,0.22,0.2321,0.9477,neutral
+ch10-special-bid-mark-multiplier,0,0,0.0,0.2321,0.0,depleted
+ch10-low-bid-score-distortion,280,65,0.2321,0.2321,1.0,neutral
+ch10-tournament-speed-tradeoff,160,45,0.2812,0.2321,1.2115,enriched
+ch10-score-mode-objective,280,65,0.2321,0.2321,1.0,neutral
+ch10-nonbidder-partial-points-erased,80,21,0.2625,0.2321,1.1308,enriched
+ch10-point-system-skill-signal,280,65,0.2321,0.2321,1.0,neutral
+ch10-timed-marks-advancement-objective,160,45,0.2812,0.2321,1.2115,enriched
