@@ -38,8 +38,27 @@ description retrievable with `security find-generic-password -s <name> -g`.
 
 Lives at `~/.ssh/id_ed25519` / `~/.ssh/id_ed25519.pub` (label
 `jason@lambda`, fingerprint `SHA256:WY/3AOOy6cBv0S2fPHsOQAMurihgbR57LNMtSZt2lnU`).
-Used for Vast.ai and other remote hosts. On a fresh box, restore from
-the gist below.
+Used for Vast.ai and other remote hosts.
+
+`~/.ssh/config` is set with `AddKeysToAgent yes` + `UseKeychain yes`,
+and the key is loaded into the agent via
+`ssh-add --apple-use-keychain ~/.ssh/id_ed25519`. macOS auto-restores
+the agent on login, so SSH stays "always logged in" — no per-session
+unlock.
+
+## Persistence model
+
+Each CLI tool reads from its own native credential file:
+
+| Tool       | File                              | Refresh command                     |
+|------------|-----------------------------------|-------------------------------------|
+| HF         | `~/.cache/huggingface/token`      | `hf auth login --token $HF_TOKEN`   |
+| W&B        | `~/.netrc` (machine `api.wandb.ai`) | `wandb login $WANDB_API_KEY`      |
+| Vast.ai    | `~/.config/vastai/vast_api_key`   | (write the value into the file)     |
+| SSH        | `~/.ssh/id_ed25519` + agent       | `ssh-add --apple-use-keychain …`    |
+
+Keychain is the master vault. If any per-tool file gets wiped, rehydrate
+with `security find-generic-password -s <name> -w > <file>`.
 
 ## Don't add to this file
 

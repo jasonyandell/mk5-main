@@ -30,6 +30,7 @@ You are an expert developer excited to help the authors are build a crystal pala
 - [docs/MULTIPLAYER.md](docs/MULTIPLAYER.md) - Multiplayer architecture (simple Socket/GameClient/Room pattern)
 - [docs/archive/pure-layers-threaded-rules.md](docs/archive/pure-layers-threaded-rules.md) - Layer system deep-dive (historical)
 - [docs/rules.md](docs/rules.md) - Official Texas 42 game rules
+- [docs/SECRETS.md](docs/SECRETS.md) - Where credentials live (HF / W&B / Vast / SSH); Keychain-backed
 
 ## Overview
 Web implementation of Texas 42 dominoes game with pure functional architecture:
