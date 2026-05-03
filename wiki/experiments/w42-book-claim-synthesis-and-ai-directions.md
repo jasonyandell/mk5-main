@@ -365,14 +365,29 @@ time. Status: `context-limited`. The book's pounce instruction encodes
 a `p_make` objective at the contract threshold; this matters for any
 agent that evaluates pounce decisions under a non-`p_make` utility.
 
-This is the most consequential finding of the campaign so far. It
-crystallizes the Wave 1.4 cross-AI matrix discovery that `p_make` /
+This is one of the most consequential findings of the campaign so far.
+It crystallizes the Wave 1.4 cross-AI matrix discovery that `p_make` /
 `threshold_mass` agree with EV at only `59%` (vs `CVaR_10` /
 `robust_q25` at `82-83%`) — the disagreement matters not just at the
 action-ranking level but at the strategic-claim level. Several other
 book claims that read as universal advice may turn out to encode
 implicit `p_make` reasoning that is correct at threshold-sharp bids and
 incorrect under tail-aware utilities.
+
+[[w42-bookval-v1-wave2-void-creation]] — paired-contrast probe on 276
+oracle-greedy snapshots. **Status: `contradicted` for the
+lead-to-self-void slice at bid=30** (the campaign's first
+contradicted-status finding). Both `p_set` delta (CI `[-0.028, -0.003]`)
+and EV delta (CI `[-3.42, -1.84]`) exclude zero opposite to the book's
+direction. Voiding by leading a singleton off-suit makes the setter's
+situation worse, consistently across phase and count-exposure subgroups.
+**Critical scope caveat from the probe**: the corpus captures setter in
+a leading position, not the book's canonical scenario of following a
+non-trump trick and discarding the last tile of a held suit. The
+broader Ch 05 void-creation claim remains untested; bead `t42-z31l`
+will mine follow-position candidates. The contradicted finding applies
+narrowly to lead-to-self-void; it does not refute the broader chapter
+concept.
 
 ## Links
 

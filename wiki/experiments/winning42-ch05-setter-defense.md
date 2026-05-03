@@ -187,6 +187,40 @@ trump-rich recognition remain blocked by missing state fields.
   belief Brier/log-loss for key hidden owners, and Burl forced-commit/tool-faithfulness
   errors by Ch05 bucket.
 
+## Wave 2 Findings (Book Validation v1)
+
+[[w42-bookval-v1-wave2-pounce-window-bid30]] — paired-contrast probe on
+52 oracle-greedy snapshots (filtered from 500 by 1-legal-move and
+setter-led-trick exclusions). The book's setter-pounce instruction is
+right under `p_make` (oracle pounces 59.6%) but **wrong under scalar EV**
+(decline better in 65.4%). 10-point count cases show EV delta `+15.68`
+with CI `[+1.60, +29.76]` (decline strictly better) yet oracle still
+pounces 80% of the time. Status: `context-limited` for the bid=30 slice;
+the high-bid scope (`ch12-setter-pounce-high-bid-off`) waits for Wave
+2.B.2's bid-aware corpus (bead `t42-8kbh`). The chapter's pounce
+recommendation encodes implicit `p_make` reasoning at the contract
+threshold; under tail-aware utilities (CVaR, robust_q25) it would
+recommend a different action substantially more often.
+
+[[w42-bookval-v1-wave2-void-creation]] — paired-contrast probe on 276
+oracle-greedy snapshots. Status: **`contradicted`** for the
+**lead-to-self-void** slice at bid=30. Both primary metrics have CIs
+excluding zero in the direction OPPOSITE to the book claim:
+`p_set` delta `-0.0155` (CI `[-0.028, -0.003]`), EV delta `-2.63`
+(CI `[-3.42, -1.84]`). Voiding by leading a singleton off-suit makes
+the setter's situation worse, consistently across phase and count-exposure
+subgroups. **Critical scope caveat**: this probe captures setter in
+a leading position, not the book's canonical scenario where setter is
+following a non-trump trick and chooses to discard their last tile
+from a held suit. The broader Ch 05 void-creation framing remains
+untested; bead `t42-z31l` will mine follow-position candidates and
+re-run.
+
+This is the campaign's first contradicted-status finding. The narrow
+scope matters: a future ledger reconciliation should NOT mark the
+broader Ch 05 void-creation concept as contradicted — only the
+lead-to-self-void sub-scenario.
+
 ## Wave 1 Findings (Book Validation v1)
 
 The cross-AI agreement matrix in [[w42-bookval-v1-wave1-cross-ai-agreement]]

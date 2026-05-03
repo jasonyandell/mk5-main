@@ -33,7 +33,7 @@ the central ledger or the synthesis page.
 | 2.A.3 | reentry probe v2 | t42-v9lu | closed (d9f8dbf) — `context-limited`, late game contradicts book |
 | 2.B | bid-aware E[Q] driver smoke | t42-6j3k | closed (0c802d4) |
 | 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | in flight |
-| 2.C | void-creation paired contrast | t42-26j8 | outputs landed (N=8 underpowered, suspect filter) |
+| 2.C | void-creation paired contrast | t42-26j8 | closed (8507b11) — **contradicted** (lead-to-self-void slice only); follow-position scope filed as t42-z31l |
 | 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
 | 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
 | 2.E.2 | setter-pounce high-bid | t42-8kbh | filed, blocked on 2.B.2 |
