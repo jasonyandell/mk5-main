@@ -1,0 +1,27 @@
+{
+  "schema_version": "w42.claim_analysis_synthesis.v1",
+  "bead": "t42-0b4l.10",
+  "created_at_utc": "2026-05-03T06:06:00Z",
+  "phase2_epic": "t42-0b4l",
+  "next_epic": "t42-qtwb",
+  "closed_child_count": 10,
+  "synthesis_table": "w42/claim_analysis_synthesis/claim_family_synthesis.csv",
+  "claim_ledger_reconciliation": {
+    "central_ledger_status_changes": "none in this final synthesis",
+    "reason": "Phase 2 produced several narrow operationalized supports, partial probes, and diagnostic/model-feature results, but broad book-claim promotion still needs explicit operationalizations and powered family-specific follow-ups.",
+    "do_not_promote": [
+      "hidden truth as live model features",
+      "static bidding risk into full auction discipline",
+      "hand-picked 84 fixtures into broad 84 advice",
+      "seed-modulo doubles/no-trump into same-hand regime choice",
+      "model-probe feature gains into book-claim proof"
+    ]
+  },
+  "next_epic_children": [
+    "t42-qtwb.1",
+    "t42-qtwb.2",
+    "t42-qtwb.3",
+    "t42-qtwb.4"
+  ],
+  "scientific_status": "Phase 2 recovered the crashed session, inventoried the data, produced empirical artifacts for every open claim family, and leaves phase 3 with generated-counterfactual work rather than missing-data fog."
+}

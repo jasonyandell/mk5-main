@@ -104,15 +104,17 @@ first five are deterministic invariants; the walker detector is the first place 
 
 ## Claim Ledger
 
-No empirical run was performed for this bead. Status values below therefore mean
-"ready to test, but not yet supported by a completed run."
+[[w42-phase4-laydown-rule-accounting]] now covers the deterministic rule
+substrate for this chapter with 23 rule assertions and zero failures. Remaining
+model-facing rows still need Gus/Burl corpus audits, but the core accounting
+claims have executable Forge-backed fixtures.
 
 | Claim | Status | Why |
 |---|---|---|
-| Chapter 1 deterministic rule accounting can be fully verified without oracle rollout. | Underpowered | The source claim is precise and enumeration-ready, but no test was run in this bead. |
-| Trump exclusivity is a high-value model sanity bucket. | Underpowered | It is a likely legality/reasoning trap and already fits strategy action tags, but no Gus/Burl bucket report was run. |
+| Chapter 1 deterministic rule accounting can be fully verified without oracle rollout. | supported | `t42-br7n.4` verifies count identity, hand total, suit membership, trump exclusivity, follow-suit masks, trick winner, lead control, count capture, and contract scoring. |
+| Trump exclusivity is a high-value model sanity bucket. | supported-as-rule, model-untested | The deterministic fixture passes against Forge; no Gus/Burl bucket report was run. |
 | Walker recognition deserves an early concept bucket. | Underpowered | The book defines it as rule vocabulary with strategic value; no oracle regret comparison was run. |
-| Bid make/set scoring should be split from hand point accounting and match scoring. | Underpowered | The chapter examples make the distinction measurable; no simulator audit was run. |
+| Bid make/set scoring should be split from hand point accounting and match scoring. | supported-as-rule | `t42-br7n.4` verifies the Chapter 1 scoring examples. Chapter 10 owns mark-vs-point objective drift. |
 | Burl traces can be audited for Chapter 1 rule faithfulness before deeper strategy. | Underpowered | The tool surface supports legality/trump/state checks, but no trace corpus was inspected here. |
 
 ## Next Implementation Notes

@@ -119,8 +119,10 @@ Burl used legal public evidence rather than an oracle-like shortcut.
 
 ## Claim Ledger
 
-No empirical run was performed for this chapter harvest. All entries are therefore
-`underpowered` until enumeration or oracle comparisons are run.
+[[w42-phase4-bidding-count-exposure-tests]] and
+[[w42-phase4-sequence-handshape-tests]] now cover two advanced rows: natural bid
+bucket evidence and high-bid off-pounce pressure. Other rows remain
+underpowered until state-injected or high-bid generators exist.
 
 | Claim | Status | Next empirical check |
 |---|---|---|
@@ -128,9 +130,9 @@ No empirical run was performed for this chapter harvest. All entries are therefo
 | The same hand should switch from protector stripping to crisis management when a dangerous trump remains. | underpowered | Run paired oracle rollouts for original-script versus crisis-plan actions across hidden worlds with retained opponent trump. |
 | 84 is justified from some non-perfect 35/36 hands only under score-context desperation. | underpowered | Simulate match utility by score deficit and compare ordinary bid versus 84 escalation. |
 | Doubles are not always the right play; bid margin and dead-suit status can make a non-double superior. | underpowered | Bucket double-available decisions and compare oracle regret for double versus book-recommended non-double. |
-| Count pounces on bidder offs are mandatory against high bids even when the defender is unsure who wins. | underpowered | Measure missed-pounce set conversion and held-count-never-used regret in 35/36 bid buckets. |
+| Count pounces on bidder offs are mandatory against high bids even when the defender is unsure who wins. | blocked by bid-30 corpus | `t42-br7n.1` supports setter pounce generally, but the input table is entirely bid `30`; 35/36 pressure needs generated high-bid contracts. |
 | 84 defenders should preserve live doubles and same-suit pairs, but discard them once partner play kills the target. | underpowered | Track live asset survival and set attribution in 84 rollouts. |
-| 32/33 bids are usually anomalous except as last-seat raises over 31. | underpowered | Enumerate bidding-risk buckets and compare set/underbid regret for 32/33 versus nearest natural bid. |
+| 32/33 bids are usually anomalous except as last-seat raises over 31. | partial empirical bucket evidence | `t42-br7n.7` finds natural 30/31 or 35/36 max-profitable buckets in 66 / 384 generated contract rows; real auction-increment behavior remains untested. |
 | Reputation for disciplined bidding can provoke opponent overcalls and should affect style priors. | context-limited | Needs repeated-player simulation or human logs; not measurable from single independent forge games alone. |
 
 ## Links

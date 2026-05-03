@@ -1,0 +1,13 @@
+{
+  "artifacts": {
+    "examples": "w42/sequence_seat_counterfactuals/examples.json",
+    "label_metrics": "w42/sequence_seat_counterfactuals/label_metrics.csv",
+    "labeled_sequence_action_rows": "w42/sequence_seat_counterfactuals/labeled_sequence_action_rows.csv",
+    "paired_contrasts": "w42/sequence_seat_counterfactuals/paired_contrasts.csv",
+    "paired_contrasts_by_slice": "w42/sequence_seat_counterfactuals/paired_contrasts_by_slice.csv",
+    "summary": "w42/sequence_seat_counterfactuals/summary.json"
+  },
+  "bead": "t42-qtwb.3",
+  "boundary": "Direct branch-value counterfactuals at naturally occurring sequence states. This tests legal candidate moves within a public sequence context; it does not yet simulate fully divergent multi-trick human plan trees.",
+  "input": "/Users/jason/code/mk5-main/w42/tactical_claim_replication/all_action_rows.jsonl"
+}

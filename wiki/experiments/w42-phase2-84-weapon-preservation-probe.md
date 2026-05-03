@@ -159,6 +159,14 @@ The dynamic branch lab adds three blockers before any promotion:
   last-trick tableaux still need state injection or seed mining;
 - live/spend labels are asset-priority proxies, not final set-attribution proofs.
 
+The phase-3 follow-up [[w42-phase3-84-seed-mining-corpus]] resolves the
+"hand-picked fixtures only" blocker by mining 50000 generated seeds. It emits
+214229 candidate 84 rows and 256 recommended natural seeds spanning protected
+one-offs, straight one-offs, two-off same-suit structures, defender live doubles,
+same-suit pairs, pair protectors, and dead-asset release controls. This is a
+documented seed corpus, not an action-value proof; preserve/spend regret still
+needs branch-atlas generation or true late-state injection.
+
 ## Artifacts
 
 | artifact | path |
@@ -174,6 +182,7 @@ The dynamic branch lab adds three blockers before any promotion:
 | dynamic action labels | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_action_labels.csv` |
 | dynamic paired contrasts | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/dynamic_84_paired_contrasts.csv` |
 | dynamic branch atlas | `w42/eighty_four_weapon_preservation_probe/dynamic_branch_lab/branch_atlas/` |
+| phase-3 seed-mining corpus | `w42/eighty_four_seed_mining/` |
 
 W&B for the original spec pass: not applicable. W&B for the dynamic branch lab:
 `f7uzoo7f`.

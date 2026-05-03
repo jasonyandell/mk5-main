@@ -1,0 +1,143 @@
+{
+  "artifacts": {
+    "bucket_summary": "w42/phase4_doubles_notrump_regime_tests/smoke/bucket_summary.csv",
+    "claim_contrasts": "w42/phase4_doubles_notrump_regime_tests/smoke/claim_contrasts.csv",
+    "examples": "w42/phase4_doubles_notrump_regime_tests/smoke/examples.json",
+    "paired_regime_rows": "w42/phase4_doubles_notrump_regime_tests/smoke/paired_regime_rows.csv",
+    "point_sample_pairs": "w42/phase4_doubles_notrump_regime_tests/smoke/point_sample_pairs.csv",
+    "regime_contract_rows": "w42/phase4_doubles_notrump_regime_tests/smoke/regime_contract_rows.csv",
+    "selected_hand_rows": "w42/phase4_doubles_notrump_regime_tests/smoke/selected_hand_rows.csv",
+    "summary": "w42/phase4_doubles_notrump_regime_tests/smoke/summary.json"
+  },
+  "bead_id": "t42-br7n.5",
+  "command": "python w42/phase4_doubles_notrump_regime_tests/run_doubles_notrump_regime_tests.py --out-dir w42/phase4_doubles_notrump_regime_tests/smoke --smoke --device cpu",
+  "config": {
+    "bucket_candidates": 24,
+    "device": "cpu",
+    "greedy": true,
+    "max_hands": 24,
+    "samples_per_hand_per_regime": 16,
+    "selection_seed": 20260503,
+    "sim_seed": 940000,
+    "smoke": true
+  },
+  "coverage": {
+    "claim_contrasts": 8,
+    "paired_regime_rows": 24,
+    "point_sample_pairs": 384,
+    "regime_contract_rows": 48,
+    "selected_hands": 24
+  },
+  "created_at_utc": "2026-05-03T15:23:12.810351+00:00",
+  "git_commit": "18a5b9415928386a9da1d74027574911306d17da",
+  "headline_claims": {
+    "dual_suit_65": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.0,
+      "hand_n": 6,
+      "mean_nt_minus_dt_best_mark_swing": 0.208333,
+      "mean_nt_minus_dt_mark_swing_30": 0.208333,
+      "nt_preferred_at_30_rate": 0.833333
+    },
+    "five_plus_doubles": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.0,
+      "hand_n": 4,
+      "mean_nt_minus_dt_best_mark_swing": 0.375,
+      "mean_nt_minus_dt_mark_swing_30": 0.375,
+      "nt_preferred_at_30_rate": 0.75
+    },
+    "four_plus_doubles": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.333333,
+      "hand_n": 15,
+      "mean_nt_minus_dt_best_mark_swing": 0.175,
+      "mean_nt_minus_dt_mark_swing_30": 0.175,
+      "nt_preferred_at_30_rate": 0.533333
+    },
+    "four_plus_missing_top_double": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.3,
+      "hand_n": 10,
+      "mean_nt_minus_dt_best_mark_swing": 0.1875,
+      "mean_nt_minus_dt_mark_swing_30": 0.1875,
+      "nt_preferred_at_30_rate": 0.5
+    },
+    "high_double_control": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.4,
+      "hand_n": 5,
+      "mean_nt_minus_dt_best_mark_swing": 0.15,
+      "mean_nt_minus_dt_mark_swing_30": 0.15,
+      "nt_preferred_at_30_rate": 0.6
+    },
+    "low_double_exposure": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.3,
+      "hand_n": 10,
+      "mean_nt_minus_dt_best_mark_swing": 0.1875,
+      "mean_nt_minus_dt_mark_swing_30": 0.1875,
+      "nt_preferred_at_30_rate": 0.5
+    },
+    "no_trump_support": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.285714,
+      "hand_n": 14,
+      "mean_nt_minus_dt_best_mark_swing": 0.223214,
+      "mean_nt_minus_dt_mark_swing_30": 0.223214,
+      "nt_preferred_at_30_rate": 0.571429
+    },
+    "regime_switch_proxy": {
+      "direction": "leans_no_trump",
+      "dt_preferred_at_30_rate": 0.285714,
+      "hand_n": 7,
+      "mean_nt_minus_dt_best_mark_swing": 0.214286,
+      "mean_nt_minus_dt_mark_swing_30": 0.214286,
+      "nt_preferred_at_30_rate": 0.571429
+    }
+  },
+  "method": {
+    "evidence_mode": "paired same-hand simulation under doubles-trump and standard no-trump",
+    "legacy_baseline": "w42/doubles_no_trump_legacy_mining was within-regime only and did not test same-hand declaration choice.",
+    "offline_label_boundary": "Final points, p_make, and mark_swing are offline rollout labels; row features are bidder-hand shape features only.",
+    "policy": "forge.bidding PolicyModel greedy play by default",
+    "same_hand_conditioning": "P0 hand fixed for both regimes.",
+    "same_opponent_world_conditioning": "simulate_games receives the same seed for decl 7 and decl 9; deal_random_hands therefore emits paired opponent deals."
+  },
+  "schema_version": "w42.phase4_doubles_notrump_regime_tests.v0",
+  "scientific_status": {
+    "caveats": [
+      "This is play-policy simulation, not exhaustive minimax/oracle proof.",
+      "P0 is always treated as bidder; auction pressure and partner/opponent bidding are outside this bead.",
+      "The policy can prefer or mishandle a regime for model reasons, so strong deltas are evidence for generated-regime behavior, not final folk-wisdom truth by themselves."
+    ],
+    "claim_ledger_impact": "No central claim ledger edit by Worker E; evidence is local to this artifact."
+  },
+  "selection": {
+    "bucket_candidate_cap": 24,
+    "bucket_population_counts": {
+      "baseline": 460021,
+      "dual_suit_65": 296010,
+      "five_plus_doubles": 4558,
+      "four_plus_doubles": 51108,
+      "high_double_control": 15506,
+      "low_double_exposure": 35602,
+      "no_trump_support": 527559,
+      "regime_switch_proxy": 21884
+    },
+    "exact_hand_space": 1184040,
+    "selected_hands": 24,
+    "selection_seed": 20260503,
+    "target_buckets": [
+      "regime_switch_proxy",
+      "four_plus_doubles",
+      "five_plus_doubles",
+      "high_double_control",
+      "low_double_exposure",
+      "no_trump_support",
+      "dual_suit_65",
+      "baseline"
+    ]
+  },
+  "wall_seconds": 16.101
+}

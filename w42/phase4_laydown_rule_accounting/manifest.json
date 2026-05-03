@@ -1,0 +1,14 @@
+{
+  "bead": "t42-br7n.4",
+  "files": [
+    "run_laydown_rule_accounting.py",
+    "validate_outputs.py",
+    "rule_results.csv",
+    "rule_fixtures.json",
+    "laydown_results.csv",
+    "laydown_fixtures.json",
+    "laydown_counterexamples.json",
+    "summary.json",
+    "manifest.json"
+  ]
+}

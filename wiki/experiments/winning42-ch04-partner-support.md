@@ -96,15 +96,17 @@ when helping the bidder.
 
 ## Claim Ledger
 
-No empirical run was performed for this chapter harvest. All statuses below are
-`underpowered` until checked against enumeration and/or oracle records.
+[[w42-phase4-sequence-handshape-tests]] now gives Chapter 4 direct
+public/action-local paired contrasts. It supports count donation only in a
+sharply gated closure setting and warns against broad partner count exposure.
+Private guarantee and exact low-trump trap claims still need richer state fields.
 
 | claim | source basis | empirical status | next test |
 |---|---|---|---|
-| Partner support is an active role that can decide whether the bidder makes the bid | Chapter summary rules and team-point framing on pages 37-38 | underpowered | Bucket partner-of-bidder decisions and compare make/set delta of high-regret mistakes |
-| Count should be donated only on guaranteed partner-won tricks | Count-donation warning on page 38 | underpowered | Measure regret and tail loss for count plays by guarantee strength |
-| Low trump leads can be traps where count donation is bad | Page 38 warning about low trump forcing a higher trump | underpowered | Split trump-led donation windows by highest-outstanding-trump risk |
-| Leads should minimize live count exposure when partner's bidder cannot be directly helped | Pages 38-40 lead-away-from-count examples | underpowered | Compare chosen leads to minimum-liability lead by live five/ten-count exposure |
+| Partner support is an active role that can decide whether the bidder makes the bid | Chapter summary rules and team-point framing on pages 37-38 | context-limited support | `t42-br7n.1` finds exact closure count donation strongly positive but earlier count donation weak. |
+| Count should be donated only on guaranteed partner-won tricks | Count-donation warning on page 38 | supported as gated timing rule | Closure count donation is `+3.143` Q across 65 pairs; count before closure is only `+0.308` Q with CI crossing zero. |
+| Low trump leads can be traps where count donation is bad | Page 38 warning about low trump forcing a higher trump | context-limited / blocker | The proxy is weak and uncertain; exact low-trump trap needs private outstanding-trump state. |
+| Leads should minimize live count exposure when partner's bidder cannot be directly helped | Pages 38-40 lead-away-from-count examples | supported directionally | Partner count-liability leads are `-3.425` Q across 526 paired lead decisions. |
 | Highest remaining suit tile can substitute for a double | Page 39 four-trey example | underpowered | Detect virtual-boss leads and compare regret when chosen or missed |
 | Partner should usually avoid leading trump while helping bidder | Page 40 warning and exception | underpowered | Measure trump-lead regret in partner-support regime and learn exception boundaries |
 

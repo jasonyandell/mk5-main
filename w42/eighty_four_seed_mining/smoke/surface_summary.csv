@@ -1,0 +1,9 @@
+surface,candidate_rows,example_seeds
+dead_asset_release_control,3736,6|16|18|19|23|43|45|54|60|62
+defender_live_double_weapon,2794,6|16|18|19|23|43|45|54|60|62
+defender_live_same_suit_pair,4096,6|16|18|19|23|43|45|54|60|62
+pair_protector_pressure,1697,6|16|18|19|23|43|45|54|60|62
+protected_one_off,463,6|43|79|83|97|101|106|123|127|135
+straight_one_off,157,16|18|19|23|45|54|60|62|81|132
+three_trump_three_double_one_off,373,6|19|23|60|79|83|97|123|132|135
+two_off_same_suit,3646,2|2|2|2|7|7|7|10|10|11

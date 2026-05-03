@@ -107,16 +107,19 @@ only winning action is preservation rather than point capture.
 
 ## Claim Ledger
 
-No empirical run was performed for this chapter harvest.
+[[w42-phase4-84-dynamic-seed-tests]] now supplies reached-state action evidence
+for 84 defense over mined natural seeds. It supports preservation and dead-asset
+release proxies, while final set attribution, throwaway-ladder bottlenecks, and
+population set-rate claims remain blocked.
 
 | claim | status | next empirical check |
 |---|---|---|
-| 84 defense should use a different mode from ordinary defense because count and trump incentives rarely decide the set | underpowered | Compare regret of ordinary defensive tags vs 84-preservation tags on 84 defender decisions. |
-| Each opponent usually starts with one to four possible last-trick weapons | underpowered | Enumerate dealt 84 positions under the project bidder and count live weapons per defender. |
+| 84 defense should use a different mode from ordinary defense because count and trump incentives rarely decide the set | context-limited support | Phase 4 reached 84 defense decisions and preservation labels; ordinary-vs-84 policy comparison remains open. |
+| Each opponent usually starts with one to four possible last-trick weapons | context-limited seed inventory | Phase 3 mines defender live-double and same-suit-pair surfaces at scale; exact per-opponent weapon distribution needs a dedicated table. |
 | When choosing between live doubles, the better double is the one with more unplayed possible final-off tiles | context-limited | Test E[Q] deltas in next-to-last-trick states with multiple live doubles. |
 | Double-ahead-off 84 can only be set by preserving a same-suit pair, not by saving a double | context-limited | Enumerate double-ahead structures and verify set paths by final two-trick simulation. |
-| Pair protectors should be kept ahead of partner-readable low discards | underpowered | Run discard counterfactuals when a legal low tile is also or is not a protector. |
-| Straight-off 84 is set nearly two out of three times, while double-ahead-off heavily favors the bidder | underpowered | Stratified enumeration over 84-bidder structures with confidence intervals. |
+| Pair protectors should be kept ahead of partner-readable low discards | context-limited / blocker | Phase 4 found 12 protector actions and positive preservation evidence, but full throwaway-ladder bottlenecks remain blocked. |
+| Straight-off 84 is set nearly two out of three times, while double-ahead-off heavily favors the bidder | blocked | Phase 4 selects straight-off games, but population set rate and final set attribution are not tested by reached greedy traces. |
 | Tracking load is a real difficulty signal for models and agents | underpowered | Bucket Gus regret and Burl trace errors by live assets plus watched target tiles. |
 
 ## Links

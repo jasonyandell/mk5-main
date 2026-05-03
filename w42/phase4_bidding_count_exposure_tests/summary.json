@@ -1,0 +1,139 @@
+{
+  "bead": "t42-br7n.7",
+  "claim_conclusions": {
+    "ch02-double-side-protection": {
+      "caveat": "The detector knows whether the side double is held, but not whether it remains live or can actually be cashed in sequence.",
+      "claim_id": "ch02-double-side-protection",
+      "conclusion": "The side-specific detector distinguishes protected from unprotected exposure points; protection applies only to the side whose double is held.",
+      "headline_metric": "protected_exposed_point_pct",
+      "headline_value": 16.774838,
+      "n_contract_rows": 384,
+      "primary_table": "double_side_protection_summary.csv",
+      "secondary_metric": "side_exposure_rows",
+      "secondary_value": 1394,
+      "status_recommendation": "static_side_detector_supported_context_limited"
+    },
+    "ch02-four-five-off-danger": {
+      "caveat": "This is a detector/outcome join, not a generated line-of-play punishment test for specific 4-5 tiles.",
+      "claim_id": "ch02-four-five-off-danger",
+      "conclusion": "Four/five-off exposure rows are measurably higher-risk and lower-value in the contract corpus.",
+      "headline_metric": "four_five_off_rows",
+      "headline_value": 34,
+      "n_contract_rows": 384,
+      "primary_table": "four_five_off_exposure_summary.csv",
+      "secondary_metric": "mean_p_make_30_four_five_off",
+      "secondary_value": 0.336857,
+      "status_recommendation": "context_limited_exposure_supported"
+    },
+    "ch02-risk-budget-threshold": {
+      "caveat": "Risk buckets are static own-hand exposure detectors; partner and opponent adaptation remains offline.",
+      "claim_id": "ch02-risk-budget-threshold",
+      "conclusion": "Risk <=12 has materially better generated make/profit averages than risk >12. The threshold is directional evidence, not a standalone bid rule.",
+      "headline_metric": "mean_p_make_30_le12_minus_gt12",
+      "headline_value": 0.037471,
+      "n_contract_rows": 384,
+      "primary_table": "risk_threshold_outcome_summary.csv",
+      "secondary_metric": "mean_mark_swing_30_le12_minus_gt12",
+      "secondary_value": 0.074942,
+      "status_recommendation": "context_limited_threshold_support"
+    },
+    "ch02-strong-trump-bad-risk-trap": {
+      "caveat": "The corpus is small for this interaction slice; stronger paired same-hand high-off contrasts would be better.",
+      "claim_id": "ch02-strong-trump-bad-risk-trap",
+      "conclusion": "Strong-trump high-exposure contracts exist in the generated corpus. They keep high make rates, but their max-profitable-bid average trails low-risk strong-trump contracts, so the trap is a static/exposure warning rather than a proved make-rate penalty.",
+      "headline_metric": "trap_rows",
+      "headline_value": 24,
+      "n_contract_rows": 384,
+      "primary_table": "strong_trump_bad_risk_trap_summary.csv",
+      "secondary_metric": "mean_p_make_30_trap",
+      "secondary_value": 0.710286,
+      "status_recommendation": "static_trap_surface_supported_outcome_mixed"
+    },
+    "ch02-three-plus-trumps-good-start": {
+      "caveat": "Generated make labels are fixed-contract simulations, not full opening-bid/pass policy rollouts.",
+      "claim_id": "ch02-three-plus-trumps-good-start",
+      "conclusion": "Three-plus trumps improve the generated contract averages, but the slice is still mixed with exposure and declaration-selection effects; it is not sufficient by itself.",
+      "headline_metric": "mean_p_make_30_ge3_minus_lt3",
+      "headline_value": 0.292901,
+      "n_contract_rows": 384,
+      "primary_table": "trump_count_outcome_summary.csv",
+      "secondary_metric": "mean_mark_swing_30_ge3",
+      "secondary_value": 0.219323,
+      "status_recommendation": "keep_context_limited_or_underpowered"
+    },
+    "ch12-natural-bid-bucket-anomaly": {
+      "caveat": "Natural buckets are max-profitable bid labels from simulated points; no real auction-increment model is present.",
+      "claim_id": "ch12-natural-bid-bucket-anomaly",
+      "conclusion": "Natural max-profitable buckets appear in the generated contract rows, but static ceiling buckets alone cannot produce the book's 30/31/35/36 auction story.",
+      "headline_metric": "generated_natural_30_31_or_35_36_pct",
+      "headline_value": 17.1875,
+      "n_contract_rows": 384,
+      "primary_table": "natural_bid_bucket_anomaly_summary.csv",
+      "secondary_metric": "natural_rows",
+      "secondary_value": 66,
+      "status_recommendation": "partial_empirical_bucket_evidence"
+    },
+    "ch16-partner-two-plus-doubles-prior": {
+      "caveat": "Partner rows are hidden-hand priors joined to generated contract labels, not observed partner auctions or play choices.",
+      "claim_id": "ch16-partner-two-plus-doubles-prior",
+      "conclusion": "The exact unconditional two-plus-double prior is sizable, and the generated contract corpus preserves a similar but hand-conditioned partner-help rate. This still does not prove partner bidding intelligence.",
+      "headline_metric": "static_pct_two_plus_doubles",
+      "headline_value": 58.098713,
+      "mean_p_make_30_all": 0.399902,
+      "mean_p_make_30_when_partner_two_plus": 0.395691,
+      "n_contract_rows": 384,
+      "primary_table": "partner_two_plus_doubles_prior_summary.csv",
+      "secondary_metric": "generated_contract_partner_two_plus_pct",
+      "secondary_value": 57.03125,
+      "status_recommendation": "context_limited_static_prior_supported"
+    }
+  },
+  "claim_ids": [
+    "ch16-partner-two-plus-doubles-prior",
+    "ch02-three-plus-trumps-good-start",
+    "ch02-risk-budget-threshold",
+    "ch02-strong-trump-bad-risk-trap",
+    "ch02-four-five-off-danger",
+    "ch12-natural-bid-bucket-anomaly",
+    "ch02-double-side-protection"
+  ],
+  "counts": {
+    "claim_summary_rows": 7,
+    "contract_rows": 384,
+    "partner_feature_rows": 384,
+    "side_exposure_rows": 2672,
+    "side_exposure_rows_with_count_points": 1394
+  },
+  "created_at_utc": "2026-05-03T15:28:30.152795+00:00",
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "outputs": {
+    "blockers": "w42/phase4_bidding_count_exposure_tests/blocker_rows.csv",
+    "claim_summary": "w42/phase4_bidding_count_exposure_tests/claim_summary.csv",
+    "double_side_protection": "w42/phase4_bidding_count_exposure_tests/double_side_protection_summary.csv",
+    "four_five_off": "w42/phase4_bidding_count_exposure_tests/four_five_off_exposure_summary.csv",
+    "natural_bucket": "w42/phase4_bidding_count_exposure_tests/natural_bid_bucket_anomaly_summary.csv",
+    "partner_prior": "w42/phase4_bidding_count_exposure_tests/partner_two_plus_doubles_prior_summary.csv",
+    "risk_threshold": "w42/phase4_bidding_count_exposure_tests/risk_threshold_outcome_summary.csv",
+    "strong_trump_risk_interaction": "w42/phase4_bidding_count_exposure_tests/strong_trump_risk_interaction_summary.csv",
+    "strong_trump_trap": "w42/phase4_bidding_count_exposure_tests/strong_trump_bad_risk_trap_summary.csv",
+    "trump_count": "w42/phase4_bidding_count_exposure_tests/trump_count_outcome_summary.csv"
+  },
+  "schema_version": "w42.phase4_bidding_count_exposure_tests.v1",
+  "scientific_status": {
+    "recommendation": "Use these tables to close the phase-4 scope gap as conservative claim evidence; leave claims caveated where full policy or sequence counterfactuals are still missing.",
+    "what_this_does_not_test": "No central ledger update, no wiki update, no observed human auction, and no new full auction/game state injection.",
+    "what_this_tests": "Claim-specific joins over prior generated contract/action rows plus exact static hand-shape and side-exposure detectors."
+  },
+  "source_files": {
+    "auction_bid_action_rows": "w42/auction_bid_discipline_claim_tests/bid_action_rows.csv",
+    "auction_context_decision_rows": "w42/auction_bid_discipline_claim_tests/context_decision_rows.csv",
+    "auction_contract_rows": "w42/auction_bid_discipline_claim_tests/contract_rows.csv",
+    "auction_natural_bucket_summary": "w42/auction_bid_discipline_claim_tests/natural_bucket_summary.csv",
+    "auction_risk_budget_summary": "w42/auction_bid_discipline_claim_tests/risk_budget_summary.csv",
+    "bid_only_hand_decl_rows": "w42/bid_only_enough_claim_tests/hand_decl_rows.csv",
+    "completion_board": "w42/phase4_claim_completion_board/completion_board.csv",
+    "ledger": "w42/statistics_claims_ledger/claims.csv",
+    "static_double_count_priors": "w42/odds_ruleset_claim_validation/double_count_priors.csv",
+    "static_risk_summary": "w42/bidding_risk_budget_claim_validation/summary.json"
+  }
+}

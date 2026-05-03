@@ -1,0 +1,66 @@
+{
+  "artifacts": {
+    "blocker_table": "w42/phase4_84_dynamic_seed_tests/blocker_table.csv",
+    "branch_atlas": "w42/phase4_84_dynamic_seed_tests/branch_atlas",
+    "dynamic_action_labels": "w42/phase4_84_dynamic_seed_tests/dynamic_84_action_labels.csv",
+    "eq_games": "w42/phase4_84_dynamic_seed_tests/mined_84_seed_games.pt",
+    "examples": "w42/phase4_84_dynamic_seed_tests/examples.json",
+    "label_metrics": "w42/phase4_84_dynamic_seed_tests/dynamic_84_label_metrics.csv",
+    "paired_contrasts": "w42/phase4_84_dynamic_seed_tests/dynamic_84_paired_contrasts.csv",
+    "score_gate_static_table": "w42/phase4_84_dynamic_seed_tests/score_gate_static_table.csv",
+    "selected_seed_rows": "w42/phase4_84_dynamic_seed_tests/selected_seed_rows.csv"
+  },
+  "commit_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "coverage": {
+    "action_rows": 1872,
+    "blocker_rows": 4,
+    "decision_rows": 672,
+    "dynamic_labeled_actions": 1872,
+    "dynamic_labels": 14,
+    "hidden_threat_rows": 14386,
+    "paired_contrasts": 3,
+    "score_gate_rows": 96,
+    "seed_games": 24
+  },
+  "created_at_utc": "2026-05-03T15:24:36.269374+00:00",
+  "generation": {
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "device": "mps",
+    "elapsed_seconds": 13.330173624912277,
+    "games": 24,
+    "samples": 128
+  },
+  "headline": {
+    "dead_asset_release_candidate_proxy_actions": 109,
+    "dead_release_pairs": 29,
+    "defender_live_double_weapon_proxy_actions": 53,
+    "defender_live_same_suit_pair_proxy_actions": 96,
+    "defense_preserve_pairs": 62,
+    "lower_target_double_choice_pairs": 0,
+    "pair_protector_proxy_actions": 12,
+    "trump_vs_final_off_pairs": 76
+  },
+  "owner_bead": "t42-br7n.2",
+  "schema_version": "w42.phase4_84_dynamic_seed_tests.v0",
+  "scientific_status": {
+    "blockers": [
+      "no arbitrary late-state injector in this runner",
+      "reached decisions are conditioned on the current greedy E[Q] policy trace",
+      "preserve/spend labels are Chapter 8 proxy labels, not final set-cause proof",
+      "score 42-vs-84 gate is static here because bidding/terminal match counterfactuals are outside the play generator"
+    ],
+    "claim_ledger_impact": "none by this worker; outputs are a scoped phase-4 artifact for later synthesis",
+    "leakage_boundary": "full-deal defender assets are used only as offline eval labels; live features remain public state plus actor hand"
+  },
+  "surface_counts_in_selected_games": {
+    "dead_asset_release_control": 23,
+    "defender_live_double_weapon": 23,
+    "defender_live_same_suit_pair": 23,
+    "laydown_all_trumps": 1,
+    "pair_protector_pressure": 23,
+    "protected_one_off": 9,
+    "straight_one_off": 10,
+    "three_trump_three_double_one_off": 9,
+    "two_off_same_suit": 4
+  }
+}

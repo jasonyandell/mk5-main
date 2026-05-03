@@ -92,18 +92,21 @@ hand value.
 
 ## Claim Ledger
 
-No empirical run was performed for this chapter bead. Statuses below are source-backed
-hypotheses awaiting enumeration/oracle/Gus/Burl checks.
+[[w42-phase4-bidding-count-exposure-tests]] now supplies static-detector and
+generated-contract evidence for the main Chapter 2 risk-budget rows. The current
+evidence is useful but still not full auction truth: promotion beyond
+context-limited support needs bid/pass policy rollout or state-injected
+make/set/E[Q] counterfactuals.
 
 | claim | status | first empirical check |
 |---|---|---|
-| A conservative bid can be modeled as `42 - at_risk_points`, with bids generally justified when at-risk points are 12 or less. | context-limited / not run | Enumerate detector budget, then compare to oracle make/set rate by bucket. |
-| Three or more candidate trumps plus doubles is a useful initial biddability prior. | context-limited / not run | Hand-shape frequency and oracle bid regret by trump-count/double-count bucket. |
-| Offs, especially four/five offs, dominate many bidding failures more than trump count does. | context-limited / not run | Tail set-rate and regret for off-risk buckets while controlling for trump strength. |
-| Double-ahead protection reduces only the protected side of an off, not both sides. | context-limited / not run | Side-specific detector precision plus oracle delta for protected vs unprotected sides. |
+| A conservative bid can be modeled as `42 - at_risk_points`, with bids generally justified when at-risk points are 12 or less. | context-limited support | `t42-br7n.7` finds risk <=12 modestly better than >12: `p_make_30` delta `+0.037471`, mark swing delta `+0.074942`. |
+| Three or more candidate trumps plus doubles is a useful initial biddability prior. | context-limited support | Three-plus trump contracts are much stronger in generated labels (`p_make_30` delta `+0.292901`), but the result is not sufficient by itself. |
+| Offs, especially four/five offs, dominate many bidding failures more than trump count does. | context-limited support | Four/five off exposure rows have lower `p_make_30` (`0.336857`) and worse generated value; stronger line-of-play punishment tests remain open. |
+| Double-ahead protection reduces only the protected side of an off, not both sides. | static side detector supported, context-limited | Side-specific protection covers only `16.774838%` of exposed count points; live sequence value remains untested. |
 | Duplicate count exposures should be counted once in the bid risk budget. | context-limited / not run | Unit-testable enumeration against naive risk-sum baseline. |
 | One vulnerable trick should be bid pessimistically, while two or more vulnerable tricks can justify some partner-help expectation. | context-limited / not run | Partner rescue probability and bid-regret interaction by loss-opportunity count. |
-| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | context-limited / not run | Auction counterfactual: unnecessary bid margin vs set rate and E[Q] regret. |
+| A bidder should bid only enough to win the auction when the same captured points will score regardless of bid size. | supported for generated bid-margin counterfactuals | Phase 3 found no positive-margin rows where bidding above the minimum improved over the minimum bid; full human/table auction policy remains separate. |
 
 ## Links
 

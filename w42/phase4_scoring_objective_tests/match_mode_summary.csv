@@ -1,0 +1,5 @@
+matchup,matches,mean_point_match_hands,mean_mark_match_hands,mean_point_full_tricks,mean_mark_played_tricks_early_stop,mean_mark_tricks_saved_vs_full_mark_match,winner_disagreement_rate
+control_greedy_vs_random,160,6.9875,9.6625,48.9125,26.39375,41.24375,0.16875
+control_greedy_vs_weak_count_dumper,160,6.7375,9.19375,47.1625,21.31875,43.0375,0.125
+count_saver_vs_random,160,6.9125,9.64375,48.3875,25.1625,42.34375,0.1875
+random_vs_weak_count_dumper,160,6.95625,9.55,48.69375,25.025,41.825,0.1375

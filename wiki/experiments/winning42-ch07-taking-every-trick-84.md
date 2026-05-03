@@ -130,18 +130,22 @@ Burl-ready:
 
 ## Claim Ledger
 
-No empirical run was performed for this bead. Statuses below are hypothesis states only.
+[[w42-phase3-84-seed-mining-corpus]] and
+[[w42-phase4-84-dynamic-seed-tests]] now give Chapter 7 natural seed inventory
+and reached-state dynamic evidence. The evidence supports bidder plan proxies
+and natural surface frequency, but score gates and straight-off population set
+rates still need stronger generators.
 
 | Claim | Source | Status | Next empirical check |
 |---|---|---|---|
-| 84 is set if opponents win one trick. | Lines 3073-3086 | Supported by rules/accounting, not newly tested here | Add `84_contract_regime` unit tests over scoring records. |
+| 84 is set if opponents win one trick. | Lines 3073-3086 | supported by rules/accounting | Add `84_contract_regime` unit tests over scoring records. |
 | Lay-down 84 can be proved from high trumps plus doubles/protected seconds. | Lines 3090-3114, 3485-3517 | Untested | Exhaustively enumerate the stated sufficient condition and measure false positives/negatives. |
-| Protected one-off 84 hands have dramatically low set risk. | Lines 3122-3154, 3326-3329 | Untested | Roll out candidate hands by trump count, off rank, and double-ahead protection. |
+| Protected one-off 84 hands have dramatically low set risk. | Lines 3122-3154, 3326-3329 | context-limited seed/dynamic support | Phase 3 finds 22176 protected-one-off candidate rows; phase 4 selects 9 and tests reached-state action proxies. Direct terminal set rate remains open. |
 | Main protected-off failure modes are opponent trump concentration or preserved off-suit threats. | Lines 3236-3245, 3274-3282 | Untested | Postmortem failed 84 rollouts with perfect-info attribution. |
-| Straight-off 84 has roughly two-to-one matching-double ownership against the bidder and is set nearly two-thirds by good players. | Lines 3318-3324 | Context-limited, untested | Enumeration can test ownership odds; policy-specific rollouts are needed for "good players" set rate. |
-| Within 42 points of 250, bid 42 instead of 84 even with a protected-off hand. | Lines 3326-3333 | Untested | Compare terminal win-rate and regret for 42 vs 84 under score states. |
+| Straight-off 84 has roughly two-to-one matching-double ownership against the bidder and is set nearly two-thirds by good players. | Lines 3318-3324 | context-limited / blocker | Phase 4 selects 10 straight-off games, but the "good players" set-rate claim still needs population rollouts. |
+| Within 42 points of 250, bid 42 instead of 84 even with a protected-off hand. | Lines 3326-3333 | blocked | `t42-br7n.2` records the score 42-vs-84 gate as static only; terminal match counterfactuals remain outside the play generator. |
 | Overcalling 84 with a straight off is poor because the set penalty becomes harder to recover from. | Lines 3335-3352 | Untested | Bucket 126/168/Game overcalls by proof strength and score context. |
-| Partner should save live doubles, discard dead doubles, and keep the double with the most remaining watched tiles. | Lines 3385-3450 | Untested | Label partner decisions in 84 hands and compare against oracle regret. |
+| Partner should save live doubles, discard dead doubles, and keep the double with the most remaining watched tiles. | Lines 3385-3450 | context-limited support | Phase 4 preserve/spend proxy is `+1.946` Q and dead-asset release is `+0.504` Q; full throwaway ladder remains blocked. |
 | Partner can help by preserving low bait tiles that make defenders save the wrong doubles. | Lines 3452-3483 | Underpowered until style policies exist | Requires synthetic defender policies or repeated-player traces. |
 
 ## Notes For Implementation

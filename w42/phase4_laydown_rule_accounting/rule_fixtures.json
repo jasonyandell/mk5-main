@@ -1,0 +1,101 @@
+[
+  {
+    "decl_id": 5,
+    "expected_legal": [
+      "6-5"
+    ],
+    "fixture_id": "trump_lead_requires_trump",
+    "follower_hand": [
+      "6-5",
+      "6-0",
+      "0-0"
+    ],
+    "lead_domino": "5-0",
+    "rationale": "When trump is led, only called-suit tiles can follow if present.",
+    "type": "legal_mask"
+  },
+  {
+    "decl_id": 5,
+    "expected_legal": [
+      "6-0"
+    ],
+    "fixture_id": "secondary_suit_excludes_trump",
+    "follower_hand": [
+      "5-0",
+      "6-0",
+      "1-1"
+    ],
+    "lead_domino": "0-0",
+    "rationale": "A trump tile containing the led pip is not also a blank for follow-suit.",
+    "type": "legal_mask"
+  },
+  {
+    "decl_id": 5,
+    "expected_legal": [
+      "2-2",
+      "3-3",
+      "6-5"
+    ],
+    "fixture_id": "void_may_play_anything",
+    "follower_hand": [
+      "2-2",
+      "3-3",
+      "6-5"
+    ],
+    "lead_domino": "0-0",
+    "rationale": "A player void in led suit can play any tile, including trump.",
+    "type": "legal_mask"
+  },
+  {
+    "decl_id": 9,
+    "expected_winner_offset": 1,
+    "fixture_id": "no_trump_high_led_suit_wins",
+    "play_order": [
+      "3-1",
+      "6-3",
+      "1-1",
+      "2-2"
+    ],
+    "rationale": "Without trump, highest tile in led suit wins.",
+    "type": "trick_winner"
+  },
+  {
+    "decl_id": 5,
+    "expected_winner_offset": 1,
+    "fixture_id": "pip_trump_beats_led_suit",
+    "play_order": [
+      "0-0",
+      "5-0",
+      "6-0",
+      "1-1"
+    ],
+    "rationale": "Any called-suit trump beats non-trump led-suit tiles.",
+    "type": "trick_winner"
+  },
+  {
+    "decl_id": 5,
+    "expected_winner_offset": 2,
+    "fixture_id": "higher_pip_trump_beats_lower_trump",
+    "play_order": [
+      "5-0",
+      "6-5",
+      "5-5",
+      "4-4"
+    ],
+    "rationale": "Highest called-suit trump wins among multiple trumps.",
+    "type": "trick_winner"
+  },
+  {
+    "decl_id": 7,
+    "expected_winner_offset": 1,
+    "fixture_id": "doubles_trump_highest_double_wins",
+    "play_order": [
+      "1-1",
+      "6-6",
+      "5-5",
+      "6-0"
+    ],
+    "rationale": "In doubles-trump, the highest double wins over lower doubles and off tiles.",
+    "type": "trick_winner"
+  }
+]

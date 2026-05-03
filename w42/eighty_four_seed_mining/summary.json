@@ -1,0 +1,57 @@
+{
+  "artifacts": {
+    "candidate_rows": "w42/eighty_four_seed_mining/candidate_84_seed_rows.csv",
+    "examples": "w42/eighty_four_seed_mining/examples.json",
+    "family_decl_summary": "w42/eighty_four_seed_mining/family_decl_summary.csv",
+    "recommended_rows": "w42/eighty_four_seed_mining/recommended_84_seed_rows.csv",
+    "seed_recommendations": "w42/eighty_four_seed_mining/seed_recommendations.csv",
+    "surface_summary": "w42/eighty_four_seed_mining/surface_summary.csv"
+  },
+  "bead": "t42-qtwb.2",
+  "config": {
+    "pip_declarations": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "recommendations": 256,
+    "seeds": 50000,
+    "start_seed": 0
+  },
+  "counts": {
+    "candidate_rows": 214229,
+    "recommended_rows": 256,
+    "scanned_seeds": 50000,
+    "seat_declaration_checks": 1400000,
+    "unique_candidate_seeds": 43013
+  },
+  "created_at_utc": "2026-05-03T13:13:32.026951+00:00",
+  "elapsed_seconds": 10.774,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "schema_version": "w42.eighty_four_seed_mining.v1",
+  "scientific_status": {
+    "what_this_does_not_test": "No legal late-state action value is measured here; dynamic preservation regret still needs branch-atlas generation or a true state injector.",
+    "what_this_enables": "Natural seed lists for follow-up branch-atlas or state-injection runs, replacing hand-built-only fixtures.",
+    "what_this_tests": "A large generated seed range is mined for exact 84 candidate structures and full-deal defender asset patterns."
+  },
+  "surface_counts": {
+    "dead_asset_release_control": 192522,
+    "defender_live_double_weapon": 140264,
+    "defender_live_same_suit_pair": 206213,
+    "laydown_all_trumps": 1,
+    "pair_protector_pressure": 85753,
+    "protected_one_off": 22176,
+    "straight_one_off": 8330,
+    "three_trump_three_double_one_off": 17935,
+    "two_off_same_suit": 183722
+  },
+  "wandb": {
+    "mode": "online",
+    "run_id": "f33g4fy1",
+    "run_url": "https://wandb.ai/jasonyandell-forge42/w42/runs/f33g4fy1"
+  }
+}

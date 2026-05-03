@@ -1,0 +1,10 @@
+claim_id,status,evidence,metric,value,caveat
+ch10-score-mode-objective,supported,deterministic terminal transform plus generated hands carry divergent point and mark labels,generated_hands,4000,does not prove objective-aware optimal policies
+ch10-early-terminal-under-marks,supported,generated traces reached mark-terminal states before trick 7,early_terminal_rate,0.945,trace frequency depends on synthetic bid mix and heuristic policies
+ch10-nonbidder-partial-points-erased,supported,made ordinary contracts with defender points score zero defender marks,partial_erasure_rate_among_made_ordinary,0.84989,"terminal accounting evidence, not live-state chase/avoidance advice"
+ch10-set-severity-compression,supported,ordinary failed bids collapse distinct point penalties into one mark,distinct_ordinary_set_severity_values,41,high-mark bids still scale by multiplier
+ch10-special-bid-mark-multiplier,supported,deterministic multiplier table covers 84/126/168,max_multiplier_tested,4,bid selection and make probability remain separate questions
+ch10-low-bid-score-distortion,supported,generated match winners sometimes disagree under point-to-250 vs marks-to-7 labels,mean_match_winner_disagreement_rate,0.154688,frequency is generated-policy dependent
+ch10-point-system-skill-signal,context-limited,heuristic policy-population rows expose different separation/noise under point and mark labels,policy_population_rows,4,needs oracle or human policy population before promotion beyond context-limited
+ch10-tournament-speed-tradeoff,supported-for-generated-trace-proxy,mark matches used fewer played tricks than point-to-250 matches in generated traces,mean_trick_reduction_points_minus_marks,23.814062,tricks are a time proxy; no wall-clock human table data
+ch10-timed-marks-advancement-objective,context-limited,timed synthetic pools sometimes select a different leader by marks than by points,advancement_disagreement_rate,0.15,"synthetic round-robin with trick budget, not a real bracket or human time control"

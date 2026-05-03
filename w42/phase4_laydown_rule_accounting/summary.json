@@ -1,0 +1,68 @@
+{
+  "artifact": "phase4_laydown_rule_accounting",
+  "bead": "t42-br7n.4",
+  "caveats": [
+    "The laydown checker is exact for explicit full-information tiny fixtures, not yet wired to arbitrary engine/corpus state snapshots.",
+    "The proof criterion is intentionally strong: every legal continuation by every player must give the claimant's team every remaining trick.",
+    "No wiki or bead metadata was edited by Worker D per task scope."
+  ],
+  "coverage": {
+    "failures": 0,
+    "laydown_counterexamples": 3,
+    "laydown_fixtures": 6,
+    "rule_assertions": 23,
+    "rule_fixtures": 7,
+    "total_assertions": 29
+  },
+  "families": {
+    "contract_scoring": {
+      "fail": 0,
+      "pass": 3
+    },
+    "count_capture": {
+      "fail": 0,
+      "pass": 1
+    },
+    "count_identity": {
+      "fail": 0,
+      "pass": 4
+    },
+    "follow_suit_mask": {
+      "fail": 0,
+      "pass": 3
+    },
+    "laydown_exact_proof": {
+      "fail": 0,
+      "pass": 6
+    },
+    "lead_control": {
+      "fail": 0,
+      "pass": 1
+    },
+    "suit_membership": {
+      "fail": 0,
+      "pass": 3
+    },
+    "trick_winner": {
+      "fail": 0,
+      "pass": 4
+    },
+    "trump_exclusivity": {
+      "fail": 0,
+      "pass": 4
+    }
+  },
+  "headline_findings": {
+    "book_like_caveat": "The Chapter 3 final deuce-ace warning is reproduced as a false laydown when an opponent still holds a higher deuce.",
+    "chapter1_accounting": "Count identity, 42-point hand accounting, natural suit membership, trump exclusivity, follow-suit masks, trick winner, lead control, count capture, and contract scoring all passed deterministic checks.",
+    "laydown_checker": "A small exact checker can prove or reject explicit remaining-trick claims by enumerating every legal continuation in tiny late-state fixtures."
+  },
+  "source_grounding": [
+    "wiki/AGENTS.md",
+    "wiki/experiments/winning42-ch01-in-a-nutshell.md",
+    "wiki/experiments/winning42-ch03-bidder-play.md",
+    "scratch/winning42/winning42.with_figures.md lines 479-734 and 2045-2057",
+    "forge.oracle.tables",
+    "forge.eq.game.GameState"
+  ]
+}

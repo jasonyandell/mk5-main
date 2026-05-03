@@ -1,0 +1,54 @@
+{
+  "artifacts": {
+    "candidate_rows": "w42/eighty_four_seed_mining/smoke/candidate_84_seed_rows.csv",
+    "examples": "w42/eighty_four_seed_mining/smoke/examples.json",
+    "family_decl_summary": "w42/eighty_four_seed_mining/smoke/family_decl_summary.csv",
+    "recommended_rows": "w42/eighty_four_seed_mining/smoke/recommended_84_seed_rows.csv",
+    "seed_recommendations": "w42/eighty_four_seed_mining/smoke/seed_recommendations.csv",
+    "surface_summary": "w42/eighty_four_seed_mining/smoke/surface_summary.csv"
+  },
+  "bead": "t42-qtwb.2",
+  "config": {
+    "pip_declarations": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "recommendations": 32,
+    "seeds": 1000,
+    "start_seed": 0
+  },
+  "counts": {
+    "candidate_rows": 4266,
+    "recommended_rows": 32,
+    "scanned_seeds": 1000,
+    "seat_declaration_checks": 28000,
+    "unique_candidate_seeds": 856
+  },
+  "created_at_utc": "2026-05-03T13:13:12.729637+00:00",
+  "elapsed_seconds": 0.217,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "schema_version": "w42.eighty_four_seed_mining.v1",
+  "scientific_status": {
+    "what_this_does_not_test": "No legal late-state action value is measured here; dynamic preservation regret still needs branch-atlas generation or a true state injector.",
+    "what_this_enables": "Natural seed lists for follow-up branch-atlas or state-injection runs, replacing hand-built-only fixtures.",
+    "what_this_tests": "A large generated seed range is mined for exact 84 candidate structures and full-deal defender asset patterns."
+  },
+  "surface_counts": {
+    "dead_asset_release_control": 3736,
+    "defender_live_double_weapon": 2794,
+    "defender_live_same_suit_pair": 4096,
+    "pair_protector_pressure": 1697,
+    "protected_one_off": 463,
+    "straight_one_off": 157,
+    "three_trump_three_double_one_off": 373,
+    "two_off_same_suit": 3646
+  },
+  "wandb": {
+    "mode": "disabled"
+  }
+}

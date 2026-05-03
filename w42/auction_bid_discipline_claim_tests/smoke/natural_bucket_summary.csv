@@ -1,0 +1,13 @@
+seat,static_risk_bucket,max_profitable_bid_bucket,n,pct
+0,risk_13_20,high_37_41,1,0.0625
+0,risk_13_20,natural_35_36,1,0.0625
+0,risk_13_20,no_profitable_bid,1,0.0625
+0,risk_le_12,natural_30_31,1,0.0625
+1,risk_13_20,natural_30_31,1,0.0625
+1,risk_13_20,no_profitable_bid,2,0.125
+1,risk_le_12,no_profitable_bid,1,0.0625
+2,risk_le_12,natural_30_31,1,0.0625
+2,risk_le_12,no_profitable_bid,3,0.1875
+3,risk_13_20,no_profitable_bid,1,0.0625
+3,risk_le_12,high_37_41,1,0.0625
+3,risk_le_12,no_profitable_bid,2,0.125

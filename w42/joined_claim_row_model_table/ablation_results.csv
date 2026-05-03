@@ -1,0 +1,9 @@
+variant,status,decision_n,action_n,match_best_mean_rate,mean_regret,median_regret,near_tie_rate_regret_lt_0_5,tail_regret_rate_ge_5,delta_vs_public_mean_regret,delta_vs_full_mean_regret
+actual_policy,offline_reference,5600,15226,0.900893,0.122624,0.0,0.95125,0.005179,,
+public_features_only,available,5600,15226,0.644643,1.359796,0.0,0.754643,0.095357,0.0,0.234055
+public_plus_all_claim_families,available,5600,15226,0.681071,1.125741,0.0,0.789464,0.0725,-0.234055,0.0
+drop_bidding_risk,available,5600,15226,0.679464,1.146082,0.0,0.787857,0.074286,-0.213714,0.020341
+drop_doubles_no_trump,available,5600,15226,0.678393,1.12841,0.0,0.785179,0.074643,-0.231386,0.002669
+drop_eighty_four_public,available,5600,15226,0.68,1.14152,0.0,0.788214,0.073571,-0.218276,0.015779
+drop_hidden_public_proxy,available,5600,15226,0.681429,1.117872,0.0,0.789821,0.071964,-0.241924,-0.007869
+drop_sequence_seat,available,5600,15226,0.647857,1.367813,0.0,0.757857,0.09375,0.008017,0.242072

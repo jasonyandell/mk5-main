@@ -1,0 +1,7 @@
+fixture_id,decl_id,claimant,leader,expected_proven,observed_proven,status,legal_completions_checked,search_nodes,rationale
+single_boss_trump_laydown,6,0,0,true,true,pass,1,5,Claimant leads the boss trump with one trick remaining; all responses lose.
+two_boss_trumps_laydown,6,0,0,true,true,pass,16,95,Claimant has the only remaining trumps and keeps lead after either legal order.
+false_off_can_be_taken,9,0,0,false,false,pass,0,4,Opponent must follow fours and beats the claimant's off lead.
+false_secondary_trump_exclusion,5,0,0,false,false,pass,0,4,"A five-blank is trump, not a blank; it can trump the claimant's off lead."
+walker_after_suit_exhaustion,9,0,0,true,true,pass,1,5,The claimant's low deuce is a walker because no other remaining hand can follow deuces.
+book_like_final_deuce_ace_counterexample,3,0,0,false,false,pass,0,4,"Mirrors the Chapter 3 warning: if an opponent still has a higher deuce, the final deuce-ace is not proven."

@@ -106,21 +106,60 @@ low-leakage, and immediately useful for Gus/Burl bucketed evaluation:
 - Burl-ready: trace audits for whether the model asks about trump status, live count,
   partner donation safety, off risk, and claim proof before committing.
 
+## Phase-3 Counterfactual Follow-Up
+
+[[w42-phase3-sequence-seat-counterfactuals]] gives Chapter 3 its first broad
+phase-3 branch-value follow-up. It does not yet expose full hand-shape gates for
+trump count, off count, reentry, or live-count inventory, but it does compare
+legal candidate moves in naturally occurring sequence states.
+
+The main lead-plan result is context-limited rather than promotional. Pooled
+bidder called-suit leads trail off-suit leads by `-1.935` Q across 1657 paired
+states, including early slices. However, called double leads beat lower
+called-suit leads by `+5.720` Q across 182 paired states. The project should
+therefore split the old "pull trumps first" row into sharper detectors:
+commanding trump/double lead, early-off exception, low-trump command exception,
+count-leading risk, and reentry/off-clear preservation.
+
+Chapter 3's partner-support and count-inventory claims also get new boundaries:
+partner count when the bidder side controls the trick is only `+0.608` Q across
+614 pairs, while partner count into defensive control is `-8.351` Q across 802
+pairs and bidder count leads are `-4.877` Q versus non-count leads. The folk rule
+survives as a gated timing rule, not a blanket invitation to dump count.
+
+## Phase-4 Hand-Shape And Laydown Follow-Up
+
+[[w42-phase4-sequence-handshape-tests]] gives Chapter 3 a sharper public/action
+local pass over the same full legal-action table. Commanding called doubles beat
+off leads by `+1.316` Q across 576 paired bidder lead decisions, while generic
+non-double called-suit leads lose to off leads by `-3.682` Q across 1263 pairs.
+This preserves the "commanding trump" intuition and further rejects the blanket
+trump-first simplification.
+
+[[w42-phase4-laydown-rule-accounting]] gives Chapter 3 its first exact
+laydown-proof artifact. The checker enumerates every legal continuation in
+small full-information late-state fixtures and requires the claimant's team to
+win every remaining trick. It proves boss-trump and suit-exhaustion walker
+claims, and rejects false laydowns when an opponent can still take control. The
+book-like final deuce warning is now executable: if an opponent still holds a
+higher deuce, the claim is rejected with a concrete counterexample.
+
 ## Claim Ledger
 
-No empirical run was performed for this bead. Status values therefore describe the
-current evidence state, not the truth of the book claims.
+Phase-3 follow-up exists for several rows, but full hand-shape/reentry tests are
+still pending. Status values describe the current evidence state, not the truth
+of the book claims.
 
 | Claim | Status | Next check |
 |---|---|---|
-| Trump-first is usually better than off-first for bidder play. | context-limited | Bucket by trump count, off count, and live count; compare E[Q] of legal first leads. |
+| Trump-first is usually better than off-first for bidder play. | context-limited | `t42-br7n.1` supports commanding called doubles over off leads, but generic non-double called-suit leads are strongly negative. Next bucket by exact trump count, off count, and live count. |
 | One-off/four-trump hands can justify an early off. | context-limited | Enumerate one-off/four-plus-trump shapes and compare off-first tail risk against trump-first void creation. |
 | The bidder should preserve at least one trump until after offs are resolved. | context-limited | Measure final-trump-spent-before-off-clear regret and failure-to-regain-lead rate. |
-| Partner should donate count only when bidder has a guaranteed winning trick. | context-limited | Label public donation windows and compare safe vs unsafe donations under full-world outcomes. |
+| Partner should donate count only when bidder has a guaranteed winning trick. | context-limited | `t42-qtwb.3` shows small-positive support under bidder-side control and strong negative support into defense; next add guaranteed-trick and partner-free-discard gates. |
 | Leading a double ahead of an off wins the vulnerable count substantially more often than leading the off first. | context-limited | Reproduce the book's double-deuce/deuce-blank style odds by exhaustive enumeration. |
 | Extra trump leads can create opponent voids that set the bidder later. | context-limited | Attribute future off-trick pounces to optional earlier trump leads. |
 | Low-trump-first can preserve command better than boss-trump-first in some hands. | context-limited | Counterfactual oracle rollout on hands with boss trump plus unresolved lower trumps and offs. |
-| A laydown is valid only when every legal continuation wins the rest. | supported-by-rules, untested-in-corpus | Implement deterministic proof checker; then measure false-positive model claims in Burl traces. |
+| A laydown is valid only when every legal continuation wins the rest. | supported-by-fixture-proof, corpus-untested | `t42-br7n.4` implements an exact tiny-state proof checker and rejects false claims, including the final-deuce warning. Next: wire saved engine snapshots and Burl trace claims into the checker. |
 
 ## Links
 

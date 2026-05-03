@@ -95,17 +95,20 @@ rollouts, Gus analysis, or Burl traces.
 
 ## Claim Ledger
 
-No empirical run was performed for this chapter harvest. All statuses below are therefore
-book-hypothesis statuses, not measurement results.
+[[w42-phase4-scoring-objective-tests]] now supplies deterministic and generated
+trace evidence for the core Chapter 10 scoring-objective claims. Statuses below
+separate scoring mechanics from broader claims about human skill and real
+tournament advancement.
 
 | claim | status | evidence and next check |
 |---|---|---|
-| Marks change the objective from exact hand points to a hand-level threshold. | context-limited | Supported by Chapter 10's scoring description and compatible with the existing Gus mark-utility note. Next check: implement explicit point-vs-mark utility swap and measure action divergence. |
-| Marks create early terminal states where the rest of the hand need not be played. | underpowered | Chapter gives examples of making a 30 bid on trick 3 or setting on trick 4. Next check: deterministic early-terminal detector over generated traces. |
-| Marks erase defender partial-point rewards when the bidder makes the contract. | underpowered | Chapter gives the 90-36 vs 3-0 example. Next check: replay made contracts and quantify defender points lost to mark compression. |
-| Marks erase set severity except for bid-class mark multipliers. | underpowered | Chapter says setting by any ordinary margin gives one mark, while 84/126 scale. Next check: terminal compression distribution by bid class and shortfall. |
-| Point scoring better hones skill for small groups. | underpowered | Plausible but not measured. Next check: compare policy separation and regret signal under point-score and mark-score arenas. |
-| Marks speed tournaments enough to justify the strategic loss. | underpowered | Chapter asserts only a modest time cost for point matches and a speed/social benefit for tournaments. Next check: simulate tricks saved and tournament throughput under early termination. |
+| Marks change the objective from exact hand points to a hand-level threshold. | supported | `t42-br7n.3` emits deterministic point-vs-mark terminal transforms and generated traces with divergent labels. |
+| Marks create early terminal states where the rest of the hand need not be played. | supported | Early terminal states appear in `94.5%` of generated hands, saving `4.3805` tricks on average. |
+| Marks erase defender partial-point rewards when the bidder makes the contract. | supported | Among made ordinary contracts, defender partial points are erased `84.989%` of the time under marks. |
+| Marks erase set severity except for bid-class mark multipliers. | supported | Ordinary failed bids collapse 41 point-severity values into one mark; 84/126/168 multipliers remain distinct. |
+| Point scoring better hones skill for small groups. | context-limited | Heuristic policy rows show score-label separation, but promotion needs oracle, Gus/Burl, human, or stronger policy-population evidence. |
+| Marks speed tournaments enough to justify the strategic loss. | supported-for-generated-trace-proxy | Generated mark matches use `23.814062` fewer played tricks in the proxy, but real wall-clock table time remains unmeasured. |
+| Timed marks can change advancement objectives. | context-limited | Synthetic pools choose different leaders by marks than by points `15%` of the time; real tournament formats and tiebreakers remain blockers. |
 
 ## Links
 

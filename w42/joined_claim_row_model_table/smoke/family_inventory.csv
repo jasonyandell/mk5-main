@@ -1,0 +1,9 @@
+family,feature_action_labels,tag_action_n,status,feature_prefixes,boundary
+bidding_risk,32,12910,available,bidrisk_,public/action-local model feature
+doubles_no_trump,13,2687,available,dnt_,public/action-local model feature
+eighty_four_public,12,1846,available,e84_public_,public/action-local model feature
+hidden_public_proxy,7,10574,available,hidden_proxy_,public/action-local model feature
+sequence_seat,50,39966,available,seq_|seat_pos_|sequence_|role_|phase_|closure_|follower_|partner_|setter_|bidder_lead_|ch04_|ch05_,public/action-local model feature
+auction_partner_opponent_values,0,0,eval_only,,"Auction partner/opponent pass values are offline generated labels, not live action-selection features."
+eighty_four_defender_assets,0,1127,eval_only,,"84 defender asset tags use full-deal opponent assets from seed mining and are report-only, not model features."
+hidden_truth_owner,0,0,eval_only,,"Hidden-owner impact/downside labels from legacy mining are offline report labels, not legal live features."

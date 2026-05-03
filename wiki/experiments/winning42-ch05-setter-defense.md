@@ -155,19 +155,22 @@ Grounding pages:
 
 ## Claim Ledger
 
-No empirical run was performed for this bead. Every row below is therefore a testable
-hypothesis, not a supported project result.
+[[w42-phase4-sequence-handshape-tests]] now supplies direct paired contrasts for
+several Chapter 5 rows over the 75079-action table. It supports count-calling
+leads, immediate pounce count-taking, and the warning against reckless count
+into bidder control. Exact private void-creation, count-protection, and
+trump-rich recognition remain blocked by missing state fields.
 
 | Claim | Source | Status | Next empirical check |
 |---|---|---|---|
-| Setter upside justifies aggressive defensive pressure because sets score bid plus captured points. | lines 2314-2327 | untested / underpowered-no-run | Compare point EV of successful sets versus made bids across generated games and scoring modes. |
-| Bidder usually exposes one or two off windows, and defenders should concentrate count pressure there. | lines 2329-2341 | untested / underpowered-no-run | Bucket bidder hands by actual off count and measure defensive regret on bidder-off tricks. |
-| Creating voids during early trump/double leads improves later pounce chances. | lines 2361-2398 | untested / underpowered-no-run | Pair oracle value of void-creating discard versus non-void discard in early tricks. |
-| Playing count before partner certainty on bidder off is often correct when setting. | lines 2443-2500 | untested / underpowered-no-run | Measure E[Q] delta for count play vs hold in public pounce windows where partner winner is uncertain. |
-| Count-calling defensive leads are preferred after winning lead, except for low-lead traps and one-point-to-set cases. | lines 2502-2616 | untested / underpowered-no-run | Evaluate lead class regret after defenders win a trick, stratified by bid margin and count called. |
-| Protecting count dominoes with same-suit throwaways reduces bidder ability to pull count with double-ahead leads. | lines 2641-2672 | untested / underpowered-no-run | Track future forced-count losses after discarding versus preserving protectors. |
-| Only-one-opponent-followed-trump is a strong public trump-set signal requiring partner support. | lines 2692-2728 | untested / underpowered-no-run | Measure Gus hidden-trump belief update and partner count-donation decisions after the signal. |
-| Trump-rich setters should choose between count attack, trump-in, hold, and high-trump lead based on rank strength, count on trick, and seat position. | lines 2730-2824 | untested / underpowered-no-run | Build oracle buckets for trump-rich defender positions and compare candidate policy classes. |
+| Setter upside justifies aggressive defensive pressure because sets score bid plus captured points. | lines 2314-2327 | supported directionally by scoring/accounting substrate | Phase 4 verifies scoring mechanics and setter pounce value, but full point EV of successful sets by bid context remains a follow-up. |
+| Bidder usually exposes one or two off windows, and defenders should concentrate count pressure there. | lines 2329-2341 | context-limited / bounded | Phase 4 supports pounce/count pressure in reached row-local states; exact bidder off-window concentration needs richer private hand/state fields. |
+| Creating voids during early trump/double leads improves later pounce chances. | lines 2361-2398 | blocked by missing causal state injection | The row table cannot attribute later pounce windows to earlier void-creating choices; needs paired multi-trick state injection. |
+| Playing count before partner certainty on bidder off is often correct when setting. | lines 2443-2500 | context-limited support | `t42-br7n.1` finds pounce take-count-now `+2.681` Q, while broader before-certainty pressure is weak/uncertain. |
+| Count-calling defensive leads are preferred after winning lead, except for low-lead traps and one-point-to-set cases. | lines 2502-2616 | supported directionally | Setter count-calling/count leads are `+3.028` Q across 1866 paired lead decisions. |
+| Protecting count dominoes with same-suit throwaways reduces bidder ability to pull count with double-ahead leads. | lines 2641-2672 | blocked by missing state fields | Current row table cannot test count-protection throwaways or future forced-count loss. |
+| Only-one-opponent-followed-trump is a strong public trump-set signal requiring partner support. | lines 2692-2728 | blocked by missing belief/state fields | Needs hidden-trump belief update and partner donation decisions after the signal; not available in the current row table. |
+| Trump-rich setters should choose between count attack, trump-in, hold, and high-trump lead based on rank strength, count on trick, and seat position. | lines 2730-2824 | blocked by missing state fields | Current row table lacks exact trump-rich recognition and private remaining-trump state. |
 
 ## Implementation Hooks
 

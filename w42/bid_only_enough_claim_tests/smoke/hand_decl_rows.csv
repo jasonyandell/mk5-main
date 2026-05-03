@@ -1,0 +1,3 @@
+seed,hand,decl_id,decl_name,n_samples,sim_seed,static_unique_exposed_points,static_naive_exposed_points,static_duplicate_overcount_points,static_bid_ceiling_proxy,static_trump_count,static_held_count_points,static_risk_bucket,mean_points,min_points,max_points,points_ge_30_rate,points_ge_35_rate,points_ge_42_rate
+0,"0-0,2-0,2-2,3-1,4-0,4-4,5-2",2,twos,8,420502,20,25,5,22,3,0,risk_13_20,39.0,30,42,1.0,0.75,0.75
+1,"1-0,2-2,4-0,4-1,6-1,6-2,6-5",6,sixes,8,421506,5,10,5,37,3,5,risk_le_12,25.875,8,41,0.375,0.25,0.0

@@ -1,0 +1,6 @@
+bid_class,made,hands,partial_erasure_hands,partial_erasure_rate,mean_erased_defender_points,set_severity_hands,distinct_set_severity_values,min_set_severity_points,max_set_severity_points,mark_values_in_bucket
+all_42,False,55,0,0.0,0.0,55,1,42,42,1
+all_42,True,1,0,0.0,0.0,0,0,0,0,1
+mark_ladder,False,26,0,0.0,0.0,26,3,84,168,"2,3,4"
+ordinary,False,198,0,0.0,0.0,198,38,43,82,1
+ordinary,True,40,35,0.875,4.971429,0,0,0,0,1

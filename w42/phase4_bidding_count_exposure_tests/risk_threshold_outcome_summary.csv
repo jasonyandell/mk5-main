@@ -1,0 +1,3 @@
+risk_threshold_bucket,n,pct_rows,mean_p_make_30,mean_mark_swing_30,mean_mean_points,mean_max_profitable_bid,profitable_at_30_rate_pct,natural_bucket_candidate_rate_pct,mean_static_unique_exposed_points
+risk_gt_12,213,55.46875,0.383216,-0.233568,24.08282,8.469484,23.943662,15.023474,18.122066
+risk_le_12,171,44.53125,0.420687,-0.158626,25.555738,10.666667,30.994152,21.052632,7.777778

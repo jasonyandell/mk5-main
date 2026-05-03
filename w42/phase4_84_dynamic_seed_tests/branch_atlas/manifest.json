@@ -1,0 +1,115 @@
+{
+  "bead_id": "t42-br7n.2",
+  "config": {
+    "examples": 24,
+    "log_every_decisions": 10,
+    "top_k_hidden_threats_per_action": 8,
+    "wandb_group": "w42-phase4-84-dynamic-seed-tests",
+    "wandb_mode": "disabled",
+    "wandb_name": "t42-br7n.2-phase4-84-dynamic-seed-tests",
+    "wandb_project": "w42"
+  },
+  "created_at_utc": "2026-05-03T15:24:35.680044+00:00",
+  "experiment": "w42-phase4-84-dynamic-mined-seed-tests",
+  "feature_groups": {
+    "actor_private_context": [
+      "actor remaining hand facts",
+      "candidate legal action"
+    ],
+    "offline_distribution_labels": [
+      "q_per_world-derived PDF shape",
+      "threshold mass",
+      "lower-tail mass",
+      "quantiles",
+      "CVaR",
+      "scalar-EV omission flags"
+    ],
+    "offline_hidden_threat_labels": [
+      "conditioned hidden domino holder impact",
+      "top downside/upside hidden drivers",
+      "holder/domino impact rows"
+    ],
+    "online_safe_context": [
+      "seat_role",
+      "trick_position",
+      "public score",
+      "played count",
+      "current trick winner",
+      "candidate action facts"
+    ]
+  },
+  "input": {
+    "bid_value_counts": {
+      "84": 24
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      5,
+      2,
+      1,
+      3,
+      1,
+      4,
+      6,
+      0,
+      4,
+      3,
+      1,
+      3,
+      2,
+      0,
+      2,
+      0,
+      3,
+      4,
+      5,
+      5,
+      3,
+      1,
+      0,
+      2
+    ],
+    "input_games": 24,
+    "n_samples": 128,
+    "path": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/mined_84_seed_games.pt",
+    "schema": "v2",
+    "seeds": [
+      6,
+      16,
+      2,
+      7,
+      10,
+      11,
+      46198,
+      18,
+      19,
+      23,
+      43,
+      45,
+      54,
+      60,
+      62,
+      79,
+      81,
+      83,
+      97,
+      101,
+      106,
+      123,
+      127,
+      132
+    ],
+    "sha256": "93455b9273129df98733f30ffba80af23b29133e41f822483d7ca11c8f001f6a",
+    "start_seed": null
+  },
+  "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+  "outputs": {
+    "decision_actions_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/decision_actions.csv",
+    "decision_states_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/decision_states.csv",
+    "examples_json": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/examples.json",
+    "hidden_threat_rows_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/hidden_threat_rows.csv",
+    "manifest_json": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/manifest.json"
+  },
+  "schema_version": "w42.branch_atlas_v1.manifest.v0"
+}

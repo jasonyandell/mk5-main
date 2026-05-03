@@ -2,7 +2,7 @@
 title: w42 Phase 2 Seat Position Strategy Map
 kind: experiment
 first_seen: local-2026-05-02
-last_updated: local-2026-05-02
+last_updated: local-2026-05-03
 status: active
 ---
 
@@ -117,6 +117,94 @@ counterfactual ownership is marked eval-only/offline in the matrix.
 No fresh model training, W&B run, or claim validation run was performed. The bead
 creates a structured map for phase-2 detector work and preserves the conservative
 w42 rule that detector existence does not move claim-ledger status.
+
+## Seat/Position Claim-Test Follow-Up
+
+`t42-0b4l.6` adds a powered row-level follow-up at
+`w42/seat_position_claim_tests/`. It consumes the existing full legal-action
+rows from [[w42-tactical-claim-replication]] and derives public/action-local
+labels for first/second/third/fourth trick position, lead/follow/last-to-act,
+bidder/partner/setter/defender role, partner support, defensive pounce windows,
+and closure decisions.
+
+Data slice:
+
+| field | value |
+|---|---:|
+| source rows | 75,079 legal actions |
+| decisions | 28,000 |
+| label metric rows | 37 |
+| role-position slice rows | 36 |
+| paired contrast rows | 8 |
+| paired contrast slice rows | 160 |
+
+The key result is that structural seat, phase, and role labels are slice-only
+context: every legal action in a decision shares them, so same-decision pairing
+is not meaningful for those labels. Action-local labels can be paired. Defensive
+pounce count beats same-decision alternatives by about `+3.85` Q across 489
+paired decisions, and pounce closure is stronger at about `+6.76` Q across 128
+paired decisions. Partner support count under current offensive control is
+small-positive at about `+0.61` Q across 614 pairs, while unsupported partner
+count into the defense is strongly negative at about `-8.35` Q across 802
+pairs. Closure-taking labels are broad but directional: taking the trick from
+fourth seat beats declining by about `+10.94` Q across 808 pairs, taking count
+beats alternatives by about `+4.67` Q across 277 pairs, and sloughing count from
+closure trails alternatives by about `-6.38` Q across 1,803 pairs.
+
+Artifacts:
+
+| artifact | path |
+|---|---|
+| runner | `w42/seat_position_claim_tests/run_seat_position_claim_tests.py` |
+| validator | `w42/seat_position_claim_tests/validate_outputs.py` |
+| summary | `w42/seat_position_claim_tests/summary.json` |
+| label metrics | `w42/seat_position_claim_tests/label_metrics.csv` |
+| role-position metrics | `w42/seat_position_claim_tests/role_position_metrics.csv` |
+| paired contrasts | `w42/seat_position_claim_tests/paired_contrasts.csv` |
+| paired contrast slices | `w42/seat_position_claim_tests/paired_contrasts_by_slice.csv` |
+| compact labeled rows | `w42/seat_position_claim_tests/labeled_action_rows.csv` |
+| examples | `w42/seat_position_claim_tests/examples.json` |
+| manifest | `w42/seat_position_claim_tests/manifest.json` |
+
+Leakage boundary: derived labels use public/action-local columns from the row
+artifact. Oracle mean, threshold mass, lower-tail mass, `q_per_world`,
+`world_hands`, and hidden outcomes remain offline report labels only, never
+model features.
+
+Commands:
+
+```bash
+.venv/bin/python w42/seat_position_claim_tests/run_seat_position_claim_tests.py \
+  --output-dir w42/seat_position_claim_tests/smoke \
+  --max-rows 2000 \
+  --bootstrap-samples 100 \
+  --min-label-n 5 \
+  --min-paired-n 3 \
+  --min-slice-n 10
+
+.venv/bin/python w42/seat_position_claim_tests/validate_outputs.py \
+  --artifact-dir w42/seat_position_claim_tests/smoke \
+  --min-actions 2000 \
+  --min-paired-contrasts 8
+
+.venv/bin/python w42/seat_position_claim_tests/run_seat_position_claim_tests.py \
+  --input w42/tactical_claim_replication/all_action_rows.jsonl \
+  --output-dir w42/seat_position_claim_tests \
+  --bootstrap-samples 1000 \
+  --min-label-n 20 \
+  --min-paired-n 20 \
+  --min-slice-n 50
+
+.venv/bin/python w42/seat_position_claim_tests/validate_outputs.py \
+  --artifact-dir w42/seat_position_claim_tests \
+  --min-actions 75079 \
+  --min-paired-contrasts 8
+```
+
+Claim-ledger impact: no automatic status change. The run is closeable as a
+seat/position claim-test artifact, with conservative slice evidence for
+structural roles and paired evidence for the action-local pounce/support/closure
+labels.
 
 Validation:
 

@@ -1,0 +1,44 @@
+{
+  "artifacts": {
+    "examples": "w42/claim_tag_model_probe/error_examples.json",
+    "manifest": "w42/claim_tag_model_probe/manifest.json",
+    "metrics": "w42/claim_tag_model_probe/model_metrics.csv",
+    "tag_inventory": "w42/claim_tag_model_probe/tag_inventory.csv"
+  },
+  "bead": "t42-0b4l.9",
+  "created_at_utc": "2026-05-03T06:02:47.063243+00:00",
+  "elapsed_seconds": 2.512,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M wiki/entities/w42.md\n M wiki/experiments/w42-bidding-risk-budget-claim-validation.md\n M wiki/experiments/w42-phase2-seat-position-strategy-map.md\n M wiki/index.md\n M wiki/log.md\n?? w42/bid_only_enough_claim_tests/\n?? w42/claim_tag_model_probe/\n?? w42/seat_position_claim_tests/\n?? wiki/experiments/w42-claim-tag-model-probe.md",
+  "headline": {
+    "public_match_rate": 0.645179,
+    "public_mean_regret": 1.38438,
+    "tag_delta_vs_public_mean_regret": -0.089521,
+    "tag_match_rate": 0.660357,
+    "tag_mean_regret": 1.294859
+  },
+  "input": "w42/seat_position_claim_tests/labeled_action_rows.csv",
+  "schema_version": "w42.claim_tag_model_probe.v1",
+  "scientific_status": {
+    "blocked_families": {
+      "bid_risk": "available as t42-0b4l.5 bid-margin counterfactual rows, but not aligned to the tactical legal-action training table",
+      "doubles_no_trump": "available in t42-0b4l.8 legacy mining, but not normalized into this row model input",
+      "eighty_four_endgame": "available as a small generated 84 fixture table, but too small and out-of-distribution for this train split",
+      "hidden_threat_distribution": "offline labels only; hidden truth and q_per_world are not legal live model features"
+    },
+    "claim_ledger_impact": "no central claim status movement",
+    "interpretation": "Small direct row-model probe over public/action-local W42 detector tags; useful as model-feature evidence, not claim proof.",
+    "leakage_boundary": "Inputs are public row context, candidate action facts, and derived public/action-local detector tags. Oracle mean/regret labels are targets/metrics only."
+  },
+  "split": {
+    "eval_action_rows": 15186,
+    "eval_decisions": 5600,
+    "train_action_rows": 59893,
+    "train_decisions": 22400,
+    "train_seed_max": 79
+  },
+  "wandb": {
+    "run_id": "gn7xxk14",
+    "run_url": "https://wandb.ai/jasonyandell-forge42/w42/runs/gn7xxk14"
+  }
+}

@@ -2080,3 +2080,160 @@ The guided wizard now exposes the intended seeded decision flow directly: option
 - Dynamic proxy labels find 10 live double weapon actions, 21 live same-suit pair actions, 4 pair-protector actions, 7 dead-asset release candidates, 13 preserve-vs-spend paired decisions, and 23 offense trump-vs-final-off paired decisions.
 - The first preserve/spend contrast is deliberately small and conservative: preserving lower-asset alternatives is `+0.136` mean Q with `+0.005` threshold-mass delta across 13 same-decision pairs. This proves the measurement surface exists, not that the broad book claim is settled.
 - No central claim status changes. The next credible step is either explicit late-hand state injection or seed mining at scale for powered 84 endgame tableaux.
+
+---
+
+## [2026-05-03 | local | w42 bid-only-enough margin probe]
+
+**Touched pages:** [[w42]] [[w42-bidding-risk-budget-claim-validation]] [[index]] [[log]]
+**Added:** 1 artifact directory - `w42/bid_only_enough_claim_tests/`.
+**Updated:** [[w42]] records the Chapter 2 bid-margin follow-up; [[w42-bidding-risk-budget-claim-validation]] now includes the generated counterfactual probe.
+**Retired:** none.
+**Questions opened:** how to add real or simulated auction histories so bid-only-enough can be tested with bidder seat, score, partner/opponent bids, pass/bid policy, and opponent response.
+
+**Frontier shift:**
+- Bead `t42-0b4l.5` now has a partial empirical probe instead of only a missing-data specification.
+- The run generates 12 arbitrary hands, chooses two static-best pip declarations per hand, simulates 96 play outcomes for each fixed hand/declaration, and expands those same outcome samples across current-high-bid and actual-bid thresholds.
+- The artifact has 24 hand/declaration rows, 1224 bid counterfactual rows, and 1104 positive unnecessary-margin contrasts. Mean delta versus minimum winning bid is `-0.111555` `P(make)` and `-0.223109` one-mark swing; 1040 contrasts worsen, 64 tie, and 0 improve.
+- The result supports the same-contract arithmetic direction of "bid only enough," but it does not promote full auction discipline, natural bid buckets, partner bid signals, or opponent response claims.
+
+---
+
+## [2026-05-03 | local | w42 seat-position claim tests]
+
+**Touched pages:** [[w42]] [[w42-phase2-seat-position-strategy-map]] [[index]] [[log]]
+**Added:** 1 artifact directory - `w42/seat_position_claim_tests/`.
+**Updated:** [[w42]] records the row-level seat/position follow-up; [[w42-phase2-seat-position-strategy-map]] now includes results, artifacts, commands, and caveats.
+**Retired:** none.
+**Questions opened:** which role/position claims need sequence counterfactuals or model probes because all legal actions in one decision share the same structural seat context.
+
+**Frontier shift:**
+- Bead `t42-0b4l.6` now turns the seat-position map into detector labels and tests over the 75,079 full legal-action rows from the tactical replication.
+- The run emits 37 label metric rows, 36 role-position slice rows, 8 paired contrasts, 160 paired contrast slices, compact labeled rows, and examples.
+- Structural seat/phase/role labels are slice evidence only. Action-local labels pair cleanly: defensive pounce count is `+3.85` Q over 489 pairs, pounce closure is `+6.76` Q over 128 pairs, partner support count is `+0.61` Q over 614 pairs, unsupported partner count into defense is `-8.35` Q over 802 pairs, closure take-trick is `+10.94` Q over 808 pairs, closure take-count is `+4.67` Q over 277 pairs, and closure slough-count is `-6.38` Q over 1803 pairs.
+- No central claim status changes. The result is closeable as seat/position row-level evidence and as input to the claim-tag model probe.
+
+---
+
+## [2026-05-03 | local | w42 claim-tag model probe]
+
+**Touched pages:** [[w42]] [[w42-claim-tag-model-probe]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-claim-tag-model-probe]]; 1 artifact directory - `w42/claim_tag_model_probe/`.
+**Updated:** [[w42]] records the direct model-probe follow-up; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** how to normalize bid-risk, 84/endgame, doubles/no-trump, and public-safe hidden-threat proxies into one future row-model table.
+
+**Frontier shift:**
+- Bead `t42-0b4l.9` now has a direct legal-action-row model probe rather than only a proxy rich-tag rerun.
+- The train/eval split uses `w42/seat_position_claim_tests/labeled_action_rows.csv`, with seeds `0..79` train and `80..99` eval: 59,893 train actions / 22,400 train decisions and 15,186 eval actions / 5,600 eval decisions.
+- The primary run improves from `1.483` public-feature selected mean regret and `61.70%` oracle-best match to `1.319` regret and `63.64%` match with claim tags. Tail regret `>=5` drops from `10.43%` to `8.95%`. W&B run `gn7xxk14` logs the per-variant summary series.
+- Family drops are modest but directional: dropping pounce/donation worsens mean regret by `+0.098` versus the full tag model, while dropping seat-position/closure worsens by `+0.053`.
+- Bid-risk, 84/endgame, doubles/no-trump, and hidden-threat/distribution are documented as unavailable or eval-only for this training table. No claim-ledger status changes.
+
+---
+
+## [2026-05-03 | local | w42 claim-analysis synthesis]
+
+**Touched pages:** [[w42]] [[w42-claim-analysis-synthesis-report]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-claim-analysis-synthesis-report]]; 1 artifact directory - `w42/claim_analysis_synthesis/`; 1 phase-3 epic - `t42-qtwb`.
+**Updated:** [[w42]] records the phase-2 synthesis and phase-3 route; [[index]] catalogues the synthesis report.
+**Retired:** none.
+**Questions opened:** none.
+
+**Frontier shift:**
+- Bead `t42-0b4l.10` synthesizes all phase-2 child results after `.5`, `.6`, and `.9` closed.
+- The synthesis table records every major family: claim matrix/harness, tactical pounce/donation, hidden threat, bidding risk, seat/position, 84, doubles/no-trump, model probe, and data inventory.
+- No broad central claim-ledger status changes are made in the final synthesis. Narrow supports stay tied to their operationalized pages; broad book claims move to generated counterfactual phase-3 work.
+- New epic `t42-qtwb` owns four next beads: auction-aware bid discipline, 84 endgame state injection, sequence/seat counterfactuals, and a joined claim-row model table.
+
+---
+
+## [2026-05-03 | local | w42 phase3 auction bid discipline corpus]
+
+**Touched pages:** [[w42]] [[w42-bidding-risk-budget-claim-validation]] [[w42-phase3-auction-bid-discipline-corpus]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase3-auction-bid-discipline-corpus]]; 1 artifact directory - `w42/auction_bid_discipline_claim_tests/`.
+**Updated:** [[w42]] records the first `t42-qtwb` follow-up; [[w42-bidding-risk-budget-claim-validation]] now links the phase-3 auction-pressure corpus; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** what real auction policy or logged auction source can replace the generated partner/opponent pass-value proxy.
+
+**Frontier shift:**
+- Bead `t42-qtwb.1` now has a generated auction-aware corpus rather than only a phase-3 plan.
+- The run evaluates 32 generated deals, 384 seat/declaration contract labels, 608 auction contexts, and 16800 P0 bid-action rows, with W&B run `6cup1bat`.
+- Bid-only-enough survives the stronger auction-pressure operationalization: across 14976 positive-margin bid rows, 12872 worsen, 2104 tie, and 0 improve versus the minimum winning bid.
+- Natural bid buckets are now measurable but not broadly promoted: 68 / 384 contract labels land on the chapter's natural max-profitable threshold buckets.
+- Partner bid signal is conditional under the generated proxy. P0 overcalls partner in 77 / 192 partner-high contexts, so the evidence supports a nuanced behavioral signal, not a static "partner bid means bid higher" rule.
+- No central claim-ledger status changes. The result strengthens local support for the operational bid-only-enough slice and routes partner-signal claims toward real auction-policy data.
+
+---
+
+## [2026-05-03 | local | w42 phase3 84 seed mining corpus]
+
+**Touched pages:** [[w42]] [[w42-phase2-84-weapon-preservation-probe]] [[w42-phase3-84-seed-mining-corpus]] [[w42-claim-analysis-synthesis-report]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase3-84-seed-mining-corpus]]; 1 artifact directory - `w42/eighty_four_seed_mining/`.
+**Updated:** [[w42]] records the phase-3 84 seed-mining follow-up; [[w42-phase2-84-weapon-preservation-probe]] now points from the six-fixture dynamic lab to the natural seed corpus; [[w42-claim-analysis-synthesis-report]] records the closed `.2` route.
+**Retired:** none.
+**Questions opened:** how to turn the mined natural seeds into exact late-hand state injections or larger branch-atlas preserve/spend contrasts.
+
+**Frontier shift:**
+- Bead `t42-qtwb.2` closes through the documented seed-mining corpus path rather than arbitrary late-state injection.
+- The scan covers 50000 seeds, 4 seats, and 7 pip declarations: 1400000 seat/declaration checks.
+- The artifact emits 214229 candidate rows, 43013 unique candidate seeds, 256 recommended rows, and W&B run `f33g4fy1`.
+- Mined surfaces include 22176 protected one-off rows, 8330 straight one-off rows, 183722 two-off same-suit rows, 140264 defender live-double rows, 206213 defender same-suit-pair rows, 85753 pair-protector-pressure rows, and one natural all-trump laydown.
+- No central claim-ledger status changes. The result removes the hand-built-only blocker and gives phase 3 a natural seed menu for 84 branch-atlas/state-injection work.
+
+---
+
+## [2026-05-03 | local | w42 phase3 sequence seat counterfactuals]
+
+**Touched pages:** [[w42]] [[w42-phase3-sequence-seat-counterfactuals]] [[winning42-ch03-bidder-play]] [[w42-claim-analysis-synthesis-report]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase3-sequence-seat-counterfactuals]]; 1 artifact directory - `w42/sequence_seat_counterfactuals/`.
+**Updated:** [[w42]] records the `t42-qtwb.3` sequence/seat follow-up; [[winning42-ch03-bidder-play]] records the lead-plan and partner-support nuance; [[w42-claim-analysis-synthesis-report]] records the closed `.3` route; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** how to add hand-shape/state-injection gates for trump count, off count, reentry preservation, early-off exceptions, and low-trump command exceptions.
+
+**Frontier shift:**
+- Bead `t42-qtwb.3` now has a phase-3 branch-value counterfactual artifact over the 75079 legal-action rows from the tactical replication.
+- The run emits 50 label metric rows, 14 paired contrasts, 394 paired contrast slice rows, compact labeled sequence rows, examples, and W&B run `kp0otpdo`.
+- Follow-seat control is strongly supported: taking control from an opponent is `+11.564` Q across 1870 paired states, while count into opponent control is `-7.322` Q across 3526 pairs.
+- Last-seat closure and setter pounce remain robust: closure take-trick is `+10.936` Q across 808 pairs, closure slough-count is `-6.377` Q across 1803 pairs, setter pounce count is `+3.846` Q across 489 pairs, and reckless setter count to bidder is `-7.829` Q across 2027 pairs.
+- Partner count support is real but gated: bidder-side control count is `+0.608` Q across 614 pairs, while partner count into defensive control is `-8.351` Q across 802 pairs.
+- Bidder lead sequencing remains context-limited rather than broadly promoted. Called-suit lead versus off-suit lead is `-1.935` Q across 1657 pairs, but called double beats lower called-suit lead by `+5.720` Q across 182 pairs. The next lead-plan test needs explicit trump/off/reentry/live-count gates.
+
+---
+
+## [2026-05-03 | local | w42 phase3 joined claim row model table]
+
+**Touched pages:** [[w42]] [[w42-phase3-joined-claim-row-model-table]] [[w42-claim-tag-model-probe]] [[w42-claim-analysis-synthesis-report]] [[index]] [[log]]
+**Added:** 1 experiment page - [[w42-phase3-joined-claim-row-model-table]]; 1 artifact directory - `w42/joined_claim_row_model_table/`.
+**Updated:** [[w42]] records the `t42-qtwb.4` joined-table close; [[w42-claim-tag-model-probe]] points to the phase-3 continuation; [[w42-claim-analysis-synthesis-report]] records the `.4` result; [[index]] catalogues the new page.
+**Retired:** none.
+**Questions opened:** whether hidden public proxies need belief-calibrated features before they should be used by a row model.
+
+**Frontier shift:**
+- Bead `t42-qtwb.4` now has a joined public-safe legal-action table over 75079 rows and 28000 decisions.
+- The table joins sequence/seat labels, partial auction-risk labels, partial public 84 bidder-structure labels, doubles/no-trump declaration/action labels, and hidden public pressure proxies. Hidden-owner truth, 84 defender assets, and auction partner/opponent pass values remain eval-only.
+- On the seed-mod held-out split, public features alone score `1.3598` mean regret and `64.464%` best-mean match. All public claim families improve that to `1.1257` mean regret and `68.107%` best-mean match; tail regret `>=5` falls from `9.536%` to `7.250%`.
+- Family drops identify sequence/seat as the main signal: dropping it gives `1.3678` mean regret, worse than the public baseline. Dropping bidding risk gives `1.1461`; dropping public 84 gives `1.1415`; dropping doubles/no-trump is nearly neutral; dropping hidden public proxy slightly improves to `1.1179`.
+- W&B run `jvjuld7m` logs the variant series and artifacts. No central claim-ledger status changes.
+
+---
+
+## [2026-05-03 | local | w42 phase4 book-claim test sweep]
+
+**Touched pages:** [[w42]] [[w42-phase4-sequence-handshape-tests]] [[w42-phase4-84-dynamic-seed-tests]] [[w42-phase4-doubles-notrump-regime-tests]] [[w42-phase4-laydown-rule-accounting]] [[w42-phase4-scoring-objective-tests]] [[w42-phase4-claim-completion-board]] [[w42-phase4-bidding-count-exposure-tests]] [[winning42-ch01-in-a-nutshell]] [[winning42-ch02-bidding]] [[winning42-ch03-bidder-play]] [[winning42-ch04-partner-support]] [[winning42-ch05-setter-defense]] [[winning42-ch07-taking-every-trick-84]] [[winning42-ch08-setting-84]] [[winning42-ch09-doubles-no-trump]] [[winning42-ch10-tournament-scoring]] [[winning42-ch12-advanced-bidding-playing]] [[winning42-ch16-statistical-odds]] [[index]] [[log]]
+**Added:** 7 experiment pages - [[w42-phase4-sequence-handshape-tests]], [[w42-phase4-84-dynamic-seed-tests]], [[w42-phase4-doubles-notrump-regime-tests]], [[w42-phase4-laydown-rule-accounting]], [[w42-phase4-scoring-objective-tests]], [[w42-phase4-claim-completion-board]], [[w42-phase4-bidding-count-exposure-tests]]; 7 artifact directories under `w42/phase4_*`.
+**Updated:** [[w42]] records the phase-4 sweep; chapter pages record the strongest supported/context-limited/blocker changes; [[index]] catalogues the new pages.
+**Retired:** none.
+**Questions opened:** which remaining blocker rows deserve arbitrary state injection, high-bid contract generation, real auction-policy data, or human/tournament population data.
+
+**Frontier shift:**
+- Phase 4 extends `t42-br7n` from a plan into seven concrete claim-test artifacts plus a completion board over all 64 ledger claims.
+- The tactical lane sharpens the core folk rule: commanding called doubles beat off leads by `+1.316` Q, while generic non-double called-suit leads lose by `-3.682` Q. Partner closure count donation is strong, earlier donation is weak, partner count-liability leads are bad, and setter pounce/count-calling labels remain strong.
+- The 84 lane turns mined natural seeds into reached-state action evidence: preserve expendable versus spend live assets is `+1.946` Q, dead-asset release is `+0.504` Q, and bidder trump-pull before final-off is `+4.295` Q. Final set attribution, full throwaway ladder, score 42-vs-84, and "good player" straight-off rates remain blocked.
+- The Chapter 9 lane finally tests same-hand doubles-trump versus no-trump regimes: no-trump beats doubles-trump on most four-plus-double hands, while high/top double control is the near-flat pro-doubles slice.
+- The deterministic lane verifies 29 Chapter 1 / laydown assertions with zero failures and turns the Chapter 3 final-deuce warning into a concrete rejected-laydown counterexample.
+- The scoring lane supports core Chapter 10 mechanics: marks create early terminal states in `94.5%` of generated hands, erase defender partial points in made ordinary contracts, compress ordinary set severity, and disagree with point-score winners in about `15.5%` of proxy matches.
+- The bidding/count-exposure lane closes the completion-board scope gap: three-plus trumps are much stronger in generated contracts, risk <=12 is modestly better, four/five offs are worse, natural max-profitable buckets appear in 66 / 384 rows, partner two-plus-double prior is about `58%`, and double-side protection is explicitly side-limited.
+- No broad central ledger mutation is made by the wiki update. Rows are promoted only at the page/evidence level; exact private-state, high-bid, auction-policy, state-injection, and human/tournament population blockers remain explicit.
+- [[w42-phase4-final-claim-audit]] independently confirms the closure condition: all 64 ledger rows have evidence and/or explicit bounded blockers, with no no-evidence/no-blocker rows.
+- [[w42-book-claim-synthesis-and-ai-directions]] records the post-closure synthesis: confirmed claims, unconfirmed technical blockers, distribution-aware E[Q] alternatives, and model/Burl/Gus experiment directions.

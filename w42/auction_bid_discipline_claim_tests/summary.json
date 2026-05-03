@@ -1,0 +1,76 @@
+{
+  "artifacts": {
+    "auction_context_rows": "w42/auction_bid_discipline_claim_tests/auction_context_rows.csv",
+    "bid_action_rows": "w42/auction_bid_discipline_claim_tests/bid_action_rows.csv",
+    "bid_margin_by_context_summary": "w42/auction_bid_discipline_claim_tests/bid_margin_by_context_summary.csv",
+    "bid_margin_summary": "w42/auction_bid_discipline_claim_tests/bid_margin_summary.csv",
+    "context_decision_rows": "w42/auction_bid_discipline_claim_tests/context_decision_rows.csv",
+    "contract_rows": "w42/auction_bid_discipline_claim_tests/contract_rows.csv",
+    "natural_bucket_summary": "w42/auction_bid_discipline_claim_tests/natural_bucket_summary.csv",
+    "opponent_pressure_summary": "w42/auction_bid_discipline_claim_tests/opponent_pressure_summary.csv",
+    "partner_signal_summary": "w42/auction_bid_discipline_claim_tests/partner_signal_summary.csv",
+    "point_samples": "w42/auction_bid_discipline_claim_tests/point_samples.csv",
+    "risk_budget_summary": "w42/auction_bid_discipline_claim_tests/risk_budget_summary.csv"
+  },
+  "bead": "t42-qtwb.1",
+  "config": {
+    "checkpoint": "default forge.bidding checkpoint",
+    "decls_per_hand": 3,
+    "device": "cpu",
+    "high_bid_contexts": [
+      30,
+      31,
+      32,
+      34,
+      35,
+      36
+    ],
+    "natural_bucket_bids": [
+      30,
+      31,
+      32,
+      33,
+      35,
+      36
+    ],
+    "samples": 64,
+    "seeds": 32,
+    "sim_seed": 430100,
+    "start_seed": 0
+  },
+  "counts": {
+    "auction_context_rows": 608,
+    "bid_action_rows": 16800,
+    "context_decision_rows": 608,
+    "contract_rows": 384,
+    "deals": 32,
+    "minimum_bid_action_rows": 1824,
+    "point_sample_rows": 384,
+    "positive_margin_rows": 14976
+  },
+  "created_at_utc": "2026-05-03T13:07:09.265598+00:00",
+  "elapsed_seconds": 111.554,
+  "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+  "headline": {
+    "contract_natural_bucket_rate": 0.177083,
+    "minimum_bid_negative_vs_pass_rows": 1458,
+    "minimum_bid_positive_vs_pass_rows": 337,
+    "partner_contexts": 192,
+    "partner_overcall_rate": 0.401042,
+    "partner_overcall_recommended_contexts": 77,
+    "positive_margin_delta_vs_min_negative_rows": 12872,
+    "positive_margin_delta_vs_min_positive_rows": 0,
+    "positive_margin_delta_vs_min_zero_rows": 2104
+  },
+  "schema_version": "w42.auction_bid_discipline_claim_tests.v1",
+  "scientific_status": {
+    "boundary": "This is not a fully conditioned four-hand auction engine. Partner/opponent values use their hand as a bidder-hand Monte Carlo label, and pass values remain offline comparison labels.",
+    "supported_slices": "Bid-only-enough is now tested under opening, partner-high, and opponent-high auction contexts. Static risk buckets are joined to empirical make labels. Natural bid buckets are measured as max-profitable threshold buckets.",
+    "what_this_tests": "Generated auction-pressure rows compare pass, minimum overcall, and higher bid amounts using bidder-hand Monte Carlo make labels for P0, partner, and opponents."
+  },
+  "wandb": {
+    "mode": "online",
+    "run_id": "6cup1bat",
+    "run_url": "https://wandb.ai/jasonyandell-forge42/w42/runs/6cup1bat"
+  }
+}

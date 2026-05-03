@@ -1,0 +1,28 @@
+{
+  "created_at_utc": "2026-05-03T15:24:36.269374+00:00",
+  "dataset_id": "w42-phase4-84-dynamic-mined-seed-tests",
+  "input_sha256": "93455b9273129df98733f30ffba80af23b29133e41f822483d7ca11c8f001f6a",
+  "leakage_boundary": "full-deal defender assets are used only as offline eval labels; live features remain public state plus actor hand",
+  "outputs": {
+    "blocker_table": "w42/phase4_84_dynamic_seed_tests/blocker_table.csv",
+    "branch_atlas": "w42/phase4_84_dynamic_seed_tests/branch_atlas",
+    "dynamic_action_labels": "w42/phase4_84_dynamic_seed_tests/dynamic_84_action_labels.csv",
+    "eq_games": "w42/phase4_84_dynamic_seed_tests/mined_84_seed_games.pt",
+    "examples": "w42/phase4_84_dynamic_seed_tests/examples.json",
+    "label_metrics": "w42/phase4_84_dynamic_seed_tests/dynamic_84_label_metrics.csv",
+    "paired_contrasts": "w42/phase4_84_dynamic_seed_tests/dynamic_84_paired_contrasts.csv",
+    "score_gate_static_table": "w42/phase4_84_dynamic_seed_tests/score_gate_static_table.csv",
+    "selected_seed_rows": "w42/phase4_84_dynamic_seed_tests/selected_seed_rows.csv"
+  },
+  "owner_bead": "t42-br7n.2",
+  "schema_version": "w42.artifact_manifest.v1",
+  "source_inputs": [
+    "wiki/AGENTS.md",
+    "wiki/experiments/winning42-ch07-taking-every-trick-84.md",
+    "wiki/experiments/winning42-ch08-setting-84.md",
+    "w42/eighty_four_seed_mining/recommended_84_seed_rows.csv",
+    "w42/eighty_four_seed_mining/candidate_84_seed_rows.csv",
+    "w42/eighty_four_weapon_preservation_probe/run_dynamic_branch_lab.py",
+    "w42/branch_atlas_v1/build_branch_atlas.py"
+  ]
+}

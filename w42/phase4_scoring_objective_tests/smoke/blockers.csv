@@ -1,0 +1,4 @@
+claim_id,missing_field,why_needed,next_generator_or_data
+ch10-point-system-skill-signal,oracle_or_human_policy_population,"heuristic policies can show score-label separation, but not actual skill honing",paired policy-population arena with E[Q]/Gus/Burl/human traces under point and mark objectives
+ch10-tournament-speed-tradeoff,wall_clock_table_time,"tricks saved are a proxy; shuffling, bidding, table talk, and laydowns change real speed",human table logs or calibrated per-trick/per-hand timing model
+ch10-timed-marks-advancement-objective,real_tournament_format_and_tiebreakers,synthetic round-robin marks-vs-points disagreement does not identify actual bracket EV,"bracket simulator with published format, clock, total-mark tiebreak, and opponent population priors"

@@ -128,15 +128,17 @@ Burl-ready:
 
 ## Claim Ledger
 
-No empirical run was performed for this bead. The ledger is therefore a harvest ledger,
-not an evidence ledger.
+[[w42-phase4-doubles-notrump-regime-tests]] now supplies same-hand paired
+evidence for the central Chapter 9 declaration-choice claims. It is generated
+policy simulation rather than exhaustive oracle proof, so rows remain
+context-limited where optimal play or auction pressure matters.
 
 | Claim | Status | Next empirical check |
 |---|---|---|
 | Doubles leave native suits under doubles-trump; non-doubles become suit tops. | supported-rules | Add engine/table assertions and strategy tags for suit-top recomputation. |
-| Four or five doubles can justify doubles-trump, but only with high-double/off-risk context. | context-limited | Enumerate 4+/5+ double hands and compare declaration EV across regimes. |
+| Four or five doubles can justify doubles-trump, but only with high-double/off-risk context. | context-limited / caveat supported | In `t42-br7n.5`, no-trump beats doubles-trump on `66.1%` of four-plus-double hands; high double control is the near-flat pro-doubles slice. |
 | A low-double planned sacrifice can turn a fragile hand into a makeable 30/31. | underpowered | Run oracle counterfactuals on Ch9-like hands with and without the low-double lead. |
-| No-trump can be safer than doubles-trump when doubles protect late offs and avoid first-trick count dump. | underpowered | Paired no-trump vs doubles-trump rollout for candidate hands with missing high double. |
+| No-trump can be safer than doubles-trump when doubles protect late offs and avoid first-trick count dump. | supported in generated paired-regime test | Missing-top / low-exposure and no-trump support buckets prefer no-trump about `76%` of the time. |
 | Dynamic no-trump suit counting can select the safer late off. | underpowered | Evaluate final-two-trick lead choice against perfect-information and E[Q] rollouts. |
 | No-trump defenders should preserve doubles/pairs like 84 defenders. | context-limited | Reuse Ch8 preservation detector on no-trump defense positions and measure missed-set regret. |
 | No-trump with doubles as a separate suit is a non-standard variant. | supported-rules | Add ruleset gate so tournament analyses exclude variant contamination. |

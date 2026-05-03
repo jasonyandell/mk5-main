@@ -1,0 +1,154 @@
+{
+  "artifacts": {
+    "decision_actions_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/decision_actions.csv",
+    "decision_states_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/decision_states.csv",
+    "examples_json": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/examples.json",
+    "hidden_threat_rows_csv": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/hidden_threat_rows.csv",
+    "manifest_json": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas/manifest.json"
+  },
+  "bead_id": "t42-br7n.2",
+  "branch_findings": {
+    "action_distribution_tag_counts": {
+      "hidden_threat_large_impact": 1340,
+      "high_std": 868,
+      "high_variance_close_mean": 597,
+      "large_lower_tail": 857,
+      "multi_peak_pdf": 1488,
+      "scalar_ev_lying_by_omission": 361,
+      "wide_shelf_gap": 1287
+    },
+    "actual_action_safest_lower_tail_count": 463,
+    "actual_action_top_mean_count": 619,
+    "actual_action_top_threshold_count": 416,
+    "decision_multi_peak_pdf_count": 488,
+    "decision_multi_peak_pdf_rate": 0.7261904761904762,
+    "decision_scalar_ev_lying_by_omission_count": 361,
+    "decision_scalar_ev_lying_by_omission_rate": 0.5372023809523809,
+    "max_hidden_impact": 46.468013763427734,
+    "max_std": 33.41262435913086,
+    "mean_top_hidden_impact": 13.222642716252672
+  },
+  "command": "w42/branch_atlas_v1/build_branch_atlas.py /Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/mined_84_seed_games.pt --output-dir /Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/branch_atlas --bead-id t42-br7n.2 --experiment w42-phase4-84-dynamic-mined-seed-tests --top-k 8 --examples 24 --log-every-decisions 10 --wandb-mode disabled --wandb-group w42-phase4-84-dynamic-seed-tests --wandb-name t42-br7n.2-phase4-84-dynamic-seed-tests --no-wandb",
+  "coverage": {
+    "inspected_decisions": 672,
+    "joint_world_decision_rate": 1.0,
+    "processed_joint_world_decisions": 672,
+    "sample_counts_by_decision": {
+      "128": 672
+    },
+    "skipped_no_joint_worlds": 0,
+    "skipped_no_legal_actions": 0
+  },
+  "created_at_utc": "2026-05-03T15:24:35.680044+00:00",
+  "git_status_before_artifacts": "M  .beads/issues.jsonl\n M wiki/entities/w42.md\n M wiki/experiments/w42-bidding-risk-budget-claim-validation.md\n M wiki/experiments/w42-phase2-84-weapon-preservation-probe.md\n M wiki/experiments/w42-phase2-seat-position-strategy-map.md\n M wiki/experiments/winning42-ch03-bidder-play.md\n M wiki/index.md\n M wiki/log.md\n?? w42/auction_bid_discipline_claim_tests/\n?? w42/bid_only_enough_claim_tests/\n?? w42/claim_analysis_synthesis/\n?? w42/claim_tag_model_probe/\n?? w42/eighty_four_seed_mining/\n?? w42/joined_claim_row_model_table/\n?? w42/phase4_84_dynamic_seed_tests/\n?? w42/phase4_claim_completion_board/\n?? w42/phase4_doubles_notrump_regime_tests/\n?? w42/phase4_laydown_rule_accounting/\n?? w42/phase4_scoring_objective_tests/\n?? w42/phase4_sequence_handshape_tests/\n?? w42/seat_position_claim_tests/\n?? w42/sequence_seat_counterfactuals/\n?? wiki/experiments/w42-claim-analysis-synthesis-report.md\n?? wiki/experiments/w42-claim-tag-model-probe.md\n?? wiki/experiments/w42-phase3-84-seed-mining-corpus.md\n?? wiki/experiments/w42-phase3-auction-bid-discipline-corpus.md\n?? wiki/experiments/w42-phase3-joined-claim-row-model-table.md\n?? wiki/experiments/w42-phase3-sequence-seat-counterfactuals.md",
+  "repo_commit": "18a5b9415928386a9da1d74027574911306d17da",
+  "rows": {
+    "action_rows": 1872,
+    "decision_rows": 672,
+    "hidden_threat_rows": 14386
+  },
+  "schema_version": "w42.branch_atlas_v1.summary.v0",
+  "scientific_status": {
+    "claim_ledger_impact": "no claim-ledger movement",
+    "hf": "not applicable",
+    "interpretation": "Powered branch-atlas pilot. It measures branch shape and offline hidden-owner impact on a generated joint-world E[Q] slice; it does not validate book claims or train a policy by itself.",
+    "leakage_boundary": "Hidden domino ownership and per-world Q outcomes are offline diagnostic labels. They may supervise belief quality or reports, but they are not live policy inputs.",
+    "training_run": false,
+    "wandb": "not applicable"
+  },
+  "source": {
+    "bid_value_counts": {
+      "84": 24
+    },
+    "bid_value_status": "fixed recorded bid_value",
+    "checkpoint": "/Users/jason/code/mk5-main/forge/models/domino-qval-large-3.3M-qgap0.071-qmae0.94.ckpt",
+    "decl_ids": [
+      5,
+      2,
+      1,
+      3,
+      1,
+      4,
+      6,
+      0,
+      4,
+      3,
+      1,
+      3,
+      2,
+      0,
+      2,
+      0,
+      3,
+      4,
+      5,
+      5,
+      3,
+      1,
+      0,
+      2
+    ],
+    "input_games": 24,
+    "n_samples": 128,
+    "path": "/Users/jason/code/mk5-main/w42/phase4_84_dynamic_seed_tests/mined_84_seed_games.pt",
+    "schema": "v2",
+    "seeds": [
+      6,
+      16,
+      2,
+      7,
+      10,
+      11,
+      46198,
+      18,
+      19,
+      23,
+      43,
+      45,
+      54,
+      60,
+      62,
+      79,
+      81,
+      83,
+      97,
+      101,
+      106,
+      123,
+      127,
+      132
+    ],
+    "sha256": "93455b9273129df98733f30ffba80af23b29133e41f822483d7ca11c8f001f6a",
+    "start_seed": null
+  },
+  "strategy_surface": {
+    "detector_counts": {
+      "bidder_first_lead_plan": 168,
+      "defender_damage_lead_class": 153,
+      "first_setter_pounce_window": 90,
+      "first_trick_public_belief_update": 1484,
+      "last_to_act_closure_policy": 406,
+      "late_trick_threshold_closure": 517,
+      "partner_forcedness_and_safety": 67,
+      "partner_third_seat_safe_donation": 57,
+      "setter_count_before_certainty": 160
+    },
+    "direct_label_readiness_values": [
+      "distribution_labels_ready",
+      "hidden_threat_offline_label_ready",
+      "needs_belief_model",
+      "needs_real_bid_margin",
+      "public_context_ready"
+    ],
+    "missing_fields_all_rows": [
+      "bid_margin"
+    ],
+    "role_counts": {
+      "bidder": 168,
+      "bidder_partner": 168,
+      "left_setter": 168,
+      "right_setter": 168
+    }
+  },
+  "wall_seconds": 1.825811207992956
+}

@@ -1,0 +1,127 @@
+{
+  "categorical_fields": [
+    "decl_name",
+    "seat_role",
+    "role_family",
+    "team",
+    "position_family",
+    "phase",
+    "current_winner_team_before",
+    "candidate_domino",
+    "candidate_is_called_suit",
+    "candidate_is_double",
+    "candidate_beats_current",
+    "candidate_would_win_trick_now"
+  ],
+  "eval_only_families": {
+    "auction_partner_opponent_values": "Auction partner/opponent pass values are offline generated labels, not live action-selection features.",
+    "eighty_four_defender_assets": "84 defender asset tags use full-deal opponent assets from seed mining and are report-only, not model features.",
+    "hidden_truth_owner": "Hidden-owner impact/downside labels from legacy mining are offline report labels, not legal live features."
+  },
+  "feature_families": {
+    "bidding_risk": [
+      "bidrisk_"
+    ],
+    "doubles_no_trump": [
+      "dnt_"
+    ],
+    "eighty_four_public": [
+      "e84_public_"
+    ],
+    "hidden_public_proxy": [
+      "hidden_proxy_"
+    ],
+    "sequence_seat": [
+      "seq_",
+      "seat_pos_",
+      "sequence_",
+      "role_",
+      "phase_",
+      "closure_",
+      "follower_",
+      "partner_",
+      "setter_",
+      "bidder_lead_",
+      "ch04_",
+      "ch05_"
+    ]
+  },
+  "numeric_fields": [
+    "actor",
+    "trick_idx",
+    "trick_position",
+    "candidate_count_points",
+    "bid_value"
+  ],
+  "offline_label_columns_excluded_from_features": [
+    "mean",
+    "mean_regret",
+    "threshold_mass",
+    "lower_tail_mass",
+    "is_best_mean",
+    "hidden_owner",
+    "world_hands",
+    "q_per_world"
+  ],
+  "schema_version": "w42.joined_claim_row_model_table.manifest.v1",
+  "summary": {
+    "bead": "t42-qtwb.4",
+    "coverage": {
+      "action_rows": 6000,
+      "auction_join_rows": 1744,
+      "decision_rows": 2274,
+      "eighty_four_public_join_rows": 351,
+      "feature_label_count": 114
+    },
+    "created_at_utc": "2026-05-03T15:08:10.463094+00:00",
+    "elapsed_seconds": 1.934,
+    "git_sha": "18a5b9415928386a9da1d74027574911306d17da",
+    "git_status_before_artifacts": "M  .beads/issues.jsonl\n M wiki/entities/w42.md\n M wiki/experiments/w42-bidding-risk-budget-claim-validation.md\n M wiki/experiments/w42-phase2-84-weapon-preservation-probe.md\n M wiki/experiments/w42-phase2-seat-position-strategy-map.md\n M wiki/experiments/winning42-ch03-bidder-play.md\n M wiki/index.md\n M wiki/log.md\n?? w42/auction_bid_discipline_claim_tests/\n?? w42/bid_only_enough_claim_tests/\n?? w42/claim_analysis_synthesis/\n?? w42/claim_tag_model_probe/\n?? w42/eighty_four_seed_mining/\n?? w42/joined_claim_row_model_table/\n?? w42/seat_position_claim_tests/\n?? w42/sequence_seat_counterfactuals/\n?? wiki/experiments/w42-claim-analysis-synthesis-report.md\n?? wiki/experiments/w42-claim-tag-model-probe.md\n?? wiki/experiments/w42-phase3-84-seed-mining-corpus.md\n?? wiki/experiments/w42-phase3-auction-bid-discipline-corpus.md\n?? wiki/experiments/w42-phase3-sequence-seat-counterfactuals.md",
+    "headline": {
+      "all_claim_families_delta_vs_public": -0.151971,
+      "all_claim_families_match_rate": 0.7,
+      "all_claim_families_mean_regret": 0.726585,
+      "best_available_variant": "drop_hidden_public_proxy",
+      "public_match_rate": 0.667857,
+      "public_mean_regret": 0.878556
+    },
+    "schema_version": "w42.joined_claim_row_model_table.v1",
+    "scientific_status": {
+      "claim_ledger_impact": "no central claim status movement",
+      "interpretation": "Joined public/action-local claim-family tags can be ablated on one legal-action split. This is model-feature evidence and routing evidence, not proof of broad book claims.",
+      "leakage_boundary": "Features exclude oracle mean/regret, threshold mass, lower-tail mass, future outcomes, hidden owners, q_per_world, and full-deal opponent asset labels. Eval-only labels are written for auditing but never used as model features."
+    },
+    "split": {
+      "eval_action_rows": 710,
+      "eval_decisions": 280,
+      "eval_seed_mod": 4,
+      "eval_seeds": [
+        4
+      ],
+      "seed_mod_base": 5,
+      "train_action_rows": 5290,
+      "train_decisions": 1994,
+      "train_seeds": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        8
+      ],
+      "train_seeds_tail": [
+        0,
+        1,
+        2,
+        3,
+        5,
+        6,
+        7,
+        8
+      ]
+    },
+    "wandb": "not applicable"
+  }
+}
