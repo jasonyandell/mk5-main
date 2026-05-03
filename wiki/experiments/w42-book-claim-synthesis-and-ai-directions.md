@@ -352,6 +352,28 @@ larger correct-hoard class. Status: `context-limited`. The probe
 correctly distinguishes the book's narrow claim from the broader
 contrast pulled by the detector vocabulary.
 
+[[w42-bookval-v1-wave2-pounce-window-bid30]] — paired contrast on 52
+oracle-greedy snapshots (500 → 52 after filtering 1-legal-move and
+setter-led-trick positions). **Major methodological finding**: the
+book's setter-pounce advice is right for `p_make` but wrong for scalar
+EV at bid=30. The oracle (which optimizes `p_make` at the contract
+threshold) chose pounce in `59.6%` of paired contrasts. Scalar EV said
+decline was better in `65.4%`. The split is sharpest in 10-point count
+cases (n=5): EV delta is `+15.68` with CI `[+1.60, +29.76]`
+(decline strictly better), yet the oracle still pounced `80%` of the
+time. Status: `context-limited`. The book's pounce instruction encodes
+a `p_make` objective at the contract threshold; this matters for any
+agent that evaluates pounce decisions under a non-`p_make` utility.
+
+This is the most consequential finding of the campaign so far. It
+crystallizes the Wave 1.4 cross-AI matrix discovery that `p_make` /
+`threshold_mass` agree with EV at only `59%` (vs `CVaR_10` /
+`robust_q25` at `82-83%`) — the disagreement matters not just at the
+action-ranking level but at the strategic-claim level. Several other
+book claims that read as universal advice may turn out to encode
+implicit `p_make` reasoning that is correct at threshold-sharp bids and
+incorrect under tail-aware utilities.
+
 ## Links
 
 [[w42]] | [[w42-phase4-final-claim-audit]] |
