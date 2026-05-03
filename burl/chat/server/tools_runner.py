@@ -22,6 +22,7 @@ seed≈4100, eval corpus uses seed≥900000 — global_idx is not portable).
 """
 from __future__ import annotations
 
+import datetime as _dt
 import json
 import logging
 import re
@@ -181,15 +182,55 @@ def available_tools() -> list[str]:
     return [*_BASE_TOOLS, *(t.name for t in improvised_tools.list_all())]
 
 
+def _trace(
+    harvest: str,
+    global_idx: int,
+    tool: str,
+    args: dict,
+    refused: bool,
+    prose: str,
+) -> None:
+    """Append one row of (tool, args, phase, refused, next-line tail) per dispatch."""
+    from . import phase_registry
+
+    trace_dir = Path(__file__).parent / "chain_traces"
+    trace_dir.mkdir(parents=True, exist_ok=True)
+    path = trace_dir / f"{harvest}_{global_idx}.jsonl"
+    next_tail = None
+    if "Next:" in (prose or ""):
+        next_tail = prose.rsplit("Next:", 1)[-1].strip()[:240]
+    rec = {
+        "ts": _dt.datetime.now().isoformat(timespec="seconds"),
+        "tool": tool,
+        "args": args,
+        "phase": phase_registry.phase_of(tool),
+        "refused": refused,
+        "prose_len": len(prose or ""),
+        "next_tail": next_tail,
+    }
+    try:
+        with path.open("a") as f:
+            f.write(json.dumps(rec) + "\n")
+    except Exception:
+        log.exception("[tools-runner] trace write failed")
+
+
 def run_tool(harvest: str, global_idx: int, tool: str, args: dict) -> dict:
     """Run ``tool(args)`` against the live game state of harvest decision
     ``(harvest, global_idx)``. Returns ``{"prose": str, "structured": ...}``.
+
+    Two HATEOAS layers wrap every dispatch:
+      1. Phase-3 (score) calls with an illegal ``play`` arg short-circuit
+         to a structured refusal pointing back at ``legal_plays``. The
+         oracle never evaluates a counterfactual that violates follow-suit.
+      2. Successful dispatches get a ``Next:`` affordance line appended to
+         their prose, dynamically composed from phase + game state.
 
     The improvised registry is checked first so a hot-registered tool of the
     same name shadows the static one (deliberate — that's the whole point
     of the experiment loop).
     """
-    from . import improvised_tools
+    from . import improvised_tools, phase_registry
     from burl.wax_museum.tools import build_registry
 
     ctx = _build_ctx(harvest, int(global_idx))
@@ -197,21 +238,30 @@ def run_tool(harvest: str, global_idx: int, tool: str, args: dict) -> dict:
     if "play" in args and not isinstance(args["play"], int):
         args["play"] = int(args["play"])
 
+    refusal = phase_registry.refuse_illegal_score(ctx, tool, args)
+    if refusal is not None:
+        log.warning(
+            "[tools-runner] REFUSED illegal score: tool=%s play=%s legal=%s",
+            tool, args.get("play"), refusal["structured"]["legal_plays"],
+        )
+        _trace(harvest, global_idx, tool, args, refused=True, prose=refusal["prose"])
+        return refusal
+
     improv = improvised_tools.get(tool)
     if improv is not None:
         payload = improv.impl(ctx, **args)
-        return {
-            "prose": payload.get("prose", ""),
-            "structured": payload.get("structured"),
-        }
+    else:
+        registry = build_registry(ctx)
+        if tool not in registry:
+            raise ValueError(
+                f"unknown tool {tool!r}; known: {list(registry.keys())}"
+            )
+        payload = registry[tool](**args)
 
-    registry = build_registry(ctx)
-    if tool not in registry:
-        raise ValueError(
-            f"unknown tool {tool!r}; known: {list(registry.keys())}"
-        )
-    payload = registry[tool](**args)
-    return {
-        "prose": payload.get("prose", ""),
-        "structured": payload.get("structured"),
-    }
+    prose = payload.get("prose", "") or ""
+    next_line = phase_registry.compose_next(ctx, tool)
+    if next_line:
+        prose = prose + next_line
+
+    _trace(harvest, global_idx, tool, args, refused=False, prose=prose)
+    return {"prose": prose, "structured": payload.get("structured")}
