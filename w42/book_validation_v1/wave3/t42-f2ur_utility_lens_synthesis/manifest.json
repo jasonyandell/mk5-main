@@ -1,0 +1,43 @@
+{
+  "bead_id": "t42-f2ur",
+  "wave": 3,
+  "parent_epic": "t42-4zi6",
+  "description": "Utility-lens synthesis: re-analyze all Wave 2 paired_contrasts.csv under 5 utility objectives",
+  "generated_utc": "2026-05-03",
+  "rng_seed": 42,
+  "n_bootstrap": 2000,
+  "input_probes": {
+    "reentry_v2":           "w42/book_validation_v1/wave2/probes/t42-v9lu_reentry_v2/paired_contrasts.csv",
+    "low_trump_trap":       "w42/book_validation_v1/wave2/probes/t42-jysl_low_trump_trap/paired_contrasts.csv",
+    "void_creation":        "w42/book_validation_v1/wave2/probes/t42-26j8_void_creation/paired_contrasts.csv",
+    "void_creation_follow": "w42/book_validation_v1/wave2/probes/t42-z31l_void_creation_follow/paired_contrasts.csv",
+    "pounce_bid30":         "w42/book_validation_v1/wave2/probes/t42-ntbe_pounce_window_bid30/paired_contrasts.csv",
+    "pounce_high_bid":      "w42/book_validation_v1/wave2/probes/t42-8kbh_pounce_high_bid/paired_contrasts.csv",
+    "bid_only_enough":      "w42/book_validation_v1/wave2/probes/t42-ey88_ch02_multistep/step_pair_deltas.csv"
+  },
+  "output_files": {
+    "per_probe_utility_verdicts": "w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/per_probe_utility_verdicts.csv",
+    "per_claim_utility_summary": "w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/per_claim_utility_summary.csv",
+    "objective_aware_ledger_schema": "w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/objective_aware_ledger_schema.json",
+    "long_form_analysis": "w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/utility_lens_synthesis.md",
+    "wiki_page": "wiki/experiments/w42-bookval-v2-utility-lens-synthesis.md"
+  },
+  "utilities_analyzed": ["EV", "p_make", "mark_ev", "CVaR_10", "robust_q25"],
+  "utilities_available": {
+    "EV":          ["reentry_v2", "low_trump_trap", "void_creation", "void_creation_follow", "pounce_bid30", "pounce_high_bid"],
+    "p_make":      ["reentry_v2", "void_creation", "void_creation_follow", "pounce_bid30", "pounce_high_bid", "bid_only_enough"],
+    "mark_ev":     ["reentry_v2", "void_creation", "void_creation_follow", "pounce_bid30", "pounce_high_bid", "bid_only_enough"],
+    "CVaR_10":     ["reentry_v2", "void_creation", "void_creation_follow", "pounce_high_bid"],
+    "robust_q25":  []
+  },
+  "sign_convention_notes": {
+    "all_Q_values": "Team 0 (bidder/declarer) perspective; positive Q = Team 0 wins",
+    "delta_conventions_verified_per_probe": true,
+    "reentry_v2": "ev_delta = ev_off - ev_trump (off-suit minus trump from T0); positive = book (preserve trump = play off)",
+    "void_creation": "ev_delta_setter = void_ev_setter - preserve_ev_setter; positive = book. cvar_delta = cvar_preserve - cvar_void from T0 (b-a convention); positive = book",
+    "void_creation_follow": "same as void_creation",
+    "pounce_bid30": "ev_delta = pounce_ev - decline_ev from T0; negative = book (pounce hurts bidder). p_set_delta_proxy positive = book",
+    "pounce_high_bid": "ev_delta_setter = pounce_setter - decline_setter; positive = book. cvar_delta = cvar_pounce - cvar_decline from T0 (a-b); negative = book"
+  },
+  "reproducibility_command": "python3 w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/analyze.py"
+}

@@ -40,6 +40,7 @@ the central ledger or the synthesis page.
 | 2.E.2 | setter-pounce high-bid snapshot probe | t42-8kbh | closed (0b7fb01) — **`ch12-setter-pounce-high-bid-off` DEMOTED to `contradicted`** |
 | 2.G | ch02 multi-step bid-only-enough | t42-ey88 | closed — **`ch02-bid-only-enough` promoted to `supported`** (campaign's first) |
 | 2.H | ch10 mark-multiplier action-level | t42-8na4 | closed (no status change; ch10 row already `supported`) |
+| 3.0 | utility-lens meta-analysis | t42-f2ur | closed — narrows p_make/EV thread; ch05-void-creation-follow is the only true objective-dependent split; high-bid pounce contradicted under all 4 utilities |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |
@@ -148,9 +149,29 @@ before merge.
   sharpened, not retired.
 - Push at session end. Work is not done until pushed.
 
+## Wave 3.0 reconciliation
+
+[[w42-bookval-v2-utility-lens-synthesis]] re-processed all 7 closed
+Wave 2 probes through 5 utility lenses. Net effect on the campaign's
+emergent p_make/EV thread:
+
+- **Narrowed, not killed.** ch05-void-creation-follow remains a true
+  objective-dependent split (EV supported, p_make spans zero) — model-
+  training-relevant.
+- **High-bid pounce hypothesis superseded.** ch12-setter-pounce-high-bid
+  is contradicted under all 4 available utilities. The earlier read
+  (Wave 2.E pounce is a p_make/EV split) does not generalize.
+- **Schema decision: ADOPT-DEFERRED.** Per-utility status columns are
+  the right shape, but populating them needs probes to record all 5
+  utilities. Defer adoption until next 3-5 probes record full coverage.
+- **Status counts unchanged** (Wave 3.0 is read-only meta-analysis):
+  supported 24, context-limited 14, underpowered 19, not-yet-tested 4,
+  contradicted 3.
+
 ## Links
 
 [[w42]] | [[w42-book-claim-synthesis-and-ai-directions]] |
+[[w42-bookval-v2-utility-lens-synthesis]] |
 [[w42-bookval-v1-wave2-infra-design]] |
 [[w42-phase4-final-claim-audit]] |
 [[w42-phase4-claim-completion-board]] |

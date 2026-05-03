@@ -365,14 +365,15 @@ time. Status: `context-limited`. The book's pounce instruction encodes
 a `p_make` objective at the contract threshold; this matters for any
 agent that evaluates pounce decisions under a non-`p_make` utility.
 
-This is one of the most consequential findings of the campaign so far.
-It crystallizes the Wave 1.4 cross-AI matrix discovery that `p_make` /
-`threshold_mass` agree with EV at only `59%` (vs `CVaR_10` /
-`robust_q25` at `82-83%`) — the disagreement matters not just at the
-action-ranking level but at the strategic-claim level. Several other
-book claims that read as universal advice may turn out to encode
-implicit `p_make` reasoning that is correct at threshold-sharp bids and
-incorrect under tail-aware utilities.
+At the time this wave landed, this looked like the campaign's first
+clear strategic-claim-level p_make/EV split — not just an action-ranking
+disagreement (Wave 1.4 cross-AI matrix at 59%) but a verdict reversal.
+**Wave 3.0 (utility-lens meta-analysis) later narrowed this read.** The
+pounce-bid30 result reproduces in the re-analysis (oracle pounce 60%,
+EV span-zero), but the broader hypothesis that "many book claims encode
+implicit p_make reasoning" did not generalize to the closed probe set.
+See the Wave 3.0 reconciliation section below for the corrected
+formulation; ch05-void-creation-follow is now the cleaner case study.
 
 [[w42-bookval-v1-wave2-void-creation]] (lead, n=276) and
 [[w42-bookval-v1-wave2-void-creation-follow]] (follow, n=500) together
@@ -525,6 +526,102 @@ analyses should test that hypothesis.
 
 The row stays `supported` (already there); the evidence base is now
 wider. No status counts change from this finding.
+
+## Wave 3.0 — Utility-Lens Meta-Analysis (Reconciliation)
+
+[[w42-bookval-v2-utility-lens-synthesis]] re-processed all seven closed
+Wave 2 probes through 5 utility lenses (EV, p_make, mark_ev, CVaR_10,
+robust_q25). The result **substantially narrows the p_make/EV split
+hypothesis** that Waves 2.E and 1.4 had projected onto the broader
+campaign:
+
+**Headline:** of seven claims tested across multiple utilities, only
+**one** shows a true objective-dependent verdict relevant to model
+training signal:
+
+| Claim | EV | p_make | Other | Type |
+|-------|----|--------|-------|------|
+| ch05-void-creation-follow | **supported** | spans_zero | mark_ev/CVaR_10 spans_zero | **Soft flip** (model-relevant) |
+| ch05-void-creation-lead | contradicted | contradicted | CVaR_10 spans_zero | Soft flip (CVaR only — noise) |
+| ch12-setter-pounce-bid30 | spans_zero | spans_zero | — | No flip (claim unresolved at all utilities) |
+| ch12-setter-pounce-high-bid | contradicted | contradicted | mark_ev/CVaR_10 contradicted | **Unanimous contradicted** |
+| ch02-bid-only-enough | (missing) | supported | mark_ev supported | Unanimous supported |
+| ch03-reentry-preservation | spans_zero | spans_zero | mark_ev/CVaR_10 spans_zero | Unresolved at all utilities |
+| ch04-low-trump-trap | contradicted | (missing) | (missing) | Single-utility evidence |
+
+No claim flips between `supported` and `contradicted`. All "flips" are
+between a verdict and `spans_zero` — i.e. one utility detects a signal
+and another doesn't.
+
+**Updated read on the p_make/EV thread:** the campaign's earlier
+formulation ("the book may encode p_make-optimized advice at the contract
+threshold, with EV-optimal play differing in some sharp-threshold
+positions") was right *at the claim level* (Wave 2.E setter-pounce-bid30
+showed it; Wave 1.4 cross-AI matrix flagged it) but **does not generalize**
+to the closed probe set. The cleanest expression of the split is now
+ch05-void-creation-follow, where EV-greedy void creation buys the setter
++0.77 EV but doesn't move P(make the set).
+
+The earlier strong claim that "high-bid pounce is a p_make/EV split"
+(Wave 2.E.2) is **superseded**: the Wave 3.0 re-analysis shows pounce-
+high-bid is contradicted under all 4 available utilities (`-10.42` EV,
+`-0.047` p_make, `-0.047` mark_ev, `+4.40` CVaR_10 — all CIs exclude
+zero in the bidder-helps direction). The book is wrong here irrespective
+of objective. This was hidden in Wave 2.E.2 because that probe only
+reported EV.
+
+**Caveat (algebraic identity reminder):** for high-bid probes where
+mark_multiplier > 1 (bid=84), `mark_ev` should differ from `p_make` by
+the multiplier scalar. Wave 3.0 reports them as identical for several
+high-bid claims; this is consistent with the dataset being dominated by
+mm=1 cases (bids 30-42 where mm=1) but is worth verifying when the
+ledger schema is populated. The argmax-equivalence still holds (positive
+affine), so verdicts are correct; only effect *sizes* would shift.
+
+### Schema decision
+
+The Wave 3.0 agent recommended adopting per-utility status columns
+(`ledger_status_ev`, `..._p_make`, `..._mark_ev`, `..._cvar_10`,
+`..._robust_q25`, `utility_flip_flags`).
+
+**Orchestrator decision: ADOPT-DEFERRED.** Schema is the right shape but
+populating it requires probes to record p_make / mark_ev / CVaR /
+robust_q25 alongside EV. Five of seven closed probes are missing two or
+more utilities. Adoption now would create a sparse ledger; adoption
+later (after the next probe wave records all five utilities by default)
+yields a complete ledger. Action: add a probe-output contract
+amendment to `AGENTS.md` requiring all five utilities in
+`paired_contrasts.csv`, and revisit schema after the next 3-5 probes
+land with full coverage.
+
+### Implications for model design
+
+The single concrete prediction for Burl/Gus head design that survives
+Wave 3.0 review:
+
+- **ch05-void-creation-follow is the only situation in the validated
+  claim set where an EV head and a p_make head would disagree on what
+  to learn.** A model with an EV training signal should learn to create
+  voids when forced off-suit in follow position; a model with a p_make
+  training signal should remain neutral. This is testable by examining
+  Burl's behavior in this specific position vs a pure-EV oracle.
+
+- For all other validated claims, both EV and p_make agree (ch12-pounce-
+  high-bid: both contradict; ch02-bid-only-enough: both support;
+  ch03-reentry, ch12-pounce-bid30: both unresolved). A single-objective
+  head suffices for these.
+
+Conclusion: a multi-head architecture (EV head + p_make head + CVaR
+head) is *worth carrying forward as future work* but is **not yet
+justified by validated evidence at the strength a campaign would
+warrant**. The earlier framing in Wave 1.4 — "p_make / threshold_mass
+agree with EV at only 59%" — describes a *ranking-disagreement rate at
+the action level*, not a strategic-claim-level split. The two phenomena
+are different: actions can disagree without claim verdicts disagreeing.
+
+Status counts are unchanged by Wave 3.0 (it is an analysis of existing
+verdicts, not a new probe): supported 24, context-limited 14,
+underpowered 19, not-yet-tested 4, contradicted 3.
 
 ## Links
 

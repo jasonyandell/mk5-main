@@ -106,3 +106,30 @@ The Wave 2.B.2 promotion of `ch12-setter-pounce-high-bid-off` to
 bids contradict). The agent had flagged the proxy as insufficient; the
 orchestrator promoted anyway. This guard prevents repeating that
 mistake.
+
+## Utility-coverage requirement (added 2026-05-03 after Wave 3.0)
+
+Every paired-contrast probe (`paired_contrasts.csv` or equivalent) must
+record per-action values for **all five utility lenses**:
+
+1. `ev_<role>` — scalar EV (or its delta vs counterfactual)
+2. `p_make_<role>` — P(Q ≥ make_threshold)
+3. `mark_ev_<role>` — bid × P(make) - penalty × P(fail), with mm taken
+   from the actual bid (mm = max(1, bid // 42))
+4. `cvar_10_<role>` — 10th-percentile tail outcome from the EV
+   distribution
+5. `robust_q25_<role>` — 25th-percentile robust quantile
+
+Where `<role>` is the perspective the claim is from (setter / bidder /
+team-0). Use both `_setter` and `_bidder` columns when both are
+relevant.
+
+**Why:** Wave 3.0 found that 5 of 7 closed probes were missing two or
+more utilities, blocking adoption of the per-utility ledger schema.
+Recording all 5 at probe time is cheap (the underlying Q tensor or
+sample distribution is already loaded); recording later requires re-
+running the probe.
+
+**Exception:** if a utility is structurally undefined for a probe (e.g.
+robust_q25 on a binary action shape with no Q distribution), record a
+`null` and explain in the probe README under "utility coverage".

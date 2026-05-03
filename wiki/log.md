@@ -2409,3 +2409,20 @@ Scribe-C's Phase-3 follow-up under continued exclusive GPU.  Team-lead's "GO" me
 - ch10-special-bid-mark-multiplier evidence base widened from deterministic transform to action-level demonstration: 71 percent of decisions at bid=42 have a different mark_ev top-1 action than at bid=30. The strategic effect operates through threshold_q recomputation; bid=84 plateaus at bid=42 because both share threshold_q=42. The mm scalar is a positive affine transform that cannot change argmax.
 - The campaign's emergent thread is the p_make / EV objective lens split: the book may encode p_make-optimized advice at the contract threshold, with EV-optimal play differing in some sharp-threshold positions. Wave 3.0 (in flight) will formalize this as a per-utility re-classification of all closed probes.
 - Status counts after wave 2.E.2: supported 24, context-limited 14, underpowered 19, not-yet-tested 4, contradicted 3.
+
+---
+
+## [2026-05-03 | local | w42 book validation v1 wave 3.0 utility-lens reconciliation]
+
+**Touched pages:** [[w42-book-claim-synthesis-and-ai-directions]] [[w42-book-validation-campaign]] [[w42-bookval-v2-utility-lens-synthesis]] [[log]]
+**Added:** Wave 3.0 (`t42-f2ur`) re-processed all 7 closed Wave 2 probes through 5 utility lenses (EV, p_make, mark_ev, CVaR_10, robust_q25). Outputs: `w42/book_validation_v1/wave3/t42-f2ur_utility_lens_synthesis/` with per-probe verdicts, per-claim pivot, proposed schema JSON, reproducibility script, long-form synthesis. Wiki page `w42-bookval-v2-utility-lens-synthesis` records the per-utility verdict matrix.
+**Updated:** [[w42-book-claim-synthesis-and-ai-directions]] absorbs the reconciliation — narrows the broad p_make/EV thread to its actual scope (1 of 7 claims, ch05-void-creation-follow), supersedes Wave 2.E.2's "p_make split" framing for high-bid pounce (it's contradicted under all 4 utilities), and records ADOPT-DEFERRED on the per-utility ledger schema. The earlier Wave 2.E synthesis text is softened with a forward-pointer to the Wave 3.0 reconciliation. SESSION_HANDOFF.md updated to reflect closed status, narrowed thread, and revised Wave 4 design direction. AGENTS.md amended with a utility-coverage requirement: every future paired-contrast probe must record all 5 utilities at probe time so the schema can be populated when adopted.
+**Retired:** the campaign-wide formulation that "the book may be implicitly p_make-optimized at the contract threshold" — replaced with the narrower "ch05-void-creation-follow is the sole claim where EV-head and p_make-head training signals diverge."
+**Questions opened:** does Burl's actual ch05-void-creation-follow behavior match a pure-EV oracle (tests whether single-head is sufficient at this one claim); when do we have 3-5 new probes with full utility coverage to revisit schema adoption.
+
+**Frontier shift:**
+- The campaign's **strongest emergent theoretical thread is reduced from "many" to "one."** Wave 3.0 is a textbook case of a meta-analysis correcting a hypothesis projected from a small number of probes. Wave 1.4's 59% p_make/EV agreement is an action-ranking-level disagreement that does NOT propagate to strategic-claim-level verdicts in the closed probe set.
+- Multi-objective head architecture (EV head + p_make head + CVaR head) is **worth carrying forward as future work but not yet justified by validated evidence**. The single concrete testable prediction is ch05-void-creation-follow.
+- ch12-setter-pounce-high-bid is **unanimously contradicted** under all 4 available utilities (EV -10.42, p_make -0.047, mark_ev -0.047, CVaR_10 +4.40). The earliest "p_make split" framing was an artifact of EV-only reporting in Wave 2.E.2.
+- Schema decision **ADOPT-DEFERRED** — defer per-utility status columns until future probes record all 5 utilities by default. AGENTS.md utility-coverage amendment makes this happen automatically.
+- Status counts unchanged (Wave 3.0 is read-only meta-analysis): supported 24, context-limited 14, underpowered 19, not-yet-tested 4, contradicted 3.

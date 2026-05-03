@@ -50,12 +50,22 @@ Wave 2 probes:
 
 ### In flight
 
-- **Wave 3.0** (`t42-f2ur`) — utility-lens meta-analysis. Re-processes
-  every closed probe through EV / p_make / mark_ev / CVaR / robust_q25
-  utility lenses to produce a master "utility-conditional book
-  validation" table. Pure offline analysis, ~45min budget. Tests the
-  campaign's strongest emergent theoretical thread: the book may be
-  implicitly p_make-optimized at the contract threshold.
+(none — Wave 3.0 closed)
+
+### Most recently closed
+
+- **Wave 3.0** (`t42-f2ur`) — utility-lens meta-analysis. Closed
+  2026-05-03. Re-processed all 7 closed Wave 2 probes through 5 utility
+  lenses. **Headline finding: the broad p_make/EV split hypothesis did
+  not generalize.** Only ch05-void-creation-follow shows a true
+  objective-dependent verdict (EV supported, p_make spans zero) — the
+  one place where EV-head vs p_make-head training signal would diverge.
+  ch12-setter-pounce-high-bid is contradicted under all 4 available
+  utilities (Wave 2.E.2's "p_make split" framing was wrong; the book
+  is wrong here irrespective of objective). Schema decision: ADOPT-
+  DEFERRED — add per-utility status columns once probes record full
+  utility coverage. AGENTS.md amended with utility-coverage requirement
+  for all future probes.
 
 ### Deferred (filed but not launched)
 
@@ -94,25 +104,32 @@ Wave 2.E.2 demotion triggered a new promotion-guard rule:
 **aggregate proxies do not qualify for promotion**, only paired
 same-decision contrasts on the relevant action shape.
 
-### Major emergent thread: p_make vs EV objective lens
+### Major emergent thread: p_make vs EV objective lens (post-Wave 3.0 update)
 
-A pattern across multiple probes: the book's tactical advice may be
-implicitly p_make-optimized at the contract threshold, while EV-optimal
-play differs. Concrete instances:
+The earlier formulation — "the book may be implicitly p_make-optimized
+at the contract threshold" — was projected from 2-3 probes (Wave 1.4
+action-ranking matrix, Wave 2.E pounce-bid30, Wave 2.E.2 high-bid
+pounce). **Wave 3.0's full re-analysis substantially narrowed this
+read:**
 
-- Wave 1.4: detectors agree with p_make at 59%, with CVaR_10 at 83%
-  (p_make is the disagreement target)
-- Wave 2.E (bid=30): pounce right-by-p_make (oracle pounces 60%), wrong-by-EV (decline better in 65%)
-- Wave 2.E.2 (high bid): pounce wrong-by-EV at all 4 bids, despite
-  Wave 2.B.2 aggregate proxy
-- Wave 2.A.3: reentry contradicted in late game (where threshold sharpens)
-- Wave 2.H: mark-multiplier is structurally a threshold-q effect, not multiplier-scalar
-- Wave 2.G: bid-only-enough is supported under both p_make AND EV (the
-  exception that confirms the pattern — when both objectives agree,
-  the claim survives easily)
+- Only **1 of 7** closed claims shows a true model-design-relevant
+  objective split: **ch05-void-creation-follow** (EV supported,
+  p_make/mark_ev/CVaR_10 all span zero).
+- ch12-setter-pounce-high-bid is contradicted under all 4 available
+  utilities — the book is wrong irrespective of objective. The Wave
+  2.E.2 "p_make split" framing was an artifact of that probe only
+  reporting EV.
+- ch12-setter-pounce-bid30 (the Wave 2.E result) reproduces in re-
+  analysis as spans_zero under all utilities — claim is unresolved,
+  not split.
+- Wave 1.4's 59% p_make/EV agreement is an *action-ranking-level*
+  disagreement that does not propagate to the *strategic-claim-level*
+  in our closed probe set.
 
-Wave 3.0 will formalize this as a per-utility re-classification of all
-closed probes.
+Conclusion: the multi-objective head architecture (EV head + p_make
+head + CVaR head) is worth carrying forward as future work but is not
+yet justified by validated evidence. ch05-void-creation-follow is the
+single concrete testable prediction.
 
 ### Pending decisions for the user when resuming
 
@@ -122,10 +139,13 @@ closed probes.
   otherwise it's a one-off claim probe.
 - **Detector hygiene beads** (`t42-v0m5`, `t42-2yb5`, `t42-btpg`):
   could roll into a single Wave 2.X cleanup pass when Wave 3.0 lands.
-- **Wave 4 design**: training implications. If Wave 3.0 confirms the
-  utility-lens split, the next research direction is whether
-  Gus/Burl should carry an objective-conditioned head (EV vs p_make)
-  rather than a single-utility head.
+- **Wave 4 design**: training implications. Wave 3.0 substantially
+  weakened the case for an objective-conditioned head (only 1 of 7
+  claims shows the split). The narrower next direction: probe Burl's
+  ch05-void-creation-follow behavior vs a pure-EV oracle to test
+  whether a single-objective EV head learns the supported claim. If
+  not, multi-head architecture is justified by that one claim; if so,
+  single-head suffices.
 - **Wave 3 (auction policy + opponent population)**: deferred from
   earlier sessions; multiple Wave 2 probes flagged that real auction
   strategy testing needs a bid-policy simulator. Wave 2.G's
