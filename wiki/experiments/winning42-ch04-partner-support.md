@@ -110,6 +110,21 @@ Private guarantee and exact low-trump trap claims still need richer state fields
 | Highest remaining suit tile can substitute for a double | Page 39 four-trey example | underpowered | Detect virtual-boss leads and compare regret when chosen or missed |
 | Partner should usually avoid leading trump while helping bidder | Page 40 warning and exception | underpowered | Measure trump-lead regret in partner-support regime and learn exception boundaries |
 
+## Wave 2 Findings (Book Validation v1)
+
+[[w42-bookval-v1-wave2-low-trump-trap]] tested the book's "low trump
+into a count-bearing trick is a trap" claim with 257 paired contrasts
+on oracle-greedy snapshots. The overall delta is `-1.95`
+(CI `[-2.94, -1.07]`), but this aggregate is dominated by positions
+where hoarding the dominant trump is broadly correct, not the specific
+trap the book warns about. **In the count-bearing subgroup (n=86,
+the actual book scenario)**, mean delta is `-0.02` with CI
+`[-2.16, +2.15]` - symmetric, no signal. The trap fires in 42.4%
+of cases (severe in 7.4%) but is offset by the larger correct-hoard
+class. The probe correctly distinguishes the book's narrow claim from
+the broader contrast pulled by the detector vocabulary. Status:
+`context-limited`.
+
 ## Wave 1 Findings (Book Validation v1)
 
 The hidden-threat impact ranker in

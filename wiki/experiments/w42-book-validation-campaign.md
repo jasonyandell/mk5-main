@@ -29,7 +29,14 @@ the central ledger or the synthesis page.
 | 1.4 | cross-AI agreement matrix | t42-m2i7 | closed |
 | 1.5 | independent ledger audit re-run | t42-1nmm | closed |
 | 2.A | state-injection harness | t42-rwdj | closed (commit 19fc675) |
-| 2.B | bid-aware E[Q] driver | t42-6j3k | closed (commit 0c802d4, smoke scope) |
+| 2.A.2 | oracle-greedy snapshot mining (5 corpora, 1822 snapshots) | t42-y8b5 | closed (commit 77a8511) |
+| 2.A.3 | reentry probe v2 | t42-v9lu | closed (d9f8dbf) — `context-limited`, late game contradicts book |
+| 2.B | bid-aware E[Q] driver smoke | t42-6j3k | closed (0c802d4) |
+| 2.B.2 | bid-aware full 50-seed MPS sweep | t42-7eop | in flight |
+| 2.C | void-creation paired contrast | t42-26j8 | outputs landed (N=8 underpowered, suspect filter) |
+| 2.D | low-trump-trap paired contrast | t42-jysl | closed (29b86b8) — `context-limited`, count subgroup symmetric |
+| 2.E | setter-pounce bid=30 | t42-ntbe | closed (79b5b7d) — `context-limited`, p_make/EV split |
+| 2.E.2 | setter-pounce high-bid | t42-8kbh | filed, blocked on 2.B.2 |
 | 2.C | void-creation snapshot corpus + ch05 probe | t42-26j8 | blocked on 2.A |
 | 2.D | low-trump-trap snapshot corpus + ch04 probe | t42-jysl | blocked on 2.A |
 | 2.E | pounce-window-high-bid snapshot corpus + ch12 probe | t42-ntbe | blocked on 2.A + 2.B |

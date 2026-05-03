@@ -135,6 +135,41 @@ underpowered until state-injected or high-bid generators exist.
 | 32/33 bids are usually anomalous except as last-seat raises over 31. | partial empirical bucket evidence | `t42-br7n.7` finds natural 30/31 or 35/36 max-profitable buckets in 66 / 384 generated contract rows; real auction-increment behavior remains untested. |
 | Reputation for disciplined bidding can provoke opponent overcalls and should affect style priors. | context-limited | Needs repeated-player simulation or human logs; not measurable from single independent forge games alone. |
 
+## Wave 2 Findings (Book Validation v1)
+
+[[w42-bookval-v1-wave2-pounce-window-bid30]] is the most consequential
+Ch 12 finding so far. A paired-contrast probe on 52 oracle-greedy
+snapshots (filtered from 500 candidates by 1-legal-move and
+setter-led-trick exclusions) tested the book's "pounce on bidder
+exposed count" instruction against the oracle's choice and against
+scalar EV.
+
+The result splits the book's advice along the objective function:
+
+- **Right under `p_make`**: the oracle (which optimizes `p_make` at
+  the contract threshold) chose pounce in `59.6%` of paired
+  contrasts. The book's instruction is directionally correct under
+  this objective.
+- **Wrong under scalar EV**: scalar EV said decline was better in
+  `65.4%` of paired contrasts. The 10-point count subgroup (n=5)
+  was sharpest: EV delta `+15.68` with CI `[+1.60, +29.76]`
+  (decline strictly better) yet the oracle still pounced `80%` of
+  the time.
+
+Status: `context-limited` for the bid=30 slice. The book's pounce
+instruction encodes an implicit `p_make` objective at the contract
+threshold; under tail-aware utilities (CVaR, robust_q25 — see
+[[w42-bookval-v1-wave1-distribution-lens-reranker]]) it would
+recommend a different action substantially more often. The high-bid
+extension (35/36/42 - the regime the chapter most cares about) waits
+for the bid-aware corpus from Wave 2.B.2 (bead `t42-8kbh`).
+
+This finding generalizes: several book claims that read as universal
+advice may actually encode `p_make` reasoning that is directionally
+correct at threshold-sharp bids and incorrect under different
+utilities. A future audit pass should re-classify each
+`context-limited` row by which objective function it survives under.
+
 ## Links
 
 [[winning42-strategy-measurement]] - [[gus-strategy-tags-probe]] - [[gus]] - [[burl]] - [[forge]]
